@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5, halten-masse halten.K1/K5 Staffel 2,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1, tore-k5-welt tore.K5 Staffel 2). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, leib-k2-sprung leib.K2 Staffel 2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1, tore-k5-welt tore.K5 Staffel 2). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -684,6 +684,70 @@ const stationen = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät",
+    },
+
+    // ───────── leib.K2#2 — der Sprung aus dem Leib-Gesetz (leib-k2-sprung) ─────────
+    {
+        kriterium: "leib.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // derselbe Lauf wie leib.K2#1 (Zwilling: gleicher Befehl und Umgebung, er fährt EINMAL): gate:koerper-stand K8 und K9
+        // mit --bild. K9 (an der Mess-Wiese, je Sicht Ego und Third): der Sprung aus dem Sprint, die Taste einen Takt gehalten,
+        // bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges, die Weite vom Abdruck bis zur Landung;
+        // je Leib der heutige, die Masse ×1,25 (`_leibMasse`) und die Kraft ×1,25 (`_sprungKraft`). Der Abdruck folgt dem
+        // Gesetz koerper LEIB.sprung (v = √(2d(F/m − g)), `_sprungAbdruck`). Das Urteil: der Fuß von #1 (dazu) und je Sicht
+        // das Bild (die Hüfte in Third, das Auge in Ego heben sich mit der Kapsel, ≥ 80 %), die Masse senkt Höhe UND Weite um
+        // ≥ 10 %, die Kraft hebt beide um ≥ 10 %. Headless (Null-Renderer, leib-k2-sprung 27.10.): Ego und Third 0,323/2,85 m,
+        // Masse 0,179/2,16 m, Kraft 0,504/3,45 m, Auge 0,315 m, Hüfte 0,326 m.
+        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
+        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const fuss = stationen.find((s) => s.kriterium === "leib.K2" && s.staffel === 1).urteil(j, lauf);
+            const sp = (j && j.k8 && j.k8.sprung) || {};
+            const rot = fuss.gruen ? [] : ["der Fuß (#1)"];
+            const r2 = (x) => Math.round(x * 1000) / 1000;
+            const teile = ["first", "third"].map((b) => {
+                const [g, masse, kraft] = sp[b] || [];
+                if (!g || !masse || !kraft) {
+                    rot.push((b === "first" ? "Ego" : "Third") + " ohne Sprung");
+                    return "";
+                }
+                const [h, w] = [(x) => x.hub[0], (x) => x.weite];
+                const blick = g.hub[b === "first" ? 2 : 1];
+                if (!(h(g) > 0.1 && blick >= 0.8 * h(g))) rot.push(b + " Bild " + r2(blick) + " von " + r2(h(g)) + " m");
+                if (!(h(masse) <= 0.9 * h(g) && w(masse) <= 0.9 * w(g))) rot.push(b + " Masse ×1,25 zieht den Sprung nicht");
+                if (!(h(kraft) >= 1.1 * h(g) && w(kraft) >= 1.1 * w(g))) rot.push(b + " Kraft ×1,25 zieht den Sprung nicht");
+                return (b === "first" ? "Ego " : "Third ") + [g, masse, kraft].map((x) => r2(h(x)) + "/" + r2(w(x))).join(" → ");
+            });
+            if (/^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout)) rot.push("die Linse zeichnet nie");
+            const zahl = teile.join(" · ") + " m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß " + fuss.zahl;
+            return { gruen: !rot.length, zahl: zahl + (rot.length ? " — ROT: " + rot.join(" · ") : "") };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/kreatur-verhalten.js",
+            "stamm/bau-buch.js",
+            "stamm/dienst.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "tetrapoda-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-koerper-stand.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte",
     },
 
     // ───────── leib.K4 — die Kamera zu Fuß ─────────
