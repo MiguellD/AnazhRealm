@@ -35,6 +35,8 @@ Die Cloud meldet kein Ende: Zweige per `git ls-remote`, die Übergabe steht im l
 (Einlass: eigener Code-Check am SHA ohne roten Job). Danach die -koord-Zweige in `koordination` mergen (`punkte.cjs selbsttest`),
 Takt 14 am neuen Kopf: genannte Stationen klang.K4#2, tore.K5#2, halten.K1#2, halten.K5#2, luftwasser.K5#1/#2 + was R6 alt macht.
 
+- 21:30 Befund einer Cloud-Karte (nicht gebaut, Notbremse): `node scripts/diag-v1-pfad.cjs --korpus` endet am unberührten main 19606f2e in 1 von 2 Läufen mit EXIT 1 bei grünen Urteilen — die welt-boot-Akte fängt `console.error: Access to fetch at https://api.anthropic.com/v1/messages … blocked by CORS`. Der Korpus stellt den Anbieter auf ollama mit Mitschnitt (diag-v1-pfad.cjs ~2019–2059), ein Hintergrund-Sprecher (Kandidaten grokSpeakFromJournal, llmCallCreature, proactiveSuggestions) oder ein Zurücksetzen von st.llm.provider (V-D6 ~1143–1166) ruft den Vorgabe-Anbieter. Karte: Rufer beim Namen (Stapel des fetch), an der Wurzel schneiden, 5× grün; Wände gate:v1-pfad, check.
+
 ## 3. Lehren dieses Abends
 
 - Die OMEN schreibt ihre Datei erst am Auftrags-Ende: einen großen GTX-Auftrag in zwei teilen, sonst wartet die Buchung ~3 h.
