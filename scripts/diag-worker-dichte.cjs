@@ -573,7 +573,7 @@ const KERN_MUTATIONEN = {
     "Höhen-Versatz": ["let h = hoeheGrund(L, x, z, mitDetail, aus);", "let h = hoeheGrund(L, x, z, mitDetail, aus) + 0.01;"],
 };
 const KERN_MODUS = { haupt: null, faden: null, probe: null }; // je Boot die Mutation im Haupt-Faden, im Voxel-Faden, in der Probe
-const kernQuelle = (wurzel = root) => liesText(path.join(wurzel, "gelaende-core.js")); // der EINE Leser des Kerns
+const kernQuelle = (wurzel = root) => fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"); // der EINE Leser des Kerns
 const kernMutiert = (roh, name) => String(roh).replace(...(KERN_MUTATIONEN[name] || ["", ""]));
 function kernWandle(p, roh) {
     if (p === "/gelaende-core.js" && KERN_MODUS.haupt) return kernMutiert(roh, KERN_MODUS.haupt);
@@ -752,7 +752,7 @@ function gelaendeKern(wurzel) {
     ctx.self = ctx;
     ctx.window = ctx;
     vm.createContext(ctx);
-    vm.runInContext(liesText(path.join(wurzel, "vendor", "simplex-noise.js")), ctx);
+    vm.runInContext(fs.readFileSync(path.join(wurzel, "vendor", "simplex-noise.js"), "utf8"), ctx);
     vm.runInContext(kernQuelle(wurzel), ctx);
     return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
 }
