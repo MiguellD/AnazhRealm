@@ -33,7 +33,7 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
@@ -985,7 +985,7 @@ async function rollen(n) {
             { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
             { silent: true, precise: true, rotationY: quer - Math.PI / 2 }
         );
-        if (e) await window.__gebautNach(e, { takt: () => new Promise((q) => setTimeout(q, 100)), max: 200 });
+        if (e) await window.__gebautNach(e, { takt: () => sleep(100), max: 200 });
         if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
             for (let k = 0; k < 15; k++) takt();
             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
@@ -1171,7 +1171,7 @@ function zeile(o) {
     );
 }
 
-(async () => {
+hauptLauf(async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
@@ -1263,7 +1263,4 @@ function zeile(o) {
     }
     console.log(rot ? `❌ gate:koerper-stand ROT (${rot})` : "✅ gate:koerper-stand grün");
     process.exit(rot ? 1 : 0);
-})().catch((e) => {
-    console.error(e);
-    process.exit(2);
 });

@@ -789,11 +789,16 @@ class AnazhRealm_dirigent_takt {
     // kostete kein Sturz etwas (2–30 m, 6,2–24,2 m/s, 0 Schaden).
     _loopPhysicsSync(delta, currentTime) {
         const s = this.state;
+        const [luft, vy] = [s.isInAir === true, s._fieldVy];
         s._sturzTempo = 0;
         this._stepCharacter(delta, currentTime);
         const G = s._sturzTempo > 0 && AnazhRealm.Gesetz("koerper:LEIB.sturz");
         if (G && s._sturzTempo > G.schadlosMs)
             this.damagePlayer(0.5 * (s._sturzTempo ** 2 - G.schadlosMs ** 2) * G.lebenJeJkg, "sturz");
+        // DIE LANDUNG als Ereignis für die Leser des Bilds (der Klang, `_schrittKlangTick` — `_sturzTempo` lebt einen Schritt):
+        // Luft → Boden mit dem Fang-Tempo des Lösers, Luft → Wasser mit dem Tempo, mit dem der Leib eintrat
+        if (luft && s.isInAir !== true)
+            s._aufprall = { tempo: s._sturzTempo || Math.max(0, -vy), n: (s._aufprall ? s._aufprall.n : 0) + 1 };
     }
 
     // ===== FIXED-TIMESTEP SIM/RENDER-SPLIT (Fiedler „Fix Your Timestep!") =====
@@ -1419,6 +1424,7 @@ class AnazhRealm_dirigent_takt {
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
         this._tickCanopyStreaming();
+        this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt

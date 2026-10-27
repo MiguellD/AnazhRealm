@@ -3,16 +3,14 @@
 // Schale um Schale, `_ringWaechst`, das Laub-Ziel ist auf seine Kante gekappt) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FOLIRING_PORT || 4615);
 const server = statikServer();
 hauptLauf(async () => {
     await server.lausche(PORT);
     // Erwartet: der Null-Renderer gibt sich unten als echter aus (_isHeadlessNull = false) — ein Stoff-Bau fragt ihn dann
     // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
-    const browser = await starteBrowser({ art: "null", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
     await server.zeige(page, 30000);
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.blueprints);

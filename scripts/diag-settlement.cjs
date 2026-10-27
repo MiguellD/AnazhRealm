@@ -2,7 +2,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, starteBrowser, nullRenderer, waitFor, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -10,7 +10,7 @@ const path = require("path");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
@@ -576,12 +576,12 @@ async function vorratAmDorf(messort, alt) {
             const vor = e.alle;
             r._tickAutoSettlement(pm);
             still = leer() && e.alle === vor ? still + 1 : 0;
-            await new Promise((ok) => setTimeout(ok, 20));
+            await sleep(20);
         }
         e.nachZug = -e.alle;
         for (let g = 0; g < 150; g++) {
             r._tickAutoSettlement(pm);
-            await new Promise((ok) => setTimeout(ok, 20));
+            await sleep(20);
         }
         for (const [k, v] of r._dorfVorraete) {
             const b = await v.fertig;
@@ -802,20 +802,20 @@ hauptLauf(async () => {
         check(
             "Selbst-Test 8: ein ebener Ort hält (Sockel 0, Türen 2/2)",
             u0.sockelMax === 0 && u0.tuerenOk === 2 && u0.tuerenN === 2,
-            JSON.stringify(u0)
+            u0
         );
         const absatz = (x, z) => (z - 100 < 5 ? 9 : 10);
         const u1 = ortUrteil(ortT([haus(-8, 8, 10), haus(8, 8, 10)]), absatz);
         check(
             "Selbst-Test 9: ein Absatz von 1 m vor den Türen -> 0/2, die Stufe beim Namen",
             u1.tuerenOk === 0 && u1.tuerenFehl.every((t) => t.vorStufe === 1),
-            JSON.stringify(u1.tuerenFehl)
+            u1.tuerenFehl
         );
         const u2 = ortUrteil(ortT([haus(-8, 8, 11), haus(8, 8, 10)]), eben);
         check(
             "Selbst-Test 10: ein Haus 1 m über dem Grund -> Sockel max 1, seine Schwelle fällt",
             u2.sockelMax === 1 && u2.tuerenOk === 1 && u2.tuerenFehl[0].si === 0,
-            JSON.stringify(u2)
+            u2
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
@@ -1371,9 +1371,7 @@ hauptLauf(async () => {
     const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
     const server = statikServer();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 240000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 240000 });
     await server.zeige(page, 30000);
     // DIE PROBEN JE LAUFZEIT-MARKE: `fn` läuft in der Seite, jede Probe setzt ihre Marke (`__marke(name)`); gewartet wird Marke um
     // Marke über das EINE Warten (`waitFor`, sein Name im Puls der Stall-Akte), höchstens eine Runde je Marke — so trägt jede Probe
@@ -1586,9 +1584,10 @@ hauptLauf(async () => {
             r.dslEffects.spawn_village([["at", pv.x, pv.y, pv.z], same], ctxV);
             let cell = null;
             for (const weiter = window.__deckel("B: das Dorf des DSL-Akts", 600); !cell && weiter();) {
-                await new Promise((rs) => setTimeout(rs, 100));
+                await sleep(100);
                 const sc = r.state.worldMeta?.settlementCells || {};
-                // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort>
+                // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort> (der EINE Schreiber `spawn_village`, stamm/siedlung-ort.js;
+                // die Probe läuft in frischer Welt, ein älterer Stand ohne @<Ort> lädt hier nie)
                 for (const key of Object.keys(sc)) if (key.startsWith(`d:${same >>> 0}@`)) cell = sc[key];
             }
             res.villageNH = cell ? cell.nH : null;
@@ -1667,7 +1666,7 @@ hauptLauf(async () => {
                 r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
                 ruhig = r.state._frameChunksBuilt ? 0 : ruhig + 1;
                 vorlauf++;
-                await new Promise((rs) => setTimeout(rs, 0));
+                await sleep(0);
             }
             res.c.vorlaufFrames = vorlauf;
             window.__anazhAutoSettlement = true;
@@ -1682,7 +1681,7 @@ hauptLauf(async () => {
                 const ran = r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
                 if (ran.includes("scatterDeco") && !r.state._frameChunksBuilt) dekoLaeufe++;
                 FRAMES++;
-                await new Promise((rs) => setTimeout(rs, 0));
+                await sleep(0);
             }
             // gezählt werden die bearbeiteten Slots (ein Slot an Wasser/Klippe fällt geschlossen, er zählt als Schritt)
             const qIdx1 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : qIdx0;
@@ -1845,7 +1844,8 @@ hauptLauf(async () => {
             };
             const pm = r.state.playerMesh;
             const p0 = pm.position.clone();
-            const lauf = async (nH, vorlauf, alt) => {
+            // kx, kz: die Zelle von C3 (oben einmal aus `key` gelesen)
+            const lauf = async (nH, vorlauf, alt, fern) => {
                 r.state._frameOverBudget = false;
                 const seed = (cand.seed ^ Math.imul(nH * 2 + !vorlauf, 0x9e3779b1)) >>> 0;
                 r._autoSettlementCellInfo = (x, z) => (x === kx && z === kz ? { ...cand, seed, nH } : null);
@@ -1884,37 +1884,75 @@ hauptLauf(async () => {
                             })()
                         );
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
-                if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
+                const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
+                if (vorlauf) r._tickAutoSettlement(stell(nah + 80));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
-                const pw = stell(A.nearM - 20);
+                // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
+                // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
+                const vr = vorlauf && !alt && r._dorfVorraete.get(key);
+                for (let m = nah + 80; vr && m > nah + 1; m -= 4)
+                    for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++)
+                        await sleep(5);
+                const vor0 = new Set(r.state.architectures); // die Häuser der Läufe davor zählen nie
+                const pw = stell(nah - 2);
+                // DAS ERSTE HAUS IM BILD (sk5-haus): `bild` = Takte vom Erwachen, bis ein Haus der Zelle in der Stufe steht, die
+                // seine Kette für seinen Abstand wählt — in der Mesh-Zone seine gedockte Stufe (`_foundryPlatzBereit`), dahinter
+                // seine Hülle im Welt-March über den Chokepoint des Cull-Takts (`_archZiegelFern`; der Null-Renderer zeichnet kein
+                // Feld, die Linse öffnet es je Ruf). Der Fit-Takt ist voll wie am Dorf: nähere Fits fragten zuerst (Werkbank am
+                // Messort dorf: 49 ja / 1 210 nein). `nahImSchirm`: ein Slot der Mesh-Zone mit der Mitte im Schirm; `fern`
+                // (Selbsttest) dreht die Reihe des Zugs um — die Hülle vor dem Haus in der Mesh-Zone.
+                const [R, rd] = [r.state.architectureCullingRadius, r.state.renderer];
+                const d = (q) => Math.hypot(q.x - pw.x, q.z - pw.z);
+                const stufe = (e) => {
+                    if (d(e.position) <= R) return r._foundryPlatzBereit(e, r._foundryPresetForEntry(e)) && "mesh";
+                    while (r._weltBakeErlaubt(0));
+                    rd._isHeadlessNull = false;
+                    r._archZiegelFern(e);
+                    rd._isHeadlessNull = true;
+                    return e._ziegelSlot && "huelle";
+                };
+                if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
+                let [bild, erstes] = [-1, null];
                 wach = true;
                 for (
                     const weiter = window.__deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
-                    !erst && weiter();
+                    (!erst || (!erstes && bild < 400)) && weiter();
                 ) {
+                    haus += !erst;
                     r._tickAutoSettlement(pw);
-                    haus++;
-                    await new Promise((rs) => setTimeout(rs, 5));
+                    bild++;
+                    const e = r.state.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
+                    if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
+                    await sleep(5);
                 }
+                r._dorfZug = zug;
+                const nahImSchirm = (erst ? erst.plan.slots : []).some((s) => {
+                    const q = { x: erst.origin.x + s.x, z: erst.origin.z + s.z };
+                    return d(q) <= R && r._imErstenBlick(q.x, q.z, 0, true);
+                });
                 return (
                     erst && {
                         nH,
                         plaene: haupt + r._ortWahlMass.kandidaten,
                         haus,
                         vor,
+                        bild,
+                        erstes,
+                        nahImSchirm,
                     }
                 );
             };
             try {
-                for (const [k, nH, v, alt] of [
+                for (const [k, nH, v, alt, fern] of [
                     ["vorlauf12", 12, 1],
                     ["vorlauf300", 300, 1],
+                    ["fern300", 302, 1, 0, 1],
                     ["teleport12", 12, 0],
                     ["teleport300", 300, 0],
                     ["alt300", 301, 1, 1],
                 ])
-                    res.c.k5[k] = await lauf(nH, v, alt);
+                    res.c.k5[k] = await lauf(nH, v, alt, fern);
                 delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
                 const y = r.state.yaw;
@@ -2123,7 +2161,7 @@ hauptLauf(async () => {
                                 const q = r._autoSettlementQueue;
                                 if (cells()[zelle] && !(q && q.cellKey === zelle)) break;
                                 still = vor && leer() ? still + 1 : 0;
-                                await new Promise((ok) => setTimeout(ok, 20));
+                                await sleep(20);
                             }
                         } finally {
                             window.__anazhAutoSettlement = hook0;
@@ -2693,16 +2731,20 @@ hauptLauf(async () => {
         `slots=${out.planSlots} name=${out.planName}`
     );
     check(
-        "B: der Konsument platziert (placed > 0, Buchhaltung exakt)",
+        // placed > 0, Buchhaltung exakt
+        "B: der Konsument platziert",
         out.placed1 > 0 && out.entriesMatch === true,
         `placed=${out.placed1} skipped=${out.skipped1} Wandlaternen ${out.wand1}/${out.wandPlan}`
     );
     check(
-        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint (Tabellen-Regel, kein Literal) oder die Wandlaterne seines Hauses",
+        // Tabellen-Regel, kein Literal
+        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint oder die Wandlaterne seines Hauses",
         out.allHaus === true
     );
     check(
-        "B: POSITIONS-DETERMINISTISCH — derselbe Anker zweimal, jedes Haus beider Akte sitzt EXAKT auf dem Plan v2 (entry == anker + slot.x/z, y == slot.y + 0,5, phi, seed)",
+        // derselbe Anker zweimal, beide Akte heben gleich viele, jedes Haus beider Akte: entry == anker + slot.x/z, phi, seed
+        // (y == slot.y + 0,5 am zweiten) — der Slot-Anker trägt den Determinismus, kein eigener Offset-Vergleich
+        "B: POSITIONS-DETERMINISTISCH — der Slot-Anker sitzt EXAKT auf dem Plan v2",
         out.planV2 === true && out.slotAnchorExact === true,
         `v2=${out.planV2} placed1=${out.placed1} placed2=${out.placed2}`
     );
@@ -2712,17 +2754,20 @@ hauptLauf(async () => {
         out.zugAkt === true
     );
     check(
-        "B: HAUS-DOPPELBAU — der Slot-ov reist als studioOv an JEDEM Eintrag (rolle == Export)",
+        // rolle == Export
+        "B: HAUS-DOPPELBAU — der Slot-ov reist als studioOv an JEDEM Eintrag",
         out.ovTravels === true
     );
     check(
-        "B: HAUS-DOPPELBAU — der Flatten-Chokepoint liest den Stempel (ov-Hash trennt Kirche von Wohnhaus)",
+        // der ov-Hash trennt Kirche von Wohnhaus
+        "B: HAUS-DOPPELBAU — der Flatten-Chokepoint liest den Stempel",
         out.ovKeysSplit === true
     );
     const eh = out.erlebnis || {};
     const el = out.erlebnisLeer || {};
     check(
-        "B: der Erlebnis-Hebel hebt die Schichten des Plans (Hof-Bäume, Marktstände, Zäune über den Zaun-Pool, Äcker in der Wege-Karte) — ohne sie keine",
+        // Hof-Bäume, Marktstände, Zäune über den Zaun-Pool, Äcker in der Wege-Karte
+        "B: der Erlebnis-Hebel hebt die Schichten des Plans — ohne sie keine",
         eh.baeume > 0 &&
             eh.staende > 0 &&
             eh.zaeune > 0 &&
@@ -2737,16 +2782,18 @@ hauptLauf(async () => {
     check(
         `B: DIE STADTMAUER (siedlung.K2) — ${sm.mauer}/${sm.soll} Streifen, wirft, die Natur weicht; Dorf ${eh.mauer}`,
         sm.mauer >= 0.8 * sm.soll && sm.wirft && sm.natur && !eh.mauer,
-        JSON.stringify(sm)
+        sm
     );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check(
-        "B: Γ5 — der Siedlungs-Same zieht aus dem Bau-Strom (`_bauSame` am Ruf, kein Math.random)",
+        // `_bauSame` am Ruf, kein Math.random
+        "B: Γ5 — der Siedlungs-Same zieht aus dem Bau-Strom",
         out.gammaStream === true
     );
     check("B: Γ5 — „baue dorf hier“ zieht denselben Bau-Strom (_bauSame)", out.gammaHier === true);
     check(
-        "B: der DSL-Akt spawn_village trägt die Größe des Siedlungs-Gesetzes (nach der Buch-Ankunft, nie der Kern-Default)",
+        // nach der Buch-Ankunft, nie der Kern-Default
+        "B: der DSL-Akt spawn_village trägt die Größe des Siedlungs-Gesetzes",
         Number.isFinite(out.villageNH) && out.villageNH === out.villageNHSoll,
         `nH ${out.villageNH} (Soll ${out.villageNHSoll})`
     );
@@ -2755,7 +2802,8 @@ hauptLauf(async () => {
         if (outO.err) console.log("  Fehler im Akt: " + outO.err.split("\n").slice(0, 3).join(" | "));
         if (outO.zelle)
             check(
-                `O ${modusName}: der Dorf-Zug baut das Dorf der Zelle am Mess-Ort (wie im Spiel, _tickAutoSettlement)`,
+                // wie im Spiel, _tickAutoSettlement
+                `O ${modusName}: der Dorf-Zug baut das Dorf der Zelle am Mess-Ort`,
                 !outO.err && outO.haeuser > 0,
                 `Zelle ${outO.zelle}`
             );
@@ -2841,12 +2889,14 @@ hauptLauf(async () => {
                 `zweites Dorf ${outO.zweit}, vor der Zelle ${(outO.ankunft || {}).zweitVor} · Ankunft: Zelle ${(outO.ankunft || {}).zelle}, Häuser ${(outO.ankunft || {}).haeuser}/${outO.slots} · Zelle ${outO.zelle}: ${outO.haeuser}/${outO.slots}`
             );
         check(
-            `O ${modusName}: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts)`,
+            // Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts
+            `O ${modusName}: der Ort hält jede Zahl`,
             fehlO.length === 0,
             fehlO.join(" · ") || "gehalten"
         );
         check(
-            `O ${modusName}: Selbst-Schein — der Zeitplan der Welt dunkel, die Gasse sieht keine Quelle (die Zahl liest das Licht-Gesetz der Welt)`,
+            // die Zahl liest das Licht-Gesetz der Welt
+            `O ${modusName}: Selbst-Schein — der Zeitplan dunkel, die Gasse sieht keine Quelle`,
             !!outO.gasse && outO.gasse.schein === 0 && outO.gasse.n > 0,
             outO.gasse ? `hell ${outO.gasse.n} · dunkel ${outO.gasse.schein}` : "keine Gasse"
         );
@@ -2855,7 +2905,8 @@ hauptLauf(async () => {
     pruefeOrt(`das Auto-Dorf der Welt am Mess-Ort dorf, Zelle ${OA.outO.zelle || "?"}`, "Auto-Dorf", OA.outO, OA.gtO);
     console.log("  FELD-WURF IM ORT " + JSON.stringify(FW));
     check(
-        "O Auto-Dorf: jeder Wurf des Felds weicht dem Ort wie die Natur — keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF)",
+        // keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF)
+        "O Auto-Dorf: jeder Wurf des Felds weicht dem Ort wie die Natur",
         !FW.err && FW.quelle === true && FW.feldMarke === true && FW.weichen === FW.arten,
         FW.err
             ? FW.err.split("\n")[0]
@@ -2868,14 +2919,16 @@ hauptLauf(async () => {
                   (FW.fehl.length ? " · kein Wurf: " + FW.fehl.join(", ") : "")
     );
     check(
-        "O Auto-Dorf: Selbst-Schein — gilt die Feuerstelle als Bau, sperrt sie den Grund und bleibt im Grundriss (die Linse sieht den Täter)",
+        // und bleibt im Grundriss: die Linse sieht den Täter
+        "O Auto-Dorf: Selbst-Schein — die Feuerstelle als Bau sperrt den Grund",
         !FWd.err && FWd.sperrt.includes("glutbrunnen") && FWd.grundriss.includes("glutbrunnen"),
         FWd.err
             ? FWd.err.split("\n")[0]
             : `sperrt: ${FWd.sperrt.join(", ") || "—"} · im Grundriss: ${FWd.grundriss.join(", ") || "—"}`
     );
     check(
-        "O Auto-Dorf: das Werk jeder Art (der Satz, der Bau-Modus) weicht nie — es sperrt den Grund, kein Grundriss und kein Weg räumt es (die Herkunft entscheidet, die Marke werk, nie die Art)",
+        // der Satz, der Bau-Modus: es sperrt den Grund, kein Grundriss und kein Weg räumt es (die Herkunft entscheidet, die Marke werk, nie die Art)
+        "O Auto-Dorf: das Werk jeder Art weicht nie",
         !FW.err && FW.werk.arten.length === FW.arten && FW.werk.weicht.length === 0,
         FW.err
             ? FW.err.split("\n")[0]
@@ -2883,34 +2936,40 @@ hauptLauf(async () => {
                   (FW.werk.weicht.length ? " · weicht als Werk: " + FW.werk.weicht.join(", ") : " · keins weicht")
     );
     check(
-        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht die Feuerstelle des Menschen (die Linse sieht den Täter)",
+        // die Linse sieht den Täter
+        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht die Feuerstelle des Menschen",
         !FWa.err && FWa.werk.weicht.some((w) => w.startsWith("glutbrunnen")),
         FWa.err ? FWa.err.split("\n")[0] : `weicht als Werk: ${FWa.werk.weicht.join(", ") || "—"}`
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     const c = out.c || {};
     check(
-        "C1: die Zell-Wahrheit des Wirts zieht aus dem Strom des Welt-Seeds (ein anderer Seed, andere Dörfer; zurück, dieselben; Γ5)",
+        // ein anderer Seed, andere Dörfer; zurück, dieselben (Γ5) — selten und deterministisch misst Teil Z am Kern-Hash
+        "C1: die Zell-Wahrheit des Wirts aus dem Welt-Seed",
         c.seedStrom === true,
         `seedStrom=${c.seedStrom}`
     );
     check("C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)", c.spawnClearWall === true);
     check(
-        "C2: HEADLESS-DEFAULT — Null-Renderer ohne Hook: der Auto-Zug ruht (kein Pending, keine Queue)",
+        // Null-Renderer ohne Hook: kein Pending, keine Queue
+        "C2: HEADLESS-DEFAULT — der Auto-Zug ruht",
         c.headlessQuiet === true
     );
     check(
-        "C3: die erzwungene Dorf-Zelle materialisiert (Export -> Reservierung -> Häuser)",
+        // Export → Reservierung → Häuser
+        "C3: die erzwungene Dorf-Zelle materialisiert",
         c.planOk === true && c.reserved === true && c.placed >= 1 && c.allHaus === true,
         `placed=${c.placed} ticks=${c.ticks}`
     );
     check(
-        "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt (echter Job-Pfad scatterDeco: Slots in Frames, nie 0, je Deko-Lauf ≤ 1/drosselTakte)",
+        // echter Job-Pfad scatterDeco: Slots in Frames, nie 0, je Deko-Lauf ≤ 1/drosselTakte
+        "C3b: Existenz vor Framerate — über dem Budget wächst die Siedlung gedrosselt",
         c.budgetWall === true,
         `über dem Budget: ${c.ueberBudget} Slots in ${c.ueberBudgetFrames} Frames (${c.dekoLaeufe} Deko-Läufe; der Ring stand nach ${c.vorlaufFrames} Frames)`
     );
     check(
-        "C6: der Wege-Schlüssel trägt den Ort — zwei Siedlungen mit demselben Samen bauen je ihre Wege",
+        // zwei Siedlungen mit demselben Samen bauen je ihre Wege
+        "C6: der Wege-Schlüssel trägt den Ort",
         Array.isArray(c.wegeJeOrt) && c.wegeJeOrt.length === 2 && c.wegeJeOrt.every((n6) => n6 > 0),
         `Wege-Formen je Ort: ${(c.wegeJeOrt || []).join(" / ")}`
     );
@@ -2918,12 +2977,14 @@ hauptLauf(async () => {
     const blZ = (q) =>
         q ? `${q.haeuser} Häuser, Gier ${q.gier} (gedreht ${q.gedreht}, neben dem Dorf ${q.nebenDorf})` : "–";
     check(
-        "C7: ein Nexus-Dorf lässt den Blick des Spielers stehen (0710-7; 4B: −2,745 mitten im Lauf)",
+        // 0710-7; 4B: −2,745 mitten im Lauf
+        "C7: ein Nexus-Dorf lässt den Blick stehen",
         !!bl.nexus && bl.nexus.haeuser > 0 && bl.nexus.gedreht < 1e-6,
         `Nexus: ${blZ(bl.nexus)}`
     );
     check(
-        "C7: ein Dorf, das der Spieler verlangt (Chat-Programm, Befehl „dorf“), richtet den Blick auf SEIN neues Dorf",
+        // Chat-Programm und Befehl „dorf“: der Blick auf SEIN neues Dorf
+        "C7: das verlangte Dorf richtet den Blick auf sich",
         !!bl.spieler &&
             !!bl.chat &&
             bl.spieler.haeuser > 0 &&
@@ -2934,75 +2995,93 @@ hauptLauf(async () => {
     );
     const werkzeug = ["faehigkeit", "wirken", "verzehr"];
     check(
-        "C7: ein Dorf aus einem Werkzeug des Spielers (Fähigkeit ability:, Wirken capability:, Verzehr consume:) schaut auf SEIN Dorf (0710-8)",
+        // Fähigkeit ability:, Wirken capability:, Verzehr consume: (0710-8)
+        "C7: das Dorf eines Werkzeugs schaut auf sich",
         werkzeug.every((k) => !!bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
         werkzeug.map((k) => `${k}: ${blZ(bl[k])}`).join(" · ")
     );
     check(
-        "C7: ein Dorf eines Mitspielers (remote-…) lässt den Blick stehen — er handelt für die Welt",
+        // remote-…: er handelt für die Welt
+        "C7: das Dorf eines Mitspielers lässt den Blick stehen",
         !!bl.mitspieler && bl.mitspieler.haeuser > 0 && bl.mitspieler.gedreht < 1e-6,
         `Mitspieler: ${blZ(bl.mitspieler)}`
     );
     const ring = c.ring || {};
     check(
-        "C5: DER GENESIS-PORTAL-RING hebt am Ursprung (alle builtIn-Welt-Portale, Stempel gesetzt)",
+        // alle builtIn-Welt-Portale, Stempel gesetzt
+        "C5: DER GENESIS-PORTAL-RING hebt am Ursprung",
         ring.stempel === true && ring.arten >= 1 && ring.gebaut >= 1,
         `arten=${ring.arten} gebaut=${ring.gebaut}`
     );
     check(
-        "C5: Ring-Radius ~11 m + doppelt idempotent (Stempel traegt, 0 Doppel)",
+        // der Stempel trägt, 0 Doppel
+        "C5: Ring-Radius ~11 m, doppelt idempotent",
         ring.radiusOk === true && ring.idempotent === true,
         `radiusOk=${ring.radiusOk} idem=${ring.idempotent}`
     );
     check(
-        "C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser (worldMeta.settlementCells trägt über den Reload)",
+        // worldMeta.settlementCells trägt über den Reload
+        "C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser",
         c.idempotent === true
     );
     const k5 = c.k5 || {};
-    const z5 = JSON.stringify(k5);
     // über dem Budget liegt ein Takt des Zugs je drosselTakte Bilder (Stadt GTX 41 fps): 0,5 s tragen `soll` Takte
     const soll = Math.floor((0.5 * 41) / k5.drossel);
     const je = (n, f) => n.every((k) => k5[k] && f(k5[k]));
+    // DAS ERSTE HAUS IM BILD (sk5-haus): nH 12 und 300 heben das nächste Haus nach dem Vorlauf, seine Stufen bestellt vor ihm, und
+    // es steht in der Stufe seines Abstands ≤ `soll` Takte nach dem Erwachen, auch hinter vollem Fit-Takt — nie als Hülle, solange
+    // ein Haus der Mesh-Zone vorn im Schirm liegt (das ferne vor dem nahen, beim Namen)
+    const fernVorNah = (w = {}) =>
+        w.erstes &&
+        w.erstes.stufe === "huelle" &&
+        w.nahImSchirm &&
+        `${w.erstes.typ} als Hülle in ${w.erstes.d} m vor dem nahen`;
     check(
-        `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen, ihre Stufen bestellt vor ihm`,
-        je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll && w.vor > 0),
-        z5
+        `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, vorgebacken`,
+        je(["vorlauf12", "vorlauf300"], (w) => w.vor > 0 && w.erstes && w.bild <= soll && !fernVorNah(w)),
+        k5
     );
     check(
-        "C-K5 Selbsttest: der Export nach dem Erwachen (Teleport) und die Schichten vor ihm (alt) fallen ROT",
+        "C-K5 Selbsttest: ein fernes Haus vor dem nahen ist ROT beim Namen",
+        !!fernVorNah(k5.fern300),
+        fernVorNah(k5.fern300) || k5
+    );
+    check(
+        // der Export nach dem Erwachen (Teleport) und die Schichten vor dem ersten Haus (alt)
+        "C-K5 Selbsttest: Teleport und alt fallen ROT",
         je(["teleport300", "alt300"], (w) => w.haus > soll),
-        z5
+        k5
     );
     check(
-        "C-K5 OHNE VORLAUF (Teleport, Start-Dorf): Pläne (Haupt-Thread + Ort-Faden) bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
+        // Teleport, Start-Dorf; die Pläne im Haupt-Thread und im Ort-Faden
+        "C-K5 OHNE VORLAUF: Pläne bis zum ersten Haus nH 300 / nH 12 ≤ 1,2",
         je(["teleport12", "teleport300"], () => k5.teleport300.plaene / k5.teleport12.plaene <= 1.2),
-        z5
+        k5
     );
     check(
-        "C-K5: DER RANG — Mitte vor Streifen vor außer Schirm: 40 m voraus, 11 m bei 70°, 15 m daneben",
+        // 40 m voraus, 11 m bei 70°, 15 m daneben
+        "C-K5: DER RANG — Mitte vor Streifen vor außer Schirm",
         String(k5.schirm) === "1,2,0",
-        z5
+        k5
     );
     const [ort, ortS, wach, voll] = [k5.ort || {}, k5.ortStoer || {}, k5.wach || {}, k5.wachVoll || {}];
     check(
-        "C-K5c: DER ORT IST EINE FUNKTION — zwei Vorläufe nH 300, der Spieler 3,7 m versetzt: der Plan v2 bit-gleich",
+        // zwei Vorläufe nH 300, der Spieler 3,7 m versetzt
+        "C-K5c: DER ORT IST EINE FUNKTION — der Plan v2 bit-gleich",
         !!ort.hash && ort.hash[0] === ort.hash[1] && !ort.erste,
         ort.erste ? `die erste Abweichung: ${ort.erste}` : JSON.stringify(ort.hash)
     );
-    check(
-        "C-K5c Selbsttest: ein Wunsch, der mit dem Spieler rückt, wird ROT beim Namen",
-        !!ortS.erste,
-        JSON.stringify(ortS)
-    );
+    check("C-K5c Selbsttest: der Wunsch, der mit dem Spieler rückt, ist ROT", !!ortS.erste, ortS);
     console.log("  C-K5d DAS ERWACHEN " + JSON.stringify(wach));
     check(
-        "C-K5d: DAS ERWACHEN IN RATEN — vom Erwachen bis zum letzten Haus trägt jeder Takt höchstens EINEN Schritt des Dorfs",
+        // vom Erwachen bis zum letzten Haus, je Takt ein Schritt des Dorfs
+        "C-K5d: DAS ERWACHEN IN RATEN — je Takt höchstens EIN Schritt",
         wach.takte > 1 && !!wach.mehr && !wach.mehr.length,
         (wach.mehr || []).join(" | ") ||
             `${wach.takte} Takte, das erste Haus im Takt ${wach.haus}, der längste ${wach.max}`
     );
     check(
-        "C-K5d Selbsttest: ein synchroner Voll-Bau im Takt des Erwachens wird ROT beim Namen",
+        "C-K5d Selbsttest: der Voll-Bau im Takt des Erwachens ist ROT",
         !!voll.mehr && voll.mehr.length > 0,
         (voll.mehr || []).join(" | ")
     );
@@ -3012,17 +3091,16 @@ hauptLauf(async () => {
             .map(([k, x]) => `Zelle ${k}: ${x} Exporte`);
     const ruht = (e) => !e.nachZug && !e.offen;
     check(
-        "C-K5b: EIN VORRAT JE ZELLE — am Mess-Ort dorf bereiten sich zwei Zellen vor, jede mit höchstens EINEM Export",
+        // am Mess-Ort dorf bereiten sich zwei Zellen vor
+        "C-K5b: EIN VORRAT JE ZELLE — höchstens EIN Export",
         Object.keys(K5b.exporte).length >= 2 && !mehrfach(K5b).length,
-        JSON.stringify(K5b)
+        K5b
     );
+    // 150 Gänge ohne Export, kein Foundry-Auftrag offen
+    check("C-K5b: NACH DEM ZUG STEHT DIE WELT", ruht(K5b), K5b);
     check(
-        "C-K5b: NACH DEM ZUG STEHT DIE WELT — 150 Gänge ohne Export, kein Foundry-Auftrag offen",
-        ruht(K5b),
-        JSON.stringify(K5b)
-    );
-    check(
-        "C-K5b Selbsttest: EIN Vorrat zur Zeit (das alte Überspringen) wird ROT beim Namen",
+        // das alte Überspringen
+        "C-K5b Selbsttest: EIN Vorrat zur Zeit ist ROT",
         mehrfach(K5bS).length > 0 && !ruht(K5bS),
         mehrfach(K5bS).join(" · ") + " " + JSON.stringify(K5bS)
     );
@@ -3039,19 +3117,20 @@ hauptLauf(async () => {
     check(
         `C-K3: DIE TRASSE AM ORT — ${trassen.length} Dörfer stehen am Ort ihres Höhen-Rasters, Gassen-Gefälle p95 ≤ ${gefSoll} % am Grund ohne Erdbau`,
         trassen.length >= 4 && trassen.every((t) => t && t.versatzM === 0 && t.aussen === 0 && t.p95 <= gefSoll),
-        JSON.stringify(trassen)
+        trassen
     );
     check(
-        "C-K3 Selbsttest: der Plan am Raster des Wunschs, den die Wahl rückt, wird ROT beim Namen",
+        "C-K3 Selbsttest: der Plan am Raster des gerückten Wunschs ist ROT",
         K3S.trasse.some((t) => t.p95 > gefSoll),
-        JSON.stringify(K3S.trasse)
+        K3S.trasse
     );
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
     }
-    console.log(
-        "\n✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT: exportSettlement ist deterministisch + eingefroren (Kern), der Export reist durch den EINEN Worker (Brücke generisch, M8), der Host hebt die Slots positions-deterministisch, wasser-bewacht und fail-closed in die Welt (deliberater Akt) — UND der Worldgen-Konsument lebt (Auto-Dörfer: Γ5-Zellen, Site-Wände, budgetierte Materialisierung durch die EINE Slot-Quelle, Reload-idempotent, headless-ruhig)."
-    );
+    // exportSettlement deterministisch + eingefroren (Kern), der Export durch den EINEN Worker (Brücke generisch, M8), der Host hebt
+    // die Slots positions-deterministisch, wasser-bewacht und fail-closed (deliberater Akt) — und der Worldgen-Konsument lebt
+    // (Auto-Dörfer: Γ5-Zellen, Site-Wände, budgetierte Materialisierung durch die EINE Slot-Quelle, Reload-idempotent, headless-ruhig)
+    console.log("\n✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT.");
     process.exit(0);
 });

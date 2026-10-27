@@ -737,18 +737,6 @@ async function wasserGraben(o = {}) {
     const nx = -(a.z - b.z) / nl,
         nz = (a.x - b.x) / nl;
     const krone = __wasserKroneVon(r, a);
-    // die Höhen des gezeichneten Wassers über (x, z): je Netz, das den Punkt trägt, seine oberste Fläche (`_wasserNetzHoehe`,
-    // ein Netz zeichnet je Zelle ein Viereck), aufsteigend, je Fläche eine (10 cm trennen zwei)
-    const flaechen = (x, z) => {
-        const ys = [];
-        for (let dz = -1; dz <= 1; dz++)
-            for (let dx = -1; dx <= 1; dx++) {
-                const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
-                const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
-                if (y !== null) ys.push(y);
-            }
-        return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
-    };
     const messen = (px, pz) => {
         const m = { nass: 0, doppelt: 0, ueber: 0, ueberM: 0, abseits: 0, abseitsM: 0 };
         for (let gz = -9; gz <= 9; gz += 0.5)
@@ -756,7 +744,7 @@ async function wasserGraben(o = {}) {
                 const x = px + gx,
                     z = pz + gz;
                 const g = r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
-                const ys = flaechen(x, z).filter((y) => y > g + 0.1);
+                const ys = wasserFlaechen(r, x, z).filter((y) => y > g + 0.1);
                 if (!ys.length) continue;
                 const atlas = r._atlasWaterLevelAt(x, z, g);
                 const S = atlas > -Infinity ? atlas : r._hydroSpiegelQuer(x, z);
@@ -816,6 +804,101 @@ async function wasserGraben(o = {}) {
         graeben.push(Object.assign(g, { sheetMs: f2(g.sheetMs) }));
     }
     return { ort: [f2(a.x), f2(a.z)], krone: f2(krone), graeben };
+}
+
+// Die Höhen des gezeichneten Wassers über (x, z): je Netz, das den Punkt trägt, seine oberste Fläche (`_wasserNetzHoehe`, ein
+// Netz zeichnet je Zelle ein Viereck), aufsteigend, je Fläche eine (10 cm trennen zwei). Leser: Graben und Damm.
+function wasserFlaechen(r, x, z) {
+    const span = r._voxelChunkConfig(0).span;
+    const ys = [];
+    for (let dz = -1; dz <= 1; dz++)
+        for (let dx = -1; dx <= 1; dx++) {
+            const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
+            const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
+            if (y !== null) ys.push(y);
+        }
+    return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
+}
+
+// ── gelaende.K2 (b) · (d): DER DAMM AM FLUSS ── 60 m stromab des Graben-Orts (längs des Laufs) quer über den Fluss aus dem
+// Verb des Aufschüttens (DSL `voxel_fill`, r 3,5 m) je 3 m eine Säule, die Krone 3 m über dem Spiegel, so weit das Land unter
+// der Krone liegt (±30 m). (b) Der Spieler 40 m seitab, Takt um Takt, bis der Automat ruht; 6 und 12 m stromauf (längs des
+// Laufs) das GEZEICHNETE Wasser gegen die Überlaufhöhe (der niedrigste Pfad über den Boden des Feldes `_voxelSurfaceY` von
+// dort zum Fluss 12 m stromab, Gitter 0,9 m, ±50 m, halbiert auf 1 cm) und gegen den Fluss von vorher (`_hydroSpiegelQuer`),
+// 6 und 12 m stromab gegen den Fluss (der Abfluss hält). (d) `o.ferne`: der Spieler 150 m auf der Achse des Damms (dort löst
+// die Masche des Rings ihn auf: ~5 × 15 m), der Fern-Ring unter den Säulen vor dem Edit und nach der Antwort des Fern-Fadens
+// auf ihn (byte-Diff), und der Fern-Faden, der jeden späteren Ring rechnet (die Bestellung des Rings), an denselben Punkten
+// auf der Krone.
+async function wasserDamm(o = {}) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const f2 = wasserRund(2);
+    const S = (q) => r._hydroSpiegelQuer(q.x, q.z);
+    const { p, fluesse } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
+    const P = fluesse.find((f) => f.points.includes(p)).points;
+    const ab = S(P[P.indexOf(p) + 1] || p) < S(P[P.indexOf(p) - 1] || p) ? 1 : -1;
+    // der Ort d m stromab von p längs des Laufs (stromauf negativ; zwischen zwei Punkten des Laufs liegen bis 12 m)
+    const lauf = (d) => {
+        let [i, s, l] = [P.indexOf(p), Math.sign(d) * ab, Math.abs(d)];
+        for (let e; P[i + s] && (e = Math.hypot(P[i + s].x - P[i].x, P[i + s].z - P[i].z)) < l; i += s) l -= e;
+        const [q, e] = [P[i + s] || P[i], Math.hypot((P[i + s] || P[i]).x - P[i].x, (P[i + s] || P[i]).z - P[i].z) || 1];
+        return { x: P[i].x + ((q.x - P[i].x) * l) / e, z: P[i].z + ((q.z - P[i].z) * l) / e };
+    };
+    const [a, b] = [lauf(60), lauf(61)];
+    const [nx, nz] = [a.z - b.z, b.x - a.x].map((v) => v / Math.hypot(b.x - a.x, b.z - a.z));
+    const krone = S(a) + 3;
+    const saeulen = [];
+    for (let s = -30; s <= 30; s += 3) if (r._voxelSurfaceY(a.x + nx * s, a.z + nz * s) < krone) saeulen.push([a.x + nx * s, a.z + nz * s]);
+    const aus = { krone: f2(krone), saeulen: saeulen.length };
+    const takt = () => r._gameLoopTick(performance.now());
+    const ring = new Map();
+    const fr = () => st.fernRing;
+    const unter = (n) => ((q) => saeulen.some(([x, z]) => Math.hypot(q.x - x, q.z - z) < 3) && q)(r._fernRingPunkt(fr(), n)); // die ebene Krone
+    const y = (q) => fr().geos[q.s].attributes.position.getY(q.li);
+    await window.__wasserStrom([a.x + nx * (o.ferne ? 150 : 40), a.z + nz * (o.ferne ? 150 : 40)], 3);
+    if (o.ferne) {
+        await window.__gebautNach("der Fern-Ring", { fertig: () => fr() && fr().cursor >= fr().totalVerts, takt, max: 3000 });
+        for (let n = 0; n < fr().totalVerts; n++) if (unter(n)) ring.set(n, y(unter(n)));
+    }
+    for (const [x, z] of saeulen) r.dslRun(["voxel_fill", x, krone - 3.5, z, 3.5], { source: "human" });
+    if (o.ferne) {
+        // der Edit reist durch die EINE Bestellung des Rings (`_fernRingUmEdits`): die Probe wartet auf ihre Antwort, eingehängt
+        // (die Laufzeit-Marke `editFlug`, der Edit-Stand `feldEditsN` des Rings), nie auf eine Frist
+        const ed = st.worldMeta.voxelEdits;
+        await window.__gebautNach("der Edit im Fern-Ring", {
+            fertig: () => fr().feldEditsN === ed.length && !fr().editFlug && !fr().nachEdit.length,
+            takt,
+            max: 600,
+        });
+        const hub = [...ring].map(([n, v]) => y(unter(n)) - v);
+        // der Fern-Faden, der jeden späteren Ring rechnet: die EINE Bestellung des Rings (`_fernRingBestellen` — jedes Feld, das
+        // der Faden liest) an denselben Punkten unter den Säulen, ihre Fläche auf der Krone (oder über ihr: die Krone der Masche,
+        // `fernKrone`, liest das Feld, dessen Vereinigung zweier Säulen die Krone um 0,42 m hebt). z44: ein Auftrag von Hand ohne
+        // Winkel und Reihen-Faktor der Masche (`ang`, `q`) warf im Faden (`fernKrone`: „reading '0'“), die Deck-Mischung fehlte still.
+        const fa = await r._fernRingBestellen(fr(), Int32Array.from(ring.keys()));
+        aus.ring = { punkte: hub.length, anders: hub.filter(Boolean).length, hubM: f2(Math.max(0, ...hub)), faden: fa.nassY.filter((v) => v >= krone - 0.01).length };
+        return aus;
+    }
+    const ruht = () => !((st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0));
+    await window.__gebautNach("der Stausee", { fertig: ruht, takt, max: 900 });
+    // die Überlaufhöhe: der niedrigste Pfad über den Boden des Feldes (0,9 m, ±50 m) zum Fluss 12 m stromab, halbiert auf 1 cm
+    const N = 112;
+    const zelle = (q) => Math.round((q.x - a.x + 50) / 0.9) + Math.round((q.z - a.z + 50) / 0.9) * N;
+    const boden = Float64Array.from({ length: N * N }, (_, c) => r._voxelSurfaceY(a.x - 50 + (c % N) * 0.9, a.z - 50 + ((c / N) | 0) * 0.9));
+    const erreicht = (weg, h, da = new Uint8Array(N * N)) => {
+        for (let c; (c = weg.pop()) !== undefined; )
+            for (const nb of [c % N ? c - 1 : -1, (c + 1) % N ? c + 1 : -1, c - N, c + N])
+                if (boden[nb] <= h && !da[nb]) weg.push(nb), (da[nb] = 1);
+        return da[zelle(lauf(72))];
+    };
+    const oben = (q) => f2(wasserFlaechen(r, q.x, q.z).pop());
+    aus.stromauf = [6, 12].map((d) => {
+        let [q, lo, hi] = [lauf(60 - d), 0, krone + 1];
+        for (lo = boden[zelle(q)]; hi - lo > 0.01; ) erreicht([zelle(q)], (lo + hi) / 2) ? (hi = (lo + hi) / 2) : (lo = (lo + hi) / 2);
+        return { d, wasser: oben(q), ueberlauf: f2(hi), fluss: f2(S(q)) };
+    });
+    aus.stromab = [6, 12].map((d) => ({ d, wasser: oben(lauf(60 + d)), fluss: f2(S(lauf(60 + d))) }));
+    return aus;
 }
 
 // ── Q7-Gestalt: die Ufer-Farbe ──
@@ -3071,6 +3154,7 @@ module.exports = {
         WELT_ORTE_INSTALL +
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
         wasserRund.toString() +
+        wasserFlaechen.toString() +
         wasserZufall.toString() +
         wasserBoot.toString() +
         wasserTier.toString() +
@@ -3078,7 +3162,7 @@ module.exports = {
         wasserSchmelze.toString() +
         wasserErstarrung.toString() +
         // jede Probe als `window.__<Name>` (der Name der Funktion ohne führende Striche)
-        Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
+        Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserDamm, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
             .map(([n, f]) => `window.__${n.replace(/^_+/, "")} = ${f};`)
             .join(""),
     quellTeileVereinen,
