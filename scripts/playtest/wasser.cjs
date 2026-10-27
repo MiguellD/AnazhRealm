@@ -2013,9 +2013,8 @@ async function checkBandWasserSheetSpiegel(ctx) {
         // ZWEI FEHLRUNDEN (streaming.K5): je Blatt verfehlt in den ersten zwei Runden ein Verweis den Faden
         let n = 0;
         r._voxelFadenAuftrag = function (w, m) {
-            const z = n < 2 && m.cells && m.cells.find((c) => c && c.zid);
-            if (z) (n++, (z.zid = 1e9));
-            return r.constructor.prototype._voxelFadenAuftrag.call(this, w, m);
+            if (n < 2 && m.zids && m.zids.some((z, i) => z && (m.zids[i] = 1e9))) n++;
+            return r.constructor.prototype._voxelFadenAuftrag.apply(this, arguments);
         };
         for (const c of cand) {
             let wd = null;

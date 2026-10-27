@@ -1510,7 +1510,7 @@ class AnazhRealm_wasser_zellen {
 
     // Wasser-Sheet OFF-THREAD im Worker. true = Anfrage abgesetzt (Worker bereit · "cells"-Default · 3×3
     // nicht aktiv-fließend [`_waterSheetCaFree`] · Chunk trägt Wasser), sonst false → Aufrufer baut SYNC. Bereit heißt das EINE
-    // Prädikat des Fadens (`_voxelFadenTraegt`, B-K2), nie der Ack: der Sender wartet selbst auf die Geburts-Zusage.
+    // Prädikat des Fadens (`_voxelFadenTraegt`, B-K2), nie der Ack: der Auftrag reist hinter dem init der Geburt.
     // BUILD-BEFORE-DISPOSE (altes Sheet bleibt bis zur Antwort) + STALE-Schutz (geprunt → weg; State-
     // Bump zwischen Request und Antwort → sync neu über `_buildVoxelChunkWaterIsoSurface`). Aufrufer:
     // Finalize (vor dem CA-Wake) + Streaming-Tick; Carve/Edit/Test bleiben sync.
