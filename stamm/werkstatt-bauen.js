@@ -1863,21 +1863,22 @@ class AnazhRealm_werkstatt_bauen {
         });
     }
 
-    // TEILEN in EINER Geste: der Knopf ruft `teileWerk` (Signatur → Code); der Code steht in der Zeile und geht in die
-    // Zwischenablage — der Empfänger gibt ihn in den Chat (`empfangeWerk`).
-    _workshopAppendTeilenRow(zone, bp) {
+    // TEILEN in EINER Geste: der Knopf ruft die Geste des Senders (`teile`: `teileWerk` oder `teileWelt` — Signatur → Code);
+    // der Code steht in der Zeile und geht in die Zwischenablage — der Empfänger gibt ihn in den Chat (`empfangeWerk`).
+    // `art` ("werk" | "welt") benennt Knopf und Zeile (data-teilen).
+    _teilenZeile(zone, art, teile) {
         const row = document.createElement("div");
-        row.className = "stat-row workshop-teilen-row";
+        row.className = "stat-row teilen-row";
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "workshop-teilen-btn";
+        btn.dataset.teilen = art;
         btn.textContent = "Teilen";
         const out = document.createElement("code");
-        out.className = "workshop-teilen-code";
+        out.dataset.teilen = art;
         out.style.wordBreak = "break-all";
         btn.addEventListener("click", async () => {
             btn.disabled = true;
-            const res = await this.teileWerk(bp.name);
+            const res = await teile();
             btn.disabled = false;
             out.textContent = res.ok ? res.code : `Teilen fehlgeschlagen: ${res.grund}`;
             if (res.ok && navigator.clipboard) navigator.clipboard.writeText(res.code).catch(() => {});

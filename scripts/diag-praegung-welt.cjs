@@ -6,7 +6,7 @@
 // über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen; jede Wand mit ihrer
 // Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -27,9 +27,17 @@ function proben() {
         const flat = await window.__flatFor(r, entry);
         return flat && window.__abdruck(flat);
     };
+    // B kennt A erst, wenn der DataChannel offen ist und A seine Vibe-Identität bewiesen hat (ed25519 über seine peerId)
+    window.__anschluss = async ({ state: { p2p } }, autor) => {
+        const peer = () => [...p2p.peers.values()].find((e) => e.vibeVerified && e.vibePassId === "ed25519:" + autor && p2p.rtcPeers.get(e.peerId)?.open);
+        for (const weiter = window.__deckel("der Anschluss zu A", 600, false); !peer() && weiter(); ) await sleep(50);
+        return peer();
+    };
 }
-const welt = async (seite) => {
-    await nullRenderer(seite);
+// das Gerät B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte (Station tore.K5#2: die Kontrolle an beiden Geräten)
+const B_ART = process.env.PRAEGUNG_WELT_B || "null";
+const welt = async (seite, art = "null") => {
+    if (art === "null") await nullRenderer(seite);
     await seite.evaluateOnNewDocument(CODE_OF_SEITE);
     await seite.evaluateOnNewDocument(proben);
     await server.zeige(seite, 30000);
@@ -42,8 +50,8 @@ let signal;
 hauptLauf(async () => {
     await server.lausche(PORT);
     const [SIGNAL] = await eigenePorte("PRAEGUNG_WELT_SIGNAL_PORT");
-    signal = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: SIGNAL });
-    const neuesGeraet = () => starteBrowser({ art: "null", frist: 600000 });
+    signal = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: SIGNAL, ANAZH_SIGNALING_HOST: "127.0.0.1" });
+    const neuesGeraet = (art = "null") => starteBrowser({ art, frist: 600000 });
     const browser = await neuesGeraet();
     const page = await browser.newPage();
     await welt(page);
@@ -333,23 +341,23 @@ hauptLauf(async () => {
     }, require(`${ROOT}/spec/abnahme/ki-korpus.json`).regler.saetze);
 
     // ===== (T)+(F) B ist ein ANDERES GERÄT: ein eigener Browser-Prozess (frisches Profil, eigener Speicher) =====
-    const browserB = await neuesGeraet();
+    const browserB = await neuesGeraet(B_ART);
     const pageB = await browserB.newPage();
     await server.zeige(pageB, undefined, "package.json", "load");
     const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
-    await welt(pageB);
+    await welt(pageB, B_ART);
     page.on("dialog", (d) => d.accept()); // die souveräne Geste des Senders (window.confirm)
     // die Geste in echten Klicks, bis der Code in der Zeile steht
     let uhr = Date.now();
-    for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', ".workshop-teilen-btn"])
+    for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', 'button[data-teilen="werk"]'])
         await (await page.waitForSelector(s, { visible: true })).click();
-    await page.waitForFunction(() => document.querySelector(".workshop-teilen-code").textContent);
+    await page.waitForFunction(() => document.querySelector('code[data-teilen="werk"]').textContent);
     const msA = Date.now() - uhr;
     const a = await page.evaluate(async () => {
         try {
             const r = window.anazhRealm;
             const ws = r._ensureWorkshopState();
-            const code = document.querySelector(".workshop-teilen-code").textContent;
+            const code = document.querySelector('code[data-teilen="werk"]').textContent;
             const seed = r._werkSame(r.state.blueprints.fahrzeug_gt, "fahrzeug_gt", null);
             const fp = await window.__flatFp(r, { type: "fahrzeug_gt", seed, studioOv: ws.studioOv.gt });
             const box = (x, y, sx, sy) => ({
@@ -373,6 +381,7 @@ hauptLauf(async () => {
                 ["define_blueprint", name, t],
                 ["spawn_blueprint", name, null, 7, null, null, 0],
             ];
+            const weltCode = (broker) => kodiere({ ...gut, programm: undefined, welt: { worldId: "w-fremd", roomId: "w-fremd", broker } });
             const korpus = [
                 ["gross", W.praefix + "A".repeat(W.max)],
                 ["kaputt", W.praefix + "@@"],
@@ -390,6 +399,8 @@ hauptLauf(async () => {
                 ["signatur", kodiere({ ...gut, programm: mit(3, 8) })],
                 ["signatur", kodiere({ ...gut, autor: "ab".repeat(32) })],
                 ["unsigniert", kodiere({ ...gut, sig: undefined })],
+                ["adresse", weltCode("http://x")],
+                ["signatur", weltCode("ws://x")], // die Signatur des Werks über einer fremden Welt-Adresse
             ];
             for (const k of korpus) if (Array.isArray(k[1])) k[1] = await sign(k[1]); // die Programme signiert A gültig
             return {
@@ -410,8 +421,17 @@ hauptLauf(async () => {
     });
     // DER ECHTE ANSCHLUSS: beide Geräte treten durch die Tür des Spiels (initP2PSync) in denselben Raum des signaling-servers
     const url = `ws://127.0.0.1:${SIGNAL}`;
-    await page.evaluate((url) => window.anazhRealm.initP2PSync("tk5", { url }), url);
-    const b = await pageB.evaluate(async (a, url) => {
+    await page.evaluate((url) => window.anazhRealm.initP2PSync(null, { url }), url);
+    // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
+    await page.waitForFunction(() => anazhRealm.state.p2p.connected);
+    uhr = Date.now();
+    await (await page.waitForSelector('[data-tab="bibliothek"]')).click();
+    await page.$eval('button[data-teilen="welt"]', (k) => k.click()); // die Lade gleitet noch: der Knopf am DOM, nie am Pixel
+    await page.waitForFunction(() => document.querySelector('code[data-teilen="welt"]').textContent);
+    const msW = Date.now() - uhr;
+    // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)
+    const [wCode, wId, wSame, raum, kb] = await page.evaluate(({ state: { worldMeta: m, p2p } } = anazhRealm) => [document.querySelector('code[data-teilen="welt"]').textContent, m.worldId, m.seed, p2p.room, JSON.stringify(anazhRealm.buildStateSnapshot()).length >> 10]);
+    const b = await pageB.evaluate(async (a, url, raum) => {
         const r = await window.__weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
         const res = { faelle: [] };
         const zustand = ({ state: s } = r) =>
@@ -434,13 +454,10 @@ hauptLauf(async () => {
         r.empfangeWerk = (...x) => (window.__spur = r.constructor.prototype.empfangeWerk.apply(r, x));
         // B kennt A erst, wenn der DataChannel offen ist und A seine Vibe-Identität bewiesen hat (ed25519 über seine peerId) —
         // die Signatur, die B am Code urteilt, ist DIESE Identität
-        r.initP2PSync("tk5", { url });
-        const { peers, rtcPeers } = r.state.p2p;
-        const peer = () => [...peers.values()].find((e) => e.vibeVerified && e.vibePassId === "ed25519:" + a.autor && rtcPeers.get(e.peerId)?.open);
-        for (const weiter = window.__deckel("der Anschluss zu A", 600, false); !peer() && weiter(); ) await sleep(50);
-        res.netz = peer().peerId;
+        r.initP2PSync(raum, { url });
+        res.netz = (await window.__anschluss(r, a.autor)).peerId;
         return res;
-    }, a, url);
+    }, a, url, raum);
     // (T) die Geste des Empfängers: die Chat-Taste, der Code, Enter
     uhr = Date.now();
     await pageB.keyboard.press("Enter");
@@ -473,6 +490,23 @@ hauptLauf(async () => {
         delete r._ovVertrag;
         return res;
     }, a));
+
+    // (T-WELT) B gibt den Welt-Code in den Chat: die Tür lädt in A's Welt; die Kontrolle ist ihr erstes Weltbild (das Ereignis
+    // `_weltbildKommt`, in der Zeit der Seite), dann trägt W den Leib
+    const neu = pageB.waitForNavigation({ timeout: 120000 });
+    uhr = Date.now();
+    await pageB.keyboard.press("Enter");
+    await pageB.keyboard.sendCharacter(wCode);
+    await pageB.keyboard.press("Enter");
+    await neu;
+    const w = await pageB.evaluate(async (autor) => {
+        const r = await window.__weltDa();
+        const da = performance.timeOrigin + (await r._weltbildKommt());
+        const [p, p0] = [r.state.playerMesh.position, r.state.playerMesh.position.clone()];
+        window.__weg = () => Math.hypot(p.x - p0.x, p.z - p0.z);
+        return [da, r.state.worldMeta, !!(await window.__anschluss(r, autor))];
+    }, a.autor);
+    const geht = await halteBis(pageB, { taste: "w", ziel: async () => (await window.__seitenTakt(), window.__weg() >= 1) });
 
     const ger = [page, pageB, await (await browser.createBrowserContext()).newPage()].map(geraet); // C: B als Kontext im Chrome von A
     await browser.close();
@@ -553,6 +587,11 @@ hauptLauf(async () => {
         `A=${a.fp} B=${b.fp} ohne=${b.fpOhne}`
     );
     check("der eigene Bauplan kommt byte-gleich (kanonische Substanz)", b.eigen);
+    const [hw, ms, { worldId, seed, role }] = [JSON.parse(Buffer.from(wCode.replace("anazh-werk:", ""), "base64url")), msW + w[0] - uhr, w[1]];
+    check("WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A", hw.welt && hw.autor === a.autor && wCode.length <= 4096, `${wCode.length} Zeichen`);
+    check("WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss", worldId === wId && seed === wSame && role === "guest" && w[2] && kb > 128, `${worldId} ${kb} KB ${role} ${w[2]}`);
+    check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", ms <= 5000, `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
+    check("WELT: der Leib geht unter W ≥ 1 m", geht.erreicht, `${geht.ms} ms`);
 
     console.log("\n=== (F) KORPUS fremder Codes ===");
     // ein Fall hält, wenn der Code abgewiesen ist, beim erwarteten Namen, und der Spieler ihn hört — sonst ist die Probe ROT
