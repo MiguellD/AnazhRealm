@@ -76,6 +76,7 @@ const SCHWELLE = {
     stauMin: 100, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (Kopf K37: 180 im Tal 26/−120)
     hubMin: 20, // Spalten, die das Stau-Feld des Damms über Boden und Gesetz hebt (sonst trägt der Ort keinen Stau)
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
+    neubauTreue: 0.01, // Anteil der nassen Punkte, um den ein frischer Neubau der Chunks am Damm den Stausee ändern darf
     randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
 };
 
@@ -273,19 +274,27 @@ function urteil(b) {
                 `R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte ${RD.nass0} → ${RD.nass1}, gezeichnete Spalten ${RD.bild0} → ${RD.bild1}`
             );
     }
-    // D
+    // D — ein Zählen, ehe der Stau stand (`offen1` am Bau, `offen2` nach dem Reload: Stau im Faden + Chunks, wie die Welt sie
+    // offen nennt; ungemessen ist nicht 0), urteilt nie über den Stausee: es nennt, worauf es hätte warten müssen
     const D = b.damm;
     if (!D || D.fehler) v.push(`D: ${D ? D.fehler : "die Damm-Probe lief nicht"}`);
+    else if (D.offen1 !== 0 || D.offen2 !== 0)
+        v.push(`D: der Stausee des Damms #${D.id} wurde gezählt, ehe der Stau stand (offen ${D.offen1} · ${D.offen2})`);
     else if (!(D.hub >= S.hubMin))
         v.push(
             `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Spalten (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau`
         );
     else {
+        // das Feld hebt (oben): staut das gezeichnete Wasser weniger, folgt das Bild dem Gesetz nicht (die Platte unter dem
+        // Stausee, ci-werk-wasser: 98 statt 458 Punkte) — kein leerer Ort
         const stau = D.w1 - D.w0;
         if (!(stau >= S.stauMin))
             v.push(
-                `D LEER: der Damm staute ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1}; Soll ≥ ${S.stauMin})`
+                `D: der Damm #${D.id} hebt ${D.hub} Spalten, das gezeichnete Wasser staut ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1})`
             );
+        else if (!(D.hub2 >= S.hubMin)) v.push(`D: nach dem Reload trägt der Stau kein Feld des Damms #${D.id} (${D.hub2} Spalten)`);
+        else if (!(Math.abs(D.w3 - D.w2) <= S.neubauTreue * D.w2))
+            v.push(`D: ein Chunk am Damm #${D.id} trug den Stau erst nach seinem Neubau (${D.w2} → ${D.w3})`);
         else if (!(Math.abs(D.w2 - D.w1) <= S.stauTreue * stau))
             v.push(
                 `D: der Stausee des Damms #${D.id} (${m(D.x)}/${m(D.z)}) bildet sich nach dem Reload nicht neu — ${D.w2} statt ${D.w1} nasse Punkte nach ${D.takte} Takten (ohne Damm ${D.w0})`
@@ -398,8 +407,7 @@ function kernUrteil(VC) {
 async function probe(A) {
     const out = {};
     const soll = (n) => !A.nur || A.nur.includes(n); // `--nur`: Werkbank-Fragen (das Gate fährt alle)
-    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
-    const r = window.anazhRealm;
+    const r = await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
     const st = r.state;
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
@@ -422,6 +430,27 @@ async function probe(A) {
             try {
                 frame();
             } catch {}
+    };
+    // DIE TAKTE DER PROBE (der EINE Helfer): `n` Bilder, vor jedem `je()`, jedes 20. gibt die Seite den Fäden frei
+    const bilder = async (n, je) => {
+        for (let i = 0; i < n; i++) {
+            if (je) je();
+            try {
+                frame();
+            } catch {}
+            if (i % 20 === 0) await sleep(0);
+        }
+    };
+    const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
+    const stelle = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
+    const fehlerZeile = (e) => String((e && e.stack) || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
+    const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
+        ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
+    // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
+    const aufsitzen = (gt, n = 12) => {
+        const m = r.mountArchitecture(gt);
+        if (!m || !m.ok) throw new Error("Aufsitzen scheiterte");
+        for (let i = 0; i < n; i++) frame();
     };
     // Das Wasser über dem Boden an (x, z), wo es über ihm steht (sonst −Infinity): das gezeichnete (`_wasserBildAt`) und —
     // `gesetz` — das des Gesetzes, aus dem das Bild wird (`_atlasWaterLevelAt` über dem Boden: ein Fern-Chunk zeichnet einen
@@ -648,27 +677,16 @@ async function probe(A) {
         }
         const o = document.getElementById("chat-output");
         for (const [PX, PZ] of orte) {
-            for (let i = 0; i < 200; i++) {
-                st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
-                try {
-                    frame();
-                } catch {}
-                if (i % 20 === 0) await sleep(0);
-            }
-            st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+            await bilder(200, () => stelle(PX, PZ));
+            stelle(PX, PZ);
             st.yaw = Math.PI / 2;
             const v0 = new Set(st.architectures);
             zensus.quelle = "Haus-Satz";
             const t0 = performance.now();
             r.processChatCommand("bau mir ein haus am wasser");
             const ms = performance.now() - t0; // der Satz samt Ort-Suche und Spawn, synchron
-            const neu = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
-            for (let i = 0; i < 60; i++) {
-                try {
-                    frame();
-                } catch {}
-                if (i % 20 === 0) await sleep(0);
-            }
+            const neu = neueWerke(v0, /^haus_/);
+            await bilder(60);
             zensus.quelle = "strom";
             satz.orte++;
             satz.haeuser += neu.length;
@@ -689,11 +707,11 @@ async function probe(A) {
         st.voxelWorker = faden;
         await window.__weltDa(() => !r._ensureHydroTilesAround(X, Z, 2048));
         st.voxelWorker = aus;
-        st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
+        stelle(X, Z);
         let last = -1;
         let still = 0;
         for (const weiter = window.__deckel("der Ring am Ort", 9000); weiter(); ) {
-            st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
+            stelle(X, Z);
             try {
                 frame();
             } catch {}
@@ -703,12 +721,7 @@ async function probe(A) {
             if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
             await sleep(0);
         }
-        for (let i = 0; i < nachlauf; i++) {
-            try {
-                frame();
-            } catch {}
-            if (i % 20 === 0) await sleep(0);
-        }
+        await bilder(nachlauf);
     };
     try {
         const worker = st.voxelWorker;
@@ -758,12 +771,7 @@ async function probe(A) {
                 const neu = st.architectures.slice(v0).filter((a) => a && a.type === "baum_eiche");
                 const caNach = st.waterCAActive ? st.waterCAActive.size : 0;
                 zensus.quelle = "Spiel-Takt";
-                for (let i = 0; i < A.takte; i++) {
-                    try {
-                        frame();
-                    } catch {}
-                    if (i % 20 === 0) await sleep(0);
-                }
+                await bilder(A.takte);
                 out.hain = {
                     takte: A.takte,
                     caVor,
@@ -793,7 +801,7 @@ async function probe(A) {
                     )
                     .map((a) => `${a.type} #${a.id} (${a.position.x.toFixed(1)}/${a.position.z.toFixed(1)})`);
             } catch (e) {
-                out.hain = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.hain = { fehler: fehlerZeile(e) };
             }
         let ansaugGT = null;
         // ── A: die Ansaugung (Karte K02, FZ-01): der GT fährt mit Vollgas vom Ufer ins tiefe Wasser ──
@@ -905,9 +913,7 @@ async function probe(A) {
                 if (!gt) throw new Error("kein GT");
                 for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
                 // Aussteigen an Land (der Anlauf ist trocken): wo steht der Spieler, gemessen am Boden unter ihm?
-                let mr = r.mountArchitecture(gt);
-                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
-                for (let i = 0; i < 12; i++) frame();
+                aufsitzen(gt);
                 r.dismountArchitecture();
                 for (let i = 0; i < 60; i++) frame();
                 const pL = st.playerMesh.position;
@@ -916,9 +922,7 @@ async function probe(A) {
                     abstand: +Math.hypot(pL.x - gt.position.x, pL.z - gt.position.z).toFixed(2),
                 };
                 st.playerMesh.position.set(gt.position.x, hh(gt.position.x, gt.position.z) + 1.2, gt.position.z);
-                mr = r.mountArchitecture(gt);
-                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
-                for (let i = 0; i < 12; i++) frame();
+                aufsitzen(gt);
                 const W = gt._fahrSatz && gt._fahrSatz.wasser;
                 if (!W) throw new Error("der Fahr-Satz des GT trägt kein Wasser-Maß");
                 const caVor = st.waterCAActive ? st.waterCAActive.size : 0;
@@ -1023,7 +1027,7 @@ async function probe(A) {
             try {
                 for (const [cx, cz] of A.satzNah) await satzProbe(cx, cz);
             } catch (e) {
-                satz.fehler = String((e && e.stack) || e).split("\n")[0];
+                satz.fehler = fehlerZeile(e);
             }
         if (soll("zensus") || soll("satz")) await werkeMessen();
         // ── F: der Wagen in der Furt ──
@@ -1100,10 +1104,8 @@ async function probe(A) {
                     { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
                 );
                 if (!gt) throw new Error("kein GT");
-                const mr = r.mountArchitecture(gt);
-                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
                 for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
-                for (let i = 0; i < 12; i++) frame();
+                aufsitzen(gt);
                 st.keys.w = true;
                 const spur = [];
                 let kamUnter = 0;
@@ -1166,7 +1168,7 @@ async function probe(A) {
                 }
                 await werkeMessen();
             } catch (e) {
-                satz.fehler = String((e && e.stack) || e).split("\n")[0];
+                satz.fehler = fehlerZeile(e);
             }
         // ── C: der Satz nennt das Ergebnis (am See, eine Uferkante je Richtung, der Blick auf den See) ──
         if (soll("satz"))
@@ -1195,25 +1197,25 @@ async function probe(A) {
                         if (d > bestD) ((bestD = d), (yaw = y));
                     }
                     for (let i = 0; i < 60; i++) {
-                        st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+                        stelle(PX, PZ);
                         frame();
                         if (i % 20 === 0) await sleep(0);
                     }
-                    st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+                    stelle(PX, PZ);
                     st.yaw = yaw;
                     const v0 = new Set(st.architectures);
                     const t0 = el ? el.innerText.length : 0;
                     zensus.quelle = "Birken-Satz";
                     r.processChatCommand("pflanz mir sechs birken");
                     zensus.quelle = "strom";
-                    const neu = st.architectures.filter((e) => e && !v0.has(e) && /birke/.test(e.type));
-                    const chat = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    const neu = neueWerke(v0, /birke/);
+                    const chat = chatSeit(t0);
                     C.versuche.push({ ufer: [+PX.toFixed(1), +PZ.toFixed(1)], gewollt: 6, gesetzt: neu.length, chat });
                     for (const e of neu) r.removeArchitecture(e);
                 }
                 out.ergebnis = C;
             } catch (e) {
-                out.ergebnis = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.ergebnis = { fehler: fehlerZeile(e) };
             }
         // ── A (Teil 2): Aussteigen in tiefem Wasser — der GT der Rampe steht im See (−906/−634), wo der Wagen und jeder
         //    Ausstieg (Ringe 1,5 und 3 m) mindestens A.aussteigTief Wasser tragen (die Tiefe, die der Körper liest: das
@@ -1247,9 +1249,7 @@ async function probe(A) {
                         `kein Ort mit ${A.aussteigTief} m Wasser um den Wagen im See (am tiefsten ${maxT.toFixed(2)} m)`
                     );
                 st.playerMesh.position.set(gt.position.x, gt.position.y + 1.2, gt.position.z);
-                const mr = r.mountArchitecture(gt);
-                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
-                for (let i = 0; i < 3; i++) frame(); // der Ritt stellt den Fahr-Zustand auf
+                aufsitzen(gt, 3); // der Ritt stellt den Fahr-Zustand auf
                 // der Reiter führt horizontal (`_rittSchritt`: die Architektur folgt ihm), der Fahr-Zustand mit
                 const fz = gt._fahr;
                 if (!fz) throw new Error("der GT trägt nach dem Aufsitzen keinen Fahr-Zustand");
@@ -1297,19 +1297,16 @@ async function probe(A) {
                 const [cx, cz] = A.satzFern[0];
                 const el = document.getElementById("chat-output");
                 const E = { faelle: [] };
-                const stelle = (x, z) => {
-                    st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-                };
                 const sprich = (satz) => {
                     const t0 = el ? el.innerText.length : 0;
                     r.processChatCommand(satz);
-                    return el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    return chatSeit(t0);
                 };
                 const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
                     const vorA = new Set(st.architectures);
                     const vorK = st.creatures.length;
                     const chat = sprich(satz);
-                    const neuA = st.architectures.filter((e) => e && !vorA.has(e));
+                    const neuA = neueWerke(vorA);
                     const gesetzt = setzen === "kreatur" ? st.creatures.length - vorK : neuA.length;
                     E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
                     for (const e of neuA) r.removeArchitecture(e);
@@ -1366,10 +1363,7 @@ async function probe(A) {
                 }
                 // E4 der See: der Tempel mitten im See (die Wand der Werke), das Dorf im See (es folgt)
                 stelle(cx, cz);
-                for (let i = 0; i < 30; i++)
-                    try {
-                        frame();
-                    } catch {}
+                takte30();
                 stelle(cx, cz);
                 // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier), nie auf ein anderes Ufer
                 st.yaw = Math.atan2(A.rand.see[0] - cx, A.rand.see[1] - cz);
@@ -1378,10 +1372,8 @@ async function probe(A) {
                     const vorA = new Set(st.architectures);
                     const t0 = el ? el.innerText.length : 0;
                     r.processChatCommand("baue dorf hier");
-                    const sofort = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
-                    const sofortGesetzt = st.architectures.filter(
-                        (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
-                    ).length;
+                    const sofort = chatSeit(t0);
+                    const sofortGesetzt = neueWerke(vorA, /^haus_/).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
                     let echo = "";
                     for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
@@ -1390,18 +1382,16 @@ async function probe(A) {
                                 frame();
                             } catch {}
                         await sleep(50);
-                        echo = el
-                            ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(sofort.length).slice(0, 300)
-                            : "";
+                        echo = chatSeit(t0, sofort.length);
                         if (/Häuser|Haus\.|kein Haus|kein Dorf|Kein Dorf/.test(echo)) break;
                     }
-                    const haeuser = st.architectures.filter((e) => e && !vorA.has(e) && /^haus_/.test(e.type));
+                    const haeuser = neueWerke(vorA, /^haus_/);
                     E.dorf = { sofort, sofortGesetzt, echo, haeuser: haeuser.length };
-                    for (const e of st.architectures.filter((e) => e && !vorA.has(e))) r.removeArchitecture(e);
+                    for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 }
                 out.setzen = E;
             } catch (e) {
-                out.setzen = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.setzen = { fehler: fehlerZeile(e) };
             }
         // ── R: das Dorf des Nexus am Seerand — ein Bau, dessen Stempel kein Wasser der Zellen verdrängt, weckt den Automaten
         //    nicht, das Wasser bleibt, wie es war. Der Wunsch-Anker stellt das Rand-Haus ans Ufer, der Spieler steht am Rand
@@ -1493,20 +1483,12 @@ async function probe(A) {
                             if (st.voxelChunks.has(key)) st.dirtyVoxelChunks.add(key);
                         }
                     for (let d = 0; d < 12 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
-                    for (let i = 0; i < A.rand.takte; i++) {
-                        try {
-                            frame();
-                        } catch {}
-                        if (i % 20 === 0) await sleep(0);
-                    }
+                    await bilder(A.rand.takte);
                 };
                 await neuBauen();
                 let vor = zaehlen();
                 for (let n = 0, ruhig = 0; n < 40 && ruhig < 3; n++) {
-                    for (let i = 0; i < 30; i++)
-                        try {
-                            frame();
-                        } catch {}
+                    takte30();
                     await sleep(0);
                     const z = zaehlen();
                     ruhig = z.nass === vor.nass && z.bild === vor.bild ? ruhig + 1 : 0;
@@ -1559,7 +1541,7 @@ async function probe(A) {
                     });
                     zensus.quelle = "strom";
                     // die Häuser bekommen ihre Hülle (das Gesetzbuch), wie im Zensus
-                    const haeuser = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
+                    const haeuser = neueWerke(v0, /^haus_/);
                     for (const e of haeuser)
                         await window.__gebautNach(e, {
                             fertig: () => !!e._hausHuelle || !st.architectures.includes(e),
@@ -1631,7 +1613,7 @@ async function probe(A) {
                     takte: A.rand.takte,
                 };
             } catch (e) {
-                out.rand = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.rand = { fehler: fehlerZeile(e) };
             }
         // ── K: DER KONSUM AM RUF: am Ort des Spielers ruft jeder Leser sein
         //    Gesetz WIRKLICH (der Spion zählt und reicht durch); der Zensus endet vorher, die gesetzten Werke fallen wieder ──
@@ -1700,7 +1682,7 @@ async function probe(A) {
                     ]),
                     "spawn_ufo → _setzErgebnis": ruft(r.dslEffects, "spawn_ufo", "_setzErgebnis", [[at], ctx()]),
                 };
-                for (const e of st.architectures.filter((e) => e && !vorA.has(e))) r.removeArchitecture(e);
+                for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 // der losgelassene Wagen (der GT der Ansaugung) rechnet im Nachlauf mit der Tiefe am Wagen
                 const gt = ansaugGT;
                 if (gt && gt._fahr) {
@@ -1715,7 +1697,7 @@ async function probe(A) {
                 K["_fahrNachlauf → _fahrTiefe"] = !!(gt && gt._fahr) && ruft(r, "_fahrNachlauf", "_fahrTiefe", [1 / 60]);
                 out.konsum = K;
             } catch (e) {
-                out.konsum = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.konsum = { fehler: fehlerZeile(e) };
             }
         if (soll("zensus") || soll("satz")) out.zensus = zensus;
         if (soll("satz")) out.satz = satz;
@@ -1731,7 +1713,7 @@ async function probe(A) {
 // "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
-    const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
+    const r = await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
     const st = r.state;
     if (st.renderer) {
         st.renderer.render = function () {};
@@ -1767,6 +1749,11 @@ async function dammProbe(A) {
         }
         await takte(120);
     };
+    // DER STAU STEHT (Lehre 26, ci-werk-wasser): gezählt wird erst, wenn die Welt ihn nicht mehr baut — kein Auftrag im Faden
+    // (`_weltOffen` stau), kein Chunk schmutzig oder im Bau, kein Wasser-Blatt in der Schlange; eine hängende Welt nennt der
+    // Deckel beim Namen. Bis hierhin zählte D nach 1200 Takten, ein Stau nach ihnen blieb ungezählt (CI 40441173506).
+    const offen = () => ((o) => o.stau + o.chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0))(r._weltOffen());
+    const stehen = (name) => window.__gebautNach(name, { fertig: () => !offen(), takt: frame }).then(offen);
     const nass = (X, Z) => {
         let n = 0;
         for (let i = -A.R; i <= A.R; i++) for (let j = -A.R; j <= A.R; j++) if (r._nassAt(X + i, Z + j)) n++;
@@ -1824,6 +1811,7 @@ async function dammProbe(A) {
         );
         if (!e) return { fehler: "der Damm wurde nicht gebaut" };
         await takte(A.takte);
+        const offen1 = await stehen("der Stausee des Damms");
         const w1 = nass(ort.x, ort.z);
         st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
         r.saveState();
@@ -1837,6 +1825,7 @@ async function dammProbe(A) {
             w1,
             takte: A.takte,
             hub: hub(ort.x, ort.z),
+            offen1,
         };
     }
     // "reload": dieselbe Welt, der Damm aus dem Save
@@ -1844,7 +1833,14 @@ async function dammProbe(A) {
     if (!e) return { fehler: "der Damm überstand den Reload nicht (kein Eintrag)" };
     await stroemen(A.x, A.z);
     await takte(A.takte);
-    const w2 = nass(A.x, A.z);
+    const offen2 = await stehen("der Stausee nach dem Reload");
+    const [w2, hub2] = [nass(A.x, A.z), hub(A.x, A.z)];
+    // DIE GEGENPROBE DES NEUBAUS: jeder Chunk am Damm frisch, wie der Empfang des Staus ihn fallen lässt (Cache fort, Neubau,
+    // der Automat wacht) — trägt einer den Stau erst jetzt, trat er vor ihm gebaut ohne ihn ein (4× Drossel: 1047 → 1142)
+    st.voxelMeshCache = null;
+    r._remeshVoxelChunksAround(A.x, A.z, A.R, 0);
+    r._invalidateWaterCapsAround(A.x, A.z, A.R);
+    const w3 = (await stehen("der Neubau am Damm"), nass(A.x, A.z));
     const inv = { n: 0 };
     const invAlt = r._invalidateWaterCapsAround;
     r._invalidateWaterCapsAround = function () {
@@ -1856,7 +1852,7 @@ async function dammProbe(A) {
     } finally {
         r._invalidateWaterCapsAround = invAlt;
     }
-    return { w2, abriss: inv.n };
+    return { w2, w3, abriss: inv.n, hub2, offen2 };
 }
 
 function selbsttest() {
@@ -1904,6 +1900,10 @@ function selbsttest() {
             abriss: 1,
             takte: 1200,
             hub: 51,
+            hub2: 51,
+            w3: 2247,
+            offen1: 0,
+            offen2: 0,
         },
         setzen: {
             faelle: [
@@ -2059,15 +2059,21 @@ function selbsttest() {
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
             "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
-            (b) => (b.damm.w2 = 2070),
+            (b) => (b.damm.w2 = b.damm.w3 = 2070),
             /D: der Stausee des Damms #425 .* bildet sich nach dem Reload nicht neu — 2070 statt 2250/,
         ],
+        // die Antwort des Fadens kommt verspätet (CI 40441173506): gezählt vor dem Stau ist ROT beim Namen dessen, was offen war
+        ["D Stau-Antwort verspätet", (b) => Object.assign(b.damm, { w2: 1, offen2: 1 }), /#425 wurde gezählt, ehe der Stau stand \(offen 0 · 1\)/],
+        ["D Stand ungemessen", (b) => delete b.damm.offen1, /ehe der Stau stand \(offen undefined · 0\)/],
+        ["D Stau nach dem Reload nie bestellt", (b) => (b.damm.hub2 = 0), /D: nach dem Reload trägt der Stau kein Feld des Damms #425 \(0 Spalten\)/],
+        // der Chunk, der vor dem Stau gebaut ohne ihn eintrat (4× Drossel am Kopf 455e5be8: 1047 → 1142 nach dem Neubau)
+        ["D Chunk vor dem Stau", (b) => (b.damm.w3 = 2290), /Damm #425 trug den Stau erst nach seinem Neubau \(2247 → 2290\)/],
         [
             "D Abbau weckt nicht",
             (b) => (b.damm.abriss = 0),
             /D: der Abbau des Damms #425 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
         ],
-        ["D leer", (b) => (b.damm.w1 = 2100), /D LEER: der Damm staute 30 /],
+        ["D Bild ohne Stau", (b) => (b.damm.w1 = 2100), /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/],
         [
             "D Ort ohne Stau (die Furt −937/−1064 am Kopf a0d6a81b: die 1 715 Punkte der Basis waren die Deck-Zeile)",
             // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
@@ -2422,6 +2428,9 @@ async function lauf() {
             try {
                 const p2 = await kontext.newPage();
                 await nullRenderer(p2);
+                // DER SPIELPFAD: die Platte des Bodens an wie im Spiel (headless ist sie aus) — bis ci-werk-wasser las der Faden
+                // unter dem Stausee die Chunks von vor dem Damm, und D sah es nie
+                await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel (Welt-Tor + aktiv + Reload): ihre Klamm S6 trägt den Stau (s. Kopf D)
                 const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));

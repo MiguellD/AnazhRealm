@@ -9,6 +9,6 @@
  },
  "Scheibe: die Seite antwortet dem Protokoll je 4 s, das Warten geht in der nächsten weiter": { "scripts/diag-idle-gpu-churn.cjs": 1 },
  "Netz-Gesetz: der Rejoin-Deckel (REJOIN_DECKEL_S)": { "scripts/diag-mp-sync.cjs": 1 },
- "fremde Welt: das Studio im Rahmen hat keinen zählbaren Takt, die Stille-Probe braucht ihr Fenster": { "scripts/diag-portal-konformanz.cjs": 2, "scripts/diag-garage-labor.cjs": 2 },
+ "fremde Welt: das Studio im Rahmen hat keinen zählbaren Takt, die Stille-Probe braucht ihr Fenster": { "scripts/diag-portal-konformanz.cjs": 1, "scripts/diag-garage-labor.cjs": 2 },
  "ANSCHLUSS: Werkzeug in Sekunden (werkbank --cap/--ruhe, stand --ruhe), kein Tor": { "scripts/werkbank.cjs": 2, "scripts/lib/stand-linse.cjs": 1 }
 }

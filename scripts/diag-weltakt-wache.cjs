@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullRenderer, nullSeite, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -489,7 +489,7 @@ function urteil(S) {
     return rot;
 }
 
-(async () => {
+hauptLauf(async () => {
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 60000);
@@ -549,7 +549,4 @@ function urteil(S) {
         "\nGRÜN — unter der Bühne läuft kein Welt-Akt durch, jeder steht beim Namen seiner Quelle; ohne Halt wirkt das Spiel wie immer."
     );
     process.exit(0);
-})().catch((e) => {
-    console.error("Welt-Wache-Diag-Fehler:", (e && e.stack) || e);
-    process.exit(2);
 });

@@ -3154,7 +3154,10 @@
     // ── DAS RANG-GESETZ (siedlung.K2, additiv): die Größen der Welt folgen dem Rang (Zipf, Exponent 1). Je Stufe L ein Raster
     // aus `zellen` × `zellen` Welt-Zellen; sein Sieger (die Dorf-Zelle mit dem höchsten Rang-Schlüssel) trägt die Stadt der
     // Stufe — der Sieger des groben Rasters siegt auch in seinem feinen, er steigt auf. Die Größe der Stufe ist Pareto(α = 1)
-    // auf [nH, 4·nH): mit der Rasterseite × 2 je Stufe (Dichte / 4) gilt N(≥ s) ∝ 1/s über alle Stufen (`siedlungsGroesse`).
+    // ab nH bis dorthin, wo die nächste beginnt (`stufeBis`); die oberste trägt den OFFENEN Schwanz bis zur Wand des DORF
+    // (`GROESSE_WAND`): mit der Rasterseite × 2 je Stufe (Dichte / 4) gilt N(≥ s) ∝ 1/s über alle Stufen bis zur Wand
+    // (`siedlungsGroesse`, gate:settlement Z3 ZIPF). Bis 27.10. endete auch die oberste bei 4·nH — N(≥ s) fiel vor 384 auf 0,
+    // ζ 1,337 über 8 × 32 × 32 km.
     // Das Dorf (Stufe 0) bleibt nHMin … nHMin+nHSpan−1, byte-gleich. Ein Ort steht nur, wo kein höherer, der steht, in
     // Reichweite liegt (`reichM`: kern + jeWurzel·√nH m um den Anker — der Rang verdrängt, `siedlungsZelle`); bis K2 würfelte
     // jede Zelle 8–17 Häuser, die Welt trug nur Dörfer. Ohne Zahl nimmt eine Epoche die Größe ihrer Klasse (`GROESSE_N`,
@@ -3166,6 +3169,8 @@
     SIEDLUNG.reichM = { kern: 30, jeWurzel: 22 };
     // je Größen-Klasse des DORF die Häuserzahl, die eine Epoche ohne Zahl verlangt (jede liegt in ihrer Klasse, gate:settlement Z)
     var GROESSE_N = { weiler: 6, dorf: 12, markt: 21, stadt: 36, grossstadt: 90, metropole: 220 };
+    // die Wand des Ziel-Gesetzes: so viele Häuser verlangt eine Stadt höchstens (DORF nZiel, die oberste Rang-Stufe)
+    var GROESSE_WAND = 500;
     // DIE STADTMAUER (siedlung.K2): die Maße, die das Labor (`worlds/fachwerk` buildDorf) und die Welt (`_stlMauerBuild`) aus der
     // Mauer des Plans (`dorfLayout`: Segmente, Türme, Tore) bauen — die Wand mit ihrer Krone (y = die Mitte über dem Fuß), der
     // Turm mit seinem Dach; die Stoffe stein und ziegel in den Farben von DEFCOL
@@ -3187,7 +3192,13 @@
         var L = stufe | 0;
         if (L <= 0) return S.nHMin + ((h >>> 24) % S.nHSpan);
         var u = (rangSchluessel((h ^ 0x9e3779b9) >>> 0) >>> 8) / 16777216;
-        return Math.floor(S.rang[L - 1].nH / (1 - 0.75 * u));
+        var a = S.rang[L - 1].nH;
+        var k = L < S.rang.length ? 1 - a / S.rang[L].nH : 1; // die oberste ist offen: was über der Wand läge, steht an ihr
+        return Math.min(GROESSE_WAND, Math.floor(a / (1 - k * u)));
+    }
+    // die größte Größe der Stufe L: wo die nächste beginnt, über der obersten die Wand
+    function stufeBis(S, L) {
+        return L < S.rang.length ? S.rang[L].nH : GROESSE_WAND;
     }
     // die Reichweite eines Orts mit nH Häusern um seinen Anker (m)
     function siedlungsReich(S, nH) {
@@ -3263,7 +3274,7 @@
             for (var L = S.rang.length; L >= Math.max(1, so) && ja; L--) {
                 var n = S.rang[L - 1].zellen;
                 var B = n * S.cellM;
-                var D = ro + siedlungsReich(S, 4 * S.rang[L - 1].nH);
+                var D = ro + siedlungsReich(S, stufeBis(S, L));
                 for (var bx = Math.floor((o.x - D) / B); bx <= Math.floor((o.x + D) / B) && ja; bx++)
                     for (var bz = Math.floor((o.z - D) / B); bz <= Math.floor((o.z + D) / B) && ja; bz++) {
                         var w = sieger(L, bx, bz);
@@ -3283,7 +3294,7 @@
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const leg=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;
-  const nZiel=Math.max(4,Math.min(500,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
+  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   let region,jahr,spanne;
   if(leg){ region=leg.region; jahr=leg.jahr+(((rnd()-0.5)*50)|0); spanne=leg.spanne; }
   else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';

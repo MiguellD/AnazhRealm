@@ -142,12 +142,12 @@ async function serverLauf(quelle, tod) {
     const blob = [];
     for (let i = 0; i < 9000; i++) blob.push(`zeile-${i}-` + "x".repeat(96));
     const body = JSON.stringify({ state: { marker: "neu", blob } });
-    const kopf = {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(body),
-    };
     const { status } = await Promise.race([
-        frage("/api/save-state", kopf, body),
+        frage(
+            "/api/save-state",
+            { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+            body
+        ),
         sleep(30000).then(() => ({ status: "zeitlos" })),
     ]);
     const lies = (f) => {
@@ -329,10 +329,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         await nullRenderer(page);
         await page.evaluateOnNewDocument(ttHaken);
         const tGoto = Date.now();
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, {
-            waitUntil: "domcontentloaded",
-            timeout: 120000,
-        });
+        await server.zeige(page, 120000);
         const g = (zeile.geladen = await page.evaluate(async () => {
             const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
             const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
@@ -426,20 +423,20 @@ const server = statikServer();
 // Platte (der Stand in IndexedDB und sein .bak, beide vom Speicher-Faden). Das Urteil gilt dem Stand ohne das Leben
 // (`LEBEN`: das Tagebuch, das Gedächtnis des Nexus, die Kreaturen — die Änderungen von KI und Welt, gedeckelt von ihrem
 // Gesetz); es steht je Schlüssel in der Zahl. Mit PERSISTENCE_EDITS=n schlägt der Spieler danach n Gruben (2-m-Raster um ihn):
-// Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6), `--weg` nur (D).
+// Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6, 0-0 ohne (D)), `--weg` nur (D).
 // DER KONSUM: jeder Stand des Fadens ist die volle Serialisierung (`buildStateSnapshot`) — die Marken der Stand-Tafel verlieren
 // nichts; die Zahl nennt je Stand die abweichenden Schlüssel. SELBSTTEST im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je
 // Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen.
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
     const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
-    const [st, spur, S, ruh] = [r.state, [], [], (ms) => new Promise((ok) => setTimeout(ok, ms))];
+    const [st, spur, S] = [r.state, [], []];
     let t = performance.now();
     const takt = async (n, f) => {
         for (let i = 1; i <= n; i++) {
             if (f) f(i);
             r._gameLoopTick((t += 100));
-            if (i % 5 === 0) await ruh(0);
+            if (i % 5 === 0) await sleep(0);
         }
     };
     const sortiert = (o) =>
@@ -500,7 +497,7 @@ const kB = (b) => (b / 1000).toFixed(1) + " kB";
 async function wegLauf(km, min, edits) {
     const { browser, page } = await nullSeite({ frist: 3600000 });
     await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
+    await server.zeige(page);
     const { S, abw } = await page.evaluate(wegSeite, km, min, edits);
     await browser.close();
     return {
@@ -568,23 +565,26 @@ function korpusHaken(feld) {
         },
     });
 }
-// Je Stand eine Seite, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
+// Je Stand eine Seite in seinem Kontext, sein localStorage hinein (IndexedDB trug denselben Stand), der Boot des Spielers.
 async function korpusLauf(selbst) {
     const alle = fs
         .readdirSync(KORPUS)
         .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
     const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
     alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
-    const port = server.address().port;
-    for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle).entries()) {
-        const [page, s] = [await browser.newPage(), korpusSoll(k)];
+    const liste = selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle;
+    // DREI STÄNDE ZUGLEICH, je in seinem Kontext (localStorage, IndexedDB): 46 Boots je 4,5 s trugen 60 % von Teil 2 der CI, je
+    // Versions-Stufe einer mehr (27.10., Karte lange-stationen); der Kopf (aus dem jüngsten Stand) bootet danach in dessen Bahn
+    const stand = async (k, i) => {
+        const kontext = await browser.createBrowserContext();
+        const [page, s] = [await kontext.newPage(), korpusSoll(k)];
         await nullRenderer(page);
         await page.evaluateOnNewDocument(korpusHaken, selbst ? VERLUST[i] : null);
-        await page.goto(`http://127.0.0.1:${port}/cores.manifest.json`);
+        await server.zeige(page, undefined, "cores.manifest.json", "load");
         await page.evaluate((ls) => Object.assign((localStorage.clear(), localStorage), ls), k.ls);
-        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded" });
+        await server.zeige(page);
         const ist = await page.evaluate(korpusIst, s);
-        await page.close();
+        await kontext.close();
         const kopf = korpusSave(ist.neu.ls);
         const inv = kopf.playerInventory.filter(Boolean).map(korpusSlot);
         const bauten = s.bauten.map(([t, x, z, ue]) =>
@@ -613,8 +613,10 @@ async function korpusLauf(selbst) {
             alle.push({ ...neu, kopf: true });
         }
         console.log(`  [V] ${z.version}${selbst ? " ohne " + VERLUST[i] : ""}: ${korpusZahl([z])}`);
-        zeilen.push(z);
-    }
+        zeilen[i] = z;
+    };
+    let n = 0;
+    await Promise.all([0, 1, 2].map(async () => { while (n < liste.length) await stand(liste[n], n++); }));
     await browser.close();
     return zeilen;
 }
@@ -661,24 +663,27 @@ function korpusUrteil(z, selbst) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
-    const w = await wegLauf(WEG_KM, WEG_MIN, EDITS);
-    const wegChecks = [
-        {
-            name: `(D) ${w.km.toFixed(1)} km in ${WEG_MIN} min ohne Edit, Soll ≤ 10 kB: ${w.weg.zeile}`,
-            pass: w.weg.ohne <= 1e4 && w.weg.ohnePlatte <= 1e4,
-        },
-        {
-            name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${w.spur.zeile}`,
-            pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
-        },
-        {
-            name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
-            pass: w.abw.every((x) => !x.length),
-        },
-    ];
-    if (EDITS)
+    // PERSISTENCE_WEG=0-0: kein Gang — ein Lauf, der (D) nie urteilt (speicher.K4/K5; den Gang misst speicher.K3 mit 5 km)
+    const w = WEG_KM && (await wegLauf(WEG_KM, WEG_MIN, EDITS));
+    const wegChecks = !w
+        ? []
+        : [
+              {
+                  name: `(D) ${w.km.toFixed(1)} km in ${WEG_MIN} min ohne Edit, Soll ≤ 10 kB: ${w.weg.zeile}`,
+                  pass: w.weg.ohne <= 1e4 && w.weg.ohnePlatte <= 1e4,
+              },
+              {
+                  name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${w.spur.zeile}`,
+                  pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
+              },
+              {
+                  name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
+                  pass: w.abw.every((x) => !x.length),
+              },
+          ];
+    if (w && EDITS)
         wegChecks.push({
             name: `(D) ${EDITS} Edits, Soll ≤ ${EDITS / 10} kB: ${w.edits.zeile}`,
             pass: Math.max(w.edits.ohne, w.edits.ohnePlatte) <= EDITS * 100,
