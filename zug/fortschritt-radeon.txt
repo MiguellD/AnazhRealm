@@ -1010,3 +1010,4 @@
 2026-10-27 20:09:05 takt13-headless siedlung.K3#1 GRÜN 1.9 · 58/81
 2026-10-27 20:09:11 takt13-headless leib.K5#1 GRÜN 1.9 · 59/81
 2026-10-27 20:09:17 takt13-headless leib.K5#2 GRÜN 1.9 · 60/81
+2026-10-27 20:09:23 takt13-headless halten.K1#1 GRÜN 0.9 · 61/81
