@@ -47,11 +47,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         dunkR = rest.filter((p) => Y(p) < med);
     const yAll = pix.map(Y).sort((a, b) => a - b);
     const q = (f) => (yAll.length ? +yAll[Math.min(yAll.length - 1, Math.floor(f * yAll.length))].toFixed(3) : null);
-    const cv = document.createElement("canvas");
-    cv.width = W;
-    cv.height = H;
-    const ctx = cv.getContext("2d");
-    const img = ctx.createImageData(W, H);
+    const img = { data: new Uint8ClampedArray(W * H * 4) };
     for (let i = 0; i < W * H; i++) {
         const o = i * 4;
         // Die Zeilen des Ziels laufen von unten nach oben (WebGL) bzw. oben nach unten (WebGPU) — das Bild ist nur
@@ -64,7 +60,6 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
             img.data[o + c] = Math.round(255 * srgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
         img.data[o + 3] = 255;
     }
-    ctx.putImageData(img, 0, 0);
     return {
         name,
         pixel: pix.length,
@@ -73,7 +68,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         hell: fmt(mittel(hellR), hellR.length),
         dunkel: fmt(mittel(dunkR), dunkR.length),
         Yq: [q(0.05), q(0.25), q(0.5), q(0.75), q(0.95)].join("/"),
-        png: cv.toDataURL("image/png"),
+        png: window.__png(img.data, W, H),
     };
 }
 
@@ -338,10 +333,7 @@ function albedoSicht(opts) {
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
         const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundles = window.__bundlesNeu;
         // Halb-Float, je Zeile auf 256 Byte ausgerichtet (8 Byte je Pixel) → Float32, dicht.
         const lies = async () => {
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
@@ -743,10 +735,7 @@ function lichtBilanz() {
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
         const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundles = window.__bundlesNeu;
         const mess = async (n) => {
             karte.position.copy(basis);
             karte.lookAt(basis.clone().add(n));
@@ -1166,9 +1155,7 @@ function nahFernSicht(opts) {
         }
         const schuss = async (sicht, e) => {
             for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+            window.__bundlesNeu();
             for (const [l] of lichter) l.intensity = 0;
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
@@ -1297,9 +1284,7 @@ function nahFernSicht(opts) {
             if (luftU) luftU.value = betaAlt;
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             rt.dispose();
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+            window.__bundlesNeu();
         }
         // Die Karte der Fern-Krone im Boden-Stoff: steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
@@ -1594,10 +1579,7 @@ function laubGegenlicht(opts) {
         const luftU = st.luft && st.luft.U;
         const luftAlt = luftU ? luftU.beta.value : null;
         const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundles = window.__bundlesNeu;
         if (elev == null)
             elev = Math.max(
                 (5 * Math.PI) / 180,
@@ -1653,11 +1635,7 @@ function laubGegenlicht(opts) {
             }
             const zeile = W * 4;
             const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const cx = cv.getContext("2d");
-            const img = cx.createImageData(W, H);
+            const img = { data: new Uint8ClampedArray(W * H * 4) };
             const enc = (v) =>
                 Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
             const Yp = new Float32Array(W * H).fill(-1),
@@ -1681,8 +1659,7 @@ function laubGegenlicht(opts) {
                     }
                     img.data[o + 3] = 255;
                 }
-            cx.putImageData(img, 0, 0);
-            return { Yp, Cp, png: cv.toDataURL("image/png") };
+            return { Yp, Cp, png: window.__png(img.data, W, H) };
         };
         try {
             for (const m of alle) m.visible = laub.includes(m);
@@ -1957,7 +1934,7 @@ function lichtWeg(opts) {
             for (const [m] of alle) m.visible = m === ding;
             [karte, see].forEach((m) => (m.visible = m === ding));
             if (wand) karte.position.copy(o).add(blick), karte.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), blick.clone().normalize().negate()), karte.updateMatrixWorld(true);
-            sc.traverse((g) => g.isBundleGroup && (g.needsUpdate = true));
+            window.__bundlesNeu();
             await window.__linseRuhe(rend, rt, sc, cam, "der Lichtweg");
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, W), schritt = px.length > W * W * 4 ? Math.ceil((W * 8) / 256) * 128 : W * 4, s = [0, 0, 0];
             for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += T.DataUtils.fromHalfFloat(px[y * schritt + x * 4 + c]) / 64;

@@ -500,11 +500,7 @@ async function probe(cfg) {
         return o;
     };
     const png = (u8, ueber) => {
-        const cv = document.createElement("canvas");
-        cv.width = W;
-        cv.height = H;
-        const ctx = cv.getContext("2d");
-        const img = ctx.createImageData(W, H);
+        const img = { data: new Uint8ClampedArray(W * H * 4) };
         img.data.set(u8.subarray(0, W * H * 4));
         if (ueber)
             for (let i = 0; i < W * H; i++) {
@@ -514,8 +510,7 @@ async function probe(cfg) {
                     img.data[i * 4] = 255; // gemessen, nicht erwartet: rot
                 }
             }
-        ctx.putImageData(img, 0, 0);
-        return cv.toDataURL("image/png");
+        return window.__png(img.data, W, H);
     };
     // castShadow eines gesetzten Baus an/aus (je Instanz-Gruppe seiner Slots, das Bundle zeichnet neu)
     const merk = new Map();

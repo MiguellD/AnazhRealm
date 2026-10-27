@@ -656,7 +656,7 @@ async function proben(phasen) {
             for (const [k, i] of innen) k.basis.fill(0, i * 16, i * 16 + 16);
             if (innen.length) s.nahWiese.neu = true;
             r._tickNahWiese = aus.length || innen.length ? () => 0 : tick;
-            s.scene.traverse((q) => q.isBundleGroup && (q.needsUpdate = true));
+            window.__bundlesNeu();
             try {
                 return (await window.__ausgabeAufnahme(WB, HB, 1, { satz: "messung" })).u8;
             } finally {
@@ -664,7 +664,7 @@ async function proben(phasen) {
                 for (const [k, i, alt] of halt) k.basis.set(alt, i * 16);
                 if (halt.length) s.nahWiese.neu = true;
                 r._tickNahWiese = tick;
-                s.scene.traverse((q) => q.isBundleGroup && (q.needsUpdate = true));
+                window.__bundlesNeu();
             }
         };
         const anders = (X, Y, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(X[i + c] - Y[i + c]))) > 18;
