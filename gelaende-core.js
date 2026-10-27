@@ -1301,6 +1301,65 @@
         return Math.round(weg / SCHMELZE.stufe) * SCHMELZE.stufe;
     }
 
+    // DER PEGEL (stoffe.K3-2 — die Schmelze speist ihn; wetter.K3: der Regen an DERSELBEN Stelle, `abfluss`): der Hub des Spiegels
+    // der Binnen-Gewässer (See und Fluss, nie das Meer) über ihren Ruhe-Spiegel — eine Funktion der Höhe y ihres Spiegels und der
+    // Saison auf dem Temperatur-Feld (`feld(traegTage)`, die Naht des Wirts).
+    // DER ABFLUSS (`abfluss`, m Wasser je Tag): was die Fläche an der Höhe y ihrem Wasser gibt — die Schmelze des Schnee-Pegels
+    // (Grad-Tag: `SCHMELZE.gradTag` je Kelvin des Tagesmittels über 0 °C, solange der Pegel Wasser trägt; der Firn des Gebirges
+    // schmilzt den Sommer hindurch). Die Fläche um den Spiegel steht für sein Einzugsgebiet (stromauf liegt es höher und schmilzt
+    // später — nicht gerechnet).
+    // DER HUB: der Ruhe-Spiegel führt den mittleren Abfluss des Klimas (`spende`, 330 mm im Jahr, gemäßigt-kontinental), das Bett
+    // formte der bordvolle (Leopold & Wolman 1957): seine Krone liegt Freibord · Tiefe über dem Ruhe-Spiegel (`spiegelFreibord` ·
+    // `kanalTiefe` der Hydrosphäre, die Damm-Krone mindestens `dammFreibord`). Im breiten Bett wächst die Tiefe mit dem Abfluss
+    // hoch 3/5 (Manning): Hub = (1 − f)·T·((1 + Abfluss/spende)^(3/5) − 1), gedeckelt an der Krone — darüber trägt die Aue den
+    // Überschuss (nicht gerechnet). Jede Schmelze über 0,6 mm am Tag füllt das Bett bis zur Krone (0,2 m): das Frühjahr hebt See
+    // und Fluss bordvoll, solange der Schnee an ihrer Höhe Wasser trägt.
+    // DIE TAFEL (`pegelTafel`): der Hub je `dy` m Höhe von `unter` unter dem Meer bis `ueber` darüber, in Stufen von `stufe` m, zum
+    // Tagesmittel der Saison; null, wo kein Wasser steigt. Die Lage trägt sie (`L.pegel`: der Wirt zieht sie je Tag der Welt nach,
+    // der Faden bekommt sie im Stand). `pegelHub` liest sie, linear zwischen den Metern: der Spiegel jedes Sees (`koerperY`) und
+    // jedes Flusses (`flussAm`, `spiegelQuer`, `flussRand`) — nie das Bett (`flussKanal`). Der Hub hängt am Spiegel allein: ein ebener Fluss-Abschnitt
+    // hebt sich eben, und stromab steigt kein Spiegel — der Hub fällt mit der Höhe höchstens 0,2 m je Meter (die Linie der
+    // Schmelze rampt über 0,09 K, 0,8 m Höhe).
+    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01 });
+    function abfluss(L, y, saison, feld) {
+        if (!Number.isFinite(y) || !Number.isFinite(saison)) throw new Error("gelaende-core abfluss: Höhe oder Saison fehlt");
+        if (!(schneePegel(L, y, saison, feld) > 0)) return 0;
+        const F = feld ? feld(0) : temperaturFeld(L, y, 0);
+        const t = F.mittel - F.kuehlung + F.jahr.amp * Math.cos(2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet);
+        return SCHMELZE.gradTag * Math.max(0, t);
+    }
+    function pegelTafel(L, saison, feldAt) {
+        const H = L.hydroGesetz;
+        if (!(H && H.kanalTiefe > 0 && H.spiegelFreibord > 0 && H.dammFreibord > 0))
+            throw new Error("gelaende-core pegelTafel: das Gesetz der Hydrosphäre fehlt (kanalTiefe, Freibord)");
+        const P = PEGEL;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
+        const F = feldAt || ((y, tr) => temperaturFeld(L, y, tr));
+        const [T, f] = [H.kanalTiefe, H.spiegelFreibord];
+        const krone = Math.min(f * T, H.dammFreibord);
+        const y0 = Math.floor(wl - P.unter);
+        const hub = new Float32Array(Math.round((P.unter + P.ueber) / P.dy) + 1);
+        let steigt = false;
+        for (let i = 0; i < hub.length; i++) {
+            const y = y0 + i * P.dy;
+            const a = abfluss(L, y, saison, (tr) => F(y, tr));
+            if (!(a > 0)) continue;
+            hub[i] = Math.round(Math.min(krone, (1 - f) * T * (Math.pow(1 + a / P.spende, 0.6) - 1)) / P.stufe) * P.stufe;
+            if (hub[i] > 0) steigt = true;
+        }
+        return steigt ? { y0, dy: P.dy, hub } : null;
+    }
+    function pegelHub(L, y) {
+        const P = L.pegel;
+        if (!P || !Number.isFinite(y)) return 0;
+        const n = P.hub.length;
+        const u = (y - P.y0) / P.dy;
+        if (u <= 0) return P.hub[0];
+        if (u >= n - 1) return P.hub[n - 1];
+        const i = Math.floor(u);
+        return P.hub[i] + (P.hub[i + 1] - P.hub[i]) * (u - i);
+    }
+
     // DIE LAVA (stoffe.K3-2): geschmolzener Stein, der über die glut-Achse zu Stein erstarrt — ihr Zustand nach `alterS`
     // Sekunden Welt-Zeit. DER STOFF ist die Zeile `stein` der Stoff-Tafel des Wirts (ρ, c, T_schmelz in K); der Kern hält nur die
     // Zahlen des Vorgangs: die Überhitzung beim Ausbruch über T_schmelz, die Dicke der Decke, den Übergang α an die Luft
@@ -1309,6 +1368,7 @@
     // τ = ρ·c·d / α — am Wasser zehnmal schneller und unter DAMPF, solange die Decke über dem Sieden liegt. Unter T_schmelz ist
     // sie ERSTARRT (Stein); die GLUT (0…1) ist ihre Strahlung über dem Draper-Punkt (∝ T⁴), die die glut-Achse der Welt trägt.
     // Die Erstarrungs-Wärme trägt der Gang nicht (sie verzögerte die Erstarrung um ~ L/(c·ΔT)).
+    // DER GANG UND DIE GLUT sind EIN Gesetz jedes heißen Körpers der Welt (`waermeGang`, `glutAus`: die Lava, der Stahl der Esse).
     const LAVA = Object.freeze({
         ueberhitzung: 150,
         dicke: 1,
@@ -1317,6 +1377,16 @@
         glueht: 798,
         sieden: 373.15,
     });
+    // DER WÄRME-GANG (Newton): die Temperatur (K) eines Körpers, der von `vonK` nach `s` Sekunden gegen `zielK` strebt (τ s) —
+    // geschlossen, darum auch der exakte Schritt eines Takts gegen ein Ziel, das über den Schritt steht.
+    function waermeGang(zielK, vonK, s, tau) {
+        return zielK + (vonK - zielK) * Math.exp(-Math.max(0, s) / tau);
+    }
+    // DIE GLUT (0…1) eines Körpers der Temperatur `TK`: seine Strahlung über dem Draper-Punkt (`LAVA.glueht`, ∝ T⁴), 1 bei `vollK`.
+    function glutAus(TK, vollK) {
+        const g4 = LAVA.glueht ** 4;
+        return Math.min(1, Math.max(0, (TK ** 4 - g4) / (vollK ** 4 - g4)));
+    }
     function lava(alterS, amWasser, luftC, stoff) {
         if (!Number.isFinite(alterS) || !Number.isFinite(luftC)) throw new Error("gelaende-core lava: Alter oder Luft fehlt");
         const S = stoff && stoff.stein;
@@ -1326,11 +1396,10 @@
         const tau = (S.rho * S.c * V.dicke) / (amWasser ? V.wasser : V.luft);
         const tu = luftC + 273.15;
         const t0 = S.tSchmelz + V.ueberhitzung;
-        const T = tu + (t0 - tu) * Math.exp(-Math.max(0, alterS) / tau);
-        const g4 = V.glueht ** 4;
+        const T = waermeGang(tu, t0, alterS, tau);
         return {
             temperatur: T - 273.15,
-            glut: Math.min(1, Math.max(0, (T ** 4 - g4) / (t0 ** 4 - g4))),
+            glut: glutAus(T, t0),
             erstarrt: T < S.tSchmelz,
             dampf: !!amWasser && T > V.sieden,
             tau,
@@ -5311,8 +5380,8 @@
     }
 
     // DER FLUSS an (x, z) → { flowX, flowZ, depth, surfaceY, centerness, ufer } oder null jenseits jeder Krone: der Spiegel der
-    // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend; Lauf,
-    // Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
+    // Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt zur Krone stetig auslaufend, samt
+    // dem Pegel (`pegelHub`); Lauf, Tiefe und Breite des nächsten Segments; centerness [0, 1] (1 Mittellinie, 0 Kanal-Kante — die Strömung trägt nur im Kanal);
     // ufer die Kronen-Blende [0, 1] (1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone, das Maximum der Segmente).
     function flussAm(L, x, z) {
         const h = hydroRegion(L, x, z);
@@ -5363,7 +5432,7 @@
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            surfaceY: sSumme / gSumme,
+            surfaceY: sSumme / gSumme + pegelHub(L, sSumme / gSumme),
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
             ufer,
         };
@@ -5393,7 +5462,7 @@
                 spiegel = seg[o + 8] + (seg[o + 9] - seg[o + 8]) * t;
             }
         }
-        return spiegel;
+        return spiegel + pegelHub(L, spiegel);
     }
     // DER NÄCHSTE RAND eines Flusses an (x, z) über die 3×3-Buckets (die Feuchte reicht ~26 m, weiter als die Bank) → { dist,
     // halfW, spiegel }: der nächste RAND (Abstand minus die Halbbreite), nie die nächste Mittellinie — zwischen zwei Segmenten
@@ -5438,7 +5507,7 @@
                 }
             }
         }
-        return { dist: best, halfW: bestHw, spiegel: bestSp };
+        return { dist: best, halfW: bestHw, spiegel: bestSp + pegelHub(L, bestSp) };
     }
     // DER SPIEGEL AM SCHNITT (F3): der Fluss-Spiegel quer (`spiegelQuer`) über einer Spalte, die ein Schnitt der Edit-Karte k
     // berührt (sein Radius + eine halbe Zell-Diagonale der Kante `step`), sonst −Infinity. Leser: das Wasser-Sheet am Graben.
@@ -5627,9 +5696,10 @@
         const felder = [...je.values()].filter(Boolean);
         return { felder, anders: anders.filter(Boolean), merk: { je, edits, n: edits.length, kacheln } };
     }
-    // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region
-    function koerperY(h, i) {
-        return h.water.waterY[i];
+    // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region — der See mit dem Pegel der Lage (`pegelHub`)
+    function koerperY(L, h, i) {
+        const y = h.water.waterY[i];
+        return h.water.waterKind[i] === 2 ? y + pegelHub(L, y) : y;
     }
     // DER BEZUG DER UFER-BÄNDER an (x, z): MAX aus Meer (`waterLevel`, Default überall), See (3×3 der Zellen — die Dilatation
     // gegen den quantisierten Becken-Rand) und Fluss-Spiegel. `aus` (optional) trägt die beiden Bezüge getrennt: `see`
@@ -5649,7 +5719,7 @@
                     const nj = cj + dj;
                     if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                     const idx = ni + nj * dim;
-                    if (wK[idx] === 2 && koerperY(h, idx) > level) level = koerperY(h, idx);
+                    if (wK[idx] === 2 && koerperY(L, h, idx) > level) level = koerperY(L, h, idx);
                 }
             }
         }
@@ -5679,7 +5749,7 @@
                 inRegion = true;
                 const wK = h.water.waterKind;
                 const here = wK[ci + cj * dim];
-                if (here === 1 || here === 2) level = koerperY(h, ci + cj * dim);
+                if (here === 1 || here === 2) level = koerperY(L, h, ci + cj * dim);
                 else {
                     let rim = -Infinity;
                     for (let dj = -1; dj <= 1; dj++) {
@@ -5688,7 +5758,7 @@
                             const nj = cj + dj;
                             if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                             const nk = wK[ni + nj * dim];
-                            if ((nk === 1 || nk === 2) && koerperY(h, ni + nj * dim) > rim) rim = koerperY(h, ni + nj * dim);
+                            if ((nk === 1 || nk === 2) && koerperY(L, h, ni + nj * dim) > rim) rim = koerperY(L, h, ni + nj * dim);
                         }
                     }
                     if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) level = rim;
@@ -5806,7 +5876,13 @@
         schneePegel: schneePegel,
         schneeLinie: schneeLinie,
         schneeVersatz: schneeVersatz,
+        PEGEL: PEGEL,
+        abfluss: abfluss,
+        pegelTafel: pegelTafel,
+        pegelHub: pegelHub,
         LAVA: LAVA,
+        waermeGang: waermeGang,
+        glutAus: glutAus,
         lava: lava,
         grossform: grossformAus,
         landformRegler: landformRegler,
