@@ -1110,49 +1110,43 @@ function urteilK9(o) {
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
-    if (!o.k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${o.k1.traeger})`);
-    if (!(Math.abs(o.k1.beckenCm) <= 1))
-        f.push(`K1 Becken auf dem Träger: ${o.k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
-    if (!o.k1.sprungLuft) f.push("K1 Aufbau: der Sprung hebt die Kapsel nicht in die Luft");
-    else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1))
-        f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
+    // ein fehlender Teil liest {}, ein fehlender Wert NaN — nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
+    const { k1, k2 = {}, k3 = {}, k4 = {}, k4b = {}, k4c = {}, k5 = {}, k6leser: L = {} } = o;
+    const zahl = (x) => x ?? NaN;
+    if (!k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${k1.traeger})`);
+    if (!(Math.abs(k1.beckenCm) <= 1))
+        f.push(`K1 Becken auf dem Träger: ${k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
+    if (!k1.sprungLuft) f.push("K1 Aufbau: der Sprung hebt die Kapsel nicht in die Luft");
+    else if (!(Math.abs(k1.sprungBeckenCm) <= 1))
+        f.push(`K1 Becken im Sprung: ${k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
     if (!o.hoehle) f.push("K2 Aufbau: keine Höhle im Raster");
     else {
-        // ein fehlender Wert ist nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
-        if (!o.k2 || o.k2.abstandCm == null || !(o.k2.abstandCm <= 10))
-            f.push(
-                `K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`
-            );
-        if (!o.k3 || o.k3.abstandM == null || !(o.k3.abstandM <= 0.15))
-            f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
+        if (!(zahl(k2.abstandCm) <= 10))
+            f.push(`K2 Fuß-Probe in der Höhle: ${k2.abstandCm} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
+        if (!(zahl(k3.abstandM) <= 0.15)) f.push(`K3 Tier in der Höhle: ${k3.abstandM} m über dem Höhlen-Boden`);
     }
     if (!o.hang) f.push("K4 Aufbau: keine Hang-Stelle im Raster");
     else {
-        if (!o.k4 || !(o.k4.leibMedianCm <= 6))
+        if (!(zahl(k4.leibMedianCm) <= 6))
+            f.push(`K4 Leib gegen die Karte: Median ${k4.leibMedianCm} cm (der Leib steht auf dem Gesetz)`);
+        if (!(k4b.treppeCm <= 8))
+            f.push(`K4 Treppe: ${k4b.treppeCm} cm Sprung je Takt über die Neigung hinaus (Träger: ${k4b.traeger})`);
+        if (!(k4c.fugen >= 20)) f.push(`K4 Aufbau: ${k4c.fugen} Fugen im Umkreis (Soll ≥ 20)`);
+        else if (k4c.traegt > 0)
             f.push(
-                `K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`
-            );
-        if (!o.k4b || !(o.k4b.treppeCm <= 8))
-            f.push(
-                `K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus (Träger: ${o.k4b ? o.k4b.traeger : "?"})`
-            );
-        if (!o.k4c || !(o.k4c.fugen >= 20))
-            f.push(`K4 Aufbau: ${o.k4c ? o.k4c.fugen : "?"} Fugen im Umkreis (Soll ≥ 20)`);
-        else if (o.k4c.traegt > 0)
-            f.push(
-                `K4 Fuge: ${o.k4c.traegt} von ${o.k4c.fugen} Fugen tragen einen Leib — Täter ${o.k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
+                `K4 Fuge: ${k4c.traegt} von ${k4c.fugen} Fugen tragen einen Leib — Täter ${k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
             );
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
-        else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
+        else if (!(Math.abs(k5.gegenStandCm) <= 3) || !(k5.wegMinCm >= -5))
             f.push(
-                `K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.gegenStandCm : "?"} cm über ihrem Stand-Kontakt, auf dem Weg ${o.k5 ? o.k5.wegMinCm + " … " + o.k5.wegMaxCm : "?"} cm (Soll ± 3, Weg ≥ −5)`
+                `K5 Tod-Lage: die tiefste Stelle liegt ${k5.gegenStandCm} cm über ihrem Stand-Kontakt, auf dem Weg ${k5.wegMinCm} … ${k5.wegMaxCm} cm (Soll ± 3, Weg ≥ −5)`
             );
     }
-    if (!o.k6leser || !(o.k6leser.n >= 300) || o.k6leser.fehl > 0)
+    if (!(L.n >= 300) || L.fehl > 0)
         f.push(
-            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}, Karten dort ${o.k6leser && o.k6leser.stufen ? o.k6leser.stufen.join(" · ") : "?"}, Mitte ${o.k6leser && o.k6leser.mitte ? o.k6leser.mitte.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
+            `K6 Leser im Rand-Streifen: ${L.fehl} von ${L.n} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${L.maxCm} cm bei ${L.wo}, Karten dort ${L.stufen}, Mitte ${L.mitte}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
         );
-    if (!o.k6leser || !(o.k6leser.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
+    if (!(L.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
     // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
     // −278/−1038 trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
