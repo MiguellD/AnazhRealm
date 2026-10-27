@@ -222,6 +222,67 @@ const alle = [
             "Persistenz über das Neuladen 0 (worlds/huelle/huelle.js ohne localStorage/indexedDB)",
         quelle: "2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms",
     },
+    // ── studios.K3 ── das Thermometer: die Kosten-Leiste der Hülle zeichnet je Stufe das Werk ALLEIN in einem eigenen
+    // Render-Abschnitt (worlds/huelle/huelle.js `zeichne`, renderer.info) und trägt neben der gezählten Zahl die gezeichnete;
+    // der Gang (H7, Zwilling von studios.K2#1) druckt je Seite `Kosten [{stufe, leiste, deckel, gezeichnet}]`.
+    {
+        kriterium: "studios.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
+        env: { ...SOFT, STUDIO_HUELLE_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const je = {};
+            for (const l of zeilen(lauf.stdout)) {
+                const m = /^\s{2}(\S+)\s+\d+ Anfragen · .* · Kosten (\[.*\])\s*$/.exec(l);
+                if (m && SEITEN[m[1]]) je[m[1]] = JSON.parse(m[2]);
+            }
+            // die Mesh-Studios: jede Seite außer klang (meshfrei, Studio-Vertrag §8); je Seite die größte Abweichung ihrer Stufen
+            const mesh = Object.keys(SEITEN).filter((s) => s !== "klang");
+            const abw = (k) => (k.leiste > 0 && k.gezeichnet > 0 ? Math.abs(k.leiste / k.gezeichnet - 1) : Infinity);
+            const groesste = (s) => (je[s] && je[s].length ? Math.max(...je[s].map(abw)) : Infinity);
+            const wahr = mesh.filter((s) => groesste(s) <= 0.05);
+            const ohne = mesh.filter((s) => !wahr.includes(s));
+            if (!Object.keys(je).length) return { gruen: false, zahl: "keine Kosten-Zeile des Gangs (Exit " + lauf.exit + ")" };
+            const stufen = wahr.reduce((n, s) => n + je[s].length, 0);
+            return {
+                gruen: wahr.length >= 4,
+                zahl:
+                    "Dreiecke ±5 % gegen renderer.info in " + wahr.length + "/" + mesh.length + " Mesh-Studios (" + stufen +
+                    " Stufen, größte Abweichung " + (Math.max(0, ...wahr.map(groesste)) * 100).toFixed(1) + " %)" +
+                    (ohne.length ? ", ohne " + ohne.map((s) => s + (je[s] ? " " + (groesste(s) * 100).toFixed(1) + " %" : " (keine Zeile)")).join(", ") : ""),
+            };
+        },
+        pfad: [
+            "worlds/huelle/",
+            "worlds/garage/",
+            "worlds/schmiede/",
+            "worlds/portale/",
+            "worlds/fachwerk/",
+            "worlds/koerperstudio/",
+            "worlds/tetrapoda/",
+            "worlds/terrain/",
+            "*-core.js",
+            "scripts/diag-studio-huelle.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Dreiecke ±5 % gegen renderer.info in ≥ 4/7 Mesh-Studios",
+    },
+    {
+        kriterium: "studios.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: null,
+        grund:
+            "die Leiste trägt gezeichnete Dreiecke und Befehle aus renderer.info (Zähl-Abschnitt, studios.K3#1), aber kein VRAM " +
+            "(info.memoryMap je Werk-Attribut), keine GPU-ms (Timer-Query gegen gpu-bank) und beim Klang keine Audio-Graph-ms; " +
+            "der Gang urteilt nur die Dreiecke",
+        quelle: "2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms",
+    },
 
     // ───────────────────────────── Pipeline ─────────────────────────────
     {
