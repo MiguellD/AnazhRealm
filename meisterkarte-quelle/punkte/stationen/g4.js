@@ -215,12 +215,60 @@ const alle = [
         kriterium: "studios.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "kein Werkzeug misst Griff → erstes Ausgabe-Bild mit neuem Bau-Hash: die Gang-Probe (20 zufällige Griffe je Studio) " +
-            "fehlt in diag-studio-huelle --engine, die Zeilen tragen kein `uniform: true` im Vertrag, A/B nur im Gelände-Studio, " +
-            "Persistenz über das Neuladen 0 (worlds/huelle/huelle.js ohne localStorage/indexedDB)",
-        quelle: "2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms",
+        // DIE GANG-PROBE (H7, Zweig studios-k2-sitzung): je Studio-Seite 20 zufällige Griffe (Saat, nie zweimal derselbe Wert) —
+        // die Zeit vom Eingabe-Ereignis bis zum ersten Bild mit neuem Bau-Hash (AnazhHuelle.gang: der rAF nach dem Render der
+        // Seite trägt den Plan, den bei/nachRuhe anwandte); die Klasse je Zeile steht im Vertrag (`uniform: true` ≤ 200 ms, sonst
+        // Neubau ≤ 1 s); dann das Neuladen (jeder Regler der Sitzung steht wieder, der EINE Speicher-Weg localStorage) und A/B
+        // (der Gang H3: A zeigt den Stand der Öffnung, B den Zug). Die Zeit urteilt nur auf der Karte (Kopfzeile „geurteilt“).
+        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
+        env: { STUDIO_HUELLE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const karte = /=== H7 DIE SITZUNG — Saat \d+, die Zeit geurteilt \(Karte\)/.test(out);
+            const je = {};
+            for (const l of zeilen(out)) {
+                const t = /^\s{2}⏱ (\S+)\s+Griff → Bild p95 Gesetz-Wert (\S+) ms · Neubau (\S+) ms · (\d+) Griffe mit Bild · Neuladen (\d+)\/(\d+)/.exec(l);
+                if (t && SEITEN[t[1]]) je[t[1]] = Object.assign(je[t[1]] || {}, { u: +t[2], n: +t[3], mit: +t[4], bleibt: +t[5] > 0 && t[5] === t[6] });
+                const g = /^\s{2}(\S+)\s+\d+ Anfragen · .*?Schieber ([^,\s]+) → ([^,\s]+),.*, A → ([^,\s]+), B → ([^,\s]+)/.exec(l);
+                if (g && SEITEN[g[1]]) je[g[1]] = Object.assign(je[g[1]] || {}, { ab: g[2] !== g[3] && g[4] === g[2] && g[5] === g[3] });
+            }
+            const s = Object.keys(SEITEN).map((id) => ({ id, ...(je[id] || {}) }));
+            const klasse = (z, k, max) => !(z[k] > max); // „–“ (keine Zeile der Klasse im Studio) ist NaN und zählt nicht
+            const zeit = s.filter((z) => z.mit === 20 && klasse(z, "u", 200) && klasse(z, "n", 1000));
+            const bleibt = s.filter((z) => z.bleibt).length;
+            const ab = s.filter((z) => z.ab).length;
+            const hoch = (k) => s.reduce((m, z) => (z[k] > m.v ? { v: z[k], id: z.id } : m), { v: 0, id: "–" });
+            const u = hoch("u"),
+                n = hoch("n");
+            return {
+                gruen: karte && zeit.length === 8 && bleibt === 8 && ab === 8,
+                zahl:
+                    (karte ? "" : "die Zeit ungeurteilt (kein Hardware-Adapter) · ") +
+                    "p95 Griff → Bild unter der Schranke in " + zeit.length + "/8 (Gesetz-Wert höchstens " + u.v + " ms " + u.id +
+                    ", Neubau höchstens " + n.v + " ms " + n.id + ") · Neuladen " + bleibt + "/8 · A/B " + ab + "/8",
+            };
+        },
+        pfad: [
+            "worlds/huelle/",
+            "worlds/garage/",
+            "worlds/schmiede/",
+            "worlds/portale/",
+            "worlds/klang/",
+            "worlds/fachwerk/",
+            "worlds/koerperstudio/",
+            "worlds/tetrapoda/",
+            "worlds/terrain/",
+            "*-core.js",
+            "scripts/diag-studio-huelle.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle:
+            "2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) " +
+            "auf beiden Geräten, dazu A/B und Persistenz über das Neuladen in 8/8",
     },
 
     // ───────────────────────────── Pipeline ─────────────────────────────
