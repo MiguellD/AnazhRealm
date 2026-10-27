@@ -702,23 +702,16 @@ const TAT = process.argv.includes("--tat");
                 st.architectureCullingRadius = R0;
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
-                // DAS WARTEN DER LINSE (Lehre 26): Takt um Takt (`jeTakt`), bis `fertig()` steht — der Deckel `max` zählt nur Takte, in
-                // denen die Welt nichts offen hat (`__deckel`); voll endet er still (das Urteil danach nennt, was nicht stand), ein Offenes
-                // ohne Bau-Ereignis wirft beim Namen. Bis ci-wackler-zensus zählte jedes Fenster jeden Takt: unter Last (2 Kerne, 3 Läufe)
-                // kamen die Antworten der Fäden und die Arbeit der ms-Budgets nach dem Fenster (ORT, STROM, NACHSCHUB, Satz-Haus), und
-                // die Phase nach `bisRuhe` begann in einer wachen Welt (GEHEN, TREUE)
-                const bisDa = async (name, fertig, max, jeTakt = takt) => {
-                    let n = 0;
-                    try {
-                        for (const weiter = window.__deckel(name, max); !fertig() && weiter(); n++) {
-                            jeTakt();
-                            if (n % 10 === 9) await sleep(5);
-                        }
-                    } catch (f) {
+                // DAS WARTEN DER LINSE ist das EINE Warten auf einen Bau (welt-boot `__gebautNach`, Lehre 26): Takt um Takt (`jeTakt`),
+                // bis `fertig()` steht — der Deckel `max` zählt nur Takte, in denen die Welt nichts offen hat; voll endet er still (das
+                // Urteil danach nennt, was nicht stand), ein Offenes ohne Bau-Ereignis wirft beim Namen. Bis ci-wackler-zensus zählte jedes
+                // Fenster jeden Takt: unter Last (2 Kerne, 3 Läufe) kamen die Antworten der Fäden und die Arbeit der ms-Budgets nach dem
+                // Fenster (ORT, STROM, NACHSCHUB, Satz-Haus), und die Phase nach `bisRuhe` begann in einer wachen Welt (GEHEN, TREUE)
+                const bisDa = (name, fertig, max, jeTakt = takt) =>
+                    window.__gebautNach(name, { fertig, max, takt: jeTakt }).catch((f) => {
                         if (!/^DER BAU STEHT NICHT/.test(f.message)) throw f;
-                    }
-                    return n;
-                };
+                        return max;
+                    });
                 // bis die Wache schläft und die Welt nichts offen hat (ein Takt, der nie schläft, fällt in der Ruhe rot)
                 const bisRuhe = async (n) => {
                     let still = 0;
@@ -1456,10 +1449,7 @@ const TAT = process.argv.includes("--tat");
                                 },
                             ]);
                             A.dirty = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
-                            let gingen = 0;
-                            const heil = () => !st.dirtyVoxelChunks || st.dirtyVoxelChunks.size === 0;
-                            A.takte = await bisDa("der Erdbau unter dem Spieler", () => (A.heil = gingen > 0 && heil()), 600, () => {
-                                gingen++;
+                            A.takte = await bisDa("der Erdbau unter dem Spieler", () => (A.heil = !(st.dirtyVoxelChunks || []).size), 600, () => { // prettier-ignore
                                 imTakt = true;
                                 try {
                                     takt();

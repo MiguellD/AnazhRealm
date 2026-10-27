@@ -88,9 +88,9 @@ hauptLauf(async () => {
             // erste Scheibe hängt — das Ereignis, nie die Wanduhr (Lehre 26; bis ci-wackler-zensus 60 Takte ohne Pause nach 6 s
             // Schlaf: unter Last war noch keine Antwort da, cursor 0). Ein Faden, der nie antwortet, steht in der Stall-Akte.
             const pm = st.playerMesh;
-            if (pm) await window.__weltDa(() => (r._tickFernRing(pm.position), st.fernRing && st.fernRing.cursor > 0));
+            await window.__weltDa(() => (r._tickFernRing(pm.position), (st.fernRing || {}).cursor > 0));
             o.fernRingDa = !!st.fernRing;
-            o.fernRingCursor = st.fernRing ? st.fernRing.cursor : -1;
+            o.fernRingCursor = st.fernRing.cursor; // der Ring steht: auf ihn wartete W4
             // W5 — die Welt lebt: den Loop DETERMINISTISCH pumpen (swiftshader-GL schafft natürliche rAF-Frames nur im
             // Sekundentakt — Wanduhr-Frames wären ein Software-Raster-Artefakt, keine Mechanik-Wahrheit).
             o.tickOk = 0;
