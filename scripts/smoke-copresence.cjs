@@ -21,7 +21,7 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, halteBis, startProc, eigenePorte, waitFor } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, startProc, eigenePorte, waitFor, pruefer } = require("./lib/welt-boot.cjs");
 
 // Der Klon, in dem die Linse liegt, und der Port je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der
 // Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT). die eigenen Ports: COPRESENCE_PORT und
@@ -30,14 +30,10 @@ let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-copresence-room";
 
 (async () => {
-    const failures = [];
+    const { errs: failures, check } = pruefer();
     [PORT, SIGNAL_PORT] = await eigenePorte("COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT");
     PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
     SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-    function check(name, ok, detail = "") {
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok) failures.push(name);
-    }
 
     console.log("Starte save-server + signaling-server ...");
     const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
