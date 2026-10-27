@@ -34,3 +34,4 @@ cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 nicht-langsamer z47z48-abab
 6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a nicht-langsamer z49z50b-abab
 9fa32207625dc4dfcfdf50e895b05c5226825ea6 nicht-langsamer z52n-abab
 f1faa0467fd4b3b63bcae3524c1e06ae18dcb2cb nicht-langsamer z53-abab
+19606f2ee8492be703fb6aff52d4e48c9279919f nicht-langsamer z54n-abab
