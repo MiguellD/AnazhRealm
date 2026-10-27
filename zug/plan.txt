@@ -154,3 +154,5 @@ erledigt buche-118  11:57 GEBUCHT 118/330 am Kopf dc06b495 (V18.546.108), Artifa
 läuft   z52  11:57 ci-werk-wasser · ci-kamera-leib · ci-portal-konformanz · mk2-mikro · punkte-farm · pruef-kurz-c (EINLASS_FREI für portal-Wackler)
 läuft   takt11  11:58 am festen Kopf 6db2602c (z50): GTX 41 (Staffel 1+2, physik.K2#2 genannt — pk2-bild) · Radeon 13 Staffel-2 · headless --offen 5 Bahnen
 erledigt z52  12:43 GELANDET 9fa32207 (V18.546.110) 6/6: ci-werk-wasser (Stausee-Bruch) · ci-kamera-leib · ci-portal-konformanz · mk2-mikro · punkte-farm (Workflow) · pruef-kurz-c; punkte-farm-koord + pruef-kurz-c-koord in koordination gemergt (Selbsttest-Blöcke (7) Farm und (8) Zwillinge vereinigt); Nachwache z52n prio 2
+befund  selbsttest  13:05 punkte.cjs nach der Vereinigung 60/64 lokal: rot nur die vier BAHNEN-Fälle (120-s-Wanduhr-Fenster unter Takt-Last, Lehre 26 — eigene Welle); Farm-Läufer 64/64; gepusht 525ee9b7 nach koordination + punkte-maschine
+läuft   omen-gruppen  13:05 per Remote Control an „Koordinator Nachricht“: nach takt11-gtx messplatz.sh aus bericht/2310-omen-runner/messplatz/messplatz.sh (gruppen) einspielen, Bestätigung in plan.txt
