@@ -456,8 +456,10 @@ jobs:
 
             - name: Persistenz-Härtung Teil 2 (Tab-Tod 8-19 ohne save-server)
               if: matrix.gruppe == 7
+              # ohne den Gang (D): Teil 1 geht ihn (1 km in 6 min, dasselbe Urteil), hier ginge er ein zweites Mal
               env:
                   PERSISTENCE_TABTOD: 8-19
+                  PERSISTENCE_WEG: 0-0
               run: node scripts/diag-persistence.cjs
 
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)

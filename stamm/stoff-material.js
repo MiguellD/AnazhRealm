@@ -1891,7 +1891,7 @@ class AnazhRealm_stoff_material {
     }
 
     // DAS MIKRO-RELIEF (TERRAIN_BUMP, material.K2): Neigung und Kavität einer Fläche aus dem Rausch-Gesetz in Oktaven, die der
-    // Pixel trägt. Drei Oktaven folgen der Pixelgröße (`fwidth` der Welt-Lage): die feinste trägt `mikroPx` Pixel je Periode,
+    // Pixel trägt. Drei Oktaven folgen der Pixelgröße (`fwidth` der Welt-Lage): die feinste trägt `mikroPx` Pixel je Periode (zwei Zellen),
     // jede weitere die halbe Frequenz, und zwischen zwei Stufen blendet die feinste ein, die gröbste aus (Gewichte fract · 1 ·
     // 1 − fract — die Summe bleibt, keine Frequenz springt am Schirm). Was feiner als ein Pixel ist, flimmert und kostet; was
     // gröber ist, fehlt bei Armlänge: die EINE Regel bindet beides an den Schirm, nie an die Weltgröße (Gebot 7). Jede Oktave
@@ -1905,7 +1905,10 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.TERRAIN_BUMP;
         const ra = this._rauschAtlas();
         const P = AnazhRealm.RAUSCH_GESETZ.P;
-        const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM)).negate();
+        // die Zelle des Rauschens ist eine HALBE Periode (Perlin ist 0 auf jedem Gitterpunkt, seine Energie liegt bei ½ Zyklus je
+        // Zelle): bis mk2-mikro trug die Zelle die ganze Periode, die feinste Oktave lag eine Oktave unter dem Nyquist (offline,
+        // dasselbe Rauschen des Kerns, TAAU-Box 4×4: nyquist 0,04 statt 0,14 — die Boden-Station GTX 0,13 < 0,15)
+        const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM).mul(0.5)).negate();
         const fr = T.fract(L);
         const L0 = L.sub(fr);
         // die Höhe je Oktave fällt mit `mikroHoehe` zur gröberen (0,75: Amplitude ∝ f^0,42, das Spektrum β ≈ 1,2 — die Energie

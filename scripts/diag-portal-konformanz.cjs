@@ -38,7 +38,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -46,9 +46,6 @@ const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
-// Die Frist der ersten ready: das Körper-Studio baut seinen Menschen, bevor die Brücke meldet (von allen Welten am
-// längsten; wie lange, misst der OMEN) — die Frist ist ein Deckel gegen den Hänger, keine Messung.
-const READY_FRIST_MS = 120000;
 
 // Je Welt: das Wort, das der Spieler in die Konsole tippt, und woran man sieht, dass es wirkt. `ui` = Zustand der
 // Welt-UI (same-origin: Selektor + Feld + Soll, der echte UI-Pfad der Studios); ohne `ui` = das Journal der Heimat
@@ -396,16 +393,25 @@ async function betreten(page, welt) {
     return (await page.evaluate(() => !!anazhRealm._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
 }
 
-// K8 werk: der Spieler holt sein Werk mit dem Verb des Studios — durch das Tor der Garage, dort „In der Welt ansehen" (die
-// Hülle reicht es über den EINEN Übergabe-Kanal und kehrt heim); steht danach kein zweites Werk (neben der Prägung des Leibs) im
-// Prägungs-Speicher, ist die Probe rot beim Namen
+// K1 das Bau-Ereignis der Welt: ihre ready (mit ihr baut die Hülle ihre Knöpfe) und ihr load, gezählt vom Spion aus `betreten` —
+// ohne Uhr, einen Hänger nennt die Stall-Akte beim Namen
+async function bereitBis(page, id) {
+    await waitFor(page, () => window.__k.typen.ready && window.__k.geladen, `ready und load der Welt ${id}`);
+    return zaehler(page);
+}
+
+// K8 werk: der Spieler holt sein Werk mit dem Verb des Studios — durch das Tor der Garage; steht die Hülle, drückt der Rück-Hörer
+// „In der Welt ansehen" vor der Marke (die Hülle reicht das Werk über den EINEN Übergabe-Kanal und kehrt heim): kehrt die Marke
+// zurück, las die Heimat beides (FIFO). Steht dann kein zweites Werk (neben der Prägung des Leibs) im Prägungs-Speicher, ist die
+// Probe rot beim Namen. Der Selbsttest fährt sie nicht: seine Ping-Pong-Täterin an der garage füllt den Kanal-Deckel
+// (`_portalChannelAdmit`), der Übergabe und Heimkehr dann verwirft — die Probe mäße die Täterin (26.10., tk1-herde, pk2-bild).
 async function werkHolen(page) {
     await betreten(page, { id: "garage" });
+    await bereitBis(page, "garage");
     await zaehlerAus(page);
-    await (await rueckHoerer(page)).$eval(".h-werk", (k) => k.click());
-    await page.waitForFunction(() => !anazhRealm._portalOverlay && Object.keys(anazhRealm.state.workshop.studioOv)[1], { timeout: READY_FRIST_MS }).catch(() => {
-        throw new Error("K8 werk: die Garage reicht kein Werk in die Welt");
-    });
+    const s = await schleuse(page, "werk", null);
+    const werk = await page.evaluate(() => Object.keys(anazhRealm.state.workshop.studioOv)[1]);
+    if (s.offen || !werk) throw new Error(`K8 werk: die Garage reicht kein Werk in die Welt (${s.knopf ? "Knopf gedrückt" : "kein Knopf „In der Welt ansehen“"}, Overlay ${s.offen ? "offen" : "zu"})`);
 }
 
 const zaehler = (page) => page.evaluate(() => window.__konformanz.zaehler());
@@ -460,8 +466,8 @@ function seitenHelfer() {
 // Der Rück-Hörer der Welt (in ihrem Reich, einmal je Welt nach ihrem load; ein Capture-Hörer, er hört jede Nachricht VOR
 // ihrer Brücke): er reicht jede Marke der Heimat zurück, gleich von wem (die fremde Seite ist nicht ihr Eltern-Fenster), und
 // nur die Marke — die Brücke sieht sie nie. Mit ihr meldet er den Zustand der Welt-UI jetzt und vor der ersten Nachricht
-// seit der letzten Marke (vor der Tat, ehe die Brücke sie las); trägt die Marke `esc`, drückt er vorher Esc (was die Welt
-// darauf der Heimat schickt, steht dort vor der Marke).
+// seit der letzten Marke (vor der Tat, ehe die Brücke sie las); trägt die Marke `esc`, drückt er vorher Esc, trägt sie `werk`,
+// den Knopf „In der Welt ansehen" (was die Welt darauf der Heimat schickt, steht dort vor der Marke).
 async function rueckHoerer(page, ui) {
     const el = await page.$("#portal-overlay iframe.portal-frame");
     const fr = el && (await el.contentFrame());
@@ -482,8 +488,10 @@ async function rueckHoerer(page, ui) {
             }
             ev.stopImmediatePropagation();
             if (d.esc) window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+            const knopf = d.werk && document.querySelector(".h-werk");
+            if (knopf) knopf.click();
             const jetzt = lies();
-            window.parent.postMessage({ __schleuse: d.__schleuse, vor: frisch ? jetzt : vor, ui: jetzt }, "*");
+            window.parent.postMessage({ __schleuse: d.__schleuse, vor: frisch ? jetzt : vor, ui: jetzt, knopf: !!knopf }, "*");
             frisch = true;
         };
         window.addEventListener("message", window.__schleuseHin, true);
@@ -491,10 +499,10 @@ async function rueckHoerer(page, ui) {
     return fr;
 }
 
-// weg „heimat" (Heimat → Welt → Heimat) · „fremd" (Heimat → fremde Seite → Welt → Heimat) · „esc" (die Marke trägt Esc).
+// weg „heimat" (Heimat → Welt → Heimat) · „fremd" (Heimat → fremde Seite → Welt → Heimat) · „esc" / „werk" (die Marke trägt Esc bzw. den Knopf).
 // tat (in derselben Aufgabe VOR der Marke — in jeder Schlange steht die Marke dahinter): { chat: wort } · { route:
 // [programm, wort] } · { peer: nachricht } · { fremd: nachricht }. Zurück: vor/nach ({ journal, ui }), enterImFenster (enter
-// der Heimat, während die Marke reiste), zaehler, offen (das Overlay danach).
+// der Heimat, während die Marke reiste), zaehler, offen (das Overlay danach), knopf (der Rück-Hörer fand ihn).
 async function schleuse(page, weg, welt, tat) {
     const t0 = Date.now();
     if (!hinFrame) hinFrame = await rueckHoerer(page, (welt && welt.ui) || null);
@@ -527,7 +535,7 @@ async function schleuse(page, weg, welt, tat) {
             if (tat && tat.route) await r._portalRouteDsl(["chain", tat.route[0]], tat.route[1], () => {});
             if (tat && tat.peer) w.postMessage(tat.peer, "*");
             if (tat && tat.fremd) fremd.contentWindow.postMessage({ __fremd: true, nachricht: tat.fremd }, "*");
-            const marke = { __schleuse: m, esc: weg === "esc" };
+            const marke = { __schleuse: m, esc: weg === "esc", werk: weg === "werk" };
             if (weg === "fremd") fremd.contentWindow.postMessage({ __fremd: true, nachricht: marke }, "*");
             else w.postMessage(marke, "*");
             await zurueck;
@@ -537,6 +545,7 @@ async function schleuse(page, weg, welt, tat) {
                 enterImFenster: k ? k.enters - enter0 : 0,
                 zaehler: k ? K.zaehler() : null,
                 offen: !!r._portalOverlay,
+                knopf: !!(antwort && antwort.knopf),
             };
         },
         marke,
@@ -592,26 +601,12 @@ async function pruefeWelt(page, welt, lies) {
     const vor = await page.evaluate(abdruck, true);
     const b = await betreten(page, welt);
     if (!b?.ok) return k1Rot(b?.fehler || "betreten fehlgeschlagen"), aus;
-    // K1: auf die ready und das load der Welt warten (terrain bootet mehrere Sekunden; nach dem load ist das enter des
-    // load-Hörers geschickt), dann klingt der Handshake durch die Schleuse aus, bis die Heimat während der Reise einer
-    // Marke kein enter mehr schickt: jedes enter davor ist dann beantwortet, und keine Antwort brachte ein neues (ein
-    // Ping-Pong schickt in jeder Reise eins und ist nach dem vierten enter rot, K2).
-    const t0 = Date.now();
-    let z = await zaehler(page);
-    while (!(z.readys && z.geladen) && Date.now() - t0 < READY_FRIST_MS) {
-        await sleep(250);
-        z = await zaehler(page);
-    }
-    aus.k.K1 = z.readys > 0 && z.geladen > 0;
-    if (!aus.k.K1) {
-        aus.notiz.push(
-            z.readys
-                ? `die Welt lädt nicht binnen ${READY_FRIST_MS / 1000} s (kein load)`
-                : `keine ready binnen ${READY_FRIST_MS / 1000} s`
-        );
-        await zaehlerAus(page);
-        return aus;
-    }
+    // K1: die ready und das load der Welt (nach dem load ist das enter des load-Hörers geschickt), dann klingt der Handshake
+    // durch die Schleuse aus, bis die Heimat während der Reise einer Marke kein enter mehr schickt: jedes enter davor ist dann
+    // beantwortet, und keine Antwort brachte ein neues (ein Ping-Pong schickt in jeder Reise eins und ist nach dem vierten
+    // enter rot, K2).
+    let z = await bereitBis(page, welt.id);
+    aus.k.K1 = true;
     let s = await schleuse(page, "heimat", welt);
     while (s.enterImFenster && s.zaehler.enters <= 3) s = await schleuse(page, "heimat", welt);
     z = s.zaehler;
@@ -657,7 +652,7 @@ async function pruefeWelt(page, welt, lies) {
     aus.handshake = { readys: z.readys, enters: z.enters };
     if (!aus.k.K2)
         aus.notiz.push(
-            `Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready${ruhig ? "" : ` (während der letzten Schleuse ${s.enterImFenster} enter)`} in ${Math.round((Date.now() - t0) / 1000)} s`
+            `Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready${ruhig ? "" : ` (während der letzten Schleuse ${s.enterImFenster} enter)`}`
         );
     aus.echo = z.readys > 1;
     await zaehlerAus(page);
@@ -768,7 +763,7 @@ async function lauf(welten, taeter) {
             r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
         }, MITGEBRACHT);
         await page.evaluate(seitenHelfer);
-        if (welten.some((w) => w.id === "garage")) await werkHolen(page);
+        if (!taeter && welten.some((w) => w.id === "garage")) await werkHolen(page);
         for (const w of welten) {
             const t0 = Date.now();
             schleusenZeit = { n: 0, ms: 0 };
