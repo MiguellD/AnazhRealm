@@ -384,7 +384,7 @@ function buildSliders(){
 // Budget-Zeile je Stufe.
 const rezeptDerGattung=()=>Object.keys(SC.PRESETS).find(id=>SC.PRESETS[id].lab===currentGattung);
 const kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:SC.PORTAL_RENDER_CONFIG.lod.budget.weapon,
-  stufen:SC.PORTAL_RENDER_CONFIG.lod.kindStages.weapon,
+  stufen:SC.PORTAL_RENDER_CONFIG.lod.kindStages.weapon,renderer:R,
   bauen:s=>{const ov={__tradition:tradName(currentTrad)};(regler?regler.zeilen:[]).forEach(z=>{ov[z.id]=P[z.id];});
     return SC.buildInstance(rezeptDerGattung(),1,s,ov);},
   quelle:'gemessen an der Welt-Gestalt (schmiede-core buildInstance: Gattung × Tradition + Regler als ov)'});
