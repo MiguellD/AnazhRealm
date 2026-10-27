@@ -36,7 +36,7 @@ const DAUER_S = {
     wachsen: 1,
     gier: 5,
     jagd: 77,
-    herde: 37,
+    herde: 44,
     peer: 1,
     zufall: 1,
     nexus: 1,
@@ -99,15 +99,8 @@ async function headless(laeufe) {
             KREATUR_PROBEN_SRC,
             o
         );
-    const bereit = () =>
-        page.waitForFunction(
-            () =>
-                window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                window.anazhRealm.state &&
-                window.anazhRealm.state.voxelWorkerReady,
-            { timeout: 120000 }
-        );
+    // die EINE Warte der Welt (welt-boot `__weltDa`): erwacht, dazu der Voxel-Worker
+    const bereit = () => page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await bereit();

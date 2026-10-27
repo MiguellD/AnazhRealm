@@ -7,29 +7,14 @@
 // zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
 // heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(
-    buehne,
-    taeter,
-    decke,
-    r,
-    s,
-    A,
-    pm,
-    frei,
-    land,
-    tier,
-    ruhig,
-    ruhigSpieler,
-    takt,
-    quantil
-) {
+async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil) {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
     await buehne("furcht", async (restore) => {
-        if (taeter === "furcht-gedaechtnis") decke(restore, "_kreaturFurchtErinnert", () => () => 0);
-        if (taeter === "furcht-ort") decke(restore, "_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
+        if (taeter === "furcht-gedaechtnis") decke("_kreaturFurchtErinnert", () => () => 0);
+        if (taeter === "furcht-ort") decke("_kreaturFurchtOrt", () => (c, NAT, von, w) => w);
         if (taeter === "furcht-speicher")
-            decke(restore, "_serializeCreature", (alt) => (c) => Object.assign(alt.call(r, c), { memory: [] }));
+            decke("_serializeCreature", (alt) => (c) => Object.assign(alt.call(r, c), { memory: [] }));
         if (taeter === "furcht-aura") {
             const F = A._furchtGesetz();
             A._furchtGesetzMemo = Object.freeze(Object.assign({}, F, { bedrohung: () => 0 }));
@@ -137,23 +122,25 @@ async function lebenBuehnen(
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
     // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit an EINEM Ort, ab Takt `ab` lebendig × ½ ──
-    const zeitraffer = (restore) => {
-        if (taeter === "bestand-nahrung") decke(restore, "_kreaturNahrung", () => () => 0.5);
+    const zeitraffer = () => {
+        if (taeter === "bestand-nahrung") decke("_kreaturNahrung", () => () => 0.5);
         if (taeter === "bestand-deckel" || taeter === "kaskade-riss")
-            decke(restore, "_kreaturBestand", (alt) => (...a) => {
+            decke("_kreaturBestand", (alt) => (...a) => {
                 const b = alt.apply(r, a);
                 for (const g in b) Object.assign(b[g], taeter === "kaskade-riss" ? { riss: 0 } : { geburt: 1, tod: 0 });
                 return b;
             });
         let halb = false;
-        decke(restore, "worldFieldAt", (wfa) => (x, z) => {
+        decke("worldFieldAt", (wfa) => (x, z) => {
             const f = wfa.call(r, x, z);
             return halb ? Object.assign({}, f, { lebendig: f.lebendig / 2 }) : f;
         });
         const tod = { n: 0, aeltester: 0, trauer: 0, journal: 0 };
         const gattung = (c) => A.TETRAPODA_SOUL_MAP[c.userData.soul];
-        decke(restore, "_creatureNaturalDeath", (dies) => (c, grund) => {
-            const aelteste = s.creatures.every((o) => gattung(o) !== gattung(c) || !(o.userData.alterS > c.userData.alterS));
+        decke("_creatureNaturalDeath", (dies) => (c, grund) => {
+            const aelteste = s.creatures.every(
+                (o) => gattung(o) !== gattung(c) || !(o.userData.alterS > c.userData.alterS)
+            );
             const o = dies.call(r, c, grund);
             const j = s.worldJournal.entries;
             if (grund === "hunger")
@@ -199,10 +186,19 @@ async function lebenBuehnen(
     // je Gattung der Bestand und der Jungwuchs: die Äsung des Reviers, wie die Kapazität des Rotwilds sie liest
     // (K ∝ Σ Lebensraum × Äsung) ──
     await buehne("kaskade", async (restore) => {
-        const lauf = zeitraffer(restore);
+        const lauf = zeitraffer();
         let frassAus = false;
-        decke(restore, "_kreaturFrass", (alt) => (...a) => frassAus || alt.apply(r, a));
-        const weg = (art, n) => (g) => s.creatures.filter((c) => g(c) === art).slice(0, n).forEach((c) => r.removeCreature(c));
+        decke(
+            "_kreaturFrass",
+            (alt) =>
+                (...a) =>
+                    frassAus || alt.apply(r, a)
+        );
+        const weg = (art, n) => (g) =>
+            s.creatures
+                .filter((c) => g(c) === art)
+                .slice(0, n)
+                .forEach((c) => r.removeCreature(c));
         const L = {};
         for (const [name, eingriff] of Object.entries({
             grund: null,
@@ -230,7 +226,12 @@ async function lebenBuehnen(
             const g0 = m(L.grund.map(wert));
             const d = L[b].map((l, i) => +((wert(l) - wert(L.grund[i])) / g0).toFixed(3));
             const [effekt, lo, hi] = [+m(d).toFixed(3), Math.min(...d), Math.max(...d)];
-            return { effekt, ki: [lo, hi], soll, haelt: soll > 0 ? lo > 0 && effekt >= soll : hi < 0 && effekt <= soll };
+            return {
+                effekt,
+                ki: [lo, hi],
+                soll,
+                haelt: soll > 0 ? lo > 0 && effekt >= soll : hi < 0 && effekt <= soll,
+            };
         };
         const richtungen = {
             hirsche: richtung("ohneWolf", "deer", 0.3),
@@ -241,8 +242,12 @@ async function lebenBuehnen(
         if (L.mutante) richtungen.mutante = richtung("mutante", "jung", -0.2);
         const G = Object.keys(A._lebensraumGesetz().L.gattung);
         return {
-            saaten: L.grund.map((l) => Object.fromEntries(G.map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))),
-            kappe: Object.values(L).flat().reduce((p, l) => p + l.kappe, 0),
+            saaten: L.grund.map((l) =>
+                Object.fromEntries(G.map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))
+            ),
+            kappe: Object.values(L)
+                .flat()
+                .reduce((p, l) => p + l.kappe, 0),
             richtungen,
             hungertod: L.grund[0].tod, // je Hungertod aller Läufe
         };
@@ -250,18 +255,31 @@ async function lebenBuehnen(
     // ── folgen (Ökologie K5, der Parcours): „folge mir“, dann geht der Spieler 10 min mit W (`_stepFixedSim`) über Hang und
     // Wasser, um Wand und gedrehtes Haus, über den Sockel; Gegenlauf ohne die Geste ──
     await buehne("folgen", async (restore) => {
-        const um = (name, fn) => decke(restore, name, (alt) => fn(alt));
-        if (taeter === "folgen") um("_tickCreatureFollowPlayer", (alt) => (...a) => alt.apply(r, a).set(0, 0, 0));
+        const um = (name, fn) => decke(name, (alt) => fn(alt));
+        if (taeter === "folgen")
+            um(
+                "_tickCreatureFollowPlayer",
+                (alt) =>
+                    (...a) =>
+                        alt.apply(r, a).set(0, 0, 0)
+            );
         if (taeter === "folgen-wand") um("_kreaturHuellenKontakt", () => () => {});
         if (taeter === "sockel") um("_kreaturAuflage", () => () => -Infinity);
         if (taeter === "gedreht-kontakt")
-            um("_resolveCapsuleVsAABB", (alt) => (b, pos, f, h, rad, st, k) => alt.call(r, b, pos, f, h, rad, st, b.obb ? null : k));
+            um(
+                "_resolveCapsuleVsAABB",
+                (alt) => (b, pos, f, h, rad, st, k) => alt.call(r, b, pos, f, h, rad, st, b.obb ? null : k)
+            );
         if (taeter === "gedreht-rahmen")
-            um("_boxAbstand2", (alt) => (b, x, z) => alt.call(r, { minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ }, x, z));
+            um(
+                "_boxAbstand2",
+                (alt) => (b, x, z) => alt.call(r, { minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ }, x, z)
+            );
         if (taeter === "hindernis")
             um("updateCreatures", (alt) => (dt) => {
                 alt.call(r, dt);
-                for (const { position: p } of s.creatures) r._fieldRaycast(p.x, p.y + 0.5, p.z, p.x + 2, p.y + 0.5, p.z + 2);
+                for (const { position: p } of s.creatures)
+                    r._fieldRaycast(p.x, p.y + 0.5, p.z, p.x + 2, p.y + 0.5, p.z + 2);
             });
         if (taeter === "hindernis-leib")
             um("_kreaturHuellenKontakt", (alt) => (...a) => {
@@ -275,7 +293,11 @@ async function lebenBuehnen(
             });
         const n = { leib: 0, strahlen: 0, takt: 0, kontakt: 0, spielerWand: 0 };
         const H = [];
-        um("_kreaturLeib", (alt) => (...a) => (n.kontakt && n.leib++, alt.apply(r, a)));
+        um(
+            "_kreaturLeib",
+            (alt) =>
+                (...a) => (n.kontakt && n.leib++, alt.apply(r, a))
+        );
         um("_kreaturHuellenKontakt", (alt) => (c, ...a) => {
             const [x, z] = [c.position.x, c.position.z];
             n.kontakt++;
@@ -287,7 +309,11 @@ async function lebenBuehnen(
                     for (const h of H) if (Math.hypot(h.cx - x, h.cz - z) < 7) h.kontakt++;
             }
         });
-        um("_fieldRaycast", (alt) => (...a) => (n.takt && n.strahlen++, alt.apply(r, a)));
+        um(
+            "_fieldRaycast",
+            (alt) =>
+                (...a) => (n.takt && n.strahlen++, alt.apply(r, a))
+        );
         const WK = ["_wandKontaktAt", "_wandKontaktNx", "_wandKontaktNz"];
         um("updateCreatures", (alt) => (dt) => {
             const vor = WK.map((k) => s[k]);
@@ -339,25 +365,49 @@ async function lebenBuehnen(
         const gebaut = H.map((h, i) => {
             const name = "_t_folgen_" + i;
             const g = (f, q = 0) => r.getTerrainHeightAt(h.cx + (h.ux ? q : 4 * f), h.cz + (h.ux ? 4 * f : q));
-            const [lo, hi] = [Math.min(...[-1, -0.5, 0, 0.5, 1].map((f) => g(f))) - 0.2, Math.max(...[-1, 0, 1].map((f) => g(f)))];
-            const size = h.art === "sockel" ? { x: 0.1, y: 0.1, z: 0.1 } : { x: h.ux ? 0.8 : 8, y: hi - lo + 2.5, z: h.ux ? 8 : 0.8 };
-            s.blueprints[name] = { name, parts: [{ shape: "box", material: "stein", position: { x: 0, y: size.y / 2, z: 0 }, size }] };
+            const [lo, hi] = [
+                Math.min(...[-1, -0.5, 0, 0.5, 1].map((f) => g(f))) - 0.2,
+                Math.max(...[-1, 0, 1].map((f) => g(f))),
+            ];
+            const size =
+                h.art === "sockel"
+                    ? { x: 0.1, y: 0.1, z: 0.1 }
+                    : { x: h.ux ? 0.8 : 8, y: hi - lo + 2.5, z: h.ux ? 8 : 0.8 };
+            s.blueprints[name] = {
+                name,
+                parts: [{ shape: "box", material: "stein", position: { x: 0, y: size.y / 2, z: 0 }, size }],
+            };
             restore.push(() => delete s.blueprints[name]);
             const y = h.art === "wand" ? lo : g(0) + 0.5;
-            const e = r.spawnArchitecture(name, { x: h.cx, y, z: h.cz }, { silent: true, rotationY: h.art === "haus" ? 0.6 : 0 });
+            const e = r.spawnArchitecture(
+                name,
+                { x: h.cx, y, z: h.cz },
+                { silent: true, rotationY: h.art === "haus" ? 0.6 : 0 }
+            );
             const unten = Math.min(...[-0.5, 0, 0.5].flatMap((f) => [-2, 0, 2].map((q) => g(f, q)))) - 0.3 - g(0);
             const teil =
                 h.art === "haus"
                     ? { c: [0, 0, 0], h: h.ux ? [0.4, 6, 4] : [4, 6, 0.4] }
                     : h.art === "sockel" && { c: [0, (unten + 0.35) / 2, 0], h: [2, (0.35 - unten) / 2, 2] };
-            if (e && teil) r._hausHuelleSetzen(e, { stufe: 0, teile: [Object.assign({ art: "box", rolle: "fest" }, teil)] });
+            if (e && teil)
+                r._hausHuelleSetzen(e, { stufe: 0, teile: [Object.assign({ art: "box", rolle: "fest" }, teil)] });
             const b = e && (e.blockerAABBs || []).find((q) => h.art !== "haus" || q.obb);
-            const o = b && (b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s: 0, hx: (b.maxX - b.minX) / 2, hz: (b.maxZ - b.minZ) / 2 });
+            const o =
+                b &&
+                (b.obb || {
+                    cx: (b.minX + b.maxX) / 2,
+                    cz: (b.minZ + b.maxZ) / 2,
+                    c: 1,
+                    s: 0,
+                    hx: (b.maxX - b.minX) / 2,
+                    hz: (b.maxZ - b.minZ) / 2,
+                });
             Object.assign(h, { box: b, F: o });
             return e;
         });
         restore.push(() => gebaut.forEach((e) => e && r.removeArchitecture(e)));
-        if (H.length < 4 || H.some((h) => !h.box)) return { fehler: "ein Hindernis ohne Hülle (" + H.length + " gebaut)" };
+        if (H.length < 4 || H.some((h) => !h.box))
+            return { fehler: "ein Hindernis ohne Hülle (" + H.length + " gebaut)" };
         // steht der Spieler 1 s, lenkt er 1 s 60° zur Seite
         const gehen = (sek, je) => {
             pm.set(P.x, boden(P.x, P.z), P.z);
@@ -409,7 +459,11 @@ async function lebenBuehnen(
                     if (abstand2.call(r, b, p.x, p.z) === 0 && stufe > 0.05 && stufe < A.PLAYER_STEP_UP) {
                         h.ueber = (h.ueber || 0) + 1;
                         const tief = b.topY - p.y;
-                        if (tief > 0.05) [h.imSockel, h.tiefMaxM] = [(h.imSockel || 0) + 1, +Math.max(h.tiefMaxM || 0, tief).toFixed(3)];
+                        if (tief > 0.05)
+                            [h.imSockel, h.tiefMaxM] = [
+                                (h.imSockel || 0) + 1,
+                                +Math.max(h.tiefMaxM || 0, tief).toFixed(3),
+                            ];
                     }
                     h.stufeM = +(b.topY - r.getTerrainHeightAt(h.cx, h.cz)).toFixed(2);
                     continue;
@@ -440,7 +494,9 @@ async function lebenBuehnen(
             },
             bindung: [+bond0.toFixed(2), +c.userData.bond.toFixed(2)],
             hindernisse: H.map(({ art, kontakt, drin, quer, vornMinM, ueber, imSockel, tiefMaxM, stufeM }) =>
-                art === "sockel" ? { art, ueber: ueber || 0, imSockel: imSockel || 0, tiefMaxM: tiefMaxM || 0, stufeM } : { art, kontakt, drin, quer, vornMinM }
+                art === "sockel"
+                    ? { art, ueber: ueber || 0, imSockel: imSockel || 0, tiefMaxM: tiefMaxM || 0, stufeM }
+                    : { art, kontakt, drin, quer, vornMinM }
             ),
             leibRufe: n.leib,
             strahlenJeTakt: +(n.strahlen / 36000).toFixed(3),
@@ -461,11 +517,10 @@ async function lebenBuehnen(
             SW = A._verhaltenGesetz().stimmung.schwellen;
         // die Täter: kein Durst · der Ruhe-Pegel leer · die alte Uhr (Ruhe, solange die Sonne unter nachtSin steht, am Tag weidet,
         // wer weidet) · die Ruhe läuft
-        const durstAus = () => decke(restore, "_kreaturDurstig", () => () => false);
+        const durstAus = () => decke("_kreaturDurstig", () => () => false);
         if (taeter === "durst") durstAus();
         if (taeter === "tagesbudget-ruhe")
             decke(
-                restore,
                 "_kreaturTaetigkeit",
                 (alt) =>
                     function (c) {
@@ -476,7 +531,6 @@ async function lebenBuehnen(
             );
         if (taeter === "tagesbudget-sonne")
             decke(
-                restore,
                 "_kreaturTaetigkeit",
                 () =>
                     function (c) {
@@ -491,7 +545,6 @@ async function lebenBuehnen(
             );
         if (taeter === "nacht")
             decke(
-                restore,
                 "updateCreatures",
                 (alt) =>
                     function (dt) {
@@ -569,13 +622,13 @@ async function lebenBuehnen(
     // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe, je Wurf der Bär am Fluss; die Gegenprobe in anderer Saat ──
     await buehne("lebensraum", async (restore) => {
         if (taeter === "lebensraum")
-            decke(restore, "_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
+            decke("_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
         const alt = {
             geburt: () => ({ x: pm.x + 15, z: pm.z }),
             "geburt-einzeln": () => r._kreaturGeburtsOrt(r._faunaRng()),
         };
         if (alt[taeter])
-            decke(restore, "_creatureNaturalBirth", () => () => {
+            decke("_creatureNaturalBirth", () => () => {
                 const o = alt[taeter]();
                 return !!o && !!r.spawnCreatureAt(o.x, pm.y, o.z, "happy", "wesen");
             });
