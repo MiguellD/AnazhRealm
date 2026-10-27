@@ -834,24 +834,18 @@ class AnazhRealm_kreatur_leben {
             const bond = Math.min(1, Math.max(0, (creature.userData && creature.userData.bond) || 0));
             const guiltMag = leb * (0.4 + 0.6 * bond);
             if (guiltMag > 0.02) this._feelAction("loss", { magnitude: guiltMag });
-            // TRIUMPH: jagte das gefallene Wesen dich FRISCH (lastHuntAt im Fenster), wirkt sein Fall als
-            // Erleichterung (joy+hope). Unabhängig von der Schuld — beides darf zugleich feuern.
+            // jagte das gefallene Wesen dich FRISCH (lastHuntAt im Fenster), sagt es das Tagebuch; der TRIUMPH selbst ist kein
+            // Stempel mehr — der Fall löst das Umstellen in der Situation (`_spielerUmstellt`), ihr δ hebt joy + hope
             const lastHunt = creature.userData && creature.userData.lastHuntAt;
             if (
                 Number.isFinite(lastHunt) &&
                 this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
-            ) {
-                this._feelAction("triumph", { magnitude: 1 });
+            )
                 this.journalAppend(
                     "relationship",
                     AnazhRealm._datum`Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`
                 );
-            }
         }
-        // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
-        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`)
-        if (creature.position)
-            this._depositEmotion(creature.position.x, creature.position.z, AnazhRealm._furchtGesetz().F.riss);
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", AnazhRealm._datum`${name} fiel im Kampf${lootSummary}.`, {
@@ -859,7 +853,21 @@ class AnazhRealm_kreatur_leben {
                 loot,
             });
         }
-        this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
+        // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
+        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`) —
+        // und sein Fehlen ins Leben des Orts (die Narbe `TAT_NARBE.riss`, `_tatSchreiben`). Von Spieler-Hand ist der Fall eine
+        // Tat (`_handTat`, affekt K1#2): gewertet an der Situation davor und danach — der Riss senkt sie, der Fall eines Jägers
+        // löst sein Umstellen.
+        const p = creature.position;
+        const fall = () => {
+            if (p) {
+                this._depositEmotion(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
+                this._tatSchreiben("riss", p.x, p.z);
+            }
+            this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
+        };
+        if (source === "player" && p) this._handTat("toeten", p, fall);
+        else fall();
     }
 
     // ═══ DER FALL — EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — K-D19) ═══
