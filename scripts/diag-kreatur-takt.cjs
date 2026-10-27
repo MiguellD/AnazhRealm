@@ -54,6 +54,7 @@ const DAUER_S = {
     lebensraum: 21,
     tagesbudget: 15,
     kaskade: 87,
+    bestand: 75,
     folgen: 42,
 };
 const TEIL = teilAus(argv);
