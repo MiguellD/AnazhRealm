@@ -304,7 +304,8 @@
                 "studio": "terrain",
                 "aktion": {
                     "klick": "#ui [data-p=\"birke\"]"
-                }
+                },
+                "blick": "waagrecht"
             },
             "welt": {
                 "exemplar": {
@@ -354,7 +355,8 @@
                 "studio": "terrain",
                 "aktion": {
                     "klick": "#ui [data-p=\"fichte\"]"
-                }
+                },
+                "blick": "waagrecht"
             },
             "welt": {
                 "exemplar": {

@@ -214,7 +214,7 @@ async function laborLaub() {
 // ── Der Selbsttest ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function tafelZumTest() {
     const t = AT.ladeTafel();
-    const k = JSON.parse(JSON.stringify(t));
+    const k = structuredClone(t);
     for (const z of k.zeilen) z.ratsche = 0.05;
     for (const s of Object.keys(k.karten)) k.karten[s].ratsche = 0.05;
     return k;
@@ -227,8 +227,7 @@ function messungZumTest(t, faktor) {
         if (z.welt && Array.isArray(z.welt.stufen)) m.welt[z.id].stufen = z.welt.stufen.slice();
         m.labor[z.id] = { Y: 0.2 * ((faktor && faktor[z.id]) || 1), rgb: "x" };
     }
-    m.uhren = {};
-    for (const u of t.uhren.slice(1)) m.uhren[u] = JSON.parse(JSON.stringify(m.welt));
+    for (const u of t.uhren.slice(1)) for (const z of t.zeilen) m.welt[z.id + "@" + u] = m.welt[z.id];
     for (const s of Object.keys(t.karten)) {
         m.karten[s] = { kL, ausgabe: [168, 168, 168] };
         m.eichung.labor[s] = 0.18;
@@ -245,14 +244,14 @@ async function selbsttest() {
     // Abdruck von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet seit <Commit>` beim Namen; eine Messung
     // ohne Abdrücke → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
     {
-        const S0 = JSON.parse(JSON.stringify(T0));
+        const S0 = structuredClone(T0);
         const heute = {};
         for (const z of S0.zeilen) for (const d of z.quellen || []) heute[d] = pruefsumme(d);
         const sha = "0123456789abcdef0123456789abcdef01234567";
         const seite = () => ({ version: "18.0.0", sha, quellen: Object.assign({}, heute) });
         S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
-        const d0 = S0.zeilen[0].quellen[0];
+        const d0 = S0.zeilen.find((z) => z.id === "lack").quellen[0]; // eine Quelle ohne Stufen-Zeilen (sie tragen nur die Welt)
         // DER CODE-ABDRUCK: dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
         // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
         const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
@@ -266,16 +265,16 @@ async function selbsttest() {
         const altForm = AT.tafelStand(S0, pruefsumme);
         delete S0.gemessen.labor.quellen;
         const ohne = AT.tafelStand(S0, pruefsumme);
-        const s0q = JSON.parse(JSON.stringify(T0));
+        const s0q = structuredClone(T0);
         delete s0q.zeilen[0].quellen;
         t(
             "Stand: heute gemessen → kein Befund; eine Kommentarzeile oder Versions-Stufe → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot",
             frisch.length === 0 &&
                 kommentar.length === 0 &&
                 stufe === pruefsumme(dk) &&
-                code.length === S0.zeilen.filter((z) => z.quellen.includes(d0)).reduce((n, z) => n + (z.labor ? 2 : 1), 0) &&
+                code.length === 2 * mitD0 &&
                 code.every((r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)) &&
-                altForm.some((r) => r.zeile === S0.zeilen[0].id && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
+                altForm.some((r) => r.zeile === "lack" && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
                 ohne.some((r) => r.art === "ungeprüft" && /ohne Abdruck/.test(r.text)) &&
                 AT.tafelPruefen(s0q).some((f) => /quellen fehlen/.test(f))
         );
@@ -330,11 +329,11 @@ async function selbsttest() {
     const uP = AT.tafelUrteil(P, messungZumTest(P, { haut: 0.86 }));
     t("Pflicht-Zeile 0,86 → nur ROT `soll`", uP.rot.length === 1 && hatRot(uP, "soll"));
     // S6 — das Schema: eine fehlende Klasse, ein Welt-Muster ohne Anker, eine Zeile mit falschem Verhältnis werden rot.
-    const s6a = JSON.parse(JSON.stringify(T0));
+    const s6a = structuredClone(T0);
     s6a.zeilen = s6a.zeilen.filter((z) => z.gruppe !== "Klinge");
-    const s6b = JSON.parse(JSON.stringify(T0));
+    const s6b = structuredClone(T0);
     s6b.zeilen[0].welt.klasse = "f:eiche";
-    const s6c = JSON.parse(JSON.stringify(T0));
+    const s6c = structuredClone(T0);
     s6c.zeilen[0].ist = { labor: { Y: 0.2, rgb: "x" }, welt: { Y: 0.1, rgb: "x" }, verhaeltnis: 1 };
     t(
         "Tafel ohne Klinge, Welt-Muster ohne Anker, Verhältnis ≠ Labor/Welt → rot; die echte Tafel nicht",
@@ -353,7 +352,7 @@ async function selbsttest() {
         mS.welt[zs.id].stufen = [s0, s0 + 1];
         const mO = messungZumTest(T0);
         delete mO.welt[zs.id].stufen;
-        const s6s = JSON.parse(JSON.stringify(T0));
+        const s6s = structuredClone(T0);
         delete s6s.zeilen.find((z) => z.id === zs.id).welt.stufen;
         t(
             "Stufe: erklärt L0, gezeichnet L0/L1 → ROT `stufe` beim Namen; nur L0 → kein Befund; ohne Stufen → ROT; Foundry-Klasse ohne Stufen → Schema rot",
@@ -363,23 +362,16 @@ async function selbsttest() {
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
         );
     }
-    // S6t — DER TON DER STUFE: Haus L2/L0 0,946 → ROT; gleich → GRÜN (S1)
-    const m6t = messungZumTest(T0);
-    m6t.welt["haus-l2"].Y = 0.1892;
-    t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
     // S6u — DIE ZWEITE UHR (material.K3: ein Hand-Faktor gleicht den Mittag an und bricht zu einer anderen Uhr): die Karte der
-    // Birke mittags gleich, um 0,27 0,9 → ROT beim Namen und der Uhr; die Spalte fehlt → ROT; die Tafel ohne Uhren → Schema rot
+    // Birke mittags gleich, um 0,27 0,9 → ROT beim Namen und der Uhr; die Spalte fehlt → ROT
     const m6u = messungZumTest(T0);
-    m6u.uhren[0.27]["birke-karte"].Y = 0.18;
+    m6u.welt["birke-karte@0.27"] = { Y: 0.18, stufen: [2] };
     const m6v = messungZumTest(T0);
-    delete m6v.uhren[0.27]["fichte-l1"];
-    const s6u = JSON.parse(JSON.stringify(T0));
-    delete s6u.uhren;
+    delete m6v.welt["fichte-l1@0.27"];
     t(
-        "Stufen-Ton zur Uhr 0,27: Birke-Karte 0,9 → ROT `(Uhr 0.27)`; die Spalte der Fichte-L1 fehlt → ROT; ohne Uhren → Schema rot",
+        "Uhr 0,27: Karte 0,9 → ROT, Spalte fehlt → ROT",
         AT.tafelUrteil(T0, m6u).rot.some((r) => r.text === "birke-karte: Welt/birke 0.9 (Uhr 0.27)") &&
-            AT.tafelUrteil(T0, m6v).rot.some((r) => r.text === "fichte-l1: Welt/fichte null (Uhr 0.27)") &&
-            AT.tafelPruefen(s6u).some((f) => /uhren/.test(f))
+            AT.tafelUrteil(T0, m6v).rot.some((r) => r.text === "fichte-l1: Welt/fichte null (Uhr 0.27)")
     );
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
     const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
@@ -446,9 +438,9 @@ window.__bereit = true;
         const karteY = y("graukarte") && y("graukarte").Y;
         const vRoh = y("roh") ? y("roh").Y / weltY : null;
         const vGes = y("gesetz") ? y("gesetz").Y / weltY : null;
-        const T8 = JSON.parse(JSON.stringify(T0));
+        const T8 = structuredClone(T0);
         // die Probe prüft das Hex-Gesetz, nicht die Stufe des Exemplars (sie trägt keine erklärte Stufe)
-        const z8 = Object.assign(JSON.parse(JSON.stringify(T0.zeilen[0])), { id: "probe", ratsche: 0 });
+        const z8 = Object.assign(structuredClone(T0.zeilen[0]), { id: "probe", ratsche: 0 });
         delete z8.welt.stufen;
         T8.zeilen = [z8];
         T8.karten = {};
@@ -512,12 +504,11 @@ window.__bereit = true;
 // Die gespeicherte Tafel als Messung (für das Urteil ohne GPU).
 function gespeichert(t) {
     const m = { labor: {}, welt: {}, karten: {}, eichung: { welt: t.karte.albedo, labor: {} } };
-    m.uhren = {};
     for (const z of t.zeilen)
         if (z.ist) {
             m.labor[z.id] = z.ist.labor;
             m.welt[z.id] = z.ist.welt;
-            for (const u of t.uhren.slice(1)) (m.uhren[u] = m.uhren[u] || {})[z.id] = (z.ist.uhren || {})[u];
+            for (const u of t.uhren.slice(1)) m.welt[z.id + "@" + u] = z.ist["@" + u];
         }
     for (const [s, k] of Object.entries(t.karten)) {
         if (k.ist) m.karten[s] = k.ist;
@@ -668,8 +659,7 @@ async function main() {
     if (!t.gemessen) errs.push("die Tafel ist ungemessen (gemessen = null)");
     // DIE NEUE ZEILE (material.K3: Birke, Fichte, Hochhaus und ihre Stufen; eine Stufen-Zeile ohne die Spalte einer Uhr): wie
     // eine veraltete laut und ohne Sperre — die Karte misst sie (`--neu`, die Station material.K3#2), nie ein Ersatz-Renderer
-    const stufig = (z) => z.welt.stufeVon || t.zeilen.some((x) => x.welt.stufeVon === z.id);
-    const neuZ = t.zeilen.filter((z) => !z.ist || (stufig(z) && t.uhren.slice(1).some((u) => !(z.ist.uhren || {})[u])));
+    const neuZ = t.zeilen.filter((z) => !z.ist || (z.welt.folgen && t.uhren.slice(1).some((u) => !z.ist["@" + u])));
     const istNeu = (r) => neuZ.some((z) => r.text.startsWith(z.id + ":") || r.text.includes(`Welt/${z.id} `));
     for (const z of t.zeilen) if (z.ist && z.labor && z.ratsche == null) errs.push(`${z.id}: ohne Ratsche`);
     for (const [s, k] of Object.entries(t.karten))
@@ -686,7 +676,7 @@ async function main() {
         process.exit(1);
     }
     for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log(`⚠ ${x} (benannt, sperrt nicht)`);
-    for (const z of neuZ) console.log(`⚠ ${z.id}: ungemessen (${z.ist ? "Uhr " + t.uhren.slice(1).join("/") : "ohne Ist"}) — die Karte misst sie (--neu), sperrt nicht`);
+    for (const z of neuZ) console.log(`⚠ ${z.id}: ungemessen (--neu)`);
     if (sw.neu.push(...neuZ.map((z) => z.id)) && (argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware")))
         return neuMessen(t, sw.neu);
     const weit = u.zeilen

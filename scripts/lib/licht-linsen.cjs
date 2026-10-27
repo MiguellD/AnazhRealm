@@ -113,7 +113,6 @@ function albedoSicht(opts) {
         rend.setAnimationLoop(null);
         const W = opts.w || 320,
             H = opts.h || 200;
-        const nur = opts.nur ? new RegExp(opts.nur) : null;
         // Die Klasse ist die Täter-Klasse des Stamms (`_taeterKlasse` — dieselbe wie Draw-Zähler, Puffer-Zensus und
         // Flugschreiber). Keinen Schuss bekommen das Wasser (es spiegelt), der Himmel und der Mensch (Spieler, Peers).
         const klasse = (o) => {
@@ -252,15 +251,10 @@ function albedoSicht(opts) {
                 const e = x.eintrag,
                     n = x.zeile.welt.exemplar.stufe,
                     D = r.constructor.LOD_DISTANCES;
-                // die Karte erst, wenn ihre Schicht gebacken ist (vorher zeichnete die Birke mittags kein Pixel)
                 const zeigt = () => {
                     for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
                         if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
-                            for (let i = 0; i < (g.liveCount || 0); i++)
-                                if (g.slotEntry[i] === e) {
-                                    const ka = g.mesh.geometry.attributes.aKarte;
-                                    return !ka || [...r._impostorAtlas().zellen.values()].some((z) => z.gebacken && z.idx === Math.round(ka.getX(i)));
-                                }
+                            for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
                     return false;
                 };
                 // der Abstand in der EINEN Wahrnehmungs-Distanz der Wahl (`_lodPerceptionDistance`, linear im Abstand): ein hoher
@@ -279,13 +273,9 @@ function albedoSicht(opts) {
                 if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
             }
             // DIE UHR DER TAFEL (`uhr` 0..1, material.K3 Staffel 2): nach dem Takt der Bühne (Mittag) springt der Uhr-Schreiber
-            // auf das Wort des Spielers, Himmel und Leuchtquellen folgen — eine Stufe, deren Ton an einer Hand-Konstante hinge,
-            // bräche an der zweiten Uhr. Die Schüsse ticken nicht mehr.
-            if (Number.isFinite(opts.uhr)) {
-                if (st.world) st.world.timeOfDay = opts.uhr;
-                r.setTimeOfDay(opts.uhr, "human");
-                for (let i = 0; i < 20; i++) r._leuchtTakt(), await sleep(50);
-            }
+            // auf das Wort des Spielers (wie `__laubGegenlicht`) — eine Stufe, deren Ton an einer Hand-Konstante hinge, bräche an der
+            // zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
+            if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
         }
         const karte = new T.Mesh(
             new T.PlaneGeometry(2, 2),
@@ -338,9 +328,6 @@ function albedoSicht(opts) {
             sc.add(ambEigen);
         }
         const A = amb || ambEigen;
-        // Die Linse misst ohne Luft (die Extinktion der Szene ruht während des Schusses).
-        const luftU = st.luft && st.luft.U;
-        const luftAlt = luftU ? luftU.beta.value : null;
         const envAlt = sc.environment;
         const kamAlt = {
             p: st.camera.position.clone(),
@@ -350,25 +337,11 @@ function albedoSicht(opts) {
             aspect: st.camera.aspect,
             layers: st.camera.layers.mask,
         };
-        if (luftU) luftU.beta.value = 0;
-        sc.environment = null;
         // der Schuss sieht die Schichten des Auges, nie den Wurf-Zwilling (material.K1: Grobstufe L1 über der feinen L0)
-        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+        const { rt, lies, bundles, ruhe, ohneLuft } = window.__linsenZiel(W, H);
+        const luftZurueck = ohneLuft();
+        sc.environment = null;
         const cam = st.camera;
-        const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
-        // Halb-Float, je Zeile auf 256 Byte ausgerichtet (8 Byte je Pixel) → Float32, dicht.
-        const lies = async () => {
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-            const zeile = W * 4;
-            const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
-            const out = new Float32Array(zeile * H);
-            for (let y = 0; y < H; y++) for (let i = 0; i < zeile; i++) out[y * zeile + i] = half(px[y * schritt + i]);
-            return out;
-        };
         // DIE STUFEN-MASKE (die Dither-Blende der Foundry-Stufen misst vom Auge des Spielers, `uLodAuge`): welche Gruppe ein
         // Exemplar trägt, entschied die CPU vom Spieler aus; die Maske kann es von dort trotzdem ganz verwerfen — der Wagen
         // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
@@ -388,7 +361,7 @@ function albedoSicht(opts) {
                 A.color.setRGB(1, 1, 1);
                 A.intensity = e;
                 if (maskeAlt != null) lu.uLodMaskOn.value = 0;
-                await window.__linseRuhe(rend, rt, sc, cam, "die Albedo-Sicht");
+                await ruhe(cam, "die Albedo-Sicht");
                 return lies();
             };
             await pass(Math.PI);
@@ -398,14 +371,18 @@ function albedoSicht(opts) {
         };
         // Ziel je Klasse: das nächste Exemplar. Die Kugel kommt aus den Positionen (die gespeicherte kann
         // veraltet sein — die Linse schreibt nie die Engine-Kugel).
-        const ziel = (m, um) => {
+        // `e` (der Eintrag des Exemplars): in seiner Gruppe nur SEIN Platz — die nächste Instanz war, solange seine Stufe reiste,
+        // ein Nachbar (die frische Birke maß als Karte 0,17 mit 73k Pixeln eines anderen Baums)
+        const ziel = (m, um, e) => {
             const bb = new T.Box3().setFromBufferAttribute(m.geometry.attributes.position);
             const bs = { center: bb.getCenter(new T.Vector3()), radius: bb.getSize(new T.Vector3()).length() / 2 };
             const M = new T.Matrix4(),
                 mw = m.matrixWorld;
             let best = null;
             const n = m.isInstancedMesh ? m.count : 1;
+            const g = e && [...st.archInstanceGroups.values()].find((q) => q && q.mesh === m && q.slotEntry);
             for (let i = 0; i < n; i++) {
+                if (g && g.slotEntry[i] !== e) continue;
                 if (m.isInstancedMesh) {
                     m.getMatrixAt(i, M);
                     M.premultiply(mw);
@@ -417,7 +394,7 @@ function albedoSicht(opts) {
                 // DIE KARTE: ihr Quad ist die Einheits-Strecke (0,0,0)–(0,1,0), ihr Rahmen reist je Instanz (`aKarte` y, z: Halbbreite
                 // und Höhe, × Skala) — aus der Strecke stand die Birke als Kugel von 1,6 m statt ihrer 15 m im Schuss
                 const ka = m.geometry.attributes.aKarte;
-                const hb = ka ? ka.getY(i) * s : 0,
+                const hb = (ka ? ka.getY(i) : Math.max(bb.max.x, bb.max.z, -bb.min.x, -bb.min.z)) * s,
                     hh = ka ? (ka.getZ(i) * s) / 2 : 0;
                 const c = ka ? new T.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
                 const d = Math.hypot(c.x - um.x, c.z - um.z);
@@ -558,7 +535,7 @@ function albedoSicht(opts) {
                     const ziele = new Map();
                     if (w.blick !== "oben")
                         for (const m of sel) {
-                            const zz = m.isInstancedMesh ? ziel(m, um) : zielSatz(m, um, R);
+                            const zz = m.isInstancedMesh ? ziel(m, um, ex.eintrag) : zielSatz(m, um, R);
                             if (zz && zz.d <= R) ziele.set(m, zz);
                         }
                     if (w.blick !== "oben") sel = sel.filter((m) => ziele.has(m));
@@ -591,20 +568,21 @@ function albedoSicht(opts) {
                         const c = bb.getCenter(new T.Vector3());
                         const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
                         // DAS EXEMPLAR ALLEIN (die Tiefen-Scheibe wie Karte gegen Gestalt, S2b): eine Instanz-Gruppe zeichnet jede Instanz
-                        // ihrer Stufe — gezählt werden nur die Kugel des Exemplars und die Spalten seiner Halbbreite (die Fichte L1 zählte
-                        // 119k Pixel ihres Waldes gegen 36k der L0). DIE KARTE sieht das Auge waagrecht: ihr Quad steht lotrecht zur
-                        // Peilung (`_ang`), jedes ihrer Pixel liegt in EINER Tiefe (±1 m im EINEN Atlas über jede Art, 582 Karten an
-                        // Genesis; die Birke maß mit ihren Nachbarn 0,50 ihrer L0); von oben ist sie eine Strecke. Jede Stufe einer Zeile
-                        // `blick: "waagrecht"` (der Baum) sieht dasselbe Auge.
-                        const hb = Math.max(...[...ziele.values()].map((z) => z.hb || 0)),
-                            waag = hb || w.blick === "waagrecht",
-                            inst = [...ziele.keys()].some((m) => m.isInstancedMesh);
+                        // ihrer Stufe — gezählt werden nur die Tiefe und die Spalten des Exemplars: schräg seine Kugel, waagrecht (jede Stufe
+                        // einer Zeile `blick: "waagrecht"`, der Baum) seine Halbbreite `hb` (die Fichte L1 zählte mit ihrem Wald 119k Pixel
+                        // gegen 36k der L0). DIE KARTE sieht das Auge waagrecht: ihr Quad steht lotrecht zur Peilung (`_ang`), jedes ihrer
+                        // Pixel liegt in EINER Tiefe (±1 m im EINEN Atlas über jede Art, 582 Karten an Genesis; die Birke maß mit ihren
+                        // Nachbarn 0,50 ihrer L0); von oben ist sie eine Strecke.
+                        const karte = [...ziele.keys()].some((m) => m.geometry.attributes.aKarte),
+                            waag = karte || w.blick === "waagrecht",
+                            inst = [...ziele.keys()].some((m) => m.isInstancedMesh),
+                            hb = waag ? Math.max(...[...ziele.values()].map((z) => z.hb || 0)) : rad;
                         for (const d of window.__tafelBlicke)
                             if (!(waag && d[1] > 0.9))
                                 stellungen.push([
                                     c.clone().addScaledVector(new T.Vector3(d[0], waag ? 0 : d[1], d[2]).normalize(), rad * 2.6),
                                     c,
-                                    inst && [hb ? rad * 2.6 - 1 : rad * 1.6, hb ? rad * 2.6 + 1 : rad * 3.6, (((hb || rad) * 1.05) / (rad * 2.6 * Math.tan((17.5 * Math.PI) / 180) * (W / H))) * (W / 2)],
+                                    inst && [rad * 2.6 - (karte || hb), rad * 2.6 + (karte || hb), (hb * 1.05 * H) / (rad * 2.6 * 0.6306)],
                                 ]);
                     }
                     const stoffe = new Set();
@@ -627,7 +605,10 @@ function albedoSicht(opts) {
                         [cam.near, cam.far] = nf || kamAlt.nf;
                         cam.updateProjectionMatrix();
                         cam.updateMatrixWorld(true);
-                        const t = await schuss((m) => set.has(m));
+                        let t = await schuss((m) => set.has(m));
+                        // die Instanz einer eben gewechselten Stufe trägt erst das nächste Bild (swiftshader: die frische Karte der Birke
+                        // zeichnete im ersten Schuss kein Pixel, im zweiten 15 235) — ein leerer Schuss fährt einmal neu, bleibt er leer, laut
+                        if (nf && !t.hell.some((v, i) => i % 4 === 3 && v > 0)) t = await schuss((m) => set.has(m));
                         if (nf) for (let p = 0; p < W * H; p++) if (Math.abs((p % W) + 0.5 - W / 2) > nf[2]) t.hell[p * 4 + 3] = 0;
                         hell.set(t.hell, i * W * H * 4);
                         dunkel.set(t.dunkel, i * W * H * 4);
@@ -656,37 +637,6 @@ function albedoSicht(opts) {
                 cam.updateMatrixWorld(true);
                 const sk = await schuss((m) => m === karte);
                 ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
-            } else {
-                const klassen = [...new Set(kl.values())].filter(
-                    (k) => !/^(wasser$|himmel|spieler$|p2p-spieler$|UNBENANNT:)/.test(k)
-                );
-                for (const k of klassen) {
-                    if (nur && !nur.test(k)) continue;
-                    let z = null;
-                    if (k === "bodenSatz" || k === "voxelChunk") {
-                        const y = r._voxelSurfaceY(pp.x, pp.z);
-                        cam.position.set(pp.x, y + 14, pp.z + 0.01);
-                        cam.lookAt(pp.x, y, pp.z);
-                    } else {
-                        for (const m of meshes)
-                            if (kl.get(m) === k && visAlt.get(m)) {
-                                const zz = ziel(m, pp);
-                                if (zz && (!z || zz.d < z.d)) z = zz;
-                            }
-                        if (!z) continue;
-                        const dx = z.c.x - pp.x,
-                            dz = z.c.z - pp.z,
-                            dl = Math.hypot(dx, dz) || 1;
-                        const ab = Math.max(1.2, z.rad * 2.4);
-                        cam.position.set(z.c.x - (dx / dl) * ab, z.c.y + z.rad * 0.3, z.c.z - (dz / dl) * ab);
-                        cam.lookAt(z.c.x, z.c.y, z.c.z);
-                    }
-                    cam.updateMatrixWorld(true);
-                    const s = await schuss((m) => kl.get(m) === k);
-                    const e = window.__albedoAuswerten(s.hell, s.dunkel, W, H, 0, k);
-                    if (z) e.abstand = +z.d.toFixed(1);
-                    ergebnisse.push(e);
-                }
             }
         } finally {
             ausschnitteFort();
@@ -699,7 +649,7 @@ function albedoSicht(opts) {
                 l.color.copy(c);
             }
             if (ambEigen) sc.remove(ambEigen);
-            if (luftU) luftU.beta.value = luftAlt;
+            luftZurueck();
             sc.environment = envAlt;
             sc.remove(karte);
             cam.position.copy(kamAlt.p);
@@ -717,16 +667,13 @@ function albedoSicht(opts) {
     })();
 }
 
-// DIE RUHE DER LINSE (die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
-// Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
-// und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren Frame, bis nichts mehr baut —
-// dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
-function linseRuhe(rend, rt, sc, cam, wer) {
-    if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
-    // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
-    // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
-    const zeichne = () => {
-        window.anazhRealm._schattenAlleNeu();
+// DAS ZIEL DER FAMILIE (Halb-Float W × H; Albedo-Sicht, Licht-Bilanz, Nah-Fern und Laub lesen es): `zeichne(cam)` die Szene
+// hinein, `lies()` dicht als Float32 (die Zeilen liegen auf 256 Byte, 8 Byte je Pixel), `bundles()` frischt jede Bündel-Gruppe
+function linsenZiel(W, H) {
+    const T = window.THREE,
+        { renderer: rend, scene: sc } = window.anazhRealm.state,
+        rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+    const zeichne = (cam) => {
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
         rend.setClearColor(0x000000, 0);
@@ -734,7 +681,28 @@ function linseRuhe(rend, rt, sc, cam, wer) {
         rend.render(sc, cam);
         rend.setRenderTarget(null);
     };
-    return window.__erstRuhe(zeichne, {}, wer);
+    return {
+        rt,
+        zeichne,
+        lies: async () => {
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H),
+                s = px.length > W * 4 * H ? Math.ceil(W / 32) * 128 : W * 4;
+            return Float32Array.from({ length: W * 4 * H }, (_x, i) => T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]));
+        },
+        bundles: () =>
+            sc.traverse((o) => {
+                if (o.isBundleGroup) o.needsUpdate = true;
+            }),
+        // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
+        // Pipeline asynchron und zeichnet nichts, und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren
+        // Frame, bis nichts mehr baut — dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs). Die
+        // Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst über
+        // der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf).
+        ruhe: (cam, wer) => window.__erstRuhe(() => (window.anazhRealm._schattenAlleNeu(), zeichne(cam)), {}, wer),
+        // die Linse misst ohne Luft (die Extinktion der Szene ruht während der Schüsse); zurück gibt der Rückgabe-Ruf
+        kamera: (cam, p = cam.position.clone(), q = cam.quaternion.clone()) => () => (cam.position.copy(p), cam.quaternion.copy(q)),
+        ohneLuft: (U = ((window.anazhRealm.state.luft || {}).U || {}).beta, alt = U && U.value) => (U && (U.value = 0), () => U && (U.value = alt)),
+    };
 }
 
 function lichtBilanz() {
@@ -762,7 +730,6 @@ function lichtBilanz() {
         // DIE ATMOSPHÄRE AM AUGE DER KARTE (D3): Sonne, Himmel und Umgebung rechnet die Welt für die Höhe des Auges
         // (`_atmoSonne`, `_atmoTakt`; Hillaire) — die Linse misst das Licht an der Karte, also mit dem Auge dort (45 m über dem
         // Boden), die Umgebung frisch gezeichnet; danach gilt das Auge des Spielers.
-        const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
         st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
         st.camera.updateMatrixWorld(true);
         r._applyDayNightToScene();
@@ -777,17 +744,11 @@ function lichtBilanz() {
             if (o.isLight) lichtAlt.push([o, o.intensity]);
         });
         const envAlt = sc.environment;
-        // Die Linse misst ohne Luft (die Extinktion der Szene ruht während des Schusses).
-        const luftU = st.luft && st.luft.U;
-        const luftAlt = luftU ? luftU.beta.value : null;
         const cam = st.camera;
-        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+        const { rt, zeichne, lies, bundles, ruhe, ohneLuft, kamera } = window.__linsenZiel(W, H);
+        const kamZurueck = kamera(cam);
+        let luftZurueck;
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };
-        const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
         const mess = async (n) => {
             karte.position.copy(basis);
             karte.lookAt(basis.clone().add(n));
@@ -795,27 +756,16 @@ function lichtBilanz() {
             cam.position.copy(basis.clone().add(n.clone().multiplyScalar(1.5)));
             cam.lookAt(basis);
             cam.updateMatrixWorld(true);
-            const zeichne = () => {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
-            };
-            // die Karte ist je Aufruf ein neuer Stoff, jede Licht-Variante ein neues Programm (`linseRuhe`)
-            await window.__linseRuhe(rend, rt, sc, cam, "die Licht-Bilanz");
+            // die Karte ist je Aufruf ein neuer Stoff, jede Licht-Variante ein neues Programm (`ruhe` des Ziels)
+            await ruhe(cam, "die Licht-Bilanz");
             const lauf = async () => {
-                zeichne();
-                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-                const zeile = W * 4;
-                const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
+                zeichne(cam);
+                const px = await lies();
                 const s = [0, 0, 0];
                 let n2 = 0;
                 for (let y = H / 2 - 4; y < H / 2 + 4; y++)
                     for (let x = W / 2 - 4; x < W / 2 + 4; x++) {
-                        const i = y * schritt + x * 4;
-                        for (let c = 0; c < 3; c++) s[c] += half(px[i + c]);
+                        for (let c = 0; c < 3; c++) s[c] += px[(y * W + x) * 4 + c];
                         n2++;
                     }
                 return s.map((v) => v / n2);
@@ -836,7 +786,7 @@ function lichtBilanz() {
         try {
             for (const m of meshes) m.visible = false;
             bundles();
-            if (luftU) luftU.beta.value = 0;
+            luftZurueck = ohneLuft();
             const varianten = { alle: null, umgebung: "env" };
             for (const [l] of lichtAlt) varianten[l.type] = l.type;
             for (const [vn, typ] of Object.entries(varianten)) {
@@ -856,10 +806,9 @@ function lichtBilanz() {
             bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
             sc.environment = envAlt;
-            if (luftU) luftU.beta.value = luftAlt;
+            if (luftZurueck) luftZurueck();
             sc.remove(karte);
-            cam.position.copy(kamAlt.p);
-            cam.quaternion.copy(kamAlt.q);
+            kamZurueck();
             cam.updateMatrixWorld(true);
             rt.dispose();
             r._applyDayNightToScene();
@@ -1128,17 +1077,7 @@ function nahFernSicht(opts) {
                     Object.assign(k, { klasse: "wiese" })
                 )
             );
-        const half = T.DataUtils.fromHalfFloat;
-        const rt = new T.RenderTarget(W, HH, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
-        const lies = async () => {
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, HH);
-            const zeile = W * 4;
-            const schritt = px.length > zeile * HH ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
-            const out = new Float32Array(zeile * HH);
-            for (let yy = 0; yy < HH; yy++)
-                for (let i = 0; i < zeile; i++) out[yy * zeile + i] = half(px[yy * schritt + i]);
-            return out;
-        };
+        const { rt, lies, bundles, zeichne, ruhe, ohneLuft } = window.__linsenZiel(W, HH);
         const meshes = [];
         sc.traverse((o) => {
             if (o.isMesh || o.isSprite || o.isPoints || o.isLine) meshes.push(o);
@@ -1157,10 +1096,8 @@ function nahFernSicht(opts) {
         // DIE LUFT AUS: die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
         // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
         // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
-        const luftU = st.luft && st.luft.U && st.luft.U.beta ? st.luft.U.beta : null;
-        if (sc.fogNode && !luftU) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
-        const betaAlt = luftU ? luftU.value : null;
-        if (luftU) luftU.value = 0;
+        if (sc.fogNode && !(st.luft && st.luft.U && st.luft.U.beta)) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
+        const luftZurueck = ohneLuft();
         // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
         // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
         const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 1, H + 1000);
@@ -1214,9 +1151,7 @@ function nahFernSicht(opts) {
         }
         const schuss = async (sicht, e) => {
             for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+            bundles();
             for (const [l] of lichter) l.intensity = 0;
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
@@ -1230,14 +1165,9 @@ function nahFernSicht(opts) {
                 still = false,
                 laeufe = 0;
             const spur = [];
-            await window.__linseRuhe(rend, rt, sc, cam, "die Nah-Fern-Sicht");
+            await ruhe(cam, "die Nah-Fern-Sicht");
             for (let lauf = 0, weiter = window.__deckel("die Ruhe der Nah-Fern-Sicht", 400); weiter(); lauf++) {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                zeichne(cam);
                 px = await lies();
                 laeufe = lauf + 1;
                 let m = 0,
@@ -1342,12 +1272,10 @@ function nahFernSicht(opts) {
             sc.remove(A);
             sc.environment = envAlt;
             sc.fog = fogAlt;
-            if (luftU) luftU.value = betaAlt;
+            luftZurueck();
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             rt.dispose();
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+            bundles();
         }
         // Die Karte der Fern-Krone im Boden-Stoff: steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
@@ -1634,18 +1562,13 @@ function laubGegenlicht(opts) {
         }
         if (opts.plan) return opts.boden && !fern ? { fehler: "kein fernes Auge über der Stelle" } : { fern, ziel: [ziel.fuss.x, ziel.fuss.z], auge: [auge.x, auge.z], hoehe: +hoehe.toFixed(1), abstand: +abstand.toFixed(1), l1, verdeckt, gefaelle: +(ziel.fuss.y - auge.y + (opts.augeH || 1.7)).toFixed(1) };
         const cam = st.camera;
-        const kamAlt = { p: cam.position.clone(), q: cam.quaternion.clone() };
         const dl = st.directionalLight;
         const dlAlt = { p: dl.position.clone(), t: dl.target.position.clone() };
         const visAlt = new Map(alle.map((m) => [m, m.visible]));
-        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
-        const luftU = st.luft && st.luft.U;
-        const luftAlt = luftU ? luftU.beta.value : null;
-        const half = T.DataUtils.fromHalfFloat;
-        const bundles = () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const zl = window.__linsenZiel(W, H),
+            { rt, bundles } = zl,
+            kamZurueck = zl.kamera(cam);
+        let luftZurueck;
         if (elev == null)
             elev = Math.max(
                 (5 * Math.PI) / 180,
@@ -1688,19 +1611,9 @@ function laubGegenlicht(opts) {
         };
         // Ein Bild der sichtbaren Züge aus `cam` in das Halb-Float-Ziel: je Pixel die lineare Luma (−1 ungeschrieben) und das Bild.
         const lies = async (wer) => {
-            let px = null;
-            await window.__linseRuhe(rend, rt, sc, cam, wer);
-            for (let k = 0; k < 3; k++) {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
-                px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-            }
-            const zeile = W * 4;
-            const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
+            await zl.ruhe(cam, wer);
+            for (let k = 0; k < 3; k++) zl.zeichne(cam);
+            const px = await zl.lies();
             const cv = document.createElement("canvas");
             cv.width = W;
             cv.height = H;
@@ -1712,11 +1625,10 @@ function laubGegenlicht(opts) {
                 Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
                 for (let x = 0; x < W; x++) {
-                    const i = y * schritt + x * 4;
+                    const i = (y * W + x) * 4;
                     const o = ((H - 1 - y) * W + x) * 4;
-                    const a = half(px[i + 3]);
-                    if (a > 0) {
-                        const c = [half(px[i]), half(px[i + 1]), half(px[i + 2])];
+                    if (px[i + 3] > 0) {
+                        const c = [px[i], px[i + 1], px[i + 2]];
                         Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
                         Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
@@ -1735,7 +1647,7 @@ function laubGegenlicht(opts) {
         try {
             for (const m of alle) m.visible = laub.includes(m);
             bundles();
-            if (luftU) luftU.beta.value = 0;
+            luftZurueck = zl.ohneLuft();
             if (opts.karte) {
                 // DIE KARTE GEGEN IHRE GESTALT (A7, Lehre 19/21: Labor = Welt, die Karte ist dieselbe Krone in einer anderen Stufe):
                 // dasselbe Auge auf die Kugel des Exemplars, die Licht-Kette der Bühne (Sonne mit Schatten, Himmel), derselbe Baum-Satz
@@ -1940,13 +1852,12 @@ function laubGegenlicht(opts) {
             if (freiAlt) freiAlt[0].array.set(freiAlt[1]), (freiAlt[0].needsUpdate = true);
             for (const m of alle) m.visible = visAlt.get(m);
             bundles();
-            if (luftU) luftU.beta.value = luftAlt;
+            if (luftZurueck) luftZurueck();
             dl.position.copy(dlAlt.p);
             dl.target.position.copy(dlAlt.t);
             dl.target.updateMatrixWorld(true);
             dl.updateMatrixWorld(true);
-            cam.position.copy(kamAlt.p);
-            cam.quaternion.copy(kamAlt.q);
+            kamZurueck();
             cam.updateMatrixWorld(true);
             rt.dispose();
             r._applyDayNightToScene();
@@ -1978,11 +1889,12 @@ function lichtWeg(opts) {
         if (!fp) return { fehler: "kein Feld-Pass" };
         r._weltLichtTakt();
         const pp = st.playerMesh.position, o = new T.Vector3(pp.x, r._voxelSurfaceY(pp.x, pp.z) + 45, pp.z), unten = new T.Vector3(0.001, -1, 0);
-        const W = 32, rt = new T.RenderTarget(W, W, { depthBuffer: true, type: T.HalfFloatType }), alle = [], dl = st.directionalLight, wurf = dl.castShadow;
+        const W = 32, zl = window.__linsenZiel(W, W), rt = zl.rt, alle = [], dl = st.directionalLight, wurf = dl.castShadow;
         // die Normale der senkrechten Fläche: waagrecht, `grad` Grad neben dem Azimut der Sonne — das Auge blickt gegen sie
         const nh = dl.position.clone().sub(dl.target.position).setY(0).normalize().applyAxisAngle(new T.Vector3(0, 1, 0), ((+grad || 0) * Math.PI) / 180);
         sc.traverse((m) => (m.isMesh || m.isSprite || m.isPoints) && alle.push([m, m.visible]));
-        const luftU = st.luft && st.luft.U, luftAlt = luftU && luftU.beta.value, kamAlt = [cam.position.clone(), cam.quaternion.clone()];
+        let luftZurueck;
+        const kamZurueck = zl.kamera(cam);
         const flaeche = (mat, kipp) => Object.assign(new T.Mesh(new T.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
         const karte = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
         const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2), n = see.geometry.attributes.position.count;
@@ -2005,16 +1917,16 @@ function lichtWeg(opts) {
             for (const [m] of alle) m.visible = m === ding;
             [karte, see].forEach((m) => (m.visible = m === ding));
             if (wand) karte.position.copy(o).add(blick), karte.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), blick.clone().normalize().negate()), karte.updateMatrixWorld(true);
-            sc.traverse((g) => g.isBundleGroup && (g.needsUpdate = true));
-            await window.__linseRuhe(rend, rt, sc, cam, "der Lichtweg");
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, W), schritt = px.length > W * W * 4 ? Math.ceil((W * 8) / 256) * 128 : W * 4, s = [0, 0, 0];
-            for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += T.DataUtils.fromHalfFloat(px[y * schritt + x * 4 + c]) / 64;
+            zl.bundles();
+            await zl.ruhe(cam, "der Lichtweg");
+            const px = await zl.lies(), s = [0, 0, 0];
+            for (let y = W / 2 - 4; y < W / 2 + 4; y++) for (let x = W / 2 - 4; x < W / 2 + 4; x++) for (let c = 0; c < 3; c++) s[c] += px[(y * W + x) * 4 + c] / 64;
             return s;
         };
         const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
         try {
             dl.castShadow = false;
-            if (luftU) luftU.beta.value = 0;
+            luftZurueck = zl.ohneLuft();
             let welt = await lies(karte, senkrecht ? nh.clone().multiplyScalar(-3) : unten, senkrecht);
             let weg;
             if (art === "panorama") {
@@ -2081,9 +1993,8 @@ function lichtWeg(opts) {
             karte.material.dispose();
             see.geometry.dispose();
             dl.castShadow = wurf;
-            if (luftU) luftU.beta.value = luftAlt;
-            cam.position.copy(kamAlt[0]);
-            cam.quaternion.copy(kamAlt[1]);
+            if (luftZurueck) luftZurueck();
+            kamZurueck();
             cam.updateMatrixWorld(true);
             rt.dispose();
         }
@@ -2866,7 +2777,7 @@ module.exports = {
     kronenObenUrteil,
     kronenReflexionSoll,
     LINSEN_INSTALL:
-        `window.__linseRuhe = ${linseRuhe.toString()};` +
+        `window.__linsenZiel = ${linsenZiel.toString()};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
         `window.__stoffPasst = ${stoffPasst.toString()};` +
