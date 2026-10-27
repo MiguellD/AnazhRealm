@@ -1011,6 +1011,13 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
+// Schalter), die Vorgabe
+const argOpt = (k, d) => {
+    const a = process.argv;
+    const i = a.indexOf(k);
+    return i >= 0 && a[i + 1] && !a[i + 1].startsWith("--") ? a[i + 1] : d;
+};
 // DAS EINE URTEIL AM ENDE einer Linse: `urteilEnde(rot, roteZeile, grueneZeile)` — rot (Zahl, Liste der Länge oder wahr) nennt die
 // rote Zeile auf stderr und endet mit Exit 1, sonst die grüne auf stdout mit Exit 0 (Lehre 9: der Exit spricht)
 const urteilEnde = (rot, roteZeile, grueneZeile) => {
@@ -1196,6 +1203,7 @@ module.exports = {
     laufUhr,
     hauptLauf,
     urteilEnde,
+    argOpt,
     waitFor,
     werkbankTor,
     werkbankRuf,

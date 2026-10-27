@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf, sleep, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -52,10 +52,6 @@ const { wetterUrteil, weltaktUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 ? argv[i + 1] : d;
-};
 
 // DIE FOLGE je Messort — fest; die Ordnung ist das Gesetz der Messung. Die Mess-Wiese trägt die volle Folge. Der Genesis-Ring
 // misst sein Band in einer EIGENEN frischen Sitzung (jeder Aufruf ist ein Boot): in 0710-6 und 0710-9 lief
