@@ -1,0 +1,13 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-koerper-stand.cjs --k8 --bild
+[linse-gpu] nvidia/pascal
+  K8 wiese -280.4/-1045.6 0° · Ring 4 von 4 · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 332) · fuss 5.4 (-0.6, n 200) · huf 0.2 (gigant 0.1, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · Ring 4 von 4 · fein 4.3 (0.3, n 200) · streu 1 (0, n 714) · fuss 17.9 (-2.7, n 200) · huf 1.5 (gigant 0.8, n 201) · rad 2.3 (2.1, n 200)
+  ❌ K8 fuss hang: p95 17.9 cm (Median -2.7, Soll ≤ 3, Ratsche 4.2) — Täter: der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)
+❌ gate:koerper-stand ROT (1)
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 54247 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
