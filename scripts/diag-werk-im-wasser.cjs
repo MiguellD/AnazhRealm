@@ -285,10 +285,12 @@ function urteil(b) {
             `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Spalten (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau`
         );
     else {
+        // das Feld hebt (oben): staut das gezeichnete Wasser weniger, folgt das Bild dem Gesetz nicht (die Platte unter dem
+        // Stausee, ci-werk-wasser: 98 statt 458 Punkte) — kein leerer Ort
         const stau = D.w1 - D.w0;
         if (!(stau >= S.stauMin))
             v.push(
-                `D LEER: der Damm staute ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1}; Soll ≥ ${S.stauMin})`
+                `D: der Damm #${D.id} hebt ${D.hub} Spalten, das gezeichnete Wasser staut ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1})`
             );
         else if (!(D.hub2 >= S.hubMin)) v.push(`D: nach dem Reload trägt der Stau kein Feld des Damms #${D.id} (${D.hub2} Spalten)`);
         else if (!(Math.abs(D.w3 - D.w2) <= S.neubauTreue * D.w2))
@@ -442,6 +444,8 @@ async function probe(A) {
     const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
     const stelle = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
     const fehlerZeile = (e) => String((e && e.stack) || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
+    const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
+        ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
     // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
     const aufsitzen = (gt, n = 12) => {
         const m = r.mountArchitecture(gt);
@@ -1205,7 +1209,7 @@ async function probe(A) {
                     r.processChatCommand("pflanz mir sechs birken");
                     zensus.quelle = "strom";
                     const neu = neueWerke(v0, /birke/);
-                    const chat = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    const chat = chatSeit(t0);
                     C.versuche.push({ ufer: [+PX.toFixed(1), +PZ.toFixed(1)], gewollt: 6, gesetzt: neu.length, chat });
                     for (const e of neu) r.removeArchitecture(e);
                 }
@@ -1296,7 +1300,7 @@ async function probe(A) {
                 const sprich = (satz) => {
                     const t0 = el ? el.innerText.length : 0;
                     r.processChatCommand(satz);
-                    return el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    return chatSeit(t0);
                 };
                 const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
                     const vorA = new Set(st.architectures);
@@ -1368,10 +1372,8 @@ async function probe(A) {
                     const vorA = new Set(st.architectures);
                     const t0 = el ? el.innerText.length : 0;
                     r.processChatCommand("baue dorf hier");
-                    const sofort = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
-                    const sofortGesetzt = st.architectures.filter(
-                        (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
-                    ).length;
+                    const sofort = chatSeit(t0);
+                    const sofortGesetzt = neueWerke(vorA, /^haus_/).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
                     let echo = "";
                     for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
@@ -1380,9 +1382,7 @@ async function probe(A) {
                                 frame();
                             } catch {}
                         await sleep(50);
-                        echo = el
-                            ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(sofort.length).slice(0, 300)
-                            : "";
+                        echo = chatSeit(t0, sofort.length);
                         if (/Häuser|Haus\.|kein Haus|kein Dorf|Kein Dorf/.test(echo)) break;
                     }
                     const haeuser = neueWerke(vorA, /^haus_/);
@@ -2073,7 +2073,7 @@ function selbsttest() {
             (b) => (b.damm.abriss = 0),
             /D: der Abbau des Damms #425 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
         ],
-        ["D leer", (b) => (b.damm.w1 = 2100), /D LEER: der Damm staute 30 /],
+        ["D Bild ohne Stau", (b) => (b.damm.w1 = 2100), /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/],
         [
             "D Ort ohne Stau (die Furt −937/−1064 am Kopf a0d6a81b: die 1 715 Punkte der Basis waren die Deck-Zeile)",
             // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
@@ -2428,6 +2428,9 @@ async function lauf() {
             try {
                 const p2 = await kontext.newPage();
                 await nullRenderer(p2);
+                // DER SPIELPFAD: die Platte des Bodens an wie im Spiel (headless ist sie aus) — bis ci-werk-wasser las der Faden
+                // unter dem Stausee die Chunks von vor dem Damm, und D sah es nie
+                await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel (Welt-Tor + aktiv + Reload): ihre Klamm S6 trägt den Stau (s. Kopf D)
                 const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
