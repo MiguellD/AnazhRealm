@@ -104,7 +104,7 @@ function encodeFrame(payload) {
 }
 
 // Frame-Parser: client → server. Browser maskiert immer (Pflicht per RFC).
-// Liefert {opcode, payload, rest} oder null wenn unvollständig.
+// Liefert {opcode, fin, payload, rest} oder null wenn unvollständig.
 function tryDecodeFrame(buf) {
     if (buf.length < 2) return null;
     const b0 = buf[0];
@@ -133,7 +133,7 @@ function tryDecodeFrame(buf) {
     offset += 4;
     const payload = Buffer.alloc(len);
     for (let i = 0; i < len; i++) payload[i] = buf[offset + i] ^ mask[i % 4];
-    return { opcode, payload, rest: buf.subarray(offset + len) };
+    return { opcode, fin: (b0 & 0x80) !== 0, payload, rest: buf.subarray(offset + len) };
 }
 
 function sendTo(ws, obj) {
@@ -477,6 +477,10 @@ server.on("upgrade", (req, socket) => {
             `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
     );
     let buffer = Buffer.alloc(0);
+    // DIE FRAGMENTE EINER NACHRICHT (RFC 6455 §5.4): Chrome teilt eine Text-Nachricht über ~128 KB in Rahmen (der erste ohne
+    // FIN, dann Fortsetzungen, Opcode 0) — bis 27.10. las der Server nur den ersten, und jeder world-snapshot einer Welt über
+    // 128 KB fiel still als Parse-Fehler (der Beitritt per Welt-Code lief in den Timeout). Gedeckelt wie ein Rahmen (1 MiB).
+    let teile = null;
     socket.on("data", (chunk) => {
         buffer = Buffer.concat([buffer, chunk]);
         while (buffer.length >= 2) {
@@ -489,13 +493,23 @@ server.on("upgrade", (req, socket) => {
             }
             buffer = result.rest;
             socket.anazhAntwortet = true; // jeder Rahmen (Text, Pong) ist ein Lebenszeichen, s. DER PULS
-            if (result.opcode === 0x1) handleClientMessage(socket, result.payload);
-            else if (result.opcode === 0x8) {
+            if (result.opcode === 0x1 || (result.opcode === 0x0 && teile)) {
+                teile = result.opcode === 0x1 ? [result.payload] : [...teile, result.payload];
+                if (teile.reduce((n, t) => n + t.length, 0) > 1048576) {
+                    logLine("WARN", "Frame-Fehler: message_too_big");
+                    socket.destroy();
+                    return;
+                }
+                if (result.fin) {
+                    handleClientMessage(socket, Buffer.concat(teile));
+                    teile = null;
+                }
+            } else if (result.opcode === 0x8) {
                 handleDisconnect(socket);
                 socket.end();
                 return;
             }
-            // Binary (0x2), Ping (0x9) und Pong (0xA, oben als Lebenszeichen gezählt) tragen sonst nichts.
+            // Binary (0x2, samt Fortsetzungen), Ping (0x9) und Pong (0xA, oben als Lebenszeichen gezählt) tragen sonst nichts.
         }
     });
     socket.on("close", () => handleDisconnect(socket));
@@ -544,8 +558,8 @@ function listLanIPv4Addresses() {
 // Ring 11.5: Cache der LAN-Adressen für welcome-Messages. Damit Host-
 // Clients ihre Einladungs-URL bauen können, ohne den User nach der
 // IP zu fragen. Wird einmal beim Start berechnet — Interfaces ändern
-// sich selten zur Laufzeit.
-const LAN_ADDRESSES = listLanIPv4Addresses().map((iface) => `${iface.address}:${PORT}`);
+// sich selten zur Laufzeit. Nur ein Server, der auf allen Schnittstellen lauscht, ist im LAN erreichbar.
+const LAN_ADDRESSES = HOST === "0.0.0.0" ? listLanIPv4Addresses().map((iface) => `${iface.address}:${PORT}`) : [];
 
 server.listen(PORT, HOST, () => {
     logLine("INFO", `signaling-server lauscht auf ${HOST}:${PORT}`);

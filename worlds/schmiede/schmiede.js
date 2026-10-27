@@ -396,11 +396,15 @@ function gattLabel(t){const d=document.createElement('div');d.className='sec-t';
    if(isTool!==lastTool){pdiv.appendChild(gattLabel(isTool?'WERKZEUGE':'WAFFEN'));lastTool=isTool;}
    const b=document.createElement('button');b.className='btn'+(isTool?' tool':'');b.textContent=name;
    if(name===currentGattung)b.classList.add('on');
-   b.onclick=()=>sitz.schritt(()=>{delete P.guardOverride;P.backSpike=false;P.beak=false;delete P.task;delete P.cheekMul;delete P.pickLen;Object.assign(P,GATTUNGEN[name]);if(!P.task)snapBases(P);currentGattung=name;
-     applyTrad(currentTrad,false);
+   b.onclick=()=>sitz.schritt(()=>{gattungWaehlen(name);
      [...pdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));b.classList.add('on');
      buildSliders();rebuild();});
    pdiv.appendChild(b);}}
+// DIE GATTUNGS-WAHL (halten.K1 Staffel 2, EIN Weg für Knopf, Arena und Start): P aus dem Gesetz der Gattung (GATTUNGEN, die Aufgabe ×
+// Kultur-Metall der Tradition) — derselbe Weg wie die Welt (schmiede-core prepP → kampfMasze). Vorher begann das Labor auf einem
+// Hand-Literal P, das nie durch die Gattung ging: das Langschwert des Start-Bilds wog 1,3802 statt 1,3869 kg, Fase 19,64° statt 18,72°.
+function gattungWaehlen(name){delete P.guardOverride;P.backSpike=false;P.beak=false;delete P.task;delete P.cheekMul;delete P.pickLen;
+  Object.assign(P,GATTUNGEN[name]);if(!P.task)snapBases(P);currentGattung=name;applyTrad(currentTrad,false);}
 // Traditionen
 const tdiv=document.getElementById('trads');
 function applyTrad(T,doRebuild){currentTrad=T;SC.setTradition(T);
@@ -951,8 +955,7 @@ function buildRange(){arena.targets=[];const specs=[[17,1.42,-0.5,0.40],[23,1.42
     const post=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,y,8),matCol(0x3a2a1a,0.9,0));post.position.set(x,y/2,z);arena.group.add(post);
     arena.targets.push({mesh:t,pos:new THREE.Vector3(x,y,z),R});}}
 function equipWeapon(name){if(!GATTUNGEN[name])return;
-  delete P.guardOverride;P.backSpike=false;P.beak=false;delete P.task;delete P.cheekMul;delete P.pickLen;
-  Object.assign(P,GATTUNGEN[name]);if(!P.task)snapBases(P);currentGattung=name;applyTrad(currentTrad,false);
+  gattungWaehlen(name);
   arena.kind=(P.modus==='bogen')?'bow':'melee';
   arena.swinging=arena.thrusting=false;arena.holdView=false;arena.ready=0;arena.sw={yaw:0,pitch:0,reach:0};arena.swRoll=0;arena._rollRend=0;arena._aimF=0;arena._edgeAlign=1;
   arena.drawFrac=0;arena.drawing=false;arena._wantAim=false;arena.raise=0;arena.prevTip=null;arena._builtFrac=-1;arena.swP=0;arena.swY=0;arena._prevSwY=0;arena._prevSwP=0;arena._restT=0;arena.swLay=0;
@@ -1574,7 +1577,7 @@ addEventListener('keydown',e=>{if(arena.active)return;const k=e.key.toLowerCase(
   else if(k==='t'){const ks=Object.keys(TRADITIONEN);const cur=Object.keys(TRADITIONEN).find(n=>TRADITIONEN[n]===currentTrad);const ni=(ks.indexOf(cur)+1)%ks.length;tdiv.children[ni].click();}});
 
 // — Start —
-P._kBase=P.kruemmung;basisP=Object.assign({},P);buildSliders();rebuild();appendArenaUI();animate();
+gattungWaehlen(currentGattung);buildSliders();rebuild();appendArenaUI();animate();
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke (../huelle/huelle.js): die DSL spricht über die ECHTEN UI-Pfade (Button-click = eine Quelle) — die 21

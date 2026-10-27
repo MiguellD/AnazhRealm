@@ -2882,7 +2882,8 @@ class AnazhRealm_kreatur_leben {
     // EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
     // je Takt frischt eine Zelle Leben und Deckung nach (Pflanzen, Fällen, Pflege), ferne fallen — die Kosten hängen am
     // Hör-Kreis, nie an der Welt. Gezeichnet wird in EINEM Pool mit dem Stoff der Bau-Pools (`_kistenPool`: EIN Programm, EIN
-    // Befehl), je Vogel seine Teile und zwei Flügel im Schlag.
+    // Befehl), je Vogel seine Teile und zwei Flügel im Schlag. Danach der Schwarm (`_vogelSchwarmTakt`, luftwasser.K5): derselbe
+    // Leib und Stoff, sein eigener Pool, fern EIN Agent.
     _vogelTakt() {
         const st = this.state;
         const pm = st.playerMesh;
@@ -2940,6 +2941,111 @@ class AnazhRealm_kreatur_leben {
             }
         voegel.length = n;
         this._vogelZeichnen(voegel, V.leib, (V.leib.teile.length + 2) * (2 * r + 1) * (2 * r + 1));
+        this._vogelSchwarmTakt(this._sonnenRichtung().y, wf.rain);
+    }
+    // DER SCHWARM (luftwasser.K5, tetrapoda VOGEL_GESETZ.schwarm): fern EIN Agent. Je Takt die Schwarm-Zellen um das Auge
+    // (sichtM): je Zelle einmal ihr Wurf (Mitte, Würfe), je frischeS ihr Revier aus der Kronen-Deckung der Mitte, je fliegendem Schwarm sein
+    // ZENTRUM auf der Uhr der Welt (`schwarmZentrum`: jeder Peer und jeder Reload sieht denselben Schwarm). Jenseits von sichtM
+    // oder mit der Hülle außer dem Blick (`_frustumCache`) rechnet er nur das; im Bild ist jedes Glied eine Funktion von Index
+    // und Zeit (`schwarmGlied`), nah (nahM) hält die Separation über das Gitter die Paare auseinander (`schwarmSeparation`).
+    // Kein Glied hat einen Takt je Kopf: die Kosten hängen an den Gliedern im Bild, nie an der Welt. Gezeichnet über
+    // `_vogelZeichnen` in EINEN Pool (Stoff und Leib der Sänger: EIN Programm, EIN Befehl). `state.schwarm` trägt die Lage des
+    // Takts: fliegende Schwärme, Schwärme und Glieder im Bild, nahe Schwärme, Paare der Separation.
+    _vogelSchwarmTakt(sonne, regen) {
+        const st = this.state;
+        const cam = st.camera;
+        if (!cam) return;
+        const VG = AnazhRealm._vogelGesetz();
+        const V = VG.V;
+        const S = V.schwarm;
+        const welt = (st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed";
+        let sk = this._schwarmKarte;
+        if (!sk || sk.welt !== welt)
+            sk = this._schwarmKarte = {
+                welt,
+                saat: parseInt(this._fastHash(welt + "-schwarm"), 16) >>> 0,
+                zellen: new Map(),
+                lagen: new Float32Array(3 * S.glieder[1]),
+                gitter: {},
+                zentrum: {},
+                glied: {},
+                kugel: new THREE.Sphere(),
+                voegel: [],
+            };
+        const { x: ax, y: ay, z: az } = cam.position;
+        const Z = S.zelleM;
+        const r = Math.ceil(S.sichtM / Z);
+        if (sk.zellen.size > 4 * (2 * r + 1) * (2 * r + 1))
+            for (const [k, c] of sk.zellen)
+                if (Math.abs(c.ix * Z - ax) > 2 * S.sichtM || Math.abs(c.iz * Z - az) > 2 * S.sichtM)
+                    sk.zellen.delete(k);
+        const lage = st.schwarm || (st.schwarm = {});
+        Object.assign(lage, { fliegen: 0, imBild: 0, glieder: 0, nah: 0, paare: 0 });
+        const F = this._frustumCache;
+        const f = S.form;
+        const uhr = st.spielZeit;
+        const zt = sk.zentrum;
+        const g = sk.glied;
+        const p = sk.lagen;
+        const voegel = sk.voegel;
+        let n = 0;
+        const ix0 = Math.floor(ax / Z);
+        const iz0 = Math.floor(az / Z);
+        for (let ix = ix0 - r; ix <= ix0 + r; ix++)
+            for (let iz = iz0 - r; iz <= iz0 + r; iz++) {
+                const k = ix * 1048576 + iz;
+                let c = sk.zellen.get(k);
+                if (!c) {
+                    const w = (j) => VG.wurf(sk.saat, ix, iz, j);
+                    c = {
+                        ix,
+                        iz,
+                        x: (ix + w(1)) * Z,
+                        z: (iz + w(2)) * Z,
+                        u: w(0),
+                        wurf: [w(3), w(4), w(5), w(6), w(7)],
+                    };
+                    sk.zellen.set(k, c);
+                }
+                // das Revier folgt der Deckung (Pflanzen, Fällen; die Karte der Kronen steht erst nach dem Boot): je frischeS neu
+                if (!(Math.abs(uhr - c.frisch) <= S.frischeS)) {
+                    c.frisch = uhr;
+                    c.revier = VG.schwarmRevier(c.u, this._kronenStreuAt(c.x, c.z), V);
+                }
+                if (!c.revier || !VG.schwarmZentrum(c.wurf, uhr, sonne, regen, V, zt)) continue;
+                lage.fliegen++;
+                const x = c.x + zt.dx;
+                const z = c.z + zt.dz;
+                // die Hülle: der Ball der Formation, atmend und mit Welle und Zittern (großzügig: die Längs-Achse × 1,5)
+                const huelle =
+                    1.5 * f[0] * S.abstandM * Math.cbrt((zt.n * S.raumJeGlied) / (4.18879 * f[0] * f[1] * f[2])) + 1;
+                if (Math.hypot(x - ax, z - az) > S.sichtM + huelle) continue;
+                const y = this._terrainMacroSurfaceY(x, z) + zt.h;
+                if (F && !F.intersectsSphere(sk.kugel.set(sk.kugel.center.set(x, y, z), huelle))) continue;
+                lage.imBild++;
+                lage.glieder += zt.n;
+                for (let i = 0; i < zt.n; i++) {
+                    VG.glied(i, zt.n, uhr, c.wurf[0], zt.gier, V, g);
+                    p[3 * i] = x + g.x;
+                    p[3 * i + 1] = y + g.y;
+                    p[3 * i + 2] = z + g.z;
+                    const v = voegel[n + i] || (voegel[n + i] = {});
+                    v.gier = g.gier;
+                    v.schlag = g.schlag;
+                }
+                if (Math.hypot(x - ax, y - ay, z - az) < S.nahM + huelle) {
+                    lage.nah++;
+                    lage.paare += VG.separation(p, zt.n, S.raumM, sk.gitter);
+                }
+                for (let i = 0; i < zt.n; i++, n++) {
+                    const v = voegel[n];
+                    v.x = p[3 * i];
+                    v.y = p[3 * i + 1];
+                    v.z = p[3 * i + 2];
+                }
+            }
+        voegel.length = n;
+        this._vogelZeichnen(voegel, V.leib, (V.leib.teile.length + 2) * S.glieder[1] * 2, "vogelSchwarmPool");
     }
     // DIE ZELLE der Vogel-Karte: ihre Würfe (einmal: das Revier, die Mitte, die Bahn) und ihr Revier aus Leben und Deckung an
     // der Mitte (je Aufruf neu; die Deckung hebt auch den Singflug über das Dach); die Mitte steht auf der EINEN 2D-Höhe, im
@@ -2960,11 +3066,19 @@ class AnazhRealm_kreatur_leben {
     }
     // DER LEIB IM BILD: je singenden Vogel seine Teile und zwei Flügel (am Schultergelenk, um die Längsachse im Schlag) —
     // die Matrizen direkt in den Puffer des Pools (Spalten-Ordnung, Gier um y), die Farben je Platz einmal beim Bau (die
-    // Teile-Folge ist je Vogel gleich). `cap` = so viele Plätze, wie der Hör-Kreis Zellen trägt.
-    _vogelZeichnen(voegel, L, cap) {
+    // Teile-Folge ist je Vogel gleich). `cap` = so viele Plätze, wie der Hör-Kreis Zellen trägt; `feld` = der Pool im Stand
+    // (`vogelPool` die Sänger, `vogelSchwarmPool` der Schwarm) — trägt das Bild mehr Teile als der Pool Plätze, wächst er auf das
+    // Doppelte des Bedarfs (der alte fällt über `_instanzAbschied`): kein Glied fällt still aus dem Bild.
+    _vogelZeichnen(voegel, L, cap, feld = "vogelPool") {
         const st = this.state;
         const je = L.teile.length + 2;
-        let P = st.vogelPool;
+        let P = st[feld];
+        if (P && voegel.length * je > P.cap) {
+            st.scene.remove(P.mesh);
+            this._instanzAbschied(P.mesh);
+            P = st[feld] = null;
+            cap = 2 * voegel.length * je;
+        }
         if (!P) {
             // je Teil ein Doppel-Keil der Ausdehnung 1 (8 Dreiecke; das Gesetz trägt die Maße)
             const mesh = this._kistenPool("vogel", cap, new THREE.OctahedronGeometry(0.5));
@@ -2973,7 +3087,7 @@ class AnazhRealm_kreatur_leben {
                 mesh.setColorAt(i, farbe.setHex(i % je < L.teile.length ? L.teile[i % je].farbe : L.fluegel.farbe));
             mesh.instanceColor.needsUpdate = true;
             st.scene.add(mesh);
-            P = st.vogelPool = { mesh, cap };
+            P = st[feld] = { mesh, cap };
         }
         const A = P.mesh.instanceMatrix.array;
         let o = 0;
@@ -2981,7 +3095,7 @@ class AnazhRealm_kreatur_leben {
         // Gier (c, s: x' = c·x + s·z, z' = −s·x + c·z) und an den Leib v gesetzt
         const teil = (v, c, s, ax, ay, bx, by, gz, lx, ly, lz) => {
             const k = 16 * o++;
-            A.fill(0, k, k + 16);
+            A[k + 3] = A[k + 7] = A[k + 9] = A[k + 11] = 0;
             A[k] = c * ax;
             A[k + 1] = ay;
             A[k + 2] = -s * ax;
@@ -3321,7 +3435,8 @@ AnazhRealm._bestandGesetz = function () {
     return AnazhRealm._kernPflichtBruch("tetrapoda:BESTAND_GESETZ");
 };
 // DER VOGEL (tetrapoda VOGEL_GESETZ + vogelWurf · vogelRevier · vogelLied · vogelBahn, Klang K1): Revier, Lied, Singflug und
-// Leib — gelesen vom Vogel-Takt und vom Klang-Zensus (die Teile je Vogel). Fail-closed.
+// Leib — gelesen vom Vogel-Takt und vom Klang-Zensus (die Teile je Vogel); dazu der Schwarm (schwarmRevier · schwarmZentrum ·
+// schwarmGlied · schwarmSeparation, luftwasser.K5), gelesen vom Schwarm-Takt. Fail-closed.
 AnazhRealm._vogelGesetz = function () {
     if (AnazhRealm._vogelGesetzMemo) return AnazhRealm._vogelGesetzMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3332,7 +3447,17 @@ AnazhRealm._vogelGesetz = function () {
         V.lied &&
         V.flug &&
         V.leib &&
-        ["vogelWurf", "vogelRevier", "vogelLied", "vogelBahn"].every((f) => typeof k[f] === "function")
+        V.schwarm &&
+        [
+            "vogelWurf",
+            "vogelRevier",
+            "vogelLied",
+            "vogelBahn",
+            "schwarmRevier",
+            "schwarmZentrum",
+            "schwarmGlied",
+            "schwarmSeparation",
+        ].every((f) => typeof k[f] === "function")
     ) {
         AnazhRealm._vogelGesetzMemo = Object.freeze({
             V,
@@ -3340,6 +3465,10 @@ AnazhRealm._vogelGesetz = function () {
             revier: k.vogelRevier,
             lied: k.vogelLied,
             bahn: k.vogelBahn,
+            schwarmRevier: k.schwarmRevier,
+            schwarmZentrum: k.schwarmZentrum,
+            glied: k.schwarmGlied,
+            separation: k.schwarmSeparation,
         });
         return AnazhRealm._vogelGesetzMemo;
     }
