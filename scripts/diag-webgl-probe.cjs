@@ -84,9 +84,11 @@ hauptLauf(async () => {
             o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
             o.computeFaehig = r._gpuComputeFaehig(); // MUSS false sein (die Wand-Quelle selbst)
             o.arenaRueckfall = r.constructor.__arenaOhne === "WebGL2" && !(r.constructor.__arenen || new Map()).size;
-            // W4 — der Fern-Ring verfeinert auf CPU (den Tick deterministisch pumpen):
+            // W4 — der Fern-Ring verfeinert auf CPU: der Takt des Rings bestellt beim Fern-Faden und hängt seine Antwort ein, bis die
+            // erste Scheibe hängt — das Ereignis, nie die Wanduhr (Lehre 26; bis ci-wackler-zensus 60 Takte ohne Pause nach 6 s
+            // Schlaf: unter Last war noch keine Antwort da, cursor 0). Ein Faden, der nie antwortet, steht in der Stall-Akte.
             const pm = st.playerMesh;
-            for (let i = 0; i < 60 && pm; i++) r._tickFernRing(pm.position);
+            if (pm) await window.__weltDa(() => (r._tickFernRing(pm.position), st.fernRing && st.fernRing.cursor > 0));
             o.fernRingDa = !!st.fernRing;
             o.fernRingCursor = st.fernRing ? st.fernRing.cursor : -1;
             // W5 — die Welt lebt: den Loop DETERMINISTISCH pumpen (swiftshader-GL schafft natürliche rAF-Frames nur im

@@ -367,19 +367,21 @@ class AnazhRealm_dirigent_takt {
                           ? `Chunks offen ${o.chunks}`
                           : o.stau
                             ? "Stau offen"
-                            : o.wald
-                              ? `Wald offen ${o.wald}`
-                              : o.karten
-                                ? `Karten offen ${o.karten}`
-                                : o.felder
-                                  ? `Felder offen ${o.felder}`
-                                  : o.dorf
-                                    ? `Dorf offen ${o.dorf}`
-                                    : o.leib
-                                      ? "Leib offen"
-                                      : o.ankunft
-                                        ? `Ankunft gleitet ${o.ankunft}`
-                                        : null;
+                            : o.horizont
+                              ? `Horizont offen ${o.horizont}`
+                              : o.wald
+                                ? `Wald offen ${o.wald}`
+                                : o.karten
+                                  ? `Karten offen ${o.karten}`
+                                  : o.felder
+                                    ? `Felder offen ${o.felder}`
+                                    : o.dorf
+                                      ? `Dorf offen ${o.dorf}`
+                                      : o.leib
+                                        ? "Leib offen"
+                                        : o.ankunft
+                                          ? `Ankunft gleitet ${o.ankunft}`
+                                          : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -420,6 +422,7 @@ class AnazhRealm_dirigent_takt {
                 leib: 0,
                 ankunft: 0,
                 stau: 0,
+                horizont: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -433,6 +436,17 @@ class AnazhRealm_dirigent_takt {
         // DER STAU IM FADEN (`_stauFelder`): sein Auftrag baut, bis die Felder ankamen (`_stauAn`) — bis ci-werk-wasser stand die
         // Welt, während er flog, und gate:werk-im-wasser D zählte den Stausee nach dem Reload vor seiner Antwort
         o.stau = this._stauImFlug ? 1 : 0;
+        // DER HORIZONT IM FADEN (B2, `_fernRingRefresh`): bis jede bestellte Scheibe und jeder Edit-Auftrag des Fern-Rings
+        // eingehängt ist und der Ring ganz steht — bis ci-wackler-zensus stand die Welt, während der Fern-Faden noch rechnete,
+        // und die Saum-Wache ging ihre erste Runde nach dem Stand (gate:stand-takt FIXPUNKT · STUFE · GEHEN, CI unter Last)
+        const fr = st.fernRing;
+        o.horizont = fr
+            ? fr.flug +
+              (fr.editFlug | 0) +
+              fr.einhaengen.length +
+              fr.nachEdit.length +
+              (fr.cursor < fr.totalVerts ? 1 : 0)
+            : 0;
         o.wald =
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
