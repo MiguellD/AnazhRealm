@@ -929,3 +929,4 @@
 2026-10-27 14:30:49 takt12-radeon ferne.K1#1 GRÜN 3.1 · 13/30
 2026-10-27 14:30:56 takt12-radeon ferne.K2#1 GRÜN 3.1 · 14/30
 2026-10-27 14:31:54 takt12-radeon mensch.K1#1 GRÜN 4.4 · 15/30
+2026-10-27 14:32:20 takt12-radeon schatten.K1#1 GRÜN 1.5 · 16/30
