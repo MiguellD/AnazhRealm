@@ -7,7 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, starteBrowser, CODE_OF_SEITE, nullRenderer, werkbankRuf, teilAus, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs"); // prettier-ignore
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
@@ -72,10 +72,8 @@ const gewaehlt = (() => {
 async function headless(laeufe) {
     const server = statikServer();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 900000 });
     page.setDefaultTimeout(880000);
-    await nullRenderer(page);
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
         const t = Date.now();

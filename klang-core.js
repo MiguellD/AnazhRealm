@@ -1431,7 +1431,8 @@
             knoten: knoten,
             anwenden: function (lage, t) {
                 if (!an) return;
-                var zeit = typeof t === "number" ? t : ctx.currentTime, m = (letzte = fahrtMischung(lage));
+                var zeit = typeof t === "number" ? t : ctx.currentTime, m = (letzte = fahrtImOhr(lage));
+                ziel(roll.frequency, R.grundHz * m.doppler, zeit, F.rampeSek);
                 ziel(saege.frequency, m.motorHz, zeit, F.rampeSek);
                 ziel(halb.frequency, m.motorHz / 2, zeit, F.rampeSek);
                 ziel(tief.frequency, m.motorFilterHz, zeit, F.rampeSek);
@@ -1456,6 +1457,41 @@
                          motorDb: letzte ? letzte.motorDb : null, rollDb: letzte ? letzte.rollDb : null };
             }
         };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DAS OHR DER FAHRT (klang.K4 Staffel 2, rein additiv) — die Stimme eines Wagens am Ohr eines Hoerers.
+    //   DOPPLER aus der Relativ-Geschwindigkeit laengs der Sichtlinie: f' = f · (c + v_ohr·û) / (c − v_quelle·û),
+    //     û die Einheit von der Quelle zum Ohr — naehert sich einer dem anderen, steigt der Ton; er traegt jede
+    //     Frequenz der Stimme (Zuend-Folge, Filter, Teiltoene und Band des Abrollens).
+    //   ABSTAND wie jede Punkt-Quelle: −20·log10(d/dMin) ab dMin, jenseits der Hoerweite schweigt der Wagen.
+    //   Sitzt das Ohr im Wagen (ohr === quelle), klingt er wie im Sattel: Faktor 1, 0 dB.
+    //  fahrtImOhr(lage) = fahrtMischung(lage) am Ohr (lage.doppler, lage.dDb; lage.motor false: kein Fahrer, der
+    //  Motor schweigt) — ohne diese Felder byte-gleich der Mischung.
+    // ═══════════════════════════════════════════════════════════════════════
+    var FAHRT_OHR = { c: 343, dMin: 4, hoerweiteM: 160 };
+    // quelle, ohr = { x, y, z, vx, vy, vz } (m, m/s) → { doppler, dDb, d }
+    function fahrtAmOhr(quelle, ohr) {
+        var O = FAHRT_OHR, q = quelle || {}, o = ohr || {};
+        if (q === o) return { doppler: 1, dDb: 0, d: 0 };
+        var w = function (x) { return typeof x === "number" && isFinite(x) ? x : 0; };
+        var dx = w(o.x) - w(q.x), dy = w(o.y) - w(q.y), dz = w(o.z) - w(q.z), d = Math.hypot(dx, dy, dz);
+        if (!(d < O.hoerweiteM)) return { doppler: 1, dDb: -Infinity, d: d };
+        var n = d > 1e-6 ? 1 / d : 0;
+        var vq = (w(q.vx) * dx + w(q.vy) * dy + w(q.vz) * dz) * n, vo = -(w(o.vx) * dx + w(o.vy) * dy + w(o.vz) * dz) * n;
+        return { doppler: (O.c + vo) / Math.max(1, O.c - vq), dDb: -20 * Math.log10(Math.max(d, O.dMin) / O.dMin), d: d };
+    }
+    function fahrtImOhr(lage) {
+        var L = lage || {}, m = fahrtMischung(L);
+        var k = typeof L.doppler === "number" && isFinite(L.doppler) && L.doppler > 0 ? L.doppler : 1;
+        var dDb = typeof L.dDb === "number" && !isNaN(L.dDb) ? L.dDb : 0;
+        m.doppler = k;
+        m.motorHz *= k;
+        m.motorFilterHz *= k;
+        m.rollHz *= k;
+        m.motorDb = L.motor === false ? -Infinity : m.motorDb + dDb;
+        m.rollDb += dDb;
+        return m;
     }
 
     root.__klangCore = {
@@ -1489,6 +1525,10 @@
         fahrtMischung: fahrtMischung,
         fahrtStimme: fahrtStimme,
         fahrtWelle: fahrtWelle,
+        // klang.K4 Staffel 2 (rein additiv) — das Ohr der Fahrt
+        FAHRT_OHR: FAHRT_OHR,
+        fahrtAmOhr: fahrtAmOhr,
+        fahrtImOhr: fahrtImOhr,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,

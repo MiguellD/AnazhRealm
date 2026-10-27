@@ -36,7 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -811,10 +811,8 @@ const server = statikServer();
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
-    await nullRenderer(page);
     let befund = null;
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
