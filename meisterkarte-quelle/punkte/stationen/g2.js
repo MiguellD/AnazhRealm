@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K5 (Zweig schwarm), mensch.K5#1 und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K5 (Zweig schwarm), mensch.K5#1 und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -1972,6 +1972,107 @@ const stationen = [
         "scripts/lib/welt-boot.cjs",
     ],
     quelle: "2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
+    },
+
+    // ───────── luftwasser.K1 — DER VOGEL FLIEGT UND RUFT AUS SEINEM KÖRPER (Zweig vogel-zensus) ─────────
+    // Der Lauf von klang.K1 (`diag-klang-zensus --json`, derselbe Befehl und dieselbe Umgebung: ein Zwilling, EIN Lauf). Der Vogel
+    // ist das Gesetzbuch tetrapoda VOGEL_GESETZ (`_vogelGesetz`, fail-closed), im Spielpfad je Takt `_vogelTakt` (dirigent-takt), sein
+    // Leib im Pool `vogelPool` (`_vogelZeichnen`, EIN Befehl). Je Ort misst der Zensus 4,5 s lang Takt für Takt die Lagen der
+    // gezeichneten Teile aus dem Pool: ihr Weg je Sekunde (Median der Takte gleicher Zahl) und ihre Höhe über dem Boden (Median) —
+    // `zensus.leiber {gehoert, gezeichnet, flug {mps, hoeheM}}`; die Ruf←Leib-Wand der Linse (R) ist ROT an jedem Ruf ohne
+    // fliegenden Körper, ihr Selbsttest S12 friert die Bahn auf einer Uhr ein (der stehende Vogel) und lässt das Phantom ohne Leib
+    // singen. Staffel 1 an der Wiese: gezeichnete Leiber > 0 rufen (die Stimme vogel spielt), fliegen ≥ 1 m/s ≥ 2 m über Grund, kein
+    // Befund R und keiner G an der Wiese. Staffel 2 an jedem Ort: gehört == gezeichnet, wo der Chor singt ≥ 1 Leib, jeder Leib
+    // fliegt, kein Befund R; die Mutation `wieseOhneLeib` (das Revier-Gesetz ohne Revier) zeichnet 0 Leiber und der Chor schweigt.
+    // Gefahren 27.10. in der Cloud am Zweig vogel-zensus 03f3c822 (headless, Null-Renderer): Wiese 14 Leiber, 5,64 m/s, 11,0 m über Grund,
+    // vogel −37,9 dB; an sechs Orten gehört = gezeichnet (6–20), Flug 4,7–5,6 m/s; ohne Leib 0 und still. An main a03b7b06 ROT
+    // (die Linse misst keinen Flug).
+    {
+        kriterium: "luftwasser.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const w = j && j.daten && j.daten.wiese;
+            const L = w && w.zensus && w.zensus.leiber;
+            if (!L || !L.flug) return { gruen: false, zahl: "kein Flug der Leiber an der Wiese im Zensus (Exit " + lauf.exit + ")" };
+            const ruft = w.zensus.stimmen.some((v) => v.name === "vogel" && v.an);
+            const rot = (j.rot || []).filter((t) => /^(R|G) wiese:/.test(t));
+            const db = w.mixMitte && w.mixMitte.vogel ? w.mixMitte.vogel.db : -999;
+            return {
+                gruen: L.gezeichnet > 0 && ruft && L.flug.mps >= 1 && L.flug.hoeheM >= 2 && rot.length === 0,
+                zahl:
+                    "Wiese " + L.gezeichnet + " Vogel-Leiber gezeichnet (" + L.gehoert + " gehört), Flug " + L.flug.mps + " m/s " +
+                    L.flug.hoeheM + " m über Grund, Ruf " + (ruft ? db.toFixed(1) + " dB" : "STUMM") +
+                    (rot.length ? " · " + rot.join(" · ") : "") + " (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/dirigent-takt.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = ein Vogel-Körper aus einem Gesetzbuch fliegt und ruft",
+    },
+    {
+        kriterium: "luftwasser.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const d = (j && j.daten) || {};
+            const orte = Object.keys(d).filter((o) => o !== "wieseOhneLeib");
+            const ohne = d.wieseOhneLeib && d.wieseOhneLeib.zensus;
+            if (!["wiese", "seeufer", "wald", "dorf"].every((o) => d[o] && d[o].zensus && d[o].zensus.leiber) || !ohne)
+                return { gruen: false, zahl: "kein Zensus der Leiber an den vier Orten und der Mutation (Exit " + lauf.exit + ")" };
+            const singt = (z) => z.stimmen.some((v) => v.name === "vogel" && v.an);
+            const leer = { gehoert: 0, gezeichnet: 0 };
+            const falsch = orte.filter((o) => {
+                const L = d[o].zensus.leiber || leer;
+                return L.gehoert !== L.gezeichnet || (singt(d[o].zensus) && !(L.gezeichnet > 0)) ||
+                    (L.gezeichnet > 0 && !(L.flug && L.flug.mps >= 1 && L.flug.hoeheM >= 2));
+            });
+            const rot = (j.rot || []).filter((t) => /^R /.test(t));
+            const stumm = (ohne.leiber || leer).gezeichnet === 0 && !singt(ohne);
+            return {
+                gruen: falsch.length === 0 && rot.length === 0 && stumm,
+                zahl:
+                    orte.map((o) => { const L = d[o].zensus.leiber || leer; return o + " " + L.gehoert + "/" + L.gezeichnet +
+                        (L.flug ? " " + L.flug.mps + " m/s" : ""); }).join(" · ") + " (gehört/gezeichnet) · ohne Leib " +
+                    (ohne.leiber || leer).gezeichnet + " Leiber, Chor " + (singt(ohne) ? "SINGT" : "still") +
+                    (falsch.length ? " · ROT an " + falsch.join(", ") : "") + (rot.length ? " · " + rot.join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/dirigent-takt.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "2 = jeder Vogel-Pegel im Klang-Zensus hat einen Körper (Konsum-Kette Ruf ← Leib), ohne Körper ROT",
     },
 
     // ───────── luftwasser.K5 — der Schwarm fern EIN Agent (Zweig schwarm: tetrapoda VOGEL_GESETZ.schwarm, `_vogelSchwarmTakt`) ─────────
