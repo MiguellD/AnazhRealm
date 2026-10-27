@@ -635,3 +635,19 @@
 2026-10-27 03:38:04 takt8-radeon ferne.K2#2 GRÜN 8.2 · 12/29
 2026-10-27 03:38:31 takt8-radeon ferne.K1#1 GRÜN 3.4 · 13/29
 2026-10-27 03:38:37 takt8-radeon ferne.K2#1 GRÜN 3.4 · 14/29
+2026-10-27 03:39:29 takt8-radeon mensch.K1#1 GRÜN 4.7 · 15/29
+2026-10-27 03:39:54 takt8-radeon schatten.K1#1 GRÜN 1.8 · 16/29
+2026-10-27 03:41:23 takt8-radeon gelaende.K3#1 GRÜN 1.5 · 17/29
+2026-10-27 03:42:07 takt8-radeon fahrzeug.K3#2 GRÜN 3.6 · 18/29
+2026-10-27 03:43:13 takt8-radeon fahrzeug.K4#1 GRÜN 3.7 · 19/29
+2026-10-27 03:43:18 takt8-radeon fahrzeug.K4#2 GRÜN 3.7 · 20/29
+2026-10-27 03:44:08 takt8-radeon pipeline.K4#1 GRÜN 0.9 · 21/29
+2026-10-27 03:44:29 takt8-radeon material.K3#1 GRÜN 2.4 · 22/29
+2026-10-27 03:45:52 takt8-radeon licht.K2#1 GRÜN 1.4 · 23/29
+2026-10-27 03:46:01 takt8-radeon vegetation.K4#1 GRÜN 4.6 · 24/29
+2026-10-27 03:46:15 takt8-radeon leib.K4#1 GRÜN 2.1 · 25/29
+2026-10-27 03:47:46 takt8-radeon tore.K3#1 GRÜN 1.9 · 26/29
+2026-10-27 03:47:51 takt8-radeon tore.K3#2 GRÜN 1.9 · 27/29
+2026-10-27 03:47:54 takt8-radeon klang.K2#1 ROT 1.9 · 28/29
+2026-10-27 03:49:02 takt8-radeon wetter.K2#1 GRÜN 2.8 · 29/29
+2026-10-27 03:49:05 takt8-radeon ENDE 26 grün / 3 rot · 119.9 min
