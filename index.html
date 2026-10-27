@@ -2068,28 +2068,6 @@
                 font-size: 0.9em;
                 line-height: 1.4;
             }
-            #world-host-banner code,
-            #world-guest-banner code {
-                background: rgba(255, 250, 235, 0.85);
-                padding: 0.15em 0.4em;
-                border-radius: 2px;
-                font-family: "JetBrains Mono", monospace;
-                font-size: 0.85em;
-                word-break: break-all;
-            }
-            .invite-copy-btn {
-                margin-left: 0.5em;
-                padding: 0.2em 0.6em;
-                font-size: 0.85em;
-                cursor: pointer;
-                background: rgba(180, 140, 80, 0.18);
-                border: 1px solid var(--brass-1, #8b6a3f);
-                border-radius: 3px;
-                color: var(--parch-ink);
-            }
-            .invite-copy-btn:hover {
-                background: rgba(180, 140, 80, 0.32);
-            }
             #world-lineage .lineage-entry {
                 display: flex;
                 gap: 0.4em;
@@ -8806,6 +8784,7 @@
                                 Empfangen
                             </button>
                         </div>
+                        <div id="world-teilen"></div>
                         <div id="world-picker-list" class="feed-picker-list drawer-hint" aria-live="polite">
                             Nur diese eine Welt im Speicher.
                         </div>
@@ -9753,7 +9732,7 @@
                 <input
                     type="text"
                     id="new-world-invite"
-                    placeholder="anazh://192.168.1.42:4313/&lt;raumId&gt;"
+                    placeholder="anazh-werk:…"
                     autocomplete="off"
                     spellcheck="false"
                 />
