@@ -1192,7 +1192,8 @@ function r6dRichter(repo, kopf, stationen, messungen, hilfe = hilfeText(), tafel
         if (!reihe.has(k)) {
             const ab = abdruck(c, hilfe);
             reihe.set(k, messungen.filter((m) => m.geraet === g && m.je && m.je[schluessel(c)] && m.je[schluessel(c)].abdruck === ab)
-                .map((m) => ({ sha: m.sha, e: m.je[schluessel(c)] })).sort((x, y) => String(y.e.zeit).localeCompare(String(x.e.zeit))));
+                .map((m) => ({ sha: m.sha, e: m.je[schluessel(c)] })).filter((x) => !bruch(x.e)) // ein Lauf-Bruch ist kein Zeuge
+                .sort((x, y) => String(y.e.zeit).localeCompare(String(x.e.zeit))));
         }
         return reihe.get(k);
     };
