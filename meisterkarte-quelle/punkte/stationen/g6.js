@@ -416,7 +416,9 @@ module.exports = [
         // CDP-Screencast (|ΔLuma| im Boden-Ausschnitt je 0,5 s), Ohr = Analyser am Gain der Wind-Stimme
         befehl: ["bash", "-c", HARNESS + 'node "$D/m15-wind.cjs" 60'],
         gpu: true,
-        zeit: false,
+        // zeit: der Screencast liefert seine Bilder nur ungestört (27.10., Takt 8 erstmals in Bahnen: neben zwei Bild-Läufen CV Bild
+        // 2,16 statt 0,26–0,29 und r 0,00 statt 0,80–0,85 an 607d0c73 · b2c6c627 · 83df2052) — das Urteil hängt an der Wanduhr
+        zeit: true,
         minuten: 5,
         urteil: (j, lauf) => {
             const z = jsonZeile(lauf.stdout, /^\{"stand":/);
