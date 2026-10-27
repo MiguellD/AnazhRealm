@@ -2760,9 +2760,6 @@ async function kreaturProben(r, T, opts) {
         });
     });
 
-    // ── tiersatz (profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere im Nah-Kreis — die Befehle der Tiere hängen nie an
-    // der Kopfzahl; wer nicht als Leib lebt, geht im Satz seiner Gattung (dass er dort nicht gleitet und die Gangart des Leibs
-    // geht, misst gate:tier-gang je Gattung und Tempo am Knoten des Satzes).
     // ── begegnung (mensch.K5 Staffel 1, ohne Modell): im Start-Dorf um 10 Uhr (Uhr und Wetter als Wort des Reglers) ein Bewohner,
     // der an seinem Ort steht; der Spieler geht in Ego mit 1,4 m/s aus 9 m schräg vor ihm (der Weg frei von Grundriss und
     // fremdem Stand) durch seinen Stand und 12 m weiter (der Vorbeigang 2 m daneben), dann steht er, bis der Bewohner wieder an
@@ -2773,149 +2770,96 @@ async function kreaturProben(r, T, opts) {
     // (`damageCreature`, Quelle Spieler), dann der vierte Gang.
     // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst.
     await buehne("begegnung", async (restore) => {
-        const BW = A.BEWOHNER;
-        const RW = A.PLAYER_WALL_RADIUS;
-        const dt = 1 / 60;
-        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+        const [dt, ab, tag0] = [1 / 60, (a, b) => Math.hypot(a.x - b.x, a.z - b.z), s.timeOfDay];
         const S = await startDorf(restore);
         if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
-        const pz = S.plan.platz;
-        const boden = (x, z) => r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET;
-        const stell = (x, z) => {
-            pm.set(x, boden(x, z), z);
-            r._spielerLageAlt = null; // ein Sprung der Lage ist kein Lauf
-        };
-        stell(S.ox + pz.cx, S.oz + pz.cz);
-        const tag0 = s.timeOfDay;
+        const stell = (x, z) => pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        const pc = { x: S.ox + S.plan.platz.cx, z: S.oz + S.plan.platz.cz };
+        stell(pc.x, pc.z);
         restore.push(() => r._uhrSetzen(tag0, "regler"));
         r._setWeather("sunny", "regler");
-        const alleDa = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
-        await bisDa("begegnung: die Leiber", () => !alleDa() || r._weltOffen().leiber > 0);
-        await uhrAuf(10, "begegnung: 10 Uhr", alleDa);
+        const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
+        await bisDa("begegnung: die Leiber", () => !da() || r._weltOffen().leiber > 0);
+        await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
-        const schritt = () => {
-            takt(dt);
-            r._tickBewohner(dt);
-        };
-        // DER WEG: aus 9 m schräg vor ihm (± 0,9 · 0,6 · 1,2 rad zu seinem Blick) durch seinen Stand und 12 m weiter — und
-        // derselbe Weg 2 m daneben (der Vorbeigang: jenseits seines Abstands, kein Platz zu machen)
+        const schritt = () => [takt(dt), r._tickBewohner(dt)];
+        // DER WEG: aus 9 m schräg vor ihm (± 0,9 · 0,6 · 1,2 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je
+        // halben Meter frei von Grundriss und 2,2 m von jedem fremden Stand — und derselbe 2 m daneben (der Vorbeigang)
         const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
-        const wegVon = (b) => {
-            const g = b.leib.position;
-            const frei = (o) => o === b || o.drinnen || !o.leib || o.weg;
-            const linie = (a, ux, uz, L) => {
-                for (let t = 0; t <= L; t += 0.5) if (!offen(a.x + ux * t, a.z + uz * t)) return false;
-                return S.liste.every((o) => {
-                    if (frei(o)) return true;
-                    const q = o.leib.position;
-                    const t = Math.max(0, Math.min(L, (q.x - a.x) * ux + (q.z - a.z) * uz));
-                    return Math.hypot(a.x + ux * t - q.x, a.z + uz * t - q.z) > 2.2;
-                });
-            };
-            for (const w of [0.9, -0.9, 0.6, -0.6, 1.2, -1.2]) {
-                const [ux, uz] = [-Math.sin(b.leib.rotation.y + w), -Math.cos(b.leib.rotation.y + w)];
-                const a = { x: g.x - ux * 9, z: g.z - uz * 9 };
-                if (!linie(a, ux, uz, 21)) continue;
-                for (const n of [1, -1])
-                    if (linie({ x: a.x + uz * n * 2, z: a.z - ux * n * 2 }, ux, uz, 21))
-                        return { a, ux, uz, L: 21, nx: uz * n, nz: -ux * n };
-            }
-            return null;
-        };
-        const pc = { x: S.ox + pz.cx, z: S.oz + pz.cz };
-        const kand = S.liste
-            .filter((b) => b.leib && !b.drinnen && !b.weg && b.da && !b.drinnenSoll && b.leib.userData.rig)
-            .sort((x, y) => ab(x.leib.position, pc) - ab(y.leib.position, pc));
-        let [b, weg] = [null, null];
-        for (const k of kand) if (!b && (weg = wegVon(k))) b = k;
-        if (!b) return { fehler: `kein Stehender mit freiem Weg um 10 Uhr (${kand.length} stehen)` };
-        const g = b.leib;
-        const stand = { x: b.ziel.x, z: b.ziel.z };
-        // DER KOPF IM BILD: die Gier seiner Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
-        const kopfGier = () => {
-            const e = g.userData.rig.head.matrixWorld.elements;
-            return { f: Math.atan2(e[8], e[10]), x: e[12], y: e[13], z: e[14] };
-        };
-        const kopfFehler = () => {
-            const k = kopfGier();
-            return Math.abs(grad(wrap(Math.atan2(pm.x - k.x, pm.z - k.z) - k.f)));
-        };
-        const ruheGrad = Math.round(Math.abs(grad(wrap(kopfGier().f - g.rotation.y))) * 10) / 10;
-        const gang = (versatz = 0) => {
-            const a0 = { x: weg.a.x + weg.nx * versatz, z: weg.a.z + weg.nz * versatz };
-            stell(a0.x, a0.z);
+        const frei = (b, a, u) =>
+            [...Array(43).keys()].every((t) => {
+                const q = { x: a.x + (u.x * t) / 2, z: a.z + (u.z * t) / 2 };
+                return offen(q.x, q.z) && S.liste.every((o) => o === b || o.drinnen || o.weg || ab(q, o.leib.position) > 2.2); // prettier-ignore
+            });
+        let [b, w] = [null, null];
+        for (const k of S.liste.filter((o) => !o.drinnen && !o.weg && o.da).sort((x, y) => ab(x.leib.position, pc) - ab(y.leib.position, pc))) // prettier-ignore
+            for (const dw of [0.9, -0.9, 0.6, -0.6, 1.2, -1.2])
+                for (const n of [2, -2]) {
+                    const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
+                    const a = { x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 };
+                    if (!b && frei(k, a, u) && frei(k, { x: a.x + u.z * n, z: a.z - u.x * n }, u)) [b, w] = [k, { a, u, n }];
+                }
+        if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
+        const [g, stand] = [b.leib, { x: b.ziel.x, z: b.ziel.z }];
+        // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt), gegen den Spieler und in Ruhe
+        const kopf = () => g.userData.rig.head.matrixWorld.elements;
+        const gier = (e, x, z) => Math.abs(grad(wrap(Math.atan2(x - e[12], z - e[14]) - Math.atan2(e[8], e[10]))));
+        const ruheGrad = Math.round(gier(kopf(), kopf()[12] + Math.sin(g.rotation.y), kopf()[14] + Math.cos(g.rotation.y)));
+        // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
+        const gang = (v) => {
+            const a = { x: w.a.x + w.u.z * v, z: w.a.z - w.u.x * v };
+            stell(a.x, a.z);
+            r._spielerLageAlt = null;
             for (let i = 0; i < 60; i++) schritt();
-            const z = { zuS: null, dMin: Infinity, beruehrt: new Set(), nah: null, imBild: !echt, fehler05: null };
-            let [t, ereignis] = [0, null];
-            for (let l = 0; l <= weg.L; l += 1.4 * dt) {
-                const [x, z0] = [a0.x + weg.ux * l, a0.z + weg.uz * l];
-                pm.set(x, boden(x, z0), z0); // der Lauf: der Kreatur-Takt liest ihn aus der Lage (`_spielerLageAlt`)
+            const z = { zuS: null, dMin: 99, beruehrt: [], nah: null, imBild: !echt };
+            for (let l = 0, t = 0, e = null; l <= 21; l += 1.4 * dt, t += dt) {
+                stell(a.x + w.u.x * l, a.z + w.u.z * l); // der Lauf: der Kreatur-Takt liest ihn aus der Lage
                 schritt();
-                t += dt;
-                if (echt) {
-                    kamera(weg.ux, weg.uz);
-                    r._loopRender();
-                }
+                if (echt) [kamera(w.u.x, w.u.z), r._loopRender()];
                 const d = ab(pm, g.position);
-                z.dMin = Math.min(z.dMin, d);
-                for (const o of S.liste)
-                    if (o.leib && !o.drinnen && ab(pm, o.leib.position) < 2 * RW) z.beruehrt.add(`${o.rolle} #${o.heim}`);
-                if (ereignis === null && d <= BW.begegnungM) [ereignis, z.nah] = [t, !!b.nah];
-                if (ereignis === null) continue;
-                const f = kopfFehler();
-                if (z.fehler05 === null && t - ereignis >= 0.5) z.fehler05 = Math.round(f);
-                if (z.zuS === null && f <= 10) {
-                    z.zuS = Math.round((t - ereignis) * 1000) / 1000;
-                    if (echt) z.imBild = g.visible && imBlick(kopfGier().x, kopfGier().y, kopfGier().z);
-                }
+                z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
+                z.beruehrt.push(...S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).map((o) => o.heim)); // prettier-ignore
+                if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.nah] = [t, !!b.nah];
+                if (e !== null && z.zuS === null && gier(kopf(), pm.x, pm.z) <= 10)
+                    [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14]))]; // prettier-ignore
             }
             // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
             for (let i = 0; i < 1800 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
-            return { ...z, dMin: Math.round(z.dMin * 1000) / 1000, beruehrt: [...z.beruehrt] };
+            return z;
         };
-        // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag neben ihm, der vierte Gang
+        // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag 5 m neben ihm, der vierte Gang
         const lauf = () => {
             g.userData.memory = [];
-            const [g0, g1, g2] = [gang(2), gang(), gang()];
-            const lage = ab(g.position, stand) < 1 ? g.position : stand;
-            const ort = spirale(lage.x + 5 - P0.x, lage.z - P0.z, 4, 1.5, (x, z) => (offen(x, z) ? neben(x, z) : null));
+            const G = [gang(w.n), gang(0), gang(0)];
+            const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
             if (!ort) return { fehler: "kein Ort für das Wesen neben ihm" };
-            const c = tier(ort, "wesen");
-            r.damageCreature(c, 1e9, { source: "player" });
+            r.damageCreature(tier(ort, "wesen"), 1e9, { source: "player" });
             const furcht = r._kreaturFurchtErinnert(g);
-            const g3 = gang();
-            const gaenge = [g0, g1, g2, g3];
+            G.push(gang(0));
+            const je = (k) => G.map((x) => x[k]);
             return {
-                wer: `${b.rolle}/${b.beruf} #${b.heim}`,
-                ruheGrad,
-                radien: 2 * RW,
-                zuS: gaenge.map((x) => x.zuS),
-                fehler05: gaenge.map((x) => x.fehler05),
-                nah: gaenge.map((x) => x.nah),
-                imBild: gaenge.map((x) => x.imBild),
-                dMin: gaenge.map((x) => x.dMin),
-                beruehrt: gaenge.flatMap((x) => x.beruehrt),
-                furcht,
-                abstand: { ohne: g1.dMin, gegen: g2.dMin, mit: g3.dMin },
-                bilder: echt,
+                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, ruheGrad, furcht, zuS: je("zuS"), nah: je("nah") },
+                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: [].concat(...je("beruehrt")) },
             };
         };
         if (!taeter) return lauf();
         const sicht = {};
-        for (const [t, name] of [
-            ["begegnung-starr", "_bewohnerKopf"],
-            ["begegnung-steht", "_bewohnerPlatz"],
-            ["begegnung-vergessen", "_bewohnerZeuge"],
-        ]) {
-            if (![].concat(taeter).includes(t)) continue;
+        for (const [t, name] of Object.entries({
+            "begegnung-starr": "_bewohnerKopf",
+            "begegnung-steht": "_bewohnerPlatz",
+            "begegnung-vergessen": "_bewohnerZeuge",
+        })) {
             const zurueck = [];
             decke(zurueck, name, () => () => false);
-            sicht[t] = lauf();
+            if ([].concat(taeter).includes(t)) sicht[t] = lauf();
             for (const f of zurueck) f();
         }
         return { sicht };
     });
 
+    // ── tiersatz (profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere im Nah-Kreis — die Befehle der Tiere hängen nie an
+    // der Kopfzahl; wer nicht als Leib lebt, geht im Satz seiner Gattung (dass er dort nicht gleitet und die Gangart des Leibs
+    // geht, misst gate:tier-gang je Gattung und Tempo am Knoten des Satzes).
     await buehne("tiersatz", async (restore) => {
         const SM = A.TETRAPODA_SOUL_MAP;
         const seelen = ["wolf", "fox", "bear", "deer"].map((g) => Object.keys(SM).find((k) => SM[k] === g));
@@ -3221,22 +3165,19 @@ function urteil(name, z) {
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
     }
     // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
-    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild),
-    // kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet den Abstand des dritten Gangs um ≥ 0,3 m, die Gegenprobe
-    // ohne Erinnerung bleibt auf 0,15 m beim ersten; der Kopf zeigt in Ruhe, wohin der Leib schaut
+    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
+    // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten; der Kopf zeigt in
+    // Ruhe, wohin der Leib schaut
     if (name === "begegnung") {
-        const [zu, ab] = [z.zuS || [], z.abstand || {}];
+        const [zu, d] = [z.zuS, z.dMin];
         soll(
-            zu.length === 4 && zu.every((t) => t !== null && t <= 0.5) && z.nah.every(Boolean) && z.imBild.every(Boolean),
-            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5; Fehler nach 0,5 s ${z.fehler05}°; als Leib ${z.nah}, im Bild ${z.imBild})`
+            zu.every((t) => t !== null && t <= 0.5) && [...z.nah, ...z.imBild].every(Boolean),
+            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5; als Leib ${z.nah}, im Bild ${z.imBild})`
         );
+        soll(!z.beruehrt.length && Math.min(...d) > 0.7, `Berührung: ${z.beruehrt.length}, Abstand min ${d.join(" / ")} m`);
         soll(
-            !z.beruehrt.length && z.dMin.every((d) => d > z.radien),
-            `Berührung: ${z.beruehrt.length} (${z.beruehrt.slice(0, 4)}), kleinster Abstand ${z.dMin.join(" / ")} m (Radien ${z.radien} m)`
-        );
-        soll(
-            z.furcht > 0 && ab.mit - ab.ohne >= 0.3 && Math.abs(ab.gegen - ab.ohne) <= 0.15,
-            `die Erinnerung lenkt den Abstand nicht: ohne ${ab.ohne} · Gegenprobe ${ab.gegen} · nach der Gewalt ${ab.mit} m (Furcht ${z.furcht})`
+            z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
+            `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`
         );
         soll(z.ruheGrad <= 10, `der Kopf zeigt in Ruhe ${z.ruheGrad}° neben den Blick des Leibs`);
     }

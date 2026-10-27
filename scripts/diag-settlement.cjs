@@ -2,7 +2,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -967,12 +967,7 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN.");
-        process.exit(0);
+        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN.");
     }
 
     console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");

@@ -1011,6 +1011,16 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DAS EINE URTEIL AM ENDE einer Linse: `urteilEnde(rot, roteZeile, grueneZeile)` — rot (Zahl, Liste der Länge oder wahr) nennt die
+// rote Zeile auf stderr und endet mit Exit 1, sonst die grüne auf stdout mit Exit 0 (Lehre 9: der Exit spricht)
+const urteilEnde = (rot, roteZeile, grueneZeile) => {
+    if (rot) {
+        console.error(roteZeile);
+        process.exit(1);
+    }
+    console.log(grueneZeile);
+    process.exit(0);
+};
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
 function werkbankRuf(port, weg, nutzlast) {
     return new Promise((res, rej) => {
@@ -1185,6 +1195,7 @@ module.exports = {
     sleep,
     laufUhr,
     hauptLauf,
+    urteilEnde,
     waitFor,
     werkbankTor,
     werkbankRuf,

@@ -4,7 +4,7 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -64,14 +64,7 @@ hauptLauf(async () => {
                 v.join(" · ")
             );
         }
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log(
-            "\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur und Lehren beim Namen."
-        );
-        process.exit(0);
+        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur und Lehren beim Namen.");
     }
 
     await server.lausche(PORT);
@@ -222,12 +215,5 @@ hauptLauf(async () => {
         m.schilderFahrt === 0 && m.schilderWerkstatt > 0,
         `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`
     );
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren."
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`, "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren.");
 });

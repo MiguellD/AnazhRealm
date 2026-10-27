@@ -16,7 +16,7 @@
 // Abbau der Trittfläche müssen beim Namen rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WEG_PORT || 4596);
 const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
@@ -380,8 +380,7 @@ hauptLauf(async () => {
             );
     }
     const rot = urteil(S);
-    if (selbst) {
-        console.log(`  Selbsttest: Boden-Streifen im Pool → ${selbst.streifen}`);
+    urteilEnde(selbst, `  Selbsttest: Boden-Streifen im Pool → ${selbst.streifen}`);
         console.log(`  Selbsttest: harte Kante → ${selbst.hart}`);
         console.log(`  Selbsttest: der ferne Umzug vergisst → ${selbst.vergessen}`);
         console.log(`  Selbsttest: der alte Abbau der Trittfläche → ${selbst.tritt}`);
@@ -393,9 +392,5 @@ hauptLauf(async () => {
     }
     if (rot.length) {
         console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log("\nGRÜN — der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
-    process.exit(0);
+        for (const e of rot) console.error("  • " + e, "\nGRÜN — der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
 });

@@ -7,7 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs"); // prettier-ignore
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
@@ -229,18 +229,9 @@ hauptLauf(async () => {
     console.log(
         `\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)${je.length ? ` — Sekunden je Probe: ${je.join(", ")}` : ""}`
     );
-    if (rot) {
-        console.log(
-            SELBST
+    urteilEnde(rot, SELBST
                 ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
-                : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`
-        );
-        process.exit(1);
-    }
-    console.log(
-        SELBST
+                : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`, SELBST
             ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${faelle.length} Täter).`
-            : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
-    );
-    process.exit(0);
+            : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`);
 });

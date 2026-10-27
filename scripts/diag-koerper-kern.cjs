@@ -21,6 +21,7 @@
 // und beweist, dass die Linse feuert (kein vakuoeses Gruen).
 // ============================================================================
 "use strict";
+const { urteilEnde } = require("./lib/welt-boot.cjs");
 
 require("../koerper-core.js");
 require("../phyto-core.js");
@@ -185,9 +186,7 @@ if (selftest) {
     if (t1.diffs === 0) { console.log("⛔ Selbsttest: Morph-Injektion NICHT erkannt"); fails++; }
     if (t2.diffs === 0) { console.log("⛔ Selbsttest: Proportionen-Injektion NICHT erkannt"); fails++; }
     if (t3.diffs === 0) { console.log("⛔ Selbsttest: Landmarken-Injektion NICHT erkannt"); fails++; }
-    if (fails) { console.error("❌ ROT — die Linse ist blind."); process.exit(1); }
-    console.log(`✅ Selbsttest: alle drei injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer).`);
-    process.exit(0);
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle drei injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer).`);
 }
 
 const r = runVergleich(core.labMorph, core.labProportionen, core.labLandmarks);

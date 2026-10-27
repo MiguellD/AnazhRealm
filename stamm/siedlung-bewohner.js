@@ -680,14 +680,16 @@ class AnazhRealm_siedlung_bewohner {
         let ankuenfte = 0;
         const NF = this._bewohnerFeldGrenze();
         // DER SPIELER IST EIN LEIB (mensch.K5, „Ausweichen ohne Berührung"): sein Lauf dieses Takts (`_spielerLageAlt`, der
-        // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus — jeder Bewohner weicht ihm wie einem Gehenden mit
-        // Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`)
+        // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus (`voraus`) — jeder Bewohner weicht ihm wie einem
+        // Gehenden mit Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`); steht er (unter 0,2 m/s,
+        // die Schwelle des Laufs `_kreaturLaufTakt`), geht man um ihn wie um einen Stehenden (`weg` leer, `_bewohnerUm`)
         const sa = this._spielerLageAlt;
         const SP =
-            this._bewohnerSpieler || (this._bewohnerSpieler = { leib: pm, weg: [{}], wi: 0, same: -1, spieler: true });
+            this._bewohnerSpieler || (this._bewohnerSpieler = { leib: pm, voraus: {}, wi: 0, same: -1, spieler: true });
         [SP.leib, SP.vx, SP.vz, SP.rueck] = [pm, sa ? sa.vx : 0, sa ? sa.vz : 0, Infinity];
-        [SP.weg[0].x, SP.weg[0].z] = [p.x + SP.vx * BW.ausweichS, p.z + SP.vz * BW.ausweichS];
+        [SP.voraus.x, SP.voraus.z] = [p.x + SP.vx * BW.ausweichS, p.z + SP.vz * BW.ausweichS];
         const spV = Math.hypot(SP.vx, SP.vz);
+        SP.weg = spV > 0.2 ? SP.zug || (SP.zug = [SP.voraus]) : null;
         const FG = AnazhRealm._furchtGesetz().F;
         const kDeckel =
             2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + BW.spielerRaumM * (1 + FG.deckel * FG.fluchtJeFurcht);
@@ -804,22 +806,23 @@ class AnazhRealm_siedlung_bewohner {
                 // der Abstand zum Spieler nur, wo er zählen kann (der Deckel des Furcht-Gesetzes: der weiteste Raum)
                 const nahS = !b.drinnen && (bd2 < (kDeckel + spV * BW.ausweichS) ** 2 || (w && w.spieler));
                 const kS = nahS ? this._bewohnerSpielerAbstand(b) : kDeckel;
+                // wohin der geht, dem er Platz machte: der Spieler `ausweichS` voraus, der Bewohner zum nächsten Punkt
+                const wv =
+                    w && (w.spieler ? SP.voraus : w.weg && !w.drinnen && w.wi < w.weg.length ? w.weg[w.wi] : null);
                 if (
                     w &&
                     b.da &&
                     !b.weg &&
                     this._bewohnerNaechster(S, b, b.ziel.x, b.ziel.z) >= BW.tuerFreiM &&
                     !(
-                        w.weg &&
+                        wv &&
                         w.leib &&
-                        !w.drinnen &&
-                        w.wi < w.weg.length &&
                         this._streckeBoxAbstand2(
                             { minX: b.ziel.x, maxX: b.ziel.x, minZ: b.ziel.z, maxZ: b.ziel.z },
                             w.leib.position.x,
                             w.leib.position.z,
-                            w.weg[w.wi].x,
-                            w.weg[w.wi].z
+                            wv.x,
+                            wv.z
                         ) <
                             ((w.spieler ? kS : 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) + 0.1) ** 2
                     )
@@ -832,9 +835,9 @@ class AnazhRealm_siedlung_bewohner {
                     nahS &&
                     !b.weg &&
                     bd2 < (kS + spV * BW.ausweichS) ** 2 &&
-                    this._streckeBoxAbstand2({ minX: gp.x, maxX: gp.x, minZ: gp.z, maxZ: gp.z }, p.x, p.z, SP.weg[0].x, SP.weg[0].z) < kS * kS // prettier-ignore
+                    this._streckeBoxAbstand2({ minX: gp.x, maxX: gp.x, minZ: gp.z, maxZ: gp.z }, p.x, p.z, SP.voraus.x, SP.voraus.z) < kS * kS // prettier-ignore
                 )
-                    this._bewohnerPlatz(S, b, p, SP.weg[0], SP, kS);
+                    this._bewohnerPlatz(S, b, p, SP.voraus, SP, kS);
                 // DER GANG: ein neues Ziel sucht seinen Weg (gedeckelt je Takt), der Weg trägt den Leib im Tempo des Gesetzes
                 if (!b.da && !b.weg && !b.hinaus && wege < BW.wegeJeTakt) {
                     this._bewohnerWeg(S, b);
@@ -1482,15 +1485,18 @@ class AnazhRealm_siedlung_bewohner {
                 for (const o of S.raster.get((ix + i) * 2097152 + iz + j) || [])
                     if (o !== b && !o.drinnen && o.leib)
                         if ((o.leib.position.x - p.x) ** 2 + (o.leib.position.z - p.z) ** 2 < reich) nb.push(o);
-        // DER SPIELER (mensch.K5): ein Gehender mit Vorrang, dem er seinen Abstand lässt (`_bewohnerSpielerAbstand`)
+        // DER SPIELER (mensch.K5): ein Leib mit Vorrang; die Vorschau der Berührung hält ihm seinen Abstand frei
+        // (`_bewohnerSpielerAbstand`, der weiche Raum — wer schon näher ist, achtet nur noch die Kapsel), die Wache und der
+        // Umweg die Kapsel: wo die Gasse den Raum nicht trägt, geht er knapp vorbei, nie steckt er
         const SP = this._bewohnerSpieler;
-        let kS = K;
+        let [kS, sD2] = [K, Infinity];
         if (SP && SP.leib) {
-            const [sx, sz, vor] = [SP.leib.position.x - p.x, SP.leib.position.z - p.z, (v + Math.hypot(SP.vx, SP.vz)) * BW.ausweichS]; // prettier-ignore
-            if (sx * sx + sz * sz < (4 + vor) ** 2) kS = this._bewohnerSpielerAbstand(b); // 4 m: jenseits des weitesten Raums
-            if (sx * sx + sz * sz < (kS + vor) ** 2) nb.push(SP);
+            const vor = (v + Math.hypot(SP.vx, SP.vz)) * BW.ausweichS;
+            sD2 = (SP.leib.position.x - p.x) ** 2 + (SP.leib.position.z - p.z) ** 2;
+            if (sD2 < (4 + vor) ** 2) kS = this._bewohnerSpielerAbstand(b); // 4 m: jenseits des weitesten Raums
+            if (sD2 < (kS + vor) ** 2) nb.push(SP);
         }
-        const kO = (o) => (o === SP ? kS : K);
+        const kO = (o) => (o === SP && sD2 >= kS * kS ? kS : K);
         if (!nb.length) return null;
         // DER BESETZTE PUNKT: steht ein Leib auf dem nächsten Punkt seines Wegs und ist er neben ihm (näher als zwei Kapseln),
         // gilt der Punkt als erreicht, wenn das Bein von hier zum übernächsten frei ist — das Bein des Tags beginnt an ihm, und
@@ -1511,8 +1517,9 @@ class AnazhRealm_siedlung_bewohner {
         // kein Leib steht (`_bewohnerUm`)
         const um = this._bewohnerUm(b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
-        // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`)
-        if (um && this._bewohnerPlatz(S, um, p, q, b)) return { vx: 0, vz: 0 };
+        // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
+        // der Spieler nie — um ihn tastet das Ausweichen)
+        if (um && !um.spieler && this._bewohnerPlatz(S, um, p, q, b)) return { vx: 0, vz: 0 };
         // DIE WACHE: der Schritt mit (cx, cz) endet in keiner Kapsel (wer schon zu nah ist, entfernt sich) — sonst der, in
         // dessen Kapsel er endete
         const wache = (cx, cz) => {
@@ -1520,7 +1527,7 @@ class AnazhRealm_siedlung_bewohner {
             for (const o of nb) {
                 const [ox, oz] = [o.leib.position.x, o.leib.position.z];
                 const d2 = (ox - x) ** 2 + (oz - z) ** 2;
-                if (d2 < kO(o) ** 2 && d2 < (ox - p.x) ** 2 + (oz - p.z) ** 2) return o;
+                if (d2 < K * K && d2 < (ox - p.x) ** 2 + (oz - p.z) ** 2) return o;
             }
             return null;
         };

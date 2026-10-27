@@ -4,7 +4,7 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
@@ -2176,14 +2176,7 @@ hauptLauf(async () => {
                 );
             }
         }
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log(
-            "\n✅ SELBST-TEST GRÜN — die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Tempo, Sprung und Querhang beim Namen."
-        );
-        process.exit(0);
+        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN — die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Tempo, Sprung und Querhang beim Namen.");
     }
 
     console.log("=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===");
@@ -2546,12 +2539,5 @@ hauptLauf(async () => {
         for (const l of bahn.log || []) console.log("  · " + l);
     }
     if (bahn.err) check("F Probe ohne Ausnahme", false, String(bahn.err).split("\n")[0]);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken."
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken.");
 });

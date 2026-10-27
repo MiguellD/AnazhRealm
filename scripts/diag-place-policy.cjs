@@ -15,7 +15,7 @@
 // sonst rot („Selbst-Test vakuös").
 //   node scripts/diag-place-policy.cjs --selftest
 
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 const SELFTEST = process.argv.includes("--selftest");
 const PORT = Number(process.env.PLACE_PORT || 4421);
 const server = statikServer();
@@ -202,12 +202,5 @@ hauptLauf(async () => {
         check("SELBST-TEST: der Dispatch ist restauriert (Prototyp trägt wieder)", out.st.restored === true);
     }
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en): die Place-Policy-Weiche (N5/H8) hält nicht.`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — N5 PLACE-POLICY: _placePolicyFor (fx.place führt) + _placeDispatch weichen die Buch-Arten korrekt — forest in die Nische, none ohne Worldgen, Fremdes must-ignore. H8: none vs forest DISJUNKT."
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): die Place-Policy-Weiche (N5/H8) hält nicht.`, "\n✅ GRÜN — N5 PLACE-POLICY: _placePolicyFor (fx.place führt) + _placeDispatch weichen die Buch-Arten korrekt — forest in die Nische, none ohne Worldgen, Fremdes must-ignore. H8: none vs forest DISJUNKT.");
 });

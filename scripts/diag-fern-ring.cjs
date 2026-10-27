@@ -35,7 +35,7 @@
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERN_RING_PORT || 4464);
 
@@ -1650,15 +1650,8 @@ hauptLauf(async () => {
         );
     }
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
             "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +
             "Scheiben aus dem Gelände-Gesetzbuch, der Haupt-Faden hängt nur ein, " +
-            "quantisiertes Re-Zentrieren, headless-default ruhig."
-    );
-    process.exit(0);
+            "quantisiertes Re-Zentrieren, headless-default ruhig.");
 });

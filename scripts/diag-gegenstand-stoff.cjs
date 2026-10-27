@@ -349,7 +349,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     return aus;
 }
 async function tafel() {
-    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
+    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne, urteilEnde } = require("./lib/welt-boot.cjs");
     const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
     const server = await statikServer().lausche(port);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
@@ -385,12 +385,7 @@ if (process.argv.includes("--tafel")) {
 
 const fehlSelbst = selbstTest();
 if (process.argv.includes("--selftest")) {
-    if (fehlSelbst.length) {
-        console.error("❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "));
-        process.exit(1);
-    }
-    console.log("✅ SELBST-TEST GRÜN — die Stoff-Linse feuert auf Ton, rohen Reifen, Lack ohne Lackschicht, blinde Scheibe, Tönung, Namenlose und fehlenden Transport.");
-    process.exit(0);
+    urteilEnde(fehlSelbst.length, "❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "), "✅ SELBST-TEST GRÜN — die Stoff-Linse feuert auf Ton, rohen Reifen, Lack ohne Lackschicht, blinde Scheibe, Tönung, Namenlose und fehlenden Transport.");
 }
 const befunde = alles();
 console.log("=== DIE STOFF-LINSE DER GEGENSTÄNDE (Fahrzeuge × 8 Lacke · Klingen/Werkzeuge) ===");

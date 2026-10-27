@@ -22,6 +22,7 @@ const {
     ROOT,
     hauptLauf,
     sleep,
+    urteilEnde,
 } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 const fs = require("fs");
@@ -329,12 +330,5 @@ hauptLauf(async () => {
     const auf = e.wege.filter((w) => w.ok).length + (e.atlas === NEUN);
     check("E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle", auf === 5, `${auf}/5`);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt."
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt.");
 });

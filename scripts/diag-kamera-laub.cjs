@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, urteilEnde } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -1214,12 +1214,7 @@ hauptLauf(async () => {
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN — die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
-        process.exit(0);
+        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN — die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
     }
 
 
@@ -1304,8 +1299,7 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    if (m) {
-        console.log(`=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
+    urteilEnde(m, `=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
         for (const ort of ORTE) {
             const o = m.orte[ort.id] || {};
             console.log(`  ${ort.id} (${ort.bild}) bei ${(o.P || []).join("/")} · Anker ${(o.anker || []).join(", ")}${o.satz ? ` · Satz: ${o.satz.length} Werke` : ""}`);
@@ -1376,9 +1370,5 @@ hauptLauf(async () => {
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
-    process.exit(0);
+        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
 });

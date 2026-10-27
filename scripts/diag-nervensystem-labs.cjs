@@ -13,7 +13,7 @@
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -47,12 +47,7 @@ hauptLauf(async () => {
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "klang"));
         const s1 = staticLaws(brokenManifest).find((l) => l[0].includes("klang-Kern"));
         check("Selbst-Test 1: klang-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRUEN.");
-        process.exit(0);
+        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuoes.", "\n✅ SELBST-TEST GRUEN.");
     }
 
     console.log("=== ε-BEWEIS LABS (klang · koerper · kreatur) — TEIL S: das Manifest ===");
@@ -683,12 +678,5 @@ hauptLauf(async () => {
     );
     check("O: die NEUEN TIERE (wolf/fuchs/baer) bauen durch den EINEN Kreatur-Guss", !!out.o && out.o.tiere === true);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials, kein Auto-Blueprint entsteht (must-ignore), die Werkstatt zeigt die Rezepte — der EINE Audio-Konsument lebt (Tempo + SKALA durch den einen Ton-Mapper, fail-soft byte-alt) und der Motion-Erstkonsument liest fx.motion (Schwanz-Rolle, KONSUM als Zahl)."
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials, kein Auto-Blueprint entsteht (must-ignore), die Werkstatt zeigt die Rezepte — der EINE Audio-Konsument lebt (Tempo + SKALA durch den einen Ton-Mapper, fail-soft byte-alt) und der Motion-Erstkonsument liest fx.motion (Schwanz-Rolle, KONSUM als Zahl).");
 });

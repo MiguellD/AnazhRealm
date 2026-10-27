@@ -19,7 +19,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -771,10 +771,5 @@ function urteile(checks) {
         if (!c.pass) fails++;
     }
     console.log(`\n${checks.length - fails}/${checks.length} Persistenz-Invarianten OK.`);
-    if (fails) {
-        console.log("⛔ Die Persistenz-Härtung greift nicht — die Welt ist bei Korruption noch verlierbar.");
-        process.exit(1);
-    }
-    console.log("✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.");
-    process.exit(0);
+    urteilEnde(fails, "⛔ Die Persistenz-Härtung greift nicht — die Welt ist bei Korruption noch verlierbar.", "✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.");
 }

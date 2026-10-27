@@ -12,6 +12,7 @@
 //   doppelt → augenAbstand rot. Die Linse feuert, sonst ist sie vakuös.
 //   node scripts/diag-mensch-anatomie.cjs [--selftest] [--json]
 "use strict";
+const { urteilEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
@@ -495,12 +496,7 @@ if (process.argv.includes("--selftest")) {
         { kern: (K) => Object.assign({}, K, { kopfToene: rot0(K) }) },
         /^lippe[LA]/
     );
-    if (rot) {
-        console.error(`\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`);
-        process.exit(1);
-    }
-    console.log("\n✅ SELBST-TEST GRÜN.");
-    process.exit(0);
+    urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
 
 console.log(
@@ -519,9 +515,4 @@ console.log(
 );
 if (process.argv.includes("--json")) console.log(JSON.stringify(Object.assign({}, m, mk), null, 1));
 const fehler = urteile(sb, m).concat(urteileKopf(so, mk));
-if (fehler.length) {
-    console.error(`\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "));
-    process.exit(1);
-}
-console.log("\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß).");
-process.exit(0);
+urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß).");
