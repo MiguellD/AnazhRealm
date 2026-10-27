@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1, tore-k5-welt tore.K5 Staffel 2). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -1331,16 +1331,74 @@ const stationen = [
         ],
         quelle: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s",
     },
+    // ───────── tore.K5 Staffel 2 — beide Flüsse an beiden Geräten (tore-k5-welt) ─────────
+    // DIESELBE Probe wie #1 (gate:praegung-welt), B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte. Nach dem Bauplan (≤ 4 KB,
+    // Bau-Hash A = B) teilt A seine Welt in EINER Geste (Bibliothek → Teilen: dieselbe Hülle `anazh-werk:`, signiert wie jede
+    // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten`, Neuladen); die Kontrolle ist das
+    // Ereignis `_weltbildKommt` in A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m. Das Urteil
+    // verlangt jede Zeile von #1, die vier WELT-Zeilen und „B echt" (ein Lauf mit Null-Renderer zählt nie). Headless (B null)
+    // an tore-k5-welt: Bauplan 530 Zeichen, Welt-Code 515, Welt 136 KB, Kontrolle 1 610 ms, Leib 1 236 ms, Bau-Hash
+    // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
+    // der signaling-server las nur den ersten (Join-Timeout 10 s).
+    {
+        kriterium: "tore.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}", PRAEGUNG_WELT_B: "echt" },
+        gpu: true,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = [
+                ["Bauplan", /^\s*(✅|❌) A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB/],
+                ["Gerät", /^\s*(✅|❌) B ist ein ANDERES GERÄT: /],
+                ["Selbsttest", /^\s*(✅|❌) SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT/],
+                ["Signatur", /^\s*(✅|❌) B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A/],
+                ["Pose", /^\s*(✅|❌) B: gezeichnet an der eigenen Pose/],
+                ["Zeit", /^\s*(✅|❌) ZEIT: Klick bis Code \+ Enter bis gezeichnet ≤ 10 s/],
+                ["Stempel", /^\s*(✅|❌) B: Stempel und Same reisen tief gleich/],
+                ["Bau-Hash", /^\s*(✅|❌) BAU-HASH A ↔ B byte-gleich/],
+                ["Welt-Code", /^\s*(✅|❌) WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A/],
+                ["Beitritt", /^\s*(✅|❌) WELT: B steht in A's Welt \(Id, Same, Gast, > 128 KB\) und kennt A am Anschluss/],
+                ["Kontrolle", /^\s*(✅|❌) WELT: KONTROLLE ≤ 5 s — Klick bis Code \+ Enter bis zum ersten Weltbild — .*, B echt\)/],
+                ["Leib", /^\s*(✅|❌) WELT: der Leib geht unter W ≥ 1 m/],
+            ];
+            const je = soll.map(([, re]) => l.find((x) => re.test(x)));
+            const fehlt = soll.filter((_, i) => !je[i]).map(([n]) => n);
+            if (fehlt.length) return { gruen: false, zahl: "Zeile fehlt: " + fehlt.join(", ") + " (Exit " + lauf.exit + ")" };
+            const rot = soll.filter((_, i) => !/✅/.test(je[i])).map(([n]) => n);
+            const nach = (i) => je[i].split(" — ").pop().slice(0, 120);
+            return {
+                gruen: !rot.length && lauf.exit === 0,
+                zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Bauplan " + nach(0) + " · Welt-Code " + nach(8) +
+                    " · Welt " + nach(9) + " · Kontrolle " + nach(10) + " · Leib " + nach(11) + " · " + nach(7),
+            };
+        },
+        pfad: [
+            "stamm/netz-identitaet.js",
+            "stamm/netz-p2p.js",
+            "stamm/netz-portal.js",
+            "stamm/feld-dsl.js",
+            "stamm/feld-leben.js",
+            "stamm/studio-bruecke.js",
+            "stamm/werkstatt-*.js",
+            "stamm/speicher-laden.js",
+            "stamm/dirigent-ankunft.js",
+            "index.html",
+            "signaling-server.js",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
+    },
 ];
 
 module.exports = stationen;
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
 module.exports.fehlt = [
-    {
-        kriterium: "tore.K5", staffel: 2, befehl: null,
-        grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten",
-    },
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
         grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
