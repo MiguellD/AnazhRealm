@@ -1391,11 +1391,16 @@ module.exports = [
     // GEFRIEREN das Eis trägt im Winter, +10 °C bricht es ein (wie #1) · SCHMELZEN das Jahr im Takt der Saison (`_tickSeason`):
     // der Schnee-Pegel (gelaende-core `schneePegel`) fällt nur über 0 °C, das Feld ohne Jahres-Welle hält ihn, die Schneegrenze
     // liest ihn (Versatz übers Jahr, das Weiß des Boden-Lesers, die Chunks im Band neu gebaut) · PEGEL die Schmelze speist den
-    // Pegel des Wassers — keine Probe: der Spiegel ist eine Funktion ohne Zeit (wetter.K3+2 „Der Pegel ist eine Funktion des
-    // Regens“ trägt ihn) · ERSTARREN die DSL gießt Lava an Land und in den See, die Uhr läuft im Takt des Tags: die glut-Achse
-    // glüht und erkaltet, unter dem Fuß Glut → Stein, am Wasser schneller und unter Dampf · GLÜHEN der Stahl der Esse — keine
-    // Probe: die Esse liest das Temperatur-Feld nicht. Am main b2c6c627 ROT 1 von 5 (nur das Eis: die Grenze war Höhe allein,
-    // die glut-Achse eingefroren); am Zweig sk3-schmelze ROT 3 von 5 (Eis, Schnee, Lava).
+    // Pegel des Wassers (gelaende-core `pegelTafel`: der Hub je Höhe aus dem Abfluss der Schmelze, Manning bis zur Krone des Betts,
+    // Spiegel jedes Sees und Flusses; dieselbe Stelle trägt den Regen): im Jahr hebt sich der See an den Wochen seiner Schmelze und
+    // nur an ihnen (`gegen` ≤ 1), der Fluss mit, der Takt trägt die Tafel in den Faden und baut die Chunks mit Wasser neu, der
+    // Körper liest das gezeichnete Wasser gehoben und das Ufer steht nasser, das Feld ohne Jahres-Welle hebt nichts · ERSTARREN
+    // die DSL gießt Lava an Land und in den See, die Uhr läuft im Takt des Tags: die glut-Achse glüht und erkaltet, unter dem Fuß
+    // Glut → Stein, am Wasser schneller und unter Dampf · GLÜHEN der Stahl der Esse (`_tickEsse`): die Klinge der Schmiede in der
+    // Hand am Glutbett glüht ab dem Draper-Punkt (Kern `glutAus`, `waermeGang`) und leuchtet in der Farbe ihrer Temperatur, 4,5 m
+    // davor erlischt sie und erkaltet gegen die Luft des Temperatur-Felds (das Feld +10 °C endet ≥ 5 K wärmer). Am main b2c6c627
+    // ROT 1 von 5 (nur das Eis: die Grenze war Höhe allein, die glut-Achse eingefroren); am Zweig sk3-schmelze ROT 3 von 5 (Eis,
+    // Schnee, Lava); am main e7a28b06 ROT 3 von 5 (der Spiegel eine Funktion ohne Zeit, die Esse las keine Temperatur).
     {
         kriterium: "stoffe.K3",
         staffel: 2,
@@ -1411,6 +1416,8 @@ module.exports = [
             const e = k.eis || {};
             const sm = k.schmelze;
             const [la, ls] = Array.isArray(k.erstarrung) ? k.erstarrung : [];
+            const [pg, gl] = [k.pegel || {}, k.gluehen || {}];
+            const [gf, gk] = [gl.feuer || {}, gl.kalt || {}];
             const kopf = (o) => (o && o.reihe && o.reihe[0]) || {};
             const ende = (o) => (o && o.reihe && o.reihe[o.reihe.length - 1]) || {};
             const glieder = {
@@ -1420,12 +1427,16 @@ module.exports = [
                 schmelzen:
                     !!sm && sm.pegel > 0.01 && sm.schmilzt > 0 && sm.gegen === 0 && sm.halt <= 0.001 && sm.versatz >= 20 &&
                     sm.weiss >= 0.3 && sm.neuBau > 0,
-                pegel: false,
+                pegel:
+                    pg.hub >= 0.1 && pg.wochen > 0 && pg.fluss > 0 && pg.gegen <= 1 && pg.post > 0 && pg.neuBau > 0 &&
+                    pg.halt <= 0.001 && !!pg.flut && pg.flut[0] >= pg.hub - 0.03 && pg.flut[1] > pg.ruhe[1] && pg.ruhe[0] <= 0.03,
                 erstarren:
                     !!la && !!ls && la.ab > 0 && kopf(la).glut >= 0.95 && kopf(la).stoff === "glut" && kopf(la).licht === true &&
                     ende(la).stoff === "stein" && !ende(la).licht && ende(la).glut <= la.frei + 0.01 && kopf(ls).dampf === true &&
                     ls.ab >= 0 && ls.ab < la.ab,
-                gluehen: false,
+                gluehen:
+                    gf.wechsel > 0 && gf.glut >= 0.5 && gf.kelvin > 798 && !!gf.esse && !gk.glut && !gk.kelvin && gk.wechsel > 0 &&
+                    gk.T - gk.luft < 50 && gl.feld >= 5,
             };
             const n = Object.values(glieder).filter(Boolean).length;
             const ja = (x) => (x ? "✓" : "✗");
@@ -1434,8 +1445,11 @@ module.exports = [
                 zahl:
                     n + " von 5 Gliedern · Eis " + ja(glieder.gefrieren) + " (" + (e.winter && e.winter.temperatur) + " °C) · Schnee " +
                     ja(glieder.schmelzen) + " (Pegel " + (sm && sm.pegel) + " m, Grenze " + (sm && sm.versatz) + " m übers Jahr, " +
-                    (sm && sm.neuBau) + " Chunks neu) · Wasser-Pegel ✗ (keine Probe) · Lava " + ja(glieder.erstarren) +
-                    " (erstarrt Land Takt " + (la && la.ab) + ", See Takt " + (ls && ls.ab) + " unter Dampf) · Stahl ✗ (keine Probe)",
+                    (sm && sm.neuBau) + " Chunks neu) · Wasser-Pegel " + ja(glieder.pegel) + (k.pegel ? " (See +" + pg.hub + " m in " + pg.wochen + " Wochen, Fluss +" +
+                    pg.fluss + " m, Körper +" + (pg.flut && pg.flut[0]) + " m, " + pg.neuBau + " Chunks neu)" : " (keine Probe)") + " · Lava " + ja(glieder.erstarren) +
+                    " (erstarrt Land Takt " + (la && la.ab) + ", See Takt " + (ls && ls.ab) + " unter Dampf) · Stahl " + ja(glieder.gluehen) +
+                    (k.gluehen ? " (" + gl.stoff + " glüht ab " + gf.wechsel + " s, " + gf.kelvin + " K, erlischt nach " + gk.wechsel + " s, Feld +10 °C → +" +
+                    gl.feld + " K)" : " (keine Probe)"),
             };
         },
         pfad: [
@@ -1449,7 +1463,11 @@ module.exports = [
             "stamm/feld-*.js",
             "stamm/dirigent-kern.js",
             "stamm/bau-vorlagen.js",
+            "stamm/bau-teile.js",
+            "stamm/klang.js",
+            "stamm/kampf.js",
             "stamm/daten.js",
+            "schmiede-core.js",
             "scripts/diag-wasser-leben.cjs",
             "scripts/lib/wasser-linse.cjs",
             "scripts/lib/welt-boot.cjs",
