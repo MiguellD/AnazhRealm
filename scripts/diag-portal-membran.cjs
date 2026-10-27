@@ -38,13 +38,13 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // B: die Seite — der Renderer steht, die Membranen sind gebaut; dann ruht der Loop, und je Blick zählt EIN Frame, was der
 // Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
@@ -445,9 +445,7 @@ async function blickStufe(check) {
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
