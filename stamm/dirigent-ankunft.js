@@ -126,13 +126,11 @@ class AnazhRealm_dirigent_ankunft {
         // Auto-Connect, wenn der Spieler die Verbindung aktiv gelassen hat oder worldMeta.role host/guest
         // ist (welt-intrinsischer Modus); ensureWorldMeta lief schon, die worldId ist Raum-Default.
         // Die Absicht setzt die Tür selbst (initP2PSync); Guests bekamen vom Importer hostInfo.url ins localStorage
-        // gespeichert, p2pLoadPersisted oben hat das schon aufgenommen.
+        // gespeichert, p2pLoadPersisted oben hat das schon aufgenommen. Verbunden wird erst mit stehendem Leib (vor der
+        // Hauptschleife, unten): vorher kannte der Partner die Seite den ganzen Weltbau lang, ohne dass ein Takt von ihr kam.
         const weltRolle = this.state.worldMeta ? this.state.worldMeta.role : null;
         const weltVerbunden = weltRolle === "host" || weltRolle === "guest";
         if (weltVerbunden) this.state.p2p.role = weltRolle;
-        if (this.state.p2p.enabled || weltVerbunden) {
-            this.initP2PSync(null);
-        }
         try {
             await this.core.initPhysics();
             this.log("Physik erfolgreich initialisiert", "INFO");
@@ -724,6 +722,8 @@ class AnazhRealm_dirigent_ankunft {
         // durch das Tor zurück (die Heimat trägt darunter eingefroren).
         this._portalDwellingBootReturn();
 
+        // der Leib steht, die Schleife beginnt: jetzt erst die Leitung (s. o., Auto-Connect)
+        if (this.state.p2p.enabled || weltVerbunden) this.initP2PSync(null);
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
     }

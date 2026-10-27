@@ -53,6 +53,7 @@
 const http = require("http");
 const crypto = require("crypto");
 const os = require("os");
+const { setInterval } = require("timers");
 
 const HOST = process.env.ANAZH_SIGNALING_HOST || "0.0.0.0";
 const PORT = Number(process.env.ANAZH_SIGNALING_PORT) || 4313;
@@ -487,13 +488,14 @@ server.on("upgrade", (req, socket) => {
                 return;
             }
             buffer = result.rest;
+            socket.anazhAntwortet = true; // jeder Rahmen (Text, Pong) ist ein Lebenszeichen, s. DER PULS
             if (result.opcode === 0x1) handleClientMessage(socket, result.payload);
             else if (result.opcode === 0x8) {
                 handleDisconnect(socket);
                 socket.end();
                 return;
             }
-            // Binary (0x2) und Ping (0x9) werden in V1 ignoriert.
+            // Binary (0x2), Ping (0x9) und Pong (0xA, oben als Lebenszeichen gezählt) tragen sonst nichts.
         }
     });
     socket.on("close", () => handleDisconnect(socket));
@@ -502,6 +504,26 @@ server.on("upgrade", (req, socket) => {
         handleDisconnect(socket);
     });
 });
+
+// DER PULS (mp-leitung): GEGANGEN ist ein Peer, dessen Socket schloss oder einen ganzen Puls lang keinen Rahmen schickte —
+// der Browser beantwortet den Ping im Netz-Stack, auch wenn sein Loop steht (verborgener Tab, langsamer Rechner). Ein
+// stiller Spieler bleibt also im Raum; ein toter Rechner (halb offenes TCP) geht mit `peer-leave`. Der Client urteilt nie
+// nach seiner eigenen Uhr (der Leerlauf-Abschied in `p2pTick` ist gefallen).
+const PULS_MS = Number(process.env.ANAZH_SIGNALING_PULS_MS) || 15000;
+const PING_RAHMEN = Buffer.from([0x89, 0x00]); // FIN + Ping, ohne Nutzlast
+setInterval(() => {
+    for (const set of rooms.values()) {
+        for (const ws of Array.from(set)) {
+            if (ws.anazhAntwortet === false) {
+                logLine("INFO", `kein Puls: peer=${ws.anazh && ws.anazh.peerId}`);
+                ws.destroy(); // close → handleDisconnect → peer-leave
+                continue;
+            }
+            ws.anazhAntwortet = false;
+            if (!ws.destroyed) ws.write(PING_RAHMEN);
+        }
+    }
+}, PULS_MS).unref();
 
 // Liste der LAN-IPv4-Adressen, damit andere Rechner wissen, wohin
 // sie sich verbinden müssen. Loopback (127.0.0.1) wird separat

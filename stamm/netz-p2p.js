@@ -1546,7 +1546,6 @@ class AnazhRealm_netz_p2p {
     _p2pHandleCreaturePos(peerId, msg) {
         const remote = this.state.p2p.remoteCreatures;
         const list = Array.isArray(msg.list) ? msg.list : [];
-        const nowSec = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
         const seen = new Set();
         for (const e of list) {
             if (!e || typeof e.id !== "string") continue;
@@ -1581,7 +1580,6 @@ class AnazhRealm_netz_p2p {
             rc.tyaw = Number.isFinite(eyaw) ? eyaw : rc.tyaw || 0;
             // die Lage eines Gefallenen (fremdes Datum: nur vier endliche Zahlen gelten)
             rc.tq = Array.isArray(e.q) && e.q.length === 4 && e.q.every((v) => Number.isFinite(v)) ? e.q : null;
-            rc.lastSeen = nowSec;
         }
         // Reconcile: jede creature-pos-Nachricht ist die VOLLE Liste dieses
         // Peers — Sicht-Kopien, die nicht mehr darin stehen, sind tot.
@@ -1888,7 +1886,6 @@ class AnazhRealm_netz_p2p {
             ls.authX = x;
             ls.authY = y;
             ls.authZ = z;
-            entry.lastSeen = nowMs / 1000;
             // Der Ghost fährt — alte Snaps sind Geschichte (kein Misch-Render
             // beim späteren Rückfall; der Puffer füllt sich dann frisch).
             if (entry.snapBuf && entry.snapBuf.length) entry.snapBuf.length = 0;
@@ -1913,7 +1910,6 @@ class AnazhRealm_netz_p2p {
         entry.y = y;
         entry.z = z;
         entry.yaw = yaw;
-        entry.lastSeen = nowMs / 1000;
     }
 
     _p2pMsgDsl(msg, p2p) {
@@ -1977,7 +1973,6 @@ class AnazhRealm_netz_p2p {
             uebergabeChanged = true;
         }
         if (changed || uebergabeChanged) this._p2pApplyPeerSoul(entry);
-        entry.lastSeen = performance.now() / 1000;
     }
 
     _p2pMsgVibe(msg, p2p) {
@@ -1991,7 +1986,6 @@ class AnazhRealm_netz_p2p {
         const proof = typeof msg.proof === "string" ? msg.proof : "";
         entry.vibePassId = vibePassId || null;
         entry.vibeVerified = false;
-        entry.lastSeen = performance.now() / 1000;
         const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
         if (m && proof) {
             this._vibeVerify(pid, proof, m[1]).then((ok) => {
@@ -2177,7 +2171,6 @@ class AnazhRealm_netz_p2p {
             // P2P-GESTALT (V18.478) — die validierte Avatar-Übergabe DIESES Peers
             // ({s, gestalt} oder null), per-Peer (nicht die eigene state-Wahrheit).
             uebergabe: null,
-            lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
         entry.mesh = this._p2pBuildPlaceholderMesh(peerId);
@@ -2697,18 +2690,14 @@ class AnazhRealm_netz_p2p {
             p2p._lastCreatureBroadcast = currentTimeMs;
             this._p2pBroadcastCreatures();
         }
-        // Peer-Avatare nachziehen: Position, Animation, Aura, Name-Schild +
-        // idle-purge (kein update >10 s → entfernen, vermutlich verbindungslos).
-        const nowSec = currentTimeMs / 1000;
-        const t = nowSec;
+        // Peer-Avatare nachziehen: Position, Animation, Aura, Name-Schild. EIN STILLER PARTNER IST NICHT WEG (mp-leitung): sein
+        // Loop steht (verborgener Tab, langsamer Rechner), seine Leitung lebt — er bleibt, wo er zuletzt stand. Gegangen ist er
+        // erst am Ereignis des Brokers (`peer-leave`: sein Socket schloss oder schwieg dem Ping), nie nach der Wanduhr dieses
+        // Takts: der Leerlauf-Abschied (10 s ohne Nachricht) riss die Leitung, und die Rückkehr kam ohne sie.
+        const t = currentTimeMs / 1000;
         const dt = p2p._lastTickMs ? Math.max(0, Math.min(0.1, (currentTimeMs - p2p._lastTickMs) / 1000)) : 0;
         p2p._lastTickMs = currentTimeMs;
-        const stale = [];
-        for (const [pid, entry] of p2p.peers) {
-            this._p2pUpdatePeer(entry, t, dt);
-            if (nowSec - entry.lastSeen > 10) stale.push(pid);
-        }
-        for (const pid of stale) this._p2pRemovePeer(pid);
+        for (const entry of p2p.peers.values()) this._p2pUpdatePeer(entry, t, dt);
         // Kreatur-Sicht-Sync — die Kreatur-Meshes der Mitspieler nachziehen.
         this._p2pTickRemoteCreatures(t, dt);
         // W16-Politur — einen hängenden Welt-Bündel-Pull weich abbrechen.
@@ -2858,7 +2847,6 @@ class AnazhRealm_netz_p2p {
         if (p2p.lockstep === false) return;
         if (!Array.isArray(msg.f) || msg.f.length === 0 || msg.f.length > 240 || !Number.isFinite(msg.s0)) return;
         const entry = this._p2pEnsurePeerEntry(msg.peerId);
-        entry.lastSeen = performance.now() / 1000;
         const ls = entry.lockstep || (entry.lockstep = this._lockstepNewGhost());
         if (p2p.lockstepDebug && !ls.trace) ls.trace = [];
         const expected = ls.bufStart + ls.buf.length;
