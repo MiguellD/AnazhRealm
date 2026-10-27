@@ -620,3 +620,4 @@
 2026-10-27 02:47:48 takt8-headless fahrzeug.K1#1 GRÜN 0.0 · 71/76
 2026-10-27 02:47:53 takt8-headless studios.K5#1 GRÜN 0.6 · 72/76
 2026-10-27 02:48:00 takt8-headless studios.K5#2 GRÜN 0.6 · 73/76
+2026-10-27 02:48:37 takt8-headless bauen.K1#1 GRÜN 1.8 · 74/76
