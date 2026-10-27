@@ -2046,18 +2046,24 @@ class AnazhRealm_feld_leben {
         const K = globalThis.__gelaendeCore;
         const g = K.glutAus(s.T + 273.15, E.feuerK);
         if (!(g > 0)) return null;
-        const q = this._stahlLicht || (this._stahlLicht = { quelle: "stahl", x: 0, y: 0, z: 0, phase: 0 });
+        const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        const q =
+            this._stahlLicht ||
+            (this._stahlLicht = {
+                quelle: "stahl",
+                phase: 0,
+                L: Object.assign({}, L, { kernM: E.kernM, flacker: null }),
+            });
         const hand = pm.userData && pm.userData.heldMesh;
         const v = this._stahlLage || (this._stahlLage = new THREE.Vector3());
         if (hand) hand.getWorldPosition(v);
         else v.set(pm.position.x, pm.position.y + E.handHoeheM, pm.position.z);
         const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
-        const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        q.L.kelvin = s.T + 273.15;
         return Object.assign(q, {
             x: v.x,
             y: v.y,
             z: v.z,
-            L: Object.assign({}, L, { kelvin: s.T + 273.15, kernM: E.kernM, flacker: null }),
             masse: (g * E.flaecheM2) / ((Math.PI / 4) * bett * bett),
             glut: g,
         });
