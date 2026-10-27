@@ -2250,7 +2250,6 @@ async function kreaturProben(r, T, opts) {
         // Täter (Selbsttest): alle in EINEM Lauf (`EIN_LAUF`), je einer an seinem Ort im Lauf — vor dem Tag gezählt und
         // zurück, im Tag an seiner Messung, nach ihm je ein Fenster mit eigenem Messer (`sicht`: das Urteil je Täter)
         const [hat, sicht] = [(t) => [].concat(taeter).includes(t), {}];
-        const schlaf = (ms) => new Promise((z) => setTimeout(z, ms));
         const FC = globalThis.__fachwerkCore;
         const wm = s.worldMeta;
         const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -2446,7 +2445,7 @@ async function kreaturProben(r, T, opts) {
             }
         };
         const bisDa = async (name, offen) => {
-            for (const weiter = W.__deckel(name, 120); weiter() && offen(); await schlaf(16)) tick();
+            for (const weiter = W.__deckel(name, 120); weiter() && offen(); await sleep(16)) tick();
         };
         // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
         // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
@@ -2478,10 +2477,10 @@ async function kreaturProben(r, T, opts) {
             const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
             weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
         )
-            await schlaf(50);
+            await sleep(50);
         for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
             r._tickAutoSettlement(pm);
-            await schlaf(0);
+            await sleep(0);
         }
         // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung)
         const S = (r._bewohnerSiedlungen || new Map()).get("start");
@@ -2700,7 +2699,7 @@ async function kreaturProben(r, T, opts) {
                 pm.copy(P);
                 // die Vorlagen der Gestalten kommen aus dem Faden zurück (die Fortgegangenen gaben sie frei): die Freigabe
                 // der Foundry wie je Bild, die Uhr steht (Takt 0)
-                for (const weiter = W.__deckel("bewohner: die Wiederkehr", 60); weiter(); await schlaf(16))
+                for (const weiter = W.__deckel("bewohner: die Wiederkehr", 60); weiter(); await sleep(16))
                     if (
                         (r._tickFoundryIngest(),
                         r._tickBewohner(0),

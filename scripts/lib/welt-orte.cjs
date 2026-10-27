@@ -247,7 +247,12 @@ function weltOrte(art, opts) {
     const gefaelle = (x, z, b) => [(H(x + b, z) - H(x - b, z)) / (2 * b), (H(x, z + b) - H(x, z - b)) / (2 * b)];
     const neigung = (x, z, b) => grad(Math.hypot(...gefaelle(x, z, b || 1)));
     const unterFels = (x, z) => r._kreaturUnterFels(x, H(x, z), z);
-    const fest = (x, y, z) => r._fieldSolid(x, y, z);
+    // die Spalte der letzten Probe (ek-schleife): `fest` fragt je Höhe dieselbe Spalte — EIN Spalten-Kontext
+    // (`_terrainColumnContext`, dieselbe Dichte wie ohne), nie je Höhe ein neuer (die Spalten-Suche `hoehle` rechnete
+    // 3,0 von 3,8 s am Kontext, ein Ruf hielt den Haupt-Faden 1,8 s)
+    let sp = {};
+    const fest = (x, y, z) =>
+        r._fieldSolid(x, y, z, sp.x === x && sp.z === z ? sp.k : (sp = { x, z, k: r._terrainColumnContext(x, z) }).k);
     // die Fahrt-Linie ab (sx, sz) längs (ux, uz): kein Blocker eines Baus von l0 bis l1 m, quer binnen q m (+ halbe Box)
     const bahnFrei = (sx, sz, ux, uz, l0, l1, q) => {
         for (const e of r.state.architectures || []) {

@@ -1963,16 +1963,34 @@ class AnazhRealm_wasser_zellen {
     // DER EMPFANG DES STAUS (`_stauFelder`): die gerechneten Felder des Voxel-Fadens gehen in den Zustand (`waterStau`, der Spiegel
     // des Kerns liest sie über die Lage), die Zellen der Fenster, deren Feld kam, fiel oder neu gerechnet ist, fallen (Neubau,
     // die Flut liest den neuen Spiegel), der Automat wacht. Der Stau einer alten Welt fällt; ein Wurf des Fadens bricht laut.
+    // DER STAND DES FENSTERS STEIGT (ci-werk-wasser): jeder Chunk-Bau, den der Faden vor diesen Feldern rechnete, fällt — im Flug
+    // (der Stand-Filter `_voxelStand` liest die Generation je Chunk, `_chunkGenKarte`, wie beim Erdbau) und im Cache, nicht nur
+    // der gezeichnete Chunk. Bis hierhin trat ein Chunk, dessen Bau beim Empfang im Flug war oder im Cache lag, ohne das
+    // Stau-Wasser ein und blieb so — nach dem Reload am Damm der Prüfbühne 1072 statt 1142 nasse Punkte (CI 40441173506), unter
+    // 4× Drossel 1047, nach einem Neubau des Fensters 1142 (gate:werk-im-wasser D, die Gegenprobe des Neubaus).
     _stauAn(a) {
         this._stauImFlug = null;
         if (a.type === "error")
             return void this._bruchMelden(`STAU-FADEN: die Felder des Staus kamen nicht — ${a.message}`);
         if (a.welt !== (this._hydroWelt | 0)) return;
         if (a.felder) this.state.waterStau = a.felder;
+        const span = this._voxelChunkConfig(0).span;
+        const gen = this._chunkGenKarte || (this._chunkGenKarte = new Map());
+        const cache = this.state.voxelMeshCache;
         for (const f of a.anders) {
-            const [x, z] = [(f.gx0 + f.w * 0.5) * f.step, (f.gz0 + f.h * 0.5) * f.step];
-            this._remeshVoxelChunksAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step, 0);
-            this._invalidateWaterCapsAround(x, z, Math.max(f.w, f.h) * 0.5 * f.step);
+            const [x, z, r] = [
+                (f.gx0 + f.w * 0.5) * f.step,
+                (f.gz0 + f.h * 0.5) * f.step,
+                Math.max(f.w, f.h) * 0.5 * f.step,
+            ];
+            this._editGenZaehler = (this._editGenZaehler || 0) + 1;
+            for (let cx = Math.floor((x - r) / span); cx <= Math.floor((x + r) / span); cx++)
+                for (let cz = Math.floor((z - r) / span); cz <= Math.floor((z + r) / span); cz++) {
+                    gen.set((cx + 32768) * 65536 + (cz + 32768), this._editGenZaehler);
+                    if (cache) for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
+                }
+            this._remeshVoxelChunksAround(x, z, r, 0);
+            this._invalidateWaterCapsAround(x, z, r);
         }
     }
 
