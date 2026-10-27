@@ -532,7 +532,7 @@ class AnazhRealm_netz_portal {
         }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const bpPortalMeta = bp && bp.portalMeta ? bp.portalMeta : null;
-        // Signierte Welt-Adresse → WEB-Portal: Bestätigungs-Karte, dann joinWorldFromCode. Ungültige Adresse
+        // Signierte Welt-Adresse → WEB-Portal: Bestätigungs-Karte, dann `_weltBeitritt`. Ungültige Adresse
         // fällt am Sieb auf den Sub-Welt-Pfad; bei "invalid" nie Auto-Join (Antikörper: lügendes Portal).
         // ENTRY-portalMeta gewinnt vor Blueprint-portalMeta — sonst trügen N Hallen-Slots dieselbe Welt.
         const entryPortalMeta = entry.portalMeta || null;
@@ -573,7 +573,7 @@ class AnazhRealm_netz_portal {
     // (1) _admitForeignWorldAddress siebt — kaputte Form fällt auf den Sub-Welt-Pfad zurück;
     // (2) Signatur async prüfen (valid · invalid · unsigned bestimmt den Ton der Karte);
     // (3) _portalAddressConfirm (Browser: confirm; headless: skipConfirm) — "invalid" nie Auto-Join;
-    // (4) joinWorldFromCode mit dem Adress-Bundle als Einladungs-Code.
+    // (4) `_weltBeitritt` mit der gesiebten Adresse.
     async _enterPortalToAddress(entry, rawAddress) {
         const addr = this._admitForeignWorldAddress(rawAddress);
         if (!addr) {
@@ -606,14 +606,13 @@ class AnazhRealm_netz_portal {
             this.log(`Portal „${addr.label}" trägt eine UNGÜLTIGE Signatur — Reise verweigert.`, "WARN");
             return { ok: false, reason: "invalid_signature", status };
         }
-        // Der bestehende Join-Flow (W11.5): broker + roomId → world-snapshot.
-        const code = `anazh://${addr.broker.replace(/^wss?:\/\//i, "")}/${addr.roomId}`;
-        this.log(`Reise zur Welt „${addr.label}" (${status}) — Adresse ${code}`, "INFO");
+        // Der Beitritt (W11.5): broker + roomId → world-snapshot.
+        this.log(`Reise zur Welt „${addr.label}" (${status}) — ${addr.broker} → ${addr.roomId}`, "INFO");
         // Der Beitritt geht durch DIE TÜR (`_importGuestWorld` → `_weltBetreten`): die alte Welt hält ihr Zeugnis fest und
         // sichert sich, die fremde wird unsere lokale Welt (role:"guest", kein Portal-Overlay), Sperre und Reload. Bis 10.10.
         // lud das Adress-Portal nie neu: der nächste saveState setzte den Aktiv-Zeiger auf die alte Welt zurück, und der
         // Beitritt verschwand still (Gegenprüfung Runde 3).
-        return this.joinWorldFromCode(code, {
+        return this._weltBeitritt(addr, {
             slugHint: addr.label,
             zeugnisA: {
                 key: `portalAddress:${addr.worldId}`,

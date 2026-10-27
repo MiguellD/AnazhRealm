@@ -2198,7 +2198,7 @@ class AnazhRealm_werkstatt_vorschau {
             this._workshopAppendWerkHeading(machZone);
             if (!bp.builtIn) this._workshopAppendSignatureRow(machZone, bp, ws);
             if (canMake) this._workshopAppendFertigenRow(machZone, bp);
-            this._workshopAppendTeilenRow(machZone, bp);
+            this._teilenZeile(machZone, "werk", () => this.teileWerk(bp.name));
             // M5 (V18.157, Befund 17) — das UMWIDMEN gehört der WERKSTATT.
             if (!bp.builtIn) this._workshopAppendUmwidmenRow(machZone, bp);
         }
