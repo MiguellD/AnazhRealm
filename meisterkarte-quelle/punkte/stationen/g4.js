@@ -97,6 +97,48 @@ const REGLER_PFAD = [
     "scripts/lib/stamm.cjs",
     "scripts/lib/welt-boot.cjs",
 ];
+// DER LOKALE ANBIETER der Stationen mit Modell (ki.K1#2, ki.K3#1, ki.K4#1): läuft ollama auf 127.0.0.1:11434 nicht, startet ihn die
+// Station und beendet ihn danach; die Zeile ANBIETER beweist, dass der Host das Modell trägt (kein Stub, kein Mitschnitt)
+const OLLAMA_AN =
+    "set -u; O=127.0.0.1:11434; S=''; " +
+    "if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X=\"${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe\"; " +
+    "[ -x \"$X\" ] || X=ollama; (\"$X\" serve > /dev/null 2>&1 < /dev/null &); S=1; " +
+    "for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; " +
+    "echo \"ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e \"let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{" +
+    "try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}" +
+    "catch(e){console.log('{}')}})\")\"; ";
+const OLLAMA_AUS = "[ -n \"$S\" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e";
+const OLLAMA_ENV = { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" };
+const anbieterVon = (out) => {
+    try {
+        return JSON.parse((/^ANBIETER \S+ (.*)$/m.exec(out) || [])[1]);
+    } catch (_e) {
+        return null;
+    }
+};
+const KEIN_ANBIETER = (anb) => ({
+    gruen: false,
+    zahl: "kein echter Anbieter: 127.0.0.1:11434 trägt qwen3:4b-instruct nicht (" + JSON.stringify(anb) + ")",
+});
+// der gemessene Pfad des Korpus mit Modell (ki.K1#2 und die Teile seele, regeln)
+const KI_KORPUS_PFAD = [
+    "spec/abnahme/ki-korpus.json",
+    "stamm/feld-*.js",
+    "stamm/werkstatt-vorschau.js",
+    "stamm/studio-*.js",
+    "stamm/bild-himmel.js",
+    "stamm/dirigent-*.js",
+    "stamm/kreatur-*.js",
+    "stamm/koerper-*.js",
+    "stamm/daten.js",
+    "*-core.js",
+    "foundry-bruecke.js",
+    "index.html",
+    "scripts/diag-v1-pfad.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/stamm.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
 // gate:praegung-welt (K): spawn_studio und sein Stempel, die Werke je Art (Bau, Wesen, Prägung) und ihre Leser in der Welt
 // (die Gesetze des Tors und des Wagens, der Guss der Gattung, der Leib des Spielers, der Klang), der Korpus-Teil Regler-Wörter
 const KI_K2_PFAD = [
@@ -448,20 +490,14 @@ const alle = [
         befehl: [
             "bash",
             "-c",
-            "set -u; O=127.0.0.1:11434; S=''; " +
-                "if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X=\"${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe\"; " +
-                "[ -x \"$X\" ] || X=ollama; (\"$X\" serve > /dev/null 2>&1 < /dev/null &); S=1; " +
-                "for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; " +
-                "echo \"ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e \"let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{" +
-                "try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}" +
-                "catch(e){console.log('{}')}})\")\"; " +
+            OLLAMA_AN +
                 "node scripts/diag-v1-pfad.cjs --korpus --echt; e=$?; " +
                 "node -e \"const k=require('./spec/abnahme/ki-korpus.json'); " +
                 "console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); " +
                 "console.log('KORPUS ' + Object.keys(k.saetze).length)\"; " +
-                "[ -n \"$S\" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e",
+                OLLAMA_AUS,
         ],
-        env: { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" },
+        env: OLLAMA_ENV,
         gpu: false,
         zeit: false,
         minuten: 15,
@@ -502,24 +538,7 @@ const alle = [
                     " ms (genannt)" + (taeter.length ? ", Täter " + taeter.join(" · ").slice(0, 160) : ""),
             };
         },
-        pfad: [
-            "spec/abnahme/ki-korpus.json",
-            "stamm/feld-*.js",
-            "stamm/werkstatt-vorschau.js",
-            "stamm/studio-*.js",
-            "stamm/bild-himmel.js",
-            "stamm/dirigent-*.js",
-            "stamm/kreatur-*.js",
-            "stamm/koerper-*.js",
-            "stamm/daten.js",
-            "*-core.js",
-            "foundry-bruecke.js",
-            "index.html",
-            "scripts/diag-v1-pfad.cjs",
-            "scripts/lib/ausgabe-aufnahme.cjs",
-            "scripts/lib/stamm.cjs",
-            "scripts/lib/welt-boot.cjs",
-        ],
+        pfad: KI_KORPUS_PFAD,
         quelle: "2 = das Soll mit Modell (gültig ≥ 95 %, Absicht ≥ 85 %, 0 Brüche, Negativ-Sätze scheitern benannt)",
     },
     {
@@ -597,6 +616,94 @@ const alle = [
         },
         pfad: [...KI_K2_PFAD, "spec/profiband/ratsche-ki-korpus*.json", "scripts/diag-v1-pfad.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
         quelle: "2 = ≥ 95 % und der Korpus-Teil Regler-Wörter („knorrig“, „schmal und hoch“) ≥ 80 % mit Modell",
+    },
+    {
+        kriterium: "ki.K3",
+        staffel: 1,
+        geraet: "headless",
+        // die Seele im Gespräch (ki-seele-regeln): der Teil seele des Korpus (spec/abnahme/ki-korpus.json, 12 Fragen) über den echten
+        // Chat-Pfad gegen das lokale Modell — je Frage ein Wesen und seine Taten über die Wege des Spiels (der Schlag des Spielers
+        // `damageCreature`, die Gabe `activateCreatureConsumable`, die Geste „folge mir", erinnert, wenn es beim Spieler ankommt),
+        // dann die Frage im Chat an seinen Namen (`maybeAnswerCreature` → Persona-Prompt mit den letzten 8 Erinnerungen in den Worten
+        // von ERINNERUNG_SATZ). Das Prädikat sucht in der Antwort den Bezug auf eine erlebte Tat und keinen auf eine fremde (das
+        // Nachplappern aller Taten fällt). Soll ≥ 70 % der Antworten; die Mutante V1_MUTANTE=gedaechtnis-leer fällt (Stub 0/12).
+        befehl: [
+            "bash",
+            "-c",
+            OLLAMA_AN +
+                "node scripts/diag-v1-pfad.cjs --korpus --seele --echt; e=$?; " +
+                "node -e \"console.log('KORPUS ' + Object.keys(require('./spec/abnahme/ki-korpus.json').seele.saetze).length)\"; " +
+                OLLAMA_AUS,
+        ],
+        env: OLLAMA_ENV,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const anb = anbieterVon(out);
+            if (!anb || anb.traegt !== true) return KEIN_ANBIETER(anb);
+            const n = +((/^KORPUS (\d+)$/m.exec(out) || [])[1] || 0);
+            const s = zeilen(out).map((l) => /^\s*(✓|✗)( ungültig)?( BRUCH)? „(.+?)“ .*? · (.*)$/.exec(l)).filter(Boolean);
+            const wort = /^\s*(✅|❌) WORT der Korpus über den echten Chat-Pfad \(echter Anbieter\).*? · seele · /m.exec(out);
+            const erf = s.filter((x) => x[1] === "✓");
+            return {
+                gruen: !!wort && n > 0 && s.length === n && erf.length / n >= 0.7,
+                zahl:
+                    erf.length + " von " + s.length + "/" + n + " Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ " +
+                    "127.0.0.1:11434" + (wort ? "" : ", keine WORT-Zeile des echten Anbieters (Exit " + lauf.exit + ")") +
+                    (erf.length ? ", z. B. „" + erf[0][4] + "“ → " + erf[0][5].slice(0, 90) : ""),
+            };
+        },
+        pfad: KI_KORPUS_PFAD,
+        quelle: "1 = mit lokalem Modell nennen ≥ 70 % der Antworten aus dem Gesprächs-Korpus eine der letzten 8 Erinnerungen, an einem Gerät",
+    },
+    {
+        kriterium: "ki.K4",
+        staffel: 1,
+        geraet: "headless",
+        // die Regeln des Modells in der Wertung (ki-seele-regeln): der Teil regeln des Korpus (6 Sätze, die Regeln verlangen) über den
+        // echten Chat-Pfad gegen das lokale Modell, verteilt über einen Selbstlauf von 600 s Welt-Zeit im Zeitraffer, in dem der Nexus
+        // je 3 s eine Regel schreibt; gezählt je Drittel und Quelle (source llm gegen nexus): neu · erneuert · verfallen · verdrängt.
+        // Der Gegenlauf mischt das δ (je Quelle im Wechsel +1 / −1 über die Baseline des Rewards, der Nexus schreibt je Sekunde, die
+        // Kappe verdrängt). GRÜN, wenn die WORT-Zeile des echten Anbieters ohne Täter steht: je Drittel eine neue LLM-Regel, LLM- und
+        // Nexus-Regeln gewertet und verdrängt, im Gegenlauf je Quelle die Heiler um ≥ 0,25 öfter erneuert als die Schädlinge
+        // (regelVerdict). Die Mutante V1_MUTANTE=wertung-aus fällt (Stub: Heiler 0,00 · Schädlinge 0,00).
+        befehl: [
+            "bash",
+            "-c",
+            OLLAMA_AN + "node scripts/diag-v1-pfad.cjs --korpus --regeln --echt; e=$?; " + OLLAMA_AUS,
+        ],
+        env: OLLAMA_ENV,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const anb = anbieterVon(out);
+            if (!anb || anb.traegt !== true) return KEIN_ANBIETER(anb);
+            const wort = /^\s*(✅|❌) WORT der Korpus über den echten Chat-Pfad \(echter Anbieter\).*? · regeln · .*?(?: — Täter: (.*))?$/m.exec(out);
+            let R = null;
+            try {
+                R = JSON.parse((/^REGELN (.*)$/m.exec(out) || [])[1]);
+            } catch (_e) {
+                R = null;
+            }
+            if (!wort || !R) return { gruen: false, zahl: "keine WORT- oder REGELN-Zeile des echten Anbieters (Exit " + lauf.exit + ")" };
+            const sum = (k) => [...R.echt, ...R.gegen].reduce((a, d) => a + (d[k] || 0), 0);
+            const fort = (q) => sum(q + "erneuert") + sum(q + "verfallen") + sum(q + "verdraengt");
+            const heil = (v) => (sum("llm" + v + "erneuert") / Math.max(1, fort("llm" + v))).toFixed(2);
+            return {
+                gruen: wort[1] === "✅" && lauf.exit === 0,
+                zahl:
+                    "LLM-Regeln neu je Drittel " + R.echt.map((d) => d["llm neu"] || 0).join("/") + ", erneuert " + sum("llm erneuert") +
+                    " · verfallen " + sum("llm verfallen") + " · verdrängt " + sum("llm verdraengt") + " (Nexus " + sum("nexus erneuert") + " · " +
+                    sum("nexus verfallen") + " · " + sum("nexus verdraengt") + "); Gegenlauf: erneuert LLM δ+ " + heil("+ ") + " · δ− " +
+                    heil("- ") + ", verdrängt " + (sum("llm+ verdraengt") + sum("llm- verdraengt")) + (wort[2] ? ", Täter " + wort[2].slice(0, 160) : ""),
+            };
+        },
+        pfad: KI_KORPUS_PFAD,
+        quelle: "1 = im Selbstlauf mit Modell registrierte LLM-Regeln (source llm) werden von derselben Fitness gewertet und verdrängt wie Nexus-Regeln, gegen den Gegenlauf mit gemischtem δ",
     },
 
     // ───────────────────────────── Bauen ─────────────────────────────
