@@ -16,7 +16,7 @@
 //  (P) SPITZEN: jede Mischung offline durch Master und Spitzen-Wand — keine Spitze erreicht 0 dBFS.
 //  (R) RUF ← LEIB: jeder gehörte Vogel ist ein gezeichneter Leib; ohne Leib verstummt der Chor (Mutation an der Wiese), ein
 //      Tier-Ruf ohne Leib der Welt bleibt stumm.
-//  (F) DER KÖRPER KLINGT AUS BEWEGUNG (klang.K4 Staffel 2): Motor, Landung, Doppler am Bus.
+//  (F) DER KÖRPER KLINGT AUS BEWEGUNG (klang.K4 Staffel 2): Motor, Landung, Doppler an sechs Radial-Geschwindigkeiten am Bus.
 //  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S13 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
@@ -587,12 +587,12 @@ async function messeOrt(page, name, ort, stubs) {
             const st = r.state;
             const P = Object.getPrototypeOf(r);
             const alt = {};
-            if (stubs && stubs.ohneWasser) {
+            if (stubs?.ohneWasser) {
                 // das Wasser an seiner Quelle weg: die EINE Wahrheit am Körper (die Nässe des Klangs liest sie)
                 alt._koerperWasser = P._koerperWasser;
                 P._koerperWasser = () => -Infinity;
             }
-            if (stubs && stubs.ohneLeib) {
+            if (stubs?.ohneLeib) {
                 // der Leib weg: das Revier-Gesetz trägt kein Revier, die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test)
                 // singt in der Lage am Ohr ohne einen Leib
                 [alt.vogel, alt.lage] = [r.constructor._vogelGesetzMemo, P._umweltLage];
@@ -603,7 +603,7 @@ async function messeOrt(page, name, ort, stubs) {
                     };
             }
             const um0 = st.symphony.umwelt;
-            if (stubs && stubs.ohneWerkstatt && um0) {
+            if (stubs?.ohneWerkstatt && um0) {
                 // Selbst-Test: ein Graph, der im Haupt-Thread rechnet (ohne Lieferung der Werkstatt).
                 alt.graph = um0.graph;
                 alt.graph.stopAlle();
@@ -754,7 +754,7 @@ async function kosten(page, stubs) {
         });
         // der Zwilling der Glut (S4): statt des Verzeichnisses (`_blockerMit("glut")`) ein Umlauf über ALLE Bauten
         const altMit = P._blockerMit;
-        if (stubs && stubs.alleBauten && altMit) {
+        if (stubs?.alleBauten && altMit) {
             P._blockerMit = function (name) {
                 if (name !== "glut") return altMit.call(this, name);
                 return this.state.architectures.filter((e) => e && this._glutFlaeche(e) > 0);
@@ -1198,8 +1198,8 @@ async function takt(page, erg) {
 // (L) ein Hopser aus 0,2 m bleibt stumm, Stürze aus 1 · 2 · 4 · 8 · 12 m bei 30 Bildern/s (zwei
 // Sim-Schritte je Bild) landen genau einmal mit dem Aufprall-Tempo des Leib-Lösers (`_sturzTempo` am Schritt), je Stufe ≥ 0,5 dB
 // lauter am Bus. (D) ein gestoßener GT rutscht 4 m am stehenden Ohr vorbei: die Periode seines Abrollens (klang
-// FAHRT.abrollen.grundHz) 6 m vor und 6 m hinter dem nächsten Punkt ist der Doppler — Vorzeichen und Betrag (± 10 %) aus der
-// Relativ-Geschwindigkeit, c 343 m/s. Die Täter des Selbsttests (S13): ein stummer Motor, eine tonlose Landung, ein Doppler mit
+// FAHRT.abrollen.grundHz) 9 · 4,5 · 2 m vor und hinter dem nächsten Punkt ist der Doppler — Vorzeichen und Betrag (± 10 %) aus
+// der Relativ-Geschwindigkeit, c 343 m/s: sechs Radial-Geschwindigkeiten, an jeder das Gesetz, ist die Proportion (klang.K4 Staffel 2). Die Täter des Selbsttests (S13): ein stummer Motor, eine tonlose Landung, ein Doppler mit
 // falschem Vorzeichen.
 async function koerperSeite(m, mut) {
     const [r, K] = [window.anazhRealm, window.__klangCore];
@@ -1298,7 +1298,7 @@ async function koerperSeite(m, mut) {
                     0
                 );
                 const k = s._schrittKlang;
-                F.landung.push([h, leib, k.landungen - n0, k.letzter && k.letzter.aufprall, d.db]);
+                F.landung.push([h, leib, k.landungen - n0, k.letzter?.aufprall, d.db]);
             }
             delete r._loopPhysicsSync;
         }
@@ -1311,7 +1311,7 @@ async function koerperSeite(m, mut) {
             stell(fz.x + 12 * fx + 4 * fz2, fz.z + 12 * fz2 - 4 * fx);
             bild(1 / 60, 30);
             r._fahrWagenStoss(e, G, v * fx, v * fz2);
-            for (const wo of [-6, 6]) {
+            for (const wo of [-9, -4.5, -2, 2, 4.5, 9]) {
                 for (let k = 0; k < 300 && (fz.x - pm.position.x) * fx + (fz.z - pm.position.z) * fz2 < wo; k++)
                     bild(1 / 60);
                 const [o, w, d] = [pm.position, r._fahrWagenGeschw(e), await abgriff(() => r._fahrtKlangTick(), 2)];
@@ -1319,7 +1319,7 @@ async function koerperSeite(m, mut) {
                 F.doppler.push([
                     wo,
                     343 / (343 - (w.x * u[0] + fz.vy * u[1] + w.z * u[2]) / Math.hypot(...u)),
-                    d.db > -90 && T0 / gipfel(ac(d), Math.round(T0 * 0.8), Math.round(T0 * 1.25), 8),
+                    d.db > -90 && T0 / gipfel(ac(d), T0 * 0.8, T0 * 1.25, 8),
                 ]);
             }
             r.removeArchitecture(e, { still: true });
