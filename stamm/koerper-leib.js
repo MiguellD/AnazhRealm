@@ -610,7 +610,7 @@ class AnazhRealm_koerper_leib {
         const [s, c] = [Math.sin(ik ? ik.yaw : 0), Math.cos(ik ? ik.yaw : 0)];
         const y = this._gaitProbeY || (this._gaitProbeY = []);
         for (let k = 0; k < u.length; k++) y[k] = this._gaitBodenY(x + u[k] * s, z + u[k] * c);
-        [p.x, p.z, p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [x, z, NaN, 0, 0, NaN, 0];
+        [p.x, p.z, p.yaw, p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [x, z, ik && ik.yaw, NaN, 0, 0, NaN, 0];
         if (!Number.isFinite(y[u.indexOf(0)])) return;
         for (let i = 0; i < u.length; i++)
             for (let j = i; j < u.length; j++) {
@@ -690,10 +690,14 @@ class AnazhRealm_koerper_leib {
         }
         ik.soleY = soleY;
         ik.yaw = Number.isFinite(yaw) ? yaw : 0;
-        // der stehende Fuß liest am Ort, an dem er aufsetzte (`_gaitSetzen`), der schwingende unter dem Knöchel der Pose
-        const [fL, fR] = [ik.lockL.on ? ik.lockL : ik.footL, ik.lockR.on ? ik.lockR : ik.footR];
-        this._gaitProbe(ik.probeL, fL.x, fL.z, ik);
-        this._gaitProbe(ik.probeR, fR.x, fR.z, ik);
+        // der stehende Fuß liest am Ort, an dem er aufsetzte (`_gaitSetzen`) — einmal je Stand und Blick —, der schwingende
+        // unter dem Knöchel der Pose
+        for (const [p, l, f] of [
+            [ik.probeL, ik.lockL, ik.footL],
+            [ik.probeR, ik.lockR, ik.footR],
+        ])
+            if (!(l.on && p.x === l.x && p.z === l.z && p.yaw === ik.yaw))
+                this._gaitProbe(p, l.on ? l.x : f.x, l.on ? l.z : f.z, ik);
         if (!Number.isFinite(ik.probeL.g) || !Number.isFinite(ik.probeR.g)) return null;
         // leichte RUMPF-Neigung am Hang: die Fuß-Proben entlang der Blick-
         // Achse tragen die Steigung (exp-geglättet; Füße beisammen → 0).
