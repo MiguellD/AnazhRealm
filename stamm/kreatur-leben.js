@@ -854,19 +854,17 @@ class AnazhRealm_kreatur_leben {
             });
         }
         // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
-        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`) —
-        // und sein Fehlen ins Leben des Orts (die Narbe `TAT_NARBE.riss`, `_tatSchreiben`). Von Spieler-Hand ist der Fall eine
-        // Tat (`_handTat`, affekt K1#2): gewertet an der Situation davor und danach — der Riss senkt sie, der Fall eines Jägers
-        // löst sein Umstellen.
+        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`).
+        // Von Spieler-Hand ist der Fall eine Tat (`_handTat`, affekt K1#2): sein Fehlen geht ins Leben des Orts (die Narbe
+        // `TAT_NARBE.riss`, `_tatSchreiben`), gewertet an der Situation davor und danach — der Riss senkt sie, der Fall eines
+        // Jägers löst sein Umstellen. Der Riss eines Jägers der Wildnis ist ihr Kreislauf (der Kadaver nährt), keine Narbe: mit
+        // ihr kippte die Kaskade (gate:kreatur-takt kaskade, Wölfe −0,52 statt 0).
         const p = creature.position;
         const fall = () => {
-            if (p) {
-                this._depositEmotion(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
-                this._tatSchreiben("riss", p.x, p.z);
-            }
+            if (p) this._depositEmotion(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
             this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
         };
-        if (source === "player" && p) this._handTat("toeten", p, fall);
+        if (source === "player" && p) this._handTat("toeten", p, () => (this._tatSchreiben("riss", p.x, p.z), fall()));
         else fall();
     }
 

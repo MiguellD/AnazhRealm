@@ -151,8 +151,10 @@ Die Konstante ist **`AnazhRealm.WERTUNG`**. Die Gleichung: `baseline += α·(x �
 `δ = x − baseline`. Zwei Ebenen lesen denselben δ:
 
 - **Spieler-Appraisal** (`p.wohlBaseline`, EMA mit `playerTau` 30 s): die Situation ist
-  60 % lebendig (Feld unter dem Spieler) + 40 % HP im Pfad-Modus, sonst lebendig allein
-  (`_playerSituationWohl`) — **NICHT die Emotion selbst** (sonst Runaway). `δ = Situation − Baseline` → joy/hope bei δ>0, sorrow/chaos bei δ<0 (über eine
+  60 % lebendig (Feld unter dem Spieler) + 40 % HP im Pfad-Modus, sonst lebendig allein, weniger das Umstellen seiner
+  Jäger (`_spielerUmstellt` × `umstellt`) (`_playerSituationWohl`) — **NICHT die Emotion selbst** (sonst Runaway).
+  `δ = Situation − Baseline` → joy/hope bei δ>0, sorrow/chaos bei δ<0 (der Anteil des Umstellens wird Furcht/chaos, sein
+  Fall löst sie: der Triumph; über eine
   kurze EMA `appraisalEmaTau` 8 s). Weil die Baseline langsam nachzieht, fällt die
   **Gewöhnung umsonst heraus**: das 100. Haus ist weniger freudig als das erste, ohne
   jeden Hardcode.
@@ -242,9 +244,6 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 
 **Die Seele (wenn das Fundament trägt):**
 
-- **Furcht und Triumph erleben:** die Jagd steht (wild jagt den Spieler und andere Kreaturen
-  über den `_scentAt`-Gradient); offen ist, das Bedrohtsein und den Fall eines Jägers als
-  Spieler-Affekt fühlbar zu knüpfen.
 - **Emotion → Regel-EMERGENZ.** Die einzelnen Kopplungen (`sorrow→rainy` etc.) sind noch
   hand-codiert. Die Weltregeln-DSL (§4.5) macht sie ausdrückbar — der Vektor: sie als
   emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.

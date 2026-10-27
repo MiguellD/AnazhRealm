@@ -2642,7 +2642,7 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
     brand: Object.freeze({ tiefe: 0.3, stunden: 72 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
-    riss: Object.freeze({ tiefe: 0.03, stunden: 24 }), // ein Tod im Kampf (`_creatureCombatDeath`): ein Leben fehlt dem Ort
+    riss: Object.freeze({ tiefe: 0.03, stunden: 24 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort
     max: 0.6,
     lebMin: 0.1,
 });
