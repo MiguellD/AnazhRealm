@@ -1006,13 +1006,15 @@ function wegHelfer(arg) {
         fertig: () => neue().length > 0 || (!lauf.satz && zeilen().length > lauf.n0),
         // die offene Schublade nach oben (das Rad zum Teilen-Knopf scrollte sie, der Rand der Auswahl läge sonst unter dem Kopf)
         oben: () => document.querySelectorAll(".drawer-scroll").forEach((d) => (d.scrollTop = 0)),
+        // das Wort des Spielers hält Mittag, Sonne und Sommer (die Nässe senkt die Haftung am Rad, `fahr-proben` wetter)
+        wort: () => (r.setTimeOfDay(0.5, "human"), r._setWeather("sunny", "human"), (st.weatherTransition = null), r._naesseTakt(1e6), r.setSeason("sommer")),
         // die Herkunft eines Satzes; die KI antwortet auf ihn mit dem Programm des Werks (`maybeAnswerWithLlm`, ihr Endpunkt ist
         // die Antwort): das Wort hinter dem Art-Präfix über spawn_studio, das eigene Werk über spawn_blueprint
         herkunft(h, name) {
             lauf.satz = true;
             const program = r._werkEigen(st.blueprints[name]) ? ["spawn_blueprint", name, ["at_player_forward", 10]] : ["spawn_studio", name.replace(/^[^_]+_/, ""), ["at_player_forward", 10], 1];
             Object.assign(st.llm, { enabled: h === "ki", provider: "ollama" }).providerConfig.ollama.endpoint = KI;
-            window.fetch = async (u, a) => (String(u).startsWith(KI) ? new Response(JSON.stringify({ message: { content: JSON.stringify({ say: "Es steht.", program }) } })) : netz(u, a));
+            window.fetch = async (u, a) => (String(u).startsWith(KI) ? new Response(JSON.stringify({ message: { content: JSON.stringify({ program }) } })) : netz(u, a));
         },
         rezept: (name) => [...document.querySelectorAll("#inventory-recipes .recipe-row")].find((z) => z.querySelector(".recipe-name").textContent === String(st.blueprints[name].label || name)).querySelector("button"),
         lesen() {
@@ -1227,6 +1229,7 @@ async function wegProbe(page, frei) {
     // L-VERBEN: je Herkunft, Sicht und Werk gesetzt und über die Taste benutzt; `verben` ist Werkstatt × Ego (Staffel 1)
     m.verbenJe = {};
     await bauWeg(page, "teile", TEILE);
+    await bauWeg(page, "wort");
     for (const h of HERKUNFT)
         for (const sicht of SICHTEN)
             for (const [werk, [name, verb, weg]] of Object.entries(VERBEN))
