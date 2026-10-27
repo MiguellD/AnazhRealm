@@ -17,7 +17,8 @@
 //  (R) RUF ← LEIB: jeder gehörte Vogel ist ein gezeichneter Leib; ohne Leib verstummt der Chor (Mutation an der Wiese), ein
 //      Tier-Ruf ohne Leib der Welt bleibt stumm.
 //  (F) DER KÖRPER KLINGT AUS BEWEGUNG (klang.K4 Staffel 2): Motor, Landung, Doppler an sechs Radial-Geschwindigkeiten am Bus.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S13 unten), Stubs restauriert.
+//  (Ra) RAUM AM OHR (klang.K3 Staffel 1): Tier-Ruf und Glut links und rechts — ILD-Vorzeichen und Pegel über den Abstand.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S14 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -1323,6 +1324,127 @@ function koerperUrteil(F) {
     };
 }
 
+// (Ra) DER RAUM AM OHR (klang.K3 Staffel 1): derselbe Tier-Ruf (ein Leib der Welt, über die Klang-Werkstatt) und dieselbe Glut
+// (der Bau des Dorfs, über die Lage am Ohr und den Studio-Graphen) links und rechts vom Ohr — gerade seitlich und 30° neben dem
+// Blick, je in drei Abständen —, der Master liegt an einem Stereo-OfflineAudioContext. Rechts heißt die Spalte 0 der
+// Kamera-Matrix (nie der Rechts-Vektor des Gesetzes, das gemessen wird). Urteil: ILD = R − L in dB mit dem Vorzeichen der Seite
+// (≥ 3 dB) an jeder Probe, der Pegel fällt mit dem Abstand (≥ 1 dB je Stufe). Täter (S14): der Panner aus (ein Gain mit
+// totem pan).
+async function raumSeite(dorf, mut) {
+    const [r, K, P] = [window.anazhRealm, window.__klangCore, BaseAudioContext.prototype];
+    const [s, sp, Ra] = [window.anazhRealm.state, P.createStereoPanner, []];
+    const [sy, um, pm, cam] = [s.symphony, s.symphony.umwelt, s.playerMesh, s.camera];
+    if (mut)
+        P.createStereoPanner = function () {
+            return Object.assign(this.createGain(), { pan: this.createGain().gain });
+        };
+    const db = (c) => 10 * Math.log10(c.reduce((a, x) => a + x * x, 0) / c.length + 1e-20);
+    // der Abgriff: `spiel` stellt die Quelle an den Master eines Stereo-Offline-Kontexts, gemessen ab `ab` Sekunden
+    const ohr = async (spiel, sek, ab) => {
+        const ctx = new OfflineAudioContext(2, 48000 * sek, 48000);
+        await spiel(ctx);
+        const b = await ctx.startRendering();
+        return [0, 1].map((c) => db(b.getChannelData(c).subarray(48000 * ab)));
+    };
+    cam.updateMatrixWorld();
+    const e = cam.matrixWorld.elements;
+    const [rx, rz] = [e[0], e[2]].map((v) => v / Math.hypot(e[0], e[2]));
+    // je Seite, Winkel und Abstand die Stelle (x, z) relativ zu (ox, oz)
+    const proben = function* (dists) {
+        for (const w of [90, 30])
+            for (const seite of [-1, 1])
+                for (const d of dists) {
+                    const [a, b] = [Math.sin((w * Math.PI) / 180) * seite * d, Math.cos((w * Math.PI) / 180) * d];
+                    yield [seite, w, d, a * rx + b * rz, a * rz - b * rx];
+                }
+    };
+    const tier = (s.creatures || []).find((c) => c && c.position && c.userData && !c.userData.dying);
+    try {
+        if (!tier) Ra.push(["tier", 0, 0, 0, NaN, NaN]);
+        const pos0 = tier && tier.position.clone();
+        for (const [seite, w, d, x, z] of tier ? proben([3, 8, 20]) : []) {
+            tier.position.set(pm.position.x + x, pm.position.y, pm.position.z + z);
+            const n = um.rufeGespielt;
+            const LR = await ohr(
+                async (ctx) => {
+                    const vor = [sy.ctx, sy.masterGain, um.bus];
+                    [sy.ctx, sy.masterGain, um.bus] = [ctx, ctx.destination, ctx.destination];
+                    try {
+                        r._tierRuf(tier, "ruhe");
+                        for (const dl = performance.now() + 3000; um.rufeGespielt === n && performance.now() < dl;)
+                            await window.sleep(10);
+                    } finally {
+                        [sy.ctx, sy.masterGain, um.bus] = vor;
+                    }
+                },
+                2,
+                0
+            );
+            Ra.push(["tier", seite, w, d, ...LR]);
+        }
+        if (tier) tier.position.copy(pos0);
+        if (!dorf) Ra.push(["glut", 0, 0, 0, NaN, NaN]);
+        const p0 = pm.position.clone();
+        for (const [seite, w, d, x, z] of dorf ? proben([1.5, 4, 10]) : []) {
+            pm.position.set(dorf.glut.x - x, p0.y, dorf.glut.z - z);
+            const mix = K.umweltMischung({ glut: r._umweltLage().glut });
+            for (const k of Object.keys(mix)) if (k !== "glut") mix[k].db = -Infinity;
+            Ra.push([
+                "glut",
+                seite,
+                w,
+                d,
+                ...(await ohr((ctx) => K.umweltGraph(ctx, ctx.destination).anwenden(mix, 0), 3.5, 1.5)),
+            ]);
+        }
+        pm.position.copy(p0);
+    } finally {
+        P.createStereoPanner = sp;
+    }
+    return Ra;
+}
+// Das Urteil (Ra) je Probe beim Namen und die Zahl: der kleinste |ILD| je Quelle und der Pegel über die Abstände.
+function raumUrteil(Ra) {
+    const rot = [];
+    const zahl = {};
+    Ra.forEach(([q, seite, w, d, L, R], i) => {
+        const [ild, vor] = [R - L, Ra[i - 1]];
+        const pegel = 10 * Math.log10(10 ** (L / 10) + 10 ** (R / 10));
+        if (!(L > -90 || R > -90)) rot.push(`Ra ${q} ${seite < 0 ? "links" : "rechts"} ${w}° ${d} m: stumm`);
+        else if (!(ild * seite >= 3))
+            rot.push(
+                `Ra ${q} ${seite < 0 ? "links" : "rechts"} ${w}° ${d} m: falsches Vorzeichen (ILD ${ild.toFixed(1)} dB)`
+            );
+        if (
+            vor &&
+            vor[0] === q &&
+            vor[1] === seite &&
+            vor[2] === w &&
+            !(pegel <= 10 * Math.log10(10 ** (vor[4] / 10) + 10 ** (vor[5] / 10)) - 1)
+        )
+            rot.push(
+                `Ra ${q} ${seite < 0 ? "links" : "rechts"} ${w}° ${d} m: der Pegel fällt nicht mit dem Abstand (${pegel.toFixed(1)} dB)`
+            );
+        const z = (zahl[q] = zahl[q] || { ild: Infinity, pegel: {} });
+        z.ild = Math.min(z.ild, Math.abs(ild));
+        if (w === 90 && seite > 0) z.pegel[d] = +pegel.toFixed(1);
+    });
+    const ok = Ra.filter(([, , , , L, R]) => L > -90 || R > -90).length;
+    return {
+        rot,
+        zahl: `${Ra.length - rot.filter((x) => /Vorzeichen|stumm/.test(x)).length}/${Ra.length} Vorzeichen richtig (${ok} hörbar) · ${Object.entries(
+            zahl
+        )
+            .map(
+                ([q, z]) =>
+                    `${q} |ILD| ≥ ${z.ild.toFixed(1)} dB, Pegel ${Object.entries(z.pegel)
+                        .map(([d, p]) => `${d} m ${p} dB`)
+                        .join(" › ")}`
+            )
+            .join(" · ")}`,
+    };
+}
+
 // (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
 // gehalten bis zum Ereignis) an den Bach der Mess-Wiese und zurück, derweil spricht er das Wetter (Sturm, dann bewölkt). Je
 // 0,1 s das Ohr — RMS am Gain der Stimmen fluss + ufer und regen (ein Analyser, die Stimme an ihrem Puffer erkannt) — und das
@@ -1342,7 +1464,8 @@ async function gesehenSeite(m) {
     // der nächste Punkt des Bachs; die Normale zur Mess-Wiese steht auf ihm senkrecht
     let P = { d: Infinity };
     for (const f of h.rivers || [])
-        for (const q of f.points) if (Math.hypot(q.x - m.x, q.z - m.z) < P.d) P = { x: q.x, z: q.z, d: Math.hypot(q.x - m.x, q.z - m.z) };
+        for (const q of f.points)
+            if (Math.hypot(q.x - m.x, q.z - m.z) < P.d) P = { x: q.x, z: q.z, d: Math.hypot(q.x - m.x, q.z - m.z) };
     const [nx, nz] = [(m.x - P.x) / P.d, (m.z - P.z) / P.d];
     st.playerMesh.position.set(P.x + nx * 45, r._voxelSurfaceY(P.x + nx * 45, P.z + nz * 45) + 1.8, P.z + nz * 45);
     r.setCameraMode("first");
@@ -1361,11 +1484,17 @@ async function gesehenSeite(m) {
         const S = window.__klangCore.UMWELT.stimmen[name];
         const o = ohr[name] || (ohr[name] = { an: ctx.createAnalyser(), td: new Float32Array(2048) });
         const q = window.__klangQuellen.findLast(
-            ({ ctx: c, start, stop, knoten: { buffer: b } }) => c === ctx && start != null && stop == null && b && b.sampleRate === S.sr && Math.abs(b.duration - S.sek) < 0.05
+            ({ ctx: c, start, stop, knoten: { buffer: b } }) =>
+                c === ctx &&
+                start != null &&
+                stop == null &&
+                b &&
+                b.sampleRate === S.sr &&
+                Math.abs(b.duration - S.sek) < 0.05
         );
         let g = q && q.knoten;
         for (let k = 0; k < 3 && g; k++) g = g.__an && g.__an[0];
-        if (g !== o.gain) g && g.connect(o.an), (o.gain = g);
+        if (g !== o.gain) (g && g.connect(o.an), (o.gain = g));
         if (!g) return 0;
         o.an.getFloatTimeDomainData(o.td);
         return Math.sqrt(o.td.reduce((x, v) => x + v * v, 0) / o.td.length);
@@ -1378,7 +1507,8 @@ async function gesehenSeite(m) {
         fr.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
         let summe = 0;
         st.scene.traverse((o) => {
-            const f = o.isMesh && o.visible && o.material === st.hydroSurfaceMaterial && o.geometry.getAttribute("aFlow");
+            const f =
+                o.isMesh && o.visible && o.material === st.hydroSurfaceMaterial && o.geometry.getAttribute("aFlow");
             for (let k = 0; f && k < f.count; k++) {
                 const t = Math.min(1, Math.max(0, (Math.hypot(f.getX(k), f.getY(k)) - 0.03) / 0.27));
                 if (t && fr.containsPoint(v.fromBufferAttribute(o.geometry.getAttribute("position"), k)))
@@ -1390,7 +1520,12 @@ async function gesehenSeite(m) {
     setInterval(() => {
         const R = r._rainSystem;
         if (st.symphony.ctx)
-            G.proben.push([Math.hypot(rms("fluss"), rms("ufer")), stroemung(st.camera), rms("regen"), R && R.mesh.visible ? R.mesh.material.opacity : 0]);
+            G.proben.push([
+                Math.hypot(rms("fluss"), rms("ufer")),
+                stroemung(st.camera),
+                rms("regen"),
+                R && R.mesh.visible ? R.mesh.material.opacity : 0,
+            ]);
     }, 100);
     // der Täter des Selbsttests: das Ohr hört Fluss, Ufer und Regen, wie sie beim Pflanzen klangen — das Bild geht weiter
     G.taeter = () => {
@@ -1409,15 +1544,34 @@ async function gesehenSeite(m) {
 // das Ohr schweigt nie, wo das Bild zeigt: höchstens 2 % der Fenster mit Bild ≥ 10 % seiner Spitze tragen ein Ohr unter 10⁻³ RMS.
 function gesehenUrteil(proben, ohr, bild) {
     const mittel = (z) => z.reduce((x, w) => x + w, 0) / z.length;
-    const reihe = (k) => Array.from({ length: Math.floor(proben.length / 5) }, (_, i) => mittel(proben.slice(5 * i, 5 * i + 5).map((p) => p[k])));
+    const reihe = (k) =>
+        Array.from({ length: Math.floor(proben.length / 5) }, (_, i) =>
+            mittel(proben.slice(5 * i, 5 * i + 5).map((p) => p[k]))
+        );
     const [A, B] = [reihe(ohr), reihe(bild)];
     const pear = (x, y) => {
         const [mx, my] = [mittel(x), mittel(y)];
-        const [sxy, sxx, syy] = [mittel(x.map((u, i) => (u - mx) * (y[i] - my))), mittel(x.map((u) => (u - mx) ** 2)), mittel(y.map((u) => (u - my) ** 2))];
-        return { r: sxy / Math.sqrt(sxx * syy) || 0, n: x.length, cvBild: Math.sqrt(sxx) / mx || 0, cvOhr: Math.sqrt(syy) / my || 0 };
+        const [sxy, sxx, syy] = [
+            mittel(x.map((u, i) => (u - mx) * (y[i] - my))),
+            mittel(x.map((u) => (u - mx) ** 2)),
+            mittel(y.map((u) => (u - my) ** 2)),
+        ];
+        return {
+            r: sxy / Math.sqrt(sxx * syy) || 0,
+            n: x.length,
+            cvBild: Math.sqrt(sxx) / mx || 0,
+            cvOhr: Math.sqrt(syy) / my || 0,
+        };
     };
     const lags = [];
-    for (let k = -6; k <= 6; k++) lags.push({ lagS: k / 2, ...pear(B.slice(Math.max(0, k), B.length + Math.min(0, k)), A.slice(-Math.min(0, k), A.length - Math.max(0, k))) });
+    for (let k = -6; k <= 6; k++)
+        lags.push({
+            lagS: k / 2,
+            ...pear(
+                B.slice(Math.max(0, k), B.length + Math.min(0, k)),
+                A.slice(-Math.min(0, k), A.length - Math.max(0, k))
+            ),
+        });
     const [r0, best] = [lags[6], lags.reduce((x, y) => (y.r > x.r ? y : x))];
     const zeigt = B.map((b) => b >= 0.1 * Math.max(...B));
     const sicht = zeigt.filter(Boolean).length;
@@ -1435,7 +1589,8 @@ async function gesehenGang(page, worte) {
         const ziel = g % 2 ? () => window.__gesehen.abstand() >= 45 : () => window.__gesehen.amWasser();
         if (!(await halteBis(page, { taste: "ws"[g % 2], ziel, frist: g ? 60000 : 180000 })).erreicht)
             throw new Error(`der Gang ${g} am Bach kam nicht an`);
-        if (!(await G(() => window.__gesehen.wandelt())) && ++i < worte.length) await G((w) => window.anazhRealm._setWeather(w, "human"), worte[i]);
+        if (!(await G(() => window.__gesehen.wandelt())) && ++i < worte.length)
+            await G((w) => window.anazhRealm._setWeather(w, "human"), worte[i]);
     }
     const proben = await G(() => window.__gesehen.proben);
     const je = { ufer: gesehenUrteil(proben, 0, 1), regen: gesehenUrteil(proben, 2, 3) };
@@ -1532,6 +1687,10 @@ async function zensus(page, browser, ergebnis) {
     const fu = koerperUrteil((ergebnis.koerper = await page.evaluate(koerperSeite, MESS, null)));
     rot.push(...fu.rot);
     console.log(`── (F) DER KÖRPER KLINGT: ${fu.zahl}`);
+    // (Ra) der Raum am Ohr: derselbe Ruf und dieselbe Glut links und rechts
+    const ru = raumUrteil((ergebnis.raum = await page.evaluate(raumSeite, orte.dorf, false)));
+    rot.push(...ru.rot);
+    console.log(`── (Ra) DER RAUM AM OHR: ${ru.zahl}`);
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
@@ -1684,8 +1843,13 @@ async function zensus(page, browser, ergebnis) {
         ])
             if (!koerperUrteil(await page.evaluate(koerperSeite, MESS, mut)).rot.some((x) => re.test(x)))
                 fehl.push(`S13: ${mut} bleibt unbemerkt`);
+        // S14: der Panner aus — Ruf und Glut klingen mittig
+        const u14 = raumUrteil(await page.evaluate(raumSeite, orte.dorf, true)).rot.join("\n");
+        for (const q of ["tier", "glut"])
+            if (!new RegExp(`^Ra ${q} .*falsches Vorzeichen`, "m").test(u14))
+                fehl.push(`S14: ${q} ohne Panner bleibt unbemerkt`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S13 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S14 nennen jeden Täter beim Namen");
         selbstOk = fehl.length === 0;
         ergebnis.selbsttest = fehl;
     }
@@ -1723,7 +1887,11 @@ async function zensus(page, browser, ergebnis) {
         if (!TAKT) await page.evaluateOnNewDocument(quellenAbgriff);
         await server.zeige(page, 180000, "index.html", "networkidle0");
         await warteAufWelt(page, 180000);
-        exit = await (TAKT ? takt(page, ergebnis) : GESEHEN ? gesehen(page, ergebnis) : zensus(page, browser, ergebnis));
+        exit = await (TAKT
+            ? takt(page, ergebnis)
+            : GESEHEN
+              ? gesehen(page, ergebnis)
+              : zensus(page, browser, ergebnis));
     } catch (e) {
         console.log("FEHLER:", e && e.stack ? e.stack : e);
     } finally {
