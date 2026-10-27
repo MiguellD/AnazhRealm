@@ -75,8 +75,8 @@
     "zweck": "KI K3 (diag-v1-pfad --korpus --seele): je Frage [Name, Seele, Taten …]; der Bezug je Tat",
     "bezug": {
       "geschlagen": "\\bschl[au]g|geschlagen|\\bhieb|weh ?getan|tat weh|verletz|angegriffen|schmerz",
-      "gefuettert": "lebenssaft|\\btrank|geschenk|\\bgabe|fütter|gestärkt",
-      "gefolgt": "\\bfolg|gefolgt|begleit|an deiner seite|hinter dir her"
+      "gefuettert": "lebenssaft|\\btrank|geschenk|\\bgabe|gabst|gegeben|fütter|gestärkt",
+      "gefolgt": "\\bfolg|gefolgt|begleit|an deiner seite|hinter dir her|mit dir (ge)?(gangen|laufen|gelaufen)"
     },
     "saetze": {
       "erinnerst du dich an mich?": ["Arvo", "wolf", "geschlagen"],
