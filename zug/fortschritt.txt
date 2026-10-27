@@ -399,3 +399,4 @@
 2026-10-27 12:48:16 z49z50b-abab stadt(4+4) nicht-langsamer 17.2 · verlängert (4+4)
 2026-10-27 12:48:30 takt11-gtx START 41 Stationen
 2026-10-27 12:50:44 takt11-gtx gelaende.K2#1 GRÜN 2.1 · 1/41
+2026-10-27 12:52:53 takt11-gtx gelaende.K5#2 GRÜN 2.1 · 2/41
