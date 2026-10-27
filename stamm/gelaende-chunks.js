@@ -576,6 +576,11 @@ class AnazhRealm_gelaende_chunks {
                 for (let b = Math.floor(((cz - 1) * span) / Z); b <= Math.floor(((cz + 2) * span) / Z); b++)
                     if (E.zellen.has((a + 32768) * 65536 + (b + 32768))) return false;
         }
+        // der Stau eines Werks (`waterStau`, `_stauAn`) flutet die Zellen seines Fensters wie ein Edit: auch dort nie alte Bytes —
+        // ein Damm ist ein Bau, kein Edit, und bis ci-werk-wasser las der Faden unter seinem Stausee den Chunk ohne Stau
+        for (const f of this.state.waterStau || [])
+            if ((f.gx0 + f.w) * f.step > (cx - 1) * span && f.gx0 * f.step < (cx + 2) * span)
+                if ((f.gz0 + f.h) * f.step > (cz - 1) * span && f.gz0 * f.step < (cz + 2) * span) return false;
         const edits = this._voxelEditsNah(cx, cz);
         if (!edits.length) return true;
         const loX = (cx - 1) * span,

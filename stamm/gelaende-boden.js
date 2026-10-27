@@ -757,7 +757,7 @@ class AnazhRealm_gelaende_boden {
         const la = Math.floor((z0 - R - rand[3]) / span);
         const lb = Math.floor((z1 + R + rand[3]) / span);
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
-        const genKarte = this._erdbauGenKarte || (this._erdbauGenKarte = new Map());
+        const genKarte = this._chunkGenKarte || (this._chunkGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
         const gezeichnet = this.state.voxelChunks;
         if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
@@ -1119,11 +1119,12 @@ class AnazhRealm_gelaende_boden {
     }
 
     // Der Stand eines Chunks für den Stale-Filter der Worker- und Platten-Antworten: der Welt-Sync
-    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits oder eines Erdbaus (`_erdbauSetzen`, K69) im 3×3 um
-    // ihn. Ein Edit und ein Ort verwerfen nur die Antworten ihrer Nachbarschaft, nie die der ganzen Welt.
+    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits, eines Erdbaus (`_erdbauSetzen`, K69) oder eines Staus
+    // (`_stauAn`; beide in `_chunkGenKarte`) im 3×3 um ihn. Ein Edit, ein Ort und ein Stausee verwerfen nur die Antworten ihrer
+    // Nachbarschaft, nie die der ganzen Welt.
     _voxelStand(cx, cz) {
         const gen = this._voxelEditKarte().gen;
-        const erd = this._erdbauGenKarte;
+        const erd = this._chunkGenKarte;
         let g = 0;
         for (let dx = -1; dx <= 1; dx++) {
             for (let dz = -1; dz <= 1; dz++) {
