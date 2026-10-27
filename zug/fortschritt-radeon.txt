@@ -722,3 +722,4 @@
 2026-10-27 11:13:10 takt10b-headless bauen.K4#1 GRÜN 7.9 · 6/70
 2026-10-27 11:13:20 takt10b-headless bauen.K4#2 GRÜN 7.9 · 7/70
 2026-10-27 11:15:14 takt10b-headless physik.K2#1 GRÜN 7.8 · 8/70
+2026-10-27 11:17:37 takt10b-headless ki.K1#2 GRÜN 12.3 · 9/70
