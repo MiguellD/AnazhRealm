@@ -1237,11 +1237,11 @@ hauptLauf(async () => {
     // hinter `renderPipeline_spiegel:strahl`, gezeichnet vom rAF-Loop zwischen zwei Aufrufen). Auf dem CPU-Raster das Holz
     // kienspan (Lehre 26); die Linse taktet selbst wie unter dem Null-Renderer; die Bühne hält Mittag · Sonne · Sommer über das
     // Wort des Spielers (Wand 3). Gewartet wird in Bau-Ereignissen, nie nach der Wanduhr: vor dem Abschied einer Seite landet
-    // jede offene Pipeline (`__erstRuhe`, sonst bricht sie beim Namen), die neue Welt ist da (`__weltDa`); ein Hänger steht in
-    // der Stall-Akte.
+    // jede offene Pipeline (`__erstRuhe`; steht der Bau 10 min ohne Fortschritt, bricht sie beim Namen — auf swiftshader dauert
+    // EIN Programm bis Minuten), die neue Welt ist da (`__weltDa`); ein Hänger steht in der Stall-Akte.
     const adresse = BILD && !istHardwareAdapter(browser.adapter) ? "index.html?holz=kienspan" : "index.html";
     const bereit = async (rest = adresse) => {
-        await page.evaluate(() => window.__erstRuhe && window.__erstRuhe(() => {}, {}, "der Abschied der Welt"));
+        await page.evaluate(() => window.__erstRuhe && window.__erstRuhe(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
         await server.zeige(page, 0, rest);
         if (rest !== adresse) return;
         await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
