@@ -318,3 +318,4 @@
 2026-10-27 03:55:50 z45z46-abab d-ego nicht-langsamer 11.0 · 2/3 (2+2)
 2026-10-27 04:13:17 z45z46-abab stadt nicht-langsamer 17.4 · 3/3 (2+2)
 2026-10-27 04:27:02 z45z46-abab w-ego(4+4) nicht-langsamer 13.7 · verlängert (4+4)
+2026-10-27 05:18:23 takt9-gtx START 18 Stationen
