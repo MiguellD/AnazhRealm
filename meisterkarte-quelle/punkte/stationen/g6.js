@@ -55,6 +55,14 @@ const ECHT_K1 =
     // werk: echt-k1 mit dem Lese-Haken der OMEN (042f681a, 23.10.: das Alter am gelesenen Stand, die Versetzung als eigene Zahl)
     ': werk 2310-lese-haken; WT="$B" OUT_DIR="$D" ECHT_PORT={PORT} node "$D/echt-k1.cjs" ';
 
+// DIE MESS-BAHN speicher-zwei (Karte speicher-zwei, 27.10.): `bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs` fährt das
+// echte Spiel aus dem Spiel-Baum (dessen welt-boot, Ausgabe-Aufnahme, Messort) — `takt` für speicher.K2#2, `bild` für
+// speicher.K4#2. Unter scripts/ des Spiels trüge die Decke die zwei Bahnen nicht (+2 139 Atome); die Bahn kopiert sich neben die
+// Ausgabe wie die HARNESS, `# werk` nennt ihren Stand.
+const SPEICHER_ZWEI =
+    VOR +
+    'cp "$K/bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs" "$D/"; ' +
+    ': werk 2710-speicher-zwei; cd "$B"; BAUM="$B" PORT={PORT} node "$D/speicher-zwei.cjs" ';
 const HYDRO_PFAD = [
     "voxel-worker.js",
     "gelaende-core.js",
@@ -721,6 +729,36 @@ module.exports = [
         quelle: "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers",
     },
     {
+        kriterium: "speicher.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // speicher-zwei `takt --echt`: Fenster und Karte, der echte Takt mit dem Autosave des Spiels (saveInterval); eine Hülle
+        // um jeden Speicher-Schritt des Haupt-Fadens — der Ruf (saveState), das Zusammensetzen (_standNachholen), der Besen
+        // (_standFegen), der Versand (schicke) — summiert je Task das SPEICHER-BILD. 20 Stände frisch, dann 10 000 Gruben am
+        // Ereignis (der Zustand „nach 2 h mit 10 000 Edits", nie die Wanduhr), wieder 20 Stände. Ein Bild über 16,7 ms (am
+        // vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms darunter bliebe.
+        befehl: ["bash", "-c", SPEICHER_ZWEI + 'takt --echt --json "$A"'],
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const ph = j ? [j.frisch, j.edits] : [];
+            if (!ph[0] || !ph[1]) return { gruen: false, zahl: "keine Speicher-Bilder (Exit " + lauf.exit + ")" };
+            // eine Sonde ohne Messung ist ROT: kein Stand kam an, oder die Gruben fehlen
+            if (ph.some((p) => !(p.staende >= 20 && p.bilder > 0)) || !(j.edits.n >= 10000))
+                return { gruen: false, zahl: "Sonde blind: " + ph.map((p) => p.staende + " Stände").join(" / ") + ", " + j.edits.n + " Edits" };
+            const zeile = (p) =>
+                "p50 " + p.p50 + " / p95 " + p.p95 + " / max " + p.max + " ms (" + p.bilder + " Bilder), " + p.wegen + " von " + p.ueber +
+                " Bildern > 16,7 ms durch Speichern";
+            return {
+                gruen: ph.every((p) => p.p95 <= 0.1 && p.max <= 16.7 && p.wegen === 0),
+                zahl: "Speicher-Bild frisch " + zeile(j.frisch) + " · nach " + j.edits.n + " Edits " + zeile(j.edits) + " (Soll p95 ≤ 0,1)",
+            };
+        },
+        pfad: SPEICHER_PFAD.concat(["speicher-faden.js"]),
+        quelle: "2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
+    },
+    {
         kriterium: "speicher.K3",
         staffel: 1,
         geraet: "headless",
@@ -822,6 +860,44 @@ module.exports = [
         quelle: "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen",
     },
     {
+        kriterium: "speicher.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // speicher-zwei `bild` (Rezept linse: am Gerät die Karte, ohne Karte das Software-Holz): am Bach der Mess-Wiese
+        // (welt-boot uferStellen — das Wasser zeichnet im Blick) setzt der Spieler einen Stein-Block 6 m vor sich und gräbt eine
+        // Grube (r 2 m) 9 m vor sich ans Ufer; die Welt steht, die Bühne (Mittag · Sonne · Sommer, das Wetter als Wort, die Uhr
+        // gehalten) — Ausgabe-Bild A 320×180. Der Stand ist fest (__stand), die Seite lädt neu (dasselbe Profil: die
+        // Wiederkehr), derselbe Ort und Blick, Bild B. diff = Anteil der Pixel mit |ΔLuma| > 8 (von 255); der Pflicht-Inhalt:
+        // Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick der Kamera (Third, Neigung −0,5), das Wasser zeichnet.
+        // Daneben das RAUSCHEN der Bahn (derselbe Blick ohne Neuladen) und die drei Bilder neben der Ausgabe ({AUS}-vor/-vor2/-nach.png).
+        befehl: ["bash", "-c", SPEICHER_ZWEI + 'bild --json "$A"'],
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            if (!j || !(j.diff >= 0)) return { gruen: false, zahl: "kein Bild-Rundlauf (Exit " + lauf.exit + ")" };
+            const ganz = (q) => !!q && q.bau && q.grube && q.wasser > 0;
+            return {
+                gruen: j.diff <= 1 && ganz(j.vor) && ganz(j.nach),
+                zahl:
+                    "bild-diff " + (+j.diff).toFixed(2) + " % (Soll ≤ 1; Rauschen ohne Neuladen " + (+j.rauschen).toFixed(2) +
+                    " %) · Pflicht vor " + JSON.stringify(j.vor) + " · nach " +
+                    JSON.stringify(j.nach) + " · " + ((j.adapter && (j.adapter.renderer || j.adapter.vendor)) || "?"),
+            };
+        },
+        pfad: SPEICHER_PFAD.concat([
+            "speicher-faden.js",
+            "stamm/bild-himmel.js",
+            "stamm/wasser-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/vegetation-baum.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ]),
+        quelle: "2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
+    },
+    {
         kriterium: "speicher.K5",
         staffel: 1,
         geraet: "headless",
@@ -877,18 +953,6 @@ module.exports.fehlt = [
         staffel: 2,
         befehl: null,
         grund: "m15-schritt misst nur die Schritte je Stoff; kein Abgriff am Motor über die Drehzahl (klang-core FAHRT), an der Landung nach Aufprall und am Doppler einer Vorbeifahrt",
-    },
-    {
-        kriterium: "speicher.K2",
-        staffel: 2,
-        befehl: null,
-        grund: "kein Werkzeug fährt 2 h Spiel mit 10 000 Edits und ordnet Frames > 16,7 ms dem Speichern zu; echt-k1 misst nur die frische Welt",
-    },
-    {
-        kriterium: "speicher.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "m16-k2k4 (bild-diff 6,75 % am 21.10., Radeon) setzt Bau und Edit, bringt aber kein Wasser sicher ins Bild: der Pflicht-Inhalt der Staffel (Bauten, Edits, Wasser) ist im Urteil nicht prüfbar",
     },
     {
         kriterium: "streaming.K4",
