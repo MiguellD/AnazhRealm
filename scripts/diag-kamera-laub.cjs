@@ -1241,7 +1241,7 @@ hauptLauf(async () => {
     // EIN Programm bis Minuten), die neue Welt ist da (`__weltDa`); ein Hänger steht in der Stall-Akte.
     const adresse = BILD && !istHardwareAdapter(browser.adapter) ? "index.html?holz=kienspan" : "index.html";
     const bereit = async (rest = adresse) => {
-        await page.evaluate(() => window.__erstRuhe && window.__erstRuhe(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
+        await page.evaluate(() => window.__erstRuhe?.(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
         await server.zeige(page, 0, rest);
         if (rest !== adresse) return;
         await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
