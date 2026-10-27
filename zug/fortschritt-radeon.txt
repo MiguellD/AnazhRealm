@@ -886,3 +886,4 @@
 2026-10-27 13:46:05 takt11b-radeon ferne.K1#1 GRÜN 3.2 · 5/15
 2026-10-27 13:46:12 takt11b-radeon ferne.K2#1 GRÜN 3.2 · 6/15
 2026-10-27 13:47:15 takt11b-radeon gelaende.K3#1 GRÜN 1.9 · 7/15
+2026-10-27 13:48:25 takt11b-radeon fahrzeug.K4#1 GRÜN 3.5 · 8/15
