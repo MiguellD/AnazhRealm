@@ -1,7 +1,7 @@
 {
  "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
  "geraet": "radeon",
- "zeit": "2026-10-27T12:51:03.414Z",
+ "zeit": "2026-10-27T12:54:48.725Z",
  "host": "MiguellD",
  "je": {
   "klang.K5#2": {
@@ -316,20 +316,19 @@
    "abdruck": "e03a045fab93",
    "port": 7764,
    "bahn": "2/3"
-  }
- },
- "ungemessen": {
+  },
   "physik.K2#2": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.078 m, Eindringen max 0.061 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 )",
    "exit": 1,
-   "minuten": 22.47,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
-   "zeit": "2026-10-27T11:38:58.679Z",
+   "minuten": 1.49,
+   "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.078 m, Eindringen max 0.061 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 )",
+   "gpu": "amd/rdna-3",
+   "warten": 0.07,
+   "zeit": "2026-10-27T12:54:48.725Z",
    "abdruck": "b10c0629d940",
    "port": 7754,
-   "bahn": "1/2"
+   "bahn": "1/1"
   }
  }
 }
