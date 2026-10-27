@@ -2551,7 +2551,8 @@ class AnazhRealm_kreatur_leben {
     // EINE Quelle, die das Ohr liest (`_umweltLage`). Die Karte merkt je Zelle ihre Würfe und ihr Revier (`_vogelZelle`);
     // je Takt frischt eine Zelle Leben und Deckung nach (Pflanzen, Fällen, Pflege), ferne fallen — die Kosten hängen am
     // Hör-Kreis, nie an der Welt. Gezeichnet wird in EINEM Pool mit dem Stoff der Bau-Pools (`_kistenPool`: EIN Programm, EIN
-    // Befehl), je Vogel seine Teile und zwei Flügel im Schlag.
+    // Befehl), je Vogel seine Teile und zwei Flügel im Schlag. Danach der Schwarm (`_vogelSchwarmTakt`, luftwasser.K5): derselbe
+    // Leib und Stoff, sein eigener Pool, fern EIN Agent.
     _vogelTakt() {
         const st = this.state;
         const pm = st.playerMesh;
