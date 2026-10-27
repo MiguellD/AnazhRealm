@@ -1,0 +1,75 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe scripts/diag-klang-zensus.cjs --takt --echt --minuten 10 --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\dc06b495-radeon\klang.K5_2.json
+[linse-gpu] amd/rdna-3
+[stall-akte] ═══ diag-klang-zensus.cjs · Seite #3 http://127.0.0.1:7754/index.html · waitForFunction(ziel) riss nach 180.0 s: Waiting failed: 180000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 182.0 s
+[stall-akte] Puls 185×, zuletzt vor 0.4 s — complete · renderer bereit · weltbild da · frames 17815 · welt 19422 Takte · Ruhe 883 · zuletzt Fege-Takt archLod 2048/2223 · programme 97 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #97 renderPipeline_MeshStandardNodeMaterial_83
+[stall-akte] Stempel 08:00:12.078 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66882 Zeichen · 3 Lichter
+[stall-akte] Stempel 08:00:12.079 gpu.createRenderPipelineAsync #92 renderPipeline_MeshStandardNodeMaterial_54
+[stall-akte] Stempel 08:00:12.146 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 11755 fs 66787 Zeichen · 3 Lichter
+[stall-akte] Stempel 08:00:12.146 gpu.createRenderPipelineAsync #93 renderPipeline_MeshPhysicalNodeMaterial_204
+[stall-akte] Stempel 08:00:12.232 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 08:00:12.233 gpu.createRenderPipelineAsync #94 renderPipeline_MeshPhysicalNodeMaterial_51
+[stall-akte] Stempel 08:00:19.914 Pipeline ShadowMaterial · geometrie-arena · vs 6753 fs 7624 Zeichen · 3 Lichter
+[stall-akte] Stempel 08:00:19.914 gpu.createRenderPipelineAsync #95 renderPipeline_ShadowMaterial_47
+[stall-akte] Stempel 08:00:19.997 Pipeline ShadowMaterial · geometrie-arena · vs 7676 fs 9405 Zeichen · 3 Lichter
+[stall-akte] Stempel 08:00:19.997 gpu.createRenderPipelineAsync #96 renderPipeline_ShadowMaterial_47
+[stall-akte] Stempel 08:00:28.505 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 9496 fs 64933 Zeichen · 3 Lichter
+[stall-akte] Stempel 08:00:28.505 gpu.createRenderPipelineAsync #97 renderPipeline_MeshStandardNodeMaterial_83
+[stall-akte] CPU (2 s) renderer 30252 75 % · GPU 36160 46 % · browser 24292 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 01:51 gpu 51/r 103 · 01:53 gpu 50/r 76 · 01:55 gpu 50/r 78 · 01:57 gpu 49/r 76 · 01:59 gpu 45/r 71 · 02:01 gpu 48/r 103 · 02:03 gpu 51/r 73 · 02:05 gpu 52/r 72 · 02:07 gpu 51/r 75 · 02:09 gpu 46/r 73 · 02:11 gpu 48/r 74 · 02:13 gpu 54/r 81 · 02:15 gpu 50/r 89 · 02:17 gpu 51/r 92 · 02:19 gpu 50/r 74 · 02:21 gpu 51/r 139 · 02:23 gpu 46/r 71 · 02:25 gpu 50/r 74 · 02:27 gpu 60/r 94 · 02:29 gpu 60/r 90 · 02:31 gpu 42/r 69 · 02:33 gpu 44/r 71 · 02:35 gpu 43/r 69 · 02:37 gpu 46/r 73 · 02:39 gpu 47/r 76 · 02:41 gpu 55/r 121 · 02:43 gpu 56/r 126 · 02:45 gpu 54/r 81 · 02:47 gpu 55/r 78 · 02:49 gpu 48/r 76
+[stall-akte] Stapel (kein Debugger: Zeit-Linse)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Siedlung „Westerfeld" (markt, Seed 1668000145): 20 Häuser platziert, 0 Slots übersprungen; Mitte 46 m Radius.
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Bauten n=1571 haus=20 ziegel=6 nah=haus_mittelalterlich @-6/21/-1253 d=345m
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (Regel) registriert: evo_2
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (Regel) registriert: evo_3
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Grok: Der Regen bleibt. Schön still ist es jetzt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_4, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Grok: Manche Welten brauchen das.
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_5, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Das Wetter bleibt rainy (Wunsch: rule:nexus)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_6, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (Regel) registriert: evo_7
+[stall-akte] Stderr [24292:36512:1027/085952.244:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [24292:36512:1027/085952.244:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [24292:36512:1027/085952.277:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [24292:36512:1027/090012.723:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [24292:36512:1027/090105.100:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.4 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 08:00:28.505 gpu.createRenderPipelineAsync #97 renderPipeline_MeshStandardNodeMaterial_83
+── ein: Klang-ms je Bild p95 0.14 · max 2.18 (307 Bilder, 4 m) · über dem Soll trägt _lofiPlayGroove 0.21 · _lofiPlayChord 0.08 · _playSchrittOneShot 0.08
+── gehen: Klang-ms je Bild p95 0.12 · max 3.61 (26539 Bilder, 259 m) · über dem Soll trägt _lofiPlayGroove 0.10 · _playSchrittOneShot 0.07 · _lofiPlayChord 0.06
+── fahrt: Klang-ms je Bild p95 0.12 · max 2.12 (19090 Bilder, 113 m) · über dem Soll trägt _lofiPlayGroove 0.15 · _lofiPlayChord 0.09 · _lofiPlayBass 0.05
+── nacht: Klang-ms je Bild p95 0.11 · max 1.47 (17474 Bilder, 196 m) · über dem Soll trägt _lofiPlayGroove 0.10 · _playSchrittOneShot 0.08 · _lofiPlayChord 0.06
+── Aussetzer am Ausgang: 0 in 600.8 s Wiedergabe (0 s still)
+✅ GRÜN — Klang-Takt in Bewegung p95 ≤ 0.2 ms je Bild (gehen · Fahrt · nachts)
+
+--- stderr ---
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf heil-ci-portal-konformanz
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf heil-ci-portal-konformanz
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf heil-wiw
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf heil-wiw
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+08:56:43 CI-Ruhe: letzter CI-Job vor 6 s zu Ende - warte 174 s
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 2016 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
