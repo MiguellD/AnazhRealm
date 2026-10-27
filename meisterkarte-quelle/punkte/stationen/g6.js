@@ -86,6 +86,10 @@ const SPEICHER_PFAD = [
     "scripts/lib/welt-boot.cjs",
     "scripts/lib/software-gpu.cjs",
 ];
+// DER VOLLE LAUF von speicher.K4/K5 (Korpus, Tab-Tod, save-server) ohne den Gang (D): keiner der drei urteilt ihn, speicher.K3 geht
+// ihn mit 5 km in 30 Spielminuten — PERSISTENCE_WEG=0-0 spart 1 km in 6 Spielminuten (3 600 Takte). Ein Stand vor dem Schalter geht
+// ihn mit 0 km; seine (D)-Zeilen und sein Exit tragen kein Urteil der drei.
+const PERSISTENZ_ENV = { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}", PERSISTENCE_WEG: "0-0" };
 // speicher.K3: was der Weg berührt — die Würfe des Felds und der Streu, die Orte und ihr Gedächtnis, das Leben im Stand
 const K3_PFAD = [
     "stamm/gelaende-boden.js",
@@ -724,20 +728,29 @@ module.exports = [
         // IndexedDB, sein .bak, das Abbild im localStorage). Geurteilt ohne das Leben (Welt = Seed + Edits + Leben: das Tagebuch,
         // das Gedächtnis des Nexus, die Kreaturen), das je Schlüssel in der Zahl steht; der Selbsttest im selben Gang schmuggelt
         // einen Weg-Zähler in den Stand und MUSS rot an seinem Namen fallen.
+        // DER LAUF VON #2 (27.10., Karte lange-stationen): die 1000 Gruben folgen dem Gang, sein Δ (Stand 0 → 1) steht vor ihnen —
+        // Zwillinge fahren EINMAL (e7a28b06 headless: #1 20,42 + #2 26,60 min). Statt des Exits (der trüge nun auch das Urteil der
+        // Gruben, Staffel 2) liest #1, was sein Exit vorher hieß: seine drei (D)-Zeilen, das Ende des Laufs (die Summen-Zeile) und
+        // keinen Fehler der Welt (welt-boot ROT) — der zählt jetzt über den ganzen Lauf, auch über die Gruben: strenger, nie weicher.
         befehl: ["node", "scripts/diag-persistence.cjs", "--weg"],
-        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_WEG: "5-30" },
+        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_WEG: "5-30", PERSISTENCE_EDITS: "1000" },
         gpu: false,
         zeit: false,
-        minuten: 15,
+        minuten: 18,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/);
             const teil = (re) => { const l = z.find((x) => re.test(x)); return l ? { ok: /✅/.test(l), l: l.trim() } : null; };
             const t = [teil(/^\s*(✅|❌) \(D\) [\d.]+ km in 30 min ohne Edit/), teil(/^\s*(✅|❌) \(D\) SELBSTTEST/)];
-            if (t.some((x) => !x)) return { gruen: false, zahl: "Teil (D) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            const voll = teil(/^\s*(✅|❌) \(D\) jeder Stand des Speicher-Fadens/);
+            const ende = z.some((x) => /^\d+\/\d+ Persistenz-Invarianten OK\./.test(x)) && !z.some((x) => /^\[welt-boot\] ROT/.test(x));
+            if (t.some((x) => !x) || !voll) return { gruen: false, zahl: "Teil (D) fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
             const km = +/\(D\) ([\d.]+) km/.exec(t[0].l)[1];
             return {
-                gruen: t.every((x) => x.ok) && km >= 5 && lauf.exit === 0,
-                zahl: t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 300)).join(" | "),
+                gruen: t.every((x) => x.ok) && voll.ok && km >= 5 && ende,
+                zahl:
+                    t.map((x) => (x.ok ? "✅ " : "❌ ") + x.l.replace(/^(✅|❌)\s*/, "").slice(0, 300)).join(" | ") +
+                    (voll.ok ? "" : " | ❌ " + voll.l.replace(/^(✅|❌)\s*/, "").slice(0, 200)) +
+                    (ende ? "" : " | ❌ Lauf ohne Ende oder mit Fehlern der Welt (Exit " + lauf.exit + ")"),
             };
         },
         pfad: SPEICHER_PFAD.concat(K3_PFAD),
@@ -781,7 +794,7 @@ module.exports = [
         // Die halbe Welt von (T) urteilt den Tod mitten im Schreiben — das ist Speicher K1 (echt-k1), nicht der Rundlauf; unter
         // Windows meldet (T) sie zudem als Rennen der Linse (taskkill /T erreicht den Baum verzögert, Bericht 2210-messschuld-6cfce).
         befehl: ["node", "scripts/diag-persistence.cjs"],
-        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
+        env: PERSISTENZ_ENV,
         gpu: false,
         zeit: false,
         minuten: 8,
@@ -814,7 +827,7 @@ module.exports = [
         // gate:persistence (U) aus dem Korpus: die Stände eines alten Bodens (V18.530–V18.541, vor K16) laden durch den Boot des
         // Spielers auf den neuen (Bauten in ihrer Höhe über Grund, Gruben am Boden), Gegenprobe: die Stände desselben Bodens ziehen nicht um
         befehl: ["node", "scripts/diag-persistence.cjs"],
-        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
+        env: PERSISTENZ_ENV,
         gpu: false,
         zeit: false,
         minuten: 8,
@@ -836,7 +849,7 @@ module.exports = [
         // (Bauten, Grabe-Hiebe, Inventar), lädt am Kopf durch den Boot des Spielers ohne Verlust; die Versions-Stufe trägt ihren
         // Stand im Baum (fehlt er, schreibt ihn der Kopf und die Zeile ist ROT, bis er committet ist)
         befehl: ["node", "scripts/diag-persistence.cjs"],
-        env: { PERSISTENCE_PORT: "{PORT}", PERSISTENCE_SERVER_PORT: "2{PORT}" },
+        env: PERSISTENZ_ENV,
         gpu: false,
         zeit: false,
         minuten: 10,

@@ -15,6 +15,8 @@
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN)
 //   node punkte.cjs plan --kopf <neu> --vorher <alt>   der Mess-Plan nach einem Zug: je GPU-Gerät die Stationen, die Punkte halten
 //        oder gewinnen können (Staffel 1 auf EINEM Gerät, Zeit-Stationen auf der GTX, rote ohne Heil-Versuch nie)
+//   node punkte.cjs gruppen --geraet radeon|gtx|headless [--nur id,id]   je Zeile die Ids EINES Laufs (Zwillinge zusammen, Reihe von
+//        nur) — der Messplatz der OMEN fährt je Zeile ein `run --nur`, nie einen Zwilling zweimal
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -286,10 +288,15 @@ function fahreStation(st, ctx) {
 }
 // fährt den Befehl der ERSTEN Station EINMAL und urteilt jede Station der Gruppe über denselben Lauf — Zwillinge (gleicher
 // Befehl, gleiche Umgebung, z. B. Staffel 1 und 2 aus EINER Linse) kosten nie zwei Läufe; Rückgabe je Station ein Ergebnis
+// DAS WARTEN (27.10., Karte lange-stationen): `minuten` zählt ab dem Start, auch das Warten am Schloss (e7a28b06 Radeon: speicher.K2#1
+// 29,51 min, davon 25,7 vor dem Schloss, die Vorfahrt des echt-Jobs); `warten` nennt die Minuten bis „gpu-lauf: Schloss …“ —
+// die Arbeit der Station ist minuten − warten
 function fahreGruppe(sts, ctx) {
     const st = sts[0];
-    return new Promise((ganz) => {
+    let tSchloss = null;
+    return new Promise((ganz0) => {
         const t0 = Date.now();
+        const ganz = (es) => ganz0(tSchloss ? es.map((e) => ({ ...e, warten: +((tSchloss - t0) / 60000).toFixed(2) })) : es);
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
         const fertig = (e) => ganz(sts.map(() => e));
         const rot = (grund, exit = null, zahl = "") => fertig({ gruen: false, zahl: zahl || grund, exit, minuten: min(), grund });
@@ -351,7 +358,7 @@ function fahreGruppe(sts, ctx) {
         const stelle = (s) => { clearTimeout(uhr); uhr = setTimeout(() => { tot = true; baumTot(kind.pid); }, s * 1000); };
         const lauscht = () => {
             if (amSchloss) return;
-            if (/^gpu-lauf: Schloss /m.test(err) || /^gpu-lauf: Schloss /m.test(out)) { amSchloss = true; stelle(deckelS + 120); } else stelle(stillS);
+            if (/^gpu-lauf: Schloss /m.test(err) || /^gpu-lauf: Schloss /m.test(out)) { amSchloss = true; tSchloss = Date.now(); stelle(deckelS + 120); } else stelle(stillS);
         };
         kind.stdout.on("data", (d) => { out = kappe(out, String(d)); lauscht(); });
         kind.stderr.on("data", (d) => { err = kappe(err, String(d)); lauscht(); });
@@ -578,6 +585,18 @@ function gruppiere(meine) {
     }
     return gruppen;
 }
+// DIE ZWILLINGE EINER LISTE (27.10., Karte lange-stationen): der Messplatz der OMEN fährt Station für Station (`run --nur <id>`) —
+// so fuhr der Lauf von speicher.K1#1 und #2 zweimal (e7a28b06 GTX 12,43 + 12,42 min). `gruppen` nennt je Lauf die Ids seiner
+// Zwillinge in der Reihe von `nur` (nur Gelistete), der Messplatz fährt je Zeile EIN `--nur`
+function zwillingsGruppen(stationen, geraet, nur) {
+    if (!GERAETE.includes(geraet)) throw new Error("--geraet radeon|gtx|headless");
+    const meine = stationen.filter((st) => geraeteVon(st).includes(geraet));
+    const ids = nur ? nur.split(",") : meine.map(schluessel);
+    const liste = ids.map((id) => meine.find((st) => schluessel(st) === id) || id);
+    const fremd = liste.filter((x) => typeof x === "string");
+    if (fremd.length) throw new Error("--nur " + fremd.join(",") + ": keine Station auf " + geraet);
+    return gruppiere(liste).map((g) => g.map(schluessel));
+}
 const sollMin = (gs) => gs.reduce((s, g) => s + g[0].minuten, 0);
 function planText(gruppen, bahnen) {
     const zeit = gruppen.filter(istZeit), bild = gruppen.filter((g) => !istZeit(g));
@@ -777,7 +796,7 @@ function planCli(opt) {
         return e && (!e.abdruck || e.abdruck === ab[id]) ? e : null;
     };
     const genannt = new Set((git(["log", "--format=%B", alt + ".." + neu], repo).match(/\b[a-z]+\.K\d\b/g) || []));
-    const minVon = (id) => Math.max(0, ...["radeon", "gtx"].map((g) => (da(id, g) && da(id, g).minuten) || 0));
+    const minVon = (id) => Math.max(0, ...["radeon", "gtx"].map((g) => (da(id, g) && da(id, g).minuten - (da(id, g).warten || 0)) || 0));
     const zeit = new Set(stationen.filter((st) => st.zeit).map(schluessel));
     const p = messPlan(stationen, da, genannt, (id) => zeit.has(id));
     const sum = (ids) => Math.round(ids.reduce((a, id) => a + minVon(id), 0));
@@ -955,6 +974,12 @@ async function selbsttest() {
         const e4 = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: lies }, { ...c4, deckelMinS: 120 });
         pruef("LÄUFER ein Schloss, das nie kommt (gpu-lauf.sh schweigt beim Warten), ist UNGEMESSEN; der Deckel zählt erst ab dem Schloss",
             e.ungemessen === true && /nie bekommen: gpu-lauf.sh schwieg 2 s/.test(e.grund) && e4.gruen === true && !e4.ungemessen, JSON.stringify([e, e4]));
+        // (3e) DAS WARTEN: die Minuten bis zur Zeile „gpu-lauf: Schloss …“ stehen als `warten` neben `minuten` (die Arbeit ist die Differenz)
+        const c5 = { ...ctx("wartet"), gpuLauf: path.join(tmp, "wartet.sh"), stillS: 30 };
+        fs.writeFileSync(c5.gpuLauf, '#!/bin/bash\nN="$1"; shift\necho "gpu-lauf: $N (zeit) wartet auf Vorfahrt" >&2\nsleep 3\necho "gpu-lauf: Schloss $N (zeit) nach 3 s" >&2\n"$@"\n');
+        const e5 = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: lies }, { ...c5, deckelMinS: 120 });
+        pruef("LÄUFER das Warten am Schloss steht als `warten` (3 s vor dem Schloss), ein Lauf ohne Schloss trägt keins",
+            e5.gruen === true && e5.warten >= 0.05 && e5.warten <= e5.minuten && typeof e4.warten === "number" && !("warten" in e2), JSON.stringify([e5, e4.warten, e2]));
     } else pruef("LÄUFER GPU über das Schloss", false, "keine Git-bash");
     // (3d) DER LESER zug.cjs (artifacts/profiband/werkzeug/zug.cjs, punkte(): Fortschritt der Radeon nach zug/fortschritt-radeon.txt) —
     // seine Muster wörtlich: Start und Station in dem Format, das er liest; ein ungemessener Lauf ist weder GRÜN noch ROT noch toter
@@ -1215,6 +1240,17 @@ async function selbsttest() {
     pruef("MESS-PLAN Staffel 1 auf EINEM Gerät (Zeit auf der GTX), rot ohne Heil-Versuch fällt, genannt fährt beide, Staffel 2 nur ganz grün oder geheilt",
         mp.radeon.join() === "a.K1#1,a.K1#2,c.K1#1" && mp.gtx.join() === "a.K1#2,c.K1#1,d.K1#1" && mp.uebersprungen.join() === "b.K1#1,d.K1#2", JSON.stringify(mp));
     pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
+    // (7) DIE ZWILLINGE EINER LISTE (Messplatz der OMEN): je Zeile ein Lauf, Zwillinge zusammen, die Reihe von nur, nur Gelistete
+    {
+        const Z = (k, s, b, ge = ["radeon", "gtx"]) => ({ kriterium: k, staffel: s, geraet: ge, befehl: ["node", b], env: {}, gpu: true });
+        const zs = [Z("a.K1", 1, "x"), Z("a.K1", 2, "x"), Z("b.K1", 1, "y"), Z("c.K1", 1, "x", ["radeon"]), Z("d.K1", 1, "x")];
+        const g1 = zwillingsGruppen(zs, "gtx", "b.K1#1,a.K1#2,d.K1#1").map((g) => g.join("+")).join(" ");
+        const g2 = zwillingsGruppen(zs, "gtx").map((g) => g.join("+")).join(" ");
+        let wirft = "";
+        try { zwillingsGruppen(zs, "gtx", "c.K1#1"); } catch (x) { wirft = x.message; }
+        pruef("GRUPPEN Zwillinge in EINEM Lauf, Reihe von nur, nur Gelistete, eine Station eines anderen Geräts ist ROT",
+            g1 === "b.K1#1 a.K1#2+d.K1#1" && g2 === "a.K1#1+a.K1#2+d.K1#1 b.K1#1" && /c.K1#1: keine Station auf gtx/.test(wirft), JSON.stringify([g1, g2, wirft]));
+    }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
     console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length + ")");
@@ -1239,6 +1275,7 @@ if (require.main === module) {
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "plan") planCli(o);
+        else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));
         else if (verb === "liste") {
             const { stationen, fehler, fehlt } = ladeGeprueft();
             // DIE WAND PFAD am Kopf (--kopf, sonst origin/main des Spiel-Klons): jeder Glob trifft eine Datei
@@ -1256,7 +1293,7 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] · buchen --kopf <sha> · liste [--kopf <sha>] · gruppen --geraet <g> [--nur id,id] · selbsttest");
             process.exitCode = 2;
         }
     })().catch((e) => {

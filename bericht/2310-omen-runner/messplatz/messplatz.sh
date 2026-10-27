@@ -90,22 +90,27 @@ fahre_abab() { # $1 id, $2 rest
   say "$id fertig $URTEIL"
 }
 
-fahre_punkte() { # $1 id, $2 rest — Station für Station (`--nur <id>`); vor jeder Station die Vorfahrt einer offenen prio-1-Zeile
-  local id=$1 S nur s8 g r=0 ids st fertig=$H/lauf/$1.stationen v
+fahre_punkte() { # $1 id, $2 rest — Lauf für Lauf (`--nur <ids eines Laufs>`); vor jedem Lauf die Vorfahrt einer offenen prio-1-Zeile
+  # DIE ZWILLINGE (27.10., Karte lange-stationen): `punkte.cjs gruppen` nennt je Zeile die Stationen EINES Laufs (gleicher Befehl und
+  # Umgebung) — Station für Station fuhr speicher.K1#1 und #2 zweimal (e7a28b06: 12,43 + 12,42 min), takt10-gtx trug 39 Stationen in 34 Läufen
+  local id=$1 S nur s8 g r=0 grp gruppen st fertig=$H/lauf/$1.stationen v
   S=$(wert sha "$2"); nur=$(wert nur "$2"); s8=${S:0:8}
   say "$id PUNKTE sha=$s8 ${nur:+nur=$nur}"
   git -C $PK fetch -q origin punkte-maschine 2>>$LOG; git -C $PK rebase -q origin/punkte-maschine 2>>$LOG || git -C $PK rebase --abort 2>/dev/null
-  if [ -n "$nur" ]; then ids=${nur//,/ }; else ids=$(cd $PK && node meisterkarte-quelle/punkte/punkte.cjs liste 2>/dev/null | grep -E "^  [a-z]+[.]K[0-9]+#[0-9]+ · [a-z+]*gtx" | awk '{print $1}'); fi
+  if ! gruppen=$(cd $PK && node meisterkarte-quelle/punkte/punkte.cjs gruppen --geraet gtx ${nur:+--nur "$nur"} 2>>$LOG) || [ -z "$gruppen" ]; then
+    melde "$id: punkte.cjs gruppen scheiterte (punkte-maschine ohne das Verb?) — nichts gefahren"; erledigt "$id" "ROT" "gruppen scheiterte"; return
+  fi
   touch $fertig
-  for st in $ids; do
+  for grp in $gruppen; do
+    st=${grp%%,*}
     grep -qx "$st" $fertig && continue
     v=$(waehle_prio1)
     if [ -n "$v" ]; then
-      say "$id pausiert vor $st: Vorfahrt $(echo "$v" | awk '{print $1}')"
+      say "$id pausiert vor $grp: Vorfahrt $(echo "$v" | awk '{print $1}')"
       set -- $v; case $3 in abab) fahre_abab "$1" "${v#* * * }" ;; station) fahre_station "$1" "${v#* * * }" ;; esac
       say "$id setzt fort"
     fi
-    (cd $PK && PUNKTE_GPU_LAUF=$(cygpath -m $BASE/p3/gpu-lauf.sh) node meisterkarte-quelle/punkte/punkte.cjs run --sha $S --geraet gtx --nur "$st" >> $H/lauf/$id.out 2>&1) || r=$?
+    (cd $PK && PUNKTE_GPU_LAUF=$(cygpath -m $BASE/p3/gpu-lauf.sh) node meisterkarte-quelle/punkte/punkte.cjs run --sha $S --geraet gtx --nur "$grp" >> $H/lauf/$id.out 2>&1) || r=$?
     echo "$st" >> $fertig
   done
   g=$(node -e 'try{const j=require(process.argv[1]);const v=Object.values(j.je||{});console.log(v.filter(x=>x.gruen).length+" grün / "+v.filter(x=>!x.gruen).length+" rot")}catch(e){console.log("keine Mess-Datei")}' "$(cygpath -m $PK/meisterkarte-quelle/punkte/messung/$s8-gtx.json)")
