@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullSeite, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
@@ -39,6 +39,7 @@ const opt = (k, d) => {
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d;
 };
 const SELBSTTEST = argv.includes("--selftest");
+const ECHT = argv.includes("--echt");
 const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
 const ABDRUCK = opt("--abdruck", null);
 const JSON_AUS = opt("--json", null);
@@ -2093,7 +2094,9 @@ hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
     await server.lausche(PORT);
     // `--faden --echt`: das Fenster an der echten GPU (die Adapter-Zeile `[linse-gpu]`), jede andere Probe am Null-Renderer
-    const { browser, page } = await (argv.includes("--echt") ? starteBrowser({ art: "echt", headless: false, frist: 900000 }).then(async (b) => ({ browser: b, page: await b.newPage() })) : nullSeite({ art: "standard", frist: 900000 }));
+    const browser = await starteBrowser({ art: ECHT ? "echt" : "standard", headless: !ECHT, frist: 900000 });
+    const page = await browser.newPage();
+    if (!ECHT) await nullRenderer(page);
     // der EINE Abdruck der Seite (SHA-256 eines Felds, hex) für Probe und Studio
     await page.evaluateOnNewDocument(() => {
         window.__sha = async (a) =>
