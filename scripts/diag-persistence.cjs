@@ -142,12 +142,12 @@ async function serverLauf(quelle, tod) {
     const blob = [];
     for (let i = 0; i < 9000; i++) blob.push(`zeile-${i}-` + "x".repeat(96));
     const body = JSON.stringify({ state: { marker: "neu", blob } });
-    const kopf = {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(body),
-    };
     const { status } = await Promise.race([
-        frage("/api/save-state", kopf, body),
+        frage(
+            "/api/save-state",
+            { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+            body
+        ),
         sleep(30000).then(() => ({ status: "zeitlos" })),
     ]);
     const lies = (f) => {
@@ -426,7 +426,7 @@ const server = statikServer();
 // Platte (der Stand in IndexedDB und sein .bak, beide vom Speicher-Faden). Das Urteil gilt dem Stand ohne das Leben
 // (`LEBEN`: das Tagebuch, das Gedächtnis des Nexus, die Kreaturen — die Änderungen von KI und Welt, gedeckelt von ihrem
 // Gesetz); es steht je Schlüssel in der Zahl. Mit PERSISTENCE_EDITS=n schlägt der Spieler danach n Gruben (2-m-Raster um ihn):
-// Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6), `--weg` nur (D).
+// Δ roh und Platte dieser Edits (Staffel 2, ≤ 100 kB je 1000). PERSISTENCE_WEG=km-min (Standard 1-6, 0-0 ohne (D)), `--weg` nur (D).
 // DER KONSUM: jeder Stand des Fadens ist die volle Serialisierung (`buildStateSnapshot`) — die Marken der Stand-Tafel verlieren
 // nichts; die Zahl nennt je Stand die abweichenden Schlüssel. SELBSTTEST im selben Gang: ein Weg-Zähler im Stand (`wegSpur`, je
 // Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen.
@@ -575,14 +575,13 @@ async function korpusLauf(selbst) {
         .map((f) => JSON.parse(zlib.brotliDecompressSync(fs.readFileSync(path.join(KORPUS, f)))));
     const [browser, zeilen] = [await starteBrowser({ art: "null" }), []];
     alle.sort((a, b) => a.version.localeCompare(b.version, "en", { numeric: true }));
-    const port = server.address().port;
     for (const [i, k] of (selbst ? alle.slice(0, VERLUST.length) : NUR_STUFE ? alle.slice(-1) : alle).entries()) {
         const [page, s] = [await browser.newPage(), korpusSoll(k)];
         await nullRenderer(page);
         await page.evaluateOnNewDocument(korpusHaken, selbst ? VERLUST[i] : null);
-        await page.goto(`http://127.0.0.1:${port}/cores.manifest.json`);
+        await page.goto(`http://127.0.0.1:${PORT}/cores.manifest.json`);
         await page.evaluate((ls) => Object.assign((localStorage.clear(), localStorage), ls), k.ls);
-        await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded" });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
         const ist = await page.evaluate(korpusIst, s);
         await page.close();
         const kopf = korpusSave(ist.neu.ls);
@@ -663,22 +662,25 @@ function korpusUrteil(z, selbst) {
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
-    const w = await wegLauf(WEG_KM, WEG_MIN, EDITS);
-    const wegChecks = [
-        {
-            name: `(D) ${w.km.toFixed(1)} km in ${WEG_MIN} min ohne Edit, Soll ≤ 10 kB: ${w.weg.zeile}`,
-            pass: w.weg.ohne <= 1e4 && w.weg.ohnePlatte <= 1e4,
-        },
-        {
-            name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${w.spur.zeile}`,
-            pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
-        },
-        {
-            name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
-            pass: w.abw.every((x) => !x.length),
-        },
-    ];
-    if (EDITS)
+    // PERSISTENCE_WEG=0-0: kein Gang — ein Lauf, der (D) nie urteilt (speicher.K4/K5; den Gang misst speicher.K3 mit 5 km)
+    const w = WEG_KM && (await wegLauf(WEG_KM, WEG_MIN, EDITS));
+    const wegChecks = !w
+        ? []
+        : [
+              {
+                  name: `(D) ${w.km.toFixed(1)} km in ${WEG_MIN} min ohne Edit, Soll ≤ 10 kB: ${w.weg.zeile}`,
+                  pass: w.weg.ohne <= 1e4 && w.weg.ohnePlatte <= 1e4,
+              },
+              {
+                  name: `(D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ${w.spur.zeile}`,
+                  pass: w.spur.ohne > 1e4 && w.spur.taeter[0] === "wegSpur",
+              },
+              {
+                  name: `(D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: ${w.abw.map((x) => x.join(" ") || "gleich").join(" · ")}`,
+                  pass: w.abw.every((x) => !x.length),
+              },
+          ];
+    if (w && EDITS)
         wegChecks.push({
             name: `(D) ${EDITS} Edits, Soll ≤ ${EDITS / 10} kB: ${w.edits.zeile}`,
             pass: Math.max(w.edits.ohne, w.edits.ohnePlatte) <= EDITS * 100,
