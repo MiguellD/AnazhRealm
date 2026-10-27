@@ -653,3 +653,4 @@
 2026-10-27 03:49:05 takt8-radeon ENDE 26 grün / 3 rot · 119.9 min
 2026-10-27 03:51:33 takt8b-radeon START 5 Stationen
 2026-10-27 03:58:05 takt8b-radeon leib.K1#1 GRÜN 6.5 · 1/5
+2026-10-27 04:03:48 takt8b-radeon halten.K2#1 ROT 5.7 · 2/5
