@@ -1,7 +1,7 @@
 {
  "sha": "e7a28b06e6fd665ad12b7a76da66157f5c38f4ab",
  "geraet": "headless",
- "zeit": "2026-10-27T01:46:46.876Z",
+ "zeit": "2026-10-27T03:52:38.115Z",
  "host": "MiguellD",
  "je": {
   "streaming.K4#1": {
@@ -379,14 +379,14 @@
   },
   "feld.K2#1": {
    "gruen": false,
-   "zahl": "1 von 6 (e)-Proben ROT: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 0 geteilte Schritte, maxΔ 0",
+   "zahl": "6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 447 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich",
    "exit": 1,
-   "minuten": 8.7,
-   "grund": "ROT: 1 von 6 (e)-Proben ROT: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 0 geteilte Schritte, maxΔ 0",
-   "zeit": "2026-10-27T01:32:54.883Z",
+   "minuten": 9.81,
+   "grund": "ROT: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 447 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich",
+   "zeit": "2026-10-27T03:52:38.115Z",
    "abdruck": "41d344731f62",
-   "port": 7724,
-   "bahn": "3/3"
+   "port": 7704,
+   "bahn": "1/1"
   },
   "feld.K2#2": {
    "gruen": false,

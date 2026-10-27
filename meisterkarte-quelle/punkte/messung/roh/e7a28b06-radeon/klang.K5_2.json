@@ -5,51 +5,47 @@
  },
  "phasen": {
   "gehen": {
-   "bilder": 15681,
-   "weg": 264,
-   "p95": 0.26,
-   "max": 4.77,
-   "schreiben": 1.05,
+   "bilder": 25517,
+   "weg": 260,
+   "p95": 0.11,
+   "max": 1.42,
+   "schreiben": 0.67,
    "traeger": [
-    "_umweltLage 0.10",
+    "_lofiPlayGroove 0.10",
     "_playSchrittOneShot 0.08",
-    "_lofiPlayGroove 0.08"
+    "_lofiPlayChord 0.06"
    ]
   },
   "fahrt": {
-   "bilder": 8943,
-   "weg": 263,
-   "p95": 0.26,
-   "max": 10.31,
-   "schreiben": 5.58,
+   "bilder": 18183,
+   "weg": 116,
+   "p95": 0.12,
+   "max": 2.32,
+   "schreiben": 3.49,
    "traeger": [
-    "_lofiPlayGroove 0.11",
-    "_umweltLage 0.10",
-    "_fahrtKlangTick 0.06"
+    "_lofiPlayGroove 0.17",
+    "_lofiPlayChord 0.09",
+    "_lofiPlayBass 0.05"
    ],
    "sattel": true
   },
   "nacht": {
-   "bilder": 11595,
-   "weg": 197,
-   "p95": 0.24,
-   "max": 6.21,
-   "schreiben": 1.27,
+   "bilder": 18435,
+   "weg": 196,
+   "p95": 0.11,
+   "max": 1.57,
+   "schreiben": 0.71,
    "traeger": [
-    "_playSchrittOneShot 0.10",
-    "_lofiPlayGroove 0.10",
-    "_umweltLage 0.08"
+    "_lofiPlayGroove 0.11",
+    "_playSchrittOneShot 0.09",
+    "_lofiPlayChord 0.07"
    ]
   }
  },
  "aussetzer": {
   "n": 0,
   "still": 0,
-  "s": 602.9
+  "s": 599.8
  },
- "rot": [
-  "T gehen: Klang-ms je Bild p95 0.26 > 0.2 (max 4.77; trägt _umweltLage 0.10 · _playSchrittOneShot 0.08 · _lofiPlayGroove 0.08)",
-  "T fahrt: Klang-ms je Bild p95 0.26 > 0.2 (max 10.31; trägt _lofiPlayGroove 0.11 · _umweltLage 0.10 · _fahrtKlangTick 0.06)",
-  "T nacht: Klang-ms je Bild p95 0.24 > 0.2 (max 6.21; trägt _playSchrittOneShot 0.10 · _lofiPlayGroove 0.10 · _umweltLage 0.08)"
- ]
+ "rot": []
 }
