@@ -851,3 +851,4 @@
 2026-10-27 13:24:19 takt11-headless halten.K4#2 GRÜN 3.9 · 44/64
 2026-10-27 13:24:32 takt11-headless siedlung.K3#1 GRÜN 4.9 · 45/64
 2026-10-27 13:24:37 takt11-headless gelaende.K1#1 GRÜN 3.6 · 46/64
+2026-10-27 13:25:16 takt11-headless ki.K1#1 GRÜN 7.3 · 47/64
