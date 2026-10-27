@@ -917,3 +917,4 @@
 2026-10-27 14:10:03 takt12-radeon klang.K5#2 GRÜN 13.3 · 1/30
 2026-10-27 14:18:26 takt12-radeon speicher.K1#2 GRÜN 8.4 · 2/30
 2026-10-27 14:20:36 takt12-radeon physik.K2#2 ROT 2.2 · 3/30
+2026-10-27 14:21:00 takt12-radeon siedlung.K2#1 GRÜN 2.6 · 4/30
