@@ -111,8 +111,9 @@ class AnazhRealm_wasser_hydro {
 
     // DER TAKT DES PEGELS (stoffe.K3-2, gerufen vom Takt der Saison mit der Schneegrenze): ändert der neue Tag den Hub an einer
     // Höhe, trägt die Welt die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die
-    // gezeichneten Chunks, deren Wasser-Zellen die Höhen treffen, an denen der Hub wechselt (± eine Stufe der Tafel), ihre Netze
-    // mit Wasser im Vorrat fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser, kein Wasser anderer Höhe.
+    // gezeichneten Chunks, deren Wasser-Zellen die Höhen treffen, an denen der Hub wechselt (± eine Stufe der Tafel), und die
+    // Netze im Vorrat, deren Wasser sie trifft, fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser,
+    // kein Wasser anderer Höhe.
     _pegelTakt() {
         const alt = this._pegelTafelGilt;
         if (alt === undefined) return;
@@ -133,29 +134,28 @@ class AnazhRealm_wasser_hydro {
         const { dim, dimY, step, floorDrop } = this._voxelChunkConfig(0);
         const oy = (st.terrainBaseHeight || 0) - floorDrop;
         const WATER = AnazhRealm.CELL_STATE.WATER;
+        // trifft das Wasser des Eintrags `e` (ein gezeichneter Chunk, ein Netz im Vorrat) das Band? — die Höhen seiner Zellen, je
+        // Eintrag gemerkt (ein Neubau trägt einen neuen Eintrag)
+        const trifft = (e) => {
+            const w = e && e.waterCells;
+            if (!w || !w.length) return false;
+            if (!e._wasserY) {
+                let [a, b] = [dimY, -1];
+                for (let j = 0; j < dimY; j++)
+                    for (let q = j * dim * dim, z = q + dim * dim; q < z; q++)
+                        if (w[q] === WATER) {
+                            [a, b] = [Math.min(a, j), j];
+                            break;
+                        }
+                e._wasserY = b < 0 ? [Infinity, -Infinity] : [oy + a * step, oy + (b + 1) * step];
+            }
+            return e._wasserY[1] >= lo && e._wasserY[0] <= hi;
+        };
         if (st.voxelChunks && st.voxelChunks.size) {
             if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
-            for (const [key, ch] of st.voxelChunks) {
-                const w = ch && ch.waterCells;
-                if (!w || !w.length) continue;
-                // die Höhen seines Wassers (je Eintrag gemerkt — ein Neubau trägt einen neuen Eintrag)
-                if (!ch._wasserY) {
-                    let [a, b] = [dimY, -1];
-                    for (let j = 0; j < dimY; j++)
-                        for (let q = j * dim * dim, e = q + dim * dim; q < e; q++)
-                            if (w[q] === WATER) {
-                                [a, b] = [Math.min(a, j), j];
-                                break;
-                            }
-                    ch._wasserY = b < 0 ? [] : [oy + a * step, oy + (b + 1) * step];
-                }
-                const [a, b] = ch._wasserY;
-                if (b >= lo && a <= hi) st.dirtyVoxelChunks.add(key);
-            }
+            for (const [key, ch] of st.voxelChunks) if (trifft(ch)) st.dirtyVoxelChunks.add(key);
         }
-        if (st.voxelMeshCache)
-            for (const [key, m] of st.voxelMeshCache)
-                if (m && m.waterCells && m.waterCells.length) st.voxelMeshCache.delete(key);
+        if (st.voxelMeshCache) for (const [key, m] of st.voxelMeshCache) if (trifft(m)) st.voxelMeshCache.delete(key);
     }
 
     // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══

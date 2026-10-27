@@ -2006,7 +2006,9 @@ class AnazhRealm_feld_leben {
     _stahlStoff(bp) {
         const memo = this._stahlStoffMemo || (this._stahlStoffMemo = new Map());
         if (!memo.has(bp.name)) {
-            const z = this._stoff(this._geraetStoff(bp));
+            // ein Werk ohne Stoff-Teil glüht nicht (es hat keine Zeile; den Bruch meldet sein Leser, `_werkStoff`, nie dieser Takt)
+            const stoffTeil = this._schmiedeWerk(bp) || (bp.parts || []).some((p) => typeof p.material === "string");
+            const z = stoffTeil ? this._stoff(this._geraetStoff(bp)) : null;
             memo.set(
                 bp.name,
                 z && z.rho * z.c > 0 && z.tSchmelz > AnazhRealm.ESSE.feuerK && !(z.tZuend > 0) ? z : null
