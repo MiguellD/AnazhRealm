@@ -650,6 +650,15 @@ class AnazhRealm_werkstatt_vorschau {
         return mat;
     }
 
+    // DER SAME DER VORSCHAU (bauen.K1, Vorschau = Phantom = Werk): ein Bauwerk zeigt den Samen seines NÄCHSTEN Setzens — den des
+    // Bau-Modus (`_werkSame` mit `buildMode`), den FERTIGEN und das Phantom stellen —, ein Gerät den seiner Art (die Hand
+    // liest ihn). So bestellt die Wahl einer Zeile die L0 genau des Werks, das FERTIGEN setzt, und die Kosten-Leiste zählt es.
+    // Befund 27.10. (diag-werkstatt-weg --bild, Konsum-Probe am Null-Renderer): Vorschau und Kosten-Leiste bauten den Samen des
+    // Namens (L0–L3 einer Gestalt, die nie stand) vor der L0 des gesetzten Hauses in der Schlange — FERTIGEN → L0 kalt 4 751 ms.
+    _vorschauSame(bp, name) {
+        return this._werkSame(bp, name, bp && this._isPlaceableBlueprint(bp) ? this.state.buildMode : null);
+    }
+
     // Kann die Foundry den Bauplan servieren, kommt die Vorschau aus der EINMAL gezogenen, GECACHTEN
     // Studio-Geometrie (geteilt, nie dupliziert); noch nicht gezogen → einmal anfragen, bei Ankunft
     // neu bauen. Sonst klassischer Pfad.
@@ -664,9 +673,15 @@ class AnazhRealm_werkstatt_vorschau {
         if (!f) return null;
         // Würfel + LOD-Knöpfe schreiben Samen + Stufe in den Bauplan (`bp._grownSeed`/`_rockSeedBase`/
         // `_crystalSeedBase` · `bp._recipeLod`); die Studio-Vorschau LIEST sie (neuer Wurf = andere
-        // Variante). Der Same des Werks (`_werkSame`) — derselbe, den das Phantom zeigt und das Setzen stellt.
+        // Variante). Der Same des Werks (`_vorschauSame`) — derselbe, den das Phantom zeigt und das Setzen stellt.
         const bp = this.state.blueprints ? this.state.blueprints[bpName] : null;
-        const seedNum = this._werkSame(bp, bpName);
+        const seedNum = this._vorschauSame(bp, bpName);
+        // DIE WAHL IST DER WILLE (bauen.K1): ein Bauwerk bestellt mit der Vorschau den Welt-Körper seines nächsten Setzens über
+        // den EINEN Weg der Welt (`_foundryFlattenFor`: die Wurf-Stufe und L0 im selben Zug) — FERTIGEN findet ihn im Cache.
+        // Befund 27.10. (Konsum-Probe): die Haus-L0 lag beim Setzen im Cache, die Senken warteten auf die Wurf-Stufe L3, die
+        // erst das Setzen bestellte, hinter den Aufträgen der Kosten-Leiste (1 006–4 302 ms).
+        if (bp && f.ready && f.recipes && this._isPlaceableBlueprint(bp))
+            this._foundryFlattenFor(Object.assign(this._phantomWerk(bp, null), { wo: 0 }), preset, 0);
         // W-A1 — die Varianten-Wahl (`_foundryVariantFor`) lebt jetzt in der EINEN
         // Studio-Quelle `_workshopStudioPreviewFrom` (seedNum reist als Parameter).
         let lod = bp && Number.isFinite(bp._recipeLod) ? bp._recipeLod | 0 : 0;
