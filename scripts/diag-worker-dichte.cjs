@@ -27,6 +27,7 @@
 "use strict";
 const { statikServer, nullSeite, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
+const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
@@ -38,6 +39,7 @@ const opt = (k, d) => {
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d;
 };
 const SELBSTTEST = argv.includes("--selftest");
+const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
 const ABDRUCK = opt("--abdruck", null);
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WORKER_DICHTE_PORT) || 4392;
@@ -57,7 +59,7 @@ const abdruckPunkte = () => {
 };
 // Die Bedienung des Studios (Namen, Gruppen, die benannten Landschaften) — kein Gesetz des Kerns (studio-vertrag §9).
 const bedienung = () =>
-    JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "worlds", "gelaende", "bedienung.json"), "utf8"));
+    JSON.parse(liesText(path.resolve(__dirname, "..", "worlds", "gelaende", "bedienung.json")));
 
 const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 
@@ -104,6 +106,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             };
             const hex = window.__sha;
             const warteAck = (nachricht) => r._voxelFadenAuftrag(s.voxelWorker, nachricht);
+            const stand = () => r._voxelWorkerSyncState({ op: "state-set" });
             // Die Orte: Standard = die Messorte des Haushalts + ein Fluss-Chunk; Bühne = ihre Stationen.
             const orte = [];
             if (welt === "standard") {
@@ -175,7 +178,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // (1) ohne Edits
             const editsVorher = s.worldMeta.voxelEdits;
             s.worldMeta.voxelEdits = [];
-            await r._voxelWorkerSyncState({ op: "state-set" });
+            await stand();
             for (const ort of orte) {
                 const zeilen = [];
                 for (let lod = 0; lod <= 3; lod++) zeilen.push(await vergleiche(ort, lod, "rein"));
@@ -204,7 +207,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                         );
                 const tischAlt = s.waterLevel;
                 s.waterLevel = hoch + 20;
-                await r._voxelWorkerSyncState({ op: "state-set" });
+                await stand();
                 const saat = new Uint8Array(4 * cfg.dim).fill(1);
                 const key = `linse-saat|${cx},${cz}`;
                 const dichte = r._voxelEditedDensityGrid(
@@ -251,7 +254,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     };
                 } finally {
                     s.waterLevel = tischAlt;
-                    await r._voxelWorkerSyncState({ op: "state-set" });
+                    await stand();
                 }
                 if (out.flutSaat.mainWirkt) break;
             }
@@ -279,7 +282,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // sich keine Fläche. `zwilling` (Selbsttest): die alte Reichweite r + 4 m — FERN-RING MUSS beim Namen rot werden.
             const o0 = orte[0];
             s.worldMeta.voxelEdits = [];
-            await r._voxelWorkerSyncState({ op: "state-set" });
+            await stand();
             const G = globalThis.__gelaendeCore;
             const [R, tx, tz] = [3.5, o0.x + 0.37, o0.z + 0.61];
             const naht = [];
@@ -319,7 +322,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             if (jenseits) out.befunde.push(`REICHWEITE (editReich): ${jenseits} Flächen ändern sich jenseits von ihr`);
             // (3) DIE EDIT-WAHRHEIT (K23: 300 Edits, Karte = Liste) misst `--kern`.
             s.worldMeta.voxelEdits = editsVorher;
-            await r._voxelWorkerSyncState({ op: "state-set" });
+            await stand();
             // Der Abdruck der Makro-Höhe für den Byte-Beweis: die Punkte des Kerns (`abdruckFeld`), die Höhe der Welt.
             const makroSha = async () =>
                 hex(Float64Array.from(punkte, ([x, z, mitDetail]) => r._terrainMacroSurfaceY(x, z, mitDetail)));
@@ -536,9 +539,9 @@ async function probeVerfaelscht(page, url) {
 }
 // Eine frische Standard-Welt (kein Rest im Profil), bis Main und Faden stehen.
 async function frisch(page, url) {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(url, LADEN);
     await page.evaluate(() => localStorage.clear());
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.reload(LADEN);
 }
 async function frischBoot(page, url) {
     await frisch(page, url);
@@ -843,18 +846,15 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
     const jede = last ? 4 : 1;
     const W = takt(Array.from({ length: Math.floor((n * n) / jede) }, (_, q) => q * jede));
     const E = takt(eben.filter((_, q) => q % jede === 0));
-    const usWarm = W.us;
-    const usEben = E.us;
-    const usNoise = W.usNoise;
     const flaecheKm2 = ((n - 1) * S * 1e-3) ** 2;
-    const memoUsJeKm2 = last ? 0 : Math.max(0, (usKalt - usWarm) * n * n) / flaecheKm2;
+    const memoUsJeKm2 = last ? 0 : Math.max(0, (usKalt - W.us) * n * n) / flaecheKm2;
     const umgelegt = memoUsJeKm2 / (1e6 / (1.8 * 1.8)); // je 1,8-m-Spalte des Spiels
     const alle = W.eq + umgelegt / W.usNoise;
     const ebenen = E.eq + umgelegt / E.usNoise;
     return {
-        usWarm: +usWarm.toFixed(2),
-        usEbene: +usEben.toFixed(2),
-        usNoise2D: +usNoise.toFixed(3),
+        usWarm: +W.us.toFixed(2),
+        usEbene: +E.us.toFixed(2),
+        usNoise2D: +W.usNoise.toFixed(3),
         memoMsJeKm2: +(memoUsJeKm2 / 1000).toFixed(1),
         umgelegtUs: +umgelegt.toFixed(3),
         noise2DAlle: +alle.toFixed(1),
@@ -1161,7 +1161,7 @@ async function studioProbe(page) {
         // wird die aktive Welt — über ihr öffnet sich das Studio.
         const b0 = await boote(page);
         if (!b0.ok) throw new Error("die Welt vor der fremden Welt erwachte nicht");
-        const nav0 = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
+        const nav0 = page.waitForNavigation(LADEN);
         await page.evaluate(() => {
             const r = window.anazhRealm;
             const G = window.__gelaendeCore;
@@ -1350,7 +1350,7 @@ async function studioProbe(page) {
         await server.zeige(page, 60000);
         const b2 = await boote(page);
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
-        const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
+        const nav = page.waitForNavigation(LADEN);
         const tor = await page.evaluate((text) => {
             const r = window.anazhRealm;
             r._openWeltTorDialog(JSON.parse(text), { name: "gelaende-plan.json" });
@@ -1687,13 +1687,15 @@ async function gebaut(page) {
 // ── DER FADEN TRÄGT DIE BYTES (`--faden`, Streaming H3) ──
 // K4: eine Hydrosphäre (Heimat, Kachel) oder ein Feld des Staus (`waterStau`, der Damm am Fluss), das nicht als Faden-Nachricht
 //     kam, und ein Bau im Haupt-Faden (Chunk-Stoff `_buildVoxelChunkData`, Guss aus `BAKERS_BY_KIND`) außerhalb von `FADEN_SYNC`
-//     ist ROT beim Namen des Rufers, ein Takt des Staus (`_stauFelder`) je Damm-Edit über 8 ms im Haupt-Faden ebenso.
+//     ist ROT beim Namen des Rufers (über der Bau-Kette `_rebuildVoxelChunk` → `_acquireVoxelChunkBuild`) — auch in den sechs
+//     echten Bau-Klicks der Fahrt (bau-faden: bis dahin baute jeder seinen Fußabdruck synchron, `_syncRebuildEditFootprint`,
+//     215 ms je Klick); ein Takt des Staus (`_stauFelder`) je Damm-Edit über 8 ms im Haupt-Faden ist ebenso ROT.
 // K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
-//   --faden [--selftest]   ein injizierter Hydro-Bau, Chunk-Bau, ein Stau-Feld im Haupt-Faden und Klon (3 MB tief in
-//                          einer Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen ROT beim Namen.
-const FADEN_SYNC = ["_syncRebuildEditFootprint", "spawnArchitecture", "_drainDirtyVoxelChunks", "init", "_bootDeferCreatures", "wasserStrom"];
+//   --faden [--selftest]   ein injizierter Hydro-Bau, synchroner Fußabdruck, ein Stau-Feld im Haupt-Faden und Klon (3 MB tief
+//                          in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen ROT beim Namen.
+const FADEN_SYNC = ["spawnArchitecture", "_drainDirtyVoxelChunks", "init", "_bootDeferCreatures", "wasserStrom"];
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen, da) {
     if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
@@ -1718,7 +1720,7 @@ function fadenHuelle(klonBytes) {
 }
 function fadenSeite(bytesQ, huelleQ, sync) {
     const klonBytes = new Function("return " + bytesQ)();
-    const F = (window.__faden = { fenster: "boot", t: {}, faeden: [], hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] }, stau: { faden: 0, rot: [], ms: 0 } });
+    const F = (window.__faden = { fenster: "boot", t: {}, faeden: [], hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] }, klick: [], stau: { faden: 0, rot: [], ms: 0 } });
     Error.stackTraceLimit = 40; // die Kette bis zur Sync-Stelle (V8 hält sonst 10 Rahmen)
     const von = new WeakSet();
     const bytes = new WeakSet();
@@ -1727,11 +1729,13 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         w[art][k] = (w[art][k] || 0) + b;
     };
     // der Rufer: der erste Rahmen aus dem Stamm (der Vendor ist nie der Täter), sonst der erste benannte außerhalb dieser Haken
+    // die Rahmen dieser Haken und der Bau-Kette (`_rebuildVoxelChunk` → `_acquireVoxelChunkBuild`) sind nie der Täter
+    const kette = /^(rufer|pruefe|set|zaehle|fadenBau|fadenGuss|kopie|construct|zu|_acquireVoxelChunkBuild|_rebuildVoxelChunk)$/;
     const rufer = () => {
         const z = new Error().stack.split("\n").slice(1);
         const n = (l) => ((n) => n.slice(n.lastIndexOf(".") + 1))((/at (?:new )?([^\s(]+)/.exec(l) || [])[1] || "");
-        const st = z.find((l) => / at [\w$.]+ \(/.test(l) && l.includes(location.origin + "/stamm/"));
-        const fremd = (l) => /^[\w$]+$/.test(n(l)) && !/^(rufer|pruefe|set|zaehle|fadenBau|fadenGuss|kopie|construct|zu)$/.test(n(l));
+        const st = z.find((l) => / at [\w$.]+ \(/.test(l) && l.includes(location.origin + "/stamm/") && !kette.test(n(l)));
+        const fremd = (l) => /^[\w$]+$/.test(n(l)) && !kette.test(n(l));
         return n(st || z.find(fremd) || "?");
     };
     const merke = (v, seen) => {
@@ -1951,7 +1955,7 @@ async function faden(page, url) {
             )
         ).then(() => localStorage.clear())
     );
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(url, LADEN);
     // die Fahrt in Takten (K-WANDUHR): eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten
     const takt = (n) =>
         page.evaluate(async (n) => {
@@ -1963,11 +1967,13 @@ async function faden(page, url) {
                     if (r.state.voxelChunks && r.state.voxelChunks.size > 20 && r.state.voxelWorkerReady) break;
                     await window.__seitenTakt();
                 }
-            for (let k = 0; k < n; k++) {
+            r.state.pitch = -Math.PI / 2; // der Blick senkrecht nach unten: ein Bau-Klick setzt den Block unter den Spieler
+            for (let k = 0, t; k < n; k++) {
                 await window.__seitenTakt();
                 p.x += 960 / n;
                 const y = r._voxelSurfaceY(p.x, p.z);
                 if (Number.isFinite(y)) p.y = y + 1.8;
+                if (k % 300 === 150 && ((t = performance.now()), r.tryMousePlace())) window.__faden.klick.push(performance.now() - t);
             }
             return n ? 60000 : performance.now();
         }, n);
@@ -1996,10 +2002,9 @@ async function faden(page, url) {
                 r._stauRechnet = true; // Werke und Feld lesen das Gesetz ohne Stau (der Selbsttest ist das Ende der Seite)
                 r.state.waterStau = G.stauFelder(r._gelaende(), r._stauWorkClusters(), AnazhRealm.CA_STAU, 1.8, (x, z) => r._voxelSurfaceY(x, z), null, [], 0).felder;
             })();
-            (function injizierterChunkBau() {
+            (function injizierterFussabdruck() {
                 const p = r.state.lastPlayerVoxelChunk;
-                const b = r._buildVoxelChunkData(p.cx, p.cz, 0);
-                if (b && b.mesh) b.mesh.geometry.dispose();
+                r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: true });
             })();
             const w = new Worker(
                 URL.createObjectURL(
@@ -2055,11 +2060,15 @@ async function faden(page, url) {
         `  Bauten im Haupt-Faden (Chunk-Stoff, Guss): ${F.bau.sync} an Sync-Stellen und Test-Nähten · ${F.bau.rot.length} sonst${F.bau.rot.length ? " — " + F.bau.rot.slice(0, 6).join(" | ") : ""}`
     );
     const k4 = F.hydro.rot.concat(F.bau.rot, F.stau.rot).filter((x) => !/injizierte/.test(x));
+    console.log(
+        `  Bau-Klicks in der Fahrt: ${F.klick.length}, die Hand ${F.klick.map((m) => m.toFixed(1)).join(" · ")} ms`
+    );
     const blind =
         F.blind ||
         (!F.haken && "die Haken sitzen nicht") ||
         (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen") ||
         (!summe((F.t.fahrt || {}).empfang) && "kein Empfang in der Fahrt") ||
+        (F.klick.length < 6 && "die Bau-Klicks der Fahrt bauten nicht") ||
         (!F.stau.faden && "kein Feld des Staus aus dem Faden");
     let rot = !!blind || k4.length > 0 || proMin.fahrt > FADEN_SOLL;
     if (blind) console.log(`  ⛔ BLIND: ${blind}`);
@@ -2072,14 +2081,14 @@ async function faden(page, url) {
         const klon = (S.empfang["selbsttest:klon"] || 0) + (S.empfang["selbsttest:krume"] || 0);
         const sieht =
             nennt(F.hydro.rot, "injizierteHydro") &&
-            nennt(F.bau.rot, "injizierterChunkBau") &&
+            nennt(F.bau.rot, "injizierterFussabdruck") &&
             nennt(F.stau.rot, "injiziertesStauFeld") &&
             klon >= 5.9e6 &&
             (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
             summe(S.kopie) >= 5.9e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, Chunk-Bau, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
     }
@@ -2115,7 +2124,7 @@ hauptLauf(async () => {
     // Seh-Spiegel lesen Zahlen (Terme, Wildnis-Gewicht), nie einen Namen; gezählt wird der CODE (der EINE Stripper).
     const nennt = (src) => (stammLib.ohneKommentare(src).match(/pruefbuehne|prüfbühne/gi) || []).length;
     for (const datei of [...stammLib.dateien(root), "voxel-worker.js"]) {
-        const n = nennt(fs.readFileSync(path.join(root, datei), "utf8"));
+        const n = nennt(liesText(path.join(root, datei)));
         if (n) {
             console.log(`  ⛔ ABSENZ: ${datei} nennt die Bühne ${n}× (ein Flag statt der Terme)`);
             rot = true;
@@ -2129,14 +2138,14 @@ hauptLauf(async () => {
     let urform = "";
     for (const welt of WELTEN) {
         let weltArg = welt;
-        const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+        const json = JSON.parse(liesText(BUEHNE_DATEI));
         if (welt === "buehne") {
             const stationen = JSON.parse(
-                fs.readFileSync(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"), "utf8")
+                liesText(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"))
             ).stationen;
             // Geboren wie im Spiel: importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechselNeuLaden`:
             // Zeiger, Sperre, Reload) — ein Speichern der alten Seite bis zu ihrem Tod setzte den Zeiger sonst zurück
-            const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
+            const nav = page.waitForNavigation(LADEN);
             const id = await page.evaluate((json) => {
                 const r = window.anazhRealm;
                 const res = r.importWorldBeside(json);
@@ -2220,11 +2229,12 @@ hauptLauf(async () => {
         }
     }
     if (ABDRUCK) {
+        const b0 = berichte[0] || {};
         const abdruck = {
             wurzel: root,
-            seed: berichte[0] && berichte[0].seed,
-            makro: berichte[0] && berichte[0].shaMakro,
-            saaten: (berichte[0] && berichte[0].shaSaaten) || null,
+            seed: b0.seed,
+            makro: b0.shaMakro,
+            saaten: b0.shaSaaten || null,
             gitter: [],
         };
         for (const rep of berichte)
@@ -2243,8 +2253,8 @@ hauptLauf(async () => {
             ? { seed: bue.seed, makro: bue.shaMakro, erbgut: bue.erbgut, leser: bue.shaLeser || null }
             : null;
         // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Erbgut-Normalform).
-        abdruck.leser = (berichte[0] && berichte[0].shaLeser) || null;
-        abdruck.leserSaaten = (berichte[0] && berichte[0].shaLeserSaaten) || null;
+        abdruck.leser = b0.shaLeser || null;
+        abdruck.leserSaaten = b0.shaLeserSaaten || null;
         fs.writeFileSync(ABDRUCK, JSON.stringify(abdruck, null, 1));
         console.log(
             `\n  Abdruck: ${ABDRUCK} (${abdruck.gitter.length} Gitter + Makro ${Object.keys(abdruck.saaten || {}).length} Saaten${abdruck.buehne ? " + Bühne" : ""})`
