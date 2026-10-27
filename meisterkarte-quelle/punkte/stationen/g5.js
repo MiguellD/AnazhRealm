@@ -1053,6 +1053,31 @@ const stationen = [
         quelle: "2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff",
     },
 
+    // ───────── ultiversum.K2 — Welten heiraten (fusion-determ) ─────────
+    {
+        kriterium: "ultiversum.K2",
+        staffel: 1,
+        geraet: "headless",
+        // gate:praegung-welt (U) FUSION: dieselben Eltern-Bytes in ZWEI Geräten (zwei Browser-Prozesse, frische Profile) → fuseWorlds
+        // A+B (random-mix: Id, Saat, Geburt, Münzwurf) byte-gleich, B+A eine andere Welt (gerichtet: A ist die Welt der Seite), der
+        // Täter „Date.now zurück in die Geburt" ROT. Am Kopf vor fusion-determ ROT (randomUUID, Math.random-Saat, Date.now, Münzwurf
+        // aus Math.random: A+B ≠ zwischen den Geräten); an fusion-determ 21c275fb GRÜN (1150 Bytes je Gerät, Exit 0). Zwilling von ultiversum.K5#1 (ein Lauf).
+        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const soll = [/^\s*(✅|❌) FUSION A\+B byte-gleich/, /^\s*(✅|❌) GERICHTET: /, /^\s*(✅|❌) TÄTER-PROBE: Date\.now /];
+            const je = soll.map((re) => l.find((x) => re.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt: " + soll.filter((_, i) => !je[i]).map(String).join(" ") + " (Exit " + lauf.exit + ")" };
+            return { gruen: je.every((x) => /✅/.test(x)), zahl: je.map((x) => x.trim().slice(0, 100)).join(" | ") };
+        },
+        pfad: ["stamm/speicher-*.js", "stamm/netz-identitaet.js", "stamm/siedlung-ort.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten",
+    },
+
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
     {
         kriterium: "ultiversum.K5",
