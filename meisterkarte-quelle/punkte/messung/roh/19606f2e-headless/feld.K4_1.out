@@ -1,0 +1,4 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-stand-takt.cjs --tat
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+TAT {"mitte":{"x":-280.42476221155374,"z":-1055.424224532209},"R":23.920185160710073,"klicks":80,"baeumeVorher":13,"gefaellt":10,"gepflueckt":30,"stunde":{"baeume":3,"pflanzen":0,"stuempfe":10,"narbe":-0.178,"taten":40},"reload":{"baeume":3,"pflanzen":0,"stuempfe":10,"narbe":-0.169,"taten":40},"reloadStunde":{"baeume":3,"pflanzen":0,"stuempfe":10,"narbe":-0.157,"taten":40},"heilung":{"baeume":3,"pflanzen":30,"stuempfe":10,"narbe":-0.055,"taten":10}}
+✅ TAT GRÜN — die Spur hält bis zum Reload
