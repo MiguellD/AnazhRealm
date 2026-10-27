@@ -117,3 +117,4 @@ takt9-gtx 1 punkte sha=455e5be81a9f441e5ff944e2b2e2c311aedddbe5 geraet=gtx nur=g
 z48-abab 1 abab A=455e5be81a9f441e5ff944e2b2e2c311aedddbe5 B=cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 zellen=w-ego,d-ego,stadt
 z48-abab 0 storno
 z47z48-abab 2 abab A=429737862d4acc40e8d0e1b67215a8be997ff397 B=cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 zellen=w-ego,d-ego,stadt
+z49-abab 1 abab A=cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 B=dc06b495020b357431dc998342945d2352e0beee zellen=w-ego,d-ego,stadt
