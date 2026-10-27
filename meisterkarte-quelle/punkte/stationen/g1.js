@@ -574,7 +574,7 @@ module.exports = [
         kriterium: "gelaende.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // dieselbe K8 auf jedem Gerät (die Ratsche spec/profiband/ratsche-boden-rolle.json urteilt die Linse; hier das Soll ohne Ratsche);
+        // dieselbe K8 auf jedem Gerät (die Linse urteilt am Soll, seit leib-k2-sprung ohne Ratsche; hier dasselbe Soll);
         // `--bild`: die Welt zeichnet auf der Karte (Rezept `linse`, kein Null-Renderer) — „beide Geräte“ verlangt das Gerät
         befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}", "--bild"],
         env: { KOERPER_STAND_PORT: "{PORT}" },
@@ -592,7 +592,7 @@ module.exports = [
             }
             return { gruen: raus.length === 0, zahl: (raus.length ? "über dem Soll: " + raus.join(", ") : "alle Rollen im Soll") + " — " + k8Zahl(l.p) };
         },
-        pfad: [...K8_PFAD, "spec/profiband/ratsche-boden-rolle.json", "scripts/lib/software-gpu.cjs"],
+        pfad: [...K8_PFAD, "scripts/lib/software-gpu.cjs"],
         quelle:
             "2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
     },

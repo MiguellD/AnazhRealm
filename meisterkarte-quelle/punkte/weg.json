@@ -1,0 +1,1899 @@
+{
+ "stand": "2026-10-27",
+ "kopf": "a03b7b06",
+ "quelle": "Triage-Workflow weg-330 (8 Leser, je offene Staffel Klasse, Aufwand, Wurzel, Karte; nur gelesen, am main 19606f2e)",
+ "wellen": [
+  {
+   "name": "w2g",
+   "art": "Cloud-Welle 27.10. 19:40",
+   "staffeln": {
+    "luftwasser.K5#1": "schwarm",
+    "luftwasser.K5#2": "schwarm",
+    "tore.K5#2": "tore-k5-welt",
+    "klang.K4#2": "klang-k4-zwei",
+    "halten.K1#2": "halten-masse",
+    "halten.K5#2": "halten-masse",
+    "affekt.K1#2": "affekt-wert",
+    "oekologie.K4#2": "affekt-wert",
+    "bauen.K5#2": "bauen-k5-verben",
+    "speicher.K2#2": "speicher-zwei",
+    "speicher.K4#2": "speicher-zwei",
+    "mensch.K5#1": "mensch-begegnung"
+   }
+  },
+  {
+   "name": "w3a",
+   "art": "Cloud-Welle 27.10. 23:20",
+   "staffeln": {
+    "oekologie.K2#2": "oeko-k2-bestand",
+    "siedlung.K3#2": "siedlung-k3-hang",
+    "leib.K2#2": "leib-k2-sprung",
+    "klang.K1#2": "klang-k1-nacht",
+    "streaming.K4#2": "streaming-k4-zaehler",
+    "bauen.K1#2": "bauen-k1-bild",
+    "siedlung.K1#2": "siedlung-k1-innen",
+    "vegetation.K4#2": "vegetation-k4-wasser",
+    "studios.K2#2": "studios-k2-sitzung",
+    "material.K3#2": "material-k3-stufen",
+    "schatten.K1#2": "schatten-k1-zuwachs"
+   }
+  },
+  {
+   "name": "w3b",
+   "art": "Cloud-Welle 27.10. 23:55",
+   "staffeln": {
+    "luftwasser.K1#1": "vogel-zensus",
+    "luftwasser.K1#2": "vogel-zensus",
+    "klang.K3#1": "klang-raum",
+    "studios.K3#1": "kosten-leiste",
+    "ultiversum.K2#1": "fusion-determ",
+    "ki.K3#1": "ki-seele-regeln",
+    "ki.K4#1": "ki-seele-regeln",
+    "affekt.K2#1": "affekt-emotion",
+    "affekt.K3#1": "affekt-emotion"
+   }
+  }
+ ],
+ "staffeln": [
+  {
+   "id": "gelaende.K2#2",
+   "klasse": "gpu-rot",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.55,
+   "buendel": "",
+   "wurzel": "koordination meisterkarte-quelle/punkte/stationen/g1.js:300 (Ego-Kopie m2-graben-ego per sed third→first); main scripts/diag-wasser-leben.cjs G6–G8 (gk2-damm)",
+   "karte": "Die letzte Messung an 607d0c73 (vor gk2-damm) ergab Third 8/10, Ego 0/0 Gräben, (b)/(d) undefined. Zu reparieren ist das Zielen der Ego-Kopie des eingefrorenen m2-graben, sodass der Verb-Klick in first den Graben jenseits der Krone trifft. Danach an 19606f2e auf Radeon und GTX neu messen: (b) Wasser stromauf auf Überlaufhöhe ±0,1 m (Zweig: 25,25 auf 25,24/25,23), (d) Ring ≥ 3 Punkte, Hub ≥ 1 m, Faden = Säulen."
+  },
+  {
+   "id": "gelaende.K3#2",
+   "klasse": "pflicht",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "wasserblick",
+   "wurzel": "stamm/wasser-hydro.js:168 _waterFlowAt (adv × centerness, kein Gefälle/A) und :583 _wasserBlick",
+   "karte": "Zwei phasenversetzte Normalen-Lagen aus flussLaeufe (gelaende-core.js Gefälle × A) im EINEN _wasserBlick, dazu eine Linse für die Anisotropie längs/quer ≥ 1,5. Gemessen wird spiegelTreue ≥ 0,6 an 12 Posen (Ego/Third × Mittag/Nacht/Regen × 2 Geräte); das ist die Uhr × Sicht der Pflicht A für die Klasse wasser."
+  },
+  {
+   "id": "wetter.K2#2",
+   "klasse": "gesetz",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "wasserblick",
+   "wurzel": "stamm/wasser-hydro.js:583 _wasserBlick (kein Pfützen-Gesetz in stamm/, 0 Treffer); foundry-core.js:171 fall: 42",
+   "karte": "Gebaut wird ein Pfützen-Gesetz aus der Kern-Krümmung im _wasserBlick; die Trocknung (_naesseTakt) geht von 1 500 s auf 5–15 min Spielzeit, der Regen fällt mit ≤ 9,2 m/s statt 42 m/s (Kern additiv, mit Byte-Beweis). Werkbank licht --naesse bekommt Third, die Trocken-Kurve und den Glanz-Anteil im Bild. Gemessen werden Mulden-r ≥ 0,5, Glanz ≥ 2× und Luma 0,5–0,8 an Wiese und Dorfgasse auf beiden Geräten."
+  },
+  {
+   "id": "wetter.K3#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "headless",
+   "sicher": 0.5,
+   "buendel": "pegel-regen",
+   "wurzel": "gelaende-core.js:1324 abfluss(L,y,saison,feld) (der Kommentar reserviert dort den Regen für wetter.K3; heute nur die Schmelze)",
+   "karte": "Der Regen des Wetter-Felds wird ein Term in abfluss neben der Schmelze, die Pegel-Tafel folgt dem Sturm im Takt statt je Welt-Tag. Gemessen wird per werkbank eval am Kern-Spiegel am Bach: Hub ≥ 0,2 m nach 20 min Sturm. Risiko: die Krone deckelt bei 0,2 m."
+  },
+  {
+   "id": "wetter.K3#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "pegel-regen",
+   "wurzel": "gelaende-core.js:1324 abfluss (Einzugsgebiet „nicht gerechnet“) + flussLaeufe (A, Lauflänge)",
+   "karte": "Der Pegel wird eine geschlossene Funktion: ∫ Regen über A mit einem Lag proportional zur Lauflänge und Verdunstung bei Dürre. Gemessen werden Lag gegen A, die Bilanz Regen × Fläche ≈ ΔVolumen ±30 %, 14 Tage Dürre senken den Pegel und das Bild am Bach auf beiden Geräten."
+  },
+  {
+   "id": "wetter.K4#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "schnee-tiefe",
+   "wurzel": "gelaende-core.js:1263 schneePegel / :1285 schneeLinie (Saison steht seit stoffe.K3) → stamm/gelaende-boden.js:19 _bodenSichtAt (Fuß ohne Schnee-Tiefe)",
+   "karte": "Der Fuß-Leser _bodenSichtAt/_standSicht liest die Schnee-Tiefe aus schneePegel als Boden-Schicht. Die Station winter misst nach einem Sprung von 10 Tagen: Deckung ≥ 60 % über der Schneegrenze der Saison im Ausgabe-Bild und Einsinken des Fußes ≥ 5 cm."
+  },
+  {
+   "id": "wetter.K4#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "schnee-tiefe",
+   "wurzel": "gelaende-core.js:1152 temperaturAus(feld,saison,uhr) / :1102 schnee(L,y,x,z,versatz)",
+   "karte": "Die Fußspur im Schnee wird bleibender Welt-Zustand (Schreib-Akt, übersteht den Reload), die sichtbare Schneegrenze folgt temperaturAus mit der Uhr. Gemessen in Ego und Third auf beiden Geräten."
+  },
+  {
+   "id": "physik.K2#2",
+   "klasse": "gpu-rot",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "",
+   "wurzel": "stamm/kreatur-verhalten.js:1242 _kreaturStossSchritt (EINE Hülle) gegen die gezeichneten Ecken in scripts/diag-kollision-bild.cjs:116",
+   "karte": "Täter: Bild ≠ Kollision. Bei 19,63 m/s und 144 fps ist der Körper-Durchtritt 0 (20/20), aber im Bild steckt der Bär 0,17 m in der Mauer und der Wagen 0,026 m (Radeon) bzw. 0,051 m (GTX). Die Hülle soll aus der gezeichneten Gestalt kommen (Schnauze, Blech), oder die gezeichnete Lage wird auf die Kontakt-Lage geklemmt. Gemessen wird Eindringen im Bild ≤ 1 cm und Spalt ≤ 5 cm auf beiden Geräten; pk2-vmax ist noch offen."
+  },
+  {
+   "id": "physik.K3#1",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "xpbd-kern",
+   "wurzel": "koerper-core.js (0 Treffer für freien Starrkörper/XPBD); stamm/bau-buch.js:1423 _loadPath urteilt nur",
+   "karte": "Ein XPBD-Löser im Körper-Kern trägt freie Starrkörper (Kiste, Fass) mit Kontakt und Stapeln im FIXED_DT. Gemessen: 5 Kisten ruhen nach ≤ 2 s mit Zittern ≤ 1 cm, ein Wagen wirft ein Fass um."
+  },
+  {
+   "id": "physik.K3#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "xpbd-gestalt",
+   "wurzel": "stamm/bau-buch.js:1423 _loadPath (BFS über AABB, nichts fällt)",
+   "karte": "_loadPath übergibt die Teile ohne Lastpfad an den Löser, und Trümmer werden Welt-Zustand im Speicher wie _voxelEditKarte. Gemessen: Einsturz an zufälligen Pfosten, Trümmer ≥ 10 min und über den Reload, 100 Körper ≤ 1 ms CPU an der GTX."
+  },
+  {
+   "id": "physik.K4#1",
+   "klasse": "gesetz",
+   "h": 16,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "xpbd-kern",
+   "wurzel": "worlds/schmiede/schmiede.js:1161 stepRope (8 Verlet-Segmente, 0 Leser in Stamm/Kernen)",
+   "karte": "stepRope fällt, das Schmiede-Seil läuft über den EINEN XPBD-Löser in koerper-core (Labor = Welt), und der Flegel schwingt am Leib. Gemessen: Seil-Länge ±2 %, die Energie fällt, byte-Diff der Seil-Bahn Labor gegen Welt ≤ 1 mm."
+  },
+  {
+   "id": "physik.K4#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "xpbd-gestalt",
+   "wurzel": "koerper-core.js XPBD (nach #1) + fachwerk-core.js (Fahne/Plane ohne Tuch)",
+   "karte": "Tuch (Fahne, Plane, Umhang) im EINEN Wind und eine Hängebrücke als Seil-Verbund, beide auf demselben Löser. Gemessen: Phasen-Korrelation mit dem Gras r ≥ 0,6, die Brücke trägt den Spieler, beide Geräte."
+  },
+  {
+   "id": "physik.K5#1",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "leib-regler",
+   "wurzel": "koerper-core.js Leib-Löser (0 Treffer gleichgewicht/ausfallschritt); stamm/kreatur-leben.js:862 _kreaturFaellt (gescriptet)",
+   "karte": "Ein Gleichgewichts-Regler (Stützpolygon, Ausfallschritt) kommt in den Leib-Löser. Gemessen per werkbank eval + bild an einem Gerät: ein Stoß von 200 N für 0,2 s beim Gehen führt zu Ausfallschritt und Erholung ≤ 1,5 s ohne Sturz; die Mutation der Leib-Masse ändert die Reaktion."
+  },
+  {
+   "id": "physik.K5#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "leib-regler",
+   "wurzel": "stamm/kreatur-leben.js:862 _kreaturFaellt → Ragdoll-Übergang",
+   "karte": "Über der Schwelle folgen Sturz, Ragdoll und Aufstehen für Spieler, Tier und Mensch; _kreaturFaellt wird der Ragdoll-Übergang. Gemessen: die Treffer-Reaktion folgt der Impuls-Richtung r ≥ 0,8, beide Geräte."
+  },
+  {
+   "id": "stoffe.K1#2",
+   "klasse": "gesetz",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "",
+   "wurzel": "scripts/diag-gegenstand-stoff.cjs:378 --tafel (main 19606f2e: holz 5 · stein 4 · eisen 4 · gras 5 · erde 4 · laub 5 · wasser 4 von 7)",
+   "karte": "Es fehlen die Wirkungen Albedo → Luma im Ausgabe-Bild (GPU), T_schmelz über Esse und Lava (seit stoffe.K3 lesen beide das Temperatur-Feld), T_zünd für nicht brennende Stoffe (als Glut-Schwelle) und μ des Wassers. Gemessen wird 7/7 je Stoff mit Sabotage-Rot."
+  },
+  {
+   "id": "stoffe.K2#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "brand",
+   "wurzel": "stamm/feld-leben.js:2630 AnazhRealm.BRAND (4 Nachbarn isotrop, greift 0,02, unter der Perkolation, kein Wind)",
+   "karte": "Das isotrope Greifen in _brandFangen wird zur Rothermel-Rate × Wind auf dem 2-m-Brandfeld. Die Station Feuer auf der Mess-Wiese (Wind 0,3) misst die Front: mit dem Wind 0,5–2 m/s, gegen den Wind ≤ 0,2 m/s."
+  },
+  {
+   "id": "stoffe.K2#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "brand",
+   "wurzel": "stamm/feld-leben.js:2630 BRAND (loescht 0,35 über die Nässe, Asche = Brennstoff 0)",
+   "karte": "Asche ≤ 0,08 im Boden-Stoff, die grün nachwächst; Rauch und Knistern aus demselben brandFeld wie das Licht; Halt an Fluss, Fels und nassem Gras; der Regen löscht in ≤ 60 s. Gemessen: 2 000 Zellen ≤ 0,5 ms CPU an der GTX und das Bild auf beiden Geräten."
+  },
+  {
+   "id": "stoffe.K4#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "alter-naesse",
+   "wurzel": "fachwerk-core.js:4400 verwitterung (Regler def 0,5, statisch)",
+   "karte": "Die Verwitterung liest Alter seit dem Bau-Akt × Nässe-Achse statt eines festen Reglers (Kern additiv, mit Byte-Beweis). Gemessen per werkbank bild im Dorf nach einem Sprung von 30 Spieltagen: ≥ 1 Stoff ändert sich messbar, abhängig von Nässe oder Lage."
+  },
+  {
+   "id": "stoffe.K4#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "alter-naesse",
+   "wurzel": "fachwerk-core.js:4400 verwitterung; gelaende-core.js Fels-Moos (Krümmung × Feuchte, statisch)",
+   "karte": "Rost (Farbton 20–30°) im Regen, Holz-Sättigung −30 %, Moos auf nassen Nordflächen, dazu eine Lauf-Achse im Feld als Trampelpfad, den die Nah-Wiese liest (Dichte −60 % nach 100 Gängen). Gemessen über den Reload mit gate:reload-treue."
+  },
+  {
+   "id": "stoffe.K5#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "naehrstoff",
+   "wurzel": "stamm/vegetation-wiese.js:1216 _tickScatterRegrow (Zeitgeber) + stamm/gelaende-boden.js:1199 _feuchteAt (statisch)",
+   "karte": "Der Nachwuchs in _tickScatterRegrow keimt mit einer Wahrscheinlichkeit aus Feuchte × Licht statt nach Zeitgeber. Gemessen per werkbank eval nach einem Sprung von 1 Jahr: r ≥ 0,5, Gegenprobe zweier Zellen mit verschiedener Feuchte."
+  },
+  {
+   "id": "stoffe.K5#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "naehrstoff",
+   "wurzel": "stamm/gelaende-boden.js:1199 _feuchteAt (Nährstoff: 0 Treffer)",
+   "karte": "Eine Nährstoff-Achse neben der Feuchte: Ernte entnimmt, Asche und Leichnam geben zurück; Sukzession Stubben → Sämling und Brand → Gras → Busch → Wald über treeParams(alter). Gemessen per eval und Bild nach einem Spieljahr."
+  },
+  {
+   "id": "feld.K2#2",
+   "klasse": "gpu-rot",
+   "h": 12,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "",
+   "wurzel": "scripts/diag-mp-sync.cjs:813 (f) + stamm/feld-leben.js:1890 _brandEntfachen",
+   "karte": "Täter laut gate:mp-sync (f) an 19606f2e: Zug und Wetter sind gleich, aber Leben nur 9/126 Zellen über Peers und 0/126 über den Reload, weil Wunsch der Welt, Tat-Uhr, Fraß und Entfachen nicht reisen. Diese vier werden Funktionen von Saat, Welt-Uhr und Schreib-Akten; die Linse misst zusätzlich Brand und Pegel (seit stoffe.K3 eine Funktion der Saison)."
+  },
+  {
+   "id": "feld.K5#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "aura-leser",
+   "wurzel": "stamm/vegetation-wiese.js:546/1295 worldFieldAt (frozen), stamm/vegetation-streu.js:20; auraAt hat 0 Leser in vegetation-*.js",
+   "karte": "auraAt wird die EINE Lese-API der frozen Vegetations-Leser, und eine Overlay-Änderung weckt nur die berührte 16-m-Zelle. Gemessen: deposit_life auf 3×3 Zellen der Mess-Wiese, Bild-Diff nach 60 s mit laiWirk +≥ 0,3 sowie mehr Buntheit und Blüten; die Nachbarzelle bleibt im Rauschen."
+  },
+  {
+   "id": "feld.K5#2",
+   "klasse": "schnitt+station",
+   "h": 6,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "aura-leser",
+   "wurzel": "stamm/feld-leben.js auraAt (Spawn-Affinität liest es schon) + vegetation-*.js wie #1",
+   "karte": "Derselbe Leser an einem zweiten Ort und auf der GTX; dazu zählt die Linse die Tier-Sichtungen am gepflegten Block gegen die Nachbarzelle, in Ego und Third, mittags und abends."
+  },
+  {
+   "id": "vegetation.K1#1",
+   "klasse": "gesetz",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "wiese-saum",
+   "wurzel": "stamm/daten.js:440-441 (NAH_WIESE radius 14 + rand 4: die Büschel enden bei 18 m)",
+   "karte": "Ein Ring-Gesetz nach Tsushima (ferne Kachel mit doppelter Kante, gleiche Büschelzahl) trägt die Halme bis 40 m und hebt den Ring 5–10 m über LAI 1,7 (heute 1,51); dazu misst laiWirk in festen Ringen 2–5/5–10/10–20/20–40 m an EINER Pose im Budget nahWiese ≤ 4 Befehle/80k (GTX Third heute 83 716)."
+  },
+  {
+   "id": "vegetation.K1#2",
+   "klasse": "pflicht",
+   "h": 26,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "wiese-saum",
+   "wurzel": "stamm/daten.js:440 (NAH_WIESE); spec/profiband/ratsche-genesis-*.json (Genesis zeichnet 0–3 Befehle / 0–1 764 Dreiecke)",
+   "karte": "Hängt an Pflicht A (boden-nah am Spawn Genesis): dasselbe Ring-Gesetz muss auch an Genesis tragen (heute fast keine Nah-Wiese), gemessen an Mess-Wiese und Genesis × Ego/Third × Uhr 0,5/0,3 auf beiden Geräten im Budget."
+  },
+  {
+   "id": "vegetation.K2#1",
+   "klasse": "nur-station",
+   "h": 5,
+   "geraet": "gpu",
+   "sicher": 0.55,
+   "buendel": "boe",
+   "wurzel": "scripts/werkbank.cjs (kein `bild --zeit`); Verhalten steht: stamm/stoff-material.js:88 `_windSwayOffset` liest WIND_BOE",
+   "karte": "Neu ist `werkbank bild --zeit Δt`: zwei Ausgabe-Bilder unter laufender _bildZeit bei fester Kamera, der Rausch-Boden kommt aus einer TAAU-Referenz bei Wind 0, gemessen wird die zeitliche Luma-Varianz bei 0–15 m mit Böen-Laufzeit an einem Gerät."
+  },
+  {
+   "id": "vegetation.K2#2",
+   "klasse": "schnitt+station",
+   "h": 15,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "boe",
+   "wurzel": "stamm/vegetation-wiese.js:4 (die ferne Wiese ist eine Parallax-Funktion im Terrain-Albedo ohne Wind); Karte stamm/stoff-material.js:1149-1168 liest WIND_BOE/uWindDir",
+   "karte": "Die Parallax-Halm-Schicht jenseits von 18 m bekommt ihre Scherung aus dem EINEN `_windSwayOffset`; das Zeit-Werkzeug misst dann jeden Ring bis 300 m, die Korrelation Gras ↔ Krone längs uWindDir (r ≥ 0,6) und Ruhe → Sturm (Varianz ≥ 3×), in Ego und Third auf beiden Geräten."
+  },
+  {
+   "id": "vegetation.K3#1",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "wald-innen",
+   "wurzel": "stamm/vegetation-baum.js:852-861 (der opake, form-folgende Schatten-Zwilling ist der EINZIGE Kronen-Caster und wirft einen Vollschatten ohne Lücken)",
+   "karte": "Die Station Wald (werkbank bild im Mischwald, Ego, Mittag, mit REF-Band für Stämme je Bildbreite, Unterholz 0–2 m und Anteil der Licht-Flecken) misst zuerst; der Schnitt gibt dem Schatten-Zwilling Laub-Lücken aus der Kronen-Dichte, damit die Flecken aus der Kaskade fallen und mit der Sonne wandern (zwei Uhrzeiten)."
+  },
+  {
+   "id": "vegetation.K3#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "wald-innen",
+   "wurzel": "stamm/bild-himmel.js (Luft-Knoten; Volumen-Licht gibt es nicht); Kronendach-Flag-Zwilling stamm/bild-himmel.js:544",
+   "karte": "Neu sind Licht-Strahlen im Gegenlicht über die EINE Luft (Strahl-Kontrast ≥ 1,1 bei Uhr 0,3), dazu die Pose Lichtung, beide Geräte und das Budget baum ≤ 40 Befehle/150k Dreiecke."
+  },
+  {
+   "id": "vegetation.K5#1",
+   "klasse": "gesetz",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "saison",
+   "wurzel": "stamm/bild-himmel.js:778-783 (`_tickSeason`, „DIE SAISON IST EINE FARBE“); foundry-core.js:223 SAISON_GESETZ ohne laubDeckung",
+   "karte": "SAISON_GESETZ bekommt additiv laubDeckung(phase, art) mit Byte-Beweis; Laub-Karten, Kern, Schatten-Zwilling und ferne Karte lesen den Wert als Ausdünn-Schwelle für eiche/birke/buche, und eine Zeitraffer-Station (Saison 0,375/0,625/0,875 als Spieler-Wort, Maske f:eiche|birke|buche) misst Winter ≤ 0,3 × Sommer."
+  },
+  {
+   "id": "vegetation.K5#2",
+   "klasse": "schnitt+station",
+   "h": 22,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "saison",
+   "wurzel": "stamm/bild-himmel.js:783 `_tickSeason` (die Halm-Höhe der Wiese liest keine Saison)",
+   "karte": "Die Halm-Höhe der Wiese liest dasselbe Saison-Gesetz, gemessen werden Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling auf beiden Geräten (dieselbe Zeitraffer-Station)."
+  },
+  {
+   "id": "tiere.K5#1",
+   "klasse": "nur-station",
+   "h": 5,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "tier-sicht",
+   "wurzel": "scripts/werkbank.cjs:244-253 (`--wandern` kennt nur bahn/fahrt, keinen Kreis; kein Sichtungs-Zähler); Bestand stamm/kreatur-leben.js:2059 (Ziel 4–14, Deckel 4–28)",
+   "karte": "Der Modus `werkbank lauf --wandern kreis` läuft 10 Spielminuten mit Klassen-Maske tier ≥ 200 px als Sichtungs-Zähler in Ego und Third an einem Gerät, gemessen wird die Zahl der Sichtungen (≥ 3)."
+  },
+  {
+   "id": "tiere.K5#2",
+   "klasse": "gesetz",
+   "h": 29,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "tier-sicht",
+   "wurzel": "stamm/kreatur-verhalten.js (Separation O(n²), kein ferner Verband als ein Agent); stamm/dirigent-kern.js:277 maxCreatures 20; spec/profiband/haushalt.json:542 Ratsche tier frei",
+   "karte": "Ferne Verbände rechnen nur über ihr Leittier, die Separation läuft über das FLOCK_CELL-Gitter, und der Bestand kommt aus Ökologie (die Cloud-Karte oekologie.K2 läuft); gemessen werden die Herde ≥ 20 im Bild in 30 min sowie updateCreatures ≤ 1,0 ms p95 bei 150 Tieren an der GTX (heute Radeon 2,77–3,16 ms bei ≤ 28 Tieren), die Ratsche tier rastet ein."
+  },
+  {
+   "id": "mensch.K1#2",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "stadt-bewohner",
+   "wurzel": "stamm/siedlung-bewohner.js:666 `_tickBewohner` (drei Schleifen über alle Bewohner je Takt, 1,52–1,82 ms); scripts/lib/kreatur-proben.cjs Probe bewohner kennt nur das Start-Dorf",
+   "karte": "`_tickBewohner` wird EINE Schleife mit Nah/Fern-Takt, und die Probe bewohner zählt an einer Stadt mit nH ≥ 27 (≥ 200 Bewohner, ≥ 40 nah animiert); die Stufe 1 steht als Station M40, gemessen wird das ABAB an der GTX gegen das Dorf (vorher CPU-Takt p95 5,0 → 5,3 schlechter)."
+  },
+  {
+   "id": "mensch.K4#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "mensch-gestalt",
+   "wurzel": "stamm/koerper-bewegung.js:1694 (`player.rotation.y = this.state.yaw`: die Third-Kamera steht immer hinter dem Kopf, das Gesicht ist nie im Bild)",
+   "karte": "Im Stand umkreist die Third-Kamera den Leib frei (der Leib dreht erst beim Gehen auf die Gier), und die Soll-Tafel mensch-kopf misst aus dieser Spiel-Pose statt aus der Tafel-Pose `--gesicht 0.7`, an einem Gerät und frisch am Kopf."
+  },
+  {
+   "id": "mensch.K4#2",
+   "klasse": "gesetz",
+   "h": 28,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "mensch-gestalt",
+   "wurzel": "stamm/siedlung-bewohner.js:2082 BEWOHNER.gestalten 4 und :33-34 (der Beleg „_rollHumanoidGenome ohne Aufrufer“ ist veraltet: 4 Genome je Siedlung, jedes mit eigenem Satz und Ofen-Schlüssel ×4 LOD)",
+   "karte": "Das Genom geht je Instanz als Attribut in den Knochen-Matrix-Satz (Höhe ±8 %, Gesichtsmaße in MENSCH_SOLL koerper-core.js:830) statt einer Gestalt je Satz; gemessen werden 50 Seeds ohne zwei gleiche (Gestalt-Distanz je Paar), ≤ 150k Dreiecke und ≤ 1 ms CPU auf beiden Geräten."
+  },
+  {
+   "id": "mensch.K5#2",
+   "klasse": "gesetz",
+   "h": 26,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "begegnung",
+   "wurzel": "stamm/feld-nexus.js:1513 `maybeAnswerCreature` (spricht nur Tiere an, nur mit LLM, ohne Gedächtnis); Drehbuch-Schritt 18 (LLM mit Schlüssel) offen",
+   "karte": "Zuerst steht die Stufe 1 (Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen, ein Gedächtnis lenkt den Abstand), dann das Gespräch mit einem Bewohner beim echten Anbieter (Host im Netz-Log); gemessen wird, ob es ≥ 2 Fakten aus Rolle/Haus/Stunde in ≤ 3 s zitiert und sich auf die vorige Begegnung bezieht, auf beiden Geräten."
+  },
+  {
+   "id": "affekt.K2#1",
+   "klasse": "nur-station",
+   "h": 5,
+   "geraet": "headless",
+   "sicher": 0.5,
+   "buendel": "emotion-regel",
+   "wurzel": "stamm/dirigent-takt.js:78 und :1103-1117 (Emotion-Trigger, wetterWunsch aus Nexus/Gesetzen/Emotion); stamm/feld-dsl.js:868 → `_setWeather` mit Quelle (bild-himmel.js:3017)",
+   "karte": "Eine Station `werkbank eval` über 30 Spielminuten lässt echte Taten die Stimmung tragen und fährt einen Gegenlauf mit eingefrorener Emotion-Achse; gemessen wird die Verschiebung EINER Größe am Ort (Wetter-Wunsch oder Kreatur-Laune)."
+  },
+  {
+   "id": "affekt.K2#2",
+   "klasse": "gesetz",
+   "h": 19,
+   "geraet": "headless",
+   "sicher": 0.3,
+   "buendel": "emotion-regel",
+   "wurzel": "stamm/koerper-seele.js:191 (feste Emotion-Trigger); stamm/dirigent-takt.js:1103 wetterWunsch; Ziel stamm/feld-dsl.js",
+   "karte": "Alle vier Kopplungen (Wetter, Kreatur-Laune, Klang, Materie) werden DSL-Regeln des Felds mit Quelle, die festen Trigger sterben; gemessen werden Determinismus aus Saat + Akten und die Peer-Gleichheit."
+  },
+  {
+   "id": "affekt.K3#1",
+   "klasse": "nur-station",
+   "h": 5,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "nexus-sicht",
+   "wurzel": "stamm/feld-dsl.js:639 `_tickWorldRules`, :771 `_measureRuleReward`; stamm/feld-nexus.js:269 `dslComposeRule` (Mechanik nur in Bändern scripts/playtest/feld.cjs:321ff)",
+   "karte": "`werkbank lauf` mit Nexus an und Zeitraffer ×10 (30 Spielminuten) misst den Anteil der Regeln mit value > 0 im ersten gegen das letzte Drittel, dazu einen Mutations-Gegenlauf mit gemischtem δ."
+  },
+  {
+   "id": "affekt.K3#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "nexus-sicht",
+   "wurzel": "stamm/feld-nexus.js:269 `dslComposeRule` (keine Bevorzugung kranker Zellen im Blick); die Wirkungen landen in Overlays ohne Leser am Ort (Feld K5)",
+   "karte": "dslComposeRule zielt auf Zellen unter dem Median von lebendig im Blick, und ein Leser am Ort macht die Wirkung sichtbar; gemessen werden ≥ 70 % der Feuer an kranken Zellen, ≥ 1 Wirkung je 5 Spielminuten im Blick, _tickWorldRules ≤ 0,2 ms und 0 verbotene Ops auf beiden Geräten."
+  },
+  {
+   "id": "affekt.K4#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "headless",
+   "sicher": 0.55,
+   "buendel": "feld-stimme",
+   "wurzel": "stamm/bild-himmel.js:2670 `_himmelSchreiber` und stamm/feld-dsl.js:639 `_tickWorldRules` schreiben keine Zeile; Ziel index.html:8056 #dialogue-box (state.dialogueBox stamm/dirigent-kern.js:435)",
+   "karte": "Jede Tat von Nexus oder KI im Blick schreibt eine Vorlagen-Zeile (Ort, Ursache, Gesetz), höchstens eine je 30 s, in die Dialog-Box; eine Station prüft über 30 Spielminuten jede Zeile gegen state (Faktentreue 100 %)."
+  },
+  {
+   "id": "affekt.K4#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "feld-stimme",
+   "wurzel": "stamm/bild-himmel.js:2670 `_himmelSchreiber` (kennt den Schreiber, keine Frage-Antwort); LLM-Lauf mit Schlüssel (Drehbuch 18) offen",
+   "karte": "Die Frage „warum regnet es?“ geht an die Schreiber-Spur des Wetters und nennt den wahren Schreiber; mit Modell erzählt sie, geprüft per Korpus-Prädikat auf beiden Geräten."
+  },
+  {
+   "id": "affekt.K5#1",
+   "klasse": "schnitt+station",
+   "h": 6,
+   "geraet": "headless",
+   "sicher": 0.6,
+   "buendel": "affekt-musik",
+   "wurzel": "stamm/klang.js:821 (_lofiActiveScale liest nur das Studio-Rezept scaleFor(darkness), :1271; keine Valenz von auraAt.emotion; die Melodie liest nur player.emotions joy/peace :867)",
+   "karte": "Die darkness für scaleFor wird zur Funktion der Valenz von auraAt(Spieler).emotion; gemessen wird am headless Klang-Abgriff (ausgabe-aufnahme, dazu ein neues Spektral-Merkmal), dass die Mutation der Emotion-Achse die Spektral-Merkmale verschiebt."
+  },
+  {
+   "id": "affekt.K5#2",
+   "klasse": "gesetz",
+   "h": 22,
+   "geraet": "headless",
+   "sicher": 0.3,
+   "buendel": "affekt-musik",
+   "wurzel": "stamm/klang.js:1522 (_lofiTick: Tempo aus Rezept-bpm, keine Erregung, keine Wetter-/Uhr-Schicht; 0 Treffer duck/sidechain in klang.js)",
+   "karte": "Tempo und Dichte kommen aus der Erregung, Wetter und Uhr wechseln die Schicht, dazu ein Duck-Bus unter Schritt, Ruf und Stimme; gemessen werden 10 Spielminuten am Abgriff mit Chroma-Wiederholungssuche und einem Duck-Pegel ≥ 6 dB."
+  },
+  {
+   "id": "haar.K1#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "haar-fell-soll",
+   "wurzel": "spec/abnahme/soll-tafel.json (12 Klassen, keine fell; albedo-tafel.json:809 hat fell) · scripts/lib/abnahme-urteil.cjs:648 (Kohärenz nur an der Masken-Kante) · Fell im Spiel tetrapoda-core.js:929 fellStreu",
+   "karte": "Die Soll-Tafel bekommt die Klasse fell (Wolf-Exemplar wie albedo-tafel, externe REF) mit einer Strich-Kohärenz im Inneren der Maske, gebaut aus dem Struktur-Tensor :648; gemessen mit werkbank bild auf 0,7 m und im Third bei 4 m an der Radeon."
+  },
+  {
+   "id": "haar.K1#2",
+   "klasse": "schnitt+station",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "haar-fell-soll",
+   "wurzel": "tetrapoda-core.js:49 (Stufen-Tafel des Fells, Fell-Schale je Stufe; Messung seit S6 veraltet)",
+   "karte": "Die Fell-Schale jeder Stufe liest denselben Ton aus der Fell-Zeile; gemessen wird die Klasse fell je Gattung von L0 bis zur Karte ohne Ton-Sprung, an Radeon und GTX."
+  },
+  {
+   "id": "haar.K2#1",
+   "klasse": "nur-station",
+   "h": 3,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "haar-fell-soll",
+   "wurzel": "koerper-core.js:386 haarStreu (10 Stile, Kappe) im Spiel; soll-tafel.json:1011 mensch-kopf zählt Haar nur als Fleck",
+   "karte": "Die Soll-Tafel bekommt die Klasse haar (Strähnen-Kohärenz gegen externe REF, Albedo-Band) mit derselben Metrik wie fell; gemessen mit werkbank bild auf Armlänge und im Third an der Radeon."
+  },
+  {
+   "id": "haar.K2#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "haar-straehnen",
+   "wurzel": "stamm/koerper-leib.js:39-43 (das Genom wählt nur hairColor, kein hairStyle/hairLen/hairVol; jeder Bewohner trägt START_PARAMS 'mittel', koerper-core.js:76)",
+   "karte": "Ein Strähnen-Gesetz baut die Frisur aus stetigen Genom-Achsen (Länge, Volumen, Scheitel, Locke) statt aus 10 Stilen; gemessen wird die Gestalt-Distanz je Seed-Paar über 50 Seeds, ohne ein gleiches Paar, an beiden Geräten."
+  },
+  {
+   "id": "haar.K3#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "haar-wind",
+   "wurzel": "stamm/stoff-material.js:88 _windSwayOffset (Leser nur Gras, Laub und studio-bruecke.js:3208; Haar und Fell starr)",
+   "karte": "Der Haar- und Fell-Stoff liest _windSwayOffset mit einem Wurzel-Abstands-Attribut wie die Krone; gemessen mit werkbank bild --zeit an Pferd und Bewohner, die Wind-Korrelation r ≥ 0,6 nach dem Vegetation-K2-Verfahren."
+  },
+  {
+   "id": "haar.K3#2",
+   "klasse": "gesetz",
+   "h": 22,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "haar-wind",
+   "wurzel": "koerper-core.js:386 haarStreu (keine Trägheit, kein Nässe-Term; der Wind-Leser fehlt bis K3#1)",
+   "karte": "Ein Feder-Löser auf den Strähnen-Wurzeln bringt das Nachschwingen beim Lauf-Stop, Nässe macht Albedo dunkler und Amplitude schwerer; gemessen mit der Lauf-Stop-Probe und Regen gegen trocken im Bild."
+  },
+  {
+   "id": "haar.K4#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "kleid-epoche",
+   "wurzel": "stamm/koerper-leib.js:41-43 (top/bottom/shoe per g.pick aus CLOTH_COLORS, ohne Epoche; die Epoche formt nur Häuser, fachwerk-core.js:2806 / stamm/siedlung-ort.js)",
+   "karte": "Das Bewohner-Genom zieht Schnitt und Stoff der kleidZonen aus der EPOCHEN-Zeile seines Heims; gemessen an der Spielgang-Station Dorfplatz in zwei Epochen (Bild unterscheidbar, Mutation der Epoche ändert den Schnitt)."
+  },
+  {
+   "id": "haar.K4#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "kleid-epoche",
+   "wurzel": "koerper-core.js:180 kleidZonen (Kleid als aus der Haut extrudierte Hülle, kein XPBD-Tuch)",
+   "karte": "Das Kleid wird Tuch des EINEN XPBD-Lösers aus koerper-core (Physik H1 vorausgesetzt), gleich in Labor und Welt; gemessen mit der Durchdringungs-Probe beim Gang (0 Durchdringung)."
+  },
+  {
+   "id": "haar.K5#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "haar-haushalt",
+   "wurzel": "koerper-core.js:49 / tetrapoda-core.js:49 (Stufen-Tafeln mit draws je Stufe) · spec/profiband/ratsche-*.json tier frei",
+   "karte": "Eine Prüfbühne mit fester Herde und 10 Bewohnern, Haar-Kappe und Fell-Schale fern als Stufe, die Ratsche tier ≤ 30; gemessen mit werkbank zaehlen in jeder Distanz an der Radeon."
+  },
+  {
+   "id": "haar.K5#2",
+   "klasse": "pflicht",
+   "h": 12,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "haar-haushalt",
+   "wurzel": "spec/profiband/ratsche-*.json (tier frei) · Pflicht E Profi-Band (Genesis Third 6,3 > 5,8 ms)",
+   "karte": "Dieselbe Prüfbühne an beiden Geräten, dazu hält das Profi-Band E; der Punkt fällt erst mit Pflicht E."
+  },
+  {
+   "id": "luftwasser.K1#1",
+   "klasse": "nur-station",
+   "h": 2,
+   "geraet": "headless",
+   "sicher": 0.8,
+   "buendel": "vogel-zensus",
+   "wurzel": "stamm/kreatur-leben.js:2555 _vogelTakt (VOGEL_GESETZ tetrapoda-core.js:2039, im Spielpfad dirigent-takt.js:1100); der g2-Beleg „0 Vögel“ ist veraltet",
+   "karte": "Eine Station über scripts/diag-klang-zensus.cjs an der Wiese: gezeichnete Leiber > 0, ihre Lage ändert sich über die Zeit (Singflug über Grund) und sie rufen (gehört > 0)."
+  },
+  {
+   "id": "luftwasser.K1#2",
+   "klasse": "nur-station",
+   "h": 3,
+   "geraet": "headless",
+   "sicher": 0.75,
+   "buendel": "vogel-zensus",
+   "wurzel": "stamm/klang.js:421 _klangZensus leiber {gehoert, gezeichnet} · scripts/diag-klang-zensus.cjs wieseOhneLeib (an main)",
+   "karte": "Die Station urteilt gehört == gezeichnet an jedem Ort und Chor stumm unter der Mutation wieseOhneLeib (Leib weg → Ruf weg), derselbe Lauf wie klang.K1."
+  },
+  {
+   "id": "luftwasser.K2#1",
+   "klasse": "gesetz",
+   "h": 12,
+   "geraet": "headless",
+   "sicher": 0.55,
+   "buendel": "vogel-schwarm",
+   "wurzel": "tetrapoda-core.js:1694 verbandZug (nur die Herde); VOGEL_GESETZ :2039 singt einzeln je Revier, ohne Verband",
+   "karte": "Das Vogel-Gesetz bekommt einen Schwarm (Stare), der über verbandZug in 3D zieht, im Pool von _vogelZeichnen; gemessen mit dem Band schwarm in kreatur-proben: Φ ≥ 0,8, Kohäsion ≥ 0,9."
+  },
+  {
+   "id": "luftwasser.K2#2",
+   "klasse": "gesetz",
+   "h": 22,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "vogel-schwarm",
+   "wurzel": "tetrapoda-core.js:2039 VOGEL_GESETZ (keine Flucht, keine Landung; Bäume aus phyto planForestCell ungelesen)",
+   "karte": "Der Schwarm flieht vor dem Spieler als EIN Pulk und landet auf Kronen aus planForestCell; gemessen in kreatur-proben: Pulk-Zerfall 0 bei der Flucht, Landepunkte auf Baum-Kronen."
+  },
+  {
+   "id": "luftwasser.K3#1",
+   "klasse": "gesetz",
+   "h": 14,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "fisch-stroemung",
+   "wurzel": "kein Fisch: 0 Treffer fisch/forelle in stamm/ und tetrapoda-core.js; die Strömung advektiert am F1-Chokepoint (gate:kopplung F1)",
+   "karte": "Ein Fisch-Gesetz neben VOGEL_GESETZ (Forelle je Bach-Zelle), die Ausrichtung liest die F1-Strömung; gemessen mit werkbank eval am Bach: Ausrichtung gegen die Strömung ≥ 0,8, unter Mutation der Strömung dreht sie mit."
+  },
+  {
+   "id": "luftwasser.K3#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "fisch-stroemung",
+   "wurzel": "kein Fisch (wie K3#1); Unterwasser-Sicht hängt an Leib K3",
+   "karte": "Die Fische meiden den Spieler, folgen dem Pegel aus _waterLevelAt und sind unter Wasser im Bild; gemessen mit Ausweich-Probe und Pegel-Mutation, dazu ein Bild unter Wasser an beiden Geräten."
+  },
+  {
+   "id": "luftwasser.K4#1",
+   "klasse": "gesetz",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "bestaeuber",
+   "wurzel": "stamm/feld-leben.js auraAt (kein Insekten-Leser; 0 Treffer insekt/bestäub in stamm/ und tetrapoda-core.js)",
+   "karte": "Ein Bestäuber-Gesetz setzt die Dichte aus dem Blüten-Anteil von auraAt am Ort, gezeichnet als Instanz-Pool; gemessen mit werkbank bild --zeit an der Mess-Wiese, Klassen-Maske insekt, r ≥ 0,5 zur Blüte."
+  },
+  {
+   "id": "luftwasser.K4#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "bestaeuber",
+   "wurzel": "stamm/feld-leben.js auraAt (die Pflege-Geste Feld K5 und die Uhr wirken auf keine Insekten)",
+   "karte": "Die Bestäuber folgen der Pflege-Geste und der Uhr (nachts 0); gemessen mit der Pflege-Mutation, die die Dichte am Ort hebt, und dem Uhr-Gang im Bild."
+  },
+  {
+   "id": "licht.K1#1",
+   "klasse": "gesetz",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "tag-kurve",
+   "wurzel": "stamm/bild-himmel.js:2142 _dayNightApplyBelichtung · scripts/lib/licht-linsen.cjs:932 tagKurveUrteil (urteilt nur das Dämmerungs-Fenster); spec/farbe trägt nur tag-kurve.json, keine REF aus HDR-Zeitraffern",
+   "karte": "Die Kamera wird ein EV100-Gesetz mit Kompensations-Steigung 0,5–0,7, dazu kommen der Mittag-Anker (18-%-Karte Luma 110–130) und eine REF-Kurve in spec/farbe; tagKurveUrteil urteilt über −18…90°, und gemessen wird werkbank licht --tag Uhr 0…1 in 0,01-Schritten, bis der Buckel bei Uhr 0,33 (+0,94 EV über Mittag) fällt."
+  },
+  {
+   "id": "licht.K1#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "tag-kurve",
+   "wurzel": "stamm/bild-himmel.js:2142 _dayNightApplyBelichtung · scripts/lib/licht-linsen.cjs:932 (Third ungemessen)",
+   "karte": "Auf #1 aufbauend wird dieselbe Tag-Linse auf Ego UND Third an Spawn und Mess-Wiese erweitert und je ≤ 3 min an Radeon und GTX gefahren, gemessen werden Sprung ≤ 0,1 EV/Schritt und REF ±0,3 EV."
+  },
+  {
+   "id": "licht.K2#2",
+   "klasse": "gpu-rot",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "richtlicht-wetter",
+   "wurzel": "stamm/bild-himmel.js:2089 dl.intensity = KEY_BASE·LEGACY_LICHT·a.lum·tint.lightIntensity",
+   "karte": "Geschnitten wird an drei Tätern. Erstens trägt das Richtlicht bei Sonne 7° nur das 0,90/1,03-Fache des Himmels statt ≥ 2,5, und im Regen-Mittag lässt tint.lightIntensity 1,638 statt ≤ 1,5 stehen. Zweitens prüft die Ort-Suche der Station Werfer nur bei 20°/45°, deshalb ist die Kugel A/B bei 7° mit 0,80 UNGÜLTIG. Drittens meldet der Himmel zur Sonne „kein freier Himmel“. Danach werden die 6 Spalten Uhr × Wetter an beiden Geräten gemessen."
+  },
+  {
+   "id": "licht.K3#1",
+   "klasse": "schnitt+station",
+   "h": 6,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "licht-weg",
+   "wurzel": "stamm/bild-sicht.js:2364 _weltLicht (Lichtweg seit 3eadec2b auf main) · stamm/gelaende-fern.js:965 Ring liest ihn; offen: Karte fichte/tanne nimmt zu viel Umgebungs-Licht (stamm/stoff-instanz.js Karten-Bake)",
+   "karte": "Der Umgebungs-Anteil im Karten-Bake von fichte/tanne wird auf _weltLicht geschnitten, und eine Station kommt dazu: werkbank licht --laub ring,fichte,tanne --karte --uhr 0.5,0.27,0.05 plus gate:licht-weg:echt, Soll Fernstufe/Gestalt 0,9–1,1 (vorher Ring bei 0,27 1,614)."
+  },
+  {
+   "id": "licht.K3#2",
+   "klasse": "nur-station",
+   "h": 9,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "licht-weg",
+   "wurzel": "stamm/bild-sicht.js:2364 _weltLicht (Leser :636, :1074, :1489, :2410); Spiegel-Zeile hängt am Weltzustand (Merge 3eadec2b offen)",
+   "karte": "Die Station aus #1 wird um Feld-Pass, Panorama und Wasser erweitert (Radeon nach licht-weg 0,94–0,98), die Spiegel-Zeile wird vom Weltzustand gelöst, und gemessen wird an beiden Geräten."
+  },
+  {
+   "id": "licht.K4#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "wolken",
+   "wurzel": "stamm/bild-himmel.js:81 _himmelSicht (2D-FBM mit Deckungs-Schwelle) · stamm/stoff-material.js:1130 receivedShadowNode ohne Wolken-Term (wolkenSchatten/cloudShadow 0 Treffer)",
+   "karte": "Dasselbe FBM-Deckungsfeld wird längs der Sonne als EIN Lookup im receivedShadowNode des Boden-Stoffs gelesen, und an der Mess-Wiese wird mit werkbank bild aus zwei Frames im Abstand von 5 s (Deckung 0,4 gegen 0) die Korrelation der Schattenverschiebung mit dem Wolkenfeld gemessen, Soll r ≥ 0,6."
+  },
+  {
+   "id": "licht.K4#2",
+   "klasse": "gesetz",
+   "h": 34,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "wolken",
+   "wurzel": "stamm/bild-himmel.js:81 _himmelSicht (kein Volumen) · stamm/bild-kosten.js _zeitAufloesung (TAAU)",
+   "karte": "Gebaut wird eine 2,5D-Wolkendichte, die per Raymarch in ¼-Auflösung über TAAU läuft, Schatten auch auf Wald-Stoffen wirft, einen Silberrand ≥ 1,3 und eine dunklere Unterseite hat; gemessen wird an beiden Geräten mit Himmel ≤ 1,0 ms per gpu-bank an der GTX."
+  },
+  {
+   "id": "licht.K5#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "",
+   "wurzel": "stamm/bild-himmel.js:3078 WEATHER_TRANSITION_DURATION_MS 45000 (Übergang steht, keine Linse fährt ihn)",
+   "karte": "Eine Spielgang-Station fährt den Wetter-Zug klar → Regen → klar als Spieler-Wort und misst die Ausgabe-Luma je Sekunde gegen das Soll Sprung ≤ 0,1 EV/s an einem Gerät."
+  },
+  {
+   "id": "licht.K5#2",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "richtlicht-wetter",
+   "wurzel": "stamm/bild-himmel.js:2089 tint.lightIntensity im Regen (Kugel-Verhältnis 1,638 > 1,5) · :1283/:1367 Purkinje nur als Mond-Hue",
+   "karte": "Das Richtlicht im Regen wird aus WEATHER_FIELD auf ≤ 1,5 geschnitten, und Purkinje kommt aus _daemmerung in die Post-Kette; Stationen messen die Kugel unter Regen, die Sterne bei Neumond > 0 und B/R ≥ 1,2× Mittag an beiden Geräten."
+  },
+  {
+   "id": "ferne.K1#2",
+   "klasse": "gpu-rot",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "ferne-blau",
+   "wurzel": "stamm/bild-himmel.js:2426-2428 Luft-farbe = A.himmelFarbe(dir, y≥0) · :1262 _atmoMedium (Aerosol = _luftBeta − Rayleigh, Mie-Phase g)",
+   "karte": "Täter beider Geräte bit-gleich: Der Farbton bei 8 km liegt bei 0,4–29,3° (Soll ≤ 10°), und die Sonnenseite am Mittag hat 1,17 (Soll ≥ 1,2). Geschnitten werden darum Mie-Anteil und Horizont-Ton der Himmels-Sicht in der In-Streuung; die Station ist werkbank licht --luft, und fernes Weiß R/B 2,59 sowie Uhr 0,27 mit 5,1 sind schon GRÜN."
+  },
+  {
+   "id": "ferne.K3#1",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "fern-saum",
+   "wurzel": "stamm/gelaende-fern.js:1127 FERN_KRONE_NAH sichtM 384 (dahinter Wald nur aKrone-Farbe) · stamm/bild-himmel.js:417/:544 + stamm/dirigent-kern.js:356 Flag-Zwilling canopyStreaming Default false",
+   "karte": "Der Fern-Ring wird um Kronenhöhe × Deckung aus aKrone angehoben, mit einem Hash je planForestCell im WGSL, und der Zwilling canopyStreaming fällt; an der Station Hügel wird die Grat-Linie mit und ohne Wald gegen die Soll-Werte Kohärenz < 0,3 und Umriss ≥ 3 m bei 2 km gemessen."
+  },
+  {
+   "id": "ferne.K3#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "fern-saum",
+   "wurzel": "stamm/gelaende-fern.js:1127 FERN_KRONE_NAH · FERN_RING.schalen (Vertex-Dichte bis 8 km)",
+   "karte": "Der Saum wird bis 8 km mit Kronen-Relief ≥ 10 m getragen; gemessen werden die Kammlinie ≤ 0,22 gegen REF real-felsen an 4 Azimuten und 0,5/1/3/8 km auf beiden Geräten sowie die Einhaltung des Boden-Haushalts."
+  },
+  {
+   "id": "ferne.K4#1",
+   "klasse": "gesetz",
+   "h": 18,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "horizont-karte",
+   "wurzel": "gelaende-core.js: horizontWinkel fehlt (0 Treffer) · stamm/bild-kosten.js:3521 CSM maxFar 180–306 m, jenseits nur N·L",
+   "karte": "Im Gelände-Kern entsteht die reine Funktion horizontWinkel(x,z,azimut), im Fern-Faden je 0,5° Sonne gebacken; Boden-Stoff und Feld-Pass lesen sie, und an der Station Hügel wird bei Sonne 5° gegen Luma Schatten-/Lichthang ≤ 0,4 gemessen."
+  },
+  {
+   "id": "ferne.K4#2",
+   "klasse": "gesetz",
+   "h": 26,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "horizont-karte",
+   "wurzel": "gelaende-core.js horizontWinkel (neu) · stamm/bild-sicht.js Feld-March-Leser",
+   "karte": "Gemessen wird, ob die Schattengrenze mit dem Horizontwinkel des Kerns auf ±2 px übereinstimmt, bei Uhr 0,26 und 0,74, mit ≤ 0,3 ms per gpu-bank an der GTX und auf beiden Geräten."
+  },
+  {
+   "id": "ferne.K5#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.55,
+   "buendel": "sturm-sicht",
+   "wurzel": "stamm/bild-himmel.js:2340 _luftBeta (Anker LUFT.sichtSturmM) · :2506 U.beta je Wetter",
+   "karte": "Die Luft-Linse werkbank licht --luft wird am Hügel mit dem Spieler-Wort Sturm gefahren; gemessen wird der Kontrastabfall über die Distanz gegen das Soll Sicht 1,5 km ±15 % an einem Gerät."
+  },
+  {
+   "id": "ferne.K5#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "sturm-sicht",
+   "wurzel": "stamm/bild-himmel.js:2340 _luftBeta liest das globale Wetter-Wort (kein Ort, keine Front)",
+   "karte": "Der Luft-Knoten liest das Wetter am Ort, der Vorhang wird zur Dichte-Kante der Front aus Wetter K1, und der Talnebel folgt dem Gelände; gemessen werden der Vorhang aus 2 km als Luma-Kante am Ort der Front und der Talnebel auf beiden Geräten."
+  },
+  {
+   "id": "material.K2#1",
+   "klasse": "gpu-rot",
+   "h": 6,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "mikro-schirm",
+   "wurzel": "stamm/stoff-material.js:1237/:1262 _substanceCharacter (Korn/Mikro-Relief des Substanz-Kerns, Fels-Zweig formationenSatz)",
+   "karte": "Täter laut Messung an 9fa32207 (letzte gemessene Stelle, auf main): Fels nyquist 0,122–0,143 an GTX und Radeon, Boden an der Kante 0,147–0,151 (Soll ≥ 0,15, glatt grün). Geschnitten wird eine Mikro-Frequenz, die über fwidth an die Pixelgröße gebunden ist, im Fragment von Boden und Fels; die Station ist bild --arm 0,5/1/2 m an beiden Geräten."
+  },
+  {
+   "id": "material.K2#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "mikro-schirm",
+   "wurzel": "stamm/stoff-material.js _substanceCharacter für alle Substanzen; Station-Lücke: bild --arm hat Ziele nur für Boden/Fels, keine Kachel-Linse (stationen/g3.js fehlt material.K2#2)",
+   "karte": "Das schirmgebundene Mikro-Detail kommt auf Rinde, Putz, Holz und Haut; gebaut werden Arm-Ziele für diese vier und eine 1/f^β-Linse gegen Kachel-Muster, gemessen wird β 0–2,4 und nyquist je Klasse an beiden Geräten."
+  },
+  {
+   "id": "material.K4#1",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "spiegel-baustein",
+   "wurzel": "stamm/wasser-hydro.js:583 _wasserBlick (einziger Spiegel-Leser) · stamm/bild-kosten.js _zeitAufloesung; Glas/Lack/Metall nur Himmels-Umgebung",
+   "karte": "Gebaut wird EIN Spiegel-Baustein als Spur in ¼-Auflösung über TAAU; Fenster-Glas bzw. GT-Lack und _wasserBlick lesen ihn, und werkbank bild am Haus-Fenster aus Ego misst spiegelTreue ≥ 0,5."
+  },
+  {
+   "id": "material.K4#2",
+   "klasse": "gesetz",
+   "h": 36,
+   "geraet": "gpu",
+   "sicher": 0.12,
+   "buendel": "spiegel-baustein",
+   "wurzel": "stamm/wasser-hydro.js:583 _wasserBlick · Spiegel-Baustein (neu)",
+   "karte": "Jede glänzende Klasse (Glas, Lack, Klinge, Nässe) liest den Baustein; gemessen werden Ego und Third, das Flimmern unter Bewegung und ≤ 1 ms per gpu-bank an der GTX auf beiden Geräten."
+  },
+  {
+   "id": "material.K5#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "stoff-glanz",
+   "wurzel": "stamm/stoff-material.js:716-740 (Rauheit aus Material-Tags hergeleitet, keine Stoff-Zeile, keine BRDF-Referenz in spec/)",
+   "karte": "Kugel-Bühne aus den Stoff-Sätzen in scripts/lib/licht-linsen.cjs neben lichtBilanz plus BRDF-Referenz-Tafel in spec/, Rauheit von 3 Klassen an der Tag-Herleitung korrigieren; gemessen werden Glanz-Breite und -Spitze je Kugel gegen die Tafel an der Radeon."
+  },
+  {
+   "id": "material.K5#2",
+   "klasse": "gesetz",
+   "h": 34,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "stoff-glanz",
+   "wurzel": "foundry-core.js:1006-1066 (13 Rauheits-Literale im Kern) + stamm/stoff-material.js:724 (23 roughness-Stellen)",
+   "karte": "EINE Stoff-Zeile Rauheit/Metall im Kern, die alle Rauheits-Literale in foundry-core und stoff-material lesen (Kern additiv oder Byte-Beweis); gemessen werden ein Mutations-Probe-Lauf und jede Klasse an der Kugel-Bühne auf Radeon und GTX."
+  },
+  {
+   "id": "schatten.K2#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "fluss-linse",
+   "wurzel": "scripts/lib/sicht-linse.cjs:1-15 (misst Arbeit je Frame, kein Bild) + stamm/bild-kosten.js:3528 SCHATTEN_TAKT nahMax 2",
+   "karte": "Bild-Fluss-Linse: Pixel mit ΔLuma > 18, die der TAAU-Bewegungs-Puffer (bild-kosten.js:1234 velocity) nicht erklärt, mit Schattenrand-Maske in werkbank sicht --gehen; gemessen wird der Anteil unerklärter Randpixel beim Gehen an der Radeon (≤ 0,5 %)."
+  },
+  {
+   "id": "schatten.K2#2",
+   "klasse": "schnitt+station",
+   "h": 22,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "fluss-linse",
+   "wurzel": "stamm/bild-kosten.js:3272 _loopShadowUpdate + :3528 SCHATTEN_TAKT",
+   "karte": "Dieselbe Fluss-Linse unter --drehen 1°/Frame und --sonne über die Tageslänge; bei ROT wird der Schatten-Takt in _loopShadowUpdate an die Sonnen-Winkelgeschwindigkeit gebunden; gemessen werden Randpixel und Kaskaden-Sprünge auf Radeon und GTX."
+  },
+  {
+   "id": "schatten.K3#1",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "verdeckung",
+   "wurzel": "stamm/stoff-material.js:1367 (aoNode nur am Boden mit opts.himmelsSicht; vendor/ trägt kein GTAONode, nur TRAANode)",
+   "karte": "GTAO in halber Auflösung in der Post-Kette über _zeitAufloesung (bild-kosten.js:1065), wirksam für jeden Stoff; licht --kontakt (licht-linsen.cjs:2651 kontaktSicht) bekommt das Kontaktband 0–20 cm an Fuß und Sockel; gemessen wird die Luma gegen den freien Boden (30–60 %) an der Radeon."
+  },
+  {
+   "id": "schatten.K3#2",
+   "klasse": "gesetz",
+   "h": 30,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "verdeckung",
+   "wurzel": "stamm/stoff-material.js:1367 + stamm/bild-kosten.js:1065 _zeitAufloesung",
+   "karte": "Dieselbe Verdeckung an Stammfuß und Tor-Fuß, klar und bedeckt; gemessen werden das Kontaktband auf beiden Geräten und die Kosten ≤ 0,5 ms per gpu-bank-ABAB an der GTX."
+  },
+  {
+   "id": "schatten.K4#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "rueckstrahlung",
+   "wurzel": "stamm/bild-himmel.js:2473 (hl.intensity = 0.1 * achse.nacht: am Tag kein Hemi-Licht, keine Rückstrahlung)",
+   "karte": "Der Hemi-Schreiber setzt am Tag groundColor = Boden-Albedo am Ort × E_Sonne der Bestrahlungs-Tafel; neue Station licht --rueck an der Prüfbühne mauer/hausrumpf mit Gegenschuss bei Boden-Albedo 0; gemessen wird der Gewinn ≥ 10 % an der Radeon, dazu die Klassen-Tafel (Pflicht A) neu."
+  },
+  {
+   "id": "schatten.K4#2",
+   "klasse": "schnitt+station",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "rueckstrahlung",
+   "wurzel": "stamm/bild-himmel.js:2470 groundColor + stamm/bild-sicht.js:2457 (Feld-Pass liest das Hemi)",
+   "karte": "Tönung zur Boden-Farbe als Farbwinkel-Urteil, dazu der Innenraum durch die offene Tür ≥ 15 % des Außen-Schattens (hängt am Haus-Innenraum aus siedlung.K1); gemessen auf Radeon und GTX."
+  },
+  {
+   "id": "schatten.K5#1",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "feuer-schatten",
+   "wurzel": "stamm/dirigent-kern.js:1540 _leuchtTakt (Uniform-Pool LICHT_POOL, kein Licht-Objekt, kein Schatten)",
+   "karte": "Der erste Pool-Platz trägt EINEN Punkt-Schatten (Würfel 512², Werfer < 15 m), den der Leucht-Stoff des Pools liest, ohne zweites PointLight; Station Prüfbühne gasse um Mitternacht mit Pfosten 2 m vom Feuer; gemessen wird der Schatten-Kontrast ≥ 3:1 an der Radeon."
+  },
+  {
+   "id": "schatten.K5#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "feuer-schatten",
+   "wurzel": "stamm/dirigent-kern.js:1540 _leuchtTakt + fachwerk-core LICHT_GESETZ kelvin",
+   "karte": "Die Gasse in der kelvin-Farbe ±200 K lesbar, der gehende Spieler wirft; gemessen werden Farbtemperatur und Wurf des Spielers auf beiden Geräten sowie die Kosten ≤ 0,4 ms per ABAB an der GTX."
+  },
+  {
+   "id": "lod.K1#1",
+   "klasse": "pflicht",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "karten-atlas",
+   "wurzel": "foundry-core.js:719 (impostor views 8 nur Azimut) + stamm/stoff-material.js:2583 _lodCrossfadeMaskNode (Karten-Zweig, Alpha ohne Deckungs-Mips)",
+   "karte": "Saum aus der Blattgröße der Art (treeParams) plus Alpha-Mips mit Deckungserhalt im Karten-Zweig, dazu ein Hebungs-Ring unter 0°; gemessen wird laub-kante fimp:atlas:L2 0,2604 → ≤ 0,22 an der Tafel-Pose und an einem Spielgang-Bild (Radeon, Pflicht A)."
+  },
+  {
+   "id": "lod.K1#2",
+   "klasse": "pflicht",
+   "h": 30,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "karten-atlas",
+   "wurzel": "foundry-core.js:719 + stamm/stoff-instanz.js Karten-Bake (waagrecht)",
+   "karte": "Derselbe Saum für Ego mit 15° Blick nach oben, Third und Hügel, dazu Haus- und Tor-Stufen L1–L3 mit milchweiss und zielTreue; gemessen auf Radeon und GTX."
+  },
+  {
+   "id": "lod.K2#1",
+   "klasse": "schnitt+station",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "fluss-linse",
+   "wurzel": "stamm/dirigent-regler.js:310-372 (foliageRadius atmet unter Last zwischen PERF_FOLIAGE_RADIUS_MIN 70 und MAX 240, :1909-1910)",
+   "karte": "Fluss-Linse mit Maske an den Stufen-Grenzen und am foliageRadius-Rand unter dem Standard-perfTarget, zuerst das ROT-Vorher, dann der Laub-Rand aus Pixelgröße × Haushalt statt aus der Bildrate; gemessen werden Pop-Pixel %/s beim Gehen an der GTX (≤ 0,05 %)."
+  },
+  {
+   "id": "lod.K2#2",
+   "klasse": "gesetz",
+   "h": 34,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "fluss-linse",
+   "wurzel": "stamm/dirigent-regler.js:310-372 + stamm/vegetation-streu.js _chooseLODForDistance (Hysterese)",
+   "karte": "Pop-frei bei Gehen, Ritt, Fahrt mit vmax und Ego↔Third alle 5 s, Wiese → Genesis und durchs Start-Dorf, 0 Geister; gemessen wird die Fluss-Linse auf beiden Geräten."
+  },
+  {
+   "id": "lod.K3#1",
+   "klasse": "schnitt+station",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "karten-atlas",
+   "wurzel": "foundry-core.js:719 impostor {views 8, cellW 128, cellH 256} nur Azimut; diag-foundry-impostor.cjs misst keine Deckung/IoU",
+   "karte": "Den Spike fern-von-oben mit Atlas-Diät mergen (Ringe −20/40/80° in ¼ der Zellfläche, +2,7 statt +10,6 MB), dazu eine Deckungs-/IoU-Linse in werkbank bild an Hügel und hohem Third; gemessen werden Deckung ≥ 0,75 und IoU ≥ 0,65 je Hebung (Radeon)."
+  },
+  {
+   "id": "lod.K3#2",
+   "klasse": "gesetz",
+   "h": 30,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "karten-atlas",
+   "wurzel": "foundry-core.js:719 + stamm/stoff-instanz.js Bake (nur Baum-Karten)",
+   "karte": "Hebungs-Ringe je Familie (Haus, Tor, Wagen), der Atlas im VRAM-Band ≤ 118 MB gesamt; gemessen werden Deckung/IoU je Familie und das VRAM auf Radeon und GTX."
+  },
+  {
+   "id": "lod.K4#1",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "stufen-zwang",
+   "wurzel": "stamm/stoff-material.js:2583 _lodCrossfadeMaskNode (Mechanik steht; kein Stufen-Zwang-Haken in scripts/werkbank.cjs)",
+   "karte": "Ein Stufen-Zwang-Haken über uLodD0/uLodD1 an der Grenze plus ein Bild-Paar vorher/nachher je Klasse in werkbank bild; gemessen werden Luma-Sprung < 2 % und zweiton 0 bei Uhr 0,5 (Radeon); der Ton von Birke und Karte hängt an material.K3#2."
+  },
+  {
+   "id": "lod.K4#2",
+   "klasse": "schnitt+station",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "stufen-zwang",
+   "wurzel": "stamm/stoff-material.js:2583 + Boden-Morph CDLOD (K51)",
+   "karte": "Dasselbe Bild-Paar bei Uhr 0,27, dazu Boden-Morph p90 ≤ 0,1 m im Bild statt in der Geometrie; gemessen auf Radeon und GTX."
+  },
+  {
+   "id": "lod.K5#1",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "stufen-zwang",
+   "wurzel": "stamm/stoff-material.js:2440 _lodAuge + foundry-core.js:349 (Screen-Space-Error-Distanzen nur für Bäume; kein Pixel-Fehler-Maß)",
+   "karte": "Chamfer-Distanz zwischen der Klassen-Maske in L0 (über den Stufen-Zwang) und der gewählten Stufe am Wechsel-Abstand, je Familie Baum/Haus/Tor/Wagen bei 1920×1080; gemessen wird der Kanten-Versatz ≤ 1 px (Radeon)."
+  },
+  {
+   "id": "lod.K5#2",
+   "klasse": "schnitt+station",
+   "h": 22,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "stufen-zwang",
+   "wurzel": "stamm/dirigent-takt.js:1579 (uLodPerf = _lodPerfMul(): die Wechsel-Abstände folgen der Bildrate)",
+   "karte": "uLodPerf aus den Wechsel-Abständen schneiden (nur noch Pixelgröße), der Regler stellt nur Dichte und Rand; gemessen werden die Abstände bei 30/60/144 fps und Regler ±10 %, dazu die Kosten in derselben Sitzung, auf beiden Geräten."
+  },
+  {
+   "id": "studios.K1#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "regler-bild",
+   "wurzel": "scripts/diag-regler-wirkt.cjs (kein Bild-Kanal, 0 Treffer ausgabe-aufnahme/Luma) · spec/vertraege/ratsche.json reglerTot 16 (klang 7, porta 8, vehicle grip)",
+   "karte": "diag-regler-wirkt bekommt den Bild-Kanal (L0 je Zeile bei min/max über ausgabe-aufnahme auf der Radeon, Wirkung = ≥1 % Gestalt-Pixel mit ΔLuma > 18) plus Grip über die Seitenkraft im fahrSchritt; gemessen wird der Anteil wirkender Zeilen an 112 (Decke heute 97/112 = 87 %, bei Zeilen, die nur am Hash leben, ist die Heilung im Rezept einzurechnen)."
+  },
+  {
+   "id": "studios.K1#2",
+   "klasse": "gesetz",
+   "h": 36,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "regler-bild",
+   "wurzel": "foundry-core.js:5045 PARAMS_BY_KIND (nur flower/grass, Baum ohne Zeile) · ratsche.json reglerTot klang 7 / porta energy..wave 8",
+   "karte": "Baum-Zeilen additiv in PARAMS_BY_KIND (die Ratsche wächst), dazu Ohr-Kanal (Spektral-Abstand des Klang-Gesetzes, 7 Klang-Regler) und Membran-Bild-Kanal über _torGesetzFor (8 Porta-Regler) in dieselbe Probe, jede tote Zeile im Rezept geheilt; gemessen 100 % der Zeilen inkl. Baum."
+  },
+  {
+   "id": "studios.K3#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "headless",
+   "sicher": 0.65,
+   "buendel": "kosten-leiste",
+   "wurzel": "worlds/huelle/huelle.js:509 zaehle (ohne Gegenzahl) · :592 Befehle = b.draws aus der Budget-Zeile",
+   "karte": "Die Kosten-Leiste der Hülle rendert das Werk in einem eigenen Abschnitt (renderer.info.reset, Stempel nach Lehre 23; den Renderer reicht das Studio wie bei panorama() :669) und stellt die Dreiecke gegen zaehle; gemessen wird die Abweichung je Mesh-Studio, Soll ±5 % in ≥4/7."
+  },
+  {
+   "id": "studios.K3#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "kosten-leiste",
+   "wurzel": "worlds/huelle/huelle.js:592/596 (draws = Budget-Zeile, VRAM und ms fehlen)",
+   "karte": "Die Leiste trägt Befehle aus renderer.info.render.calls statt b.draws, VRAM aus Attribut- und Textur-Bytes gegen info.memoryMap, GPU-ms per Timer-Query gegen gpu-bank und beim Klang die Audio-Graph-ms; gemessen ±5 % in 7/7 an Radeon und GTX."
+  },
+  {
+   "id": "studios.K4#1",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "eine-engine",
+   "wurzel": "worlds/{fachwerk,koerperstudio,portale,schmiede,terrain,tetrapoda}/index.html laden r128 (nur worlds/garage auf r184) · eigene ACES fachwerk.js:560, schmiede.js:11, terrain/phytogenesis.js:531",
+   "karte": "Bild-Diff Studio gegen Welt bauen (gleiche Saat und ov, Bühnen-Kamera = Vorschau-Kamera, gleiche Uhr, bild-diff-Rezept), Garage messen, Terrain und Schmiede auf r184 mit dem Welt-Licht (LEGACY_LICHT bild-himmel.js:3229) heben und das eigene ACES streichen; gemessen Bild-Differenz ≤ 2,1 % und Albedo-Rand 0,10 an 3/7."
+  },
+  {
+   "id": "studios.K4#2",
+   "klasse": "gesetz",
+   "h": 72,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "eine-engine",
+   "wurzel": "worlds/{fachwerk,koerperstudio,portale,tetrapoda}/index.html r128 · koerperstudio.js:78, porta.js:134, tetrapoda.js:225 (18-%-Karte brennt auf 255)",
+   "karte": "Die vier übrigen Studios auf r184 mit Welt-Licht, ihr eigenes ACES stirbt, Tetrapoda-Karte zurück in Luma 110–130; gemessen 7/7 an Radeon und GTX."
+  },
+  {
+   "id": "pipeline.K2#1",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "eine-engine",
+   "wurzel": "foundry-bruecke.js:246 bakeImpostorAtlas (Studio, r128) ⇄ stamm/stoff-instanz.js:406 _tickImpostorBake (Welt, r184)",
+   "karte": "bakeImpostorAtlas stirbt, das Phyto-Studio backt über denselben Welt-Bäcker _tickImpostorBake (setzt Terrain auf r184 aus studios.K4#1 voraus); gemessen Byte-Vergleich des Baum-Atlas aus Studio und Welt bei gleicher Saat und gleichem Gesetz-SHA."
+  },
+  {
+   "id": "pipeline.K2#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "headless",
+   "sicher": 0.3,
+   "buendel": "eine-engine",
+   "wurzel": "fachwerk-core.js eigene L2-Ton-Rechnung (Beleg :1999/:2612, Haus-Ton L2/L0 0,788; Zeilen am Kopf nicht nachgeprüft)",
+   "karte": "Der eine Bäcker backt jede Art mit Karte aus ihrem L0, die eigenen Ton-Rechnungen der Stufen sterben; gemessen wird die Byte-Gleichheit Studio⇄Welt je Art (Ton L2/L0 als Nachweis an Material K3)."
+  },
+  {
+   "id": "pipeline.K4#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "platte",
+   "wurzel": "stamm/studio-bruecke.js:560 _foundrySchale (Platte nur für build-asset) · :28 _foundryBlattAtlas, Dorf-Export und stoff-instanz.js:406 Karten live je Boot",
+   "karte": "Blatt-Atlas, Dorf-Export und Karten über denselben Platten-Pfad wie build-asset unter Gesetz-SHA je Art, dazu das Bau-Instrument in Worker und Haupt-Faden in diag-boot-stage und eine Probe mit geändertem Kern-SHA; gemessen Zweit-Boot 100 % von der Platte, 0 fremde Neubauten, je ≥ 4 Läufe an Radeon und GTX."
+  },
+  {
+   "id": "pipeline.K5#1",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "worker-r184",
+   "wurzel": "cores.manifest.json:7 lib worlds/terrain/lib/three-r128.min.js · stamm/studio-bruecke.js:524 synchrones XMLHttpRequest, :541 importScripts",
+   "karte": "Der Foundry-Worker wird Modul-Worker auf vendor/three.module.min.js (die r184 der Welt), das Manifest kommt per postMessage statt per synchronem XHR, mit Byte-Beweis aller Bauten r128 → r184 über gate:asset-contract; gemessen 0 Bytes auf worlds/*/lib/three* und 0 synchrone XHR im Netz- und Parse-Log des Workers."
+  },
+  {
+   "id": "pipeline.K5#2",
+   "klasse": "schnitt+station",
+   "h": 18,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "worker-r184",
+   "wurzel": "stamm/studio-bruecke.js:518-541 (Worker lädt alle Kerne vor ready)",
+   "karte": "Kaltstart des Workers (Parse und Eval von r184 und Kernen) messen und auf ≤ 300 ms bringen, mit Kernen je Art bei Bedarf statt alle vor ready; gemessen kalt bereit an Radeon und GTX."
+  },
+  {
+   "id": "ki.K3#1",
+   "klasse": "nur-station",
+   "h": 5,
+   "geraet": "headless",
+   "sicher": 0.5,
+   "buendel": "seele-erinnert",
+   "wurzel": "stamm/feld-nexus.js:1221 _buildCreaturePersonaPrompt liest memory.slice(-8) · stamm/kreatur-leben.js:1220 _creatureRemember (geschlagen :756, gefuettert :507)",
+   "karte": "Gesprächs-Korpus mit Erinnerungen, die über den Spielpfad entstehen (geschlagen, gefüttert, gefolgt), dazu das Prädikat Bezug auf eine konkrete Erinnerung, gefahren mit qwen3:4b über Ollama wie die Station ki.K1#2; gemessen Anteil der Antworten ≥ 70 %."
+  },
+  {
+   "id": "ki.K3#2",
+   "klasse": "schnitt+station",
+   "h": 17,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "seele-erinnert",
+   "wurzel": "stamm/feld-nexus.js:1170 _buildCreaturePersonaPrompt nur für Kreaturen, Menschen-Bewohner ohne Gedächtnis (0 %)",
+   "karte": "Menschen-Bewohner erhalten dasselbe Gedächtnis (_creatureRemember) und denselben Persona-Prompt mit den letzten 8 Erinnerungen, der Korpus wird auf Bewohner erweitert; gemessen ≥ 70 % an Radeon und GTX."
+  },
+  {
+   "id": "ki.K4#1",
+   "klasse": "nur-station",
+   "h": 6,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "ki-regeln",
+   "wurzel": "stamm/feld-dsl.js:550 LLM-Regel ephemer mit TTL · :607 _evictWorldRule (nur human/pinned geschützt) · :657 _worldRuleFitness, nie mit Modell gelaufen (scripts/playtest/feld.cjs:1196 Stub)",
+   "karte": "10-min-Selbstlauf an Genesis mit Ollama und Sätzen, die Regeln verlangen, Zählung der Regeln mit source llm je Drittel (gewertet, erneuert, verfallen, verdrängt wie Nexus-Regeln) gegen einen Gegenlauf mit gemischtem δ; gemessen gleiche Wertung beider Quellen."
+  },
+  {
+   "id": "ki.K4#2",
+   "klasse": "nur-station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "ki-regeln",
+   "wurzel": "stamm/feld-dsl.js:541 rule_effect_forbidden · costMsSum je Regel (feld-dsl.js:661)",
+   "karte": "Derselbe Lauf zählt den Anteil überlebender LLM-Regeln mit δ > 0, die verbotenen Ops (rule_effect_forbidden) und den Regel-Takt aus costMsSum; gemessen 0 Verbote und Takt ≤ 0,2 ms an Radeon und GTX."
+  },
+  {
+   "id": "ki.K5#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "ki-takt",
+   "wurzel": "Beleg 11,68 s = qwen3:4b auf der Radeon-CPU ohne GPU-Offload · stamm/feld-nexus.js:1068 llmBuildSystemPrompt (dynamischer Schwanz :1151-1162 je Satz neu)",
+   "karte": "Station = Korpuslauf der Station ki.K1#2 (diag-v1-pfad --korpus --echt) mit p95 Satz → Welt und Anbieter-Host im Netz-Log, gefahren an der GTX mit Ollama auf CUDA statt auf der Radeon-CPU; gemessen p95 ≤ 6 s."
+  },
+  {
+   "id": "ki.K5#2",
+   "klasse": "schnitt+station",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "ki-takt",
+   "wurzel": "stamm/feld-nexus.js:1068 llmBuildSystemPrompt (70 Ops, 9 Orte, 14 Bedingungen, Größe nie gezählt) · Radeon-Inferenz auf der CPU",
+   "karte": "Prompt-Tokens zählen und auf ≤ 4000 bringen, während der K1-Korpus hält; Radeon-Inferenz auf die iGPU (Ollama Vulkan) mit Programm zuerst im Stream; werkbank haenger während der spawn_studio-Bauten (hängt an streaming.K4); gemessen 0 Hänger > 100 ms und 0 $ je Satz lokal an beiden Geräten."
+  },
+  {
+   "id": "bauen.K2#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "headless",
+   "sicher": 0.5,
+   "buendel": "haus-slot",
+   "wurzel": "stamm/gelaende-kollision.js:289 _hausGrundSetzen (nur grund, kein Vorplatz) · fachwerk-core.js:6507 vorplatzFlaeche nur im ortPlan :6577",
+   "karte": "Das gesetzte Haus holt Erdbau und Vorplatz aus derselben Slot-Rechnung wie ein Dorf-Slot (additiver Export aus fachwerk-core, ortPlan byte-gleich; mit siedlung.K3#2 abstimmen, gleicher Grundriss-Leser), gesetzt über die echte Werkstatt-UI am Hang ≥ 15 %; gemessen Byte-Vergleich gegen einen Dorf-Slot gleicher Gestalt und Dichte über der Diele 0."
+  },
+  {
+   "id": "bauen.K2#2",
+   "klasse": "gesetz",
+   "h": 34,
+   "geraet": "headless",
+   "sicher": 0.2,
+   "buendel": "haus-slot",
+   "wurzel": "fachwerk-core.js:6577 ortPlan (kein fester Fremd-Slot) · stamm/gelaende-kollision.js:289 (Keller nur per Anti-Clip-Hub erreichbar)",
+   "karte": "Im Ortsradius plant ortPlan den Ort mit dem gesetzten Haus als festem Slot neu (Gasse umgelegt), und eine Treppe macht den Keller begehbar ohne Anti-Clip-Hub; gemessen Slot im Plan und der Gang des Leibs bis kellerY −2,40 m."
+  },
+  {
+   "id": "tore.K1#1",
+   "klasse": "schnitt+station",
+   "h": 12,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "tor-vorwaerm",
+   "wurzel": "stamm/netz-portal.js:133 (_buildPortalOverlay baut das Studio-iframe erst beim Kreuzen, siedlung-ort.js:618 → enterPortal)",
+   "karte": "Das iframe des Studio-Tors im Blick wird ab 30 m verdeckt vorgebootet, sodass das Kreuzen nur noch umschaltet; die Station tor misst dann t von der Apertur bis zur ersten Eingabe mit Wirkung im Ziel-Bild (≤ 2 s, Luma 0,05–0,95, kein Frame > 100 ms, E in derselben Sitzung)."
+  },
+  {
+   "id": "tore.K1#2",
+   "klasse": "pflicht",
+   "h": 52,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "",
+   "wurzel": "stamm/speicher-laden.js:948-957 (_weltWechselNeuLaden → window.location.reload)",
+   "karte": "Das Welt-Tor wechselt die Welt ohne Neuladen, mit Renderer und Leib in der Seite; kalt ≤ 2 s hängt an B (Ankunft ≤ 5 s); gemessen wird warm ≤ 1 s, kalt ≤ 2 s und Heimkehr ≤ 1 s für beide Zeilen an Radeon und GTX."
+  },
+  {
+   "id": "tore.K2#1",
+   "klasse": "schnitt+station",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "tor-vorwaerm",
+   "wurzel": "scripts/diag-studio-huelle.cjs:164 (VERALTET sperrt nicht, 6 von 10 Panoramen veraltet)",
+   "karte": "Die veralteten Panoramen werden neu gebacken, ein veralteter Stempel sperrt (H5), und die Station tor misst Spearman r zwischen Membran (3 m vor der Apertur) und Welt-Bild nach ≥ 1° Kamera-Drehung, dazu milchweiß ≤ 0,05 und oeffnungBunt ≥ 20."
+  },
+  {
+   "id": "tore.K2#2",
+   "klasse": "schnitt+station",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "tor-vorwaerm",
+   "wurzel": "stamm/siedlung-ort.js:618 (Membran-Uniforms zeigen das gebackene Panorama, worlds/tor-ziele.json)",
+   "karte": "Die Membran zeigt das Bild des vorgewärmten Ziel-iframes statt der Postkarte; gemessen wird r ≥ 0,5 für jedes Tor in Ego und Third, mittags und nachts, an beiden Geräten."
+  },
+  {
+   "id": "tore.K4#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "mp-zwei-geraete",
+   "wurzel": "scripts/diag-mp-sync.cjs:303 (zwei Seiten in EINEM Browser auf einer Maschine)",
+   "karte": "Ein neuer echt-Teil in der gate:mp-sync-Familie bootet Radeon-Laptop und OMEN über den signaling-server im LAN in dieselbe Welt und misst die Klassen-Teilung des Peers (> 0, nie im Ursprung) im Ausgabe-Bild von B."
+  },
+  {
+   "id": "tore.K4#2",
+   "klasse": "schnitt+station",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "mp-zwei-geraete",
+   "wurzel": "scripts/diag-mp-sync.cjs:303 (keine Pose-Latenz, keine Uhr-Abgleichung zwischen Geräten)",
+   "karte": "Derselbe Zwei-Geräte-Lauf bekommt einen Uhr-Abgleich per Ping und misst Taste an A → Leib im Bild von B (p95 ≤ 150 ms), Bau von A bei B ≤ 1 s mit gleichem Bau-Hash und Rejoin ≤ 31 s nach 3 s Ausfall; reißt die Latenz, wird der Snapshot-Takt bzw. Interpolations-Puffer geschnitten."
+  },
+  {
+   "id": "fahrzeug.K2#1",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "fahrer-trasse",
+   "wurzel": "scripts/lib/fahr-proben.cjs (Fahrer ohne Route; das Wege-Netz lebt nur im Dorf, stamm/siedlung-bewohner.js:1702 _bewohnerNetz)",
+   "karte": "Eine feste 2-km-Route Wiese → Wald → Dorf aus Wegen und Feldwegen des Gesetzes wird gebaut, der Fahrer folgt ihr (derselbe Trassen-Folger, den Pflicht C braucht), der Hänger im Wald wird beim Namen geschnitten; gemessen werden 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax."
+  },
+  {
+   "id": "fahrzeug.K2#2",
+   "klasse": "gesetz",
+   "h": 28,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "fahrer-trasse",
+   "wurzel": "scripts/lib/fahr-proben.cjs (kein Hang-/Furt-Abschnitt, nur eine Sicht)",
+   "karte": "Die Route bekommt einen Abschnitt am 25°-Hang und eine Furt, Ego und Third, gefahren an Radeon und GTX mit denselben Sollwerten."
+  },
+  {
+   "id": "fahrzeug.K5#1",
+   "klasse": "nur-station",
+   "h": 5,
+   "geraet": "gpu",
+   "sicher": 0.55,
+   "buendel": "fahr-rueckmeldung",
+   "wurzel": "stamm/koerper-bewegung.js:2325 (_rumbleTakt aus Reifen-Schlupf und Tempo) · stamm/klang.js:637 (Motor) · stamm/koerper-fahrt.js:559 (Feder)",
+   "karte": "Drei Kanäle, die im Spiel stehen, werden je als Paar gemessen: Motor-Klang am Klang-Abgriff, Federung im Ausgabe-Bild und Rumble an einem Stub-vibrationActuator, jeweils Drift auf Schotter gegen Weg."
+  },
+  {
+   "id": "fahrzeug.K5#2",
+   "klasse": "gesetz",
+   "h": 29,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "fahr-rueckmeldung",
+   "wurzel": "stamm/koerper-fahrt.js (Reifenspur, Staub, Spritzwasser und Kamera-Rauheit fehlen, leben nur in worlds/garage)",
+   "karte": "Reifenspur aus dem Schlupf, Staub/Spritzwasser je Boden und Kamera-Rauheit je Boden lesen in der Welt denselben Fahr-Zustand und dieselbe Stoff-Zeile; gemessen wird 6/6 mit Spur im Ausgabe-Bild nach dem Drift und Staub nur auf Schotter."
+  },
+  {
+   "id": "siedlung.K4#1",
+   "klasse": "gesetz",
+   "h": 16,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "jahresringe",
+   "wurzel": "fachwerk-core.js:3305-3314 (groesse aus nZiel statt Epoche; ringe nur staedtisch&&jahr>1700, die Epoche verschiebt den rnd-Strom)",
+   "karte": "DORF wird additiv mit byte-gleichem Default zu EINER Wachstums-Folge je Zelle umgebaut, in der das Jahr nur filtert (Haus steht, wenn sein Baujahr ≤ Jahr) und die Epoche moderne Stadt-Größe ergibt; diag-settlement Teil J misst die Überdeckung ≥ 80 % über 1320/1560/1860/1935 sowie Rolle, Bauart und Kleidung im Export."
+  },
+  {
+   "id": "siedlung.K4#2",
+   "klasse": "gesetz",
+   "h": 56,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "jahresringe",
+   "wurzel": "fachwerk-core.js:3310 (Jahresring-Gesetz statisch; in Spielzeit wächst nichts)",
+   "karte": "Der Ort wächst in Spielzeit aus Bewohnern (wohl und lebendig, deterministisch aus Saat und Akten), das Spieler-Haus wird Ring-Kern; Teil W misst das Wachstum über Ereignis-Takte, die Mutation wohl → 0 hält es an, sichtbar vom Hügel."
+  },
+  {
+   "id": "leib.K1#2",
+   "klasse": "gpu-rot",
+   "h": 6,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "",
+   "wurzel": "stamm/koerper-bewegung.js:1326-1441 (Anfahren kAcc, der erste Zentimeter braucht ~2 Takte FIXED_DT)",
+   "karte": "Die Station ist durch R6 veraltet (dirigent-ankunft/kern/takt geändert); Täter ist ego/gehen p95 44–55 ms an der Radeon (schlechtester von 3 Boots, 51,4/54,8) sowie einmal einsteigen 53,9 ms, an der GTX fehlt eine Probe von third/hieb; geschnitten wird der erste Takt nach frischer Eingabe, der den vollen Schritt trägt, und die fehlende hieb-Probe, gemessen wird mit 3 Boots an beiden Geräten nach."
+  },
+  {
+   "id": "leib.K3#1",
+   "klasse": "schnitt+station",
+   "h": 6,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "wasser-leib",
+   "wurzel": "stamm/koerper-bewegung.js:693-698 (schwimmt kippt binär) · :134-150 (Shift taucht)",
+   "karte": "Eine Station am See 1816/−6168 geht vom Ufer ins Wasser, schwimmt und taucht per Shift und misst Kamera-Bahn und Leib-Lage je Frame; kippt die Lage am Schalter schwimmt, wird sie dort geblendet."
+  },
+  {
+   "id": "leib.K3#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "wasser-leib",
+   "wurzel": "stamm/bild-sicht.js:1376-1377 (Unterwasser = Voll-Bild-Tint über playerEyesUnderwater)",
+   "karte": "Der Tint wird durch einen Sicht-Abfall nach Tiefe aus der EINEN Wasser-Wahrheit (HYDROSPHERE) ersetzt, dazu Licht-Abfall in der Höhle; gemessen wird Unterwasser-Luma gegen Tiefe gegen REF plus gate:hoehlen-sicht mit Bild an beiden Geräten."
+  },
+  {
+   "id": "leib.K4#2",
+   "klasse": "gpu-rot",
+   "h": 8,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "",
+   "wurzel": "stamm/koerper-bewegung.js:1830-1860 (Kugel-Wurf des Arms vom Drehpunkt, im Haus ohne Arm-Erholung)",
+   "karte": "Die Station ist durch R6 veraltet; Täter ist Gang innen (haus_alemannisch) mit Bau-Nah-Pixeln in 3 Orbit-Proben (4,5/1,7/12,5 %), innen-sprint mit Ruck p95 0,061–0,066 m (Soll ≤ 0,02, Sprünge bis 3,2 m) und an der GTX haus orbit fern Bau 0,9 % — steil und steil-sprint sind grün; geschnitten wird ein Kugel-Radius, der die Ecken der Nah-Ebene deckt, und ein Arm, der sofort kürzt, aber geglättet wieder ausfährt."
+  },
+  {
+   "id": "spielgang.K1#1",
+   "klasse": "schnitt+station",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "",
+   "wurzel": "scripts/diag-v1-pfad.cjs:1-14 (je Chokepoint eigene Probe, headless, kein Sitzungs-Lauf)",
+   "karte": "Ein Lauf aus aufgenommenen Spieler-Eingaben ohne Neuladen und ohne Konsole fährt bauen (Bauen K1), mit der KI erschaffen (WORT-Mitschnitt), benutzen (fahren/halten) und teilen (tore.K5#1) in EINER Sitzung, denn ankommen und laufen+sehen hängen an B und A; gezählt wird, dass ≥ 3 Zahlen dort zugleich halten."
+  },
+  {
+   "id": "spielgang.K1#2",
+   "klasse": "pflicht",
+   "h": 26,
+   "geraet": "gpu",
+   "sicher": 0.1,
+   "buendel": "",
+   "wurzel": "scripts/diag-v1-pfad.cjs:1 (Chokepoint-Linse je Boot, keine Sitzung; in stamm/ gibt es keinen Eingabe-Replay); Pflicht B (Ankunft ≤ 5 s) + A (Gang-Bild) + E",
+   "karte": "Einen Replay-Gang aus aufgenommenen Spieler-Eingaben bauen (setzt die offene #1 voraus), der alle 5 Schritte in EINER Sitzung mit Speicher-Rundlauf byte-gleich fährt, an Radeon und GTX gemessen; der Punkt fällt erst, wenn Ankunft ≤ 5 s (B) und der A-Spiegel halten."
+  },
+  {
+   "id": "spielgang.K2#1",
+   "klasse": "gesetz",
+   "h": 14,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "blind-spieler",
+   "wurzel": "docs/abnahme-drehbuch.md (18 Hand-Schritte, kein Blind-Lauf); die Hinweis-Schicht am Ding fehlt in stamm/werkstatt-hud.js",
+   "karte": "Eine Verb-Hinweis-Schicht am Ding (Werkstatt, Tor, Chat, je ein Satz aus KIND_POLICY) bauen und dazu einen Blind-Läufer (frischer Agent, nur Bild + Eingabe, werkbank --echt); gemessen werden die gefundenen Verben von 6 in ≤ 3 min am Ereignis-Strom."
+  },
+  {
+   "id": "spielgang.K2#2",
+   "klasse": "gesetz",
+   "h": 22,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "blind-spieler",
+   "wurzel": "docs/abnahme-drehbuch.md; Blind-Läufer fehlt (wie K2#1)",
+   "karte": "Den Blind-Läufer aus K2#1 auf 3 unabhängige Agenten an Radeon und GTX ausweiten; gemessen wird 6/6 Verben bei 3/3 Spielern, Text ≤ 1 Zeile je Verb."
+  },
+  {
+   "id": "spielgang.K3#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.5,
+   "buendel": "hud-mass",
+   "wurzel": "stamm/werkstatt-hud.js (HUD steht, ungemessen); scripts/lib/ausgabe-aufnahme.cjs (die Bild-Aufnahme ist vorhanden)",
+   "karte": "Eine Station mit PerformanceObserver('event') über HUD und Menü im echten Fenster bauen, dazu die HUD-Maske aus dem Ausgabe-Bild; gemessen werden INP p98 ≤ 200 ms und die Bild-Deckung ≤ 5 % an einem Gerät."
+  },
+  {
+   "id": "spielgang.K3#2",
+   "klasse": "gesetz",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "hud-mass",
+   "wurzel": "index.html font-size: 11px ×90, 10px ×85, 9px ×70 (rund 350 Angaben < 16 px); die Tastenbelegung steht bei stamm/dirigent-ankunft.js:590 (Rebind-Capture)",
+   "karte": "Die UI-Schrift über EINE Skalen-Wurzel auf ≥ 16 px bei 1080p heben, ohne die HUD-Deckung von K3#1 über 5 % zu treiben, und den freien Rebind per Probe belegen; gemessen werden die kleinste Glyphe im Ausgabe-Bild, die Deckung und eine Belegung, die wirkt, an beiden Geräten."
+  },
+  {
+   "id": "spielgang.K4#1",
+   "klasse": "schnitt+station",
+   "h": 7,
+   "geraet": "headless",
+   "sicher": 0.6,
+   "buendel": "zugang-gesetz",
+   "wurzel": "stamm/klang.js:358 _tierRuf (dazu :542 _schrittKlangEreignis, :458 _trefferPaar, :472 _substanzKlang); untertitel|subtitle hat 0 Treffer in stamm/",
+   "karte": "Eine Untertitel-Zeile an den Ereignis-Chokepoints des Klang-Gesetzes (Ruf, Treffer, Substanz) einhängen; gemessen werden Ruf-Ereignisse gegen Untertitel-Zeilen = 100 % im headless-Lauf."
+  },
+  {
+   "id": "spielgang.K4#2",
+   "klasse": "gesetz",
+   "h": 21,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "zugang-gesetz",
+   "wurzel": "Farbseh/Deuteranop: 0 Treffer in stamm/; der FOV-Setter steht in stamm/koerper-bewegung.js:2046 (_kamFovSoll), ein Komfort-Schalter fehlt",
+   "karte": "Einen Farb-Modus als Post-Abbildung über die Klassen-Grenzen der Albedo-Tafel bauen, dazu Bewegungs-Komfort (FOV-Regler auf _kamFovSoll, Wackeln/Unschärfe aus); gemessen werden ΔE ≥ 10 an jeder Klassen-Grenze unter Deuteranopie-Simulation des Ausgabe-Bilds und die Komfort-Schalter wirkend."
+  },
+  {
+   "id": "spielgang.K5#1",
+   "klasse": "gesetz",
+   "h": 28,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "text-tafel",
+   "wurzel": "stamm/: 461 Zuweisungen an textContent/innerHTML/title/placeholder, dazu die Markup-Texte in index.html; eine Sprach-Tafel gibt es nicht",
+   "karte": "EINE Text-Tafel DE/EN bauen und alle harten UI-Strings (HUD, Werkstatt, Chat-Antworten) daraus lesen; gemessen wird die Zählung harter Strings über window.__codeOf = 0 plus ein Schuss je Sprache."
+  },
+  {
+   "id": "spielgang.K5#2",
+   "klasse": "gesetz",
+   "h": 38,
+   "geraet": "headless",
+   "sicher": 0.25,
+   "buendel": "text-tafel",
+   "wurzel": "scripts/diag-v1-pfad.cjs (--korpus, Mitschnitt spec/abnahme/ki-korpus.json, nur DE); der LLM-Lauf mit Schlüssel ist offen (Drehbuch-Schritt 18)",
+   "karte": "Einen EN-Teil im KI-Korpus aufnehmen und die Antwort-Sprache an die Spieler-Sprache aus der Text-Tafel binden; gemessen wird der Anteil EN-Antworten auf EN-Sätze im abgespielten Mitschnitt."
+  },
+  {
+   "id": "ultiversum.K1#1",
+   "klasse": "schnitt+station",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "welt-gesetz",
+   "wurzel": "stamm/speicher-welten.js:780 buildStateSnapshot (trägt terrainSteepness/weather, aber kein gravity); stamm/feld-leben.js:1598 setzt g hart auf −9.81; der Leser steht bei stamm/koerper-leib.js:426",
+   "karte": "g und eine Himmels-Konstante je Welt in den Snapshot legen und beim Laden setzen (statt −9.81 hart), mit einem Himmels-Leser in bild-himmel; gemessen werden Sprung-Höhe (headless) und Himmels-Bild in zwei per Tor erreichbaren Welten."
+  },
+  {
+   "id": "ultiversum.K1#2",
+   "klasse": "gesetz",
+   "h": 34,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "welt-gesetz",
+   "wurzel": "wie K1#1; Gelände-Funktion, Kreatur-Verhalten und Wetter-Tafel je Welt fehlen in worldMeta (stamm/speicher-welten.js:372)",
+   "karte": "Alle Kapitel des Welt-Gesetzes (Gelände-Funktion, Physik, Kreatur-Verhalten, Wetter, Himmel) je Welt mit Leser verdrahten; gemessen wird je Kapitel eine Mutation, die Bild bzw. Leib ändert, an beiden Geräten."
+  },
+  {
+   "id": "ultiversum.K2#1",
+   "klasse": "schnitt+station",
+   "h": 6,
+   "geraet": "headless",
+   "sicher": 0.7,
+   "buendel": "fusion",
+   "wurzel": "stamm/speicher-laden.js:1806 _fusionGenerateIdentity (randomUUID, Math.random-Saat, Date.now) + :1871 Math.random-Münzwurf bei random-mix",
+   "karte": "Identität, Saat, Geburt und Münzwurf der Fusion aus einem Hash von (A, B, Strategie) ableiten statt aus Zufall und Wanduhr; gemessen wird der Byte-Vergleich des Fusions-Stands bei gleichen Eingaben an beiden Runnern."
+  },
+  {
+   "id": "ultiversum.K2#2",
+   "klasse": "schnitt+station",
+   "h": 14,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "fusion",
+   "wurzel": "stamm/speicher-laden.js:1920 _fusionMergeWorldRules (Union mit Dedup über die Signatur, keine Affekt-Wertung)",
+   "karte": "Eine Schreib-Falle auf den frozen Kern während der Fusion stellen (wie teilen-sicher) und die gemischten Regeln über die Affekt-K3-Wertung ordnen; gemessen werden 0 Schreibe und die gewertete Regel-Reihenfolge byte-gleich."
+  },
+  {
+   "id": "ultiversum.K3#1",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "headless",
+   "sicher": 0.45,
+   "buendel": "bibliothek",
+   "wurzel": "stamm/netz-identitaet.js:545 signBlueprint, :588 verifyBlueprintSignature; stamm/netz-p2p.js:909 world-bundle-pull; eine Bibliothek fehlt",
+   "karte": "Einen Bibliotheks-Index über Codes bauen mit signierten Einträgen für Welt, Regel und Bauplan aus signBlueprint/world-bundle; gemessen werden die Größe je Gesetz-Eintrag ≤ 8 KB, die Signatur-Prüfung und das Finden per Code."
+  },
+  {
+   "id": "ultiversum.K3#2",
+   "klasse": "gesetz",
+   "h": 36,
+   "geraet": "headless",
+   "sicher": 0.35,
+   "buendel": "bibliothek",
+   "wurzel": "wie K3#1; die Herkunft endet heute bei worldMeta.parentWorlds (stamm/speicher-laden.js:1760)",
+   "karte": "Fork mit Herkunfts-Kette (signierte Eltern-Hashes) und offen lesbaren Einträgen bauen; gemessen werden ein Fork, dessen Kette verifiziert, und ein manipuliertes Glied, das anschlägt."
+  },
+  {
+   "id": "ultiversum.K4#1",
+   "klasse": "gesetz",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "regel-werkstatt",
+   "wurzel": "stamm/feld-dsl.js:66 dslRun (DSL steht, Regeln reisen als dsl im Signaling); ein Schreib-Werkzeug für Spieler fehlt, stamm/werkstatt-hud.js:411 kann Regeln nur vergessen",
+   "karte": "Einen DSL-Regel-Editor als Werkstatt-Modus über dslRun bauen; gemessen werden eine neue Regel (Hash neu), ihre Wirkung im Bild und dass der Mitspieler sie sieht, im Spielgang."
+  },
+  {
+   "id": "ultiversum.K4#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "regel-werkstatt",
+   "wurzel": "wie K4#1; das Andocken hängt an studios.K5 (Gesetzbuch-Schnittstelle)",
+   "karte": "Ein Spieler-Gesetzbuch aus Editor-Regeln bündeln und über die Studios-K5-Schnittstelle andocken; gemessen wird ein gedocktes Spieler-Buch, das wie ein Studio gelesen wird und die Welt ändert."
+  },
+  {
+   "id": "ankunft.K1#1",
+   "klasse": "pflicht",
+   "h": 60,
+   "geraet": "gpu",
+   "sicher": 0.2,
+   "buendel": "welt-faden",
+   "wurzel": "scripts/diag-boot-stage.cjs:309 (t = state._weltbildDa, die Eigenmeldung) · Schnitt stamm/dirigent-takt.js:1423 _runFrameScheduler",
+   "karte": "Pflicht B: B-Plan-Karten 3/4/5 plus Teile des Welt-Fadens bringen die Radeon auf ≤ 5 s und die GTX von 15,45 auf ≤ 10 s; gemessen wird t ab der ersten angenommenen Taste plus Ausgabe-Bild, nicht ab _weltbildDa, mit ≥ 4 Kalt-Boots je Gerät."
+  },
+  {
+   "id": "ankunft.K1#2",
+   "klasse": "pflicht",
+   "h": 140,
+   "geraet": "gpu",
+   "sicher": 0.08,
+   "buendel": "welt-faden",
+   "wurzel": "stamm/dirigent-takt.js:1423 _runFrameScheduler (Geomorph, Fern-Ring, Natur und Streu im Haupt-Faden)",
+   "karte": "Pflicht B ganz: der Welt-Faden (Geometrie und Platzierung nach voxel-worker) drückt die GTX ebenfalls auf ≤ 5 s kalt, gemessen mit derselben Außen-t-Station an beiden Geräten."
+  },
+  {
+   "id": "ankunft.K2#1",
+   "klasse": "nur-station",
+   "h": 6,
+   "geraet": "gpu",
+   "sicher": 0.45,
+   "buendel": "ankunft-aussen",
+   "wurzel": "scripts/diag-boot-stage.cjs:176 (wartet auf _weltbildDa; Aufnahme scripts/lib/ausgabe-aufnahme.cjs ab :182, kein bild-diff auf main)",
+   "karte": "Die Außen-t-Station: t(Kontrolle) = Taste bewegt den Leib um ≥ 0,1 m; dann das Ausgabe-Bild gegen dieselbe Pose nach 60 s Ruhe (offener Bedarf im Bild plus Pixel-Diff ≤ 2 %), an der GTX, wo die Ankunftsbilder schon ganz aussahen."
+  },
+  {
+   "id": "ankunft.K2#2",
+   "klasse": "pflicht",
+   "h": 30,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "ankunft-aussen",
+   "wurzel": "stamm/studio-bruecke.js:854 _rangImBild (b-blick schiebt alles außerhalb des Blicks hinter die Kontrolle; Leser stamm/gelaende-chunks.js:2984)",
+   "karte": "Ein 180°-Blick 2 s nach der Kontrolle und ein Blick aus 30 m Höhe an beiden Geräten verlangen, dass die Rückseite nach der Kontrolle in 2 s fertig ist; das hängt an der Haupt-Faden-Last aus B (Radeon: beige Tor-Grobstufe 3 m vor dem Auge)."
+  },
+  {
+   "id": "ankunft.K3#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.35,
+   "buendel": "ankunft-aussen",
+   "wurzel": "scripts/diag-boot-stage.cjs:161 (Zweit-Zeile über das benannte Profil, t aus _weltbildDa)",
+   "karte": "Die Zweit-Zeile läuft mit Außen-t und einem frischen Prozess je Boot, ≥ 4 Läufe an der Radeon, die warm nie gemessen wurde (kalt 6,3–9,7 s, Platte trägt 107/108 Lieferungen); der Punkt kommt, wenn warm ≤ 5 s hält."
+  },
+  {
+   "id": "ankunft.K3#2",
+   "klasse": "pflicht",
+   "h": 120,
+   "geraet": "gpu",
+   "sicher": 0.05,
+   "buendel": "programm-abdruck",
+   "wurzel": "stamm/bild-kosten.js:6 _configureRenderer (Erst-Bau jedes Boot neu; ERST_BAU_MS :3525)",
+   "karte": "Warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden Geräten verlangen Pflicht B plus einen Programm-Abdruck je Gesetz-SHA; der Spike b-abdruck 78f6abe5 hat am Gerät nur ≤ 0,3 s gewonnen und liegt geparkt."
+  },
+  {
+   "id": "ankunft.K4#1",
+   "klasse": "pflicht",
+   "h": 10,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "spawn-tafel",
+   "wurzel": "scripts/lib/abnahme-urteil.cjs:1740 sollTafelUrteil (am Spawn nur 3 von 12 Klassen, richter-spawn f4270382 ungemergt)",
+   "karte": "Pflicht A am Spawn: richter-spawn auf den Kopf rebasen und den ersten Blick plus 4 Azimute in Ego und Third über die Soll-Tafel urteilen; der Punkt kommt bei ≥ 6 von 12 Klassen frisch GRÜN an der Radeon (an den eigenen Mittag-Posen sind 11/12 GRÜN)."
+  },
+  {
+   "id": "ankunft.K4#2",
+   "klasse": "pflicht",
+   "h": 50,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "spawn-tafel",
+   "wurzel": "scripts/lib/abnahme-urteil.cjs:1740 sollTafelUrteil (4 sichtbare Klassen ohne Zeile; laub-kante 0,2635 > 0,22)",
+   "karte": "Pflicht A ganz: neue Zeilen für fahrzeug, esse, tier und haus-vorschau mit externem Soll, dazu den laub-kante-Schnitt; urteilt ≥ 95 % GRÜN am Spawn an beiden Geräten."
+  },
+  {
+   "id": "ankunft.K5#1",
+   "klasse": "pflicht",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "b-plan",
+   "wurzel": "stamm/dirigent-takt.js:1256 _kappeOffen (Fix-Takte nach dem Dispatcher ohne Frist; LADE_TAKT_MS 100 :1750, LADE_BILD_MS 500 :1752)",
+   "karte": "Pflicht B, B-Plan-Karten 3/4/5 (Bau am Ereignis, Lade-Scheibe, Streu im Blick): die längste Aufgabe der Radeon geht von 653 auf ≤ 250 ms und die blockierte Summe von 4,79 auf ≤ 4 s, gemessen mit LongTask im Kalt-Boot bis zur Außen-Kontrolle."
+  },
+  {
+   "id": "ankunft.K5#2",
+   "klasse": "pflicht",
+   "h": 110,
+   "geraet": "gpu",
+   "sicher": 0.08,
+   "buendel": "welt-faden",
+   "wurzel": "stamm/dirigent-takt.js:1423 _runFrameScheduler (GTX bis zum Bild zu 97 % belegt)",
+   "karte": "≤ 100 ms und ≤ 2 s an beiden Geräten plus eine Eingabe, die im Lade-Bild antwortet: das geht nur mit dem Welt-Faden; gemessen mit LongTask und der Antwort auf eine Kamera-Drehung."
+  },
+  {
+   "id": "streaming.K1#1",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "zeit-bis-bedarf",
+   "wurzel": "stamm/gelaende-chunks.js:2909 _tickVoxelChunkStreaming (fester Voraus 1–2 Chunks; LOD stamm/gelaende-boden.js:2493 ohne Tempo)",
+   "karte": "Die Lücken-Linse (offene Bedarfe im Sichtkegel bis 384 m plus bild-diff) fährt auf fester Bahn bei Sprint und GT-vmax und wird ROT; dann wird fahrt-vorausschau 1bb06b4e als EIN Rang Zeit-bis-Bedarf eingefädelt, bis 60 s ohne Lücken-Bild an einem Gerät halten."
+  },
+  {
+   "id": "streaming.K1#2",
+   "klasse": "gesetz",
+   "h": 44,
+   "geraet": "gpu",
+   "sicher": 0.12,
+   "buendel": "zeit-bis-bedarf",
+   "wurzel": "stamm/studio-bruecke.js:854 _rangImBild / _foundryRang als EINE Quelle; stamm/dirigent-takt.js:1433 _tickPendingVegSpawns(4) FIFO",
+   "karte": "Die Vorausschau läuft entlang des Gesetzes (Wegenetz, Gelände) statt entlang des Tempo-Vektors, bis die Tempo-Decke vmax × 1,2 am Boden und in 30 m Höhe hält, beide Geräte, auf einer Bahn aus dem geladenen Ring heraus."
+  },
+  {
+   "id": "streaming.K2#1",
+   "klasse": "gesetz",
+   "h": 12,
+   "geraet": "headless",
+   "sicher": 0.3,
+   "buendel": "zeit-bis-bedarf",
+   "wurzel": "stamm/dirigent-takt.js:1433 _tickPendingVegSpawns(4) (Wuchs FIFO) · stamm/gelaende-boden.js:2493 _voxelChunkLodFor (Chebyshev ohne Tempo)",
+   "karte": "Eine Ereignis-Zählung je Ding (fertig in der verlangten Stufe gegen Eintritt in den Sichtkegel) für Boden, Wuchs, Streu und Bauten, gerankt über denselben Zeit-bis-Bedarf; Soll ≥ 95 % am Spieler-Weg (Mehrkosten innerhalb der Karte)."
+  },
+  {
+   "id": "streaming.K2#2",
+   "klasse": "gesetz",
+   "h": 24,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "zeit-bis-bedarf",
+   "wurzel": "stamm/gelaende-chunks.js:2909 _tickVoxelChunkStreaming (ein Einbau je Takt)",
+   "karte": "≥ 99 % bei GT-Vollgas an beiden Geräten; dazu kommt Grob zuerst, fein danach: die Ankunftszeit wählt die Stufe."
+  },
+  {
+   "id": "streaming.K3#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "gpu",
+   "sicher": 0.4,
+   "buendel": "sprung",
+   "wurzel": "stamm/dirigent-takt.js:863 (der Loop übernimmt einen externen Teleport des Mesh; keine Sprung-Station)",
+   "karte": "Eine Sprung-Station setzt per Werkbank-eval den Spieler 1 km weit und misst Frame p95 über das Neu-Entstehen der Welt; der Punkt kommt bei ≤ 50 ms an der Radeon."
+  },
+  {
+   "id": "streaming.K3#2",
+   "klasse": "gesetz",
+   "h": 90,
+   "geraet": "gpu",
+   "sicher": 0.1,
+   "buendel": "welt-faden",
+   "wurzel": "stamm/dirigent-takt.js:1423 _runFrameScheduler (Bild und Welt auf EINEM Faden)",
+   "karte": "Der Welt-Faden (Geomorph, Fern-Ring, Natur-Skelett, Streu nach voxel-worker, der Haupt-Faden lädt nur Transfer-Puffer hoch); Soll bei Teleport und Tor-Durchgang p95 ≤ 33 ms und keine Bild-Faden-Aufgabe > 50 ms an beiden Geräten."
+  },
+  {
+   "id": "profiband.K1#1",
+   "klasse": "pflicht",
+   "h": 40,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "bewegter-takt",
+   "wurzel": "stamm/dirigent-takt.js:1256 _kappeOffen / :1423 _runFrameScheduler (Stadt gehend GTX 49,8 ms, Fahrt 33,3 an der VSync-Kante)",
+   "karte": "Pflicht E: der bewegte Takt an EINER Kappe (Bau-Satz je Slot, _hoehlenSicht, _tickBewohner, Selbst-Morph) plus eine Station über werkbank lauf ABAB je Bewegungszelle; Soll p95 ≤ 33 ms in jeder Zelle an GTX und Radeon (Radeon in Bewegung ungemessen)."
+  },
+  {
+   "id": "profiband.K1#2",
+   "klasse": "gesetz",
+   "h": 120,
+   "geraet": "gpu",
+   "sicher": 0.05,
+   "buendel": "bewegter-takt",
+   "wurzel": "stamm/dirigent-takt.js:1423 _runFrameScheduler",
+   "karte": "≤ 16,7 ms in jeder Bewegungszelle braucht Welt-Faden plus Render-Diät (EIN Zeichner je Stoff und Chunk); gemessen von derselben Station."
+  },
+  {
+   "id": "profiband.K2#1",
+   "klasse": "pflicht",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.3,
+   "buendel": "diaet-hoert",
+   "wurzel": "stamm/bild-diaet.js:594 _diaetRefresh (1,94 ms je Bild; Aufruf stamm/bild-kosten.js:74)",
+   "karte": "Pflicht E, E-Bauart: die Diät meldet sich an der Schreib-Stelle, statt jedes Objekt zu prüfen; Trace-Belegung stehend ≤ 5,8 ms an der GTX (heute Wiese 5,95, Genesis Third 7,3, Dorf 7,1) mit einer Trace-Station."
+  },
+  {
+   "id": "profiband.K2#2",
+   "klasse": "pflicht",
+   "h": 60,
+   "geraet": "gpu",
+   "sicher": 0.1,
+   "buendel": "bewegter-takt",
+   "wurzel": "stamm/dirigent-takt.js:1256 _kappeOffen",
+   "karte": "Dazu die Belegung bewegt ≤ 8 ms an beiden Geräten (GTX gehend 19,5–20,3, Radeon stehend schon 10,4); kommt nur zusammen mit dem bewegten Takt."
+  },
+  {
+   "id": "profiband.K3#1",
+   "klasse": "pflicht",
+   "h": 20,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "gpu-haushalt",
+   "wurzel": "spec/profiband/ratsche-*-{gtx,radeon}-*.json (12 Dateien) + scripts/werkbank.cjs:56 band / :48 gpu-bank",
+   "karte": "Pflicht E: eine Station fährt werkbank band plus gpu-bank je Ort × Sicht im Stand an beiden Geräten; vor dem Punkt muss an der GTX ~1 ms GPU fallen (Wiese 12,99, Dorf 12,45 > 12; baum haupt über der Ratsche), und die Radeon fährt nach."
+  },
+  {
+   "id": "profiband.K3#2",
+   "klasse": "pflicht",
+   "h": 36,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "gpu-haushalt",
+   "wurzel": "scripts/werkbank.cjs:254 wandern fahrt (VRAM Fahrt 118,8 > 118 MB)",
+   "karte": "Dieselbe Zählung in Bewegung (Gehen, Fahrt) mit gpu-bank; dafür muss das VRAM in der Fahrt unter 118 MB und die GPU-Zeit ≤ 12 ms in allen Zellen."
+  },
+  {
+   "id": "profiband.K4#2",
+   "klasse": "gpu-rot",
+   "h": 80,
+   "geraet": "gpu",
+   "sicher": 0.08,
+   "buendel": "bewegter-takt",
+   "wurzel": "stamm/dirigent-takt.js:1423 _runFrameScheduler; Station scripts/werkbank.cjs:254 (Fahrt, V alle 4 s)",
+   "karte": "Täter: an der GTX sind in der Fahrt 47,6–59,9 % der Bilder > 33 ms (ein Bild kostet über 16,7 ms, also kommt jedes verpasste VSync als 33,3 ms), Gehen 1,28–1,57 % mit max 125–208 ms; an der Radeon kosten Third und der V-Wechsel Gehen 8,5–41,9 % und Fahrt 36,5–78,3 % > 33 ms, max bis 301 ms beim V/E-Wechsel; der Punkt braucht ~60 fps in Fahrt und Third an beiden Geräten."
+  },
+  {
+   "id": "profiband.K5#1",
+   "klasse": "schnitt+station",
+   "h": 16,
+   "geraet": "gpu",
+   "sicher": 0.25,
+   "buendel": "gang-20min",
+   "wurzel": "scripts/werkbank.cjs:3452 puffer --gang (Werkzeug steht, kein Stations-Eintrag; M14: Heap +932 MB in 21 min, Täter unbenannt)",
+   "karte": "Ein symmetrischer 20-min-Spielgang (ankommen, gehen, GT fahren mit echtem Aufsitzen, bauen, Tor, Nacht, ≥ 5 km, zurück an den Start) über puffer --gang wird Station; danach wird das Heap-Leck beim Namen gefunden und geschnitten; Soll an der Radeon p95 letzte/erste ≤ 1,05, VRAM ≤ 2 MB."
+  },
+  {
+   "id": "profiband.K5#2",
+   "klasse": "schnitt+station",
+   "h": 22,
+   "geraet": "gpu",
+   "sicher": 0.15,
+   "buendel": "gang-20min",
+   "wurzel": "scripts/werkbank.cjs:3452 puffer --gang",
+   "karte": "Derselbe Gang an der GTX, nachdem der Leck-Schnitt der Radeon gelandet ist; gemessen werden Drift und Puffer ruhend/verwaist = 0 an beiden Geräten."
+  },
+  {
+   "id": "klang.K3#1",
+   "klasse": "nur-station",
+   "h": 4,
+   "geraet": "headless",
+   "sicher": 0.75,
+   "buendel": "klang-raum",
+   "wurzel": "stamm/klang.js:358 _tierRuf (pan aus dem Rechts-Vektor, Pegel aus d) → klang-core.js:1179 createStereoPanner; der g6-Beleg „0 Treffer“ ist veraltet",
+   "karte": "Station klang-raum: derselbe Tier-Ruf (und die Glut) links und rechts vom Ohr, L/R-Kanal am Master-Abgriff geteilt; der Punkt kommt bei 100 % richtigem ILD-Vorzeichen und einem Pegel, der mit der Entfernung fällt."
+  },
+  {
+   "id": "klang.K3#2",
+   "klasse": "gesetz",
+   "h": 32,
+   "geraet": "headless",
+   "sicher": 0.4,
+   "buendel": "klang-raum",
+   "wurzel": "klang-core.js:372 RAUM (nur Musik-Hall, feste impulseSec 3,4; kein Convolver, keine Verdeckung)",
+   "karte": "EIN Raum-Gesetz: Verdeckung als Strahl Ohr → Quelle gegen hoehe und Grundriss (≥ 6 dB plus Tiefpass), Hall-Klasse aus Kronen-Deckung, Bau-Dichte und Höhle; gemessen RT60 je Ort paarweise ≥ 30 % verschieden plus Mutations-Probe monoton (v1: false, Feature-Stopp beachten)."
+  }
+ ]
+}
