@@ -914,6 +914,79 @@ const stationen = [
         quelle: "1 = Haus und Fels Stufe/L0 0,95–1,05 bei Uhr 0,5 an einem Gerät",
     },
     {
+        kriterium: "material.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // material-k3-stufen: die Albedo-Tafel trägt je Klasse ihre Stufen (`welt.folgen`: Haus L1/L2, Birke und Fichte L1 und Karte) und
+        // die Uhr-Spalten 0,5 und 0,27 (`uhren`); `werkbank albedo --tafel` misst jede Stufen-Zeile im Auge ihrer Stufe zu jeder Uhr
+        // (der Baum in jeder Stufe waagrecht wie seine Karte, das Exemplar allein). Je Klasse und Uhr Stufe/L0 0,95–1,05, jede Zeile genau
+        // in ihrer Stufe; der Fels zeigt nur L0 (wie #1). Die Haus-Stufen des Glas-Stils (hochhaus, volle_moderne) hält offline
+        // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
+        // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
+        befehl: befehlDer({
+            name: "material.K3#2",
+            schritte: [
+                { name: "ort", args: ["umstellen", "0", "0"], muss: true },
+                { name: "ruhe", args: ["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"] },
+                { name: "welt", args: ["albedo", "--tafel", "--datei", "@DIR@/welt.json", "--ordner", "@DIR@/albw"], datei: "@DIR@/welt.json", ms: 3600000 },
+                {
+                    name: "fels",
+                    args: [
+                        "eval",
+                        "const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === \"rock\") o[k] = r._foundryKindStages(k); return o;",
+                    ],
+                },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 40,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const D = j.dateien && j.dateien.welt;
+            if (!(D && D.welt)) return { gruen: false, zahl: "albedo --tafel ohne Messung: " + String((j.schritte.welt && j.schritte.welt.rest) || "").slice(-200) };
+            // die Uhr-Spalten der Tafel: Mittag `<id>`, 0,27 `<id>@0.27`
+            const nur = (z, s) => !!z && Array.isArray(z.stufen) && z.stufen.length > 0 && z.stufen.every((x) => x === s);
+            let gruen = hw;
+            const teile = [];
+            for (const u of ["", "@0.27"]) {
+                for (const [k, folgen] of [["haus", ["l1", "l2"]], ["birke", ["l1", "karte"]], ["fichte", ["l1", "karte"]]]) {
+                    const b = D.welt[k + u];
+                    const r = folgen.map((n, i) => {
+                        const z = D.welt[k + "-" + n + u];
+                        const v = z && z.Y > 0 && b && b.Y > 0 && nur(b, 0) && nur(z, i + 1) ? z.Y / b.Y : null;
+                        if (!(v != null && v >= 0.95 && v <= 1.05)) gruen = false;
+                        return n + " " + (v == null ? "ungemessen" : v.toFixed(3));
+                    });
+                    teile.push(k + (u || "@0.5") + " " + r.join("/"));
+                }
+            }
+            const fe = j.schritte.fels && j.schritte.fels.json && j.schritte.fels.json.ergebnis;
+            const arten = fe && typeof fe === "object" ? Object.entries(fe) : [];
+            const nurL0 = arten.length > 0 && arten.every(([, st]) => Array.isArray(st) && st.length === 1 && st[0] === 0);
+            if (!(nurL0 && D.welt.fels && D.welt.fels.Y > 0)) gruen = false;
+            teile.push("Fels " + (nurL0 ? "nur L0" : "Stufen " + JSON.stringify(fe)));
+            return { gruen, zahl: teile.join(" · ") + " · Soll 0,95–1,05 · " + (j.adapter || "Adapter ungenannt") };
+        },
+        pfad: [
+            ...BILD,
+            "fachwerk-core.js",
+            "foundry-bruecke.js",
+            "stamm/siedlung-*.js",
+            "stamm/bau-*.js",
+            "stamm/studio-*.js",
+            "stamm/vegetation-*.js",
+            "phyto-core.js",
+            "spec/farbe/albedo-tafel.json",
+            "scripts/lib/albedo-tafel.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+        ],
+        quelle: "2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte",
+    },
+    {
         kriterium: "material.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
@@ -1021,16 +1094,6 @@ stationen.fehlt = [
             "`bild --arm` (material-mikro) hat Ziele nur für Boden und Fels; für Rinde, Putz, Holz und Haut auf Armlänge fehlt das Ziel. " +
             "β misst klassenMasse zwar, aber eine Linse gegen Kachel-Muster gibt es nicht.",
         quelle: "2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
-    },
-    {
-        kriterium: "material.K3",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Die Albedo-Tafel hat keine Stufen-Zeilen für Birke, Fichte und Karte und keine Spalte für Uhr 0,27; dazu sind hochhaus und " +
-            "volle_moderne (L1 ≠ L0) offen (material.K3 beleg).",
-        quelle: "2 = Haus, Birke, Fichte, Fels, L0/L1/L2/Karte, Uhr 0,5 und 0,27, beide Geräte",
     },
     {
         kriterium: "schatten.K1",
