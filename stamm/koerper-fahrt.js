@@ -1888,6 +1888,7 @@ class AnazhRealm_koerper_fahrt {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._fahrAnzeige(); // der Ritt im Bild läuft vor der Kamera (`_tickMountedMovement`, startEternalLoop)
         this._tickFocusingAffordances(dt);
+        this._tickEsse(dt); // der Stahl in der Hand glüht am Feuer der Esse (stoffe.K3-2)
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
         this._tickLiftingAffordances();

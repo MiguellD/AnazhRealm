@@ -1975,6 +1975,94 @@ class AnazhRealm_feld_leben {
         return Object.assign(z, { alterS });
     }
 
+    // === DER STAHL DER ESSE (stoffe.K3-2): das Gerät in der Hand glüht am Feuer der Esse und erkaltet an der Luft des Felds ===
+    // Ein gehaltenes Gerät, dessen Stoff (`_geraetStoff`: ein Werk der Schmiede sein werkStoff, ein Eigenwerk sein größter Teil)
+    // in der Esse weder schmilzt noch brennt (T_schmelz über dem Feuer, kein T_zünd: Stahl, Eisen, Stein — die Bronze schmölze),
+    // trägt seine Temperatur (`_stahl` { geraet, T °C, esse }, ein Stand der Sitzung). Reicht die Hand in das Glutbett einer Esse (eine Brenn-Fläche
+    // der Schmiede-Werkstatt, `_esseAmArm`), strebt sie gegen ihr Feuer (`ESSE.feuerK`), sonst gegen die Luft des Temperatur-Felds
+    // an der Höhe der Hand (`_temperaturAt`) — der Gang des Kerns (`waermeGang`, τ = ρ·c·d/2 / α aus der Zeile ihres Stoffs),
+    // exakt je Takt; unter der Ruhe über der Luft ist sie kalt, ihr Stand fällt. Ihre GLUT ist die des Kerns (`glutAus`: über dem
+    // Draper-Punkt ∝ T⁴, 1 am Feuer) und leuchtet in der Hand als Wärmestrahler in der Farbe ihrer Temperatur (`_stahlGlut` →
+    // `_leuchtQuellen`). Bis stoffe.K3-2 las die Esse keine Temperatur: ihr Glutbett glühte, was man in es hielt, blieb kalt.
+    _tickEsse(dt) {
+        const pm = this.state.playerMesh;
+        if (!pm || !(dt > 0)) return;
+        const bp = this._heldImplementBlueprint();
+        const z = bp ? this._stahlStoff(bp) : null;
+        if (!z || (this._stahl && this._stahl.geraet !== bp.name)) this._stahl = null; // die Hand wechselte das Gerät
+        if (!z) return; // nichts in der Hand, das in der Esse glüht
+        const esse = this._esseAmArm(pm.position);
+        if (!this._stahl && !esse) return; // kalt und fern jeder Esse: der billigste Weg (Lehre 25)
+        const E = AnazhRealm.ESSE;
+        const luft = this._temperaturAt(pm.position.y);
+        const s = this._stahl || (this._stahl = { geraet: bp.name, T: luft, esse: null });
+        const tau = (z.rho * z.c * E.dickeM) / 2 / (esse ? E.alphaFeuer : E.alphaLuft);
+        s.T = globalThis.__gelaendeCore.waermeGang(esse ? E.feuerK : luft + 273.15, s.T + 273.15, dt, tau) - 273.15;
+        s.esse = esse ? esse.type : null;
+        if (!esse && s.T - luft < E.ruheK) this._stahl = null;
+    }
+
+    // Die Zeile der Stoff-Tafel des Geräts, wenn es in der Esse glüht (es schmilzt und brennt dort nicht), sonst null — je Bauplan.
+    _stahlStoff(bp) {
+        const memo = this._stahlStoffMemo || (this._stahlStoffMemo = new Map());
+        if (!memo.has(bp.name)) {
+            const z = this._stoff(this._geraetStoff(bp));
+            memo.set(
+                bp.name,
+                z && z.rho * z.c > 0 && z.tSchmelz > AnazhRealm.ESSE.feuerK && !(z.tZuend > 0) ? z : null
+            );
+        }
+        return memo.get(bp.name);
+    }
+
+    // Die Esse, in deren Glutbett die Hand bei p reicht, oder null: ein Eintrag mit Brenn-Fläche (`_glutFlaeche`, das Verzeichnis
+    // „glut") der Domäne forging (`_computeWorkshopDomain`, je Bauplan), so nah, dass der Rand ihres Betts (der Radius seiner
+    // Fläche) plus die Reichweite des Arms (`ESSE.armM`) die Hand erreicht.
+    _esseAmArm(p) {
+        const E = AnazhRealm.ESSE;
+        const nah = this._esseNah || (this._esseNah = []);
+        nah.length = 0;
+        this._blockerUmPlatz(p.x, p.z, E.suchM, nah, "glut");
+        const memo = this._esseMemo || (this._esseMemo = new Map());
+        for (const e of nah) {
+            if (!memo.has(e.type)) {
+                const bp = this.state.blueprints && this.state.blueprints[e.type];
+                memo.set(e.type, !!bp && this._computeWorkshopDomain(bp) === "forging");
+            }
+            const r = Math.sqrt(this._glutFlaeche(e) / Math.PI) + E.armM;
+            if (memo.get(e.type) && e.position && Math.hypot(e.position.x - p.x, e.position.z - p.z) <= r) return e;
+        }
+        return null;
+    }
+
+    // Das Licht des glühenden Geräts (`_leuchtQuellen`) oder null: an der Hand, das Herdfeuer des Gesetzbuchs (LICHT_GESETZ.feuer)
+    // in der Farbtemperatur des Stahls, ohne Flackern, mit dem Kern der Klinge; die Masse folgt der Glut über die strahlende
+    // Fläche der Klinge gegen das Glutbett der Studio-Feuerstelle (klang `bettRefM`, der Bezug jeder Glut).
+    _stahlGlut() {
+        const s = this._stahl;
+        const pm = this.state.playerMesh;
+        if (!s || !pm) return null;
+        const E = AnazhRealm.ESSE;
+        const K = globalThis.__gelaendeCore;
+        const g = K.glutAus(s.T + 273.15, E.feuerK);
+        if (!(g > 0)) return null;
+        const q = this._stahlLicht || (this._stahlLicht = { quelle: "stahl", x: 0, y: 0, z: 0, phase: 0 });
+        const hand = pm.userData && pm.userData.heldMesh;
+        const v = this._stahlLage || (this._stahlLage = new THREE.Vector3());
+        if (hand) hand.getWorldPosition(v);
+        else v.set(pm.position.x, pm.position.y + E.handHoeheM, pm.position.z);
+        const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
+        const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        return Object.assign(q, {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+            L: Object.assign({}, L, { kelvin: s.T + 273.15, kernM: E.kernM, flacker: null }),
+            masse: (g * E.flaecheM2) / ((Math.PI / 4) * bett * bett),
+            glut: g,
+        });
+    }
+
     // === DIE TAT BLEIBT (feld.K4): das Gedächtnis der Taten — die EINE Quelle von Narbe, Ernte und Fällung ===
     // Jede Tat am Lebendigen (ein Baum fällt, eine Pflanze der Nah-Streu wird gepflückt) ist ein SCHREIB-AKT der Welt: sie liegt
     // in `worldMeta.taten` ({ tat, x, z, h, … }, `h` die Welt-Stunde) und reist mit jedem Save und Reload (der Speicher trägt
@@ -2545,6 +2633,24 @@ AnazhRealm.BRAND = Object.freeze({
         [0, 1],
         [0, -1],
     ]),
+});
+
+// DER STAHL DER ESSE (stoffe.K3-2, `_tickEsse`): das Feuer der Esse (Holzkohle unter dem Blasebalg, gelbe Glut 1 300 °C), die
+// Klinge (`dickeM`, τ = ρ·c·d/2 / α — Stahl im Feuer 32 s, an der Luft 160 s: ab 16 s glüht sie, 2,3 min nach dem Feuer nicht
+// mehr), der Übergang im Glutbett (Strahlung und Kontakt der Kohle, W/(m²·K)) und an der Luft (Strahlung und Konvektion über den
+// Gang gemittelt), die Reichweite des Arms über den Rand des Betts, der Umkreis der Suche, die Ruhe (K über der Luft: darunter
+// ist sie kalt), die strahlende Fläche und der Kern der Klinge (ihr Licht) und die Hand über dem Fuß ohne Gerät-Netz.
+AnazhRealm.ESSE = Object.freeze({
+    feuerK: 1573,
+    dickeM: 0.005,
+    alphaFeuer: 300,
+    alphaLuft: 60,
+    armM: 0.9,
+    suchM: 4,
+    ruheK: 1,
+    flaecheM2: 0.06,
+    kernM: 0.25,
+    handHoeheM: 1.1,
 });
 
 AnazhRealm.EMOTION_FIELD = Object.freeze({

@@ -68,6 +68,96 @@ class AnazhRealm_wasser_hydro {
         return globalThis.__gelaendeCore.atlasSpiegel(this._gelaende(), x, z, terrainTopY, aus);
     }
 
+    // DER PEGEL DER WELT (stoffe.K3-2, gelaende-core `pegelTafel`): der Hub jedes Sees und Flusses über seinem Ruhe-Spiegel je
+    // Höhe, aus der Schmelze am Tag der Saison auf dem Feld dieser Naht — gerechnet je Tag der Welt (die Schmelze ist ein
+    // Tagesmittel), je Feld und Meer, nie je Bild. `_pegelGilt` ist die Tafel, die die Welt trägt: der Spiegel des Kerns liest sie
+    // über die Lage (`L.pegel`) im Main und im Faden (`pegel` im Stand), bit-gleich; `_pegelTakt` zieht sie nach.
+    _pegelTafel() {
+        const K = globalThis.__gelaendeCore;
+        const L = this._gelaende();
+        const n = K.TEMPERATUR.jahrTage;
+        const tag = Math.floor(this.state.seasonPhase * n) / n;
+        const c = this._pegelStand;
+        if (c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel) return c.tafel;
+        const tafel = K.pegelTafel(L, tag, (y, tr) => this._temperaturFeld(y, tr));
+        this._pegelStand = { tag, feld: this._temperaturFeld, wl: L.waterLevel, tafel };
+        return tafel;
+    }
+    _pegelGilt() {
+        if (this._pegelTafelGilt === undefined) this._pegelTafelGilt = this._pegelTafel();
+        return this._pegelTafelGilt;
+    }
+
+    // Die Marke des Pegels am Chunk (cx, cz) — sein Platten-Schlüssel und die Probe seines Auftrags: der Hub der Tafel über den
+    // Höhen, die sein Wasser tragen kann (die Makro-Höhe seiner Mitte ± PEGEL_RAND_M); "" wo nichts steigt (der Schlüssel bleibt).
+    _pegelMarke(cx, cz) {
+        const T = this._pegelGilt();
+        if (!T) return "";
+        if (!this._pegelMarken || this._pegelMarken.T !== T) this._pegelMarken = { T, je: new Map() };
+        const key = cx + "," + cz;
+        const je = this._pegelMarken.je;
+        if (je.has(key)) return je.get(key);
+        const { span } = this._voxelChunkConfig();
+        const y = this._terrainMacroSurfaceY((cx + 0.5) * span, (cz + 0.5) * span, false);
+        const R = AnazhRealm.PEGEL_RAND_M;
+        const i0 = Math.max(0, Math.floor((y - R - T.y0) / T.dy));
+        const i1 = Math.min(T.hub.length - 1, Math.ceil((y + R - T.y0) / T.dy));
+        let h = 0;
+        for (let i = i0; i <= i1; i++) if (T.hub[i] > 0) h = (Math.imul(h ^ i, 31) + Math.round(T.hub[i] * 100)) | 0;
+        const marke = h ? (h >>> 0).toString(36) : "";
+        je.set(key, marke);
+        return marke;
+    }
+
+    // DER TAKT DES PEGELS (stoffe.K3-2, gerufen vom Takt der Saison mit der Schneegrenze): ändert der neue Tag den Hub an einer
+    // Höhe, trägt die Welt die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die
+    // gezeichneten Chunks, deren Wasser-Zellen die Höhen treffen, an denen der Hub wechselt (± eine Stufe der Tafel), ihre Netze
+    // mit Wasser im Vorrat fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser, kein Wasser anderer Höhe.
+    _pegelTakt() {
+        const alt = this._pegelTafelGilt;
+        if (alt === undefined) return;
+        const neu = this._pegelTafel();
+        if (neu === alt) return;
+        this._pegelTafelGilt = neu;
+        const K = globalThis.__gelaendeCore;
+        const T = neu || alt;
+        let [lo, hi] = [Infinity, -Infinity];
+        for (let i = 0; i < T.hub.length; i++) {
+            const y = T.y0 + i * T.dy;
+            if (K.pegelHub({ pegel: alt }, y) === K.pegelHub({ pegel: neu }, y)) continue;
+            [lo, hi] = [Math.min(lo, y - T.dy), Math.max(hi, y + T.dy)];
+        }
+        if (!(lo <= hi)) return;
+        this._voxelZustandPost({ type: "state-update", delta: { pegel: neu } });
+        const st = this.state;
+        const { dim, dimY, step, floorDrop } = this._voxelChunkConfig(0);
+        const oy = (st.terrainBaseHeight || 0) - floorDrop;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        if (st.voxelChunks && st.voxelChunks.size) {
+            if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
+            for (const [key, ch] of st.voxelChunks) {
+                const w = ch && ch.waterCells;
+                if (!w || !w.length) continue;
+                // die Höhen seines Wassers (je Eintrag gemerkt — ein Neubau trägt einen neuen Eintrag)
+                if (!ch._wasserY) {
+                    let [a, b] = [dimY, -1];
+                    for (let j = 0; j < dimY; j++)
+                        for (let q = j * dim * dim, e = q + dim * dim; q < e; q++)
+                            if (w[q] === WATER) {
+                                [a, b] = [Math.min(a, j), j];
+                                break;
+                            }
+                    ch._wasserY = b < 0 ? [] : [oy + a * step, oy + (b + 1) * step];
+                }
+                const [a, b] = ch._wasserY;
+                if (b >= lo && a <= hi) st.dirtyVoxelChunks.add(key);
+            }
+        }
+        if (st.voxelMeshCache)
+            for (const [key, m] of st.voxelMeshCache)
+                if (m && m.waterCells && m.waterCells.length) st.voxelMeshCache.delete(key);
+    }
+
     // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
     // Strömungs-Geschwindigkeit (m/s) aus dem kanonischen Fluss-Flow von `_hydroRiverAt` für jeden Leser: Körper
     // (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`) und Klang (der Fluss am Ohr). Betrag = die
@@ -595,3 +685,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_wasser_hydro]);
 AnazhRealm._flussTiefe = function (p) {
     return globalThis.__gelaendeCore.flussTiefe(AnazhRealm.HYDROSPHERE, p);
 };
+// DER RAND DER PEGEL-MARKE (`_pegelMarke`): so weit über und unter der Makro-Höhe seiner Mitte kann das Wasser eines Chunks stehen
+// (die Kante von 43,2 m an einem Hang, ein See über seinem Becken).
+AnazhRealm.PEGEL_RAND_M = 40;

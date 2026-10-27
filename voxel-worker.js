@@ -775,6 +775,8 @@ function applyStateSnapshot(snap) {
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
     // Der Versatz der Schneegrenze (stoffe.K3-2), den der Main trägt (`_schneeGilt`) — dieselbe Zahl.
     if (typeof snap.schneeVersatz === "number") state.schneeVersatz = snap.schneeVersatz;
+    // Der Pegel der Binnen-Gewässer (stoffe.K3-2), den der Main trägt (`_pegelGilt`) — dieselbe Tafel (null: nichts steigt).
+    if (snap.pegel !== undefined) state.pegel = snap.pegel;
     // Der Wiesen-Grund des Mains (K53, `WIESEN_GRUND`: Farbe, Wache, Fleck) — dieselben Zahlen.
     if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;

@@ -612,6 +612,10 @@ class AnazhRealm_gelaende_boden {
             get stau() {
                 return realm._stauRechnet ? null : realm.state.waterStau || null;
             },
+            // der Pegel der Binnen-Gewässer (stoffe.K3-2, `_pegelGilt`: die Tafel des Tags) — der Spiegel des Kerns liest ihn
+            get pegel() {
+                return realm._pegelGilt();
+            },
         };
         return this._gelaendeLage;
     }
