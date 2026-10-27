@@ -693,3 +693,4 @@
 2026-10-27 08:24:21 takt9-radeon fahrzeug.K4#1 GRÜN 8.1 · 14/28
 2026-10-27 08:25:59 takt10-radeon START 11 Stationen
 2026-10-27 08:26:34 takt10-headless START 81 Stationen
+2026-10-27 09:13:03 takt10-radeon klang.K5#2 GRÜN 47.1 · 1/11
