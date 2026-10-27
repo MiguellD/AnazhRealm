@@ -1,0 +1,57 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-1 C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   5.1 s · 3.37 MB/min am Empfang: Faden → Main 0.25 MB · Main → Faden 0.03 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: buch:book 0.10 MB · werk:asset 0.09 MB · buch:asset 0.03 MB · buch:settlement 0.01 MB
+         Main → Faden: werk:build-asset 0.01 MB · streu:state-set 0.00 MB · wald:state-set 0.00 MB · voxel:init 0.00 MB
+  fahrt  60.0 s · 0.85 MB/min am Empfang: Faden → Main 0.46 MB · Main → Faden 0.39 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: voxel:chunk-mesh-result 0.19 MB · wald:wald-darts-result 0.09 MB · buch:asset 0.07 MB · voxel:water-sheet-result 0.06 MB
+         Main → Faden: speicher:? 0.13 MB · voxel:water-sheet 0.09 MB · voxel:chunk-mesh 0.08 MB · wald:wald-darts 0.06 MB
+  Fäden: buch · werk · werk · werk · voxel · streu · wald · speicher
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 3.5 ms): 1 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 87 an Sync-Stellen und Test-Nähten · 0 sonst
+  Bau-Klicks in der Fahrt: 6, die Hand 9.4 · 3.0 · 2.9 · 4.9 · 4.1 · 2.8 ms
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 0.85 MB/min ≤ 5 in der Fahrt
+
+
+--- stderr ---
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: Schloss punkte-headless-1 (zeit) nach 2433 s

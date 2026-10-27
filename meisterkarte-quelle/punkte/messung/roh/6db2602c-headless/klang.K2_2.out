@@ -1,0 +1,11 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-3 C:\Program Files\nodejs\node.exe scripts/diag-klang-zensus.cjs --gesehen --selftest --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6db2602c-headless\klang.K2_2.json
+Gesehen = gehört am Bach der Mess-Wiese (x, z, Abstand): -396 · -878 · 204
+✅ ufer: r 0.95 bei Lag 0 (n 272), Spitze 0.95 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm im Bild 0 von 270 Fenstern
+✅ regen: r 1.00 bei Lag 0 (n 272), Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm im Bild 0 von 263 Fenstern
+❌ ufer: r 0.00 bei Lag 0 (n 136), Spitze 0.03 bei -1 s, CV Bild 0.30 / Ohr 0.10, stumm im Bild 0 von 136 Fenstern
+❌ regen: r -0.21 bei Lag 0 (n 136), Spitze 0.04 bei -3 s, CV Bild 0.36 / Ohr 0.04, stumm im Bild 0 von 136 Fenstern
+✅ SELBSTTEST: der eingefrorene Pegel ist ROT (ufer und regen)
+✅ GRÜN — gesehen = gehört: der Bach-Pegel folgt der sichtbaren Strömung, der Regen-Pegel dem gezeichneten Regen
+
+--- stderr ---
+gpu-lauf: Schloss punkte-headless-3 (bild, Platz 3 von 5) nach 100 s
