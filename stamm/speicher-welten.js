@@ -970,17 +970,28 @@ class AnazhRealm_speicher_welten {
             ["playerEmotions", () => ({ ...pl().emotions })],
             // DIE LEBENSWERTE SIND ZUSTAND (halten.K5, `recomputePlayerStats`): Leben, Ausdauer und Mana als Anteil ihres
             // Maximums (das Maximum rechnet der Leib beim Laden neu, wie `hpAnteil` des Tiers), dazu die Wunde des Tods —
-            // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie.
+            // vorher heilte jeder Reload (hp 69,6 → 134 von 134, die Wunde 1 → 0). `_loadStateRestoreLeben` liest sie. DIE NAHRUNG
+            // reist mit (halten.K5 Staffel 2): was der Leib gegessen hat (`consume:`-Boosts, `activateConsumable`), mit ihrer
+            // Restzeit — sie hebt das Maximum, an dem die Anteile hängen; vorher fiel sie im Reload, hpMax mit ihr.
             [
                 "playerLeben",
                 () => {
                     const pl = st().player;
                     const anteil = (v, max) => (Number.isFinite(v) && max > 0 ? +Math.min(1, v / max).toFixed(4) : 1);
+                    const jetzt = performance.now() / 1000;
                     return {
                         hp: anteil(pl.hp, pl.hpMax),
                         ausdauer: anteil(pl.stamina, pl.staminaMax),
                         mana: anteil(pl.mana, pl.manaMax),
                         wunde: +(pl.deathWoundIntensity || 0).toFixed(4),
+                        nahrung: (Array.isArray(pl.boosts) ? pl.boosts : [])
+                            .filter((b) => b && String(b.source).startsWith("consume:") && b.expiresAt > jetzt)
+                            .map((b) => ({
+                                quelle: b.source,
+                                tags: { ...b.tagDelta },
+                                rest: +(b.expiresAt - jetzt).toFixed(2),
+                                label: b.label,
+                            })),
                     };
                 },
             ],
