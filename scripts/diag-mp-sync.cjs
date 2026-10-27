@@ -36,7 +36,9 @@
 //                 (geurteilt an diesem Ereignis, oder sofort, wenn die Leitung nicht mehr offen steht), und (e) Leib rechnet den
 //                 Lauf danach bit-gleich. Täter beim Namen: ein Abschied von A ohne `peer-leave` des Brokers (der alte
 //                 Leerlauf-Abschied in `p2pTick`: 10 s ohne Nachricht → `_p2pRemovePeer` riss die Leitung, die Rückkehr kam
-//                 ohne sie). Selbsttest am Ende: B trägt den alten Abschied → (g) ROT beim Namen.
+//                 ohne sie). Selbsttest am Ende: B trägt den alten Abschied → (g) ROT beim Namen. Unter Last (3 Läufe parallel,
+//                 je samt Chrome auf 2 Kernen, `taskset -c 0,1`): vorher 1 von 3 GRÜN (2× „A kennt B … keine Leitung"),
+//                 nachher 6 von 6.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
