@@ -994,6 +994,11 @@ class AnazhRealm_speicher_welten {
             // der Übergang des Wetter-Zugs ist ihre Funktion (der erste Takt zieht ihn neu), darum reist weatherTransition nicht.
             ["spielZeit", () => st().spielZeit, { augenblick: true }],
             ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5), { augenblick: true }],
+            // DAS JAHR DER WELT (speicher.K4): die Phase der Saison reist — ohne sie begann jede Wiederkehr am Sommer-Anfang
+            // (0,375), und der Pegel des Jahrs (`_pegelTafel`: die Schmelze hebt See und Fluss) zeichnete Ufer, Wasser und den
+            // Boden der Gruben am Fluss anders als vor dem Speichern (Grube am Bach der Mess-Wiese: der Boden-Chunk 777 → 774
+            // Ecken, bild-diff 4,2 %).
+            ["seasonPhase", () => (typeof st().seasonPhase === "number" ? st().seasonPhase : null)],
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
@@ -1666,7 +1671,8 @@ class AnazhRealm_speicher_welten {
 
     // Die Sicherung der lebenden Welt an den Faden: die Änderung seit dem letzten Stand (ganz, wenn der Faden kein Modell
     // dieser Welt hält). DER RUF DES TAKTS (Autosave, Edit-Timer; Lehre 14) merkt nur, DASS ein Stand aussteht — ihn setzt der
-    // Besen im nächsten Leerlauf-Fenster mit Platz zusammen (`_standNachholen`), spätestens nach `STAND_TAKT.fristMs`; jeder
+    // Besen in seinem nächsten Fenster mit Platz zusammen (`_standNachholen`; er schläft höchstens 1 s, darum weckt ihn der Ruf
+    // nicht mehr: clearTimeout und Leerlauf-Auftrag waren das halbe Bild des Rufs), spätestens nach `STAND_TAKT.fristMs`; jeder
     // andere Ruf, die Schranke (`_speicherStill`) und das Verlassen setzen ihn vorher synchron. Bis speicher-takt setzte jeder
     // Ruf den Stand im Takt zusammen: je Ruf p95 5 ms auf der Radeon (speicher.K2, eeaff9d6). PLATTE VOR ZEIGER: aufgeschoben
     // wird nur, wo der Zeiger (`anazhRealmActiveWorld`) schon auf dieser Welt steht — der Stand, nach dem saveState den Zeiger
@@ -1679,7 +1685,7 @@ class AnazhRealm_speicher_welten {
                 welt,
                 bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis,
             };
-            return S.wecken();
+            return;
         }
         S.ausstehend = null;
         this._standSenden(welt, at, takt);
@@ -1741,12 +1747,12 @@ class AnazhRealm_speicher_welten {
     }
 
     // Der Besen läuft ab dem Boot in Leerlauf-Fenstern (ohne die API im nächsten Task: ohne Frist) — EINMAL gestartet; er
-    // schläft, bis wieder ein Glied fällig ist, und der Ruf des Takts weckt ihn (`S.wecken`). Zuerst der ausstehende Stand des
-    // Takts: in einem Fenster mit `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
+    // schläft, bis wieder ein Glied fällig ist (höchstens 1 s). Zuerst der ausstehende Stand des Takts: in einem Fenster mit
+    // `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
     _standBesen() {
         const S = this._speicherZustand();
-        if (S.wecken) return;
-        S.schlaf = null;
+        if (S.besen) return;
+        S.besen = true;
         const lauf = (f) => {
             const [frist, T] = [f || { timeRemaining: () => 0, didTimeout: true }, AnazhRealm.STAND_TAKT];
             // JE BILD EIN SCHRITT (speicher.K2: kein Bild trägt mehr als ~0,1 ms): das Zusammensetzen, der Versand, das Fegen
@@ -1760,13 +1766,7 @@ class AnazhRealm_speicher_welten {
             const ruhe = this._standFegen(frist);
             if (S.ausstehend) return this._imLeerlauf(lauf, Math.max(1, S.ausstehend.bis - performance.now()));
             const ms = ruhe > 0 ? Math.min(Math.max(ruhe, T.schlafMs), 1000) : 0;
-            S.schlaf = setTimeout(() => ((S.schlaf = null), this._imLeerlauf(lauf, 1000)), ms);
-        };
-        S.wecken = () => {
-            if (S.schlaf === null) return;
-            clearTimeout(S.schlaf);
-            S.schlaf = null;
-            this._imLeerlauf(lauf, AnazhRealm.STAND_TAKT.fristMs);
+            setTimeout(() => this._imLeerlauf(lauf, 1000), ms);
         };
         this._imLeerlauf(lauf, 1000);
     }

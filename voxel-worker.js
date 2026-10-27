@@ -840,9 +840,15 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
 function terrainColumnContext(x, z) {
     return G.dichteSpalte(state, x, z, {});
 }
-// die Dichte an (x, y, z) über der Spalte ctx, mit den Edits der Karte am Punkt
+// die Dichte an (x, y, z) über der Spalte ctx, mit den Edits der Karte am Punkt — nie, solange der Faden eine Region der
+// Hydrosphäre rechnet (`hydroComputing`): sie ist f(Saat, Gesetz), nie f(Edits). Bis speicher-zwei las ihr Fluss-Spiegel
+// (`hydroSampleRiverSurfaces`, `hydroRiverSpiegel`) den Boden samt Gruben — eine Grube am Bach der Mess-Wiese senkte den
+// Spiegel stromab um 9 cm, aber erst beim nächsten Boot: die Wiederkehr zeichnete Fluss, Ufer und Boden anders (speicher.K4).
 function terrainDensityAtCol(x, y, z, ctx) {
-    const edits = state.voxelEdits && state.voxelEdits.length ? G.editsAm(editKarteFrisch(), x, z) : undefined;
+    const edits =
+        !state.hydroComputing && state.voxelEdits && state.voxelEdits.length
+            ? G.editsAm(editKarteFrisch(), x, z)
+            : undefined;
     return G.mitEdits(G.dichteBasis(x, y, z, ctx), x, y, z, edits);
 }
 // die EINE Punkt-API: die Dichte an (x, y, z) samt Edits
