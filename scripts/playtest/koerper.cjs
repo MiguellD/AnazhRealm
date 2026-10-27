@@ -1819,10 +1819,16 @@ async function checkBandKoerperBewegung(ctx) {
             const soleY = pmesh.position.y - A.PLAYER_FOOT_OFFSET;
             const savedTraeger = s._kapselTraegerY;
             const savedStruktur = s._kapselStruktur;
-            // der Träger, wie ihn der Kapsel-Schritt stempelt (ein Bauwerk: eben per Definition)
-            const traeger = (y) => {
-                s._kapselTraegerY = y;
+            // der Boden unter dem Leib um dy: der Träger, wie ihn der Kapsel-Schritt stempelt, UND der Bau, der ihn trägt —
+            // jeder Fuß liest die Auflage seines Baus (`_fussBoden`, leib.K2); ein Stempel ohne Bau unter den Füßen ist ROT
+            const pp = pmesh.position;
+            const bau = r._blockerNahe(pp.x, pp.z, 2, -Infinity, []).flatMap((e) => e.blockerAABBs || [])
+                .filter((b) => Math.abs(b.topY - soleY) < 0.05).map((b) => [b, b.topY]);
+            o.checks.eBauTraegt = bau.length > 0;
+            const traeger = (dy) => {
+                s._kapselTraegerY = soleY + dy;
                 s._kapselStruktur = true;
+                for (const [b, y] of bau) b.topY = y + dy;
             };
             const probenFrisch = () => {
                 const ik = pmesh.userData._gaitIK;
@@ -1840,15 +1846,15 @@ async function checkBandKoerperBewegung(ctx) {
             };
             const savedAir = s.isInAir;
             s.isInAir = false; // der stehende Körper (die Luft-Sperre prüft E2)
-            traeger(soleY); // der Träger auf der Sohlen-Ebene
+            traeger(0); // der Boden auf der Sohlen-Ebene
             probenFrisch();
             tickeIdle(500);
             const h0 = rig.hips.position.y;
-            traeger(soleY - 0.25); // der Träger 25 cm gesenkt
+            traeger(-0.25); // der Boden 25 cm gesenkt
             probenFrisch();
             tickeIdle(510);
             const h1 = rig.hips.position.y;
-            traeger(soleY - 50); // Abgrund
+            traeger(-50); // Abgrund
             probenFrisch();
             tickeIdle(520);
             let alleFinite = true;
@@ -1858,12 +1864,13 @@ async function checkBandKoerperBewegung(ctx) {
             if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
             // das Becken NICHT
-            traeger(soleY - 0.25);
+            traeger(-0.25);
             s.isInAir = true;
             probenFrisch();
             tickeIdle(530);
             const hLuft = rig.hips.position.y;
             s.isInAir = savedAir;
+            traeger(0);
             s._kapselTraegerY = savedTraeger; // restaurieren
             s._kapselStruktur = savedStruktur;
             probenFrisch();
@@ -1955,7 +1962,7 @@ async function checkBandKoerperBewegung(ctx) {
     check(`Körper-Bewegung (C) Blend stetig (max Δw ${f(out.blend && out.blend.maxJump, 3)}), konvergiert, NaN-Wand; SELBSTTEST S1 hartes Blend sichtbar (Δw ${f(out.s1MaxJump)})`, !cc, cc && "ROT: " + cc);
     const d = rot("dPitch30", "dGeerdet", "s2LensFires", "pitchPur", "pitchNaNWand");
     check(`Körper-Bewegung (D) der Tier-Root folgt dem 30°-Hang (${f(out.tierPitchDeg, 1)}°), geerdet; SELBSTTEST S2 _slopePitch ≡ 0 (${f(out.s2PitchDeg, 1)}°), die Hang-Formel pur`, !d, d && "ROT: " + d);
-    const e = rot("eBeckenSenkt", "eAbgrundOhneNaN", "eLuftSperre");
+    const e = rot("eBauTraegt", "eBeckenSenkt", "eAbgrundOhneNaN", "eLuftSperre");
     check(`Körper-Bewegung (E) Fuß-IK über den echten Pfad: das Becken senkt sich aufs tiefere Bein, Abgrund ohne NaN, in der Luft keine Senkung (${f(out.beckenFlach, 3)} → ${f(out.beckenLuft, 3)})`, !e, e && "ROT: " + e);
 }
 

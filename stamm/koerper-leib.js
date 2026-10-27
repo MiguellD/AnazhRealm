@@ -741,6 +741,18 @@ class AnazhRealm_koerper_leib {
     // lockt an seiner gecachten Boden-Position (Two-Bone-IK), der Rumpf lehnt in den Hang; das
     // Schwung-Bein bleibt Pose. Der Lock löst, sobald das Ziel die Reichweite verlässt (kein Spagat/Pop).
     _gaitApplyFussIK(r, walkPhase, w, ik) {
+        // im Stand ohne Gang liest jeder Fuß den Boden unter dem Knöchel DIESER Pose (leib.K2), bevor das Becken sinkt: die
+        // Probe der Vorbereitung stand unter dem Knöchel des vorigen Takts — nach dem Gang 1,2 m vor dem Leib, an der Kante des
+        // Genesis-Platzes 0,33 m tiefer (das Becken sank im ersten Stand-Takt bis zum Deckel, gate:kampf-gefuehl E)
+        if (w < 0.35)
+            for (const [leg, p, f] of [
+                [r.legL, ik.probeL, ik.footL],
+                [r.legR, ik.probeR, ik.footR],
+            ]) {
+                const av = leg.ankle.getWorldPosition(this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3()));
+                [f.x, f.z] = [av.x, av.z];
+                if (p.x !== f.x || p.z !== f.z || p.yaw !== ik.yaw) this._gaitProbe(p, f.x, f.z, ik);
+            }
         const dyL = Math.max(-0.7, Math.min(0.7, ik.probeL.g - ik.soleY));
         const dyR = Math.max(-0.7, Math.min(0.7, ik.probeR.g - ik.soleY));
         // Becken: nur SENKEN (das tiefere Bein muss reichen; heben macht die Physik).
