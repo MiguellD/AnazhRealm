@@ -204,6 +204,8 @@ function taeter(inj) {
             this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
         };
     // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
+    // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts
+    if (inj === "sprung") r._sprungAbdruck = () => r.state.jumpPower;
     if (inj === "nexus") {
         r.state.nexusEvolutionInterval = 5;
         r.evolveNexus = function (t) {
@@ -1063,6 +1065,100 @@ async function rollen(n) {
     return o;
 }
 
+// ── K9 (Kopf der Datei) ──
+async function spruenge() {
+    const r = window.anazhRealm;
+    const [s, pm, W] = [r.state, r.state.playerMesh, window.__messWiese];
+    let uhr = performance.now();
+    const takt = () => {
+        try {
+            r._gameLoopTick((uhr += 1000 / 60));
+        } catch {}
+    };
+    const setz = () => {
+        pm.position.set(W[0], r._voxelSurfaceY(W[0], W[1]) + 0.6, W[1]);
+        [s._fixedSimPos, s.yaw] = [null, 0];
+        s.playerVel.setValue(0, 0, 0);
+    };
+    await window.__weltStehtNach(() => (setz(), takt()));
+    const hueft = new window.THREE.Vector3();
+    // je Sprung: die Taste einen Takt gehalten, der Leib bis zur Landung — der Hub der Kapsel, der gezeichneten Hüfte und des
+    // Auges, die Weite vom Abdruck bis zur Landung; das Gesetz ist die Höhe des Abdrucks (v²/2g, v aus `_sprungAbdruck`)
+    const sprung = (lauf) => {
+        setz();
+        [s.keys.w, s.keys.shift] = [lauf, lauf];
+        for (let k = 0; k < 120; k++) takt();
+        const y = () => (
+            pm.updateMatrixWorld(true),
+            [pm.position.y, pm.userData.rig.legL.hip.getWorldPosition(hueft).y, s.camera.position.y]
+        );
+        const [y0, x0, z0, gesetz] = [y(), pm.position.x, pm.position.z, r._sprungAbdruck() ** 2 / 2 / -s.gravity];
+        const hub = [0, 0, 0];
+        s.keys[" "] = true;
+        for (let k = 0, luft = false; k < 300 && (!luft || s.isJumping); k++, s.keys[" "] = false) {
+            takt();
+            luft = luft || s.isJumping;
+            y().forEach((v, i) => (hub[i] = Math.max(hub[i], v - y0[i])));
+        }
+        [s.keys.w, s.keys.shift] = [false, false];
+        return {
+            hoch: hub[0],
+            leib: hub[1],
+            auge: hub[2],
+            gesetz,
+            weite: Math.hypot(pm.position.x - x0, pm.position.z - z0),
+        };
+    };
+    // die Mutanten des Leib-Gesetzes: die Masse ×1,25 (das Volumen der Haut, `_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
+    const av = [];
+    pm.traverse((o) => o.userData._leibV > 0 && av.push(o));
+    const leib = (mut) => {
+        if (mut === "masse") av.forEach((o) => (o.userData._leibV *= 1.25));
+        if (mut === "kraft") r._sprungKraft = (...a) => 1.25 * Object.getPrototypeOf(r)._sprungKraft.apply(r, a);
+        const o = { stand: sprung(false), lauf: sprung(true) };
+        if (mut === "masse") av.forEach((o) => (o.userData._leibV /= 1.25));
+        if (mut === "kraft") delete r._sprungKraft;
+        return o;
+    };
+    const o = {};
+    for (const sicht of ["first", "third"]) {
+        r.setCameraMode(sicht);
+        o[sicht] = { gesetz: leib(), masse: leib("masse"), kraft: leib("kraft") };
+    }
+    return o;
+}
+
+// K9 je Sicht: das Gesetz trägt die Höhe (± 10 %, der Takt von 1/60 s schneidet den Scheitel), Leib und Auge heben sich mit
+// (≥ 80 %), die Masse ×1,25 senkt Höhe und Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
+function urteilK9(o) {
+    if (!o || !o.first || !o.third) return ["K9 Aufbau: kein Sprung je Sicht"];
+    const f = [];
+    for (const [sicht, j] of Object.entries(o)) {
+        const { stand, lauf } = j.gesetz;
+        if (!(Math.abs(stand.hoch / stand.gesetz - 1) <= 0.1))
+            f.push(
+                `K9 Höhe ${sicht}: ${stand.hoch} m gegen das Gesetz ${stand.gesetz} m — Täter: der Abdruck (_sprungAbdruck)`
+            );
+        const blick = sicht === "first" ? "auge" : "leib";
+        if (!(stand[blick] >= 0.8 * stand.hoch))
+            f.push(`K9 Bild ${sicht}: ${blick} ${stand[blick]} von ${stand.hoch} m`);
+        for (const [mut, vz] of [
+            ["masse", -1],
+            ["kraft", 1],
+        ])
+            for (const [art, m] of [
+                ["hoch", "stand"],
+                ["weite", "lauf"],
+            ])
+                if (!((j[mut][m][art] / j.gesetz[m][art] - 1) * vz >= 0.1))
+                    f.push(
+                        `K9 Mutante ${mut} ${sicht} ${art}: ${j[mut][m][art]} gegen ${j.gesetz[m][art]} m — Täter: ein fester Sprung`
+                    );
+        if (!(lauf.weite > 1)) f.push(`K9 Aufbau ${sicht}: Weite ${lauf.weite} m`);
+    }
+    return f;
+}
+
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
@@ -1207,7 +1303,7 @@ hauptLauf(async () => {
                 })
             );
             const o = k8
-                ? await page.evaluate(rollen, K8_UMFANG)
+                ? { ...(await page.evaluate(rollen, K8_UMFANG)), sprung: await page.evaluate(spruenge) }
                 : await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
             return { o };
@@ -1227,11 +1323,12 @@ hauptLauf(async () => {
                 ring: ["K8 Ring wiese", "K8 Ring hang"],
                 nexus: ["K8 Aufbau: der Nexus"],
                 fuss: ["K8 fuss hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
+                sprung: ["K9 Mutante masse first hoch", "K9 Mutante kraft third weite"],
             };
             for (const inj of Object.keys(soll)) {
                 const k8 = soll[inj][0].startsWith("K8");
                 const { o } = await lauf(inj, k8);
-                const f = k8 ? urteilK8(o, K8_UMFANG) : urteil(o);
+                const f = k8 ? [...urteilK8(o, K8_UMFANG), ...urteilK9(o.sprung)] : urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
                 const ok = fehlt.length === 0;
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
@@ -1241,7 +1338,7 @@ hauptLauf(async () => {
         }
         const { o } = NUR_K8 ? { o: null } : await lauf(null);
         const k8 = await lauf(null, true);
-        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG)];
+        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG), ...urteilK9(k8.o.sprung)];
         console.log("  " + zeile({ ...o, k8: k8.o }));
         if (process.argv.includes("--ratsche"))
             fs.writeFileSync(

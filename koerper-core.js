@@ -1353,10 +1353,17 @@
     //    Leib-Lösers) tragen die Beine bis schadlosMs (7,7 m/s: ein Fall aus 3 m, √(2g·3)); darüber kostet jedes J/kg der
     //    Aufprall-Energie ½(v² − schadlosMs²) lebenJeJkg Lebenskraft (Wirt: _loopPhysicsSync). Der bloße Leib (Lebenskraft
     //    134) verliert aus 4 m 11, aus 8 m 56, aus 12 m 101 und stirbt aus 15 m (17,2 m/s). ──
+    // ── leib.K2 (rein additiv) — DER SPRUNG AUS MASSE UND KRAFT: die Beine strecken den Leib über den Abdruck-Weg abdruckM
+    //    (m, die Streckung von Knie und Hüfte aus der Hocke) mit der Kraft F gegen sein Gewicht, ½ m v² = (F − m g) d, also
+    //    v = √(2 d (F/m − g)). Die Sprungkraft der Seele (bewegung.jumpPower, m/s) ist das Abdruck-Tempo, das ihre Beine dem
+    //    Bezugs-Leib refKg unter der Erd-Schwere refG geben (der Mensch der START_PARAMS: Haut-Volumen × dichteKgM3 = 89,0 kg),
+    //    die Kraft F = refKg (refG + v²/2d). Ein schwererer Leib springt niedriger und kürzer, stärkere Beine höher und
+    //    weiter (Wirt: _sprungKraft, _sprungAbdruck). ──
     var LEIB = Object.freeze({
         dichteKgM3: 985,
         armAnteil: 0.05,
         sturz: Object.freeze({ schadlosMs: 7.7, lebenJeJkg: 1.15 }),
+        sprung: Object.freeze({ abdruckM: 0.4, refKg: 89, refG: 9.81 }),
     });
 
     // ── K2 (rein additiv) — DIE WEBUNG je Stoff-Art (Kleid-Zeile `webe`): [Frequenz, Tiefe] der Mikro-Struktur, die die

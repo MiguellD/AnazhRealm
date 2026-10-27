@@ -2754,6 +2754,7 @@ class AnazhRealm_netz_p2p {
             speed: NaN,
             sprintSpeed: NaN,
             jumpPower: NaN,
+            leibKg: NaN,
             buf: [],
             bufStart: 0,
             doneSeq: -1,
@@ -2809,6 +2810,7 @@ class AnazhRealm_netz_p2p {
                 sp: st.speed,
                 ssp: st.sprintSpeed,
                 jp: st.jumpPower,
+                kg: this._leibMasse(m), // die Masse des Leibs: der Abdruck des Geists rechnet mit ihr (`_sprungAbdruck`)
             };
             if (Number.isFinite(st._groundedCachedAt)) a.gt = st._groundedCachedAt;
             if (Number.isFinite(st.lastGroundedTime)) a.lg = st.lastGroundedTime;
@@ -2910,6 +2912,7 @@ class AnazhRealm_netz_p2p {
         s.speed = st.speed;
         s.sprint = st.sprintSpeed;
         s.jp = st.jumpPower;
+        s.kg = st._geistKg;
         // --- Ghost laden ---
         mesh.position.set(ls.x, ls.y, ls.z);
         st.playerVel = ls.vel;
@@ -2937,6 +2940,7 @@ class AnazhRealm_netz_p2p {
         if (Number.isFinite(ls.speed)) st.speed = ls.speed;
         if (Number.isFinite(ls.sprintSpeed)) st.sprintSpeed = ls.sprintSpeed;
         if (Number.isFinite(ls.jumpPower)) st.jumpPower = ls.jumpPower;
+        st._geistKg = ls.leibKg;
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
         this._loopPlayerMovement(ls.simT, FIXED_DT);
         this._stepCharacter(FIXED_DT, ls.simT);
@@ -2989,6 +2993,7 @@ class AnazhRealm_netz_p2p {
         st.speed = s.speed;
         st.sprintSpeed = s.sprint;
         st.jumpPower = s.jp;
+        st._geistKg = s.kg;
     }
 
     // GHOST-TICK: Anker anwenden (seed/re-seed), anschlussfähige Frames verbrauchen (2-Frame-Reserve
@@ -3041,6 +3046,7 @@ class AnazhRealm_netz_p2p {
                     ls.speed = fin(a.sp, ls.speed);
                     ls.sprintSpeed = fin(a.ssp, ls.sprintSpeed);
                     ls.jumpPower = fin(a.jp, ls.jumpPower);
+                    ls.leibKg = fin(a.kg, ls.leibKg);
                     ls.authX = ls.authY = ls.authZ = NaN;
                     if (ls.trace) ls.trace.length = 0; // Debug-Trace = nur der aktuell geseedete Lauf
                     const drop = a.s - ls.bufStart + 1;
