@@ -1,7 +1,7 @@
 {
  "sha": "dc06b495020b357431dc998342945d2352e0beee",
  "geraet": "gtx",
- "zeit": "2026-10-27T09:58:54.859Z",
+ "zeit": "2026-10-27T10:47:19.429Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "gelaende.K2#1": {
@@ -404,14 +404,12 @@
    "bahn": "allein"
   },
   "tore.K3#1": {
-   "gruen": false,
-   "zahl": "Wand GPU: die Linse zeichnet nie (welt-boot: das Rezept ist „null“, 1×) · keine K8-Tafel (Exit 2)",
-   "exit": 2,
-   "minuten": 0.35,
-   "grund": "Wand GPU: die Linse zeichnet nie (welt-boot: das Rezept ist „null“, 1×)",
+   "gruen": true,
+   "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
+   "exit": 0,
+   "minuten": 1.5,
    "gpu": "nvidia/pascal",
-   "gpuNie": 1,
-   "zeit": "2026-10-27T09:54:43.615Z",
+   "zeit": "2026-10-27T10:47:19.429Z",
    "abdruck": "34ff650a2da6",
    "port": 7754,
    "bahn": "1/1"
