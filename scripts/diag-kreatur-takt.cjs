@@ -45,7 +45,7 @@ const DAUER_S = {
     gestalt: 1,
     todlage: 1,
     bewohner: 660,
-    begegnung: 14,
+    begegnung: 15,
     tiersatz: 7,
     furcht: 31,
     lebensraum: 21,
