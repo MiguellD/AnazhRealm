@@ -394,3 +394,4 @@
 2026-10-27 11:48:49 takt10c-gtx tore.K3#1 GRÜN 1.5 · 1/1
 2026-10-27 11:49:05 z49z50b-abab START 3 Zellen
 2026-10-27 12:02:42 z49z50b-abab w-ego nicht-langsamer 13.6 · 1/3 (2+2)
+2026-10-27 12:13:35 z49z50b-abab d-ego nicht-langsamer 10.8 · 2/3 (2+2)
