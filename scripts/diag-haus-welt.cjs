@@ -21,7 +21,8 @@
 //       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
 //   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
-//       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0.
+//       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0, Third vor jedem Haus 0, das Haus
+//       des Spielers setzt die Werkstatt; am See und am Fluss der Mess-Wiese je Ego und Third kein Halm unter dem Spiegel.
 //       ABBAU · PLAN · WAISE · ZUG · AUSSTATTUNG: der Grund fällt mit dem Bau, liegt vor seiner Hülle, trägt stets einen Bau;
 //       der Zug des Start-Dorfs überlebt Sperre und Reload, Brunnen, Laternen und Stände stehen am Ort des Plans.
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
