@@ -1217,30 +1217,16 @@ class AnazhRealm_feld_nexus {
                       .map((b) => `${AnazhRealm._datum(b.label || b.source)} (${Math.round(b.expiresAt - nowSec)}s)`)
                       .join(", ")
                 : "kein aktiver Trank-Effekt";
-        // Memory-Auszug (letzte 8 Einträge, älteste→neueste lesbar)
-        const memory = Array.isArray(ud.memory) ? ud.memory.slice(-8) : [];
+        // die letzten 8 Erinnerungen, älteste → neueste, in den Worten der EINEN Tafel (ERINNERUNG_SATZ)
         const memLine =
-            memory.length > 0
-                ? memory
-                      .map((m) => {
-                          if (m.type === "gathered" && m.content && m.content.material)
-                              return AnazhRealm._datum`ich sammelte ${m.content.material}`;
-                          if (m.type === "built" && m.content && m.content.blueprint)
-                              return AnazhRealm._datum`ich baute ${m.content.blueprint}`;
-                          if (m.type === "delivered" && m.content) return `ich übergab Material an den Schöpfer`;
-                          if (m.type === "took_materials" && m.content && m.content.blueprint)
-                              return AnazhRealm._datum`ich nahm Material für ${m.content.blueprint}`;
-                          if (m.type === "no_material" && m.content && m.content.material)
-                              return AnazhRealm._datum`ich fand kein ${m.content.material}`;
-                          if (m.type === "no_blueprint" && m.content && m.content.blueprint)
-                              return AnazhRealm._datum`der Bauplan ${m.content.blueprint} war mir fremd`;
-                          if (m.type === "no_inventory_for_build") return `der Schöpfer hatte kein Material für mich`;
-                          if (m.type === "spoken") return `der Schöpfer sprach zu mir`;
-                          return null;
-                      })
-                      .filter(Boolean)
-                      .join(" · ")
-                : "keine besonderen Erinnerungen";
+            (Array.isArray(ud.memory) ? ud.memory.slice(-8) : [])
+                .map(
+                    (m) =>
+                        AnazhRealm.ERINNERUNG_SATZ[m.type] &&
+                        "ich " + AnazhRealm.ERINNERUNG_SATZ[m.type](m.content || {})
+                )
+                .filter(Boolean)
+                .join(" · ") || "keine besonderen Erinnerungen";
         // Welt-Kontext
         const m = this.state.worldMeta || {};
         const worldLine =
