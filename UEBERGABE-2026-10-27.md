@@ -15,6 +15,8 @@
   profiband.K4 +1 (Radeon #1 4/4 grün; GTX #1 ROT 14,6; #2 ROT: s1 geh 125,8 ms, fahrt 116,8 ms beim Sicht-Wechsel und Einsteigen).
 - `aufraeumen.ps1` ist NICHT gelaufen (es räumt die Mess-Prozesse ab) — erst nach dem Ende von Takt 13, Port 4312 nie.
 
+- 21:15 Nachtrag: Radeon 29/33 + Nachmessung allein (fahrzeug.K3#2 GRÜN, Drift 0° statt 176° in 2 Bahnen). ferne.K1#1/K2#1 waren ROT nur wegen "Adapter ungenannt": tk1-herde startet `werkbank --eigen` am werkbankTor, die Kind-Ausgabe geht ins eigene Log. Schnitt in koordination 58194711: punkte.cjs reicht die Zeugen-Zeilen ins Urteil (Selbsttest 66/66). Die OMEN fährt ihre eigene punkte.cjs (koord-punkte): bei der nächsten Gelegenheit den Schnitt dort eintragen lassen (Auftrag, keine Kopie).
+
 ## 2. Cloud-Welle w2g (19:40, je Zweig X + X-koord)
 
 | Karte | Code-Zweig | Station (-koord) | Stand | Nächster Schritt |
