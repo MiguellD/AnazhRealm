@@ -559,3 +559,4 @@
 2026-10-27 02:22:31 takt8-headless ki.K2#2 GRÜN 4.7 · 12/76
 2026-10-27 02:24:14 takt8-headless feld.K3#1 GRÜN 2.5 · 13/76
 2026-10-27 02:24:33 takt8-headless feld.K3#2 GRÜN 2.5 · 14/76
+2026-10-27 02:25:21 takt8-headless oekologie.K5#2 GRÜN 1.1 · 15/76
