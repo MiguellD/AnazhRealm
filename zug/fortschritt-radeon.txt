@@ -682,3 +682,4 @@
 2026-10-27 07:36:12 takt9-headless bauen.K4#1 GRÜN 34.7 · 7/74
 2026-10-27 07:36:20 takt9-headless bauen.K4#2 GRÜN 34.7 · 8/74
 2026-10-27 07:39:21 takt9-headless gelaende.K5#1 GRÜN 20.9 · 9/74
+2026-10-27 08:12:55 takt9-headless feld.K3#1 GRÜN 33.6 · 10/74
