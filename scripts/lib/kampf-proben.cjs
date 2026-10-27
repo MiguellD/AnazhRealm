@@ -3082,8 +3082,9 @@ async function WELLE_L(ort) {
 // 0,6 s Kreatur-Uhr. (tod) vor dem Tod Holz, Stein und ein Fuchs, den die Geste bindet (85 m abseits, außer Witterung); der
 // Wolf jagt den Spieler am Rand seines Lebens über den Biss-Weg, die Rückkehr (Leben, Wunde, Gnade, Lebens-Spur, Seele,
 // Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Genesis-Anker
-// (`_genesisPlattform`, die EINE Quelle — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, dann
-// `saveState`. `abdruck` ist K5_ABDRUCK.
+// (`_genesisPlattform`, die EINE Quelle — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, und ein
+// Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
+// Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
     const r = window.anazhRealm,
         s = r.state,
@@ -3169,13 +3170,14 @@ async function K5_VOR(abdruck) {
     };
     r.removeCreature(wolf);
     ruhe(0.6, pm.position.clone());
-    for (let k = 0; k < 90; k++) r._loopFixedStep(1 / 60, (t += 1 / 60));
+    for (let k = 0; k < 60 * r.constructor._bestandGesetz().B.taktS; k++) takt(1 / 60);
     K.nachTod = abdruck();
     r.saveState();
     return K;
 }
 // DER ABDRUCK DES ZUSTANDS (Q13): der Ort (dm), das Inventar, die Lebenswerte (Leben als Anteil in Hundertsteln, die Wunde in
-// Zehnteln aufgerundet — sie heilt 1/600 je s), die Bindung des Fuchses (bond in Hundertsteln, sein Auftrag)
+// Zehnteln aufgerundet — sie heilt 1/600 je s), die Bindung des Fuchses (bond in Hundertsteln, sein Auftrag) und sein Alter
+// (`alterS`, Spiel-Zeit: ein Takt des Lebenszyklus zu viel hebt es um taktS)
 function K5_ABDRUCK() {
     const s = window.anazhRealm.state,
         p = s.player,
@@ -3186,6 +3188,7 @@ function K5_ABDRUCK() {
         inventar: p.inventory.filter(Boolean).map((x) => (x.material || x.blueprintName) + x.count),
         leben: [g(p.hp / p.hpMax, 100), Math.ceil(10 * p.deathWoundIntensity) / 10],
         bindung: f && [g(f.userData.bond, 100), f.userData.task.name],
+        alter: f && f.userData.alterS,
     };
 }
 
