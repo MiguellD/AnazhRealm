@@ -95,97 +95,16 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
+    const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", anzahl: 32, teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
+    const eps = await page.evaluate(kernStufen.epsilonSeite, W);
     const out = await page.evaluate(async () => {
-        const res = { b: {}, d: {}, p: {}, e: {}, f: {} };
-        await window.__weltDa();
+        const res = { b: {}, f: {} };
         const r = window.anazhRealm;
-        const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.alemannisch && rc && rc.lod && rc.lod.kindStages; });
-        const rc = A._studioRenderConfig;
-        const ks = rc && rc.lod ? rc.lod.kindStages : null;
-        // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
-        res.b.kind = f && f.recipes && f.recipes.alemannisch ? f.recipes.alemannisch.kind : null;
-        res.b.sW =
-            f && f.recipes && f.recipes.alemannisch && f.recipes.alemannisch.s ? f.recipes.alemannisch.s.W : null;
-        res.b.stil =
-            f && f.recipes && f.recipes.alemannisch && f.recipes.alemannisch.fx ? f.recipes.alemannisch.fx.stil : null;
-        res.b.hausCount =
-            f && f.recipes
-                ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "haus").length
-                : 0;
-        res.b.paramsHaus = f && f.paramsByKind && Array.isArray(f.paramsByKind.haus) ? f.paramsByKind.haus.length : -1;
-        res.b.ksHaus = ks ? JSON.stringify(ks.haus) : null;
-        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
-        // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
-        try {
-            const bp = r.state.blueprints && r.state.blueprints.haus_alemannisch;
-            res.d.blueprint = !!bp;
-            res.d.autoSpecies = bp ? bp._foundryAutoSpecies : null;
-            res.d.grownSpecies = bp ? bp._grownSpecies || null : "kein-bp";
-            res.d.label = bp ? bp.label : null;
-            res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-            res.d.builtIn = bp ? !!bp.builtIn : null;
-            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND,
-            // die Substanz lebt in KIND_SUBSTANCE, der Klon traegt byte-gleiche Parts.
-            const KS = r.constructor.KIND_SUBSTANCE || {};
-            res.d.donorAbsent = !(r.state.blueprints && r.state.blueprints.haus_basis);
-            res.d.substanzParts = KS.haus_basis && Array.isArray(KS.haus_basis.parts) ? KS.haus_basis.parts.length : 0;
-            res.d.clonePartsMatch =
-                !!bp && !!KS.haus_basis && JSON.stringify(bp.parts) === JSON.stringify(KS.haus_basis.parts);
-            res.d.hochhaus = !!(r.state.blueprints && r.state.blueprints.haus_hochhaus);
-            res.d.presetResolves = r._foundryPresetFor("haus_alemannisch");
-            res.d.entryResolves = r._foundryPresetForEntry({ type: "haus_hanseatisch" });
-        } catch (e) {
-            res.d.err = (e && e.message) || String(e);
-        }
-        // ===== P: die PLACE-AUFLOESUNG (N5.7 — settlement als benannter DELIBERATER Kanal, Worldgen streut nicht) =====
-        try {
-            const pol = r._placePolicyFor(f.recipes.alemannisch);
-            res.p.mode = pol.mode;
-            res.p.siteTag = pol.siteTag;
-            res.p.dispatch = r._placeDispatch(pol, { id: "alemannisch" });
-            r._forestExtraCache = null;
-            res.p.inExtras = r._forestExtraSpecies().some((e) => String(e.species).indexOf("haus_") === 0);
-            r._forestExtraCache = null;
-        } catch (e) {
-            res.p.err = (e && e.message) || String(e);
-        }
-        // ===== E: das ASSET selbst — ALLE VIER STUFEN end-to-end (Worker-Dispatch + BuildGroup; die Stufe 3 ist
-        // NUR-WURF, S3 haus: sie trägt ihre Fernform als Beipack __fern) =====
-        try {
-            res.e.meshCount = {};
-            for (const L of [0, 1, 2, 3]) {
-                const meshes = await Promise.race([
-                    r._foundryRequest("alemannisch", 7, L),
-                    new Promise((res3) => setTimeout(() => res3(null), 45000)),
-                ]);
-                res.e.meshCount[L] = Array.isArray(meshes) ? meshes.length : -1;
-                if (L === 3)
-                    res.e.fern3 =
-                        Array.isArray(meshes) &&
-                        meshes.some((m) => m && m.kind === "__fern" && m.huelle && Array.isArray(m.huelle.teile));
-                if (L === 0 && Array.isArray(meshes) && meshes.length) {
-                    res.e.hasMatColor = meshes.some(
-                        (m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
-                    );
-                    const g = r._foundryBuildGroup(meshes);
-                    res.e.groupChildren = g && g.children ? g.children.length : 0;
-                    res.e.allHaveColor =
-                        !!g &&
-                        g.children.every(
-                            (ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color)
-                        );
-                    if (g)
-                        g.traverse((o) => {
-                            if (o.isMesh && o.geometry) o.geometry.dispose();
-                        });
-                }
-            }
-        } catch (e) {
-            res.e.err = (e && e.message) || String(e);
-        }
+        const rez = f.recipes.alemannisch;
+        res.b.stil = rez.fx ? rez.fx.stil : null;
+        res.b.paramsHaus = f.paramsByKind && Array.isArray(f.paramsByKind.haus) ? f.paramsByKind.haus.length : -1;
+        res.hochhaus = !!(r.state.blueprints && r.state.blueprints.haus_hochhaus);
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
         // FLÄCHEN-STUFE: L1 ist eine echte
@@ -218,98 +137,15 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    check(
-        "B: das LIVE-Buch traegt alemannisch als kind:haus (Worker-Draht lebt)",
-        out.b.kind === "haus",
-        String(out.b.kind)
-    );
-    check(
-        `B: die Dial-Drift-Wand haelt (Buch s.W == Kern-PRESETS ${kernAlemannischW})`,
-        out.b.sW === kernAlemannischW,
-        String(out.b.sW)
-    );
+    kernStufen.epsilonUrteil(check, eps, W, kern);
+    check(`B: die Dial-Drift-Wand haelt (Buch s.W == Kern-PRESETS ${kernAlemannischW})`, eps.b.s.W === kernAlemannischW, String(eps.b.s.W));
     check('B: die fx-Strings reisen (alemannisch.fx.stil == "alt")', out.b.stil === "alt", String(out.b.stil));
-    check("B: alle 32 Haus-Kulturen im Buch", out.b.hausCount === 32, String(out.b.hausCount));
-    check(
-        `B: die B4-Regler-Tabelle reist (paramsByKind.haus == ${kernParamsRows} Dials, W-A1-Generik)`,
-        out.b.paramsHaus === kernParamsRows,
-        String(out.b.paramsHaus)
-    );
-    check(
-        "B: kindStages.haus == [0,1,2,3] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene; 3 = NUR-WURF)",
-        out.b.ksHaus === "[0,1,2,3]",
-        String(out.b.ksHaus)
-    );
-    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
-    check(
-        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
-        abweichung.length === 0,
-        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
-    );
-    check(
-        "D: Auto-Blueprint haus_alemannisch registriert (Donor-Klon, 6 begehbare Judge-Parts)",
-        out.d.blueprint === true && out.d.parts === 6,
-        out.d.err || `parts=${out.d.parts}`
-    );
-    check("D: die Herkunfts-Marke sitzt (_foundryAutoSpecies == alemannisch)", out.d.autoSpecies === "alemannisch");
-    check(
-        "D: KEIN _grownSpecies (ein Haus ist keine gewachsene Art)",
-        out.d.grownSpecies === null,
-        String(out.d.grownSpecies)
-    );
-    check(
-        "D: das Label reist aus dem Rezept (lab der Kultur-Wahl)",
-        out.d.label === "Alemannisch · steil, hell",
-        String(out.d.label)
-    );
-    check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor/Klinge)", out.d.builtIn === false);
-    check(
-        "D: der Alt-Donor haus_basis ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (6 Parts)",
-        out.d.donorAbsent === true && out.d.substanzParts === 6,
-        `substanzParts=${out.d.substanzParts}`
-    );
-    check(
-        "D: der Auto-Klon traegt die Substanz byte-gleich (haus_alemannisch.parts == KIND_SUBSTANCE.haus_basis.parts)",
-        out.d.clonePartsMatch === true
-    );
-    check("D: auch der Glasturm dockt (haus_hochhaus registriert)", out.d.hochhaus === true);
-    check(
-        "D: die generische haus_-Regel loest auf (haus_alemannisch -> alemannisch)",
-        out.d.presetResolves === "alemannisch",
-        String(out.d.presetResolves)
-    );
-    check(
-        "D: der Entry-Pfad loest auf (_foundryPresetForEntry, haus_hanseatisch -> hanseatisch)",
-        out.d.entryResolves === "hanseatisch",
-        String(out.d.entryResolves)
-    );
-    check(
-        'P: die Place-Aufloesung liest die Rezept-DATEN (mode "settlement", siteTag "haus" — N5.7)',
-        out.p.mode === "settlement" && out.p.siteTag === "haus",
-        out.p.err || `${out.p.mode}/${out.p.siteTag}`
-    );
-    check(
-        'P: settlement ist der benannte DELIBERATE Kanal (Dispatch "settlement" — Konsument spawnSettlement, kein Worldgen-Streu-Leser)',
-        out.p.dispatch === "settlement",
-        String(out.p.dispatch)
-    );
-    check("P: keine haus_-Nische in der Wald-Liste", out.p.inExtras === false);
-    check(
-        "E: der Worker liefert das Haus-Asset auf ALLEN vier Stufen (Meshes > 0 je Stufe; die Stufe 3 mit Beipack __fern)",
-        out.e.meshCount &&
-            out.e.meshCount[0] > 0 &&
-            out.e.meshCount[1] > 0 &&
-            out.e.meshCount[2] > 0 &&
-            out.e.meshCount[3] > 0 &&
-            out.e.fern3 === true,
-        out.e.err || JSON.stringify(out.e.meshCount)
-    );
-    console.log(
-        `      ↳ end-to-end Mesh-Zahl alemannisch je Stufe: L0=${out.e.meshCount && out.e.meshCount[0]} · L1=${out.e.meshCount && out.e.meshCount[1]} · L2=${out.e.meshCount && out.e.meshCount[2]} · L3=${out.e.meshCount && out.e.meshCount[3]} (__fern ${out.e.fern3})`
-    );
-    check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
-    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
-    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
+    check(`B: die B4-Regler-Tabelle reist (paramsByKind.haus == ${kernParamsRows} Dials, W-A1-Generik)`, out.b.paramsHaus === kernParamsRows, String(out.b.paramsHaus));
+    const ksHaus = JSON.stringify(eps.b.ks.haus);
+    check("B: kindStages.haus == [0,1,2,3] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene; 3 = NUR-WURF)", ksHaus === "[0,1,2,3]", ksHaus);
+    check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor/Klinge)", eps.d.builtIn === false);
+    check("D: auch der Glasturm dockt (haus_hochhaus registriert)", out.hochhaus === true);
+    check("E: die Stufe 3 trägt ihre Fernform als Beipack __fern (S3 haus, NUR-WURF)", eps.e.fern === true);
     check(
         "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient (kein [0]-Kollaps — der Merge lebt)",
         /^[^|]*\|[^|]*\|2(\||$)/.test(out.f.k2 || ""),
