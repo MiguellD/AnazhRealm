@@ -498,9 +498,11 @@ class AnazhRealm_klang {
 
     // DER EINE SCHRITT-TICK (aus animatePlayerSoul direkt nach dem Gang-Tick — keine eigene Uhr): je
     // Halbzyklus (π) der Gang-Phase EIN Schritt, nur geerdet + über der Tempo-Schwelle; Luft/Schwimmen/
-    // Stand re-ankern den Zähler stumm (der Hit-Stop friert mit). Die LANDUNG hört s.isInAir und wiegt
-    // über s._fieldVy — NIE über _landImpactPending (die Ego-Kamera nullt ihn vorher, der Kampf-Hit
-    // füttert ihn mit). Schwelle = die EINE Konstante LAND_DIP_MIN_SPEED.
+    // Stand re-ankern den Zähler stumm (der Hit-Stop friert mit). Die LANDUNG ist die des Leib-Lösers: sein Aufprall-Ereignis
+    // (`s._aufprall` aus `_loopPhysicsSync`, am Boden und ins Wasser — ein Bild mit zwei Schritten verliert keins, klang.K4); es
+    // klingt, wenn der Leib steht (eins aus einer früheren Luft-Strecke verfällt) — NIE über _landImpactPending (die Ego-Kamera
+    // nullt ihn vorher, der Kampf-Hit füttert ihn mit), nie über einen eigenen Fall-Zähler (er hörte 0,16–0,33 m/s zu wenig).
+    // Schwelle = die EINE Konstante LAND_DIP_MIN_SPEED.
     _schrittKlangTick(halter, speed, underwater, mesh) {
         const s = this.state;
         if (!halter || !mesh) return;
@@ -508,23 +510,16 @@ class AnazhRealm_klang {
             s._schrittKlang ||
             (s._schrittKlang = {
                 halb: null, // verankerter Halbzyklus-Index (floor(phase/π))
-                luft: false, // war der letzte Tick in der Luft?
-                fallVy: 0, // negativstes vy der Luft-Strecke (Aufprall-Maß)
+                aufprall: s._aufprall ? s._aufprall.n : 0, // das zuletzt gehörte Aufprall-Ereignis des Leib-Lösers
                 schritte: 0, // Ereignis-Zähler (Linsen-Messpunkte, render-only)
                 landungen: 0,
                 letzter: null, // Parameter des letzten Ereignisses
             });
         const grounded = s.isInAir !== true;
-        const vy = Number.isFinite(s._fieldVy) ? s._fieldVy : 0;
-        if (!grounded) {
-            if (vy < k.fallVy) k.fallVy = vy;
-            k.luft = true;
-        } else {
-            if (k.luft && -k.fallVy >= AnazhRealm.LAND_DIP_MIN_SPEED) {
-                this._schrittKlangEreignis(mesh, true, -k.fallVy);
-            }
-            k.luft = false;
-            k.fallVy = 0;
+        const A = s._aufprall;
+        if (A && A.n !== k.aufprall) {
+            k.aufprall = A.n;
+            if (grounded && A.tempo >= AnazhRealm.LAND_DIP_MIN_SPEED) this._schrittKlangEreignis(mesh, true, A.tempo);
         }
         const T = AnazhRealm.SCHRITT_KLANG;
         const phase = Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0;
@@ -566,8 +561,9 @@ class AnazhRealm_klang {
     }
 
     // Stoff → Timbre aus der Klang-Spalte seiner Zeile der Stoff-Tafel (`_stoff`, stoffe.K1; ein eigener Stoff klingt wie sein
-    // nächster Verwandter). Die LANDUNG ist derselbe
-    // Burst, STÄRKER ∝ Aufprall-Tempo (√(2gh), wie der Kamera-Dip), länger + tiefer, gainDeckel-begrenzt.
+    // nächster Verwandter). Die LANDUNG ist derselbe Burst, STÄRKER mit dem Aufprall-Tempo (√(2gh)): vom Pegel des Schritts
+    // linear bis zur Decke beim Aufprall landVollMs — jeder Stoff steigt über die ganze Spanne (bis klang.K4 deckelte ein
+    // Zusatz ab 11,7 m/s: 12 m klangen wie 8 m), länger und tiefer.
     _schrittKlangParams(material, landung, impact) {
         const T = AnazhRealm.SCHRITT_KLANG;
         const zeile = this._stoff(material);
@@ -584,7 +580,8 @@ class AnazhRealm_klang {
         };
         if (landung) {
             const im = Number.isFinite(impact) && impact > 0 ? impact : 0;
-            p.gain = Math.min(T.gainDeckel, m.gain * (1 + Math.min(T.landGainSpanne, im * T.landGainProMs)));
+            p.aufprall = im;
+            p.gain = m.gain + (Math.max(m.gain, T.gainDeckel) - m.gain) * Math.min(1, im / T.landVollMs);
             p.dauer = m.dauer * T.landDauerFaktor;
             p.freq = m.freq * T.landFreqFaktor;
         }
@@ -636,31 +633,74 @@ class AnazhRealm_klang {
         this._fahrtKlangTick();
     }
 
-    // DIE STIMME DER FAHRT (Leben-Schau 2, fahr-bahn — Befund: Fahren war stumm): im Sattel eines Gesetz-Wagens klingt seine
-    // Fahrt aus dem Gesetzbuch (klang:FAHRT — der Motor aus der Zünd-Folge seiner Drehzahl im Gang, das Abrollen aus dem
-    // Tempo; die Quellen baut klang-core `fahrtStimme`) auf dem Welt-Master. Der Wirt reicht nur die Lage: das Tempo des
-    // Fahr-Zustands, die Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-
-    // Tasten (W, rückwärts S), den Flug. Absteigen oder ein Wagen-Wechsel stoppt sie. Kosten: eine Stimme, nur im Sattel.
+    // DIE STIMME DER FAHRT (Leben-Schau 2, fahr-bahn — Befund: Fahren war stumm): jeder Gesetz-Wagen in Fahrt klingt aus dem
+    // Gesetzbuch (klang:FAHRT — der Motor aus der Zünd-Folge seiner Drehzahl im Gang, das Abrollen aus dem Tempo; die Quellen
+    // baut klang-core `fahrtStimme`) auf dem Welt-Master: der im Sattel und jeder im Nachlauf (`_fahrLos`, gestoßen oder im
+    // Flug verlassen — ohne Fahrer schweigt sein Motor). Der Wirt reicht nur die Lage: das Tempo des Fahr-Zustands, die
+    // Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-Tasten (W, rückwärts S),
+    // den Flug und das Ohr (klang:FAHRT_OHR, `fahrtAmOhr`: Doppler aus der Geschwindigkeit des Wagens `_fahrWagenGeschw`
+    // gegen die des Leibs am Ohr, Abstand; im Sattel sitzt das Ohr im Wagen). Absteigen, ein Wagen-Wechsel, die Ruhe oder die
+    // Hörweite stoppt eine Stimme. Kosten: eine Stimme je hörbarem Wagen in Fahrt.
     _fahrtKlangTick() {
         const s = this.state.symphony;
-        const pl = this.state.player;
-        const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
-        const fz =
-            e && e.id === pl.mountedArch && e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
-        if (s.fahrt && (!fz || s.fahrt.entry !== e)) {
-            s.fahrt.stimme.stop(s.ctx.currentTime);
-            s.fahrt = null;
-        }
-        if (!fz) return;
-        if (!s.fahrt) s.fahrt = { entry: e, stimme: AnazhRealm._umweltGesetz().kern.fahrtStimme(s.ctx, s.masterGain) };
+        const st = this.state;
+        const pl = st.player;
+        const pm = st.playerMesh;
+        const v = st.playerVel;
+        const { kern } = AnazhRealm._umweltGesetz();
         const S = AnazhRealm._fahrSchrittGesetz().S;
-        const T = this.state.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
-        const gas = Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0);
-        const vmax = e._fahrSatz.vmax;
-        s.fahrt.stimme.anwenden(
-            { v: fz.vlong, vmax, rueckVmax: vmax * S.rueckVmax, gas, luft: !!fz.luft },
-            s.ctx.currentTime
-        );
+        const T = st.verbTafel; // Gas analog aus der Verb-Tafel; die Bremse unter bremsV treibt rückwärts
+        const sattel = pl && pl.mountedArch != null && this._mountedEntry ? this._mountedEntry : null;
+        const ohr = pm && {
+            x: pm.position.x,
+            y: pm.position.y,
+            z: pm.position.z,
+            vx: v ? v.x() : 0,
+            vy: v ? v.y() : 0,
+            vz: v ? v.z() : 0,
+        };
+        const stimmen = s.fahrt || (s.fahrt = new Map());
+        const hoert = new Map();
+        for (const e of sattel ? [sattel, ...(this._fahrLos || [])] : this._fahrLos || []) {
+            const fz = e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
+            const imSattel = e === sattel && e.id === pl.mountedArch;
+            const vw = fz && ohr && this._fahrWagenGeschw(e);
+            if (!vw || hoert.has(e)) continue;
+            const am = imSattel
+                ? kern.fahrtAmOhr(ohr, ohr)
+                : kern.fahrtAmOhr(
+                      {
+                          x: fz.x,
+                          y: Number.isFinite(fz.y) ? fz.y : e.position.y,
+                          z: fz.z,
+                          vx: vw.x,
+                          vy: fz.vy,
+                          vz: vw.z,
+                      },
+                      ohr
+                  );
+            const vmax = e._fahrSatz.vmax;
+            const lage = {
+                v: fz.vlong,
+                vmax,
+                rueckVmax: vmax * S.rueckVmax,
+                gas: imSattel ? Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0) : 0,
+                luft: !!fz.luft,
+                motor: imSattel,
+                doppler: am.doppler,
+                dDb: am.dDb,
+            };
+            if (imSattel || kern.fahrtImOhr(lage).rollDb > -Infinity) hoert.set(e, lage);
+        }
+        for (const [e, stimme] of stimmen)
+            if (!hoert.has(e)) {
+                stimme.stop(s.ctx.currentTime);
+                stimmen.delete(e);
+            }
+        for (const [e, lage] of hoert) {
+            if (!stimmen.has(e)) stimmen.set(e, kern.fahrtStimme(s.ctx, s.masterGain));
+            stimmen.get(e).anwenden(lage, s.ctx.currentTime);
+        }
     }
 
     // ### Lofi-Pad-Schicht ###
@@ -1666,6 +1706,8 @@ AnazhRealm._umweltGesetz = function () {
         kern.SUBSTANZ &&
         kern.fahrtStimme &&
         kern.fahrtMischung &&
+        kern.fahrtAmOhr &&
+        kern.fahrtImOhr &&
         kern.FAHRT
     ) {
         AnazhRealm._umweltGesetzMemo = { UMWELT: U, kern };
@@ -1748,8 +1790,7 @@ AnazhRealm.SCHRITT_KLANG = Object.freeze({
     },
     maxProTick: 2, // Frame-Hänger feuern keinen Burst-Schwall (max 2 Füße/Frame)
     gainDeckel: 0.12, // absolute Decke jedes Bursts (unter dem Kampf-Treffer)
-    landGainProMs: 0.12, // Zusatz-Verstärkung je m/s Aufprall (∝ Fallhöhe via √(2gh))
-    landGainSpanne: 1.4, // maximaler Zusatz — ein harter Sturz bleibt gedeckelt
+    landVollMs: 16, // m/s Aufprall (ein Sturz aus ≈ 13 m): hier erreicht die Landung die Decke, darunter steigt sie linear
     landDauerFaktor: 2.0, // die Landung klingt länger nach
     landFreqFaktor: 0.7, // und tiefer — Masse im Aufprall
 });
