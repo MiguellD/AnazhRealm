@@ -1461,15 +1461,14 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 r.state.worldMeta.voxelEdits.pop();
             }
         }
-        // T1 zeitliche Kohärenz: der Edit-FOOTPRINT heilt SYNCHRON im Edit-Call, die SKIRT-Nachbarn
-        // bleiben async (kein Edit-Spike). Probe: carve r=3 mitten in einem gestreamten Chunk → sein Mesh
-        // ist neu OHNE `_drainDirtyVoxelChunks`; das Dirty-Set trägt danach noch die Skirt-Nachbarn.
+        // T1 zeitliche Kohärenz (bau-faden, Lehre 14): der Edit baut keinen Chunk-Stoff im Haupt-Faden — sein Fußabdruck
+        // wartet im Dirty-Set auf den Faden, und das stehende Netz trägt die Säule schon im Edit-Call (die Boden-Karte unter
+        // der Mitte auf ihrem Fuß, `_editGestaltVorlaeufig`). Probe: carve r=3 mitten in einem gestreamten Chunk, ohne Drain.
+        // Bis bau-faden heilte der Fußabdruck synchron (`_syncRebuildEditFootprint`, 215 ms je Bau-Klick).
         out.t1FootprintSync = "no-streamed-chunk";
-        out.t1SkirtStaysAsync = false;
         {
             let t1Cx = null,
                 t1Cz = null,
-                t1Before = null,
                 t1My = null;
             // den gestreamten Chunk am nächsten zum Ursprung (interior → 8 Skirt-Nachbarn da)
             let bestD = Infinity;
@@ -1485,7 +1484,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
                     bestD = d;
                     t1Cx = kx;
                     t1Cz = kz;
-                    t1Before = e.mesh.uuid;
                     t1My = my;
                 }
             }
@@ -1493,12 +1491,18 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const mx = t1Cx * span + span / 2,
                     mz = t1Cz * span + span / 2;
                 if (r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks.clear();
-                r._addVoxelEdit(mx, t1My, mz, 3, "carve"); // KEIN Drain — T1 muss in-edit heilen
-                const afterEntry = r.state.voxelChunks.get(`${t1Cx},${t1Cz}`);
-                const afterUuid = afterEntry && afterEntry.mesh ? afterEntry.mesh.uuid : null;
-                out.t1FootprintSync = afterUuid && afterUuid !== t1Before ? "synced" : "stale";
-                // die Skirt-Nachbarn bleiben im Dirty-Set (nicht gesynct = kein Spike)
-                out.t1SkirtStaysAsync = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > 0);
+                const bau = r._buildVoxelChunkData;
+                let sync = 0;
+                r._buildVoxelChunkData = (...a) => (sync++, bau.apply(r, a));
+                try {
+                    r._addVoxelEdit(mx, t1My, mz, 3, "carve"); // KEIN Drain
+                } finally {
+                    delete r._buildVoxelChunkData;
+                }
+                const fuss = r._bodenSichtAt(mx, mz) - t1My;
+                const faden = r.state.dirtyVoxelChunks.has(`${t1Cx},${t1Cz}`);
+                out.t1FootprintSync = `${sync} Sync-Bauten · die Karte ${fuss.toFixed(2)} m · im Faden ${faden}`;
+                out.t1Faden = !sync && fuss < -2 && faden;
                 // Cleanup: den Test-Edit zurücknehmen + die Skirt drainen
                 if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits))
                     r.state.worldMeta.voxelEdits.pop();
@@ -1604,18 +1608,13 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `state=${res.carveCellUnderWL} (0=air erwartet)`
         );
     }
-    // T1 (Terrain-Kohärenz-Plan §4): die zeitliche Naht — der Edit-Footprint heilt synchron.
-    if (res.t1FootprintSync !== "no-streamed-chunk") {
+    // T1 (Terrain-Kohärenz-Plan §4): die zeitliche Naht — der Fußabdruck baut im Faden, das Netz trägt die Säule sofort.
+    if (res.t1FootprintSync !== "no-streamed-chunk")
         check(
-            "T1 (Terrain-Kohärenz): der Edit-FOOTPRINT heilt SYNCHRON im Edit-Call (kein async-Fenster)",
-            res.t1FootprintSync === "synced",
-            `footprint=${res.t1FootprintSync}`
+            "T1 (Terrain-Kohärenz): der Edit baut seinen Fußabdruck im Faden, das Netz trägt die Säule im Edit-Call",
+            res.t1Faden,
+            res.t1FootprintSync
         );
-        check(
-            "T1 (Terrain-Kohärenz): die SKIRT-Nachbarn bleiben async (footprint-only sync → kein Edit-Spike)",
-            res.t1SkirtStaysAsync
-        );
-    }
     // T2 (Terrain-Kohärenz-Plan §4): der Cross-LOD-Geomorph — die räumliche Naht.
     check("T2 (Cross-LOD-Geomorph): kein Material-Morph-Fehler (positionNode kompiliert)", res.t2NoMorphError);
     check(
