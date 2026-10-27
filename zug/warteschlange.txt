@@ -125,3 +125,6 @@ z50-abab 1 abab A=dc06b495020b357431dc998342945d2352e0beee B=6db2602c6ea8c3a2ae5
 z49n-abab 0 storno
 z50-abab 0 storno
 z49z50-abab 2 abab A=cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 B=6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a zellen=w-ego,d-ego,stadt
+z49z50-abab 0 storno
+takt10c-gtx 1 punkte sha=dc06b495020b357431dc998342945d2352e0beee geraet=gtx nur=tore.K3#1
+z49z50b-abab 2 abab A=cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 B=6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a zellen=w-ego,d-ego,stadt
