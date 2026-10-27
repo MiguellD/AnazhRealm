@@ -433,13 +433,13 @@ const server = statikServer();
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
     const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
-    const [st, spur, S, ruh] = [r.state, [], [], (ms) => new Promise((ok) => setTimeout(ok, ms))];
+    const [st, spur, S] = [r.state, [], []];
     let t = performance.now();
     const takt = async (n, f) => {
         for (let i = 1; i <= n; i++) {
             if (f) f(i);
             r._gameLoopTick((t += 100));
-            if (i % 5 === 0) await ruh(0);
+            if (i % 5 === 0) await sleep(0);
         }
     };
     const sortiert = (o) =>
