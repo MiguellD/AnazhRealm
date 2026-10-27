@@ -1299,7 +1299,8 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    urteilEnde(m, `=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
+    if (m) {
+        console.log(`=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
         for (const ort of ORTE) {
             const o = m.orte[ort.id] || {};
             console.log(`  ${ort.id} (${ort.bild}) bei ${(o.P || []).join("/")} · Anker ${(o.anker || []).join(", ")}${o.satz ? ` · Satz: ${o.satz.length} Werke` : ""}`);
@@ -1369,6 +1370,5 @@ hauptLauf(async () => {
         check(`K3 NP-03 0 von ${NINJA_WP.length * 4} Posen mit Park-Geometrie zwischen Blickziel und Kamera oder um die Kamera, NP-02 der Tunnel bleibt zu`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
 });

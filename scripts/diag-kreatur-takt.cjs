@@ -229,9 +229,13 @@ hauptLauf(async () => {
     console.log(
         `\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)${je.length ? ` — Sekunden je Probe: ${je.join(", ")}` : ""}`
     );
-    urteilEnde(rot, SELBST
-                ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
-                : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`, SELBST
+    urteilEnde(
+        rot,
+        SELBST
+            ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
+            : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`,
+        SELBST
             ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${faelle.length} Täter).`
-            : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`);
+            : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
+    );
 });
