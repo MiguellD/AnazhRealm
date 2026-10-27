@@ -1,0 +1,98 @@
+{
+ "sha": "e7a28b06e6fd665ad12b7a76da66157f5c38f4ab",
+ "geraet": "radeon",
+ "zeit": "2026-10-27T02:29:58.202Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 150.7 · 350.9 · 1087.5 · 125.8 ms; Hänger 12/84/13/3)",
+   "exit": 0,
+   "minuten": 22.67,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 150.7 · 350.9 · 1087.5 · 125.8 ms; Hänger 12/84/13/3)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T00:49:12.639Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.26 · fahrt 0.26 · nacht 0.24 ms · Aussetzer 0 in 602.9 s Wiedergabe (0 s still) (Exit 1)",
+   "exit": 1,
+   "minuten": 13.59,
+   "grund": "ROT: Klang-Takt p95 gehen 0.26 · fahrt 0.26 · nacht 0.24 ms · Aussetzer 0 in 602.9 s Wiedergabe (0 s still) (Exit 1)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T01:11:52.730Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 5.424 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 15.17,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T01:25:27.974Z",
+   "abdruck": "347160cebd7c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.5 ms (Soll p95 ≤ 0,3; 105 Rufe in 6182 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "exit": 0,
+   "minuten": 29.51,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T01:40:38.223Z",
+   "abdruck": "2897b2bde797",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "siedlung.K2#1": {
+   "gruen": true,
+   "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 94 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62 σ 26 schwarz 0.0 % weiß 0.0 % · Sta",
+   "exit": 0,
+   "minuten": 19.72,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T02:10:09.106Z",
+   "abdruck": "22156cd39fff",
+   "port": 7754,
+   "bahn": "1/3"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2875/1186/6091/4084 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.104 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 19.82,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T02:10:09.168Z",
+   "abdruck": "a99597ca60dd",
+   "port": 7764,
+   "bahn": "2/3"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 14.1 s, 3 fressen: tier:wolf 8294 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.36 m · Luma 79.8 σ 36 schwarz 0.0 % weiß 0.0 % · Stand 18.546.104 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 20.76,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T02:10:09.225Z",
+   "abdruck": "6f4d55252639",
+   "port": 7774,
+   "bahn": "3/3"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.6 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 1.83,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T02:29:58.202Z",
+   "abdruck": "8b16706e5959",
+   "port": 7764,
+   "bahn": "2/3"
+  }
+ }
+}

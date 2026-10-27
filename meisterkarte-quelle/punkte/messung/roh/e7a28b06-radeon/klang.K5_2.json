@@ -1,0 +1,55 @@
+{
+ "seite": {
+  "isoliert": true,
+  "tiere": 0
+ },
+ "phasen": {
+  "gehen": {
+   "bilder": 15681,
+   "weg": 264,
+   "p95": 0.26,
+   "max": 4.77,
+   "schreiben": 1.05,
+   "traeger": [
+    "_umweltLage 0.10",
+    "_playSchrittOneShot 0.08",
+    "_lofiPlayGroove 0.08"
+   ]
+  },
+  "fahrt": {
+   "bilder": 8943,
+   "weg": 263,
+   "p95": 0.26,
+   "max": 10.31,
+   "schreiben": 5.58,
+   "traeger": [
+    "_lofiPlayGroove 0.11",
+    "_umweltLage 0.10",
+    "_fahrtKlangTick 0.06"
+   ],
+   "sattel": true
+  },
+  "nacht": {
+   "bilder": 11595,
+   "weg": 197,
+   "p95": 0.24,
+   "max": 6.21,
+   "schreiben": 1.27,
+   "traeger": [
+    "_playSchrittOneShot 0.10",
+    "_lofiPlayGroove 0.10",
+    "_umweltLage 0.08"
+   ]
+  }
+ },
+ "aussetzer": {
+  "n": 0,
+  "still": 0,
+  "s": 602.9
+ },
+ "rot": [
+  "T gehen: Klang-ms je Bild p95 0.26 > 0.2 (max 4.77; trägt _umweltLage 0.10 · _playSchrittOneShot 0.08 · _lofiPlayGroove 0.08)",
+  "T fahrt: Klang-ms je Bild p95 0.26 > 0.2 (max 10.31; trägt _lofiPlayGroove 0.11 · _umweltLage 0.10 · _fahrtKlangTick 0.06)",
+  "T nacht: Klang-ms je Bild p95 0.24 > 0.2 (max 6.21; trägt _playSchrittOneShot 0.10 · _lofiPlayGroove 0.10 · _umweltLage 0.08)"
+ ]
+}

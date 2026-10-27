@@ -1,0 +1,1 @@
+[linse-gpu] amd/rdna-3
