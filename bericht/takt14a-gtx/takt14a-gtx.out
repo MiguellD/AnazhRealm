@@ -1,0 +1,32 @@
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 1 Läufe ~6 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  tore.K5#2 · ROT: Stempel, Bau-Hash, Kontrolle · Bauplan 399 Zeichen, eigener Bauplan 845 · Welt-Code 517 Zeichen · Welt 5ad84f2d-e331-4764-b6a8-5f42bcfb6163 136 KB guest true · Kontrolle 16809 ms (A 532, B echt) · Leib 2096 ms · A=9c183437/12 B=515787a7/12 ohne=515787a7/12 · allein · Exit 1 · 2.83 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~9 min auf 1 Bahn(en) · erwartet ~9 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN klang.K4#2 · ✅ Schritte gras 5625 Hz (n 27) · laub 5229 Hz (n 20) · quarz 3300 Hz (n 19), kleinster Abstand 396 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) · Bahn 1/1 · Exit 0 · 3.33 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~6 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  halten.K1#2 · keine Zeile Q15 halten.K1 Staffel 2 (Exit 1) · Bahn 1/1 · Exit 1 · 5.71 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~4 min auf 1 Bahn(en) · erwartet ~4 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  halten.K5#1 · Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → cc66cb3569cd · Bahn 1/1 · Exit 1 · 0.85 min
+  ROT  halten.K5#2 · hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/97.4/19.8 · Nahrung im Stand [["consume:_k5"],["consume:_k5"]] · ROT: stand-werte · Bahn 1/1 · Exit 1 · 0.85 min (Zwilling von halten.K5#1)
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 1 Läufe ~4 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~4 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN luftwasser.K5#1 · Schwarm-Takt 0.205 ms je Takt (Median, p95 0.35) bei 100 Gliedern im Blick in jeder Reihe, 673 Paare der Separation, Auge 51.1 m (Soll ≤ 0,3 ms, 100 im Bild) · allein · Exit 0 · 0.22 min
+  GRÜN luftwasser.K5#2 · Klasse vogel 2 Befehle {"haupt":2}, 565 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle) · allein · Exit 0 · 0.22 min (Zwilling von luftwasser.K5#1)
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 1 Läufe ~14 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~14 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN siedlung.K5#2 · nH 12 erstes Haus nach 60.7 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 196.3 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf) · allein · Exit 0 · 5.64 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~15 min auf 1 Bahn(en) · erwartet ~15 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN siedlung.K2#2 · ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0) · Bahn 1/1 · Exit 0 · 2.04 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~10 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN leib.K2#1 · hang 1.5 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.4 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 · Bahn 1/1 · Exit 0 · 2.85 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~5 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN tore.K3#1 · 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) · Bahn 1/1 · Exit 0 · 1.51 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am a03b7b06 · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~5 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  klang.K4#1 · gras 5794 Hz (n 39) · laub 5501 Hz (n 16) · quarz 3274 Hz (n 20) — kleinster Abstand 293 Hz · Bahn 1/1 · Exit 0 · 1.21 min
+→ meisterkarte-quelle\punkte\messung\a03b7b06-gtx.json
