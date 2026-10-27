@@ -2159,7 +2159,11 @@ class AnazhRealm_studio_bruecke {
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
             if (huelle && !bf.fern)
                 return AnazhRealm._kernPflichtBruch("fachwerk:__fern (" + preset + ", Stufe " + stufe + ")");
-            if (!this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt (Treffer sind frei)
+            // DER FIT-TAKT ZÄHLT FITS (sk5-haus, Gebot 7): die Hülle ist die Liste des Gesetzbuchs, kein Fit im Wirt — sie
+            // kostet, was ein Treffer kostet, und wartet nie am Takt. Bis sk5-haus wartete das erste Haus des kleinen Dorfs
+            // (nH 12, Hülle in 234 m, Flat vorgebacken) hinter den näheren Fits der Streu auf die zweite Fenster-Hälfte
+            // (GTX 562 ms; am Dorf antwortete der Takt 49 ja / 1 210 nein).
+            if (!huelle && !this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt (Treffer sind frei)
         }
         const einblenden = entry._ziegelNah === undefined; // fern entstanden (nie in der Mesh-Zone): die Geburt blendet ein
         const handle = this._weltKapselSpawn(

@@ -1852,7 +1852,7 @@ hauptLauf(async () => {
             const pm = r.state.playerMesh;
             const p0 = pm.position.clone();
             const [kx, kz] = key.split(",").map(Number);
-            const lauf = async (nH, vorlauf, alt) => {
+            const lauf = async (nH, vorlauf, alt, fern) => {
                 r.state._frameOverBudget = false;
                 const seed = (cand.seed ^ Math.imul(nH * 2 + !vorlauf, 0x9e3779b1)) >>> 0;
                 r._autoSettlementCellInfo = (x, z) => (x === kx && z === kz ? { ...cand, seed, nH } : null);
@@ -1894,34 +1894,84 @@ hauptLauf(async () => {
                 if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
-                const pw = stell(A.nearM - 20);
+                const pw = stell(A.nearM - 2); // am Ring des Erwachens, wie der Gang mit 4 m/s ihn kreuzt (das Auge des Vorrats, `_dorfVorbacken`)
+                // DAS ERSTE HAUS IM BILD (sk5-haus): `bild` = Takte vom Erwachen, bis ein Haus der Zelle in der Stufe steht, die
+                // seine Kette für seinen Abstand wählt — in der Mesh-Zone seine gedockte Stufe (`_foundryPlatzBereit`), dahinter
+                // seine Hülle im Welt-March über den Chokepoint des Cull-Takts (`_archZiegelFern`; der Null-Renderer zeichnet kein
+                // Feld, die Linse öffnet es je Ruf). Der Fit-Takt ist voll wie am Dorf: nähere Fits fragten zuerst (Werkbank am
+                // Messort dorf: 49 ja / 1 210 nein). `naechst` der Abstand des Slots, den der Schirm vorn sieht (Mitte im Schirm,
+                // dann nah); `fern` (Selbsttest) dreht die Reihe des Zugs um — das ferne Haus vor dem nahen.
+                const R = r.state.architectureCullingRadius;
+                const rd = r.state.renderer;
+                const stufe = (e) => {
+                    if (Math.hypot(e.position.x - pw.x, e.position.z - pw.z) <= R)
+                        return r._foundryPlatzBereit(e, r._foundryPresetForEntry(e)) ? "mesh" : null;
+                    while (r._weltBakeErlaubt(0));
+                    rd._isHeadlessNull = false;
+                    try {
+                        r._archZiegelFern(e);
+                    } finally {
+                        rd._isHeadlessNull = true;
+                    }
+                    return e._ziegelSlot ? "huelle" : null;
+                };
+                if (fern)
+                    r._dorfZug = (...a) => {
+                        const q = zug.apply(r, a);
+                        q.reihe.reverse();
+                        return q;
+                    };
+                const messen = vorlauf && !alt;
+                let bild = -1,
+                    erstes = null;
                 wach = true;
                 for (
                     const weiter = window.__deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
-                    !erst && weiter();
+                    (!erst || (messen && !erstes && bild < 400)) && weiter();
                 ) {
+                    const vorErst = !erst;
                     r._tickAutoSettlement(pw);
-                    haus++;
+                    bild++;
+                    if (vorErst) haus++;
+                    for (const e of messen ? r.state.architectures : []) {
+                        const s = !vorher[0].has(e) && /^haus_/.test(e.type) && stufe(e);
+                        if (s) {
+                            erstes = {
+                                typ: e.type,
+                                stufe: s,
+                                d: +Math.hypot(e.position.x - pw.x, e.position.z - pw.z).toFixed(1),
+                            };
+                            break;
+                        }
+                    }
                     await new Promise((rs) => setTimeout(rs, 5));
                 }
+                r._dorfZug = zug;
+                const rang = (s) => {
+                    const [x, z] = [erst.origin.x + s.x, erst.origin.z + s.z];
+                    return [r._imErstenBlick(x, z, 0, true) ? 0 : 1, Math.hypot(x - pw.x, z - pw.z)];
+                };
+                const vorn = erst && erst.plan.slots.map(rang).sort((a, b) => a[0] - b[0] || a[1] - b[1])[0];
                 return (
                     erst && {
                         nH,
                         plaene: haupt + r._ortWahlMass.kandidaten,
                         haus,
                         vor,
+                        ...(messen && { bild, erstes, naechst: +vorn[1].toFixed(1) }),
                     }
                 );
             };
             try {
-                for (const [k, nH, v, alt] of [
+                for (const [k, nH, v, alt, fern] of [
                     ["vorlauf12", 12, 1],
                     ["vorlauf300", 300, 1],
+                    ["fern300", 302, 1, 0, 1],
                     ["teleport12", 12, 0],
                     ["teleport300", 300, 0],
                     ["alt300", 301, 1, 1],
                 ])
-                    res.c.k5[k] = await lauf(nH, v, alt);
+                    res.c.k5[k] = await lauf(nH, v, alt, fern);
                 delete r._foundryFlattenFor;
                 res.c.k5.drossel = A.drosselTakte;
                 const y = r.state.yaw;
@@ -2982,6 +3032,28 @@ hauptLauf(async () => {
         `C-K5: DAS NÄCHSTE HAUS ZUERST — nH 12 und 300 heben es nach dem Vorlauf ≤ 0,5 s (${soll} Takte) nach dem Erwachen, ihre Stufen bestellt vor ihm`,
         je(["vorlauf12", "vorlauf300"], (w) => w.haus >= 0 && w.haus <= soll && w.vor > 0),
         z5
+    );
+    // DAS ERSTE HAUS IM BILD (sk5-haus): es steht in der Stufe seines Abstands ≤ `soll` Takte nach dem Erwachen, auch hinter
+    // vollem Fit-Takt, und es ist das Haus, das der Schirm vorn sieht — sonst beim Namen das ferne vor dem nahen
+    const fernVorNah = (w) =>
+        w.erstes && w.erstes.d > w.naechst + 1
+            ? `ein fernes Haus vor dem nahen: ${w.erstes.typ} (${w.erstes.stufe}) in ${w.erstes.d} m vor dem Slot in ${w.naechst} m`
+            : null;
+    check(
+        `C-K5: DAS ERSTE HAUS IM BILD — nH 12 und 300 stehen in ihrer Stufe ≤ ${soll} Takte nach dem Erwachen, das nahe zuerst, bei vollem Fit-Takt`,
+        je(["vorlauf12", "vorlauf300"], (w) => w.erstes && w.bild <= soll && !fernVorNah(w)),
+        ["vorlauf12", "vorlauf300"]
+            .map(
+                (k) =>
+                    (k5[k] && fernVorNah(k5[k])) ||
+                    `${k} ${JSON.stringify(k5[k] && k5[k].erstes)} nach ${k5[k] && k5[k].bild} Takten`
+            )
+            .join(" · ")
+    );
+    check(
+        "C-K5 Selbsttest: die Reihe des Zugs umgedreht — ein fernes Haus vor dem nahen wird ROT beim Namen",
+        !!(k5.fern300 && fernVorNah(k5.fern300)),
+        (k5.fern300 && fernVorNah(k5.fern300)) || z5
     );
     check(
         "C-K5 Selbsttest: der Export nach dem Erwachen (Teleport) und die Schichten vor ihm (alt) fallen ROT",
