@@ -978,3 +978,4 @@
 2026-10-27 20:06:06 takt13-headless mensch.K2#1 GRÜN 3.6 · 26/81
 2026-10-27 20:06:11 takt13-headless tiere.K1#1 GRÜN 0.3 · 27/81
 2026-10-27 20:06:15 takt13-headless tiere.K3#1 GRÜN 0.6 · 28/81
+2026-10-27 20:06:20 takt13-headless oekologie.K3#1 GRÜN 0.3 · 29/81
