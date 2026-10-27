@@ -1891,16 +1891,24 @@ hauptLauf(async () => {
                             })()
                         );
                 const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
-                if (vorlauf) r._tickAutoSettlement(stell(A.nearM + 80));
+                const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
+                if (vorlauf) r._tickAutoSettlement(stell(nah + 80));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
-                const pw = stell(A.nearM - 2); // am Ring des Erwachens, wie der Gang mit 4 m/s ihn kreuzt (das Auge des Vorrats, `_dorfVorbacken`)
+                // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
+                // bis seine Stufen stehen — dann erwacht die Zelle
+                const vr = r._dorfVorraete.get(key);
+                for (let m = nah + 80; vorlauf && !alt && vr && m > nah + 1; m -= 4)
+                    for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++)
+                        await new Promise((rs) => setTimeout(rs, 5));
+                const vor0 = new Set(r.state.architectures); // die Häuser der Läufe davor zählen nie
+                const pw = stell(nah - 2); // am Ring des Erwachens, wie der Gang mit 4 m/s ihn kreuzt (das Auge des Vorrats, `_dorfVorbacken`)
                 // DAS ERSTE HAUS IM BILD (sk5-haus): `bild` = Takte vom Erwachen, bis ein Haus der Zelle in der Stufe steht, die
                 // seine Kette für seinen Abstand wählt — in der Mesh-Zone seine gedockte Stufe (`_foundryPlatzBereit`), dahinter
                 // seine Hülle im Welt-March über den Chokepoint des Cull-Takts (`_archZiegelFern`; der Null-Renderer zeichnet kein
                 // Feld, die Linse öffnet es je Ruf). Der Fit-Takt ist voll wie am Dorf: nähere Fits fragten zuerst (Werkbank am
                 // Messort dorf: 49 ja / 1 210 nein). `naechst` der Abstand des Slots, den der Schirm vorn sieht (Mitte im Schirm,
-                // dann nah); `fern` (Selbsttest) dreht die Reihe des Zugs um — das ferne Haus vor dem nahen.
+                // dann nah); `fern` (Selbsttest) dreht die Reihe des Zugs um — die Hülle vor dem Haus in der Mesh-Zone.
                 const R = r.state.architectureCullingRadius;
                 const rd = r.state.renderer;
                 const stufe = (e) => {
@@ -1934,7 +1942,7 @@ hauptLauf(async () => {
                     bild++;
                     if (vorErst) haus++;
                     for (const e of messen ? r.state.architectures : []) {
-                        const s = !vorher[0].has(e) && /^haus_/.test(e.type) && stufe(e);
+                        const s = !vor0.has(e) && /^haus_/.test(e.type) && stufe(e);
                         if (s) {
                             erstes = {
                                 typ: e.type,
@@ -1958,7 +1966,7 @@ hauptLauf(async () => {
                         plaene: haupt + r._ortWahlMass.kandidaten,
                         haus,
                         vor,
-                        ...(messen && { bild, erstes, naechst: +vorn[1].toFixed(1) }),
+                        ...(messen && { bild, erstes, naechst: +vorn[1].toFixed(1), R }),
                     }
                 );
             };
@@ -3034,9 +3042,9 @@ hauptLauf(async () => {
         z5
     );
     // DAS ERSTE HAUS IM BILD (sk5-haus): es steht in der Stufe seines Abstands ≤ `soll` Takte nach dem Erwachen, auch hinter
-    // vollem Fit-Takt, und es ist das Haus, das der Schirm vorn sieht — sonst beim Namen das ferne vor dem nahen
+    // vollem Fit-Takt — und nie als Hülle, solange vorn im Schirm ein Haus der Mesh-Zone liegt: sonst das ferne vor dem nahen
     const fernVorNah = (w) =>
-        w.erstes && w.erstes.d > w.naechst + 1
+        w.erstes && w.erstes.stufe === "huelle" && w.naechst <= w.R
             ? `ein fernes Haus vor dem nahen: ${w.erstes.typ} (${w.erstes.stufe}) in ${w.erstes.d} m vor dem Slot in ${w.naechst} m`
             : null;
     check(
