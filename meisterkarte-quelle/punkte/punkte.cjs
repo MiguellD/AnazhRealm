@@ -312,7 +312,12 @@ function fahreGruppe(sts, ctx) {
         }
         argv = argv.slice(1);
         const zeugeDatei = st.gpu ? ctx.aus + ".gpu-zeuge.txt" : null;
-        if (st.gpu) {
+        // DAS SCHLOSS DES RECHNERS (27.10., Takt 8): headless fuhr in 3 Bahnen ohne Schloss neben den Zeit-Stationen der Radeon —
+        // profiband.K4#1 84 Hänger statt 0 (607d0c73: max 67 ms), klang.K5#2 p95 0,26 statt 0,11 ms. Darum nimmt auch eine
+        // headless-Station ihren Platz im Schloss: ein Zeit-Lauf misst allein auf dem RECHNER, nie nur auf der Karte; die Karte bleibt
+        // ihr verwehrt (LINSE_GPU=software), der Zeuge gilt nur GPU-Stationen. Ohne gpuLauf (die Läufer des Selbsttests) läuft sie frei.
+        const schloss = st.gpu || !!ctx.gpuLauf;
+        if (schloss) {
             if (!ctx.gpuLauf || !fs.existsSync(ctx.gpuLauf)) return rot("gpu-lauf.sh fehlt — eine GPU-Station läuft nie ohne Schloss");
             if (!ctx.bash) return rot("keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh");
             argv = [ctx.gpuLauf, "punkte-" + ctx.geraet + "-" + ((ctx.bahn || 0) + 1), exe, ...argv];
@@ -321,6 +326,8 @@ function fahreGruppe(sts, ctx) {
             // das Platz-Schloss: ein Zeit-Lauf nimmt alle Plätze, ein Bild-Lauf einen von N (N = 1: das Ein-Platz-Schloss)
             env.GPU_LAUF_ART = istZeit(sts) ? "zeit" : "bild";
             env.GPU_LAUF_PLAETZE = String(ctx.plaetze || 1);
+        }
+        if (st.gpu) {
             // der Zeuge der Karte in JEDEM node-Prozess der Station (die Werkbank schreibt in ihr eigenes Log)
             env.PUNKTE_GPU_ZEUGE = zeugeDatei;
             env.NODE_OPTIONS = ((env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim();
@@ -340,7 +347,7 @@ function fahreGruppe(sts, ctx) {
         // gpu-lauf.sh, das selbst beendet und löst (trap); davor ist sie die Wache über ein schweigendes gpu-lauf.sh (Nachtruhe und
         // Frist zählt es selbst — eine feste Summe Deckel + Frist riss jeden Lauf, der über die Nacht wartete)
         const stillS = ctx.stillS || SCHLOSS_STILL_S;
-        let uhr = null, amSchloss = !st.gpu;
+        let uhr = null, amSchloss = !schloss;
         const stelle = (s) => { clearTimeout(uhr); uhr = setTimeout(() => { tot = true; baumTot(kind.pid); }, s * 1000); };
         const lauscht = () => {
             if (amSchloss) return;
@@ -348,7 +355,7 @@ function fahreGruppe(sts, ctx) {
         };
         kind.stdout.on("data", (d) => { out = kappe(out, String(d)); lauscht(); });
         kind.stderr.on("data", (d) => { err = kappe(err, String(d)); lauscht(); });
-        stelle(st.gpu ? stillS : deckelS);
+        stelle(schloss ? stillS : deckelS);
         kind.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
         // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
         // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
@@ -375,11 +382,11 @@ function fahreGruppe(sts, ctx) {
                     (zeugeText ? "\n--- gpu-zeuge ---\n" + zeugeText : ""));
             }
             if (tot && !amSchloss) return offen("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + stillS + " s beim Warten — beendet, ungemessen", code);
-            if (tot) return rot("Deckel " + (st.gpu ? deckelS + 120 : deckelS) + " s überschritten — beendet", code);
+            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet", code);
             if (sig) return rot("Absturz: Signal " + sig, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
-            if (st.gpu && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
-            if (st.gpu && code === 124) return rot("GPU-Deckel " + deckelS + " s (gpu-lauf.sh Exit 124)", code);
+            if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
+            if (schloss && code === 124) return rot("GPU-Deckel " + deckelS + " s (gpu-lauf.sh Exit 124)", code);
             let j = null;
             if (fs.existsSync(ctx.aus))
                 try { j = JSON.parse(fs.readFileSync(ctx.aus, "utf8")); } catch (_e) { j = null; }
@@ -907,6 +914,11 @@ async function selbsttest() {
         const mitKarte = (zeilen) => ["node", "-e", "for (const z of " + JSON.stringify(zeilen) + ") console.log(z); require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}"];
         e = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: (j, l) => ({ gruen: j.n === 0 && /schloss punkte-radeon-1 120/.test(l.stdout), zahl: l.stdout.trim().split("\n")[0] }) }, { ...c, deckelMinS: 120 });
         pruef("LÄUFER GPU über das Schloss", e.gruen === true && e.gpu === "amd/rdna-3", JSON.stringify(e));
+        // (3c) DAS SCHLOSS DES RECHNERS: headless nimmt einen Platz (bild) neben den Bahnen der Karte, ohne Karte und ohne Zeugen
+        e = await fahreStation({ ...st0, befehl: ["node", "-e", "console.log(process.env.LINSE_GPU + ' ' + process.env.GPU_LAUF_ART)"],
+            urteil: (j, l) => ({ gruen: /schloss punkte-headless-1 120/.test(l.stdout) && /software bild/.test(l.stdout), zahl: l.stdout.trim().split("\n").join(" | ") }) },
+            { ...c, geraet: "headless", deckelMinS: 120 });
+        pruef("LÄUFER headless nimmt einen Platz im Schloss des Rechners (ein Zeit-Lauf misst allein), nie die Karte", e.gruen === true && e.gpu === undefined, JSON.stringify(e));
         // (3b) DIE WAND GPU: ohne Zeugen der Karte, mit Software-Adapter, mit „zeichnet nie" ROT; der Zeuge aus dem Log eines Kindes GRÜN
         const gs = { ...st0, geraet: "radeon", gpu: true, urteil: lies };
         e = await fahreStation({ ...gs, befehl: schreib({ n: 0 }) }, { ...ctx("ohne-zeugen"), gpuLauf: falsch });
