@@ -14,8 +14,8 @@
 //   ersetzen[-ohne-id|-ohne-meta]   das Welt-Tor „Ersetzen" (`_weltTorImportReplace`)
 //   ersetzen-quota      dasselbe, der Speicher wirft beim Ablegen (Quota): die Seite bleibt laut in A, kein Reload
 //   weltpull[-ohne-id|-ohne-meta]   der Snapshot des Hosts (`_p2pApplyWorldSnapshot`, Resync, world-pull)
-//   portal              das Adress-Portal (`_enterPortalToAddress` → `joinWorldFromCode` gegen einen Schein-Broker)
-//   einladung           der Beitritt per Einladungs-Code (`joinWorldFromCode` → `_importGuestWorld`, Schein-Broker)
+//   portal              das Adress-Portal (`_enterPortalToAddress` → `_weltBeitritt` gegen einen Schein-Broker)
+//   einladung           der Beitritt per Einladung (`_weltBeitritt` → `_importGuestWorld`, Schein-Broker)
 //   geburt              „Neue Welt" (`createNewWorld`) — erlaubt ist nur die Positiv-Liste (visibility, creator)
 //   reload              B liegt im Speicher, die Seite lädt neu (Boot: Vorlade + Restore; die Formen ohne worldId,
 //                       ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
@@ -466,7 +466,7 @@ async function fahreWeg(browser, weg, schein) {
                     }
                     if (basis === "portal" || basis === "einladung") {
                         // DER SCHEIN-BROKER: eine WebSocket, die auf world-request den Snapshot von B schickt (das echte
-                        // joinWorldFromCode, die echte Gast-Ablage, der echte Rufer `_enterPortalToAddress` bzw. der Code).
+                        // _weltBeitritt, die echte Gast-Ablage, der echte Rufer `_enterPortalToAddress` bzw. der Code).
                         class ScheinWS {
                             constructor(url) {
                                 this.url = url;
@@ -511,7 +511,7 @@ async function fahreWeg(browser, weg, schein) {
                                 { type: "welt_portal", affordances: { isPortal: true } },
                                 { worldId: id, roomId: id, broker: "ws://127.0.0.1:9", label: "grenze-b" }
                             );
-                        else await r.joinWorldFromCode(`anazh://127.0.0.1:9/${id}`, { slugHint: "grenze-b" });
+                        else await r._weltBeitritt({ broker: "ws://127.0.0.1:9", roomId: id }, { slugHint: "grenze-b" });
                         return {};
                     }
                     if (basis === "reload") {

@@ -54,57 +54,11 @@ class AnazhRealm_netz_p2p {
         return `p-${t}-${rnd}`;
     }
 
-    // Ring 11.5: Einladungs-Code-Format `anazh://host:port/roomId`. Kompakt,
-    // copy-paste-freundlich, im Browser klickbar (sobald jemand das
-    // anazh://-Protokoll registriert). Eine Zeile — passt in Chat, Mail, SMS.
-    makeInvitationCode(url, roomId) {
-        if (typeof url !== "string" || typeof roomId !== "string") return null;
-        let host = "";
-        let port = "";
-        try {
-            // WebSocket-URLs (ws:// oder wss://) — URL-Parser kann ws nicht
-            // direkt, also via http-Prefix-Trick.
-            const m = url.trim().match(/^wss?:\/\/([^:/]+)(?::(\d+))?/i);
-            if (!m) return null;
-            host = m[1];
-            port = m[2] || "4313";
-        } catch {
-            return null;
-        }
-        // worldId-Format ist UUID-ähnlich (z. B. "w-1k7p-abcdef..."); wir
-        // nehmen das KOMPLETT, kein Hash — Eindeutigkeit + room-Match nötig.
-        return `anazh://${host}:${port}/${roomId}`;
-    }
-
-    parseInvitationCode(code) {
-        if (typeof code !== "string") return null;
-        const trimmed = code.trim();
-        if (!trimmed) return null;
-        // Format: anazh://host:port/roomId
-        // Auch tolerant für bloßes "host:port/roomId" oder mit ws:// statt anazh://
-        let normalized = trimmed;
-        if (/^anazh:\/\//i.test(normalized)) normalized = normalized.replace(/^anazh:\/\//i, "ws://");
-        else if (!/^wss?:\/\//i.test(normalized)) normalized = "ws://" + normalized;
-        const m = normalized.match(/^(wss?):\/\/([^:/]+)(?::(\d+))?\/(.+)$/i);
-        if (!m) return null;
-        const scheme = m[1].toLowerCase();
-        const host = m[2];
-        const port = m[3] || "4313";
-        const roomId = m[4];
-        if (!roomId || roomId.length < 4 || roomId.length > 80) return null;
-        return { url: `${scheme}://${host}:${port}`, roomId };
-    }
-
-    // Join-Flow: kurzlebige WS, join + world-request, auf world-snapshot warten; die Welt unter der
-    // host-worldId mit role="guest" + hostInfo durch die Tür `_weltBetreten` ablegen (Sichern, Probe, Sperre, Reload);
-    // `zeugnisA` hält die alte Welt vorher fest (das Adress-Portal).
-    // Liefert Promise<{worldId} | null>.
-    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000, zeugnisA = null } = {}) {
-        const parsed = this.parseInvitationCode(code);
-        if (!parsed) {
-            this.log("Einladungs-Code ungültig", "WARN");
-            return { ok: false, reason: "invalid_code" };
-        }
+    // DER BEITRITT zu einer Welt-Adresse ({broker, roomId}, gesiebt von `_admitForeignWorldAddress`): kurzlebige WS, join +
+    // world-request, auf world-snapshot warten; die Welt unter der host-worldId mit role="guest" + hostInfo durch die Tür
+    // `_weltBetreten` ablegen (Sichern, Probe, Sperre, Reload); `zeugnisA` hält die alte Welt vorher fest (das Adress-Portal).
+    // Rufer: der Welt-Code (`empfangeWerk`, Teilen in EINER Geste) und das Adress-Portal. → Promise<{ok, worldId|reason}>
+    async _weltBeitritt(addr, { slugHint = null, timeoutMs = 10000, zeugnisA = null } = {}) {
         if (typeof WebSocket === "undefined") {
             return { ok: false, reason: "no_websocket" };
         }
@@ -112,7 +66,7 @@ class AnazhRealm_netz_p2p {
         return new Promise((resolve) => {
             let ws;
             try {
-                ws = new WebSocket(parsed.url);
+                ws = new WebSocket(addr.broker);
             } catch (err) {
                 this.log(`Join-WS-Aufbau gescheitert: ${err.message}`, "ERROR");
                 resolve({ ok: false, reason: "ws_throw" });
@@ -135,7 +89,7 @@ class AnazhRealm_netz_p2p {
             }, timeoutMs);
             ws.addEventListener("open", () => {
                 try {
-                    ws.send(JSON.stringify({ type: "join", room: parsed.roomId, peerId: myPeerId }));
+                    ws.send(JSON.stringify({ type: "join", room: addr.roomId, peerId: myPeerId }));
                 } catch {
                     /* defensive */
                 }
@@ -162,8 +116,8 @@ class AnazhRealm_netz_p2p {
                 if (!msg.state || typeof msg.state !== "object") return;
                 clearTimeout(timeout);
                 const hostInfo = {
-                    url: parsed.url,
-                    roomId: parsed.roomId,
+                    url: addr.broker,
+                    roomId: addr.roomId,
                     peerId: typeof msg.peerId === "string" ? msg.peerId : null,
                 };
                 const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint, { neuLaden: true, zeugnisA });
@@ -268,7 +222,9 @@ class AnazhRealm_netz_p2p {
             return { ok: false, reason: "no_websocket" };
         }
         p2p.peerId = p2p.peerId || this.p2pGenerateId();
+        // Raum und Broker sind die der lebenden Verbindung: der Rejoin und die geteilte Welt-Adresse lesen sie
         p2p.room = room;
+        p2p.url = url;
         p2p.lastError = null;
         // RECONNECT #1 — dieser Aufbau ist GEWOLLT: die Abbruch-Markierung des
         // letzten shutdown fällt (der close-Handler darf wieder heilen).
@@ -1714,8 +1670,7 @@ class AnazhRealm_netz_p2p {
         if (Array.isArray(msg.lanAddresses)) {
             p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
         }
-        // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
-        // neu rendern, sobald wir die LAN-Adressen kennen.
+        // Falls wir gerade als Host aktiv sind: den Host-Banner neu rendern (der Raum steht).
         if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
             this.updateWorldInfo();
         }
