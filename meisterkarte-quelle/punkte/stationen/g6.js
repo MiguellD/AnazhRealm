@@ -2,7 +2,7 @@
 //
 // Erfasst ist jedes g6-Kriterium mit Punkten (klang K2 K4 K5, speicher K4 K5), aus der Messschuld (speicher K1 K2 = M30 M35
 // M37 M38, profiband K4 = M34 M39, klang K2 K5 = M33 M15) und aus dem Stau (hydro-faden: streaming K4 K5; speicher-journal:
-// speicher K2 K3), dazu aus einer Karte (klang-k1-zensus: klang K1). Je Kriterium und Staffel steht hier der Befehl, mit dem
+// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2). Je Kriterium und Staffel steht hier der Befehl, mit dem
 // der Beleg gemessen wurde.
 //
 // HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
@@ -420,6 +420,77 @@ module.exports = [
             "scripts/lib/welt-orte.cjs",
         ],
         quelle: "1 = Mittag im Stand: jedes Soll je Ort hält, und jeder Pegel einer Quelle mit Körper (Vogel, Tier) hat einen Körper in der Welt",
+    },
+    {
+        kriterium: "klang.K1",
+        staffel: 2,
+        geraet: "headless",
+        // der Zensus (N), Zweig klang-k1-nacht: zusätzlich zu Staffel 1 die Wiese in vier Szenen, Wetter und Uhr als Wort des
+        // Spielers (R9) — nachts (Mitternacht im Sommer: die Grillen aus Nacht × Wärme des Bodens ihrer Röhre × offenem Gras, ihr
+        // Ton die Harfe 4,4/4,8 kHz, Band 3,5–5,6 kHz offline nachgemessen; kein Vogel singt), im Regen (das Wort „rainy“: der
+        // Regen-Teppich ≥ −34 dB, die Vögel singen nur aus Leibern), gehend (W/S pendelnd, ≥ 10 m) und fahrend (im Sattel des GT,
+        // ≥ 30 m): je Szene das Soll und Ruf ← Leib in Bewegung. Unter dieser Linse am Welt-Stand von main 19606f2e ROT: nacht
+        // grille −∞ (Luft 10,3 °C < 12); nach der Trägheit −40,1 dB mit Schwerpunkt 2 898 Hz (die rate trug den Ton); am Kopf von
+        // klang-k1-nacht −40,1 dB bei 4 606 Hz. Derselbe Lauf wie klang.K1#1 und klang.K5#1 (Zwilling).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const d = (j && j.daten) || {};
+            const orte = ["wiese", "seeufer", "wald", "dorf", "nacht", "regen", "gehend", "fahrend"];
+            if (!orte.every((o) => d[o] && d[o].mixMitte && d[o].um) || !d.wieseOhneLeib)
+                return { gruen: false, zahl: "kein Zensus der Orte, Szenen und der Mutation (Exit " + lauf.exit + ")" };
+            const db = (o, s) => d[o].mixMitte[s].db;
+            const leib = (o) => d[o].zensus.leiber || { gehoert: 0, gezeichnet: 0 };
+            const chorOhne = d.wieseOhneLeib.zensus.stimmen.some((v) => v.name === "vogel" && v.an);
+            // die Befunde dieses Kriteriums: SOLL, Lab = Welt, Ruf ← Leib, Ort fehlt, je Szene (N), der Tier-Ruf ohne Leib
+            const rot = (j.rot || []).filter((t) => /^(S|L|R|O|N)[ :]|^E tier:/.test(t));
+            const szenen = ["nacht", "regen", "gehend", "fahrend"];
+            const ruf = ["wiese", ...szenen].every((o) => leib(o).gehoert === leib(o).gezeichnet);
+            const bewegt = d.gehend.um.weg >= 10 && !d.gehend.um.sattel && d.fahrend.um.weg >= 30 && d.fahrend.um.sattel;
+            const gruen =
+                rot.length === 0 && ruf && bewegt && leib("wiese").gehoert > 0 && leib("wieseOhneLeib").gezeichnet === 0 &&
+                !chorOhne && db("nacht", "grille") >= -46 && !(db("nacht", "vogel") > -64) && db("regen", "regen") >= -34;
+            const f = (v) => (v > -999 ? v.toFixed(1) : "−∞");
+            const m = (v) => Math.round(v);
+            return {
+                gruen,
+                zahl:
+                    "Nacht grille " + f(db("nacht", "grille")) + " · vogel " + f(db("nacht", "vogel")) + " dB (" + leib("nacht").gehoert +
+                    " Leiber) · Regen regen " + f(db("regen", "regen")) + " (wind " + f(db("regen", "wind")) + ", vogel " + f(db("regen", "vogel")) +
+                    " aus " + leib("regen").gehoert + " Leibern) · gehend " + m(d.gehend.um.weg) + " m wind " + f(db("gehend", "wind")) + " vogel " +
+                    f(db("gehend", "vogel")) + " (" + leib("gehend").gehoert + "/" + leib("gehend").gezeichnet + ") · fahrend " + m(d.fahrend.um.weg) +
+                    " m " + (d.fahrend.um.sattel ? "im Sattel" : "ZU FUSS") + " wind " + f(db("fahrend", "wind")) + " vogel " + f(db("fahrend", "vogel")) +
+                    " (" + leib("fahrend").gehoert + "/" + leib("fahrend").gezeichnet + ")" +
+                    (rot.length ? " · " + rot.length + " Befund(e): " + rot.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/stoff-*.js",
+            "stamm/feld-leben.js",
+            "stamm/dirigent-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/koerper-*.js",
+            "stamm/wasser-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "worlds/klang/klang.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ],
+        quelle: "2 = zusätzlich Nacht (Grillen), Regen, gehend und fahrend",
     },
     {
         kriterium: "klang.K2",
