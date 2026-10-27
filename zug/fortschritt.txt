@@ -296,3 +296,17 @@
 2026-10-27 01:52:02 takt8-gtx START 19 Stationen
 2026-10-27 01:56:53 takt8-gtx gelaende.K2#1 GRÜN 4.7 · 1/19
 2026-10-27 01:59:08 takt8-gtx gelaende.K5#2 GRÜN 2.2 · 2/19
+2026-10-27 02:01:26 takt8-gtx tiere.K3#2 GRÜN 2.2 · 3/19
+2026-10-27 02:04:51 takt8-gtx tiere.K2#2 GRÜN 3.3 · 4/19
+2026-10-27 02:09:30 takt8-gtx mensch.K2#2 GRÜN 4.6 · 5/19
+2026-10-27 02:17:37 takt8-gtx ferne.K2#2 GRÜN 8.0 · 6/19
+2026-10-27 02:21:05 takt8-gtx material.K1#2 GRÜN 3.4 · 7/19
+2026-10-27 02:22:45 takt8-gtx fahrzeug.K3#1 GRÜN 1.6 · 8/19
+2026-10-27 02:26:47 takt8-gtx fahrzeug.K3#2 GRÜN 4.0 · 9/19
+2026-10-27 02:30:27 takt8-gtx fahrzeug.K4#2 GRÜN 3.6 · 10/19
+2026-10-27 02:36:03 takt8-gtx siedlung.K5#1 GRÜN 5.5 · 11/19
+2026-10-27 02:42:11 takt8-gtx leib.K1#1 ROT 6.0 · 12/19
+2026-10-27 02:48:09 takt8-gtx halten.K2#1 ROT 5.8 · 13/19
+2026-10-27 02:49:05 takt8-gtx halten.K5#1 GRÜN 0.8 · 14/19
+2026-10-27 02:50:41 takt8-gtx tore.K3#2 GRÜN 1.5 · 15/19
+2026-10-27 02:51:59 takt8-gtx klang.K4#1 GRÜN 1.2 · 16/19
