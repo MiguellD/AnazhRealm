@@ -35,7 +35,7 @@ const KERN = path.join(root, "vehicle-core.js");
 require(KERN);
 const VC = globalThis.__vehicleCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, ende } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Kultur-Kanal) ──
 const GATTUNGEN = ["gt", "supersport", "limousine", "kompakt_fwd", "suv"];
@@ -136,10 +136,7 @@ function caseKey(c) {
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
+    ende(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
     console.log(
         "\n✅ GRÜN — der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
     );

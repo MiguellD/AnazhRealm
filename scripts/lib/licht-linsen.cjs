@@ -2644,10 +2644,12 @@ function naesseUrteil(welt) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
 }
 
-// DER KONTAKT-SCHATTEN (Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) 8 m voraus; je Pose
-// (ego 2 m quer, Auge 1,6 m · third 4,5 m, 2,6 m) drei Schüsse aus dem Ausgabe-Pfad ohne Bloom: A die Welt, B ohne Pfosten, C ohne
-// Sonne. Die Sonnen-Sicht f = (A − C)/(B − C), linear, quer zum Streifen `fuss` (und `fern`) Meter hinter dem Pfosten: je Kante die
-// Breite 10–90 % von f, der Median in cm.
+// DER KONTAKT-SCHATTEN (Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) auf der Platte der Bühnen-Station
+// `o.ort` (spec/pruefbuehne s7-kontakt: die Bühne setzt den ebenen Boden-Stoff, nie die Linse); je Pose (ego 2 m quer, Auge 1,6 m ·
+// third 4,5 m, 2,6 m) und Ziel drei Schüsse aus dem Ausgabe-Pfad ohne Bloom: A die Welt, B ohne Pfosten, C ohne Sonne. Die
+// Sonnen-Sicht f = (A − C)/(B − C), linear, quer zum Schatten s Meter hinter dem Pfosten; je Linie zwei Kanten (beidseits des
+// Kerns), je Kante die Breite 10–90 % von f oder ihr Grund (`fleck` · `kern` · `rand`). `fuss` (s 0,05–0,3) trägt den
+// Median, `zuwachs` (s bis 0,4 m vor die Spitze, die Ziele je 2 m) die Gerade cm über L = Weg Werfer → Empfänger längs des Lichts.
 function kontaktSicht(o) {
     return (async () => {
         const [r, T] = [window.anazhRealm, window.THREE];
@@ -2658,24 +2660,15 @@ function kontaktSicht(o) {
         if (o.uhr !== 0.5) (r.setTimeOfDay(o.uhr, "human"), (r._himmelSprung = true), r._applyDayNightToScene());
         const PU = st.postProcessingUniforms;
         const [bloom0, I0, fov0, kam0] = [PU.bloomStrength.value, dl.intensity, cam.fov, cam.matrix.clone()];
-        const boden = (x, z) => r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
+        const platte = (st.architectures || []).find((a) => a && a.id === o.ort.platte.saat);
+        if (!platte) return { fehler: `keine Platte „${o.ort.platte.saat}" auf der Bühne` };
+        const Y0 = platte.position.y + o.ort.platte.oben;
         const S = dl.position.clone().sub(dl.target.position).normalize();
         const d = new T.Vector3(-S.x, 0, -S.z).normalize();
         const b = new T.Vector3(-d.z, 0, d.x);
         const laenge = 3 / Math.tan(Math.asin(Math.max(0.05, S.y)));
-        const rc = new T.Raycaster();
-        rc.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-        // frei: kein Werfer kreuzt den Streifen zur Sonne
-        const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
-        const F = st.playerMesh.position.clone().addScaledVector(fwd, 8);
-        for (let t = 0; t <= Math.min(laenge, 3.5); t += 0.5)
-            for (const u of [-0.9, 0, 0.9]) {
-                const q = F.clone().addScaledVector(d, 0.25 + t).addScaledVector(b, u);
-                q.y = boden(q.x, q.z) + 0.05;
-                rc.set(q, S);
-                if (rc.intersectObject(sc, true).some((h) => h.object !== st.playerMesh)) return { fehler: "der Ort des Pfostens liegt im Schatten" };
-            }
-        F.y = boden(F.x, F.z);
+        // die Platte ist frei: ein fremder Werfer im Streifen nennt seine Kanten beim Grund (`rand`)
+        const F = new T.Vector3(o.ort.x, Y0, o.ort.z);
         const pf = new T.Mesh(new T.BoxGeometry(0.5, 3.3, 0.5), r._buildToonNodeMaterial({ color: new T.Color(0.4, 0.4, 0.4) }));
         pf.position.set(F.x, F.y + 1.35, F.z);
         pf.rotation.y = Math.atan2(d.x, d.z);
@@ -2705,65 +2698,80 @@ function kontaktSicht(o) {
             return L;
         };
         const aus = { uhr: o.uhr, sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), schattenM: +laenge.toFixed(2), posen: {} };
-        const ebenen = Object.assign({ fuss: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3] }, laenge > 3.6 && { fern: [2.9, 3, 3.1] });
+        // die Linien (s hinter der Rückseite): der Fuß 0,05–0,3 und bis 0,4 m vor die Spitze höchstens 16 weitere, je 2 m ein Ziel
+        const bis = Math.max(0.1, laenge - 0.4);
+        const ziele = {};
+        for (let s = 0.05, i = 0; s <= bis + 1e-6; s = i < 5 ? 0.05 * (++i + 1) : s + Math.max(0.05, (bis - 0.05) / 15))
+            (ziele[s < 1 ? 0.25 : Math.floor(s / 2) * 2 + 1.25] ||= []).push(+s.toFixed(3));
+        // je Linie zwei Kanten beidseits des Kerns (h[0] Kern … Rand): gültig mit Kern ≤ 10 %, Rand ≥ 90 %, ohne Fleck
+        const kanten = (abc) => {
+            const sonne = abc.map(([, bb, c]) => bb - c).sort((x, y) => x - y)[abc.length >> 1];
+            const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
+            // dunkle Flecken (< 1/5 des Sonnen-Anteils) ohne f: Lücken bis 3 cm überbrückt die Gerade
+            for (let i = 1, j; i < f.length; i = j + 1) {
+                for (j = i; j < f.length && f[j] !== f[j]; j++);
+                for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
+            }
+            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((y, z) => y - z)[1]);
+            const k = m3.reduce((m, x, i) => (x === x && !(m3[m] <= x) ? i : m), -1);
+            return [m3.slice(0, k + 1).reverse(), m3.slice(k)].map((h) =>
+                k < 0 || h.some((x) => x !== x) ? "fleck" : !(h[0] <= 0.1) ? "kern" : !(h[h.length - 1] >= 0.9) ? "rand" : (h.filter((x) => x > 0.1 && x < 0.9).length * 3) / 10
+            );
+        };
         try {
             for (const [pose, ab, hoch] of [
                 ["ego", 2, 1.6],
                 ["third", 4.5, 2.6],
             ]) {
-                const ziel = F.clone().addScaledVector(d, 0.5);
-                ziel.y = boden(ziel.x, ziel.z);
-                cam.fov = 60;
-                cam.updateProjectionMatrix();
-                cam.position.copy(ziel).addScaledVector(b, ab).setY(ziel.y + hoch);
-                cam.lookAt(ziel);
-                cam.updateMatrixWorld(true);
-                const A = await schuss();
-                const png = o.png && o.u8.slice();
-                pf.visible = false;
-                const B = await schuss();
-                pf.visible = true;
-                dl.intensity = 0;
-                const C = await schuss();
-                dl.intensity = I0;
-                const v = new T.Vector3();
-                const probe = (L) => {
-                    const [x, y] = [((v.x + 1) / 2) * W - 0.5, ((1 - v.y) / 2) * H - 0.5];
-                    const [x0, y0, fx, fy] = [Math.floor(x), Math.floor(y), x % 1, y % 1];
-                    const g = (i, j) => L[(y0 + j) * W + x0 + i];
-                    return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
-                };
-                const p = (aus.posen[pose] = {});
-                for (const [ebene, liste] of Object.entries(ebenen)) {
-                    const breiten = [];
-                    let von = 0;
+                const linien = [];
+                for (const [z, liste] of Object.entries(ziele)) {
+                    const ziel = F.clone().addScaledVector(d, 0.25 + +z);
+                    cam.fov = 60;
+                    cam.updateProjectionMatrix();
+                    cam.position.copy(ziel).addScaledVector(b, ab).setY(Y0 + hoch);
+                    cam.lookAt(ziel);
+                    cam.updateMatrixWorld(true);
+                    const A = await schuss();
+                    if (o.png && z === "0.25") aus.posen[pose] = { png: o.u8.slice() };
+                    pf.visible = false;
+                    const B = await schuss();
+                    pf.visible = true;
+                    dl.intensity = 0;
+                    const C = await schuss();
+                    dl.intensity = I0;
+                    const v = new T.Vector3();
+                    const probe = (L) => {
+                        const [x, y] = [((v.x + 1) / 2) * W - 0.5, ((1 - v.y) / 2) * H - 0.5];
+                        const [x0, y0, fx, fy] = [Math.floor(x), Math.floor(y), x % 1, y % 1];
+                        const g = (i, j) => L[(y0 + j) * W + x0 + i];
+                        return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
+                    };
                     for (const s of liste) {
                         const abc = [];
                         for (let u = -0.7; u <= 0.7; u += 0.003) {
-                            v.copy(F).addScaledVector(d, 0.25 + s).addScaledVector(b, u);
-                            v.y = boden(v.x, v.z);
-                            v.project(cam);
+                            v.copy(F).addScaledVector(d, 0.25 + s).addScaledVector(b, u).project(cam);
                             abc.push([probe(A), probe(B), probe(C)]);
                         }
-                        // dunkle Flecken (< 1/5 des Sonnen-Anteils) ohne f: Lücken bis 3 cm überbrückt die Gerade
-                        const sonne = abc.map(([, bb, c]) => bb - c).sort((x, y) => x - y)[abc.length >> 1];
-                        const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
-                        for (let i = 1, j; i < f.length; i = j + 1) {
-                            for (j = i; j < f.length && f[j] !== f[j]; j++);
-                            for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
-                        }
-                        // je Linie zwei Kanten: die Punkte im Übergang 10–90 % halb; gültig mit Mitte ≤ 10 %, Enden ≥ 90 %
-                        const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((y, z) => y - z)[1]);
-                        von += 2;
-                        if (m3.every((x) => x === x) && Math.min(...m3) <= 0.1 && m3[0] >= 0.9 && m3[m3.length - 1] >= 0.9)
-                            breiten.push(m3.filter((x) => x > 0.1 && x < 0.9).length * 0.15);
+                        linien.push([s, +((0.25 + s) / Math.hypot(S.x, S.z)).toFixed(2), ...kanten(abc)]);
                     }
-                    breiten.sort((x, y) => x - y);
-                    p[ebene] = { halbschattenCm: breiten.length ? +breiten[breiten.length >> 1].toFixed(1) : null, kanten: 2 * breiten.length, von };
                 }
-                if (png) {
+                // der Fuß: der Median der gültigen Kanten; der Zuwachs: die Gerade w = a + k · L (kleinste Quadrate) über alle,
+                // die Scheibe k / 0,688 (der 10–90-%-Halbschatten der Sonnen-Scheibe ist 0,688 ihrer Breite: das Kreis-Segment)
+                const P = linien.flatMap(([s, L, ...k]) => k.filter((w) => w >= 0).map((w) => [L, w, s]));
+                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort((x, y) => x - y);
+                const [mL, mw] = [0, 1].map((i) => P.reduce((s, q) => s + q[i], 0) / P.length);
+                const k = P.reduce((s, [L, w]) => s + (L - mL) * (w - mw), 0) / P.reduce((s, [L]) => s + (L - mL) ** 2, 0);
+                const gruende = {};
+                for (const g of linien.flatMap((l) => l.slice(2)).filter((w) => !(w >= 0))) gruende[g] = (gruende[g] || 0) + 1;
+                const p = Object.assign((aus.posen[pose] ||= {}), {
+                    linien,
+                    fuss: { halbschattenCm: fu.length ? fu[fu.length >> 1] : null, kanten: fu.length, von: 2 * linien.filter((l) => l[0] <= 0.3).length },
+                    zuwachs: { cmJeM: k === k ? +k.toFixed(3) : null, scheibeCmJeM: k === k ? +(k / 0.688).toFixed(3) : null, kanten: P.length, von: 2 * linien.length, gruende },
+                });
+                if (P.length) p.zuwachs.achseM = [Math.min(...P.map((q) => q[0])), Math.max(...P.map((q) => q[0]))];
+                if (p.png) {
                     const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(png, (q, i) => (i % 4 === 3 ? 255 : q)), W, H), 0, 0);
+                    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(p.png, (q, i) => (i % 4 === 3 ? 255 : q)), W, H), 0, 0);
                     p.png = cv.toDataURL("image/png");
                 }
             }
@@ -2781,25 +2789,37 @@ function kontaktSicht(o) {
     })();
 }
 
-// DAS URTEIL: am Fuß der Median-Halbschatten ≤ 3 cm in Ego UND Third aus ≥ 6 gültigen Kanten je Pose;
-// `fern` (3 m hinter dem Pfosten) steht als Zahl daneben.
-function kontaktUrteil(m) {
+// DAS URTEIL: am Fuß der Median-Halbschatten ≤ 3 cm in Ego UND Third aus ≥ 6 gültigen Kanten je Pose (Staffel 1); mit
+// `zuwachs` (Staffel 2) dazu je Pose der Zuwachs der Scheibe 0,9 ± 0,25 cm je m (tan 0,53°) aus ≥ 75 % gültigen Kanten über
+// ≥ 1 m Weg — ein fester Filter-Kern (alle Kanten gleich breit) trägt 0, ein Fleck-Boden nennt seine Kanten beim Grund.
+function kontaktUrteil(m, zuwachs) {
     const befunde = m && !m.fehler ? [] : [(m && m.fehler) || "keine Messung"];
     for (const pose of m && !m.fehler ? ["ego", "third"] : []) {
-        const fu = (m.posen[pose] || {}).fuss || { kanten: 0, von: 0 };
-        if (!(fu.kanten >= 6)) befunde.push(`${pose}: ${fu.kanten} von ${fu.von} Kanten gültig`);
-        if (!(fu.halbschattenCm != null && fu.halbschattenCm <= 3)) befunde.push(`${pose}: Halbschatten am Fuß ${fu.halbschattenCm} cm`);
+        const { fuss: fu = { kanten: 0, von: 0 }, zuwachs: z = {} } = m.posen[pose] || {};
+        const [a, e] = z.achseM || [0, 0];
+        for (const [rot, b] of [
+            [!(fu.kanten >= 6), `${fu.kanten} von ${fu.von} Kanten gültig`],
+            [!(fu.halbschattenCm != null && fu.halbschattenCm <= 3), `Halbschatten am Fuß ${fu.halbschattenCm} cm`],
+            [zuwachs && !(z.kanten >= 0.75 * z.von), `Zuwachs aus ${z.kanten} von ${z.von} Kanten (${JSON.stringify(z.gruende)})`],
+            [zuwachs && !(e - a >= 1), `Zuwachs über ${(e - a).toFixed(2)} m Weg`],
+            [zuwachs && !(Math.abs(z.scheibeCmJeM - 0.9) <= 0.25), `Zuwachs ${z.scheibeCmJeM} cm je m (Soll 0,9 ± 0,25)`],
+        ])
+            if (rot) befunde.push(`${pose}: ${b}`);
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
 }
 
 function kontaktSelbsttest() {
-    const p = (cm, kanten = 12) => ({ fuss: { halbschattenCm: cm, kanten, von: 12 } });
-    const U = (posen) => kontaktUrteil({ posen }).befunde.join();
+    const p = (cm, kanten = 12, zu = 0.93, zk = 32) => ({
+        fuss: { halbschattenCm: cm, kanten, von: 12 },
+        zuwachs: { scheibeCmJeM: zu, kanten: zk, von: 32, achseM: [1, 9.5], gruende: { fleck: 32 - zk } },
+    });
+    const U = (posen, z) => kontaktUrteil({ posen }, z).befunde.join();
     return [
-        [kontaktUrteil({ posen: { ego: p(2.1), third: p(2.8) } }).urteil, /^GRUEN$/],
+        [U({ ego: p(2.1), third: p(2.8) }, true), /^$/],
         [U({ ego: p(17.5), third: p(2.8) }), /^ego: Halbschatten am Fuß 17\.5 cm$/],
         [U({ ego: p(null, 0) }), /^ego: 0 von 12 Kanten gültig,ego: Halbschatten am Fuß null cm,third: 0 von 0/],
+        [U({ ego: p(2.1, 12, 0.05, 5), third: p(2.8) }, true), /^ego: Zuwachs aus 5 von 32 Kanten \(\{"fleck":27\}\),ego: Zuwachs 0\.05 cm je m/],
     ]
         .filter(([ist, soll]) => !soll.test(ist))
         .map(([ist, soll]) => `${soll} ≠ ${ist}`);

@@ -30,7 +30,7 @@ const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 // Der DECKEL (aus der Messung, mit Marge): 8-9 Haeuser auf der Fernstufe = ~28k Tris
 // gemessen → Deckel 70k (×2.5 Marge). Die Fernstufe selbst: L2 ≤ 8k Tris je Haus.
@@ -109,10 +109,7 @@ hauptLauf(async () => {
             !stammLib.fehlt("cloneBlueprint", /donorOnly/, (t) => stammLib.ersetze(t, "cloneBlueprint", "const source = ", "const donorOnly = 0, source = ")),
             stammLib.fehlt.wo
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
+        ende("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
         console.log("\n✅ SELBST-TEST GRÜN.");
         process.exit(0);
     }
@@ -513,10 +510,7 @@ hauptLauf(async () => {
         if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    ende();
     console.log(
         "\n✅ GRÜN — DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt."
     );

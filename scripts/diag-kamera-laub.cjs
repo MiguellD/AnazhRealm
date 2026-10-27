@@ -52,7 +52,7 @@ const ORTE = [
 ];
 const MODI = ["third", "ritt", "first"];
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { check, ende } = require("./lib/welt-boot.cjs").pruefer();
 const pct = (x) => (x == null ? "—" : `${(100 * x).toFixed(1)} %`);
 
 // ── DAS URTEIL (pure Funktion; Welt UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
@@ -1214,10 +1214,7 @@ hauptLauf(async () => {
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
+        ende("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
         console.log("\n✅ SELBST-TEST GRÜN — die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }
@@ -1375,10 +1372,7 @@ hauptLauf(async () => {
         check(`K3 NP-03 0 von ${NINJA_WP.length * 4} Posen mit Park-Geometrie zwischen Blickziel und Kamera oder um die Kamera, NP-02 der Tunnel bleibt zu`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    ende();
     console.log("\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
     process.exit(0);
 });

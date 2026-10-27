@@ -21,7 +21,7 @@
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Farbton,
 //                                                           Sonnenseite, fernes Weiß; Rand und Kante an Hügel und Gipfel)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
-//   node scripts/werkbank.cjs licht --kontakt [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
+//   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
@@ -3197,19 +3197,22 @@ hauptLauf(async () => {
         console.log(JSON.stringify(u.kurven, null, 1));
         endeMit(`TAG-ACHSE ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && argv.includes("--kontakt")) {
-        // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` auf der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
+        // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte der Bühnen-Station s7-kontakt je Uhr, das Urteil
+        // `kontaktUrteil` (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m)
         const fehl = LL.kontaktSelbsttest();
-        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "3/3"}`);
+        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "4/4"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
+        const ort = require("../spec/pruefbuehne/stationen.json").stationen.find((s) => s.id === "s7-kontakt");
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
             await rufe("/umstellen", { ort: "buehne", sicht: "ego" });
-            const o = { uhr, png: !!opt("--bilder") };
+            await rufe("/umstellen", { x: ort.x, z: ort.z - 8 });
+            const o = { uhr, png: !!opt("--bilder"), ort };
             const m = (welt[uhr] = (await rufe("/eval", { code: `return await (${LL.kontaktSicht})(${JSON.stringify(o)});` })).ergebnis);
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
                 if (p.png) fs.writeFileSync(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), Buffer.from(p.png.split(",")[1], "base64")), delete p.png;
         }
-        const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m).befunde.map((b) => `Uhr ${uhr} ${b}`));
+        const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, argv.includes("--zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
         console.log(JSON.stringify(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
     } else if (cmd === "licht" && argv.includes("--naesse")) {

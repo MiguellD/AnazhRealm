@@ -37,7 +37,7 @@ const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 
 hauptLauf(async () => {
     await server.lausche(PORT);
@@ -696,10 +696,7 @@ hauptLauf(async () => {
         E.kachel ? "" : "keine Probe"
     );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.join(", ")}`);
-        process.exit(1);
-    }
+    ende(`\n❌ ROT — ${errs.join(", ")}`);
     console.log(
         `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`
     );

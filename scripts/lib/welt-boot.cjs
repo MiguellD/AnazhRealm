@@ -923,7 +923,9 @@ async function buehne(page) {
     await page.evaluate(() => window.__buehne());
 }
 
-// DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`.
+// DER PRÜFER EINER LINSE (die Zeile je Urteil): `check(name, ok, detail)` schreibt ✅/❌ und sammelt jedes Rot in `errs`;
+// `ende(satz)` ist das EINE ROT-Ende: mit einem Rot der Satz (ohne ihn die Namen) und Exit 1 — ein eigenes
+// `if (errs.length) { console…; process.exit(1); }` daneben ist ein Zwilling (gate:welt-boot, DIE ENDE-WAND)
 function pruefer() {
     const errs = [];
     // ein Detail, das kein Text ist, schreibt die Prüfung selbst als JSON (kein JSON.stringify je Aufrufer)
@@ -932,7 +934,9 @@ function pruefer() {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
         if (!ok) errs.push(name);
     };
-    return { errs, check };
+    const ende = (satz) =>
+        errs.length && (console.error(satz || `\n❌ ROT: ${errs.join(" · ")}`), process.exit(1));
+    return { errs, check, ende };
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
@@ -1330,6 +1334,12 @@ async function selbsttest() {
         "await new Promise((r) => setTimeout(r, 50));",
         "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",
     ].filter(schlafZwilling).length;
+    // DIE ENDE-WAND: endet eine Linse ihr Rot selbst (`if (errs.length) { console…; process.exit(1); }`), ist das ein Zwilling von
+    // `pruefer().ende`; FREMD tragen ihn bis zum Schnitt ihres Besitzers (die Dateien laufender Karten, 27.10.) — trifft die Wand sie
+    // nicht mehr, ist sie blind oder ein Besitzer hat geschnitten: beides ROT, bis die Liste folgt
+    const endeZwilling = (c) => /errs\.length\) \{\s*console\.\w+\([^\n]*\);\s*process\.exit\(1/.test(c);
+    const ender = code.filter(([, c]) => endeZwilling(c)).map(([f]) => f.slice(5, -4)).join(" ");
+    const ENDE_FREMD = "chunk-satz fahr-leben fluss scatter-lod season-meadow settlement streu-fern studio-uebergabe studio-vertrag v1-pfad werkstatt-weg";
     const sturzRuf = `require(${JSON.stringify(__filename)}).hauptLauf(async () => { throw new Error("__sturz"); }, () => console.error("__zuletzt"))`;
     const sturz = require("child_process").spawnSync(process.execPath, ["-e", sturzRuf], { encoding: "utf8" });
     await browser.close();
@@ -1376,6 +1386,7 @@ async function selbsttest() {
                 seitenSchlaf === String(sleep),
             `eigene Schlafe neben sleep: ${schlaefer} (FREMD ${SCHLAF_FREMD}) · gepflanzt ${geschlafen}/2 gefasst · die Seite schläft mit ${seitenSchlaf}`,
         ],
+        [ender === ENDE_FREMD, `eigene ROT-Enden neben pruefer().ende: ${ender} (FREMD ${ENDE_FREMD})`],
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
             schleife.length > 0 &&

@@ -1,5 +1,5 @@
 {
-    "zweck": "DIE STATIONEN DER PRÜFBÜHNE (Spike 09.10.): je Station ihr Ort (x|z, Meter) und die Gesetz-Zahlen, die eine Linse am lebenden Erbgut prüft (der Term der Station steht ≤ 1 m neben der Spec). Höhen relativ zur Basis (Spiegel = Basis − 3). Kameras: A, B = die benannten Posen, je [dx, dz, \"+Höhe über dem Boden\"] von der Station. S0 (Atrium), S2 (die 30°-Rampe), S4 (die Hindernisse: ihre Körper je Teil — Mitte über dem Boden und Maß in Metern, Gier in Grad, gesät als Baupläne des Snapshots) S5 (die Bucht mit Furt) und S6 (die Klamm: der Bach, quer über den der Damm von gate:werk-im-wasser D staut); `meer` ist der Schelf-Grund vor der Insel.",
+    "zweck": "DIE STATIONEN DER PRÜFBÜHNE (Spike 09.10.): je Station ihr Ort (x|z, Meter) und die Gesetz-Zahlen, die eine Linse am lebenden Erbgut prüft (der Term der Station steht ≤ 1 m neben der Spec). Höhen relativ zur Basis (Spiegel = Basis − 3). Kameras: A, B = die benannten Posen, je [dx, dz, \"+Höhe über dem Boden\"] von der Station. S0 (Atrium), S2 (die 30°-Rampe), S4 (die Hindernisse: ihre Körper je Teil — Mitte über dem Boden und Maß in Metern, Gier in Grad, gesät als Baupläne des Snapshots) S5 (die Bucht mit Furt) S6 (die Klamm: der Bach, quer über den der Damm von gate:werk-im-wasser D staut) und S7 (die Platte, gesät wie S4); `meer` ist der Schelf-Grund vor der Insel.",
     "spiegel": -3,
     "stationen": [
         {
@@ -158,6 +158,13 @@
             "z": 0,
             "gefaelle": 0.14,
             "sohle": 20
+        },
+        {
+            "id": "s7-kontakt",
+            "x": -150,
+            "z": 100,
+            "platte": { "saat": "saat-s7-platte", "oben": 0.3 },
+            "satz": "die Platte der Kontakt-Linse (werkbank licht --kontakt): Boden ohne Mikro-Relief"
         },
         {
             "id": "meer",

@@ -13,7 +13,7 @@ const server = statikServer();
 // jede Zeile, die kein Programm erreicht, beim Namen ihres Befunds (keine Ausnahme: seit KI K2 trägt jede Zeile ein Welt-Werk)
 const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 // Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot).
 function proben() {
@@ -579,10 +579,7 @@ hauptLauf(async () => {
         b.taeter?.ok && !haelt(b.taeter)
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
+    ende();
     console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
     process.exit(0);
 }, () => signal?.kill());

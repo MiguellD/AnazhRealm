@@ -37,7 +37,7 @@ const server = statikServer({
         ]),
     },
 });
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, ende } = require("./lib/welt-boot.cjs").pruefer();
 
 // DAS URTEIL E (rein): je Soll sein Täter; leer = grün.
 const zahl = (z) =>
@@ -329,10 +329,7 @@ hauptLauf(async () => {
     const auf = e.wege.filter((w) => w.ok).length + (e.atlas === NEUN);
     check("E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle", auf === 5, `${auf}/5`);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    ende();
     console.log(
         "\n✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt."
     );

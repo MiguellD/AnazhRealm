@@ -20,7 +20,7 @@ const path = require("path");
 const PORT = Number(process.env.NERV_LABS_PORT || 4437);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 // ===== TEIL S: das Manifest trägt die drei MESHFREI-Kerne (die Kern-Form prüft gate:daten-contract am Namensraum) =====
 function staticLaws(manifestSrc) {
@@ -47,10 +47,7 @@ hauptLauf(async () => {
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "klang"));
         const s1 = staticLaws(brokenManifest).find((l) => l[0].includes("klang-Kern"));
         check("Selbst-Test 1: klang-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
+        ende("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
         console.log("\n✅ SELBST-TEST GRUEN.");
         process.exit(0);
     }
@@ -683,10 +680,7 @@ hauptLauf(async () => {
     );
     check("O: die NEUEN TIERE (wolf/fuchs/baer) bauen durch den EINEN Kreatur-Guss", !!out.o && out.o.tiere === true);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    ende();
     console.log(
         "\n✅ GRÜN — DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials, kein Auto-Blueprint entsteht (must-ignore), die Werkstatt zeigt die Rezepte — der EINE Audio-Konsument lebt (Tempo + SKALA durch den einen Ton-Mapper, fail-soft byte-alt) und der Motion-Erstkonsument liest fx.motion (Schwanz-Rolle, KONSUM als Zahl)."
     );

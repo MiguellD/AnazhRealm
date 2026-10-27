@@ -39,7 +39,7 @@ const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot
 
 const PORT = Number(process.env.FERN_RING_PORT || 4464);
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 const server = statikServer();
 
@@ -1650,10 +1650,7 @@ hauptLauf(async () => {
         );
     }
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    ende();
     console.log(
         "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
             "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +
