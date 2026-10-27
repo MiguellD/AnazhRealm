@@ -1,0 +1,64 @@
+{
+ "sha": "dc06b495020b357431dc998342945d2352e0beee",
+ "geraet": "headless",
+ "zeit": "2026-10-27T09:00:13.537Z",
+ "host": "farm:40477422354",
+ "je": {
+  "stoffe.K1#1": {
+   "gruen": true,
+   "zahl": "holz 5/7 · stein 4/7 · eisen 4/7 · gras 5/7 · erde 4/7 · laub 5/7 · wasser 4/7 · Sabotage ROT an jeder Wirkung",
+   "exit": 0,
+   "minuten": 0.22,
+   "zeit": "2026-10-27T09:00:05.650Z",
+   "abdruck": "eef46e03396f",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40477422354/1"
+  },
+  "oekologie.K4#1": {
+   "gruen": true,
+   "zahl": "6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0)",
+   "exit": 0,
+   "minuten": 0.26,
+   "zeit": "2026-10-27T09:00:05.353Z",
+   "abdruck": "8993e64452a0",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40477422354/2"
+  },
+  "wetter.K5#1": {
+   "gruen": true,
+   "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+   "exit": 0,
+   "minuten": 0.07,
+   "zeit": "2026-10-27T09:00:09.182Z",
+   "abdruck": "531ff2d7aefb",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40477422354/3"
+  },
+  "wetter.K5#2": {
+   "gruen": true,
+   "zahl": "Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000)",
+   "exit": 0,
+   "minuten": 0.07,
+   "zeit": "2026-10-27T09:00:09.182Z",
+   "abdruck": "9b3c4a3a2e0f",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40477422354/3",
+   "zwilling": "wetter.K5#1"
+  },
+  "fahrzeug.K1#1": {
+   "gruen": true,
+   "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
+   "exit": 0,
+   "minuten": 0,
+   "zeit": "2026-10-27T09:00:13.537Z",
+   "abdruck": "37c3aaaa8f26",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40477422354/3"
+  }
+ }
+}
