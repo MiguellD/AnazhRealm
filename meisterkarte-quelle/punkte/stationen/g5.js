@@ -1,6 +1,6 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
-// (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
+// (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5, halten-masse halten.K1/K5 Staffel 2,
 // teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
@@ -1116,6 +1116,80 @@ const stationen = [
         pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js"],
         quelle: "1 = Fall-Schaden aus dem Aufprall-Tempo, Tod und Wiederkehr am Ort mit Zustand (Inventar, Bindung) über Speichern, an einem Gerät",
     },
+    // halten.K5 Staffel 2 (halten-masse): derselbe Lauf `--k5` (Zwilling der Staffel 1, fährt einmal), Q14 nach dem Tod: die Werte des
+    // Leibs (hpMax · staminaMax · manaMax · defense, `recomputePlayerStats`) je Mutation — der Brustpanzer aus Eisen · Bronze · Holz,
+    // der Lebenssaft mit Kraut · Fleisch (`activateConsumable`) —, dann getragen und gegessen über den Reload (der Abdruck `werte`
+    // ohne die Wunde, die Quellen der Nahrung). GRÜN: je Mutation andere Werte als die Geschwister und der leere Leib, Werte und
+    // Nahrung nach dem Reload wie vor dem Speichern, S20 feuert. An halten-masse (headless, Null-Renderer): leer 116,0 hp ·
+    // Eisen 154,9 · Bronze 152,7 · Holz 131,9 · Kraut 125,9 · Fleisch 127,2, Stand 184,01/104,48/92,87/19,84 vor = nach; an main
+    // f1faa046 fiel die Nahrung im Reload (der Boost lebte nur auf der Wanduhr der Seite).
+    {
+        kriterium: "halten.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q14 halten\.K5 Staffel 2/.test(x));
+            const z = l.find((x) => /^\s*\(Q14\) \{/.test(x));
+            if (!q || !z) return { gruen: false, zahl: "keine Zeile Q14 halten.K5 Staffel 2 (Exit " + lauf.exit + ")" };
+            const s20 = l.some((x) => /^\s*✅/.test(x) && x.includes("SELBST-TEST (S20)"));
+            let Q = null;
+            try { Q = JSON.parse(z.trim().slice(6)); } catch (_e) { Q = null; }
+            const w = (a) => (Array.isArray(a) ? a.map((v) => (Number.isFinite(v) ? v.toFixed(1) : "?")).join("/") : "?");
+            const zahl = Q
+                ? "hpMax/staminaMax/manaMax/defense leer " + w(Q.leer) + " · Werk " + Object.entries(Q.werk || {}).map(([k, v]) => k + " " + w(v)).join(" · ") +
+                  " · Nahrung " + Object.entries(Q.nahrung || {}).map(([k, v]) => k + " " + w(v)).join(" · ") + " · Stand " + (Q.stand || []).slice(0, 2).map(w).join(" → ") +
+                  " · Nahrung im Stand " + JSON.stringify((Q.stand || []).slice(2))
+                : "Q14-Zeile ohne Zahlen";
+            const rot = /❌/.test(q) ? " · ROT: " + q.split("Werk und Nahrung ").slice(1).join("").trim() : "";
+            return { gruen: /✅/.test(q) && s20, zahl: zahl + rot + (s20 ? "" : " · Selbst-Test S20 stumm") };
+        },
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/bau-*.js"],
+        quelle: "2 = Lebenswerte lesen Werk und Nahrung (Mutation), beide Geräte",
+    },
+    // ───────── halten.K1 Staffel 2 — der Treffer aus dem Gesetz im Bild, Labor = Welt (halten-masse) ─────────
+    // gate:kampf-gefuehl --k1 (echter Renderer, ?holz=kienspan, der ewige Loop läuft): das Langschwert trifft einen Hirsch über den
+    // Klick-Dispatcher je Lauf vor · masse (MAT.*.rho × 1,25) · schneide (sigY der Stoff-Zeile × 1,5), am Treffer das Urteil des
+    // Kerns (KE · p · edgeQ), das Bild hält (PNG {AUS}-<lauf>.png, Third) und die Schneide der gezeichneten Pose; dann dieselbe
+    // Mutation im Labor (worlds/schmiede, `measure(P)`). GRÜN: jede Schneide ≥ 0,9 in der Bahn (Urteil und Bild), Labor = Welt
+    // (Masse, Fase ± 0,5 %), Masse × 1,25 in Werk und wirksamer Masse des Treffers (± 2 %), die Schneide senkt die Fase und hebt
+    // KE ÷ v², der Schaden folgt KE, S21 feuert. Das Vorher (main f1faa046): die Welt reichte edgeQ 1, die gezeichnete Pose
+    // legte die Breitseite in die Bahn (edgeQ im Treffer-Takt 0,176–0,192, T18); an halten-masse 1,000.
+    {
+        kriterium: "halten.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k1"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware", KAMPF_BILDER: "{AUS}" },
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q15 halten\.K1 Staffel 2/.test(x));
+            const z = l.find((x) => /^\s*\(Q15\) \{/.test(x));
+            if (!q || !z) return { gruen: false, zahl: "keine Zeile Q15 halten.K1 Staffel 2 (Exit " + lauf.exit + ")" };
+            const s21 = l.some((x) => /^\s*✅/.test(x) && x.includes("SELBST-TEST (S21)"));
+            let K = null;
+            try { K = JSON.parse(z.trim().slice(6)); } catch (_e) { K = null; }
+            const f = (v, n = 2) => (Number.isFinite(v) ? v.toFixed(n) : "?");
+            const je = (k) => {
+                const [w, b] = [K.welt[k] || {}, K.labor[k] || {}];
+                return k + ": Treffer KE " + f(w.KE, 1) + " J · p " + f(w.p) + " · v " + f(w.v, 1) + " · Schaden " + f(w.schaden, 1) + " · edgeQ " + f(w.edgeQ, 3) +
+                    "/Bild " + f(w.schneideBild, 3) + " · Werk " + f(w.kg, 3) + " kg β " + f(w.edgeWinkel, 1) + "° · Labor " + f(b.kg, 3) + " kg β " + f(b.edgeWinkel, 1) + "°";
+            };
+            const zahl = K && K.welt && K.labor ? ["vor", "masse", "schneide"].map(je).join(" | ") : "Q15-Zeile ohne Zahlen";
+            const rot = /❌/.test(q) ? " · ROT: " + q.split("Labor-Werk ").slice(1).join("").trim() : "";
+            return { gruen: lauf.exit === 0 && /✅/.test(q) && s21, zahl: zahl + rot + (s21 ? "" : " · Selbst-Test S21 stumm") };
+        },
+        pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html"],
+        quelle: "2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
+    },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
     // gate:fahr-leben K8 Reifen (--kern, Node): je Rezept und Achse die Seitenkraft des Kerns (`fahrKraefte`, dieselbe Funktion wie
     // Probefahrt und Welt) über den Schlupf 0,1–30°; das Urteil liest `REIFEN {achsen:[{wo, spitze, abfall}], hz, kostenUs}` —
@@ -1344,9 +1418,5 @@ module.exports.fehlt = [
     {
         kriterium: "siedlung.K1", staffel: 2, befehl: null,
         grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
-    },
-    {
-        kriterium: "halten.K1", staffel: 2, befehl: null,
-        grund: "Q11 mutiert MAT (rho, sigY) und misst den Treffer headless; dass dieselbe Mutation das Labor-Werk ändert, und der Treffer im Bild beider Geräte, misst keine Linse",
     },
 ];
