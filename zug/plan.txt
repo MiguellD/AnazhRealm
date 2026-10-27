@@ -125,3 +125,4 @@ befund  mp-leitung  03:40 Spiel-Bruch (nicht gebaut): steht der Loop > 10 s (ver
 plan    z48  nach z47: ek-schleife 23021d6a + pk2-bild a6303399 + mp-wackler d7e94b9d (+ jeder Neulauf ganz grün) — Starter wartet auf main=455e5be8
 befund  neulauf  03:55 bau-faden 9b40adb2 und sk2-zipf2 9c24d7a8 GRÜN im Neulauf (G13 + G5 Wackler) → z48 · fk1-ton G13 2× rot · pbk4-fahrt G9 gate:fernwald SELBSTTEST 1 echt rot (Cloud baut weiter) · pk2-bild a6303399 G13 + G14 rot (Wackler-Klasse) → Neulauf · klang.K2#1 zeit: true (CV Bild 2,16 in Bahn 1/3)
 läuft   takt8b  03:52 Radeon allein profiband.K4#1 klang.K5#2 klang.K2#1 halten.K2#1 leib.K1#1 + headless feld.K2#1, dann buche.sh am e7a28b06 (trocken 110: +6 aus z44b/z45, −8 an Zeit-Stationen)
+erledigt z47  03:54 GELANDET 455e5be8 (V18.546.106) kk4-motor + sk5-haus; Nachwache z47 storniert → wird z47z48-abab (A=42973786 B=<z48>)
