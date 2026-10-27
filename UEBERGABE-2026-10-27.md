@@ -3,7 +3,9 @@
 **Stand:** main = integ-probe **19606f2e** (V18.546.112, Zug z54: tk1-herde, lk2-hang, pbk4-fahrt, mp-leitung). Gebucht **119/330** am
 9fa32207 (Artifact `Y6nuChFfb1dJTf7Btch4J5` v12). Pflicht-Offen A · B · C · E stehen unverändert. Chronik: `zug/plan.txt`, `zug/agenten.txt`.
 
-## 1. Takt 13 läuft maschinell weiter (kein LLM) — ZUERST buchen
+## 1. Takt 13 — GEBUCHT 123/330 am 19606f2e (21:59, Artifact v13)
+
+- +4 ohne Verlust: leib.K2 0→1, profiband.K4 0→1, siedlung.K5 1→2, tiere.K1 1→2 (Buchung 259cd726). Die Abschnitte darunter sind der Weg dahin.
 
 - Kopf **19606f2ee8492be703fb6aff52d4e48c9279919f**. Farm (headless) 80/81 grün in 37 min (rot nur feld.K2#2, war schon rot) — committet.
 - Radeon `takt13-radeon` (33 Stationen, Laptop): bei 20:45 13/33, rot nur profiband.K4#2. Datei `meisterkarte-quelle/punkte/messung/19606f2e-radeon.json`.
