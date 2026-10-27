@@ -905,14 +905,17 @@ async function kreaturProben(r, T, opts) {
     // Leiber des Wurfs, kein fremder dazu ──
     await buehne("herde", async (restore) => {
         r.setGameMode("frieden");
-        if (taeter === "herde")
+        // die Bewegung am Blick; fünf Tiere auf einem Punkt (jedes Glied nach dem Takt am Ort des ersten)
+        if (/^herde(-punkt)?$/.test(taeter))
             decke(
                 restore,
                 "updateCreatures",
                 (alt) =>
                     function (dt) {
                         alt.call(this, dt);
-                        for (const c of this.state.creatures) if (this.isInFrustum(c)) c.position.x += 0.01;
+                        for (const c of this.state.creatures)
+                            if (taeter === "herde") this.isInFrustum(c) && (c.position.x += 0.01);
+                            else c.position.copy(this.state.creatures[0].position);
                     }
             );
         // die alte Herden-Form: die Glieder sind jedes Tier DERSELBEN Gattung — zwei fremde Herden einer Art verschmelzen
@@ -965,6 +968,7 @@ async function kreaturProben(r, T, opts) {
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
+            Object.assign(t, { enge: 0, engst: [Infinity] });
             const [alt, ab] = [glieder.map((c) => c.position.clone()), []];
             for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
@@ -986,9 +990,14 @@ async function kreaturProben(r, T, opts) {
                 t.fluchtTakte += fliehen;
                 if (k >= 600) ((t.summe += a), t.bilder++);
                 if (fliehen) ((t.fs += a), t.fb++, (t.fMin = Math.min(t.fMin, a)));
-                let [sx, sz, nl] = [0, 0, 0];
+                let [sx, sz, nl, e] = [0, 0, 0, [Infinity]];
                 glieder.forEach((c, i) => {
                     const [p, fl] = [c.position, c.userData._motionZustand === "flucht"];
+                    // DIE ENGE: das engste Paar in seinem Paar-Raum (dem Raum der Separation, `_kreaturRaum` beider)
+                    for (const b of glieder.slice(0, i)) {
+                        const q = Math.hypot(p.x - b.position.x, p.z - b.position.z) / (r._kreaturRaum(c) + r._kreaturRaum(b));
+                        if (q < e[0]) e = [+q.toFixed(2), b.userData.name, c.userData.name, (k / 60) | 0];
+                    }
                     const d = Math.hypot(p.x - alt[i].x, p.z - alt[i].z);
                     if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
                     alt[i].copy(p);
@@ -997,6 +1006,8 @@ async function kreaturProben(r, T, opts) {
                     if (ab[i]) t.weg[i] = Math.max(t.weg[i], Math.hypot(p.x - ab[i].x, p.z - ab[i].z));
                 });
                 if (fliehen && nl >= 3) ((t.phi[0] += Math.hypot(sx, sz) / nl), t.phi[1]++);
+                if (k >= 600) t.enge += e[0];
+                if (!(e[0] >= t.engst[0])) t.engst = e;
             }
             return t;
         };
@@ -1008,6 +1019,8 @@ async function kreaturProben(r, T, opts) {
             fluchtAnteil: +(t.fluchtTakte / (3600 * t.n)).toFixed(3),
             fluchtMittel: t.fb ? +(t.fs / t.fb).toFixed(3) : null,
             fluchtMin: t.fb ? +t.fMin.toFixed(3) : null,
+            enge: +(t.enge / t.bilder).toFixed(2),
+            engst: t.engst,
         });
         const L = F.lauf.filter(Boolean);
         const k = L.map((x) => x[0]);
@@ -1090,8 +1103,6 @@ async function kreaturProben(r, T, opts) {
                         return Math.random() < 2 ? alt.apply(this, a) : null;
                     }
             );
-        if (typeof window.__fehlt !== "function")
-            return { fehler: "window.__fehlt fehlt (der Absenz-Helfer der Linse)" };
         const namen = new Set(BENANNT);
         for (const n of Object.getOwnPropertyNames(A.prototype))
             if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof A.prototype[n] === "function") namen.add(n);
@@ -3150,6 +3161,13 @@ function urteil(name, z) {
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
         );
+        // die Enge (Herde am Hang: EIN Pulk aus Leibern, nie ein Leib) — das engste Paar in Paar-Räumen, im Mittel ab 10 s; gemessen
+        // 1,02 wandernd und 0,86 auf der Flucht (headless, 27.10.)
+        const E = W.engst[0] < F.engst[0] ? W.engst : F.engst;
+        soll(
+            Math.min(W.enge, F.enge) >= 0.5,
+            `Verband klumpt: das engste Paar ${W.enge} / ${F.enge} Paar-Räume (Soll ≥ 0,5), ${E[1]} und ${E[2]} auf ${E[0]} nach ${E[3]} s`
+        );
         soll(R.takte >= 60 && R.mittel >= 0.8, `Verband flieht ungerichtet: Φ ${R.mittel} über ${R.takte} Takte`);
         soll(
             K.letzterS <= 1 && K.letzterS !== null,
@@ -3405,6 +3423,7 @@ const TAETER = {
         ["herde-zerfall", /zerfällt beim Wandern[\s\S]*zerfällt auf der Flucht[\s\S]*flieht ungerichtet/],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
+        ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
     ],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],

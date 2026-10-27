@@ -101,15 +101,8 @@ async function headless(laeufe) {
             KREATUR_PROBEN_SRC,
             o
         );
-    const bereit = () =>
-        page.waitForFunction(
-            () =>
-                window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                window.anazhRealm.state &&
-                window.anazhRealm.state.voxelWorkerReady,
-            { timeout: 120000 }
-        );
+    // die EINE Warte der Welt (welt-boot `__weltDa`): erwacht, dazu der Voxel-Worker
+    const bereit = () => page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await bereit();
