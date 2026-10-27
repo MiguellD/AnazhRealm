@@ -387,6 +387,10 @@ class AnazhRealm_kampf {
         const lx = uy * f.z - uz * f.y,
             ly = uz * f.x - ux * f.z,
             lz = ux * f.y - uy * f.x;
+        const u = out.u || (out.u = {});
+        u.x = ux;
+        u.y = uy;
+        u.z = uz;
         const phi = K.arcHalfRad * (2 * s - 1);
         const cf = Math.cos(phi) * Math.cos(heb),
             sf = Math.sin(phi) * Math.cos(heb),
@@ -457,6 +461,14 @@ class AnazhRealm_kampf {
                 if (!this._trefferErreichbar(c, S.x, S.z, lage.ht + K.bladeRadiusM)) continue; // das Grob-Tor (der Leib)
                 const tr = this._kampfKlingenKontakt(sw, c, lage, B, T);
                 if (!tr) continue;
+                // DAS BILD DES TREFFERS (halten.K1 Staffel 2): die Pose des Treffer-Takts liegt, bevor die Schneide gemessen
+                // wird — die Schwung-Uhr auf dem Teil-Schritt, der Leib gelegt (`animatePlayerSoul`, die Anzeige dieses Takts;
+                // ihr zweiter Ruf im Takt rückt keine Uhr). Vorher las das Urteil die Pose des letzten Bilds: bei 5 Bildern je s
+                // lag sie noch im Ausholen, die Schneide halb gerollt (edgeQ 0,40 statt 1,00) — der Treffer hing an der Bildrate.
+                if (!getroffen) {
+                    sw.t = t;
+                    this.animatePlayerSoul(nowSec);
+                }
                 sw.hits.add(c);
                 getroffen = true;
                 // DER TREFFER-WEG (Welle LF, Leben-Schau 07.10. Posten 1): die Energie folgt dem Schwung über den Weg, den
@@ -467,10 +479,13 @@ class AnazhRealm_kampf {
                 const weg = this._kampfTrefferWeg(c, sw, achse, t, hb + tr.s * (lage.ht - hb));
                 const rS = this._kampfSchlagpunkt(sw.rahmen);
                 const hebel = Math.max(weg.lo, Math.min(weg.hi, rS));
-                const urteil = this._kampfUrteil(this._kampfSchlagTempo(sw, achse, t, rS), 0, tr.zone, [
-                    weg.lo - hb,
-                    weg.hi - hb,
-                ]);
+                const urteil = this._kampfUrteil(
+                    this._kampfSchlagTempo(sw, achse, t, rS),
+                    0,
+                    tr.zone,
+                    [weg.lo - hb, weg.hi - hb],
+                    this._kampfSchneide(lage)
+                );
                 const bp = this._heldImplementBlueprint();
                 const roh = this._kampfRohSchaden(urteil, tr.zone, this._kampfKraft());
                 this._kampfVerschleiss(bp);
@@ -637,13 +652,44 @@ class AnazhRealm_kampf {
     // trefferUrteil über seine Messung kampfMasze.mess — Schnitt · Stich · Schlag, KE, Impuls, Zone). Faust und
     // Eigenwerke ohne Schmiede-Rezept haben keine Messung → null (sie tragen die Hand ×1). `weg` = der Treffer-Weg auf der
     // Waffe ([xLo, xHi], m ab dem Knauf — _kampfTrefferWeg): der Kern richtet den Ort, vLat ist das Tempo des Schlagpunkts.
-    _kampfUrteil(vLat, vAx, zone, weg) {
+    _kampfUrteil(vLat, vAx, zone, weg, edgeQ) {
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         if (!sc || typeof sc.trefferUrteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:trefferUrteil");
         const bp = this._heldImplementBlueprint();
         const km = bp ? this._schmiedeKampfMasze(bp) : null;
         if (!km || !km.mess) return null;
-        return sc.trefferUrteil(km.mess, { vLat, vAx, edgeQ: 1, zone, weg: weg || null });
+        return sc.trefferUrteil(km.mess, { vLat, vAx, edgeQ, zone, weg: weg || null });
+    }
+
+    // DIE SCHNEIDE IN DER BAHN (halten.K1 Staffel 2): edgeQ des Kerns (trefferUrteil: |v̂ · Schneide|), wie das Labor sie am
+    // Treffer misst (`arena._edgeAlign`, worlds/schmiede) — die Schneiden-Achse des Werks in der Hand (die Klinge: ihre Breite
+    // +Y der Vorlage, ein Kopf: +Z; die Faust legt sie in die Schwung-Ebene, `_refreshHeldMesh`), senkrecht zur sichtbaren
+    // Klinge a (+X), gegen die Bahn u × a (u das Oben der Schnitt-Ebene der Lage, `_kampfSchwungLage`; der Bogen dreht um u, die
+    // Größe hängt nicht an der Phase), gelesen an der Pose des Treffer-Takts (`_kampfSweepTick` legt sie). null: keine Studio-Gestalt in
+    // der Hand (der Kern setzt 1). Vorher reichte die Welt die Konstante 1 — im Treffer-Takt lag die Breitseite des
+    // Großschwerts in der Bahn (edgeQ 0,18) und schnitt wie die Schneide. `out` nimmt die Achse a und die kürzeste Drehung um
+    // sie, die die Schneide auf ±Bahn legt (out.roll — der Betrag gilt: |v̂ · Schneide|), für die Pose.
+    _kampfSchneide(lage, out) {
+        const pm = this.state.playerMesh;
+        const held = pm && pm.userData && pm.userData.heldMesh;
+        if (!held || !held.userData.foundryHeld || held.userData.heldAxis !== "x" || !lage || !lage.u) return null;
+        const q = held.getWorldQuaternion(this._schneideQ || (this._schneideQ = new THREE.Quaternion()));
+        const V =
+            this._schneideV || (this._schneideV = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
+        const a = V[0].set(1, 0, 0).applyQuaternion(q);
+        const e = (held.userData.heldArt === "klinge" ? V[1].set(0, 1, 0) : V[1].set(0, 0, 1)).applyQuaternion(q);
+        e.addScaledVector(a, -e.dot(a));
+        const b = V[2].set(lage.u.x, lage.u.y, lage.u.z).cross(a);
+        const n = e.length() * b.length();
+        if (!(n > 1e-9)) return null;
+        const c = e.dot(b) / n;
+        if (out) {
+            const det = a.x * (e.y * b.z - e.z * b.y) + a.y * (e.z * b.x - e.x * b.z) + a.z * (e.x * b.y - e.y * b.x);
+            const w = Math.atan2(det / n, c);
+            out.roll = w > Math.PI / 2 ? w - Math.PI : w < -Math.PI / 2 ? w + Math.PI : w;
+            out.a = a;
+        }
+        return Math.abs(c);
     }
 
     // DER ROH-SCHADEN EINES TREFFERS (Welle L, K-D5 + K-D6) — das EINE Gesetz für JEDE geführte Waffe, Klinge wie Pfeil:
@@ -1573,10 +1619,16 @@ class AnazhRealm_kampf {
         drehe(a.elbow, gewichtet(V.qw.setFromUnitVectors(V.a, V.b)));
         // (4) die Schulter legt die Hand-Mitte auf die Achse der Klinge, (5) das Handgelenk das Gerät längs der Achse (die leere
         // Faust hat keins). Die Kette der Gestalt trägt Skalen (die Morph-Proportionen): eine Welt-Drehung am Gelenk trifft
-        // in einem Zug nur auf 0,07 rad — KAMPF_POSE_ZUEGE Züge legen die Klinge auf 0,001 rad.
+        // in einem Zug nur auf 0,07 rad — KAMPF_POSE_ZUEGE Züge legen die Klinge auf 0,001 rad. (6) Vor jedem Zug rollt das
+        // Handgelenk das Werk um seine Achse, bis seine Schneide in der Bahn liegt (`_kampfSchneide` — die kürzeste Drehung der
+        // Schneiden-Ebene in die Bahn wie das Labor, `arena.swRoll`; die Züge danach drehen um das Oben der Schnitt-Ebene und
+        // lassen sie stehen). Vorher schlug die Klinge mit der Breitseite (edgeQ im Treffer-Takt 0,18).
         V.b.set(L.d.x, L.d.y, L.d.z);
         const geraet = !!mesh.userData.heldMesh;
+        const rolle = this._poseRolle || (this._poseRolle = {});
         for (let zug = 0; zug < AnazhRealm.KAMPF_POSE_ZUEGE; zug++) {
+            if (geraet && this._kampfSchneide(L, rolle) !== null)
+                drehe(a.wrist, gewichtet(V.qw.setFromAxisAngle(rolle.a, rolle.roll)));
             V.a.subVectors(this._kampfHandMitte(rig, V.G), V.S).normalize();
             drehe(a.shoulder, gewichtet(V.qw.setFromUnitVectors(V.a, V.b)));
             if (geraet && this._kampfGeraetSpitze(mesh, rig, V.T)) {

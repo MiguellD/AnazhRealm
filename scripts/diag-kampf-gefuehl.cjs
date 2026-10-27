@@ -10,7 +10,8 @@
 // Kamera, der Klick über den EINEN Dispatcher, gezählt nur mitlaufend: Q8 Treffer · Q9 Maus · Q10 Blick · Q11 das Gesetz
 // des Haltens · Q12 der ballistische Bogen · G3/T12 das Grob-Tor · T13–T27 die Posten der Leben-Schau; danach Q13 Sturz, Tod
 // und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
-// Naht, jede Naht restauriert. Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5]
+// Naht, jede Naht restauriert; Q15 der Treffer je Kern-Mutation im Takt des Spiels, im Bild und am Labor (allein: `--k1`, mit dem
+// echten Renderer). Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5 | --k1]
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
@@ -582,6 +583,27 @@ function k5Verdict(K) {
         soll["wiederkehr-" + t] = gleich(N, K.nachReload, t);
     return Object.keys(soll).filter((x) => !soll[x]);
 }
+// (Q14) halten.K5 Staffel 2: jede Mutation des getragenen Werks (Eisen · Bronze · Holz) und der Nahrung (Kraut · Fleisch) gibt
+// andere Lebenswerte als ihre Geschwister und als der leere Leib, und Werk und Nahrung reisen im Stand (Werte und Nahrung nach
+// dem Reload wie vor dem Speichern).
+function q14Verdict(K) {
+    const Q = K && K.q14;
+    if (!Q) return ["keine Messung"];
+    const je = (M) => Object.values(M).map((x) => JSON.stringify(x));
+    const v = [];
+    for (const [art, M] of [
+        ["werk", Q.werk],
+        ["nahrung", Q.nahrung],
+    ]) {
+        const w = je(M);
+        if (new Set(w).size < w.length || w.includes(JSON.stringify(Q.leer))) v.push(art + "-mutation");
+    }
+    if (JSON.stringify(Q.getragen) === JSON.stringify(Q.leer)) v.push("getragen");
+    const gleich = (t) => JSON.stringify(K.nachTod[t]) === JSON.stringify(K.nachReload[t]);
+    if (!gleich("werte") || !K.nachTod.nahrung.length) v.push("stand-werte");
+    if (!gleich("nahrung")) v.push("stand-nahrung");
+    return v;
+}
 // der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, das erste Bild der geladenen Welt (ohne
 // Bild-Schleife von Hand, `__seitenTakt`), ihr Abdruck
 async function k5Lauf(page) {
@@ -612,6 +634,24 @@ function k5Bericht(K, check) {
         mit(K.sturz, { ...K.nachReload, inventar: [] }).includes("wiederkehr-inventar"),
         "SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil"
     );
+    const q = q14Verdict(K),
+        Q = K.q14 || { leer: [] };
+    console.log(
+        `  (Q14) ${JSON.stringify({ ...K.q14, stand: [K.nachTod.werte, K.nachReload.werte], standNahrung: [K.nachTod.nahrung, K.nachReload.nahrung] })}`
+    );
+    check(
+        !q.length,
+        "Q14 halten.K5 Staffel 2: die Lebenswerte lesen Werk und Nahrung — je Mutation andere Werte, beide reisen im Stand " +
+            q
+    );
+    const ohne = { ...K.nachReload, nahrung: [], werte: Q.leer };
+    check(
+        q14Verdict({ ...K, nachReload: ohne }).includes("stand-nahrung") &&
+            q14Verdict({ ...K, q14: { ...Q, nahrung: { kraut: Q.leer, fleisch: Q.leer } } }).includes(
+                "nahrung-mutation"
+            ),
+        "SELBST-TEST (S20): ein Stand ohne Nahrung ROT an stand-nahrung, eine Nahrung ohne Wirkung an nahrung-mutation"
+    );
 }
 const server = statikServer();
 let ok = true;
@@ -627,21 +667,103 @@ async function k5Ende(browser, k5) {
     process.exit(ok ? 0 : 1);
 }
 
-const { WELLE_L, K5_VOR, K5_ABDRUCK } = require("./lib/kampf-proben.cjs");
+const { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LOS, K1_LABOR } = require("./lib/kampf-proben.cjs");
 // (Q13) `--k5` fährt nur Sturz, Tod und Wiederkehr — mit dem echten Renderer (die Station halten.K5 am Gerät)
 const NUR_K5 = process.argv.includes("--k5");
+// (Q15) `--k1` fährt nur den Treffer im Bild je Mutation und das Labor — mit dem echten Renderer (die Station halten.K1 am Gerät)
+const NUR_K1 = process.argv.includes("--k1");
+
+// (Q15) halten.K1 Staffel 2, je Soll beim Namen: im Takt des Spiels trifft das Langschwert in jedem Lauf (vor · masse · schneide),
+// die Schneide liegt im Urteil UND in der gezeichneten Pose in der Bahn (≥ 0,9); die Masse (MAT.*.rho × 1,25) hebt das Werk in
+// Welt und Labor gleich (über √1,25 — das Gehilz wiegt nicht aus MAT) und die wirksame Masse des Treffers (p ÷ v√eff) wie die des
+// Werks (± 2 %), die Schneide (sigY der Eisen-Zeile × 1,5, die Prägung Nihon) senkt die Fase und hebt die Energie je
+// Tempo (KE ÷ v²·eff); der Schaden folgt der Energie (Schaden ÷ Kraft der Führung ÷ KE je Zone gleich); das Labor zeigt dasselbe Werk (Masse und
+// Fase wie die Welt ± 0,5 %) in jedem Lauf.
+const K1_SOLL = { bahn: 0.9, gleich: 0.005, masse: 1.25, band: 0.02 };
+function k1Verdict(K) {
+    const [W, L] = [K && K.welt, K && K.labor];
+    if (!W || !L || !W.vor || !L.vor) return ["keine Messung"];
+    const v = [];
+    const rel = (a, b) => Math.abs(a / b - 1);
+    for (const l of ["vor", "masse", "schneide"]) {
+        const [w, b] = [W[l], L[l]];
+        if (!w || !w.traf) {
+            v.push(l + "-traf");
+            continue;
+        }
+        if (!(w.edgeQ >= K1_SOLL.bahn && w.schneideBild >= K1_SOLL.bahn)) v.push(l + "-bahn");
+        if (!b || !(rel(b.kg, w.kg) <= K1_SOLL.gleich && rel(b.edgeWinkel, w.edgeWinkel) <= K1_SOLL.gleich))
+            v.push(l + "-labor");
+    }
+    if (v.length) return v;
+    const mEff = (x) => x.p / (x.v * Math.sqrt(x.eff));
+    const je = (x) => x.KE / (x.v * x.v * x.eff);
+    const werk = W.masse.kg / W.vor.kg;
+    if (!(werk > K1_SOLL.masse ** 0.5 && rel(L.masse.kg / L.vor.kg, werk) <= 1e-3)) v.push("masse-werk");
+    if (!(rel(mEff(W.masse) / mEff(W.vor), W.masse.mEffWerk / W.vor.mEffWerk) <= K1_SOLL.band)) v.push("masse-treffer");
+    if (!(W.schneide.edgeWinkel < W.vor.edgeWinkel && L.schneide.edgeWinkel < L.vor.edgeWinkel))
+        v.push("schneide-fase");
+    if (!(je(W.schneide) > je(W.vor) * 1.01)) v.push("schneide-treffer");
+    const z = ["vor", "masse", "schneide"].map((l) => W[l]).filter((x) => x.zone === W.vor.zone);
+    const wirk = (x) => x.schaden / (x.kraft * x.KE);
+    if (z.some((x) => !(rel(wirk(x), wirk(W.vor)) <= 1e-3))) v.push("schaden");
+    return v;
+}
+// der Lauf: je Mutation ein Hieb im Takt des Spiels, das gehaltene Bild (Third) als PNG neben {AUS}, dann das Labor
+async function k1Lauf(browser, page) {
+    const K = { welt: {}, labor: {}, bilder: [] };
+    const aus = process.env.KAMPF_BILDER || require("path").join(require("os").tmpdir(), "kampf-k1");
+    for (const l of ["vor", "masse", "schneide"]) {
+        K.welt[l] = await page.evaluate(K1_BILD, l);
+        if (K.welt[l].traf) {
+            const f = `${aus}-${l}.png`;
+            await page.screenshot({ path: f });
+            K.bilder.push(f);
+        }
+        await page.evaluate(K1_LOS, l === "schneide");
+    }
+    const lab = await browser.newPage();
+    await server.zeige(lab, 120000, "worlds/schmiede/index.html", "load");
+    await lab.waitForFunction("typeof measure === 'function' && typeof P === 'object' && !!window.__schmiedeCore", {
+        timeout: 120000,
+    });
+    for (const l of ["vor", "masse", "schneide"])
+        K.labor[l] = await lab.evaluate(`(${K1_LABOR})(${JSON.stringify(l)}, ${JSON.stringify(K.welt.vor.stoff)})`);
+    return K;
+}
+async function k1Ende(browser, K) {
+    await browser.close();
+    server.close();
+    const v = K ? k1Verdict(K) : ["kein Lauf"];
+    const f3 = (x) => (Number.isFinite(x) ? +x.toFixed(3) : x);
+    if (K) console.log(`  (Q15) ${JSON.stringify(K, (k, x) => (typeof x === "number" ? f3(x) : x))}`);
+    check(
+        !v.length,
+        "Q15 halten.K1 Staffel 2: Schaden und Impuls aus Masse × Schneide × Tempo im Takt des Spiels und im Bild, dieselbe Mutation am Labor-Werk " +
+            v
+    );
+    if (K && K.welt && K.welt.vor && K.welt.vor.traf) {
+        const flach = { ...K, welt: { ...K.welt, vor: { ...K.welt.vor, schneideBild: 0.18 } } };
+        const stumm = { ...K, labor: { ...K.labor, masse: K.labor.vor } };
+        check(
+            k1Verdict(flach).includes("vor-bahn") && k1Verdict(stumm).includes("masse-labor"),
+            "SELBST-TEST (S21): die Breitseite im Bild ROT an der Bahn, ein Labor ohne die Mutation am Labor"
+        );
+    }
+    process.exit(ok ? 0 : 1);
+}
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: NUR_K5 ? "linse" : "null", frist: 300000 });
+    const browser = await starteBrowser({ art: NUR_K5 || NUR_K1 ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    if (!NUR_K5) await nullRenderer(page); // GPU-frei, Produktions-Boot
+    if (!NUR_K5 && !NUR_K1) await nullRenderer(page); // GPU-frei, Produktions-Boot
     let out;
     let welle = null;
     let k5 = null;
     try {
-        await server.zeige(page, 120000, `index.html${NUR_K5 ? "?holz=kienspan" : ""}`, "networkidle0");
+        await server.zeige(page, 120000, `index.html${NUR_K5 || NUR_K1 ? "?holz=kienspan" : ""}`, "networkidle0");
         await warteAufWelt(page, 120000);
         // Warmup: die Welt settled pumpen.
         await page.evaluate(async () => {
@@ -655,6 +777,7 @@ const NUR_K5 = process.argv.includes("--k5");
 
         // SYNCHRON messen (keine awaits — der rAF-Loop kann nicht dazwischenfunken).
         if (NUR_K5) return k5Ende(browser, await k5Lauf(page));
+        if (NUR_K1) return k1Ende(browser, await k1Lauf(browser, page));
         out = await page.evaluate(() => {
             const r = window.anazhRealm,
                 s = r.state,
@@ -1155,10 +1278,14 @@ const NUR_K5 = process.argv.includes("--k5");
         const paarV = paarVerdict(z.paar);
         check(
             !paarV.length,
-            "Q11 halten.K2 Staffel 2: Klang und Funken aus dem Stoff-Paar am Bus " + JSON.stringify(z.paar) +
+            "Q11 halten.K2 Staffel 2: Klang und Funken aus dem Stoff-Paar am Bus " +
+                JSON.stringify(z.paar) +
                 (paarV.length ? " — ROT " + paarV.join(" · ") : "")
         );
-        check(paarVerdict(SB.paar).some((x) => x.includes("≈")), "SELBST-TEST (S19): alle Paare gleich — die Linse nennt sie");
+        check(
+            paarVerdict(SB.paar).some((x) => x.includes("≈")),
+            "SELBST-TEST (S19): alle Paare gleich — die Linse nennt sie"
+        );
         const s6 = satzVerdict({ hand: S.hand, langbogen: SB.bogen });
         check(
             s6.some((x) => x.includes("zehrt nicht")) && s6.some((x) => x.includes("führt bei wear")),
