@@ -1,8 +1,8 @@
 {
  "sha": "dc06b495020b357431dc998342945d2352e0beee",
  "geraet": "headless",
- "zeit": "2026-10-27T09:36:29.751Z",
- "host": "farm:40479199372",
+ "zeit": "2026-10-27T09:41:23.304Z",
+ "host": "farm:40480438435",
  "je": {
   "stoffe.K1#1": {
    "gruen": true,
@@ -30,12 +30,12 @@
    "gruen": true,
    "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
    "exit": 0,
-   "minuten": 0.07,
-   "zeit": "2026-10-27T09:00:09.182Z",
+   "minuten": 0.11,
+   "zeit": "2026-10-27T09:41:16.411Z",
    "abdruck": "531ff2d7aefb",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:40477422354/3"
+   "host": "farm:40480438435/1"
   },
   "wetter.K5#2": {
    "gruen": true,
@@ -54,11 +54,11 @@
    "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
    "exit": 0,
    "minuten": 0.01,
-   "zeit": "2026-10-27T09:36:29.751Z",
+   "zeit": "2026-10-27T09:41:23.304Z",
    "abdruck": "37c3aaaa8f26",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:40479199372/1"
+   "host": "farm:40480438435/1"
   }
  }
 }
