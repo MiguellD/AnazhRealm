@@ -814,8 +814,11 @@ class AnazhRealm_koerper_leib {
             }
             tx = lock.x;
             tz = lock.z;
-        } else if (Math.abs(probe.g - ik.soleY) < 0.03) {
-            return; // ebener Boden im Stand: die Kontrapost-Pose bleibt byte-alt
+        } else {
+            // im Stand ohne Gang hält kein Lock (leib.K2): vorher trug der erste Schritt nach Halt oder Umsetzen den alten
+            // Weltpunkt weiter — bis 4 m neben dem Fuß der Pose, die Sohle 3–20 cm neben dem Boden
+            lock.on = false;
+            if (Math.abs(probe.g - ik.soleY) < 0.03) return; // ebener Boden im Stand: die Kontrapost-Pose bleibt byte-alt
         }
         const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
         leg.hip.getWorldPosition(hv);
