@@ -2406,7 +2406,7 @@ hauptLauf(async () => {
     if (process.argv.includes("--feind")) return feindHaupt(quelle);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
-        const gesund = {
+        const gesundV = {
             gestartet: true,
             renders: 1,
             vertices: 1200,
@@ -2415,23 +2415,6 @@ hauptLauf(async () => {
             maskeWelt: 1,
             maskeDanach: 1,
         };
-        check("Selbst-Test V-D3: gesunde Vorschau == 0 Täter", vorschauVerdict(gesund).length === 0);
-        for (const [name, bruch, soll] of [
-            [
-                "leere Vorschau (21 108 Dreiecke, 0 im Bild)",
-                { anteil: 0, maskeImRender: 1, augeAbstand: 36 },
-                "vorschau 0.0 %",
-            ],
-            ["Vorschau zeichnet nie", { renders: 0 }, "vorschau zeichnete nie"],
-            ["Welt-Maske bleibt aus", { maskeDanach: 0 }, "welt-maske"],
-        ]) {
-            const v = vorschauVerdict(Object.assign({}, gesund, bruch));
-            check(
-                `Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
         const zugGesund = {
             gestartet: true,
             vorschau: { key: "eiche|2|0", fremd: true, ms: 1500, imCache: true },
@@ -2439,99 +2422,10 @@ hauptLauf(async () => {
             stufen: [0, 1, 2].map((lod) => ({ lod, wart: "eiche|2|" + lod, ms: 800, da: true, hoch: 21.4, soll: 21 })),
             vorrat: { key: "gras|1|1", imFlug: true, auftraege: 1 },
         };
-        check(
-            "Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter",
-            zugVerdict(zugGesund).length === 0,
-            zugVerdict(zugGesund).join(" · ")
-        );
-        const zugMit = (wer, z) => Object.assign({}, zugGesund, { [wer]: Object.assign({}, zugGesund[wer], z) });
-        for (const [name, bruch, soll] of [
-            [
-                "die Vorschau schläft nach der Ankunft (Zweig-CI 38453848494)",
-                zugMit("vorschau", { ms: null, imCache: true }),
-                "zug vorschau schläft",
-            ],
-            [
-                "der fremde Zug im Rang der Ferne",
-                zugMit("vorschau", { ms: null, imCache: false }),
-                "zug vorschau: eiche|2|0 nach",
-            ],
-            ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null, imCache: true }), "zug hand schläft"],
-            ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
-            ["keine Klinge im Buch (vakuös)", Object.assign({}, zugGesund, { hand: null }), "zug hand: keine Probe"],
-            [
-                "die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)",
-                Object.assign({}, zugGesund, {
-                    stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", ms: null, da: true }],
-                }),
-                "zug stufe L2 schläft",
-            ],
-            ["keine Stufen gemessen (vakuös)", Object.assign({}, zugGesund, { stufen: [] }), "zug stufen: 0 von 3"],
-            [
-                "der Leser bestellt im Flug des Vorrats neu (bis 15.10.)",
-                zugMit("vorrat", { auftraege: 2 }),
-                "zug vorrat: gras|1|1 2×",
-            ],
-            [
-                "der Vorrat zieht nicht (vakuös)",
-                zugMit("vorrat", { imFlug: false }),
-                "zug vorrat: gras|1|1 nicht im Flug",
-            ],
-            ["keine Vorrats-Probe (vakuös)", Object.assign({}, zugGesund, { vorrat: null }), "zug vorrat: keine Probe"],
-            [
-                "die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)",
-                Object.assign({}, zugGesund, {
-                    stufen: [
-                        ...zugGesund.stufen.slice(0, 2),
-                        { lod: 2, wart: "fimp:eiche|2", ms: 900, da: true, hoch: 1.1, soll: 21 },
-                    ],
-                }),
-                "zug stufe L2 rahmen",
-            ],
-        ]) {
-            const v = zugVerdict(bruch);
-            check(
-                `Selbst-Test V-D3 Fremder Zug: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
+        const zugMit = (wer, z) => ({ [wer]: { ...zugGesund[wer], ...z } });
+        const stufeL2 = (l2) => ({ stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", da: true, ...l2 }] });
         const waffe = (id, fuell) => ({ art: "rezept", id, kind: "weapon", fuell, kante: 0.4, dist: 3 });
         const gesundR = { gestartet: true, waffenImBuch: 2, eintraege: [waffe("beil", 0.7), waffe("messer", 0.7)] };
-        check(
-            "Selbst-Test V-D3 Rahmen: gesunde Vorschau == 0 Täter",
-            rahmenVerdict(gesundR).length === 0,
-            rahmenVerdict(gesundR).join(" · ")
-        );
-        for (const [name, bruch, soll] of [
-            [
-                "Messer 0,059 (3-m-Mindestabstand, Runner WS-01)",
-                { eintraege: [waffe("beil", 0.7), waffe("messer", 0.059)] },
-                "rahmen 1 außerhalb",
-            ],
-            [
-                "ein Bauplan sprengt das Bild (0,97)",
-                { eintraege: gesundR.eintraege.concat([{ art: "bauplan", id: "haus", kind: "teile", fuell: 0.97 }]) },
-                "rahmen 1 außerhalb",
-            ],
-            [
-                "eine Waffe ungemessen",
-                { eintraege: [waffe("beil", 0.7), { art: "rezept", id: "messer", kind: "weapon", leer: true }] },
-                "rahmen waffen 1 von 2",
-            ],
-            [
-                "eine Gestalt bleibt pending",
-                { eintraege: gesundR.eintraege.concat([{ art: "rezept", id: "eiche", kind: "tree", frist: true }]) },
-                "rahmen 1 ohne Gestalt",
-            ],
-        ]) {
-            const v = rahmenVerdict(Object.assign({}, gesundR, bruch));
-            check(
-                `Selbst-Test V-D3 Rahmen: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
         const gesundA = {
             gestartet: true,
             baeume: 9,
@@ -2541,26 +2435,6 @@ hauptLauf(async () => {
             trocken: true,
             plattformen: 1,
         };
-        check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
-        for (const [name, bruch, soll] of [
-            [
-                "Tanne 2,0 m vom Mittelpunkt (V-D1)",
-                { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" },
-                "2 Krone",
-            ],
-            ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
-            ["kein Ring über dem Frame-Budget", { ringPortale: 0 }, "kein Genesis-Ring"],
-            ["Plattform im See", { trocken: false }, "plattform im wasser"],
-            ["der zweite Leger sucht nicht (Zwilling)", { plattformen: 2 }, "2 Plattformen"],
-            ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
-        ]) {
-            const v = ankunftVerdict(Object.assign({}, gesundA, bruch));
-            check(
-                `Selbst-Test V-D1: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
         // Die Einzelschnitte: je ein gesunder Zustand ohne Täter, je der Befund-Zustand mit Täter beim Namen.
         const gesundS = {
             gestartet: true,
@@ -2576,7 +2450,110 @@ hauptLauf(async () => {
             empfaengerAbstandZumAbsender: 12,
             telemetrieImChat: false,
         };
+        // Die V-k5-Klasse und ihr Rest, R2: je ein gesunder Zustand, je Befund-Zustand der Täter beim Namen.
+        const opGesund = (op) => ({
+            ok: false,
+            grund: "kein Wasser im Umkreis von 60 m",
+            effekt: op,
+            fehler: null,
+            kalt: false,
+            akte: [],
+        });
+        const gesundO = {
+            gestartet: true,
+            radius: 60,
+            ops: Object.fromEntries(ORT_OPS.map((op) => [op, opGesund(op)])),
+            chain: {
+                ok: false,
+                grund: "kein Wasser im Umkreis von 60 m",
+                effekt: "spawn_tree",
+                fehler: null,
+                akte: [{ nm: "_depositLife", abstand: 0 }],
+            },
+            buchWarm: true,
+            dorfAuftraege: 0,
+            dorfOhneOrt: null,
+        };
+        const mitOp = (op, e) => ({ ops: { ...gesundO.ops, [op]: { ...opGesund(op), ...e } } });
+        const kGesund = (name) => {
+            const [, , soll, effekt] = KNOTEN.find((e) => e[0] === name);
+            return { ok: false, grund: soll.replace(/^\^/, ""), effekt, fehler: null, akte: [] };
+        };
+        const gesundK = {
+            gestartet: true,
+            laeufe: Object.fromEntries(KNOTEN.map(([name]) => [name, kGesund(name)])),
+            defaults: { near_water: "kein Wasser im Umkreis von 60 m", at_player_forward: 5, at_field_need: 50 },
+            messOrtOhneSpieler: null,
+            ohneKnoten: true,
+            gesund: { ok: true, akte: 1, grund: null },
+        };
+        const mitK = (name, e) => ({ laeufe: { ...gesundK.laeufe, [name]: { ...kGesund(name), ...e } } });
+        const still = (nm, abstand) => ({ ok: true, grund: null, effekt: null, akte: [{ nm, abstand }] });
+        const mitD = (d) => ({ defaults: { ...gesundK.defaults, ...d } });
+        const gesundW = {
+            gestartet: true,
+            exakt: { n: 3600, falsch: 0, nass: 400, beispiele: [] },
+            zaehlung: {
+                "trinken@trocken": { R: 40, proben: 351, scans: 0 },
+                "chat@trocken": { R: 80, proben: 1330, scans: 12 },
+                "ki@trocken": { R: 200, proben: 1954, scans: 90 },
+                "ki@trocken-voll": { R: 200, proben: 8037, scans: 300 },
+            },
+        };
+        const mitZ = (k, z) => ({ zaehlung: { ...gesundW.zaehlung, [k]: z } });
         for (const [kurz, urteil, gesund, brueche] of [
+            [
+                "V-D3",
+                vorschauVerdict,
+                gesundV,
+                [
+                    ["leere Vorschau (21 108 Dreiecke, 0 im Bild)", { anteil: 0, maskeImRender: 1, augeAbstand: 36 }, "vorschau 0.0 %"],
+                    ["Vorschau zeichnet nie", { renders: 0 }, "vorschau zeichnete nie"],
+                    ["Welt-Maske bleibt aus", { maskeDanach: 0 }, "welt-maske"],
+                ],
+            ],
+            [
+                "V-D3 Fremder Zug",
+                zugVerdict,
+                zugGesund,
+                [
+                    ["die Vorschau schläft nach der Ankunft (Zweig-CI 38453848494)", zugMit("vorschau", { ms: null }), "zug vorschau schläft"],
+                    ["der fremde Zug im Rang der Ferne", zugMit("vorschau", { ms: null, imCache: false }), "zug vorschau: eiche|2|0 nach"],
+                    ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null }), "zug hand schläft"],
+                    ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
+                    ["keine Klinge im Buch (vakuös)", { hand: null }, "zug hand: keine Probe"],
+                    ["die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)", stufeL2({ ms: null }), "zug stufe L2 schläft"],
+                    ["keine Stufen gemessen (vakuös)", { stufen: [] }, "zug stufen: 0 von 3"],
+                    ["der Leser bestellt im Flug des Vorrats neu (bis 15.10.)", zugMit("vorrat", { auftraege: 2 }), "zug vorrat: gras|1|1 2×"],
+                    ["der Vorrat zieht nicht (vakuös)", zugMit("vorrat", { imFlug: false }), "zug vorrat: gras|1|1 nicht im Flug"],
+                    ["keine Vorrats-Probe (vakuös)", { vorrat: null }, "zug vorrat: keine Probe"],
+                    ["die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)", stufeL2({ ms: 900, hoch: 1.1, soll: 21 }), "zug stufe L2 rahmen"],
+                ],
+            ],
+            [
+                "V-D3 Rahmen",
+                rahmenVerdict,
+                gesundR,
+                [
+                    ["Messer 0,059 (3-m-Mindestabstand, Runner WS-01)", { eintraege: [waffe("beil", 0.7), waffe("messer", 0.059)] }, "rahmen 1 außerhalb"],
+                    ["ein Bauplan sprengt das Bild (0,97)", { eintraege: [...gesundR.eintraege, { art: "bauplan", id: "haus", kind: "teile", fuell: 0.97 }] }, "rahmen 1 außerhalb"],
+                    ["eine Waffe ungemessen", { eintraege: [waffe("beil", 0.7), { art: "rezept", id: "messer", kind: "weapon", leer: true }] }, "rahmen waffen 1 von 2"],
+                    ["eine Gestalt bleibt pending", { eintraege: [...gesundR.eintraege, { art: "rezept", id: "eiche", kind: "tree", frist: true }] }, "rahmen 1 ohne Gestalt"],
+                ],
+            ],
+            [
+                "V-D1",
+                ankunftVerdict,
+                gesundA,
+                [
+                    ["Tanne 2,0 m vom Mittelpunkt (V-D1)", { kronen: 2, naechsterStamm: 1.97, naechsteArt: "baum_tanne" }, "2 Krone"],
+                    ["Ring um den Ursprung, 36 m daneben", { ringMitteAbstand: 36 }, "ring-mitte"],
+                    ["kein Ring über dem Frame-Budget", { ringPortale: 0 }, "kein Genesis-Ring"],
+                    ["Plattform im See", { trocken: false }, "plattform im wasser"],
+                    ["der zweite Leger sucht nicht (Zwilling)", { plattformen: 2 }, "2 Plattformen"],
+                    ["kein Wald gewachsen (vakuös)", { baeume: 0 }, "kein Wald"],
+                ],
+            ],
             [
                 "V-k4",
                 tasteVerdict,
@@ -2621,6 +2598,64 @@ hauptLauf(async () => {
                         "der Empfänger pflanzt",
                     ],
                     ["Telemetrie im Chat (V-D8)", { telemetrieImChat: true }, "Dorf-Telemetrie"],
+                ],
+            ],
+            [
+                "V-k5-Klasse",
+                ortVerdict,
+                gesundO,
+                [
+                    [
+                        "TypeError (6b988a07)",
+                        mitOp("spawn_creature", {
+                            fehler: "op_exception: Cannot read properties of null (reading 'x')",
+                            grund: null,
+                            effekt: null,
+                        }),
+                        "spawn_creature: wirft",
+                    ],
+                    ["Dorf am Spieler-Ort über die Op (6b988a07)", mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }), "spawn_village: wirkt ohne Ort"],
+                    [
+                        "still am Spieler-Ort (cf9a07ba)",
+                        mitOp("spawn_studio", { ok: true, grund: null, effekt: null, akte: [{ nm: "spawnArchitecture", abstand: 4.1 }] }),
+                        "spawn_studio: wirkt ohne Ort",
+                    ],
+                    ["Absage ohne Grund", mitOp("deposit_life", { grund: null }), "deposit_life: scheitert nicht benannt"],
+                    ["chain meldet Erfolg", { chain: { ...gesundO.chain, ok: true } }, "chain: meldet Erfolg"],
+                    ["chain bricht ganz ab", { chain: { ...gesundO.chain, akte: [] } }, "chain: bricht ganz ab"],
+                    ["spawnSettlement ohne Ort gründet beim Spieler", { dorfAuftraege: 1 }, "dorf ohne Ort gründet"],
+                ],
+            ],
+            [
+                "V-k5-Klasse (Rest)",
+                knotenVerdict,
+                gesundK,
+                [
+                    ["der Text wird der Ursprung", mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)), `${KNOTEN[0][0]}: wirkt ohne Ort`],
+                    ["at(null) wird die 0 (Lehre 17)", mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)), "at mit null (Number(null) === 0): wirkt ohne Ort"],
+                    ["das Dorf ohne Abstände beim Spieler", mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)), "far_player ohne Abstände (das Dorf): wirkt ohne Ort"],
+                    ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
+                    ["ohne Spieler am Ursprung", mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)), "at_player ohne Spieler: wirkt ohne Ort"],
+                    ["die nächste Kreatur am Ursprung", mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)), "die nächste Kreatur ohne Spieler: wirkt ohne Ort"],
+                    ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],
+                    ["near_water ohne Radius sucht 8 m", mitD({ near_water: "kein Wasser im Umkreis von 8 m" }), "near_water ohne Radius"],
+                    ["vorn ohne Abstand 1 m", mitD({ at_player_forward: 1 }), "at_player_forward ohne Zahl"],
+                    ["Bedarf ohne Radius 10 m", mitD({ at_field_need: 10 }), "at_field_need ohne Zahl"],
+                    ["der Mess-Ort ohne Spieler ist der Ursprung", { messOrtOhneSpieler: { x: 0, z: 0 } }, "der Mess-Ort"],
+                    ["ohne Knoten scheitert der Spawn", { ohneKnoten: "nicht verlangt" }, "ohne Knoten kein Default-Ort"],
+                    ["ein gültiger Knoten wirkt nicht (vakuös)", { gesund: { ok: false, akte: 0, grund: "at: x fehlt" } }, "ein gültiger at-Knoten"],
+                ],
+            ],
+            [
+                "R2",
+                sucheVerdict,
+                gesundW,
+                [
+                    ["Spalten-Scan je Probe (6b988a07)", mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }), "ki 200 m: 1954 Spalten-Scans"],
+                    ["ohne Wasser alle 8037 Proben gescannt", mitZ("ki@trocken-voll", { R: 200, proben: 8037, scans: 8037 }), "ki@trocken-voll 200 m: 8037"],
+                    ["Trinken scannt je Probe", mitZ("trinken@trocken", { R: 40, proben: 351, scans: 351 }), "trinken 40 m"],
+                    ["der Fels-Beweis lügt", { exakt: { n: 3600, falsch: 3, nass: 400, beispiele: ["(1, 2, 0.2)"] } }, "das Urteil weicht"],
+                    ["kein nasser Punkt (vakuös)", { exakt: { n: 3600, falsch: 0, nass: 0 } }, "kein nasser Punkt"],
                 ],
             ],
         ]) {
@@ -2932,222 +2967,6 @@ hauptLauf(async () => {
             rot.filter((w) => !w[1]).length === 6,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
-        // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
-        const opGesund = (op) => ({
-            ok: false,
-            grund: "kein Wasser im Umkreis von 60 m",
-            effekt: op,
-            fehler: null,
-            kalt: false,
-            akte: [],
-        });
-        const gesundO = {
-            gestartet: true,
-            radius: 60,
-            ops: Object.fromEntries(ORT_OPS.map((op) => [op, opGesund(op)])),
-            chain: {
-                ok: false,
-                grund: "kein Wasser im Umkreis von 60 m",
-                effekt: "spawn_tree",
-                fehler: null,
-                akte: [{ nm: "_depositLife", abstand: 0 }],
-            },
-            buchWarm: true,
-            dorfAuftraege: 0,
-            dorfOhneOrt: null,
-        };
-        check(
-            "Selbst-Test V-k5-Klasse: gesund == 0 Täter",
-            ortVerdict(gesundO).length === 0,
-            ortVerdict(gesundO).join(" · ")
-        );
-        const mitOp = (op, e) =>
-            Object.assign({}, gesundO, {
-                ops: Object.assign({}, gesundO.ops, { [op]: Object.assign(opGesund(op), e) }),
-            });
-        for (const [name, bruch, soll] of [
-            [
-                "TypeError (6b988a07)",
-                mitOp("spawn_creature", {
-                    fehler: "op_exception: Cannot read properties of null (reading 'x')",
-                    grund: null,
-                    effekt: null,
-                }),
-                "spawn_creature: wirft",
-            ],
-            [
-                "Dorf am Spieler-Ort über die Op (6b988a07)",
-                mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }),
-                "spawn_village: wirkt ohne Ort",
-            ],
-            [
-                "still am Spieler-Ort (cf9a07ba)",
-                mitOp("spawn_studio", {
-                    ok: true,
-                    grund: null,
-                    effekt: null,
-                    akte: [{ nm: "spawnArchitecture", abstand: 4.1 }],
-                }),
-                "spawn_studio: wirkt ohne Ort",
-            ],
-            ["Absage ohne Grund", mitOp("deposit_life", { grund: null }), "deposit_life: scheitert nicht benannt"],
-            [
-                "chain meldet Erfolg",
-                Object.assign({}, gesundO, { chain: Object.assign({}, gesundO.chain, { ok: true }) }),
-                "chain: meldet Erfolg",
-            ],
-            [
-                "chain bricht ganz ab",
-                Object.assign({}, gesundO, { chain: Object.assign({}, gesundO.chain, { akte: [] }) }),
-                "chain: bricht ganz ab",
-            ],
-            [
-                "spawnSettlement ohne Ort gründet beim Spieler",
-                Object.assign({}, gesundO, { dorfAuftraege: 1 }),
-                "dorf ohne Ort gründet",
-            ],
-        ]) {
-            const v = ortVerdict(bruch);
-            check(
-                `Selbst-Test V-k5-Klasse: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
-        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
-        const kGesund = (name) => {
-            const [, , soll, effekt] = KNOTEN.find((e) => e[0] === name);
-            return { ok: false, grund: soll.replace(/^\^/, ""), effekt, fehler: null, akte: [] };
-        };
-        const gesundK = {
-            gestartet: true,
-            laeufe: Object.fromEntries(KNOTEN.map(([name]) => [name, kGesund(name)])),
-            defaults: { near_water: "kein Wasser im Umkreis von 60 m", at_player_forward: 5, at_field_need: 50 },
-            messOrtOhneSpieler: null,
-            ohneKnoten: true,
-            gesund: { ok: true, akte: 1, grund: null },
-        };
-        check(
-            "Selbst-Test V-k5-Klasse (Rest): gesund == 0 Täter",
-            knotenVerdict(gesundK).length === 0,
-            knotenVerdict(gesundK).join(" · ")
-        );
-        const mitK = (name, e) =>
-            Object.assign({}, gesundK, {
-                laeufe: Object.assign({}, gesundK.laeufe, { [name]: Object.assign(kGesund(name), e) }),
-            });
-        const still = (nm, abstand) => ({ ok: true, grund: null, effekt: null, akte: [{ nm, abstand }] });
-        const mitD = (d) => Object.assign({}, gesundK, { defaults: Object.assign({}, gesundK.defaults, d) });
-        for (const [name, bruch, soll] of [
-            [
-                "der Text wird der Ursprung",
-                mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)),
-                `${KNOTEN[0][0]}: wirkt ohne Ort`,
-            ],
-            [
-                "at(null) wird die 0 (Lehre 17)",
-                mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)),
-                "at mit null (Number(null) === 0): wirkt ohne Ort",
-            ],
-            [
-                "das Dorf ohne Abstände beim Spieler",
-                mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)),
-                "far_player ohne Abstände (das Dorf): wirkt ohne Ort",
-            ],
-            [
-                "voxel_carve gräbt bei 0",
-                mitK("voxel_carve mit null-Koordinaten", still("carveVoxel", 300.2)),
-                "voxel_carve mit null-Koordinaten: wirkt ohne Ort",
-            ],
-            [
-                "ohne Spieler am Ursprung",
-                mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)),
-                "at_player ohne Spieler: wirkt ohne Ort",
-            ],
-            [
-                "die nächste Kreatur am Ursprung",
-                mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)),
-                "die nächste Kreatur ohne Spieler: wirkt ohne Ort",
-            ],
-            ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],
-            [
-                "near_water ohne Radius sucht 8 m",
-                mitD({ near_water: "kein Wasser im Umkreis von 8 m" }),
-                "near_water ohne Radius",
-            ],
-            ["vorn ohne Abstand 1 m", mitD({ at_player_forward: 1 }), "at_player_forward ohne Zahl"],
-            ["Bedarf ohne Radius 10 m", mitD({ at_field_need: 10 }), "at_field_need ohne Zahl"],
-            [
-                "der Mess-Ort ohne Spieler ist der Ursprung",
-                Object.assign({}, gesundK, { messOrtOhneSpieler: { x: 0, z: 0 } }),
-                "der Mess-Ort",
-            ],
-            [
-                "ohne Knoten scheitert der Spawn",
-                Object.assign({}, gesundK, { ohneKnoten: "nicht verlangt" }),
-                "ohne Knoten kein Default-Ort",
-            ],
-            [
-                "ein gültiger Knoten wirkt nicht (vakuös)",
-                Object.assign({}, gesundK, { gesund: { ok: false, akte: 0, grund: "at: x fehlt" } }),
-                "ein gültiger at-Knoten",
-            ],
-        ]) {
-            const v = knotenVerdict(bruch);
-            check(
-                `Selbst-Test V-k5-Klasse (Rest): ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
-        // R2: gesund (Urteil exakt, trocken wenige Scans), je Befund-Zustand der Täter beim Namen.
-        const gesundW = {
-            gestartet: true,
-            exakt: { n: 3600, falsch: 0, nass: 400, beispiele: [] },
-            zaehlung: {
-                "trinken@trocken": { R: 40, proben: 351, scans: 0 },
-                "chat@trocken": { R: 80, proben: 1330, scans: 12 },
-                "ki@trocken": { R: 200, proben: 1954, scans: 90 },
-                "ki@trocken-voll": { R: 200, proben: 8037, scans: 300 },
-            },
-        };
-        check(
-            "Selbst-Test R2: gesund == 0 Täter",
-            sucheVerdict(gesundW).length === 0,
-            sucheVerdict(gesundW).join(" · ")
-        );
-        const mitZ = (k, z) =>
-            Object.assign({}, gesundW, { zaehlung: Object.assign({}, gesundW.zaehlung, { [k]: z }) });
-        for (const [name, bruch, soll] of [
-            [
-                "Spalten-Scan je Probe (6b988a07)",
-                mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }),
-                "ki 200 m: 1954 Spalten-Scans",
-            ],
-            [
-                "ohne Wasser alle 8037 Proben gescannt",
-                mitZ("ki@trocken-voll", { R: 200, proben: 8037, scans: 8037 }),
-                "ki@trocken-voll 200 m: 8037",
-            ],
-            ["Trinken scannt je Probe", mitZ("trinken@trocken", { R: 40, proben: 351, scans: 351 }), "trinken 40 m"],
-            [
-                "der Fels-Beweis lügt",
-                Object.assign({}, gesundW, { exakt: { n: 3600, falsch: 3, nass: 400, beispiele: ["(1, 2, 0.2)"] } }),
-                "das Urteil weicht",
-            ],
-            [
-                "kein nasser Punkt (vakuös)",
-                Object.assign({}, gesundW, { exakt: { n: 3600, falsch: 0, nass: 0 } }),
-                "kein nasser Punkt",
-            ],
-        ]) {
-            const v = sucheVerdict(bruch);
-            check(
-                `Selbst-Test R2: ‚${name}' → die Linse nennt ${soll}`,
-                v.some((t) => t.startsWith(soll)),
-                v.join(" · ")
-            );
-        }
         // WORT — der Korpus: das Soll liest den Abdruck; ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
         const kP = (soll, nach) => korpusPraedikat(soll, { werke: { baum_eiche: 1 } }, nach, { eiche: "baum_eiche" });
         for (const [name, ist, soll] of [
@@ -3345,17 +3164,33 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    console.log("=== V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG ===");
-    const am = out.ankunft || {};
-    if (am.err) check("V-D1 Probe ohne Ausnahme", false, am.err.split("\n")[0]);
-    const vA = ankunftVerdict(am);
-    check(
-        "V-D1 die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie",
-        vA.length === 0,
-        `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
-    );
-    console.log("=== V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
+    // DIE SCHNITTE DES V1-PFADS (Q14, Q15): je Probe ihr Urteil, die Zeile der Zahl, die Täter beim Namen
+    const opZeile = (om) => (op) => {
+        const e = (om.ops || {})[op] || {};
+        return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
+    };
+    const zZeile = (zz) => (k) =>
+        zz[k]
+            ? `${k} ${zz[k].R} m: ${zz[k].proben} ${zz[k].nass != null ? "trockene " : ""}Proben/${zz[k].scans} Scans${zz[k].gefunden ? " (Wasser)" : ""}${zz[k].nass != null ? ` (${zz[k].nass} nasse ohne Zählung; ganz trocken hochgerechnet ${zz[k].hoch})` : ""}`
+            : `${k} —`;
+    const zZ = (wer, z) =>
+        z
+            ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}`
+            : `${wer} —`;
+    const stat = (xs) => {
+        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
+        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
+    };
+    const rm = out.rahmen || {};
     for (const [kurz, name, m, urteil, zeile] of [
+        [
+            "V-D1",
+            "die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie",
+            out.ankunft,
+            ankunftVerdict,
+            (am) =>
+                `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m`,
+        ],
         [
             "V-k4",
             "der Fensterwechsel löst die gehaltene Taste",
@@ -3378,6 +3213,65 @@ hauptLauf(async () => {
             (m) =>
                 `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`,
         ],
+        [
+            "V-k5-Klasse",
+            "jede Op mit near_water in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)",
+            out.ort,
+            ortVerdict,
+            (om) =>
+                `near_water ${om.radius} m · ${ORT_OPS.map(opZeile(om)).join(" · ")} · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}`,
+        ],
+        [
+            "V-k5-Klasse (Rest)",
+            `jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme: kein Knoten · at ohne Zahl · Text statt Zahl · kein Spieler · Voxel), die Defaults der Auflöser gelten`,
+            out.knoten,
+            knotenVerdict,
+            (km) => {
+                const [kl, kd] = [km.laeufe || {}, km.defaults || {}];
+                const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
+                const kAkte = KNOTEN.reduce((n, [name]) => n + ((kl[name] && kl[name].akte) || []).length, 0);
+                return `${benannt}/${KNOTEN.length} benannt · ${kAkte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(km.messOrtOhneSpieler)}`;
+            },
+        ],
+        [
+            "R2",
+            "das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche",
+            out.suche,
+            sucheVerdict,
+            (sm) =>
+                `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${["trinken", "chat", "ki"]
+                    .flatMap((p) => [`${p}@trocken`, `${p}@plattform`])
+                    .concat(["ki@trocken-voll"])
+                    .map(zZeile(sm.zaehlung || {}))
+                    .join(" · ")}`,
+        ],
+        [
+            "V-D3",
+            "die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)",
+            out.vorschau,
+            vorschauVerdict,
+            (vm) =>
+                `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m`,
+        ],
+        [
+            "V-D3 Fremder Zug",
+            "jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (am Ereignis, nie an der Uhr)",
+            out.zug,
+            zugVerdict,
+            (zm) =>
+                `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}`,
+        ],
+        [
+            "V-D3 Rahmen",
+            `jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`,
+            rm,
+            rahmenVerdict,
+            () => {
+                const re = (rm.eintraege || []).filter((q) => Number.isFinite(q.fuell));
+                const rw = re.filter((q) => q.kind === "weapon");
+                return `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms`;
+            },
+        ],
     ]) {
         const mm = m || {};
         if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
@@ -3388,88 +3282,6 @@ hauptLauf(async () => {
             `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
         );
     }
-    console.log("=== V-k5-KLASSE (Q15) — DER VERLANGTE ORT, DEN ES NICHT GIBT ===");
-    const om = out.ort || {};
-    if (om.err) check("V-k5-Klasse Probe ohne Ausnahme", false, om.err.split("\n")[0]);
-    const vO = ortVerdict(om);
-    const opZeile = (op) => {
-        const e = (om.ops || {})[op] || {};
-        return `${op} ${e.fehler ? "wirft" : e.akte && e.akte.length ? `${e.akte.length} Akt(e)` : e.grund ? "benannt" : "still"}`;
-    };
-    check(
-        `V-k5-Klasse jede Op mit near_water ${om.radius || "?"} m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)`,
-        vO.length === 0,
-        `${om.gestartet ? ORT_OPS.map(opZeile).join(" · ") + ` · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}` : "nicht gestartet"}${vO.length ? " — Täter: " + vO.join(", ") : ""}`
-    );
-    console.log("=== V-k5-KLASSE, DER REST — JEDER UNGÜLTIGE ORT SCHEITERT BENANNT ===");
-    const km = out.knoten || {};
-    if (km.err) check("V-k5-Klasse (Rest) Probe ohne Ausnahme", false, km.err.split("\n")[0]);
-    const vK = knotenVerdict(km);
-    const kl = km.laeufe || {};
-    const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
-    const kAkte = KNOTEN.reduce((n, [name]) => n + ((kl[name] && kl[name].akte) || []).length, 0);
-    const kd = km.defaults || {};
-    check(
-        `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme: kein Knoten · at ohne Zahl · Text statt Zahl · kein Spieler · Voxel), die Defaults der Auflöser gelten`,
-        vK.length === 0,
-        `${km.gestartet ? `${benannt}/${KNOTEN.length} benannt · ${kAkte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(km.messOrtOhneSpieler)}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
-    );
-    console.log("=== R2 — DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN ===");
-    const sm = out.suche || {};
-    if (sm.err) check("R2 Probe ohne Ausnahme", false, sm.err.split("\n")[0]);
-    const vS = sucheVerdict(sm);
-    const zz = sm.zaehlung || {};
-    const zZeile = (k) =>
-        zz[k]
-            ? `${k} ${zz[k].R} m: ${zz[k].proben} ${zz[k].nass != null ? "trockene " : ""}Proben/${zz[k].scans} Scans${zz[k].gefunden ? " (Wasser)" : ""}${zz[k].nass != null ? ` (${zz[k].nass} nasse ohne Zählung; ganz trocken hochgerechnet ${zz[k].hoch})` : ""}`
-            : `${k} —`;
-    check(
-        "R2 das Wasser-Urteil ist bit-gleich zum vollen Scan, die Suche scannt trocken höchstens wie die 8-Strahlen-Suche",
-        vS.length === 0,
-        `${sm.exakt ? `${sm.exakt.falsch} von ${sm.exakt.n} Urteilen abweichend (${sm.exakt.nass} nass)` : "—"} · ${[
-            "trinken",
-            "chat",
-            "ki",
-        ]
-            .flatMap((p) => [zZeile(`${p}@trocken`), zZeile(`${p}@plattform`)])
-            .concat([zZeile("ki@trocken-voll")])
-            .join(" · ")}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
-    );
-    console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
-    const vm = out.vorschau || {};
-    if (vm.err) check("V-D3 Probe ohne Ausnahme", false, vm.err.split("\n")[0]);
-    const vV = vorschauVerdict(vm);
-    check(
-        "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)",
-        vV.length === 0,
-        `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
-    );
-    const zm = out.zug || {};
-    if (zm.err) check("V-D3 Fremder Zug Probe ohne Ausnahme", false, zm.err.split("\n")[0]);
-    const vZ = zugVerdict(zm);
-    const zZ = (wer, z) =>
-        z
-            ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}`
-            : `${wer} —`;
-    check(
-        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (am Ereignis, nie an der Uhr)`,
-        vZ.length === 0,
-        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
-    );
-    const rm = out.rahmen || {};
-    if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
-    const vR = rahmenVerdict(rm);
-    const re = (rm.eintraege || []).filter((q) => Number.isFinite(q.fuell));
-    const stat = (xs) => {
-        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
-        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
-    };
-    const rw = re.filter((q) => q.kind === "weapon");
-    check(
-        `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`,
-        vR.length === 0,
-        `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
-    );
     if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
