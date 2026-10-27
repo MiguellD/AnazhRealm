@@ -72,6 +72,20 @@ function gassenGefaelle(v2, grund) {
     gs.sort((a, b) => a - b);
     return +(100 * gs[Math.round(0.95 * (gs.length - 1))]).toFixed(1);
 }
+// DER ERDBAU JE HAUS (siedlung.K3 Staffel 2, die Kosten neben dem Gefälle): der Median über die Häuser des Plans v2 von
+// ∫ |Boden des Hauses − Grund| über seine Platte (obb samt Saum, 1-m-Raster), in m³ — so viel Erde bewegt der Ort je Haus.
+function erdbauMedian(v2, grund, saum) {
+    const vs = [];
+    for (const { y, obb: b } of v2.slots.filter((q) => q.obb)) {
+        const [c, s, ex, ez] = [Math.cos(b.phi || 0), Math.sin(b.phi || 0), b.ex + saum, b.ez + saum];
+        let v = 0;
+        for (let u = 0.5 - ex; u < ex; u++)
+            for (let w = 0.5 - ez; w < ez; w++)
+                v += Math.abs(y - grund(v2.ort.x + b.cx + u * c + w * s, v2.ort.z + b.cz - u * s + w * c));
+        vs.push(v);
+    }
+    return Math.round(vs.sort((a, q) => a - q)[vs.length >> 1]);
+}
 
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
@@ -529,8 +543,9 @@ async function gtDorfweg(v2, anker, sek) {
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
 // C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
 // Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Bereitungen
-// (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "trasse" jeden Export am Raster des
-// Wunschs, wohin die Wahl ihn auch rückt — wie bis zu ihren Schnitten. C-K3 DIE TRASSE AM ORT: je Vorrat der Abstand seines Plans v2 vom Ort
+// (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "wand" stellt die Steil-Wand 0,35 zurück
+// in `_autoSettlementSiteOk`, die bis siedlung-k3-hang jeden Ort steiler als 0,35 abwies. C-K3 DIE TRASSE AM ORT: je Vorrat der
+// Abstand seines Plans v2 vom Ort, `hang` die Steilheit dort (die EINE `_slopeAt` am Grund ohne Erdbau)
 // seines Höhen-Rasters, die Lese-Punkte außerhalb des Rasters und die Gassen (das Gefälle misst `gassenGefaelle`). Browser.
 async function vorratAmDorf(messort, alt) {
     const r = window.anazhRealm;
@@ -542,10 +557,17 @@ async function vorratAmDorf(messort, alt) {
         if (z) zelle.set(z.seed, z.key);
     }
     const e = { exporte: {}, alle: 0, nachZug: -1, trasse: [], welt: r._gelaende().seed };
-    const [req, bereite, ort0] = [r._foundryRequestSettlement, r._ortMitTrasse, {}];
+    const [req, bereite, ok, GN] = [
+        r._foundryRequestSettlement,
+        r._ortMitTrasse,
+        r._autoSettlementSiteOk,
+        globalThis.__gelaendeCore,
+    ];
+    const Lw = GN.lageGrund(e.welt, SimplexNoise);
+    const steil = (x, z) => r._slopeAt(x, z, (px, pz) => GN.hoehe(Lw, px, pz, true));
+    if (alt === "wand") r._autoSettlementSiteOk = (x, z, ...a) => steil(x, z) <= 0.35 && ok.call(r, x, z, ...a);
     r._foundryRequestSettlement = function (dp, ...a) {
         e.alle++;
-        if (alt === "trasse" && dp && dp.ort) dp.ort = ort0[dp.seed] ||= dp.ort;
         return req.call(this, dp, ...a);
     };
     r._ortMitTrasse = function (dp, ...a) {
@@ -591,18 +613,19 @@ async function vorratAmDorf(messort, alt) {
                     zelle: k,
                     versatzM: +Math.hypot(v2.ort.x - b.anker.x, v2.ort.z - b.anker.z).toFixed(1),
                     aussen: (b.plan.trasse || {}).aussen,
-                    v2: { ort: v2.ort, roads: v2.roads },
+                    hang: +steil(v2.ort.x, v2.ort.z).toFixed(2),
+                    v2: { ort: v2.ort, roads: v2.roads, slots: v2.slots },
                 });
         }
     } finally {
         delete r._foundryRequestSettlement;
         delete r._ortMitTrasse;
         delete r._dorfBereiten;
+        r._autoSettlementSiteOk = ok;
         window.__anazhAutoSettlement = hook0;
     }
     return Object.assign(e, { nachZug: e.nachZug + e.alle, gaenge, offen: r._weltOffen().foundry });
 }
-
 // Je Art ein Wurf an einem
 // freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
 // und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: die Feuerstelle des Satzes oder des Bau-Modus ist Bau (sie sperrt den
@@ -1892,8 +1915,7 @@ hauptLauf(async () => {
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
                 for (let m = nah + 80; vr && m > nah + 1; m -= 4)
-                    for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++)
-                        await sleep(5);
+                    for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++) await sleep(5);
                 const vor0 = new Set(r.state.architectures); // die Häuser der Läufe davor zählen nie
                 const pw = stell(nah - 2);
                 // DAS ERSTE HAUS IM BILD (sk5-haus): `bild` = Takte vom Erwachen, bis ein Haus der Zelle in der Stufe steht, die
@@ -2207,7 +2229,7 @@ hauptLauf(async () => {
                             zelle: res.zelle || "Akt",
                             versatzM: +Math.hypot(anker.x - zc.wx, anker.z - zc.wz).toFixed(1),
                             aussen: (plan.trasse || {}).aussen,
-                            v2: { ort: v2.ort, roads: v2.roads },
+                            v2: { ort: v2.ort, roads: v2.roads, slots: v2.slots },
                         };
                     const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
                     const haeuser = r.state.architectures.filter(
@@ -2716,8 +2738,15 @@ hauptLauf(async () => {
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
     const K5 = [];
-    for (const alt of [null, "vorrat", "trasse"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
-    const [K5b, K5bS, K3S] = K5;
+    for (const alt of [null, "vorrat"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
+    const [K5b, K5bS] = K5;
+    // DER HANG-ORT (siedlung.K3 Staffel 2): in seinem Vorlauf-Ring liegen vier Zellen, deren Anker zwischen der alten Wand 0,35 und
+    // der Böschung des Erdbaus liegt (−3,−14 0,38 · −1,−14 0,49 · −3,−12 0,51 · −1,−12 0,57; am Mess-Ort dorf −3,−3 0,51)
+    const [H, HS] = [
+        await page.evaluate(vorratAmDorf, [-400, -3175], null),
+        await page.evaluate(vorratAmDorf, [-400, -3175], "wand"),
+    ];
+    const HD = H.trasse.filter((t) => t.hang > 0.35);
     // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
     const wirf = (d) => (OA.outO.anker ? page.evaluate(feldWurfImOrt, OA.outO.anker, d) : { err: "kein Ort" });
     const [FW, FWd, FWa] = [await wirf(false), await wirf("bau"), await wirf("art")];
@@ -3108,21 +3137,40 @@ hauptLauf(async () => {
     require(path.join(root, "gelaende-core.js"));
     const GN = globalThis.__gelaendeCore;
     const Lw = GN.lageGrund(K5b.welt, require(path.join(root, "vendor/simplex-noise.js")));
-    for (const t of [...K5b.trasse, ...K3S.trasse, OA.outO.trasse, O.outO.trasse].filter(Boolean)) {
-        t.p95 = gassenGefaelle(t.v2, (x, z) => GN.hoehe(Lw, x, z, true));
+    // der Selbsttest der Trasse (`fremd`): dieselben Gassen am Grund 24 m daneben — eine Trasse, die einem anderen Boden folgt
+    for (const t of [...K5b.trasse, ...H.trasse, OA.outO.trasse, O.outO.trasse].filter((q) => q && q.v2)) {
+        const grund = (dx) => (x, z) => GN.hoehe(Lw, x + dx, z, true);
+        [t.p95, t.fremd, t.erdbauM3] = [
+            gassenGefaelle(t.v2, grund(0)),
+            gassenGefaelle(t.v2, grund(24)),
+            erdbauMedian(t.v2, grund(0), FC.ORT_GESETZ.saumM),
+        ];
         delete t.v2;
     }
     const trassen = [...K5b.trasse, OA.outO.trasse, O.outO.trasse];
     const gefSoll = FC.ORT_GESETZ.gefaelle * 100;
+    const traegt = (t) => t && t.versatzM === 0 && t.aussen === 0 && t.p95 <= gefSoll;
     check(
         `C-K3: DIE TRASSE AM ORT — ${trassen.length} Dörfer stehen am Ort ihres Höhen-Rasters, Gassen-Gefälle p95 ≤ ${gefSoll} % am Grund ohne Erdbau`,
-        trassen.length >= 4 && trassen.every((t) => t && t.versatzM === 0 && t.aussen === 0 && t.p95 <= gefSoll),
+        trassen.length >= 4 && trassen.every(traegt),
         trassen
     );
     check(
-        "C-K3 Selbsttest: der Plan am Raster des gerückten Wunschs ist ROT",
-        K3S.trasse.some((t) => t.p95 > gefSoll),
-        K3S.trasse
+        // Staffel 2: der Ort steht am Hang über der alten Wand, die Trasse hält die Gassen, der Erdbau je Haus ist die Kosten
+        `C-K3: DIE HANGDÖRFER — ${HD.length} Dörfer stehen über der alten Wand 0,35, Gassen-Gefälle p95 ≤ ${gefSoll} %, Erdbau-Median je Haus`,
+        HD.length >= 4 && HD.every(traegt),
+        HD
+    );
+    const hangS = HS.trasse.filter((t) => t.hang > 0.35).map((t) => t.zelle + " " + t.hang); // dieselbe Lesart wie HD
+    check(
+        "C-K3 Selbsttest: die Wand 0,35 zurück trägt am Hang-Ort keine vier Hangdörfer (ROT)",
+        hangS.length < 4,
+        hangS
+    );
+    check(
+        "C-K3 Selbsttest: die Gassen am Grund 24 m daneben sind ROT",
+        HD.some((t) => t.fremd > gefSoll),
+        HD
     );
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
