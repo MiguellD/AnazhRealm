@@ -617,14 +617,36 @@ class AnazhRealm_netz_identitaet {
         return JSON.stringify({ v: 1, programm });
     }
 
-    // Versiegelt ein reisendes Programm mit dem Vibe-Pass → EIN Code (`WERK_CODE.praefix` + base64url der Hülle
-    // { v, programm, autor, sig }). Die Signatur deckt v + programm. { ok, code } | { ok:false, grund }.
+    // Versiegelt ein reisendes Programm mit dem Vibe-Pass → EIN Code (`_werkHuelle`). Die Signatur deckt v + programm.
     async _werkCode(programm) {
         const sig = await this._vibeSign(this._werkKanon(programm));
         if (!sig) return { ok: false, grund: "sign_failed" };
-        const huelle = JSON.stringify({ v: 1, programm, autor: this.state.vibePass.publicKeyHex, sig });
+        return this._werkHuelle({ programm, sig });
+    }
+
+    // DAS EINE CODE-FORMAT jedes Teilens: `WERK_CODE.praefix` + base64url der Hülle { v, programm | welt, autor, sig } — ein
+    // Werk trägt sein Programm, eine Welt ihre signierte Adresse (`teileWelt`). { ok, code } | { ok:false, grund }.
+    _werkHuelle(fracht) {
+        const huelle = JSON.stringify({ v: 1, ...fracht, autor: this.state.vibePass.publicKeyHex });
         const code = AnazhRealm.WERK_CODE.praefix + this._vibeBytesToB64u(new TextEncoder().encode(huelle));
         return code.length <= AnazhRealm.WERK_CODE.max ? { ok: true, code } : { ok: false, grund: "gross" };
+    }
+
+    // DIE GESTE DES SENDERS einer Welt: die aktive Welt wird Gastgeber (Rolle host, der Raum offen — der Host beantwortet den
+    // world-request), ihre Adresse signiert der Vibe-Pass (`signWorldAddress`, die EINE Signatur einer Welt-Adresse, mit
+    // ihrer souveränen Geste) und reist in derselben Hülle wie ein Werk. Ein Gast teilt die Adresse seines Hosts.
+    async teileWelt(opts) {
+        const wm = this.state.worldMeta || {};
+        const p2p = this.state.p2p;
+        if (wm.role !== "guest" && wm.role !== "host") {
+            wm.role = p2p.role = "host";
+            this.saveState();
+        }
+        if (!p2p.ws) this.initP2PSync(null);
+        const res = await this.signWorldAddress(opts);
+        if (!res.ok) return { ok: false, grund: res.reason };
+        const { worldId, roomId, broker, label, sig } = res.address;
+        return this._werkHuelle({ welt: { worldId, roomId, broker, label }, sig });
     }
 
     // DIE GESTE DES SENDERS: das Werk der Werkstatt — Bauplan, Same der Vorschau (`_werkSame`), Stempel (`_studioStampFor`) —
@@ -667,6 +689,7 @@ class AnazhRealm_netz_identitaet {
         }
         if (!h || typeof h !== "object" || Array.isArray(h)) return ab("kaputt");
         if (h.v !== 1) return ab("version");
+        if (h.welt) return this._empfangeWelt(h, ab, opts);
         const p = h.programm;
         const kette = Array.isArray(p) && p[0] === "chain";
         const [def, spawn] = kette ? [p[1], p[2]] : [null, p];
@@ -727,6 +750,21 @@ class AnazhRealm_netz_identitaet {
         return { ok: true, id: steht.id, name: ziel, autor: h.autor, fremd };
     }
 
+    // DER EMPFANG EINER WELT (dieselbe Geste, dieselbe Hülle): die Adresse durch den EINEN Eingang fremder Welt-Adressen
+    // (`_admitForeignWorldAddress`), die Signatur des Autors über sie (`verifyWorldAddress`, nur "valid" reist), dann der
+    // Beitritt (`_weltBeitritt` → die Tür `_weltBetreten`). Nichts wird geschrieben, bevor alle Wände tragen.
+    async _empfangeWelt(h, ab, opts) {
+        const addr = this._admitForeignWorldAddress({ ...h.welt, authorPubKey: h.autor, sig: h.sig });
+        if (!addr) return ab("adresse");
+        if (!addr.sig) return ab("unsigniert");
+        if ((await this.verifyWorldAddress(addr)) !== "valid") return ab("signatur");
+        this._spielerSagt(
+            `Geteilte Welt „${addr.label}" (von ${this._vibeFingerprint(addr.authorPubKey)}) — trete bei …`
+        );
+        const res = await this._weltBeitritt(addr, { slugHint: opts.slugHint || addr.label });
+        return res.ok ? { ok: true, welt: res.worldId, autor: addr.authorPubKey } : ab("beitritt:" + res.reason);
+    }
+
     // ### Welt-Manifest-Signatur ###
     // Spiegelt die Bauplan-Signatur: der Spieler versiegelt eine Welt mit SEINEM Vibe-Pass (kein
     // Projekt-Schlüssel, keine zentrale Autorität). Spieler-global in state.signedWorlds + localStorage
@@ -761,8 +799,12 @@ class AnazhRealm_netz_identitaet {
         const wm = this.state.worldMeta || {};
         if (!wm.worldId) return null;
         const p2p = this.state.p2p || {};
-        const broker = (opts && opts.broker) || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL;
-        const roomId = (opts && opts.roomId) || (p2p.roomOverride || "").trim() || String(wm.worldId);
+        // erreichbar für ein anderes Gerät: die LAN-Adresse, die der signaling-server meldet, sonst die eingestellte URL;
+        // der Raum, in dem die Welt steht
+        const lan = (p2p.lanAddresses || [])[0];
+        const broker = (opts && opts.broker) || (lan ? `ws://${lan}` : p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL);
+        const roomId =
+            (opts && opts.roomId) || (p2p.ws && p2p.room) || (p2p.roomOverride || "").trim() || String(wm.worldId);
         const label = (opts && opts.label) || wm.slug || String(wm.worldId).slice(0, 16);
         return {
             worldId: String(wm.worldId),
@@ -838,7 +880,7 @@ class AnazhRealm_netz_identitaet {
         // broker MUSS ein wss:// oder ws:// sein — gegen Pfade ausserhalb der
         // Taille (das M3-Sieb: an der Form vor dem Inhalt).
         if (!/^wss?:\/\//i.test(broker)) return null;
-        // worldId-Form (analog buildInvitationCode): 4..80 Zeichen, kein /
+        // worldId-Form: 4..80 Zeichen, kein /
         if (worldId.length < 4 || worldId.length > 80 || /[/\\\s]/.test(worldId)) return null;
         if (roomId.length < 4 || roomId.length > 80 || /[/\\\s]/.test(roomId)) return null;
         const out = {
@@ -2220,8 +2262,8 @@ AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitsch
 // Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
 AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
-// DER WERK-CODE (Teilen in EINER Geste): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des Empfängers und je
-// Wand der Satz des Spielers (`empfangeWerk` nennt jede Absage beim Namen — der Schlüssel ist der Kopf des Grunds).
+// DER WERK-CODE (Teilen in EINER Geste, Werk und Welt): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des
+// Empfängers und je Wand der Satz des Spielers (`empfangeWerk` nennt jede Absage beim Namen — der Schlüssel ist der Kopf des Grunds).
 AnazhRealm.WERK_CODE = Object.freeze({
     praefix: "anazh-werk:",
     max: 4096,
@@ -2245,5 +2287,7 @@ AnazhRealm.WERK_CODE = Object.freeze({
         unsigniert: "der Code ist nicht signiert",
         signatur: "die Signatur passt nicht zum Werk",
         steht_nicht: "das Werk fand an deiner Pose keinen Grund",
+        adresse: "die Welt-Adresse ist ungültig",
+        beitritt: "die Welt des Gastgebers kam nicht an",
     }),
 });
