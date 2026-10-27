@@ -876,3 +876,4 @@
 2026-10-27 13:35:30 takt11-radeon material.K1#2 GRÜN 2.7 · 9/13
 2026-10-27 13:38:02 takt11-radeon fahrzeug.K4#2 GRÜN 2.5 · 10/13
 2026-10-27 13:38:20 takt11-radeon fahrzeug.K3#2 GRÜN 3.0 · 11/13
+2026-10-27 13:39:19 takt11-radeon tore.K3#2 GRÜN 1.3 · 12/13
