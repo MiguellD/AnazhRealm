@@ -423,3 +423,4 @@
 2026-10-27 14:33:47 takt11-gtx fahrzeug.K4#1 GRÜN 3.5 · 23/41
 2026-10-27 14:37:08 takt11-gtx ferne.K1#1 GRÜN 3.3 · 24/41
 2026-10-27 14:40:26 takt11-gtx ferne.K2#1 GRÜN 3.2 · 25/41
+2026-10-27 14:41:58 takt11-gtx gelaende.K3#1 GRÜN 1.4 · 26/41
