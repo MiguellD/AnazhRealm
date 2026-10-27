@@ -953,3 +953,4 @@
 2026-10-27 20:03:15 takt13-headless gelaende.K1#1 GRÜN 0.7 · 1/81
 2026-10-27 20:03:21 takt13-headless gelaende.K1#2 GRÜN 1.5 · 2/81
 2026-10-27 20:03:27 takt13-headless gelaende.K4#1 GRÜN 0.3 · 3/81
+2026-10-27 20:03:34 takt13-headless gelaende.K4#2 GRÜN 1.5 · 4/81
