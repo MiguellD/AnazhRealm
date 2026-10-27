@@ -430,6 +430,7 @@ class AnazhRealm_dirigent_takt {
         o.wald =
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
+            (this._saatOffen ? this._saatOffen.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
         o.felder = this._weltBakeSchuld();
@@ -1275,7 +1276,9 @@ class AnazhRealm_dirigent_takt {
                 prio: 1, // Welt-Substanz: die Gestalt jedes Baums in frischem Wald wartet auf ihre Zellen (K69)
                 run: (ms) => {
                     const _wp = performance.now();
-                    this._tickWaldPlan(ms);
+                    // erst die Saat der Chunks (`_tickSaat`, mindestens ein Schritt), dann die Zellen und Pflanzungen des Walds
+                    this._tickSaat(_wp + ms, null, false, 1);
+                    this._tickWaldPlan(ms - (performance.now() - _wp));
                     this._perfSenseLap("waldPlan", _wp);
                 },
             },

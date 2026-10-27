@@ -489,7 +489,9 @@ class AnazhRealm_studio_gestalt {
         const key = this._foundryKoerperKey(preset, variant, lod, this._artifactStudioOv(entry));
         return f.cache.has(key) && f.cache.get(key) != null;
     }
-    _foundryRewarmColdTrees() {
+    // `menge`: die Einträge, die er fragt — der Cull reicht seine wachen (`_cullWache`: jeder Kalte und Klassische der
+    // Mesh-Zone wacht), sonst der Bestand.
+    _foundryRewarmColdTrees(menge) {
         // Regime-Quelle = `_foundryEnabled`: Foundry aus → Rewarm ist No-op (sonst läuft er im Gate-Hook-
         // Fenster mit, Burst über dem Cull-Budget). `!f || !f.ready` unten deckt jeden foundry-losen Zustand.
         // Rückgabe: die Zahl der Kandidaten (kalt oder vor dem Studio platziert) — die Stand-Wache des Culling-Takts hält
@@ -501,8 +503,8 @@ class AnazhRealm_studio_gestalt {
         if (this._dekoWartet()) return 1;
         const f = this._foundry;
         if (!f || !f.ready) return 0; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
-        const archs = this.state.architectures;
-        if (!Array.isArray(archs)) return 0;
+        const archs = menge || this.state.architectures;
+        if (!archs) return 0;
         const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
         const rad = this.state.architectureCullingRadius || 200;
         const radiusSq = rad * rad;

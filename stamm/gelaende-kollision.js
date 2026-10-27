@@ -588,6 +588,7 @@ class AnazhRealm_gelaende_kollision {
     _blockerBewegt(entry) {
         const N = this._blockerNetz();
         if (entry._blockerGen === N.gen) N.beweger.add(entry);
+        this._cullWecken(entry); // der Cull fragt ihn je Gang (er schläft nie mehr, `tickArchitectureCulling`)
     }
 
     // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).

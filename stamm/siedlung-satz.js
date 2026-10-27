@@ -2710,6 +2710,7 @@ class AnazhRealm_siedlung_satz {
         }
         entry.instanced = true;
         entry.instSlots = slots;
+        this._cullWecken(entry); // die gezeichnete Stufe wechselt: der Cull urteilt neu (`_cullWache`)
         this._fluegelLeib(entry); // der Tür- und Tor-Flügel trägt seinen Leib aus der Matrix, die er zeichnet (leib.K4)
         // DIE HÜLLE DER STUFE (Welle L, Kollision == Optik): ein Haus kollidiert, wie es gezeichnet ist — die Stufe 0 mit den
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
@@ -2830,7 +2831,7 @@ class AnazhRealm_siedlung_satz {
         if (!lists.length) {
             entry.instSlotsBand = null;
             entry._lodBandLevel = null;
-            if (!bandOnly) entry.instanced = false;
+            if (!bandOnly) [(entry.instanced = false), this._cullWecken(entry)];
             return;
         }
         // Gruppen, die nach dem Freigeben LEER sind, GANZ entsorgen (wie _disposeScatterRegion) → keine leeren
@@ -2848,6 +2849,7 @@ class AnazhRealm_siedlung_satz {
         entry.instSlotsBand = null;
         entry._lodBandLevel = null;
         if (!bandOnly) {
+            this._cullWecken(entry);
             entry.instSlots = null;
             entry.instanced = false;
             entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
@@ -3002,6 +3004,7 @@ class AnazhRealm_siedlung_satz {
         }
         this.state.scene.add(group);
         entry.mesh = group;
+        this._cullWecken(entry);
         return group;
     }
 
@@ -3130,6 +3133,7 @@ class AnazhRealm_siedlung_satz {
         if (this.state.scene) this.state.scene.remove(entry.mesh);
         this._disposeSoulGroup(entry.mesh);
         entry.mesh = null;
+        this._cullWecken(entry);
     }
 
     // Horizontaler Footprint-Radius eines Bauplans (Zentrum bis äußerster solider Part-Rand), VOR dem
@@ -3418,6 +3422,7 @@ class AnazhRealm_siedlung_satz {
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
+        this._cullWecken(entry, "ein");
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
