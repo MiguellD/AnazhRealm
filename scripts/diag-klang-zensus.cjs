@@ -1189,12 +1189,17 @@ async function koerperSeite(m, mut) {
         for (let i = 0; i < n; i++) (r._loopFixedStep(dt, (t += dt)), r.animatePlayerSoul(t));
     };
     const abgriff = async (tick, sek = 1, ab = 0.3) => {
-        const [vor, ctx] = [{ ...sy }, new OfflineAudioContext(1, 48000 * sek, 48000)];
+        const [vor, ctx, zufall] = [{ ...sy }, new OfflineAudioContext(1, 48000 * sek, 48000), Math.random];
         Object.assign(sy, { ctx, masterGain: ctx.destination, enabled: true, fahrt: null });
+        // der Klang-Körper rauscht aus Math.random (Rausch-Puffer je Kontext, Start-Versatz): je Abgriff derselbe Samen — sonst
+        // streute der Pegel ±0,5 dB, und die Landung „skalierte nicht" an wechselnden Höhen (CI bbf798f9: 12 m +0,48 dB)
+        let q = 1;
+        Math.random = () => (q = (q * 16807) % 2147483647) / 2147483647;
         try {
             tick();
         } finally {
             Object.assign(sy, vor);
+            Math.random = zufall;
         }
         const d = (await ctx.startRendering()).getChannelData(0).subarray(48000 * ab);
         return Object.assign(d, { db: 10 * Math.log10(d.reduce((a, x) => a + x * x, 0) / d.length) });
