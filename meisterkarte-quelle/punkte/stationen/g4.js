@@ -765,7 +765,7 @@ const alle = [
         env: { ...SOFT, FALL_WAECHTER_PORT: "{PORT}" },
         gpu: false,
         zeit: false,
-        minuten: 3,
+        minuten: 13, // 27.10.: der Fall-Wächter wuchs mit bk4-turm (sechs Türme à 20 Klicks) auf 162–291 s lokal, die Station läuft ~3,5× langsamer (ek-schleife)
         urteil: (j, lauf) => {
             const b = jsonZeile(lauf.stdout, /^\s*B-ZAHL \{/);
             if (!b) return { gruen: false, zahl: "keine B-ZAHL-Zeile (Exit " + lauf.exit + ")" };
@@ -813,7 +813,7 @@ const alle = [
         env: { ...SOFT, FALL_WAECHTER_PORT: "{PORT}" },
         gpu: false,
         zeit: false,
-        minuten: 6,
+        minuten: 13,
         urteil: (j, lauf) => {
             const b = jsonZeile(lauf.stdout, /^\s*B2-ZAHL \{/);
             if (!b) return { gruen: false, zahl: "keine B2-ZAHL-Zeile (Exit " + lauf.exit + ")" };
