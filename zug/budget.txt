@@ -30,3 +30,4 @@
 2026-10-27T03:08 woche=68 karte=112 (Konto 2; Takt 8 headless 73/76, GTX 14/16 grün, Radeon wartet hinter echt z46)
 2026-10-27T05:03 karte=114 (gebucht am e7a28b06, buche.sh)
 2026-10-27T05:09 woche=73 karte=114 (Konto 2; gebucht 05:03 am e7a28b06, z48 abgebrochen)
+2026-10-27T11:56 karte=118 (gebucht am dc06b495, buche.sh)
