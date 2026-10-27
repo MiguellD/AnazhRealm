@@ -1,5 +1,5 @@
 {
- "kopf": "6db2602c",
+ "kopf": "9fa32207",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -89,7 +89,7 @@
   },
   "fahrzeug.K1": {
    "punkte": 2,
-   "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an e7a28b06 headless · (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 4.440892098500626e-16 m (198 Schritte) · Exit 0 an 6db2602c headless",
+   "beleg": "Maschine: 10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 % an e7a28b06 headless · (a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 4.440892098500626e-16 m (198 Schritte) · Exit 0 an 9fa32207 headless",
    "stationen": [
     {
      "id": "fahrzeug.K1#1",
@@ -104,14 +104,14 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 4.440892098500626e-16 m (198 Schritte) · Exit 0",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "fahrzeug.K3": {
    "punkte": 2,
-   "beleg": "Maschine: Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.43° Arm +18.3 % bei 15.14 m/s (Ende ok) an 6db2602c gtx · Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.11 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an 9fa32207 radeon · Drift Kamera ≤ 8.7° neben dem Fahrtvektor (Schlupf bis 13°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an 6db2602c gtx",
+   "beleg": "Maschine: Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.43° Arm +18.3 % bei 15.14 m/s (Ende ok) an 9fa32207 gtx · Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.11 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an 9fa32207 radeon · Drift Kamera ≤ 8.8° neben dem Fahrtvektor (Schlupf bis 8°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an 9fa32207 gtx",
    "stationen": [
     {
      "id": "fahrzeug.K3#1",
@@ -126,7 +126,7 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.43° Arm +18.3 % bei 15.14 m/s (Ende ok)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -141,15 +141,15 @@
      "id": "fahrzeug.K3#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Drift Kamera ≤ 8.7° neben dem Fahrtvektor (Schlupf bis 13°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Drift Kamera ≤ 8.8° neben dem Fahrtvektor (Schlupf bis 8°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "fahrzeug.K4": {
    "punkte": 2,
-   "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 5.7/2.2/0.3°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.9° · Hang 17.4° an 9fa32207 radeon · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4° an 6db2602c gtx · nach Ego → Third im Bild 3/3, Azimut 5.7/2.2/0.3°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.9° · Hang 17.4° an 9fa32207 radeon · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4° an 6db2602c gtx",
+   "beleg": "Maschine: nach Ego → Third im Bild 3/3, Azimut 5.7/2.2/0.3°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.9° · Hang 17.4° an 9fa32207 radeon · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4° an 6db2602c gtx · nach Ego → Third im Bild 3/3, Azimut 5.7/2.2/0.3°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.9° · Hang 17.4° an 9fa32207 radeon · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.73 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4° an 9fa32207 gtx",
    "stationen": [
     {
      "id": "fahrzeug.K4#1",
@@ -179,22 +179,22 @@
      "id": "fahrzeug.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.73 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.8° · Hang 17.4°",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "feld.K1": {
    "punkte": 2,
-   "beleg": "Maschine: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an 6db2602c headless · Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an 6db2602c headless",
+   "beleg": "Maschine: Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0 an 9fa32207 headless · Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0 an 9fa32207 headless",
    "stationen": [
     {
      "id": "feld.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -202,7 +202,7 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -275,23 +275,23 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 6db2602c radeon · Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6db2602c gtx — offen: ferne.K1#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +10) · ferne.K1#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +10)",
+   "beleg": "Maschine: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 9fa32207 radeon — offen: ferne.K1#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +11) · ferne.K1#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +11)",
    "stationen": [
     {
      "id": "ferne.K1#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "ferne.K1#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +11)"
     },
     {
      "id": "ferne.K1#2",
@@ -299,7 +299,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +10)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +11)"
     },
     {
      "id": "ferne.K1#2",
@@ -307,44 +307,44 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +10)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +11)"
     }
    ]
   },
   "ferne.K2": {
    "punkte": 2,
-   "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an 6db2602c radeon · Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an 6db2602c gtx · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3 an 6db2602c radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an 6db2602c gtx",
+   "beleg": "Maschine: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an 9fa32207 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3 an 9fa32207 radeon · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] nvidia/pascal an 9fa32207 gtx",
    "stationen": [
     {
      "id": "ferne.K2#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "ferne.K2#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +11)"
     },
     {
      "id": "ferne.K2#2",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "ferne.K2#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] nvidia/pascal",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -373,7 +373,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: 8 von 10 Gräben über das Verb, in 2263 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 50.3–342.8 ms (1 m 3, 3 m 5) an 6db2602c gtx — offen: gelaende.K2#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/bild-sicht.js +11) · gelaende.K2#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/dirigent-kern.js +9)",
+   "beleg": "Maschine: 8 von 10 Gräben über das Verb, in 2558 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 57.3–498.9 ms (1 m 3, 3 m 5) an 9fa32207 gtx — offen: gelaende.K2#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/bild-sicht.js +12) · gelaende.K2#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/dirigent-kern.js +10)",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -387,8 +387,8 @@
      "id": "gelaende.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "8 von 10 Gräben über das Verb, in 2263 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 50.3–342.8 ms (1 m 3, 3 m 5)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "8 von 10 Gräben über das Verb, in 2558 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 57.3–498.9 ms (1 m 3, 3 m 5)",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -397,7 +397,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/bild-sicht.js +11)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/bild-sicht.js +12)"
     },
     {
      "id": "gelaende.K2#2",
@@ -405,29 +405,29 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/dirigent-kern.js +9)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/dirigent-kern.js +10)"
     }
    ]
   },
   "gelaende.K3": {
    "punkte": 1,
-   "beleg": "Maschine: spiegelTreue 0.7856 (wasserSatz 36788 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 6db2602c radeon · spiegelTreue 0.7773 (wasserSatz 36699 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.7 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 6db2602c gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: spiegelTreue 0.7853 (wasserSatz 36801 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 9fa32207 radeon — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "gelaende.K3#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "spiegelTreue 0.7856 (wasserSatz 36788 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "spiegelTreue 0.7853 (wasserSatz 36801 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "gelaende.K3#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "spiegelTreue 0.7773 (wasserSatz 36699 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.7 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/bild-sicht.js +14)"
     }
    ]
   },
@@ -455,30 +455,30 @@
   },
   "gelaende.K5": {
    "punkte": 2,
-   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an 6db2602c headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.4 cm (p95, schlechtere Sicht) an 6db2602c radeon · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an 6db2602c gtx",
+   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an 9fa32207 headless · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht) an 9fa32207 radeon · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.4 cm (p95, schlechtere Sicht) an 9fa32207 gtx",
    "stationen": [
     {
      "id": "gelaende.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "gelaende.K5#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.4 cm (p95, schlechtere Sicht)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "gelaende.K5#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.4 cm (p95, schlechtere Sicht)",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -499,7 +499,7 @@
   },
   "halten.K2": {
    "punkte": 2,
-   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms third/hieb 36.9 · ego/hieb 25.1 · Bild 15/15.4/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (153–179 ms, gleitet bis 0 mm je Takt) / 59-mal (153–168 ms, gleitet bis 0 mm je Takt) / 59-mal (154–167 ms, gleitet bis 0 mm je Takt) an 6db2602c gtx · stahl/holz 954 Hz -37 dB Funken 0 Latenz 0 ms · stahl/stein 2179 Hz -34 dB Funken 24 Latenz 0 ms · holz/fleisch 192 Hz -49 dB Funken 0 Latenz 0 ms · S19 feuert an 6db2602c headless",
+   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms third/hieb 46.6 · ego/hieb 22.1 · Bild 15.1/14.8/15.2 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (150–167 ms, gleitet bis 0 mm je Takt) / 60-mal (120–168 ms, gleitet bis 0 mm je Takt) / 59-mal (154–177 ms, gleitet bis 0 mm je Takt) an 9fa32207 gtx · stahl/holz 954 Hz -37 dB Funken 0 Latenz 0 ms · stahl/stein 2179 Hz -34 dB Funken 24 Latenz 0 ms · holz/fleisch 192 Hz -49 dB Funken 0 Latenz 0 ms · S19 feuert an 6db2602c headless",
    "stationen": [
     {
      "id": "halten.K2#1",
@@ -513,8 +513,8 @@
      "id": "halten.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 36.9 · ego/hieb 25.1 · Bild 15/15.4/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (153–179 ms, gleitet bis 0 mm je Takt) / 59-mal (153–168 ms, gleitet bis 0 mm je Takt) / 59-mal (154–167 ms, gleitet bis 0 mm je Takt)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 46.6 · ego/hieb 22.1 · Bild 15.1/14.8/15.2 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 59-mal (150–167 ms, gleitet bis 0 mm je Takt) / 60-mal (120–168 ms, gleitet bis 0 mm je Takt) / 59-mal (154–177 ms, gleitet bis 0 mm je Takt)",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -573,7 +573,7 @@
   },
   "halten.K5": {
    "punkte": 1,
-   "beleg": "Maschine: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 84864b15008e → 84864b15008e an 6db2602c gtx",
+   "beleg": "Maschine: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 84864b15008e → 84864b15008e an 9fa32207 gtx",
    "stationen": [
     {
      "id": "halten.K5#1",
@@ -588,7 +588,7 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 84864b15008e → 84864b15008e",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -653,7 +653,7 @@
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: r 0.85 bei Lag 0 (n 119), Spitze 0.86 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 97.3 fps, Klang an an 6db2602c gtx · Ufer r 0.95 bei Lag 0 (n 272, Spitze 0.95 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm 0/270) · Regen r 1.00 bei Lag 0 (n 272, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/263) · Selbsttest (eingefroren) ROT an 6db2602c headless",
+   "beleg": "Maschine: r 0.87 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.24 / Ohr 0.55, 109.7 fps, Klang an an 9fa32207 gtx · Ufer r 0.95 bei Lag 0 (n 272, Spitze 0.95 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm 0/270) · Regen r 1.00 bei Lag 0 (n 272, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/263) · Selbsttest (eingefroren) ROT an 6db2602c headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -667,8 +667,8 @@
      "id": "klang.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "r 0.85 bei Lag 0 (n 119), Spitze 0.86 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 97.3 fps, Klang an",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "r 0.87 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.24 / Ohr 0.55, 109.7 fps, Klang an",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -683,7 +683,7 @@
   },
   "klang.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gras 5757 Hz (n 29) · laub 5450 Hz (n 17) · quarz 3311 Hz (n 20) — kleinster Abstand 307 Hz an 6db2602c gtx — offen: klang.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: gras 5635 Hz (n 31) · laub 5298 Hz (n 22) · quarz 3261 Hz (n 13) — kleinster Abstand 337 Hz an 9fa32207 gtx — offen: klang.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -697,15 +697,15 @@
      "id": "klang.K4#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "gras 5757 Hz (n 29) · laub 5450 Hz (n 17) · quarz 3311 Hz (n 20) — kleinster Abstand 307 Hz",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "gras 5635 Hz (n 31) · laub 5298 Hz (n 22) · quarz 3261 Hz (n 13) — kleinster Abstand 337 Hz",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "klang.K5": {
    "punkte": 2,
-   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":172.63} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6db2602c headless · Klang-Takt p95 gehen 0.1 · fahrt 0.13 · nacht 0.1 ms · Aussetzer 0 in 600.6 s Wiedergabe (0 s still) (Exit 0) an 9fa32207 radeon · Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.13 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0) an 6db2602c gtx",
+   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":172.63} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6db2602c headless · Klang-Takt p95 gehen 0.1 · fahrt 0.13 · nacht 0.1 ms · Aussetzer 0 in 600.6 s Wiedergabe (0 s still) (Exit 0) an 9fa32207 radeon · Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.13 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0) an 9fa32207 gtx",
    "stationen": [
     {
      "id": "klang.K5#1",
@@ -728,14 +728,14 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.13 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "leib.K1": {
    "punkte": 1,
-   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms ego/gehen 44.7 · third/gehen 42.7 · ego/wechsel 27.6 · third/wechsel 24.3 · Bild 15.2/15.2/15.3 ms an 6db2602c gtx — offen: leib.K1#2 radeon: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-kern.js, stamm/dirigent-takt.js +9) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-kern.js, stamm/dirigent-takt.js +9)",
+   "beleg": "Maschine: schlechtester von 3 Läufen p95 ms ego/gehen 49.7 · third/gehen 42.7 · ego/wechsel 25.7 · third/wechsel 25 · Bild 15.1/14.9/14.8 ms an 9fa32207 gtx — offen: leib.K1#2 radeon: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-kern.js, stamm/dirigent-takt.js +9) · leib.K1#2 gtx: Pfad seit der Messung geändert (R6: stamm/dirigent-ankunft.js, stamm/dirigent-kern.js, stamm/dirigent-takt.js +9)",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -749,8 +749,8 @@
      "id": "leib.K1#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 44.7 · third/gehen 42.7 · ego/wechsel 27.6 · third/wechsel 24.3 · Bild 15.2/15.2/15.3 ms",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 49.7 · third/gehen 42.7 · ego/wechsel 25.7 · third/wechsel 25 · Bild 15.1/14.9/14.8 ms",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -795,7 +795,7 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an 9fa32207 radeon · stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an 6db2602c gtx — offen: leib.K4#2 radeon: ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":1} · Ruck p95 0.0104 höchstens 1.241 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.98 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit fern: Bau\":2} · Ruck p95 0.0608 höchstens 2.338 m | steil 25.9°: 1120 Bilder · heran 8 → 0.43 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.101 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.92 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0036 höchstens 0.119 m — ROT: Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.5 % · Bild 918 orbit: Bau 1.7 % · Bild 1278 orbit fern: Bau 12.5 % · Gang innen-sprint: Ruck p95 0.061 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 2 Proben — Bild 858 orbit fern: Bau 14.8 % · Bild 864 orbit fern: Bau 1.7 % · Wand-Pixel (Bau) im Nahbereich in 5 Proben an 9fa32207 · leib.K4#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, stamm/dirigent-takt.js +7)",
+   "beleg": "Maschine: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an 9fa32207 radeon · stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an 6db2602c gtx — offen: leib.K4#2 radeon: ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":1} · Ruck p95 0.0104 höchstens 1.241 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.98 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit fern: Bau\":2} · Ruck p95 0.0608 höchstens 2.338 m | steil 25.9°: 1120 Bilder · heran 8 → 0.43 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0032 höchstens 0.101 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.92 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0036 höchstens 0.119 m — ROT: Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.5 % · Bild 918 orbit: Bau 1.7 % · Bild 1278 orbit fern: Bau 12.5 % · Gang innen-sprint: Ruck p95 0.061 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 2 Proben — Bild 858 orbit fern: Bau 14.8 % · Bild 864 orbit fern: Bau 1.7 % · Wand-Pixel (Bau) im Nahbereich in 5 Proben an 9fa32207 · leib.K4#2 gtx: ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":1} · Ruck p95 0.0104 höchstens 1.240 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.83 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit fern: Bau\":1} · Ruck p95 0.0663 höchstens 3.199 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0033 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0036 höchstens 0.160 m — ROT: Staffel 1: Täter: Gang haus (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 1032 orbit fern: Bau 0.9 % · Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.5 % · Bild 918 orbit: Bau 1.7 % · Bild 1278 orbit fern: Bau 12.5 % · Gang innen-sprint: Ruck p95 0.066 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 864 orbit fern: Bau 5.2 % · Wand-Pixel (Bau) im Nahbereich in 5 Proben an 9fa32207",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -825,9 +825,9 @@
      "id": "leib.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, stamm/dirigent-takt.js +7)"
+     "zahl": "innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":1} · Ruck p95 0.0104 höchstens 1.240 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.83 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit fern: Bau\":1} · Ruck p95 0.0663 höchstens 3.199 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0033 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0036 höchstens 0.160 m — ROT: Staffel 1: Täter: Gang haus (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 1032 orbit fern: Bau 0.9 % · Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.5 % · Bild 918 orbit: Bau 1.7 % · Bild 1278 orbit fern: Bau 12.5 % · Gang innen-sprint: Ruck p95 0.066 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 864 orbit fern: Bau 5.2 % · Wand-Pixel (Bau) im Nahbereich in 5 Proben",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+     "grund": "ROT: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.43 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit: Bau\":2,\"orbit fern: Bau\":1} · Ruck p95 0.0104 höchstens 1.240 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.83 m · im Haus true · Kugel {} · Nah-Pixel {\"orbit fern: Bau\":1} · Ruck p95 0.0663 höchstens 3.199 m | steil 25.9°: 1120 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0033 höchstens 0.083 m | steil-sprint 25.9°: 827 Bilder · heran 8 → 1.97 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0036 höchstens 0.160 m — ROT: Staffel 1: Täter: Gang haus (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 1032 orbit fern: Bau 0.9 % · Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.5 % · Bild 918 orbit: Bau 1.7 % · Bild 1278 orbit fern: Bau 12.5 % · Gang innen-sprint: Ruck p95 0.066 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 864 orbit fern: Bau 5.2 % · Wand-Pixel (Bau) im Nahbereich in 5 Proben"
     }
    ]
   },
@@ -855,23 +855,23 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 6db2602c radeon · Verhältnis 5.071 (5–12,5), Schatten-Anteil 0.1972 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 6db2602c gtx — offen: licht.K2#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +6) · licht.K2#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +6)",
+   "beleg": "Maschine: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 9fa32207 radeon — offen: licht.K2#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +7) · licht.K2#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +7)",
    "stationen": [
     {
      "id": "licht.K2#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "licht.K2#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Verhältnis 5.071 (5–12,5), Schatten-Anteil 0.1972 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +7)"
     },
     {
      "id": "licht.K2#2",
@@ -879,7 +879,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +6)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +7)"
     },
     {
      "id": "licht.K2#2",
@@ -887,36 +887,36 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +6)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bau-teile.js, stamm/bild-himmel.js +7)"
     }
    ]
   },
   "material.K1": {
    "punkte": 2,
-   "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 6db2602c radeon · Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] nvidia/pascal an 6db2602c gtx · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 6db2602c radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal an 6db2602c gtx",
+   "beleg": "Maschine: Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 9fa32207 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 9fa32207 radeon · Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal an 9fa32207 gtx",
    "stationen": [
     {
      "id": "material.K1#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "material.K1#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Welt/Labor 0,9–1,1: 12/12 · im realen Band beidseits: 12/12 · echt beide Seiten · [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39)"
     },
     {
      "id": "material.K1#2",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -924,52 +924,52 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "material.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: Pfad seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +19) · material.K2#1 gtx: ROT: boden 0.5 m glatt 0.015 nyquist 0.1346 (Arm 0.408), 1 m glatt 0.0111 nyquist 0.1309 (Arm 0.909), 2 m glatt 0.0066 nyquist 0.1302 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 6db2602c",
+   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: ROT: boden 0.5 m glatt 0.0032 nyquist 0.1473 (Arm 0.5), 1 m glatt 0.0022 nyquist 0.1507 (Arm 1), 2 m glatt 0.0013 nyquist 0.1495 (Arm 1.889) · fels 0.5 m glatt 0.0001 nyquist 0.1337 (Arm 0.498), 1 m glatt 0 nyquist 0.1403 (Arm 0.994), 2 m glatt 0.0009 nyquist 0.1365 (Arm 1.987) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an 9fa32207 · material.K2#1 gtx: ROT: boden 0.5 m glatt 0.0028 nyquist 0.1513 (Arm 0.5), 1 m glatt 0.0018 nyquist 0.1494 (Arm 1), 2 m glatt 0 nyquist 0.1505 (Arm 1.889) · fels 0.5 m glatt 0 nyquist 0.143 (Arm 0.499), 1 m glatt 0.0002 nyquist 0.1224 (Arm 0.996), 2 m glatt 0 nyquist 0.1425 (Arm 1.99) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 9fa32207",
    "stationen": [
     {
      "id": "material.K2#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: foundry-core.js, gelaende-core.js, index.html +19)"
+     "zahl": "boden 0.5 m glatt 0.0032 nyquist 0.1473 (Arm 0.5), 1 m glatt 0.0022 nyquist 0.1507 (Arm 1), 2 m glatt 0.0013 nyquist 0.1495 (Arm 1.889) · fels 0.5 m glatt 0.0001 nyquist 0.1337 (Arm 0.498), 1 m glatt 0 nyquist 0.1403 (Arm 0.994), 2 m glatt 0.0009 nyquist 0.1365 (Arm 1.987) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+     "grund": "ROT: boden 0.5 m glatt 0.0032 nyquist 0.1473 (Arm 0.5), 1 m glatt 0.0022 nyquist 0.1507 (Arm 1), 2 m glatt 0.0013 nyquist 0.1495 (Arm 1.889) · fels 0.5 m glatt 0.0001 nyquist 0.1337 (Arm 0.498), 1 m glatt 0 nyquist 0.1403 (Arm 0.994), 2 m glatt 0.0009 nyquist 0.1365 (Arm 1.987) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3"
     },
     {
      "id": "material.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "boden 0.5 m glatt 0.015 nyquist 0.1346 (Arm 0.408), 1 m glatt 0.0111 nyquist 0.1309 (Arm 0.909), 2 m glatt 0.0066 nyquist 0.1302 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": "ROT: boden 0.5 m glatt 0.015 nyquist 0.1346 (Arm 0.408), 1 m glatt 0.0111 nyquist 0.1309 (Arm 0.909), 2 m glatt 0.0066 nyquist 0.1302 (Arm 1.911) · fels 0.5 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 1 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc, 2 m: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung brauc · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal"
+     "zahl": "boden 0.5 m glatt 0.0028 nyquist 0.1513 (Arm 0.5), 1 m glatt 0.0018 nyquist 0.1494 (Arm 1), 2 m glatt 0 nyquist 0.1505 (Arm 1.889) · fels 0.5 m glatt 0 nyquist 0.143 (Arm 0.499), 1 m glatt 0.0002 nyquist 0.1224 (Arm 0.996), 2 m glatt 0 nyquist 0.1425 (Arm 1.99) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+     "grund": "ROT: boden 0.5 m glatt 0.0028 nyquist 0.1513 (Arm 0.5), 1 m glatt 0.0018 nyquist 0.1494 (Arm 1), 2 m glatt 0 nyquist 0.1505 (Arm 1.889) · fels 0.5 m glatt 0 nyquist 0.143 (Arm 0.499), 1 m glatt 0.0002 nyquist 0.1224 (Arm 0.996), 2 m glatt 0 nyquist 0.1425 (Arm 1.99) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal"
     }
    ]
   },
   "material.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 6db2602c radeon · Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.986 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an 6db2602c gtx — offen: material.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 9fa32207 radeon — offen: material.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "material.K3#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.985 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "material.K3#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.986 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2388 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, stamm/bau-teile.js +12)"
     }
    ]
   },
@@ -997,7 +997,7 @@
   },
   "mensch.K2": {
    "punkte": 2,
-   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.987 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 6db2602c headless · Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.559 m), Sprünge 0, Plan bit-gleich true an 9fa32207 radeon · Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.389 m), Sprünge 0, Plan bit-gleich true an 6db2602c gtx",
+   "beleg": "Maschine: Soll-Orte über 24 Spielstunden min 0.987 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0 an 6db2602c headless · Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.559 m), Sprünge 0, Plan bit-gleich true an 9fa32207 radeon · Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true an 9fa32207 gtx",
    "stationen": [
     {
      "id": "mensch.K2#1",
@@ -1019,8 +1019,8 @@
      "id": "mensch.K2#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.389 m), Sprünge 0, Plan bit-gleich true",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -1165,7 +1165,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6db2602c headless — offen: physik.K2#2 radeon: ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.078 m, Eindringen max 0.061 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 ) an 6db2602c · physik.K2#2 gtx: ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.07 m, Eindringen max 0.02 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#976 — im Bild Spalt 0 ) an 6db2602c",
+   "beleg": "Maschine: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 16.37 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6db2602c headless — offen: physik.K2#2 radeon: ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0.026 m; Bär Spalt max 0 m, Eindringen max 0.17 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 ) an 9fa32207 · physik.K2#2 gtx: ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.053 m, Eindringen max 0.051 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 6 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#926 — im Bild Spalt 0 ) an 9fa32207",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -1179,17 +1179,17 @@
      "id": "physik.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.078 m, Eindringen max 0.061 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 )",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.078 m, Eindringen max 0.061 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 )"
+     "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0.026 m; Bär Spalt max 0 m, Eindringen max 0.17 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 )",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+     "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0 m, Eindringen max 0.026 m; Bär Spalt max 0 m, Eindringen max 0.17 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 )"
     },
     {
      "id": "physik.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.07 m, Eindringen max 0.02 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#976 — im Bild Spalt 0 )",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.07 m, Eindringen max 0.02 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#976 — im Bild Spalt 0 )"
+     "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.053 m, Eindringen max 0.051 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 6 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#926 — im Bild Spalt 0 )",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+     "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.053 m, Eindringen max 0.051 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 6 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#926 — im Bild Spalt 0 )"
     }
    ]
   },
@@ -1261,7 +1261,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +60) · profiband.K4#1 gtx: ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 108.3 · 108.3 · 116.7 · 108.4 ms; Hänger 1/1/1/1) an 6db2602c · profiband.K4#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38) · profiband.K4#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38)",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +60) · profiband.K4#1 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39) · profiband.K4#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39) · profiband.K4#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39)",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -1275,9 +1275,9 @@
      "id": "profiband.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 108.3 · 108.3 · 116.7 · 108.4 ms; Hänger 1/1/1/1)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 108.3 · 108.3 · 116.7 · 108.4 ms; Hänger 1/1/1/1)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39)"
     },
     {
      "id": "profiband.K4#2",
@@ -1285,7 +1285,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39)"
     },
     {
      "id": "profiband.K4#2",
@@ -1293,29 +1293,29 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +38)"
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, klang-core.js +39)"
     }
    ]
   },
   "schatten.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3 an 6db2602c radeon · Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] nvidia/pascal an 6db2602c gtx — offen: schatten.K1#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3 an 9fa32207 radeon — offen: schatten.K1#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "schatten.K1#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "schatten.K1#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Uhr 0.5 ego 2.4 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] nvidia/pascal",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, stamm/bild-himmel.js, stamm/bild-sicht.js +8)"
     }
    ]
   },
@@ -1335,7 +1335,7 @@
   },
   "siedlung.K2": {
    "punkte": 2,
-   "beleg": "Maschine: Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 94 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 26 schwarz 0.0 % weiß 0.0 % · S an 9fa32207 radeon · Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 94 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 25.9 schwarz 0.0 % weiß 0.0 % · an 6db2602c gtx · ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0) an 9fa32207 radeon · ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0) an 6db2602c gtx",
+   "beleg": "Maschine: Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 94 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 26 schwarz 0.0 % weiß 0.0 % · S an 9fa32207 radeon · Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 94 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 25.9 schwarz 0.0 % weiß 0.0 % · an 6db2602c gtx · ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0) an 9fa32207 radeon · ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0) an 9fa32207 gtx",
    "stationen": [
     {
      "id": "siedlung.K2#1",
@@ -1366,7 +1366,7 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -1387,7 +1387,7 @@
   },
   "siedlung.K5": {
    "punkte": 1,
-   "beleg": "Maschine: nH 12 erstes Haus nach 68.8 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 214.5 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 6db2602c gtx — offen: siedlung.K5#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9) · siedlung.K5#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9)",
+   "beleg": "Maschine: nH 12 erstes Haus nach 57.5 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 214.6 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 9fa32207 gtx — offen: siedlung.K5#2 radeon: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9) · siedlung.K5#2 gtx: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/dirigent-ankunft.js, stamm/dirigent-kern.js +9)",
    "stationen": [
     {
      "id": "siedlung.K5#1",
@@ -1401,8 +1401,8 @@
      "id": "siedlung.K5#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "nH 12 erstes Haus nach 68.8 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 214.5 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "nH 12 erstes Haus nach 57.5 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 214.6 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -1425,7 +1425,7 @@
   },
   "speicher.K1": {
    "punkte": 2,
-   "beleg": "Maschine: 20 Tode: Alter max 2.53 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an 6db2602c gtx · 20 Tode: Alter max 1.698 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 9fa32207 radeon · 20 Tode: Alter max 2.113 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 6db2602c gtx",
+   "beleg": "Maschine: 20 Tode: Alter max 2.42 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an 9fa32207 gtx · 20 Tode: Alter max 1.698 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 9fa32207 radeon · 20 Tode: Alter max 2.42 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 9fa32207 gtx",
    "stationen": [
     {
      "id": "speicher.K1#1",
@@ -1439,8 +1439,8 @@
      "id": "speicher.K1#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "20 Tode: Alter max 2.53 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "20 Tode: Alter max 2.42 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -1455,15 +1455,15 @@
      "id": "speicher.K1#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "20 Tode: Alter max 2.113 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "20 Tode: Alter max 2.42 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "speicher.K2": {
    "punkte": 1,
-   "beleg": "Maschine: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.5 ms (Soll p95 ≤ 0,3; 103 Rufe in 5212 Bildern; aufgefüllt je Bild p95 0, blind) an 6db2602c gtx — offen: speicher.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: je Speicher-Bild (Ruf) p50 0 / p95 0.3 / max 0.7 ms (Soll p95 ≤ 0,3; 106 Rufe in 6352 Bildern; aufgefüllt je Bild p95 0, blind) an 9fa32207 gtx — offen: speicher.K2#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "speicher.K2#1",
@@ -1477,8 +1477,8 @@
      "id": "speicher.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.5 ms (Soll p95 ≤ 0,3; 103 Rufe in 5212 Bildern; aufgefüllt je Bild p95 0, blind)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.3 / max 0.7 ms (Soll p95 ≤ 0,3; 106 Rufe in 6352 Bildern; aufgefüllt je Bild p95 0, blind)",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -1629,14 +1629,14 @@
   },
   "studios.K5": {
    "punkte": 2,
-   "beleg": "Maschine: 3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0× an 6db2602c headless · 4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0× an 6db2602c headless",
+   "beleg": "Maschine: 3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0× an 9fa32207 headless · 4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0× an 9fa32207 headless",
    "stationen": [
     {
      "id": "studios.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -1644,14 +1644,14 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0×",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an dc06b495 headless — offen: tiere.K1#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +15) · tiere.K1#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +15)",
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an dc06b495 headless — offen: tiere.K1#2 radeon: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +16) · tiere.K1#2 gtx: Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +16)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -1667,7 +1667,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +15)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +16)"
     },
     {
      "id": "tiere.K1#2",
@@ -1675,13 +1675,13 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +15)"
+     "grund": "Pfad seit der Messung geändert (R6: gelaende-core.js, phyto-core.js, stamm/bild-himmel.js +16)"
     }
    ]
   },
   "tiere.K2": {
    "punkte": 2,
-   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an dc06b495 headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.8 s, 3 fressen: tier:wolf 7790 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.36 m · Luma 71.3 σ 29.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 6db2602c radeon · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 15.6 s, 3 fressen: tier:wolf 11426 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.3 m · Luma 73.2 σ 32.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 6db2602c gtx",
+   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an dc06b495 headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 14.9 s, 3 fressen: tier:wolf 10622 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.29 m · Luma 73.6 σ 33.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 9fa32207 radeon · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 14.5 s, 3 fressen: tier:wolf 8799 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.33 m · Luma 74.2 σ 32.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 9fa32207 gtx",
    "stationen": [
     {
      "id": "tiere.K2#1",
@@ -1695,23 +1695,23 @@
      "id": "tiere.K2#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.8 s, 3 fressen: tier:wolf 7790 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.36 m · Luma 71.3 σ 29.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 14.9 s, 3 fressen: tier:wolf 10622 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.29 m · Luma 73.6 σ 33.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "tiere.K2#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 15.6 s, 3 fressen: tier:wolf 11426 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.3 m · Luma 73.2 σ 32.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 14.5 s, 3 fressen: tier:wolf 8799 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.33 m · Luma 74.2 σ 32.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "tiere.K3": {
    "punkte": 2,
-   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an dc06b495 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2859/1181/6051/4036 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 6db2602c radeon · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2888/1194/6032/4052 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.7 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 6db2602c gtx",
+   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an dc06b495 headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2892/1193/6053/4060 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 9fa32207 radeon · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2865/1214/6014/4059 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 91.8 σ 38.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 9fa32207 gtx",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -1725,16 +1725,16 @@
      "id": "tiere.K3#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2859/1181/6051/4036 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2892/1193/6053/4060 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.6 σ 39 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "tiere.K3#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2888/1194/6032/4052 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 93.7 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2865/1214/6014/4059 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 91.8 σ 38.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.110 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -1763,7 +1763,7 @@
   },
   "tore.K3": {
    "punkte": 2,
-   "beleg": "Maschine: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an 9fa32207 radeon · 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an 6db2602c gtx · leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an 9fa32207 radeon · leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an 6db2602c gtx",
+   "beleg": "Maschine: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an 9fa32207 radeon · 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an 6db2602c gtx · leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an 9fa32207 radeon · leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an 9fa32207 gtx",
    "stationen": [
     {
      "id": "tore.K3#1",
@@ -1794,7 +1794,7 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
@@ -1815,7 +1815,7 @@
   },
   "ultiversum.K5": {
    "punkte": 2,
-   "beleg": "Maschine: ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true an dc06b495 headless · ✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“ an 6db2602c headless",
+   "beleg": "Maschine: ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule). | ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden) | ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true an dc06b495 headless · ✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“ an 9fa32207 headless",
    "stationen": [
     {
      "id": "ultiversum.K5#1",
@@ -1830,30 +1830,30 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59229 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an 6db2602c radeon · 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59135 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an 6db2602c gtx — offen: vegetation.K4#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59124 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an 9fa32207 radeon — offen: vegetation.K4#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59229 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59124 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "vegetation.K4#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 59135 px; ungemessen (ohne freies Auge) haus_skandinavisch 17-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, gelaende-core.js, phyto-core.js +11)"
     }
    ]
   },
@@ -1881,36 +1881,36 @@
   },
   "wetter.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809), Wiese draußen 0.771 an 6db2602c radeon · Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809), Wiese draußen 0.771 an 6db2602c gtx — offen: wetter.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771 an 9fa32207 radeon — offen: wetter.K2#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "wetter.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809), Wiese draußen 0.771",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "zahl": "Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
      "id": "wetter.K2#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809), Wiese draußen 0.771",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
-     "grund": null
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/bau-teile.js, stamm/bau-vorlagen.js +10)"
     }
    ]
   },
   "wetter.K5": {
    "punkte": 2,
-   "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 6db2602c headless · Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an 6db2602c headless",
+   "beleg": "Maschine: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 9fa32207 headless · Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an 9fa32207 headless",
    "stationen": [
     {
      "id": "wetter.K5#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     },
     {
@@ -1918,12 +1918,12 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000)",
-     "sha": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
+     "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
      "grund": null
     }
    ]
   }
  },
- "kopfVoll": "6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a",
- "zeit": "2026-10-27T14:36:14.510Z"
+ "kopfVoll": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+ "zeit": "2026-10-27T16:18:29.473Z"
 }
