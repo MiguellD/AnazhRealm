@@ -947,42 +947,6 @@ async function rollen(n) {
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
         R.falllinie = bahn([auf, auf + Math.PI].map((y) => [y, 6]));
-        // die Treppe: zehn Stufen (Auftritt 0,3 m, Breite 1,4 m) und ein Podest 1,6 m, bergauf längs der Falllinie ab dem Ort;
-        // gezählt wird ein Fuß über ihrem Grundriss (quer ± 0,7 m, längs 0 … 4,6 m)
-        if (!s.blueprints.messtreppe && r.createBlueprint("messtreppe"))
-            for (let i = 0; i <= 10; i++) {
-                const [top, tief] = [0.17 * Math.min(i + 1, 10), i < 10 ? 0.3 : 1.6];
-                r.addPartToBlueprint("messtreppe", {
-                    position: { x: 0, y: (top - 1.5) / 2, z: 0.3 * i + tief / 2 },
-                    size: { x: 1.4, y: top + 1.5, z: tief },
-                });
-            }
-        const t = r.spawnArchitecture(
-            "messtreppe",
-            { x: X, y: r._voxelSurfaceY(X, Z) + 0.5, z: Z },
-            { precise: true, rotationY: auf }
-        );
-        const lot = new T.Raycaster();
-        treppe = (x, z) => {
-            t.mesh.updateMatrixWorld(true);
-            lot.set(new T.Vector3(x, 1e4, z), new T.Vector3(0, -1, 0));
-            const h = lot.intersectObject(t.mesh, true)[0];
-            return h ? h.point.y : -Infinity;
-        };
-        const [sx, sz] = [Math.sin(auf), Math.cos(auf)];
-        const ueber = (l) =>
-            Math.abs((l.x - X) * sz - (l.z - Z) * sx) < 0.7 && Math.abs((l.x - X) * sx + (l.z - Z) * sz - 2.3) < 2.3;
-        R.stufe =
-            t &&
-            bahn(
-                [auf, auf + Math.PI].map((y) => [y, 5.4]),
-                ueber,
-                X - 1.5 * sx,
-                Z - 1.5 * sz
-            );
-        treppe = null;
-        if (t) r.removeArchitecture(t);
-        streuJetzt();
         // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
         // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
@@ -1057,6 +1021,42 @@ async function rollen(n) {
             r.dismountArchitecture();
             r.removeArchitecture(e);
         }
+        // die Treppe: zehn Stufen (Auftritt 0,3 m, Breite 1,4 m) und ein Podest 1,6 m, bergauf längs der Falllinie ab dem Ort;
+        // gezählt wird ein Fuß über ihrem Grundriss (quer ± 0,7 m, längs 0 … 4,6 m)
+        if (!s.blueprints.messtreppe && r.createBlueprint("messtreppe"))
+            for (let i = 0; i <= 10; i++) {
+                const [top, tief] = [0.17 * Math.min(i + 1, 10), i < 10 ? 0.3 : 1.6];
+                r.addPartToBlueprint("messtreppe", {
+                    position: { x: 0, y: (top - 1.5) / 2, z: 0.3 * i + tief / 2 },
+                    size: { x: 1.4, y: top + 1.5, z: tief },
+                });
+            }
+        const t = r.spawnArchitecture(
+            "messtreppe",
+            { x: X, y: r._voxelSurfaceY(X, Z) + 0.5, z: Z },
+            { precise: true, rotationY: auf }
+        );
+        const lot = new T.Raycaster();
+        treppe = (x, z) => {
+            t.mesh.updateMatrixWorld(true);
+            lot.set(new T.Vector3(x, 1e4, z), new T.Vector3(0, -1, 0));
+            const h = lot.intersectObject(t.mesh, true)[0];
+            return h ? h.point.y : -Infinity;
+        };
+        const [sx, sz] = [Math.sin(auf), Math.cos(auf)];
+        const ueber = (l) =>
+            Math.abs((l.x - X) * sz - (l.z - Z) * sx) < 0.7 && Math.abs((l.x - X) * sx + (l.z - Z) * sz - 2.3) < 2.3;
+        R.stufe =
+            t &&
+            bahn(
+                [auf, auf + Math.PI].map((y) => [y, 5.4]),
+                ueber,
+                X - 1.5 * sx,
+                Z - 1.5 * sz
+            );
+        treppe = null;
+        if (t) r.removeArchitecture(t);
+        streuJetzt();
         R.streu = mass(streu);
     }
     o.nexus = r.nexus && r.nexus.knightOfTime.autonomyLevel;
