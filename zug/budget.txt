@@ -34,3 +34,5 @@
 2026-10-27T13:58 woche=90 karte=118 (Konto 2; gebucht 11:57 am dc06b495; Takt 11 wartet auf GTX, Takt 12 läuft)
 2026-10-27T15:36 karte=119 (gebucht am 6db2602c, buche.sh)
 2026-10-27T17:18 karte=119 (gebucht am 9fa32207, buche.sh)
+2026-10-27T21:59 karte=123 (gebucht am 19606f2e, buche.sh)
+2026-10-27T22:00 woche=98 karte=123 (Konto 2; gebucht 21:59 am 19606f2e, Notbremse 20:55)
