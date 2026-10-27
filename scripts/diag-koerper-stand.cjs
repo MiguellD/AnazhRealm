@@ -946,7 +946,6 @@ async function rollen(n) {
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
-        R.falllinie = bahn([auf, auf + Math.PI].map((y) => [y, 6]));
         // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
         // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
@@ -1021,6 +1020,7 @@ async function rollen(n) {
             r.dismountArchitecture();
             r.removeArchitecture(e);
         }
+        R.falllinie = bahn([auf, auf + Math.PI].map((y) => [y, 6]));
         // die Treppe: zehn Stufen (Auftritt 0,3 m, Breite 1,4 m) und ein Podest 1,6 m, bergauf längs der Falllinie ab dem Ort;
         // gezählt wird ein Fuß über ihrem Grundriss (quer ± 0,7 m, längs 0 … 4,6 m)
         if (!s.blueprints.messtreppe && r.createBlueprint("messtreppe"))
