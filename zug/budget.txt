@@ -31,3 +31,4 @@
 2026-10-27T05:03 karte=114 (gebucht am e7a28b06, buche.sh)
 2026-10-27T05:09 woche=73 karte=114 (Konto 2; gebucht 05:03 am e7a28b06, z48 abgebrochen)
 2026-10-27T11:56 karte=118 (gebucht am dc06b495, buche.sh)
+2026-10-27T13:58 woche=90 karte=118 (Konto 2; gebucht 11:57 am dc06b495; Takt 11 wartet auf GTX, Takt 12 läuft)
