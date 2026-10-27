@@ -108,3 +108,4 @@ z44b-abab 1 abab A=607d0c73a2b98fdc1c2dbc06a961563bad73ce2a B=5b8603c181cc376edb
 z45-abab 1 abab A=5b8603c181cc376edb37dc1f31ec09e8859d2fb5 B=e7a28b06e6fd665ad12b7a76da66157f5c38f4ab zellen=w-ego,d-ego,stadt
 z45-abab 0 storno
 takt8-gtx 1 punkte sha=e7a28b06e6fd665ad12b7a76da66157f5c38f4ab geraet=gtx nur=gelaende.K2#1,gelaende.K5#2,tiere.K3#2,tiere.K2#2,mensch.K2#2,ferne.K2#2,material.K1#2,fahrzeug.K3#1,fahrzeug.K3#2,fahrzeug.K4#2,siedlung.K5#1,leib.K1#1,halten.K2#1,halten.K5#1,tore.K3#2,klang.K4#1,klang.K5#2,speicher.K1#1,speicher.K1#2
+z46-abab 1 abab A=e7a28b06e6fd665ad12b7a76da66157f5c38f4ab B=429737862d4acc40e8d0e1b67215a8be997ff397 zellen=w-ego,d-ego,stadt
