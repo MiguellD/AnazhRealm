@@ -452,3 +452,4 @@
 2026-10-27 16:10:30 takt12-gtx fahrzeug.K3#2 GRÜN 3.9 · 10/25
 2026-10-27 16:13:49 takt12-gtx fahrzeug.K4#2 GRÜN 3.2 · 11/25
 2026-10-27 16:19:25 takt12-gtx siedlung.K5#1 GRÜN 5.5 · 12/25
+2026-10-27 16:25:32 takt12-gtx leib.K1#1 GRÜN 6.0 · 13/25
