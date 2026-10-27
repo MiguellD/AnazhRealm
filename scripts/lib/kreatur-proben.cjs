@@ -222,12 +222,12 @@ async function kreaturProben(r, T, opts) {
         });
         return { ps, lokal, glieder: noch.map((k) => Tt[k]) };
     };
-    // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen zurück.
-    const decke = (name, fn) => {
+    // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen der Bühne zurück (oder früher über `ab`).
+    const decke = (name, fn, ab = aufraeumen) => {
         const hatte = Object.prototype.hasOwnProperty.call(r, name);
         const alt = r[name];
         r[name] = fn(alt);
-        aufraeumen.push(() => {
+        ab.push(() => {
             if (hatte) r[name] = alt;
             else delete r[name];
         });
@@ -2394,7 +2394,7 @@ async function kreaturProben(r, T, opts) {
                 // prettier-ignore
                 const [ab, M] = [[], wegeMesser(S.liste)];
                 await uhrAuf(5, "bewohner: die Ankunft der Stadt", da);
-                if (ueber) decke(ab, ueber, () => () => null);
+                if (ueber) decke(ueber, () => () => null, ab);
                 for (let i = 0; i < (taeter ? 30 : 240) * takte; i++) takt(DT, M);
                 for (const f of ab) f();
                 sicht[t] = { stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, wege: M.zahl() } };
@@ -2653,7 +2653,7 @@ async function kreaturProben(r, T, opts) {
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
         const wiederkehr = async () => {
             const ab0 = [];
-            if (hat("bewohner-wiederkehr")) decke(ab0, "_bewohnerAnkunft", () => () => {});
+            if (hat("bewohner-wiederkehr")) decke("_bewohnerAnkunft", () => () => {}, ab0);
             const [ueber, P] = [[], pm.clone()];
             let [n, maxM] = [0, 0];
             for (const [T, sah] of blieb) {
