@@ -4,7 +4,7 @@
 # die Werkbank des Baums jedes Boots). Bootet das Instrument eine Seite nicht binnen 3 min (z9: die Werkbank aus B wartete auf
 # `anazhRealm.erwacht`, das A nicht trug), fällt dieser Boot auf die Werkbank seines eigenen Baums zurück — benannt im Log
 # (`INSTRUMENT`). Helfer unter werkzeug/.
-# Je Boot frisch: Schloss, Seiten-Wache (Fingerabdruck vor und nach), Vorfahrt Runner.Worker, Nachtruhe, stopp.ps1, save-server :4312.
+# Je Boot frisch: Schloss, Seiten-Wache (Fingerabdruck vor und nach), Vorfahrt Runner.Worker, stopp.ps1, save-server :4312.
 BASE=/c/Users/micha/Desktop/AnazhRealm-OMEN
 A=${MP_A:?}; B=${MP_B:?}; case ${MP_INS:-A} in B) INS=$B;; *) INS=$A;; esac; WZ=$BASE/p3/messplatz/werkzeug
 OUT=${MP_OUT:?}; LOG=$OUT/fortschritt.log; K14=$BASE/p3/k14; mkdir -p $OUT/stand $OUT/gehen $OUT/fahrt $OUT/blick
@@ -36,31 +36,37 @@ werkbank_an() { # $1 Datei-Präfix, $2 Ort, $3 Baum des Boots -> setzt W auf das
   say "$(basename $1) WERKBANK NICHT BEREIT"; return 1
 }
 . $BASE/p3/gpu-schloss.sh
-nachtruhe() { while :; do hm=$((10#$(date +%H%M))); if [ $hm -ge 325 ] && [ $hm -lt 415 ]; then sleep 60; else break; fi; done; }
 for f in geher.js geher-ende.js kreatur-uhr-an.js kreatur-uhr-lesen.js tiere-zensus.js stopp.ps1 fahrt.js fahrt-pruef.js blick.js jpg.cjs; do [ -s $WZ/$f ] || { echo "FEHLT $WZ/$f"; exit 4; }; done
 L8="A1 B1 A2 B2"; L16="A1 B1 A2 B2 A3 B3 A4 B4"
 worker() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
-vorfahrt() { local w=0; while worker; do [ $w = 0 ] && say "VORFAHRT: Runner.Worker läuft - warte"; w=1; sleep 30; done; }
+# VORFAHRT je Boot: das Schloss ist zwischen zwei Boots frei (schloss_loesen am Boot-Ende); ein laufender oder wartender CI-Job
+# geht vor, danach setzt die Zelle mit dem nächsten Boot fort — jede Seite bekommt gleich viele Boots unter gleichen Bedingungen.
+# 25.10.: die Wartezeit als Zeile `<id> VORFAHRT <zelle-boot> gewartet <min>` nach zug/fortschritt.txt (fortschritt aus messplatz.sh).
+vorfahrt() { local w=0 t0=$(date +%s); while worker || ci_wartet; do [ $w = 0 ] && say "VORFAHRT: CI-Job läuft oder wartet - warte"; w=1; sleep 30; done
+  [ $w = 1 ] && type fortschritt > /dev/null 2>&1 && fortschritt "${MP_ID:-serie} VORFAHRT $NAME gewartet $(awk -v s=$(( $(date +%s) - t0 )) 'BEGIN { printf "%.1f", s / 60 }')"; return 0; }
+# STORNO je Boot (25.10.: takt2-abab lief storniert weiter): Exit 5, der Dienst bucht nichts
+storno_probe() { [ -n "${MP_ID:-}" ] && type storniert > /dev/null 2>&1 && git -C "$MK" fetch -q origin koordination 2>/dev/null && storniert "$MP_ID"; }
 export WERKBANK_PORT=4490; W="node $INS/scripts/werkbank.cjs"
 say "SERIE START A=$(git -C $A log -1 --format=%h)[$(git -C $A status --porcelain | wc -l)] B=$(git -C $B log -1 --format=%h)[$(git -C $B status --porcelain | wc -l)] Instrument=$(git -C $INS log -1 --format=%h) ZELLEN=${ZELLEN:-fahrt d-ego w-ego g-third stadt}"
 for Z in ${ZELLEN:-fahrt d-ego w-ego g-third stadt}; do
-  case $Z in g-third) ORT=genesis; SICHT=third;; w-ego|w-tier|hieb|takt) ORT=wiese; SICHT=ego;; d-ego) ORT=dorf; SICHT=ego;; sturm) ORT=wiese; SICHT=ego;; stadt) ORT=stadt; SICHT=ego;; fahrt|blick) ORT=wiese; SICHT=third;; esac
+  case $Z in g-third) ORT=genesis; SICHT=third;; w-ego|w-tier|hieb|takt) ORT=wiese; SICHT=ego;; d-ego|d-takt) ORT=dorf; SICHT=ego;; sturm) ORT=wiese; SICHT=ego;; stadt) ORT=stadt; SICHT=ego;; fahrt|blick) ORT=wiese; SICHT=third;; esac
   LISTE=${LAEUFE:-$L8}
   for N in $LISTE; do
     NAME=$Z-$N
     case $Z in fahrt) D=$OUT/fahrt; FERTIG=$D/$NAME-pruef.txt;; blick) D=$OUT/blick/$N; FERTIG=$D/blick.txt;; d-ego|g-third) D=$OUT/gehen; FERTIG=$D/$NAME-bank.txt;;
     w-tier) D=$OUT/tier; FERTIG=$D/$NAME-bank-mit2.txt;;
     hieb) D=$OUT/hieb; FERTIG=$D/$NAME-latenz.json;;
-    takt) D=$OUT/takt; FERTIG=$D/$NAME-takt.txt;; *) D=$OUT/gehen; FERTIG=$D/$NAME-geht-1.txt;; esac
+    takt|d-takt) D=$OUT/takt; FERTIG=$D/$NAME-takt.txt;; *) D=$OUT/gehen; FERTIG=$D/$NAME-geht-1.txt;; esac
     mkdir -p $D; [ -s $FERTIG ] && { say "$NAME steht schon"; continue; }
     case $N in A*) WT=$A;; B*) WT=$B;; esac
-    nachtruhe; vorfahrt; schloss_nehmen ${MP_LOCK:?}; stopp; seite $NAME $WT
+    storno_probe && { say "$NAME STORNO - die Serie bricht ab"; exit 5; }
+    vorfahrt; schloss_nehmen ${MP_LOCK:?}; stopp; seite $NAME $WT
     say "$NAME start FP=$FP gpu[$(gpu)]"
     P=$D/$NAME; [ $Z = blick ] && P=$D/blick
     smi_an $P-smi.csv
     werkbank_an $P $ORT $WT
     $W eval "window.__gf = []; r.state.renderer.backend.device.addEventListener('uncapturederror', (e) => window.__gf.push(String((e.error && e.error.message) || e).slice(0, 200))); return 1" > /dev/null 2>&1
-    case $Z in d-ego|stadt) ;; *) $W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1;; esac
+    case $Z in d-ego|d-takt|stadt) ;; *) $W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1;; esac
     $W fenster 1920 1080 > /dev/null 2>&1
     $W umstellen --ort $ORT --sicht $SICHT > $P-umstellen.txt 2>&1
     case $Z in
@@ -91,6 +97,11 @@ for Z in ${ZELLEN:-fahrt d-ego w-ego g-third stadt}; do
       timeout 600 $W takt 30 --ein 2 --wandern bahn --tiere frei --json "$(cygpath -w $P-takt.json)" > $P-takt.txt 2>&1
       ERG="$(kurz $P-steht.txt) takt[$(head -12 $P-takt.txt | tr "
 " " " | cut -c1-400)]" ;;
+    d-takt) # z13 (24.10.): die Zerlegung des CPU-Takts im Dorf stehend, je Methode (p3/n2410/z13/takt-delta.cjs); ohne Kreatur-Uhr (ihre Hülle läge im Profil)
+      $W eval "$(cat $WZ/uhr8.js)" > $P-uhr.txt 2>&1
+      $W lauf 30 --ein 20 --ruhe 300 --regler voll --tiere frei > $P-steht.txt 2>&1
+      timeout 900 $W takt 60 --ein 2 --wandern aus --regler voll --tiere frei --json "$(cygpath -w $P-takt.json)" > $P-takt.txt 2>&1
+      ERG="$(kurz $P-steht.txt) takt[$(head -1 $P-takt.txt | cut -c1-200)]" ;;
     hieb)
       $W lauf 30 --ein 20 --ruhe 300 --regler voll --tiere frei > $P-steht.txt 2>&1
       timeout 900 $W latenz --proben 30 --sicht ego --verb hieb --json "$(cygpath -w $P-latenz.json)" > $P-latenz.txt 2>&1
