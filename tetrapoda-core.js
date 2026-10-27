@@ -1791,7 +1791,8 @@
     // VERHALTEN.furcht; sie wiegt die Aura des Spielers UND den Abdruck einer Tat am Ort (vorher rechnete der Wirt sie nur fuer
     // den Spieler, der Ort trug Gefuehle, die kein Tier las). DAS WESEN ERINNERT (furchtErinnert): jede Erinnerung an den
     // Spieler traegt ihr Gewicht (geschlagen +, gefuettert −; der Schlag wiegt schwerer als die Gabe: Baumeister et al. 2001,
-    // „Bad is stronger than good"), die Summe geklemmt auf ±deckel hebt oder senkt die Wariness vor ihm; erinnerte Furcht
+    // „Bad is stronger than good"; gewalt + = der Schlag des Spielers in der Naehe, gesehen, nicht erlitten — mensch.K5, 27.10.,
+    // additiv: der Zeuge erinnert ihn halb so schwer wie das Opfer), die Summe geklemmt auf ±deckel hebt oder senkt die Wariness vor ihm; erinnerte Furcht
     // weitet Witterung und Flucht-Distanz um fluchtJeFurcht je Einheit (bejagte Bestaende fliehen frueher und weiter, beim
     // Wapiti um ein Mehrfaches: Stankowich 2008, Biol. Conserv. 141:2159). Gezaehlt wird, was das Gedaechtnis traegt (die Kappe
     // seiner Eintraege), nie eine Uhr: die Erinnerung reist im Speicherstand. DER ORT ERINNERT (furchtOrt): die Bedrohung des
@@ -1802,7 +1803,7 @@
     // bis zur Kante der Furcht, und wer frueher flieht, flieht weiter (Stankowich 2008, „distance fled"); vorher endete die
     // Flucht am Radius selbst.
     var FURCHT_GESETZ = Object.freeze({
-        erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5 }),
+        erinnerung: Object.freeze({ geschlagen: 2, gefuettert: -1.5, gewalt: 1 }),
         deckel: 3,
         fluchtJeFurcht: 1.25,
         fluchtWegJeRadius: 2.2,
