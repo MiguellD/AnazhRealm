@@ -140,7 +140,10 @@ class AnazhRealm_gelaende_chunks {
                         const pending = this.state.voxelWorkerPending.get(msg.requestId);
                         if (pending) {
                             this.state.voxelWorkerPending.delete(msg.requestId);
-                            pending.reject(new Error(msg.message));
+                            // der Wurf trägt den Stapel des Fadens (die Zeile, die warf), nie nur die Meldung
+                            pending.reject(
+                                Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null)
+                            );
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
@@ -151,10 +154,10 @@ class AnazhRealm_gelaende_chunks {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // DIE EINE ZUSAGE (B-K2): der init der Geburt trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag wartet auf
-            // sie (`_voxelFadenAuftrag`), nie auf einen neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg),
-            // trägt dieser init schon die Welt: der Strom darf ihn fragen.
-            worker.zusage = this._voxelWorkerSyncState({ op: "init" });
+            // DER INIT DER GEBURT (B-K2) trägt den Stand (Seed, Gesetz, voxelEdits); jeder Auftrag reist hinter ihm
+            // (`_voxelFadenAuftrag`), nie mit einem neuen init. Kommt der Faden erst nach der Weltgen (der Blob-Weg), trägt dieser
+            // init schon die Welt: der Strom darf ihn fragen. Verwirft der Faden ihn, bricht es laut beim Namen.
+            this._voxelWorkerSyncState({ op: "init" }).catch((e) => this._stoffBruch("der Voxel-Faden (init)", e));
             // DIE REGIONEN DIESER WELT (streaming.K5): der Stand trägt keine — ein Faden, der nach ihrer Bestellung geboren wird,
             // rechnet jede selbst direkt hinter seinem init (ohne Rückfrage: der Main hält sie). Bis dahin baute ein
             // nachgeborener Voxel-Faden jeden Chunk ohne Fluss und See (werk-im-wasser: 0 Häuser an 8 Uferorten, das Bild trocken)
@@ -201,6 +204,8 @@ class AnazhRealm_gelaende_chunks {
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
             voxelEdits: this._snapshotVoxelEdits(),
+            stau: this.state.waterStau || null, // die Felder des Staus (`_stauFelder`), dieselben im Faden
+
             // DAS GESETZ DER HYDROSPHÄRE reist mit (Karte hydro-faden): der Faden rechnet mit ihm die Regionen (gelaende-core
             // `hydrosphaere`) und baut dasselbe Bett (Welle L: Freibord und die Bank)
             hydroGesetz: AnazhRealm.HYDROSPHERE,
@@ -299,20 +304,22 @@ class AnazhRealm_gelaende_chunks {
         return !!(this.state.voxelWorker && this.state.voxelWorkerWorldgenSynced);
     }
 
-    // DER EINE AUFTRAG AN DEN VOXEL-FADEN (B-K2): jeder Rechen-Auftrag wartet auf die EINE Zusage des Fadens
-    // (`worker.zusage`, der init seiner Geburt) — nie auf einen neuen init. Bis B-K2 schickte jeder Auftrag vor dem Ack einen
-    // eigenen vollen Stand (`_voxelWorkerSyncState()`: je Auftrag ein Klon der Welt im Haupt-Faden, Lehre 24). Ein Faden
-    // ohne Zusage (von außen gesetzt) trägt seinen Stand seit der Geburt. `msg` bekommt die Rückfrage-Nummer.
-    _voxelFadenAuftrag(worker, msg) {
-        return (worker.zusage || Promise.resolve(true)).then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            msg.requestId = requestId;
-            worker.postMessage(msg);
-            return promise;
+    // DER EINE AUFTRAG AN DEN VOXEL-FADEN (B-K2): jeder Rechen-Auftrag reist hinter dem init seiner Geburt (der Stand: Seed,
+    // Gesetz, voxelEdits — die Nachrichten eines Ports kommen in ihrer Reihe an), nie mit einem neuen init. Bis B-K2 schickte
+    // jeder Auftrag vor dem Ack einen eigenen vollen Stand (`_voxelWorkerSyncState()`: je Auftrag ein Klon der Welt im
+    // Haupt-Faden, Lehre 24). DIE REIHE DES PROGRAMMS (streaming.K5): der Auftrag geht SOFORT hinaus, in der Reihe, in der er
+    // seine Verweise las — bis sk5-kopie wartete er einen Mikro-Takt auf die Zusage (`worker.zusage`), und eine Freigabe hinter
+    // ihm im selben Takt (`zellen-frei` beim Tausch des Chunks) überholte ihn: das Wasser-Blatt fragte nach, und der Main
+    // klonte die Zellen des Fadens zurück (0,13 MB je Block, an 607d0c73 0,27 MB in der Minute Fahrt). `msg` bekommt die
+    // Rückfrage-Nummer, `transfer` sind seine Puffer (Lehre 24).
+    _voxelFadenAuftrag(worker, msg, transfer) {
+        const requestId = this.state.voxelWorkerNextRequestId++;
+        const promise = new Promise((resolve, reject) => {
+            this.state.voxelWorkerPending.set(requestId, { resolve, reject });
         });
+        msg.requestId = requestId;
+        worker.postMessage(msg, transfer || []);
+        return promise;
     }
 
     // Density-Grid im Worker: Promise<Float32Array> mit (dimX+1)·(dimY+1)·(dimZ+1) Floats, Indizierung
@@ -368,7 +375,8 @@ class AnazhRealm_gelaende_chunks {
             const p = msg.requestId ? f.pending.get(msg.requestId) : null;
             if (!p) return;
             f.pending.delete(msg.requestId);
-            if (msg.type === "error") p.reject(new Error(msg.message));
+            if (msg.type === "error")
+                p.reject(Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null));
             else p.resolve(msg);
         };
         worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));
@@ -420,21 +428,29 @@ class AnazhRealm_gelaende_chunks {
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         if (!entry || !entry.waterCells) return Promise.resolve({ empty: true });
-        // je Chunk des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt sie samt der Liste
-        // seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (ohne Verweis, und je Verweis, der den Faden
-        // verfehlte: `ganz`, die Plätze der Antwort)
+        // je Platz i = (dz+1)·3 + (dx+1) des 3×3 ein Verweis auf die Zellen des Fadens (`zellenId`: er baute sie, der Main trägt
+        // sie samt der Liste seines Stempels, `zellenFest`) — sonst die eigenen Zellen des Mains (ohne Verweis, und je Verweis,
+        // der den Faden verfehlte: `ganz`, die Plätze der Antwort). DER AUFTRAG REIST PER TRANSFER (Lehre 24): die Verweise als
+        // EIN Int32Array (`zids`, 0 ohne Verweis), die Stempel als EINE Liste mit Grenzen (`fest`, Platz i in festAb[i]…festAb[i+1]);
+        // geklont reisen nur eigene Zellen (`eigen`). Bis sk5-kopie klonte jede Bestellung neun Objekte (0,18 MB je Minute Fahrt).
         const zellen = (ganz) => {
-            const cells = new Array(9).fill(null);
-            for (let dz = -1; dz <= 1; dz++)
-                for (let dx = -1; dx <= 1; dx++) {
-                    const e = dx === 0 && dz === 0 ? entry : this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                    if (e && e.waterCells)
-                        cells[(dz + 1) * 3 + (dx + 1)] =
-                            e.zellenId && !(ganz && ganz.includes((dz + 1) * 3 + (dx + 1)))
-                                ? { zid: e.zellenId, fest: e.zellenFest }
-                                : e.waterCells;
+            const [zids, festAb, listen, eigen] = [new Int32Array(9), new Int32Array(10), [], {}];
+            let n = 0;
+            for (let i = 0; i < 9; i++) {
+                const e = i === 4 ? entry : this.state.voxelChunks.get(`${cx + (i % 3) - 1},${cz + ((i / 3) | 0) - 1}`);
+                festAb[i] = n;
+                if (!e || !e.waterCells) continue;
+                if (!e.zellenId || (ganz && ganz.includes(i))) {
+                    eigen[i] = e.waterCells;
+                    continue;
                 }
-            return cells;
+                zids[i] = e.zellenId;
+                if (e.zellenFest) (listen.push(e.zellenFest), (n += e.zellenFest.length));
+            }
+            festAb[9] = n;
+            const fest = new Int32Array(n);
+            for (let i = 0, o = 0; i < listen.length; o += listen[i++].length) fest.set(listen[i], o);
+            return { zids, festAb, fest, eigen };
         };
         const smoothRaw =
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
@@ -443,28 +459,29 @@ class AnazhRealm_gelaende_chunks {
         const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
         // die Plätze, die den Faden verfehlten, wachsen, bis keiner mehr fehlt (höchstens neun Runden): fiel ein Verweis zwischen
         // zwei Runden (der Deckel des Fadens, `zellen-frei` beim Neubau), kam `{ fehlt }` als Blatt an — ein leeres Netz
-        const auftrag = (ganz) =>
-            this._voxelFadenAuftrag(worker, { type: "water-sheet", cx, cz, smoothPasses, cells: zellen(ganz) }).then(
-                (r) => (r && r.fehlt ? auftrag((ganz || []).concat(r.fehlt)) : r)
-            );
+        const auftrag = (ganz) => {
+            const z = zellen(ganz);
+            return this._voxelFadenAuftrag(worker, Object.assign({ type: "water-sheet", cx, cz, smoothPasses }, z), [
+                z.zids.buffer,
+                z.festAb.buffer,
+                z.fest.buffer,
+            ]).then((r) => (r && r.fehlt ? auftrag((ganz || []).concat(r.fehlt)) : r));
+        };
         return auftrag(null);
     }
 
-    // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und
-    // kein Stau (`waterStauFields`) im 3×3 liegt. Byte-identisch, weil ein settled Chunk am Flood-Spiegel
-    // ruht → `_seedWaterLevel` setzt Zellen auf 1 → CA-Delta d == 0 → Main-Sheet == Worker-Sheet
-    // (`diag-worker-watersheet`). Aktiv fließende und Stau-Chunks tragen ein echtes Delta → SYNC.
+    // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind. Byte-identisch, weil
+    // ein settled Chunk am Flood-Spiegel ruht → `_seedWaterLevel` setzt Zellen auf 1 → CA-Delta d == 0 → Main-Sheet ==
+    // Worker-Sheet (`diag-worker-watersheet`); der Stau ist Gesetz des Spiegels (`_stauFelder`, im Faden dieselben Felder).
+    // Aktiv fließende Chunks tragen ein echtes Delta → SYNC.
     _waterSheetCaFree(cx, cz) {
         const active = this.state.waterCAActive;
-        const stau = this.state.waterStauFields;
         const chunks = this.state.voxelChunks;
         const hasActive = active && active.size > 0;
-        const hasStau = stau && stau.size > 0;
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const k = `${cx + dx},${cz + dz}`;
                 if (hasActive && active.has(k)) return false;
-                if (hasStau && stau.has(k)) return false;
                 // Ein gezeichnetes oder gewünschtes Dach im 3×3 (der Automat lief dort) baut der Main: der Worker kennt
                 // es nicht — ein dachloses Worker-Sheet neben einem Main-Sheet mit Dach wäre die Wasser-Naht.
                 const e = chunks ? chunks.get(k) : null;
@@ -3025,6 +3042,8 @@ class AnazhRealm_gelaende_chunks {
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
+        // der Stau der Werke folgt dem Edit, ehe ein Faden die Chunks neu baut (ein Damm hält, ein Schnitt öffnet ihn)
+        this._stauFelder();
         // `_remeshVoxelChunksAround` ist der EINZIGE Reaktiv-Pfad: die Chunks bauen neu, das Cell-Feld
         // klassifiziert die neue Lage (Carve unter waterLevel → WATER, Fill → SOLID) — Cells sind DERIVED,
         // kein Hydro-Recompute. Nur die Footprint-Chunks werden grass-dirty (Oberfläche geändert); die

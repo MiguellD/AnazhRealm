@@ -17,14 +17,14 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenz über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
 // constitution N1 wörtlich; die Wirkung der Policy beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum.
@@ -60,9 +60,7 @@ hauptLauf(async () => {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 180000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

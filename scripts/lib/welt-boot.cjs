@@ -787,6 +787,14 @@ async function nullRenderer(page) {
         window.__anazhHeadlessNullRenderer = true;
     });
 }
+// DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse.
+async function nullSeite(opts) {
+    const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
+    const page = await browser.newPage();
+    await nullRenderer(page);
+    return { browser, page };
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
         timeout: frist,
@@ -1130,6 +1138,7 @@ module.exports = {
     starteBrowser,
     warteAufWelt,
     nullRenderer,
+    nullSeite,
     halteBis,
     buehne,
     uferStellen,

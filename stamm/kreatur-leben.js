@@ -2057,7 +2057,9 @@ class AnazhRealm_kreatur_leben {
     // zuvor äst die Herde den Jungwuchs ihres Reviers (`_kreaturFrass`), und die Jäger reißen ihre Beute (Ökologie K1).
     // Jenseits der Lebensspanne kehrt das älteste Wesen zur Erde zurück. Bis Ökologie K2 setzte ein Deckel den Bestand (Ziel
     // 4–14 und Deckel 4–28 Tiere aus dem Feld am Spieler, FAUNA_TARGET/MAX_POPULATION), getaktet in der Wanduhr (Abklingen 25
-    // bzw. 35 s); kein Fraß, keine Beute änderte eine Geburt, gestorben wurde nur über dem Deckel und am Alter.
+    // bzw. 35 s); kein Fraß, keine Beute änderte eine Geburt, gestorben wurde nur über dem Deckel und am Alter. Die Marke des
+    // letzten Takts reist nicht mit der Uhr: das Laden setzt sie an die Uhr des Stands (halten.K5,
+    // `_loadStateRestoreSoulAndAtmosphere`).
     tickFaunaLifecycle() {
         const st = this.state;
         const L = st.faunaLifecycle;
