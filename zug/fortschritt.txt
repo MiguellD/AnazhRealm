@@ -525,3 +525,4 @@
 2026-10-28 00:11:56 takt14b-gtx START 20 Stationen in 19 Läufen
 2026-10-28 00:13:45 takt14b-gtx fahrzeug.K3#1 GRÜN 1.7 · 1/20
 2026-10-28 00:17:49 takt14b-gtx fahrzeug.K3#2 GRÜN 4.0 · 2/20
+2026-10-28 00:21:21 takt14b-gtx fahrzeug.K4#2 GRÜN 3.4 · 3/20
