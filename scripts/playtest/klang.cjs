@@ -299,8 +299,9 @@ async function checkBandW4LofiPad(ctx) {
 // Der Fuß spielt den Boden, nicht die Uhr — eingefaltet aus gate:schritt-klang (D3b, Orakel Tier-1 #7): die drei Schritt-Klang-
 // Gesetze am ECHTEN Chokepoint (animatePlayerSoul → `_schrittKlangTick`), Audio stumm, die EREIGNIS-Logik pur: (A) je Halbzyklus
 // der weg-getriebenen Gang-Phase EIN Schritt · (B) Stand, Schleichen, Luft und Schwimmen nie · (C) der gainDeckel (das Timbre je
-// Stoff, Wasser am Fuß eingeschlossen, misst gate:gegenstand-stoff --tafel am Klang) · (D) die Landung GENAU EINMAL, stärker und
-// tiefer, unter LAND_DIP_MIN_SPEED keine · (E) die Stimme-aus-Wand; Selbsttest S1 (ω ≡ 0 ⇒ 0 Schritte).
+// Stoff, Wasser am Fuß eingeschlossen, misst gate:gegenstand-stoff --tafel am Klang) · (E) die Stimme-aus-Wand; Selbsttest S1
+// (ω ≡ 0 ⇒ 0 Schritte). Die Landung (genau einmal, der Hopser stumm, lauter mit dem Aufprall-Tempo des Leib-Lösers) misst
+// gate:klang-zensus (F) am Bus über den echten Leib-Löser.
 async function checkBandSchrittKlang(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, () => {
@@ -399,37 +400,6 @@ async function checkBandSchrittKlang(ctx) {
         // ── (C) der Deckel der Landung (das Timbre je Stoff misst die Stoff-Linse am Klang: gate:gegenstand-stoff --tafel) ──
         o.checks.cDeckel = r._schrittKlangParams("stein", true, 1000).gain <= T.gainDeckel + 1e-12;
     
-        // ── (D) LANDUNG: genau 1×, stärker + tiefer; unter der Schwelle nie ──
-        const falle = (t0, fallTempo, frames) => {
-            vStub = 0;
-            p.animationLastTick = -Infinity;
-            r.animatePlayerSoul(t0); // geerdet ankern
-            s.isInAir = true;
-            for (let k = 0; k < frames; k++) {
-                s._fieldVy = -(fallTempo * (k + 1)) / frames; // wachsendes Fall-Tempo
-                r.animatePlayerSoul(t0 + 0.1 + k / 60);
-            }
-            s.isInAir = false;
-            s._fieldVy = 0;
-            r.animatePlayerSoul(t0 + 0.2 + frames / 60); // das Aufsetzen
-        };
-        frisch();
-        falle(1000, 9, 30); // harter Fall (9 m/s ≫ LAND_DIP_MIN_SPEED)
-        const landA = { landungen: z().landungen, letzter: z().letzter };
-        for (let k = 1; k <= 30; k++) r.animatePlayerSoul(1002 + k / 60); // weitere Boden-Ticks
-        o.land = landA;
-        o.checks.dGenauEinmal = landA.landungen === 1 && z().landungen === 1 && z().schritte === 0;
-        const schrittRef = landA.letzter ? r._schrittKlangParams(landA.letzter.material, false, 0) : null;
-        o.checks.dStaerkerTiefer =
-            !!landA.letzter &&
-            landA.letzter.landung === true &&
-            !!schrittRef &&
-            landA.letzter.gain > schrittRef.gain &&
-            landA.letzter.freq < schrittRef.freq;
-        frisch();
-        falle(1100, 1.0, 10); // Hopser (1 m/s < LAND_DIP_MIN_SPEED)
-        o.checks.dSchwelleHaelt = z().landungen === 0;
-    
         // ── (E) STIMME-AUS-WAND: Ereignis zählt, der Klang-Aufruf unterbleibt ──
         let calls = 0;
         const savedPlay = r._playSchrittOneShot;
@@ -492,8 +462,6 @@ async function checkBandSchrittKlang(ctx) {
     check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
     const timbre = alle("cDeckel");
     check("Schritt-Klang (C): die Landung bleibt unter dem gainDeckel", !timbre.length, zeig(timbre));
-    const land = alle("dGenauEinmal", "dStaerkerTiefer", "dSchwelleHaelt");
-    check(`Schritt-Klang (D): die Landung feuert GENAU EINMAL (${out.land.landungen}×), STÄRKER + TIEFER als der Schritt, der Hopser bleibt stumm`, !land.length, zeig(land));
     const stimme = alle("eStummZaehlt", "eAnRuft", "s1LinseFeuert");
     check(`Schritt-Klang (E) + S1: Stimme aus zählt ohne Aufruf, Stimme an ruft EINMAL je Schritt (${out.anCalls}/${out.anSchritte}), ω ≡ 0 ⇒ 0 Schritte`, !stimme.length, zeig(stimme));
 }
