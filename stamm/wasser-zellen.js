@@ -1966,7 +1966,8 @@ class AnazhRealm_wasser_zellen {
     // DER STAND DES FENSTERS STEIGT (ci-werk-wasser): jeder Chunk-Bau, den der Faden vor diesen Feldern rechnete, fällt — im Flug
     // (der Stand-Filter `_voxelStand` liest die Generation je Chunk, `_chunkGenKarte`, wie beim Erdbau) und im Cache, nicht nur
     // der gezeichnete Chunk. Bis hierhin trat ein Chunk, dessen Bau beim Empfang im Flug war oder im Cache lag, ohne das
-    // Stau-Wasser ein und blieb so — nach dem Reload am Damm der Prüfbühne 1072 statt 1142 nasse Punkte (CI 40441173506).
+    // Stau-Wasser ein und blieb so — nach dem Reload am Damm der Prüfbühne 1072 statt 1142 nasse Punkte (CI 40441173506), unter
+    // 4× Drossel 1047, nach einem Neubau des Fensters 1142 (gate:werk-im-wasser D, die Gegenprobe des Neubaus).
     _stauAn(a) {
         this._stauImFlug = null;
         if (a.type === "error")

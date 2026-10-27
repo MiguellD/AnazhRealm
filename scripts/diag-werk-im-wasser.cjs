@@ -76,6 +76,7 @@ const SCHWELLE = {
     stauMin: 100, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (Kopf K37: 180 im Tal 26/−120)
     hubMin: 20, // Spalten, die das Stau-Feld des Damms über Boden und Gesetz hebt (sonst trägt der Ort keinen Stau)
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
+    neubauTreue: 0.01, // Anteil der nassen Punkte, um den ein frischer Neubau der Chunks am Damm den Stausee ändern darf
     randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
 };
 
@@ -290,6 +291,8 @@ function urteil(b) {
                 `D LEER: der Damm staute ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1}; Soll ≥ ${S.stauMin})`
             );
         else if (!(D.hub2 >= S.hubMin)) v.push(`D: nach dem Reload trägt der Stau kein Feld des Damms #${D.id} (${D.hub2} Spalten)`);
+        else if (!(Math.abs(D.w3 - D.w2) <= S.neubauTreue * D.w2))
+            v.push(`D: ein Chunk am Damm #${D.id} trug den Stau erst nach seinem Neubau (${D.w2} → ${D.w3})`);
         else if (!(Math.abs(D.w2 - D.w1) <= S.stauTreue * stau))
             v.push(
                 `D: der Stausee des Damms #${D.id} (${m(D.x)}/${m(D.z)}) bildet sich nach dem Reload nicht neu — ${D.w2} statt ${D.w1} nasse Punkte nach ${D.takte} Takten (ohne Damm ${D.w0})`
@@ -436,7 +439,9 @@ async function probe(A) {
             if (i % 20 === 0) await sleep(0);
         }
     };
+    const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
     const stelle = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
+    const fehlerZeile = (e) => String((e && e.stack) || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
     // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
     const aufsitzen = (gt, n = 12) => {
         const m = r.mountArchitecture(gt);
@@ -676,7 +681,7 @@ async function probe(A) {
             const t0 = performance.now();
             r.processChatCommand("bau mir ein haus am wasser");
             const ms = performance.now() - t0; // der Satz samt Ort-Suche und Spawn, synchron
-            const neu = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
+            const neu = neueWerke(v0, /^haus_/);
             await bilder(60);
             zensus.quelle = "strom";
             satz.orte++;
@@ -792,7 +797,7 @@ async function probe(A) {
                     )
                     .map((a) => `${a.type} #${a.id} (${a.position.x.toFixed(1)}/${a.position.z.toFixed(1)})`);
             } catch (e) {
-                out.hain = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.hain = { fehler: fehlerZeile(e) };
             }
         let ansaugGT = null;
         // ── A: die Ansaugung (Karte K02, FZ-01): der GT fährt mit Vollgas vom Ufer ins tiefe Wasser ──
@@ -1018,7 +1023,7 @@ async function probe(A) {
             try {
                 for (const [cx, cz] of A.satzNah) await satzProbe(cx, cz);
             } catch (e) {
-                satz.fehler = String((e && e.stack) || e).split("\n")[0];
+                satz.fehler = fehlerZeile(e);
             }
         if (soll("zensus") || soll("satz")) await werkeMessen();
         // ── F: der Wagen in der Furt ──
@@ -1159,7 +1164,7 @@ async function probe(A) {
                 }
                 await werkeMessen();
             } catch (e) {
-                satz.fehler = String((e && e.stack) || e).split("\n")[0];
+                satz.fehler = fehlerZeile(e);
             }
         // ── C: der Satz nennt das Ergebnis (am See, eine Uferkante je Richtung, der Blick auf den See) ──
         if (soll("satz"))
@@ -1199,14 +1204,14 @@ async function probe(A) {
                     zensus.quelle = "Birken-Satz";
                     r.processChatCommand("pflanz mir sechs birken");
                     zensus.quelle = "strom";
-                    const neu = st.architectures.filter((e) => e && !v0.has(e) && /birke/.test(e.type));
+                    const neu = neueWerke(v0, /birke/);
                     const chat = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
                     C.versuche.push({ ufer: [+PX.toFixed(1), +PZ.toFixed(1)], gewollt: 6, gesetzt: neu.length, chat });
                     for (const e of neu) r.removeArchitecture(e);
                 }
                 out.ergebnis = C;
             } catch (e) {
-                out.ergebnis = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.ergebnis = { fehler: fehlerZeile(e) };
             }
         // ── A (Teil 2): Aussteigen in tiefem Wasser — der GT der Rampe steht im See (−906/−634), wo der Wagen und jeder
         //    Ausstieg (Ringe 1,5 und 3 m) mindestens A.aussteigTief Wasser tragen (die Tiefe, die der Körper liest: das
@@ -1297,7 +1302,7 @@ async function probe(A) {
                     const vorA = new Set(st.architectures);
                     const vorK = st.creatures.length;
                     const chat = sprich(satz);
-                    const neuA = st.architectures.filter((e) => e && !vorA.has(e));
+                    const neuA = neueWerke(vorA);
                     const gesetzt = setzen === "kreatur" ? st.creatures.length - vorK : neuA.length;
                     E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
                     for (const e of neuA) r.removeArchitecture(e);
@@ -1380,13 +1385,13 @@ async function probe(A) {
                             : "";
                         if (/Häuser|Haus\.|kein Haus|kein Dorf|Kein Dorf/.test(echo)) break;
                     }
-                    const haeuser = st.architectures.filter((e) => e && !vorA.has(e) && /^haus_/.test(e.type));
+                    const haeuser = neueWerke(vorA, /^haus_/);
                     E.dorf = { sofort, sofortGesetzt, echo, haeuser: haeuser.length };
-                    for (const e of st.architectures.filter((e) => e && !vorA.has(e))) r.removeArchitecture(e);
+                    for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 }
                 out.setzen = E;
             } catch (e) {
-                out.setzen = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.setzen = { fehler: fehlerZeile(e) };
             }
         // ── R: das Dorf des Nexus am Seerand — ein Bau, dessen Stempel kein Wasser der Zellen verdrängt, weckt den Automaten
         //    nicht, das Wasser bleibt, wie es war. Der Wunsch-Anker stellt das Rand-Haus ans Ufer, der Spieler steht am Rand
@@ -1536,7 +1541,7 @@ async function probe(A) {
                     });
                     zensus.quelle = "strom";
                     // die Häuser bekommen ihre Hülle (das Gesetzbuch), wie im Zensus
-                    const haeuser = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
+                    const haeuser = neueWerke(v0, /^haus_/);
                     for (const e of haeuser)
                         await window.__gebautNach(e, {
                             fertig: () => !!e._hausHuelle || !st.architectures.includes(e),
@@ -1608,7 +1613,7 @@ async function probe(A) {
                     takte: A.rand.takte,
                 };
             } catch (e) {
-                out.rand = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.rand = { fehler: fehlerZeile(e) };
             }
         // ── K: DER KONSUM AM RUF: am Ort des Spielers ruft jeder Leser sein
         //    Gesetz WIRKLICH (der Spion zählt und reicht durch); der Zensus endet vorher, die gesetzten Werke fallen wieder ──
@@ -1677,7 +1682,7 @@ async function probe(A) {
                     ]),
                     "spawn_ufo → _setzErgebnis": ruft(r.dslEffects, "spawn_ufo", "_setzErgebnis", [[at], ctx()]),
                 };
-                for (const e of st.architectures.filter((e) => e && !vorA.has(e))) r.removeArchitecture(e);
+                for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 // der losgelassene Wagen (der GT der Ansaugung) rechnet im Nachlauf mit der Tiefe am Wagen
                 const gt = ansaugGT;
                 if (gt && gt._fahr) {
@@ -1692,7 +1697,7 @@ async function probe(A) {
                 K["_fahrNachlauf → _fahrTiefe"] = !!(gt && gt._fahr) && ruft(r, "_fahrNachlauf", "_fahrTiefe", [1 / 60]);
                 out.konsum = K;
             } catch (e) {
-                out.konsum = { fehler: String((e && e.stack) || e).split("\n")[0] };
+                out.konsum = { fehler: fehlerZeile(e) };
             }
         if (soll("zensus") || soll("satz")) out.zensus = zensus;
         if (soll("satz")) out.satz = satz;
@@ -1745,9 +1750,9 @@ async function dammProbe(A) {
         await takte(120);
     };
     // DER STAU STEHT (Lehre 26, ci-werk-wasser): gezählt wird erst, wenn die Welt ihn nicht mehr baut — kein Auftrag im Faden
-    // (`_weltOffen` stau), kein Chunk schmutzig oder im Bau; eine hängende Welt nennt der Deckel beim Namen. Bis hierhin zählte D
-    // nach 1200 Takten, und auf dem langsamen Läufer kam der Stau danach (CI 40441173506: 1072 statt 1142 Punkte).
-    const offen = () => ((o) => o.stau + o.chunks)(r._weltOffen());
+    // (`_weltOffen` stau), kein Chunk schmutzig oder im Bau, kein Wasser-Blatt in der Schlange; eine hängende Welt nennt der
+    // Deckel beim Namen. Bis hierhin zählte D nach 1200 Takten, ein Stau nach ihnen blieb ungezählt (CI 40441173506).
+    const offen = () => ((o) => o.stau + o.chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0))(r._weltOffen());
     const stehen = (name) => window.__gebautNach(name, { fertig: () => !offen(), takt: frame }).then(offen);
     const nass = (X, Z) => {
         let n = 0;
@@ -1830,6 +1835,12 @@ async function dammProbe(A) {
     await takte(A.takte);
     const offen2 = await stehen("der Stausee nach dem Reload");
     const [w2, hub2] = [nass(A.x, A.z), hub(A.x, A.z)];
+    // DIE GEGENPROBE DES NEUBAUS: jeder Chunk am Damm frisch, wie der Empfang des Staus ihn fallen lässt (Cache fort, Neubau,
+    // der Automat wacht) — trägt einer den Stau erst jetzt, trat er vor ihm gebaut ohne ihn ein (4× Drossel: 1047 → 1142)
+    st.voxelMeshCache = null;
+    r._remeshVoxelChunksAround(A.x, A.z, A.R, 0);
+    r._invalidateWaterCapsAround(A.x, A.z, A.R);
+    const w3 = (await stehen("der Neubau am Damm"), nass(A.x, A.z));
     const inv = { n: 0 };
     const invAlt = r._invalidateWaterCapsAround;
     r._invalidateWaterCapsAround = function () {
@@ -1841,7 +1852,7 @@ async function dammProbe(A) {
     } finally {
         r._invalidateWaterCapsAround = invAlt;
     }
-    return { w2, abriss: inv.n, hub2, offen2 };
+    return { w2, w3, abriss: inv.n, hub2, offen2 };
 }
 
 function selbsttest() {
@@ -1890,6 +1901,7 @@ function selbsttest() {
             takte: 1200,
             hub: 51,
             hub2: 51,
+            w3: 2247,
             offen1: 0,
             offen2: 0,
         },
@@ -2047,13 +2059,15 @@ function selbsttest() {
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
             "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
-            (b) => (b.damm.w2 = 2070),
+            (b) => (b.damm.w2 = b.damm.w3 = 2070),
             /D: der Stausee des Damms #425 .* bildet sich nach dem Reload nicht neu — 2070 statt 2250/,
         ],
         // die Antwort des Fadens kommt verspätet (CI 40441173506): gezählt vor dem Stau ist ROT beim Namen dessen, was offen war
         ["D Stau-Antwort verspätet", (b) => Object.assign(b.damm, { w2: 1, offen2: 1 }), /#425 wurde gezählt, ehe der Stau stand \(offen 0 · 1\)/],
         ["D Stand ungemessen", (b) => delete b.damm.offen1, /ehe der Stau stand \(offen undefined · 0\)/],
         ["D Stau nach dem Reload nie bestellt", (b) => (b.damm.hub2 = 0), /D: nach dem Reload trägt der Stau kein Feld des Damms #425 \(0 Spalten\)/],
+        // der Chunk, der vor dem Stau gebaut ohne ihn eintrat (4× Drossel am Kopf 455e5be8: 1047 → 1142 nach dem Neubau)
+        ["D Chunk vor dem Stau", (b) => (b.damm.w3 = 2290), /Damm #425 trug den Stau erst nach seinem Neubau \(2247 → 2290\)/],
         [
             "D Abbau weckt nicht",
             (b) => (b.damm.abriss = 0),
