@@ -1419,6 +1419,7 @@ class AnazhRealm_dirigent_takt {
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
         this._tickCanopyStreaming();
+        this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt

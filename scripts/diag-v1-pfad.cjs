@@ -17,7 +17,7 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -25,7 +25,7 @@ const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 const ohneKommentare = stammLib.ohneKommentare;
 
@@ -2037,9 +2037,7 @@ const mitschnitt = (ratsche) => (req) =>
 async function kiWelt(seiten) {
     const srv = statikServer({ seiten });
     await srv.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 900000 });
     await srv.zeige(page);
     await warteAufWelt(page);
     return { srv, browser, page };
@@ -3168,10 +3166,8 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 600000 });
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page);
     await server.zeige(page, 30000);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, {

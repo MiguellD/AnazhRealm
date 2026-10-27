@@ -4,12 +4,12 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
@@ -2194,13 +2194,10 @@ hauptLauf(async () => {
     if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({
-        art: "null",
+    const { browser, page } = await nullSeite({
         frist: 300000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
-    const page = await browser.newPage();
-    await nullRenderer(page);
     await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
