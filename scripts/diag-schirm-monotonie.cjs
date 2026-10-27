@@ -22,7 +22,7 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT: root, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -136,10 +136,8 @@ function driftBefunde(reihe) {
 async function welt() {
     const server = statikServer();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 900000 });
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
-    await nullRenderer(page);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL);
