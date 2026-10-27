@@ -1,4 +1,5 @@
 name: Punkte-Farm
+run-name: Punkte-Farm ${{ inputs.sha }} ${{ inputs.auswahl }} → ${{ inputs.koord }} ${{ inputs.marke }}
 
 # DIE PUNKTE-FARM (27.10., Karte punkte-farm; die Regel des Schöpfers: „Die Prüfung darf nie länger dauern als das Erstellen.“):
 # die headless-Stationen der Punkte-Maschine (Zweig koordination, meisterkarte-quelle/punkte/punkte.cjs) fahren nicht auf dem
@@ -12,8 +13,9 @@ name: Punkte-Farm
 #   vereinen — `punkte.cjs vereine` zur EINEN messung/<sha8>-headless.json samt Roh-Ausgaben, nach koordination gepusht; der Zweig
 #              wird parallel beschrieben: je Versuch frisch holen, vereinen, committen, pushen
 # Die Maschine liegt als Arbeitsbaum des Spiel-Klons unter .claude/worktrees/koordination (wie am Laptop), nur ihr Verzeichnis
-# meisterkarte-quelle ausgecheckt (der Zweig trägt 1,3 GB Berichte). Auf Abruf (Actions → Punkte-Farm) oder per API:
-#   POST /repos/MiguellD/AnazhRealm/actions/workflows/punkte-farm.yml/dispatches {"ref":"main","inputs":{"sha":"…"}}
+# meisterkarte-quelle ausgecheckt (der Zweig trägt 1,3 GB Berichte). Der Ruf: `punkte.cjs run --sha <sha> --geraet headless
+# [--offen|--nur …]` am Laptop (farmRufen: dispatch, warten, die Messung holen — headless misst nie am Platz), von Hand
+# Actions → Punkte-Farm. Zwei Läufe am selben SHA vertragen sich (vereine je Versuch auf dem frischen Zweig), darum kein concurrency.
 on:
     # PROBE (fällt vor dem Zug): je Push auf den Zweig ein Lauf mit den Vorgaben unten
     push:
@@ -35,13 +37,12 @@ on:
             koord:
                 description: "der Zweig der Maschine und das Ziel der Messung"
                 default: "koordination"
+            marke:
+                description: "die Marke des Rufers (run-name), an der punkte.cjs seinen Lauf findet"
+                default: ""
 
 permissions:
     contents: read
-
-concurrency:
-    group: punkte-farm-${{ inputs.sha || 'dc06b495020b357431dc998342945d2352e0beee' }}-${{ inputs.koord || 'punkte-farm-beweis' }}
-    cancel-in-progress: false
 
 env:
     KOORD: ${{ inputs.koord || 'punkte-farm-beweis' }}
@@ -73,9 +74,9 @@ jobs:
               shell: bash
               env:
                   SHA: ${{ inputs.sha || 'dc06b495020b357431dc998342945d2352e0beee' }}
-                  AUSWAHL: ${{ inputs.auswahl || 'alle' }}
-                  NUR: ${{ inputs.nur }}
-                  JOBS: ${{ inputs.jobs || '12' }}
+                  AUSWAHL: ${{ inputs.auswahl || 'nur' }}
+                  NUR: ${{ inputs.nur || 'ki.K1#2' }}
+                  JOBS: ${{ inputs.jobs || '1' }}
               run: |
                   echo "beginn=$(date +%s)" >> "$GITHUB_OUTPUT"
                   git fetch -q --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
@@ -160,13 +161,15 @@ jobs:
               run: npm ci --no-audit --no-fund
 
             # der Anbieter des Laptops für die Stationen, deren KI_ENDPUNKT der lokale Ollama ist (punkte.cjs kiModelle): dieselbe
-            # Adresse, dasselbe Modell — die Station bleibt byte-gleich
+            # Adresse, dasselbe Modell — die Station bleibt byte-gleich. Der Läufer fährt kein systemd: der Dienst startet hier und
+            # lebt bis zum Ende des Jobs
             - name: KI-Anbieter (Ollama mit dem Modell der Scheibe)
               if: matrix.ki != ''
               env:
                   KI: ${{ matrix.ki }}
               run: |
                   curl -fsSL https://ollama.com/install.sh | sh
+                  nohup ollama serve > "$RUNNER_TEMP/ollama.log" 2>&1 &
                   for t in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:11434/api/tags && break; sleep 1; done
                   for m in $KI; do ollama pull "$m"; done
                   ollama list
