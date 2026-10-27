@@ -105,4 +105,4 @@ bereit  z45  hk5-bindung 52e02b30 (Täter fk2-uhr: faunaLifecycle.lastTick reist
 regel   keine-nachtruhe  01:00 Schöpfer: „wir sind Maschinen“ — gpu-schloss.sh ohne Nachtruhe (0325–0415 hielt jede Nacht 50 min beide GPUs leer; den nächtlichen echt-Job schützt die Runner-Vorfahrt). OFFEN: die OMEN-eigene p3/gpu-lauf.sh (ABAB-Serien) trägt die Nachtruhe noch.
 läuft   z45  01:02 hk5-bindung 52e02b30 + sk5-kopie 5a89fc4f (beide eigene CI grün)
 bereit  z46  ek-schleife a5f3f0c7 (Stall war der Fall-Wächter selbst 9,0 → 0,52 s; _voxelEditKarte 4,7 s → 13 ms; CI läuft) · gk2-damm (Wasser-Bild-Heilung läuft) · fzk3/tk3 gelandet
-bereit  cloud-w2f  acht Karten vorgeschlagen: lk2-hang · mk2-mikro · sk5-haus · sk2-zipf · tk1-herde · pk2-bild · pbk4-fahrt (E) · bau-faden (E, Bau-Klick 172 ms Mittel / 401 ms max)
+läuft   cloud-w2f  acht Karten vorgeschlagen: lk2-hang · mk2-mikro · sk5-haus · sk2-zipf · tk1-herde · pk2-bild · pbk4-fahrt (E) · bau-faden (E, Bau-Klick 172 ms Mittel / 401 ms max)
