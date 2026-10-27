@@ -1339,9 +1339,19 @@ function sicherheit(kette, stationen, messungen, richterAm, band = new Map()) {
                 const w = ab.w > 1 ? ab.bei : null;
                 if (a.sha === b.sha) { if (w) aus.rauschen.push(id + " " + g + " an " + a.sha.slice(0, 8) + ": " + w); continue; }
                 aus.paare++;
-                if (!w) continue;
                 const richter = richterAm(b.sha);
                 const gr = richter(st, g, a.sha);
+                // DIE LEERE NACHMESSUNG: das Paar bewegte sich nicht, die Regel hätte es dennoch neu gemessen
+                if (!w) {
+                    aus.ruhig = (aus.ruhig || 0) + 1;
+                    if (gr.length) aus.ruhigAltR6d = (aus.ruhigAltR6d || 0) + 1;
+                    // die Klasse der Gründe einer leeren Nachmessung (domaene:<d> · kern · werkzeug · menge · genannt · kanarie)
+                    aus.leerKlasse = aus.leerKlasse || {};
+                    for (const k of new Set(gr.map((x) => x.startsWith("domaene:") ? x : x.replace(/[:→ ].*$/, ""))))
+                        aus.leerKlasse[k] = (aus.leerKlasse[k] || 0) + 1;
+                    if (richter.aendZwischen(a.sha, b.sha).some((x) => !x.werkzeug && trifftPfad(x.datei, st.pfad))) aus.ruhigAltR6 = (aus.ruhigAltR6 || 0) + 1;
+                    continue;
+                }
                 const r6 = richter.aendZwischen(a.sha, b.sha).filter((x) => !x.werkzeug && trifftPfad(x.datei, st.pfad));
                 const z = id + " " + g + " " + a.sha.slice(0, 8) + "→" + b.sha.slice(0, 8) + ": " + w;
                 aus.bewegt.push(z + " · R6d " + (gr.join(", ") || "—") + " · R6 " + (r6.length ? "alt" : "frisch"));
@@ -1389,6 +1399,8 @@ function altCli(opt) {
         const band = rauschBand(stationen);
         const b = sicherheit(kette, stationen, ms, richterAm, band);
         console.log("SICHERHEIT " + b.paare + " Mess-Paare an verschiedenen Köpfen · bewegt " + b.bewegt.length + " · verpasst R6d " + b.verpasst.length + " · verpasst R6 " + b.verpasstR6.length + " · nicht alt, aber im Rausch-Band " + b.imRauschen.length + " · Abdruck gewechselt " + b.fremd + " · Lauf-Bruch " + b.bruch);
+        console.log("LEERE NACHMESSUNG " + (b.ruhig || 0) + " Paare ohne Bewegung · davon alt nach R6 " + (b.ruhigAltR6 || 0) + " · nach R6d " + (b.ruhigAltR6d || 0) +
+            " · Gründe R6d (je Paar jede Klasse einmal): " + Object.entries(b.leerKlasse || {}).sort((x, y) => y[1] - x[1]).map(([k, n]) => k + " " + n).join(" · "));
         console.log("RAUSCH-BAND " + band.size + " Stationen mit Mess-Paaren am gleichen SHA, davon " + [...band.values()].filter((x) => x.w > 1).length + " über der Toleranz: " + [...band.entries()].filter(([, x]) => x.w > 1).map(([k, x]) => k + " (" + x.beleg + ")").join(" · "));
         // eine Kanarie, die am gleichen SHA über ihre Toleranz springt, ist kein Zeuge des Kerns (sie machte bei jedem Kern-Zug ihre
         // Domänen alt) — ROT beim Namen
@@ -1902,6 +1914,74 @@ async function selbsttest() {
         pruef("GRUPPEN Zwillinge in EINEM Lauf, Reihe von nur, nur Gelistete, eine Station eines anderen Geräts ist ROT",
             g1 === "b.K1#1 a.K1#2+d.K1#1" && g2 === "a.K1#1+a.K1#2+d.K1#1 b.K1#1" && /c.K1#1: keine Station auf gtx/.test(wirft), JSON.stringify([g1, g2, wirft]));
     }
+    // (9) R6d — je Regel ein Fall beim Namen, dazu die Tafel, der Diff und „verpasste Änderung ist ROT“
+    {
+        const mods = [...new Set([...Object.values(TAFEL.DOMAENEN), TAFEL.KERN].flatMap((e) => e.module || []))];
+        const kids = [...new Set([...Object.values(TAFEL.DOMAENEN), TAFEL.KERN].flatMap((e) => e.kerne || []))];
+        const man = kids.map((id) => ({ id, scripts: [id + "-core.js"] }));
+        const karte = domaenenKarte({ ordnung: mods.map((m) => [m, ""]) }, man);
+        pruef("R6D TAFEL die echte Tafel über ihre eigenen Module und Kerne ohne Fehler", karte.fehler.length === 0, karte.fehler.join(" | "));
+        const k2 = domaenenKarte({ ordnung: [...mods, "Neu/modul"].map((m) => [m, ""]) }, [...man, { id: "neu", scripts: ["neu-core.js"] }]);
+        pruef("R6D TAFEL ein Modul und ein Kern ohne Domäne beim Namen, eine fremde Welt-Datei unzugeordnet",
+            k2.fehler.some((f) => /Modul Neu\/modul/.test(f)) && k2.fehler.some((f) => /Kern neu/.test(f)) && k2.unzugeordnet(["stamm/neu-modul.js", "stamm/klang.js", "scripts/x.cjs", ".claude/a.md"]).join() === "stamm/neu-modul.js", k2.fehler.join(" | "));
+        const diffT = ["diff --git a/index.html b/index.html", "@@ -1 +1 @@", '-<script src="a.js?v=1"></script>', '+<script src="a.js?v=2"></script>',
+            "diff --git a/stamm/klang.js b/stamm/klang.js", "@@ -1,2 +1,3 @@", "-a();", "-b();", "+a(1);", "+b();", "+c();",
+            "diff --git a/scripts/diag-licht.cjs b/scripts/diag-licht.cjs", "@@ -1 +1 @@", "-x", "+y"].join("\n");
+        const ae = aenderungen("index.html\nstamm/klang.js\nscripts/diag-licht.cjs", diffT);
+        pruef("R6D DIFF Stempel fällt, Zeilen gezählt, Werkzeug markiert (R6 liest denselben Diff)",
+            JSON.stringify(ae) === JSON.stringify([{ datei: "stamm/klang.js", zeilen: 3, werkzeug: false }, { datei: "scripts/diag-licht.cjs", zeilen: 2, werkzeug: true }]) &&
+            weltDateien("index.html\nstamm/klang.js\nscripts/diag-licht.cjs", diffT).join() === "stamm/klang.js", JSON.stringify(ae));
+        const L = { kriterium: "licht.K2", staffel: 1, geraet: "radeon", gpu: true, zeit: false, befehl: ["node", "scripts/diag-licht.cjs"], pfad: ["stamm/bild-*.js", "scripts/lib/welt-boot.cjs"], quelle: "q", minuten: 1 };
+        const C = { ...L, kriterium: "material.K3", kanarie: true };
+        const ctx = (u = "haelt", genannt = []) => ({ karte, genannt: new Set(genannt), kanarien: [C], kanarieUrteil: () => (u === "bewegt" ? { status: u, was: "Zahl 1 → 2" } : { status: u }) });
+        const A = (datei, zeilen = 3) => ({ datei, zeilen, werkzeug: WERKZEUG_PFAD.test(datei) });
+        let g = r6dGruende(L, [A("stamm/bild-himmel.js")], ctx());
+        const g1b = r6dGruende(L, [A("stamm/klang.js")], ctx());
+        pruef("R6D REGEL 1 domaene: eigene Domäne alt, fremde Domäne frisch", g.join() === "domaene:licht" && g1b.length === 0, g.join() + " | " + g1b.join());
+        const gh = r6dGruende(L, [A("gelaende-core.js")], ctx("haelt"));
+        const gb = r6dGruende(L, [A("gelaende-core.js")], ctx("bewegt"));
+        const ga = r6dGruende(L, [A("stamm/dirigent-kern.js")], ctx("aus"));
+        const gk = r6dGruende(C, [A("gelaende-core.js")], ctx("haelt"));
+        pruef("R6D REGEL 2 kern: Kanarie hält → frisch, bewegt → alt beim Namen, ungemessen → wartet, die Kanarie selbst misst",
+            gh.length === 0 && /^kern→kanarie:material.K3#1 \(Zahl 1 → 2\)$/.test(gb.join()) && nurWarten(ga) && /ausstehend$/.test(ga.join()) && gk.join() === "kanarie:gelaende-core.js",
+            [gh, gb, ga, gk].map((x) => x.join()).join(" | "));
+        const gw = r6dGruende(L, [A("scripts/diag-licht.cjs")], ctx());
+        const gf = r6dGruende(L, [A("scripts/diag-anders.cjs")], ctx());
+        const gt = r6dGruende(L, [A("scripts/lib/welt-boot.cjs")], ctx("haelt"));
+        const gtb = r6dGruende(L, [A("scripts/lib/welt-boot.cjs")], ctx("bewegt"));
+        pruef("R6D REGEL 3 werkzeug: die eigene Linse alt, eine fremde nicht, geteiltes Werkzeug entscheiden die Kanarien",
+            gw.join() === "werkzeug:scripts/diag-licht.cjs" && gf.length === 0 && gt.length === 0 && /^kern→kanarie:material.K3#1/.test(gtb.join()), [gw, gf, gt, gtb].map((x) => x.join()).join(" | "));
+        const gm = r6dGruende(L, [A("stamm/klang.js", TAFEL.MENGE.zeilen + 1)], ctx());
+        const gm0 = r6dGruende(L, [A("stamm/klang.js", TAFEL.MENGE.zeilen)], ctx());
+        pruef("R6D REGEL 4 menge: eine fremde Domäne über der Schwelle macht alt, an der Schwelle nicht",
+            gm.join() === "menge:klang " + (TAFEL.MENGE.zeilen + 1) + "/" + TAFEL.MENGE.zeilen && gm0.length === 0, gm.join() + " | " + gm0.join());
+        const gn = r6dGruende(L, [], ctx("haelt", ["licht.K2"]));
+        pruef("R6D REGEL 5 genannt: ein Kriterium, das der Zug nennt, ist alt ohne jede Datei", gn.join() === "genannt", gn.join());
+        // die Buchung nimmt R6d: alt beim Namen → 0, frisch → 1, nur ausstehend → wartet
+        const s1 = { ...L, kriterium: "gelaende.K4", pfad: ["stamm/wasser-*.js"] };
+        const Mx = [{ sha: "a1", geraet: "radeon", je: { "gelaende.K4#1": { gruen: true, zahl: "z", zeit: "2026-10-27T10:00:00Z", abdruck: abdruck(s1, "hilfe"), gpu: "amd/rdna-3" } } }];
+        const bAlt = buchen("kopf", [s1], Mx, () => [], "hilfe", [], { r6d: () => ["domaene:gelaende"] });
+        const bFr = buchen("kopf", [s1], Mx, () => ["stamm/wasser-hydro.js"], "hilfe", [], { r6d: () => [] });
+        const w = frischUrteil(Mx, () => [], "hilfe", { r6d: () => ["kern→kanarie:x#1 ausstehend"] })(s1, "radeon");
+        pruef("R6D BUCHUNG alt beim Namen → 0, frisch trotz R6-Treffer → 1, nur ausstehend → wartet",
+            bAlt.je["gelaende.K4"].punkte === 0 && /R6d: domaene:gelaende/.test(bAlt.je["gelaende.K4"].beleg) && bFr.je["gelaende.K4"].punkte === 1 && w.warten === true,
+            bAlt.je["gelaende.K4"].beleg + " | " + bFr.je["gelaende.K4"].beleg + " | " + JSON.stringify(w));
+        // DER SICHERHEITS-BEWEIS: eine bewegte Station, die R6d nicht alt nennt, ist VERPASST; im Rausch-Band nicht
+        const stub = (gr) => { const r = () => gr; r.aendZwischen = () => []; return r; };
+        const P = [{ sha: "a", geraet: "radeon", je: { "licht.K2#1": { gruen: true, zahl: "Luma 10", zeit: "1", abdruck: "x" } } },
+            { sha: "b", geraet: "radeon", je: { "licht.K2#1": { gruen: true, zahl: "Luma 20", zeit: "2", abdruck: "x" } } }];
+        const v0 = sicherheit(["a", "b"], [L], P, () => stub([]));
+        const v1 = sicherheit(["a", "b"], [L], P, () => stub(["domaene:licht"]));
+        const v2 = sicherheit(["a", "b"], [L], P, () => stub([]), new Map([["licht.K2#1", { w: Infinity, beleg: "radeon an c: Urteil GRÜN → ROT" }]]));
+        pruef("R6D VERPASST eine bewegte Station ohne R6d-Grund ist ROT beim Namen, mit Grund GRÜN, im Rausch-Band der Station kein Täter",
+            v0.verpasst.length === 1 && /^licht.K2#1 radeon a→b: Zahl 10 → 20/.test(v0.verpasst[0]) && v1.verpasst.length === 0 && v2.verpasst.length === 0 && v2.imRauschen.length === 1,
+            [v0.verpasst, v1.verpasst, v2.imRauschen].map((x) => x.join()).join(" | "));
+        const lb = abstand({ gruen: true, zahl: "Deckel 480 s überschritten — beendet" }, { gruen: true, zahl: "x" }, L);
+        pruef("R6D LAUF-BRUCH und Wanduhr: ein Deckel ist Bruch, ms-Zahlen tragen die Zeit-Toleranz",
+            bruch({ zahl: "Deckel 480 s überschritten — beendet" }) && !bruch({ zahl: "Luma 71 (Exit 1)" }) && lb.gestalt === true &&
+            bewegt({ gruen: true, zahl: "p95 40 ms" }, { gruen: true, zahl: "p95 50 ms" }, L) === null && bewegt({ gruen: true, zahl: "Luma 40" }, { gruen: true, zahl: "Luma 50" }, L) !== null,
+            JSON.stringify(lb));
+    }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
     console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length + ")");
@@ -1939,6 +2019,21 @@ if (require.main === module) {
             for (const st of stationen) {
                 const t = toteGlobs(st.pfad, dateien);
                 if (t.length) fehler.push(schluessel(st) + ": " + pfadGrund(t, "am Kopf " + kopf.slice(0, 8)));
+            }
+            // DIE TAFEL R6d am Kopf: jedes Modul, jeder Kern, jede Welt-Datei hat eine Domäne (oder Kern, oder ohne Welt), jeder Bereich
+            // seine Domänen; je Gerät 4–6 Kanarien, zusammen ≤ 15 min (die Minuten ihrer jüngsten Messung)
+            const zeige = (p) => { try { return JSON.parse(git(["show", kopf + ":" + p], repo)); } catch (e) { return null; } };
+            const karte = domaenenKarte(zeige("spec/stamm/modul-karte.json"), zeige("cores.manifest.json"));
+            for (const f of karte.fehler) fehler.push("Tafel R6d: " + f);
+            for (const f of karte.unzugeordnet(dateien)) fehler.push("Tafel R6d: Welt-Datei " + f + " am Kopf " + kopf.slice(0, 8) + " in keiner Domäne, nicht Kern, nicht ohne Welt");
+            for (const st of stationen) if (!domaenenDer(st)) fehler.push(schluessel(st) + ": Bereich " + st.kriterium.split(".")[0] + " fehlt in der Tafel R6d (domaenen.js BEREICHE)");
+            const minK = minutenVon(ladeMessungen());
+            for (const g of GERAETE) {
+                const ks = stationen.filter((c) => c.kanarie && geraeteVon(c).includes(g));
+                const m = ks.reduce((a, c) => a + minK(c, g), 0);
+                const offen = Object.keys(TAFEL.DOMAENEN).filter((d) => !ks.some((c) => (domaenenDer(c) || []).includes(d)));
+                console.log("  KANARIEN " + g + " " + ks.map(schluessel).join(" ") + " · " + m.toFixed(1) + " min · ohne Kanarie: " + (offen.join(" ") || "—"));
+                if (ks.length < 4 || ks.length > 6 || m > 15) fehler.push("Kanarien " + g + ": " + ks.length + " Stationen, " + m.toFixed(1) + " min (Soll 4–6, ≤ 15 min)");
             }
             for (const st of stationen) console.log("  " + schluessel(st) + " · " + geraeteVon(st).join("+") + (st.gpu ? " · GPU" : "") + (st.zeit ? " · Zeit" : " · Bild") + " · " + st.minuten + " min · " + st.befehl.join(" ") + " · " + abdruck(st));
             for (const e of fehlt) console.log("  FEHLT " + e.kriterium + "#" + e.staffel + " · " + String(e.grund).slice(0, 140));
