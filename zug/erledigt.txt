@@ -45,3 +45,4 @@ z49z50b-abab nicht-langsamer abab 6db2602c gegen cd34e72b: w-ego 2+2 nicht-langs
 takt11-gtx gemessen punkte 6db2602c gtx: 37 grün / 4 rot
 takt12-gtx gemessen punkte 9fa32207 gtx: 22 grün / 3 rot
 z52n-abab nicht-langsamer abab 9fa32207 gegen 6db2602c: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+z53-abab nicht-langsamer abab f1faa046 gegen 9fa32207: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
