@@ -1676,6 +1676,46 @@ const stationen = [
         pfad: [...KREATUR],
         quelle: "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt)",
     },
+    // Staffel 2 (Zweig oeko-k2-bestand): die Probe bestand der Kreatur-Linse (Familie der Station #1, Null-Renderer) — der
+    // Bestand ist das Verzeichnis je Region (Kachel der Revier-Fläche, `state.faunaBestand`), ein Leib nur seine Zeichnung. Je
+    // Saat 4 Spielstunden am echten Lebenszyklus, der Spieler an der Ecke von vier Regionen: Grundlauf mit der Kappe des
+    // Spiels (20), Mutante „Kappe halbiert“ (Soll: je Takt und naher Region dieselben Tiere, Leiber ≤ Kappe, der Bestand über
+    // der Kappe), Mutante „Nahrung halbiert“ (Soll: in jeder Region, nah UND fern, Effekt ≤ −15 % mit 95-%-Intervall < 0); vier
+    // ferne Regionen als Zahl gelesen (ohne Leib), kein Leib aus einer fernen Region; der Takt des Lebenszyklus p95 ≤ 5,8 ms
+    // (der CPU-Takt des Profi-Bands). An main fehlt die Probe (ROT „keine Zeile“).
+    {
+        kriterium: "oekologie.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bestand"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "bestand");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bestand (Exit " + lauf.exit + ")" };
+            const [K, N] = [z.kappe, z.nahrung];
+            if (z.fehler || !K || !Array.isArray(N) || !z.ms)
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne Kappe, Nahrung oder Kosten") };
+            const fern = N.slice(z.nah);
+            const senkt = N.filter((o) => o.grund >= 1 && o.effekt <= -0.15 && o.ki[1] < 0).length;
+            const gruen =
+                z.saaten >= 8 && z.nah >= 2 && K.takte > 0 && K.anders === 0 && K.leiber[0] <= 20 && K.leiber[1] <= 10 &&
+                K.bestand > 20 && K.fremd === 0 && fern.length >= 4 && senkt === N.length && z.ms.p95 <= 5.8;
+            return {
+                gruen,
+                zahl:
+                    z.saaten + " Saaten · Kappe halbiert: " + K.anders + " von " + K.takte + " Takten andere Tiere in " + z.nah +
+                    " nahen Regionen, Leiber " + K.leiber.join("/") + " bei Bestand " + K.bestand + " · halbe Nahrung senkt " +
+                    senkt + " von " + N.length + " Regionen (" + fern.length + " fern, Effekt " +
+                    Math.max(...N.map((o) => o.effekt)) + " … " + Math.min(...N.map((o) => o.effekt)) + ") · Takt p95 " +
+                    z.ms.p95 + " ms",
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band",
+    },
     {
         kriterium: "oekologie.K1",
         staffel: 1,
