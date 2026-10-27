@@ -102,3 +102,7 @@ rot     z44  00:20 FAHRT ROT urteil (4f40eb73): gk2-damm brachte rote Gruppen 4/
 läuft   z44b  00:22 tk3-werk 8d132b2f + fzk3-drift 85143934 (Kandidat 5b8603c1)
 gelandet z44b 00:42 5b8603c1 (tk3-werk, fzk3-drift); Nachwache z40z43 nicht-langsamer 3/3; z44b-abab läuft
 bereit  z45  hk5-bindung 52e02b30 (Täter fk2-uhr: faunaLifecycle.lastTick reist nicht mit der Welt-Uhr → Hunger doppelt, der gebundene Fuchs stirbt; Radeon dd0a1c9f → 84864b15) · sk5-kopie 5a89fc4f (Täter sk3-schmelze löst die Reihenfolge-Lücke in _voxelFadenAuftrag aus → water-sheet als Klon; 1,10 → 0,65–0,79 MB/min, Kopie 0,27 → 0) — CI läuft, dann z45
+regel   keine-nachtruhe  01:00 Schöpfer: „wir sind Maschinen“ — gpu-schloss.sh ohne Nachtruhe (0325–0415 hielt jede Nacht 50 min beide GPUs leer; den nächtlichen echt-Job schützt die Runner-Vorfahrt). OFFEN: die OMEN-eigene p3/gpu-lauf.sh (ABAB-Serien) trägt die Nachtruhe noch.
+läuft   z45  01:02 hk5-bindung 52e02b30 + sk5-kopie 5a89fc4f (beide eigene CI grün)
+bereit  z46  ek-schleife a5f3f0c7 (Stall war der Fall-Wächter selbst 9,0 → 0,52 s; _voxelEditKarte 4,7 s → 13 ms; CI läuft) · gk2-damm (Wasser-Bild-Heilung läuft) · fzk3/tk3 gelandet
+bereit  cloud-w2f  acht Karten vorgeschlagen: lk2-hang · mk2-mikro · sk5-haus · sk2-zipf · tk1-herde · pk2-bild · pbk4-fahrt (E) · bau-faden (E, Bau-Klick 172 ms Mittel / 401 ms max)
