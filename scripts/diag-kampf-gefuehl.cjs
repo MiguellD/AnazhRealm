@@ -558,7 +558,8 @@ function bogenK4Taeter(K) {
 // fester Schaden je Sturz fällt an der Reihe, ein Höhen-Zähler am Wurf; die Tod-Lage ist bei 60 Hz mit Leerlauf und 15 Hz
 // ohne ihn bei 0,6 s gleich (≤ 0,5° · 0,5 cm) und kippt; der Wolf tötet über den Biss, die Rückkehr am Anker trägt Leben,
 // Wunde, Gnade, Lebens-Spur, Seele, Trauer und Journal; Inventar und Bindung überstehen den Tod, der Abdruck nach dem Reload
-// gleicht dem vor dem Speichern je Teil. Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
+// gleicht dem vor dem Speichern je Teil, das Alter des Fuchses eingeschlossen (das erste Bild der Wiederkehr zählt keinen Takt
+// des Lebens nach). Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
 const hash = (o) => require("crypto").createHash("sha256").update(JSON.stringify(o)).digest("hex").slice(0, 12);
 const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
 function k5Verdict(K) {
@@ -577,16 +578,18 @@ function k5Verdict(K) {
         tod: tod.q === "jagd" && tod.rueckkehr.every(Boolean) && tod.anker < 2,
         "tod-zustand": !!N.bindung && gleich(V, N, "inventar") && gleich(V, N, "bindung"),
     };
-    for (const t of ["ort", "inventar", "leben", "bindung"]) soll["wiederkehr-" + t] = gleich(N, K.nachReload, t);
+    for (const t of ["ort", "inventar", "leben", "bindung", "alter"])
+        soll["wiederkehr-" + t] = gleich(N, K.nachReload, t);
     return Object.keys(soll).filter((x) => !soll[x]);
 }
-// der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, der Abdruck der geladenen Welt
+// der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, das erste Bild der geladenen Welt (ohne
+// Bild-Schleife von Hand, `__seitenTakt`), ihr Abdruck
 async function k5Lauf(page) {
     const k5 = await page.evaluate(`(${K5_VOR})(${K5_ABDRUCK})`);
     await sleep(1500);
     await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
     await warteAufWelt(page, 180000);
-    k5.nachReload = await page.evaluate(K5_ABDRUCK);
+    k5.nachReload = await page.evaluate(`window.__seitenTakt().then(${K5_ABDRUCK})`);
     return k5;
 }
 // die Zahl: der Hash des gespeicherten und des geladenen Abdrucks, dann die ganze Probe (Zahlen auf Tausendstel)
@@ -725,22 +728,23 @@ const NUR_K5 = process.argv.includes("--k5");
             const p = s.player;
             const pm = s.playerMesh;
             if (!p || !pm) return { error: "kein Spieler" };
-            const saved = {
-                yaw: s.yaw,
-                equipped: p.equipped,
-                swing: p._swing,
-                hitStop: p._hitStopUntil,
-                landImpact: s._landImpactPending,
-                lastAttackAt: p.lastAttackAt,
-                maxCreatures: s.maxCreatures,
-                vel: s.playerVel,
-                uw: s.playerUnderwater,
-                mounted: p.mountedArch,
-                walkPhase: p.walkPhase,
-                gaitW: p._gaitW,
-                lastTick: p.animationLastTick,
-                soul: p.soul,
-            };
+            // der Stand der Bühne, je Feld [Halter, Name] — am Ende kehrt jedes zurück
+            const BUEHNE = [
+                [s, "yaw"],
+                [p, "equipped"],
+                [p, "_swing"],
+                [p, "_hitStopUntil"],
+                [s, "_landImpactPending"],
+                [p, "lastAttackAt"],
+                [s, "maxCreatures"],
+                [s, "playerVel"],
+                [s, "playerUnderwater"],
+                [p, "mountedArch"],
+                [p, "walkPhase"],
+                [p, "_gaitW"],
+                [p, "animationLastTick"],
+            ];
+            const saved = Object.fromEntries(BUEHNE.map(([h, k]) => [k, h[k]]));
             blu._kg_klinge = leicht;
             p.equipped = { held: "_kg_klinge" };
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
@@ -876,7 +880,7 @@ const NUR_K5 = process.argv.includes("--k5");
             };
             o.checks.cGangFriert = gehe(6000, 30) === 0 && o.handM[0] === 0;
             // (C3) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (Fixed-Akku-Probe)
-            s.playerVel = saved.vel; // die Sim braucht den ECHTEN Body (kein Stub)
+            s.playerVel = saved.playerVel; // die Sim braucht den ECHTEN Body (kein Stub)
             const simT0 = s._fixedSimTime;
             const steps1 = r._loopFixedStep(0.05, performance.now() / 1000);
             const steps2 = r._loopFixedStep(0.05, performance.now() / 1000 + 0.05);
@@ -963,19 +967,7 @@ const NUR_K5 = process.argv.includes("--k5");
             o.checks.todKipptStattDespawn = ruft(() => r._kreaturFaellt(cRuecken), "_fieldGradient") && absenzTod;
             for (const c of [cNeben, cRuecken]) if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener
             delete blu._kg_klinge;
-            s.yaw = saved.yaw;
-            p.equipped = saved.equipped;
-            p._swing = saved.swing;
-            p._hitStopUntil = saved.hitStop;
-            s._landImpactPending = saved.landImpact;
-            p.lastAttackAt = saved.lastAttackAt;
-            s.maxCreatures = saved.maxCreatures;
-            s.playerVel = saved.vel;
-            s.playerUnderwater = saved.uw;
-            p.mountedArch = saved.mounted;
-            p.walkPhase = saved.walkPhase;
-            p._gaitW = saved.gaitW;
-            p.animationLastTick = saved.lastTick;
+            for (const [h, k] of BUEHNE) h[k] = saved[k];
 
             return o;
         });
