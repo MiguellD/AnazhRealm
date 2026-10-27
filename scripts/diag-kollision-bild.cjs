@@ -255,7 +255,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
@@ -969,10 +969,8 @@ async function tempo(K) {
 (async () => {
     console.log("=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 900000 });
     page.setDefaultTimeout(880000);
-    await nullRenderer(page);
     let befund = null;
     try {
         await server.zeige(page, 120000);

@@ -2031,6 +2031,20 @@
         }
         return top;
     }
+    // DIE HÖHE MIT EDITS (die Ferne, gelaende.K2 (d)): die oberste Fläche über (x, z) einer Höhe h ohne Edits nach den Säulen
+    // der Liste (Setz-Reihenfolge; die Form `editForm`: Radius r, halbe Höhe r, oben und unten eben) — eine Füllung hebt sie auf
+    // ihre Krone (y + r), ein Graben, dessen Säule die Fläche öffnet, senkt sie auf seinen Grund (y − r) — ohne die Kehle der
+    // Vereinigung (`rundM`: wo zwei Füllungen sich treffen, trägt die Dichte die Krone bis 0,41 m höher). Leser: die Nässe der
+    // Ferne (`fernNass`, Stamm `_fernNass`) — der Fern-Ring trägt jeden Edit, der Kern rechnet ihn einmal für Faden und Stamm.
+    function editHoehe(h, x, z, edits) {
+        for (let i = 0; edits && i < edits.length; i++) {
+            const e = edits[i];
+            if (!e || !(e.r > 0) || (x - e.x) ** 2 + (z - e.z) ** 2 > e.r * e.r) continue;
+            if (e.mode === "fill") h = Math.max(h, e.y + e.r);
+            else if (e.y + e.r >= h && e.y - e.r < h) h = e.y - e.r;
+        }
+        return h;
+    }
     // DER PUNKT: die Dichte über `basis` an (x, y, z) mit den Edits `edits` (Setz-Reihenfolge; ohne Liste die Basis) —
     // max(1, |Basis|/tiefeM) · n: stetig, gleich der Basis, wo kein Edit sie ändert, um jede Säule ihr Abstand (die Wand-Proben
     // des Leibs lesen ihn).
@@ -5436,6 +5450,183 @@
         }
         return -Infinity;
     }
+    // DER STAU (gelaende.K2 (b)): der Spiegel des Stausees hinter einem Werk (Damm aus Füllungen, ein geerdeter Bau) an (x, z) —
+    // die Stau-Felder der Lage (`L.stau`, je Feld ein Spalten-Fenster `gx0`/`gz0`/`w`/`h` der Kante `step` mit dem gehaltenen
+    // Pegel `fillY`, NaN wo er nichts hebt), über dem Boden `boden` (−Infinity: jeder Pegel, Infinity: keiner); −Infinity ohne.
+    // Ein stehender Körper wie See und Meer: der Spiegel des Kerns trägt ihn (`atlasSpiegel`), jeder Leser liest ihn mit. Die
+    // Felder rechnet jeder Faden (`stauFelder`: der Überlauf aus Werk und Feld-Boden), nie der Haupt-Faden.
+    function stauSpiegel(L, x, z, boden) {
+        const felder = L.stau;
+        let y = -Infinity;
+        for (let n = 0; felder && n < felder.length; n++) {
+            const f = felder[n];
+            const i = Math.floor(x / f.step) - f.gx0;
+            const k = Math.floor(z / f.step) - f.gz0;
+            if (i < 0 || k < 0 || i >= f.w || k >= f.h) continue;
+            const v = f.fillY[i + k * f.w];
+            if (v > y && !(boden >= v)) y = v;
+        }
+        return y;
+    }
+    // DER ÜBERLAUF (Priority-Flood, gelaende.K2 (b)): `barrier[c]` = die Höhe, über der Wasser die Spalte c passiert, `init[c]`
+    // = der Halte-Pegel der Außenwelt am Fensterrand (innen +Infinity) → je Spalte die niedrigste Fluchthöhe nach außen
+    // (Relaxation fill[nb] = max(fill[cur], barrier[nb]) über einen Min-Heap).
+    function stauUeberlauf(barrier, w, h, init) {
+        const n = w * h;
+        const fill = new Float64Array(n);
+        const heap = new Int32Array(n + 1);
+        const pos = new Int32Array(n).fill(-1);
+        let size = 0;
+        const less = (a, b) => fill[a] < fill[b];
+        const swap = (i, j) => {
+            const t = heap[i];
+            heap[i] = heap[j];
+            heap[j] = t;
+            pos[heap[i]] = i;
+            pos[heap[j]] = j;
+        };
+        const up = (i) => {
+            while (i > 1 && less(heap[i], heap[i >> 1])) {
+                swap(i, i >> 1);
+                i >>= 1;
+            }
+        };
+        const down = (i) => {
+            for (;;) {
+                let m = i;
+                const l = i * 2;
+                const r = l + 1;
+                if (l <= size && less(heap[l], heap[m])) m = l;
+                if (r <= size && less(heap[r], heap[m])) m = r;
+                if (m === i) break;
+                swap(i, m);
+                i = m;
+            }
+        };
+        for (let c = 0; c < n; c++) {
+            fill[c] = init[c];
+            if (Number.isFinite(init[c])) {
+                heap[++size] = c;
+                pos[c] = size;
+                up(size);
+            }
+        }
+        const done = new Uint8Array(n);
+        const NDX = [1, -1, 0, 0];
+        const NDZ = [0, 0, 1, -1];
+        while (size > 0) {
+            const cur = heap[1];
+            heap[1] = heap[size--];
+            if (size > 0) {
+                pos[heap[1]] = 1;
+                down(1);
+            }
+            pos[cur] = -1;
+            if (done[cur]) continue;
+            done[cur] = 1;
+            const ci = cur % w;
+            const ck = (cur / w) | 0;
+            for (let d = 0; d < 4; d++) {
+                const ni = ci + NDX[d];
+                const nk = ck + NDZ[d];
+                if (ni < 0 || nk < 0 || ni >= w || nk >= h) continue;
+                const nb = ni + nk * w;
+                if (done[nb]) continue;
+                const cand = Math.max(fill[cur], barrier[nb]);
+                if (cand < fill[nb]) {
+                    fill[nb] = cand;
+                    if (pos[nb] >= 0) up(pos[nb]);
+                    else {
+                        heap[++size] = nb;
+                        pos[nb] = size;
+                        up(size);
+                    }
+                }
+            }
+        }
+        return fill;
+    }
+    // DER SPIEGEL AM WERK: das Wasser an der Mitte des Werks `cl` (−Infinity: es steht nicht über Wasser und hält keines) —
+    // das Feld (`stauFeld`) und die Auswahl der Werke, die der Stamm den Fäden schickt (`_stauFelder`), lesen ihn.
+    function stauWerkY(L, cl) {
+        return atlasSpiegel(L, (cl.minX + cl.maxX) * 0.5, (cl.minZ + cl.maxZ) * 0.5, -Infinity);
+    }
+    // DAS FELD EINES WERKS (`stauFelder`): ein Fenster in Welt-Spalten (gx = floor(x/step), das Werk ± REACH, höchstens WIN_MAX)
+    // — die Sperre jeder Spalte ist der Boden `boden(x, z)` (der Boden des Feldes samt Edits: ein Damm aus Füllungen steht
+    // darin) oder die Krone eines Baus, der sie deckt; der Rand gibt das Wasser nur frei, wo es fließt: nass auf seinem Spiegel,
+    // wo der nicht über dem Spiegel am Werk liegt (stromab; stromauf fließt es zu, über trockenem Rand reicht der See weiter,
+    // beides hält). Der Überlauf ist der Pegel jeder Spalte; gehalten (`fillY`) ist er dort, wo er über dem Boden und über dem
+    // Spiegel des Gesetzes liegt, verbunden mit einer gehobenen Wasser-Spalte (eine trockene Mulde daneben bleibt trocken).
+    // null, wenn das Werk nicht über Wasser steht oder nichts hebt.
+    function stauFeld(L, cl, CFG, step, boden) {
+        const werkY = stauWerkY(L, cl);
+        if (!(werkY > -Infinity)) return null;
+        let gx0 = Math.floor(cl.minX / step) - CFG.REACH;
+        let gx1 = Math.floor(cl.maxX / step) + CFG.REACH;
+        let gz0 = Math.floor(cl.minZ / step) - CFG.REACH;
+        let gz1 = Math.floor(cl.maxZ / step) + CFG.REACH;
+        if (gx1 - gx0 + 1 > CFG.WIN_MAX) gx1 = (gx0 = ((gx0 + gx1) >> 1) - (CFG.WIN_MAX >> 1)) + CFG.WIN_MAX - 1;
+        if (gz1 - gz0 + 1 > CFG.WIN_MAX) gz1 = (gz0 = ((gz0 + gz1) >> 1) - (CFG.WIN_MAX >> 1)) + CFG.WIN_MAX - 1;
+        const w = gx1 - gx0 + 1;
+        const h = gz1 - gz0 + 1;
+        const barrier = new Float64Array(w * h);
+        const basis = new Float64Array(w * h);
+        const init = new Float64Array(w * h).fill(Infinity);
+        for (let c = 0; c < w * h; c++) {
+            const ix = c % w;
+            const kz = (c / w) | 0;
+            const x = (gx0 + ix + 0.5) * step;
+            const z = (gz0 + kz + 0.5) * step;
+            let bY = boden(x, z);
+            for (const b of cl.bauten)
+                if (x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ) bY = Math.max(bY, b.topY);
+            barrier[c] = bY;
+            basis[c] = atlasSpiegel(L, x, z, bY);
+            if (ix === 0 || kz === 0 || ix === w - 1 || kz === h - 1)
+                init[c] = basis[c] > -Infinity && basis[c] <= werkY + 0.05 ? basis[c] : Infinity;
+        }
+        const fill = stauUeberlauf(barrier, w, h, init);
+        const fillY = new Float32Array(w * h).fill(NaN);
+        const hebt = (c) => fill[c] < Infinity && fill[c] > barrier[c] + 0.01 && fill[c] > basis[c] + 0.01;
+        const offen = [];
+        for (let c = 0; c < w * h; c++) if (basis[c] > -Infinity && hebt(c)) offen.push(c);
+        for (const c of offen) fillY[c] = fill[c];
+        while (offen.length) {
+            const c = offen.pop();
+            const ix = c % w;
+            for (const nb of [ix > 0 ? c - 1 : -1, ix < w - 1 ? c + 1 : -1, c - w, c + w])
+                if (nb >= 0 && nb < w * h && !(fillY[nb] === fillY[nb]) && hebt(nb))
+                    (offen.push(nb), (fillY[nb] = fill[nb]));
+        }
+        return fillY.some((v) => v === v) ? { gx0, gz0, w, h, step, fillY } : null;
+    }
+    // DIE FELDER DES STAUS (gelaende.K2 (b), gelesen von `stauSpiegel` über `L.stau`): je Werk der Werke `werke` (die Cluster
+    // des Stamms `_stauWorkClusters`: Kasten minX/maxX/minZ/maxZ, Krone topY, Bauten `bauten`, Schlüssel `key`) sein Feld
+    // (`stauFeld`, Regel `CFG` = CA_STAU des Stamms, Spalten-Kante `step`, Boden `boden`) an der Lage L, die dabei das Gesetz
+    // ohne Stau liest (der Rufer hält `L.stau` leer). Gerechnet im Faden (voxel-worker `stauRechnen`, Lehre 14), nie im
+    // Haupt-Faden. `merk` (oder null) ist der Stand der letzten Rechnung über der Edit-Liste `edits` und der Zahl der
+    // Hydro-Kacheln `kacheln`: neu gerechnet wird nur ein neues Werk oder eines, in dessen Fenster ein neuer Edit reicht, und
+    // jedes, wenn eine Kachel kam (ihr Wasser kann ein Werk tragen). → { felder, anders, merk }: `anders` die Felder, die
+    // kamen, fielen oder neu gerechnet sind (ihre Zellen fallen).
+    function stauFelder(L, werke, CFG, step, boden, merk, edits, kacheln) {
+        const m = merk || { je: new Map(), edits: null, n: 0, kacheln: -1 };
+        const neu = m.edits === edits && m.kacheln === kacheln ? edits.slice(m.n) : null;
+        const R = CFG.REACH * step;
+        const je = new Map();
+        const anders = [];
+        for (const cl of werke) {
+            const alt = m.je.get(cl.key);
+            const fern = (e) => {
+                const r = R + editReich(e);
+                return e.x + r < cl.minX || e.x - r > cl.maxX || e.z + r < cl.minZ || e.z - r > cl.maxZ;
+            };
+            if (alt !== undefined && neu && neu.every(fern)) je.set(cl.key, alt);
+            else anders.push(alt, je.set(cl.key, stauFeld(L, cl, CFG, step, boden)).get(cl.key));
+        }
+        for (const [key, alt] of m.je) if (!je.has(key)) anders.push(alt);
+        const felder = [...je.values()].filter(Boolean);
+        return { felder, anders: anders.filter(Boolean), merk: { je, edits, n: edits.length, kacheln } };
+    }
     // der Spiegel des stehenden Wasser-Körpers (Meer, See) der Zelle i einer Region
     function koerperY(h, i) {
         return h.water.waterY[i];
@@ -5505,6 +5696,8 @@
             }
         }
         if (h && h.ready && !inRegion) level = typeof L.waterLevel === "number" ? L.waterLevel : 0;
+        const stau = stauSpiegel(L, x, z, terrainTopY);
+        if (stau > level) level = stau;
         if (aus) aus.koerper = level;
         const river = flussAm(L, x, z);
         if (river && river.surfaceY > level && (terrainTopY !== -Infinity || river.centerness > 0)) level = river.surfaceY;
@@ -5581,6 +5774,7 @@
         editForm: editForm,
         editReich: editReich,
         editKrone: editKrone,
+        editHoehe: editHoehe,
         mitEdits: mitEdits,
         editsImGitter: editsImGitter,
         bandOben: bandOben,
@@ -5644,5 +5838,8 @@
         flussRand: flussRand,
         wasserSpiegel: wasserSpiegel,
         atlasSpiegel: atlasSpiegel,
+        stauUeberlauf: stauUeberlauf,
+        stauWerkY: stauWerkY,
+        stauFelder: stauFelder,
     });
 })(typeof self !== "undefined" ? self : globalThis);

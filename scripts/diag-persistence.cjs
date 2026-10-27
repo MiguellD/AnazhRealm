@@ -19,7 +19,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -498,9 +498,7 @@ function wegDelta([a, aBak], [b, bBak]) {
 }
 const kB = (b) => (b / 1000).toFixed(1) + " kB";
 async function wegLauf(km, min, edits) {
-    const browser = await starteBrowser({ art: "null", frist: 3600000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 3600000 });
     await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
     const { S, abw } = await page.evaluate(wegSeite, km, min, edits);

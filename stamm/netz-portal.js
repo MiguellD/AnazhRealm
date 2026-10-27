@@ -419,7 +419,9 @@ class AnazhRealm_netz_portal {
         // WAS DER SPIELER TRÄGT, REIST MIT (tore.K3): Leib (Seele · Teile einer eigenen Seele · Prägung des Mensch-Rezepts),
         // Inventar (Slots · Hotbar), Gehaltenes (Haupt-, Neben-Hand, Rüstung) und das Werk, auf dem er sitzt (Reittier oder
         // Fahrzeug, `mountedArch`: Art · Gestalt aus Bauplan, Saat, Maß, Tönung und Prägung · die Glut, sein einziger
-        // Lebenswert · die Bindung) — die Bytes des Zustands, nie eine Auswahl; die Hülle drüben hält sie
+        // Lebenswert · die Bindung) und seine Werke (der EINE Prägungs-Speicher je Rezept, in den jedes Studio sein Werk
+        // reicht, `_praegungSetzen` — Rezept · Regler · Same `__gestalt`, der Bau-Hash des Werks: Studio → Welt → Studio
+        // reist es mit) — die Bytes des Zustands, nie eine Auswahl; die Hülle drüben hält sie
         // (`AnazhHuelle.reisender`), gate:portal-konformanz K8 vergleicht vor · drüben · nach der Heimkehr.
         const ov = (this.state.workshop && this.state.workshop.studioOv) || {};
         const ritt = (this.state.architectures || []).find((e) => e.id === player.mountedArch);
@@ -450,6 +452,7 @@ class AnazhRealm_netz_portal {
                       bindung: ritt.id,
                   }
                 : null,
+            werk: ov,
         };
         return payload;
     }

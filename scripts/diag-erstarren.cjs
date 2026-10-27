@@ -27,18 +27,16 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über ERSTARREN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4427.
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     page.setDefaultTimeout(280000);
-    await nullRenderer(page); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     let out = null;
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");

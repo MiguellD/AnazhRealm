@@ -148,29 +148,30 @@ self.onmessage = function (e) {
             });
         } else if (msg.type === "water-sheet") {
             // B1 (V18.345) — der Wasser-Sheet OFF-THREAD (Streaming, CA-frei). Der Main
-            // sendet den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je Uint8Array oder
-            // null), der Worker baut das Sheet (byte-identisch zu `_computeWaterSheetData`)
+            // sendet den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je Verweis, eigene
+            // Zellen oder nichts), der Worker baut das Sheet (byte-identisch zu `_computeWaterSheetData`)
             // + transferiert die Geometrie-Arrays zurück. Main macht nur BufferGeometry +
             // Mesh (`_applyWorkerWaterSheet`). `getDach` undefined → dachlos (der Main baut jede
             // Nachbarschaft mit gezeichnetem Dach selbst, `_waterSheetCaFree`).
-            const { cx, cz, requestId, smoothPasses } = msg;
-            // DIE ZELLEN DES FADENS (Karte hydro-faden): ein Verweis `{ zid }` nimmt die Zellen, die dieser Faden für den Chunk
-            // baute und unverändert beim Main liegen (`zellen`); fehlt einer, nennt die Antwort ihn, und der Main fragt mit
-            // genau diesen Zellen nach (bis zur Karte streaming-k5 mit allen neun: 2,9 MB je Minute Fahrt).
+            const { cx, cz, requestId, smoothPasses, zids, festAb, fest, eigen } = msg;
+            // DIE ZELLEN DES FADENS (Karte hydro-faden): ein Verweis (`zids[i]`, Platz i = (dz+1)·3 + (dx+1)) nimmt die Zellen, die
+            // dieser Faden für den Chunk baute und unverändert beim Main liegen (`zellen`); fehlt einer, nennt die Antwort ihn, und
+            // der Main fragt mit genau diesen Zellen nach (`eigen`; bis zur Karte streaming-k5 mit allen neun: 2,9 MB je Minute
+            // Fahrt). Verweise und Stempel reisen per Transfer (sk5-kopie).
             const fehlt = [];
-            const cells = msg.cells.map((c, i) => {
-                if (!c || !(c.zid > 0)) return c;
+            const cells = Array.from({ length: 9 }, (_, i) => {
+                if (!(zids[i] > 0)) return eigen[i] || null;
                 const z = (zellen.get(cx + ((i % 3) - 1) + "," + (cz + ((i / 3) | 0) - 1)) || []).find(
-                    (b) => b.zid === c.zid
+                    (b) => b.zid === zids[i]
                 );
                 if (!z) {
                     fehlt.push(i);
                     return null;
                 }
-                if (!c.fest) return z.cells;
+                if (festAb[i + 1] === festAb[i]) return z.cells;
                 // der Architektur-Stempel des Mains: seine Zellen sind fest (`_stampArchitectureSolidCellsInto`)
                 const k = z.cells.slice();
-                for (let j = 0; j < c.fest.length; j++) k[c.fest[j]] = CELL_STATE.SOLID;
+                for (let j = festAb[i]; j < festAb[i + 1]; j++) k[fest[j]] = CELL_STATE.SOLID;
                 return k;
             });
             if (fehlt.length) {
@@ -254,15 +255,33 @@ self.onmessage = function (e) {
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+        } else if (msg.type === "stau") {
+            // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
+            // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,
+            // deren Zellen fallen; ein Neben-Faden behält sie nur
+            const r = stauRechnen(msg);
+            if (msg.requestId) {
+                const anders = r ? r.anders.map(({ gx0, gz0, w, h, step }) => ({ gx0, gz0, w, h, step })) : [];
+                const felder = anders.length
+                    ? r.felder.map((f) => Object.assign({}, f, { fillY: f.fillY.slice() }))
+                    : null;
+                self.postMessage(
+                    { type: "stau-result", requestId: msg.requestId, welt: msg.welt, felder, anders },
+                    felder ? felder.map((f) => f.fillY.buffer) : []
+                );
+            }
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
     } catch (err) {
+        // der Stapel reist mit (`stapel`): der Main wirft ihn weiter, jede Linse nennt die Zeile im Faden, die warf (z44: die
+        // Meldung „reading '0'“ allein verbarg `fernAuftrag`)
         self.postMessage({
             type: "error",
             op: msg.type,
             requestId: msg.requestId || null,
             message: String(err && err.message ? err.message : err),
+            stapel: err && err.stack ? String(err.stack) : null,
         });
     }
 };
@@ -539,6 +558,7 @@ waldTakt.port1.onmessage = () => {
             op: msg.type,
             requestId: msg.requestId || null,
             message: String(err && err.message ? err.message : err),
+            stapel: err && err.stack ? String(err.stack) : null,
         });
     }
     waldWecken();
@@ -745,6 +765,9 @@ function applyStateSnapshot(snap) {
     }
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
+    // DER STAU DER WERKE (gelaende.K2 (b)): ein Faden, der nach dem Stau geboren wurde, bekommt die Felder im Stand; danach
+    // rechnet er sie selbst (`stauRechnen`) — der Spiegel des Kerns liest sie (`L.stau`)
+    if (snap.stau !== undefined) state.stau = snap.stau;
     if (snap.hydroGesetz) state.hydroGesetz = snap.hydroGesetz;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
@@ -823,6 +846,38 @@ function terrainDensityAtCol(x, y, z, ctx) {
 // die EINE Punkt-API: die Dichte an (x, y, z) samt Edits
 function terrainDensityAt(x, y, z) {
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
+}
+
+// DER STAU IM FADEN (gelaende.K2 (b), Lehre 14): die Felder der Werke (gelaende-core `stauFelder`) an DIESEM Zustand — der
+// Auftrag des Mains (`_stauFelder`: die Werke, die Regel `CA_STAU`) reist über den EINEN Sender an jeden Faden, jeder rechnet ihn
+// an derselben Stelle seiner Reihe (das Gedächtnis `stauMerk` je Faden). Der Boden ist der des Feldes (`voxelSurfaceY`, sonst
+// die Höhe), wie im Stamm; während der Rechnung liest die Lage das Gesetz ohne Stau. Ohne Hydrosphäre hält kein Werk Wasser.
+let stauMerk = null;
+function stauRechnen(msg) {
+    const h = state.hydrosphere;
+    if (!(h && h.ready)) return null;
+    const alt = state.stau;
+    state.stau = null;
+    let r;
+    try {
+        const boden = (x, z) => voxelSurfaceY(x, z) ?? G.hoehe(state, x, z, true);
+        const kacheln = state.hydroTiles ? state.hydroTiles.size : 0;
+        r = G.stauFelder(
+            state,
+            msg.werke,
+            msg.gesetz,
+            voxelChunkConfig(0).step,
+            boden,
+            stauMerk,
+            state.voxelEdits || [],
+            kacheln
+        );
+    } finally {
+        state.stau = alt;
+    }
+    stauMerk = r.merk;
+    state.stau = r.felder;
+    return r;
 }
 
 // DIE REGION ENTSTEHT IM FADEN (Karte hydro-faden): das Gesetz `hydrosphaere` des Gelände-Kerns an DIESEM Zustand, die
@@ -3333,7 +3388,8 @@ function fernNass(x, z, law, wl, aus) {
         aus.spiegel = wl;
         return law < wl;
     }
-    const y = G.gewaesserForm(law, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
+    const edits = state.voxelEdits && state.voxelEdits.length ? G.editsAm(editKarteFrisch(), x, z) : null;
+    const y = G.editHoehe(G.gewaesserForm(law, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z)), x, z, edits);
     aus.y = y;
     atlasWaterLevelAt(x, z, y, aus);
     aus.spiegel = aus.koerper;
