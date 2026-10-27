@@ -231,7 +231,7 @@ class AnazhRealm_feld_leben {
         if (!Array.isArray(node)) return "etwas";
         const op = node[0];
         const a = node.slice(1);
-        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1]})`;
+        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1] ?? "deiner Schwelle"})`;
         if (op === "fps_below") return `die FPS unter ${a[0]} fallen`;
         if (op === "player_y_below") return `der Spieler unter Höhe ${a[0]} ist`;
         if (op === "weather_is") return `das Wetter „${a[0]}" ist`;
@@ -346,7 +346,7 @@ class AnazhRealm_feld_leben {
     }
 
     selfAwarenessAnalyze() {
-        const currentTime = performance.now() / 1000;
+        const currentTime = this._taktUhr();
         if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
             return; // Strengere Debounce: Nur einmal alle 2 Sekunden analysieren
         }
@@ -402,7 +402,8 @@ class AnazhRealm_feld_leben {
             // zweiter, kaputter fps-Regler (Physik heilt keinen Render-Freeze) — der eine
             // Perf-Regelkreis (V18.263) regelt die fps. Der Loop-Trigger ist mit weg.
         };
-        this.state.nexusLastEvolution = performance.now() / 1000;
+        this.state.nexusLastEvolution = this._taktUhr();
+        this._gemuetGesetze(); // die Gesetze des Gemüts erwachen mit der Welt (affekt.K2)
         this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
     }
 
@@ -458,7 +459,7 @@ class AnazhRealm_feld_leben {
             name: `evo_${this.state.dsl.nextEntryId++}`,
             program,
             source: "nexus",
-            createdAt: performance.now() / 1000,
+            createdAt: this._taktUhr(),
         };
     }
 

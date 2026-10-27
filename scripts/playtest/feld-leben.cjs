@@ -353,7 +353,6 @@ async function checkBandV1744Appraisal(ctx) {
         const savedEmo = { ...p.emotions };
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedApply = { ...(p.emotionLastApply || {}) };
         const savedLife = r.state.lifeField;
         const savedWohl = r.state.wohlBaseline;
         const savedEmoField = r.state.emotionField;
@@ -434,18 +433,17 @@ async function checkBandV1744Appraisal(ctx) {
 
         // --- (6) V17.30 bleibt heil: anhaltendes Tun erreicht WEITER 0.7 + triggert ---
         setEmo({});
-        p.emotionLastApply = {};
         for (let i = 0; i < 10; i++) r._feelAction("build"); // joy → ~1.0 (ACTION_TO_EMOTION, V17.30)
         const joyHigh = p.emotions.joy;
-        p.emotionLastTick = 5000;
-        r.updatePlayerEmotions(5001); // der 0.7-Trigger für joy feuert
-        out.triggerPreserved = joyHigh >= 0.7 && (p.emotionLastApply.joy ?? -Infinity) > -Infinity;
+        const freude = r.state.worldRules.find((g) => g.source === "emotion:joy");
+        freude.lastFired = -Infinity;
+        r._tickWorldRules(5001); // das Gesetz des Gemüts `emotion:joy` feuert (affekt.K2)
+        out.triggerPreserved = joyHigh >= 0.7 && freude.lastFired === 5001;
 
         // restore
         setEmo(savedEmo);
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
-        p.emotionLastApply = savedApply;
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
         r.state.emotionField = savedEmoField;

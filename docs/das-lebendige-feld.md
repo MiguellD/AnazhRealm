@@ -245,9 +245,9 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 - **Furcht und Triumph erleben:** die Jagd steht (wild jagt den Spieler und andere Kreaturen
   über den `_scentAt`-Gradient); offen ist, das Bedrohtsein und den Fall eines Jägers als
   Spieler-Affekt fühlbar zu knüpfen.
-- **Emotion → Regel-EMERGENZ.** Die einzelnen Kopplungen (`sorrow→rainy` etc.) sind noch
-  hand-codiert. Die Weltregeln-DSL (§4.5) macht sie ausdrückbar — der Vektor: sie als
-  emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.
+- **Emotion → Regel-EMERGENZ.** Die Kopplungen (`sorrow→rainy` etc.) sind seit affekt.K2 Welt-Regeln mit
+  Quelle (`_gemuetGesetze`, je Achse ein Gesetz `emotion:<Achse>` in `state.worldRules`: gewertet, gespeichert,
+  geteilt, pausierbar). Der Vektor: sie evolvierbar machen (der Nexus mutiert sie wie seine eigenen).
 - **Die anderen Feld-Achsen schreibbar — und der Spieler als Pfleger.** Heute schreiben
   Geburt, Tod, Nexus-Regel und Kreatur-Trickle ins lebendig-Overlay (§4.2); der Vektor: **DU trägst Leben** (Spieler-Pflege
   als zweiter Schreib-Pfad = echte Co-Schöpfung). dichte/magieleitung bleiben frozen,
@@ -261,7 +261,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 
 ## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein `docs/PFLICHT-OFFEN.md`)
 
-- Emotion-Kopplungen (`sorrow→rainy` u. ä.) sind noch feste Trigger statt aus Weltregeln emergent.
+- Die Gesetze des Gemüts (`sorrow→rainy` u. ä.) sind Welt-Regeln, aber noch gesetzt, nicht evolviert.
 - Der Spieler schreibt Leben nur mit seinem Tod (`_playerDeathRespawn`), nicht als Pflege (Pflege = Co-Schöpfung).
 - Die KI ist opt-in; der Co-Schöpfer spricht seit V18.493 die Studio-Rezepte (`spawn_studio`),
   der echte Lauf braucht keinen Schlüssel: der KI-Korpus fährt ein lokales Modell (ollama) über den echten Chat-Pfad
