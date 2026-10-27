@@ -21,7 +21,7 @@ Am 23.10. warteten deshalb vier Aufträge 2 h, während die Sitzung die Serie f�
 | art | Schlüssel | tut |
 |---|---|---|
 | `abab` | `A=<sha40> B=<sha40> zellen=w-ego,g-third,d-ego[,stadt,fahrt,sturm]` | die Serie (Folge, Zellen, Größen, Urteil wie `bericht/2310-abab-zug5/serie.sh`, sequentiell, siehe unten), Urteil-Zeile `<B> nicht-langsamer\|LANGSAMER\|UNENTSCHIEDEN <id>` in `zug/abab.txt` |
-| `punkte` | `sha=<sha40> geraet=gtx [nur=<ids>]` | `node meisterkarte-quelle/punkte/punkte.cjs run --sha <sha> --geraet gtx [--nur …]` aus einem Baum des Zweigs `punkte-maschine`, die Mess-Datei (ohne `*-werk/`) nach `punkte-maschine` |
+| `punkte` | `sha=<sha40> geraet=gtx [nur=<ids>]` | je Zeile von `punkte.cjs gruppen --geraet gtx [--nur …]` (Zwillinge in EINEM Lauf) ein `node meisterkarte-quelle/punkte/punkte.cjs run --sha <sha> --geraet gtx --nur <ids>` aus einem Baum des Zweigs `punkte-maschine`, die Mess-Datei (ohne `*-werk/`) nach `punkte-maschine` |
 | `station` | `sha=<sha40> lauf=<datei unter zug/>` | ein benanntes Skript aus koordination am Baum `<sha>` (Forschung, prio 3) |
 
 ## Der Dienst `p3/messplatz.sh` (OMEN, läuft im Hintergrund, startet nach Neustart wieder)
