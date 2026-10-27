@@ -36,3 +36,4 @@ takt7-gtx gemessen punkte 607d0c73 gtx: 13 grün / 7 rot
 z40z43-abab nicht-langsamer abab 607d0c73 gegen f85ddf35: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
 z44b-abab nicht-langsamer abab 5b8603c1 gegen 607d0c73: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
 takt8-gtx gemessen punkte e7a28b06 gtx: 17 grün / 2 rot
+z45z46-abab nicht-langsamer abab 42973786 gegen 5b8603c1: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
