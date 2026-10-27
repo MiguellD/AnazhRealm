@@ -1087,8 +1087,11 @@ async function starte() {
                 H = k.h;
             // DIE KLASSEN IM BILD (scripts/lib/abnahme-urteil.cjs): an derselben Pose unter der EINEN Uhr G, G2 (das
             // Rauschen) und je Teil-Klasse (`_taeterKlasse`) O ohne sie; jedes Pixel höchstens EINER Klasse, die Maße aus dem Bild. `k.abstand`: je 2×2-Block der Teilung der Strahl der Block-Mitte bis zum gezeichneten Boden
-            // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Die Nah-Wiese ruht, solange
-            // Objekte verborgen sind (ihr Takt setzt je Kachel `visible`), jedes Bündel nimmt neu auf; danach steht alles wie vorher.
+            // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Solange Objekte verborgen
+            // sind, ruhen die Schreiber im Render-Pfad: die Nah-Wiese (ihr Takt setzt je Kachel `visible`) und der Blick des Bilds
+            // (`_ruheImBild`: die Plätze des Tier-Satzes setzen über `_instanzZahl` ihr `visible`, ein geweckter Leib sein Feld —
+            // tiere.K1 Herde am Hang: der Hirsch im Satz zeichnete in G und O und fehlte der Maske); jedes Bündel nimmt neu auf,
+            // danach steht alles wie vorher.
             let klasse = null;
             if (k.klasse) {
                 const re = new RegExp(k.klasse);
@@ -1140,22 +1143,13 @@ async function starte() {
                     if (bs) {
                         for (const key of bs.s.bloecke.keys()) {
                             const kl = r._taeterGruppe(key);
-                            const [aus, an] = [() => r._chunkSatzAus(bs.art, key), () => r._bauSatzMarke(key, bs.art)];
-                            if (re.test(kl)) nimm(kl, { mesh: o, aus, an });
+                            if (re.test(kl)) nimm(kl, { bereich: true, art: bs.art, key, mesh: o });
                         }
                         return;
                     }
                     const kl = teilName(o);
                     if (re.test(kl)) nimm(kl, o);
                 });
-                // DER LEIB IM FELD (`_kzBesitztFeld`: fern IST das Feld die Gestalt, sein Mesh zeichnet nicht): die Teilung führt
-                // ihn beim Namen seines Leibs und verbirgt seine Glieder im Feld — die Nah-Grenze zählt vom Spieler, nie vom Auge
-                // (tiere.K1 Herde am Hang: der fünfte Hirsch zeichnete auf 46 m und fehlte der Maske, 14 Pixel)
-                for (const c of r.state.creatures.concat(r.state.leichname || [])) {
-                    const feld = (an) => () => c.userData._kzGlieder.forEach((gl) => r._weltFeldAktiv(gl.handle, an, true));
-                    if (r._kzBesitztFeld(c) && c.userData._kzGlieder && !r.state.creaturesHidden && re.test(teilName(c)))
-                        nimm(teilName(c), { aus: feld(false), an: feld(true) });
-                }
                 if (!teile.size)
                     throw new Error(
                         `Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`
@@ -1164,16 +1158,15 @@ async function starte() {
                 if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
                 const alle = [].concat(...teile.values());
                 // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
-                const wurf = new Map(alle.map((o) => o.mesh || o).map((o) => [o, o.castShadow]));
-                const verbirg = (o) => (o.aus ? o.aus() : (o.visible = false));
-                const zeig = (o) => (o.an ? o.an() : (o.visible = true));
+                const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
+                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
+                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
                 const bundlesNeu = () =>
                     r.state.scene.traverse((o) => {
                         if (o.isBundleGroup) o.needsUpdate = true;
                     });
-                const wieseEigen = Object.prototype.hasOwnProperty.call(r, "_tickNahWiese");
-                const wieseAlt = r._tickNahWiese;
-                r._tickNahWiese = () => 0;
+                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                for (const [m] of ruhen) r[m] = () => 0;
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
                     bundlesNeu();
@@ -1595,8 +1588,9 @@ async function starte() {
                     for (const [o, c] of wurf) o.castShadow = c;
                     bundlesNeu();
                     r._schattenAlleNeu();
-                    if (wieseEigen) r._tickNahWiese = wieseAlt;
-                    else delete r._tickNahWiese;
+                    for (const [m, eigen, alt] of ruhen)
+                        if (eigen) r[m] = alt;
+                        else delete r[m];
                 }
             }
             const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
