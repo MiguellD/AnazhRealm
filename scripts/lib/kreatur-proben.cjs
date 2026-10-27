@@ -27,7 +27,9 @@ async function kreaturProben(r, T, opts) {
     const pm = s.playerMesh.position;
     const P0 = pm.clone();
 
-    // Die Bühne je Probe: eigene Tier-Liste (die Welt-Tiere ruhen), der Spieler zurück, Modus und Gefühl zurück.
+    // Die Bühne je Probe: eigene Tier-Liste (die Welt-Tiere ruhen), der Spieler zurück, Modus und Gefühl zurück; `aufraeumen`
+    // ist das Aufräumen der laufenden Bühne (die Proben laufen nacheinander), `decke` legt dorthin
+    let aufraeumen = null;
     const buehne = async (name, fn) => {
         if (nur && !nur.includes(name)) return;
         const altK = s.creatures;
@@ -36,7 +38,7 @@ async function kreaturProben(r, T, opts) {
         const altModus = r.getGameMode();
         const altGefuehl = Object.assign({}, s.player.emotions || {});
         const altNetSeq = s._creatureNetSeq;
-        const restore = [];
+        const restore = (aufraeumen = []);
         s.creatures = [];
         s.creatureEmotions = [];
         s.maxCreatures = 64;
@@ -220,20 +222,19 @@ async function kreaturProben(r, T, opts) {
         });
         return { ps, lokal, glieder: noch.map((k) => Tt[k]) };
     };
-    // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen zurück.
-    const decke = (restore, name, fn) => {
+    // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen der Bühne zurück (oder früher über `ab`).
+    const decke = (name, fn, ab = aufraeumen) => {
         const hatte = Object.prototype.hasOwnProperty.call(r, name);
         const alt = r[name];
         r[name] = fn(alt);
-        restore.push(() => {
+        ab.push(() => {
             if (hatte) r[name] = alt;
             else delete r[name];
         });
     };
     // DER ALTE JAGD-WEG als Täter (jagdkreis, rudel): im Schritt-Tempo geradewegs auf das Ziel, kein Platz im Rudel, keine Hetze
-    const schrittJagd = (restore) =>
+    const schrittJagd = () =>
         decke(
-            restore,
             "_kreaturJagdZug",
             () =>
                 function (c, tx, tz, key, direction, speed) {
@@ -344,10 +345,9 @@ async function kreaturProben(r, T, opts) {
     };
     // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: die Linse merkt nur, wessen Lage der Hüllen-Kontakt
     // schob; freier Lauf und Anprall zählen getrennt.
-    const kontaktZaehler = (restore) => {
+    const kontaktZaehler = () => {
         const geschoben = new Set();
         decke(
-            restore,
             "_kreaturHuellenKontakt",
             (alt) =>
                 function (c, ...rest) {
@@ -361,7 +361,6 @@ async function kreaturProben(r, T, opts) {
         // DER EINE LEIB-LÖSER im Sim-Schritt (`_leibKontakte`): ein Leib, den er aus einem anderen oder aus dem Spieler
         // schiebt, prallt — derselbe Anprall wie an der Wand.
         decke(
-            restore,
             "_leibKontakte",
             (alt) =>
                 function (...a) {
@@ -417,7 +416,6 @@ async function kreaturProben(r, T, opts) {
         const auf = s.player.mountedArch === e.id;
         if (taeter === "sattel")
             decke(
-                restore,
                 "_playerDeathRespawn",
                 (alt) =>
                     function (q) {
@@ -448,7 +446,6 @@ async function kreaturProben(r, T, opts) {
         // Der Konsum des Sprung-Gesetzes: wie oft creatureJump einen Sprung STARTET (instrumentiert, durchgereicht).
         let rufe = 0;
         decke(
-            restore,
             "creatureJump",
             (alt) =>
                 function (c, ...rest) {
@@ -461,7 +458,6 @@ async function kreaturProben(r, T, opts) {
         );
         if (taeter === "huepfer")
             decke(
-                restore,
                 "updateCreatures",
                 (alt) =>
                     function (dt) {
@@ -482,7 +478,6 @@ async function kreaturProben(r, T, opts) {
         // stand ein Bär 7,6 m über dem Boden; bis heim-z27 das Playtest-Band „DER HÜPFER LANDET“, diese Probe trägt es).
         if (taeter === "huepfer-scheitel")
             decke(
-                restore,
                 "updateCreatures",
                 (alt) =>
                     function (dt) {
@@ -497,7 +492,6 @@ async function kreaturProben(r, T, opts) {
         // am Sprung-Gesetz vorbei.
         if (taeter === "huepfer-zwilling")
             decke(
-                restore,
                 "_tickKreaturVerhalten",
                 (alt) =>
                     function (c, ...rest) {
@@ -591,7 +585,6 @@ async function kreaturProben(r, T, opts) {
         const s0 = c.scale.x;
         if (taeter === "wachsen")
             decke(
-                restore,
                 "_loopWeatherAndGrowth",
                 (alt) =>
                     function (dt, t) {
@@ -621,7 +614,6 @@ async function kreaturProben(r, T, opts) {
         });
         if (taeter === "gier")
             decke(
-                restore,
                 "updateCreatures",
                 (alt) =>
                     function (dt) {
@@ -632,7 +624,6 @@ async function kreaturProben(r, T, opts) {
         // Folgen als Gas oder Bremse: jenseits des Halts das volle Tempo, davor 0 (am Ankunfts-Gesetz vorbei).
         if (taeter === "gier-folgen")
             decke(
-                restore,
                 "_kreaturZiel",
                 () =>
                     function (out, dx, dz, rest, vMax) {
@@ -664,7 +655,7 @@ async function kreaturProben(r, T, opts) {
             freiT: 0,
         }));
         const vorher = tiere.map((c) => ({ x: c.position.x, z: c.position.z, v: 0, anprall: false }));
-        const geschoben = kontaktZaehler(restore);
+        const geschoben = kontaktZaehler();
         let k = 0;
         for (const [ex, ez] of ecken) {
             for (let j = 0; j < Math.round(30 / v / dt); j++, k++) {
@@ -765,19 +756,18 @@ async function kreaturProben(r, T, opts) {
         r.setGameMode("pfad");
         s.player.hp = 1e9;
         // der heutige Riss als Täter: er tötet das Opfer im Nah-Kreis wie fern (die Zahl, kein Jäger am Leib) — oder fällt nah aus
-        if (taeter === "riss") decke(restore, "_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
-        if (taeter === "jagd-schritt") schrittJagd(restore);
-        if (taeter === "riss-verloren")
-            decke(restore, "_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
+        if (taeter === "riss") decke("_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
+        if (taeter === "jagd-schritt") schrittJagd();
+        if (taeter === "riss-verloren") decke("_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
         const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
         const genannt = new Set();
-        decke(restore, "_kreaturRiss", (alt) => (c, j) => {
+        decke("_kreaturRiss", (alt) => (c, j) => {
             if (nah(c) && !c.userData._rissVon) (R.risse++, genannt.add(c));
             return alt.call(r, c, j);
         });
-        decke(restore, "_creatureCombatDeath", (tod) => (c, quelle) => {
+        decke("_creatureCombatDeath", (tod) => (c, quelle) => {
             if (quelle === "jagd" && nah(c)) {
                 R.nah++;
                 R.mitJaeger += s.creatures.some(
@@ -792,7 +782,6 @@ async function kreaturProben(r, T, opts) {
         // die Richtung der Jagd auf eine Himmelsachse gerastet (am Jagd-Weg _kreaturJagdZug)
         if (taeter === "jagd")
             decke(
-                restore,
                 "_kreaturJagdZug",
                 (alt) =>
                     function (c, tx, tz, key, d, ...rest) {
@@ -806,12 +795,11 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         const dt = 1 / 60;
-        const geschoben = kontaktZaehler(restore);
+        const geschoben = kontaktZaehler();
         // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
         // Himmelsachse liegt (gleicher Abstand); ein Lauf darauf ist ein Raster, auch wenn er „auf sein Ziel" geht
         if (taeter === "jagd-ziel")
             decke(
-                restore,
                 "_kreaturJagdZug",
                 (alt) =>
                     function (c, tx, tz, ...rest) {
@@ -905,20 +893,21 @@ async function kreaturProben(r, T, opts) {
     // Leiber des Wurfs, kein fremder dazu ──
     await buehne("herde", async (restore) => {
         r.setGameMode("frieden");
-        if (taeter === "herde")
+        // die Bewegung am Blick; fünf Tiere auf einem Punkt (jedes Glied nach dem Takt am Ort des ersten)
+        if (/^herde(-punkt)?$/.test(taeter))
             decke(
-                restore,
                 "updateCreatures",
                 (alt) =>
                     function (dt) {
                         alt.call(this, dt);
-                        for (const c of this.state.creatures) if (this.isInFrustum(c)) c.position.x += 0.01;
+                        for (const c of this.state.creatures)
+                            if (taeter === "herde") this.isInFrustum(c) && (c.position.x += 0.01);
+                            else c.position.copy(this.state.creatures[0].position);
                     }
             );
         // die alte Herden-Form: die Glieder sind jedes Tier DERSELBEN Gattung — zwei fremde Herden einer Art verschmelzen
         if (taeter === "herde-artfremd")
             decke(
-                restore,
                 "_kreaturVerbandGlieder",
                 () =>
                     function (c) {
@@ -927,10 +916,9 @@ async function kreaturProben(r, T, opts) {
             );
         // die alten Defekte: der Verband ohne seinen Zug (Ausrichtung und Kohäsion), ohne den Alarm aus zweiter Hand, die
         // Flucht endet am Radius
-        if (taeter === "herde-zerfall") decke(restore, "_kreaturVerbandZug", () => () => {});
+        if (taeter === "herde-zerfall") decke("_kreaturVerbandZug", () => () => {});
         if (taeter === "herde-alarm")
             decke(
-                restore,
                 "_kreaturVerbandAlarm",
                 () => (c, NAT, von, w) => ((c.userData._alarmEigen = w >= NAT.fleeThreshold), w)
             );
@@ -965,6 +953,7 @@ async function kreaturProben(r, T, opts) {
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
+            Object.assign(t, { enge: 0, engst: [Infinity] });
             const [alt, ab] = [glieder.map((c) => c.position.clone()), []];
             for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
@@ -986,9 +975,16 @@ async function kreaturProben(r, T, opts) {
                 t.fluchtTakte += fliehen;
                 if (k >= 600) ((t.summe += a), t.bilder++);
                 if (fliehen) ((t.fs += a), t.fb++, (t.fMin = Math.min(t.fMin, a)));
-                let [sx, sz, nl] = [0, 0, 0];
+                let [sx, sz, nl, e] = [0, 0, 0, [Infinity]];
                 glieder.forEach((c, i) => {
                     const [p, fl] = [c.position, c.userData._motionZustand === "flucht"];
+                    // DIE ENGE: das engste Paar in seinem Paar-Raum (dem Raum der Separation, `_kreaturRaum` beider)
+                    for (const b of glieder.slice(0, i)) {
+                        const q =
+                            Math.hypot(p.x - b.position.x, p.z - b.position.z) /
+                            (r._kreaturRaum(c) + r._kreaturRaum(b));
+                        if (q < e[0]) e = [+q.toFixed(2), b.userData.name, c.userData.name, (k / 60) | 0];
+                    }
                     const d = Math.hypot(p.x - alt[i].x, p.z - alt[i].z);
                     if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
                     alt[i].copy(p);
@@ -997,6 +993,8 @@ async function kreaturProben(r, T, opts) {
                     if (ab[i]) t.weg[i] = Math.max(t.weg[i], Math.hypot(p.x - ab[i].x, p.z - ab[i].z));
                 });
                 if (fliehen && nl >= 3) ((t.phi[0] += Math.hypot(sx, sz) / nl), t.phi[1]++);
+                if (k >= 600) t.enge += e[0];
+                if (!(e[0] >= t.engst[0])) t.engst = e;
             }
             return t;
         };
@@ -1008,6 +1006,8 @@ async function kreaturProben(r, T, opts) {
             fluchtAnteil: +(t.fluchtTakte / (3600 * t.n)).toFixed(3),
             fluchtMittel: t.fb ? +(t.fs / t.fb).toFixed(3) : null,
             fluchtMin: t.fb ? +t.fMin.toFixed(3) : null,
+            enge: +(t.enge / t.bilder).toFixed(2),
+            engst: t.engst,
         });
         const L = F.lauf.filter(Boolean);
         const k = L.map((x) => x[0]);
@@ -1035,7 +1035,6 @@ async function kreaturProben(r, T, opts) {
         if (c.userData._steuer) c.userData._steuer.gier = 1.0;
         if (taeter === "reload")
             decke(
-                restore,
                 "_serializeCreature",
                 (alt) =>
                     function (cr) {
@@ -1083,15 +1082,12 @@ async function kreaturProben(r, T, opts) {
         ];
         if (taeter === "zufall")
             decke(
-                restore,
                 "_pickCreatureName",
                 (alt) =>
                     function (...a) {
                         return Math.random() < 2 ? alt.apply(this, a) : null;
                     }
             );
-        if (typeof window.__fehlt !== "function")
-            return { fehler: "window.__fehlt fehlt (der Absenz-Helfer der Linse)" };
         const namen = new Set(BENANNT);
         for (const n of Object.getOwnPropertyNames(A.prototype))
             if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof A.prototype[n] === "function") namen.add(n);
@@ -1113,7 +1109,6 @@ async function kreaturProben(r, T, opts) {
         // der Kopie ruht.
         if (taeter === "peer")
             decke(
-                restore,
                 "_p2pTickRemoteCreatures",
                 (alt) =>
                     function (t, dt) {
@@ -1181,7 +1176,6 @@ async function kreaturProben(r, T, opts) {
             };
         if (taeter === "nexus-wuerfel")
             decke(
-                restore,
                 "dslComposeAtomic",
                 (alt) =>
                     function (g) {
@@ -1190,7 +1184,6 @@ async function kreaturProben(r, T, opts) {
             );
         if (taeter === "nexus-geburt")
             decke(
-                restore,
                 "_kreaturGeburtsOrt",
                 () =>
                     function () {
@@ -1298,7 +1291,6 @@ async function kreaturProben(r, T, opts) {
     await buehne("temperament", async (restore) => {
         if (taeter === "temperament")
             decke(
-                restore,
                 "_creatureTemperament",
                 () =>
                     function (c) {
@@ -1308,7 +1300,6 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "temperament-masse")
             // der Zwilling der Vereinigung: das Gemüt aus der Dial-Masse size × Größe
             decke(
-                restore,
                 "_creatureTemperament",
                 () =>
                     function (c) {
@@ -1412,7 +1403,7 @@ async function kreaturProben(r, T, opts) {
                 return o;
             };
             restore.push(() => (K.verbandZug = alt));
-            decke(restore, "_leibPaar", () => () => false);
+            decke("_leibPaar", () => () => false);
         }
         if (taeter === "abstand-spieler") {
             // die Separation und der Weg des Gangs ohne den Spieler: ein Nachbar drückt das vordere Tier in ihn
@@ -1426,8 +1417,8 @@ async function kreaturProben(r, T, opts) {
                         this.state.playerMesh = p;
                     }
                 };
-            decke(restore, "_applyCreatureSeparation", ohne);
-            decke(restore, "_leibGegenLeiber", ohne);
+            decke("_applyCreatureSeparation", ohne);
+            decke("_leibGegenLeiber", ohne);
         }
         // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
         const start = frei(40, -40, 20) || land(40, -40);
@@ -1565,7 +1556,6 @@ async function kreaturProben(r, T, opts) {
         // Der alte Weg als Täter: der Gradient des Geruchs-Felds (vier Proben, die vor dem Schnitt die Richtung gaben).
         if (taeter === "jagd-gradient")
             decke(
-                restore,
                 "_creatureScentHuntDir",
                 (alt) =>
                     function (c, w) {
@@ -1592,7 +1582,6 @@ async function kreaturProben(r, T, opts) {
         // der Fall ohne Kadaver (der Leib liegt und sinkt, kein Fleisch) und die Nase ohne Aas-Witterung als Täter
         if (taeter === "jagd-aas")
             decke(
-                restore,
                 "_kreaturFaellt",
                 (alt) =>
                     function (c) {
@@ -1601,14 +1590,13 @@ async function kreaturProben(r, T, opts) {
                         return out;
                     }
             );
-        if (taeter === "jagd-duft") decke(restore, "_kreaturAasZug", () => () => false);
+        if (taeter === "jagd-duft") decke("_kreaturAasZug", () => () => false);
         const dt = 1 / 60;
         // (A) DIE QUOTE JE JAGD (Tiere K2, MacNulty): ein Wolf und vier gegen den Hirsch, vier gegen ein Kitz, in 20 · 60 · 20
         // Saaten; die Jagd endet mit dem Riss oder der Erschöpfung (JAGD_GESETZ). Der erste Riss der vier trägt die Kette: Kadaver,
         // das Rudel frisst, Fuchs und Bär kommen. Jede Jagd auf frischem Feld.
         if (taeter === "jagd-flucht")
             decke(
-                restore,
                 "_creatureWariness",
                 () =>
                     function (c) {
@@ -1617,9 +1605,8 @@ async function kreaturProben(r, T, opts) {
                         return this._creatureWarinessSpieler(c, A._verhaltenGesetz().furcht, von);
                     }
             );
-        if (taeter === "jagd-ohne-ende") decke(restore, "_kreaturJagdEndet", () => () => false);
-        if (taeter === "jagd-ohne-wunde")
-            decke(restore, "_kreaturSprint", () => (c, L) => A._steuerGesetz().sprintTempo(L));
+        if (taeter === "jagd-ohne-ende") decke("_kreaturJagdEndet", () => () => false);
+        if (taeter === "jagd-ohne-wunde") decke("_kreaturSprint", () => (c, L) => A._steuerGesetz().sprintTempo(L));
         // der magere Riss: der Kadaver trägt ein Zwölftel seines Fleischs (aas.fleischAnteil 0,05)
         if (taeter === "jagd-mager") {
             const V0 = A._verhaltenGesetzMemo;
@@ -1713,10 +1700,10 @@ async function kreaturProben(r, T, opts) {
     // erste Pirsch auf den Spieler (ein Wolf im Zustand „jagd" mit dem Ziel „spieler"), das erste Umstellen (≥ 3 Jäger, alle
     // näher als 2 × jagd.hetzM, die größte Winkel-Lücke ≤ anderthalb Plätze, 540°/n) und die Lücke beim ersten Biss ──
     await buehne("rudel", async (restore) => {
-        if (taeter === "rudel") schrittJagd(restore);
+        if (taeter === "rudel") schrittJagd();
         // der alte Defekt: die Witterung liest nur Tiere, der Spieler ist keine Beute
         if (taeter === "rudel-beute")
-            decke(restore, "_kreaturIstBeute", (alt) => (j, o) => o !== s.playerMesh && alt.call(r, j, o));
+            decke("_kreaturIstBeute", (alt) => (j, o) => o !== s.playerMesh && alt.call(r, j, o));
         const heim = frei(60, -60, 45) || land(60, -60);
         pm.set(heim.x + 140, heim.y, heim.z); // der Wurf wirft fern vom Spieler, außer Blick
         kamera(1, 0);
@@ -1737,7 +1724,6 @@ async function kreaturProben(r, T, opts) {
         // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
         let ersterBiss = null;
         decke(
-            restore,
             "damagePlayer",
             (alt) =>
                 function (amount, quelle) {
@@ -1779,7 +1765,6 @@ async function kreaturProben(r, T, opts) {
         r.setGameMode("frieden");
         if (taeter === "querhang")
             decke(
-                restore,
                 "_animateTierBaum",
                 (alt) =>
                     function (group, ...a) {
@@ -1794,7 +1779,6 @@ async function kreaturProben(r, T, opts) {
             // der Täter: der Fuß im Stand hat keinen Halt am Aufsetz-Punkt — die Pfoten-Haltung wird je Takt vergessen,
             // jeder Takt greift die Pfote dort, wohin der Leib sie mitnahm (der Fuß wandert mit dem Leib)
             decke(
-                restore,
                 "_animateTierBaum",
                 (alt) =>
                     function (group, ...a) {
@@ -1960,7 +1944,6 @@ async function kreaturProben(r, T, opts) {
         r.setGameMode("frieden");
         if (taeter === "ferngang")
             decke(
-                restore,
                 "_kreaturLaeuft",
                 () =>
                     function () {
@@ -1969,7 +1952,6 @@ async function kreaturProben(r, T, opts) {
             );
         if (taeter === "ferngang-bindung")
             decke(
-                restore,
                 "_gelenkGestalt",
                 (orig) =>
                     function (...arg) {
@@ -2107,19 +2089,18 @@ async function kreaturProben(r, T, opts) {
             r._gliedKapseln = altK;
             r._trefferGliedNamen = altN;
         });
-        if (taeter === "gestalt-vorrat") decke(restore, "_gliederBestellen", () => () => Promise.resolve(null));
+        if (taeter === "gestalt-vorrat") decke("_gliederBestellen", () => () => Promise.resolve(null));
         r._trefferGliedNamen = new Map();
         await r._ofenPrefetchKreaturen();
         const vorrat = Object.keys(r.constructor._lebensraumGesetz().L.gattung).filter(
             (g) => !r._trefferGliedNamen.has(g)
         );
         // der Täter: der Leser zerlegt selbst (der Bau der Glieder im Takt, bis dorf-takt-z13)
-        if (taeter === "gestalt-takt") decke(restore, "_gattungGlieder", () => (cr) => r._gattungGliederBacken(cr));
+        if (taeter === "gestalt-takt") decke("_gattungGlieder", () => (cr) => r._gattungGliederBacken(cr));
         let zerlegt = 0;
-        decke(restore, "_kreaturGliederGruppen", (f) => (cr) => (zerlegt++, f.call(r, cr)));
+        decke("_kreaturGliederGruppen", (f) => (cr) => (zerlegt++, f.call(r, cr)));
         if (taeter === "gestalt")
             decke(
-                restore,
                 "_gestaltRuhe",
                 () =>
                     function () {
@@ -2200,14 +2181,9 @@ async function kreaturProben(r, T, opts) {
     // Leerlauf rechnet die Frist sie am Ende des Vorlaufs (`_todLageFrist`, halten.K5 — die Lage bei 60 und 15 Hz misst Q13).
     await buehne("todlage", async (restore) => {
         if (taeter === "todlage-takt")
-            decke(
-                restore,
-                "_kreaturFaellt",
-                (f) => (c) => (f.call(r, c), r._todLageTick({ timeRemaining: () => Infinity }))
-            );
+            decke("_kreaturFaellt", (f) => (c) => (f.call(r, c), r._todLageTick({ timeRemaining: () => Infinity })));
         let n = 0;
         decke(
-            restore,
             "_standSicht",
             (f) =>
                 (...a) => (n++, f.apply(r, a))
@@ -2461,7 +2437,7 @@ async function kreaturProben(r, T, opts) {
                 // prettier-ignore
                 const [ab, M] = [[], wegeMesser(S.liste)];
                 await uhrAuf(5, "bewohner: die Ankunft der Stadt", da);
-                if (ueber) decke(ab, ueber, () => () => null);
+                if (ueber) decke(ueber, () => () => null, ab);
                 for (let i = 0; i < (taeter ? 30 : 240) * takte; i++) takt(DT, M);
                 for (const f of ab) f();
                 sicht[t] = { stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, wege: M.zahl() } };
@@ -2682,7 +2658,7 @@ async function kreaturProben(r, T, opts) {
         // der Heimkehrer geht 1 h vor jeder Prüf-Stunde fort und findet die neu Geborenen (Takt 0). Täter: geboren am Ziel
         const wiederkehr = async () => {
             const ab0 = [];
-            if (hat("bewohner-wiederkehr")) decke(ab0, "_bewohnerAnkunft", () => () => {});
+            if (hat("bewohner-wiederkehr")) decke("_bewohnerAnkunft", () => () => {}, ab0);
             const [ueber, P] = [[], pm.clone()];
             let [n, maxM] = [0, 0];
             for (const [T, sah] of blieb) {
@@ -2886,14 +2862,13 @@ async function kreaturProben(r, T, opts) {
             return { haupt, wurf, leiber, satz, satzW };
         };
         // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl)
-        if (taeter === "tiersatz-kopf") decke(restore, "_tierSatzWahl", () => () => null);
+        if (taeter === "tiersatz-kopf") decke("_tierSatzWahl", () => () => null);
         // · das Auge trägt jedes Satz-Tier (kein Blick) · der Takt schreibt jeden Platz, ob sich etwas rührte oder nicht
-        if (taeter === "tiersatz-blick") decke(restore, "_kreaturAusserBlick", () => () => false);
-        if (taeter === "tiersatz-schreiben") decke(restore, "_tierSatzStempel", () => () => true);
+        if (taeter === "tiersatz-blick") decke("_kreaturAusserBlick", () => () => false);
+        if (taeter === "tiersatz-schreiben") decke("_tierSatzStempel", () => () => true);
         // · die Sicht-Kopien der Mitspieler stehen nicht in der Menge des Satzes (jede Kopie ein Leib)
         if (taeter === "tiersatz-kopie")
             decke(
-                restore,
                 "_tickTierSatz",
                 (alt) =>
                     function (...a) {
@@ -3262,6 +3237,13 @@ function urteil(name, z) {
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
         );
+        // die Enge (Herde am Hang: EIN Pulk aus Leibern, nie ein Leib) — das engste Paar in Paar-Räumen, im Mittel ab 10 s; gemessen
+        // 1,02 wandernd und 0,86 auf der Flucht (headless, 27.10.)
+        const E = W.engst[0] < F.engst[0] ? W.engst : F.engst;
+        soll(
+            Math.min(W.enge, F.enge) >= 0.5,
+            `Verband klumpt: das engste Paar ${W.enge} / ${F.enge} Paar-Räume (Soll ≥ 0,5), ${E[1]} und ${E[2]} auf ${E[0]} nach ${E[3]} s`
+        );
         soll(R.takte >= 60 && R.mittel >= 0.8, `Verband flieht ungerichtet: Φ ${R.mittel} über ${R.takte} Takte`);
         soll(
             K.letzterS <= 1 && K.letzterS !== null,
@@ -3517,6 +3499,7 @@ const TAETER = {
         ["herde-zerfall", /zerfällt beim Wandern[\s\S]*zerfällt auf der Flucht[\s\S]*flieht ungerichtet/],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
+        ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
     ],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],

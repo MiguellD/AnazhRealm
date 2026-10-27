@@ -65,7 +65,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -187,15 +187,8 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
 const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stringify(t, null, 1)), process.exit(gruen ? 0 : 1));
-// `--eigen`: die Welt als Kind von `start`, bereit, wenn die Steuerung antwortet (erst nach dem Boot)
-async function eigeneWelt() {
-    const k = require("child_process").spawn(process.execPath, [__filename, "start", "--port", String(PORT)], { stdio: "inherit" });
-    for (let t = 0; !(await rufe("/status").then(() => true, () => false)); t++) {
-        if (k.exitCode != null || t > 600) throw new Error(`die eigene Werkbank steht nicht (Exit ${k.exitCode})`);
-        await sleep(1000);
-    }
-    return () => rufe("/stop");
-}
+// `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
+const eigeneWelt = async (tor = werkbankTor(PORT)) => (await tor.bereit, tor.stop);
 
 // Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
 function methodeAusQuelle(quelle, name) {
@@ -352,18 +345,10 @@ function lauf(k) {
             // Schlange + Ingest leer, Karten-Bäcker ohne Wartende/Hängende, die Mesh-Zone fertig oder 10 s ohne Fortschritt.
             const ruheZustand = () => {
                 const z = r._impostorCensus() || {};
-                const pm = st.playerMesh.position;
-                const R2 = (st.architectureCullingRadius || 0) ** 2;
-                let offen = 0;
-                for (const e of st.architectures || []) {
-                    const dx = e.position.x - pm.x,
-                        dz = e.position.z - pm.z;
-                    if (dx * dx + dz * dz <= R2 && !r._archIsRendered(e)) offen++;
-                }
                 return {
                     chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                     foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
-                    karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: offen,
+                    karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: window.__ungebaut(),
                 };
             };
             let ruhe = null;
@@ -651,26 +636,14 @@ function bandEinschwingen(k) {
             vor = null,
             o = {};
         const stand = () => {
-            const pm = st.playerMesh.position;
-            const rad2 = st.architectureCullingRadius * st.architectureCullingRadius;
-            let ungebaut = 0;
-            for (const e of st.architectures || []) {
-                const dx = e.position.x - pm.x,
-                    dz = e.position.z - pm.z;
-                if (dx * dx + dz * dz <= rad2 && !r._archIsRendered(e)) ungebaut++;
-            }
             let instanzen = 0;
             if (st.archInstanceGroups)
                 for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
             const ls = st.perfSense ? +st.perfSense.loadScale.toFixed(3) : 1;
-            return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut, loadScale: ls };
+            return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: window.__ungebaut(), loadScale: ls };
         };
         while (performance.now() < dl) {
-            try {
-                window.__buehne();
-                if (window.__ortSchritt) window.__ortSchritt();
-                r._gameLoopTick(performance.now());
-            } catch {}
+            window.__werkTakt();
             takte++;
             // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
             o = window.__einschwingOffen(r);
@@ -701,11 +674,7 @@ function bandProben(k) {
         for (let i = 0; i < (k.n || 6); i++) {
             if (i)
                 for (let t = 0; t < (k.zwischen || 20); t++) {
-                    try {
-                        window.__buehne();
-                        if (window.__ortSchritt) window.__ortSchritt();
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                    window.__werkTakt();
                     await sleep(50);
                 }
             window.__buehne();
@@ -729,7 +698,7 @@ async function starte() {
             http.get(ECHT_SEITE + "/", (res) => (res.resume(), r(res.statusCode === 200))).on("error", () => r(false))
         );
         if (!da) throw new Error(`--echt braucht den save-server auf ${ECHT_SEITE} (npm start)`);
-    } else await new Promise((r) => seiten.listen(SEITEN_PORT, "127.0.0.1", r));
+    } else await seiten.lausche(SEITEN_PORT);
     // DAS PROFIL DER MESS-SERIE: ohne eigenes Profil legte puppeteer je Start ein namenloses an — jede Zahl war eine
     // Erst-Boot-Zahl („17 von 319 von der Platte"). Scratch je Start (beim `stop` gelöscht) oder benannt (`--serie`).
     const profil = SERIE
@@ -798,6 +767,23 @@ async function starte() {
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(DIAET.DIAET_INSTALL);
         await page.evaluate(SICHT.SICHT_INSTALL);
+        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht); dazu die
+        // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
+        await page.evaluate(() => {
+            window.__werkTakt = () => {
+                try {
+                    window.__buehne();
+                    if (window.__ortSchritt) window.__ortSchritt();
+                    window.anazhRealm._gameLoopTick(performance.now());
+                } catch {}
+            };
+            window.__ungebaut = (r = window.anazhRealm, st = r.state, pm = st.playerMesh.position) =>
+                (st.architectures || []).filter(
+                    (e) =>
+                        (e.position.x - pm.x) ** 2 + (e.position.z - pm.z) ** 2 <= (st.architectureCullingRadius || 0) ** 2 &&
+                        !r._archIsRendered(e)
+                ).length;
+        });
         await page.evaluate(`window.__tierZahl = ${tierZahl.toString()};`);
         await page.evaluate(STAND.STAND_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
@@ -1114,8 +1100,11 @@ async function starte() {
                 H = k.h;
             // DIE KLASSEN IM BILD (scripts/lib/abnahme-urteil.cjs): an derselben Pose unter der EINEN Uhr G, G2 (das
             // Rauschen) und je Teil-Klasse (`_taeterKlasse`) O ohne sie; jedes Pixel höchstens EINER Klasse, die Maße aus dem Bild. `k.abstand`: je 2×2-Block der Teilung der Strahl der Block-Mitte bis zum gezeichneten Boden
-            // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Die Nah-Wiese ruht, solange
-            // Objekte verborgen sind (ihr Takt setzt je Kachel `visible`), jedes Bündel nimmt neu auf; danach steht alles wie vorher.
+            // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Solange Objekte verborgen
+            // sind, ruhen die Schreiber im Render-Pfad: die Nah-Wiese (ihr Takt setzt je Kachel `visible`) und der Blick des Bilds
+            // (`_ruheImBild`: die Plätze des Tier-Satzes setzen über `_instanzZahl` ihr `visible`, ein geweckter Leib sein Feld —
+            // tiere.K1 Herde am Hang: der Hirsch im Satz zeichnete in G und O und fehlte der Maske); jedes Bündel nimmt neu auf,
+            // danach steht alles wie vorher.
             let klasse = null;
             if (k.klasse) {
                 const re = new RegExp(k.klasse);
@@ -1186,9 +1175,8 @@ async function starte() {
                 const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
                 const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
                 const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
-                const wieseEigen = Object.prototype.hasOwnProperty.call(r, "_tickNahWiese");
-                const wieseAlt = r._tickNahWiese;
-                r._tickNahWiese = () => 0;
+                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                for (const [m] of ruhen) r[m] = () => 0;
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
                     bundlesNeu();
@@ -1610,8 +1598,9 @@ async function starte() {
                     for (const [o, c] of wurf) o.castShadow = c;
                     bundlesNeu();
                     r._schattenAlleNeu();
-                    if (wieseEigen) r._tickNahWiese = wieseAlt;
-                    else delete r._tickNahWiese;
+                    for (const [m, eigen, alt] of ruhen)
+                        if (eigen) r[m] = alt;
+                        else delete r[m];
                 }
             }
             const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
@@ -1743,10 +1732,7 @@ async function starte() {
                             const db = st.renderer.getDrawingBufferSize(new window.THREE.Vector2());
                             return {
                                 wetter: window.__wetterBuch(a.seit),
-                                weltakt:
-                                    typeof window.__weltaktBuch === "function"
-                                        ? window.__weltaktBuch(a.seitWelt)
-                                        : null,
+                                weltakt: window.__weltaktBuch(a.seitWelt),
                                 ort: {
                                     dorfZug: window.__anazhAutoSettlement !== false,
                                     ortTakt: window.__ortTakt || [],
@@ -1755,7 +1741,7 @@ async function starte() {
                                     kamera: st.cameraMode,
                                 },
                                 fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
-                                tiere: typeof window.__tierZahl === "function" ? window.__tierZahl() : null,
+                                tiere: window.__tierZahl(),
                                 version: r.constructor.VERSION,
                             };
                         },
@@ -2052,11 +2038,7 @@ async function starte() {
                             return q.fehlt.length === 0 && !baut && (!k || karteHier(k));
                         };
                         const takt = async () => {
-                            try {
-                                if (window.__buehne) window.__buehne();
-                                if (window.__ortSchritt) window.__ortSchritt();
-                                r._gameLoopTick(performance.now());
-                            } catch {}
+                            window.__werkTakt();
                             takte++;
                             await sleep(50);
                         };

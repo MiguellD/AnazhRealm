@@ -1817,56 +1817,34 @@ async function checkBandKoerperBewegung(ctx) {
         {
             const rig = pmesh.userData.rig;
             const soleY = pmesh.position.y - A.PLAYER_FOOT_OFFSET;
-            const savedTraeger = s._kapselTraegerY;
-            const savedStruktur = s._kapselStruktur;
-            // der Träger, wie ihn der Kapsel-Schritt stempelt (ein Bauwerk: eben per Definition)
-            const traeger = (y) => {
-                s._kapselTraegerY = y;
-                s._kapselStruktur = true;
-            };
-            const probenFrisch = () => {
+            const saved = [s._kapselTraegerY, s._kapselStruktur, s.isInAir, pmesh.position.y];
+            const frisch = () => {
                 const ik = pmesh.userData._gaitIK;
-                if (ik) {
-                    ik.probeL.g = NaN;
-                    ik.probeR.g = NaN;
-                }
+                if (ik) ik.probeL.g = ik.probeR.g = NaN;
             };
-            const tickeIdle = (t0) => {
-                vStub = 0;
-                p._gaitW = 0;
-                p.animationLastTick = -Infinity;
-                r.animatePlayerSoul(t0);
-                for (let k = 1; k <= 8; k++) r.animatePlayerSoul(t0 + k / 60);
+            // der Boden unter den Füßen um dy tiefer als ihre Sohle: der Leib steht -dy über dem Grund, auf dem der
+            // Kapsel-Schritt ihn stempelt — jeder Fuß liest, was dort trägt (Bau oder gezeichneter Boden, `_fussBoden`, leib.K2).
+            // Vorher senkte die Bühne nur den Stempel eines Baus (`_kapselStruktur`): seit jeder Fuß seine Auflage liest, stand
+            // er weiter auf dem echten Boden unter ihm (Gelände 90,37 m, am Genesis-Platz der Bau 91,33 m). Neun Stand-Takte.
+            const becken = (dy, t0, luft = false) => {
+                [s._kapselTraegerY, s._kapselStruktur, s.isInAir] = [soleY, false, luft];
+                pmesh.position.y = soleY + A.PLAYER_FOOT_OFFSET - dy;
+                frisch();
+                [vStub, p._gaitW, p.animationLastTick] = [0, 0, -Infinity];
+                for (let k = 0; k <= 8; k++) r.animatePlayerSoul(t0 + k / 60);
+                return rig.hips.position.y;
             };
-            const savedAir = s.isInAir;
-            s.isInAir = false; // der stehende Körper (die Luft-Sperre prüft E2)
-            traeger(soleY); // der Träger auf der Sohlen-Ebene
-            probenFrisch();
-            tickeIdle(500);
-            const h0 = rig.hips.position.y;
-            traeger(soleY - 0.25); // der Träger 25 cm gesenkt
-            probenFrisch();
-            tickeIdle(510);
-            const h1 = rig.hips.position.y;
-            traeger(soleY - 50); // Abgrund
-            probenFrisch();
-            tickeIdle(520);
-            let alleFinite = true;
-            for (const leg of [rig.legL, rig.legR])
-                for (const kk of ["hip", "knee", "ankle"])
-                    if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
-            if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
+            const h0 = becken(0, 500); // der Boden auf der Sohlen-Ebene, der Körper steht (die Luft-Sperre prüft E2)
+            const h1 = becken(-0.25, 510); // der Boden 25 cm unter der Sohle
+            becken(-50, 520); // Abgrund
+            const alleFinite =
+                Number.isFinite(rig.hips.position.y) &&
+                [rig.legL, rig.legR].every((leg) => ["hip", "knee", "ankle"].every((kk) => !leg[kk] || Number.isFinite(leg[kk].rotation.x)));
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
             // das Becken NICHT
-            traeger(soleY - 0.25);
-            s.isInAir = true;
-            probenFrisch();
-            tickeIdle(530);
-            const hLuft = rig.hips.position.y;
-            s.isInAir = savedAir;
-            s._kapselTraegerY = savedTraeger; // restaurieren
-            s._kapselStruktur = savedStruktur;
-            probenFrisch();
+            const hLuft = becken(-0.25, 530, true);
+            [s._kapselTraegerY, s._kapselStruktur, s.isInAir, pmesh.position.y] = saved; // restaurieren
+            frisch();
             o.beckenLuft = hLuft;
             o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
             o.beckenFlach = h0;

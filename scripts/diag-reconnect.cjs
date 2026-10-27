@@ -542,7 +542,7 @@ hauptLauf(async () => {
         // Integration über die ECHTE Pipe: _p2pMsgPos füllt, der Sampler liest
         // renderT = now − INTERP_DELAY.
         const p2p = { peerId: "ich" };
-        const entry = { peerId: "peerX", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0, lastSeen: 0 };
+        const entry = { peerId: "peerX", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 };
         self._p2pEnsurePeerEntry = () => entry;
         nowVal = 0;
         self._p2pMsgPos({ peerId: "peerX", x: 0, y: 0, z: 0, yaw: 0 }, p2p);
@@ -557,7 +557,7 @@ hauptLauf(async () => {
         );
 
         // Erst-Kontakt (< 2 Snaps): roh, kein Sampling.
-        const entry1 = { peerId: "peerY", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0, lastSeen: 0 };
+        const entry1 = { peerId: "peerY", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 };
         self._p2pEnsurePeerEntry = () => entry1;
         nowVal = 0;
         self._p2pMsgPos({ peerId: "peerY", x: 7, y: 0, z: 0, yaw: 0 }, p2p);
@@ -580,7 +580,6 @@ hauptLauf(async () => {
                 { t: 50, x: 1, y: 0, z: 0, yaw: 0 },
             ],
             lastMovedAt: 0,
-            lastSeen: 0,
         };
         self._p2pEnsurePeerEntry = () => entryL;
         nowVal = 100; // Ghost frisch (< 1200 ms)
@@ -591,7 +590,7 @@ hauptLauf(async () => {
         check("Lockstep-Pfad byte-heilig: Snap wird Autorität (authX), Puffer fällt, Sampler tritt zurück", lockstepUntouched && samplerSteppedBack);
 
         // Bounded: der Puffer wächst nie über P2P_SNAP_BUF_MAX.
-        const entryB = { peerId: "peerB", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0, lastSeen: 0 };
+        const entryB = { peerId: "peerB", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 };
         self._p2pEnsurePeerEntry = () => entryB;
         for (let i = 0; i < 40; i++) {
             nowVal = i * 33;
