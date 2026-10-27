@@ -34,3 +34,4 @@ takt5z-gtx gemessen punkte eeaff9d6 gtx: 32 grün / 11 rot
 takt6-gtx gemessen punkte b2c6c627 gtx: 11 grün / 5 rot
 takt7-gtx gemessen punkte 607d0c73 gtx: 13 grün / 7 rot
 z40z43-abab nicht-langsamer abab 607d0c73 gegen f85ddf35: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
+z44b-abab nicht-langsamer abab 5b8603c1 gegen 607d0c73: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 2+2 nicht-langsamer
