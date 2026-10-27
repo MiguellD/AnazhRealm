@@ -1,7 +1,7 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
 // (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
+// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, siedlung-k3-hang siedlung.K3 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -575,6 +575,59 @@ const stationen = [
             "spec/asset-contract/v6/golden/siedlung.json",
         ],
         quelle: "1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten",
+    },
+    // siedlung.K3 Staffel 2 (Zweig siedlung-k3-hang): die Steil-Wand ist die Böschung des Erdbaus (gelaende-core ERDBAU.boeschung
+    // 0,6 statt SIEDLUNG.slopeMax 0,35), EIN Grundriss-Leser (`_grundrissVon`; `_slotGrundriss` und `_werkGrundriss` fielen).
+    // gate:settlement C-K3 (Browser, Null-Renderer): am Hang-Ort −400/−3175 die Vorräte der Welt (`_dorfBereiten`) der Zellen,
+    // deren Ort steiler liegt als 0,35 — je Dorf Steilheit, Gassen-Gefälle p95 am Grund ohne Erdbau, Erdbau-Median je Haus (m³),
+    // dazu die Zahl der Grundriss-Leser; Selbsttests: dieselben Gassen am Grund 24 m daneben ROT, die Wand 0,35 zurück ROT (am
+    // Kopf 2 statt 4 Hangdörfer). An siedlung-k3-hang: 4 Dörfer 0,38–0,57, p95 8,5–11,2 %, Erdbau 449–801 m³ (flach 86–94), 1 Leser.
+    {
+        kriterium: "siedlung.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-settlement.cjs"],
+        env: { SETTLEMENT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const zeile = (re) => re.exec(out);
+            const t = zeile(/^\s*(✅|❌) C-K3: DIE TRASSE AM ORT — (\d+) Dörfer/m);
+            const h = zeile(/^\s*(✅|❌) C-K3: DIE HANGDÖRFER — (\d+) Dörfer[^\n]*?, (\d+) Grundriss-Leser — (\[.*\])\s*$/m);
+            const s1 = zeile(/^\s*(✅|❌) C-K3 Selbsttest: die Gassen am Grund 24 m daneben/m);
+            const s2 = zeile(/^\s*(✅|❌) C-K3 Selbsttest: die Wand 0,35 zurück/m);
+            let d = [];
+            try {
+                d = h ? JSON.parse(h[4]) : [];
+            } catch (_e) {
+                d = [];
+            }
+            const gruen =
+                !!t && t[1] === "✅" && !!h && h[1] === "✅" && +h[2] >= 4 && +h[3] === 1 &&
+                [s1, s2].every((s) => s && s[1] === "✅") && lauf.exit === 0;
+            return {
+                gruen,
+                zahl: h
+                    ? h[2] + " Hangdörfer " + d.map((x) => x.zelle + " " + x.hang + "/" + x.p95 + " %/" + x.erdbauM3 + " m³").join(" · ") +
+                      ", " + h[3] + " Grundriss-Leser, Selbsttests " + [s1, s2].map((s) => (s ? s[1] : "—")).join("") + ", Exit " + lauf.exit
+                    : "keine Zeile C-K3 HANGDÖRFER (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/siedlung-ort.js",
+            "stamm/gelaende-boden.js",
+            "stamm/vegetation-baum.js",
+            "stamm/feld-leben.js",
+            "stamm/studio-bruecke.js",
+            "scripts/diag-settlement.cjs",
+        ],
+        quelle: "2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei",
     },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
