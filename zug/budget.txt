@@ -26,3 +26,4 @@
 2026-10-26T21:28 woche=55 karte=108 (Hand, nach takt6-gtx)
 2026-10-26T23:38 karte=112 (gebucht am 607d0c73, buche.sh)
 2026-10-27T00:53 woche=61 karte=112 (Konto 2; über beide Konten 159 %)
+2026-10-27T01:50 woche=66 karte=112 (Konto 2; z44b+z45 gelandet, Takt 8 misst)
