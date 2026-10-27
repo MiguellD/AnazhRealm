@@ -1837,11 +1837,9 @@ async function checkBandKoerperBewegung(ctx) {
             const h0 = becken(0, 500); // der Boden auf der Sohlen-Ebene, der Körper steht (die Luft-Sperre prüft E2)
             const h1 = becken(-0.25, 510); // der Boden 25 cm unter der Sohle
             becken(-50, 520); // Abgrund
-            let alleFinite = true;
-            for (const leg of [rig.legL, rig.legR])
-                for (const kk of ["hip", "knee", "ankle"])
-                    if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
-            if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
+            const alleFinite =
+                Number.isFinite(rig.hips.position.y) &&
+                [rig.legL, rig.legR].every((leg) => ["hip", "knee", "ankle"].every((kk) => !leg[kk] || Number.isFinite(leg[kk].rotation.x)));
             // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
             // das Becken NICHT
             const hLuft = becken(-0.25, 530, true);
