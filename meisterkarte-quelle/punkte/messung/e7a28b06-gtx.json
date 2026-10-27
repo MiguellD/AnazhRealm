@@ -1,0 +1,219 @@
+{
+ "sha": "e7a28b06e6fd665ad12b7a76da66157f5c38f4ab",
+ "geraet": "gtx",
+ "zeit": "2026-10-27T02:18:03.648Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 1761 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 200.5–725.3 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 2.61,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T00:54:15.948Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 2.15,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T00:56:58.850Z",
+   "abdruck": "8b16706e5959",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2845/1200/5996/4043 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 91.8 σ 38.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.104 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 2.2,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T00:59:13.610Z",
+   "abdruck": "a99597ca60dd",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 20.9 s, 3 fressen: tier:wolf 12572 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.09 m · Luma 89.4 σ 38.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.104 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 3.31,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:01:31.860Z",
+   "abdruck": "6f4d55252639",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.389 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 4.56,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:04:56.468Z",
+   "abdruck": "dc99c476be49",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 8.02,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:09:35.599Z",
+   "abdruck": "dad9cf32497f",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 3.38,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:17:42.530Z",
+   "abdruck": "03c706724ee9",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K3#1": {
+   "gruen": true,
+   "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.23/16.00 m/s · Welt FOV +9.43° Arm +18.3 % bei 15.14 m/s (Ende ok)",
+   "exit": 0,
+   "minuten": 1.55,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:21:11.661Z",
+   "abdruck": "47c7c8bcd372",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K3#2": {
+   "gruen": true,
+   "zahl": "Drift Kamera ≤ 5.9° neben dem Fahrtvektor (Schlupf bis 2.6°) · Rückkehr 1.09 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 3.95,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:22:50.740Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.6° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 3.56,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:26:53.321Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 68.9 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 196.3 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.5,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:30:33.242Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 51 · third/gehen 42.9 · ego/wechsel 27.2 · third/wechsel 26.8 · Bild 15.3/15.3/15.2 ms",
+   "exit": 0,
+   "minuten": 6.03,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 51 · third/gehen 42.9 · ego/wechsel 27.2 · third/wechsel 26.8 · Bild 15.3/15.3/15.2 ms",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:36:09.233Z",
+   "abdruck": "9687c62fd915",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 40.4 (fehlt 1) · ego/hieb 25.5 · Bild 15.7/15.4/15.6 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (134–175 ms, gleitet bis 0 mm je Takt) / 59-mal (154–169 ms, gleitet bis 0 mm je Takt) / 60-mal (125–168 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 5.85,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms third/hieb 40.4 (fehlt 1) · ego/hieb 25.5 · Bild 15.7/15.4/15.6 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (134–175 ms, gleitet bis 0 mm je Takt) / 59-mal (154–169 ms, gleitet bis 0 mm je Takt) / 60-mal (125–168 ms, gleitet bis 0 mm je Takt)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:42:17.498Z",
+   "abdruck": "631137359d80",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K5#1": {
+   "gruen": true,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 84864b15008e → 84864b15008e",
+   "exit": 0,
+   "minuten": 0.84,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:48:14.908Z",
+   "abdruck": "b8c2b35ae818",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tore.K3#2": {
+   "gruen": true,
+   "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+   "exit": 0,
+   "minuten": 1.5,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:49:10.732Z",
+   "abdruck": "4a0e91ccdc14",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "gras 5683 Hz (n 33) · laub 5368 Hz (n 15) · quarz 3240 Hz (n 18) — kleinster Abstand 315 Hz",
+   "exit": 0,
+   "minuten": 1.21,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:50:46.197Z",
+   "abdruck": "29930e27f73e",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "klang.K5#2": {
+   "gruen": true,
+   "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.14 ms · Aussetzer 0 in 600.9 s Wiedergabe (0 s still) (Exit 0)",
+   "exit": 0,
+   "minuten": 13.35,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T01:52:04.568Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 4.933 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 12.43,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T02:05:31.291Z",
+   "abdruck": "80965330139c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 3.872 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 12.42,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-27T02:18:03.648Z",
+   "abdruck": "347160cebd7c",
+   "port": 7754,
+   "bahn": "allein"
+  }
+ }
+}
