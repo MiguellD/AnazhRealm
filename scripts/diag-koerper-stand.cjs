@@ -47,33 +47,15 @@ const BILD = process.argv.includes("--bild");
 const DORF_ZUG = messort("wiese").dorfZug;
 const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
-// DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
-// `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst (Seite: `window.__eignerKarte`, Proben und Täter „rand").
+// DIE KARTE DES EIGNERS (die Karte des Chunks unter dem Punkt, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
+// `_bodenSichtAt` über alle Nachbarn — die Linse fragt den EINEN Karten-Leser des Spiels für den Eigner allein, ohne das Gewicht
+// der Stufe (`_bodenKarteBilinear`, Stufe 0; Seite: `window.__eignerKarte`, Proben und Täter „rand").
 function eignerKarte(r, x, z) {
-    const s = r.state;
     const span = r._voxelChunkConfig(0).span;
-    const cx = Math.floor(x / span);
-    const cz = Math.floor(z / span);
-    const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
-    const m = e && e.surfMap;
-    if (!m) return null;
-    const C = r._voxelChunkConfig(e.lod || 0);
-    const T = r.constructor.BODEN_KARTE_TEILUNG;
-    const h = C.step / T;
-    const M = T * (C.dim + 3) + 1;
-    const u = (x - (cx * C.span - C.step)) / h;
-    const v = (z - (cz * C.span - C.step)) / h;
-    const i = Math.floor(u);
-    const j = Math.floor(v);
-    if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
-    const ka = m[i + j * M];
-    const kb = m[i + 1 + j * M];
-    const kc = m[i + (j + 1) * M];
-    const kd = m[i + 1 + (j + 1) * M];
-    if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
-    const fu = u - i;
-    const fv = v - j;
-    return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
+    const [cx, cz] = [Math.floor(x / span), Math.floor(z / span)];
+    const e = r.state.voxelChunks && r.state.voxelChunks.get(`${cx},${cz}`);
+    const k = e && e.surfMap && r._bodenKarteBilinear(e, cx, cz, x, z, null, 0);
+    return k ? k.y : null;
 }
 
 // DER GEZEICHNETE BODEN (Seite: `window.__gezeichnet`, K6 und K8): ein Strahl lotrecht auf das Mesh des Eigners und seiner unteren
