@@ -1,0 +1,15 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-2 C:\Program Files\nodejs\node.exe scripts/diag-wasser-leben.cjs --nur mutation,ueberall,laeufe,treibt
+
+--- stderr ---
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-headless-1
+gpu-lauf: Schloss punkte-headless-2 (bild, Platz 2 von 3) nach 807 s
+C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\node\BrowserLauncher.js:188
+                throw new Errors_js_1.TimeoutError(error.message);
+                      ^
+
+TimeoutError: Timed out after 30000 ms while waiting for the WS endpoint URL to appear in stdout!
+    at ChromeLauncher.launch (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\node\BrowserLauncher.js:188:23)
+    at async starteBrowser (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-headless-2\scripts\lib\welt-boot.cjs:711:21)
+    at async lauf (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-headless-2\scripts\diag-wasser-leben.cjs:825:21)
+
+Node.js v24.15.0

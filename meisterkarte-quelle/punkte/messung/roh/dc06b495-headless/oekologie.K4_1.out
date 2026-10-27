@@ -1,0 +1,12 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-3 C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben rudel
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ rudel     {"woelfe":6,"ohnePirsch":[0,0],"pirschS":0,"umstelltS":17.4,"lueckeBeimBiss":125}
+
+  (9 s) — Sekunden je Probe: rudel: 0
+
+✅ GRÜN — rudel
+
+--- stderr ---
+gpu-lauf: Schloss punkte-headless-3 (bild, Platz 2 von 5) nach 58 s

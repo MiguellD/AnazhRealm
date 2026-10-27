@@ -1,0 +1,57 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-4 C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7734/index.html · der Puls steht seit 20.4 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 39.2 s
+[stall-akte] Puls 31×, zuletzt vor 20.4 s — complete · renderer bereit · weltbild da · frames 878 · welt 878 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 34900 114 % · GPU 4548 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 12:15 gpu 9/r 175 · 12:18 gpu 6/r 235 · 12:20 gpu 2/r 168 · 12:22 gpu 3/r 483 · 12:24 gpu 1/r 672 · 12:26 gpu 1/r 417 · 12:28 gpu 2/r 211 · 12:30 gpu 2/r 124 · 12:32 gpu 1/r 98 · 12:34 gpu 1/r 720 · 12:36 gpu 1/r 534 · 12:38 gpu 1/r 494 · 12:40 gpu 1/r 493 · 12:42 gpu 1/r 356 · 12:44 gpu 0/r 195 · 12:46 gpu 0/r 183 · 12:48 gpu 2/r 152 · 12:50 gpu 1/r 134 · 12:52 gpu 1/r 117 · 12:54 gpu 1/r 105 · 12:56 gpu 1/r 102 · 12:58 gpu 1/r 98 · 13:00 gpu 1/r 106 · 13:02 gpu 1/r 102 · 13:04 gpu 1/r 104 · 13:06 gpu 1/r 103 · 13:08 gpu 1/r 130
+[stall-akte] Stapel messen :2298 < takt :2378 < (anonym) :2628
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: das Wege-Netz von „Steintal" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [WARN] FPS-Einbruch: 21 (zuvor ~40)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [WARN] FPS-Einbruch: 22 (zuvor ~39)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Emotion 'sorrow' triggert Welt-Effekt (Wert 0.70)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [WARN] FPS-Einbruch: 22 (zuvor ~34)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [WARN] FPS-Einbruch: 21 (zuvor ~33)
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_2, fitness=1.00
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in messen :2298
+[stall-akte] Seite #2: der Puls kehrt zurück nach 74.3 s — complete · renderer bereit · weltbild da · frames 885 · welt 885 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 256/1734, streuLod 160/1230 · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7734/index.html · der Puls steht seit 20.2 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 226.0 s
+[stall-akte] Puls 145×, zuletzt vor 20.2 s — complete · renderer bereit · weltbild da · frames 2858 · welt 2858 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 256/3184, streuLod 160/2255 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 34900 97 % · browser 39868 2 % · GPU 4548 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 15:16 gpu 0/r 215 · 15:19 gpu 0/r 114 · 15:21 gpu 0/r 85 · 15:23 gpu 0/r 112 · 15:25 gpu 2/r 595 · 15:27 gpu 2/r 718 · 15:29 gpu 2/r 614 · 15:31 gpu 0/r 536 · 15:33 gpu 2/r 237 · 15:35 gpu 0/r 234 · 15:37 gpu 0/r 99 · 15:39 gpu 0/r 522 · 15:41 gpu 0/r 432 · 15:43 gpu 0/r 347 · 15:45 gpu 0/r 295 · 15:47 gpu 0/r 417 · 15:49 gpu 0/r 327 · 15:51 gpu 0/r 211 · 15:53 gpu 0/r 192 · 15:55 gpu 1/r 296 · 15:57 gpu 1/r 105 · 15:59 gpu 1/r 106 · 16:01 gpu 1/r 122 · 16:03 gpu 1/r 101 · 16:05 gpu 1/r 101 · 16:07 gpu 1/r 99 · 16:09 gpu 1/r 102 · 16:11 gpu 1/r 102 · 16:13 gpu 1/r 101 · 16:15 gpu 1/r 98
+[stall-akte] Stapel messen :2304 < takt :2378 < stadtTag :2413
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 875.9/425.1 zu 722.1/471.1
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 881.3/421.1 zu 977.7/338.2
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 906.9/418.4 zu 976.0/342.7
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 675.1/169.7 zu 779.9/153.8
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 853.4/423.5 zu 717.2/469.0
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 854.0/423.5 zu 717.2/469.0
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 651.4/177.7 zu 779.9/151.0
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 797.2/435.5 zu 713.6/469.4
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 853.4/423.8 zu 717.2/469.0
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 853.1/424.3 zu 717.2/469.0
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 912.1/416.3 zu 980.6/332.8
+[stall-akte] Konsole log: [AnazhRealm V18.546.108] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 915.6/416.0 zu 980.2/341.5
+[stall-akte] Stderr [39868:32108:1027/111317.264:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [39868:32108:1027/111317.270:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [39868:32108:1027/111317.270:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [39868:32108:1027/111317.388:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [39868:32108:1027/111317.389:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [39868:32108:1027/111344.977:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: QUOTA_EXCEEDED
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in messen :2304
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":27,"third":29},"nahLeiber":4,"planGleich":true,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.018,"wegLeib":1492.7},"blick":{"n":163,"quote":0.988,"sektorMax":0.196},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":269,"tuer":269,"falsch":[],"aufWeg":0.938,"sprungN":0,"wegeMin":6,"wegeMax":8,"streckeMin":131,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.559,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.964,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (359 s) — Sekunden je Probe: bewohner: 339
+
+✅ GRÜN — bewohner
+
+--- stderr ---
+gpu-lauf: Schloss punkte-headless-4 (bild, Platz 4 von 5) nach 10 s
