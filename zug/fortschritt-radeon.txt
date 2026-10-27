@@ -656,3 +656,4 @@
 2026-10-27 04:03:48 takt8b-radeon halten.K2#1 ROT 5.7 · 2/5
 2026-10-27 04:36:41 takt8b-radeon profiband.K4#1 ROT 32.9 · 3/5
 2026-10-27 04:38:32 takt8b-radeon klang.K2#1 GRÜN 1.9 · 4/5
+2026-10-27 04:52:23 takt8b-radeon klang.K5#2 GRÜN 13.8 · 5/5
