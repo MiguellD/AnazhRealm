@@ -39,3 +39,4 @@ takt8-gtx gemessen punkte e7a28b06 gtx: 17 grün / 2 rot
 z45z46-abab nicht-langsamer abab 42973786 gegen 5b8603c1: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
 takt9-gtx gemessen punkte 455e5be8 gtx: 18 grün / 0 rot
 z47z48-abab nicht-langsamer abab cd34e72b gegen 42973786: w-ego 2+2 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
+takt10-gtx gemessen punkte dc06b495 gtx: 35 grün / 4 rot
