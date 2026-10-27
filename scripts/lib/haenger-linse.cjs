@@ -640,8 +640,10 @@ function haengerTabelle(a) {
 // `posten` (`takt --posten a,b`; IN FAHRT `wandern: "fahrt"`, profiband.K1, die FAHRT-POSTEN der OMEN-Zerlegung 22.10., GTX GT-Fahrt
 // F95 33,5 ms): je Name seine Zeit ab p95 über jeden Pfad (je Ast einmal gezählt), ROT über der Schwelle je Takt — ein Posten, der
 // in JEDEM Takt kostet, trägt keine Spitze über der Mitte und bliebe sonst ungenannt (Lehre 25: der Takt kostet, was ihn betrifft).
+// Der Cull (pbk4-fahrt) ging je Takt den Bestand, der mit dem Weg wächst — er steht für `_loopAutoSave`, das seit fahrt-takt im
+// Leerlauf speichert (0 ms je Takt ab p95).
 // In Fahrt ist die Schwelle 0,5 ms: jeder Rahmen darüber steht BENANNT, ROT ist ein Posten oder ein Wagen unter 150 m (blind).
-const FAHRT_POSTEN = ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "_loopAutoSave"];
+const FAHRT_POSTEN = ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "tickArchitectureCulling"];
 function postenSumme(k, namen, summe = namen.map(() => 0), oben = -1) {
     k.k.forEach((c, nm) => {
         const i = namen.indexOf(nm.split(" ")[0]);

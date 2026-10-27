@@ -1560,8 +1560,6 @@ class AnazhRealm_kampf {
         const a = rig && rig.armR;
         // (0) ohne Schwung steht die Hülle des Leibs auf ihrem Platz (den Ausfall trägt sie nur im Schwung, Schritt 2)
         const huelle = this._kampfHuelle(mesh);
-        if (huelle && !huelle.userData._ausfallBasis) huelle.userData._ausfallBasis = huelle.position.clone();
-        if (huelle) huelle.position.copy(huelle.userData._ausfallBasis);
         if (!sw || !sw.rahmen || !a || !a.shoulder || !a.elbow || !a.wrist || !rig.spine || !rig.spine.parent) return;
         const achse = this._kampfKlingenAchse(sw, this._poseAchse || (this._poseAchse = {}));
         const L = this._kampfSchwungLage(sw, sw.t, achse, this._poseLage || (this._poseLage = {}));
@@ -1638,9 +1636,17 @@ class AnazhRealm_kampf {
         }
     }
 
-    // Die Hülle des Leibs (der _creatureSkin-Knoten des Avatars, an dessen Knochen Rig und Gerät hängen) oder null.
+    // Die Hülle des Leibs (der _creatureSkin-Knoten des Avatars, an dessen Knochen Rig und Gerät hängen) AUF IHREM PLATZ, oder
+    // null. Den Ausfall trägt sie nur im Schwung (Schritt 2): die Seele stellt sie vor der Lokomotion zurück, die Fuß-IK misst
+    // den Leib ohne den Ausfall des letzten Takts (leib.K2 — sonst las sie den Boden 1,2–2,3 m vor den Füßen, und die Beine
+    // folgten dem Oberkörper-Layer, gate:kampf-gefuehl E).
     _kampfHuelle(mesh) {
-        for (const ch of mesh.children) if (ch && ch.userData && ch.userData._creatureSkin) return ch;
+        for (const ch of mesh.children)
+            if (ch && ch.userData && ch.userData._creatureSkin) {
+                if (!ch.userData._ausfallBasis) ch.userData._ausfallBasis = ch.position.clone();
+                ch.position.copy(ch.userData._ausfallBasis);
+                return ch;
+            }
         return null;
     }
 

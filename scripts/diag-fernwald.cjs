@@ -275,8 +275,7 @@ hauptLauf(async () => {
         res.totband = TOT;
         const dist = (e) => Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
         // Die Linse liest die Karten-Art über die Prototyp-Methode — der Selbsttest ersetzt nur die der Welt.
-        const KP = AR.prototype._archKartenPreset;
-        const kartenPreset = (e) => KP.call(r, e);
+        const kartenPreset = (e) => AR.prototype._archKartenPreset.call(r, e);
         const karten = () => st.architectures.filter((e) => e && e.position && kartenPreset(e));
         // Der Stempel einer Karten-Instanz: das Vorzeichen von aKarte.w im Slot (negativ = voll).
         const stempel = (e) => {
@@ -295,8 +294,7 @@ hauptLauf(async () => {
             return h !== null && r._lodPerceptionDistance(d, h) >= LD.thresh12 + (LD.hysteresis || 0);
         };
         const partner = (e) => (Number.isFinite(e._lodBandLevel) ? e._lodBandLevel : null);
-        const RAND = AR.prototype._archKartenHorizont;
-        const rand = (e) => RAND.call(r, e);
+        const rand = (e) => AR.prototype._archKartenHorizont.call(r, e);
         // A: der Zustand jedes Karten-Dings der Karten-Zone, Täter beim Namen.
         const formZensus = () => {
             const R = st.architectureCullingRadius;
@@ -549,14 +547,17 @@ hauptLauf(async () => {
         // Der Tausch ändert, was Cull und Stufen-Wahl urteilen: er ist ein Schreiber und trägt seinen Weckruf (die Stand-Wache,
         // `_standRuht` — ohne ihn ging der Cull in einer eingeschwungenen Welt nie, A blieb unter dem alten Weg grün: CI
         // 91c44f0f, A 1558/1558). A zählt erst, wenn der Cull nach dem Tausch gegangen ist — nie nach einer festen Taktzahl.
+        // Seit pbk4-fahrt schläft ein Eintrag mit stehendem Urteil in der Cull-Wache (`_cullWache`, ihr Schlüssel: Bestand und
+        // Buch) — der Tausch ist ein neues Buch und weckt sie ganz (`_weltRegt` → undefined; ohne ihn A 2230/2230 grün unter dem
+        // alten Weg).
         const cullVor = wache("archCull").arbeit;
         r._archKartenPreset = () => null;
-        r._weltRegt();
+        r._cullWacheStand = r._weltRegt();
         await warte("der Cull nach dem Tausch", () => wache("archCull").arbeit > cullVor);
         const cullGaenge = wache("archCull").arbeit - cullVor;
         res.S1 = { A: formZensus(), cullGaenge, D: await uebergang(), vorher: !kandS1.fehlt };
         delete r._archKartenPreset; // die Prototyp-Methode trägt wieder
-        r._weltRegt();
+        r._cullWacheStand = r._weltRegt();
         // ── SELBSTTEST (2): ein injizierter Satz an einem Baum ──
         const opfer = karten()[0];
         if (opfer) {
