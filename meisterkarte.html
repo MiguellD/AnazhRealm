@@ -5,16 +5,20 @@
   :root {
     --bg: #f5f4ef; --fg: #1c1e20; --muted: #5c6166; --card: #ffffff; --line: #e2dfd6; --track: #e9e6dd;
     --fill: #2f6f5e; --fill-strong: #245a4c; --dot-off: #d3cfc4; --chip: #e6efea; --chip-fg: #245a4c; --code: #efece4;
+    /* der Weg zu 330: EINE Grün-Rampe nach Nähe zum Punkt (gebucht am dunkelsten), ordinal validiert gegen die Fläche */
+    --w0: #0f3029; --w1: #1b4a3e; --w2: #286253; --w3: #377a68; --w4: #49917d; --w5: #5ea692; --w6: #77b8a4; --w7: #d3cfc4;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
       --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+      --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
     --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+    --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -59,6 +63,18 @@
   .top li::before { counter-increment: top; content: counter(top); position: absolute; left: 16px; top: 15px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: var(--chip-fg); font-size: 0.85rem; font-weight: 650; }
   .meta { color: var(--muted); font-size: 0.875rem; margin: 2px 0 0; }
   .regeln li { font-size: 0.9rem; }
+  .weg-bar { display: flex; gap: 2px; height: 28px; margin: 4px 0 14px; }
+  .weg-bar > span { display: block; min-width: 3px; flex-basis: 0; }
+  .weg-bar > span:first-child { border-radius: 4px 0 0 4px; }
+  .weg-bar > span:last-child { border-radius: 0 4px 4px 0; }
+  .w0 { background: var(--w0); } .w1 { background: var(--w1); } .w2 { background: var(--w2); } .w3 { background: var(--w3); }
+  .w4 { background: var(--w4); } .w5 { background: var(--w5); } .w6 { background: var(--w6); } .w7 { background: var(--w7); }
+  .weg-tafel { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .weg-tafel th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--line); }
+  .weg-tafel td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .weg-tafel .z { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .weg-tafel td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
+  @media (max-width: 560px) { .weg-tafel .meta { display: none; } }
   footer { color: var(--muted); font-size: 0.85rem; margin-top: 32px; }
   footer p { margin: 0 0 4px; }
 </style>
@@ -74,6 +90,39 @@
       <p class="meta">Nach dem Vorlauf 73f28224..3528f2d0 (−7 nach R6) trägt die Liste bis ≈ +12: M37–M42 holen die sieben R6-Punkte zurück (Speicher K1 2, K2 1, Profiband K4 1, Menschen K1 1, Vegetation K4 1, Tiere K3 1), M43 Material K3 +1 (Fels), dazu M9, M10 und M11 je eine Stufe und die Aussetzer der GTX aus M15 (Klang K5 → 2); M36 ist ROT mit den Tätern beim Namen und steigt nur durch einen Schnitt — sie werden erst mit der Messung am Kopf gebucht und im Verlauf als „gemessen“ geführt, nie als Schnitt.</p>
     </section>
   </header>
+
+  <section aria-labelledby="h-weg">
+    <h2 id="h-weg">Der Weg zu 330</h2>
+    <p class="sub">Jede der 207 offenen Staffeln trägt eine Klasse, einen Aufwand in Macher-Stunden und eine Wahrscheinlichkeit, dass ihre Karte den Punkt am Gerät holt (Triage-Workflow weg-330 (8 Leser, je offene Staffel Klasse, Aufwand, Wurzel, Karte; nur gelesen, am main 19606f2e)). Offen ohne Welle: 175 Staffeln, ≈ 3944 Macher-Stunden, erwartet ≈ 55 Punkte beim ersten Anlauf.</p>
+    <div class="flaeche">
+      <div class="weg-bar" role="img" aria-label="gebucht 123, in Arbeit 32, nur die Station fehlt 14, Schnitt + Station 51, Station rot 9, neues Gesetz 81, an Pflicht-Offen 20 von 330"><span class="w0" style="flex-grow:123" title="gebucht: 123 Punkte"></span><span class="w1" style="flex-grow:32" title="in Arbeit: 32 Punkte"></span><span class="w2" style="flex-grow:14" title="nur die Station fehlt: 14 Punkte"></span><span class="w3" style="flex-grow:51" title="Schnitt + Station: 51 Punkte"></span><span class="w4" style="flex-grow:9" title="Station rot: 9 Punkte"></span><span class="w5" style="flex-grow:81" title="neues Gesetz: 81 Punkte"></span><span class="w6" style="flex-grow:20" title="an Pflicht-Offen: 20 Punkte"></span></div>
+      <table class="weg-tafel">
+        <thead><tr><th scope="col">Klasse</th><th scope="col" class="z">Punkte</th><th scope="col" class="z">Macher-h</th><th scope="col" class="z">erwartet</th><th scope="col" class="z">Karten</th></tr></thead>
+        <tbody>
+          <tr><td><i class="w0" aria-hidden="true"></i><strong>gebucht</strong><span class="meta"> — am Kopf gemessen und gebucht</span></td><td class="z">123</td><td class="z">—</td><td class="z">—</td><td class="z">—</td></tr>
+          <tr><td><i class="w1" aria-hidden="true"></i><strong>in Arbeit</strong><span class="meta"> — Zweig gebaut oder Karte läuft — fällt mit Zug und Messung</span></td><td class="z">32</td><td class="z">—</td><td class="z">—</td><td class="z">25</td></tr>
+          <tr><td><i class="w2" aria-hidden="true"></i><strong>nur die Station fehlt</strong><span class="meta"> — das Verhalten steht im Spiel, es fehlt Werkzeug und Station (≤ 4 h)</span></td><td class="z">14</td><td class="z">71</td><td class="z">6,6</td><td class="z">12</td></tr>
+          <tr><td><i class="w3" aria-hidden="true"></i><strong>Schnitt + Station</strong><span class="meta"> — ein Schnitt ≤ 1 Tag an EINER Wurzel, dann die Station</span></td><td class="z">51</td><td class="z">631</td><td class="z">19,9</td><td class="z">39</td></tr>
+          <tr><td><i class="w4" aria-hidden="true"></i><strong>Station rot</strong><span class="meta"> — die Station steht und ist rot, der Täter steht beim Namen</span></td><td class="z">9</td><td class="z">142</td><td class="z">3,6</td><td class="z">9</td></tr>
+          <tr><td><i class="w5" aria-hidden="true"></i><strong>neues Gesetz</strong><span class="meta"> — ein Gesetz oder Teilsystem, mehr als 1 Tag</span></td><td class="z">81</td><td class="z">2204</td><td class="z">21,4</td><td class="z">58</td></tr>
+          <tr><td><i class="w6" aria-hidden="true"></i><strong>an Pflicht-Offen</strong><span class="meta"> — fällt erst mit A, B, C oder E</span></td><td class="z">20</td><td class="z">896</td><td class="z">3,8</td><td class="z">14</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin-top:16px">Die nächsten Karten (erwartete Punkte je Macher-Stunde)</h3>
+    <ol class="liste top" style="margin-top:8px">
+      <li class="flaeche"><div class="kopf"><strong>gelaende.K2#2</strong><span class="rate">+1 · 4 h · GPU</span></div><p class="meta">gelaende.K2#2 — Die letzte Messung an 607d0c73 (vor gk2-damm) ergab Third 8/10, Ego 0/0 Gräben, (b)/(d) undefined.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>sturm-sicht</strong><span class="rate">+1 · 4 h · GPU</span></div><p class="meta">ferne.K5#1 — Die Luft-Linse werkbank licht --luft wird am Hügel mit dem Spieler-Wort Sturm gefahren; gemessen wird der Kontrastabfall über die Distanz gegen das Soll Sicht 1,5 km ±15 % an einem Gerät.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>licht.K5#1</strong><span class="rate">+1 · 4 h · GPU</span></div><p class="meta">licht.K5#1 — Eine Spielgang-Station fährt den Wetter-Zug klar → Regen → klar als Spieler-Wort und misst die Ausgabe-Luma je Sekunde gegen das Soll Sprung ≤ 0,1 EV/s an einem Gerät.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>hud-mass</strong><span class="rate">+1 · 4 h · GPU</span></div><p class="meta">spielgang.K3#1 — Eine Station mit PerformanceObserver('event') über HUD und Menü im echten Fenster bauen, dazu die HUD-Maske aus dem Ausgabe-Bild; gemessen werden INP p98 ≤ 200 ms und die Bild-Deckung ≤ 5 % an einem Gerät.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>fahr-rueckmeldung</strong><span class="rate">+1 · 5 h · GPU</span></div><p class="meta">fahrzeug.K5#1 — Drei Kanäle, die im Spiel stehen, werden je als Paar gemessen: Motor-Klang am Klang-Abgriff, Federung im Ausgabe-Bild und Rumble an einem Stub-vibrationActuator, jeweils Drift auf Schotter gegen Weg.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>tier-sicht</strong><span class="rate">+1 · 5 h · GPU</span></div><p class="meta">tiere.K5#1 — Der Modus <code>werkbank lauf --wandern kreis</code> läuft 10 Spielminuten mit Klassen-Maske tier ≥ 200 px als Sichtungs-Zähler in Ego und Third an einem Gerät, gemessen wird die Zahl der Sichtungen (≥ 3).</p></li>
+      <li class="flaeche"><div class="kopf"><strong>sprung</strong><span class="rate">+1 · 4 h · GPU</span></div><p class="meta">streaming.K3#1 — Eine Sprung-Station setzt per Werkbank-eval den Spieler 1 km weit und misst Frame p95 über das Neu-Entstehen der Welt; der Punkt kommt bei ≤ 50 ms an der Radeon.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>affekt-musik</strong><span class="rate">+1 · 6 h · headless</span></div><p class="meta">affekt.K5#1 — Die darkness für scaleFor wird zur Funktion der Valenz von auraAt(Spieler).emotion; gemessen wird am headless Klang-Abgriff (ausgabe-aufnahme, dazu ein neues Spektral-Merkmal), dass die Mutation der Emotion-Achse die Spektral-Merkmale verschiebt.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>zugang-gesetz</strong><span class="rate">+1 · 7 h · headless</span></div><p class="meta">spielgang.K4#1 — Eine Untertitel-Zeile an den Ereignis-Chokepoints des Klang-Gesetzes (Ruf, Treffer, Substanz) einhängen; gemessen werden Ruf-Ereignisse gegen Untertitel-Zeilen = 100 % im headless-Lauf.</p></li>
+      <li class="flaeche"><div class="kopf"><strong>leib.K1#2</strong><span class="rate">+1 · 6 h · GPU</span></div><p class="meta">leib.K1#2 — Die Station ist durch R6 veraltet (dirigent-ankunft/kern/takt geändert); Täter ist ego/gehen p95 44–55 ms an der Radeon (schlechtester von 3 Boots, 51,4/54,8) sowie einmal einsteigen 53,9 ms, an der GTX fehlt eine Probe von third/hieb; geschnitten wird der erste Takt nach frischer Eingabe, der den vollen Schritt trägt, und die fehlende hieb-Probe, gemessen wird mit 3 Boots an beiden Geräten nach.</p></li>
+    </ol>
+  </section>
 
   <section aria-labelledby="h-vision">
     <h2 id="h-vision">Was AnazhRealm im AAAA-Zustand ist</h2>
