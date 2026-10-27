@@ -918,8 +918,11 @@ hauptLauf(async () => {
         );
         if (R) weich("Reload mitten im Sturm", g.A, R);
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
-        // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt einen Zug — der Zug ROT
-        await pageA.evaluate(sturmSprung, 1);
+        // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
+        // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
+        // A im Zug von B, und der Selbsttest war blind, je nachdem, wie weit die Uhr unter Last lief (CI 40467672118; der Kern
+        // wetterAt über 2000 Züge: blind in 10,6–12,2 %, mit 3 in keinem)
+        await pageA.evaluate(sturmSprung, 3);
         await pageB.evaluate(() => {
             const r = window.anazhRealm;
             r._weltUhrNimm = () => {};
