@@ -702,17 +702,25 @@ const TAT = process.argv.includes("--tat");
                 st.architectureCullingRadius = R0;
                 const L = window.__standLinseAn();
                 const summe = (f) => Object.keys(TAKTE).reduce((a, n) => a + (f[n] | 0), 0);
-                // bis die Wache schläft (höchstens n Takte; ein Takt, der nie schläft, fällt in der Ruhe rot)
+                // DAS WARTEN DER LINSE ist das EINE Warten auf einen Bau (welt-boot `__gebautNach`, Lehre 26): Takt um Takt (`jeTakt`),
+                // bis `fertig()` steht — der Deckel `max` zählt nur Takte, in denen die Welt nichts offen hat; voll endet er still (das
+                // Urteil danach nennt, was nicht stand), ein Offenes ohne Bau-Ereignis wirft beim Namen. Bis ci-wackler-zensus zählte jedes
+                // Fenster jeden Takt: unter Last (2 Kerne, 3 Läufe) kamen die Antworten der Fäden und die Arbeit der ms-Budgets nach dem
+                // Fenster (ORT, STROM, NACHSCHUB, Satz-Haus), und die Phase nach `bisRuhe` begann in einer wachen Welt (GEHEN, TREUE)
+                const bisDa = (name, fertig, max, jeTakt = takt) =>
+                    window.__gebautNach(name, { fertig, max, takt: jeTakt }).catch((f) => {
+                        if (!/^DER BAU STEHT NICHT/.test(f.message)) throw f;
+                        return max;
+                    });
+                // bis die Wache schläft und die Welt nichts offen hat (ein Takt, der nie schläft, fällt in der Ruhe rot)
                 const bisRuhe = async (n) => {
-                    let still = 0,
-                        i = 0;
+                    let still = 0;
                     L.frame();
-                    for (; i < n && still < 30; i++) {
+                    const offen = () => Object.values(r._weltOffen()).some(Boolean);
+                    return bisDa("die Ruhe der Wache", () => still >= 30 && !offen(), n, () => {
                         takt();
                         still = summe(L.frame()) === 0 ? still + 1 : 0;
-                        if (i % 10 === 0) await sleep(5);
-                    }
-                    return i;
+                    });
                 };
                 const phase = async (n, schritt) => {
                     const fs = [];
@@ -1285,20 +1293,17 @@ const TAT = process.argv.includes("--tat");
                                 Object.assign(Wd, { gesetzt: true, ort: [wx, wz], synchron: n, ms: +ms.toFixed(1) });
                                 const preset = r._foundryPresetForEntry(e);
                                 let g = r._foundryGestaltFor(e, preset);
-                                let takte = 0;
                                 let maxN = 0;
                                 let maxMs = 0;
                                 n = 0;
-                                while (!Number.isInteger(g) && takte < 600) {
+                                const takte = await bisDa("die Gestalt im frischen Wald", () => Number.isInteger(g), 600, () => {
                                     const n0 = n;
                                     const m0 = ms;
                                     takt();
-                                    takte++;
                                     if (ms - m0 > maxMs) maxMs = ms - m0;
                                     maxN = Math.max(maxN, n - n0);
                                     g = r._foundryGestaltFor(e, preset);
-                                    if (takte % 20 === 0) await sleep(5);
-                                }
+                                });
                                 Object.assign(Wd, {
                                     takte,
                                     gestalt: Number.isInteger(g) ? g : null,
@@ -1355,12 +1360,7 @@ const TAT = process.argv.includes("--tat");
                                     })
                                 );
                             };
-                            let takte = 0;
-                            while (!drin() && takte < 600) {
-                                takt();
-                                takte++;
-                                if (takte % 20 === 0) await sleep(5);
-                            }
+                            const takte = await bisDa("das Haus im Bau-Satz", drin, 600);
                             const gs = gruppen();
                             Object.assign(SH, {
                                 takte,
@@ -1449,19 +1449,14 @@ const TAT = process.argv.includes("--tat");
                                 },
                             ]);
                             A.dirty = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
-                            for (; A.takte < 600; A.takte++) {
+                            A.takte = await bisDa("der Erdbau unter dem Spieler", () => (A.heil = !(st.dirtyVoxelChunks || []).size), 600, () => { // prettier-ignore
                                 imTakt = true;
                                 try {
                                     takt();
                                 } finally {
                                     imTakt = false;
                                 }
-                                if (!st.dirtyVoxelChunks || st.dirtyVoxelChunks.size === 0) {
-                                    A.heil = true;
-                                    break;
-                                }
-                                if (A.takte % 5 === 0) await sleep(10);
-                            }
+                            });
                         } finally {
                             if (bauEigen) r._buildVoxelChunkData = bauRoh;
                             else delete r._buildVoxelChunkData;
@@ -1526,20 +1521,14 @@ const TAT = process.argv.includes("--tat");
                     let n = 0;
                     let nach = 0;
                     try {
-                        for (; n < 600; n++) {
+                        const gang = () => {
                             jetztTakt = 0;
                             takt();
                             W.maxTakt = Math.max(W.maxTakt, jetztTakt);
-                            if (st.voxelChunks && st.voxelChunks.has(key)) break;
-                            if (n % 5 === 0) await sleep(10);
-                        }
-                        // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach
-                        for (; nach < 240; nach++) {
-                            jetztTakt = 0;
-                            takt();
-                            W.maxTakt = Math.max(W.maxTakt, jetztTakt);
-                            if (nach % 10 === 0) await sleep(5);
-                        }
+                        };
+                        n = await bisDa("der Spieler-Chunk am fremden Ort", () => !!(st.voxelChunks && st.voxelChunks.has(key)), 600, gang); // prettier-ignore
+                        // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach (240 ohne Offenes)
+                        nach = await bisDa("der Wald am fremden Ort", () => false, 240, gang);
                     } finally {
                         core.planForestCell = roh;
                         if (jobEigen) r._tickWaldPlan = jobRoh;
@@ -1564,12 +1553,7 @@ const TAT = process.argv.includes("--tat");
                 {
                     const p = st.playerMesh.position;
                     const o = () => r._weltOffen(); // was die Welt noch baut (A9): die Schlange des Walds und die Foundry
-                    let i = 0;
-                    for (; i < 2000; i++) {
-                        if (o().wald + o().foundry === 0 && r._streuWartet(p) === 0) break;
-                        takt();
-                        if (i % 10 === 0) await sleep(5);
-                    }
+                    const i = await bisDa("der Nachschub des Walds", () => o().wald + o().foundry === 0 && r._streuWartet(p) === 0, 2000); // prettier-ignore
                     const warten = [];
                     r._streuWartet(p, warten);
                     aus.nachschub = { takte: i, schlange: o().wald, foundry: o().foundry, warten };
