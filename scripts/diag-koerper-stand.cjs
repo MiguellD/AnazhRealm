@@ -927,8 +927,9 @@ async function rollen(n) {
         const auf = Math.atan2(h(X + 1, Z) - h(X - 1, Z), h(X, Z + 1) - h(X, Z - 1));
         const rig = pm.userData.rig;
         const fuss = sohle(pm, [rig.legL.ankle, rig.legR.ankle]);
-        const bahn = (x, z, wege, zaehlt = () => true) => {
+        const bahn = (wege, zaehlt = () => true, x = X, z = Z) => {
             setz(x, z);
+            for (let k = 0; k < 30; k++) takt(); // der Leib steht am neuen Ort, bevor er geht (kein Lock der Bahn davor)
             let [i, k, x0, z0, h0, stecken] = [0, 0, x, z, 0, 0];
             const vor = () => (P.x - x0) * Math.sin(s.yaw) + (P.z - z0) * Math.cos(s.yaw);
             [s.yaw, s.keys.w] = [wege[0][0], true];
@@ -944,16 +945,8 @@ async function rollen(n) {
             s.keys.w = false;
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
-        R.fuss = bahn(
-            X,
-            Z,
-            [auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25])
-        );
-        R.falllinie = bahn(
-            X,
-            Z,
-            [auf, auf + Math.PI].map((y) => [y, 6])
-        );
+        R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
+        R.falllinie = bahn([auf, auf + Math.PI].map((y) => [y, 6]));
         // die Treppe: zehn Stufen (Auftritt 0,3 m, Breite 1,4 m) und ein Podest 1,6 m, bergauf längs der Falllinie ab dem Ort;
         // gezählt wird ein Fuß über ihrem Grundriss (quer ± 0,7 m, längs 0 … 4,6 m)
         if (!s.blueprints.messtreppe && r.createBlueprint("messtreppe"))
@@ -973,7 +966,8 @@ async function rollen(n) {
         treppe = (x, z) => {
             t.mesh.updateMatrixWorld(true);
             lot.set(new T.Vector3(x, 1e4, z), new T.Vector3(0, -1, 0));
-            return (lot.intersectObject(t.mesh, true)[0] || { point: { y: -Infinity } }).point.y;
+            const h = lot.intersectObject(t.mesh, true)[0];
+            return h ? h.point.y : -Infinity;
         };
         const [sx, sz] = [Math.sin(auf), Math.cos(auf)];
         const ueber = (l) =>
@@ -981,10 +975,10 @@ async function rollen(n) {
         R.stufe =
             t &&
             bahn(
-                X - 1.5 * sx,
-                Z - 1.5 * sz,
                 [auf, auf + Math.PI].map((y) => [y, 5.4]),
-                ueber
+                ueber,
+                X - 1.5 * sx,
+                Z - 1.5 * sz
             );
         treppe = null;
         if (t) r.removeArchitecture(t);
@@ -1232,7 +1226,7 @@ const zeile = (o) =>
                 sohle: ["K8 huf hang"],
                 ring: ["K8 Ring wiese", "K8 Ring hang"],
                 nexus: ["K8 Aufbau: der Nexus"],
-                fuss: ["K8 fuss hang", "K8 falllinie hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
+                fuss: ["K8 fuss hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
             };
             for (const inj of Object.keys(soll)) {
                 const k8 = soll[inj][0].startsWith("K8");
