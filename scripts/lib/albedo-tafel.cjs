@@ -81,11 +81,28 @@ const STUDIOS = {
     },
 };
 
-// DIE STUFEN-ZEILE (`welt.stufeVon`) misst nur die Welt (das Labor zeigt die L0) und trägt die Quellen ihrer Zeile
+// DIE FOLGEN einer Zeile (`welt.folgen` {name: [stufe, klasse]}, S8): je Stufe eine Stufen-Zeile `<id>-<name>` — dasselbe
+// Exemplar im Auge der Stufe, nur die Welt (das Labor zeigt die L0, `welt.stufeVon`), die Quellen der Zeile, ihr Ist in `ist.folgen`
 function ladeTafel(p) {
     const t = JSON.parse(fs.readFileSync(p || TAFEL_PFAD, "utf8"));
-    for (const z of t.zeilen) if (z.welt.stufeVon) z.quellen = t.zeilen.find((b) => b.id === z.welt.stufeVon).quellen;
+    t.zeilen = t.zeilen.flatMap((z) => [
+        z,
+        ...Object.entries(z.welt.folgen || {}).map(([n, [stufe, klasse]]) => ({
+            id: `${z.id}-${n}`,
+            gruppe: z.gruppe,
+            titel: `${z.titel} — ${n}`,
+            quellen: z.quellen,
+            welt: { ...z.welt, exemplar: { ...z.welt.exemplar, stufe }, klasse, stufen: [stufe], stufeVon: z.id, folgen: undefined },
+            ist: ((z.ist || {}).folgen || {})[n] || null,
+        })),
+    ]);
     return t;
+}
+function tafelSchreiben(t) {
+    const zeilen = t.zeilen.filter((z) => !z.welt.stufeVon);
+    for (const z of zeilen)
+        if (z.ist && z.welt.folgen) z.ist.folgen = Object.fromEntries(Object.keys(z.welt.folgen).map((n) => [n, t.zeilen.find((f) => f.id === `${z.id}-${n}`).ist]));
+    fs.writeFileSync(TAFEL_PFAD, JSON.stringify({ ...t, zeilen }, null, 4) + "\n");
 }
 
 const zahl = (x) => typeof x === "number" && Number.isFinite(x);
@@ -885,6 +902,7 @@ module.exports = {
     PFLICHT_GRUPPEN,
     STUDIOS,
     ladeTafel,
+    tafelSchreiben,
     tafelPruefen,
     tafelStand,
     standWand,

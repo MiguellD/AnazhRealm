@@ -83,7 +83,7 @@ function stoffPasst(sel, s) {
     if (!sel) return true;
     if (!s) return false;
     if (sel.kind && !new RegExp(sel.kind).test(s.kind || "")) return false;
-    if (sel.seh && !new RegExp("^(?:" + sel.seh + ")$").test(s.seh || "")) return false;
+    if (sel.seh && s.seh !== sel.seh) return false;
     for (const f of ["r", "mt", "cc"])
         if (sel[f]) {
             const v = s[f];
@@ -252,19 +252,15 @@ function albedoSicht(opts) {
                 const e = x.eintrag,
                     n = x.zeile.welt.exemplar.stufe,
                     D = r.constructor.LOD_DISTANCES;
-                // die Stufe steht, wenn eine ihrer Gruppen das Exemplar trägt — im Satz erst, wenn sein Block es zeichnet
-                // (`_bauSatzBlock`; vorher zog der Schuss eine Stufe, deren Satz noch packte: in swiftshader Haus L0 „kein Pixel")
+                // die Karte erst, wenn ihre Schicht gebacken ist (vorher zeichnete die Birke mittags kein Pixel)
                 const zeigt = () => {
-                    for (const [key, g] of st.archInstanceGroups || [])
+                    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
                         if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
-                            for (let i = 0; i < (g.liveCount || 0); i++) {
-                                if (g.slotEntry[i] !== e) continue;
-                                if (!g.satz) return true;
-                                const s = [...st.chunkSaetze.values()].find((q) => q.art === g.satz),
-                                    b = s && s.bloecke.get(key),
-                                    nv = g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
-                                if (b && nv && Math.floor(b.vAnzahl / nv) > i) return true;
-                            }
+                            for (let i = 0; i < (g.liveCount || 0); i++)
+                                if (g.slotEntry[i] === e) {
+                                    const ka = g.mesh.geometry.attributes.aKarte;
+                                    return !ka || [...r._impostorAtlas().zellen.values()].some((z) => z.gebacken && z.idx === Math.round(ka.getX(i)));
+                                }
                     return false;
                 };
                 // der Abstand in der EINEN Wahrnehmungs-Distanz der Wahl (`_lodPerceptionDistance`, linear im Abstand): ein hoher
@@ -425,7 +421,7 @@ function albedoSicht(opts) {
                     hh = ka ? (ka.getZ(i) * s) / 2 : 0;
                 const c = ka ? new T.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
                 const d = Math.hypot(c.x - um.x, c.z - um.z);
-                if (!best || d < best.d) best = { c, rad: ka ? Math.hypot(hb, hh) : bs.radius * s, d };
+                if (!best || d < best.d) best = { c, rad: ka ? Math.hypot(hb, hh) : bs.radius * s, d, hb };
             }
             return best;
         };
@@ -594,17 +590,21 @@ function albedoSicht(opts) {
                             );
                         const c = bb.getCenter(new T.Vector3());
                         const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
-                        // DIE TIEFEN-SCHEIBE (wie die Karte gegen die Gestalt, S2b): gezeichnet wird nur die Kugel des Exemplars. Die
-                        // KARTE sieht das Auge waagrecht: ihr Quad steht lotrecht zur Peilung (je Fragment, `_ang`), so liegt jedes
-                        // ihrer Pixel in EINER Tiefe — ±1 m schneidet sie aus dem EINEN Atlas über jede Art (582 Karten an Genesis,
-                        // die Birke maß mit ihren Nachbarn 0,50 ihrer L0); von oben ist sie eine Strecke und zählt nicht
-                        const karte = [...ziele.keys()].some((m) => m.geometry.attributes.aKarte);
+                        // DAS EXEMPLAR ALLEIN (die Tiefen-Scheibe wie Karte gegen Gestalt, S2b): eine Instanz-Gruppe zeichnet jede Instanz
+                        // ihrer Stufe — gezählt werden nur die Kugel des Exemplars und die Spalten seiner Halbbreite (die Fichte L1 zählte
+                        // 119k Pixel ihres Waldes gegen 36k der L0). DIE KARTE sieht das Auge waagrecht: ihr Quad steht lotrecht zur
+                        // Peilung (`_ang`), jedes ihrer Pixel liegt in EINER Tiefe (±1 m im EINEN Atlas über jede Art, 582 Karten an
+                        // Genesis; die Birke maß mit ihren Nachbarn 0,50 ihrer L0); von oben ist sie eine Strecke. Jede Stufe einer Zeile
+                        // `blick: "waagrecht"` (der Baum) sieht dasselbe Auge.
+                        const hb = Math.max(...[...ziele.values()].map((z) => z.hb || 0)),
+                            waag = hb || w.blick === "waagrecht",
+                            inst = [...ziele.keys()].some((m) => m.isInstancedMesh);
                         for (const d of window.__tafelBlicke)
-                            if (!(karte && d[1] > 0.9))
+                            if (!(waag && d[1] > 0.9))
                                 stellungen.push([
-                                    c.clone().addScaledVector(new T.Vector3(d[0], karte ? 0 : d[1], d[2]).normalize(), rad * 2.6),
+                                    c.clone().addScaledVector(new T.Vector3(d[0], waag ? 0 : d[1], d[2]).normalize(), rad * 2.6),
                                     c,
-                                    karte ? [rad * 2.6 - 1, rad * 2.6 + 1] : [rad * 1.6, rad * 3.6],
+                                    inst && [hb ? rad * 2.6 - 1 : rad * 1.6, hb ? rad * 2.6 + 1 : rad * 3.6, (((hb || rad) * 1.05) / (rad * 2.6 * Math.tan((17.5 * Math.PI) / 180) * (W / H))) * (W / 2)],
                                 ]);
                     }
                     const stoffe = new Set();
@@ -624,10 +624,11 @@ function albedoSicht(opts) {
                         cam.position.copy(stellungen[i][0]);
                         cam.lookAt(stellungen[i][1]);
                         const nf = stellungen[i][2];
-                        if (nf) [cam.near, cam.far] = [Math.max(0.05, nf[0]), nf[1]];
+                        [cam.near, cam.far] = nf || kamAlt.nf;
                         cam.updateProjectionMatrix();
                         cam.updateMatrixWorld(true);
                         const t = await schuss((m) => set.has(m));
+                        if (nf) for (let p = 0; p < W * H; p++) if (Math.abs((p % W) + 0.5 - W / 2) > nf[2]) t.hell[p * 4 + 3] = 0;
                         hell.set(t.hell, i * W * H * 4);
                         dunkel.set(t.dunkel, i * W * H * 4);
                     }

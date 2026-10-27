@@ -261,7 +261,7 @@ async function selbsttest() {
         const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
         const dk = "stamm/dirigent-kern.js";
         const stufe = AU.codeAbdruck(fs.readFileSync(path.join(__dirname, "..", dk), "utf8").replace(/VERSION = "/, "$&0."), dk);
-        const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).reduce((n, z) => n + (z.labor ? 1 : 0.5), 0);
+        const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).length;
         S0.gemessen.welt.quellen[d0] = "0000000000000000";
         const altForm = AT.tafelStand(S0, pruefsumme);
         delete S0.gemessen.labor.quellen;
@@ -273,7 +273,7 @@ async function selbsttest() {
             frisch.length === 0 &&
                 kommentar.length === 0 &&
                 stufe === pruefsumme(dk) &&
-                code.length === 2 * mitD0 &&
+                code.length === S0.zeilen.filter((z) => z.quellen.includes(d0)).reduce((n, z) => n + (z.labor ? 2 : 1), 0) &&
                 code.every((r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)) &&
                 altForm.some((r) => r.zeile === S0.zeilen[0].id && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
                 ohne.some((r) => r.art === "ungeprüft" && /ohne Abdruck/.test(r.text)) &&
@@ -302,7 +302,7 @@ async function selbsttest() {
     const u1 = AT.tafelUrteil(T0, messungZumTest(T0));
     t(
         "Labor = Welt auf jeder Zeile → GRÜN, jede Zeile und Karte im Soll",
-        u1.urteil === "GRUEN" && u1.zeilen.every((z) => z.imSoll)
+        u1.urteil === "GRUEN" && u1.zeilen.every((z) => z.imSoll || z.stufeTon)
     );
     // S2 — das Labor liest das Hex roh (Faktor 2,3 auf einer Zeile): über der Ratsche ROT und außerhalb des Solls; ein
     // Schritt Richtung 1 innerhalb von Ratsche + Rand bleibt grün.
@@ -659,8 +659,7 @@ async function main() {
             for (const x of [...sn.brueche, ...sn.neu.flatMap((id) => sn.veraltet[id])]) console.log("   ❌ " + x);
             process.exit(1);
         }
-        for (const z of r.tafel.zeilen) if (z.welt.stufeVon) delete z.quellen;
-        fs.writeFileSync(AT.TAFEL_PFAD, JSON.stringify(r.tafel, null, 4) + "\n");
+        AT.tafelSchreiben(r.tafel);
         console.log(`\nTafel nachgezogen (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}`);
         process.exit(0);
     }

@@ -321,7 +321,18 @@
                 "klasse": "^f:birke:L0$",
                 "stufen": [
                     0
-                ]
+                ],
+                "folgen": {
+                    "l1": [
+                        1,
+                        "^f:birke:L1$"
+                    ],
+                    "karte": [
+                        2,
+                        "^fimp:atlas:L2$"
+                    ]
+                },
+                "blick": "waagrecht"
             },
             "quellen": [
                 "phyto-core.js",
@@ -334,54 +345,6 @@
             ],
             "ist": null,
             "ratsche": null
-        },
-        {
-            "id": "birke-l1",
-            "gruppe": "Baum",
-            "titel": "Die Birke in Stufe 1",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "baum_birke",
-                    "radius": 6,
-                    "nah": 25,
-                    "versatz": [
-                        12,
-                        -12
-                    ],
-                    "stufe": 1
-                },
-                "klasse": "^f:birke:L1$",
-                "stufen": [
-                    1
-                ],
-                "stufeVon": "birke"
-            },
-            "ist": null
-        },
-        {
-            "id": "birke-karte",
-            "gruppe": "Baum",
-            "titel": "Die Birke als Karte (der EINE Atlas, aus der L1 gebacken)",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "baum_birke",
-                    "radius": 6,
-                    "nah": 25,
-                    "versatz": [
-                        12,
-                        -12
-                    ],
-                    "stufe": 2
-                },
-                "klasse": "^fimp:atlas:L2$",
-                "stufen": [
-                    2
-                ],
-                "stufeVon": "birke"
-            },
-            "ist": null
         },
         {
             "id": "fichte",
@@ -408,7 +371,18 @@
                 "klasse": "^f:fichte:L0$",
                 "stufen": [
                     0
-                ]
+                ],
+                "folgen": {
+                    "l1": [
+                        1,
+                        "^f:fichte:L1$"
+                    ],
+                    "karte": [
+                        2,
+                        "^fimp:atlas:L2$"
+                    ]
+                },
+                "blick": "waagrecht"
             },
             "quellen": [
                 "phyto-core.js",
@@ -421,54 +395,6 @@
             ],
             "ist": null,
             "ratsche": null
-        },
-        {
-            "id": "fichte-l1",
-            "gruppe": "Baum",
-            "titel": "Die Fichte in Stufe 1",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "baum_fichte",
-                    "radius": 6,
-                    "nah": 25,
-                    "versatz": [
-                        -12,
-                        12
-                    ],
-                    "stufe": 1
-                },
-                "klasse": "^f:fichte:L1$",
-                "stufen": [
-                    1
-                ],
-                "stufeVon": "fichte"
-            },
-            "ist": null
-        },
-        {
-            "id": "fichte-karte",
-            "gruppe": "Baum",
-            "titel": "Die Fichte als Karte (der EINE Atlas, aus der L1 gebacken)",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "baum_fichte",
-                    "radius": 6,
-                    "nah": 25,
-                    "versatz": [
-                        -12,
-                        12
-                    ],
-                    "stufe": 2
-                },
-                "klasse": "^fimp:atlas:L2$",
-                "stufen": [
-                    2
-                ],
-                "stufeVon": "fichte"
-            },
-            "ist": null
         },
         {
             "id": "fels",
@@ -661,7 +587,17 @@
                 },
                 "stufen": [
                     0
-                ]
+                ],
+                "folgen": {
+                    "l1": [
+                        1,
+                        "^(bauSatz|f:alemannisch:L1)$"
+                    ],
+                    "l2": [
+                        2,
+                        "^(bauSatz|f:alemannisch:L2)$"
+                    ]
+                }
             },
             "quellen": [
                 "fachwerk-core.js",
@@ -689,179 +625,31 @@
                         0
                     ]
                 },
-                "verhaeltnis": 0.9366
+                "verhaeltnis": 0.9366,
+                "folgen": {
+                    "l1": {
+                        "welt": {
+                            "Y": 0.1579,
+                            "rgb": "0.2745/0.1304/0.0873",
+                            "pixel": 161942,
+                            "stufen": [
+                                1
+                            ]
+                        }
+                    },
+                    "l2": {
+                        "welt": {
+                            "Y": 0.1568,
+                            "rgb": "0.2798/0.1269/0.0909",
+                            "pixel": 187904,
+                            "stufen": [
+                                2
+                            ]
+                        }
+                    }
+                }
             },
             "ratsche": 0.0579
-        },
-        {
-            "id": "haus-l1",
-            "gruppe": "Haus",
-            "titel": "Das Haus in Stufe 1",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_alemannisch",
-                    "radius": 9,
-                    "stufe": 1
-                },
-                "klasse": "^(bauSatz|f:alemannisch:L1)$",
-                "stoff": {
-                    "seh": "stoff"
-                },
-                "stufen": [
-                    1
-                ],
-                "stufeVon": "haus"
-            },
-            "ist": {
-                "welt": {
-                    "Y": 0.1579,
-                    "rgb": "0.2745/0.1304/0.0873",
-                    "pixel": 161942,
-                    "stufen": [
-                        1
-                    ]
-                }
-            }
-        },
-        {
-            "id": "haus-l2",
-            "gruppe": "Haus",
-            "titel": "Das Haus in Stufe 2",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_alemannisch",
-                    "radius": 9,
-                    "stufe": 2
-                },
-                "klasse": "^(bauSatz|f:alemannisch:L2)$",
-                "stoff": {
-                    "seh": "stoff"
-                },
-                "stufen": [
-                    2
-                ],
-                "stufeVon": "haus"
-            },
-            "ist": {
-                "welt": {
-                    "Y": 0.1568,
-                    "rgb": "0.2798/0.1269/0.0909",
-                    "pixel": 187904,
-                    "stufen": [
-                        2
-                    ]
-                }
-            }
-        },
-        {
-            "id": "hochhaus",
-            "gruppe": "Haus",
-            "titel": "Hochhaus (Glasturm): Stoff und Metall (die Fassade ist Metall-Raster) in Stufe 0",
-            "labor": {
-                "studio": "fachwerk",
-                "aktion": [
-                    {
-                        "waehle": "#pK",
-                        "wert": "hochhaus"
-                    },
-                    {
-                        "klick": "#pTerrain"
-                    }
-                ],
-                "stoff": {
-                    "seh": "stoff|metall"
-                }
-            },
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_hochhaus",
-                    "radius": 28,
-                    "versatz": [
-                        -14,
-                        -14
-                    ],
-                    "seed": 7,
-                    "stufe": 0
-                },
-                "klasse": "^(bauSatz|f:hochhaus:L0)$",
-                "stoff": {
-                    "seh": "stoff|metall"
-                },
-                "stufen": [
-                    0
-                ]
-            },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
-            "ist": null,
-            "ratsche": null
-        },
-        {
-            "id": "hochhaus-l1",
-            "gruppe": "Haus",
-            "titel": "Der Turm in Stufe 1 (ein Körper)",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_hochhaus",
-                    "radius": 28,
-                    "versatz": [
-                        -14,
-                        -14
-                    ],
-                    "seed": 7,
-                    "stufe": 1
-                },
-                "klasse": "^(bauSatz|f:hochhaus:L1)$",
-                "stoff": {
-                    "seh": "stoff|metall"
-                },
-                "stufen": [
-                    1
-                ],
-                "stufeVon": "hochhaus"
-            },
-            "ist": null
-        },
-        {
-            "id": "hochhaus-l2",
-            "gruppe": "Haus",
-            "titel": "Der Turm in Stufe 2",
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_hochhaus",
-                    "radius": 28,
-                    "versatz": [
-                        -14,
-                        -14
-                    ],
-                    "seed": 7,
-                    "stufe": 2
-                },
-                "klasse": "^(bauSatz|f:hochhaus:L2)$",
-                "stoff": {
-                    "seh": "stoff|metall"
-                },
-                "stufen": [
-                    2
-                ],
-                "stufeVon": "hochhaus"
-            },
-            "ist": null
         },
         {
             "id": "lack",
