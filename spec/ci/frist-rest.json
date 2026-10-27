@@ -2,7 +2,7 @@
  "Messfenster, die Zeit ist das Maß: Erstarren, Flugschreiber und Hänger-Wache, Klang in Echtzeit, Feld-Alter, die Stille nach dem Wort": {
   "scripts/diag-erstarren.cjs": 1,
   "scripts/diag-hitch-telemetrie.cjs": 2,
-  "scripts/diag-klang-zensus.cjs": 3,
+  "scripts/diag-klang-zensus.cjs": 2,
   "scripts/playtest/feld-leben.cjs": 1,
   "scripts/lib/haenger-linse.cjs": 1,
   "scripts/lib/gpu-fehler.cjs": 1
