@@ -1235,16 +1235,19 @@ async function selbsttest() {
     // tmp (nie das der Karte, nie ein echter CI-Job: GPU_WORKER_BILD, GPU_HOOK_LOG, GPU_NACHT eigen). Das Urteil ist die REIHENFOLGE
     // der Ereignisse im Log (S = Start unter dem Schloss, E = Ende), nie die Wanduhr (Lehre 26; 26.10. auf dem Laptop: einen Platz
     // nehmen dauerte 2,9–3,8 s, die Fenster von 500/800 ms rissen): ein Stub hält seinen Platz, bis seine Tür (eine Datei) aufgeht
-    // oder sein Partner unter dem Schloss steht; der Test öffnet eine Tür erst, wenn der Wartende sein Warten gemeldet hat
+    // oder sein Partner unter dem Schloss steht; der Test öffnet eine Tür erst, wenn der Wartende sein Warten gemeldet hat. Auch die
+    // Wächter zählen Ereignisse (27.10., Karte ci-wackler-zensus: unter Last rissen die 120-s-Fenster von bis und die 60-s-Schleifen
+    // des Stubs, ruhig 64/64): bis wartet, solange der Lauf lebt, der das Ereignis bringt, der Stub auf Tür oder Partner (dessen
+    // Lauf endet, ohne zu stehen, schreibt der Test „X“); ein Lauf, der nie kommt, endet am Schloss mit Exit 75 beim Namen
     if (findeBash()) {
         const wz = GPU_LAUF;
         const fw = (p) => p.split(path.sep).join("/");
         const schlossEnv = (n) => ({ GPU_SCHLOSS: fw(path.join(tmp, "bahn-" + n)), GPU_HOOK_LOG: fw(path.join(tmp, "bahn-" + n + ".hook.log")),
             GPU_NACHT: "", GPU_WORKER_BILD: "Kein.Worker.exe", GPU_LAUF_TAKT_S: "1" });
-        // $1 Log · $2 wer · $3 {AUS} oder leer · $4 Tür oder leer · $5 Partner oder leer (je höchstens ~60 s: ein Hänger wird ROT, nie ewig)
-        const STUB = 'echo "[linse-gpu] amd/rdna-3"; echo "S $2" >> "$1"; i=0; ' +
-            'while [ -n "$4" ] && [ ! -e "$4" ] && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done; ' +
-            'while [ -n "$5" ] && ! grep -qx "S $5" "$1" && [ $i -lt 600 ]; do sleep 0.1; i=$((i+1)); done; ' +
+        // $1 Log · $2 wer · $3 {AUS} oder leer · $4 Tür oder leer · $5 Partner oder leer (er steht „S“ oder kam nie „X“)
+        const STUB = 'echo "[linse-gpu] amd/rdna-3"; echo "S $2" >> "$1"; ' +
+            'while [ -n "$4" ] && [ ! -e "$4" ]; do sleep 0.1; done; ' +
+            'while [ -n "$5" ] && ! grep -qx "[SX] $5" "$1"; do sleep 0.1; done; ' +
             'echo "E $2" >> "$1"; [ -n "$3" ] && echo "{\\"n\\": 0}" > "$3"; true';
         // je Lauf die Zeilen-Stelle seines S und E im Log
         const spannen = (log) => {
@@ -1259,8 +1262,8 @@ async function selbsttest() {
         const ueber = (a, b) => spanne(a) && spanne(b) && a.S < b.E && b.S < a.E;
         const nach = (a, b) => spanne(a) && spanne(b) && a.S > b.E;
         const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-        // wartet auf ein Ereignis (höchstens ~120 s: ein Hänger wird ROT, nie ewig)
-        const bis = async (f) => { for (let i = 0; i < 1200; i++) { if (f()) return true; await warte(100); } return false; };
+        // wartet auf ein Ereignis, solange der Lauf r lebt, der es bringt — endet er ohne, ist es false (ROT mit seinem Exit)
+        const bis = async (f, r) => { while (!f()) { if (r.code !== undefined) return f(); await warte(100); } return true; };
         // ein fremder Lauf: gpu-lauf.sh direkt, wie ein Macher oder ein zweiter Läufer ihn ruft
         const lauf = (env, art, n, wer, log, tuer = "") => {
             const r = { out: "", err: "", code: undefined };
@@ -1281,8 +1284,11 @@ async function selbsttest() {
             const env = schlossEnv("plan"), log = path.join(tmp, "bahn-plan.log");
             const G = (wer, zeit, partner) => [{ ...st0, geraet: ["radeon", "gtx"], gpu: true, zeit, env, befehl: ["bash", "-c", STUB, "stub", fw(log), wer, "{AUS}", "", partner], urteil: lies }];
             const es = [];
-            await fahrePlan([G("A", false, "B"), G("Z", true, ""), G("B", false, "A")], 2, async (g, b) =>
-                es.push(await fahreGruppe(g, { ...ctx("plan-" + g[0].befehl[5]), gpuLauf: wz, bahn: b, plaetze: 2, deckelMinS: 120 })));
+            // der Deckel des Läufers ist nur der Wächter (eine Stunde), nie das Maß: A hält seinen Platz, bis B steht
+            await fahrePlan([G("A", false, "B"), G("Z", true, ""), G("B", false, "A")], 2, async (g, b) => {
+                es.push(await fahreGruppe(g, { ...ctx("plan-" + g[0].befehl[5]), gpuLauf: wz, bahn: b, plaetze: 2, deckelMinS: 3600 }));
+                if (!spannen(log)[g[0].befehl[5]]) fs.appendFileSync(log, "X " + g[0].befehl[5] + "\n");
+            });
             const sp = spannen(log);
             return ["BAHNEN der Plan: zwei Bild-Läufe halten zugleich je einen Platz, der Zeit-Lauf fährt allein (Läufer + Platz-Schloss, N = 2)",
                 ueber(sp.A, sp.B) && nach(sp.A, sp.Z) && nach(sp.B, sp.Z) && es.length === 3 && es.every((r) => r[0].gruen) && !fs.existsSync(env.GPU_SCHLOSS),
@@ -1293,11 +1299,11 @@ async function selbsttest() {
         const zeitFall = (async () => {
             const env = schlossEnv("zeit"), log = path.join(tmp, "bahn-zeit.log"), tuer = path.join(tmp, "bahn-zeit.tuer");
             const x = lauf(env, "bild", 2, "X", log, tuer);
-            const ev = [await bis(steht(log, "X"))];
+            const ev = [await bis(steht(log, "X"), x)];
             const z = lauf(env, "zeit", 2, "Z", log);
-            ev.push(await bis(wartet(z)));
+            ev.push(await bis(wartet(z), z));
             const y = lauf(env, "bild", 2, "Y", log);
-            ev.push(await bis(wartet(y)));
+            ev.push(await bis(wartet(y), y));
             fs.writeFileSync(tuer, "");
             const codes = await Promise.all([x.fertig, z.fertig, y.fertig]);
             const sp = spannen(log);
@@ -1309,9 +1315,9 @@ async function selbsttest() {
         const einFall = (async () => {
             const env = schlossEnv("eins"), log = path.join(tmp, "bahn-eins.log"), tuer = path.join(tmp, "bahn-eins.tuer");
             const p = lauf(env, "bild", 1, "P", log, tuer);
-            const ev = [await bis(steht(log, "P"))];
+            const ev = [await bis(steht(log, "P"), p)];
             const q = lauf(env, "bild", 1, "Q", log);
-            ev.push(await bis(wartet(q)));
+            ev.push(await bis(wartet(q), q));
             fs.writeFileSync(tuer, "");
             const codes = await Promise.all([p.fertig, q.fertig]);
             const sp = spannen(log);
@@ -1323,13 +1329,13 @@ async function selbsttest() {
         const ciFall = (async () => {
             const env = schlossEnv("ci"), log = path.join(tmp, "bahn-ci.log"), tuer = path.join(tmp, "bahn-ci.tuer");
             const x = lauf(env, "bild", 2, "X", log, tuer);
-            const ev = [await bis(steht(log, "X"))];
+            const ev = [await bis(steht(log, "X"), x)];
             fs.appendFileSync(env.GPU_HOOK_LOG, "2026-10-26 10:00:00 start ci-probe 1/1 echt: wartet auf Schloss von 'probe-X'\r\n");
             const y = lauf(env, "bild", 2, "Y", log);
-            ev.push(await bis(wartet(y)));
+            ev.push(await bis(wartet(y), y));
             fs.writeFileSync(tuer, "");
             await x.fertig;
-            const hook = await bis(() => { try { fs.mkdirSync(env.GPU_SCHLOSS); return true; } catch (_e) { return false; } });
+            const hook = await bis(() => { try { fs.mkdirSync(env.GPU_SCHLOSS); return true; } catch (_e) { return false; } }, y);
             if (hook) {
                 fs.writeFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "ci-probe 1/1 echt\npid=" + process.pid + "\n");
                 fs.appendFileSync(log, "S H\n");
@@ -1348,9 +1354,9 @@ async function selbsttest() {
             const env = schlossEnv("vertreter"), log = path.join(tmp, "bahn-vertreter.log");
             const [t1, t2] = [1, 2].map((i) => path.join(tmp, "bahn-vertreter-" + i + ".tuer"));
             const v1 = lauf(env, "bild", 2, "V1", log, t1);
-            const ev = [await bis(steht(log, "V1"))];
+            const ev = [await bis(steht(log, "V1"), v1)];
             const v2 = lauf(env, "bild", 2, "V2", log, t2);
-            ev.push(await bis(steht(log, "V2")));
+            ev.push(await bis(steht(log, "V2"), v2));
             fs.writeFileSync(t1, "");
             const c1 = await v1.fertig;
             const b = fs.existsSync(path.join(env.GPU_SCHLOSS, "besitzer.txt")) ? fs.readFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "utf8") : "";
@@ -1369,7 +1375,7 @@ async function selbsttest() {
             fs.mkdirSync(env.GPU_SCHLOSS, { recursive: true });
             fs.writeFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "probe-halter\npid=" + process.pid + "\n");
             const n = lauf({ ...env, GPU_NACHT: "0000-2400", GPU_LAUF_WARTE_S: "0" }, "bild", 2, "N", log);
-            const ev = [await bis(() => /wartet auf Nachtruhe 0000-2400/.test(n.err))];
+            const ev = [await bis(() => /wartet auf Nachtruhe 0000-2400/.test(n.err), n)];
             const a1 = lauf({ ...env, GPU_LAUF_WARTE_S: "0" }, "bild", 2, "A1", log);
             const c1 = await a1.fertig;
             const c2 = await lauf({ ...env, GPU_LAUF_WARTE_S: "0" }, "bild", 2, "A2", log).fertig;
