@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3) und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K5#1 und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -1534,6 +1534,86 @@ const stationen = [
         "scripts/lib/welt-boot.cjs",
     ],
     quelle: "2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
+    },
+
+    // ───────── mensch.K5 Staffel 1 — die Begegnung ohne Modell (mensch-begegnung) ─────────
+    {
+    kriterium: "mensch.K5",
+    staffel: 1,
+    geraet: ["radeon", "gtx"],
+    // die Begegnungs-Probe (`diag-kreatur-takt --proben begegnung`, Familie kreatur-proben) im Fenster der echten GPU, wie
+    // mensch.K2#2: EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server. Im Start-Dorf um 10 Uhr (Uhr und Wetter als
+    // Wort des Reglers) geht der Spieler in Ego mit 1,4 m/s an einem Stehenden vorbei (2 m daneben, die Peilung auf 3 m 40–90°
+    // neben seinem Blick) und dreimal durch seinen Stand; vor dem vierten Gang schlägt er ein Wesen 5 m neben ihm
+    // (`damageCreature`, Quelle Spieler). Je Takt der echte Frame (`_loopRender`, Ego-Kamera längs des Wegs), gelesen wird der
+    // Kopf-Knoten nach ihm (seine Welt-Matrix, wie das Bild ihn zeichnet; gezeichnet und im Frustum). Grün: je Gang der Kopf auf
+    // 10° zum Spieler ≤ 0,5 s ab 3 m (der Vorbeigang ab ≥ 30° am Ereignis — keine geschenkte Zuwendung), als Leib und im Bild;
+    // kein Bewohner draußen näher als zwei Kapseln (0,7 m) zum Spieler; die Erinnerung (Furcht > 0) weitet den kleinsten
+    // Abstand des vierten Gangs um ≥ 0,3 m gegen den zweiten, die Gegenprobe ohne Erinnerung (der dritte) bleibt auf 0,15 m bei
+    // ihm. Ports: save-server {PORT}, Werkbank {PORT}+20000.
+    befehl: [
+        "bash",
+        "-c",
+        [
+            "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+            "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+            "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+            "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+            "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+            "trap ende EXIT; trap 'exit 143' INT TERM",
+            "raeum; stand",
+            "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+            "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+            "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
+            "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+            "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+            "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung",
+        ].join("\n"),
+    ],
+    gpu: true,
+    zeit: false,
+    minuten: 8,
+    urteil: (j, lauf) => {
+        const z = probeZeile(lauf.stdout, "begegnung");
+        if (!z) return { gruen: false, zahl: "keine Zeile der Probe begegnung im Fenster (Exit " + lauf.exit + ")" };
+        if (z.fehler || !Array.isArray(z.zuS)) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne zuS") };
+        const d = z.dMin;
+        const kopf =
+            z.zuS.length === 4 && z.zuS.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 &&
+            [...z.nah, ...z.imBild].every((x) => x === true);
+        const ohne = z.beruehrt.length === 0 && Math.min(...d) > 0.7;
+        const erinnert = z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15;
+        return {
+            gruen: kopf && ohne && erinnert,
+            zahl:
+                z.wer + ": Kopf-Zuwendung ab 3 m " + z.zuS.join(" / ") + " s (Vorbeigang ab " + z.amEreignis +
+                "°, im Bild " + z.imBild.join("/") + ") · Berührung " + z.beruehrt.length + ", kleinster Abstand " +
+                d.join(" / ") + " m (Radien 0,7) · ohne Erinnerung " + d[1] + ", Gegenprobe " + d[2] + ", nach der Gewalt " +
+                d[3] + " m (Furcht " + z.furcht + ")",
+        };
+    },
+    pfad: [
+        "stamm/siedlung-*.js",
+        "stamm/kreatur-*.js",
+        "stamm/koerper-*.js",
+        "stamm/stoff-instanz.js",
+        "stamm/studio-bruecke.js",
+        "stamm/gelaende-kollision.js",
+        "stamm/bild-himmel.js",
+        "stamm/dirigent-takt.js",
+        "stamm/daten.js",
+        "koerper-core.js",
+        "fachwerk-core.js",
+        "tetrapoda-core.js",
+        "foundry-bruecke.js",
+        "save-server.js",
+        "scripts/diag-kreatur-takt.cjs",
+        "scripts/werkbank.cjs",
+        "scripts/lib/kreatur-proben.cjs",
+        "scripts/lib/software-gpu.cjs",
+        "scripts/lib/welt-boot.cjs",
+    ],
+    quelle: "1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand",
     },
 ];
 
