@@ -1090,11 +1090,11 @@ async function k1Ende(browser, K) {
         zeig("B", out, "reach sweep simSteps simDelta handM freeze");
         zeig("E", out.pose);
         // "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft"
-        check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt");
+        check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt stumm");
         // "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)"
-        check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst");
+        check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus");
         // "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)"
-        check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST");
+        check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST die Schwung-Dauer");
         // "KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle"
         check(c.hudLiestQuelle, "KONSUM: das Stats-HUD (Angriffstempo)");
         // "KONSUM: die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle"
@@ -1121,13 +1121,13 @@ async function k1Ende(browser, K) {
         // "(C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)"
         check(c.cSchwungFriert, "(C) HIT-STOP: die Schwung-Phase friert");
         // "(C) HIT-STOP: der GANZE Leib steht (Gang-Phase und Hand Δ=0, das Ziel gleitet)"
-        check(c.cGangFriert, "(C) HIT-STOP: der GANZE Leib");
+        check(c.cGangFriert, "(C) HIT-STOP: der GANZE Leib steht");
         // `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
         check(c.cSimLaeuftWeiter, `(C) die FIXE SIM läuft ${out.simSteps}`);
         // "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand"
-        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer");
+        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand");
         // "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)"
-        check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den");
+        check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN");
         check(
             c.s1LinseFeuert,
             "SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)"
@@ -1135,11 +1135,11 @@ async function k1Ende(browser, K) {
         // "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
         check(c.todKipptStattDespawn, "(D) der EINE Fall (_kreaturFaellt)");
         // "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)"
-        check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben");
+        check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf");
         // "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)"
         check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich");
         // "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt"
-        check(c.eRueckstandsfrei, "(E) nach dem Schwung ist");
+        check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
     }
     console.log("\n  ── WELLE L ──\n");
     if (!welle) {
@@ -1284,7 +1284,7 @@ async function k1Ende(browser, K) {
             je((x) => x.dauer.toFixed(3)) >= 3 &&
                 je((x) => x.reach.toFixed(2)) >= 3 &&
                 je((x) => x.w20.toFixed(2)) >= 3,
-            "EINHEITSBREI: Spender-Teile, ≥3 distinkte"
+            "EINHEITSBREI: Spender-Teile, ≥3 distinkte Dauern/Reichweiten/Wirkungen"
         );
         // "EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule bei gleichem
         // Tempo)"
@@ -1308,27 +1308,27 @@ async function k1Ende(browser, K) {
         // Riss)"
         check(
             ohne.length >= 15 && [0, 1].every((i) => new Set(ohne.map((x) => x[i].toFixed(3))).size <= 2),
-            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt →"
+            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → die Tafel kollabiert auf die"
         );
         // "Q8 K-D2: jeder Treffer trägt eine Zone (die Phantom-Zone war null in 222/222)"
-        check(c.zoneJederTreffer, "Q8 K-D2: jeder Treffer trägt");
+        check(c.zoneJederTreffer, "Q8 K-D2: jeder Treffer trägt eine Zone");
         // "Q8 K-D2: die Zone wirkt — Kopf ÷ Bein ≥ 1,5 (dieselbe Klinge, derselbe Hirsch)"
         check(c.zoneWirkt, "Q8 K-D2: die Zone wirkt");
         // "Q8 K-D3: hangab (Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m) je ≥ 8/10 — die Klinge folgt dem Fadenkreuz"
         check(c.hangab, "Q8 K-D3: hangab (Hirsch 1,6");
         // "Q8 K-D3: klein auf gleicher Höhe (Hirsch L 0,64) ≥ 8/10 — getroffen wird die Gestalt"
-        check(c.kleinFlach, "Q8 K-D3: klein auf gleicher");
+        check(c.kleinFlach, "Q8 K-D3: klein auf gleicher Höhe");
         // "Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens
         // 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)"
-        check(c.hitStopEnergie, "Q8 K-D4: der Hit-Stop ist");
+        check(c.hitStopEnergie, "Q8 K-D4: der Hit-Stop ist energie-skaliert");
         // "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor"
         check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe");
         // "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns"
-        check(c.eineGuete, "Q8 K-D7: EINE Güte je");
+        check(c.eineGuete, "Q8 K-D7: EINE Güte je Gerät");
         // "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)"
-        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt");
+        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seine Energie in den");
         // "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)"
-        check(c.pfeilWand, "Q8 K-D8: eine Wand hält");
+        check(c.pfeilWand, "Q8 K-D8: eine Wand hält den Pfeil");
         const rz = z.rueck || {};
         zeig("T13", rz);
         const rv = rueckVerdict(z.rueck);
@@ -1839,35 +1839,35 @@ async function k1Ende(browser, K) {
         check(c.kernPflichtZone, "Q8 K-D3: fehlt tetrapoda trefferZone");
         // "Q8 T11 Lehre 14: der erste Hieb auf eine kalte Gattung trifft, zerlegt nichts, bricht nicht (die Geburt
         // bestellt)"
-        check(c.kaltTrifft, "Q8 T11 Lehre 14: der erste Hieb");
+        check(c.kaltTrifft, "Q8 T11 Lehre 14: der erste Hieb auf eine");
         // "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)"
-        check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest");
+        check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn");
         // "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle"
-        check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf");
+        check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf eine eigene Methode in");
         // "Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor (_trefferErreichbar), es liest den kreatur-Leib — kein
         // drittes Körpermaß"
-        check(c.grobLiestLeib, "Gesetz #0: Klinge und Pfeil");
+        check(c.grobLiestLeib, "Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor");
         // "Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen
         // × Größen-Grenzen, 90 Takte)"
-        check(c.grobDeckt, "Gesetz #0: das Grob-Tor deckt");
+        check(c.grobDeckt, "Gesetz #0: das Grob-Tor deckt die Gestalt");
         // "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt; ein Werk der Schmiede faltet auch nicht in den
         // Angriff)"
-        check(c.keinPanzer, "Q8 K-D15: die Hand ist");
+        check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer");
         // "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20
         // Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)"
-        check(c.gegenwehr, "Q8 K-D16/K-D12: Gegenwehr nach dem");
+        check(c.gegenwehr, "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung");
         // "Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)"
         check(c.haltenOhneKrater, "Q9 K-D1: 1st-Person — das");
         // "Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)"
-        check(c.rmbSchwert, "Q9 K-D17: RMB mit dem");
+        check(c.rmbSchwert, "Q9 K-D17: RMB mit dem Schwert schüttet nie auf");
         // "Q9 V-D2: bei offener Werkstatt ist der Canvas taub (0 von 4 Griffen; ohne Schublade greift er)"
-        check(c.werkstattTaub, "Q9 V-D2: bei offener Werkstatt");
+        check(c.werkstattTaub, "Q9 V-D2: bei offener Werkstatt ist der Canvas taub");
         // "Q10 K-D14: die Ego-Neigung ist der Blick (−90° → −90°, −57,3° → −57,3°)"
-        check(c.egoBlick, "Q10 K-D14: die Ego-Neigung ist");
+        check(c.egoBlick, "Q10 K-D14: die Ego-Neigung ist der Blick");
         // "Q10 V-D4: jedes „vor dir“ liegt vor dem Blick (at_player_forward, „baue dorf hier“: cos > 0,9)"
-        check(c.vorDir, "Q10 V-D4: jedes „vor dir“");
+        check(c.vorDir, "Q10 V-D4: jedes „vor dir“ liegt vor dem Blick");
         // "Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung)"
-        check(c.pfeilFadenkreuz, "Q10 K-D14: der Pfeil fliegt");
+        check(c.pfeilFadenkreuz, "Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz");
         check(
             c.s3 === true,
             "SELBST-TEST (S3): _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir“ kippt hinter dich"
