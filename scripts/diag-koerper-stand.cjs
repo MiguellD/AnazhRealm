@@ -689,17 +689,7 @@ async function proben(mitWiese, umfang) {
                             });
                         }
                     }
-        o.k6leser = {
-            n: leser.n,
-            fehl: leser.fehl,
-            ueberhang: leser.ueberhang,
-            kante: leser.kante,
-            maxCm: Math.round(leser.max * 1000) / 10,
-            wo: leser.wo,
-            stufen: leser.stufen || null,
-            mitte: [Math.round(mitte.x), Math.round(mitte.z)],
-            meshe: G.meshe,
-        };
+        o.k6leser = { ...leser, maxCm: Math.round(leser.max * 1000) / 10, mitte: [mitte.x, mitte.z], meshe: G.meshe };
     }
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
@@ -1261,8 +1251,7 @@ hauptLauf(async () => {
                 const k8 = /^K[89]/.test(soll[inj][0]);
                 const { o } = await lauf(inj, k8);
                 const f = k8 ? urteilK8(o) : urteil(o);
-                const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
-                const ok = fehlt.length === 0;
+                const ok = soll[inj].every((x) => f.some((y) => y.startsWith(x)));
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
                 console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${beleg}`);
                 if (!ok) rot++;
