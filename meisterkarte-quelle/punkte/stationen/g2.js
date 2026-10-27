@@ -1667,7 +1667,8 @@ const stationen = [
     // im Blick (seine Hülle im Frustum des Auges) mit 100 Gliedern. Staffel 2 (die Zwillings-Messung, beide Geräte): die Klasse
     // vogel (Sänger und Schwarm, EIN Stoff) ≤ 10 Befehle über alle Pässe, und der gezählte Frame zeichnet die 100 Glieder
     // (≥ 100 × Teile Instanzen der Klasse). Schlupfloch „Schwärme nur außerhalb des Blicks": die Bühne zählt die Glieder im
-    // Blick je Reihe, eine Reihe ohne sie ist ROT.
+    // Blick je Reihe, eine Reihe ohne sie ist ROT. Gefahren 27.10. in der Cloud am Zweig schwarm 08a97885 (headless, swiftshader auf
+    // 4 Kernen): 0,135 ms je Takt (Median, p95 0,735), 100 Glieder im Blick in 60/60 Reihen, Klasse vogel 2 Befehle (haupt).
     {
         kriterium: "luftwasser.K5",
         staffel: 1,
