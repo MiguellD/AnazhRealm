@@ -612,6 +612,10 @@ class AnazhRealm_gelaende_boden {
             get stau() {
                 return realm._stauRechnet ? null : realm.state.waterStau || null;
             },
+            // der Pegel der Binnen-Gewässer (stoffe.K3-2, `_pegelGilt`: die Tafel des Tags) — der Spiegel des Kerns liest ihn
+            get pegel() {
+                return realm._pegelGilt();
+            },
         };
         return this._gelaendeLage;
     }
@@ -753,7 +757,7 @@ class AnazhRealm_gelaende_boden {
         const la = Math.floor((z0 - R - rand[3]) / span);
         const lb = Math.floor((z1 + R + rand[3]) / span);
         const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
-        const genKarte = this._erdbauGenKarte || (this._erdbauGenKarte = new Map());
+        const genKarte = this._chunkGenKarte || (this._chunkGenKarte = new Map());
         this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
         const gezeichnet = this.state.voxelChunks;
         if (gezeichnet && gezeichnet.size && !this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
@@ -1091,13 +1095,17 @@ class AnazhRealm_gelaende_boden {
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk — das Gesetz des Kerns (gelaende-core `editKarte`) über der EINEN Liste
     // `worldMeta.voxelEdits` (persistiert, in Setz-Reihenfolge, ohne Deckel — kein Edit fällt still). Je Chunk eine Generation
     // aus EINEM steigenden Zähler (`_editGenZaehler`, nie wiederholt; der Erdbau zieht denselben) — der Stale-Filter der
-    // Worker-Antworten (`_voxelStand`).
+    // Worker-Antworten (`_voxelStand`). Jede Dichte-Probe fragt die Karte: steht sie (gelaende-core `editKarteSteht`),
+    // kostet die Frage zwei Vergleiche, erst ein neuer Edit zieht Maß und Generation (ek-schleife, Lehre 25 — bis dahin
+    // baute jede Probe `_voxelChunkConfig`: im Fall-Wächter 60 Mio. Mal, der Edit-Weg 48 % der Feld-Dichte).
     _voxelEditKarte() {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        const G = globalThis.__gelaendeCore;
+        if (G.editKarteSteht(this._editKarte, edits)) return this._editKarte;
         const gen = this._editGen || (this._editGen = () => (this._editGenZaehler = (this._editGenZaehler || 0) + 1));
         const span = this._voxelChunkConfig().span;
-        return (this._editKarte = globalThis.__gelaendeCore.editKarte(this._editKarte, edits, span, gen));
+        return (this._editKarte = G.editKarte(this._editKarte, edits, span, gen));
     }
 
     // Die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können — in Setz-Reihenfolge, leer ohne.
@@ -1111,11 +1119,12 @@ class AnazhRealm_gelaende_boden {
     }
 
     // Der Stand eines Chunks für den Stale-Filter der Worker- und Platten-Antworten: der Welt-Sync
-    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits oder eines Erdbaus (`_erdbauSetzen`, K69) im 3×3 um
-    // ihn. Ein Edit und ein Ort verwerfen nur die Antworten ihrer Nachbarschaft, nie die der ganzen Welt.
+    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits, eines Erdbaus (`_erdbauSetzen`, K69) oder eines Staus
+    // (`_stauAn`; beide in `_chunkGenKarte`) im 3×3 um ihn. Ein Edit, ein Ort und ein Stausee verwerfen nur die Antworten ihrer
+    // Nachbarschaft, nie die der ganzen Welt.
     _voxelStand(cx, cz) {
         const gen = this._voxelEditKarte().gen;
-        const erd = this._erdbauGenKarte;
+        const erd = this._chunkGenKarte;
         let g = 0;
         for (let dx = -1; dx <= 1; dx++) {
             for (let dz = -1; dz <= 1; dz++) {
@@ -1133,11 +1142,15 @@ class AnazhRealm_gelaende_boden {
     // (persistiert) und gelten ZULETZT — der Spieler-Wille überschreibt Terrain UND Hydrosphäre-Sculpting. Gefragt werden nur
     // die Edits, deren Reichweite den Chunk der Probe berührt (der Kern der Karte); die Form ist das Gesetz des Kerns
     // (gelaende-core `mitEdits`: die Säule `editForm`, Graben und Aufschütten, mode-lose Alt-Edits graben).
+    // Ohne Edit die Basis; die stehende Karte fragt die Probe direkt (`editKarteSteht`), ihr letzter Chunk bleibt
+    // gemerkt (`editsAm`) — ABAB je Spalten-Probe mit 147 Edits 238 → 134 ns, ohne Edit 89 → 90 ns (ek-schleife).
     _mitEdits(basis, x, y, z) {
         const meta = this.state.worldMeta;
-        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return basis;
+        const edits = meta && meta.voxelEdits;
+        if (!edits || !edits.length) return basis;
         const G = globalThis.__gelaendeCore;
-        return G.mitEdits(basis, x, y, z, G.editsAm(this._voxelEditKarte(), x, z));
+        const k = G.editKarteSteht(this._editKarte, edits) ? this._editKarte : this._voxelEditKarte();
+        return G.mitEdits(basis, x, y, z, G.editsAm(k, x, z));
     }
 
     // Base-gecachter Density-Grid-Pfad: das Gitter des Kerns (gelaende-core `dichteGitter`, Band und Basis-Dichte), je Chunk+LOD
