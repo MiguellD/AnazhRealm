@@ -484,3 +484,4 @@
 2026-10-27 20:16:47 takt13-gtx profiband.K4#2 ROT 20.3 · 4/27
 2026-10-27 20:22:33 takt13-gtx siedlung.K5#1,siedlung.K5#2 GRÜN/GRÜN 5.7 · 6/27
 2026-10-27 20:24:53 takt13-gtx gelaende.K2#1 GRÜN 2.2 · 7/27
+2026-10-27 20:30:17 takt13-gtx gelaende.K5#2 GRÜN 5.3 · 8/27
