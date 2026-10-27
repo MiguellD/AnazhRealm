@@ -365,19 +365,21 @@ class AnazhRealm_dirigent_takt {
                         ? `Foundry offen ${o.foundry}`
                         : o.chunks
                           ? `Chunks offen ${o.chunks}`
-                          : o.wald
-                            ? `Wald offen ${o.wald}`
-                            : o.karten
-                              ? `Karten offen ${o.karten}`
-                              : o.felder
-                                ? `Felder offen ${o.felder}`
-                                : o.dorf
-                                  ? `Dorf offen ${o.dorf}`
-                                  : o.leib
-                                    ? "Leib offen"
-                                    : o.ankunft
-                                      ? `Ankunft gleitet ${o.ankunft}`
-                                      : null;
+                          : o.stau
+                            ? "Stau offen"
+                            : o.wald
+                              ? `Wald offen ${o.wald}`
+                              : o.karten
+                                ? `Karten offen ${o.karten}`
+                                : o.felder
+                                  ? `Felder offen ${o.felder}`
+                                  : o.dorf
+                                    ? `Dorf offen ${o.dorf}`
+                                    : o.leib
+                                      ? "Leib offen"
+                                      : o.ankunft
+                                        ? `Ankunft gleitet ${o.ankunft}`
+                                        : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -417,6 +419,7 @@ class AnazhRealm_dirigent_takt {
                 dorf: 0,
                 leib: 0,
                 ankunft: 0,
+                stau: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -427,6 +430,9 @@ class AnazhRealm_dirigent_takt {
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
+        // DER STAU IM FADEN (`_stauFelder`): sein Auftrag baut, bis die Felder ankamen (`_stauAn`) — bis ci-werk-wasser stand die
+        // Welt, während er flog, und gate:werk-im-wasser D zählte den Stausee nach dem Reload vor seiner Antwort
+        o.stau = this._stauImFlug ? 1 : 0;
         o.wald =
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
