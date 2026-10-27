@@ -791,3 +791,4 @@
 2026-10-27 11:49:20 takt10c-radeon gelaende.K5#2 GRÜN 1.3 · 2/5
 2026-10-27 11:52:32 takt10c-radeon ferne.K2#2 GRÜN 7.7 · 3/5
 2026-10-27 11:52:41 takt10c-radeon mensch.K2#2 GRÜN 3.4 · 4/5
+2026-10-27 11:54:34 takt10c-radeon fahrzeug.K4#2 GRÜN 2.0 · 5/5
