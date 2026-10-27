@@ -1149,8 +1149,9 @@ class AnazhRealm_dirigent_ankunft {
         }
         // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69 — die Stufe nach der Saat): sein Chunk
         // trägt noch keinen Baum — ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
-        const PW = this._waldPflanzWarten;
-        if (PW && PW.size) {
+        // Die Saat im Takt (`_saatOffen`, `_tickSaat`): ein Chunk, dessen Proben oder Wald noch gesät werden, wie die Pflanzung.
+        for (const PW of [this._waldPflanzWarten, this._saatOffen && this._saatOffen.keys()]) {
+            if (!PW) continue;
             for (const key of PW) {
                 const i = key.indexOf(",");
                 const cx = Number(key.slice(0, i));

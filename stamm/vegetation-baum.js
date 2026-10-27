@@ -2104,43 +2104,68 @@ class AnazhRealm_vegetation_baum {
     // Raster über die Chunk-Bounds (`span`, origin-basiert) durch `_vegetationSampleSpawn`, Höhe aus
     // `_voxelSurfaceY`; die Bäume pflanzt `_forestPlantChunk`. Idempotent über
     // `state.voxelPopulatedChunks`, am Voxel-Chunk-Lifecycle aufgehängt.
+    // DIE SAAT IM TAKT (pbk4-fahrt, Lehre 14): der Chunk tritt in die Saat (`_saatOffen`), und `_tickSaat` sät ihn Probe für
+    // Probe im Budget des Frames — der Rest im Job des Walds (Welt-Substanz, nie verhungert); headless (Budget ∞) und
+    // `opts.immediate` (Test-/Worldgen-Pfade) säen ihn ganz. Bis pbk4-fahrt säte der Chunk-Einbau 100 Proben und den Wald am
+    // Stück (Mess-Wiese, GT 20 m/s: 22,9 ms je Takt ab p95, `werkbank takt`). Rückgabe: die Zahl der gesäten Stücke.
     _populateVoxelChunkVegetation(cx, cz, opts = {}) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         if (!this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks = new Set();
         const key = `${cx},${cz}`;
         if (this.state.voxelPopulatedChunks.has(key)) return 0;
         this.state.voxelPopulatedChunks.add(key);
+        const S = this._saatOffen || (this._saatOffen = new Map());
+        S.set(key, { cx, cz, i: 0 });
+        if (opts.immediate) return this._tickSaat(Infinity, key, true);
+        const B = this.state._frameBudget;
+        return this._tickSaat(B ? performance.now() + B.remainingMs() : Infinity, null, false);
+    }
 
+    // Sät bis zur Frist (`frist`, performance.now()): je Schritt eine Probe des 10×10-Rasters, nach der letzten der Wald
+    // des Chunks; nah zuerst (`_foundryAuftragD2`), im Lade-Takt bis zur Frist des Lade-Frames. `nur`: nur dieser Chunk,
+    // `sofort`: die Stücke umgehen die Spawn-Schlange (`_vegSpawnImmediate`). Leser: die Bepflanzung des Chunks und der
+    // Job des Walds (`waldPlan`, der mindestens einen Schritt geht). → die Zahl der gesäten Stücke.
+    _tickSaat(frist, nur, sofort, mindestens = 0) {
+        const S = this._saatOffen;
+        if (!S || !S.size) return 0;
+        frist = Math.max(frist, this._ladeFrist());
         const { span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        // SAMPLES = 10 je Achse: mehr Sample-Stellen × dieselbe chance-Formel = dichtere Wald-Regionen, mehr
-        // Lücken im Gras (forest-mask × clumpAt clumpt natürlich). Die Dichte regelt `foliageRadius`
-        // kapazitäts-gemessen.
         const SAMPLES = 10;
         const step = span / SAMPLES;
-        // `opts.immediate === true` umgeht die Spawn-Queue (Test-/Worldgen-Pfade, synchron); Default false →
-        // Queue, per Frame gedrosselt.
+        const reihe = nur ? [S.get(nur)] : [...S.values()];
+        if (!nur && reihe.length > 1) {
+            const d2 = (c) => this._foundryAuftragD2({ x: (c.cx + 0.5) * span, z: (c.cz + 0.5) * span });
+            for (const c of reihe) c.d2 = d2(c);
+            reihe.sort((a, b) => a.d2 - b.d2);
+        }
         const prevImmediate = this._vegSpawnImmediate || false;
-        this._vegSpawnImmediate = !!opts.immediate;
-        let spawned = 0;
-        // die Bauplan-Tags je Chunk EINMAL (Pläne und Stoffe ändern sich in diesem synchronen Lauf nicht)
+        this._vegSpawnImmediate = !!sofort;
+        let spawned = 0,
+            n = 0;
+        // die Bauplan-Tags je Ruf EINMAL (Pläne und Stoffe ändern sich in diesem synchronen Lauf nicht)
         const tagsJe = new Map();
         try {
-            for (let zi = 0; zi < SAMPLES; zi++) {
-                for (let xi = 0; xi < SAMPLES; xi++) {
-                    const sampleX = ox + (xi + 0.5) * step;
-                    const sampleZ = oz + (zi + 0.5) * step;
+            for (const c of reihe)
+                while (n < mindestens || performance.now() < frist) {
+                    n++;
+                    if (c.i === SAMPLES * SAMPLES) {
+                        // Die Bäume pflanzt der Wald-Generator (`_forestPlantChunk`, zell-deterministisch: Poisson-Disc +
+                        // Nische + reverse-J + Dichte-Gradient), nicht das Sample-Raster. Jeder Baum gehört genau dem Chunk
+                        // seiner Position → genau einmal.
+                        S.delete(`${c.cx},${c.cz}`);
+                        spawned += this._forestPlantChunk(c.cx, c.cz);
+                        break;
+                    }
+                    const xi = c.i % SAMPLES,
+                        zi = (c.i / SAMPLES) | 0;
+                    c.i++;
+                    const sampleX = c.cx * span + (xi + 0.5) * step;
+                    const sampleZ = c.cz * span + (zi + 0.5) * step;
                     const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
                     if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
-                    const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                    const seedForSpawn = ((c.cx * 73856093) ^ (c.cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
                     spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe);
                 }
-            }
-            // Die Bäume pflanzt der Wald-Generator (`_forestPlantChunk`, zell-deterministisch: Poisson-Disc +
-            // Nische + reverse-J + Dichte-Gradient), nicht das Sample-Raster. Jeder Baum gehört genau dem Chunk
-            // seiner Position → genau einmal.
-            spawned += this._forestPlantChunk(cx, cz);
         } finally {
             this._vegSpawnImmediate = prevImmediate;
         }
@@ -2278,7 +2303,39 @@ class AnazhRealm_vegetation_baum {
         // Saum vor `SCATTER.outerM`, dem Rand der Deko-Streu); geräumt wird erst ein Totband dahinter (kein Flattern).
         const totband = AnazhRealm.KARTEN_HORIZONT_TOTBAND_M;
         const saumSq = (AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M) ** 2;
-        for (const entry of this.state.architectures) {
+        // DIE WACHE DES CULLS (pbk4-fahrt, Gebot 7): der Gang geht die WACHEN Einträge (`_cullWache`), nie den Bestand. Ein
+        // Eintrag, dessen Urteil steht (nichts offen, kein Mesh der Mesh-Zone, kein Beweger), schläft, bis der Weg des Spielers
+        // (samt dem Wachsen des Radius) seinen Abstand zur nächsten Urteils-Grenze aufbraucht — gezeichnete Karte bis hinter das
+        // Totband, ungezeichnete bis an ihren Rand, ein ferner Satz bis an den Radius; was sein Urteil liest (Stufe gezeichnet,
+        // Typ, Lage, Satz, Buch), weckt ihn (`_cullWecken`). Bis pbk4-fahrt ging jeder Gang jeden Eintrag des Bestands, der mit
+        // dem gefahrenen Weg wächst (Mess-Wiese, GT 20 m/s, 60 s: 868 → 3 859 Einträge, der Gang 2,9 ms bei 4 953, `werkbank takt`).
+        const K = this._cullWache();
+        K.odo += K.px === null ? 0 : Math.hypot(playerPos.x - K.px, playerPos.z - K.pz) + Math.max(0, radius - K.R);
+        [K.px, K.pz, K.R] = [playerPos.x, playerPos.z, radius];
+        const Q = AnazhRealm.CULL_EIMER_M;
+        const jetzt = Math.floor(K.odo / Q);
+        const wecke = (b) => {
+            for (const e of K.eimer.get(b))
+                if (e._cullEimer === b) {
+                    e._cullEimer = undefined;
+                    K.wach.add(e);
+                }
+            K.eimer.delete(b);
+        };
+        if (jetzt - K.ab > K.eimer.size) for (const b of [...K.eimer.keys()]) b <= jetzt && wecke(b);
+        else for (let b = K.ab; b <= jetzt; b++) if (K.eimer.has(b)) wecke(b);
+        K.ab = jetzt + 1;
+        const beweger = this._blockerNetz().beweger;
+        const schlaf = (entry, rest) => {
+            if (!(rest >= Q) || beweger.has(entry)) return;
+            const b = Math.floor((K.odo + rest) / Q);
+            entry._cullEimer = b;
+            K.wach.delete(entry);
+            const l = K.eimer.get(b);
+            if (l) l.push(entry);
+            else K.eimer.set(b, [entry]);
+        };
+        for (const entry of K.wach) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
@@ -2302,11 +2359,21 @@ class AnazhRealm_vegetation_baum {
                     if (!this._archIsRendered(entry)) {
                         entry._nahD2 = distSq;
                         nahOffen.push(entry);
+                        continue;
                     }
                 } else if (distSq > (h + totband) ** 2 && this._archIsRendered(entry)) {
                     this._cullArchitectureMesh(entry);
                     regung++;
                 }
+                // der Schlaf: gezeichnet bis hinter das Totband, ungezeichnet bis an den eigenen Rand (er liegt im Saum oder
+                // dahinter: diesseits trägt jedes); eine Stufe ohne Studio-Asset (`instFoundry`) hebt der Rewarm in der
+                // Mesh-Zone — sie wacht dort und schläft davor nur bis an den Radius
+                const d = Math.sqrt(distSq),
+                    rand = this._archKartenHorizont(entry);
+                if (!this._archIsRendered(entry)) schlaf(entry, d - rand);
+                else if (entry.instFoundry === true || !this._foundryPresetForEntry(entry))
+                    schlaf(entry, rand + totband - d);
+                else if (d > radius) schlaf(entry, Math.min(rand + totband - d, d - radius));
                 continue;
             }
             // DIE MESH-ZONE (der geregelte Cull-Radius, 100–150 m): hier IST das Studio-Mesh die Gestalt, der
@@ -2348,6 +2415,7 @@ class AnazhRealm_vegetation_baum {
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
                 if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
                     if (this._archZiegelFern(entry)) regung++;
+                    else if (!this._archIsRendered(entry)) schlaf(entry, Math.sqrt(distSq) - radius); // der Satz steht
                 } else {
                     entry._ziegelD2 = distSq;
                     ziegelOffen.push(entry);
@@ -2443,11 +2511,47 @@ class AnazhRealm_vegetation_baum {
         // Foundry-Drain: baut kalte Foundry-Einträge + hebt vor Studio-ready gespawnte auf das Studio-Asset.
         // Budget-gedeckelt (pausiert über Budget) → die Erst-Welt konvergiert ohne Spike. Headless/Studio
         // nicht ready → früher No-op.
-        const kalt = this._foundryRewarmColdTrees();
+        const kalt = this._foundryRewarmColdTrees(K.wach); // die Kalten und Klassischen der Mesh-Zone wachen (oben)
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
         this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0 && (kalt || !nurSatz || "felder"));
+    }
+
+    // DIE WACHE DES CULLS (`tickArchitectureCulling`): je Bestand (`state.architectures`, eine neue Liste oder ein neues Buch
+    // weckt alle) die wachen Einträge (`wach`), die schlafenden in Eimern des Spieler-Wegs (`eimer`: Eimer b weckt, sobald der
+    // Weg `odo` b · CULL_EIMER_M erreicht; `_cullEimer` am Eintrag nennt seinen Eimer) und die autonomen (`autos`, der Deckel
+    // `_capNexusStructures`).
+    _cullWache() {
+        const liste = this.state.architectures || [];
+        const buch = this._foundryEnabled() && this._foundry ? this._foundry.recipes : null;
+        const K = this._cullWacheStand;
+        if (K && K.liste === liste && K.buch === buch) return K;
+        for (const e of liste) e._cullEimer = undefined;
+        return (this._cullWacheStand = {
+            liste,
+            buch,
+            wach: new Set(liste),
+            eimer: new Map(),
+            autos: new Set(liste.filter((e) => e.autonomous)),
+            odo: 0,
+            ab: 0,
+            px: null,
+            pz: null,
+            R: 0,
+        });
+    }
+
+    // Der Weckruf: seine gezeichnete Stufe, sein Typ oder seine Lage wechselt — sein Urteil geht im nächsten Gang. `art`
+    // "ein": er tritt in den Bestand, "weg": er verlässt ihn (danach weckt ihn nichts mehr). Leser: Eintritt und Abbau,
+    // `_blockerBewegt`, die Instanz-Naht (`_archInstanceAdd`, `_archInstanceRemove`) und das Mesh (`_rebuildArchitectureMesh`,
+    // `_cullArchitectureMesh`).
+    _cullWecken(entry, art) {
+        const K = this._cullWacheStand;
+        if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;
+        entry._cullEimer = art === "weg" ? -1 : undefined;
+        if (art === "weg") [K.wach.delete(entry), K.autos.delete(entry)];
+        else [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist
@@ -2459,7 +2563,7 @@ class AnazhRealm_vegetation_baum {
         if (!arches || arches.length === 0) return;
         const cap = AnazhRealm.MAX_NEXUS_STRUCTURES;
         const autos = [];
-        for (const e of arches) if (e && e.autonomous) autos.push(e);
+        for (const e of this._cullWache().autos) autos.push(e);
         if (autos.length <= cap) return;
         const pp = playerPos || (this.state.playerMesh ? this.state.playerMesh.position : null);
         const distSq = (e) => {
@@ -2660,6 +2764,8 @@ AnazhRealm.ARCH_PLATZ_MS = 4;
 AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
 AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
 AnazhRealm.STAND_RAND_FERN_M = 1;
+// Der Eimer der Cull-Wache (m Spieler-Weg): ein Eintrag schläft nur, wenn sein Urteil mindestens einen Eimer weit steht.
+AnazhRealm.CULL_EIMER_M = 2;
 // V18.297 — wie viele autonom (vom Nexus) gespawnte Bauten gleichzeitig leben dürfen.
 // Großzügig (eine reiche ferne Welt), aber gedeckelt → der Heap kann nicht über Stunden
 // volllaufen (das war das Leck). Über dem Cap verblasst das Fernste (_capNexusStructures).
