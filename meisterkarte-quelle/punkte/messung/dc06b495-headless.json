@@ -2,7 +2,7 @@
  "sha": "dc06b495020b357431dc998342945d2352e0beee",
  "geraet": "headless",
  "zeit": "2026-10-27T09:45:44.172Z",
- "host": "farm:40483158489",
+ "host": "farm:40479939643",
  "je": {
   "stoffe.K1#1": {
    "gruen": true,
@@ -939,6 +939,17 @@
    "port": 7704,
    "bahn": "1/1",
    "host": "farm:40478542414/9"
+  },
+  "ki.K1#2": {
+   "gruen": true,
+   "zahl": "40/40 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434: gültig 95.0 % (Soll 95), Absicht 87.5 % (Soll 85), Brüche 0, Negativ 8/8 ohne Tat benannt, p95 84996 ms (genannt)",
+   "exit": 1,
+   "minuten": 22.91,
+   "zeit": "2026-10-27T09:37:36.075Z",
+   "abdruck": "a8876f20dede",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40479939643/1"
   }
  }
 }
