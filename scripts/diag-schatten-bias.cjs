@@ -28,7 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1321,7 +1321,7 @@ hauptLauf(async () => {
         for (const bi of S.bilder)
             for (const k of ["mit", "ueber", "leer"])
                 if (bi[k])
-                    fs.writeFileSync(path.join(OUT, `${bi.name}-${k}.png`), Buffer.from(bi[k].split(",")[1], "base64"));
+                    pngDatei(path.join(OUT, `${bi.name}-${k}.png`), bi[k]);
     console.log("=== DER SCHATTEN KLEINER WERFER — der Bias als Gesetz der Kaskade (echter Renderer) ===");
     console.log(
         `  Renderer: die GPU des Rechners · ${W}×${H} · ${Math.round((Date.now() - t0) / 1000)} s · ` +

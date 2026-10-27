@@ -216,7 +216,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pngDatei } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
@@ -799,7 +799,7 @@ async function tempo(K) {
     }
     // das Beweisbild des Stoßes (`--bild`; KOLLISION_BILD_PNG: die Datei, in die es geht)
     if (S && S.png && process.env.KOLLISION_BILD_PNG)
-        require("fs").writeFileSync(process.env.KOLLISION_BILD_PNG, Buffer.from(S.png.split(",")[1], "base64"));
+        pngDatei(process.env.KOLLISION_BILD_PNG, S.png);
     if (S) console.log(`  Stoß im Ausgabe-Bild: ${S.fehler || `Wagen ${S.px.wagen} px · Bär ${S.px.gestossen} px in 640×360 · ${S.zeile}`}`);
     const v = urteil(befund).filter((x) => !x.startsWith("OFFEN") || console.log("  " + x));
     if (v.length) {

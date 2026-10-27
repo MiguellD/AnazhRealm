@@ -1117,14 +1117,7 @@ function zerlegeMessen(k) {
                 wieseRuht();
             }
             await lese();
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const ctx = cv.getContext("2d");
-            const img = ctx.createImageData(W, H);
-            img.data.set(auf.u8.subarray(0, W * H * 4));
-            ctx.putImageData(img, 0, 0);
-            return { u8: auf.u8, png: cv.toDataURL("image/png") };
+            return { u8: auf.u8, png: window.__png(auf.u8, W, H) };
         };
         const aenderung = (a, b) => {
             let n0 = 0,
