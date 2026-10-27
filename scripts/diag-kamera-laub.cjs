@@ -16,12 +16,12 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const stammLib = require("./lib/stamm.cjs");
-const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
@@ -31,7 +31,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 // ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
-const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,gang,gang2,ninja").split(",");
+const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : "laub,leib,gang,gang2,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
@@ -628,7 +628,6 @@ async function leibGang(G) {
     const R = G.R;
     const out = { gaenge: [] };
     try {
-        st.renderer.setAnimationLoop(null); // die Linse taktet selbst
         if (L.gt) r.removeArchitecture(L.gt); // der GT von K2 parkt im Weg
         const eintrag = (a) => st.architectures.find((e) => e && e.id === a.id);
         const stamm = (a) => (eintrag(a).blockerAABBs || []).filter((b) => b.pflanze === true && b.dick >= G.stammDickM).sort((u, v) => v.dick - u.dick)[0];
@@ -1233,45 +1232,55 @@ hauptLauf(async () => {
     await page.evaluateOnNewDocument(() => {
         window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
     });
-    const bereit = () => warteAufWelt(page, 90000);
-    await server.zeige(page, 30000);
+    // DER START DER WELT — die EINE Stelle jeder Seite der Linse, auch der Prüfbühne und des Körper-Studios (CI 26./27.10.,
+    // swiftshader: 43–50 kalte Programme an der Mess-Wiese, der Regen der Front seit fk2-uhr 71 s, der Reload riss nach 60 s
+    // hinter `renderPipeline_spiegel:strahl`, gezeichnet vom rAF-Loop zwischen zwei Aufrufen). Auf dem CPU-Raster das Holz
+    // kienspan (Lehre 26); die Linse taktet selbst wie unter dem Null-Renderer; die Bühne hält Mittag · Sonne · Sommer über das
+    // Wort des Spielers (Wand 3). Gewartet wird in Bau-Ereignissen, nie nach der Wanduhr: vor dem Abschied einer Seite landet
+    // jede offene Pipeline (`__erstRuhe`, sonst bricht sie beim Namen), die neue Welt ist da (`__weltDa`); ein Hänger steht in
+    // der Stall-Akte.
+    const adresse = BILD && !istHardwareAdapter(browser.adapter) ? "index.html?holz=kienspan" : "index.html";
+    const bereit = async (rest = adresse) => {
+        await page.evaluate(() => window.__erstRuhe && window.__erstRuhe(() => {}, {}, "der Abschied der Welt"));
+        await server.zeige(page, 0, rest);
+        if (rest !== adresse) return;
+        await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
+        await buehne(page);
+    };
+    await bereit();
     const zeiten = {};
     let m = null;
     if (TEILE.includes("laub")) {
         const tL = Date.now();
-        await page.evaluate(KAMERA_NAH_INSTALL);
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         await page.evaluate(leibInstall, { R: LEIB_R }); // der Wagen des Ritts (`gtHolen`)
-        m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
+        m = await page.evaluate(probe, { orte: ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
         zeiten.laub = Date.now() - tL;
     }
     let gang = null;
     let leib = null;
     if (TEILE.includes("leib")) {
         const tW = Date.now();
-        await bereit();
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib = { wiese: await page.evaluate(leibWiese, { x: WIESE.x, z: WIESE.z, quote: LEIB_WIESE }) };
         zeiten.wiese = Date.now() - tW;
         if (TEILE.includes("gang")) {
             const tG = Date.now();
-            await page.evaluate(KAMERA_NAH_INSTALL);
             await page.evaluate(WASSER_INSTALL); // __weltOrt: der Steilhang aus der Welt
             gang = await page.evaluate(leibGang, { ...GANG, zwei: TEILE.includes("gang2") });
             zeiten.gang = Date.now() - tG;
         }
         // die Prüfbühne, geboren wie im Spiel: Welt-Tor importWorldBeside + aktiv + Reload
         const tH = Date.now();
-        const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
+        const pb = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
         const id = await page.evaluate((j) => {
             const r = window.anazhRealm;
             const res = r.importWorldBeside(j);
             if (!res || !res.ok) return null;
             r.activeWorldSet(res.worldId);
             return res.worldId;
-        }, buehne);
+        }, pb);
         if (id) {
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
             await bereit();
             await page.evaluate(leibInstall, { R: LEIB_R });
             leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
@@ -1283,7 +1292,7 @@ hauptLauf(async () => {
     let nin = null;
     if (TEILE.includes("ninja")) {
         const tN = Date.now();
-        await server.zeige(page, 60000, "worlds/koerperstudio/index.html");
+        await bereit("worlds/koerperstudio/index.html");
         await page.waitForFunction(
             // eslint-disable-next-line no-undef
             () => typeof enterPlay === "function" && typeof playPhysics === "function" && typeof parkBoxes !== "undefined" && parkBoxes.length > 0,
@@ -1294,7 +1303,6 @@ hauptLauf(async () => {
     }
     await browser.close();
     server.close();
-    if (process.env.KAMERA_LAUB_JSON) fs.writeFileSync(process.env.KAMERA_LAUB_JSON, JSON.stringify({ laub: m, leib, ninja: nin, gang, zeiten }, null, 1));
 
     if (m) {
         console.log(`=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
