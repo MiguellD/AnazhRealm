@@ -25,7 +25,7 @@ const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 
 const ohneKommentare = stammLib.ohneKommentare;
 
@@ -3303,10 +3303,6 @@ hauptLauf(async () => {
         `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
     );
     if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.");
+    ende("der v1-Pfad trägt seine benannten Schnitte.");
     process.exit(0);
 });

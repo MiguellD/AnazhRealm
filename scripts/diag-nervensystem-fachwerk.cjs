@@ -30,7 +30,7 @@ const kernStufen = require("./lib/kern-stufen.cjs");
 const PORT = Number(process.env.NERV_FACHWERK_PORT || 4434);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
 function staticLaws(q, manifestSrc) {
@@ -96,7 +96,7 @@ hauptLauf(async () => {
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
-        const res = { b: {}, d: {}, p: {}, e: {}, f: {} };
+        const res = { b: {}, d: {}, p: {}, f: {} };
         await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
@@ -117,7 +117,6 @@ hauptLauf(async () => {
                 : 0;
         res.b.paramsHaus = f && f.paramsByKind && Array.isArray(f.paramsByKind.haus) ? f.paramsByKind.haus.length : -1;
         res.b.ksHaus = ks ? JSON.stringify(ks.haus) : null;
-        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
         try {
             const bp = r.state.blueprints && r.state.blueprints.haus_alemannisch;
@@ -152,40 +151,6 @@ hauptLauf(async () => {
         } catch (e) {
             res.p.err = (e && e.message) || String(e);
         }
-        // ===== E: das ASSET selbst — ALLE VIER STUFEN end-to-end (Worker-Dispatch + BuildGroup; die Stufe 3 ist
-        // NUR-WURF, S3 haus: sie trägt ihre Fernform als Beipack __fern) =====
-        try {
-            res.e.meshCount = {};
-            for (const L of [0, 1, 2, 3]) {
-                const meshes = await Promise.race([
-                    r._foundryRequest("alemannisch", 7, L),
-                    new Promise((res3) => setTimeout(() => res3(null), 45000)),
-                ]);
-                res.e.meshCount[L] = Array.isArray(meshes) ? meshes.length : -1;
-                if (L === 3)
-                    res.e.fern3 =
-                        Array.isArray(meshes) &&
-                        meshes.some((m) => m && m.kind === "__fern" && m.huelle && Array.isArray(m.huelle.teile));
-                if (L === 0 && Array.isArray(meshes) && meshes.length) {
-                    res.e.hasMatColor = meshes.some(
-                        (m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
-                    );
-                    const g = r._foundryBuildGroup(meshes);
-                    res.e.groupChildren = g && g.children ? g.children.length : 0;
-                    res.e.allHaveColor =
-                        !!g &&
-                        g.children.every(
-                            (ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color)
-                        );
-                    if (g)
-                        g.traverse((o) => {
-                            if (o.isMesh && o.geometry) o.geometry.dispose();
-                        });
-                }
-            }
-        } catch (e) {
-            res.e.err = (e && e.message) || String(e);
-        }
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
         // FLÄCHEN-STUFE: L1 ist eine echte
@@ -213,7 +178,7 @@ hauptLauf(async () => {
         return res;
     });
     // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
+    await kernStufen.kernProbe(page, check, "alemannisch", [0, 1, 2, 3], "Haus");
 
     await browser.close();
     server.close();
@@ -239,12 +204,6 @@ hauptLauf(async () => {
         "B: kindStages.haus == [0,1,2,3] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene; 3 = NUR-WURF)",
         out.b.ksHaus === "[0,1,2,3]",
         String(out.b.ksHaus)
-    );
-    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
-    check(
-        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
-        abweichung.length === 0,
-        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
     );
     check(
         "D: Auto-Blueprint haus_alemannisch registriert (Donor-Klon, 6 begehbare Judge-Parts)",
@@ -295,22 +254,6 @@ hauptLauf(async () => {
     );
     check("P: keine haus_-Nische in der Wald-Liste", out.p.inExtras === false);
     check(
-        "E: der Worker liefert das Haus-Asset auf ALLEN vier Stufen (Meshes > 0 je Stufe; die Stufe 3 mit Beipack __fern)",
-        out.e.meshCount &&
-            out.e.meshCount[0] > 0 &&
-            out.e.meshCount[1] > 0 &&
-            out.e.meshCount[2] > 0 &&
-            out.e.meshCount[3] > 0 &&
-            out.e.fern3 === true,
-        out.e.err || JSON.stringify(out.e.meshCount)
-    );
-    console.log(
-        `      ↳ end-to-end Mesh-Zahl alemannisch je Stufe: L0=${out.e.meshCount && out.e.meshCount[0]} · L1=${out.e.meshCount && out.e.meshCount[1]} · L2=${out.e.meshCount && out.e.meshCount[2]} · L3=${out.e.meshCount && out.e.meshCount[3]} (__fern ${out.e.fern3})`
-    );
-    check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
-    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
-    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
-    check(
         "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient (kein [0]-Kollaps — der Merge lebt)",
         /^[^|]*\|[^|]*\|2(\||$)/.test(out.f.k2 || ""),
         out.f.err || String(out.f.k2)
@@ -332,12 +275,6 @@ hauptLauf(async () => {
         String(out.f.k3)
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
-    );
+    ende("DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen.");
     process.exit(0);
 });

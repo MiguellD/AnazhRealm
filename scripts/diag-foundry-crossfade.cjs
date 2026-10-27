@@ -34,7 +34,7 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.CROSSFADE_PORT || 4418);
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 
 // ===== TEIL (a): die geladene Klasse, das Gesetz und die Studio-Blende =====
 const KLASSE = stammLib.ladeKlasse(root);
@@ -1689,13 +1689,7 @@ async function main() {
         check("GEISTER-BAUM Auge Selbsttest: das Auge = der Spieler — die Linse zählt die Sonde und jede Geburt", !!GB.gegenSpieler && GB.gegenSpieler.falsch >= 1 && GB.gegenSpieler.geburtFalsch > 0, ga(GB.gegenSpieler));
         console.log(`  (die Geister-Linse lief ${GB.ms} ms)`);
     } else check("GEISTER-BAUM lief", false, "fehlt");
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN."
-    );
+    ende("DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN.");
     process.exit(0);
 }
 

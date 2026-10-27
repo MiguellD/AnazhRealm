@@ -44,7 +44,7 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 // B: die Seite — der Renderer steht, die Membranen sind gebaut; dann ruht der Loop, und je Blick zählt EIN Frame, was der
 // Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
@@ -788,11 +788,5 @@ hauptLauf(async () => {
     await browser.close();
     if (!process.argv.includes("--ohne-blick")) await blickStufe(check);
     server.close();
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B)."
-    );
+    ende("das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B).");
 });

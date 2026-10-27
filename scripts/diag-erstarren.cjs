@@ -31,7 +31,7 @@ const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-b
 const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 (async () => {
     await server.lausche(PORT);
@@ -253,11 +253,5 @@ const { errs, check } = pruefer();
         L.selbstTestGesehen === true
     );
 
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — kein Todes-Spiral, kein hartes Erstarren im headless-Pfad, die Membran kompiliert genau einmal. (Was diese Linse NICHT sieht: GPU-seitige Freezes — dafür trägt der Flugschreiber anazhRealmPerf.json vom echten Holz.)"
-    );
+    ende("kein Todes-Spiral, kein hartes Erstarren im headless-Pfad, die Membran kompiliert genau einmal. (Was diese Linse NICHT sieht: GPU-seitige Freezes — dafür trägt der Flugschreiber anazhRealmPerf.json vom echten Holz.)");
 })();

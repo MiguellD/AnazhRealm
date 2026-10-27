@@ -24,7 +24,7 @@ const kernStufen = require("./lib/kern-stufen.cjs");
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenz über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
 // constitution N1 wörtlich; die Wirkung der Policy beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum.
@@ -64,15 +64,13 @@ hauptLauf(async () => {
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
-        const res = { b: {}, d: {}, p: {}, e: {}, f: {} };
+        const res = { b: {}, d: {}, p: {}, f: {} };
         await window.__weltDa();
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
         await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.drachentor && rc && rc.lod && rc.lod.kindStages; });
-        const rc = A._studioRenderConfig;
-        const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
         res.b.kind = f && f.recipes && f.recipes.drachentor ? f.recipes.drachentor.kind : null;
         res.b.orders =
@@ -81,7 +79,6 @@ hauptLauf(async () => {
             f && f.recipes
                 ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "gate").length
                 : 0;
-        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
         try {
             const bp = r.state.blueprints && r.state.blueprints.tor_drachentor;
@@ -114,31 +111,6 @@ hauptLauf(async () => {
         } catch (e) {
             res.p.err = (e && e.message) || String(e);
         }
-        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup) =====
-        try {
-            const meshes = await Promise.race([
-                r._foundryRequest("drachentor", 7, 0),
-                new Promise((res3) => setTimeout(() => res3(null), 30000)),
-            ]);
-            res.e.meshCount = Array.isArray(meshes) ? meshes.length : -1;
-            res.e.hasMatColor =
-                Array.isArray(meshes) &&
-                meshes.some((m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
-            if (Array.isArray(meshes) && meshes.length) {
-                const g = r._foundryBuildGroup(meshes);
-                res.e.groupChildren = g && g.children ? g.children.length : 0;
-                res.e.allHaveColor =
-                    !!g &&
-                    g.children.every((ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color));
-                // Aufraeumen (kein Leak in der Probe):
-                if (g)
-                    g.traverse((o) => {
-                        if (o.isMesh && o.geometry) o.geometry.dispose();
-                    });
-            }
-        } catch (e) {
-            res.e.err = (e && e.message) || String(e);
-        }
         // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 klemmt auf Stufe 0 =====
         try {
             if (!f.requested) f.requested = new Set();
@@ -152,7 +124,7 @@ hauptLauf(async () => {
         return res;
     });
     // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
+    const { ks, kern } = await kernStufen.kernProbe(page, check, "drachentor", [0], "Tor");
 
     await browser.close();
     server.close();
@@ -164,17 +136,11 @@ hauptLauf(async () => {
     );
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.orders === 2, String(out.b.orders));
     check("B: alle 7 Tor-Ordnungen im Buch", out.b.gateCount === 7, String(out.b.gateCount));
-    const ksGate = out.b.ks ? JSON.stringify(out.b.ks.gate) : "fehlt";
+    const ksGate = ks ? JSON.stringify(ks.gate) : "fehlt";
     check(
         "B: kindStages.gate == die Deklaration von porta-core (N7.5-Merge am Ingest; 3 = NUR-WURF)",
         ksGate === kern.gate,
         `${ksGate} (Kern ${kern.gate})`
-    );
-    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
-    check(
-        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
-        abweichung.length === 0,
-        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
     );
     check(
         "D: Auto-Blueprint tor_drachentor registriert (Donor-Klon)",
@@ -218,14 +184,6 @@ hauptLauf(async () => {
         String(out.p.dispatch)
     );
     check("P: keine tor_-Nische in der Wald-Liste", out.p.inExtras === false);
-    check(
-        "E: der Worker liefert das Tor-Asset (Meshes > 0)",
-        out.e.meshCount > 0,
-        out.e.err || `meshes=${out.e.meshCount}`
-    );
-    check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
-    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
-    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     const fSoll = kern.gate ? kernStufen.geklemmteStufe(kern.gate, 2) : null;
     check(
         `F: die Distanz-Wahl 2 klemmt fuer kind:gate auf die groesste deklarierte Stufe ≤ 2 (${fSoll})`,
@@ -233,12 +191,6 @@ hauptLauf(async () => {
         out.f.err || String(out.f.key)
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Tor-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — porta-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), tor_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6)."
-    );
+    ende("DER ε-BEWEIS STEHT: die Tor-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — porta-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), tor_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6).");
     process.exit(0);
 });

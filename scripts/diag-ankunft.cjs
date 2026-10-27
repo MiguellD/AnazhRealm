@@ -35,7 +35,7 @@ const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 function ladeschirmVerdict(m) {
@@ -1964,10 +1964,6 @@ hauptLauf(async () => {
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
     zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — die Ankunft trägt ihre benannten Schnitte.");
+    ende("die Ankunft trägt ihre benannten Schnitte.");
     process.exit(0);
 });

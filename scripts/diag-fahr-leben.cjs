@@ -9,7 +9,7 @@ const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
@@ -2546,12 +2546,6 @@ hauptLauf(async () => {
         for (const l of bahn.log || []) console.log("  · " + l);
     }
     if (bahn.err) check("F Probe ohne Ausnahme", false, String(bahn.err).split("\n")[0]);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken."
-    );
+    ende("der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken.");
     process.exit(0);
 });

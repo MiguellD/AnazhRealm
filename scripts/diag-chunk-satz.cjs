@@ -383,7 +383,7 @@ if (process.argv.includes("--selftest")) {
 const PORT = Number(process.env.CHUNK_SATZ_PORT) || 4483;
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { check, ende } = pruefer();
 
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
@@ -1633,11 +1633,5 @@ const { errs, check } = pruefer();
         !!wa2 && wa2.haupt > 0,
         wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt."
-    );
+    ende("der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.");
 })();

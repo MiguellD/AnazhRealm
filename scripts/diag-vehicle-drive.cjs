@@ -10,7 +10,7 @@ const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PORT = Number(process.env.DRIVE_PORT || 4411);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, ende } = pruefer();
 
 // ── DIE DIVERGENZ-LINSE: welche drive-Skalare weichen vom Soll ab? (===, byte) ──
 const DRIVE_KEYS = ["topSpeedMul", "kAcc", "kBrake", "mass", "vmax"];
@@ -690,12 +690,6 @@ hauptLauf(async () => {
             `größter Rad-Spalt ${(st.spaltM || 0).toFixed(3)} m über ${st.proben || 0} Hang-Proben (Steigung ${JSON.stringify(st.steigung || [])}, je ${JSON.stringify(st.je || [])})${sv.length ? " — Täter: " + sv.join(", ") : ""}`
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad."
-    );
+    ende("DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad.");
     process.exit(0);
 });
