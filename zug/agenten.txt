@@ -66,3 +66,5 @@
 2026-10-27T06:21 champion ci-werk-wasser: gate:werk-im-wasser D wartet auf das Stau-Ereignis des Workers statt 1200 Takte (CI 1072 statt 1142, lokal grün) · WICHTIG
 2026-10-27T06:21 wf heim-z49 2 champion: bau-faden (diag-worker-dichte: Bau-Klicks ∪ Stau-Feld) · sk2-zipf2 (diag-settlement: sleep, Wege-Schlüssel, lauf(fern), B-Checks) auf main cd34e72b → z49
 2026-10-27T09:00 wf pruefung-kuerzer 2 champion (Schöpfer 08:55: Prüfung ≤ Erstellen; Takt heute Σ 590 Maschinen-min, 1–3 h Wanduhr): A punkte-farm — headless-Stationen auf ≥ 12 GitHub-Läufer, Ziel ≤ 30 min, Laptop 0 headless · C lange-stationen — speicher.K3, profiband.K4#1, ki.K1#2, tiere.K2/K3#2 … auf die Länge ihres Urteils, gleiche Strenge · WICHTIG
+2026-10-27T15:00 champion r6-domaene (WIP, kein Merge): R6d — Station alt nur bei Domäne · Kern→Kanarien · Werkzeug→Linse · Menge über Schwelle · genannt; Beweis an der Historie z46–z52 (0 verpasste Änderungen); Schöpfer: ereignis-, nie uhr-gesteuert · WICHTIG
+2026-10-27T15:00 cloud ci-wackler-zensus (Schöpfer-Karte): Wackler aus den Neulauf-Daten, Top 3 an der Wurzel, BAHNEN-Selbsttest auf Ereignisse

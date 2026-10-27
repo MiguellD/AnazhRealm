@@ -32,6 +32,7 @@ koord_frisch() { # der Dienst-Baum der Koordination auf origin/koordination (er 
 }
 koord_push() { # $1 Nachricht; drei Versuche (ein Koordinator-Push dazwischen: neu aufsetzen)
   local i
+  [ -f $MK/zug/fortschritt.txt ] && git -C $MK add zug/fortschritt.txt 2>>$LOG
   git -C $MK add -A zug/abab.txt zug/erledigt.txt bericht 2>>$LOG
   git -C $MK -c core.autocrlf=false commit -q -m "$1
 
@@ -41,6 +42,17 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" 2>>$LOG || return 1
     git -C $MK fetch -q origin koordination 2>>$LOG; git -C $MK rebase -q origin/koordination 2>>$LOG || { git -C $MK rebase --abort 2>/dev/null; return 1; }
   done
   return 1
+}
+fortschritt() { # $* die Zeile ohne Zeit -> zug/fortschritt.txt auf koordination, sofort gepusht (Koordinator 25.10.: Fortschritt in
+  # Minuten statt am Auftragsende, ein Hänger fällt nach einer Station auf); scheitert der Push, bleibt die Zeile in p3/messplatz/fortschritt.txt
+  local z="$(date '+%F %T') $*"
+  echo "$z" >> $H/fortschritt.txt
+  { koord_frisch && echo "$z" >> $MK/zug/fortschritt.txt && koord_push "Messplatz fortschritt: $*"; } || say "fortschritt-Push scheiterte: $*"
+}
+minuten() { awk -v a="$1" -v b="$(date +%s)" 'BEGIN { printf "%.1f", (b - a) / 60 }'; } # $1 Start (s)
+zelle_urteil() { # $1 out, $2 zelle -> "<urteil> <A>+<B>" dieser einen Zelle
+  node $H/urteil.cjs $1 "$2" --json $1/urteil-zelle.json --md $1/urteil-zelle.md > /dev/null 2>&1
+  node -e 'try { const e = require(process.argv[1]).ergebnisse[0]; console.log(e.urteil + " " + e.n.A + "+" + e.n.B) } catch (x) { console.log("? ?") }' "$(cygpath -m $1/urteil-zelle.json)"
 }
 erledigt() { # $1 id, $2 urteil, $3 kurz
   printf '%s %s %s\n' "$1" "$2" "$3" >> $MK/zug/erledigt.txt
@@ -61,6 +73,9 @@ waehle_prio1() { # die erste offene prio-1-Zeile (die Vorfahrt in einem Punkte-A
   git -C $MK fetch -q origin koordination 2>>$LOG
   waehle | awk '$2 == "1"'
 }
+storniert() { # $1 id — steht eine Storno-Zeile in der Warteschlange (origin/koordination, frisch geholt von waehle_prio1)?
+  git -C $MK show origin/koordination:zug/warteschlange.txt 2>/dev/null | awk -v i="$1" '$1 == i && $2 == "0" && $3 == "storno" { f = 1 } END { exit !f }'
+}
 wert() { echo "$2" | tr ' ' '\n' | sed -n "s/^$1=//p" | head -1; }
 
 fahre_abab() { # $1 id, $2 rest
@@ -69,12 +84,23 @@ fahre_abab() { # $1 id, $2 rest
   a=$(baum $A) || { melde "$id Baum A $A fehlt"; return 2; }; b=$(baum $B) || { melde "$id Baum B $B fehlt"; return 2; }
   out=$H/lauf/$id; mkdir -p $out
   export MP_A=$a MP_B=$b MP_OUT=$out MP_LOCK=omen-mp MP_LABEL="A ${A:0:8} · B ${B:0:8}"
+  # die Serie schreibt ihre VORFAHRT-Zeilen selbst und fragt je Boot nach dem Storno (25.10.)
+  export MP_ID=$id H MK KLON; export -f fortschritt koord_frisch koord_push minuten storniert
   say "$id ABAB A=${A:0:8} B=${B:0:8} zellen=$zl"
-  ZELLEN="${zl//,/ }" bash $H/serie.sh > $out/serie.out 2>&1 || { grep -q "SEITEN-WACHE" $out/fortschritt.log && melde "$id Seiten-Wache ROT"; }
+  local k n=0 t; k=$(echo ${zl//,/ } | wc -w); : > $out/serie.out
+  fortschritt "$id START $k Zellen"
+  for z in ${zl//,/ }; do
+    n=$((n + 1)); t=$(date +%s)
+    ZELLEN=$z bash $H/serie.sh >> $out/serie.out 2>&1 || { grep -q "SEITEN-WACHE" $out/fortschritt.log && { melde "$id Seiten-Wache ROT"; break; }; }
+    git -C $MK fetch -q origin koordination 2>>$LOG; storniert "$id" && { say "$id storniert - Abbruch in $z"; fortschritt "$id STORNO in $z"; return 0; }
+    set -- $(zelle_urteil $out $z); fortschritt "$id $z $1 $(minuten $t) · $n/$k ($2)"
+  done
   u=$(node $H/urteil.cjs $out "$zl" --json $out/urteil.json --md $out/urteil.md)
   for z in $(node -e 'const j=require(process.argv[1]);console.log(j.ergebnisse.filter(e=>e.verlaengern).map(e=>e.zelle).join(" "))' "$(cygpath -m $out/urteil.json)"); do
-    say "$id verlängert $z auf 4+4"
+    say "$id verlängert $z auf 4+4"; t=$(date +%s)
     ZELLEN=$z LAEUFE="A3 B3 A4 B4" bash $H/serie.sh >> $out/serie.out 2>&1
+    git -C $MK fetch -q origin koordination 2>>$LOG; storniert "$id" && { say "$id storniert - Abbruch in $z(4+4)"; fortschritt "$id STORNO in $z(4+4)"; return 0; }
+    set -- $(zelle_urteil $out $z); fortschritt "$id $z(4+4) $1 $(minuten $t) · verlängert ($2)"
   done
   u=$(node $H/urteil.cjs $out "$zl" --json $out/urteil.json --md $out/urteil.md)
   URTEIL=$(node -e 'const g=require(process.argv[1]).gesamt;console.log(g==="VERLÄNGERN"?"UNENTSCHIEDEN":g)' "$(cygpath -m $out/urteil.json)")
@@ -93,25 +119,41 @@ fahre_abab() { # $1 id, $2 rest
 fahre_punkte() { # $1 id, $2 rest — Lauf für Lauf (`--nur <ids eines Laufs>`); vor jedem Lauf die Vorfahrt einer offenen prio-1-Zeile
   # DIE ZWILLINGE (27.10., Karte lange-stationen): `punkte.cjs gruppen` nennt je Zeile die Stationen EINES Laufs (gleicher Befehl und
   # Umgebung) — Station für Station fuhr speicher.K1#1 und #2 zweimal (e7a28b06: 12,43 + 12,42 min), takt10-gtx trug 39 Stationen in 34 Läufen
-  local id=$1 S nur s8 g r=0 grp gruppen st fertig=$H/lauf/$1.stationen v
+  local id=$1 S nur s8 g r=0 ids tr st fertig=$H/lauf/$1.stationen v grp gruppen
   S=$(wert sha "$2"); nur=$(wert nur "$2"); s8=${S:0:8}
   say "$id PUNKTE sha=$s8 ${nur:+nur=$nur}"
-  git -C $PK fetch -q origin punkte-maschine 2>>$LOG; git -C $PK rebase -q origin/punkte-maschine 2>>$LOG || git -C $PK rebase --abort 2>/dev/null
-  if ! gruppen=$(cd $PK && node meisterkarte-quelle/punkte/punkte.cjs gruppen --geraet gtx ${nur:+--nur "$nur"} 2>>$LOG) || [ -z "$gruppen" ]; then
+  git -C $PK fetch -q origin punkte-maschine 2>>$LOG; git -C $PK rebase -q origin/punkte-maschine 2>>$LOG || { git -C $PK rebase --abort 2>/dev/null; melde "$id punkte-maschine: Rebase scheiterte, Stationen von $(git -C $PK rev-parse --short HEAD)"; }
+  if [ -n "$nur" ]; then ids=${nur//,/ }; else tr=$(cd $PK && node meisterkarte-quelle/punkte/punkte.cjs run --sha $S --geraet gtx --offen --trocken 2>>$LOG); ids=$(echo "$tr" | sed -n 's/^Punkte-Maschine (trocken): .* min: //p')
+    [ -n "$ids" ] || printf '%s' "$tr" | grep -q "frisch gemessen" || { melde "$id Trocken-Lauf ohne Stations-Liste: $(printf '%s' "$tr" | tail -1)"; return 2; }; fi
+  say "$id Stationen: ${ids:-keine (jede frisch gemessen)}"
+  if [ -z "$ids" ]; then koord_frisch; erledigt "$id" "frisch" "punkte $s8 gtx: jede Station frisch gemessen"; koord_push "Messplatz $id: Punkte $s8 gtx frisch" || melde "$id push nach koordination scheiterte"; say "$id fertig frisch"; return 0; fi
+  ids=${ids// /,}
+  if ! gruppen=$(cd $PK && node meisterkarte-quelle/punkte/punkte.cjs gruppen --geraet gtx --nur "$ids" 2>>$LOG) || [ -z "$gruppen" ]; then
     melde "$id: punkte.cjs gruppen scheiterte (punkte-maschine ohne das Verb?) — nichts gefahren"; erledigt "$id" "ROT" "gruppen scheiterte"; return
   fi
   touch $fertig
+  local nst=0 gst t z0 u s; gst=$(echo ${ids//,/ } | wc -w)
+  fortschritt "$id START $gst Stationen in $(echo $gruppen | wc -w) Läufen$( [ -s $fertig ] && echo " (fortgesetzt, $(wc -l < $fertig) fertig)")"
   for grp in $gruppen; do
-    st=${grp%%,*}
+    st=${grp%%,*}; nst=$((nst + $(echo ${grp//,/ } | wc -w)))
     grep -qx "$st" $fertig && continue
-    v=$(waehle_prio1)
+    v=$(waehle_prio1 | awk -v i="$id" '$1 != i') # die eigene prio-1-Zeile ist keine Vorfahrt (takt1b-gtx, 24.10.)
+    storniert "$id" && { say "$id storniert - Abbruch vor $grp"; return 0; }
     if [ -n "$v" ]; then
       say "$id pausiert vor $grp: Vorfahrt $(echo "$v" | awk '{print $1}')"
       set -- $v; case $3 in abab) fahre_abab "$1" "${v#* * * }" ;; station) fahre_station "$1" "${v#* * * }" ;; esac
       say "$id setzt fort"
     fi
+    t=$(date +%s); z0=$(wc -l < $LOG)
     (cd $PK && PUNKTE_GPU_LAUF=$(cygpath -m $BASE/p3/gpu-lauf.sh) node meisterkarte-quelle/punkte/punkte.cjs run --sha $S --geraet gtx --nur "$grp" >> $H/lauf/$id.out 2>&1) || r=$?
-    echo "$st" >> $fertig
+    echo ${grp//,/ } | tr ' ' '\n' >> $fertig
+    # gpu-lauf.sh schreibt je Verdrängung „VERDRÄNGT k/3 nach <s> s“ nach dienst.log: die verworfene Laufzeit des Laufs
+    for s in $(tail -n +$((z0 + 1)) $LOG | grep "gpu-lauf .* VERDRÄNGT" | sed -n 's/.* nach \([0-9]*\) s .*/\1/p'); do
+      fortschritt "$id VORFAHRT $grp verloren $(awk -v s=$s 'BEGIN { printf "%.1f", s / 60 }')"
+    done
+    # je Station des Laufs ihr Urteil, Zwillinge mit „/“ (ein Lauf, eine Zeile, eine Minutenzahl)
+    u=$(for s in ${grp//,/ }; do awk -v s="$s" '$2 == s { u = $1 } END { print u ? u : "?" }' $H/lauf/$id.out; done | paste -sd/)
+    fortschritt "$id $grp $u $(minuten $t) · $nst/$gst"
   done
   g=$(node -e 'try{const j=require(process.argv[1]);const v=Object.values(j.je||{});console.log(v.filter(x=>x.gruen).length+" grün / "+v.filter(x=>!x.gruen).length+" rot")}catch(e){console.log("keine Mess-Datei")}' "$(cygpath -m $PK/meisterkarte-quelle/punkte/messung/$s8-gtx.json)")
   git -C $PK add meisterkarte-quelle/punkte/messung/$s8-gtx.json 2>>$LOG
@@ -135,11 +177,13 @@ fahre_station() { # $1 id, $2 rest
   koord_frisch
   [ -f "$MK/zug/$lauf" ] || { melde "$id zug/$lauf fehlt"; return 2; }
   cp "$MK/zug/$lauf" $out/lauf.sh
-  say "$id STATION $lauf an ${S:0:8}"
+  say "$id STATION $lauf an ${S:0:8}"; local t=$(date +%s)
+  fortschritt "$id START 1 Stationen"
   (cd $b && BAUM=$b OUT=$out bash $out/lauf.sh > $out/station.out 2>&1); r=$?
+  fortschritt "$id $lauf Exit$r $(minuten $t) · 1/1"
   koord_frisch
   erledigt "$id" "Exit$r" "station $lauf an ${S:0:8}"
-  mkdir -p $MK/bericht/$id; cp -r $out/. $MK/bericht/$id/ 2>/dev/null
+  mkdir -p $MK/bericht/$id; cp -r $out/. $MK/bericht/$id/ 2>/dev/null; rm -rf $MK/bericht/$id/stand # die Spielstände der Boots (omen-z13-takt: 7,4 MB) bleiben auf der OMEN
   koord_push "Messplatz $id: Station $lauf an ${S:0:8} Exit $r" || melde "$id push nach koordination scheiterte"
   say "$id fertig Exit $r"
 }
