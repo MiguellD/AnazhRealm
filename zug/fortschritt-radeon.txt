@@ -1068,3 +1068,4 @@
 2026-10-27 21:07:53 takt13b-radeon fahrzeug.K3#2 GRÜN 2.2 · 3/3
 2026-10-27 21:07:57 takt13b-radeon ENDE 1 grün / 2 rot · 4.5 min
 2026-10-27 21:22:15 takt13c-radeon START 2 Stationen
+2026-10-27 21:24:32 takt13c-radeon ferne.K1#1 GRÜN 2.3 · 1/2
