@@ -357,3 +357,4 @@
 2026-10-27 08:57:22 takt10-gtx fahrzeug.K3#2 GRÜN 3.7 · 9/39
 2026-10-27 09:00:43 takt10-gtx fahrzeug.K4#2 GRÜN 3.3 · 10/39
 2026-10-27 09:06:20 takt10-gtx siedlung.K5#1 GRÜN 5.5 · 11/39
+2026-10-27 09:07:13 takt10-gtx halten.K5#1 GRÜN 0.8 · 12/39
