@@ -1326,121 +1326,90 @@ function koerperUrteil(F) {
 
 // (Ra) DER RAUM AM OHR (klang.K3 Staffel 1): derselbe Tier-Ruf (ein Leib der Welt, über die Klang-Werkstatt) und dieselbe Glut
 // (der Bau des Dorfs, über die Lage am Ohr und den Studio-Graphen) links und rechts vom Ohr — gerade seitlich und 30° neben dem
-// Blick, je in drei Abständen —, der Master liegt an einem Stereo-OfflineAudioContext. Rechts heißt die Spalte 0 der
-// Kamera-Matrix (nie der Rechts-Vektor des Gesetzes, das gemessen wird). Urteil: ILD = R − L in dB mit dem Vorzeichen der Seite
-// (≥ 3 dB) an jeder Probe, der Pegel fällt mit dem Abstand (≥ 1 dB je Stufe). Täter (S14): der Panner aus (ein Gain mit
-// totem pan).
+// Blick, je in drei Abständen —, der Master liegt an einem Stereo-OfflineAudioContext; rechts heißt die Spalte 0 der
+// Kamera-Matrix, nie der Rechts-Vektor des gemessenen Gesetzes. Urteil: ILD = R − L mit dem Vorzeichen der Seite (≥ 3 dB) an
+// jeder Probe, der Pegel fällt mit dem Abstand (≥ 1 dB je Stufe). Der Täter (S14): der Panner aus (ein Gain mit totem pan).
 async function raumSeite(dorf, mut) {
     const [r, K, P] = [window.anazhRealm, window.__klangCore, BaseAudioContext.prototype];
-    const [s, sp, Ra] = [window.anazhRealm.state, P.createStereoPanner, []];
-    const [sy, um, pm, cam] = [s.symphony, s.symphony.umwelt, s.playerMesh, s.camera];
+    const [s, sp, Ra, e] = [r.state, P.createStereoPanner, [], r.state.camera.matrixWorld.elements];
+    const [sy, um, pm, l] = [s.symphony, s.symphony.umwelt, s.playerMesh, Math.hypot(e[0], e[2])];
+    const tier = s.creatures.find((c) => c.userData && !c.userData.dying);
+    const [t0, p0, vor] = [tier.position.clone(), pm.position.clone(), [sy.ctx, sy.masterGain, um.bus]];
     if (mut)
         P.createStereoPanner = function () {
             return Object.assign(this.createGain(), { pan: this.createGain().gain });
         };
-    const db = (c) => 10 * Math.log10(c.reduce((a, x) => a + x * x, 0) / c.length + 1e-20);
-    // der Abgriff: `spiel` stellt die Quelle an den Master eines Stereo-Offline-Kontexts, gemessen ab `ab` Sekunden
-    const ohr = async (spiel, sek, ab) => {
-        const ctx = new OfflineAudioContext(2, 48000 * sek, 48000);
-        await spiel(ctx);
-        const b = await ctx.startRendering();
-        return [0, 1].map((c) => db(b.getChannelData(c).subarray(48000 * ab)));
+    // je Quelle: Abstände, Sekunden, gemessen ab, und das Spiel an der Stelle (x, z) vom Ohr
+    const Q = {
+        tier: [
+            [3, 8, 20],
+            2,
+            0,
+            async (ctx, x, z) => {
+                tier.position.set(p0.x + x, p0.y, p0.z + z);
+                const n = um.rufeGespielt;
+                [sy.ctx, sy.masterGain, um.bus] = [ctx, ctx.destination, ctx.destination];
+                r._tierRuf(tier, "ruhe");
+                for (const dl = performance.now() + 3000; um.rufeGespielt === n && performance.now() < dl;)
+                    await window.sleep(10);
+                [sy.ctx, sy.masterGain, um.bus] = vor;
+            },
+        ],
+        glut: [
+            [1.5, 4, 10],
+            3.5,
+            1.5,
+            (ctx, x, z) => {
+                pm.position.set(dorf.glut.x - x, p0.y, dorf.glut.z - z);
+                const mix = K.umweltMischung({ glut: r._umweltLage().glut });
+                for (const k in mix) if (k !== "glut") mix[k].db = -Infinity;
+                K.umweltGraph(ctx, ctx.destination).anwenden(mix, 0);
+            },
+        ],
     };
-    cam.updateMatrixWorld();
-    const e = cam.matrixWorld.elements;
-    const [rx, rz] = [e[0], e[2]].map((v) => v / Math.hypot(e[0], e[2]));
-    // je Seite, Winkel und Abstand die Stelle (x, z) relativ zu (ox, oz)
-    const proben = function* (dists) {
-        for (const w of [90, 30])
-            for (const seite of [-1, 1])
-                for (const d of dists) {
-                    const [a, b] = [Math.sin((w * Math.PI) / 180) * seite * d, Math.cos((w * Math.PI) / 180) * d];
-                    yield [seite, w, d, a * rx + b * rz, a * rz - b * rx];
-                }
-    };
-    const tier = (s.creatures || []).find((c) => c && c.position && c.userData && !c.userData.dying);
     try {
-        if (!tier) Ra.push(["tier", 0, 0, 0, NaN, NaN]);
-        const pos0 = tier && tier.position.clone();
-        for (const [seite, w, d, x, z] of tier ? proben([3, 8, 20]) : []) {
-            tier.position.set(pm.position.x + x, pm.position.y, pm.position.z + z);
-            const n = um.rufeGespielt;
-            const LR = await ohr(
-                async (ctx) => {
-                    const vor = [sy.ctx, sy.masterGain, um.bus];
-                    [sy.ctx, sy.masterGain, um.bus] = [ctx, ctx.destination, ctx.destination];
-                    try {
-                        r._tierRuf(tier, "ruhe");
-                        for (const dl = performance.now() + 3000; um.rufeGespielt === n && performance.now() < dl;)
-                            await window.sleep(10);
-                    } finally {
-                        [sy.ctx, sy.masterGain, um.bus] = vor;
+        for (const [q, [dists, sek, ab, spiel]] of Object.entries(Q))
+            for (const w of [90, 30])
+                for (const seite of [-1, 1])
+                    for (const d of dists) {
+                        const [a, b] = [Math.sin((w * Math.PI) / 180) * seite * d, Math.cos((w * Math.PI) / 180) * d];
+                        const ctx = new OfflineAudioContext(2, 48000 * sek, 48000);
+                        await spiel(ctx, (a * e[0] + b * e[2]) / l, (a * e[2] - b * e[0]) / l);
+                        const buf = await ctx.startRendering();
+                        const LR = [0, 1].map((c) =>
+                            buf
+                                .getChannelData(c)
+                                .subarray(48000 * ab)
+                                .reduce((v, x) => v + x * x, 1e-20)
+                        );
+                        Ra.push([q, seite, w, d, ...LR]);
                     }
-                },
-                2,
-                0
-            );
-            Ra.push(["tier", seite, w, d, ...LR]);
-        }
-        if (tier) tier.position.copy(pos0);
-        if (!dorf) Ra.push(["glut", 0, 0, 0, NaN, NaN]);
-        const p0 = pm.position.clone();
-        for (const [seite, w, d, x, z] of dorf ? proben([1.5, 4, 10]) : []) {
-            pm.position.set(dorf.glut.x - x, p0.y, dorf.glut.z - z);
-            const mix = K.umweltMischung({ glut: r._umweltLage().glut });
-            for (const k of Object.keys(mix)) if (k !== "glut") mix[k].db = -Infinity;
-            Ra.push([
-                "glut",
-                seite,
-                w,
-                d,
-                ...(await ohr((ctx) => K.umweltGraph(ctx, ctx.destination).anwenden(mix, 0), 3.5, 1.5)),
-            ]);
-        }
-        pm.position.copy(p0);
     } finally {
-        P.createStereoPanner = sp;
+        [P.createStereoPanner, sy.ctx, sy.masterGain, um.bus] = [sp, ...vor];
+        tier.position.copy(t0);
+        pm.position.copy(p0);
     }
     return Ra;
 }
-// Das Urteil (Ra) je Probe beim Namen und die Zahl: der kleinste |ILD| je Quelle und der Pegel über die Abstände.
+// Das Urteil (Ra) je Probe beim Namen; die Zahl je Quelle: ILD/Pegel in dB je Winkel (− links) und Abstand.
 function raumUrteil(Ra) {
-    const rot = [];
-    const zahl = {};
+    const [rot, z] = [[], {}];
     Ra.forEach(([q, seite, w, d, L, R], i) => {
-        const [ild, vor] = [R - L, Ra[i - 1]];
-        const pegel = 10 * Math.log10(10 ** (L / 10) + 10 ** (R / 10));
-        if (!(L > -90 || R > -90)) rot.push(`Ra ${q} ${seite < 0 ? "links" : "rechts"} ${w}° ${d} m: stumm`);
-        else if (!(ild * seite >= 3))
-            rot.push(
-                `Ra ${q} ${seite < 0 ? "links" : "rechts"} ${w}° ${d} m: falsches Vorzeichen (ILD ${ild.toFixed(1)} dB)`
-            );
-        if (
-            vor &&
-            vor[0] === q &&
-            vor[1] === seite &&
-            vor[2] === w &&
-            !(pegel <= 10 * Math.log10(10 ** (vor[4] / 10) + 10 ** (vor[5] / 10)) - 1)
-        )
-            rot.push(
-                `Ra ${q} ${seite < 0 ? "links" : "rechts"} ${w}° ${d} m: der Pegel fällt nicht mit dem Abstand (${pegel.toFixed(1)} dB)`
-            );
-        const z = (zahl[q] = zahl[q] || { ild: Infinity, pegel: {} });
-        z.ild = Math.min(z.ild, Math.abs(ild));
-        if (w === 90 && seite > 0) z.pegel[d] = +pegel.toFixed(1);
+        const [wo, ild, pegel, v] = [
+            `Ra ${q} ${seite * w}° ${d} m`,
+            10 * Math.log10(R / L),
+            10 * Math.log10(L + R),
+            Ra[i - 1],
+        ];
+        if (!(ild * seite >= 3)) rot.push(`${wo}: falsches Vorzeichen (ILD ${ild.toFixed(1)} dB)`);
+        if (v && v[3] < d && !(pegel <= 10 * Math.log10(v[4] + v[5]) - 1)) rot.push(`${wo}: der Pegel fällt nicht`);
+        (z[q] = z[q] || []).push(`${seite * w}° ${d} m ${ild.toFixed(0)}/${pegel.toFixed(0)}`);
     });
-    const ok = Ra.filter(([, , , , L, R]) => L > -90 || R > -90).length;
+    const falsch = rot.filter((x) => /Vorzeichen/.test(x)).length;
     return {
         rot,
-        zahl: `${Ra.length - rot.filter((x) => /Vorzeichen|stumm/.test(x)).length}/${Ra.length} Vorzeichen richtig (${ok} hörbar) · ${Object.entries(
-            zahl
-        )
-            .map(
-                ([q, z]) =>
-                    `${q} |ILD| ≥ ${z.ild.toFixed(1)} dB, Pegel ${Object.entries(z.pegel)
-                        .map(([d, p]) => `${d} m ${p} dB`)
-                        .join(" › ")}`
-            )
+        zahl: `${Ra.length - falsch}/${Ra.length} Vorzeichen richtig · ${Object.entries(z)
+            .map(([q, x]) => `${q} ${x.join(" ")}`)
             .join(" · ")}`,
     };
 }
