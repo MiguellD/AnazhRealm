@@ -2032,32 +2032,14 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### Intuitives Multi-User-Setup ###
-    // Mode/Rolle im New-World-Dialog, Einladungs-Code, Auto-Host/Guest, world-snapshot-Empfang nur bei
-    // pending=true, role-State in worldMeta + p2p.
+    // Mode/Rolle im New-World-Dialog, world-snapshot-Empfang nur bei pending=true, role-State in worldMeta + p2p; den
+    // Gast-Import samt Auto-Verbindung zum Host trägt der echte Beitritt (gate:praegung-welt, T-WELT).
     const ring115Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
-        // 1. State: role in worldMeta + p2p
-
-        // 2. Invitation-Code: encode + decode roundtrip
-        const codeA = r.makeInvitationCode("ws://192.168.1.42:4313", "w-1k7p-abc123");
-        out.encodeShape = codeA === "anazh://192.168.1.42:4313/w-1k7p-abc123";
-        const parsedA = r.parseInvitationCode(codeA);
-        out.decodeShape = parsedA && parsedA.url === "ws://192.168.1.42:4313" && parsedA.roomId === "w-1k7p-abc123";
-
-        // 3. parseInvitationCode toleriert tolerantes Format
-        const parsedTolerant = r.parseInvitationCode("192.168.1.42:4313/myroom123");
-        out.parseTolerant =
-            parsedTolerant && parsedTolerant.url === "ws://192.168.1.42:4313" && parsedTolerant.roomId === "myroom123";
-
-        // 4. parseInvitationCode lehnt Müll ab
-        out.parseRejectsEmpty = r.parseInvitationCode("") === null;
-        out.parseRejectsBad = r.parseInvitationCode("ho ha") === null;
-        out.parseRejectsShortRoom = r.parseInvitationCode("anazh://h:4313/ab") === null;
-
-        // 5. createNewWorld({role: "host"}) setzt role in worldMeta
+        // createNewWorld({role: "host"}) setzt role in worldMeta
         const hostId = r.createNewWorld({
             slug: "host-test-" + Date.now().toString(36),
             role: "host",
@@ -2068,46 +2050,6 @@ async function checkBandLateMultiUser(ctx) {
             const saved = JSON.parse(localStorage.getItem(r.worldStorageKey(hostId)));
             out.hostRoleInSavedMeta = saved && saved.worldMeta && saved.worldMeta.role === "host";
             r.deleteWorld(hostId);
-        }
-
-        // 6. _importGuestWorld erzeugt guest-Welt aus Snapshot
-        const sampleSnapshot = {
-            worldMeta: {
-                worldId: "guest-source-uuid-xxx",
-                slug: "originalwelt",
-                seed: "abc-seed",
-                bornAt: Date.now() - 100000,
-                schemaVersion: "10.5-chunk-delta-v1",
-                parentWorlds: [],
-            },
-            worldJournal: { entries: [], seen: {} },
-            architectures: [],
-            blueprints: [],
-            playerEmotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 },
-        };
-        const guestId = r._importGuestWorld(
-            sampleSnapshot,
-            { url: "ws://192.168.1.99:4313", roomId: "guest-source-uuid-xxx", peerId: "peer-host" },
-            "test-guest"
-        );
-        out.guestImportOk = guestId === "guest-source-uuid-xxx";
-        if (guestId) {
-            const savedGuest = JSON.parse(localStorage.getItem(r.worldStorageKey(guestId)));
-            out.guestRoleSet = savedGuest && savedGuest.worldMeta && savedGuest.worldMeta.role === "guest";
-            out.guestHostInfoSet =
-                savedGuest &&
-                savedGuest.worldMeta &&
-                savedGuest.worldMeta.hostInfo &&
-                savedGuest.worldMeta.hostInfo.url === "ws://192.168.1.99:4313" &&
-                savedGuest.worldMeta.hostInfo.peerId === "peer-host";
-            // P2P-Settings für Auto-Connect geschrieben
-            out.p2pEnabledPersisted = localStorage.getItem("anazh.p2p.enabled") === "true";
-            out.p2pUrlPersisted = localStorage.getItem("anazh.p2p.url") === "ws://192.168.1.99:4313";
-            // Cleanup
-            r.deleteWorld(guestId);
-            // p2p-flags wieder weg, damit andere Tests nicht beeinflusst werden
-            localStorage.setItem("anazh.p2p.enabled", "false");
-            localStorage.setItem("anazh.p2p.url", "ws://127.0.0.1:4313");
         }
 
         // 7. world-snapshot wird nur bei pending=true akzeptiert
@@ -2189,24 +2131,10 @@ async function checkBandLateMultiUser(ctx) {
             (ring115Results && ring115Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 11.5: makeInvitationCode liefert anazh://host:port/roomId", ring115Results.encodeShape);
-        check("Ring 11.5: parseInvitationCode dekodiert URL + roomId", ring115Results.decodeShape);
-        check("Ring 11.5: parseInvitationCode toleriert host:port/room ohne Schema", ring115Results.parseTolerant);
-        check("Ring 11.5: parseInvitationCode lehnt leeren Code ab", ring115Results.parseRejectsEmpty);
-        check("Ring 11.5: parseInvitationCode lehnt unsinnigen Code ab", ring115Results.parseRejectsBad);
-        check("Ring 11.5: parseInvitationCode lehnt zu kurze roomId ab", ring115Results.parseRejectsShortRoom);
         check(
             "Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta",
             ring115Results.hostRoleInSavedMeta
         );
-        check("Ring 11.5: _importGuestWorld nutzt host-worldId als neue worldId", ring115Results.guestImportOk);
-        check("Ring 11.5: _importGuestWorld setzt worldMeta.role='guest'", ring115Results.guestRoleSet);
-        check("Ring 11.5: _importGuestWorld setzt worldMeta.hostInfo korrekt", ring115Results.guestHostInfoSet);
-        check(
-            "Ring 11.5: _importGuestWorld aktiviert P2P-Auto-Connect (localStorage)",
-            ring115Results.p2pEnabledPersisted
-        );
-        check("Ring 11.5: _importGuestWorld speichert host-URL in localStorage", ring115Results.p2pUrlPersisted);
         check(
             "Ring 11.5: world-snapshot wird ohne pending-Flag verworfen (Sicherheits-Wall)",
             ring115Results.snapshotRejectedWhenNotPending
