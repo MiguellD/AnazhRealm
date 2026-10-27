@@ -492,27 +492,35 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
     );
 }
 
-// TEIL S (Lehre 14, B-K2): kein Chunk-Stoff im Haupt-Faden vor dem Ack des Fadens. Ack und Zusage hängen, der Strom fragt den
-// Spieler-Chunk in L3 und die Dichte: Soll pending, kein voller Stand (`voxelWorkerStateGen`), die Dichte kommt nach dem Ack,
-// und der Boot meldete keinen VOXEL-FADEN-Bruch. `urform` (Selbsttest): Stufe 3 und ein init vor dem Ack.
-const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0";
+// TEIL S (Lehre 14, B-K2): kein Chunk-Stoff im Haupt-Faden vor dem Ack des Fadens. Der Ack hängt, der Strom fragt den
+// Spieler-Chunk in L3 und die Dichte: Soll pending, kein voller Stand (`voxelWorkerStateGen`), die Dichte kommt, und der Boot
+// meldete keinen VOXEL-FADEN-Bruch. DIE REIHE (streaming.K5, Lehre 24): der Auftrag geht im Ruf hinaus (`sofort`) — wartet er
+// einen Mikro-Takt, überholt ihn eine Freigabe im selben Takt (`zellen-frei`), das Wasser-Blatt fragt nach, und der Main klont
+// die Zellen des Fadens zurück (an 607d0c73 0,27 MB je Minute Fahrt). `urform` (Selbsttest): Stufe 3, ein init vor dem Ack und
+// der wartende Auftrag (die Form bis sk5-kopie).
+const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0 · Reihe sofort";
 async function strom(page, urform) {
     return page.evaluate(async (urform) => {
         const r = window.anazhRealm;
         const s = r.state;
         const [w, ack, gen, p] = [s.voxelWorker, s.voxelWorkerReady, s.voxelWorkerStateGen, s.lastPlayerVoxelChunk];
-        const zusage = w.zusage;
-        let los;
-        w.zusage = new Promise((res) => (los = res));
         s.voxelWorkerReady = false;
-        if (urform) r._voxelWorkerSyncState();
+        if (urform)
+            r._voxelWorkerSyncState(),
+                (r._voxelFadenAuftrag = async (...x) => (await 0, AnazhRealm.prototype._voxelFadenAuftrag.apply(r, x)));
         const a = urform ? r._buildVoxelChunkData(p.cx, p.cz, 3) : r._acquireVoxelChunkBuild(p.cx, p.cz, 3, {});
+        let reihe = "verzögert";
+        w.postMessage = function () {
+            reihe = "sofort";
+            Worker.prototype.postMessage.apply(w, arguments);
+        };
         const d = r._voxelWorkerComputeDensity(0, 0, 0, 2, 2, 2, 1.8);
-        [s.voxelWorkerReady, w.zusage] = [ack, zusage];
-        los();
-        const da = (await Promise.race([d, new Promise((res) => setTimeout(res, 9000, []))])).length > 0;
+        s.voxelWorkerReady = ack;
+        delete w.postMessage;
+        delete r._voxelFadenAuftrag;
+        const da = (await d).length > 0; // der Auftrag reist hinter dem init, der hängende Ack hält ihn nie
         const bruch = [...(r._bruchBuch || new Map()).keys()].filter((t) => t.startsWith("VOXEL-FADEN")).length;
-        return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${s.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch}`;
+        return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${s.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch} · Reihe ${reihe}`;
     }, urform);
 }
 
@@ -1791,9 +1799,10 @@ function fadenSeite(bytesQ, huelleQ, sync) {
     const post = Roh.prototype.postMessage;
     Roh.prototype.postMessage = function (m, tr) {
         const frei = new Set(Array.isArray(tr) ? tr : (tr && tr.transfer) || []);
-        const k = klonBytes(m, frei, new Set(), (p) => bytes.has(p));
-        if (k) kopie(k);
-        zu("gesendet", `${this.__faden}:${(m && m.type) || "?"}`, klonBytes(m, frei, new Set()) - k);
+        const art = `${this.__faden}:${(m && m.type) || "?"}`;
+        const k = klonBytes(m, frei, new Set(), da);
+        if (k) zu("kopie", art, k); // der Klon empfangener Bytes zurück in einen Faden heißt nach seiner Nachricht (Lehre 24)
+        zu("gesendet", art, klonBytes(m, frei, new Set()) - k);
         return post.call(this, m, tr);
     };
     // DIE PLATTE wie im Spiel: Put und Get klonen ihren Wert im Haupt-Faden — es zählt, wo der Wert Bytes trägt
@@ -1823,17 +1832,14 @@ function fadenSeite(bytesQ, huelleQ, sync) {
     const da = (x) => !!x && (bytes.has(x) || (ArrayBuffer.isView(x) && bytes.has(x.buffer)));
     const TAK = Object.getPrototypeOf(Int8Array);
     const TA = TAK.prototype;
-    const [sl, abs] = [TA.slice, ArrayBuffer.prototype.slice];
-    TA.slice = function (...a) {
-        const r = sl.apply(this, a);
-        if (da(this)) kopie(r.byteLength);
-        return r;
-    };
-    ArrayBuffer.prototype.slice = function (...a) {
-        const r = abs.apply(this, a);
-        if (da(this)) kopie(r.byteLength);
-        return r;
-    };
+    for (const P of [TA, ArrayBuffer.prototype]) {
+        const sl = P.slice;
+        P.slice = function (...a) {
+            const r = sl.apply(this, a);
+            if (da(this)) kopie(r.byteLength);
+            return r;
+        };
+    }
     for (const K of [Array, TAK]) {
         const f = K.from;
         K.from = function (q, ...a) {
@@ -2240,7 +2246,7 @@ hauptLauf(async () => {
             selbst.ferne > 0 &&
             selbst.wald > 0 &&
             urform &&
-            urform !== STROM_SOLL &&
+            urform.endsWith("Reihe verzögert") &&
             selbst.namen === "FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);

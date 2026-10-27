@@ -285,6 +285,11 @@ class AnazhRealm_speicher_laden {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
         this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
+        // DER LEBENSZYKLUS ZÄHLT AB DER UHR DES STANDS (halten.K5): seine Marke (`faunaLifecycle.lastTick`) ist eine Lesung der
+        // Welt-Uhr und reist nicht; an der gereisten Uhr fand die Null der Sitzung den letzten Takt so alt wie den Stand, und das
+        // erste Bild der Wiederkehr zählte das Intervall, das die Welt des Stands schon gezählt hatte, ein zweites Mal (607d0c73:
+        // der gebundene Fuchs starb im ersten Bild am Hunger, Alter 10 s). Die Tiere des Stands kehren jetzt wieder, ihr Takt mit.
+        this.state.faunaLifecycle.lastTick = this.state.spielZeit;
         // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
         // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`
