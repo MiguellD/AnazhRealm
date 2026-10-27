@@ -137,3 +137,4 @@ erledigt heim-z49  07:50 bau-faden 3d02342f (10 Blöcke vereinigt: --faden misst
 befund  schloss  08:15 echt von z49 wartete 06:50–07:50 auf das verwaiste Schloss heil-wiw (Halter-pid tot, Hook löst erst nach 60 min); Radeon Takt 9 nur 11/28 in 3 h, headless 11/74: champions-Läufe, echt und Waise teilen die 3 Plätze. GTX takt9 18/18 grün, ABAB z45z46 und z47z48 nicht-langsamer
 plan    takt10  nach z49: GTX misst die volle gtx-Liste (Staffel 1 + 2), die Radeon nur, was beide Geräte verlangt — der Engpass ist die Radeon
 läuft   takt10  08:25 am festen Kopf dc06b495 (z46–z49): GTX 39 Stationen (Staffel 1 + 2, die Last weg von der Radeon) · Radeon nur die 11 Staffel-2 · headless --offen; Takt 9 abgebrochen (Radeon 11/28, headless 11/74 an 455e5be8, Teil-Messung committet)
+erledigt z49  08:23 GELANDET dc06b495 (V18.546.108) stk3-phasen + ci-kamera-leib; Nachwache z49n prio 2 hinter takt10-gtx
