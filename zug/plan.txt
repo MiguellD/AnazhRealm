@@ -117,3 +117,5 @@ bereit  pk2-bild  03:05 a6303399 = ab08027a (Cloud) + z46-Kopf; Konflikt diag-ko
 plan    z47  nach z46: kk4-motor 65cbb4b0 (grün) · pk2-bild a6303399 (CI läuft) · sk5-haus 4d2fbb91 (CI läuft); merge-tree auf z46-Kopf: kk4 + sk5 sauber
 befund  r6-konsum-koord  03:00 nicht gemergt: Konsum macht MEHR Messungen alt (lk4-steil 31/35 gegen 19/35 Glob), +7–22 % Wanduhr je Station; offen bis OMEN-ABAB mit/ohne Zeugen an einer Zeit-Station
 befund  cloud-rot  03:00 Neulauf angestoßen: bau-faden G13 · sk2-zipf2 G13+G5 (STAND-TAKT deckWache) · tk1-herde G7 (bewohner) G13 G14 G18 · pbk4-fahrt G9 · fk1-ton G10 G13; G13 = swiftshader-Stall beim Pipeline-Bau, auf z46 grün
+erledigt z46  03:05 GELANDET 42973786 (V18.546.105) mit gk2-damm; ek-schleife fiel am Konflikt diag-weltakt-wache.cjs:30 → heim, z48. Nachwache z45z46-abab (A=5b8603c1 B=42973786) prio 2 hinter takt8-gtx
+läuft   z47  03:10 kk4-motor 65cbb4b0 + sk5-haus 4d2fbb91 (beide CI grün, merge-tree sauber)
