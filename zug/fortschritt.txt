@@ -412,3 +412,4 @@
 2026-10-27 13:31:01 takt11-gtx siedlung.K5#1 GRÜN 5.6 · 12/41
 2026-10-27 13:37:11 takt11-gtx leib.K1#1 GRÜN 6.0 · 13/41
 2026-10-27 13:43:05 takt11-gtx halten.K2#1 GRÜN 5.8 · 14/41
+2026-10-27 13:43:59 takt11-gtx halten.K5#1 GRÜN 0.8 · 15/41
