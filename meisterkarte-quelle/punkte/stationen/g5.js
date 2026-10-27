@@ -484,6 +484,76 @@ const stationen = [
         ],
         quelle: "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus",
     },
+    // siedlung.K1 Staffel 2 (Zweig siedlung-k1-innen): ZWEI Läufe von gate:haus-welt. (1) W10 headless, Phasen haus + start: der
+    // Takt der Welt hebt das Start-Dorf, gegangen wird JEDES Haus seines Plans (der Plan v2 im Gedächtnis des Orts unter
+    // `settlementCells.start.ort`, je Haus-Slot das Haus an seinem Ort; ein Slot ohne Haus ist ROT) von der Tür bis Keller und
+    // Dachboden, je Sim-Schritt der Hub. (2) `--bild` auf der Karte (Rezept linse, `[linse-gpu]`): W9 schießt je Haus des
+    // Start-Dorfs seine Innen-Blicke aus dem Ausgabe-Pfad (das Auge 1,3 m über der Diele), W10 dazu den Boden im Schatten
+    // zur selben Stunde (Mittag der Bühne; von DIESEM Haus gegen die Sonne der erste Boden 1 m vor jedem Bau, dessen Strahl
+    // zur Sonne einen Werfer trifft). Die Quote: dunkelster Innen-Blick ÷ Schatten-Fleck außen, Median der Luminanz (sRGB
+    // linear), Soll ≥ 0,15 je Haus. Die Cloud (swiftshader) trägt den echten Renderer nicht bis zum Bild (Ankunft 79, Karten 3 offen nach
+    // 28 066 Takten) — das Urteil fällt an Radeon und GTX. Erwartet: Quote ≥ 0,4 (M41, Radeon 23.10.: Innen-Median 0,017–0,177;
+    // Schatten-Boden 0,014–0,034 im Radeon-Bild bericht/1110-5/bilder/dorf-an.png). Headless am Zweig: 18 von 18 Häusern ganz.
+    {
+        kriterium: "siedlung.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            'A=$(cygpath -m "$1" 2> /dev/null || echo "$1"); ' +
+                'HAUS_WELT_JSON="$A.gang" node scripts/diag-haus-welt.cjs --phasen=haus,start; echo "GANG EXIT $?"; ' +
+                'HAUS_WELT_JSON="$A.bild" node scripts/diag-haus-welt.cjs --phasen=grund --bild; echo "BILD EXIT $?"; ' +
+                "node -e 'const f = require(\"fs\"), a = process.argv[1]; f.writeFileSync(a, JSON.stringify({ gang: JSON.parse(f.readFileSync(a + \".gang\")), bild: JSON.parse(f.readFileSync(a + \".bild\")) }))' \"$A\"",
+            "siedlung-k1",
+            "{AUS}",
+        ],
+        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1" },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j) => {
+            const [g, b] = [j && j.gang, j && j.bild];
+            if (!g || !b || !g.startDorf || !b.startDorf || !b.w9 || !b.w9.bild)
+                return { gruen: false, zahl: "kein JSON beider Läufe (gang: Phasen haus,start · bild: --bild mit W9)" };
+            const sd = g.startDorf;
+            const gaenge = g.haeuser.filter((h) => h.start && !h.fehler && h.gang);
+            const ganz = gaenge.filter((h) => !h.gang.fehlt.length && h.gang.hub <= 0.3);
+            const innen = b.w9.haeuser.filter((h) => h.start);
+            const dunkel = innen.filter((h) => !(h.quote >= 0.15));
+            const q = innen.map((h) => h.quote).filter(Number.isFinite).sort((x, y) => x - y);
+            const gruen =
+                sd.slots >= 1 && !sd.fehlt.length && ganz.length === sd.slots &&
+                !b.startDorf.fehlt.length && innen.length === b.startDorf.slots && !dunkel.length;
+            return {
+                gruen,
+                zahl:
+                    ganz.length + " von " + sd.slots + " Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max " +
+                    Math.max(0, ...gaenge.map((h) => h.gang.hub)).toFixed(2) + " m" + (sd.fehlt.length ? " (ohne Haus: " + sd.fehlt.join(" ") + ")" : "") +
+                    " · Innen-Bild " + (innen.length - dunkel.length) + " von " + innen.length + " lesbar (Plan " + b.startDorf.slots +
+                    "), innen ÷ Außen-Schatten min " + q[0] + " · Median " + q[q.length >> 1] + " (Soll ≥ 0,15)" +
+                    (dunkel.length ? " · dunkel: " + dunkel.map((h) => h.typ + " " + h.innen + "/" + h.aussen).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "fachwerk-core.js",
+            "foundry-core.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "stamm/kreatur-*.js",
+            "stamm/vegetation-*.js",
+        ],
+        quelle: "2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
+    },
 
     // ───────── siedlung.K5 — das erste Haus steht sofort (M36, die Stufe am Abstand) ─────────
     // Station dorf wie M36: Werkbank --echt --ort dorf, Regler frei, die Zelle −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit
@@ -1340,10 +1410,6 @@ module.exports.fehlt = [
     {
         kriterium: "tore.K5", staffel: 2, befehl: null,
         grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten",
-    },
-    {
-        kriterium: "siedlung.K1", staffel: 2, befehl: null,
-        grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
     },
     {
         kriterium: "halten.K1", staffel: 2, befehl: null,
