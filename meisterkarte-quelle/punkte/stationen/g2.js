@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3) und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K5 (Zweig schwarm) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -20,6 +20,20 @@ const KREATUR = [
     "scripts/diag-kreatur-leben.cjs",
     "scripts/lib/kreatur-proben.cjs",
     "scripts/lib/welt-boot.cjs",
+];
+
+// der Schwarm (luftwasser.K5): das Gesetz, der Takt und sein Zeichner, die Bühne und der Draw-Zähler der Werkbank
+const SCHWARM = [
+    "tetrapoda-core.js",
+    "stamm/kreatur-leben.js",
+    "stamm/dirigent-takt.js",
+    "stamm/stoff-instanz.js",
+    "stamm/siedlung-satz.js",
+    "scripts/werkbank.cjs",
+    "scripts/lib/welt-boot.cjs",
+    "scripts/lib/draw-zaehler.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/software-gpu.cjs",
 ];
 
 // ───────── DIE HERDE AM HANG (tiere.K1 Staffel 2): drei Funktionen, ihr Text geht in den Befehl (und in den Abdruck) ─────────
@@ -280,6 +294,115 @@ async function herdeHang() {
 
 // der Text einer Funktion ohne Einzug und Kommentar-Zeilen (ein Argument des Befehls, s. herdeHang)
 const knapp = (fn) => String(fn).replace(/\n\s*\/\/[^\n]*/g, "").replace(/\n\s+/g, "\n");
+
+// ───────── luftwasser.K5 — DER SCHWARM IST FERN EIN AGENT (Zweig schwarm) ─────────
+// DIE PRÜFBÜHNE DES SCHWARMS (in der Seite der Werkbank, r = Welt, T = THREE): Mittag · Sonne · Sommer (`__buehne`, das Wort
+// des Spielers), Ego; die Schwarm-Karte frisch, die Zelle unter dem Auge trägt den FESTEN Schwarm von o.n Gliedern (ihr Wurf
+// der Glieder gesetzt), jede andere Zelle keinen. Je Reihe steht das Auge o.abstand m quer zur Flugrichtung des Zentrums auf
+// Augenhöhe über dem Boden, der Blick auf das Zentrum (die Hülle im Blick, nah: die Separation rechnet); ein ungemessener Takt
+// legt neue Zellen an (sie tragen keinen Schwarm), dann o.je gemessene Takte des Schwarms auf der Uhr der Welt (1/60 s je
+// Takt). Zurück die ms je Takt jeder Reihe und die Lage des Takts (`state.schwarm`) je Reihe, dazu die Pose der letzten Reihe.
+function schwarmSzene(r, T, o) {
+    const s = r.state;
+    const A = r.constructor;
+    const VG = A._vogelGesetz();
+    const V = VG.V;
+    const S = V.schwarm;
+    const pm = s.playerMesh.position;
+    const H = (x, z) => r.getTerrainHeightAt(x, z);
+    s.renderer.setAnimationLoop(null);
+    window.__buehne();
+    r.setCameraMode("first");
+    const sonne = r._sonnenRichtung().y;
+    const regen = r._weatherFieldFor(s.weather).rain;
+    r._schwarmKarte = null;
+    r._vogelSchwarmTakt(sonne, regen);
+    const sk = r._schwarmKarte;
+    const Z = S.zelleM;
+    const c = sk.zellen.get(Math.floor(s.camera.position.x / Z) * 1048576 + Math.floor(s.camera.position.z / Z));
+    if (!c) return { fehler: "keine Schwarm-Zelle unter dem Auge" };
+    c.revier = true;
+    c.wurf[4] = (o.n - S.glieder[0]) / (S.glieder[1] - S.glieder[0]);
+    const zt = {};
+    let pose = null;
+    const stelle = () => {
+        if (!VG.schwarmZentrum(c.wurf, s.spielZeit + o.je / 120, sonne, regen, V, zt)) return null;
+        const [x, z] = [c.x + zt.dx, c.z + zt.dz];
+        const y = r._terrainMacroSurfaceY(x, z) + zt.h;
+        const [ex, ez] = [x + Math.cos(zt.gier) * o.abstand, z - Math.sin(zt.gier) * o.abstand];
+        pm.set(ex, H(ex, ez) + 0.5, ez);
+        s.camera.position.set(ex, H(ex, ez) + A.EGO_AUGE_M, ez);
+        s.camera.lookAt(x, y, z);
+        s.camera.updateMatrixWorld(true);
+        r._loopFrustumCulling();
+        r._vogelSchwarmTakt(sonne, regen);
+        for (const q of sk.zellen.values()) {
+            q.revier = q === c;
+            q.frisch = s.spielZeit; // das Revier frischt erst nach frischeS nach: die Reihe hält die Bühne
+        }
+        const e = s.camera.position;
+        return (pose = { kamera: [e.x, e.y, e.z, x, y, z].map((v) => +v.toFixed(2)), abstand: +Math.hypot(x - e.x, y - e.y, z - e.z).toFixed(1) });
+    };
+    const ms = [];
+    const lagen = [];
+    for (let b = 0; b < o.reihen; b++) {
+        if (!stelle()) return { fehler: "der Schwarm fliegt nicht (Sonne " + sonne.toFixed(2) + ", Regen " + regen + ")" };
+        const t0 = performance.now();
+        for (let k = 0; k < o.je; k++) {
+            s.spielZeit += 1 / 60;
+            r._vogelSchwarmTakt(sonne, regen);
+        }
+        ms.push((performance.now() - t0) / o.je);
+        lagen.push(Object.assign({}, s.schwarm));
+    }
+    const P = s.vogelSchwarmPool;
+    return { ms, lagen, pose, instanzen: P ? P.mesh.count : 0, je: V.leib.teile.length + 2 };
+}
+
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte), Port {PORT}+20000; darin die
+// Prüfbühne (60 Reihen × 20 Takte, 100 Glieder, das Auge 40 m quer), dann EIN gezählter Frame (`__drawZensus`, der Draw-Zähler
+// am Renderer) an der Pose der letzten Reihe: die Befehle der Klasse vogel je Pass (Sänger und Schwarm zeichnen im Stoff der
+// Vogel-Pools). Das Ergebnis in {AUS}, die Zeile „SCHWARM {…}".
+async function schwarmLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const erg = {};
+    const tor = werkbankTor(W);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
+        const a = await werkbankRuf(W, "/eval", {
+            code: "return (" + szene + ")(r, T, " + JSON.stringify({ n: 100, abstand: 40, reihen: 60, je: 20 }) + ");",
+        });
+        const b = a && a.ergebnis;
+        if (!b || b.fehler) throw new Error("Bühne: " + JSON.stringify(b || a).slice(0, 300));
+        const z = await werkbankRuf(W, "/eval", {
+            code: "const z = await window.__drawZensus({ alle: true }); const k = z.klassen.find((x) => x.klasse === 'vogel') || {}; return { cmd: k.cmd || 0, je: k.je || {}, inst: k.inst || 0, dMin: k.dMin, dMax: k.dMax, gesamt: z.gesamt };",
+        });
+        const q = b.ms.slice().sort((x, y) => x - y);
+        const im = b.lagen.map((l) => (l.imBild === 1 && l.nah === 1 ? l.glieder : 0));
+        Object.assign(erg, {
+            msMedian: +q[q.length >> 1].toFixed(4),
+            msP95: +q[Math.floor(0.95 * (q.length - 1))].toFixed(4),
+            imBildMin: Math.min(...im),
+            paare: b.lagen.reduce((x, l) => x + l.paare, 0),
+            instanzen: b.instanzen,
+            teileJe: b.je,
+            pose: b.pose,
+            vogel: z && z.ergebnis,
+        });
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+    } finally {
+        tor.stop();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("SCHWARM " + JSON.stringify(erg));
+}
 
 // ───────── oekologie.K5 Staffel 2 — DIE ANSTECKUNG GEGEN bond = 0 UND DIE BINDUNG ÜBER DEN RELOAD ─────────
 // Null-Renderer, Produktions-Boot, ein Statik-Server auf {PORT} (R3: die Stimmung ist Zustand der Welt, kein Bild). Vier Läufe
@@ -1534,6 +1657,60 @@ const stationen = [
         "scripts/lib/welt-boot.cjs",
     ],
     quelle: "2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
+    },
+
+    // ───────── luftwasser.K5 — der Schwarm fern EIN Agent (Zweig schwarm: tetrapoda VOGEL_GESETZ.schwarm, `_vogelSchwarmTakt`) ─────────
+    // EINE Werkbank an der Weiche (`schwarmLauf` oben, Port {PORT}+20000), die Prüfbühne mit dem festen Schwarm von 100 Gliedern,
+    // das Auge 40 m quer zur Flugrichtung (nah: die Separation rechnet mit): 60 Reihen × 20 Takte des Schwarm-Takts auf der Uhr
+    // der Welt, je Reihe die ms je Takt (performance.now um die Reihe) und die Lage des Takts; danach EIN gezählter Frame
+    // (`__drawZensus`) an der Pose der letzten Reihe. Staffel 1: der Median ≤ 0,3 ms an der GTX-CPU, in JEDER Reihe der Schwarm
+    // im Blick (seine Hülle im Frustum des Auges) mit 100 Gliedern. Staffel 2 (die Zwillings-Messung, beide Geräte): die Klasse
+    // vogel (Sänger und Schwarm, EIN Stoff) ≤ 10 Befehle über alle Pässe, und der gezählte Frame zeichnet die 100 Glieder
+    // (≥ 100 × Teile Instanzen der Klasse). Schlupfloch „Schwärme nur außerhalb des Blicks": die Bühne zählt die Glieder im
+    // Blick je Reihe, eine Reihe ohne sie ist ROT. Gefahren 27.10. in der Cloud am Zweig schwarm 08a97885 (headless, swiftshader auf
+    // 4 Kernen): 0,135 ms je Takt (Median, p95 0,735), 100 Glieder im Blick in 60/60 Reihen, Klasse vogel 2 Befehle (haupt).
+    {
+        kriterium: "luftwasser.K5",
+        staffel: 1,
+        geraet: "gtx",
+        befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)],
+        gpu: true,
+        zeit: true,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j || j.fehler || !(j.msMedian >= 0))
+                return { gruen: false, zahl: "ohne Messung der Prüfbühne" + (j && j.fehler ? ": " + j.fehler : "") };
+            return {
+                gruen: j.msMedian <= 0.3 && j.imBildMin >= 100,
+                zahl:
+                    "Schwarm-Takt " + j.msMedian + " ms je Takt (Median, p95 " + j.msP95 + ") bei " + j.imBildMin +
+                    " Gliedern im Blick in jeder Reihe, " + j.paare + " Paare der Separation, Auge " + (j.pose && j.pose.abstand) +
+                    " m (Soll ≤ 0,3 ms, 100 im Bild)",
+            };
+        },
+        pfad: SCHWARM,
+        quelle: "1 = 100 Vögel im Bild ≤ 0,3 ms CPU an der GTX-CPU",
+    },
+    {
+        kriterium: "luftwasser.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)],
+        gpu: true,
+        zeit: true,
+        minuten: 4,
+        urteil: (j) => {
+            const v = j && j.vogel;
+            if (!j || j.fehler || !v) return { gruen: false, zahl: "ohne gezählten Frame" + (j && j.fehler ? ": " + j.fehler : "") };
+            return {
+                gruen: v.cmd >= 1 && v.cmd <= 10 && v.inst >= 100 * j.teileJe && j.imBildMin >= 100,
+                zahl:
+                    "Klasse vogel " + v.cmd + " Befehle " + JSON.stringify(v.je) + ", " + v.inst + " Instanzen (" + j.instanzen +
+                    " des Schwarms, " + j.teileJe + " Teile je Glied), " + j.imBildMin + " Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+            };
+        },
+        pfad: SCHWARM,
+        quelle: "2 = dazu im Haushalt ≤ 10 Befehle, beide Geräte",
     },
 ];
 
