@@ -130,3 +130,5 @@ takt10c-gtx 1 punkte sha=dc06b495020b357431dc998342945d2352e0beee geraet=gtx nur
 z49z50b-abab 2 abab A=cd34e72b7180e1596ba105b70ccff93d7ed1d4e0 B=6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a zellen=w-ego,d-ego,stadt
 takt11-gtx 1 punkte sha=6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a geraet=gtx nur=gelaende.K2#1,gelaende.K5#2,tiere.K3#2,tiere.K2#2,mensch.K2#2,ferne.K2#2,material.K1#2,fahrzeug.K3#1,fahrzeug.K3#2,fahrzeug.K4#2,siedlung.K2#2,siedlung.K5#1,leib.K1#1,halten.K2#1,halten.K5#1,tore.K3#2,klang.K2#1,klang.K4#1,klang.K5#2,speicher.K1#1,speicher.K1#2,speicher.K2#1,fahrzeug.K4#1,ferne.K1#1,ferne.K2#1,gelaende.K3#1,leib.K2#1,leib.K4#1,licht.K2#1,material.K1#1,material.K2#1,material.K3#1,mensch.K1#1,pipeline.K4#1,profiband.K4#1,schatten.K1#1,siedlung.K2#1,tore.K3#1,vegetation.K4#1,wetter.K2#1,physik.K2#2
 z52-abab 1 abab A=6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a B=9fa32207625dc4dfcfdf50e895b05c5226825ea6 zellen=w-ego,d-ego,stadt
+z52-abab 0 storno
+z52n-abab 2 abab A=6db2602c6ea8c3a2ae5e75e6309f7a6196b03c3a B=9fa32207625dc4dfcfdf50e895b05c5226825ea6 zellen=w-ego,d-ego,stadt

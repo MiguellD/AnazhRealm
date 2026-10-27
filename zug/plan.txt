@@ -153,3 +153,4 @@ plan    z52  nach der Buchung von Takt 10: ci-werk-wasser 16ab2c23 · ci-kamera-
 erledigt buche-118  11:57 GEBUCHT 118/330 am Kopf dc06b495 (V18.546.108), Artifact v10: feld.K2 +1 (mp-wackler), halten.K2 +2, stoffe.K3 +1 (stk3-phasen), 0 Verluste — Nachmessung allein: radeon 5/5 in 9,8 min, headless gelaende.K4#2 + oekologie.K4#1 grün
 läuft   z52  11:57 ci-werk-wasser · ci-kamera-leib · ci-portal-konformanz · mk2-mikro · punkte-farm · pruef-kurz-c (EINLASS_FREI für portal-Wackler)
 läuft   takt11  11:58 am festen Kopf 6db2602c (z50): GTX 41 (Staffel 1+2, physik.K2#2 genannt — pk2-bild) · Radeon 13 Staffel-2 · headless --offen 5 Bahnen
+erledigt z52  12:43 GELANDET 9fa32207 (V18.546.110) 6/6: ci-werk-wasser (Stausee-Bruch) · ci-kamera-leib · ci-portal-konformanz · mk2-mikro · punkte-farm (Workflow) · pruef-kurz-c; punkte-farm-koord + pruef-kurz-c-koord in koordination gemergt (Selbsttest-Blöcke (7) Farm und (8) Zwillinge vereinigt); Nachwache z52n prio 2
