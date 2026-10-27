@@ -83,15 +83,15 @@ function pruefeGang(netz, seiten = {}) {
         else if (!fremd.length && pfade.some((p) => /^\/vendor\/three/.test(p)) && !pfade.includes(ENGINE_EINE))
             rot.push(`H6 ${id}: three aus vendor/ ohne ${ENGINE_EINE} — die Welt rendert WebGPU r184`);
     }
-    for (const [id, { folge: f, kosten = [] }] of Object.entries(seiten)) {
+    for (const [id, { folge: f, kosten }] of Object.entries(seiten)) {
         // eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
-        // H7 je Mesh-Studio (klang ist meshfrei, Studio-Vertrag §8)
-        const w = STUDIOS.includes(id) && id !== "klang" && (kosten.find((k) => !(Math.abs(k.leiste / k.gezeichnet - 1) <= 0.05)) || (!kosten.length && {}));
+        // H7 je gelesene Leiste (der Gang liest sie je Mesh-Studio; klang ist meshfrei, Studio-Vertrag §8)
+        const w = kosten && (kosten.find((k) => !(Math.abs(k.leiste / k.gezeichnet - 1) <= 0.05)) || (!kosten.length && {}));
         if (w) rot.push(`H7 ${id}: L${w.stufe} gezählt ${w.leiste} △ ↔ gezeichnet ${w.gezeichnet} △`);
         const fehl = f && (f[0] === f[1] ? 1 : f.findIndex((v, i) => v !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
-        const [k0 = {}] = kosten;
+        const [k0 = {}] = kosten || [];
         if (OFEN_STUDIOS[id] && !(+k0.leiste <= +k0.deckel))
             rot.push(`H4 ${id}: Labor L0 ${k0.leiste} △ über der Welt-Zeile ${k0.deckel} — das Labor zeigt nicht den Ofen-Körper`);
     }
@@ -417,7 +417,7 @@ async function gang() {
             // ihre gezeichnete Zahl trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot `waitFor`): ein Hänger
             // endet an der Frist des Browsers, die Stall-Akte nennt die Seite
             const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
-            if (id !== "klang") {
+            if (STUDIOS.includes(id) && id !== "klang") {
                 await waitFor(page, `(${zeilen})().every((k) => k.gezeichnet)`, `${id}: jede Zeile der Kosten-Leiste mit ihrer gezeichneten Zahl`);
                 z.kosten = await page.evaluate(zeilen);
             }
