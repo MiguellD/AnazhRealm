@@ -22,7 +22,7 @@
 // (der Erst-Boot füllt die Platte ganz); am Zweit-Boot urteilt sie: ≥ 95 % von der Platte, kein Auftrag verschluckt.
 // --selftest verschluckt eine Lieferung (Null-Renderer) — die Zeile ist ROT beim Namen.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, sleep, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -302,9 +302,7 @@ hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const SELFTEST = process.argv.includes("--selftest");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     if (SELFTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");
     // t(Weltbild) aus der Welt selbst: der Moment, in dem der Ladeschirm weicht (`state._weltbildDa`, ab Navigation).

@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, starteBrowser, nullRenderer } = require("./welt-boot.cjs");
+const { statikServer, nullSeite } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -169,9 +169,7 @@ function readPack(file) {
 async function bootRealm(port) {
     const server = statikServer();
     await server.lausche(port);
-    const browser = await starteBrowser({ art: "null", frist: 240000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 240000 });
     await server.zeige(page, 30000);
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {

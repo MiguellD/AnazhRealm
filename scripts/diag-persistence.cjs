@@ -19,7 +19,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -433,13 +433,13 @@ const server = statikServer();
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
     const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
-    const [st, spur, S, ruh] = [r.state, [], [], (ms) => new Promise((ok) => setTimeout(ok, ms))];
+    const [st, spur, S] = [r.state, [], []];
     let t = performance.now();
     const takt = async (n, f) => {
         for (let i = 1; i <= n; i++) {
             if (f) f(i);
             r._gameLoopTick((t += 100));
-            if (i % 5 === 0) await ruh(0);
+            if (i % 5 === 0) await sleep(0);
         }
     };
     const sortiert = (o) =>
@@ -498,9 +498,7 @@ function wegDelta([a, aBak], [b, bBak]) {
 }
 const kB = (b) => (b / 1000).toFixed(1) + " kB";
 async function wegLauf(km, min, edits) {
-    const browser = await starteBrowser({ art: "null", frist: 3600000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 3600000 });
     await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded" });
     const { S, abw } = await page.evaluate(wegSeite, km, min, edits);

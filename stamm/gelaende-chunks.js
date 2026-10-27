@@ -140,7 +140,10 @@ class AnazhRealm_gelaende_chunks {
                         const pending = this.state.voxelWorkerPending.get(msg.requestId);
                         if (pending) {
                             this.state.voxelWorkerPending.delete(msg.requestId);
-                            pending.reject(new Error(msg.message));
+                            // der Wurf trägt den Stapel des Fadens (die Zeile, die warf), nie nur die Meldung
+                            pending.reject(
+                                Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null)
+                            );
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
@@ -201,6 +204,8 @@ class AnazhRealm_gelaende_chunks {
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
             voxelEdits: this._snapshotVoxelEdits(),
+            stau: this.state.waterStau || null, // die Felder des Staus (`_stauFelder`), dieselben im Faden
+
             // DAS GESETZ DER HYDROSPHÄRE reist mit (Karte hydro-faden): der Faden rechnet mit ihm die Regionen (gelaende-core
             // `hydrosphaere`) und baut dasselbe Bett (Welle L: Freibord und die Bank)
             hydroGesetz: AnazhRealm.HYDROSPHERE,
@@ -370,7 +375,8 @@ class AnazhRealm_gelaende_chunks {
             const p = msg.requestId ? f.pending.get(msg.requestId) : null;
             if (!p) return;
             f.pending.delete(msg.requestId);
-            if (msg.type === "error") p.reject(new Error(msg.message));
+            if (msg.type === "error")
+                p.reject(Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null));
             else p.resolve(msg);
         };
         worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));
@@ -464,21 +470,18 @@ class AnazhRealm_gelaende_chunks {
         return auftrag(null);
     }
 
-    // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind und
-    // kein Stau (`waterStauFields`) im 3×3 liegt. Byte-identisch, weil ein settled Chunk am Flood-Spiegel
-    // ruht → `_seedWaterLevel` setzt Zellen auf 1 → CA-Delta d == 0 → Main-Sheet == Worker-Sheet
-    // (`diag-worker-watersheet`). Aktiv fließende und Stau-Chunks tragen ein echtes Delta → SYNC.
+    // Off-thread (statischer Flood-Sheet) nur, wenn Chunk + 8 Nachbarn nicht in `waterCAActive` sind. Byte-identisch, weil
+    // ein settled Chunk am Flood-Spiegel ruht → `_seedWaterLevel` setzt Zellen auf 1 → CA-Delta d == 0 → Main-Sheet ==
+    // Worker-Sheet (`diag-worker-watersheet`); der Stau ist Gesetz des Spiegels (`_stauFelder`, im Faden dieselben Felder).
+    // Aktiv fließende Chunks tragen ein echtes Delta → SYNC.
     _waterSheetCaFree(cx, cz) {
         const active = this.state.waterCAActive;
-        const stau = this.state.waterStauFields;
         const chunks = this.state.voxelChunks;
         const hasActive = active && active.size > 0;
-        const hasStau = stau && stau.size > 0;
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const k = `${cx + dx},${cz + dz}`;
                 if (hasActive && active.has(k)) return false;
-                if (hasStau && stau.has(k)) return false;
                 // Ein gezeichnetes oder gewünschtes Dach im 3×3 (der Automat lief dort) baut der Main: der Worker kennt
                 // es nicht — ein dachloses Worker-Sheet neben einem Main-Sheet mit Dach wäre die Wasser-Naht.
                 const e = chunks ? chunks.get(k) : null;
@@ -3041,6 +3044,8 @@ class AnazhRealm_gelaende_chunks {
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
+        // der Stau der Werke folgt dem Edit, ehe ein Faden die Chunks neu baut (ein Damm hält, ein Schnitt öffnet ihn)
+        this._stauFelder();
         // `_remeshVoxelChunksAround` ist der EINZIGE Reaktiv-Pfad: die Chunks bauen neu, das Cell-Feld
         // klassifiziert die neue Lage (Carve unter waterLevel → WATER, Fill → SOLID) — Cells sind DERIVED,
         // kein Hydro-Recompute. Nur die Footprint-Chunks werden grass-dirty (Oberfläche geändert); die
