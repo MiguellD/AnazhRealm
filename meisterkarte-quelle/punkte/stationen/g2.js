@@ -530,6 +530,242 @@ async function bindungAnsteckung() {
     process.exit(erg.fehler.length ? 1 : 0);
 }
 
+
+// ───────── DIE WERTUNG ANTWORTET GANZ (affekt.K1#2, oekologie.K4#2; Zweig affekt-wert): zwei Seiten-Funktionen, ihr Text geht in
+// den Befehl (`knapp`), und EIN Lauf (`wertLauf`) ─────────
+// DER WERT-GANG (affekt.K1#2), in der Seite der Werkbank (r = Welt, T = THREE): am Baum nächst (o.x, o.z) zur Uhr o.uhr (über das
+// Wort des Spielers), in der Sicht o.sicht, im Frieden, der Nexus ruht: fällen (das Fadenkreuz auf den Stamm, der Hieb des Spiels
+// tryMouseBreak, bis der Baum fällt), töten (ein Wesen neben dem Spieler, das Schadens-Tor damageCreature von Spieler-Hand),
+// pflegen („pflege das land"), je 30 s Spielzeit Abstand; dann 30 min Ruhe (Spielzeit) und wieder pflegen. Je Tat ihr δ und
+// Ertrag (das Buch `state.taten`, `_tatWerten`) und die Antwort des Orts im Ausgabe-Pfad: der Graph der Umwelt (`zensus`), sobald
+// er die Mischung der Lage nach der Tat trägt (Takte bis dahin, höchstens 2 s), gegen dieselbe Lage ohne Antwort — die Stimme,
+// die singt (Vogel-Chor am Tag, Grillen in der Nacht) — und 32 m daneben.
+function wertGang(r, T, o) {
+    const st = r.state;
+    const K = window.__klangCore;
+    const pm = st.playerMesh.position;
+    const cam = st.camera;
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    if (st.renderer && st.renderer.setAnimationLoop) st.renderer.setAnimationLoop(null);
+    const takt = (n) => {
+        for (let i = 0; i < n; i++) r._gameLoopTick((window.__gangUhr = (window.__gangUhr || 1e6) + 1000 / 60));
+    };
+    if (!window.__wertGang) {
+        window.__wertGang = 1;
+        r._loopNexusUpdate = () => {};
+        st.worldRules = [];
+        st.perfRegulator = false;
+        window.__buehne();
+        st.weatherEffectTime = 0;
+        r._setWeather("sunny", "regler");
+        r.initSymphony();
+    }
+    r.setGameMode("frieden");
+    r.setTimeOfDay(o.uhr, "regler");
+    r.setCameraMode(o.sicht);
+    const um = st.symphony.umwelt;
+    const baum = (a) => /baum/.test(a._lodSpecies || a.type) && r._istNatur(a);
+    const ab = (a) => Math.hypot(a.position.x - o.x, a.position.z - o.z);
+    const B = st.architectures.filter(baum).sort((a, b) => ab(a) - ab(b))[0];
+    if (!B) return { fehler: "kein Baum nahe der Wiese" };
+    const ziel = { x: B.position.x, y: y(B.position.x, B.position.z) + 1, z: B.position.z };
+    const stand = { x: ziel.x + 2.2, z: ziel.z };
+    const halte = (n) => {
+        for (let i = 0; i < n; i++) (pm.set(stand.x, y(stand.x, stand.z) + 1.8, stand.z), takt(1));
+    };
+    halte(30);
+    const stimme = () => (Number.isFinite(K.umweltMischung(r._umweltLage()).vogel.db) ? "vogel" : "grille");
+    // vor jeder Tat singt eine Stimme des Orts (die Vögel kreisen nach der Uhr der Welt): je 5 s Spielzeit, höchstens 24 Schritte
+    const singt = () => {
+        for (let w = 0; w < 24 && !Number.isFinite(K.umweltMischung(r._umweltLage())[stimme()].db); w++) (st.spielZeit += 5), halte(4);
+    };
+    const tat = () => {
+        const e = st.taten && st.taten[st.taten.length - 1];
+        return e ? { op: e.op, delta: +e.delta.toFixed(4), ertrag: +e.ertrag.toFixed(4) } : {};
+    };
+    const antwort = () => {
+        const alt = um.lage;
+        um.letzteMischung = -Infinity;
+        let takte = 0;
+        let a = null;
+        let vor = null;
+        for (; takte < 120 && !a; takte++) {
+            halte(1);
+            if (um.lage !== alt && !vor) vor = um.mix;
+            const v = stimme();
+            const z = um.graph.zensus().find((x) => x.name === v);
+            // die Mischung der neuen Lage ist gerechnet und angewandt (die Folge des Takts: Lage → Mischung → Graph)
+            if (vor && um.mix !== vor && um.folge !== 2 && z && Number.isFinite(z.db) && Math.abs(z.db - um.mix[v].db) < 0.3)
+                a = { stimme: v, db: +(z.db - K.umweltMischung({ ...um.lage, antwort: null })[v].db).toFixed(2) };
+        }
+        pm.x += 32;
+        const l = r._umweltLage();
+        pm.x -= 32;
+        const v = stimme();
+        const nachbar = +(K.umweltMischung(l)[v].db - K.umweltMischung({ ...l, antwort: null })[v].db).toFixed(2) || 0;
+        return { ...(a || { stimme: v, db: null }), s: +(takte / 60).toFixed(3), nachbar };
+    };
+    const pause = () => ((st.spielZeit += 30), halte(4), singt());
+    const aus = { uhr: o.uhr, sicht: st.cameraMode, sonne: +r._sonnenRichtung().y.toFixed(2), baum: [+ziel.x.toFixed(1), +ziel.z.toFixed(1)] };
+    pause();
+    let hiebe = 0;
+    for (let i = 0; i < 64 && st.architectures.includes(B); i++) {
+        const g = y(stand.x, stand.z);
+        pm.set(stand.x, g + 1.8, stand.z);
+        cam.position.set(stand.x, g + 1.6, stand.z);
+        cam.lookAt(ziel.x, ziel.y, ziel.z);
+        cam.updateMatrixWorld(true);
+        if ((r._pickArchitectureAtCrosshair() || {}).entry === B) (r.tryMouseBreak(), hiebe++);
+        else takt(1);
+    }
+    if (st.architectures.includes(B)) return { ...aus, fehler: "der Baum fällt nicht (" + hiebe + " Hiebe)" };
+    aus.faellen = { hiebe, ...tat(), ...antwort() };
+    pause();
+    st.maxCreatures = Math.max(st.maxCreatures || 0, st.creatures.length + 2);
+    const c = r.spawnCreatureAt(stand.x + 2.5, y(stand.x + 2.5, stand.z + 1), stand.z + 1, "happy", "wesen");
+    if (!c) return { ...aus, fehler: "kein Wesen" };
+    r.damageCreature(c, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+    aus.toeten = { ...tat(), ...antwort() };
+    pause();
+    r.processChatCommand("pflege das land");
+    aus.pflegen = { ...tat(), ...antwort() };
+    st.spielZeit += 1800;
+    halte(4);
+    singt();
+    r.processChatCommand("pflege das land");
+    aus.ruhe = { ...tat(), ...antwort() };
+    // der nächste Gang beginnt wieder an der Baseline
+    st.spielZeit += 1800;
+    halte(30);
+    return aus;
+}
+
+// DAS RUDEL UND DAS GEFÜHL (oekologie.K4#2), in der Seite der Werkbank: jedes Tier fort, ein Rudel aus dem Wurf (`_kreaturWurf`)
+// 45 m westlich vom stehenden Spieler wie in Staffel 1 (Gesundheit voll, der Nexus ruht); im pfad pirscht und umstellt es ihn — der Biss ruht: gemessen
+// wird das Umstellen, nicht die Wunde (der Biss stempelt `damage`) —, im Gegenlauf (o.gegen, Frieden) dieselbe Szene ohne Jagd.
+// Gelesen werden die Emotion-Achsen des Spielers am echten Takt (`_gameLoopTick`, je 1/60 s): das erste Umstellen wie Staffel 1
+// (≥ 3 Jäger näher als 2 × hetzM, die größte Lücke ≤ 540°/n), die Furcht (chaos, sorrow) 20 s danach; dann fallen seine Jäger
+// (`_spielerJaeger`) von seiner Hand (damageCreature), der Triumph ist der Gipfel von joy und hope in den 5 s danach über ihrem
+// Wert beim Fall. Der Gegenlauf läuft dieselbe Zeit und tötet dieselbe Zahl Wölfe; die Szene räumt ihre Tiere und Risse.
+function rudelGefuehl(r, T, o) {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const p = s.player;
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    const takt = () => r._gameLoopTick((window.__gangUhr = (window.__gangUhr || 1e6) + 1000 / 60));
+    window.__buehne();
+    s.weatherEffectTime = 0;
+    r._loopNexusUpdate = () => {};
+    s.worldRules = [];
+    s.perfRegulator = false;
+    r.setGameMode(o.gegen ? "frieden" : "pfad");
+    r.setCameraMode(o.sicht);
+    for (const c of [...s.creatures, ...(s.leichname || [])]) r.removeCreature(c);
+    s.faunaLifecycle.lastTick = 1e12;
+    const n0 = (s.worldMeta.taten ||= []).length;
+    p.hp = p.stats.hpMax;
+    const heim = { x: o.x - 45, z: o.z };
+    pm.set(heim.x + 140, y(heim.x + 140, heim.z) + 1.8, heim.z);
+    s.maxCreatures = Math.max(s.maxCreatures || 0, 12);
+    const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
+    for (const c of woelfe) {
+        c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        c.userData.nextHuntStrikeAt = 1e12;
+    }
+    const steh = () => pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+    steh();
+    for (const k in p.emotions) p.emotions[k] = 0;
+    p.wohlBaseline = undefined;
+    p.appraisalDelta = 0;
+    const H = r.constructor._verhaltenGesetz().jagd.hetzM;
+    const jaeger = () =>
+        woelfe.filter((c) => c.userData._jagdZiel === "spieler" && /^(jagd|hetzen)$/.test(c.userData._motionZustand) && !c.userData.dying);
+    const luecke = (R) => {
+        const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+        return (Math.max(...w.map((a, i) => (i + 1 < w.length ? w[i + 1] : w[0] + 2 * Math.PI) - a)) * 180) / Math.PI;
+    };
+    const e = () => ({ chaos: +p.emotions.chaos.toFixed(3), sorrow: +p.emotions.sorrow.toFixed(3), joy: +p.emotions.joy.toFixed(3), hope: +p.emotions.hope.toFixed(3) });
+    const sit = () => +r._playerSituationWohl(r.auraAt(pm.x, pm.z)).toFixed(3);
+    const aus = { woelfe: woelfe.length, gegen: !!o.gegen, sicht: s.cameraMode };
+    let k = 0;
+    let umstelltK = null;
+    const ende = o.gegen ? Math.round(o.dauer * 60) : 36000;
+    for (; k < ende && !(umstelltK !== null && k >= umstelltK + 1200); k++) {
+        steh();
+        takt();
+        const R = jaeger();
+        const nah = R.length >= 3 && R.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * H);
+        if (!o.gegen && umstelltK === null && nah && luecke(R) <= 540 / R.length) umstelltK = k;
+    }
+    aus.dauer = +(k / 60).toFixed(2);
+    aus.umstelltS = umstelltK === null ? null : +(umstelltK / 60).toFixed(2);
+    aus.umstellt = +r._spielerUmstellt().toFixed(3);
+    aus.furcht = e();
+    const opfer = o.gegen ? woelfe.slice(0, o.opfer) : (r._spielerJaeger || []).filter((c) => woelfe.includes(c) && !c.userData.dying);
+    aus.opfer = opfer.length;
+    aus.situation = [sit(), +(p.wohlBaseline || 0).toFixed(3)];
+    for (const c of opfer) r.damageCreature(c, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+    aus.situation.push(sit());
+    const vor = e();
+    const gipfel = { joy: vor.joy, hope: vor.hope };
+    for (let i = 0; i < 300; i++) {
+        steh();
+        takt();
+        gipfel.joy = Math.max(gipfel.joy, p.emotions.joy);
+        gipfel.hope = Math.max(gipfel.hope, p.emotions.hope);
+    }
+    aus.triumph = { joy: +(gipfel.joy - vor.joy).toFixed(3), hope: +(gipfel.hope - vor.hope).toFixed(3) };
+    aus.chaosNach = +p.emotions.chaos.toFixed(3);
+    for (const c of [...s.creatures, ...(s.leichname || [])]) r.removeCreature(c);
+    s.worldMeta.taten.length = n0;
+    return aus;
+}
+
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
+// art „wert": der Wert-Gang zur Uhr 12 und 22 Uhr (die Wiese hat dann 13,8 °C — um Mitternacht schweigen die Grillen unter
+// tStumm 12 °C, Dolbear), je Ego und Third; art „rudel": je Sicht der Lauf im pfad und sein Gegenlauf. Je Ergebnis eine Zeile
+// „WERT-GANG {…}" bzw. „RUDEL-GEFUEHL {…}", alle in {AUS}.
+async function wertLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const [aus, port, art, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const erg = { art, laeufe: [] };
+    const ruf = async (o) => {
+        const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, ...o }) + ");" });
+        if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        console.log((art === "wert" ? "WERT-GANG " : "RUDEL-GEFUEHL ") + JSON.stringify(a.ergebnis));
+        erg.laeufe.push(a.ergebnis);
+        return a.ergebnis;
+    };
+    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        if (art === "wert") for (const [uhr, sicht] of [[0.5, "first"], [0.5, "third"], [0.92, "first"], [0.92, "third"]]) await ruf({ uhr, sicht });
+        else
+            for (const sicht of ["first", "third"]) {
+                const a = await ruf({ sicht });
+                await ruf({ sicht, gegen: true, dauer: a.dauer, opfer: a.opfer });
+            }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+        console.log("FEHLER " + erg.fehler);
+    } finally {
+        tor.stop();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+// die Zeilen eines Laufs (stdout) als Objekte
+const zeilenVon = (lauf, marke) =>
+    String(lauf.stdout || "")
+        .split(/\r?\n/)
+        .filter((z) => z.startsWith(marke + " {"))
+        .map((z) => JSON.parse(z.slice(marke.length + 1)));
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -1358,6 +1594,51 @@ const stationen = [
         quelle: "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose",
     },
 
+    // ───────── affekt.K1 Staffel 2 — die schädliche Tat kehrt das Vorzeichen um (Zweig affekt-wert) ─────────
+    // Der Wert-Gang (`wertGang`, oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000: vier Gänge (12 und
+    // 22 Uhr × Ego und Third) mit den echten Verben — fällen (tryMouseBreak), töten (damageCreature von Spieler-Hand), pflegen
+    // („pflege das land") —, dann 30 min Ruhe in Spielzeit und wieder pflegen. GRÜN, wenn in jedem Gang: fällen und töten werten
+    // negativ (δ < 0) und die Stimme des Orts im Ausgabe-Pfad verstummt (< 0 dB), pflegen wertet positiv und sie singt auf
+    // (> 0 dB), nach der Ruhe wertet pflegen wieder ≥ 0,9 seines Ertrags (die Erwartung des Orts ist vergessen: die Baseline),
+    // jede Antwort binnen 2 s, 32 m daneben |Antwort| ≤ 0,5 dB; am Tag antwortet der Vogel-Chor, in der Nacht die Grillen.
+    // Headless (Null-Renderer, affekt-wert): fällen δ −0,12 / −4,79 dB, töten −0,03 / −1,2 dB, pflegen +0,25 / +9,0 dB, Ruhe
+    // 0,243–0,246 von 0,247–0,25, Antwort 0,05 s, Nachbar 0 — in allen vier Gängen. Vorher (main 19606f2e, derselbe Gang
+    // headless) ROT: fällen und töten keine Tat (das Buch nennt keinen Op, 0 dB), nachts 0 dB auch beim Pflegen.
+    {
+        kriterium: "affekt.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)],
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const G = zeilenVon(lauf, "WERT-GANG");
+            const kaputt = G.find((g) => g.fehler);
+            if (G.length !== 4 || kaputt)
+                return { gruen: false, zahl: "Gänge " + G.length + "/4 (Exit " + lauf.exit + (kaputt ? ": " + kaputt.fehler : "") + ")" };
+            const am = (x) => x.db !== null && x.s <= 2 && Math.abs(x.nachbar) <= 0.5;
+            const gut = (g) => {
+                const [f, t, p, ruhe] = [g.faellen, g.toeten, g.pflegen, g.ruhe];
+                return (
+                    [f, t, p, ruhe].every(am) && f.op === "faellen" && t.op === "toeten" && f.delta < 0 && t.delta < 0 && f.db < 0 && t.db < 0 && p.delta > 0 && p.db > 0 &&
+                    ruhe.delta >= 0.9 * ruhe.ertrag && ruhe.delta > 0 && ruhe.db > 0 && f.stimme === (g.sonne > 0 ? "vogel" : "grille")
+                );
+            };
+            const ganz = G.some((g) => g.sonne > 0) && G.some((g) => g.sonne < 0) && new Set(G.map((g) => g.sicht)).size === 2;
+            const db = (x) => x.delta + " " + x.db + " dB";
+            return {
+                gruen: ganz && G.every(gut),
+                zahl: G.map((g) => (g.sonne > 0 ? "Tag " : "Nacht ") + g.sicht + " " + (gut(g) ? "GRÜN" : "ROT") + ": fällen " + db(g.faellen) + " · töten " +
+                    db(g.toeten) + " · pflegen " + db(g.pflegen) + " · nach 30 min " + db(g.ruhe) + " (Ertrag " + g.ruhe.ertrag + ")").join(" | "),
+            };
+        },
+        pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/klang.js", "klang-core.js", "stamm/werkstatt-bauen.js",
+            "stamm/kreatur-leben.js", "stamm/kampf.js", "stamm/dirigent-takt.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
+    },
+
     // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────
     // Proben der Kreatur-Linse (Null-Renderer, R3: sie messen ein Gesetz). kaskade: der echte Lebenszyklus
     // (tickFaunaLifecycle) im Zeitraffer an EINEM Ort, die Bühne leer, der Spieler ruhig; folgen: „folge mir“ über die
@@ -1584,6 +1865,40 @@ const stationen = [
         },
         pfad: [...KREATUR],
         quelle: "1 = im Wolfsrevier wird der Spieler in 10 Spielminuten ≥ 1× gepirscht und umstellt (im Bild)",
+    },
+
+    // ───────── oekologie.K4 Staffel 2 — Furcht und Triumph aus der Situation (Zweig affekt-wert) ─────────
+    // Das Rudel und das Gefühl (`rudelGefuehl`, oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000: je Sicht
+    // (Ego, Third) der Lauf im pfad und sein Gegenlauf (Frieden, dieselbe Zeit, dieselbe Zahl gefallener Wölfe). GRÜN, wenn in
+    // beiden Sichten: das Rudel umstellt ihn (≤ 600 s), seine Furcht steht 20 s danach (chaos ≥ 0,3, Gegenlauf ≤ 0,05), ≥ 1 Jäger
+    // fällt, und der Triumph steigt (joy + hope in 5 s ≥ 0,1 über dem Wert beim Fall, Gegenlauf ≤ 0,02). Gelesen wird die Emotion,
+    // die δ aus der Situation schreibt (`_playerSituationWohl`: das Umstellen der Jäger des Spielers), nie ein Stempel — der
+    // Triumph-Stempel fiel mit affekt-wert. Headless (Null-Renderer, frische Seite wie hier, zwei Läufe): Ego umstellt 15,6 /
+    // 16,4 s, chaos 0,99 / 1,0, Triumph joy + hope +0,308 / +0,240; Third 14,7 / 15,2 s, chaos 0,93 / 1,0, +0,559 / +0,610; die
+    // Gegenläufe 0. Vorher (main 19606f2e, dieselbe Szene headless) ROT: umstellt 16,2–19,9 s, chaos 0.
+    {
+        kriterium: "oekologie.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)],
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const L = zeilenVon(lauf, "RUDEL-GEFUEHL");
+            const paare = ["first", "third"].map((s) => [L.find((x) => x.sicht === s && !x.gegen), L.find((x) => x.sicht === s && x.gegen)]);
+            if (paare.some(([a, g]) => !a || !g)) return { gruen: false, zahl: "Läufe " + L.length + "/4 (Exit " + lauf.exit + ")" };
+            const tr = (x) => +(x.triumph.joy + x.triumph.hope).toFixed(3);
+            const gut = ([a, g]) =>
+                a.umstelltS !== null && a.umstelltS <= 600 && a.opfer >= 1 && a.furcht.chaos >= 0.3 && g.furcht.chaos <= 0.05 && tr(a) >= 0.1 && tr(g) <= 0.02;
+            return {
+                gruen: paare.every(gut),
+                zahl: paare.map(([a, g]) => a.sicht + " " + (gut([a, g]) ? "GRÜN" : "ROT") + ": umstellt " + a.umstelltS + " s, Furcht chaos " + a.furcht.chaos +
+                    " (Gegenlauf " + g.furcht.chaos + "), " + a.opfer + " Jäger fallen, Triumph joy+hope " + tr(a) + " (Gegenlauf " + tr(g) + ")").join(" | "),
+            };
+        },
+        pfad: [...KREATUR, "stamm/feld-sprache.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "2 = seine Emotion-Achsen antworten (Furcht beim Umstellen, Triumph nach dem Fall des Jägers) gegen einen Gegenlauf, beide Geräte",
     },
 
     // ───────── mensch.K2 Staffel 2 — die Ankunft der Bewohner (mensch-bewohner-k5 1e4e725a) ─────────
