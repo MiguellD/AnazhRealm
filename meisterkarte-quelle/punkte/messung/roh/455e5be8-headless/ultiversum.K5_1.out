@@ -1,0 +1,32 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-1 C:\Program Files\nodejs\node.exe scripts/diag-praegung-welt.cjs
+SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)
+
+--- stderr ---
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf heil-ci-kamera-leib
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-1 (zeit) wartet auf punkte-radeon-1

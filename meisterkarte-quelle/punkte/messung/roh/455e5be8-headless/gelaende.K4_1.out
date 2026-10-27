@@ -1,0 +1,25 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-2 C:\Program Files\nodejs\node.exe scripts/diag-wasser-leben.cjs --nur mutation
+
+--- stderr ---
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft

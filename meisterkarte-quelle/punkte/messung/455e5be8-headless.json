@@ -1,0 +1,229 @@
+{
+ "sha": "455e5be81a9f441e5ff944e2b2e2c311aedddbe5",
+ "geraet": "headless",
+ "zeit": "2026-10-27T07:12:55.147Z",
+ "host": "MiguellD",
+ "je": {
+  "streaming.K4#1": {
+   "gruen": true,
+   "zahl": "Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 87 an Sync-Stellen · 0 sonst",
+   "exit": 0,
+   "minuten": 6.69,
+   "zeit": "2026-10-27T05:07:01.336Z",
+   "abdruck": "738e092db189",
+   "port": 7704,
+   "bahn": "allein"
+  },
+  "streaming.K5#1": {
+   "gruen": true,
+   "zahl": "0.78 MB/min am Empfang in 60.0 s Fahrt",
+   "exit": 0,
+   "minuten": 6.69,
+   "zeit": "2026-10-27T05:07:01.336Z",
+   "abdruck": "08885852a938",
+   "port": 7704,
+   "bahn": "allein",
+   "zwilling": "streaming.K4#1"
+  },
+  "streaming.K5#2": {
+   "gruen": true,
+   "zahl": "0.78 MB/min in 60.0 s Fahrt · Kopie 0.00 MB · Speicher-Faden ja (Fäden: buch · werk · werk · werk · voxel · streu · wald · speicher)",
+   "exit": 0,
+   "minuten": 6.69,
+   "zeit": "2026-10-27T05:07:01.336Z",
+   "abdruck": "1fe252f89810",
+   "port": 7704,
+   "bahn": "allein",
+   "zwilling": "streaming.K4#1"
+  },
+  "speicher.K3#2": {
+   "gruen": true,
+   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.6 kB, Platte 5.2 kB, am stärksten worldMeta.settlementCells 3.6 kB · gesamt roh 66.5 kB, Platte 133.0 kB · Leben worldJournal 32.8 kB, dslHistory 19.6 kB, dslAbilities 7.9 kB, knowledgeBase 3.1 kB, creatures 0.5 kB, dslPatternMemory 0. | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.7 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 44.5 kB, Platte 89.0 kB · Leben dslHistory 1.2 kB, dslAbilities 0.2 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB, worldJournal 0.0 kB, creatures -0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1156.9 kB, Platte 2313.7 kB, am stärksten wegSpur 1156.9 kB · gesamt roh 1156.9 kB, Platte 2313.7 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+   "exit": 0,
+   "minuten": 52.32,
+   "zeit": "2026-10-27T05:13:42.924Z",
+   "abdruck": "36711e149096",
+   "port": 7704,
+   "bahn": "1/3"
+  },
+  "ki.K2#2": {
+   "gruen": true,
+   "zahl": "118 von 118 Zeilen (100.0 %), Korpus-Teil 20 von 24 Sätzen mit Welt-Prädikat (Mitschnitt qwen3:4b-instruct @ 127.0.0.1:11434 2026-10-26)",
+   "exit": 0,
+   "minuten": 12.47,
+   "zeit": "2026-10-27T06:06:02.366Z",
+   "abdruck": "7425864a0e46",
+   "port": 7704,
+   "bahn": "1/3"
+  },
+  "speicher.K3#1": {
+   "gruen": true,
+   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 3.8 kB, Platte 7.5 kB, am stärksten worldMeta.settlementCells 3.2 kB · gesamt roh 52.7 kB, Platte 105.5 kB · Leben worldJournal 22.6 kB, dslHistory 17.5 kB, dslAbilities 6.3 kB, knowledgeBase 3.1 kB, dslPatternMemory 0.0 kB, creatures -0 | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1156.9 kB, Platte 2313.7 kB, am stärksten wegSpur 1156.9 kB · gesamt roh 1156.9 kB, Platte 2313.7 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+   "exit": 0,
+   "minuten": 27.59,
+   "zeit": "2026-10-27T06:00:09.501Z",
+   "abdruck": "afbc1b056c25",
+   "port": 7724,
+   "bahn": "3/3"
+  },
+  "bauen.K4#1": {
+   "gruen": true,
+   "zahl": "Turm aus 20/20 Blöcken über die Maus 70.00 m über dem Gelände · Hub 3.49–3.52 m je Block · Sohle ≤ 0.02 m neben dem Mesh · nach dem Reload 20 Edits, 0 Löcher, Sohle 0.01 m",
+   "exit": 0,
+   "minuten": 34.73,
+   "zeit": "2026-10-27T06:01:29.256Z",
+   "abdruck": "57f493e9996e",
+   "port": 7714,
+   "bahn": "2/3"
+  },
+  "bauen.K4#2": {
+   "gruen": true,
+   "zahl": "Dach Ego 69.98 m, Sohle ≤ 0.03 m, Ring 166.52/166.52 m, Edit nach 2 Takten (3 Bytes) · Dach Third 69.98 m, Sohle ≤ 0.03 m, Ring 165.68/165.67 m, Edit nach 2 Takten (3 Bytes) · Fels Ego 69.98 m, Sohle ≤ 0.02 m, Ring 162.41/162.41 m, Edit nach 2 Takten (3 Bytes) · Fels Third 69.99 m, Sohle ≤ 0.03 m, Ring 162.38/162.38 m, Edit nach 2 Takten (3 Bytes) · Brücke Ego 69.99 m, Sohle ≤ 0.04 m, Ring 158.75/158.75 m, Edit nach 2 Takten (3 Bytes) · Brücke Third 69.98 m, Sohle ≤ 0.03 m, Ring 166.23/166.23 m, Edit nach 2 Takten (3 Bytes)",
+   "exit": 0,
+   "minuten": 34.73,
+   "zeit": "2026-10-27T06:01:29.256Z",
+   "abdruck": "4e45209b36a0",
+   "port": 7714,
+   "bahn": "2/3",
+   "zwilling": "bauen.K4#1"
+  },
+  "gelaende.K5#1": {
+   "gruen": true,
+   "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 20.85,
+   "zeit": "2026-10-27T06:18:30.506Z",
+   "abdruck": "fef7f09b4127",
+   "port": 7704,
+   "bahn": "1/3"
+  },
+  "feld.K3#1": {
+   "gruen": true,
+   "zahl": "Wasser-Automat 0 Einheiten in 60 s Ruhe (Akte 1534); alle Sims: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0",
+   "exit": 0,
+   "minuten": 33.56,
+   "zeit": "2026-10-27T06:39:21.400Z",
+   "abdruck": "7e159c07a4ac",
+   "port": 7704,
+   "bahn": "1/3"
+  },
+  "feld.K3#2": {
+   "gruen": true,
+   "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 1534 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: gezündet true, 36 Schritte, brennend bis 2 Zellen, Einheiten je Zelle und Schritt bis 36, noch brennend 0, Asche 2, lebendig am Herd 0.839 → 0.513, glut +0.68, Licht true",
+   "exit": 0,
+   "minuten": 33.56,
+   "zeit": "2026-10-27T06:39:21.400Z",
+   "abdruck": "b0d142e1e4d9",
+   "port": 7704,
+   "bahn": "1/3",
+   "zwilling": "feld.K3#1"
+  },
+  "mensch.K3#1": {
+   "gruen": true,
+   "zahl": "Durchdringung 0, Tür 269/269, Hüllen 18/18, Gangzeit auf Wegen 0.938",
+   "exit": 0,
+   "minuten": 8.61,
+   "zeit": "2026-10-27T07:12:55.147Z",
+   "abdruck": "20aa4a506500",
+   "port": 7704,
+   "bahn": "1/3"
+  },
+  "mensch.K3#2": {
+   "gruen": true,
+   "zahl": "Stadt 33 Häuser: Steckenbleiber 0, Gangzeit auf Wegen 0.964, Strecke min 166 m, Berührung 0, Durchdringung 0, Tür 390/390",
+   "exit": 0,
+   "minuten": 8.61,
+   "zeit": "2026-10-27T07:12:55.147Z",
+   "abdruck": "0f30d5794146",
+   "port": 7704,
+   "bahn": "1/3",
+   "zwilling": "mensch.K3#1"
+  },
+  "mensch.K2#1": {
+   "gruen": true,
+   "zahl": "Soll-Orte über 24 Spielstunden min 0.987 (81/81 ≥ 0,9), Plan bit-gleich true, Schmiede 10/2 Uhr 2/0, Sprünge 0",
+   "exit": 0,
+   "minuten": 8.61,
+   "zeit": "2026-10-27T07:12:55.147Z",
+   "abdruck": "8959d343c09e",
+   "port": 7704,
+   "bahn": "1/3",
+   "zwilling": "mensch.K3#1"
+  }
+ },
+ "ungemessen": {
+  "ultiversum.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)) — ungemessen",
+   "exit": 75,
+   "minuten": 45.26,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)) — ungemessen",
+   "zeit": "2026-10-27T04:21:45.585Z",
+   "abdruck": "35f691f5a6b7",
+   "port": 7704,
+   "bahn": "allein"
+  },
+  "tore.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)) — ungemessen",
+   "exit": 75,
+   "minuten": 45.26,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von punkte-radeon-1 nach 2708 s Warten (ohne Nachtruhe; Wanduhr 2708 s)) — ungemessen",
+   "zeit": "2026-10-27T04:21:45.585Z",
+   "abdruck": "de0a766a90ba",
+   "port": 7704,
+   "bahn": "allein",
+   "zwilling": "ultiversum.K5#1"
+  },
+  "ki.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2747 s Warten (ohne Nachtruhe; Wanduhr 2747 s)) — ungemessen",
+   "exit": 75,
+   "minuten": 46.44,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2747 s Warten (ohne Nachtruhe; Wanduhr 2747 s)) — ungemessen",
+   "zeit": "2026-10-27T05:13:43.114Z",
+   "abdruck": "a8876f20dede",
+   "port": 7724,
+   "bahn": "3/3"
+  },
+  "gelaende.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2827 s Warten (ohne Nachtruhe; Wanduhr 2827 s)) — ungemessen",
+   "exit": 75,
+   "minuten": 47.77,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2827 s Warten (ohne Nachtruhe; Wanduhr 2827 s)) — ungemessen",
+   "zeit": "2026-10-27T05:13:42.958Z",
+   "abdruck": "e2cba54e7e11",
+   "port": 7714,
+   "bahn": "2/3"
+  },
+  "physik.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von heil-ci-portal-konformanz nach 2981 s Warten (ohne Nachtruhe; Wanduhr 2981 s)) — ungemessen",
+   "exit": 75,
+   "minuten": 50.06,
+   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von heil-ci-portal-konformanz nach 2981 s Warten (ohne Nachtruhe; Wanduhr 2981 s)) — ungemessen",
+   "zeit": "2026-10-27T06:27:44.913Z",
+   "abdruck": "fefe280e8f4d",
+   "port": 7724,
+   "bahn": "3/3"
+  },
+  "gelaende.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "exit": 1,
+   "minuten": 43.93,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "zeit": "2026-10-27T06:36:12.832Z",
+   "abdruck": "a049a8dbebf9",
+   "port": 7714,
+   "bahn": "2/3"
+  }
+ }
+}

@@ -1,0 +1,24 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-3 C:/Program Files/Git/bin/bash.exe -c set -u; O=127.0.0.1:11434; S=''; if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X="${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe"; [ -x "$X" ] || X=ollama; ("$X" serve > /dev/null 2>&1 < /dev/null &); S=1; for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; echo "ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e "let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}catch(e){console.log('{}')}})")"; node scripts/diag-v1-pfad.cjs --korpus --echt; e=$?; node -e "const k=require('./spec/abnahme/ki-korpus.json'); console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); console.log('KORPUS ' + Object.keys(k.saetze).length)"; [ -n "$S" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e
+SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2747 s Warten (ohne Nachtruhe; Wanduhr 2747 s)
+
+--- stderr ---
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-3 (bild) wartet auf punkte-radeon-1

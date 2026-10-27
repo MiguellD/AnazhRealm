@@ -1,0 +1,25 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-2 C:\Program Files\nodejs\node.exe scripts/diag-wasser-leben.cjs --nur mutation,ueberall,laeufe,treibt
+SCHLOSS BLOCKIERT von Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze nach 2827 s Warten (ohne Nachtruhe; Wanduhr 2827 s)
+
+--- stderr ---
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=14564 wartet auf alle Plätze
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf punkte-radeon-1
+gpu-lauf: punkte-headless-2 (bild) wartet auf Vorrang: 'punkte-radeon-1' pid=39584 wartet auf alle Plätze

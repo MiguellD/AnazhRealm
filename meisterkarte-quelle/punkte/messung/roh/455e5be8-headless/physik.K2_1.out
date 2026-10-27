@@ -1,0 +1,25 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-headless-3 C:/Program Files/Git/bin/bash.exe -c FAHR_LEBEN_PORT=7724 node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT=7724 node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))
+SCHLOSS BLOCKIERT von heil-ci-portal-konformanz nach 2981 s Warten (ohne Nachtruhe; Wanduhr 2981 s)
+
+--- stderr ---
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-headless-3 (bild) wartet auf heim-sk2-zipf2-check
