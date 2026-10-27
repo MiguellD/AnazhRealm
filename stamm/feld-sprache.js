@@ -1354,9 +1354,9 @@ AnazhRealm.WERTUNG = Object.freeze({
     playerTau: 30,
     pruneAgeSec: 180,
     // DAS UMSTELLEN (oekologie.K4#2): so weit senkt ein geschlossenes Rudel die Situation des Spielers (`_spielerUmstellt`
-    // ∈ [0, 1) × umstellt) — ein Rudel im Ring ~0,5 unter die Baseline, die Furcht; ihr Fall hebt sie zurück über die
-    // Baseline, die ihr nachlief (playerTau), der Triumph.
-    umstellt: 0.8,
+    // ∈ [0, 1) × umstellt) — ein Rudel im Ring 0,4–0,6 unter die Baseline, die Furcht; sein Fall hebt sie zurück über die
+    // Baseline, die ihr nachlief (playerTau), der Triumph (Mess-Wiese: Ego joy + hope +0,31, bei 0,5 +0,02 bis +0,13).
+    umstellt: 1,
     // V17.43 Phase 2 — die EMA-Rate, mit der rule.value den per-Feuern gemessenen
     // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
     // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1]. Dieselbe Rate lernt die Erwartung eines

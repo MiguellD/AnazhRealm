@@ -1744,7 +1744,7 @@ class AnazhRealm_feld_leben {
     }
 
     // DAS UMSTELLEN des Spielers ∈ [0, 1): seine Jäger dieses Takts (`_spielerJaeger`, gefüllt mit der EINEN Jäger-Liste im
-    // Kreatur-Takt; ein gefallener jagt nicht mehr) — ihre Zahl sättigt (n / (n + 1), je Jäger seine Nähe, voll im Ring des
+    // Kreatur-Takt; ein Gefallener verlässt sie mit der Liste der Wesen, `_kreaturAusListe`) — ihre Zahl sättigt (n / (n + 1), je Jäger seine Nähe, voll im Ring des
     // Rudels 2 × jagd.hetzM), ihr Kreis schließt sich (die halbe Last trägt 1 − die größte Winkel-Lücke um ihn / 360°). Ohne
     // Jäger 0.
     _spielerUmstellt() {
@@ -1756,14 +1756,11 @@ class AnazhRealm_feld_leben {
         w.length = 0;
         let n = 0;
         for (const c of J) {
-            const u = c.userData;
-            if (u.dying) continue;
             const dx = c.position.x - pm.x;
             const dz = c.position.z - pm.z;
             n += Math.min(1, ring / Math.max(1e-3, Math.hypot(dx, dz)));
             w.push(Math.atan2(dx, dz));
         }
-        if (!w.length) return 0;
         w.sort((a, b) => a - b);
         let luecke = w[0] + 2 * Math.PI - w[w.length - 1];
         for (let i = 1; i < w.length; i++) luecke = Math.max(luecke, w[i] - w[i - 1]);

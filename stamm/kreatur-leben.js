@@ -52,6 +52,9 @@ class AnazhRealm_kreatur_leben {
         const em = this.state.creatureEmotions;
         if (Array.isArray(em) && idx < em.length) em.splice(idx, 1);
         if (Number.isInteger(this._kreaturTaktI) && idx <= this._kreaturTaktI) this._kreaturTaktI--;
+        // … und die Jäger des Spielers dieses Takts (`_spielerJaeger`): ein Gefallener umstellt ihn nicht mehr
+        const sj = this._spielerJaeger ? this._spielerJaeger.indexOf(creature) : -1;
+        if (sj >= 0) this._spielerJaeger.splice(sj, 1);
         return true;
     }
 
