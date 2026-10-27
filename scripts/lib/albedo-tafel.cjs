@@ -31,7 +31,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
 
 // Die acht Klassen des Studio-Befunds (Synthese §4 W1e) — jede trägt mindestens eine Zeile.
-const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
+const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Baum", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
 
 // DIE STUDIOS des Labors (r128): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
@@ -96,6 +96,9 @@ function tafelPruefen(t) {
     if (!(zahl(t.messRand) && t.messRand >= 0 && t.messRand < 0.2)) f.push("messRand (Rand der Ratsche, 0..0,2) fehlt");
     if (!t.karte || t.karte.albedo !== 0.18 || !(zahl(t.karte.eichRand) && t.karte.eichRand > 0))
         f.push("karte {albedo 0.18, eichRand} fehlt (die Selbst-Eichung)");
+    // DIE UHR-SPALTEN des Stufen-Tons (material.K3): die erste ist die Bühne (Mittag), jede weitere bricht einen Hand-Faktor
+    if (!(Array.isArray(t.uhren) && t.uhren[0] === 0.5 && t.uhren.every((u) => zahl(u) && u > 0 && u < 1)))
+        f.push("uhren (die Uhr-Spalten des Stufen-Tons, die erste 0.5) fehlen");
     if (!t.belichtung || !(kartenEichung(t.belichtung.kurve) > 0))
         f.push("belichtung.kurve (die Tonkurve der Labore) trägt keine Eichung (kartenEichung)");
     const ids = new Set();
@@ -233,10 +236,19 @@ function tafelUrteil(t, messung) {
                     text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
                 });
         }
-        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`
-        const W0 = z.welt.stufeVon && messung.welt[z.welt.stufeVon];
-        if (W0 && !(Math.abs((e.stufeTon = W && +(W.Y / W0.Y).toFixed(3)) - 1) <= t.stufenToleranz))
-            rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${e.stufeTon}` });
+        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`, zu jeder Uhr der Tafel (die
+        // Mittags-Spalte ist `welt`, jede weitere steht in `uhren`; eine fehlende Spalte ist stumm, nie grün)
+        if (z.welt.stufeVon) {
+            e.stufeTon = {};
+            for (const u of t.uhren) {
+                const M = u === 0.5 ? messung.welt : (messung.uhren || {})[u] || {};
+                const [Wu, W0] = [M[z.id], M[z.welt.stufeVon]];
+                const v = Wu && W0 && zahl(Wu.Y) && W0.Y > 0 ? +(Wu.Y / W0.Y).toFixed(3) : null;
+                e.stufeTon[u] = v;
+                if (!(v != null && Math.abs(v - 1) <= t.stufenToleranz))
+                    rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${v} (Uhr ${u})` });
+            }
+        }
         if (L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
@@ -303,6 +315,11 @@ function tafelNachziehen(t, messung, gemessen) {
         // die Stufen der Welt reisen mit dem Ist: die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
         const knapp = (m) => Object.assign({ Y: m.Y, rgb: m.rgb, pixel: m.pixel }, Array.isArray(m.stufen) ? { stufen: m.stufen } : {});
         z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
+        // die Uhr-Spalten der Welt (material.K3): je weitere Uhr das Ist der Stufen-Zeile
+        for (const u of neu.uhren.slice(1)) {
+            const m = ((messung.uhren || {})[u] || {})[z.id];
+            if (m && zahl(m.Y)) (z.ist.uhren = z.ist.uhren || {})[u] = knapp(m);
+        }
         if (z.ratsche == null || e.abweichung < z.ratsche) {
             aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);
             z.ratsche = e.abweichung;
@@ -335,7 +352,7 @@ function tafelTabelle(u) {
             lpad("Welt Y", 9) +
             lpad("L/W", 8) +
             lpad("Ratsche", 9) +
-            "  Soll  Labor rgb · Welt rgb"
+            "  Soll  Labor rgb · Welt rgb · Stufe/L0 je Uhr"
     );
     for (const e of u.zeilen)
         z.push(
@@ -347,7 +364,8 @@ function tafelTabelle(u) {
                 lpad(zahl(e.ratsche) ? e.ratsche.toFixed(3) : "–", 9) +
                 "  " +
                 pad(e.imSoll ? "ja" : "nein", 5) +
-                ` ${(e.labor && e.labor.rgb) || "–"} · ${(e.welt && e.welt.rgb) || "–"}`
+                ` ${(e.labor && e.labor.rgb) || "–"} · ${(e.welt && e.welt.rgb) || "–"}` +
+                (e.stufeTon ? " · " + Object.entries(e.stufeTon).map(([u, v]) => `${u}: ${v == null ? "–" : v}`).join(" ") : "")
         );
     z.push("");
     z.push(

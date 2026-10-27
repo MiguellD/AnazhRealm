@@ -2149,10 +2149,17 @@ async function starte() {
                         w: 640,
                         h: 400,
                     });
-                    for (const z of nahZ) {
-                        const l2 = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: [z], w: 640, h: 400 });
-                        for (const e of l2) if (e.name !== "graukarte") liste.push(e);
-                    }
+                    // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel; die erste ist
+                    // die Bühne (Mittag), jede weitere reist in `uhren` der Messung
+                    const uhren = {};
+                    for (const uhr of t.uhren)
+                        for (const z of nahZ) {
+                            const l2 = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: [z], w: 640, h: 400, uhr: uhr === 0.5 ? undefined : uhr });
+                            for (const e of l2)
+                                if (e.name === "graukarte") continue;
+                                else if (uhr === 0.5) liste.push(e);
+                                else (uhren[uhr] = uhren[uhr] || {})[e.id] = e.gesamt ? { Y: e.gesamt.Y, pixel: e.pixel, stufen: e.stufen } : { Y: null, fehler: e.fehler || "kein Pixel" };
+                        }
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
@@ -2197,12 +2204,13 @@ async function starte() {
                         spieler,
                         eichung,
                         welt,
+                        uhren,
                     };
                     const datei = path.resolve(b.datei || path.join(ordner, `welt-${Date.now()}.json`));
                     ordnerFuer(datei);
                     fs.writeFileSync(datei, JSON.stringify(messung, null, 1));
                     // Das Urteil gegen das LABOR-Ist der Tafel (die Labor-Seite misst diag-albedo-tafel.cjs --labor).
-                    const g = { labor: {}, welt, karten: {}, eichung: { welt: eichung, labor: {} } };
+                    const g = { labor: {}, welt, uhren, karten: {}, eichung: { welt: eichung, labor: {} } };
                     for (const z of t.zeilen) if (z.ist) g.labor[z.id] = z.ist.labor;
                     for (const [sid, k] of Object.entries(t.karten)) {
                         if (k.ist) g.karten[sid] = k.ist;

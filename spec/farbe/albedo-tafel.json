@@ -4,7 +4,11 @@
     "toleranz": 0.1,
     "messRand": 0.04,
     "stufenToleranz": 0.05,
-    "stufenQuelle": "S8 (material.K3): eine Zeile mit welt.stufeVon misst ihre Stufe (exemplar.stufe, das Auge im Abstand, aus dem der Spieler sie sieht) gegen die Welt der genannten Zeile (Stufe 0); Soll Stufe/L0 0,95–1,05 — ein LOD wechselt die Form, nie den Stoff (Lagarde & de Rousiers 2014, Frostbite: die Albedo ist ein Datum des Stoffs)",
+    "stufenQuelle": "S8 (material.K3): eine Zeile mit welt.stufeVon misst ihre Stufe (exemplar.stufe, das Auge im Abstand, aus dem der Spieler sie sieht) gegen die Welt der genannten Zeile (Stufe 0); Soll Stufe/L0 0,95–1,05 — ein LOD wechselt die Form, nie den Stoff (Lagarde & de Rousiers 2014, Frostbite: die Albedo ist ein Datum des Stoffs); je Uhr der Tafel (`uhren`: die Bühne 0,5 und 0,27 — ein Hand-Faktor je Stufe gliche den Mittag an und bräche zur zweiten Uhr), die weiteren Uhren im Ist als `uhren`",
+    "uhren": [
+        0.5,
+        0.27
+    ],
     "karte": {
         "albedo": 0.18,
         "eichRand": 0.003
@@ -291,6 +295,274 @@
                 "verhaeltnis": 1.0625
             },
             "ratsche": 0.0565
+        },
+        {
+            "id": "birke",
+            "gruppe": "Baum",
+            "titel": "Birke — der ganze Baum (Rinde und Laub) in seiner Stufe 0, das Soll seiner Stufen (S8, material.K3)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"birke\"]"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_birke",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        12,
+                        -12
+                    ],
+                    "stufe": 0
+                },
+                "klasse": "^f:birke:L0$",
+                "stufen": [
+                    0
+                ]
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/gelaende-boden.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-gestalt.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/vegetation-baum.js",
+                "stamm/bild-himmel.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "birke-l1",
+            "gruppe": "Baum",
+            "titel": "Derselbe Baum in seiner Stufe 1: die Welt-Albedo gegen die der Stufe 0 (Zeile birke); das Labor zeigt nur die L0",
+            "labor": {
+                "studio": "terrain"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_birke",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        12,
+                        -12
+                    ],
+                    "stufe": 1
+                },
+                "klasse": "^f:birke:L1$",
+                "stufen": [
+                    1
+                ],
+                "stufeVon": "birke"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/gelaende-boden.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-gestalt.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/vegetation-baum.js",
+                "stamm/bild-himmel.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "birke-karte",
+            "gruppe": "Baum",
+            "titel": "Derselbe Baum als Karte (Stufe 2, der EINE Atlas fimp:atlas, gebacken aus der L1): gegen die Stufe 0 (Zeile birke)",
+            "labor": {
+                "studio": "terrain"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_birke",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        12,
+                        -12
+                    ],
+                    "stufe": 2
+                },
+                "klasse": "^fimp:atlas:L2$",
+                "stufen": [
+                    2
+                ],
+                "stufeVon": "birke"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/gelaende-boden.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-gestalt.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/vegetation-baum.js",
+                "stamm/bild-himmel.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "fichte",
+            "gruppe": "Baum",
+            "titel": "Fichte — der ganze Baum (Rinde und Laub) in seiner Stufe 0, das Soll seiner Stufen (S8, material.K3)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"fichte\"]"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_fichte",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        -12,
+                        12
+                    ],
+                    "stufe": 0
+                },
+                "klasse": "^f:fichte:L0$",
+                "stufen": [
+                    0
+                ]
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/gelaende-boden.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-gestalt.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/vegetation-baum.js",
+                "stamm/bild-himmel.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "fichte-l1",
+            "gruppe": "Baum",
+            "titel": "Derselbe Baum in seiner Stufe 1: die Welt-Albedo gegen die der Stufe 0 (Zeile fichte); das Labor zeigt nur die L0",
+            "labor": {
+                "studio": "terrain"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_fichte",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        -12,
+                        12
+                    ],
+                    "stufe": 1
+                },
+                "klasse": "^f:fichte:L1$",
+                "stufen": [
+                    1
+                ],
+                "stufeVon": "fichte"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/gelaende-boden.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-gestalt.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/vegetation-baum.js",
+                "stamm/bild-himmel.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "fichte-karte",
+            "gruppe": "Baum",
+            "titel": "Derselbe Baum als Karte (Stufe 2, der EINE Atlas fimp:atlas, gebacken aus der L1): gegen die Stufe 0 (Zeile fichte)",
+            "labor": {
+                "studio": "terrain"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_fichte",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        -12,
+                        12
+                    ],
+                    "stufe": 2
+                },
+                "klasse": "^fimp:atlas:L2$",
+                "stufen": [
+                    2
+                ],
+                "stufeVon": "fichte"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/gelaende-boden.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-gestalt.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/vegetation-baum.js",
+                "stamm/bild-himmel.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
         },
         {
             "id": "fels",
@@ -620,6 +892,146 @@
                 "verhaeltnis": 0.9413
             },
             "ratsche": 0.0516
+        },
+        {
+            "id": "hochhaus",
+            "gruppe": "Haus",
+            "titel": "Hochhaus (Glasturm, 7 Geschosse): die tragenden Bau-Stoffe (Stoff und Metall — die Fassade ist Metall-Raster) in Stufe 0, das Soll seiner Stufen (S8)",
+            "labor": {
+                "studio": "fachwerk",
+                "aktion": [
+                    {
+                        "waehle": "#pK",
+                        "wert": "hochhaus"
+                    },
+                    {
+                        "klick": "#pTerrain"
+                    }
+                ],
+                "stoff": {
+                    "seh": "stoff|metall"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_hochhaus",
+                    "radius": 28,
+                    "versatz": [
+                        -14,
+                        -14
+                    ],
+                    "seed": 7,
+                    "stufe": 0
+                },
+                "klasse": "^(bauSatz|f:hochhaus:L0)$",
+                "stoff": {
+                    "seh": "stoff|metall"
+                },
+                "stufen": [
+                    0
+                ]
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "hochhaus-l1",
+            "gruppe": "Haus",
+            "titel": "Derselbe Turm in seiner Stufe 1 (ein Körper: TURMNUR + Fern-Fenster) gegen die Stufe 0; das Labor zeigt nur die L0",
+            "labor": {
+                "studio": "fachwerk"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_hochhaus",
+                    "radius": 28,
+                    "versatz": [
+                        -14,
+                        -14
+                    ],
+                    "seed": 7,
+                    "stufe": 1
+                },
+                "klasse": "^(bauSatz|f:hochhaus:L1)$",
+                "stoff": {
+                    "seh": "stoff|metall"
+                },
+                "stufen": [
+                    1
+                ],
+                "stufeVon": "hochhaus"
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "hochhaus-l2",
+            "gruppe": "Haus",
+            "titel": "Derselbe Turm in seiner Stufe 2 gegen die Stufe 0; das Labor zeigt nur die L0",
+            "labor": {
+                "studio": "fachwerk"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_hochhaus",
+                    "radius": 28,
+                    "versatz": [
+                        -14,
+                        -14
+                    ],
+                    "seed": 7,
+                    "stufe": 2
+                },
+                "klasse": "^(bauSatz|f:hochhaus:L2)$",
+                "stoff": {
+                    "seh": "stoff|metall"
+                },
+                "stufen": [
+                    2
+                ],
+                "stufeVon": "hochhaus"
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/siedlung-satz.js",
+                "stamm/feld-leben.js",
+                "stamm/werkstatt-bauen.js"
+            ],
+            "ist": null,
+            "ratsche": null
         },
         {
             "id": "lack",

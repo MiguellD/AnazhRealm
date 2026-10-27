@@ -227,6 +227,8 @@ function messungZumTest(t, faktor) {
         if (z.welt && Array.isArray(z.welt.stufen)) m.welt[z.id].stufen = z.welt.stufen.slice();
         m.labor[z.id] = { Y: 0.2 * ((faktor && faktor[z.id]) || 1), rgb: "x" };
     }
+    m.uhren = {};
+    for (const u of t.uhren.slice(1)) m.uhren[u] = JSON.parse(JSON.stringify(m.welt));
     for (const s of Object.keys(t.karten)) {
         m.karten[s] = { kL, ausgabe: [168, 168, 168] };
         m.eichung.labor[s] = 0.18;
@@ -365,6 +367,20 @@ async function selbsttest() {
     const m6t = messungZumTest(T0);
     m6t.welt["haus-l2"].Y = 0.1892;
     t("Stufen-Ton: L2/L0 0,946 → ROT beim Namen", AT.tafelUrteil(T0, m6t).rot.some((r) => r.text.startsWith("haus-l2: Welt/haus")));
+    // S6u — DIE ZWEITE UHR (material.K3: ein Hand-Faktor gleicht den Mittag an und bricht zu einer anderen Uhr): die Karte der
+    // Birke mittags gleich, um 0,27 0,9 → ROT beim Namen und der Uhr; die Spalte fehlt → ROT; die Tafel ohne Uhren → Schema rot
+    const m6u = messungZumTest(T0);
+    m6u.uhren[0.27]["birke-karte"].Y = 0.18;
+    const m6v = messungZumTest(T0);
+    delete m6v.uhren[0.27]["fichte-l1"];
+    const s6u = JSON.parse(JSON.stringify(T0));
+    delete s6u.uhren;
+    t(
+        "Stufen-Ton zur Uhr 0,27: Birke-Karte 0,9 → ROT `(Uhr 0.27)`; die Spalte der Fichte-L1 fehlt → ROT; ohne Uhren → Schema rot",
+        AT.tafelUrteil(T0, m6u).rot.some((r) => r.text === "birke-karte: Welt/birke 0.9 (Uhr 0.27)") &&
+            AT.tafelUrteil(T0, m6v).rot.some((r) => r.text === "fichte-l1: Welt/fichte null (Uhr 0.27)") &&
+            AT.tafelPruefen(s6u).some((f) => /uhren/.test(f))
+    );
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
     const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });

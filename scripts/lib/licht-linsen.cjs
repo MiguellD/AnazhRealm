@@ -83,7 +83,7 @@ function stoffPasst(sel, s) {
     if (!sel) return true;
     if (!s) return false;
     if (sel.kind && !new RegExp(sel.kind).test(s.kind || "")) return false;
-    if (sel.seh && s.seh !== sel.seh) return false;
+    if (sel.seh && !new RegExp("^(?:" + sel.seh + ")$").test(s.seh || "")) return false;
     for (const f of ["r", "mt", "cc"])
         if (sel[f]) {
             const v = s[f];
@@ -252,13 +252,26 @@ function albedoSicht(opts) {
                 const e = x.eintrag,
                     n = x.zeile.welt.exemplar.stufe,
                     D = r.constructor.LOD_DISTANCES;
+                // die Stufe steht, wenn eine ihrer Gruppen das Exemplar trägt — im Satz erst, wenn sein Block es zeichnet
+                // (`_bauSatzBlock`; vorher zog der Schuss eine Stufe, deren Satz noch packte: in swiftshader Haus L0 „kein Pixel")
                 const zeigt = () => {
-                    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
+                    for (const [key, g] of st.archInstanceGroups || [])
                         if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
-                            for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
+                            for (let i = 0; i < (g.liveCount || 0); i++) {
+                                if (g.slotEntry[i] !== e) continue;
+                                if (!g.satz) return true;
+                                const s = [...st.chunkSaetze.values()].find((q) => q.art === g.satz),
+                                    b = s && s.bloecke.get(key),
+                                    nv = g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                                if (b && nv && Math.floor(b.vAnzahl / nv) > i) return true;
+                            }
                     return false;
                 };
-                const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / Math.SQRT2;
+                // der Abstand in der EINEN Wahrnehmungs-Distanz der Wahl (`_lodPerceptionDistance`, linear im Abstand): ein hoher
+                // Baum schaltet später — die Fichte (26,7 m) stand aus 19 m noch in L0
+                const vh = r._lodTreeVisHeight(e),
+                    f = vh > 0 ? r._lodPerceptionDistance(1, vh) : 1;
+                const ab = [4.2, (D.thresh01 + D.thresh12) / 2, D.thresh12 * 1.6][n] / f / Math.SQRT2;
                 const auge = new T.Vector3(e.position.x + ab, e.position.y + 1.7, e.position.z + ab);
                 r._lodAuge = () => auge;
                 try {
@@ -268,6 +281,14 @@ function albedoSicht(opts) {
                     delete r._lodAuge;
                 }
                 if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
+            }
+            // DIE UHR DER TAFEL (`uhr` 0..1, material.K3 Staffel 2): nach dem Takt der Bühne (Mittag) springt der Uhr-Schreiber
+            // auf das Wort des Spielers, Himmel und Leuchtquellen folgen — eine Stufe, deren Ton an einer Hand-Konstante hinge,
+            // bräche an der zweiten Uhr. Die Schüsse ticken nicht mehr.
+            if (Number.isFinite(opts.uhr)) {
+                if (st.world) st.world.timeOfDay = opts.uhr;
+                r.setTimeOfDay(opts.uhr, "human");
+                for (let i = 0; i < 20; i++) r._leuchtTakt(), await sleep(50);
             }
         }
         const karte = new T.Mesh(
@@ -328,6 +349,7 @@ function albedoSicht(opts) {
         const kamAlt = {
             p: st.camera.position.clone(),
             q: st.camera.quaternion.clone(),
+            nf: [st.camera.near, st.camera.far],
             fov: st.camera.fov,
             aspect: st.camera.aspect,
             layers: st.camera.layers.mask,
@@ -392,13 +414,18 @@ function albedoSicht(opts) {
                     m.getMatrixAt(i, M);
                     M.premultiply(mw);
                 } else M.copy(mw);
-                const c = bs.center.clone().applyMatrix4(M);
                 const s = Math.max(
                     new T.Vector3().setFromMatrixColumn(M, 0).length(),
                     new T.Vector3().setFromMatrixColumn(M, 1).length()
                 );
+                // DIE KARTE: ihr Quad ist die Einheits-Strecke (0,0,0)–(0,1,0), ihr Rahmen reist je Instanz (`aKarte` y, z: Halbbreite
+                // und Höhe, × Skala) — aus der Strecke stand die Birke als Kugel von 1,6 m statt ihrer 15 m im Schuss
+                const ka = m.geometry.attributes.aKarte;
+                const hb = ka ? ka.getY(i) * s : 0,
+                    hh = ka ? (ka.getZ(i) * s) / 2 : 0;
+                const c = ka ? new T.Vector3().setFromMatrixPosition(M).setY(M.elements[13] + hh) : bs.center.clone().applyMatrix4(M);
                 const d = Math.hypot(c.x - um.x, c.z - um.z);
-                if (!best || d < best.d) best = { c, rad: bs.radius * s, d };
+                if (!best || d < best.d) best = { c, rad: ka ? Math.hypot(hb, hh) : bs.radius * s, d };
             }
             return best;
         };
@@ -567,11 +594,18 @@ function albedoSicht(opts) {
                             );
                         const c = bb.getCenter(new T.Vector3());
                         const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
+                        // DIE TIEFEN-SCHEIBE (wie die Karte gegen die Gestalt, S2b): gezeichnet wird nur die Kugel des Exemplars. Die
+                        // KARTE sieht das Auge waagrecht: ihr Quad steht lotrecht zur Peilung (je Fragment, `_ang`), so liegt jedes
+                        // ihrer Pixel in EINER Tiefe — ±1 m schneidet sie aus dem EINEN Atlas über jede Art (582 Karten an Genesis,
+                        // die Birke maß mit ihren Nachbarn 0,50 ihrer L0); von oben ist sie eine Strecke und zählt nicht
+                        const karte = [...ziele.keys()].some((m) => m.geometry.attributes.aKarte);
                         for (const d of window.__tafelBlicke)
-                            stellungen.push([
-                                c.clone().addScaledVector(new T.Vector3(d[0], d[1], d[2]).normalize(), rad * 2.6),
-                                c,
-                            ]);
+                            if (!(karte && d[1] > 0.9))
+                                stellungen.push([
+                                    c.clone().addScaledVector(new T.Vector3(d[0], karte ? 0 : d[1], d[2]).normalize(), rad * 2.6),
+                                    c,
+                                    karte ? [rad * 2.6 - 1, rad * 2.6 + 1] : [rad * 1.6, rad * 3.6],
+                                ]);
                     }
                     const stoffe = new Set();
                     for (const m of sel)
@@ -589,6 +623,9 @@ function albedoSicht(opts) {
                     for (let i = 0; i < stellungen.length; i++) {
                         cam.position.copy(stellungen[i][0]);
                         cam.lookAt(stellungen[i][1]);
+                        const nf = stellungen[i][2];
+                        if (nf) [cam.near, cam.far] = [Math.max(0.05, nf[0]), nf[1]];
+                        cam.updateProjectionMatrix();
                         cam.updateMatrixWorld(true);
                         const t = await schuss((m) => set.has(m));
                         hell.set(t.hell, i * W * H * 4);
@@ -613,6 +650,8 @@ function albedoSicht(opts) {
                 // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).
                 cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
                 cam.lookAt(karte.position);
+                [cam.near, cam.far] = kamAlt.nf;
+                cam.updateProjectionMatrix();
                 cam.updateMatrixWorld(true);
                 const sk = await schuss((m) => m === karte);
                 ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
@@ -665,6 +704,7 @@ function albedoSicht(opts) {
             cam.position.copy(kamAlt.p);
             cam.quaternion.copy(kamAlt.q);
             cam.fov = kamAlt.fov;
+            [cam.near, cam.far] = kamAlt.nf;
             cam.aspect = kamAlt.aspect;
             cam.layers.mask = kamAlt.layers;
             cam.updateProjectionMatrix();
