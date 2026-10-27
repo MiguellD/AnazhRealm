@@ -1349,9 +1349,10 @@ class AnazhRealm_speicher_welten {
         };
         // (1) DER AUGENBLICK DES STANDS (speicher.K2): im Takt fragt der Stand nur die Felder, die jeder Stand trägt (Art
         // `augenblick`: Lage, Uhr, die Hand); jedes ruhige Feld und den Kopf fragt der Besen im Leerlauf reihum (`_standFegen`)
-        // wie die Glieder der Listen — bis speicher-zwei fragte jeder Stand die ganze Tafel: je Stand p50 0,22 ms im
-        // Haupt-Faden (headless, 2 kB Kopf, sonst nichts Neues). REGTE SICH DIE HAND (das Inventar), fragt er alles: ein Akt,
-        // der Material zahlt, steht ganz im Stand.
+        // wie die Glieder der Listen — bis speicher-zwei fragte jeder Stand die ganze Tafel: je Stand p50 0,325 / max 0,6 ms im
+        // Haupt-Faden (headless im Takt des Autosaves, 2 kB Kopf, sonst nichts Neues), seither p50 0,09–0,12 / max 0,26 ms und
+        // sein Versand ein eigenes Bild. REGTE SICH DIE HAND (das Inventar), fragt er alles: ein Akt, der Material zahlt, steht
+        // ganz im Stand.
         for (const z of C.augenblick) feld(z, true);
         const alles = !takt || voll || K.geaendert.includes("playerInventory");
         // (2) DER KOPF: die Felder ohne Art, je Feld sein Stück JSON (gefragt oder gefegt), EIN Text, EIN Vergleich — neu
