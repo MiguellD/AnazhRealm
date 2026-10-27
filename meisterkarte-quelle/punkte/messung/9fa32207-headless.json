@@ -1,0 +1,157 @@
+{
+ "sha": "9fa32207625dc4dfcfdf50e895b05c5226825ea6",
+ "geraet": "headless",
+ "zeit": "2026-10-27T12:56:09.079Z",
+ "host": "farm:40507630325",
+ "je": {
+  "speicher.K3#1": {
+   "gruen": true,
+   "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.8 kB, Platte 5.6 kB, am stärksten worldMeta.settlementCells 3.6 kB · gesamt roh 65.5 kB, Platte 131.1 kB · Leben worldJournal 32.3 kB, dslHistory 19.4 kB, dslAbilities 7.8 kB, knowledgeBase 2.8 kB, creatures 0.5 kB, dslPatternMemory 0. | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1008.1 kB, Platte 2016.2 kB, am stärksten wegSpur 1008.1 kB · gesamt roh 1008.1 kB, Platte 2016.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl",
+   "exit": 0,
+   "minuten": 8.63,
+   "zeit": "2026-10-27T12:55:59.341Z",
+   "abdruck": "14a69b36ebde",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/1"
+  },
+  "speicher.K4#1": {
+   "gruen": true,
+   "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 47/47 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 47/47 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 47/47 | ✅ Dichte über den Reload: Linie 703 Löcher, 0 korrupt",
+   "exit": 0,
+   "minuten": 3.6,
+   "zeit": "2026-10-27T12:55:57.572Z",
+   "abdruck": "a9a37cf39c61",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/2"
+  },
+  "speicher.K5#1": {
+   "gruen": true,
+   "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 40/40",
+   "exit": 0,
+   "minuten": 3.6,
+   "zeit": "2026-10-27T12:55:57.572Z",
+   "abdruck": "9a97f144bf16",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/2",
+   "zwilling": "speicher.K4#1"
+  },
+  "speicher.K5#2": {
+   "gruen": true,
+   "zahl": "✅ (V) Korpus: 46 Stände 18.530.0 … 18.546.110 und 1 Kopf laden am Kopf — Bauten 235/235 · Gruben 141/141 · Inventar 126/126 · ganz 47/47 | ✅ (V) Versions-Stufe 18.546.110: ihr Stand steht im Korpus (bump-version.cjs)",
+   "exit": 0,
+   "minuten": 3.6,
+   "zeit": "2026-10-27T12:55:57.572Z",
+   "abdruck": "8b59c1abd9e6",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/2",
+   "zwilling": "speicher.K4#1"
+  },
+  "gelaende.K5#1": {
+   "gruen": true,
+   "zahl": "im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 1.5 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 1.39,
+   "zeit": "2026-10-27T12:56:09.079Z",
+   "abdruck": "fef7f09b4127",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/3"
+  },
+  "studios.K5#1": {
+   "gruen": true,
+   "zahl": "3/3 Baupläne · Stufen L0 160 · L1 32 · L2 14 △ · Kosten pass/pass/pass · Neuladen steht · der Wirt nennt die Art 0×",
+   "exit": 0,
+   "minuten": 0.46,
+   "zeit": "2026-10-27T12:55:54.989Z",
+   "abdruck": "060cdf4401e9",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/4"
+  },
+  "studios.K5#2": {
+   "gruen": true,
+   "zahl": "4/4 Wege (✓ Werkstatt 6f1c8c0a/1 · ✓ KI-Satz a996fd2b/1 · ✓ Foundry 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1 · ✓ P2P 6f1c8c0a/1) · Atlas worlds/neuntes-buch/stele-core.js · der Wirt nennt die Art 0×",
+   "exit": 0,
+   "minuten": 0.46,
+   "zeit": "2026-10-27T12:55:54.989Z",
+   "abdruck": "fde1d0fb1103",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/4",
+   "zwilling": "studios.K5#1"
+  },
+  "feld.K1#1": {
+   "gruen": true,
+   "zahl": "Tiefe 4 mit Festhalte-Probe · Bremsweg trocken 20.6 → Sturm 35.5 m (Regen gehalten 20.6, Nässe gehalten 20.6) · Exit 0",
+   "exit": 0,
+   "minuten": 0.41,
+   "zeit": "2026-10-27T12:55:57.812Z",
+   "abdruck": "802502816fff",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/5"
+  },
+  "feld.K1#2": {
+   "gruen": true,
+   "zahl": "Tiefe 4 mit Festhalte-Probe (Glieder regen → naesse → stoff → brand → licht), Soll ≥ 4 · Exit 0",
+   "exit": 0,
+   "minuten": 0.41,
+   "zeit": "2026-10-27T12:55:57.812Z",
+   "abdruck": "fac998139a9a",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/5",
+   "zwilling": "feld.K1#1"
+  },
+  "fahrzeug.K1#2": {
+   "gruen": true,
+   "zahl": "(a) Spitze 6.5–8.5°, Abfall ab 20 % · (b) Bremsweg 50 → 0 km/h Gras 20.60 / Weg 12.62 m = 1.63× · nass Gras 1.72×, Weg 1.48× · μ(kraut) halb 1.72× · Takt 240 Hz · S1 4.440892098500626e-16 m (198 Schritte) · Exit 0",
+   "exit": 0,
+   "minuten": 0.41,
+   "zeit": "2026-10-27T12:55:57.812Z",
+   "abdruck": "906fab5cdc46",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/5",
+   "zwilling": "feld.K1#1"
+  },
+  "ultiversum.K5#2": {
+   "gruen": true,
+   "zahl": "✅ FEIND Wand: jede Erinnerung trägt ihre Namen als Datum — 0 ungetarnt | ✅ FEIND erreicht: keine Injektion erreicht das Modell — 0 von 7 (Rufe {\"stimme\":1,\"wesen\":1,\"journal\":8}) | ✅ FEIND ausgeführt: 0 fremde Anweisungen — 0 Taten | ✅ FEIND Signatur: die Manipulation schlägt an — valid,modified,forged | ✅ FEIND Anzeige: der Spieler liest den Namen — „Ich kenne ⁨Kanarie5Gewitter⁩.“",
+   "exit": 0,
+   "minuten": 0.09,
+   "zeit": "2026-10-27T12:55:55.877Z",
+   "abdruck": "f4a20aeb208e",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/6"
+  },
+  "wetter.K5#1": {
+   "gruen": true,
+   "zahl": "F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam",
+   "exit": 0,
+   "minuten": 0.1,
+   "zeit": "2026-10-27T12:56:00.821Z",
+   "abdruck": "531ff2d7aefb",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/7"
+  },
+  "wetter.K5#2": {
+   "gruen": true,
+   "zahl": "Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000)",
+   "exit": 0,
+   "minuten": 0.1,
+   "zeit": "2026-10-27T12:56:00.821Z",
+   "abdruck": "9b3c4a3a2e0f",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40507630325/7",
+   "zwilling": "wetter.K5#1"
+  }
+ }
+}
