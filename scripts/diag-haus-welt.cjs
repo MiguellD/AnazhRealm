@@ -709,7 +709,7 @@ async function proben(phasen) {
         };
         // DAS HAUS DES SPIELERS AUF DER WIESE (`--bild`): am Nadelwald-Hang des Dorfs wächst kaum ein Büschel — ein Haus mit
         // Anbau steht gesetzt auf dem ersten Ort um den Start, an dem die Nah-Wiese im 16-m-Kreis ≥ 60 Büschel baut
-        const HS = [...H];
+        const HS = [...H, ...SD.filter((e) => !H.includes(e))]; // ein Haus des Start-Dorfs, das nach dem Akt stand
         if (BILD) {
             const vor = H.find((v) => (gesetz(v).masse || []).some((m) => m.art === "anbau"));
             o.w9.suche = { typ: vor ? vor.type : null, orte: [] };
@@ -890,20 +890,21 @@ async function proben(phasen) {
                 }
             }
             // W10 DAS INNEN-BILD (siedlung.K1 Staffel 2, Schatten K4; `--bild`): der dunkelste Innen-Blick (`innen`) gegen den
-            // Boden im Schatten DIESES Hauses zur selben Stunde (`aussen`, 13 × 13 px): 1 m hinter jedem Grundriss gegen die
-            // Sonne, der Strahl zur Sonne trifft einen Werfer, das Auge 1,6 m hoch 3 m davor; ohne Fleck bleibt `quote` leer
+            // Boden im Schatten zur selben Stunde (`aussen`, 13 × 13 px): von DIESEM Haus gegen die Sonne der erste Boden 1 m
+            // vor jedem Bau (Wege zählen), dessen Strahl zur Sonne einen Werfer trifft, das Auge 1,6 m hoch 3 m davor; ohne
+            // Fleck bleibt `quote` leer
             if (BILD && h.start) {
                 const S = s.directionalLight.position.clone().sub(s.directionalLight.target.position).normalize();
                 const d = new THREE.Vector3(-S.x, 0, -S.z).normalize();
                 const rc = new THREE.Raycaster();
                 rc.layers.set(A.SHADOW_TWIN_LAYER);
                 let f = null;
-                for (let t = 1; t < 40 && f === null; t += 0.25) {
+                for (let t = 1; t < 40 && !f; t += 0.25) {
                     const q = new THREE.Vector3(e.position.x + d.x * t, 0, e.position.z + d.z * t);
-                    if (r._imGrundriss(q.x, q.z, 1)) continue;
+                    if (/haus|bau/.test(r._imGrundriss(q.x, q.z, 1))) continue;
                     q.y = r._bodenSichtAt(q.x, q.z) ?? r.getTerrainHeightAt(q.x, q.z);
                     rc.set(q.clone().setY(q.y + 0.05), S);
-                    f = rc.intersectObject(s.scene, true).length ? q : false;
+                    if (rc.intersectObject(s.scene, true).length) f = q;
                 }
                 if (f) {
                     const p = f.clone().addScaledVector(d, 3);
