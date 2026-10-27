@@ -23,6 +23,10 @@
 //        oder gewinnen können (Staffel 1 auf EINEM Gerät, Zeit-Stationen auf der GTX, rote ohne Heil-Versuch nie)
 //   node punkte.cjs gruppen --geraet radeon|gtx|headless [--nur id,id]   je Zeile die Ids EINES Laufs (Zwillinge zusammen, Reihe von
 //        nur) — der Messplatz der OMEN fährt je Zeile ein `run --nur`, nie einen Zwilling zweimal
+//   node punkte.cjs alt --kopf <neu> --vorher <alt> [--r6 domaene]   die Alt-Tafel eines Zugs: je Gerät jede Station, als wäre sie
+//        am Vorher-Kopf gemessen — R6 gegen R6d, jeder Grund beim Namen (buchen und run --offen nehmen --r6 domaene ebenso)
+//   node punkte.cjs alt --historie <sha,sha,…> [--json <datei>]   je Schritt der Kette R6 gegen R6d und die Minuten, dazu der
+//        SICHERHEITS-BEWEIS: jede Station, die sich zwischen zwei gemessenen Köpfen bewegte, ist nach R6d alt (sonst VERPASST, Exit 1)
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -488,10 +492,12 @@ function auswahl(opt) {
     const tot = (st) => toteGlobs(st.pfad, dateien);
     // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
     if (opt.offen) {
-        const frisch = frischUrteil(ladeMessungen(), (s) =>
+        const ms = ladeMessungen();
+        const frisch = frischUrteil(ms, (s) =>
             weltDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
-            { tot, roh: rohAus() });
-        meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
+            { tot, roh: rohAus(), r6d: r6Wahl(opt) ? r6dRichter(repo, sha, stationen, ms) : null });
+        // R6d: eine Station, die nur auf ausstehende Kanarien wartet, misst erst nach ihnen (der nächste `run --offen` urteilt neu)
+        meine = meine.filter((st) => { const u = frisch(st, opt.geraet); return u.ungemessen && !u.warten; });
     }
     return { repo, sha, meine, tot };
 }
@@ -868,16 +874,26 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const tot = opt.tot ? opt.tot(st) : [];
         if (tot.length) return { gruen: false, ungemessen: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe);
-        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [];
+        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], altZeit = "";
         const frisch = [];
         for (const m of messungen) {
             if (m.geraet !== g || !m.je || !m.je[id]) continue;
             const e = m.je[id];
             if (e.abdruck !== ab) { fremd++; continue; }
-            const d = diff(m.sha);
-            if (d.fehler) { unbekannt++; continue; }
-            const t = d.dateien.filter((f) => trifftPfad(f, st.pfad));
-            if (t.length) { alt++; taeter = t; continue; }
+            // R6 (Vorgabe): ein pfad-Glob trifft eine geänderte Welt-Datei · R6d (opt.r6d, `--r6 domaene`): die Gründe beim Namen
+            let t;
+            if (opt.r6d) {
+                try { t = opt.r6d(st, g, m.sha); } catch (x) { unbekannt++; continue; }
+            } else {
+                const d = diff(m.sha);
+                if (d.fehler) { unbekannt++; continue; }
+                t = d.dateien.filter((f) => trifftPfad(f, st.pfad));
+            }
+            if (t.length) {
+                alt++;
+                if (!altZeit || String(e.zeit) > altZeit) { altZeit = String(e.zeit); taeter = t; }
+                continue;
+            }
             // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
             if (st.gpu && e.gruen) {
                 const z = "gpu" in e ? { karte: e.gpu, fremd: e.gpuFremd || null, nie: e.gpuNie || 0 } : gpuZeuge(opt.roh ? opt.roh(m.sha, g, id) : "");
@@ -889,7 +905,8 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         frisch.sort((a, b) => String(b.zeit).localeCompare(String(a.zeit)));
         if (frisch.length) return frisch[0];
         // der Grund der jüngsten verworfenen Art zuerst: ein GRÜN ohne Zeugen vor dem R6 einer älteren Messung
-        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : alt ? "Pfad seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
+        const r = opt.r6d ? "R6d" : "R6";
+        return { gruen: false, ungemessen: true, warten: !ohneZeugen && alt > 0 && nurWarten(taeter), grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : alt ? (opt.r6d ? "seit der Messung alt" : "Pfad seit der Messung geändert") + " (" + r + ": " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein " + r + "-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
     };
 }
 
@@ -944,8 +961,10 @@ const VERSIONS_STEMPEL = [
     [/(VERSION\s*=\s*["'`])[^"'`]*(["'`])/g, "$1$2"],
 ];
 const ohneStempel = (z) => VERSIONS_STEMPEL.reduce((s, [rx, e]) => s.replace(rx, e), z);
-// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → die Dateien, deren Welt-Bytes sich änderten
-function weltDateien(namen, diffText) {
+// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → je Datei, deren Bytes sich ohne Versions-Stempel
+// änderten, { datei, zeilen (geänderte Zeilen ohne Stempel-Paare; Binär, Umbenennung = 1), werkzeug } — die EINE Lesung des Diffs
+// für R6 (weltDateien) und R6d (Werkzeug und Menge)
+function aenderungen(namen, diffText) {
     const je = new Map();
     let cur = null;
     for (const z of String(diffText).split("\n")) {
@@ -960,12 +979,242 @@ function weltDateien(namen, diffText) {
         else if (z[0] === "-") cur.weg.push(ohneStempel(z.slice(1)));
         else if (z[0] === "+") cur.neu.push(ohneStempel(z.slice(1)));
     }
-    return String(namen).split("\n").filter(Boolean).filter((f) => {
-        if (WERKZEUG_PFAD.test(f)) return false;
+    const aus = [];
+    for (const f of String(namen).split("\n").filter(Boolean)) {
         const d = je.get(f);
-        if (!d || d.bin) return true;
-        return d.weg.sort().join("\n") !== d.neu.sort().join("\n");
-    });
+        let zeilen = 1;
+        if (d && !d.bin) {
+            const n = new Map();
+            for (const z of d.weg) n.set(z, (n.get(z) || 0) + 1);
+            for (const z of d.neu) n.set(z, (n.get(z) || 0) - 1);
+            zeilen = [...n.values()].reduce((a, v) => a + Math.abs(v), 0);
+            if (!zeilen) continue;
+        }
+        aus.push({ datei: f, zeilen, werkzeug: WERKZEUG_PFAD.test(f) });
+    }
+    return aus;
+}
+// R6: die Dateien, deren Welt-Bytes sich änderten
+const weltDateien = (namen, diffText) => aenderungen(namen, diffText).filter((a) => !a.werkzeug).map((a) => a.datei);
+
+// ───────────────────────────────── R6d: die Domäne der Änderung ─────────────────────────────────
+// R6d (27.10., Karte r6-domaene; Wahl `--r6 domaene`, Vorgabe bleibt R6): eine Messung gilt am Kopf weiter, außer
+//   genannt          · eine Karte des Zugs nennt das Kriterium (Commits seit der Messung)
+//   domaene:<d>      · eine geänderte Welt-Datei gehört einer Domäne der Station (Tafel domaenen.js)
+//   kern→kanarie:<k> · eine Kern-Datei (oder geteiltes Werkzeug) änderte sich und die Kanarie k bewegte sich in einer Domäne der
+//                      Station; „ausstehend“, solange k am Kopf ungemessen ist (die Station wartet, run --offen misst sie nicht)
+//   kanarie:<datei>  · die Station IST eine Kanarie und der Kern änderte sich: sie misst zuerst
+//   werkzeug:<datei> · ihre Linse oder ein Werkzeug ihres Pfads (nicht geteilt) änderte sich
+//   menge:<d> n/s    · eine fremde Domäne (oder der Kern) änderte seit der Messung mehr als s Zeilen
+const TAFEL = require("./domaenen.js");
+// die Wahl der Regel: `--r6 domaene` → R6d, sonst R6 (die Vorgabe, bis der Schöpfer entscheidet)
+function r6Wahl(opt) {
+    if (!opt || !opt.r6 || opt.r6 === "pfad") return false;
+    if (opt.r6 === "domaene") return true;
+    throw new Error("--r6 " + opt.r6 + ": pfad (Vorgabe) oder domaene");
+}
+const modulDatei = (m) => "stamm/" + m.toLowerCase().replace("/", "-") + ".js";
+
+// die Karte der Domänen an einem Stand: modulKarte = spec/stamm/modul-karte.json, manifest = cores.manifest.json (beide am Kopf)
+function domaenenKarte(modulKarte, manifest, tafel = TAFEL) {
+    const fehler = [];
+    const module = new Set(((modulKarte && modulKarte.ordnung) || []).map((x) => x[0]));
+    const kerne = new Map((Array.isArray(manifest) ? manifest : (manifest && manifest.cores) || []).map((c) => [c.id, c.scripts || []]));
+    const globs = (e, wer) => {
+        const g = [...(e.dateien || [])];
+        for (const m of e.module || []) { if (!module.has(m)) fehler.push(wer + ": Modul " + m + " fehlt in der Modul-Karte"); g.push(modulDatei(m)); }
+        for (const k of e.kerne || []) { if (!kerne.has(k)) fehler.push(wer + ": Kern " + k + " fehlt im Manifest"); else g.push(...kerne.get(k)); }
+        return g;
+    };
+    const dom = Object.entries(tafel.DOMAENEN).map(([d, e]) => [d, globs(e, "Domäne " + d)]);
+    const kern = globs(tafel.KERN, "Kern");
+    const alle = [...Object.values(tafel.DOMAENEN), tafel.KERN];
+    const mz = new Set(alle.flatMap((e) => e.module || []));
+    for (const m of module) if (!mz.has(m)) fehler.push("Modul " + m + " (Modul-Karte) in keiner Domäne und nicht im Kern");
+    const kz = new Set(alle.flatMap((e) => e.kerne || []));
+    for (const k of kerne.keys()) if (!kz.has(k)) fehler.push("Kern " + k + " (Manifest) in keiner Domäne und nicht im Kern");
+    for (const [b, ds] of Object.entries(tafel.BEREICHE)) for (const d of ds) if (d !== "*" && !tafel.DOMAENEN[d]) fehler.push("Bereich " + b + ": Domäne " + d + " unbekannt");
+    const cache = new Map();
+    const von = (f) => {
+        if (!cache.has(f)) {
+            let r;
+            if (WERKZEUG_PFAD.test(f)) r = { werkzeug: true, geteilt: trifftPfad(f, tafel.GETEILT), domaenen: [] };
+            else if (trifftPfad(f, tafel.OHNE_WELT)) r = { ohneWelt: true, domaenen: [] };
+            else if (trifftPfad(f, kern)) r = { kern: true, domaenen: [] };
+            else {
+                const ds = dom.filter(([, g]) => trifftPfad(f, g)).map(([d]) => d);
+                r = ds.length ? { domaenen: ds } : { unzugeordnet: true, domaenen: [] };
+            }
+            cache.set(f, r);
+        }
+        return cache.get(f);
+    };
+    return { von, fehler, unzugeordnet: (dateien) => dateien.filter((f) => von(f).unzugeordnet) };
+}
+
+// die Domänen einer Station: der Bereich ihres Kriteriums nach der Tafel, „*“ = jede; die Wanduhr trägt dazu den Takt; null = Bereich fehlt
+function domaenenDer(st, tafel = TAFEL) {
+    const ds = tafel.BEREICHE[st.kriterium.split(".")[0]];
+    if (!ds) return null;
+    const alle = ds.includes("*") ? Object.keys(tafel.DOMAENEN) : [...ds];
+    if (st.zeit && !alle.includes(tafel.ZEIT_DOMAENE)) alle.push(tafel.ZEIT_DOMAENE);
+    return alle;
+}
+
+// bewegt sich eine Messung gegen eine andere? Urteil gleich und jede Zahl im Zahl-Text in der Toleranz → null, sonst der Grund
+// die Zahlen eines Zahl-Texts samt Einheit ms (die Wanduhr)
+const zahlenIn = (s) => [...String(s == null ? "" : s).matchAll(/(-?\d+(?:[.,]\d+)?)(\s*ms\b)?/g)].map((m) => ({ x: Number(m[1].replace(",", ".")), ms: !!m[2] }));
+// der Abstand zweier Messungen: { flip } (Urteil anders) · { gestalt } (andere Zahl-Zahl) · { w, bei } (der größte relative Sprung
+// einer Zahl über dem absoluten Rand, geteilt durch ihre Toleranz: w > 1 heißt bewegt)
+function abstand(e1, e2, st, tafel = TAFEL) {
+    if (!!e1.gruen !== !!e2.gruen) return { flip: true, w: Infinity, bei: "Urteil " + (e1.gruen ? "GRÜN" : "ROT") + " → " + (e2.gruen ? "GRÜN" : "ROT") };
+    const a = zahlenIn(e1.zahl), b = zahlenIn(e2.zahl);
+    if (a.length !== b.length) return { gestalt: true, w: Infinity, bei: "Zahl-Gestalt " + a.length + " → " + b.length + " Zahlen" };
+    const rel0 = st.toleranz != null ? st.toleranz : st.zeit ? tafel.TOLERANZ.zeit : tafel.TOLERANZ.bild;
+    let w = 0, bei = "";
+    for (let i = 0; i < a.length; i++) {
+        const d = Math.abs(a[i].x - b[i].x);
+        if (d <= tafel.TOLERANZ.absolut) continue;
+        const rel = a[i].ms ? Math.max(rel0, tafel.TOLERANZ.zeit) : rel0;
+        const q = d / Math.max(Math.abs(a[i].x), Math.abs(b[i].x)) / rel;
+        if (q > w) { w = q; bei = "Zahl " + a[i].x + " → " + b[i].x + " (± " + Math.round(rel * 100) + " %)"; }
+    }
+    return { w, bei };
+}
+function bewegt(e1, e2, st, tafel = TAFEL) {
+    const a = abstand(e1, e2, st, tafel);
+    return a.w > 1 ? a.bei : null;
+}
+
+// ein LAUF-BRUCH ist keine Messung der Welt: Deckel, Wand GPU, Linse ohne JSON oder Bild, Absturz (Exit ≥ 2) — er zählt weder als
+// Rauschen noch als Bewegung
+const LAUF_BRUCH = /Deckel \d+ s überschritten|Wand GPU|kein JSON|zeichnet nie|\(Exit ([2-9]|\d\d+)\)/;
+const bruch = (e) => LAUF_BRUCH.test(String(e.zahl || "")) || LAUF_BRUCH.test(String(e.grund || ""));
+// DAS RAUSCHEN JE STATION: jede Fassung jeder messung/*.json in der Git-Geschichte dieses Zweigs; zwei Messungen derselben Station
+// am GLEICHEN SHA (gleicher Abdruck, andere Zeit) sind reines Rauschen der Linse — ihr größter Abstand ist das Rausch-Band
+// (Infinity: das Urteil kippt am gleichen SHA). Rückgabe Map id → { w, beleg }
+function rauschBand(stationen, mdir = path.join(DIR, "messung")) {
+    const je = new Map();
+    const st = new Map(stationen.map((s) => [schluessel(s), s]));
+    const rel = path.relative(KOORD, mdir).split(path.sep).join("/");
+    for (const f of fs.readdirSync(mdir).filter((x) => x.endsWith(".json"))) {
+        const revs = git(["log", "--format=%H", "--", rel + "/" + f], KOORD).split(/\r?\n/).filter(Boolean);
+        for (const r of revs) {
+            let m;
+            try { m = JSON.parse(git(["show", r + ":" + rel + "/" + f], KOORD)); } catch (e) { continue; }
+            for (const [id, e] of Object.entries(m.je || {})) {
+                const k = m.sha + "|" + m.geraet + "|" + id;
+                if (!je.has(k)) je.set(k, new Map());
+                je.get(k).set(String(e.zeit), e);
+            }
+        }
+    }
+    const band = new Map();
+    for (const [k, z] of je) {
+        const id = k.split("|")[2], s = st.get(id);
+        if (!s) continue;
+        const xs = [...z.entries()].sort((a, b) => a[0].localeCompare(b[0])).map((x) => x[1]);
+        for (let i = 1; i < xs.length; i++) {
+            if (xs[i].abdruck !== xs[i - 1].abdruck || bruch(xs[i]) || bruch(xs[i - 1])) continue;
+            const a = abstand(xs[i - 1], xs[i], s);
+            const alt = band.get(id);
+            if (!alt || a.w > alt.w) band.set(id, { w: a.w, beleg: k.split("|")[1] + " an " + k.slice(0, 8) + ": " + (a.bei || "gleich") });
+        }
+    }
+    return band;
+}
+
+// die Gründe, aus denen eine Messung der Station nach R6d alt ist (leer = sie gilt weiter). aend = aenderungen(Mess-SHA → Kopf) ·
+// ctx.karte = domaenenKarte am Kopf · ctx.genannt = Set der Kriterien der Commits seit der Messung · ctx.kanarien = die
+// Kanarien-Stationen des Geräts · ctx.kanarieUrteil(c) → { status: "haelt"|"bewegt"|"aus", was }
+function r6dGruende(st, aend, ctx, tafel = TAFEL) {
+    const gr = [];
+    if (ctx.genannt && ctx.genannt.has(st.kriterium)) gr.push("genannt");
+    const dom = domaenenDer(st, tafel) || Object.keys(tafel.DOMAENEN);
+    const treffer = new Set(), menge = {}, kern = [];
+    for (const a of aend) {
+        const v = ctx.karte.von(a.datei);
+        if (v.werkzeug) {
+            if (!st.befehl.includes(a.datei) && !trifftPfad(a.datei, st.pfad)) continue;
+            if (v.geteilt) kern.push(a.datei);
+            else gr.push("werkzeug:" + a.datei);
+            continue;
+        }
+        if (v.ohneWelt) continue;
+        if (v.kern || v.unzugeordnet) {
+            kern.push(a.datei);
+            menge.kern = (menge.kern || 0) + a.zeilen;
+            continue;
+        }
+        for (const d of v.domaenen) {
+            menge[d] = (menge[d] || 0) + a.zeilen;
+            if (dom.includes(d)) treffer.add(d);
+        }
+    }
+    for (const d of treffer) gr.push("domaene:" + d);
+    for (const [d, n] of Object.entries(menge)) if (!treffer.has(d) && n > tafel.MENGE.zeilen) gr.push("menge:" + d + " " + n + "/" + tafel.MENGE.zeilen);
+    if (kern.length) {
+        if (st.kanarie) gr.push("kanarie:" + kern[0]);
+        else
+            for (const c of ctx.kanarien || []) {
+                if (!(domaenenDer(c, tafel) || []).some((d) => dom.includes(d))) continue;
+                const u = ctx.kanarieUrteil(c);
+                if (u.status === "bewegt") gr.push("kern→kanarie:" + schluessel(c) + " (" + u.was + ")");
+                else if (u.status === "aus") gr.push("kern→kanarie:" + schluessel(c) + " ausstehend");
+            }
+    }
+    return gr;
+}
+// eine Station, deren Gründe NUR ausstehende Kanarien sind, wartet (run --offen misst sie nicht vor den Kanarien)
+const nurWarten = (gr) => gr.length > 0 && gr.every((g) => / ausstehend$/.test(g));
+
+// DER R6d-RICHTER an einem Kopf: (st, g, messSha) → Gründe. Liest den Spiel-Klon (Diffs, Modul-Karte, Manifest, Commit-Texte)
+// und die Messungen (Kanarien); jeder Diff einmal (Cache je Paar)
+function r6dRichter(repo, kopf, stationen, messungen, hilfe = hilfeText(), tafel = TAFEL) {
+    const zeige = (pfad) => { try { return JSON.parse(git(["show", kopf + ":" + pfad], repo)); } catch (e) { return null; } };
+    const karte = domaenenKarte(zeige("spec/stamm/modul-karte.json"), zeige("cores.manifest.json"), tafel);
+    const dc = new Map();
+    const aendZwischen = (a, b) => {
+        const k = a + ".." + b;
+        if (!dc.has(k)) dc.set(k, a === b ? [] : aenderungen(git(["diff", "--name-only", a, b], repo), git(["diff", "-U0", "--no-color", a, b], repo)));
+        return dc.get(k);
+    };
+    const kernBeruehrt = (a, b) => aendZwischen(a, b).some((x) => { const v = karte.von(x.datei); return v.kern || v.unzugeordnet || (v.werkzeug && v.geteilt); });
+    const gc = new Map();
+    const genannt = (s) => {
+        if (!gc.has(s)) gc.set(s, new Set(git(["log", "--format=%B", s + ".." + kopf], repo).match(/\b[a-z]+\.K\d\b/g) || []));
+        return gc.get(s);
+    };
+    const kanarien = (g) => stationen.filter((c) => c.kanarie && geraeteVon(c).includes(g));
+    const reihe = new Map();
+    const messReihe = (c, g) => {
+        const k = schluessel(c) + "|" + g;
+        if (!reihe.has(k)) {
+            const ab = abdruck(c, hilfe);
+            reihe.set(k, messungen.filter((m) => m.geraet === g && m.je && m.je[schluessel(c)] && m.je[schluessel(c)].abdruck === ab)
+                .map((m) => ({ sha: m.sha, e: m.je[schluessel(c)] })).sort((x, y) => String(y.e.zeit).localeCompare(String(x.e.zeit))));
+        }
+        return reihe.get(k);
+    };
+    // die Kanarie c auf g: ihre jüngste Messung im Kern-Stand des Kopfs gegen ihre jüngste im Kern-Stand der Messung vorSha
+    const urteilCache = new Map();
+    const kanarieUrteil = (c, g, vorSha) => {
+        const k = schluessel(c) + "|" + g + "|" + vorSha;
+        if (!urteilCache.has(k)) {
+            const r = messReihe(c, g);
+            const nach = r.find((x) => !kernBeruehrt(x.sha, kopf));
+            const vor = r.find((x) => x !== nach && !kernBeruehrt(x.sha, vorSha));
+            const b = nach && vor ? bewegt(vor.e, nach.e, c, tafel) : null;
+            urteilCache.set(k, !nach || !vor ? { status: "aus" } : b ? { status: "bewegt", was: b } : { status: "haelt" });
+        }
+        return urteilCache.get(k);
+    };
+    const richter = (st, g, messSha) => r6dGruende(st, aendZwischen(messSha, kopf),
+        { karte, genannt: genannt(messSha), kanarien: kanarien(g), kanarieUrteil: (c) => kanarieUrteil(c, g, messSha) }, tafel);
+    richter.karte = karte;
+    richter.kopf = kopf;
+    richter.aendZwischen = aendZwischen;
+    return richter;
 }
 
 // die GTX-Stationen, deren Messung am Kopf Punkte ändern KANN (26.10.: takt5z maß 43 Stationen in ~6 h, auch Staffel 1 hinter
@@ -1041,6 +1290,134 @@ function planCli(opt) {
     return p;
 }
 
+// DIE ALT-TAFEL eines Zug-Schritts (R6 gegen R6d): je Gerät jede Station, als wäre sie am Vorher-Kopf gemessen — welche wäre am
+// neuen Kopf alt, nach welcher Regel, mit welchem Grund, und was kostet ihre Nachmessung (Minuten ihrer jüngsten Messung)
+function minutenVon(messungen) {
+    const j = {};
+    for (const m of messungen)
+        for (const [id, e] of Object.entries(m.je || {})) {
+            const k = id + "|" + m.geraet;
+            if (e.minuten != null && (!j[k] || String(e.zeit) > String(j[k].zeit))) j[k] = { zeit: e.zeit, min: Math.max(0, e.minuten - (e.warten || 0)) };
+        }
+    return (st, g) => (j[schluessel(st) + "|" + g] ? j[schluessel(st) + "|" + g].min : st.minuten);
+}
+function altSchritt(richter, vorher, stationen, minuten) {
+    const welt = richter.aendZwischen(vorher, richter.kopf).filter((a) => !a.werkzeug).map((a) => a.datei);
+    const je = {};
+    for (const g of GERAETE) {
+        je[g] = stationen.filter((st) => geraeteVon(st).includes(g)).map((st) => {
+            const r6 = welt.filter((f) => trifftPfad(f, st.pfad));
+            const r6d = richter(st, g, vorher);
+            return { id: schluessel(st), st, r6, r6d, warten: nurWarten(r6d), min: minuten(st, g) };
+        });
+    }
+    return je;
+}
+const summe = (xs) => Math.round(xs.reduce((a, x) => a + x.min, 0) * 10) / 10;
+function schrittZeile(g, xs) {
+    const r6 = xs.filter((x) => x.r6.length), d = xs.filter((x) => x.r6d.length && !x.warten), w = xs.filter((x) => x.warten);
+    return g + " " + xs.length + " Stationen · R6 alt " + r6.length + " (" + summe(r6) + " min) · R6d alt " + d.length + " (" + summe(d) + " min)" +
+        (w.length ? " · wartet auf Kanarien " + w.length + " (" + summe(w) + " min)" : "");
+}
+
+// DER SICHERHEITS-BEWEIS an der Historie: jede Station, deren Urteil oder Zahl sich zwischen zwei gemessenen Köpfen der Kette
+// über ihre Toleranz bewegte, muss nach R6d zwischen ihnen alt sein — sonst ist sie eine VERPASSTE ÄNDERUNG beim Namen (eine Lücke
+// der Tafel, ROT). Daneben dasselbe für R6 (der Vergleich) und das Rauschen bei gleichem SHA (die Eichung der Toleranz)
+function sicherheit(kette, stationen, messungen, richterAm, band = new Map()) {
+    const pos = new Map(kette.map((s, i) => [s, i]));
+    const aus = { paare: 0, bewegt: [], verpasst: [], verpasstR6: [], rauschen: [], imRauschen: [], fremd: 0, bruch: 0 };
+    for (const st of stationen)
+        for (const g of geraeteVon(st)) {
+            const id = schluessel(st);
+            const r = messungen.filter((m) => m.geraet === g && m.je && m.je[id] && pos.has(m.sha))
+                .map((m) => ({ sha: m.sha, e: m.je[id] })).sort((a, b) => pos.get(a.sha) - pos.get(b.sha) || String(a.e.zeit).localeCompare(String(b.e.zeit)));
+            for (let i = 1; i < r.length; i++) {
+                const [a, b] = [r[i - 1], r[i]];
+                if (a.e.abdruck !== b.e.abdruck) { aus.fremd++; continue; }
+                if (bruch(a.e) || bruch(b.e)) { aus.bruch++; continue; }
+                const ab = abstand(a.e, b.e, st);
+                const w = ab.w > 1 ? ab.bei : null;
+                if (a.sha === b.sha) { if (w) aus.rauschen.push(id + " " + g + " an " + a.sha.slice(0, 8) + ": " + w); continue; }
+                aus.paare++;
+                if (!w) continue;
+                const richter = richterAm(b.sha);
+                const gr = richter(st, g, a.sha);
+                const r6 = richter.aendZwischen(a.sha, b.sha).filter((x) => !x.werkzeug && trifftPfad(x.datei, st.pfad));
+                const z = id + " " + g + " " + a.sha.slice(0, 8) + "→" + b.sha.slice(0, 8) + ": " + w;
+                aus.bewegt.push(z + " · R6d " + (gr.join(", ") || "—") + " · R6 " + (r6.length ? "alt" : "frisch"));
+                // nicht alt: im Rausch-Band der Station (am gleichen SHA sprang sie mindestens so weit) oder VERPASST
+                const rb = band.get(id);
+                const still = rb && rb.w >= ab.w;
+                if (!gr.length) (still ? aus.imRauschen : aus.verpasst).push(z + (still ? " · Rauschen " + rb.beleg : ""));
+                if (!r6.length && !still) aus.verpasstR6.push(z);
+            }
+        }
+    return aus;
+}
+
+function altCli(opt) {
+    const repo = spielRepo();
+    const { stationen, fehler } = ladeGeprueft();
+    if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
+    const ms = ladeMessungen();
+    const minuten = minutenVon(ms);
+    const hilfe = hilfeText();
+    const rc = new Map();
+    const richterAm = (kopf) => {
+        if (!rc.has(kopf)) { const r = r6dRichter(repo, kopf, stationen, ms, hilfe); r.kopf = kopf; rc.set(kopf, r); }
+        return rc.get(kopf);
+    };
+    if (opt.historie) {
+        const kette = String(opt.historie).split(",").map((s) => voll(repo, s.trim()));
+        const sum = {};
+        console.log("ALT-TAFEL der Kette " + kette.map((s) => s.slice(0, 8)).join(" → ") + " (je Schritt: jede Station als am Vorher-Kopf gemessen)");
+        for (let i = 1; i < kette.length; i++) {
+            const je = altSchritt(richterAm(kette[i]), kette[i - 1], stationen, minuten);
+            console.log(kette[i - 1].slice(0, 8) + " → " + kette[i].slice(0, 8));
+            for (const g of GERAETE) {
+                console.log("  " + schrittZeile(g, je[g]));
+                const s = sum[g] = sum[g] || { r6: 0, r6d: 0, warten: 0 };
+                s.r6 += summe(je[g].filter((x) => x.r6.length));
+                s.r6d += summe(je[g].filter((x) => x.r6d.length && !x.warten));
+                s.warten += summe(je[g].filter((x) => x.warten));
+            }
+            const gr = {};
+            for (const g of GERAETE) for (const x of je[g]) for (const r of x.r6d) { const k = r.replace(/ \(.*$/, "").replace(/ \d+\/\d+$/, ""); gr[k] = (gr[k] || 0) + 1; }
+            console.log("  Gründe R6d: " + (Object.entries(gr).sort((a, b) => b[1] - a[1]).map(([k, n]) => k + " ×" + n).join(" · ") || "—"));
+        }
+        for (const g of GERAETE) console.log("Σ " + g + ": R6 " + Math.round(sum[g].r6) + " min · R6d " + Math.round(sum[g].r6d) + " min (+ wartend " + Math.round(sum[g].warten) + ") · gespart " + Math.round(sum[g].r6 - sum[g].r6d) + " min");
+        const band = rauschBand(stationen);
+        const b = sicherheit(kette, stationen, ms, richterAm, band);
+        console.log("SICHERHEIT " + b.paare + " Mess-Paare an verschiedenen Köpfen · bewegt " + b.bewegt.length + " · verpasst R6d " + b.verpasst.length + " · verpasst R6 " + b.verpasstR6.length + " · nicht alt, aber im Rausch-Band " + b.imRauschen.length + " · Abdruck gewechselt " + b.fremd + " · Lauf-Bruch " + b.bruch);
+        console.log("RAUSCH-BAND " + band.size + " Stationen mit Mess-Paaren am gleichen SHA, davon " + [...band.values()].filter((x) => x.w > 1).length + " über der Toleranz: " + [...band.entries()].filter(([, x]) => x.w > 1).map(([k, x]) => k + " (" + x.beleg + ")").join(" · "));
+        // eine Kanarie, die am gleichen SHA über ihre Toleranz springt, ist kein Zeuge des Kerns (sie machte bei jedem Kern-Zug ihre
+        // Domänen alt) — ROT beim Namen
+        const lautK = stationen.filter((c) => c.kanarie && band.has(schluessel(c)) && band.get(schluessel(c)).w > 1);
+        for (const c of lautK) console.log("  KANARIE RAUSCHT " + schluessel(c) + " · " + band.get(schluessel(c)).beleg);
+        for (const z of b.bewegt) console.log("  BEWEGT " + z);
+        for (const z of b.imRauschen) console.log("  IM-RAUSCHEN " + z);
+        for (const z of b.verpasst) console.log("  VERPASST " + z);
+        b.kanarieRauscht = lautK.map(schluessel);
+        if (lautK.length) process.exitCode = 1;
+        if (opt.json) fs.writeFileSync(opt.json, JSON.stringify({ kette, sum, sicherheit: b }, null, 1) + "\n");
+        if (b.verpasst.length) process.exitCode = 1;
+        return b;
+    }
+    if (!opt.kopf || !opt.vorher) throw new Error("alt --kopf <neu> --vorher <alt> [--r6 domaene] · alt --historie <sha,sha,…>");
+    const [neu, alt] = [voll(repo, opt.kopf), voll(repo, opt.vorher)];
+    const d = r6Wahl(opt);
+    const je = altSchritt(richterAm(neu), alt, stationen, minuten);
+    console.log("ALT-TAFEL " + neu.slice(0, 8) + " nach " + alt.slice(0, 8) + " · Regel " + (d ? "R6d (domaene)" : "R6 (pfad, Vorgabe)"));
+    for (const g of GERAETE) {
+        console.log(schrittZeile(g, je[g]));
+        for (const x of je[g]) {
+            const gr = d ? x.r6d : x.r6;
+            if (gr.length) console.log("  " + (d && x.warten ? "WARTET " : "ALT ") + x.id + " · " + x.min.toFixed(1) + " min · " + gr.join(" · "));
+        }
+    }
+    return je;
+}
+
 function gtxNutzenCli(opt) {
     const s = buchenCli({ ...opt, trocken: true });
     const n = gtxNutzen(s);
@@ -1056,9 +1433,11 @@ function buchenCli(opt) {
     const repo = spielRepo();
     const kopfVoll = voll(repo, opt.kopf);
     const dateien = dateienAm(repo, kopfVoll);
-    const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
+    const ms = ladeMessungen();
+    const s = buchen(kopfVoll.slice(0, 8), stationen, ms, (sha) =>
         weltDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
-        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus() });
+        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), r6d: r6Wahl(opt) ? r6dRichter(repo, kopfVoll, stationen, ms) : null });
+    if (r6Wahl(opt)) s.r6 = "domaene";
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     if (opt.trocken) return s;
@@ -1549,6 +1928,7 @@ if (require.main === module) {
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "plan") planCli(o);
+        else if (verb === "alt") altCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));
         else if (verb === "liste") {
             const { stationen, fehler, fehlt } = ladeGeprueft();
@@ -1567,7 +1947,7 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest();
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> [--r6 domaene] · alt --kopf <neu> --vorher <alt> [--r6 domaene] · alt --historie <sha,sha,…> [--json <datei>] · liste [--kopf <sha>] · selbsttest");
             process.exitCode = 2;
         }
     })().catch((e) => {

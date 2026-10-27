@@ -94,7 +94,8 @@ const BEREICHE = {
     tiere: ["tiere", "feld", "gelaende"],
     vegetation: ["vegetation", "siedlung"],
     oekologie: ["tiere", "feld"],
-    affekt: ["feld", "klang"],
+    // der Vogel-Chor hört die Vögel (tiere) und wo sie stehen (gelaende) — Historie: affekt.K1#1 dc06b495→6db2602c 6,69 → 6,35 dB
+    affekt: ["feld", "klang", "tiere", "gelaende"],
     licht: ["licht"],
     ferne: ["licht", "vegetation", "gelaende"],
     material: ["licht", "vegetation", "siedlung", "studios"],
@@ -111,7 +112,9 @@ const BEREICHE = {
     tore: ["netz", "studios"],
     streaming: ["gelaende", "takt", "studios"],
     profiband: ["*"],
-    klang: ["klang"],
+    // der Klang hört die Welt: Vögel (tiere), Ufer (gelaende), Laub (vegetation), Glut (siedlung) — Historie: klang.K1#1 16 → 21
+    // Leiber und klang.K2#2 Ufer-Lag 0,5 → 0 s bei dc06b495→6db2602c (gelaende-chunks, wasser-zellen)
+    klang: ["klang", "gelaende", "tiere", "vegetation", "siedlung"],
     speicher: ["speicher", "siedlung"],
 };
 
@@ -136,10 +139,15 @@ const OHNE_WELT = [".claude/**", ".gitattributes", ".gitignore", ".prettierrc.js
 // MENGE (Regel 4): die geänderten Welt-Zeilen einer FREMDEN Domäne seit der Messung (Stempel-Hunks fallen) über der Schwelle
 // machen auch Stationen alt, die die Domäne nicht tragen — ein Umbau dieser Größe ist kein Detail. Begründung der Zahl im
 // Bericht bericht/2710-r6-domaene.md (Historie e7a28b06 → 9fa32207)
-const MENGE = { zeilen: 400 };
+// 1000: über dem größten Schritt der Historie (D1 552 Zeilen, e7a28b06 → 42973786) — ein gewöhnlicher Zug macht nichts
+// Fremdes alt, eine alte Messung altert über die Summe der Züge, ein Umbau in Modul-Größe sofort
+const MENGE = { zeilen: 1000 };
 
 // die Toleranz einer Zahl beim Kanarien- und Sicherheits-Urteil: relativ je Zahl im Zahl-Text (Bild/Funktion eng, Wanduhr weit);
 // eine Station darf `toleranz` selbst tragen (nicht im Abdruck)
-const TOLERANZ = { bild: 0.05, zeit: 0.25, absolut: 0.02 };
+// Zahlen mit der Einheit ms urteilen immer an der Wanduhr (zeit). Das Rauschen am GLEICHEN SHA (die Geschichte der Mess-Dateien,
+// `alt --historie`) trennt im Sicherheits-Beweis die verpasste Änderung vom Rauschen der Linse
+// zeit 0,5: am gleichen SHA sprang leib.K1#1 ego/wechsel 46 → 26,6 ms (42 %, 4a5f5e2c radeon), halten.K2#1 52,5 → 38,2 ms
+const TOLERANZ = { bild: 0.05, zeit: 0.5, absolut: 0.02 };
 
 module.exports = { DOMAENEN, BEREICHE, ZEIT_DOMAENE, KERN, GETEILT, OHNE_WELT, MENGE, TOLERANZ };
