@@ -120,11 +120,13 @@ function quellenAbgriff() {
 function werkzeug() {
     const r = window.anazhRealm;
     const st = r.state;
-    const W = {};
+    // die Szene (klang.K1 Staffel 2): Wetter und Uhr als Wort des Spielers (R9), je Takt über die Bühne
+    const W = { szene: {} };
     // Ein Frame des echten Loops (Bühne fest, Tiere halten).
     W.takt = () => {
         try {
-            window.__buehne();
+            window.__buehne(W.szene);
+            if (W.szene.uhr != null) r.setTimeOfDay(W.szene.uhr, "regler");
             r._gameLoopTick(performance.now());
         } catch {}
     };
@@ -474,6 +476,8 @@ function werkzeug() {
                     freq: e.freq,
                     frames,
                     gesetzKnoten: !!(knoten && knoten.has(e.knoten)),
+                    // die Stimme der Fahrt (klang:FAHRT) trägt ihre Quellen selbst
+                    fahrt: [...(s.fahrt || [])].some(([, f]) => f.knoten.has(e.knoten)),
                 };
             });
     };
@@ -551,7 +555,17 @@ const SOLL = {
             ["fall ≥ wind + 10", m.fall.db >= m.wind.db + 10],
         ];
     },
+    // DIE SZENEN der Wiese (klang.K1 Staffel 2, Befund N): nachts zirpen die Grillen (DOLBEAR: Nacht × Wärme × Lebensraum) und
+    // kein Vogel singt (der Chor schläft), im Regen trägt der Regen-Teppich, gehend und fahrend hält das Soll der Wiese.
+    nacht: (m) => [
+        ["grille ≥ −46", m.grille.db >= -46],
+        ["kein Vogel singt", !(m.vogel.db > -64)],
+    ],
+    regen: (m) => [["regen ≥ −34", m.regen.db >= -34]],
 };
+SOLL.gehend = SOLL.fahrend = SOLL.wiese;
+// Die Szene je Name: Wetter und Uhr (das Wort des Spielers), der Gang (zu Fuß oder im Sattel des GT) und sein Mindest-Weg (m).
+const SZENEN = { nacht: { uhr: 0 }, regen: { wetter: "rainy" }, gehend: { weg: 10 }, fahrend: { weg: 30, wagen: 1 } };
 // Band je Stimme (spektraler Schwerpunkt des Offline-Renders, Hz).
 const BAND = {
     wind: [80, 1200],
@@ -596,22 +610,37 @@ async function messeOrt(page, name, ort, stubs) {
                 um0.graph = window.__klangCore.umweltGraph(st.symphony.ctx, um0.bus);
             }
             const syn0 = W.synthese();
+            const sz = (W.szene = (stubs && stubs.szene) || {});
+            let wagen = null;
             try {
                 // umstellen schwingt ein, bis der Wald steht (`W.waldSteht`); dann läuft der Ring voll, die Stimmen werden
-                // bestellt, geliefert und rampen ein.
+                // bestellt, geliefert und rampen ein — im Gang mit gehaltener Taste W, zu Fuß oder im Sattel des GT (Gas).
                 const um = await W.umstellen(ort.x, ort.z);
-                const dl = performance.now() + 4500;
-                while (performance.now() < dl) {
+                const [q, t0] = [st.playerMesh.position.clone(), performance.now()];
+                if (sz.wagen) r.mountArchitecture((wagen = await W.wagen(q.x + 3, q.z)));
+                // im Gang pendelt die Taste (W vor, S zurück) je viertel Soll-Weg oder am Hindernis (20 Takte ohne Weg): das Ohr
+                // bleibt an der Wiese und misst in Bewegung
+                let [weg, seg, still, vor] = [0, 0, 0, true];
+                while (performance.now() - t0 < 4500 || (weg < sz.weg && performance.now() - t0 < 30000)) {
+                    [st.keys.w, st.keys.s] = [sz.weg && vor, sz.weg && !vor];
                     W.takt();
                     await sleep(30);
+                    const [p, d] = [st.playerMesh.position, Math.hypot(st.playerMesh.position.x - q.x, st.playerMesh.position.z - q.z)];
+                    [weg, seg, still] = [weg + d, seg + d, d < 0.01 ? still + 1 : 0, q.copy(p)];
+                    if (seg >= sz.weg / 4 || still > 20) [vor, seg, still] = [!vor, 0, 0];
                 }
                 const laufend = W.laufend();
                 const zensus = W.zensus();
                 const syn1 = W.synthese();
                 const bp = st.playerMesh.position;
                 const baeume = W.bestand(bp.x, bp.z, 15);
+                um.weg = Math.round(weg);
+                um.fahrt = [...(st.symphony.fahrt || new Map()).values()].map((f) => W.endlich(f.zensus()));
                 return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0 };
             } finally {
+                st.keys.w = st.keys.s = false;
+                if (wagen) r.dismountArchitecture(), r.removeArchitecture(wagen, { still: true });
+                W.szene = {};
                 if (alt.lage)
                     [r.constructor._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
                 if (alt._koerperWasser) P._koerperWasser = alt._koerperWasser;
@@ -878,7 +907,7 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
         const z = d.zensus;
         const stimmen = z ? z.stimmen : [];
         const sumQuellen = stimmen.filter((v) => v.an).reduce((a, v) => a + v.quellen, 0);
-        const dauernd = d.laufend.filter((q) => q.dauernd);
+        const dauernd = d.laufend.filter((q) => q.dauernd && !q.fahrt);
         for (const q of dauernd) {
             if (!q.gesetzKnoten) rot.push(`H ${name}: dauernde Quelle ohne Gesetz-Stimme (${kette(q.frames)})`);
         }
@@ -896,8 +925,11 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
     }
     for (const [name, m] of Object.entries(mixAlle)) {
         if (!SOLL[name]) continue;
-        for (const [txt, ok] of SOLL[name](m, mixAlle, daten[name] && daten[name].ort))
-            if (!ok) rot.push(`S ${name}: ${txt} verfehlt`);
+        const [sz, d] = [SZENEN[name], daten[name]];
+        for (const [txt, ok] of SOLL[name](m, mixAlle, d && d.ort)) if (!ok) rot.push(`${sz ? "N" : "S"} ${name}: ${txt} verfehlt`);
+        if (sz && sz.weg && !(d.um.weg >= sz.weg)) rot.push(`N ${name}: ${d.um.weg} m in 30 s — kein Gang (Soll ≥ ${sz.weg} m)`);
+        if (sz && sz.gang === "fahrt" && !d.um.fahrt.some((f) => f.an && f.motorDb > -64))
+            rot.push(`N ${name}: die Stimme der Fahrt schweigt im Sattel`);
     }
     // Der Wald-Ort ist aus der Kronen-Karte gewählt, die auch das Ohr liest — geprüft wird er am BESTAND, an den
     // Objekten der Welt (stehende Bäume ≤ 15 m, Einträge + Streu-Zellen): mindestens doppelt so dicht wie die Wiese.
@@ -929,7 +961,7 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
         else {
             if (!lab.graphGebaut) rot.push("L: das Lab baut seine Welt nicht über __klangCore.umweltGraph");
             if (!lab.seeuferUfer) rot.push("L: das Seeufer des Labs trägt kein Ufer");
-            for (const name of Object.keys(SOLL)) {
+            for (const name of Object.keys(SOLL).filter((n) => !SZENEN[n] || lab.orte[n])) {
                 const m = lab.orte[name];
                 if (!m) {
                     rot.push(`L: Lab-Ort ${name} fehlt`);
@@ -1487,9 +1519,11 @@ async function zensus(page, browser, ergebnis) {
     const offline = {};
     // die nahen Orte zuerst, dann die fernen (Seeufer und Fall liegen Kilometer weit — kehrt die Tour von dort zurück,
     // pflanzt der Wald seinen Bestand neu)
-    for (const name of ["wiese", "wald", "dorf", "glutArm", "seeufer", "fallArm"]) {
-        if (!orte[name]) continue;
-        daten[name] = await messeOrt(page, name, orte[name]);
+    // die Szenen stehen an der Wiese
+    for (const name of ["wiese", ...Object.keys(SZENEN), "wald", "dorf", "glutArm", "seeufer", "fallArm"]) {
+        const szene = SZENEN[name];
+        if (!orte[szene ? "wiese" : name]) continue;
+        daten[name] = await messeOrt(page, name, orte[szene ? "wiese" : name], { szene });
         // (R) Leib weg → Ruf weg: dieselbe Wiese, deren Revier-Gesetz keinen Vogel trägt
         if (name === "wiese")
             daten.wieseOhneLeib = await messeOrt(page, "wieseOhneLeib", orte.wiese, { ohneLeib: true });
