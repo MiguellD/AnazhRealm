@@ -903,14 +903,76 @@ const alle = [
         ],
         quelle: "1 = von 6 gesetzten Werken (Haus, Wagen, Tor, Brücke, Leiter, Bank) ist jedes Verb aus KIND_POLICY (betreten, drive, portal, sitzen, klettern) über die echte Eingabe nutzbar, an einem Gerät",
     },
+    // Staffel 2 (bauen-k5-verben 57f568bd): L-VERBEN je Herkunft — die Werkstatt (das Tor über die Hotbar) · der Satz an die KI (Enter, der
+    // Satz, Enter → maybeAnswerWithLlm, die Antwort ein fester DSL-Text: spawn_studio mit dem Wort hinter dem Art-Präfix, das eigene
+    // Werk spawn_blueprint) · geteilt (der Teilen-Knopf der Werkstatt, sein Code getippt in den Chat → empfangeWerk) — × Ego und
+    // Third × 6 Werke, benutzt über die Taste; `--verben` fährt nur L-VERBEN, mit echtem Renderer (die Karte). Das Haus in Third:
+    // die Kamera steht hinter dem Spieler, das Haus bleibt bis zur Schwelle in Stufe 1 (K36), die die Tür offen bäckt — dort zählt
+    // der Eintritt durch die offene Tür, die der Tür-Takt hält (`_tuerRec`), nicht ihr Drehen. Cloud headless (Null-Renderer)
+    // 26/36 → 36/36 (Wurzel `_werkFuss`: spawn_blueprint stellte das Werk in die Fußhöhe des Spielers).
     {
         kriterium: "bauen.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "L-VERBEN setzt nur über Werkstatt und Hotbar in Ego; das KI-gesetzte (spawn_studio) und das geteilte Werk (Werk-Code), Third " +
-            "und die Geräte misst kein Werkzeug",
+        befehl: [
+            "bash",
+            "-c",
+            "rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --verben; e=$?; " +
+                "cp artifacts/werkstatt-weg/weg.json \"$PUNKTE_AUS\" 2>/dev/null; exit $e",
+        ],
+        env: { WERKSTATT_WEG_PORT: "{PORT}", PUNKTE_AUS: "{AUS}" },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const je = j && j.verbenJe;
+            if (!je) return { gruen: false, zahl: "keine verbenJe in weg.json (Exit " + lauf.exit + ")" };
+            const [teile, nein] = [[], []];
+            let [ja, n] = [0, 0];
+            for (const h of ["werkstatt", "ki", "geteilt"])
+                for (const s of ["Ego", "Third"]) {
+                    let k = 0;
+                    for (const w of ["Haus", "Wagen", "Tor", "Brücke", "Leiter", "Bank"]) {
+                        const e = ((je[h] || {})[s] || {})[w];
+                        n++;
+                        if (e && e.steht === 1 && e.verb === true && !e.fehler) k++;
+                        else nein.push(`${h} · ${s} · ${w} (${e ? e.fehler || e.warum || "steht nicht" : "nicht gelaufen"})`);
+                    }
+                    ja += k;
+                    teile.push(`${h} ${s} ${k}/6`);
+                }
+            return {
+                gruen: lauf.exit === 0 && ja === n,
+                zahl:
+                    `${ja}/${n} Herkunft × Sicht × Werk tragen ihr Verb über die Taste (${teile.join(" · ")})` +
+                    (nein.length ? " — offen: " + nein.slice(0, 6).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-*.js",
+            "stamm/netz-*.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/siedlung-*.js",
+            "stamm/vegetation-baum.js",
+            "stamm/bau-*.js",
+            "stamm/studio-*.js",
+            "stamm/kampf.js",
+            "stamm/dirigent-*.js",
+            "stamm/stoff-material.js",
+            "index.html",
+            "fachwerk-core.js",
+            "vehicle-core.js",
+            "porta-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "spec/pruefsatz/bauen-k3.json",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
         quelle: "2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte",
     },
     // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)
