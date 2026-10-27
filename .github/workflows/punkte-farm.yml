@@ -1,0 +1,282 @@
+name: Punkte-Farm
+
+# DIE PUNKTE-FARM (27.10., Karte punkte-farm; die Regel des Schöpfers: „Die Prüfung darf nie länger dauern als das Erstellen.“):
+# die headless-Stationen der Punkte-Maschine (Zweig koordination, meisterkarte-quelle/punkte/punkte.cjs) fahren nicht auf dem
+# Laptop (Takt an e7a28b06: 76 Stationen Σ 266 min, 60 min Wanduhr in 3 Bahnen neben der Radeon), sondern hier, je Scheibe ein
+# Läufer — die Wanduhr ist der längste Lauf samt Vorbereitung. Drei Stufen:
+#   scheiben — die Maschine wählt die Stationen am SHA (alle · offen = die Buchung fände sie nicht frisch · nur) und schneidet die
+#              Läufe (Zwillinge EIN Lauf) in höchstens `jobs` Scheiben, die schwersten zuerst (`punkte.cjs scheiben`)
+#   messen   — je Scheibe `punkte.cjs run --nur <scheibe> --bahnen 1 --farm <name>`: derselbe Läufer, dieselben Abdrücke wie am
+#              Laptop (headless fährt LINSE_GPU=software, swiftshader wie die CI), ohne Schloss des Rechners (der Läufer trägt nur
+#              diesen Lauf); die Teil-Messung samt Roh-Ausgaben als Artefakt
+#   vereinen — `punkte.cjs vereine` zur EINEN messung/<sha8>-headless.json samt Roh-Ausgaben, nach koordination gepusht; der Zweig
+#              wird parallel beschrieben: je Versuch frisch holen, vereinen, committen, pushen
+# Die Maschine liegt als Arbeitsbaum des Spiel-Klons unter .claude/worktrees/koordination (wie am Laptop), nur ihr Verzeichnis
+# meisterkarte-quelle ausgecheckt (der Zweig trägt 1,3 GB Berichte). Auf Abruf (Actions → Punkte-Farm) oder per API:
+#   POST /repos/MiguellD/AnazhRealm/actions/workflows/punkte-farm.yml/dispatches {"ref":"main","inputs":{"sha":"…"}}
+on:
+    # PROBE (fällt vor dem Zug): je Push auf den Zweig ein Lauf mit den Vorgaben unten
+    push:
+        branches: [punkte-farm]
+    workflow_dispatch:
+        inputs:
+            sha:
+                description: "Spiel-SHA (kurz oder voll)"
+                required: true
+            auswahl:
+                description: "alle | offen (nur, was die Buchung am SHA nicht frisch findet) | nur"
+                default: "offen"
+            nur:
+                description: "bei auswahl=nur: die Stationen, id,id (z. B. speicher.K3#2,ki.K1#2)"
+                default: ""
+            jobs:
+                description: "höchstens so viele Scheiben (Läufer zugleich; das Konto trägt 20 Plätze, die CI teilt sie)"
+                default: "12"
+            koord:
+                description: "der Zweig der Maschine und das Ziel der Messung"
+                default: "koordination"
+
+permissions:
+    contents: read
+
+concurrency:
+    group: punkte-farm-${{ inputs.sha || 'dc06b495020b357431dc998342945d2352e0beee' }}-${{ inputs.koord || 'punkte-farm-beweis' }}
+    cancel-in-progress: false
+
+env:
+    KOORD: ${{ inputs.koord || 'punkte-farm-beweis' }}
+    K: .claude/worktrees/koordination
+
+jobs:
+    # PROBE (fällt vor dem Zug): der Selbsttest der Maschine auf einem Läufer (am Laptop reißen unter der Last des Takts die
+    # Schloss-Fälle BAHNEN ihre 120-s-Fenster)
+    selbsttest:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  filter: blob:none
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Selbsttest der Maschine
+              shell: bash
+              run: |
+                  git fetch -q --depth=1 --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
+                  git worktree add -q --detach --no-checkout "$K" "origin/$KOORD"
+                  git -C "$K" sparse-checkout set --no-cone '/meisterkarte-quelle/' '!/meisterkarte-quelle/punkte/messung/roh/'
+                  git -C "$K" reset -q --hard
+                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" selbsttest
+                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" liste --kopf HEAD | tail -1
+
+    scheiben:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        outputs:
+            sha: ${{ steps.plan.outputs.sha }}
+            sha8: ${{ steps.plan.outputs.sha8 }}
+            n: ${{ steps.plan.outputs.n }}
+            matrix: ${{ steps.plan.outputs.matrix }}
+            beginn: ${{ steps.plan.outputs.beginn }}
+        steps:
+            # die ganze Geschichte ohne Blobs: `--offen` urteilt R6 über den Diff jedes Mess-SHA zum Ziel (die Blobs holt git diff nach)
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  filter: blob:none
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Maschine holen und Scheiben schneiden
+              id: plan
+              shell: bash
+              env:
+                  SHA: ${{ inputs.sha || 'dc06b495020b357431dc998342945d2352e0beee' }}
+                  AUSWAHL: ${{ inputs.auswahl || 'nur' }}
+                  NUR: ${{ inputs.nur || 'fahrzeug.K1#1,wetter.K5#1,wetter.K5#2,stoffe.K1#1,oekologie.K4#1' }}
+                  JOBS: ${{ inputs.jobs || '3' }}
+              run: |
+                  echo "beginn=$(date +%s)" >> "$GITHUB_OUTPUT"
+                  git fetch -q --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
+                  git worktree add -q --detach --no-checkout "$K" "origin/$KOORD"
+                  git -C "$K" sparse-checkout set --no-cone '/meisterkarte-quelle/' '!/meisterkarte-quelle/punkte/messung/roh/'
+                  git -C "$K" reset -q --hard
+                  case "$AUSWAHL" in
+                    alle) WAHL=() ;;
+                    offen) WAHL=(--offen) ;;
+                    nur) WAHL=(--nur "$NUR") ;;
+                    *) echo "auswahl=$AUSWAHL: alle | offen | nur"; exit 2 ;;
+                  esac
+                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" scheiben --sha "$SHA" --geraet headless --jobs "$JOBS" "${WAHL[@]}" > scheiben.json
+                  node -e '
+                    const p = require("./scheiben.json");
+                    const aus = ["sha=" + p.sha, "sha8=" + p.sha8, "n=" + p.scheiben.length, "matrix=" + JSON.stringify({ include: p.scheiben })];
+                    require("fs").appendFileSync(process.env.GITHUB_OUTPUT, aus.join("\n") + "\n");
+                    const z = ["### Scheiben " + p.sha8 + ": " + p.stationen + " Stationen in " + p.laeufe + " Läufen auf " + p.scheiben.length + " Läufern", ""];
+                    for (const s of p.scheiben) z.push("- " + s.nr + " · ~" + s.min + " min · " + s.laeufe + " Läufe" + (s.ki ? " · KI " + s.ki : "") + " · `" + s.nur + "`");
+                    require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, z.join("\n") + "\n");'
+
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: scheiben
+                  path: scheiben.json
+                  retention-days: 7
+
+    messen:
+        name: messen ${{ matrix.nr }} · ~${{ matrix.min }} min
+        needs: scheiben
+        if: needs.scheiben.outputs.n != '0'
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.scheiben.outputs.matrix) }}
+        runs-on: ubuntu-latest
+        # der Deckel je Station ist 2 × ihre Soll-Minuten (punkte.cjs); der Schritt endet vor dem Job, damit der Teil hochgeht
+        timeout-minutes: 120
+        env:
+            SHA: ${{ needs.scheiben.outputs.sha }}
+            SHA8: ${{ needs.scheiben.outputs.sha8 }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.scheiben.outputs.sha }}
+                  filter: blob:none
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            # die Caches wie in check.yml: der Inhalt als Schlüssel (scripts/ci-schluessel.cjs), nie die Projektversion
+            - name: Cache-Schlüssel
+              id: schluessel
+              run: node scripts/ci-schluessel.cjs
+
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}
+                  restore-keys: npm-${{ runner.os }}-
+
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/puppeteer
+                  key: puppeteer-${{ runner.os }}-${{ steps.schluessel.outputs.chrome }}
+                  restore-keys: puppeteer-${{ runner.os }}-
+
+            - name: System-Libs für headless Chromium
+              run: |
+                  LIBS="libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 libcairo2"
+                  SO="libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 libcups.so.2 libdrm.so.2 libxkbcommon.so.0 libXcomposite.so.1 libXdamage.so.1 libXfixes.so.3 libXrandr.so.2 libgbm.so.1 libpango-1.0.so.0 libcairo.so.2 libasound.so.2"
+                  DA=1; for so in $SO; do ldconfig -p | grep -qF "$so (" || DA=0; done
+                  if [ "$DA" = 1 ]; then
+                    echo "System-Libs da"
+                  else
+                    sudo apt-get update -qq
+                    sudo apt-get install -y --no-install-recommends $LIBS libasound2t64 || \
+                    sudo apt-get install -y --no-install-recommends $LIBS libasound2
+                  fi
+
+            - name: Dependencies installieren (inkl. puppeteer)
+              run: npm ci --no-audit --no-fund
+
+            # der Anbieter des Laptops für die Stationen, deren KI_ENDPUNKT der lokale Ollama ist (punkte.cjs kiModelle): dieselbe
+            # Adresse, dasselbe Modell — die Station bleibt byte-gleich
+            - name: KI-Anbieter (Ollama mit dem Modell der Scheibe)
+              if: matrix.ki != ''
+              env:
+                  KI: ${{ matrix.ki }}
+              run: |
+                  curl -fsSL https://ollama.com/install.sh | sh
+                  for t in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:11434/api/tags && break; sleep 1; done
+                  for m in $KI; do ollama pull "$m"; done
+                  ollama list
+
+            - name: Maschine holen und Scheibe messen
+              shell: bash
+              timeout-minutes: 110
+              env:
+                  NUR: ${{ matrix.nur }}
+                  FARM: farm:${{ github.run_id }}/${{ matrix.nr }}
+              run: |
+                  git fetch -q --depth=1 --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
+                  git worktree add -q --detach --no-checkout "$K" "origin/$KOORD"
+                  git -C "$K" sparse-checkout set --no-cone '/meisterkarte-quelle/' '!/meisterkarte-quelle/punkte/messung/'
+                  git -C "$K" reset -q --hard
+                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" run --sha "$SHA" --geraet headless --nur "$NUR" --bahnen 1 --farm "$FARM"
+
+            - name: Teil sammeln
+              if: always()
+              shell: bash
+              run: |
+                  M="$K/meisterkarte-quelle/punkte/messung"
+                  mkdir -p teil/roh
+                  cp "$M/$SHA8-headless.json" teil/
+                  cp -r "$M/roh/$SHA8-headless" teil/roh/
+
+            - uses: actions/upload-artifact@v4
+              if: always()
+              with:
+                  name: teil-${{ matrix.nr }}
+                  path: teil/
+                  retention-days: 7
+
+    vereinen:
+        needs: [scheiben, messen]
+        if: always() && needs.scheiben.result == 'success' && needs.scheiben.outputs.n != '0'
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        permissions:
+            contents: write
+        env:
+            SHA: ${{ needs.scheiben.outputs.sha }}
+            SHA8: ${{ needs.scheiben.outputs.sha8 }}
+            BEGINN: ${{ needs.scheiben.outputs.beginn }}
+        steps:
+            # nur die Maschine und die Mess-Dateien (die Roh-Ausgaben dieses SHA kommen aus den Teilen, git add --sparse)
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ env.KOORD }}
+                  filter: blob:none
+                  sparse-checkout-cone-mode: false
+                  sparse-checkout: |
+                      /meisterkarte-quelle/punkte/*.cjs
+                      /meisterkarte-quelle/punkte/messung/*.json
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: teil-*
+                  path: teile
+
+            - uses: actions/download-artifact@v4
+              with:
+                  name: scheiben
+
+            - name: Vereinen und nach koordination schieben
+              shell: bash
+              run: |
+                  P=meisterkarte-quelle/punkte
+                  git config user.name "punkte-farm"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  for versuch in 1 2 3 4 5 6 7 8; do
+                    git fetch -q --depth=1 --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
+                    git reset -q --hard "origin/$KOORD"
+                    node "$P/punkte.cjs" vereine --sha "$SHA" --geraet headless --farm "farm:$GITHUB_RUN_ID" --teile teile --scheiben scheiben.json --beginn "$BEGINN" > vereint.txt
+                    git add --sparse "$P/messung/$SHA8-headless.json" "$P/messung/roh/$SHA8-headless"
+                    { head -1 vereint.txt; echo; echo "Lauf $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"; } > nachricht.txt
+                    if git diff --cached --quiet; then echo "nichts Neues gegen $KOORD"; break; fi
+                    git commit -q -F nachricht.txt
+                    if git push -q origin "HEAD:refs/heads/$KOORD"; then
+                      echo "geschoben im Versuch $versuch"
+                      break
+                    fi
+                    [ "$versuch" = 8 ] && { echo "Push nach $KOORD 8× abgewiesen"; exit 1; }
+                    sleep $((RANDOM % 20 + 5))
+                  done
+                  cat vereint.txt
+                  { echo '```'; cat vereint.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
