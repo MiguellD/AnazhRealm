@@ -1,8 +1,8 @@
 {
  "sha": "dc06b495020b357431dc998342945d2352e0beee",
  "geraet": "headless",
- "zeit": "2026-10-27T09:00:13.537Z",
- "host": "farm:40477422354",
+ "zeit": "2026-10-27T09:36:29.751Z",
+ "host": "farm:40479199372",
  "je": {
   "stoffe.K1#1": {
    "gruen": true,
@@ -53,12 +53,12 @@
    "gruen": true,
    "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
    "exit": 0,
-   "minuten": 0,
-   "zeit": "2026-10-27T09:00:13.537Z",
+   "minuten": 0.01,
+   "zeit": "2026-10-27T09:36:29.751Z",
    "abdruck": "37c3aaaa8f26",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:40477422354/3"
+   "host": "farm:40479199372/1"
   }
  }
 }
