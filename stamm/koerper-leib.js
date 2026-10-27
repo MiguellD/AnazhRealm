@@ -606,23 +606,24 @@ class AnazhRealm_koerper_leib {
     // die Probe den Punkt unter dem Knöchel und kippte nach zwei Proben ± 0,12 m: auf der Treppe stand die Spitze in der
     // nächsten Stufe (gate:koerper-stand K8 stufe p95 16 cm).
     _gaitProbe(p, x, z, ik) {
-        const u = (ik && ik.sohle) || [0];
+        const u = (ik && ik.sohle) || AnazhRealm.SOHLE_PUNKT;
         const [s, c] = [Math.sin(ik ? ik.yaw : 0), Math.cos(ik ? ik.yaw : 0)];
-        const y = u.map((d) => this._gaitBodenY(x + d * s, z + d * c));
-        [p.x, p.z, p.g, p.kipp, p.traegt] = [x, z, NaN, 0, 0];
+        const y = this._gaitProbeY || (this._gaitProbeY = []);
+        for (let k = 0; k < u.length; k++) y[k] = this._gaitBodenY(x + u[k] * s, z + u[k] * c);
+        [p.x, p.z, p.g, p.kipp, p.traegt, p.luecke] = [x, z, NaN, 0, 0, NaN];
         if (!Number.isFinite(y[u.indexOf(0)])) return;
         for (let i = 0; i < u.length; i++)
             for (let j = i; j < u.length; j++) {
                 const b = j > i ? Math.max(-0.4831, Math.min(0.4831, (y[j] - y[i]) / (u[j] - u[i]))) : 0; // tan 0,45
-                const a = Math.max(...u.map((d, k) => y[k] - b * d).filter(Number.isFinite));
-                const n = u.filter((d, k) => a + b * d - y[k] <= 0.01).length;
+                let [a, n, l] = [-Infinity, 0, 0];
+                for (let k = 0; k < u.length; k++) if (y[k] - b * u[k] > a) a = y[k] - b * u[k];
+                for (let k = 0; k < u.length; k++) {
+                    const h = a + b * u[k] - y[k];
+                    if (h <= 0.01) n++;
+                    l = h > l || !(h >= 0) ? h : l;
+                }
                 if (n > p.traegt || (n === p.traegt && Math.abs(b) < Math.abs(Math.tan(p.kipp))))
-                    [p.g, p.kipp, p.traegt, p.luecke] = [
-                        a,
-                        Math.atan(b),
-                        n,
-                        Math.max(...u.map((d, k) => a + b * d - y[k])),
-                    ];
+                    [p.g, p.kipp, p.traegt, p.luecke] = [a, Math.atan(b), n, l];
             }
     }
     // DER FUSS SETZT AUF, WO SEINE SOHLE AM MEISTEN TRÄGT (leib.K2): beim Aufsetzen rückt der Lock längs des Blicks um bis zu
@@ -3471,5 +3472,6 @@ AnazhRealm.GANG_DECKEL_RAD = 0.6;
 // Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden
 // unter dem Körper.
 AnazhRealm.STAND_SICHT_BAND = 2.0;
+AnazhRealm.SOHLE_PUNKT = Object.freeze([0]); // die Sohle ohne gebauten Fuß: die Stelle unter dem Knöchel (`_gaitProbe`)
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
 AnazhRealm.PLAYER_KH = 0.2125;
