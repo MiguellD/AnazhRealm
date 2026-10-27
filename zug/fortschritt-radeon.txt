@@ -983,3 +983,4 @@
 2026-10-27 20:06:34 takt13-headless tiere.K2#1 GRÜN 1.1 · 31/81
 2026-10-27 20:06:39 takt13-headless tiere.K4#1 GRÜN 0.5 · 32/81
 2026-10-27 20:06:44 takt13-headless tiere.K4#2 GRÜN 0.7 · 33/81
+2026-10-27 20:06:48 takt13-headless affekt.K1#1 GRÜN 0.4 · 34/81
