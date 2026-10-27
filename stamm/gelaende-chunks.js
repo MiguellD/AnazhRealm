@@ -224,6 +224,8 @@ class AnazhRealm_gelaende_chunks {
             bodenPalette: AnazhRealm.BODEN_FARBE,
             // DER VERSATZ DER SCHNEEGRENZE (stoffe.K3-2), den die Welt trägt (`_schneeGilt`; `_schneeTakt` zieht ihn nach)
             schneeVersatz: this._schneeGilt(),
+            // DER PEGEL DER BINNEN-GEWÄSSER (stoffe.K3-2), den die Welt trägt (`_pegelGilt`; `_pegelTakt` zieht ihn nach)
+            pegel: this._pegelGilt(),
             // DER WIESEN-GRUND reist mit (K53): Farbe, Wache und Fleck aus EINER Quelle (`WIESEN_GRUND`)
             wiesenGrund: AnazhRealm.WIESEN_GRUND,
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
@@ -554,11 +556,12 @@ class AnazhRealm_gelaende_chunks {
     // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
     // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkPlatte).
     // Ein Versatz der Schneegrenze (stoffe.K3-2, `_schneeGilt`) färbt den Chunk: er trägt seinen Schlüssel (die Sommer-Mitte 0
-    // den alten).
+    // den alten); ebenso der Pegel, der sein Wasser hebt (`_pegelMarke`, "" wo nichts steigt).
     _chunkIdbKey(cx, cz, lod) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         const schnee = this._schneeGilt();
-        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "");
+        const pegel = this._pegelMarke(cx, cz);
+        return `${seed}|${cx},${cz}|${lod}` + (schnee ? `|s${schnee}` : "") + (pegel ? `|p${pegel}` : "");
     }
     // Warm-Start-Gate (Read UND Write): liegt irgendein Edit in der 3×3-Chunk-Box um (cx,cz)? Wie
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
@@ -605,6 +608,7 @@ class AnazhRealm_gelaende_chunks {
         this.state.voxelMeshPending.add(cacheKey);
         const expectedStateGen = this._voxelStand(cx, cz);
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz, den er bei diesem Auftrag trägt
+        const pegel = this._pegelMarke(cx, cz); // … und hebt sein Wasser mit dem Pegel, den er trägt
         this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
         // die Platte NUR für edit-freie Footprints bei stehender Worldgen-Wahrheit (Lesen und Stiften, auch `empty:true`)
         const platte =
@@ -614,7 +618,11 @@ class AnazhRealm_gelaende_chunks {
         this._voxelWorkerComputeChunkMesh(cx, cz, lod, platte)
             .then((meshData) => {
                 this.state.voxelMeshPending.delete(cacheKey);
-                if (this._voxelStand(cx, cz) !== expectedStateGen || this._schneeGilt() !== schnee) {
+                if (
+                    this._voxelStand(cx, cz) !== expectedStateGen ||
+                    this._schneeGilt() !== schnee ||
+                    this._pegelMarke(cx, cz) !== pegel
+                ) {
                     this.state.voxelMeshGenAtRequest.delete(cacheKey);
                     return;
                 }
