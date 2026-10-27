@@ -1020,3 +1020,4 @@
 2026-10-27 20:10:03 takt13-headless halten.K4#2 GRÜN 0.9 · 68/81
 2026-10-27 20:10:10 takt13-headless fahrzeug.K1#2 GRÜN 0.4 · 69/81
 2026-10-27 20:10:15 takt13-headless tore.K5#1 GRÜN 1.6 · 70/81
+2026-10-27 20:10:22 takt13-headless streaming.K4#1 GRÜN 0.8 · 71/81
