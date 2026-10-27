@@ -2782,7 +2782,7 @@ async function kreaturProben(r, T, opts) {
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
         const schritt = () => [takt(dt), r._tickBewohner(dt)];
-        // DER WEG: aus 9 m schräg vor ihm (± 0,9 · 0,6 · 1,2 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je
+        // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je
         // halben Meter frei von Grundriss und 2,2 m von jedem fremden Stand — und derselbe 2 m daneben (der Vorbeigang)
         const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
         const frei = (b, a, u) =>
@@ -2790,22 +2790,16 @@ async function kreaturProben(r, T, opts) {
                 const q = { x: a.x + (u.x * t) / 2, z: a.z + (u.z * t) / 2 };
                 return offen(q.x, q.z) && S.liste.every((o) => o === b || o.drinnen || o.weg || ab(q, o.leib.position) > 2.2); // prettier-ignore
             });
-        // die Peilung des Vorbeigangs auf 3 m neben seinem Blick: 40–90° (der Kopf muss sich wenden, der Leib nicht)
-        const peilung = (k, a, u) => {
-            let l = 0;
-            while (ab({ x: a.x + u.x * l, z: a.z + u.z * l }, k.leib.position) > A.BEWOHNER.begegnungM) l += 0.1;
-            return Math.abs(grad(wrap(Math.atan2(a.x + u.x * l - k.leib.position.x, a.z + u.z * l - k.leib.position.z) - k.leib.rotation.y))); // prettier-ignore
-        };
+        // der Vorbeigang 2 m daneben auf der Seite, die die Peilung auf 3 m weitet: ±0,6 rad + atan(2/√5) ≈ 76° neben seinem Blick
+        // (der Kopf muss sich wenden, der Leib nicht)
         let [b, w] = [];
         for (const k of S.liste)
-            for (const dw of [0.9, -0.9, 0.6, -0.6, 1.2, -1.2])
-                for (const n of [2, -2]) {
-                    const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
-                    const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: u.z * n, z: -u.x * n }]; // prettier-ignore
-                    const a2 = { x: a.x + v.x, z: a.z + v.z };
-                    if (!b && !k.drinnen && !k.weg && k.da && frei(k, a, u) && frei(k, a2, u) && Math.abs(peilung(k, a2, u) - 65) <= 25) // prettier-ignore
-                        [b, w] = [k, { a, u, v }];
-                }
+            for (const dw of [0.6, -0.6]) {
+                const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
+                const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
+                if (!b && !k.drinnen && !k.weg && k.da && frei(k, a, u) && frei(k, { x: a.x + v.x, z: a.z + v.z }, u))
+                    [b, w] = [k, { a, u, v }];
+            }
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
         const [g, stand] = [b.leib, { x: b.ziel.x, z: b.ziel.z }];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
