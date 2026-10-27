@@ -362,11 +362,7 @@ function richter(root, trocken) {
 // ── Selbsttest ────────────────────────────────────────────────────────────────────────────────────────────────────────
 function selbsttest() {
     const os = require("os");
-    let rot = 0;
-    const pruef = (name, ok, info) => {
-        console.log(`${ok ? "  ok " : "  ROT"} ${name}${info ? " — " + info : ""}`);
-        if (!ok) rot++;
-    };
+    const pruef = stamm.pruefZaehler();
     const T = stamm.text(ROOT);
     const K = stamm.karteVon(ROOT);
     const t0 = Date.now();
@@ -467,8 +463,7 @@ function selbsttest() {
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
-    console.log(rot ? `stamm-umzug: ${rot} ROT` : "stamm-umzug: Selbsttest grün");
-    return rot;
+    return pruef.ende("stamm-umzug");
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────────────────────────────

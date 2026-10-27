@@ -1021,7 +1021,20 @@ function fehlt(glied, re, quelle) {
     });
 }
 
+// DER PRÜFER der Stamm-Werkzeuge (stamm-lib · stamm-umzug · stamm-rehome): `pruef(name, ok, info)` je Zeile, `pruef.ende(wer)`
+// nennt das Urteil des Selbsttests und liefert die Zahl der Roten
+function pruefZaehler() {
+    let rot = 0;
+    const pruef = (name, ok, info) => {
+        console.log(`${ok ? "  ok " : "  ROT"} ${name}${info ? " — " + info : ""}`);
+        if (!ok) rot++;
+    };
+    pruef.ende = (wer) => (console.log(rot ? `${wer}: ${rot} ROT` : `${wer}: Selbsttest grün`), rot);
+    return pruef;
+}
+
 module.exports = {
+    pruefZaehler,
     kinder,
     ohneKommentare,
     fehlt,
@@ -1072,11 +1085,7 @@ if (require.main === module && process.argv.includes("--selftest")) {
     const os = require("os");
     const root = path.resolve(__dirname, "..", "..");
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamm-lib-"));
-    let rot = 0;
-    const pruef = (name, ok, info) => {
-        console.log(`${ok ? "  ok " : "  ROT"} ${name}${info ? " — " + info : ""}`);
-        if (!ok) rot++;
-    };
+    const pruef = pruefZaehler();
     const wirft = (fn, rx) => {
         try {
             fn();
@@ -1293,6 +1302,5 @@ if (require.main === module && process.argv.includes("--selftest")) {
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
-    console.log(rot ? `stamm-lib: ${rot} ROT` : "stamm-lib: Selbsttest grün");
-    process.exit(rot ? 1 : 0);
+    process.exit(pruef.ende("stamm-lib") ? 1 : 0);
 }

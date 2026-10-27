@@ -184,12 +184,14 @@ function bildLagen(meshes, atlas, px) {
     return { quad: nQ ? sQ / nQ : 0, alpha: nA ? sA / nA : 0, je };
 }
 
+// DER EINE DEKODER der gebauten Antwort (asset-worker-harness: Attribute als base64 des rohen Puffers) — ein Typ-Array über ihm
+const dek = (b64, Typ) => {
+    const b = Buffer.from(b64, "base64");
+    return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
+};
+
 // Die ganze Stufe als Bild: die Krone mit ihrer Atlas-Alpha, die Rinde (und jedes andere Teil) deckt voll.
 function bildAus(meshes) {
-    const dek = (b64, Typ) => {
-        const b = Buffer.from(b64, "base64");
-        return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
-    };
     const out = [];
     for (const m of meshes || []) {
         if (!m.attrs || !m.attrs.position || !m.index) continue;
@@ -216,10 +218,6 @@ function kartenVervielfacht(krone, n) {
 // Die Krone einer gebauten Antwort (asset-worker-harness: Attribute als base64 des rohen Puffers): Klingen/Nadeln/
 // Strähnen (foliage) und Karten (foliageTex) — die Rinde deckt nicht mit (die Deckung ist die der Krone).
 function kroneAus(meshes) {
-    const dek = (b64, Typ) => {
-        const b = Buffer.from(b64, "base64");
-        return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
-    };
     const out = [];
     for (const m of meshes || []) {
         if ((m.kind !== "foliage" && m.kind !== "foliageTex") || !m.attrs || !m.attrs.position || !m.index) continue;
@@ -249,10 +247,6 @@ function kartenSkaliert(krone, f) {
 
 // Die Rinde einer gebauten Antwort als Dreiecks-Liste (alles mit Fläche, das nicht Krone ist).
 function rindeAus(meshes) {
-    const dek = (b64, Typ) => {
-        const b = Buffer.from(b64, "base64");
-        return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
-    };
     const tris = [];
     for (const m of meshes || []) {
         if (m.kind === "foliage" || m.kind === "foliageTex" || !m.attrs || !m.attrs.position || !m.index) continue;
@@ -429,6 +423,7 @@ function unterBoden(krone) {
 }
 
 module.exports = {
+    dek,
     bildDeckung,
     bildLagen,
     bildAus,

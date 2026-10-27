@@ -15,6 +15,7 @@ const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = req
 const { probeWand } = require("./lib/plattform-probe.cjs");
 const { hauptLauf } = require("./lib/welt-boot.cjs");
 const {
+    dek,
     bildDeckung,
     bildLagen,
     bildAus,
@@ -110,10 +111,6 @@ function meshDiff(tag, gold, live) {
 //  (S) SCHWEBE + BODEN — jede Karte einer Baum-L0 hängt an ihrer Rinde (oder an einer hängenden Karte: die Strähne ist
 //      eine Kette), kein Laub liegt unter dem Boden der Vorlage (Prüfer W5, R1/R2: schwebende Nadel-Karten, Strähnen
 //      ohne Peitsche und unter dem Boden-Rand). Rot nennt den Fall, die Zahl und eine Stelle.
-const dekodiere = (b64, Typ) => {
-    const b = Buffer.from(b64, "base64");
-    return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
-};
 // DIE FERN-WAND (S3 haus, docs/studio-vertrag.md N5): jede gebaute NUR-WURF-Stufe (B2c `nurWurf`) trägt den Beipack `__fern` in
 // der EINEN Hüllen-Form — Teile box · keil · kapsel mit endlichen Zahlen auf dem Raster 2^-12, die First-Kante ±x/±z, der
 // Walm in [0, 1], die Farbe je sichtbarem Teil, höchstens 24 Teile im Fernbild (rolle "sicht"/"beide" — der Welt-March läuft je
@@ -160,8 +157,8 @@ function teileAus(meshes) {
             if (m.joint) t.joint = m.joint;
             if (m.teil) t.teil = m.teil;
             for (const k of Object.keys(m.attrs))
-                t[k] = { array: dekodiere(m.attrs[k].b64, Float32Array), itemSize: m.attrs[k].itemSize };
-            if (m.index) t.index = dekodiere(m.index, Uint32Array);
+                t[k] = { array: dek(m.attrs[k].b64, Float32Array), itemSize: m.attrs[k].itemSize };
+            if (m.index) t.index = dek(m.index, Uint32Array);
             return t;
         });
 }
@@ -490,10 +487,10 @@ hauptLauf(async () => {
             let lag = 0;
             if (teile.length === 1) {
                 const m = teile[0];
-                const pos = dekodiere(m.attrs.position.b64, Float32Array),
-                    uv = m.attrs.uv ? dekodiere(m.attrs.uv.b64, Float32Array) : null,
-                    deckt = m.attrs.aDeckt ? dekodiere(m.attrs.aDeckt.b64, Float32Array) : null,
-                    ix = dekodiere(m.index, Uint32Array);
+                const pos = dek(m.attrs.position.b64, Float32Array),
+                    uv = m.attrs.uv ? dek(m.attrs.uv.b64, Float32Array) : null,
+                    deckt = m.attrs.aDeckt ? dek(m.attrs.aDeckt.b64, Float32Array) : null,
+                    ix = dek(m.index, Uint32Array);
                 const karten = [];
                 if (deckt) for (let t = 0; t < ix.length; t += 3) if (!deckt[ix[t]] && !deckt[ix[t + 1]] && !deckt[ix[t + 2]]) karten.push(ix[t], ix[t + 1], ix[t + 2]);
                 let lo = Infinity,
