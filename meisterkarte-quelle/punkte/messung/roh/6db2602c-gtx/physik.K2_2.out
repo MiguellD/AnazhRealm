@@ -1,0 +1,79 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-kollision-bild.cjs --bild
+=== KOLLISION = BILD — die Karte zeichnet, Mess-Wiese 150 m ===
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ diag-kollision-bild.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.4 s
+[stall-akte] offen evaluate(tempo) seit 22.6 s
+[stall-akte] Puls 61×, zuletzt vor 20.4 s — complete · renderer bereit · weltbild da · frames 1371 · welt 3112 Takte · Ruhe 2 · zuletzt Foundry offen 1 · programme 108 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #108 renderPipeline_MeshPhysicalNodeMaterial_60
+[stall-akte] Stempel 14:30:37.875 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 14:30:37.876 gpu.createRenderPipelineAsync #104 renderPipeline_MeshStandardNodeMaterial_61
+[stall-akte] Stempel 14:30:38.005 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 14:30:38.005 gpu.createRenderPipelineAsync #105 renderPipeline_MeshStandardNodeMaterial_62
+[stall-akte] Stempel 14:30:38.129 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66882 Zeichen · 3 Lichter
+[stall-akte] Stempel 14:30:38.129 gpu.createRenderPipelineAsync #106 renderPipeline_MeshStandardNodeMaterial_63
+[stall-akte] Stempel 14:30:38.260 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 11755 fs 66787 Zeichen · 3 Lichter
+[stall-akte] Stempel 14:30:38.260 gpu.createRenderPipelineAsync #107 renderPipeline_MeshPhysicalNodeMaterial_186
+[stall-akte] Stempel 14:30:38.416 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 14:30:38.416 gpu.createRenderPipelineAsync #108 renderPipeline_MeshPhysicalNodeMaterial_60
+[stall-akte] Stempel 14:30:56.451 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 5662 fs 58761 Zeichen · 3 Lichter
+[stall-akte] Stempel 14:30:56.451 gpu.createRenderPipelineAsync #109 renderPipeline_MeshStandardNodeMaterial_34
+[stall-akte] CPU (2 s) renderer 18688 105 % · GPU 14248 3 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 30:19 gpu 46/r 567 · 30:21 gpu 51/r 346 · 30:23 gpu 13/r 188 · 30:25 gpu 31/r 179 · 30:27 gpu 34/r 77 · 30:29 gpu 34/r 146 · 30:31 gpu 191/r 270 · 30:33 gpu 553/r 186 · 30:35 gpu 39/r 396 · 30:37 gpu 104/r 159 · 30:39 gpu 403/r 113 · 30:41 gpu 46/r 78 · 30:43 gpu 16/r 142 · 30:45 gpu 13/r 142 · 30:47 gpu 7/r 135 · 30:49 gpu 11/r 141 · 30:51 gpu 4/r 107 · 30:53 gpu 4/r 104 · 30:55 gpu 10/r 130 · 30:57 gpu 8/r 195 · 30:59 gpu 3/r 375 · 31:01 gpu 3/r 552 · 31:03 gpu 3/r 242 · 31:05 gpu 3/r 153 · 31:07 gpu 3/r 112 · 31:09 gpu 3/r 116 · 31:11 gpu 3/r 109 · 31:13 gpu 3/r 116 · 31:15 gpu 3/r 115 · 31:17 gpu 3/r 110
+[stall-akte] Stapel tickCreatureBoosts :459 < loop :83 < takt :9 < fahre :117 < (anonym) :204 < lauf :193 < galopp :198 < tempo :211
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] WERK IM WASSER: glutbrunnen bei -266/-1125 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Boot-Phase 3 (Kreaturen) progressiv vollendet.
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_1, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [WARN] FPS-Einbruch: 30 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [WARN] FPS-Einbruch: 27 (zuvor ~43)
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Siedlung „Westerfeld" (markt, Seed 1668000145): 20 Häuser platziert, 0 Slots übersprungen; Mitte 46 m Radius.
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Bauten n=959 haus=20 ziegel=5 nah=haus_mittelalterlich @-6/21/-1253 d=345m
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [WARN] FPS-Einbruch: 20 (zuvor ~35)
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Nexus-Evolution (Regel) registriert: evo_2
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [ERROR] BEWOHNER: das Wege-Netz von „Lindenheim" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.109] [INFO] Nexus-Evolution (Regel) registriert: evo_3
+[stall-akte] Stderr [23228:20016:1027/153053.885:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [23228:20016:1027/153053.886:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [23228:20016:1027/153053.892:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [23228:20016:1027/153053.922:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [23228:20016:1027/153053.922:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [23228:20016:1027/153115.061:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in tickCreatureBoosts :459
+[stall-akte] Seite #3: der Puls kehrt zurück nach 38.3 s — complete · renderer bereit · weltbild da · frames 1376 · welt 10549 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 109 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #109 renderPipeline_MeshStandardNodeMaterial_34
+  747 Studio-Werke · Box ohne Bild seitlich/oben 4.30/0.09 m · Bild ohne Box 0.16 m
+  OFFEN (U) haus: haus_roemisch#137 — 3.26 m neben jeder Box (bei 6.3/0.6/5.0)
+  OFFEN (U) haus: haus_griechisch#141 — 2.15 m neben jeder Box (bei -2.1/0.2/4.2)
+  OFFEN (U) haus: haus_alemannisch#921 — 1.02 m neben jeder Box (bei 0.8/1.7/2.1)
+  OFFEN (U) ausstattung: brunnen_dorf#922 — 0.33 m neben jeder Box (bei 1.4/1.2/0.0)
+  OFFEN (U) ausstattung: marktstand_dorf#923 — 0.69 m neben jeder Box (bei 1.6/0.3/-0.1)
+  (V) Kontakt beim Tempo: 126/126 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#976","durch":true,"tief":0.285,"spalt":0}
+      fuchs      5.860 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      wolf       7.450 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      baer       8.230 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      riese      13.520 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      gehen      1.150 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      sprint     5.170 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      fall       25.000 m/s · Durchtritt 0/2 · Eindringen max 0.001 m · Spalt max 0.000 m
+      wagen      19.630 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.018 m · im Bild Spalt max 0.070 m, Eindringen max 0.020 m · fahrzeug_supersport vmax 16.36 m/s × 1.2
+      gestossen  16.370 m/s · Durchtritt 0/4 · Eindringen max 0.000 m · Spalt max 0.000 m · im Bild Spalt max 0.000 m, Eindringen max 0.171 m
+  Stoß im Ausgabe-Bild: Wagen 8109 px · Bär 586 px in 640×360 · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Bär an der Mauer im Bild frei 7.48 m · Luma 92.8 σ 42.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.109 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#976 — im Bild Spalt 0 m, Eindringen 0.02 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @60 → _t_kontakt_mauer#976 — im Bild Spalt 0.07 m, Eindringen 0 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.61 m/s @30 → _t_kontakt_mauer#976 — im Bild Spalt 0.059 m, Eindringen 0 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @144 → _t_kontakt_mauer#976 — im Bild Spalt 0 m, Eindringen 0.109 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @60 → _t_kontakt_mauer#976 — im Bild Spalt 0 m, Eindringen 0.092 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @30 → _t_kontakt_mauer#976 — im Bild Spalt 0 m, Eindringen 0.164 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.24 m/s @deckel → _t_kontakt_mauer#976 — im Bild Spalt 0 m, Eindringen 0.171 m
+
+❌ KOLLISION = BILD ROT:
+  (B) BLOCKER OHNE BILD: haus_roemisch#135 bei -201.1/-1136.5 — eine Box ragt 3.34 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_roemisch#138 bei -181.9/-1134.9 — eine Box ragt 4.30 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_roemisch#143 bei -183.7/-1155.9 — eine Box ragt 0.56 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_griechisch#145 bei -162.1/-1136.5 — eine Box ragt 0.56 m seitlich über das Bild
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 63067 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
