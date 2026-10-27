@@ -1,0 +1,15 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] nvidia/pascal
+  Dorf-Ort -129/-94 (Gefälle 0.598, der Spieler bei 0/0) · 0 Häuser () · W1 (Vorplatz über der Diele  m) · W2 Diele  cm · W4 Natur im Grundriss ? · W4 Weg ? · W4c Überstand  m · W4b (fern 212/212) Streu vorher ? Zellen im Dorf-Kreis, unter den Häusern ?, fern ? Streu, nah ? Natur + ? Streu, Neubau ?, Nah-Streu ?, Promotion ? (? Häuser) · W5 Optik  % · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[59084],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":43,"gesperrt":false,"ohne":0,"slots":0,"haeuser":0,"reload":0,"zugOffen":false,"ausstattung":null,"verblasst":false,"ms":3}} · W8 Lichtung ? · W7 Bau im Bau ? · W6 Tür frontal 
+  ❌ W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen true,43,false,0,false
+  ❌ W9 Ausstattung: blind — kein Brunnen, keine Laterne
+  1 Welten, 1 zugleich, 212 s
+❌ gate:haus-welt ROT (2)
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 30650 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

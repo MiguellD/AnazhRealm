@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-portal-konformanz.cjs
+[linse-gpu] nvidia/pascal
+[welt-boot] FEHLER klasse: diag-portal-konformanz.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
+[welt-boot] ROT — 1 Fehler der Welt:
+  · klasse: diag-portal-konformanz.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
+
+--- stderr ---
+diag-portal-konformanz.cjs ABSTURZ: Error: Error: failed to find element matching selector ".h-werk"
+    at CdpElementHandle.$eval (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\api\ElementHandle.js:499:27)
+    at async CdpFrame.$eval (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Frame.js:467:20)
+    at async werkHolen (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx\scripts\diag-portal-konformanz.cjs:405:5)
+    at async lauf (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx\scripts\diag-portal-konformanz.cjs:771:52)
+    at async C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx\scripts\diag-portal-konformanz.cjs:855:28
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 30546 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[welt-boot] FEHLER klasse: diag-portal-konformanz.cjs startet „linse" und zeichnet nie (keine seiner 1 Seiten arbeitet auf der GPU): das Rezept ist „null"
