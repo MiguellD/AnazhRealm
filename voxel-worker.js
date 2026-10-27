@@ -814,6 +814,7 @@ function applyStateDelta(delta) {
 let editKarte = null;
 function editKarteFrisch() {
     const edits = Array.isArray(state.voxelEdits) ? state.voxelEdits : null;
+    if (G.editKarteSteht(editKarte, edits)) return editKarte; // die stehende Karte: zwei Vergleiche (ek-schleife)
     return (editKarte = G.editKarte(editKarte, edits, voxelChunkConfig(0).span, null));
 }
 // die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können

@@ -1091,13 +1091,17 @@ class AnazhRealm_gelaende_boden {
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk — das Gesetz des Kerns (gelaende-core `editKarte`) über der EINEN Liste
     // `worldMeta.voxelEdits` (persistiert, in Setz-Reihenfolge, ohne Deckel — kein Edit fällt still). Je Chunk eine Generation
     // aus EINEM steigenden Zähler (`_editGenZaehler`, nie wiederholt; der Erdbau zieht denselben) — der Stale-Filter der
-    // Worker-Antworten (`_voxelStand`).
+    // Worker-Antworten (`_voxelStand`). Jede Dichte-Probe fragt die Karte: steht sie (gelaende-core `editKarteSteht`),
+    // kostet die Frage zwei Vergleiche, erst ein neuer Edit zieht Maß und Generation (ek-schleife, Lehre 25 — bis dahin
+    // baute jede Probe `_voxelChunkConfig`: im Fall-Wächter 60 Mio. Mal, der Edit-Weg 48 % der Feld-Dichte).
     _voxelEditKarte() {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        const G = globalThis.__gelaendeCore;
+        if (G.editKarteSteht(this._editKarte, edits)) return this._editKarte;
         const gen = this._editGen || (this._editGen = () => (this._editGenZaehler = (this._editGenZaehler || 0) + 1));
         const span = this._voxelChunkConfig().span;
-        return (this._editKarte = globalThis.__gelaendeCore.editKarte(this._editKarte, edits, span, gen));
+        return (this._editKarte = G.editKarte(this._editKarte, edits, span, gen));
     }
 
     // Die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können — in Setz-Reihenfolge, leer ohne.
@@ -1134,11 +1138,15 @@ class AnazhRealm_gelaende_boden {
     // (persistiert) und gelten ZULETZT — der Spieler-Wille überschreibt Terrain UND Hydrosphäre-Sculpting. Gefragt werden nur
     // die Edits, deren Reichweite den Chunk der Probe berührt (der Kern der Karte); die Form ist das Gesetz des Kerns
     // (gelaende-core `mitEdits`: die Säule `editForm`, Graben und Aufschütten, mode-lose Alt-Edits graben).
+    // Ohne Edit die Basis; die stehende Karte fragt die Probe direkt (`editKarteSteht`), ihr letzter Chunk bleibt
+    // gemerkt (`editsAm`) — ABAB je Spalten-Probe mit 147 Edits 238 → 134 ns, ohne Edit 89 → 90 ns (ek-schleife).
     _mitEdits(basis, x, y, z) {
         const meta = this.state.worldMeta;
-        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return basis;
+        const edits = meta && meta.voxelEdits;
+        if (!edits || !edits.length) return basis;
         const G = globalThis.__gelaendeCore;
-        return G.mitEdits(basis, x, y, z, G.editsAm(this._voxelEditKarte(), x, z));
+        const k = G.editKarteSteht(this._editKarte, edits) ? this._editKarte : this._voxelEditKarte();
+        return G.mitEdits(basis, x, y, z, G.editsAm(k, x, z));
     }
 
     // Base-gecachter Density-Grid-Pfad: das Gitter des Kerns (gelaende-core `dichteGitter`, Band und Basis-Dichte), je Chunk+LOD

@@ -34,8 +34,15 @@
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
-// Ort (±0,3 m waagrecht); die Latenz (A bewegt sich → B sieht es) wird berichtet.
+// Ort (±0,3 m waagrecht); die Latenz (A bewegt sich → B sieht es) wird berichtet, nie geurteilt: sie misst den Läufer (die
+// alte Wand „≤ 150 ms, lokal" lag unter drei parallelen Läufen in 3 von 6 Läufen ohne Stillstand darüber, 212–488 ms), das
+// Gesetz hinter ihr urteilen (d) je Takt und der Ort.
 // Konsum-Leser: `_p2pUpdatePeer` (zeichnet den Peer je Takt) und der close-Zweig von `initP2PSync` (plant den Rejoin).
+// DER TAKT JEDER SEITE: beide Seiten fahren den Null-Renderer (kein GPU-Prozess, die Probe misst kein Pixel), ihren Loop
+// treibt ab der Geburt die Pumpe (`seitenPumpe`, ein Zeitgeber, nie rAF) — verborgen wie sichtbar. Vorher liefen zwei
+// GL-Seiten auf swiftshader: die verborgene stand unter Last bis 51,7 s im synchronen Rücklesen, der Leerlauf-Abschied
+// (`p2pTick`, 10 s) riss die Leitung ab, und die Probe las einen Mitspieler, den es nicht mehr gab. Geurteilt wird erst,
+// wenn die Seite den Mitspieler MIT Gestalt über eine offene Leitung kennt (`kenntMitGestalt`).
 //
 // Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Die
 // Selbsttests von (c), (d) und (e) laufen im Hauptlauf.
@@ -43,7 +50,16 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest]
 "use strict";
-const { starteBrowser, halteBis, startProc, eigenePorte, sleep, waitFor, hauptLauf } = require("./lib/welt-boot.cjs");
+const {
+    starteBrowser,
+    nullRenderer,
+    halteBis,
+    startProc,
+    eigenePorte,
+    sleep,
+    waitFor,
+    hauptLauf,
+} = require("./lib/welt-boot.cjs");
 
 // die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
@@ -51,7 +67,6 @@ const ROOM = "mp-sync-raum";
 const SELBSTTEST = process.argv.includes("--selftest");
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
-const LATENZ_MS = 150;
 // Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.
 const LAUF_M = 1.5;
 const LAUF_FRIST_MS = 30000;
@@ -87,6 +102,40 @@ function netzLog() {
                 return send.call(this, d);
             };
     }
+}
+// DIE PUMPE (Seite, vor ihrem ersten Skript, über jeden Reload): unter dem Null-Renderer ruft niemand den Loop
+// (`setAnimationLoop` ist dort leer) — ein Zeitgeber je 16 ms tut es, sobald die Welt ihn trägt; ein verborgener Tab tickt
+// mit (Puppeteer startet Chrome ohne Hintergrund-Drosselung der Zeitgeber, ChromeLauncher `--disable-background-timer-throttling`)
+function seitenPumpe() {
+    setInterval(() => {
+        const r = window.anazhRealm;
+        if (!r || !r._gameLoopTick) return;
+        try {
+            r._gameLoopTick(performance.now());
+        } catch {
+            /* der Loop trägt seine eigene Fehlerwand */
+        }
+    }, 16);
+}
+// DIE MARKE (Seite): die Seite kennt den Mitspieler MIT Gestalt (sein Leib `mesh` steht in `peers`) über eine offene Leitung
+// (`rtcPeers`: über sie reisen Eingaben und Anker), `rechnet` dazu: ihr Ghost hat seinen Anker (`lockstep.seeded`). Der
+// Eintrag allein (`peers.has`) entsteht schon mit dem welcome, vor jeder Leitung. Was fehlt, steht beim Namen in `__marke`.
+function kenntMitGestalt(id, rechnet) {
+    const p2p = window.anazhRealm.state.p2p;
+    const e = p2p.peers.get(id);
+    const rtc = p2p.rtcPeers.get(id);
+    window.__marke = !e
+        ? "kein Eintrag"
+        : !e.mesh
+          ? "kein Leib"
+          : !rtc
+            ? "keine Leitung"
+            : !rtc.open
+              ? `Leitung ${rtc.pc.connectionState} ohne offenen Kanal`
+              : rechnet && !(e.lockstep && e.lockstep.seeded)
+                ? "Ghost ohne Anker"
+                : "";
+    return !window.__marke;
 }
 // Der Abdruck der Welt aus den Schreib-Akten (Seite): die Edits, die Bauten der Akte (`bauten`, je eine Kennung), der Boden an
 // jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang)
@@ -167,28 +216,21 @@ const SCHUB_VOR_DEM_FENSTER = [
 ].map(([dt, n, nach]) => ({ dt, n, nach, anschluss: true }));
 const SCHUB_GESETZ = { reserve: 2, aufhol: 10, fixMs: 1000 / 60 }; // das Gesetz, unter dem er aufgenommen wurde
 
-// Im Seiten-Kontext: Render ruht (zwei Seiten auf swiftshader verhungern sonst den Event-Loop),
-// der Loop läuft voll über die Pumpe; die Probe hängt am Spiel-Takt `p2pTick` und am Empfang `_p2pMsgPos`.
+// Im Seiten-Kontext (der Loop läuft über die Pumpe, der Null-Renderer zeichnet nichts): die Probe hängt am Spiel-Takt
+// `p2pTick` und am Empfang `_p2pMsgPos`.
 function installiere(alteTuer) {
     const r = window.anazhRealm;
-    if (r.state.renderer) {
-        r.state.renderer.render = function () {};
-        if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
-    }
-    r.state.postProcessingFailed = true;
     r.state.p2p.lockstepDebug = true; // die Spuren des Leibs (A je seq, der Ghost bei B) für (e)
     const mp = (window.__mp = {
         peerTakte: 0,
         ursprung: 0,
         ursprungOhneOrt: 0,
-        ursprungNachlauf: 0,
         // je Mitspieler: stand er beim ZEICHNEN im Ursprung (die Wahrheit des Zeichen-Moments, `_p2pUpdatePeer`)
         wahrBeimZeichnen: new Map(),
         ortZuletzt: new Map(),
         ursprungBeispiel: null,
         ortGesehen: new Set(),
         inits: 0,
-        verbundenAm: null,
         eigenStart: null,
         eigenBewegtAm: null,
         blick: null,
@@ -233,20 +275,14 @@ function installiere(alteTuer) {
     r.p2pTick = function (t) {
         const res = tick.call(this, t);
         const p2p = this.state.p2p;
-        if (p2p.connected && mp.verbundenAm === null) mp.verbundenAm = Date.now();
-        if (!p2p.connected) mp.verbundenAm = null;
         for (const [pid, e] of p2p.peers) {
             mp.peerTakte++;
             const ls = e.lockstep;
             const ortBekannt = mp.ortGesehen.has(pid) || !!(ls && ls.seeded && ls.doneSeq >= 0);
             for (const o of [e.mesh, e.nameLabel]) {
                 if (!o || !o.parent || !o.visible) continue;
-                const oz = mp.ortZuletzt.get(pid);
                 const wirklich = mp.wahrBeimZeichnen.get(pid) === true;
                 const imUrsprung = o.position.x === 0 && o.position.z === 0;
-                // der Nachlauf: die alte Regel (Ghost NACH dem Takt, neuester Ort) hätte diesen Takt ROT gezählt
-                const alteRegel = (oz && oz.x === 0 && oz.z === 0) || (ls && ls.seeded && ls.x === 0 && ls.z === 0);
-                if (imUrsprung && wirklich && !alteRegel) mp.ursprungNachlauf++;
                 if (imUrsprung && !wirklich) {
                     mp.ursprung++;
                     if (!ortBekannt) mp.ursprungOhneOrt++;
@@ -275,13 +311,6 @@ function installiere(alteTuer) {
         return lsEcht.call(this, nowMs);
     };
     r._lockstepTickPeers = mp.lsZaehler;
-    window.__mpPumpe = setInterval(() => {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch {
-            /* der Loop trägt seine eigene Fehlerwand */
-        }
-    }, 16);
     return true;
 }
 
@@ -289,7 +318,9 @@ function installiere(alteTuer) {
 async function seite(browser, name, alteTuer) {
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 400 });
+    await nullRenderer(page);
     await page.evaluateOnNewDocument(netzLog);
+    await page.evaluateOnNewDocument(seitenPumpe);
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
     const da = () =>
         !!window.anazhRealm &&
@@ -309,7 +340,6 @@ function bericht(p) {
             peerTakte: mp.peerTakte,
             ursprung: mp.ursprung,
             ursprungOhneOrt: mp.ursprungOhneOrt,
-            ursprungNachlauf: mp.ursprungNachlauf,
             ursprungBeispiel: mp.ursprungBeispiel,
             inits: mp.inits,
             enabled: p2p.enabled === true,
@@ -349,16 +379,11 @@ hauptLauf(async () => {
         PORT: String(PORT),
         ANAZH_SIGNALING_PORT: String(SIGNAL_PORT),
     });
+    // das Null-Rezept (kein GPU-Prozess); die Hintergrund-Drosselung schaltet Puppeteer selbst ab (seine Default-Schalter)
     const browser = await starteBrowser({
-        art: "webgl",
+        art: "null",
         frist: 180000,
-        zusatz: [
-            "--ignore-gpu-blocklist",
-            "--autoplay-policy=no-user-gesture-required",
-            "--disable-background-timer-throttling",
-            "--disable-backgrounding-occluded-windows",
-            "--disable-renderer-backgrounding",
-        ],
+        zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
     {
         // ── Seite A: frisch, der signaling-server ist AUS ──
@@ -463,9 +488,18 @@ hauptLauf(async () => {
         await waitFor(pageB, () => window.anazhRealm.state.p2p.connected === true, "B verbunden über den Boot");
         const idA = kVerb.peerId;
         const idB = (await bericht(pageB)).peerId;
-        await waitFor(pageA, (id) => window.anazhRealm.state.p2p.peers.has(id), "A kennt B", idB);
-        await waitFor(pageB, (id) => window.anazhRealm.state.p2p.peers.has(id), "B kennt A", idA);
-        check("B verbunden über den Boot, beide kennen einander", true, `A=${idA} B=${idB}`);
+        // DIE MARKE mit Täter: scheitert sie, nennt die Zeile, was der Seite fehlt (`__marke`), nie nur „Waiting failed"
+        const kennt = (seite, id, rechnet, wer) =>
+            waitFor(seite, kenntMitGestalt, wer, id, rechnet).catch(async (f) => {
+                throw new Error(`${wer}: ${await seite.evaluate(() => window.__marke)} (${f.message})`);
+            });
+        await kennt(pageA, idB, false, "A kennt B mit Gestalt über die Leitung");
+        await kennt(pageB, idA, true, "B rechnet A mit Gestalt über die Leitung");
+        check(
+            "B verbunden über den Boot, beide kennen einander mit Gestalt über die Leitung",
+            true,
+            `A=${idA} B=${idB}`
+        );
         // am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
         const vibeMs = await waitFor(
             pageB,
@@ -499,6 +533,7 @@ hauptLauf(async () => {
                 const p = window.anazhRealm.state.playerMesh.position;
                 return { x: p.x, z: p.z };
             });
+            await kennt(pageB, idA, true, "B rechnet A mit Gestalt über die Leitung");
             await pageB.evaluate((id) => {
                 const e = window.anazhRealm.state.p2p.peers.get(id);
                 window.__mp.blick = { pid: id, x: e.mesh.position.x, z: e.mesh.position.z };
@@ -593,8 +628,6 @@ hauptLauf(async () => {
             l0.sichtB.sichtbar && l0.abstand <= ABSTAND_M,
             sichtSatz(l0)
         );
-        if (!process.env.CI && l0.latenz !== null)
-            check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
 
         // ── (d) LANGE TAKTE: B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
@@ -847,7 +880,6 @@ hauptLauf(async () => {
                 `(a) Seite ${n}: kein Mitspieler-Takt im Ursprung`,
                 s.ursprung === 0,
                 `${s.ursprung} Takte am Ursprung (davon ${s.ursprungOhneOrt} ohne je empfangenen Ort) von ${s.peerTakte} Peer-Takten` +
-                    ` · Nachlauf ${s.ursprungNachlauf} Takte (beim Zeichnen stand er im Ursprung, der Ghost danach schon weiter; keine Täter)` +
                     (s.ursprung
                         ? ` — Täter _p2pEnsurePeerEntry: Leib/Schild sichtbar bei 0/0/0 (${JSON.stringify(s.ursprungBeispiel)})`
                         : "")
@@ -870,11 +902,15 @@ hauptLauf(async () => {
                 () => true,
                 () => false
             );
-        // B spielt wieder (die Pumpe der Probe), bis sein erster Zug den laufenden Sturm zieht
+        // B spielt wieder (die Pumpe trägt jede Seite ab ihrer Geburt, die Probe hängt sich neu ein), bis sein erster Zug den
+        // laufenden Sturm zieht
         if (nachReload) await pageB.evaluate(installiere, false);
         await waitFor(pageB, () => window.anazhRealm._wetterZug !== undefined, "B zieht den Zug");
+        // DERSELBE MOMENT auf beiden Seiten: die Welt-Uhr lief weiter, seit A seinen Abdruck der Akte nahm — unter Last stand B
+        // im Reload bis 79 s, und der Zug wechselt je WETTER_ZUG_SEK (120 s); Edits, Bauten und Boden stehen seit den Akten still
         const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
-        const rg = R && gleichIn(R, g.A);
+        const jetztA = R && (await pageA.evaluate(abdruck, g.a));
+        const rg = R && gleichIn(R, jetztA);
         check(
             "(e) Reload: B trägt nach dem Neuladen denselben Abdruck",
             !!R && teile.every(rg),

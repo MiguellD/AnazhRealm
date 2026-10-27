@@ -563,12 +563,12 @@ async function vorratAmDorf(messort, alt) {
             const vor = e.alle;
             r._tickAutoSettlement(pm);
             still = leer() && e.alle === vor ? still + 1 : 0;
-            await new Promise((ok) => setTimeout(ok, 20));
+            await sleep(20);
         }
         e.nachZug = -e.alle;
         for (let g = 0; g < 150; g++) {
             r._tickAutoSettlement(pm);
-            await new Promise((ok) => setTimeout(ok, 20));
+            await sleep(20);
         }
         for (const [k, v] of r._dorfVorraete) {
             const b = await v.fertig;
@@ -1563,7 +1563,7 @@ hauptLauf(async () => {
             r.dslEffects.spawn_village([["at", pv.x, pv.y, pv.z], same], ctxV);
             let cell = null;
             for (const weiter = window.__deckel("B: das Dorf des DSL-Akts", 600); !cell && weiter();) {
-                await new Promise((rs) => setTimeout(rs, 100));
+                await sleep(100);
                 const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
                 // der Wege-Schlüssel des Dorfs: d:<Same>@<Ort>, auf älteren Ständen d:<Same>
                 for (const key of Object.keys(sc))
@@ -1659,7 +1659,7 @@ hauptLauf(async () => {
                 r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
                 ruhig = r.state._frameChunksBuilt ? 0 : ruhig + 1;
                 vorlauf++;
-                await new Promise((rs) => setTimeout(rs, 0));
+                await sleep(0);
             }
             res.c.vorlaufFrames = vorlauf;
             window.__anazhAutoSettlement = true;
@@ -1674,7 +1674,7 @@ hauptLauf(async () => {
                 const ran = r._dispatchFrameJobs(r._buildDeferrableJobs({ x: pmP.x, y: pmP.y, z: pmP.z }), B);
                 if (ran.includes("scatterDeco") && !r.state._frameChunksBuilt) dekoLaeufe++;
                 FRAMES++;
-                await new Promise((rs) => setTimeout(rs, 0));
+                await sleep(0);
             }
             // gezählt werden die bearbeiteten Slots (ein Slot an Wasser/Klippe fällt geschlossen, er zählt als Schritt)
             const qIdx1 = r._autoSettlementQueue ? r._autoSettlementQueue.idx : qIdx0;
@@ -1898,7 +1898,7 @@ hauptLauf(async () => {
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
                 for (let m = nah + 80; vr && m > nah + 1; m -= 4)
                     for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++)
-                        await window.sleep(5);
+                        await sleep(5);
                 const vor0 = new Set(r.state.architectures); // die Häuser der Läufe davor zählen nie
                 const pw = stell(nah - 2);
                 // DAS ERSTE HAUS IM BILD (sk5-haus): `bild` = Takte vom Erwachen, bis ein Haus der Zelle in der Stufe steht, die
@@ -1929,7 +1929,7 @@ hauptLauf(async () => {
                     bild++;
                     const e = r.state.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
                     if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
-                    await window.sleep(5);
+                    await sleep(5);
                 }
                 r._dorfZug = zug;
                 const nahImSchirm = (erst ? erst.plan.slots : []).some((s) => {
@@ -2168,7 +2168,7 @@ hauptLauf(async () => {
                                 const q = r._autoSettlementQueue;
                                 if (cells()[zelle] && !(q && q.cellKey === zelle)) break;
                                 still = vor && leer() ? still + 1 : 0;
-                                await new Promise((ok) => setTimeout(ok, 20));
+                                await sleep(20);
                             }
                         } finally {
                             window.__anazhAutoSettlement = hook0;
