@@ -255,6 +255,7 @@ class AnazhRealm_gelaende_boden {
             // aus der alten Welt sind nicht mehr relevant (Atlas + Surface
             // sind neu generiert, alte Positionen können kollidieren).
             this.state.pendingVegSpawns = [];
+            this._saatOffen = null; // ebenso die Saat der alten Welt (`_tickSaat`)
             if (!Array.isArray(wm.feldStand)) {
                 const alt = new Set();
                 for (const a of this.state.architectures || [])
