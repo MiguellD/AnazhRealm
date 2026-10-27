@@ -939,7 +939,7 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
         for (const [txt, ok] of SOLL[name](m, mixAlle, d?.ort))
             if (!ok) rot.push(`${sz ? "N" : "S"} ${name}: ${txt} verfehlt`);
         if (sz?.weg && !(d.um.weg >= sz.weg && !sz.wagen === !d.um.sattel))
-            rot.push(`N ${name}: kein Gang (${d.um.weg} von ${sz.weg} m, im Sattel ${d.um.sattel})`);
+            rot.push(`N ${name}: kein Gang (${d.um.weg} von ${sz.weg} m, Sattel?)`);
     }
     // Der Wald-Ort ist aus der Kronen-Karte gewählt, die auch das Ohr liest — geprüft wird er am BESTAND, an den
     // Objekten der Welt (stehende Bäume ≤ 15 m, Einträge + Streu-Zellen): mindestens doppelt so dicht wie die Wiese.
