@@ -796,3 +796,4 @@
 2026-10-27 11:55:36 takt10d-headless gelaende.K4#2 GRÜN 10.2 · 1/1
 2026-10-27 11:55:39 takt10d-headless ENDE 1 grün / 0 rot · 10.2 min
 2026-10-27 11:55:46 takt10c-headless START 1 Stationen
+2026-10-27 11:56:03 takt10c-headless oekologie.K4#1 GRÜN 0.3 · 1/1
