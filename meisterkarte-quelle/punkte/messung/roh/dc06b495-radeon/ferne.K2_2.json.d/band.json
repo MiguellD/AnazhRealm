@@ -11,21 +11,21 @@
   },
   {
    "name": "Dreiecke",
-   "ist": 320718,
+   "ist": 320634,
    "soll": 680000,
    "faktor": 0.47
   },
   {
    "name": "VRAM MB",
-   "ist": 77.5,
+   "ist": 77.9,
    "soll": 118,
    "faktor": 0.66
   },
   {
    "name": "GPU ms/Frame",
-   "ist": 4.32,
+   "ist": 5.02,
    "soll": 16.7,
-   "faktor": 0.26
+   "faktor": 0.3
   }
  ],
  "rot": [
@@ -74,9 +74,9 @@
   {
    "art": "ratsche",
    "schluessel": "ratsche:vram:buf:?",
-   "ist": 29.9,
+   "ist": 30.3,
    "groesse": "vramMB",
-   "text": "VRAM buf:?: 29.9 MB über der Ratsche 0"
+   "text": "VRAM buf:?: 30.3 MB über der Ratsche 0"
   },
   {
    "art": "weit",
@@ -97,7 +97,7 @@
    "schluessel": "weit:boden:k1:dreiecke",
    "ist": 70348,
    "groesse": null,
-   "text": "boden k1 dreiecke: Ratsche 70348 über der Messung 10841 — zu weit"
+   "text": "boden k1 dreiecke: Ratsche 70348 über der Messung 10877 — zu weit"
   },
   {
    "art": "weit",
@@ -167,7 +167,7 @@
    "schluessel": "weit:einzelstuecke:haupt:dreiecke",
    "ist": 25253,
    "groesse": null,
-   "text": "einzelstuecke haupt dreiecke: Ratsche 25253 über der Messung 19749 — zu weit"
+   "text": "einzelstuecke haupt dreiecke: Ratsche 25253 über der Messung 19629 — zu weit"
   },
   {
    "art": "weit",
@@ -195,7 +195,7 @@
    "schluessel": "weit:gesamt:dreiecke",
    "ist": 661892,
    "groesse": null,
-   "text": "Summe (gebunden) Dreiecke: Ratsche 661892 über der Messung 320718 — zu weit"
+   "text": "Summe (gebunden) Dreiecke: Ratsche 661892 über der Messung 320634 — zu weit"
   },
   {
    "art": "weit",
@@ -244,7 +244,7 @@
    "schluessel": "weit:gesamt:vramMB",
    "ist": 118.9,
    "groesse": null,
-   "text": "VRAM (gebunden): Ratsche 118.9 über der Messung 77.5 — zu weit"
+   "text": "VRAM (gebunden): Ratsche 118.9 über der Messung 77.9 — zu weit"
   }
  ],
  "band": {
@@ -256,7 +256,7 @@
  },
  "summe": {
   "befehle": 116,
-  "dreiecke": 320718,
+  "dreiecke": 320634,
   "je": {
    "haupt": 63,
    "k0": 28,
@@ -264,14 +264,14 @@
   },
   "gebunden": {
    "befehle": 116,
-   "dreiecke": 320718
+   "dreiecke": 320634
   }
  },
  "abstand": {
   "befehle": 0.56,
   "dreiecke": 0.47,
   "vram": 0.66,
-  "gpu": 0.26
+  "gpu": 0.3
  },
  "ausserhalb": {
   "k2": 3,
@@ -287,7 +287,7 @@
    },
    "ist": {
     "befehle": 8,
-    "dreiecke": 65786
+    "dreiecke": 65822
    },
    "je": {
     "haupt": {
@@ -300,7 +300,7 @@
     },
     "k1": {
      "befehle": 1,
-     "dreiecke": 10841
+     "dreiecke": 10877
     }
    },
    "taeter": [
@@ -319,7 +319,7 @@
     {
      "klasse": "bodenSatz",
      "befehle": 3,
-     "dreiecke": 25526,
+     "dreiecke": 25562,
      "je": {
       "k0": {
        "befehle": 1,
@@ -327,7 +327,7 @@
       },
       "k1": {
        "befehle": 1,
-       "dreiecke": 10841
+       "dreiecke": 10877
       },
       "haupt": {
        "befehle": 1,
@@ -965,12 +965,12 @@
         "tris": 4165,
         "eintraege": [
          16,
-         31,
-         69,
+         34,
+         41,
          26,
-         35,
-         30,
-         38
+         27,
+         32,
+         37
         ]
        }
       ]
@@ -1131,12 +1131,12 @@
         "tris": 168,
         "eintraege": [
          16,
-         31,
-         69,
+         34,
+         41,
          26,
-         35,
-         30,
-         38
+         27,
+         32,
+         37
         ]
        },
        {
@@ -1158,8 +1158,8 @@
         "zellen": 3,
         "tris": 72,
         "eintraege": [
-         31,
-         69,
+         34,
+         41,
          26
         ]
        }
@@ -1262,19 +1262,19 @@
         "tris": 4800,
         "eintraege": [
          14,
-         68,
+         40,
          13,
-         28,
+         30,
          15,
-         67,
+         38,
          21,
          24,
-         37,
-         32,
+         33,
+         35,
          20,
          25,
-         27,
          29,
+         31,
          12
         ]
        },
@@ -1297,16 +1297,16 @@
         "zellen": 10,
         "tris": 3200,
         "eintraege": [
-         68,
-         70,
-         74,
-         28,
-         33,
-         32,
-         73,
-         34,
-         71,
-         29
+         40,
+         44,
+         48,
+         30,
+         36,
+         35,
+         47,
+         39,
+         45,
+         31
         ]
        }
       ],
@@ -1319,22 +1319,22 @@
         "tris": 5760,
         "eintraege": [
          14,
-         68,
+         40,
          13,
-         70,
-         74,
-         28,
+         44,
+         48,
+         30,
          15,
-         67,
+         38,
+         36,
          33,
-         37,
-         32,
+         35,
          25,
-         73,
-         34,
-         71,
-         27,
+         47,
+         39,
+         45,
          29,
+         31,
          12
         ]
        },
@@ -1377,12 +1377,12 @@
    },
    "ist": {
     "befehle": 17,
-    "dreiecke": 39794
+    "dreiecke": 39674
    },
    "je": {
     "haupt": {
      "befehle": 10,
-     "dreiecke": 19749
+     "dreiecke": 19629
     },
     "k0": {
      "befehle": 5,
@@ -1457,14 +1457,14 @@
     {
      "klasse": "vogel",
      "befehle": 1,
-     "dreiecke": 760,
+     "dreiecke": 640,
      "je": {
       "haupt": {
        "befehle": 1,
-       "dreiecke": 760
+       "dreiecke": 640
       }
      },
-     "dMax": 99
+     "dMax": 100
     },
     {
      "klasse": "himmel-sonne",
@@ -1593,13 +1593,13 @@
   }
  ],
  "vram": {
-  "mb": 77.5,
-  "gebunden": 77.5,
+  "mb": 77.9,
+  "gebunden": 77.9,
   "band": 118,
   "erzeuger": [
    {
     "erzeuger": "buf:?",
-    "mb": 29.9,
+    "mb": 30.3,
     "n": 516,
     "form": [
      "buf:?"
@@ -1796,7 +1796,7 @@
    {
     "erzeuger": "buf:bindingBuffer",
     "mb": 0.2,
-    "n": 338,
+    "n": 337,
     "form": [
      "buf:bindingBuffer#_object_(vertex,fragment,compute)",
      "buf:bindingBuffer#_render_(vertex,fragment,compute)"
@@ -2155,8 +2155,8 @@
  "messung": {
   "proben": 6,
   "eingeschwungen": false,
-  "takte": 4124,
-  "ms": 240037,
+  "takte": 4093,
+  "ms": 240018,
   "stand": {
    "chunks": 81,
    "instanzen": 1708,
@@ -2168,25 +2168,25 @@
   }
  },
  "fluss": {
-  "n": 52,
+  "n": 53,
   "platte": 0,
-  "mb": 9.8,
+  "mb": 9.1,
   "platteMb": 0,
-  "neuMb": 9.8
+  "neuMb": 9.1
  },
  "gpu": {
   "n": 12,
   "runden": 3,
-  "gpuJeFrameMs": 4.32,
-  "cpuJeFrameMs": 1.01,
+  "gpuJeFrameMs": 5.02,
+  "cpuJeFrameMs": 1.17,
   "gpuGebunden": true,
-  "nachlaufMs": 39.8
+  "nachlaufMs": 46.2
  },
  "stempel": {
   "einschwingen": 0,
   "proben": 0,
   "bank": 0,
-  "seitBoot": 3144,
+  "seitBoot": 2963,
   "warnung": 1,
   "spitze": 2048,
   "pool": {
@@ -2194,12 +2194,12 @@
    "max": 2048
   },
   "taeter": {
-   "OrthographicCamera → ziel": 910,
-   "OrthographicCamera → TRAANode.resolve": 913,
-   "haupt → output": 913,
-   "k0 → kaskade0:farbe": 34,
-   "k1 → kaskade1:farbe": 35,
-   "k2 → kaskade2:farbe": 35,
+   "OrthographicCamera → ziel": 853,
+   "OrthographicCamera → TRAANode.resolve": 855,
+   "haupt → output": 856,
+   "k0 → kaskade0:farbe": 31,
+   "k1 → kaskade1:farbe": 32,
+   "k2 → kaskade2:farbe": 32,
    "OrthographicCamera → atmo-himmel": 29,
    "OrthographicCamera → atmo-bestrahlung": 1,
    "OrthographicCamera → himmel-umgebung": 15,
@@ -2211,15 +2211,15 @@
   "urteil": "ROT"
  },
  "puffer": {
-  "mb": 29.93,
+  "mb": 30.27,
   "halter": {
-   "szene": 29.93,
+   "szene": 30.27,
    "bild": 0
   },
   "klassen": [
    {
     "klasse": "szene:bauSatz",
-    "mb": 8.3,
+    "mb": 8.28,
     "n": 89
    },
    {
@@ -2249,12 +2249,12 @@
    },
    {
     "klasse": "szene:formationenSatz",
-    "mb": 1.09,
+    "mb": 1.33,
     "n": 16
    },
    {
     "klasse": "szene:bauWurf",
-    "mb": 1,
+    "mb": 1.13,
     "n": 7
    },
    {
@@ -2326,20 +2326,74 @@
  },
  "unbenannt": [],
  "frameMs": [
+  16,
+  15,
   14,
   14,
-  12,
-  13,
-  12,
+  14,
   14
  ],
  "programme": {
-  "vertex": 89,
-  "fragment": 85,
-  "familien": 73,
-  "pipelines": 121
+  "vertex": 88,
+  "fragment": 84,
+  "familien": 72,
+  "pipelines": 120
  },
  "proben": [
+  {
+   "OrthographicCamera": {
+    "cmd": 2,
+    "tris": 2,
+    "ro": 2
+   },
+   "haupt": {
+    "cmd": 63,
+    "tris": 208867,
+    "ro": 43
+   },
+   "k0": {
+    "cmd": 28,
+    "tris": 52902,
+    "ro": 24
+   },
+   "k1": {
+    "cmd": 25,
+    "tris": 58813,
+    "ro": 18
+   },
+   "k2": {
+    "cmd": 3,
+    "tris": 9444,
+    "ro": 3
+   }
+  },
+  {
+   "OrthographicCamera": {
+    "cmd": 2,
+    "tris": 2,
+    "ro": 2
+   },
+   "haupt": {
+    "cmd": 63,
+    "tris": 208879,
+    "ro": 43
+   },
+   "k0": {
+    "cmd": 28,
+    "tris": 52902,
+    "ro": 24
+   },
+   "k1": {
+    "cmd": 25,
+    "tris": 58813,
+    "ro": 18
+   },
+   "k2": {
+    "cmd": 3,
+    "tris": 9444,
+    "ro": 3
+   }
+  },
   {
    "OrthographicCamera": {
     "cmd": 2,
@@ -2358,12 +2412,12 @@
    },
    "k1": {
     "cmd": 25,
-    "tris": 58777,
+    "tris": 58813,
     "ro": 18
    },
    "k2": {
     "cmd": 3,
-    "tris": 9430,
+    "tris": 9444,
     "ro": 3
    }
   },
@@ -2375,7 +2429,7 @@
    },
    "haupt": {
     "cmd": 63,
-    "tris": 208999,
+    "tris": 208879,
     "ro": 43
    },
    "k0": {
@@ -2385,39 +2439,12 @@
    },
    "k1": {
     "cmd": 25,
-    "tris": 58777,
+    "tris": 58813,
     "ro": 18
    },
    "k2": {
     "cmd": 3,
-    "tris": 9430,
-    "ro": 3
-   }
-  },
-  {
-   "OrthographicCamera": {
-    "cmd": 2,
-    "tris": 2,
-    "ro": 2
-   },
-   "haupt": {
-    "cmd": 63,
-    "tris": 209039,
-    "ro": 43
-   },
-   "k0": {
-    "cmd": 28,
-    "tris": 52902,
-    "ro": 24
-   },
-   "k1": {
-    "cmd": 25,
-    "tris": 58777,
-    "ro": 18
-   },
-   "k2": {
-    "cmd": 3,
-    "tris": 9430,
+    "tris": 9444,
     "ro": 3
    }
   },
@@ -2439,12 +2466,12 @@
    },
    "k1": {
     "cmd": 25,
-    "tris": 58777,
+    "tris": 58813,
     "ro": 18
    },
    "k2": {
     "cmd": 3,
-    "tris": 9430,
+    "tris": 9444,
     "ro": 3
    }
   },
@@ -2456,7 +2483,7 @@
    },
    "haupt": {
     "cmd": 63,
-    "tris": 208859,
+    "tris": 208819,
     "ro": 43
    },
    "k0": {
@@ -2466,39 +2493,12 @@
    },
    "k1": {
     "cmd": 25,
-    "tris": 58777,
+    "tris": 58813,
     "ro": 18
    },
    "k2": {
     "cmd": 3,
-    "tris": 9430,
-    "ro": 3
-   }
-  },
-  {
-   "OrthographicCamera": {
-    "cmd": 2,
-    "tris": 2,
-    "ro": 2
-   },
-   "haupt": {
-    "cmd": 63,
-    "tris": 208919,
-    "ro": 43
-   },
-   "k0": {
-    "cmd": 28,
-    "tris": 52902,
-    "ro": 24
-   },
-   "k1": {
-    "cmd": 25,
-    "tris": 58777,
-    "ro": 18
-   },
-   "k2": {
-    "cmd": 3,
-    "tris": 9430,
+    "tris": 9444,
     "ro": 3
    }
   }
@@ -2661,12 +2661,12 @@
        "tris": 4165,
        "eintraege": [
         16,
-        31,
-        69,
+        34,
+        41,
         26,
-        35,
-        30,
-        38
+        27,
+        32,
+        37
        ]
       }
      ]
@@ -2779,19 +2779,19 @@
        "tris": 4800,
        "eintraege": [
         14,
-        68,
+        40,
         13,
-        28,
+        30,
         15,
-        67,
+        38,
         21,
         24,
-        37,
-        32,
+        33,
+        35,
         20,
         25,
-        27,
         29,
+        31,
         12
        ]
       },
@@ -2814,16 +2814,16 @@
        "zellen": 10,
        "tris": 3200,
        "eintraege": [
-        68,
-        70,
-        74,
-        28,
-        33,
-        32,
-        73,
-        34,
-        71,
-        29
+        40,
+        44,
+        48,
+        30,
+        36,
+        35,
+        47,
+        39,
+        45,
+        31
        ]
       }
      ],
@@ -2836,22 +2836,22 @@
        "tris": 5760,
        "eintraege": [
         14,
-        68,
+        40,
         13,
-        70,
-        74,
-        28,
+        44,
+        48,
+        30,
         15,
-        67,
+        38,
+        36,
         33,
-        37,
-        32,
+        35,
         25,
-        73,
-        34,
-        71,
-        27,
+        47,
+        39,
+        45,
         29,
+        31,
         12
        ]
       },
@@ -2907,7 +2907,7 @@
     "stufe": null,
     "art": null,
     "cmd": 4,
-    "tris": 31684,
+    "tris": 31734,
     "je": {
      "k0": 1,
      "k1": 1,
@@ -2916,8 +2916,8 @@
     },
     "jeTris": {
      "k0": 2345,
-     "k1": 10841,
-     "k2": 6158,
+     "k1": 10877,
+     "k2": 6172,
      "haupt": 12340
     },
     "inst": 0,
@@ -3107,12 +3107,12 @@
        "tris": 168,
        "eintraege": [
         16,
-        31,
-        69,
+        34,
+        41,
         26,
-        35,
-        30,
-        38
+        27,
+        32,
+        37
        ]
       },
       {
@@ -3134,8 +3134,8 @@
        "zellen": 3,
        "tris": 72,
        "eintraege": [
-        31,
-        69,
+        34,
+        41,
         26
        ]
       }
@@ -3323,17 +3323,17 @@
     "stufe": null,
     "art": null,
     "cmd": 1,
-    "tris": 760,
+    "tris": 640,
     "je": {
      "haupt": 1
     },
     "jeTris": {
-     "haupt": 760
+     "haupt": 640
     },
-    "inst": 95,
-    "exemplare": 34,
-    "dMin": 20,
-    "dMax": 99
+    "inst": 80,
+    "exemplare": 33,
+    "dMin": 18,
+    "dMax": 100
    },
    {
     "klasse": "himmel",
@@ -3382,7 +3382,7 @@
      "haupt": 312
     },
     "inst": 26,
-    "exemplare": 19,
+    "exemplare": 18,
     "dMin": 15,
     "dMax": 17
    },
@@ -3405,15 +3405,15 @@
    }
   ],
   "vram": {
-   "mb": 77.5,
-   "puffer": 30.3,
+   "mb": 77.9,
+   "puffer": 30.7,
    "texturen": 47.2,
-   "spitze": 93.9,
+   "spitze": 95.5,
    "gc": 0.1,
    "liste": [
     {
      "k": "buf:?",
-     "mb": 29.926,
+     "mb": 30.273,
      "n": 516
     },
     {
@@ -3543,8 +3543,8 @@
     },
     {
      "k": "buf:bindingBuffer#_object_(vertex,fragment,compute)",
-     "mb": 0.216,
-     "n": 289
+     "mb": 0.215,
+     "n": 288
     },
     {
      "k": "tex:atmo-himmel rgba16float 192x108x1",

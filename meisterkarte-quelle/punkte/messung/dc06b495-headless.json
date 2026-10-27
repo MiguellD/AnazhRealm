@@ -1,7 +1,7 @@
 {
  "sha": "dc06b495020b357431dc998342945d2352e0beee",
  "geraet": "headless",
- "zeit": "2026-10-27T10:32:49.620Z",
+ "zeit": "2026-10-27T10:55:46.231Z",
  "host": "MiguellD",
  "je": {
   "streaming.K4#1": {
@@ -47,15 +47,14 @@
    "bahn": "1/3"
   },
   "gelaende.K4#2": {
-   "gruen": false,
-   "zahl": "keine Probe ÜBERALL, LÄUFE oder STRÖMUNG in der Ausgabe (Exit 1)",
-   "exit": 1,
-   "minuten": 28.08,
-   "grund": "ROT: keine Probe ÜBERALL, LÄUFE oder STRÖMUNG in der Ausgabe (Exit 1)",
-   "zeit": "2026-10-27T08:23:58.654Z",
+   "gruen": true,
+   "zahl": "6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m)",
+   "exit": 0,
+   "minuten": 10.18,
+   "zeit": "2026-10-27T10:45:25.506Z",
    "abdruck": "e2cba54e7e11",
-   "port": 7714,
-   "bahn": "2/3"
+   "port": 7704,
+   "bahn": "1/1"
   },
   "feld.K3#1": {
    "gruen": true,
@@ -745,15 +744,14 @@
    "bahn": "1/5"
   },
   "oekologie.K4#1": {
-   "gruen": false,
-   "zahl": "Deckel 480 s überschritten — beendet",
-   "exit": 1,
-   "minuten": 9.09,
-   "grund": "Deckel 480 s überschritten — beendet",
-   "zeit": "2026-10-27T10:31:20.353Z",
+   "gruen": true,
+   "zahl": "6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0)",
+   "exit": 0,
+   "minuten": 0.29,
+   "zeit": "2026-10-27T10:55:46.231Z",
    "abdruck": "8993e64452a0",
-   "port": 7724,
-   "bahn": "3/5"
+   "port": 7704,
+   "bahn": "1/1"
   },
   "studios.K5#1": {
    "gruen": true,

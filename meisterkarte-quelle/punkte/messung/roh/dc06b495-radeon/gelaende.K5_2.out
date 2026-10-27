@@ -29,3 +29,23 @@ $ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\
     }
     fs.writeFileSync(aus, JSON.stringify(erg));
 })() C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\dc06b495-radeon\gelaende.K5_2.json --bild
+== SICHT first EXIT 1
+[linse-gpu] amd/rdna-3
+  K8 wiese -280.4/-1045.6 0° · Ring 4 von 4 · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 332) · fuss 6.2 (-0.6, n 200) · huf 0.2 (gigant 0.1, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · Ring 4 von 4 · fein 4.3 (0.3, n 200) · streu 1 (0, n 714) · fuss 18.6 (-2.6, n 200) · huf 1.5 (gigant 0.9, n 200) · rad 2.3 (2.1, n 200)
+  ❌ K8 fuss wiese: p95 6.2 cm (Median -0.6, Soll ≤ 3, Ratsche 4.5) — Täter: der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)
+  ❌ K8 fuss hang: p95 18.6 cm (Median -2.6, Soll ≤ 3, Ratsche 4.2) — Täter: der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)
+❌ gate:koerper-stand ROT (2)
+== SICHT third EXIT 1
+[linse-gpu] amd/rdna-3
+  K8 wiese -280.4/-1045.6 0° · Ring 4 von 4 · fein 1.1 (0.1, n 200) · streu 0.5 (0, n 338) · fuss 5.4 (-0.6, n 200) · huf 0.2 (gigant 0.1, n 200) · rad 0.2 (0, n 200) | K8 hang -526/-853 24.4° · Ring 4 von 4 · fein 4.3 (0.3, n 200) · streu 1 (0, n 714) · fuss 18.5 (-4.3, n 200) · huf 1.6 (gigant 0.8, n 200) · rad 2.3 (2.1, n 200)
+  ❌ K8 fuss hang: p95 18.5 cm (Median -4.3, Soll ≤ 3, Ratsche 4.2) — Täter: der Fuß des Spielers (die Sohle des Leibs gegen _gaitBodenY)
+❌ gate:koerper-stand ROT (1)
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 2 von 2) nach 6 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

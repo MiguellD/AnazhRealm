@@ -1,7 +1,7 @@
 {
  "sha": "dc06b495020b357431dc998342945d2352e0beee",
  "geraet": "radeon",
- "zeit": "2026-10-27T09:11:34.111Z",
+ "zeit": "2026-10-27T10:52:32.736Z",
  "host": "MiguellD",
  "je": {
   "klang.K5#2": {
@@ -38,15 +38,15 @@
    "bahn": "1/3"
   },
   "tiere.K2#2": {
-   "gruen": false,
-   "zahl": "Deckel 1560 s überschritten — beendet",
-   "exit": 1,
-   "minuten": 35.96,
-   "grund": "Deckel 1560 s überschritten — beendet",
-   "zeit": "2026-10-27T08:22:37.833Z",
+   "gruen": true,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 14 s, 3 fressen: tier:wolf 6893 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.6 m · Luma 82.6 σ 35.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.108 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 3.22,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T10:44:48.359Z",
    "abdruck": "6f4d55252639",
-   "port": 7764,
-   "bahn": "2/3"
+   "port": 7754,
+   "bahn": "1/2"
   },
   "fahrzeug.K3#2": {
    "gruen": true,
@@ -60,15 +60,15 @@
    "bahn": "2/3"
   },
   "ferne.K2#2": {
-   "gruen": false,
-   "zahl": "Deckel 1560 s überschritten — beendet",
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 64.39,
-   "grund": "Deckel 1560 s überschritten — beendet",
-   "zeit": "2026-10-27T08:22:37.869Z",
+   "minuten": 7.74,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T10:44:48.399Z",
    "abdruck": "dad9cf32497f",
-   "port": 7774,
-   "bahn": "3/3"
+   "port": 7764,
+   "bahn": "2/2"
   },
   "tore.K3#2": {
    "gruen": true,
@@ -91,44 +91,39 @@
    "abdruck": "03c706724ee9",
    "port": 7754,
    "bahn": "1/3"
-  }
- },
- "ungemessen": {
+  },
   "gelaende.K5#2": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
-   "exit": 1,
-   "minuten": 12.42,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
-   "zeit": "2026-10-27T08:34:05.493Z",
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 1.6 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 1.31,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T10:48:01.698Z",
    "abdruck": "8b16706e5959",
    "port": 7754,
-   "bahn": "1/3"
+   "bahn": "1/2"
   },
   "mensch.K2#2": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
-   "exit": 1,
-   "minuten": 11.37,
-   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
-   "zeit": "2026-10-27T08:46:30.847Z",
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.559 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 3.35,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T10:49:20.569Z",
    "abdruck": "dc99c476be49",
    "port": 7754,
-   "bahn": "1/3"
+   "bahn": "1/2"
   },
   "fahrzeug.K4#2": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von pruef-kurz-pers-nach nach 3011 s Warten (ohne Nachtruhe; Wanduhr 3011 s)) — ungemessen",
-   "exit": 75,
-   "minuten": 50.47,
-   "grund": "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von pruef-kurz-pers-nach nach 3011 s Warten (ohne Nachtruhe; Wanduhr 3011 s)) — ungemessen",
-   "zeit": "2026-10-27T09:11:34.111Z",
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.5/2.1/0.3°, Stufe ≤ 1.79 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.6° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 2.03,
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-27T10:52:32.736Z",
    "abdruck": "b8dfe1a249ab",
    "port": 7764,
-   "bahn": "2/3"
+   "bahn": "2/2"
   }
  }
 }

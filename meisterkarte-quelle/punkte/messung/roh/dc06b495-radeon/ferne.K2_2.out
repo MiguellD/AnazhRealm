@@ -1,4 +1,4 @@
-$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
     const fs = require("fs");
     const path = require("path");
     const cp = require("child_process");
@@ -86,11 +86,7 @@ $ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\
 FOLGE ferne.K2#2: 3 Schritte
 
 --- stderr ---
-gpu-lauf: punkte-radeon-3 (bild) wartet auf ?
-gpu-lauf: punkte-radeon-3 (bild) wartet auf punkte-headless-1
-09:58:59 verwaister Platz platz.3 'punkte-radeon-2' geloest - Halter pid=6264 lebt nicht
-gpu-lauf: punkte-radeon-3 (bild) wartet auf heil-ci-kamera-leib
-gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 2 von 3) nach 2654 s
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 1 von 2) nach 5 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
