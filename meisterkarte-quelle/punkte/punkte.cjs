@@ -8,7 +8,8 @@
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
 //        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
 //        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
-//        --farm <name>: headless auf einem Läufer der Farm (punkte-farm.yml im Spiel-Repo), ohne Schloss des Rechners, host = name
+//        headless misst nie am Platz: ohne --farm ruft run die Farm (punkte-farm.yml im Spiel-Repo, farmRufen), wartet und holt
+//        ihre Messung in diesen Baum; --farm <name> fährt AUF dem Läufer (ohne Schloss des Rechners, host = name)
 //   node punkte.cjs scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur id,id]
 //        der Plan der Farm: die Läufe in höchstens --jobs Scheiben, die schwersten zuerst (JSON auf stdout = die Matrix)
 //   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
@@ -618,6 +619,89 @@ function vereineCli(opt) {
     return { ...r, zeile };
 }
 
+// DER RUF DER FARM — der EINE Weg einer headless-Messung (G4: der Laptop trägt 0 headless-Last; bis 27.10. fuhr `run --geraet
+// headless` am Platz und nahm unter dem Schloss des Rechners Plätze neben den Zeit-Läufen der Radeon: takt10-headless an
+// dc06b495 trug nach 1 h 08 min 5 von 81 Stationen, 9 ungemessen am blockierten Schloss). `run --geraet headless` ohne --farm
+// ruft punkte-farm.yml im Spiel-Repo (workflow_dispatch am Zweig PUNKTE_FARM_REF, Vorgabe main) mit derselben Auswahl, findet
+// den Lauf an seiner Marke (run-name), meldet jeden fertigen Läufer, holt nach dem Lauf die gepushte Messung in den Baum der
+// Maschine (git checkout origin/<zweig> -- Datei und Roh-Ausgaben: dieselben Bytes wie am Zweig, ein späterer Merge findet
+// gleiche Zugänge) und schreibt die Zeilen, die zug.cjs liest. Ein Ruf, den GitHub abweist, ist ROT beim Grund — nie ein Lauf am
+// Platz. Der Schlüssel: GH_TOKEN | GITHUB_TOKEN | git credential (github.com).
+const FARM_WORKFLOW = "punkte-farm.yml";
+function ghSchluessel() {
+    if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN) return process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+    const r = spawnSync("git", ["credential", "fill"], { input: "protocol=https\nhost=github.com\n\n", encoding: "utf8", windowsHide: true });
+    const t = (/^password=(.+)$/m.exec(String(r.stdout || "")) || [])[1];
+    if (!t) throw new Error("Farm: kein GitHub-Schlüssel (GH_TOKEN, GITHUB_TOKEN oder git credential für github.com)");
+    return t.trim();
+}
+const repoSlug = (url) => {
+    const m = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?\/?$/.exec(String(url).trim());
+    if (!m) throw new Error("Farm: origin " + url + " ist kein GitHub-Repo");
+    return m[1];
+};
+// die Eingaben des Rufs: die Auswahl reist als Liste (nur) — --offen urteilt HIER, am selben Stand der Messungen, den die Buchung
+// liest; die Marke findet den Lauf (run-name)
+const farmEingaben = (meine, sha, zweig, marke, jobs) => ({ sha, auswahl: "nur", nur: meine.map(schluessel).join(","), jobs: String(jobs || 12), koord: zweig, marke });
+async function farmRufen(opt, a, warte = (ms) => new Promise((r) => setTimeout(r, ms))) {
+    const { repo, sha, meine } = a;
+    const slug = repoSlug(git(["remote", "get-url", "origin"], repo));
+    const zweig = git(["rev-parse", "--abbrev-ref", "HEAD"], KOORD);
+    if (zweig === "HEAD") throw new Error("Farm: der Baum der Maschine steht auf keinem Zweig (die Farm pusht ihre Messung auf einen Zweig)");
+    const ref = process.env.PUNKTE_FARM_REF || "main";
+    const marke = os.hostname() + "-" + process.pid + "-" + Date.now();
+    const auswahlArt = opt.nur ? "nur" : opt.offen ? "offen" : "alle";
+    const schluesselGh = ghSchluessel();
+    const api = async (p, init = {}) => {
+        const r = await fetch("https://api.github.com/repos/" + slug + p, { ...init, headers: { Authorization: "Bearer " + schluesselGh,
+            Accept: "application/vnd.github+json", "User-Agent": "punkte-maschine", ...(init.body ? { "Content-Type": "application/json" } : {}) } });
+        const text = await r.text();
+        if (!r.ok) throw new Error("Farm: " + (init.method || "GET") + " " + p + " → " + r.status + " " + text.slice(0, 200));
+        return text ? JSON.parse(text) : null;
+    };
+    await api("/actions/workflows/" + FARM_WORKFLOW + "/dispatches", { method: "POST", body: JSON.stringify({ ref, inputs: farmEingaben(meine, sha, zweig, marke, opt.jobs) }) });
+    let lauf = null;
+    for (let i = 0; i < 60 && !lauf; i++) {
+        await warte(5000);
+        const l = await api("/actions/workflows/" + FARM_WORKFLOW + "/runs?event=workflow_dispatch&per_page=30");
+        lauf = (l.workflow_runs || []).find((r) => String(r.display_title || r.name).includes(marke)) || null;
+    }
+    if (!lauf) throw new Error("Farm: der Lauf mit der Marke " + marke + " erschien nicht binnen 5 min (" + ref + ")");
+    console.log(startZeile(meine.length, gruppiere(meine), "headless", sha, 1) + " · auf der Farm (" + auswahlArt + ") " + lauf.html_url);
+    const gemeldet = new Set();
+    for (;;) {
+        const j = await api("/actions/runs/" + lauf.id + "/jobs?per_page=100");
+        for (const x of j.jobs || [])
+            if (x.status === "completed" && !gemeldet.has(x.id)) {
+                gemeldet.add(x.id);
+                console.log("  Farm: " + x.name + " · " + x.conclusion + " · " + ((new Date(x.completed_at) - new Date(x.started_at)) / 60000).toFixed(1) + " min");
+            }
+        lauf = await api("/actions/runs/" + lauf.id);
+        if (lauf.status === "completed") break;
+        await warte(30000);
+    }
+    const datei = messDatei(sha, "headless");
+    const rel = (f) => path.relative(KOORD, f).split(path.sep).join("/");
+    const roh = path.join(DIR, "messung", "roh", sha.slice(0, 8) + "-headless");
+    git(["fetch", "-q", "origin", "+refs/heads/" + zweig + ":refs/remotes/origin/" + zweig], KOORD);
+    const da = (p) => spawnSync("git", ["cat-file", "-e", "origin/" + zweig + ":" + p], { cwd: KOORD }).status === 0;
+    if (!da(rel(datei))) throw new Error("Farm: der Lauf " + lauf.html_url + " endete " + lauf.conclusion + " ohne " + rel(datei) + " auf " + zweig);
+    git(["checkout", "origin/" + zweig, "--", rel(datei), ...(da(rel(roh)) ? [rel(roh)] : [])], KOORD);
+    const m = JSON.parse(fs.readFileSync(datei, "utf8"));
+    const von = "farm:" + lauf.id;
+    for (const st of meine) {
+        const id = schluessel(st);
+        const e = (m.je[id] && String(m.je[id].host).startsWith(von) && m.je[id]) || (m.ungemessen && m.ungemessen[id] && String(m.ungemessen[id].host).startsWith(von) && m.ungemessen[id]);
+        console.log(e ? stationsZeile(id, e) : "  OFFEN " + id + " · der Farm-Lauf trug kein Urteil · Bahn farm · ungemessen, `run --offen` misst neu");
+    }
+    if (lauf.conclusion !== "success") {
+        console.log("Farm-Lauf " + lauf.html_url + " endete " + lauf.conclusion);
+        process.exitCode = 1;
+    }
+    console.log("→ " + rel(datei) + " (von " + zweig + ", Lauf " + lauf.id + ")");
+    return m;
+}
+
 async function run(opt) {
     if (!opt.sha) throw new Error("--sha fehlt");
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
@@ -634,6 +718,8 @@ async function run(opt) {
         console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen");
         return null;
     }
+    // headless misst nie am Platz: ohne --farm ruft run die Farm und holt ihre Messung (farmRufen)
+    if (opt.geraet === "headless" && !opt.farm && !opt.trocken) return farmRufen(opt, a);
     if (opt.trocken) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
             planText(gruppiere(meine), bahnenSoll) + ": " + meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
@@ -1391,6 +1477,11 @@ async function selbsttest() {
             v.n === 3 && v.m.je["a.K1#1"].gruen && v.m.je["a.K1#1"].host === "farm:7/1" && v.m.je["z.K1#1"].gruen && !v.m.je["b.K1#1"] && v.m.ungemessen["b.K1#1"] &&
             v.m.host === "farm:7" && v.m.zeit === "2026-10-27T10:05:00Z" && !alt.je["a.K1#1"].gruen && v.fehlt.length === 1 && v.fehlt[0].nr === 3 &&
             v.fehlt[0].ids.join() === "c.K1#1,d.K1#1" && /teil-9 misst f2 headless statt f1 headless/.test(wirft), JSON.stringify([v, wirft]));
+        const fe = farmEingaben([S("a.K1", 1, 1), zw], "f1", "koordination", "laptop-1-2");
+        pruef("FARM der Ruf: die hier gewählte Liste reist als nur, die Marke findet den Lauf, origin nennt das Repo",
+            JSON.stringify(fe) === JSON.stringify({ sha: "f1", auswahl: "nur", nur: "a.K1#1,a.K1#2", jobs: "12", koord: "koordination", marke: "laptop-1-2" }) &&
+            repoSlug("https://github.com/MiguellD/AnazhRealm.git") === "MiguellD/AnazhRealm" && repoSlug("git@github.com:MiguellD/AnazhRealm") === "MiguellD/AnazhRealm",
+            JSON.stringify(fe));
         let gpuWirft = "";
         try { gpuLaufFuer("radeon", "farm:7/1"); } catch (e) { gpuWirft = e.message; }
         pruef("FARM headless fährt auf dem Läufer ohne Schloss des Rechners, am Platz mit ihm; eine GPU-Station nie auf der Farm",
