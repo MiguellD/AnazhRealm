@@ -2782,14 +2782,10 @@ async function kreaturProben(r, T, opts) {
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
         const schritt = () => [takt(dt), r._tickBewohner(dt)];
-        // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je
-        // halben Meter frei von Grundriss und 2,2 m von jedem fremden Stand — und derselbe 2 m daneben (der Vorbeigang)
+        // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je halben Meter frei
+        // von Grundriss — und derselbe 2 m daneben (der Vorbeigang); wer sonst dort steht, macht dem Spieler Platz
         const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
-        const frei = (b, a, u) =>
-            [...Array(43).keys()].every((t) => {
-                const q = { x: a.x + (u.x * t) / 2, z: a.z + (u.z * t) / 2 };
-                return offen(q.x, q.z) && S.liste.every((o) => o === b || o.drinnen || o.weg || ab(q, o.leib.position) > 2.2); // prettier-ignore
-            });
+        const frei = (a, u) => [...Array(43).keys()].every((t) => offen(a.x + (u.x * t) / 2, a.z + (u.z * t) / 2));
         // der Vorbeigang 2 m daneben auf der Seite, die die Peilung auf 3 m weitet: ±0,6 rad + atan(2/√5) ≈ 76° neben seinem Blick
         // (der Kopf muss sich wenden, der Leib nicht)
         let [b, w] = [];
@@ -2797,11 +2793,11 @@ async function kreaturProben(r, T, opts) {
             for (const dw of [0.6, -0.6]) {
                 const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
                 const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
-                if (!b && !k.drinnen && !k.weg && k.da && frei(k, a, u) && frei(k, { x: a.x + v.x, z: a.z + v.z }, u))
+                if (!b && !k.drinnen && !k.weg && k.da && frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u))
                     [b, w] = [k, { a, u, v }];
             }
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
-        const [g, stand] = [b.leib, { x: b.ziel.x, z: b.ziel.z }];
+        const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
         const kopf = () => g.userData.rig.head.matrixWorld.elements;
         const gier = (e = kopf()) => Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
@@ -2811,17 +2807,17 @@ async function kreaturProben(r, T, opts) {
             stell(a.x, a.z);
             r._spielerLageAlt = null;
             for (let i = 0; i < 60; i++) schritt();
-            const z = { zuS: null, dMin: 99, beruehrt: [], nah: null, imBild: !echt };
+            const z = { zuS: null, dMin: 99, beruehrt: 0, imBild: null };
             for (let l = 0, t = 0, e = null; l <= 21; l += 1.4 * dt, t += dt) {
                 stell(a.x + w.u.x * l, a.z + w.u.z * l); // der Lauf: der Kreatur-Takt liest ihn aus der Lage
                 schritt();
                 if (echt) [kamera(w.u.x, w.u.z), r._loopRender()];
                 const d = ab(pm, g.position);
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
-                z.beruehrt.push(...S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).map((o) => o.heim)); // prettier-ignore
-                if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.nah, z.amEreignis] = [t, !!b.nah, Math.round(gier())];
+                z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
+                if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.amEreignis] = [t, Math.round(gier())];
                 if (e !== null && z.zuS === null && gier() <= 10)
-                    [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14]))]; // prettier-ignore
+                    [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
             // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
             for (let i = 0; i < 1800 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
@@ -2832,14 +2828,13 @@ async function kreaturProben(r, T, opts) {
             g.userData.memory = [];
             const G = [gang(1), gang(0), gang(0)];
             const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
-            if (!ort) return { fehler: "kein Ort für das Wesen neben ihm" };
-            r.damageCreature(tier(ort, "wesen"), 1e9, { source: "player" });
+            r.damageCreature(tier(ort, "wesen"), 1e9, { source: "player" }); // ohne Ort wirft der Wurf beim Namen
             const furcht = r._kreaturFurchtErinnert(g);
             G.push(gang(0));
             const je = (k) => G.map((x) => x[k]);
             return {
-                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, furcht, zuS: je("zuS"), amEreignis: je("amEreignis")[0], nah: je("nah") }, // prettier-ignore
-                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: [].concat(...je("beruehrt")) },
+                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis },
+                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt") },
             };
         };
         if (!taeter) return lauf();
@@ -3170,10 +3165,10 @@ function urteil(name, z) {
     if (name === "begegnung") {
         const [zu, d] = [z.zuS, z.dMin];
         soll(
-            zu.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && [...z.nah, ...z.imBild].every(Boolean),
-            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib ${z.nah}, im Bild ${z.imBild})`
+            zu.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every(Boolean),
+            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
         );
-        soll(!z.beruehrt.length && Math.min(...d) > 0.7, `Berührung: ${z.beruehrt.length}, Abstand min ${d.join(" / ")} m`);
+        soll(Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7, `Berührung: ${z.beruehrt}, Abstand min ${d.join(" / ")} m`);
         soll(
             z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
             `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`

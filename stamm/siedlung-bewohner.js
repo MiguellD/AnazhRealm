@@ -1647,8 +1647,8 @@ class AnazhRealm_siedlung_bewohner {
         return steht.o;
     }
 
-    // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt auf den nächsten Punkt im Ring um sich (bis 1,8 m, für den
-    // Spieler bis über seinen Abstand `kF` hinaus), der mehr als `kF` (zwei Kapseln; dem Spieler sein Abstand,
+    // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt auf den nächsten Punkt der Ringe um sich (je 0,6 m bis 1,8 m; für
+    // den Spieler je 0,3 m bis über seinen Abstand `kF` hinaus), der mehr als `kF` (zwei Kapseln; dem Spieler sein Abstand,
     // `_bewohnerSpielerAbstand`) neben dem Bein p → q des Gehenden liegt, frei von Wand und Leib ist und den er frei erreicht
     // (`platz`; wer schon beiseite steht, tritt wieder); ist sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er
     // zurück (`_tickBewohner`). Liefert, ob er Platz macht.
@@ -1656,7 +1656,8 @@ class AnazhRealm_siedlung_bewohner {
         if (o.platz && o.weg) return true; // er tritt schon beiseite
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const g = { x: o.leib.position.x, z: o.leib.position.z };
-        for (let r = 0.6; r <= Math.max(1.81, kF + 0.61); r += 0.6)
+        const dr = fuer && fuer.spieler ? 0.3 : 0.6; // dem Spieler auf 0,3 m genau: sein Abstand trägt die Erinnerung
+        for (let r = dr; r <= Math.max(1.81, kF + 0.61); r += dr)
             for (let i = 0; i < 12; i++) {
                 const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
                 const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
