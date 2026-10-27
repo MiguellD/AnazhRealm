@@ -82,7 +82,7 @@ function gassenGefaelle(v2, grund) {
 //   Tür erreichbar = die Schwelle (Boden + Diele) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
 //   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
 //   |Δh| ≤ STUFE, nie durch eine Wand oder den Keller) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
-// der Punkt (x, z) im Rahmen um (cx, cz) mit der Drehung phi
+// der Punkt (x, z) im Rahmen um (cx, cz) mit der Drehung phi (reist mit `ortUrteil` als Quelltext in die Seite)
 function lokal(cx, cz, phi, x, z) {
     const [c, s] = [Math.cos(phi || 0), Math.sin(phi || 0)];
     return [(x - cx) * c - (z - cz) * s, (x - cx) * s + (z - cz) * c];
@@ -2081,7 +2081,7 @@ hauptLauf(async () => {
         const outO = await page.evaluate(
             async (urteilSrc, dp, modus, messort) => {
                 const r = window.anazhRealm;
-                const ortUrteil = new Function("return (" + urteilSrc + ")")();
+                const ortUrteil = new Function(urteilSrc)();
                 const res = {};
                 try {
                     const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
@@ -2600,7 +2600,7 @@ hauptLauf(async () => {
                 }
                 return res;
             },
-            ortUrteil.toString(),
+            `${lokal}\nreturn ${ortUrteil}`,
             dpO,
             modus,
             messort
