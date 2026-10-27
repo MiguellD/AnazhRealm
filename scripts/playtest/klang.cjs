@@ -99,20 +99,7 @@ async function checkBandW4LofiPad(ctx) {
         const sym = r.state.symphony;
         out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
         if (out.symphonyReady) {
-            out.lofiLayerBuilt =
-                !!sym.lofi &&
-                !!sym.lofi.gain &&
-                !!sym.lofi.filter &&
-                !!sym.lofi.melodyGain &&
-                // die Lead-Stimme sitzt über dem Pad.
-                sym.lofi.melodyGain.gain.value >= 0.2 &&
-                // die Groove-Schicht + Noise-Puffer.
-                !!sym.lofi.grooveGain &&
-                !!sym.lofi.noiseBuffer &&
-                // die Bass-Schicht.
-                !!sym.lofi.bassGain &&
-                sym.lofi.degree === 0 &&
-                typeof sym.lofi.rngState === "number";
+            // die Lofi-Schichten beweist ihr Spiel (`_lofiTick` spielt einen Akkord, unten), nicht ihre Existenz
             // W4 V3 Phase 2 — die Melodie: Form (startet + endet
             // auf einem Akkord-Ton, aufsteigende Startzeiten, über
             // dem Pad), emotion-gesteuerte Dichte.
@@ -234,60 +221,56 @@ async function checkBandW4LofiPad(ctx) {
         check("W4 V2/V3 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
     } else {
         check(
-            "W4 V3: LOFI_SCALE abwesend (Zwilling fiel 19.07.) + LOFI_HARMONY (7 Stufen) frozen",
+            "W4 V3: LOFI_SCALE abwesend, LOFI_HARMONY frozen",
             w4v2Results.scaleHarmonyDefined
         );
-        check("W4 V2: LOFI_BPM abwesend (Zwilling fiel 19.07.)", w4v2Results.bpmDefined);
+        check("W4 V2: LOFI_BPM abwesend", w4v2Results.bpmDefined);
         check(
-            "W4 V3: _lofiChordFromDegree stapelt Terzen (kaltes Preset → Kern-Blues [0,5,7,12])",
+            "W4 V3: _lofiChordFromDegree stapelt Terzen",
             w4v2Results.chordFromDegree
         );
-        check("W4 V3: _lofiScaleSemitone wickelt Oktaven (6-Ton-Blues: idx 6 → +12)", w4v2Results.scaleSemitone);
+        check("W4 V3: _lofiScaleSemitone wickelt Oktaven", w4v2Results.scaleSemitone);
         check(
-            "W4 V3 Phase 3: RHYTHMUS_MUSTER.Swing (Kern) trägt kick/snare/hihat — LOFI_GROOVE_PATTERN/GROOVE_SWING abwesend",
+            "W4 V3: RHYTHMUS_MUSTER.Swing trägt den Groove",
             w4v2Results.grooveDefined
         );
         check(
-            "W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)",
+            "W4 V3: _grooveStepTime swingt den Off-Beat",
             w4v2Results.grooveStepTime
         );
         check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
         check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
-        check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
-        check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
+        check("W4 V2: hope hebt die Terz", w4v2Results.majorLeanRaisesThird);
+        check("W4 V2: sorrow verlangsamt", w4v2Results.sorrowSlowsTempo);
         if (w4v2Results.symphonyReady) {
             check(
-                "W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)",
-                w4v2Results.lofiLayerBuilt
-            );
-            check(
-                "W4 V3 Phase 2: _lofiMelodyNotes — Phrase startet + endet auf Akkord-Ton, steigt zeitlich",
+                "W4 V3: Melodie-Form",
                 w4v2Results.melodyShape
             );
             check(
-                "W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)",
+                "W4 V3: Melodie-Dichte folgt der Emotion",
                 w4v2Results.melodyDensityEmotion
             );
             check(
-                "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
+                "W4 V3: Melodie mit Rhythmus und Dynamik",
                 w4v2Results.melodyRhythmDynamics
             );
-            check("W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)", w4v2Results.worldFieldShape);
+            check("W4 V4: _lofiWorldField geclampt", w4v2Results.worldFieldShape);
             check(
-                "W4 V4 Sub-2: das Welt-Feld biast die Harmonie (helles Feld → mehr helle Stufen)",
+                "W4 V4: das Welt-Feld biast die Harmonie",
                 w4v2Results.worldFieldBiasesHarmony
             );
             check(
-                "W4 V4 Sub-2: die Emotion bleibt der dominante Bias (Emotion 0.8 > Welt-Feld 0.4)",
+                "W4 V4: die Emotion dominiert",
                 w4v2Results.emotionDominatesWorldBias
             );
             check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
             check(
-                "W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)",
+                "W4 V3: die Harmonie ist seed-deterministisch",
                 w4v2Results.harmonyDeterministic
             );
-            check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
-            check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
+            check("W4 V3: Emotion biast die Harmonie", w4v2Results.emotionBiasesHarmony);
+            check("W4 V3: _lofiTick spielt einen Akkord", w4v2Results.tickPlaysChord);
             check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
             check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
         } else {
@@ -457,13 +440,13 @@ async function checkBandSchrittKlang(ctx) {
     const alle = (...k) => k.filter((x) => c[x] !== true);
     const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");
     const konsum = alle("keineEigeneUhr", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
-    check("Schritt-Klang: der EINE Tick trägt keine eigene Uhr, die EINE Stimme keinen zweiten AudioContext und hält still, solange die Symphonie ruht; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
+    check("Schritt-Klang: Absenz-Wachen und Stimme-aus", !konsum.length, zeig(konsum));
     const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
     check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
     const timbre = alle("cDeckel");
     check("Schritt-Klang (C): die Landung bleibt unter dem gainDeckel", !timbre.length, zeig(timbre));
     const stimme = alle("eStummZaehlt", "eAnRuft", "s1LinseFeuert");
-    check(`Schritt-Klang (E) + S1: Stimme aus zählt ohne Aufruf, Stimme an ruft EINMAL je Schritt (${out.anCalls}/${out.anSchritte}), ω ≡ 0 ⇒ 0 Schritte`, !stimme.length, zeig(stimme));
+    check(`Schritt-Klang (E) + S1: ${out.anCalls}/${out.anSchritte} Aufrufe je Schritt, ω ≡ 0 ⇒ 0`, !stimme.length, zeig(stimme));
 }
 
 module.exports = {
