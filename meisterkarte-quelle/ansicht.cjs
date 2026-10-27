@@ -18,6 +18,74 @@ const balken = (p, max, gross) => `<div class="bar${gross ? " gross" : ""}" role
 const erster = (s) => { const t = String(s || ""); const i = t.search(/[.!?](\s|$)/); return i > 0 ? t.slice(0, i + 1) : t; };
 const bestHebel = (b) => (b.hebel || []).slice().sort((x, y) => (y.p_je_tag || 0) - (x.p_je_tag || 0))[0];
 
+// DER WEG ZU 330 (punkte/weg.json): jede offene Staffel mit Klasse, Aufwand und Wahrscheinlichkeit aus der Triage, dazu die
+// Wellen im Bau. Was die Buchung schon trägt, fällt heraus — die Segmente summieren sich immer auf max; was keine Zeile trägt,
+// steht offen als „ohne Triage".
+const wegPfad = path.join(__dirname, "punkte", "weg.json");
+const weg = fs.existsSync(wegPfad) ? JSON.parse(fs.readFileSync(wegPfad, "utf8")) : null;
+const erreicht = (id) => {
+    const [bk, rest] = id.split(".K");
+    const [k, s] = rest.split("#").map(Number);
+    const b = m.bereiche.find((x) => x.key === bk);
+    return !!b && b.kriterien[k - 1].punkte >= s;
+};
+const WEG_KLASSEN = [
+    ["gebucht", "gebucht", "am Kopf gemessen und gebucht"],
+    ["welle", "in Arbeit", "Zweig gebaut oder Karte läuft — fällt mit Zug und Messung"],
+    ["nur-station", "nur die Station fehlt", "das Verhalten steht im Spiel, es fehlt Werkzeug und Station (≤ 4 h)"],
+    ["schnitt+station", "Schnitt + Station", "ein Schnitt ≤ 1 Tag an EINER Wurzel, dann die Station"],
+    ["gpu-rot", "Station rot", "die Station steht und ist rot, der Täter steht beim Namen"],
+    ["gesetz", "neues Gesetz", "ein Gesetz oder Teilsystem, mehr als 1 Tag"],
+    ["pflicht", "an Pflicht-Offen", "fällt erst mit A, B, C oder E"],
+];
+const wegSektion = () => {
+    if (!weg) return "";
+    const inWelle = new Map();
+    for (const w of weg.wellen) for (const [id, z] of Object.entries(w.staffeln)) if (!erreicht(id)) inWelle.set(id, z);
+    const offen = weg.staffeln.filter((s) => !erreicht(s.id) && !inWelle.has(s.id));
+    const n = { gebucht: m.summe, welle: inWelle.size };
+    const h = {}, ew = {}, karten = {};
+    for (const s of offen) {
+        n[s.klasse] = (n[s.klasse] || 0) + 1;
+        h[s.klasse] = (h[s.klasse] || 0) + s.h;
+        ew[s.klasse] = (ew[s.klasse] || 0) + s.sicher;
+        (karten[s.klasse] = karten[s.klasse] || new Set()).add(s.buendel || s.id);
+    }
+    const rest = m.max - WEG_KLASSEN.reduce((a, [k]) => a + (n[k] || 0), 0);
+    const zeilen = WEG_KLASSEN.map(([k, name, was], i) => ({ k, name, was, i, n: n[k] || 0 }));
+    if (rest > 0) zeilen.push({ k: "rest", name: "ohne Triage", was: "offen, ohne Zeile in weg.json", i: 7, n: rest });
+    const seg = zeilen.filter((z) => z.n > 0).map((z) => `<span class="w${z.i}" style="flex-grow:${z.n}" title="${esc(z.name)}: ${z.n} Punkte"></span>`).join("");
+    // die nächsten Karten: Bündel aus Station, Schnitt und Röte nach erwarteten Punkten je Macher-Stunde
+    const b = new Map();
+    for (const s of offen.filter((x) => ["nur-station", "schnitt+station", "gpu-rot"].includes(x.klasse))) {
+        const key = s.buendel || s.id;
+        const e = b.get(key) || { key, ids: [], h: 0, ew: 0, gpu: false, karte: s.karte };
+        e.ids.push(s.id); e.h += s.h; e.ew += s.sicher; e.gpu = e.gpu || s.geraet === "gpu";
+        b.set(key, e);
+    }
+    const top = [...b.values()].sort((x, y) => y.ew / y.h - x.ew / x.h).slice(0, 10);
+    const hSum = offen.reduce((a, s) => a + s.h, 0);
+    const ewSum = offen.reduce((a, s) => a + s.sicher, 0);
+    return `
+  <section aria-labelledby="h-weg">
+    <h2 id="h-weg">Der Weg zu ${m.max}</h2>
+    <p class="sub">Jede der ${m.max - m.summe} offenen Staffeln trägt eine Klasse, einen Aufwand in Macher-Stunden und eine Wahrscheinlichkeit, dass ihre Karte den Punkt am Gerät holt (${esc(weg.quelle)}). Offen ohne Welle: ${offen.length} Staffeln, ≈ ${Math.round(hSum)} Macher-Stunden, erwartet ≈ ${Math.round(ewSum)} Punkte beim ersten Anlauf.</p>
+    <div class="flaeche">
+      <div class="weg-bar" role="img" aria-label="${zeilen.filter((z) => z.n > 0).map((z) => z.name + " " + z.n).join(", ")} von ${m.max}">${seg}</div>
+      <table class="weg-tafel">
+        <thead><tr><th scope="col">Klasse</th><th scope="col" class="z">Punkte</th><th scope="col" class="z">Macher-h</th><th scope="col" class="z">erwartet</th><th scope="col" class="z">Karten</th></tr></thead>
+        <tbody>
+${zeilen.map((z) => `          <tr><td><i class="w${z.i}" aria-hidden="true"></i><strong>${esc(z.name)}</strong><span class="meta"> — ${esc(z.was)}</span></td><td class="z">${z.n}</td><td class="z">${h[z.k] ? Math.round(h[z.k]) : "—"}</td><td class="z">${ew[z.k] ? de(ew[z.k], 1) : "—"}</td><td class="z">${karten[z.k] ? karten[z.k].size : z.k === "welle" ? new Set(inWelle.values()).size : "—"}</td></tr>`).join("\n")}
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin-top:16px">Die nächsten Karten (erwartete Punkte je Macher-Stunde)</h3>
+    <ol class="liste top" style="margin-top:8px">
+${top.map((e) => `      <li class="flaeche"><div class="kopf"><strong>${esc(e.key)}</strong><span class="rate">+${e.ids.length} · ${Math.round(e.h)} h · ${e.gpu ? "GPU" : "headless"}</span></div><p class="meta">${esc(e.ids.join(" · "))} — ${md(erster(e.karte))}</p></li>`).join("\n")}
+    </ol>
+  </section>`;
+};
+
 const altSkala = m.verlauf.filter((v) => v.skala !== "2.0");
 const neuSkala = m.verlauf.filter((v) => v.skala === "2.0");
 const verlaufText = `Alte Skala (9 Bereiche, max 90): ${altSkala.map((v) => `${v.stand.slice(8, 10)}.${v.stand.slice(5, 7)}. ${v.summe}`).join(" · ")}. Neue Skala (33 Bereiche, max 330): ${neuSkala.map((v) => `${v.stand.slice(8, 10)}.${v.stand.slice(5, 7)}. ${v.summe}`).join(" · ")}.`;
@@ -59,16 +127,20 @@ const html = `<title>Meisterkarte</title>
   :root {
     --bg: #f5f4ef; --fg: #1c1e20; --muted: #5c6166; --card: #ffffff; --line: #e2dfd6; --track: #e9e6dd;
     --fill: #2f6f5e; --fill-strong: #245a4c; --dot-off: #d3cfc4; --chip: #e6efea; --chip-fg: #245a4c; --code: #efece4;
+    /* der Weg zu 330: EINE Grün-Rampe nach Nähe zum Punkt (gebucht am dunkelsten), ordinal validiert gegen die Fläche */
+    --w0: #0f3029; --w1: #1b4a3e; --w2: #286253; --w3: #377a68; --w4: #49917d; --w5: #5ea692; --w6: #77b8a4; --w7: #d3cfc4;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
       --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+      --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark; --bg: #111315; --fg: #e7e5e0; --muted: #9ba1a7; --card: #1a1d20; --line: #2a2e32; --track: #2a2e33;
     --fill: #5fb497; --fill-strong: #8fd3bc; --dot-off: #3a4045; --chip: #1f2a26; --chip-fg: #8fd3bc; --code: #22262a;
+    --w0: #b5e8d8; --w1: #94d4c0; --w2: #76bea7; --w3: #5da68f; --w4: #4a8e78; --w5: #3b7764; --w6: #306253; --w7: #3a4045;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
@@ -113,6 +185,18 @@ const html = `<title>Meisterkarte</title>
   .top li::before { counter-increment: top; content: counter(top); position: absolute; left: 16px; top: 15px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--chip); color: var(--chip-fg); font-size: 0.85rem; font-weight: 650; }
   .meta { color: var(--muted); font-size: 0.875rem; margin: 2px 0 0; }
   .regeln li { font-size: 0.9rem; }
+  .weg-bar { display: flex; gap: 2px; height: 28px; margin: 4px 0 14px; }
+  .weg-bar > span { display: block; min-width: 3px; flex-basis: 0; }
+  .weg-bar > span:first-child { border-radius: 4px 0 0 4px; }
+  .weg-bar > span:last-child { border-radius: 0 4px 4px 0; }
+  .w0 { background: var(--w0); } .w1 { background: var(--w1); } .w2 { background: var(--w2); } .w3 { background: var(--w3); }
+  .w4 { background: var(--w4); } .w5 { background: var(--w5); } .w6 { background: var(--w6); } .w7 { background: var(--w7); }
+  .weg-tafel { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .weg-tafel th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--line); }
+  .weg-tafel td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .weg-tafel .z { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .weg-tafel td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
+  @media (max-width: 560px) { .weg-tafel .meta { display: none; } }
   footer { color: var(--muted); font-size: 0.85rem; margin-top: 32px; }
   footer p { margin: 0 0 4px; }
 </style>
@@ -128,6 +212,7 @@ const html = `<title>Meisterkarte</title>
       <p class="meta">${md(m.text.messschuldErwartung)}</p>
     </section>
   </header>
+${wegSektion()}
 
   <section aria-labelledby="h-vision">
     <h2 id="h-vision">Was AnazhRealm im AAAA-Zustand ist</h2>
