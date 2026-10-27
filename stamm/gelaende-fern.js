@@ -451,6 +451,7 @@ class AnazhRealm_gelaende_fern {
             feldEdits: st.worldMeta && st.worldMeta.voxelEdits,
             feldEditsN: (st.worldMeta && st.worldMeta.voxelEdits && st.worldMeta.voxelEdits.length) | 0,
             nachEdit: [],
+            editFlug: 0, // die Edit-Bestellungen im Flug (`_fernRingUmEdits`)
             refreshed: 0, // eingehängte Punkte (Linse)
             ready: false,
         };
@@ -1008,37 +1009,6 @@ class AnazhRealm_gelaende_fern {
         return n;
     }
 
-    // DER EDIT IN DER FERNE (gelaende.K2 (d)): jeder gerechnete Punkt des Rings unter der Säule des Edits `e` trägt seine Fläche
-    // neu — die Nässe der Ferne (`_fernNass`) liest die Edits über das Gesetz des Kerns (`editHoehe`), wie der Fern-Faden für
-    // jeden Ring, den er danach rechnet —, durch die EINE Setz-Naht im Takt des Edits. Gefragt werden nur die Reihen, deren
-    // Radius die Säule (samt Snap der Schale) schneidet (Lehre 25).
-    _fernRingEdit(fr, e) {
-        const W = AnazhRealm.FERN_RING.winkel;
-        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        const aus = { y: 0, spiegel: 0 };
-        const o = {};
-        const bewegt = fr.schalen.map(() => []);
-        const d = Math.hypot(e.x - fr.anchorX, e.z - fr.anchorZ);
-        fr.schalen.forEach((sh, s) => {
-            const zeile = (rad) =>
-                ((sh.reihen - 1) * Math.log(Math.max(rad, sh.inner) / sh.inner)) / Math.log(sh.aussen / sh.inner);
-            const bis = Math.min(sh.reihen - 1, Math.ceil(zeile(d + e.r + sh.snap)));
-            for (let row = Math.floor(zeile(d - e.r - sh.snap)); row <= bis; row++)
-                for (let ai = 0; ai < W; ai++) {
-                    AnazhRealm._fernRingOrt(fr, sh, row, ai, o);
-                    const g = sh.off + row * W + ai;
-                    if (g >= fr.cursor || (o.x - e.x) ** 2 + (o.z - e.z) ** 2 > e.r * e.r) continue;
-                    this._fernNass(o.x, o.z, fr.law[g], wl, aus);
-                    fr.nassY[g] = aus.y;
-                    fr.spiegel[g] = aus.spiegel;
-                    const p = this._fernRingPunkt(fr, g);
-                    this._fernRingSetzVertex(fr, p, wl);
-                    bewegt[s].push(p.li);
-                }
-        });
-        this._fernRingHoch(fr, bewegt);
-    }
-
     // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je Schale die bewegten Punkte (`bewegt[s]`, lokale Indizes) — Lage, Farben
     // und die Normalen (das Licht braucht sie) NUR an den Ecken der Dreiecke um einen bewegten Punkt (`_fernRingNormalen`).
     _fernRingHoch(fr, bewegt) {
@@ -1345,12 +1315,16 @@ class AnazhRealm_gelaende_fern {
         );
     }
 
-    // DIE EDITS IM HORIZONT (bauen.K4: der Fern-Ring zeigt den Edit): seit dem Edit-Stand des Rings (`feldEdits`, `feldEditsN`)
-    // neue Edits bestellen je Schale die Ecken um Reihe und Winkel ihrer Mitte um den Anker neu, je ±2 (das Snap verschiebt eine
-    // Ecke um weniger als eine Masche), beim Fern-Faden, dessen Gesetz die Krone der Füll-Edits in der Masche trägt (`fernKrone`);
-    // die Antwort hängt `_fernRingEinhaengen` ein. Eine neue Liste (die erste ausgenommen) bestellt den ganzen Ring. Bis bk4-turm
-    // sah der Ring einen Edit nur an der Naht (`feldY`): der 70-m-Turm stand 320 m vor dem Spieler nicht im Horizont (Ring
-    // 89–91 m unter der Krone 160 m).
+    // DIE EDITS IM HORIZONT (bauen.K4: der Fern-Ring zeigt den Edit; gelaende.K2 (d): er trägt JEDEN Edit): seit dem Edit-Stand
+    // des Rings (`feldEdits`, `feldEditsN`) neue Edits bestellen je Schale die Ecken über ihrem Fußabdruck neu — die Reihen und
+    // Winkel, die die Säule samt Snap der Schale schneidet (r bis 12 m: an 150 m trug das feste ±2 nur ±9,8 m), je ±2 darüber
+    // (die Ecke, deren Masche die Mitte trägt) —, beim Fern-Faden, dessen Gesetz die Krone der Füll-Edits in der Masche
+    // (`fernKrone`) und die Fläche über der Säule (`fernNass`, gelaende-core `editHoehe`) trägt; die Antwort hängt
+    // `_fernRingEinhaengen` ein, `editFlug` zählt die Bestellungen im Flug (die Laufzeit-Marke der Linsen). Eine neue Liste (die
+    // erste ausgenommen) bestellt den ganzen Ring. Bis bk4-turm sah der Ring einen Edit nur an der Naht (`feldY`): der 70-m-Turm
+    // stand 320 m vor dem Spieler nicht im Horizont (Ring 89–91 m unter der Krone 160 m). Der Haupt-Faden rechnet die Ferne
+    // nicht: bis 27.10. setzte ein zweiter Weg im Takt des Edits die Nässe mit dem Gesetz von vorher (`_fernRingEdit`), und
+    // der Faden hob 3 von 5 Punkten am Damm einen Takt später um 0,423 m.
     _fernRingUmEdits(fr) {
         const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         const [von, bis] = [fr.feldEditsN | 0, Array.isArray(ed) ? ed.length : 0];
@@ -1364,19 +1338,28 @@ class AnazhRealm_gelaende_fern {
             if (!(rad > 0)) continue;
             const ai = Math.round((Math.atan2(e.z - fr.anchorZ, e.x - fr.anchorX) / (2 * Math.PI)) * W);
             for (const sh of fr.schalen) {
-                const row = Math.round(Math.log(rad / sh.inner) / Math.log(sh.q));
-                for (let r = Math.max(0, row - 2); r <= Math.min(sh.reihen - 1, row + 2); r++)
-                    for (let a = ai - 2; a <= ai + 2; a++) gs.add(sh.off + r * W + (((a % W) + W) % W));
+                const R = (e.r > 0 ? e.r : 0) + sh.snap;
+                const zeile = (d) => Math.log(d / sh.inner) / Math.log(sh.q);
+                const da = Math.ceil((Math.asin(Math.min(1, R / rad)) / (2 * Math.PI)) * W) + 2;
+                const r1 = Math.min(sh.reihen - 1, Math.ceil(zeile(rad + R)) + 2);
+                for (let r = Math.max(0, Math.floor(zeile(rad - R)) - 2); r <= r1; r++)
+                    for (let a = ai - da; a <= ai + da; a++) gs.add(sh.off + r * W + (((a % W) + W) % W));
             }
         }
         if (!gs.size) return;
         const liste = Int32Array.from(gs);
         const gen = fr.gen | 0;
+        fr.editFlug++;
         this._fernRingBestellen(fr, liste)
             .then((antwort) => {
-                if (this.state.fernRing === fr && (fr.gen | 0) === gen) fr.nachEdit.push({ liste, antwort });
+                if (this.state.fernRing !== fr || (fr.gen | 0) !== gen) return; // überholt (Re-Anker/neue Liste)
+                fr.editFlug--;
+                fr.nachEdit.push({ liste, antwort });
             })
-            .catch((e) => this._stoffBruch("der Fern-Ring (der Fern-Faden, Edit)", e));
+            .catch((e) => {
+                if (this.state.fernRing === fr && (fr.gen | 0) === gen) fr.editFlug--;
+                this._stoffBruch("der Fern-Ring (der Fern-Faden, Edit)", e);
+            });
     }
 
     // DER NEUE RING AM ANKER: der Fern-Faden rechnet ihn ganz in Scheiben (Re-Anker, eine neue Edit-Liste) — laufende Bestellungen
@@ -1387,6 +1370,7 @@ class AnazhRealm_gelaende_fern {
         fr.flug = 0;
         fr.einhaengen.length = 0;
         fr.nachEdit.length = 0;
+        fr.editFlug = 0;
         fr.gen = (fr.gen || 0) + 1;
         fr.vollY.fill(NaN);
         fr.feldY.fill(NaN);
@@ -1468,7 +1452,6 @@ class AnazhRealm_gelaende_fern {
                         const p = this._fernRingPunkt(fr, i);
                         if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 < r2) fr.feldY[p.g] = NaN;
                     }
-                    this._fernRingEdit(fr, e);
                 }
             } else fr.feldY.fill(NaN);
             fr.feldEdits = ed;

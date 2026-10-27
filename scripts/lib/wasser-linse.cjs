@@ -826,8 +826,9 @@ function wasserFlaechen(r, x, z) {
 // Laufs) das GEZEICHNETE Wasser gegen die Überlaufhöhe (der niedrigste Pfad über den Boden des Feldes `_voxelSurfaceY` von
 // dort zum Fluss 12 m stromab, Gitter 0,9 m, ±50 m, halbiert auf 1 cm) und gegen den Fluss von vorher (`_hydroSpiegelQuer`),
 // 6 und 12 m stromab gegen den Fluss (der Abfluss hält). (d) `o.ferne`: der Spieler 150 m auf der Achse des Damms (dort löst
-// die Masche des Rings ihn auf: ~5 × 15 m), der Fern-Ring unter den Säulen vor und nach dem Takt des Edits (byte-Diff), und
-// der Fern-Faden, der jeden späteren Ring rechnet, an den Säulen-Mitten auf der Krone.
+// die Masche des Rings ihn auf: ~5 × 15 m), der Fern-Ring unter den Säulen vor dem Edit und nach der Antwort des Fern-Fadens
+// auf ihn (byte-Diff), und der Fern-Faden, der jeden späteren Ring rechnet (die Bestellung des Rings), an denselben Punkten
+// auf der Krone.
 async function wasserDamm(o = {}) {
     const r = window.anazhRealm;
     const st = r.state;
@@ -861,12 +862,21 @@ async function wasserDamm(o = {}) {
     }
     for (const [x, z] of saeulen) r.dslRun(["voxel_fill", x, krone - 3.5, z, 3.5], { source: "human" });
     if (o.ferne) {
-        takt();
+        // der Edit reist durch die EINE Bestellung des Rings (`_fernRingUmEdits`): die Probe wartet auf ihre Antwort, eingehängt
+        // (die Laufzeit-Marke `editFlug`, der Edit-Stand `feldEditsN` des Rings), nie auf eine Frist
+        const ed = st.worldMeta.voxelEdits;
+        await window.__gebautNach("der Edit im Fern-Ring", {
+            fertig: () => fr().feldEditsN === ed.length && !fr().editFlug && !fr().nachEdit.length,
+            takt,
+            max: 600,
+        });
         const hub = [...ring].map(([n, v]) => y(unter(n)) - v);
-        // der Fern-Faden (jeder Ring nach dem Edit, `_fernAuftrag` „ring“) an den Säulen-Mitten: die Fläche auf der Krone
-        const [ht, n] = [new Float64Array(saeulen.length), saeulen.length];
-        const fa = await r._fernAuftrag("ring", { punkte: new Float64Array(saeulen.flat()), ht, hr: ht, rad: ht.map(() => 1e4), zone: new Uint8Array(n), ax: a.x, az: a.z });
-        aus.ring = { punkte: hub.length, anders: hub.filter(Boolean).length, hubM: f2(Math.max(0, ...hub)), faden: fa.nassY.filter((v) => Math.abs(v - krone) < 0.01).length };
+        // der Fern-Faden, der jeden späteren Ring rechnet: die EINE Bestellung des Rings (`_fernRingBestellen` — jedes Feld, das
+        // der Faden liest) an denselben Punkten unter den Säulen, ihre Fläche auf der Krone (oder über ihr: die Krone der Masche,
+        // `fernKrone`, liest das Feld, dessen Vereinigung zweier Säulen die Krone um 0,42 m hebt). z44: ein Auftrag von Hand ohne
+        // Winkel und Reihen-Faktor der Masche (`ang`, `q`) warf im Faden (`fernKrone`: „reading '0'“), die Deck-Mischung fehlte still.
+        const fa = await r._fernRingBestellen(fr(), Int32Array.from(ring.keys()));
+        aus.ring = { punkte: hub.length, anders: hub.filter(Boolean).length, hubM: f2(Math.max(0, ...hub)), faden: fa.nassY.filter((v) => v >= krone - 0.01).length };
         return aus;
     }
     const ruht = () => !((st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0));

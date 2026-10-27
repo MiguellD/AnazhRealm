@@ -273,11 +273,14 @@ self.onmessage = function (e) {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
     } catch (err) {
+        // der Stapel reist mit (`stapel`): der Main wirft ihn weiter, jede Linse nennt die Zeile im Faden, die warf (z44: die
+        // Meldung „reading '0'“ allein verbarg `fernAuftrag`)
         self.postMessage({
             type: "error",
             op: msg.type,
             requestId: msg.requestId || null,
             message: String(err && err.message ? err.message : err),
+            stapel: err && err.stack ? String(err.stack) : null,
         });
     }
 };
@@ -554,6 +557,7 @@ waldTakt.port1.onmessage = () => {
             op: msg.type,
             requestId: msg.requestId || null,
             message: String(err && err.message ? err.message : err),
+            stapel: err && err.stack ? String(err.stack) : null,
         });
     }
     waldWecken();

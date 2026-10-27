@@ -140,7 +140,10 @@ class AnazhRealm_gelaende_chunks {
                         const pending = this.state.voxelWorkerPending.get(msg.requestId);
                         if (pending) {
                             this.state.voxelWorkerPending.delete(msg.requestId);
-                            pending.reject(new Error(msg.message));
+                            // der Wurf trägt den Stapel des Fadens (die Zeile, die warf), nie nur die Meldung
+                            pending.reject(
+                                Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null)
+                            );
                         }
                     }
                     this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
@@ -370,7 +373,8 @@ class AnazhRealm_gelaende_chunks {
             const p = msg.requestId ? f.pending.get(msg.requestId) : null;
             if (!p) return;
             f.pending.delete(msg.requestId);
-            if (msg.type === "error") p.reject(new Error(msg.message));
+            if (msg.type === "error")
+                p.reject(Object.assign(new Error(msg.message), msg.stapel ? { stack: msg.stapel } : null));
             else p.resolve(msg);
         };
         worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));

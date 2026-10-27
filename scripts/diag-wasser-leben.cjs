@@ -23,7 +23,7 @@
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 //   G6 · G7 · G8    der Damm aus dem Verb (gelaende.K2 (b), (d)): stromauf steht der Stausee auf der Überlaufhöhe (±0,1 m),
-//                   stromab fließt der Fluss auf seinem Spiegel; der Fern-Ring trägt den Edit im Takt und am neuen Anker (--bild).
+//                   stromab fließt der Fluss auf seinem Spiegel; der Fern-Ring trägt den Edit aus dem Faden und am neuen Anker (--bild).
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -530,8 +530,8 @@ function urteil(b) {
         }
     }
     // G6 · G7 · G8 — DER DAMM (gelaende.K2 (b), (d)): der Stausee steht auf der Überlaufhöhe (±0,1 m) über dem Fluss von
-    // vorher, stromab fließt der Fluss auf seinem Spiegel; am Fern-Ring trägt jeder Punkt unter den Säulen den Edit im Takt des
-    // Edits und am neuen Anker die Krone
+    // vorher, stromab fließt der Fluss auf seinem Spiegel; am Fern-Ring trägt jeder Punkt unter den Säulen den Edit nach der
+    // Antwort des Fern-Fadens und am neuen Anker die Krone
     const d = b.damm;
     if (d && (d.fehler || !(d.saeulen >= 3))) v.push(`G6: ${d.fehler || d.saeulen + " Säulen"}`);
     for (const u of d && !d.fehler ? d.stromauf : [])
@@ -539,9 +539,13 @@ function urteil(b) {
             v.push(`G6 KEIN STAU: ${u.d} m stromauf ${u.wasser} m, Überlauf ${u.ueberlauf} m, Fluss ${u.fluss} m`);
     for (const u of d && !d.fehler ? d.stromab : [])
         if (!(Math.abs(u.wasser - u.fluss) <= 0.1)) v.push(`G7 KEIN ABFLUSS: ${u.d} m stromab ${u.wasser} m, Fluss ${u.fluss} m`);
+    // ein Feld der Ferne, das der Befund nicht trägt, heißt beim Namen (z43 an der Radeon: „Ring undefined/undefined“)
     const f = b.ferne && b.ferne.ring;
-    if (b.ferne && !(f && f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === b.ferne.saeulen))
-        v.push(`G8 FERNE: ${f ? `Ring ${f.anders}/${f.punkte}, Hub ${f.hubM} m, Faden ${f.faden}/${b.ferne.saeulen}` : b.ferne.fehler}`);
+    const fehlt = f ? ["punkte", "anders", "hubM", "faden"].filter((k) => !Number.isFinite(f[k])) : [];
+    if (b.ferne && !f) v.push(`G8 FERNE: ${b.ferne.fehler || "der Befund trägt keinen Ring"}`);
+    else if (fehlt.length) v.push(`G8 FERNE: das Feld ${fehlt.map((k) => "ferne.ring." + k).join(", ")} fehlt`);
+    else if (b.ferne && !(f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte))
+        v.push(`G8 FERNE: Ring ${f.anders}/${f.punkte}, Hub ${f.hubM} m, Faden ${f.faden}/${f.punkte}`);
     return v;
 }
 
@@ -670,7 +674,7 @@ function selbsttest() {
             stromauf: [6, 12].map((d) => ({ d, wasser: 25.25, ueberlauf: 25.24, fluss: 24.88 })),
             stromab: [6, 12].map((d) => ({ d, wasser: 24.63, fluss: 24.63 })),
         },
-        ferne: { saeulen: 21, ring: { punkte: 5, anders: 5, hubM: 2.84, faden: 21 } },
+        ferne: { saeulen: 21, ring: { punkte: 5, anders: 5, hubM: 2.84, faden: 5 } },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
@@ -850,6 +854,8 @@ function selbsttest() {
         ["G6 KEIN STAU", (b) => Object.assign(b.damm.stromauf[0], { wasser: 24.88 })],
         ["G7 KEIN ABFLUSS", (b) => (b.damm.stromab[1].wasser = null)],
         ["G8 FERNE", (b) => Object.assign(b.ferne.ring, { anders: 0, hubM: 0, faden: 0 })],
+        // z43/z44: der Ferne-Teil lieferte Felder, die es nicht gab — die Wand nennt das fehlende beim Namen
+        ["G8 FERNE: das Feld ferne.ring.faden fehlt", (b) => delete b.ferne.ring.faden],
         ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
         // DIE TEILE: die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
         // trockener Ursprung in nur EINEM Teil bleibt rot im Ganzen
@@ -1103,7 +1109,8 @@ async function lauf() {
         } else console.log("\nWASSER-LEBEN GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
-        console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
+        // der Stapel nennt die Zeile, die las (aus der Seite: die Probe `__wasser*` oder der Stamm), nie nur die Meldung
+        console.log("WASSER-LEBEN ABBRUCH:", (e && (e.stack || e.message)) || e);
         annotation(`ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`);
         exit = 1;
     } finally {
