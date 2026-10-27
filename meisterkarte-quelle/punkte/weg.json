@@ -37,6 +37,21 @@
     "material.K3#2": "material-k3-stufen",
     "schatten.K1#2": "schatten-k1-zuwachs"
    }
+  },
+  {
+   "name": "w3b",
+   "art": "Cloud-Welle 27.10. 23:55",
+   "staffeln": {
+    "luftwasser.K1#1": "vogel-zensus",
+    "luftwasser.K1#2": "vogel-zensus",
+    "klang.K3#1": "klang-raum",
+    "studios.K3#1": "kosten-leiste",
+    "ultiversum.K2#1": "fusion-determ",
+    "ki.K3#1": "ki-seele-regeln",
+    "ki.K4#1": "ki-seele-regeln",
+    "affekt.K2#1": "affekt-emotion",
+    "affekt.K3#1": "affekt-emotion"
+   }
   }
  ],
  "staffeln": [
