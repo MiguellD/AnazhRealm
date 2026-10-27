@@ -1,7 +1,7 @@
 {
  "sha": "19606f2ee8492be703fb6aff52d4e48c9279919f",
  "geraet": "radeon",
- "zeit": "2026-10-27T20:05:43.280Z",
+ "zeit": "2026-10-27T20:22:15.542Z",
  "host": "MiguellD",
  "je": {
   "siedlung.K5#1": {
@@ -224,27 +224,25 @@
    "bahn": "2/2"
   },
   "ferne.K1#1": {
-   "gruen": false,
-   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, Adapter ungenannt",
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 2.22,
-   "grund": "ROT: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, Adapter ungenannt",
+   "minuten": 2.28,
    "gpu": "amd/rdna-3",
    "warten": 0.08,
-   "zeit": "2026-10-27T20:03:30.354Z",
+   "zeit": "2026-10-27T20:22:15.542Z",
    "abdruck": "bbee11502f53",
    "port": 7754,
    "bahn": "1/1"
   },
   "ferne.K2#1": {
-   "gruen": false,
-   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, Adapter ungenannt",
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 2.22,
-   "grund": "ROT: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, Adapter ungenannt",
+   "minuten": 2.28,
    "gpu": "amd/rdna-3",
    "warten": 0.08,
-   "zeit": "2026-10-27T20:03:30.354Z",
+   "zeit": "2026-10-27T20:22:15.542Z",
    "abdruck": "a2c61a28b0e5",
    "port": 7754,
    "bahn": "1/1",
