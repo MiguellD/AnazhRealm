@@ -1872,7 +1872,14 @@ class AnazhRealm_vegetation_baum {
             const rs = Math.sin(e.phi || 0);
             const dxw = Number.isFinite(ob.cx) ? ob.cx - e.x : 0;
             const dzw = Number.isFinite(ob.cz) ? ob.cz - e.z : 0;
-            return { ex: ob.ex, ez: ob.ez, ox: dxw * rc - dzw * rs, oz: dxw * rs + dzw * rc, saum, tuer: e.tuer || null };
+            return {
+                ex: ob.ex,
+                ez: ob.ez,
+                ox: dxw * rc - dzw * rs,
+                oz: dxw * rs + dzw * rc,
+                saum,
+                tuer: e.tuer || null,
+            };
         }
         const f = e.fundament;
         if (f && Number.isFinite(f.ex) && Number.isFinite(f.ez))
@@ -1918,7 +1925,8 @@ class AnazhRealm_vegetation_baum {
             if (fp) return fp;
         }
         const t = e.tuer;
-        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0, tuer: t };
+        if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
+            return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0, tuer: t };
         if (art !== undefined) {
             const g = this._grundrissGesetz(art);
             if (!g) return null;
@@ -1936,7 +1944,8 @@ class AnazhRealm_vegetation_baum {
             let fp = null;
             if (rec.kind === "haus") {
                 const hausParams =
-                    AnazhRealm.Gesetz("fachwerk:hausParams", null) || AnazhRealm._kernPflichtBruch("fachwerk:hausParams");
+                    AnazhRealm.Gesetz("fachwerk:hausParams", null) ||
+                    AnazhRealm._kernPflichtBruch("fachwerk:hausParams");
                 const massBau =
                     AnazhRealm.Gesetz("fachwerk:massBau", null) || AnazhRealm._kernPflichtBruch("fachwerk:massBau");
                 const p = hausParams(pre, ov);
@@ -1966,7 +1975,8 @@ class AnazhRealm_vegetation_baum {
                           : 1) * k;
                 if (tr && tr.typ === "kreis" && tr.r > 0)
                     fp = { ex: tr.r * gr, ez: tr.r * gr, ox: 0, oz: 0, tuer: null };
-                else if (tr && tr.ex > 0 && tr.ez > 0) fp = { ex: tr.ex * gr, ez: tr.ez * gr, ox: 0, oz: 0, tuer: null };
+                else if (tr && tr.ex > 0 && tr.ez > 0)
+                    fp = { ex: tr.ex * gr, ez: tr.ez * gr, ox: 0, oz: 0, tuer: null };
             }
             if (M.size >= 256) M.clear();
             M.set(key, fp);
