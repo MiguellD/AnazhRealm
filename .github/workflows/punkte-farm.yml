@@ -4,7 +4,8 @@ run-name: Punkte-Farm ${{ inputs.sha }} ${{ inputs.auswahl }} → ${{ inputs.koo
 # DIE PUNKTE-FARM (27.10., Karte punkte-farm; die Regel des Schöpfers: „Die Prüfung darf nie länger dauern als das Erstellen.“):
 # die headless-Stationen der Punkte-Maschine (Zweig koordination, meisterkarte-quelle/punkte/punkte.cjs) fahren nicht auf dem
 # Laptop (Takt an e7a28b06: 76 Stationen Σ 266 min, 60 min Wanduhr in 3 Bahnen neben der Radeon), sondern hier, je Scheibe ein
-# Läufer — die Wanduhr ist der längste Lauf samt Vorbereitung. Drei Stufen:
+# Läufer — die Wanduhr ist der längste Lauf samt Vorbereitung (Beweis an dc06b495: 83 Stationen, die Läufer 4,8–9,4 min, ki.K1#2
+# allein 22,9 min am CPU-Ollama; der Laptop-Takt desselben Kopfs trug nach 2 h 10 min 8 von 81). Drei Stufen:
 #   scheiben — die Maschine wählt die Stationen am SHA (alle · offen = die Buchung fände sie nicht frisch · nur) und schneidet die
 #              Läufe (Zwillinge EIN Lauf) in höchstens `jobs` Scheiben, die schwersten zuerst (`punkte.cjs scheiben`)
 #   messen   — je Scheibe `punkte.cjs run --nur <scheibe> --bahnen 1 --farm <name>`: derselbe Läufer, dieselben Abdrücke wie am
@@ -17,9 +18,6 @@ run-name: Punkte-Farm ${{ inputs.sha }} ${{ inputs.auswahl }} → ${{ inputs.koo
 # [--offen|--nur …]` am Laptop (farmRufen: dispatch, warten, die Messung holen — headless misst nie am Platz), von Hand
 # Actions → Punkte-Farm. Zwei Läufe am selben SHA vertragen sich (vereine je Versuch auf dem frischen Zweig), darum kein concurrency.
 on:
-    # PROBE (fällt vor dem Zug): je Push auf den Zweig ein Lauf mit den Vorgaben unten
-    push:
-        branches: [punkte-farm]
     workflow_dispatch:
         inputs:
             sha:
@@ -45,33 +43,10 @@ permissions:
     contents: read
 
 env:
-    KOORD: ${{ inputs.koord || 'punkte-farm-beweis' }}
+    KOORD: ${{ inputs.koord }}
     K: .claude/worktrees/koordination
 
 jobs:
-    # PROBE (fällt vor dem Zug): der Selbsttest der Maschine auf einem Läufer (am Laptop reißen unter der Last des Takts die
-    # Schloss-Fälle BAHNEN ihre 120-s-Fenster)
-    selbsttest:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  filter: blob:none
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: "22"
-            - name: Selbsttest der Maschine
-              shell: bash
-              run: |
-                  git fetch -q --depth=1 --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
-                  git worktree add -q --detach --no-checkout "$K" "origin/$KOORD"
-                  git -C "$K" sparse-checkout set --no-cone '/meisterkarte-quelle/' '!/meisterkarte-quelle/punkte/messung/roh/'
-                  git -C "$K" reset -q --hard
-                  git -C "$K" log --oneline -1
-                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" selbsttest
-                  node "$K/meisterkarte-quelle/punkte/punkte.cjs" liste --kopf HEAD | tail -1
-
     scheiben:
         runs-on: ubuntu-latest
         timeout-minutes: 15
@@ -96,10 +71,10 @@ jobs:
               id: plan
               shell: bash
               env:
-                  SHA: ${{ inputs.sha || 'dc06b495020b357431dc998342945d2352e0beee' }}
-                  AUSWAHL: ${{ inputs.auswahl || 'nur' }}
-                  NUR: ${{ inputs.nur || 'fahrzeug.K1#1' }}
-                  JOBS: ${{ inputs.jobs || '1' }}
+                  SHA: ${{ inputs.sha }}
+                  AUSWAHL: ${{ inputs.auswahl }}
+                  NUR: ${{ inputs.nur }}
+                  JOBS: ${{ inputs.jobs }}
               run: |
                   echo "beginn=$(date +%s)" >> "$GITHUB_OUTPUT"
                   git fetch -q --filter=blob:none origin "+refs/heads/$KOORD:refs/remotes/origin/$KOORD"
