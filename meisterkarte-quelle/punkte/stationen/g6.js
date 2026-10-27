@@ -545,6 +545,112 @@ module.exports = [
         quelle: "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden",
     },
     {
+        kriterium: "klang.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // EIN Lauf, alle vier Teile: (S) die Schritte je Stoff wie klang.K4#1 (m15-schritt im echten Spiel, Analyser am Schritt-Gain,
+        // stdout); (F) der Körper-Teil des Klang-Zensus (`diag-klang-zensus --json`, Port {PORT}+1, j.koerper): je Abgriff liegt der
+        // Master-Bus EINEN Klang-Takt lang an einem OfflineAudioContext, die Linse fährt den festen Schritt des Leibs —
+        // motor [Upm, Hz] im Sattel des GT mit Gas (der Grundton = die stärkste Linie gegen die Drehzahl klang `fahrtUpm`),
+        // landung [h, Aufprall des Leib-Lösers `_sturzTempo`, Landungen, Aufprall des Klangs, dB] für einen Hopser aus 0,2 m und
+        // Stürze aus 1 · 2 · 4 · 8 · 12 m, doppler [wo, soll, ist] an sechs Punkten 9 · 4,5 · 2 m vor und hinter dem nächsten Punkt
+        // einer Vorbeifahrt (die Periode des Abrollens, c 343 m/s). Urteil, nie weicher als die Staffel: Schritte ≥ 3 Stoffe
+        // (n ≥ 5) mit kleinstem Abstand ≥ 300 Hz UND Motor r ≥ 0,9 (≥ 10 Abgriffe) UND Landung genau einmal je Sturz mit dem
+        // Aufprall des Leib-Lösers, je Stufe lauter und r(dB, Aufprall) ≥ 0,9, der Hopser stumm UND Doppler: die Radial-
+        // Geschwindigkeit am Ohr v = c·(1 − 1/f) über die des Gesetzes, beide Vorzeichen, Steigung durch den Ursprung 1 ± 10 %,
+        // r ≥ 0,9, jeder Punkt ± 10 % — dazu kein Befund „F …" der Linse. Der Körper-Teil rechnet am Null-Renderer (das Klang-Gesetz
+        // ist CPU), die Schritte tragen die Karte (`[linse-gpu]` aus m15-schritt).
+        befehl: [
+            "bash",
+            "-c",
+            HARNESS +
+                ': werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten; ' +
+                'KLANG_ZENSUS_PORT=$(( {PORT} + 1 )) node scripts/diag-klang-zensus.cjs --json "$A" > "$D/zensus.log" 2>&1; ' +
+                'echo "zensus EXIT=$?"; grep -F "(F)" "$D/zensus.log"',
+        ],
+        gpu: true,
+        zeit: false,
+        minuten: 9,
+        urteil: (j, lauf) => {
+            const f = (x, n) => (typeof x === "number" && isFinite(x) ? x.toFixed(n) : "—");
+            const r = (a, b) => {
+                const mu = (v) => v.reduce((s, x) => s + x, 0) / v.length;
+                const [ma, mb] = [mu(a), mu(b)];
+                const k = (u, mu1, v, mu2) => u.reduce((s, x, i) => s + (x - mu1) * (v[i] - mu2), 0);
+                return a.length > 2 ? k(a, ma, b, mb) / Math.sqrt(k(a, ma, a, ma) * k(b, mb, b, mb)) : NaN;
+            };
+            // (S) die Schritte je Stoff — dasselbe Urteil wie klang.K4#1
+            const je = [];
+            for (const l of String(lauf.stdout || "").split(/\r?\n/)) {
+                const m = /^(\S+) n (\d+) median ([\d.]+) p10 (\S+) p90 (\S+)$/.exec(l.trim());
+                if (m && !/^(undefined|null)$/.test(m[1]) && +m[2] >= 5) je.push({ stoff: m[1], n: +m[2], hz: +m[3] });
+            }
+            let dHz = je.length >= 3 ? Infinity : NaN;
+            for (let a = 0; a < je.length; a++) for (let b = a + 1; b < je.length; b++) dHz = Math.min(dHz, Math.abs(je[a].hz - je[b].hz));
+            const schritt = dHz >= 300;
+            const F = j && j.koerper;
+            if (!F || !Array.isArray(F.motor) || !Array.isArray(F.landung) || !Array.isArray(F.doppler))
+                return { gruen: false, zahl: "Schritte " + je.length + " Stoffe, Δ " + f(dHz, 0) + " Hz · kein Körper-Teil (F) im Zensus (Exit " + lauf.exit + ")" };
+            // (M) der Motor-Grundton über die Drehzahl
+            const M = F.motor.filter((x) => x[0] > 0 && x[1] > 0);
+            const rM = r(M.map((x) => x[0]), M.map((x) => x[1]));
+            const motor = M.length >= 10 && rM >= 0.9;
+            // (L) die Landung mit dem Aufprall des Leib-Lösers
+            const fall = F.landung.slice(1);
+            const rL = r(fall.map((x) => x[1]), fall.map((x) => x[4]));
+            const landung =
+                !(F.landung[0] && F.landung[0][2]) &&
+                fall.length === 5 &&
+                fall.every((x, i) => x[2] === 1 && Math.abs(x[3] - x[1]) <= 1e-3 && (!i || x[4] >= fall[i - 1][4] + 0.5)) &&
+                rL >= 0.9;
+            const dbJe = fall.length > 1 ? (fall[fall.length - 1][4] - fall[0][4]) / (fall[fall.length - 1][1] - fall[0][1]) : NaN;
+            // (D) Doppler proportional zur Radial-Geschwindigkeit: v = c·(1 − 1/f) am Ohr gegen die des Gesetzes
+            const D = F.doppler.filter((x) => x[2] > 0);
+            const [vs, vi] = [D.map((x) => 343 * (1 - 1 / x[1])), D.map((x) => 343 * (1 - 1 / x[2]))];
+            const k = vs.reduce((s, x, i) => s + x * vi[i], 0) / vs.reduce((s, x) => s + x * x, 0);
+            const rD = r(vs, vi);
+            const doppler =
+                D.length === F.doppler.length &&
+                D.length >= 6 &&
+                vs.some((x) => x > 0) &&
+                vs.some((x) => x < 0) &&
+                D.every((x) => (x[2] - 1) * (x[1] - 1) > 0 && Math.abs(x[2] - x[1]) <= 0.1 * Math.abs(x[1] - 1)) &&
+                Math.abs(k - 1) <= 0.1 &&
+                rD >= 0.9;
+            const rotF = (j.rot || []).filter((t) => /^F /.test(t));
+            return {
+                gruen: schritt && motor && landung && doppler && rotF.length === 0,
+                zahl:
+                    (schritt ? "✅" : "❌") + " Schritte " + je.map((s) => s.stoff + " " + Math.round(s.hz) + " Hz (n " + s.n + ")").join(" · ") +
+                    ", kleinster Abstand " + f(dHz, 0) + " Hz · " + (motor ? "✅" : "❌") + " Motor r " + f(rM, 4) + " (" + M.length +
+                    " Abgriffe, " + f(M.length ? (M[0][1] / M[0][0]) * 1000 : NaN, 1) + " Hz je 1000 Upm) · " + (landung ? "✅" : "❌") +
+                    " Landung " + f(dbJe, 2) + " dB je m/s, r " + f(rL, 4) + " (" + fall.map((x) => x[0] + " m " + f(x[1], 1) + " m/s " + f(x[4], 1) + " dB").join(" · ") +
+                    ") · " + (doppler ? "✅" : "❌") + " Doppler Steigung " + f(k, 4) + " r " + f(rD, 4) + " (" +
+                    F.doppler.map((x) => x[0] + " m " + f(343 * (1 - 1 / x[1]), 1) + " m/s " + f(x[2], 4) + "/" + f(x[1], 4)).join(" · ") + ")" +
+                    (rotF.length ? " · " + rotF.length + " Befund(e): " + rotF.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "vehicle-core.js",
+            "koerper-core.js",
+            "stamm/klang.js",
+            "stamm/koerper-seele.js",
+            "stamm/kampf.js",
+            "stamm/dirigent-takt.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/wasser-hydro.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/band-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
+    },
+    {
         kriterium: "klang.K5",
         staffel: 1,
         geraet: "headless",
@@ -872,12 +978,6 @@ module.exports = [
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
 module.exports.fehlt = [
-    {
-        kriterium: "klang.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "m15-schritt misst nur die Schritte je Stoff; kein Abgriff am Motor über die Drehzahl (klang-core FAHRT), an der Landung nach Aufprall und am Doppler einer Vorbeifahrt",
-    },
     {
         kriterium: "speicher.K2",
         staffel: 2,
