@@ -35,7 +35,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -52,16 +52,6 @@ const AUSGENOMMEN = {
 };
 // H4 — die Ofen-Studios (die Welt bäckt ihre Gestalt über BAKERS_BY_KIND); der Gang liest ihre L0 an der Kosten-Leiste (keine Ausnahme).
 const OFEN_STUDIOS = { tetrapoda: 1, koerperstudio: 1 };
-// H7 — die Mesh-Studios (klang ist meshfrei, Studio-Vertrag §8) und die größte Abweichung gezählt ↔ gezeichnet über ihre Stufen
-const MESH_STUDIOS = STUDIOS.filter((id) => id !== "klang");
-const kostenWahrheit = (kosten = []) =>
-    kosten.reduce(
-        (w, k) => {
-            const abw = k.gezeichnet == null || !k.leiste ? Infinity : Math.abs(k.leiste - k.gezeichnet) / k.gezeichnet;
-            return abw > w.abw ? { ...k, abw } : w;
-        },
-        { abw: kosten.length ? 0 : Infinity }
-    );
 const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
@@ -93,21 +83,17 @@ function pruefeGang(netz, seiten = {}) {
         else if (!fremd.length && pfade.some((p) => /^\/vendor\/three/.test(p)) && !pfade.includes(ENGINE_EINE))
             rot.push(`H6 ${id}: three aus vendor/ ohne ${ENGINE_EINE} — die Welt rendert WebGPU r184`);
     }
-    for (const [id, { folge: f, l0, zeile, kosten }] of Object.entries(seiten)) {
-        const w = kostenWahrheit(kosten);
-        if (MESH_STUDIOS.includes(id) && w.abw > 0.05)
-            rot.push(
-                w.gezeichnet == null
-                    ? `H7 ${id}: die Kosten-Leiste nennt keine gezeichnete Zahl${w.stufe == null ? "" : ` an L${w.stufe}`} — das Studio reicht ihr keinen Renderer, die Zahl bleibt ohne Gegenzahl`
-                    : !w.leiste
-                      ? `H7 ${id}: die Leiste zählt an L${w.stufe} nichts (gezeichnet ${w.gezeichnet} △) — eine leere Stufe ist keine Messung`
-                      : `H7 ${id}: die Leiste zählt an L${w.stufe} ${w.leiste} △, gezeichnet ${w.gezeichnet} △ (${(w.abw * 100).toFixed(1)} % > 5 %) — sie zählt, was das Werk nicht zeichnet`
-            );
+    for (const [id, { folge: f, kosten = [] }] of Object.entries(seiten)) {
+        // eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
+        // H7 je Mesh-Studio (klang ist meshfrei, Studio-Vertrag §8)
+        const w = STUDIOS.includes(id) && id !== "klang" && (kosten.find((k) => !(Math.abs(k.leiste / k.gezeichnet - 1) <= 0.05)) || (!kosten.length && {}));
+        if (w) rot.push(`H7 ${id}: L${w.stufe} gezählt ${w.leiste} △ ↔ gezeichnet ${w.gezeichnet} △`);
         const fehl = f && (f[0] === f[1] ? 1 : f.findIndex((v, i) => v !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
-        if (OFEN_STUDIOS[id] && !(l0 <= zeile))
-            rot.push(`H4 ${id}: Labor L0 ${l0} △ über der Welt-Zeile ${zeile} — das Labor zeigt nicht den Ofen-Körper`);
+        const [k0 = {}] = kosten;
+        if (OFEN_STUDIOS[id] && !(+k0.leiste <= +k0.deckel))
+            rot.push(`H4 ${id}: Labor L0 ${k0.leiste} △ über der Welt-Zeile ${k0.deckel} — das Labor zeigt nicht den Ofen-Körper`);
     }
     return rot;
 }
@@ -156,7 +142,7 @@ function panoramaStempel(id, lies) {
     return h.digest("hex");
 }
 const liesAus = (karte) => (rel) => {
-    if (Object.prototype.hasOwnProperty.call(karte, rel)) return karte[rel];
+    if (rel in karte) return karte[rel];
     const f = path.join(ROOT, rel);
     return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
 };
@@ -177,7 +163,7 @@ function baum() {
         }
     }
     for (const rel of WERKSTATT) karte[rel] = fs.readFileSync(path.join(ROOT, rel), "utf8");
-    if (fs.existsSync(path.join(ROOT, TOR_ZIELE))) karte[TOR_ZIELE] = fs.readFileSync(path.join(ROOT, TOR_ZIELE), "utf8");
+    karte[TOR_ZIELE] = liesAus({})(TOR_ZIELE);
     return karte;
 }
 
@@ -202,7 +188,7 @@ function pruefe(karte) {
         if (!welt) continue;
         // H2 — Brücken-Kopie
         if (!fehltIn(rel, READY_LITERAL)) {
-            zahl.bruecken.push(`${welt}${ausgenommen ? " (" + ausgenommen.split(/[:(,]/)[0].trim() + ")" : ""}`);
+            zahl.bruecken.push(welt);
             if (!ausgenommen) rot.push(`H2 ${stammLib.fehlt.wo}: eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)`);
         }
         if (!fehltIn(rel, ELEMENT_ADAPTER))
@@ -250,10 +236,6 @@ function pruefe(karte) {
     return { rot, zahl, veraltet };
 }
 
-function bericht(zahl) {
-    console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
-    console.log(`  Ziel-Bild (H5): ${zahl.panorama} von ${zahl.soll} Panoramen an den Quellen von heute (${TOR_ZIELE}), ohne: ${Object.keys(OHNE_PANORAMA).join(", ")}`);
-}
 
 // ── SELBSTTEST: die Täter in die Karte gespielt (Fundstelle fehlt → rot, die Linse wandert mit dem Code) ──
 function selbsttest() {
@@ -368,10 +350,9 @@ function selbsttest() {
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
-    const ofen = { tetrapoda: { l0: 54894, zeile: 62000 }, koerperstudio: { l0: 30000, zeile: 40000 } };
-    // jedes Studio mit Sitzung, die Ofen-Labore unter der Zeile, jede Leiste mit ihrer gezeichneten Zahl (H7)
-    const wahr = (leiste, gezeichnet) => ({ kosten: [{ stufe: 0, leiste, gezeichnet }] });
-    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { folge: [..."121212"], ...ofen[id], ...wahr(9000, 9120) }]));
+    // jedes Studio mit Sitzung, jede Leiste unter ihrer Welt-Zeile und mit ihrer gezeichneten Zahl (H4, H7)
+    const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000) => ({ folge: [..."121212"], kosten: [{ stufe, leiste, gezeichnet, deckel }] });
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, wahr(9000, 9120)]));
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
@@ -382,11 +363,11 @@ function selbsttest() {
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
         ["H3 das Strg+Y der klang wiederholt nicht", {}, /^H3 klang: Strg\+Y wirkt nicht/, { klang: { folge: [..."121211"] } }],
         ["H3 die schmiede verliert ihre Sitzung ganz (nie still)", {}, /^H3 schmiede: das Studio trägt keine Sitzung/, { schmiede: {} }],
-        ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, { tetrapoda: { l0: 1299852, zeile: 62000 } }],
+        ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, { tetrapoda: wahr(1299852, 1299852) }],
         ["H4 die Kosten-Leiste des koerperstudio nennt keine L0 (nie grün auf der leeren Zeile)", {}, /^H4 koerperstudio: Labor L0 undefined/, { koerperstudio: {} }],
-        ["H7 die Leiste der fachwerk zählt die Bühne mit (Boden + Hof 4 800 △)", {}, /^H7 fachwerk: die Leiste zählt an L0 12800/, { fachwerk: { folge: [..."121212"], ...wahr(12800, 8000) } }],
-        ["H7 die Wurf-Stufe des koerperstudio ohne Werfer (0 ↔ 0 △)", {}, /^H7 koerperstudio: die Leiste zählt an L3 nichts/, { koerperstudio: { folge: [..."121212"], ...ofen.koerperstudio, kosten: [{ stufe: 3, leiste: 0, gezeichnet: 0 }] } }],
-        ["H7 die garage reicht der Leiste keinen Renderer", {}, /^H7 garage: die Kosten-Leiste nennt keine gezeichnete Zahl an L0/, { garage: { folge: [..."121212"], ...wahr(9000, null) } }],
+        ["H7 die Leiste zählt die Bühne mit", {}, /^H7 fachwerk: L0 gezählt 12800/, { fachwerk: wahr(12800, 8000) }],
+        ["H7 die Wurf-Stufe ohne Werfer", {}, /^H7 koerperstudio: L3 gezählt 0/, { koerperstudio: wahr(0, 0, 3) }],
+        ["H7 die Leiste ohne Renderer", {}, /^H7 garage: L0 gezählt 9000 △ ↔ gezeichnet undefined/, { garage: wahr(9000) }],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
@@ -432,43 +413,20 @@ async function gang() {
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
-            // H4: die Kosten-Leiste nennt die L0 erst, wenn der Ofen gebacken hat — gefragt je Änderung der Seite, höchstens
-            // 120 s; ohne L0 nennt H4 das Labor beim Namen (nie still weiter gewartet)
-            if (OFEN_STUDIOS[id]) {
-                const leiste = () => /([1-9][\d.]*) \/ ([\d.]+) △/.exec([...document.querySelectorAll(".h-kosten-zeile")].map((e) => e.textContent).join(" "));
-                const m = await page.waitForFunction(leiste, { polling: "mutation", timeout: 120000 }).then((h) => h.jsonValue(), () => null);
-                if (m) Object.assign(z, { l0: +m[1].replace(/\./g, ""), zeile: +m[2].replace(/\./g, "") });
-            }
-            // H7: je Stufe die gezählte Zahl gegen die gezeichnete — gelesen, sobald jede Zeile beide trägt (oder ihren Bau-Fehler),
-            // höchstens 120 s; danach gilt, was steht (eine Zeile ohne gezeichnete Zahl nennt H7 beim Namen)
-            if (MESH_STUDIOS.includes(id)) {
-                const zeilen = () =>
-                    [...document.querySelectorAll(".h-kosten-zeile")].map((e) => [e.querySelector(".h-kosten-stufe"), e.querySelector(".h-kosten-text")].map((x) => (x ? x.textContent : "")));
-                await page
-                    .waitForFunction(() => ((t) => t.length && t.every((x) => /gezeichnet|Bau-Fehler/.test(x.textContent)))([...document.querySelectorAll(".h-kosten-text")]), {
-                        polling: "mutation",
-                        timeout: 120000,
-                    })
-                    .catch(() => null);
-                const zahl = (m) => (m ? +m[1].replace(/\./g, "") : null);
-                z.kosten = (await page.evaluate(zeilen)).map(([s, t]) => ({
-                    stufe: +(/\d+/.exec(s) || [])[0],
-                    leiste: zahl(/^([\d.]+) \//.exec(t)),
-                    gezeichnet: zahl(/gezeichnet ([\d.]+) △/.exec(t)),
-                    befehle: zahl(/△ in (\d+) Befehlen/.exec(t)),
-                }));
+            // H4 + H7: die Kosten-Leiste je Stufe (Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet) — gelesen, sobald jede Zeile
+            // ihre gezeichnete Zahl trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot `waitFor`): ein Hänger
+            // endet an der Frist des Browsers, die Stall-Akte nennt die Seite
+            const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
+            if (id !== "klang") {
+                await waitFor(page, `(${zeilen})().every((k) => k.gezeichnet)`, `${id}: jede Zeile der Kosten-Leiste mit ihrer gezeichneten Zahl`);
+                z.kosten = await page.evaluate(zeilen);
             }
             await page.close();
             const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
             sauber += !fremd.length;
             const engine = fremd.length ? "fremd " + fremd.join(" ") : pfade.includes(ENGINE_EINE) ? "r184 WebGPU" : "ohne three";
             const sitzung = z.folge ? folgeText(z.folge) : "ohne Sitzung"; // den Spruch fällt pruefeGang
-            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${OFEN_STUDIOS[id] ? ` · L0 ${z.l0} / ${z.zeile} △` : ""}`);
-            if (z.kosten) {
-                const w = kostenWahrheit(z.kosten);
-                const je = z.kosten.map((k) => `L${k.stufe} ${k.leiste} ↔ ${k.gezeichnet} △ in ${k.befehle} Befehlen`).join(" · ");
-                console.log(`  ${id.padEnd(14)} Kosten gezählt ↔ gezeichnet: ${je || "keine Zeile"} · größte Abweichung ${(w.abw * 100).toFixed(1)} %`);
-            }
+            console.log(`  ${id.padEnd(14)} ${String(pfade.length).padStart(3)} Anfragen · ${engine} · ${sitzung}${z.kosten ? " · Kosten " + JSON.stringify(z.kosten) : ""}`);
         }
     } finally {
         await browser.close();
@@ -476,7 +434,7 @@ async function gang() {
     }
     const rot = pruefeGang(netz, seiten);
     for (const x of rot) console.log("❌ " + x);
-    console.log(`${rot.length ? "❌" : "✅"} DER GANG: ${sauber} von ${Object.keys(netz).length} Seiten ohne fremde Engine (Ratsche ${Object.keys(ENGINE_RATSCHE).join(", ")}) · ${Object.values(seiten).filter((z) => z.folge).length} Sitzungen · Kosten-Wahrheit ${MESH_STUDIOS.filter((id) => seiten[id] && kostenWahrheit(seiten[id].kosten).abw <= 0.05).length}/${MESH_STUDIOS.length} Mesh-Studios ±5 %`);
+    console.log(`${rot.length ? "❌" : "✅"} DER GANG: ${sauber} von ${Object.keys(netz).length} Seiten ohne fremde Engine · ${Object.values(seiten).filter((z) => z.folge).length} Sitzungen`);
     if (rot.length) process.exitCode = 1;
 }
 
@@ -562,9 +520,7 @@ async function panoramaBacken(nur) {
         await browser.close();
         s.close();
     }
-    const sortiert = {};
-    for (const k of Object.keys(neu.welten).sort()) sortiert[k] = neu.welten[k];
-    neu.welten = sortiert;
+    neu.welten = Object.fromEntries(Object.entries(neu.welten).sort());
     fs.writeFileSync(kp, JSON.stringify(neu, null, 4) + "\n");
     if (rot) process.exitCode = 1;
 }
@@ -580,7 +536,8 @@ hauptLauf(async () => {
     if (a.includes("--selftest")) process.exit(selbsttest() ? 0 : 1);
     const { rot, zahl, veraltet } = pruefe(baum());
     console.log("Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg (Studios: " + STUDIOS.join(", ") + "; Nebenwelten: " + NEBENWELTEN.join(", ") + ")");
-    bericht(zahl);
+    console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
+    console.log(`  Ziel-Bild (H5): ${zahl.panorama} von ${zahl.soll} Panoramen an den Quellen von heute (${TOR_ZIELE}), ohne: ${Object.keys(OHNE_PANORAMA).join(", ")}`);
     for (const x of veraltet) console.log("⚠ " + x + " (benannt, sperrt nicht)");
     if (rot.length) {
         for (const x of rot) console.log("❌ " + x);

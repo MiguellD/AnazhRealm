@@ -696,6 +696,8 @@
             if (!zz || !b) return;
             if (g) c.gezeichnet = g;
             stand[s] = c;
+            // die Zahlen der Zeile für ihre Leser (gate:studio-huelle H4, H7): Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet
+            Object.assign(zz.z.dataset, { stufe: s, leiste: c.tris, deckel: b.tris || 0 }, g ? { gezeichnet: g.tris } : {});
             var deckel = b.tris || 1;
             var anteil = Math.min(1, c.tris / deckel);
             zz.balken.style.width = (anteil * 100).toFixed(1) + "%";
