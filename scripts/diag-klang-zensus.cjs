@@ -1327,11 +1327,12 @@ function koerperUrteil(F) {
 // (Ra) DER RAUM AM OHR (klang.K3 Staffel 1): derselbe Tier-Ruf (ein Leib der Welt, über die Klang-Werkstatt) und dieselbe Glut
 // (der Bau des Dorfs, über die Lage am Ohr und den Studio-Graphen) links und rechts vom Ohr — gerade seitlich und 30° neben dem
 // Blick, je in drei Abständen —, der Master liegt an einem Stereo-OfflineAudioContext; rechts heißt die Spalte 0 der
-// Kamera-Matrix, nie der Rechts-Vektor des gemessenen Gesetzes. Urteil: ILD = R − L mit dem Vorzeichen der Seite (≥ 3 dB) an
-// jeder Probe, der Pegel fällt mit dem Abstand (≥ 1 dB je Stufe). Der Täter (S14): der Panner aus (ein Gain mit totem pan).
+// Kamera-Matrix, nie der Rechts-Vektor des gemessenen Gesetzes. ROT beim Namen der Probe, wenn ILD = R − L nicht mit dem
+// Vorzeichen der Seite ≥ 3 dB trägt, der Pegel nicht ≥ 1 dB je Abstands-Stufe fällt oder die Welt die Quelle in einem anderen
+// Abstand hört (eine nähere Glut). Die Zahl je Probe: ILD/Pegel in dB. Der Täter (S14): der Panner aus (ein Gain mit totem pan).
 async function raumSeite(dorf, mut) {
-    const [r, K, P] = [window.anazhRealm, window.__klangCore, BaseAudioContext.prototype];
-    const [s, sp, Ra, e] = [r.state, P.createStereoPanner, [], r.state.camera.matrixWorld.elements];
+    const [r, K, P, rot, zahl] = [window.anazhRealm, window.__klangCore, BaseAudioContext.prototype, [], []];
+    const [s, sp, e] = [r.state, P.createStereoPanner, r.state.camera.matrixWorld.elements];
     const [sy, um, pm, l] = [s.symphony, s.symphony.umwelt, s.playerMesh, Math.hypot(e[0], e[2])];
     const tier = s.creatures.find((c) => c.userData && !c.userData.dying);
     const [t0, p0, vor] = [tier.position.clone(), pm.position.clone(), [sy.ctx, sy.masterGain, um.bus]];
@@ -1339,7 +1340,7 @@ async function raumSeite(dorf, mut) {
         P.createStereoPanner = function () {
             return Object.assign(this.createGain(), { pan: this.createGain().gain });
         };
-    // je Quelle: Abstände, Sekunden, gemessen ab, und das Spiel an der Stelle (x, z) vom Ohr
+    // je Quelle: Abstände, Sekunden, gemessen ab, und das Spiel an der Stelle (x, z) vom Ohr — es nennt den Abstand der Welt
     const Q = {
         tier: [
             [3, 8, 20],
@@ -1349,21 +1350,24 @@ async function raumSeite(dorf, mut) {
                 tier.position.set(p0.x + x, p0.y, p0.z + z);
                 const n = um.rufeGespielt;
                 [sy.ctx, sy.masterGain, um.bus] = [ctx, ctx.destination, ctx.destination];
-                r._tierRuf(tier, "ruhe");
+                const ruf = r._tierRuf(tier, "ruhe");
                 for (const dl = performance.now() + 3000; um.rufeGespielt === n && performance.now() < dl;)
                     await window.sleep(10);
                 [sy.ctx, sy.masterGain, um.bus] = vor;
+                return ruf && ruf.d;
             },
         ],
         glut: [
-            [1.5, 4, 10],
+            [1.5, 3, 6],
             3.5,
             1.5,
             (ctx, x, z) => {
                 pm.position.set(dorf.glut.x - x, p0.y, dorf.glut.z - z);
-                const mix = K.umweltMischung({ glut: r._umweltLage().glut });
+                const glut = r._umweltLage().glut;
+                const mix = K.umweltMischung({ glut });
                 for (const k in mix) if (k !== "glut") mix[k].db = -Infinity;
                 K.umweltGraph(ctx, ctx.destination).anwenden(mix, 0);
+                return glut.d;
             },
         ],
     };
@@ -1371,47 +1375,29 @@ async function raumSeite(dorf, mut) {
         for (const [q, [dists, sek, ab, spiel]] of Object.entries(Q))
             for (const w of [90, 30])
                 for (const seite of [-1, 1])
-                    for (const d of dists) {
+                    for (let i = 0, db0 = Infinity; i < 3; i++) {
+                        const [d, ctx] = [dists[i], new OfflineAudioContext(2, 48000 * sek, 48000)];
                         const [a, b] = [Math.sin((w * Math.PI) / 180) * seite * d, Math.cos((w * Math.PI) / 180) * d];
-                        const ctx = new OfflineAudioContext(2, 48000 * sek, 48000);
-                        await spiel(ctx, (a * e[0] + b * e[2]) / l, (a * e[2] - b * e[0]) / l);
+                        const welt = await spiel(ctx, (a * e[0] + b * e[2]) / l, (a * e[2] - b * e[0]) / l);
                         const buf = await ctx.startRendering();
-                        const LR = [0, 1].map((c) =>
+                        const [L, R] = [0, 1].map((c) =>
                             buf
                                 .getChannelData(c)
                                 .subarray(48000 * ab)
                                 .reduce((v, x) => v + x * x, 1e-20)
                         );
-                        Ra.push([q, seite, w, d, ...LR]);
+                        const [ild, db] = [10 * Math.log10(R / L), 10 * Math.log10(L + R)];
+                        zahl.push(`${q} ${seite * w}° ${d} m ${ild.toFixed(1)}/${db.toFixed(1)}`);
+                        if (!(ild * seite >= 3 && db <= db0 - 1 && Math.abs(welt - d) < 0.1))
+                            rot.push(`Ra ${zahl.at(-1)} dB, gehört in ${welt} m`);
+                        db0 = db;
                     }
     } finally {
         [P.createStereoPanner, sy.ctx, sy.masterGain, um.bus] = [sp, ...vor];
         tier.position.copy(t0);
         pm.position.copy(p0);
     }
-    return Ra;
-}
-// Das Urteil (Ra) je Probe beim Namen; die Zahl je Quelle: ILD/Pegel in dB je Winkel (− links) und Abstand.
-function raumUrteil(Ra) {
-    const [rot, z] = [[], {}];
-    Ra.forEach(([q, seite, w, d, L, R], i) => {
-        const [wo, ild, pegel, v] = [
-            `Ra ${q} ${seite * w}° ${d} m`,
-            10 * Math.log10(R / L),
-            10 * Math.log10(L + R),
-            Ra[i - 1],
-        ];
-        if (!(ild * seite >= 3)) rot.push(`${wo}: falsches Vorzeichen (ILD ${ild.toFixed(1)} dB)`);
-        if (v && v[3] < d && !(pegel <= 10 * Math.log10(v[4] + v[5]) - 1)) rot.push(`${wo}: der Pegel fällt nicht`);
-        (z[q] = z[q] || []).push(`${seite * w}° ${d} m ${ild.toFixed(0)}/${pegel.toFixed(0)}`);
-    });
-    const falsch = rot.filter((x) => /Vorzeichen/.test(x)).length;
-    return {
-        rot,
-        zahl: `${Ra.length - falsch}/${Ra.length} Vorzeichen richtig · ${Object.entries(z)
-            .map(([q, x]) => `${q} ${x.join(" ")}`)
-            .join(" · ")}`,
-    };
+    return { rot, zahl: `${zahl.length - rot.length}/${zahl.length} richtig · ILD/Pegel ${zahl.join(" · ")}` };
 }
 
 // (U) GESEHEN = GEHÖRT AM BACH UND IM REGEN (`--gesehen`, klang.K2 Staffel 2): der Spieler geht im echten Spiel (Ego, W und S
@@ -1657,7 +1643,7 @@ async function zensus(page, browser, ergebnis) {
     rot.push(...fu.rot);
     console.log(`── (F) DER KÖRPER KLINGT: ${fu.zahl}`);
     // (Ra) der Raum am Ohr: derselbe Ruf und dieselbe Glut links und rechts
-    const ru = raumUrteil((ergebnis.raum = await page.evaluate(raumSeite, orte.dorf, false)));
+    const ru = (ergebnis.raum = await page.evaluate(raumSeite, orte.dorf, false));
     rot.push(...ru.rot);
     console.log(`── (Ra) DER RAUM AM OHR: ${ru.zahl}`);
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
@@ -1813,10 +1799,9 @@ async function zensus(page, browser, ergebnis) {
             if (!koerperUrteil(await page.evaluate(koerperSeite, MESS, mut)).rot.some((x) => re.test(x)))
                 fehl.push(`S13: ${mut} bleibt unbemerkt`);
         // S14: der Panner aus — Ruf und Glut klingen mittig
-        const u14 = raumUrteil(await page.evaluate(raumSeite, orte.dorf, true)).rot.join("\n");
+        const u14 = (await page.evaluate(raumSeite, orte.dorf, true)).rot.join("\n");
         for (const q of ["tier", "glut"])
-            if (!new RegExp(`^Ra ${q} .*falsches Vorzeichen`, "m").test(u14))
-                fehl.push(`S14: ${q} ohne Panner bleibt unbemerkt`);
+            if (!u14.includes(`Ra ${q}`)) fehl.push(`S14: ${q} ohne Panner bleibt unbemerkt`);
         for (const t of fehl) console.log("   ❌ " + t);
         if (!fehl.length) console.log("   ✅ S1–S14 nennen jeden Täter beim Namen");
         selbstOk = fehl.length === 0;
