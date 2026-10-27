@@ -1,7 +1,7 @@
 {
  "sha": "19606f2ee8492be703fb6aff52d4e48c9279919f",
  "geraet": "radeon",
- "zeit": "2026-10-27T19:59:18.592Z",
+ "zeit": "2026-10-27T20:05:43.280Z",
  "host": "MiguellD",
  "je": {
   "siedlung.K5#1": {
@@ -227,27 +227,27 @@
    "gruen": false,
    "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, Adapter ungenannt",
    "exit": 0,
-   "minuten": 2.87,
+   "minuten": 2.22,
    "grund": "ROT: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, Adapter ungenannt",
    "gpu": "amd/rdna-3",
-   "warten": 0.09,
-   "zeit": "2026-10-27T19:47:15.127Z",
+   "warten": 0.08,
+   "zeit": "2026-10-27T20:03:30.354Z",
    "abdruck": "bbee11502f53",
    "port": 7754,
-   "bahn": "1/2"
+   "bahn": "1/1"
   },
   "ferne.K2#1": {
    "gruen": false,
    "zahl": "Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, Adapter ungenannt",
    "exit": 0,
-   "minuten": 2.87,
+   "minuten": 2.22,
    "grund": "ROT: Restkontrast am Rand 0.9–1.2 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, Adapter ungenannt",
    "gpu": "amd/rdna-3",
-   "warten": 0.09,
-   "zeit": "2026-10-27T19:47:15.127Z",
+   "warten": 0.08,
+   "zeit": "2026-10-27T20:03:30.354Z",
    "abdruck": "a2c61a28b0e5",
    "port": 7754,
-   "bahn": "1/2",
+   "bahn": "1/1",
    "zwilling": "ferne.K1#1"
   },
   "schatten.K1#1": {
@@ -263,17 +263,16 @@
    "bahn": "2/2"
   },
   "fahrzeug.K3#2": {
-   "gruen": false,
-   "zahl": "Drift Kamera ≤ 176.2° neben dem Fahrtvektor (Schlupf bis 9.7°) · Rückkehr 1.11 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+   "gruen": true,
+   "zahl": "Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 68° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
    "exit": 0,
-   "minuten": 3.08,
-   "grund": "ROT: Drift Kamera ≤ 176.2° neben dem Fahrtvektor (Schlupf bis 9.7°) · Rückkehr 1.11 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+   "minuten": 2.18,
    "gpu": "amd/rdna-3",
-   "warten": 0.33,
-   "zeit": "2026-10-27T19:50:07.448Z",
+   "warten": 0.09,
+   "zeit": "2026-10-27T20:05:43.280Z",
    "abdruck": "3a58d98e9e1c",
    "port": 7754,
-   "bahn": "1/2"
+   "bahn": "1/1"
   },
   "fahrzeug.K4#1": {
    "gruen": true,

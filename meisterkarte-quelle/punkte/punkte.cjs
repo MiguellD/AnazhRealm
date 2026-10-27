@@ -412,7 +412,9 @@ function fahreGruppe(sts, ctx) {
                 const r = (grund) => ({ gruen: false, zahl: grund, exit: code, minuten: m, grund, ...gz });
                 let u;
                 try {
-                    u = s.urteil(j, { exit: code, stdout: out, stderr: err });
+                    // die Zeugen-Zeilen sind Ausgabe der Station, auch aus Kindern mit eigenem Log (werkbank --eigen am werkbankTor
+                    // seit tk1-herde): das Urteil liest den Adapter wie die Wand GPU
+                    u = s.urteil(j, { exit: code, stdout: out + (zeugeText ? "\n" + zeugeText : ""), stderr: err });
                 } catch (e) {
                     return r("Urteil warf: " + String((e && e.message) || e).split("\n")[0]);
                 }
@@ -1184,8 +1186,8 @@ async function selbsttest() {
         const kind = "const cp = require('child_process'), fs = require('fs'); const fd = fs.openSync(process.argv[1] + '.log', 'w'); " +
             "cp.spawnSync(process.execPath, ['-e', " + JSON.stringify("console.log('[linse-gpu] nvidia/pascal')") + "], { stdio: ['ignore', fd, 'inherit'] }); " +
             "fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))";
-        e = await fahreStation({ ...gs, befehl: ["node", "-e", kind, "{AUS}"], urteil: (j, l) => ({ gruen: j.n === 0 && !/linse-gpu/.test(l.stdout), zahl: "n " + j.n }) }, { ...ctx("kind"), gpuLauf: falsch });
-        pruef("WAND GPU der Zeuge liest das Log eines Kind-Prozesses → GRÜN", e.gruen === true && e.gpu === "nvidia/pascal", JSON.stringify(e));
+        e = await fahreStation({ ...gs, befehl: ["node", "-e", kind, "{AUS}"], urteil: (j, l) => ({ gruen: j.n === 0 && /^\[linse-gpu\] nvidia\/pascal$/m.test(l.stdout), zahl: "n " + j.n }) }, { ...ctx("kind"), gpuLauf: falsch });
+        pruef("WAND GPU der Zeuge liest das Log eines Kind-Prozesses, das Urteil sieht seinen Adapter → GRÜN", e.gruen === true && e.gpu === "nvidia/pascal", JSON.stringify(e));
         // (3a) EIN BLOCKIERTES SCHLOSS IST KEINE MESSUNG: Exit 75 und ein gpu-lauf.sh, das beim Warten schweigt, sind ungemessen beim
         // Grund — nie ROT in m.je, und `run --offen` (frischUrteil) misst die Station neu; ein Lauf AM Schloss schweigt, so lang er will
         const c2 = { ...ctx("blockiert"), gpuLauf: path.join(tmp, "blockiert.sh") };
