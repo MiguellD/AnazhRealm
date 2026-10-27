@@ -138,3 +138,4 @@ befund  schloss  08:15 echt von z49 wartete 06:50–07:50 auf das verwaiste Schl
 plan    takt10  nach z49: GTX misst die volle gtx-Liste (Staffel 1 + 2), die Radeon nur, was beide Geräte verlangt — der Engpass ist die Radeon
 läuft   takt10  08:25 am festen Kopf dc06b495 (z46–z49): GTX 39 Stationen (Staffel 1 + 2, die Last weg von der Radeon) · Radeon nur die 11 Staffel-2 · headless --offen; Takt 9 abgebrochen (Radeon 11/28, headless 11/74 an 455e5be8, Teil-Messung committet)
 erledigt z49  08:23 GELANDET dc06b495 (V18.546.108) stk3-phasen + ci-kamera-leib; Nachwache z49n prio 2 hinter takt10-gtx
+läuft   z50  08:29  ci-werk-wasser@85e6a335 bau-faden@3d02342f sk2-zipf2@2f4cb8e3 pk2-bild@a6303399 — FAHRT_EINLASS_FREI: ihre Röten sind nur die Wackler-Klassen werk-im-wasser (Fix fährt mit), kamera-leib (auf main), portal-konformanz (integ bisher grün); mk2-mikro Konflikt werkbank.cjs → heim
