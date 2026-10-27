@@ -320,6 +320,7 @@ const stationen = [
     {
         kriterium: "siedlung.K2",
         staffel: 1,
+        kanarie: true,
         geraet: ["radeon", "gtx"],
         befehl: sitzung(
             "A=$(cygpath -m '{AUS}')",
@@ -690,6 +691,7 @@ const stationen = [
     {
         kriterium: "leib.K4",
         staffel: 1,
+        kanarie: true,
         geraet: ["radeon", "gtx"],
         // gate:kamera-leib Teil gang mit --bild (echter Renderer): Stamm, Fels, Haus im echten Spiel-Takt, rückwärts heran +
         // 360°-Orbit; Kugel in Fels/Bau, Nah-Pixel von Fels, Gelände und Rinde, Ruck p95
@@ -829,6 +831,7 @@ const stationen = [
     {
         kriterium: "halten.K1",
         staffel: 1,
+        kanarie: true,
         geraet: "headless",
         // gate:kampf-gefuehl am echten Chokepoint (_beginPlayerSwing, _kampfSweepTick, damageCreature): (A) Dauer ∝ √I zweier echter
         // Blueprints, (B) der Sweep trifft neben dem Fadenkreuz genau einmal, hinter dem Rücken nie

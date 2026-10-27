@@ -171,6 +171,7 @@ const alle = [
     {
         kriterium: "studios.K2",
         staffel: 1,
+        kanarie: true,
         geraet: "headless",
         // DER GANG der Hülle (H3, Beleg 1972da18): je Studio-Seite der erste Hüllen-Schieber an seinen Rand, Strg+Z, der Wert
         // kehrt zurück. Redo (Strg+Umschalt+Z · Strg+Y) fährt der Gang nicht — die Zahl nennt es.

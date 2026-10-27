@@ -547,6 +547,7 @@ const stationen = [
     {
         kriterium: "tiere.K1",
         staffel: 1,
+        kanarie: true,
         geraet: "headless",
         // (a) Kohäsion des Verbands am ECHTEN Wurf (`_kreaturWurf`, scheue Hirsche) wandernd und fliehend — Verband ist Mechanik
         // (R3: der Null-Renderer beweist Gesetz, Kontakt, Verband); die Probe herde der Kreatur-Linse (Q11), wie S6 (475a446a)
@@ -731,6 +732,7 @@ const stationen = [
     {
         kriterium: "tiere.K3",
         staffel: 2,
+        kanarie: true,
         geraet: ["radeon", "gtx"],
         befehl: [
             "bash",

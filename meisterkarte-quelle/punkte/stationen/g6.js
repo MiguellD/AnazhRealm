@@ -416,6 +416,7 @@ module.exports = [
     {
         kriterium: "klang.K2",
         staffel: 1,
+        kanarie: true,
         geraet: ["radeon", "gtx"],
         // M33 (reihe.sh `m33`): m15-wind 60 s an der Mess-Wiese, Ego, Böen frei, Tiere gehalten, Klang per CDP-Klick; Bild =
         // CDP-Screencast (|ΔLuma| im Boden-Ausschnitt je 0,5 s), Ohr = Analyser am Gain der Wind-Stimme

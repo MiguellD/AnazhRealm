@@ -553,6 +553,7 @@ module.exports = [
     {
         kriterium: "gelaende.K5",
         staffel: 1,
+        kanarie: true,
         geraet: "headless",
         befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}"],
         env: { KOERPER_STAND_PORT: "{PORT}" },
@@ -573,6 +574,7 @@ module.exports = [
     {
         kriterium: "gelaende.K5",
         staffel: 2,
+        kanarie: true,
         geraet: ["radeon", "gtx"],
         // dieselbe K8 auf jedem Gerät (die Ratsche spec/profiband/ratsche-boden-rolle.json urteilt die Linse; hier das Soll ohne Ratsche);
         // `--bild`: die Welt zeichnet auf der Karte (Rezept `linse`, kein Null-Renderer) — „beide Geräte“ verlangt das Gerät
@@ -1145,6 +1147,7 @@ module.exports = [
     {
         kriterium: "feld.K1",
         staffel: 1,
+        kanarie: true,
         geraet: "headless",
         befehl: ["node", "scripts/diag-fahr-leben.cjs", "--kette"],
         env: { FAHR_LEBEN_PORT: "{PORT}" },
@@ -1284,6 +1287,7 @@ module.exports = [
     {
         kriterium: "stoffe.K1",
         staffel: 1,
+        kanarie: true,
         geraet: "headless",
         befehl: ["node", "scripts/diag-gegenstand-stoff.cjs", "--tafel"],
         env: { GEGENSTAND_STOFF_PORT: "{PORT}" },

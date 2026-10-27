@@ -849,6 +849,7 @@ const stationen = [
     {
         kriterium: "material.K3",
         staffel: 1,
+        kanarie: true,
         geraet: ["radeon", "gtx"],
         // Messschuld M43 (Beleg am Kopf 3528f2d0): die Welt-Seite der Albedo-Tafel `werkbank albedo --tafel` am Ort der Tafel-Messung,
         // genau so wie diag-albedo-tafel neuMessen (umstellen 0 0, 10 s, albedo --tafel --datei). Gemessen wird der Stoff unter weißem
