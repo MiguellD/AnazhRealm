@@ -110,3 +110,4 @@ bereit  gk2-damm  b6bdfba1 geheilt: die Ferne-Probe baute den Ring-Auftrag von H
 läuft   omen-nachtruhe  01:42 per Remote-Control an „Koordinator Nachricht“: Nachtruhe aus p3/gpu-lauf.sh (+ serie.sh, Hooks) streichen, mv-Ersatz, Kopie nach bericht/2310-omen-runner/ — Bestätigung am Commit lesen
 läuft   mp-wackler  01:44 champion: diag-mp-sync laufUndSicht zweimal gefallen (Z.502 peers.get(idA) undefined unter Last · Z.540 B's Takt steht im Hintergrund-Tab, ek-schleife Gruppe 17); ek-schleife Neulauf angestoßen
 läuft   z46  01:53 gk2-damm b6bdfba1 + ek-schleife a5f3f0c7 (Neulauf grün); Takt 8 bucht am festen Kopf e7a28b06
+erledigt omen-nachtruhe  01:54 OMEN 526ce5bc: p3/gpu-lauf.sh, serie.sh, m37/m39 ohne Nachtruhe; Selbsttests V1–V4 + S1–S16 grün. OFFEN (benannter Zwilling, eigene Welle): messplatz.sh setzt PUNKTE_GPU_LAUF=p3/gpu-lauf.sh neben der Werkzeug-Kopie meisterkarte-quelle/punkte/werkzeug/gpu-lauf.sh
