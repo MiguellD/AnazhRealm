@@ -1608,6 +1608,7 @@ class AnazhRealm {
                 atmo.lichtKern[k].value = 0;
                 continue;
             }
+            if (q.quelle === "stahl") this._stahlGlut(); // das Licht des Stahls folgt der Hand und seiner Glut je Bild
             const L = q.L;
             // das Licht des Auges folgt ihm je Bild
             if (q.quelle === "auge") {
@@ -1738,6 +1739,9 @@ class AnazhRealm {
             const L = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
             nimm(a, { quelle: "lava", x: a.x, y: a.y + 1, z: a.z, L, masse: AnazhRealm.BRAND.licht * g, phase });
         }
+        // DER STAHL DER ESSE (stoffe.K3-2): das glühende Gerät leuchtet an der Hand in der Farbe seiner Temperatur (`_stahlGlut`)
+        const stahl = this._stahlGlut();
+        if (stahl) nimm(stahl, stahl);
         const tor = this._portalLeuchte;
         if (tor) nimm(tor, Object.assign({}, tor));
         return out;
@@ -1825,7 +1829,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.104";
+AnazhRealm.VERSION = "18.546.110";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

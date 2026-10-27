@@ -27,7 +27,7 @@
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -48,7 +48,7 @@ function faustVerdict(h) {
     if (!(h.winkel >= FAUST.winkel[0] && h.winkel <= FAUST.winkel[1])) out.push(`winkel ${(h.winkel || 0).toFixed(1)}°`);
     return out;
 }
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
 // constitution N1 wörtlich; Policy, Substanz und donorTool beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der
@@ -104,9 +104,7 @@ hauptLauf(async () => {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 180000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

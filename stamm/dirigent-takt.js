@@ -365,19 +365,21 @@ class AnazhRealm_dirigent_takt {
                         ? `Foundry offen ${o.foundry}`
                         : o.chunks
                           ? `Chunks offen ${o.chunks}`
-                          : o.wald
-                            ? `Wald offen ${o.wald}`
-                            : o.karten
-                              ? `Karten offen ${o.karten}`
-                              : o.felder
-                                ? `Felder offen ${o.felder}`
-                                : o.dorf
-                                  ? `Dorf offen ${o.dorf}`
-                                  : o.leib
-                                    ? "Leib offen"
-                                    : o.ankunft
-                                      ? `Ankunft gleitet ${o.ankunft}`
-                                      : null;
+                          : o.stau
+                            ? "Stau offen"
+                            : o.wald
+                              ? `Wald offen ${o.wald}`
+                              : o.karten
+                                ? `Karten offen ${o.karten}`
+                                : o.felder
+                                  ? `Felder offen ${o.felder}`
+                                  : o.dorf
+                                    ? `Dorf offen ${o.dorf}`
+                                    : o.leib
+                                      ? "Leib offen"
+                                      : o.ankunft
+                                        ? `Ankunft gleitet ${o.ankunft}`
+                                        : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -417,6 +419,7 @@ class AnazhRealm_dirigent_takt {
                 dorf: 0,
                 leib: 0,
                 ankunft: 0,
+                stau: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -427,6 +430,9 @@ class AnazhRealm_dirigent_takt {
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
+        // DER STAU IM FADEN (`_stauFelder`): sein Auftrag baut, bis die Felder ankamen (`_stauAn`) — bis ci-werk-wasser stand die
+        // Welt, während er flog, und gate:werk-im-wasser D zählte den Stausee nach dem Reload vor seiner Antwort
+        o.stau = this._stauImFlug ? 1 : 0;
         o.wald =
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
@@ -790,11 +796,16 @@ class AnazhRealm_dirigent_takt {
     // kostete kein Sturz etwas (2–30 m, 6,2–24,2 m/s, 0 Schaden).
     _loopPhysicsSync(delta, currentTime) {
         const s = this.state;
+        const [luft, vy] = [s.isInAir === true, s._fieldVy];
         s._sturzTempo = 0;
         this._stepCharacter(delta, currentTime);
         const G = s._sturzTempo > 0 && AnazhRealm.Gesetz("koerper:LEIB.sturz");
         if (G && s._sturzTempo > G.schadlosMs)
             this.damagePlayer(0.5 * (s._sturzTempo ** 2 - G.schadlosMs ** 2) * G.lebenJeJkg, "sturz");
+        // DIE LANDUNG als Ereignis für die Leser des Bilds (der Klang, `_schrittKlangTick` — `_sturzTempo` lebt einen Schritt):
+        // Luft → Boden mit dem Fang-Tempo des Lösers, Luft → Wasser mit dem Tempo, mit dem der Leib eintrat
+        if (luft && s.isInAir !== true)
+            s._aufprall = { tempo: s._sturzTempo || Math.max(0, -vy), n: (s._aufprall ? s._aufprall.n : 0) + 1 };
     }
 
     // ===== FIXED-TIMESTEP SIM/RENDER-SPLIT (Fiedler „Fix Your Timestep!") =====
@@ -1422,6 +1433,7 @@ class AnazhRealm_dirigent_takt {
         this._tickRain(); // WETTER: sichtbarer Regen bei rainy/stormy (auf der Bild-Uhr)
         this._tickBrand(); // BRAND: das Feuer auf dem Feld, nur in brennenden Zellen (feld.K3#2)
         this._tickCanopyStreaming();
+        this._stauFelder(); // der Stau folgt den Werken (ein Bau kam oder fiel; die Edits rechnen ihn sofort)
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt

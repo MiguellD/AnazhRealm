@@ -20,8 +20,12 @@
 //   K4 LÄUFE        jeder Lauf endet in See oder Meer, jede Senke ist nass, Sohle und Spiegel steigen nie; K4 STRÖMUNG: an 4
 //                   Fluss-Orten treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
 //   E (stoffe.K3)   im Winter trägt das Eis den Gang und die Tiere am Spiegel (±5 cm); das Feld +10 °C bricht ihn ein.
+//   S · L · P · H   (stoffe.K3-2) der Schnee schmilzt über 0 °C, die Lava erstarrt am Wasser schneller; die Schmelze hebt See
+//                   und Fluss (der Körper liest das gezeichnete Wasser gehoben); der Stahl der Esse glüht und erkaltet am Feld.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
+//   G6 · G7 · G8    der Damm aus dem Verb (gelaende.K2 (b), (d)): stromauf steht der Stausee auf der Überlaufhöhe (±0,1 m),
+//                   stromab fließt der Fluss auf seinem Spiegel; der Fern-Ring trägt den Edit aus dem Faden und am neuen Anker (--bild).
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_atlasWaterLevelAt`), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -33,7 +37,7 @@
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
-const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
+const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -63,48 +67,36 @@ const HASH_ALT =
     "            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));\n        });\n    }\n" +
     "    _naechster() {}\n}\n";
 
-// Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
+// Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf. Jeder Verstoß nennt den
+// Täter beim Namen (Klasse und Wort) und trägt die Zahlen seines Befunds (`rot`: der Name und das Stück des Befunds, das ihn trägt).
 function urteil(b) {
     const v = [];
     const S = SCHWELLE;
+    const rot = (name, o) => v.push(`${name}: ${JSON.stringify(o)}`);
     if (b.hashSin) v.push(`B6 HASH: das Wasser-Rauschen rechnet mit sin (${b.hashSin}) — auf echter GPU ungenau`);
     // F9 — die Pflanzen im gezeichneten Wasser (Nah-Streu ohne Ufer-Band, Nah-Wiese): je Gebiet ihre Zahl und das Wasser
     // über dem Fuß; LEER, wenn das Gebiet weniger Pflanzen trägt, als dort stehen (die Probe prüfte nichts)
     const florUrteil = (wo, fl, minStreu, minWiese) => {
         if (!fl || fl.fehler) return v.push(`F9: ${wo} ${fl ? fl.fehler : "die Pflanzen-Probe lief nicht"}`);
-        const st = fl.streu || {},
-            wi = fl.wiese || {};
-        if (!(st.pflanzen >= minStreu && wi.bueschel >= minWiese))
-            v.push(`F9 LEER: ${wo} nur ${st.pflanzen} Pflanzen der Nah-Streu und ${wi.bueschel} Büschel der Nah-Wiese`);
-        if (st.imWasser > 0)
-            v.push(
-                `F9 STREU: ${wo} stehen ${st.imWasser} von ${st.pflanzen} Pflanzen der Nah-Streu ohne Ufer-Band im ` +
-                    `gezeichneten Wasser (bis ${st.maxM} m über dem Fuß; ${JSON.stringify(st.jeArt)})`
-            );
-        if (wi.imWasser > 0)
-            v.push(
-                `F9 WIESE: ${wo} stehen ${wi.imWasser} von ${wi.bueschel} Büscheln der Nah-Wiese im gezeichneten Wasser ` +
-                    `(bis ${wi.maxM} m über dem Fuß)`
-            );
+        const [st, wi] = [fl.streu || {}, fl.wiese || {}];
+        if (!(st.pflanzen >= minStreu && wi.bueschel >= minWiese)) rot(`F9 LEER: ${wo}`, fl);
+        if (st.imWasser > 0) rot(`F9 STREU: ${wo}`, st);
+        if (wi.imWasser > 0) rot(`F9 WIESE: ${wo}`, wi);
+    };
+    // UNSICHTBAR · PHANTOM (F5 die Quell-Läufe, F8 der Bach): Körper-Wasser, das die Welt nicht zeichnet (`unsichtbarBreite`),
+    // und gezeichnetes Wasser, in dem der Körper trocken steht (`phantomBreite`) — als Breite (Summe je Punkt)
+    const quer = (F, wo, k) => {
+        if (!(k.unsichtbarBreite <= 0)) rot(`${F} UNSICHTBAR: ${wo}`, k);
+        if (!(k.phantomBreite <= 0)) rot(`${F} PHANTOM: ${wo}`, k);
     };
     if (b.fluss) {
         const f = b.fluss;
         if (f.fehler) v.push(`F: ${f.fehler}`);
         else {
-            if (!(f.schritte > 1000))
-                v.push(`F LEER: nur ${f.schritte} Fluss-Schritte gemessen (die Probe prüfte nichts)`);
-            if (!(f.anteilSteigend <= S.steigend))
-                v.push(
-                    `F1 BERGAUF: ${(f.anteilSteigend * 100).toFixed(1)} % der 2-m-Schritte steigen (${f.steigend} von ${f.schritte}, ` +
-                        `${f.anstiegM} m Anstieg, Spitze ${f.maxAnstiegM} m)`
-                );
-            if (!(f.buckelP90M <= S.buckelP90))
-                v.push(
-                    `F2 BUCKEL: der Querschnitt wölbt sich p90 ${f.buckelP90M} m (max ${f.buckelMaxM} m; Spanne p90 ${f.querP90M} m) ` +
-                        "statt waagrecht"
-                );
-            if (f.wasserfaelle !== f.wasserfallOrte)
-                v.push(`F4 DOPPEL: ${f.wasserfaelle} Wasserfall-Einträge an ${f.wasserfallOrte} Orten`);
+            if (!(f.schritte > 1000)) rot("F LEER", f);
+            if (!(f.anteilSteigend <= S.steigend)) rot("F1 BERGAUF", f);
+            if (!(f.buckelP90M <= S.buckelP90)) rot("F2 BUCKEL", f);
+            if (f.wasserfaelle !== f.wasserfallOrte) rot("F4 DOPPEL", f);
         }
     }
     if (b.quelle) {
@@ -114,320 +106,178 @@ function urteil(b) {
         const fehlen = QUELL_KACHELN.filter((k) => gemessen.indexOf(k) < 0);
         const fremd = gemessen.filter((k) => QUELL_KACHELN.indexOf(k) < 0);
         if (q.fehler) v.push(`F5: ${q.fehler}`);
-        else if (fehlen.length || fremd.length || gemessen.length !== QUELL_KACHELN.length)
-            v.push(
-                `F5 KACHELN: gemessen ${gemessen.length} Kacheln statt der ${QUELL_KACHELN.length} der Probe` +
-                    (fehlen.length ? ` — fehlen ${fehlen.join(" ")}` : "") +
-                    (fremd.length ? ` — fremd ${fremd.join(" ")}` : "")
-            );
-        else if (!(q.quellen >= 30)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
+        else if (fehlen.length || fremd.length || gemessen.length !== QUELL_KACHELN.length) rot("F5 KACHELN", { fehlen, fremd });
+        else if (!(q.quellen >= 30)) rot("F5 LEER", q.quellen);
         else {
-            if (q.spruenge > 0)
-                v.push(
-                    `F5 SPRUNG: ${q.spruenge} von ${q.quellen - q.gespeist} Quellen brechen aus dem Nichts — breiter oder tiefer ` +
-                        `als die Hülle des Gesetzes (am Ursprung ${q.huelle0[0]} m breit, ${q.huelle0[1]} m tief; gemessen p50 ` +
-                        `${q.breiteP50} m / ${q.tiefeP50} m, max ${q.breiteMax} m / ${q.tiefeMax} m)`
-                );
-            if (q.trocken > 0)
-                v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
-            if (!(q.buckel <= 0))
-                v.push(
-                    `F5 BUCKEL: ${q.buckel} von ${q.imKanal} Quellen im Kanal eines breiteren Flusses heben dessen Spiegel ` +
-                        `(bis ${q.buckelMax} m) — der Zufluss nahm den Spiegel seiner ungefrästen Ufer`
-                );
-            if (!(q.unsichtbarBreite <= 0))
-                v.push(
-                    `F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf ${q.unsichtbarBreite} m Breite (Summe je Punkt, in ` +
-                        `${q.unsichtbar} von ${q.querschnitte} Querschnitten) Wasser, das die Welt nicht zeichnet`
-                );
-            if (!(q.phantomBreite <= 0))
-                v.push(
-                    `F5 PHANTOM: auf den Quell-Läufen zeichnet die Welt auf ${q.phantomBreite} m Breite (Summe je Punkt, in ` +
-                        `${q.phantom} von ${q.querschnitte} Querschnitten) Wasser, in dem der Körper trocken steht`
-                );
+            // SPRUNG: breiter oder tiefer als die Hülle des Gesetzes (`huelle0` am Ursprung); BUCKEL: ein Zufluss im Kanal eines
+            // breiteren Flusses hebt dessen Spiegel (er nahm den Spiegel seiner ungefrästen Ufer)
+            if (q.spruenge > 0) rot("F5 SPRUNG", q);
+            if (q.trocken > 0) v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
+            if (!(q.buckel <= 0)) rot("F5 BUCKEL", q);
+            quer("F5", "auf den Quell-Läufen", q);
         }
     }
     // F8 = der Bach der Mess-Wiese: das gezeichnete Wasser gegen den Körper
     if (b.bach) {
         const k = b.bach;
         if (k.fehler) v.push(`F8: ${k.fehler}`);
-        else if (!(k.querschnitte >= 80 && k.koerperNass >= 80))
-            v.push(`F8 LEER: nur ${k.querschnitte} Querschnitte, ${k.koerperNass} mit Körper-Wasser`);
-        else {
-            if (!(k.unsichtbarBreite <= 0))
-                v.push(
-                    `F8 UNSICHTBAR: der Bach der Mess-Wiese — der Körper liest auf ${k.unsichtbarBreite} m Breite (Summe je ` +
-                        `Punkt, in ${k.mitUnsichtbar} von ${k.querschnitte} Querschnitten) Wasser, das die Welt nicht zeichnet ` +
-                        `(Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`
-                );
-            if (!(k.phantomBreite <= 0))
-                v.push(
-                    `F8 PHANTOM: der Bach der Mess-Wiese — die Welt zeichnet auf ${k.phantomBreite} m Breite (Summe je Punkt, ` +
-                        `in ${k.mitPhantom} von ${k.querschnitte} Querschnitten) Wasser, in dem der Körper trocken steht ` +
-                        `(Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`
-                );
-        }
+        else if (!(k.querschnitte >= 80 && k.koerperNass >= 80)) rot("F8 LEER", k);
+        else quer("F8", "der Bach der Mess-Wiese", k);
         florUrteil("am Bach", k.flora, 100, 30);
     }
     if (b.see) {
         const k = b.see;
         if (k.fehler) v.push(`F10: ${k.fehler}`);
-        else if (!(k.koerperM2 >= 1000)) v.push(`F10 LEER: nur ${k.koerperM2} m² Körper-Wasser im See-Fenster`);
+        else if (!(k.koerperM2 >= 1000)) rot("F10 LEER", k.koerperM2);
         else {
-            if (!(k.phantomM2 <= 0))
-                v.push(
-                    `F10 PHANTOM: im See-Fenster zeichnet die Welt auf ${k.phantomM2} m² Wasser, in dem der Körper trocken ` +
-                        `steht (Körper ${k.koerperM2} m², Bild ${k.bildM2} m²; z. B. ${JSON.stringify(k.bspP[0] || null)})`
-                );
-            if (!(k.unsichtbarM2 <= 0))
-                v.push(
-                    `F10 UNSICHTBAR: im See-Fenster liest der Körper auf ${k.unsichtbarM2} m² Wasser, das die Welt nicht ` +
-                        `zeichnet (z. B. ${JSON.stringify(k.bspU[0] || null)})`
-                );
+            // PHANTOM: die Welt zeichnet Wasser, in dem der Körper trocken steht; UNSICHTBAR: umgekehrt (je ein Beispiel)
+            if (!(k.phantomM2 <= 0)) rot("F10 PHANTOM", k);
+            if (!(k.unsichtbarM2 <= 0)) rot("F10 UNSICHTBAR", k);
         }
         florUrteil("im See-Fenster", k.flora, 300, 500);
     }
     if (b.bank) {
         const k = b.bank;
         if (k.fehler) v.push(`F7: ${k.fehler}`);
-        else if (!(k.profile >= 20)) v.push(`F7 LEER: nur ${k.profile} Bank-Profile gemessen`);
-        else if (!(k.felsAnteil <= SCHWELLE.bankFels))
-            v.push(
-                `F7 STEILWAND: ${k.fels} von ${k.profile} Bank-Profilen steiler als der Fels des Boden-Gesetzes ` +
-                    `(${k.felsGrad}°; Neigung p50 ${k.winkelP50}°, p90 ${k.winkelP90}°, max ${k.winkelMax}°)`
-            );
+        else if (!(k.profile >= 20)) rot("F7 LEER", k.profile);
+        else if (!(k.felsAnteil <= SCHWELLE.bankFels)) rot("F7 STEILWAND", k); // steiler als der Fels des Boden-Gesetzes
     }
     if (b.uferFarbe) {
         const u = b.uferFarbe;
         if (u.fehler) v.push(`U: ${u.fehler}`);
         else {
-            if (!(u.schritte > 5000)) v.push(`U LEER: nur ${u.schritte} Ufer-Schritte gemessen`);
-            if (u.spruenge > 0)
-                v.push(
-                    `U1 UFER-SPRUNG: die Boden-Farbe springt quer zum Fluss ${u.spruenge}-mal (Luma-Stufe bis ${u.maxSprung} ` +
-                        `je 2 cm, z. B. ${JSON.stringify(u.beispiele[0] || null)})`
-                );
+            if (!(u.schritte > 5000)) rot("U LEER", u.schritte);
+            if (u.spruenge > 0) rot("U1 UFER-SPRUNG", u); // die Boden-Farbe springt quer zum Fluss (Luma-Stufe je 2 cm)
             const sf = u.schilf;
             if (!sf || sf.fehler) v.push(`U3: ${sf ? sf.fehler : "die Schilf-Probe lief nicht"}`);
-            else if (!(sf.schritte > 5000)) v.push(`U3 LEER: nur ${sf.schritte} Schilf-Schritte gemessen`);
-            else if (sf.spruenge > 0)
-                v.push(
-                    `U3 SCHILF-SPRUNG: das Ufer-Band der Nah-Streu (${sf.art}) springt quer zum Fluss ${sf.spruenge}-mal ` +
-                        `(Gewicht-Stufe bis ${sf.maxSprung} je 2 cm, z. B. ${JSON.stringify(sf.beispiele[0] || null)})`
-                );
+            else if (!(sf.schritte > 5000)) rot("U3 LEER", sf.schritte);
+            else if (sf.spruenge > 0) rot("U3 SCHILF-SPRUNG", sf); // das Ufer-Band der Nah-Streu springt (Gewicht-Stufe je 2 cm)
             const p = u.paritaet;
             if (!p || !(p.vertices > 1000)) v.push("U2 LEER: die Farb-Parität verglich keinen Ufer-Chunk");
-            else if (p.abweichend > 0)
-                v.push(
-                    `U2 ZWEI FARBEN: ${p.abweichend} von ${p.vertices} Ufer-Vertices färbt der Worker anders als der Main ` +
-                        `(max ${p.maxDiff}; ${p.fels || 0} tragen den Fels-Stoff)`
-                );
+            else if (p.abweichend > 0) rot("U2 ZWEI FARBEN", p); // der Worker färbt Ufer-Vertices anders als der Main
         }
     }
     if (b.regen) {
         const g = b.regen;
         if (g.fehler) v.push(`B4: ${g.fehler}`);
-        else {
-            if (!(g.schlieren >= S.schlieren))
-                v.push(`B4 REGEN: der Sturm zeigt ${g.schlieren} Schlieren (lit ${g.litAnteil} der Pixel)`);
-            else if (!(Math.abs(g.neigung) >= S.neigung))
-                v.push(`B5 SENKRECHT: quer zum Sturm fallen die Schlieren senkrecht (Neigung ${g.neigung})`);
-        }
+        else if (!(g.schlieren >= S.schlieren)) rot("B4 REGEN", g);
+        else if (!(Math.abs(g.neigung) >= S.neigung)) rot("B5 SENKRECHT", g); // quer zum Sturm fallen die Schlieren senkrecht
     }
     if (b.hoehle) {
         const hh = b.hoehle;
         if (hh.fehler) v.push(`K10: ${hh.fehler}`);
         else {
-            if (!(hh.proben >= 20)) v.push(`K10 LEER: nur ${hh.proben} trockene Höhlen-Proben`);
-            else if (hh.nass > 0)
-                v.push(
-                    `K10 HÖHLE: ${hh.nass} von ${hh.proben} trockenen Höhlen-Proben tragen Körper-Wasser (unter dem See ` +
-                        `${hh.nassUnter} von ${hh.unter}, daneben ${hh.nassNeben} von ${hh.neben}; bis ${hh.maxM} m)`
-                );
-            const sp = hh.spieler || {},
-                ka = hh.kamera || {},
-                ti = hh.tier || {};
-            if (!(sp.proben > 0 && ka.proben > 0 && ti.proben > 0))
-                v.push("K10 LEER: Spieler, Kamera oder Tier liefen in keiner Höhle");
-            if (sp.schwimmFrames > 0)
-                v.push(
-                    `K10 SPIELER: in ${sp.proben} trockenen Höhlen schwimmt der Spieler ${sp.schwimmFrames} von ${sp.schritte} Schritten`
-                );
-            if (ka.unterWasser > 0)
-                v.push(
-                    `K10 KAMERA: in ${ka.unterWasser} von ${ka.proben} trockenen Höhlen sieht die Kamera Unterwasser`
-                );
-            if (ti.schwimmt > 0)
-                v.push(
-                    `K10 TIER: in ${ti.schwimmt} von ${ti.proben} trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden`
-                );
-            // der Wagen (wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
+            // trockene Höhlen unter und neben dem See: keine Probe trägt Körper-Wasser, Spieler, Kamera, Tier und Wagen trocken
+            if (!(hh.proben >= 20)) rot("K10 LEER", hh.proben);
+            else if (hh.nass > 0) rot("K10 HÖHLE", hh);
+            const [sp, ka, ti] = [hh.spieler || {}, hh.kamera || {}, hh.tier || {}];
+            if (!(sp.proben > 0 && ka.proben > 0 && ti.proben > 0)) rot("K10 LEER", hh);
+            if (sp.schwimmFrames > 0) rot("K10 SPIELER", sp);
+            if (ka.unterWasser > 0) rot("K10 KAMERA", ka);
+            if (ti.schwimmt > 0) rot("K10 TIER", ti);
+            // der Wagen (wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden (`_fahrTiefe`)
             const wa = hh.wagen;
             if (!wa) v.push("K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand");
-            else if (wa.nass > 0)
-                v.push(
-                    `K10 WAGEN: an ${wa.nass} von ${wa.proben} trockenen Höhlen-Böden steht der Wagen im Wasser (bis ${wa.maxM} m) — die Tiefe am Wagen liest das Wasser über der obersten Fläche`
-                );
+            else if (wa.nass > 0) rot("K10 WAGEN", wa);
         }
     }
     if (b.wagen) {
         const w = b.wagen;
         if (w.fehler) v.push(`K11: ${w.fehler}`);
         else {
-            const g = w.wagen || {},
-                bo = w.boot || {},
-                rd = w.rand || {},
-                ba = w.bugAb;
+            const [g, bo, rd, ba] = [w.wagen || {}, w.boot || {}, w.rand || {}, w.bugAb];
             if (g.fehler) v.push(`K11: ${g.fehler}`);
-            else if (g.afloat)
-                v.push(
-                    `K11 STRASSENWAGEN SCHWIMMT: der GT treibt im See (${g.tiefe} m Wasser; Unterkante ` +
-                        `${g.unterkanteUeberGrund} m über dem Grund, ${g.unterkanteUnterSpiegel} m unter dem Spiegel)`
-                );
+            else if (g.afloat) rot("K11 STRASSENWAGEN SCHWIMMT", g); // der GT treibt im See
             if (bo.fehler) v.push(`K11: ${bo.fehler}`);
-            else if (!bo.afloat) v.push(`K11 BOOT SINKT: das Holz-Boot steht im See am Grund (${bo.tiefe} m Wasser)`);
-            if (!(rd.proben >= 5)) v.push(`W2 LEER: nur ${rd.proben || 0} Proben im Rand-Streifen des Sees`);
-            else if (rd.treibt < rd.proben)
-                v.push(
-                    `W2 RAND-STREIFEN: im Rand-Streifen des Sees (1–7 m Wasser über Atlas-Land) treibt das Boot an ` +
-                        `${rd.treibt} von ${rd.proben} Proben — sonst fährt es am Seegrund`
-                );
-            if (!ba || ba.fehler)
-                v.push(`K11 LEER: die Bug-ab-Probe lief nicht${ba && ba.fehler ? " (" + ba.fehler + ")" : ""}`);
-            else if (ba.afloat && !(Math.abs(ba.nickZielGrad) <= 1 && Math.abs(ba.wankZielGrad) <= 1))
-                v.push(
-                    `K11 BUG-AB: treibend neigt sich das Boot mit dem Seegrund (Nick-Ziel ${ba.nickZielGrad}°, Wank-Ziel ` +
-                        `${ba.wankZielGrad}°; Grund ${ba.grundGrad}°)`
-                );
+            else if (!bo.afloat) rot("K11 BOOT SINKT", bo); // das Holz-Boot steht im See am Grund
+            // im Rand-Streifen des Sees (1–7 m Wasser über Atlas-Land) treibt das Boot an jeder Probe
+            if (!(rd.proben >= 5)) rot("W2 LEER", rd);
+            else if (rd.treibt < rd.proben) rot("W2 RAND-STREIFEN", rd);
+            if (!ba || ba.fehler) rot("K11 LEER", ba || null);
+            else if (ba.afloat && !(Math.abs(ba.nickZielGrad) <= 1 && Math.abs(ba.wankZielGrad) <= 1)) rot("K11 BUG-AB", ba);
         }
     }
     if (b.leser) {
         const l = b.leser;
         if (l.fehler) v.push(`K12: ${l.fehler}`);
         else {
-            const bs = l.beispiele || {};
-            if (!(l.spalten >= 5000 && l.nass >= 500))
-                v.push(`K12 LEER: nur ${l.spalten} Spalten verglichen (${l.nass} nass)`);
-            if (l.klang > 0)
-                v.push(
-                    `K12 KLANG: in ${l.klang} von ${l.spalten} Spalten hört der Klang (_nassAt) Wasser anders, als der Körper ` +
-                        `es trägt (z. B. ${JSON.stringify((bs.klang || [])[0] || null)})`
-                );
+            // der Klang (`_nassAt`) hört Wasser, wie der Körper es trägt; das Sheet des Küsten-Aquifers trägt den Körper
+            if (!(l.spalten >= 5000 && l.nass >= 500)) rot("K12 LEER", l);
+            if (l.klang > 0) rot("K12 KLANG", l);
             const k = l.kueste || {};
-            if (!(k.sichtbar >= 20))
-                v.push(`K12 LEER: nur ${k.sichtbar || 0} Küsten-Spalten mit Sheet-Wasser über Atlas-Land`);
-            else if (k.trocken > 0)
-                v.push(
-                    `K12 KÜSTE: in ${k.trocken} von ${k.sichtbar} Spalten zeichnet das Sheet den Küsten-Aquifer über dem Boden, ` +
-                        `der Körper steht dort trocken`
-                );
+            if (!(k.sichtbar >= 20)) rot("K12 LEER", k);
+            else if (k.trocken > 0) rot("K12 KÜSTE", k);
         }
     }
     // K12 M — die Mutation der EINEN Wahrheit (Gelände K4): jeder Leser liest vorher trocken und folgt im Takt danach (am See
-    // der Mess-Wiese, K4 ÜBERALL an Zufalls-Orten der Karte)
+    // der Mess-Wiese, K4 ÜBERALL an Zufalls-Orten der Karte); die Kontrolle folgt nie (sonst trifft die Mutation den Kern nicht)
     const mutation = (m, wo) => {
         if (m.fehler) return v.push(`${wo}: ${m.fehler}`);
-        if (!(m.punkte >= 50)) v.push(`${wo} LEER: nur ${m.punkte} Punkte trockenen Lands (${m.versuche} Versuche)`);
+        if (!(m.punkte >= 50)) rot(`${wo} LEER`, m.punkte);
         for (const [k, l] of Object.entries(m.leser)) {
             const was = `${k.toUpperCase()}: ${l.wer}`;
-            if (!(l.n >= m.punkte)) v.push(`${wo} LEER: ${was} urteilte nur an ${l.n} von ${m.punkte} Punkten`);
+            if (!(l.n >= m.punkte)) rot(`${wo} LEER: ${was}`, l);
             else if (k === "kontrolle") {
-                if (l.nach > 0) v.push(`${wo} BLIND: ${was} folgt an ${l.nach} Punkten — die Mutation trifft nicht den Kern`);
-            } else if (l.vor > 0 || l.nach < l.n)
-                v.push(
-                    `${wo} ${was} liest eine eigene Fläche: vorher nass an ${l.vor}, nach der Mutation trocken an ` +
-                        `${l.n - l.nach} von ${l.n} Punkten (z. B. ${JSON.stringify(l.bsp)})`
-                );
+                if (l.nach > 0) rot(`${wo} BLIND: ${was}`, l);
+            } else if (l.vor > 0 || l.nach < l.n) rot(`${wo} ${was} liest eine eigene Fläche`, l);
         }
         const [fv, fn] = [m.flora.vor || {}, m.flora.nach || {}];
-        if (!(fv.wiese >= 20 && fv.streu >= 10))
-            v.push(`${wo} LEER: in den Scheiben vorher nur ${fv.wiese} Büschel der Nah-Wiese und ${fv.streu} Pflanzen der Nah-Streu`);
-        for (const art of ["wiese", "streu"])
-            if (fn[art] > 0) v.push(`${wo} ${art.toUpperCase()}: nach der Mutation stehen ${fn[art]} von ${fv[art]} Pflanzen im Wasser`);
+        if (!(fv.wiese >= 20 && fv.streu >= 10)) rot(`${wo} LEER`, m.flora);
+        for (const art of ["wiese", "streu"]) if (fn[art] > 0) rot(`${wo} ${art.toUpperCase()}`, m.flora);
     };
     if (b.mutation) mutation(b.mutation, "K12 M");
     const wo = (t) => `${t.ort.map(Math.round)}`;
     if (b.ueberall) {
-        if (!(b.ueberall.length >= 5)) v.push(`K4 ÜBERALL LEER: nur ${b.ueberall.length} Zufalls-Orte trockenen Lands`);
+        if (!(b.ueberall.length >= 5)) rot("K4 ÜBERALL LEER", b.ueberall.length);
         for (const m of b.ueberall) mutation(m, `K4 ÜBERALL ${wo(m)}`);
     }
     if (b.laeufe) {
+        // jeder Lauf endet in See oder Meer, jede Senke ist nass, Sohle und Spiegel steigen stromab nie
         const l = b.laeufe;
-        const ende = (l.ende.see || 0) + (l.ende.meer || 0);
-        if (!(l.laeufe >= 100 && l.schritte > 10000)) v.push(`K4 LÄUFE LEER: ${l.laeufe} Läufe, ${l.schritte} Schritte`);
-        if (ende !== l.laeufe) v.push(`K4 LÄUFE: ${l.laeufe - ende} von ${l.laeufe} enden in keinem See und Meer (${JSON.stringify(l.trocken)})`);
-        if (l.nass !== l.senken) v.push(`K4 SENKE TROCKEN: ${l.senken - l.nass} von ${l.senken} Senken ohne Wasser (${JSON.stringify(l.trocken)})`);
-        if (l.steigt > 0) v.push(`K4 BERGAUF: an ${l.steigt} von ${l.schritte} Lauf-Schritten steigt der Spiegel oder die Sohle stromab`);
+        if (!(l.laeufe >= 100 && l.schritte > 10000)) rot("K4 LÄUFE LEER", l);
+        if ((l.ende.see || 0) + (l.ende.meer || 0) !== l.laeufe) rot("K4 LÄUFE", l);
+        if (l.nass !== l.senken) rot("K4 SENKE TROCKEN", l);
+        if (l.steigt > 0) rot("K4 BERGAUF", l);
     }
     if (b.treibt) {
-        if (!(b.treibt.length >= 4)) v.push(`K4 STRÖMUNG LEER: nur ${b.treibt.length} Fluss-Orte`);
+        if (!(b.treibt.length >= 4)) rot("K4 STRÖMUNG LEER", b.treibt.length);
         for (const t of b.treibt) {
             if (t.fehler) v.push(`K4 STRÖMUNG ${wo(t)}: ${t.fehler}`);
+            // > 0,5 m in 90 Takten mit Strömung, ohne sie keine (sonst eine zweite Quelle)
             for (const k of t.fehler ? [] : ["schwimmer", "boot", "tier"]) {
                 const d = t[k] || {};
-                if (!(d.mit > 0.5)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ${d.mit} m in 90 Takten (soll > 0,5 m)`);
-                if (!(Math.abs(d.ohne) < 0.05)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ohne Strömung ${d.ohne} m (zweite Quelle)`);
+                if (!(d.mit > 0.5)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ${d.mit}`);
+                if (!(Math.abs(d.ohne) < 0.05)) v.push(`K4 STRÖMUNG ${wo(t)}: ${k} treibt ohne ${d.ohne}`);
             }
         }
     }
     if (b.ufer) {
         const u = b.ufer;
         if (u.fehler) v.push(`K8: ${u.fehler}`);
-        else if (!(u.trocken > 20)) v.push(`K8 LEER: nur ${u.trocken} trockene Ufer-Proben`);
-        else if (u.geflutet > 0)
-            v.push(
-                `K8 UFER-FLUT: ${u.geflutet} von ${u.trocken} trockenen Ufer-Proben tragen Körper-Wasser (bis ${u.maxFlutM} m über dem Gras)`
-            );
+        else if (!(u.trocken > 20)) rot("K8 LEER", u.trocken);
+        else if (u.geflutet > 0) rot("K8 UFER-FLUT", u); // trockene Ufer-Proben tragen Körper-Wasser
     }
     if (b.koerper) {
         const k = b.koerper;
         if (k.fehler) v.push(`K: ${k.fehler}`);
         else {
-            const h = k.hinein || {};
+            // K1 nie geerdet unter der Brustkorb-Linie · K2 in Ruhe an ihr · K3 Kraulen hält das Gesetz · K4 das Eintauchen klingt ·
+            // K6 jedes Tier an seiner Wasserlinie (auch ohne Gestalt-Baum) · K7 der Mitspieler lehnt sich · K5 die Kamera taucht
+            const [h, l, c, e] = [k.hinein || {}, k.lage || {}, k.kraulen || {}, k.eintauchen || {}];
             if (!(h.schwimmFrames > 0)) v.push("K LEER: der Gang erreichte kein Wasser (die Probe prüfte nichts)");
-            if (h.tiefGeerdet > 0)
-                v.push(
-                    `K1 AM GRUND: ${h.tiefGeerdet} Frames Brustkorb unter dem Spiegel UND geerdet (bis ${h.maxTiefeGeerdetM} m tief)`
-                );
-            if (h.augenUnterGeerdet > 0)
-                v.push(`K1 AM GRUND: ${h.augenUnterGeerdet} Frames Augen unter Wasser UND geerdet`);
-            const l = k.lage || {};
-            if (!(Math.abs(l.fussUnterSpiegelP50 - l.sollFussUnterSpiegel) <= S.lageToleranz))
-                v.push(
-                    `K2 ZELL-DACH: in Ruhe die Füße ${l.fussUnterSpiegelP50} m unter dem Spiegel, die Brustkorb-Linie verlangt ` +
-                        `${l.sollFussUnterSpiegel} m`
-                );
-            if (l.augenUnter > 0) v.push(`K2 UNTERGEHEN: ${l.augenUnter} Ruhe-Frames mit den Augen unter Wasser`);
-            const c = k.kraulen || {};
-            if (!(c.anteil >= S.kraulAnteil))
-                v.push(
-                    `K3 KRIECHEN: Kraulen ${c.mps} m/s = ${Math.round((c.anteil || 0) * 100)} % des Gesetzes (${c.soll} m/s)`
-                );
-            const e = k.eintauchen || {};
-            if (!e.landung) v.push(`K4 STUMM: das Eintauchen mit ${e.eintauchVy} m/s löst keine Landung aus`);
-            else if (e.landung.material !== "wasser")
-                v.push(`K4 STUMM: die Landung klingt „${e.landung.material}" statt „wasser"`);
+            if (h.tiefGeerdet > 0 || h.augenUnterGeerdet > 0) rot("K1 AM GRUND", h);
+            if (!(Math.abs(l.fussUnterSpiegelP50 - l.sollFussUnterSpiegel) <= S.lageToleranz)) rot("K2 ZELL-DACH", l);
+            if (l.augenUnter > 0) rot("K2 UNTERGEHEN", l);
+            if (!(c.anteil >= S.kraulAnteil)) rot("K3 KRIECHEN", c);
+            if (!e.landung || e.landung.material !== "wasser") rot("K4 STUMM", e);
             const tiere = Array.isArray(k.tier) ? k.tier : [];
-            if (tiere.length < 8) v.push(`K6 LEER: nur ${tiere.length} Tier-Proben (4 Arten × nah/fern verlangt)`);
-            for (const t of tiere) {
-                if (t.amGrund)
-                    v.push(
-                        `K6 AM GRUND: ${t.seele} in ${t.abstand} m steht am Seegrund (Sohle ${t.sohleUnterSpiegel} m unter dem Spiegel)`
-                    );
-                else if (!(Math.abs(t.sohleUnterSpiegel - t.wasserlinie) <= S.tierLinie))
-                    v.push(
-                        `K6 LAGE: ${t.seele} in ${t.abstand} m treibt mit der Sohle ${t.sohleUnterSpiegel} m unter dem Spiegel, ` +
-                            `ihre Wasserlinie (Schultergelenk) liegt bei ${t.wasserlinie} m`
-                    );
-            }
+            if (tiere.length < 8) rot("K6 LEER", tiere.length);
+            for (const t of tiere)
+                if (t.amGrund) rot("K6 AM GRUND", t);
+                else if (!(Math.abs(t.sohleUnterSpiegel - t.wasserlinie) <= S.tierLinie)) rot("K6 LAGE", t);
             const bl = k.baumlos;
-            if (!bl || !Number.isFinite(bl.sohleUnterSpiegel))
-                v.push("K6 LEER: die Probe des Wesens ohne Gestalt-Baum lief nicht");
-            else if (!(Math.abs(bl.sohleUnterSpiegel - bl.soll) <= S.tierLinie))
-                v.push(
-                    `K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle ${bl.sohleUnterSpiegel} m unter dem Spiegel, ` +
-                        `die Schwimm-Tiefe des Gesetzes ist ${bl.soll} m`
-                );
+            if (!bl || !Number.isFinite(bl.sohleUnterSpiegel)) v.push("K6 LEER: die Probe des Wesens ohne Gestalt-Baum lief nicht");
+            else if (!(Math.abs(bl.sohleUnterSpiegel - bl.soll) <= S.tierLinie)) rot("K6 BAUMLOS", bl);
             const { winter: w = {}, mutation: mu = {}, tier: et = [], uebergang: ue = {}, meer: me = {} } = k.eis || {};
             if (!(w.seeFrames >= 120 && et.length === 3)) v.push(`E LEER: ${w.seeFrames} Schritte über dem See, ${et.length} Tiere`);
             else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05))
@@ -445,100 +295,81 @@ function urteil(b) {
             if (!la || !(la[2].glut >= 0.95 && la[2].stoff === "glut" && la[2].licht && !la[2].dampf && la[0] > 0) || la[3].stoff !== "stein" || la[3].licht || la[3].glut > la[1] + 0.01)
                 v.push(`L1 ERSTARRT NIE: ${JSON.stringify(la)}`);
             else if (!(ls[2].dampf && ls[0] >= 0 && ls[0] < la[0])) v.push(`L2 WASSER: ${JSON.stringify(ls)}`);
-            if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
-            else if (!(Math.abs(k.peer.lehne) > 0.05))
-                v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
-            const m = k.medium;
-            if (!m) v.push("K5 MEDIUM: die Luft-Probe lief nicht (keine Kamera oder Luft)");
-            else {
-                if (m.kameraUnten !== true)
-                    v.push(
-                        "K5 MEDIUM: die Kamera 3 m unter dem Spiegel sieht klare Luft (die Luft folgt den Augen des Körpers)"
-                    );
-                if (m.kameraOben !== false)
-                    v.push(
-                        "K5 MEDIUM: die Kamera 10 m über dem Spiegel sieht Unterwasser (die Augen des Körpers sind getaucht)"
-                    );
-            }
+            // P die Schmelze speist See und Fluss, der Körper liest das gezeichnete Wasser · H der Stahl glüht in der Esse
+            const { pegel: p = {}, gluehen: g = {} } = k;
+            if (!(p.hub >= 0.1 && p.wochen > 0 && p.fluss > 0) || p.gegen > 1) rot("P1 STARR", p);
+            else if (!(p.flut[0] >= p.hub - 0.03 && p.flut[2] === p.flut[0] && p.ruhe[0] <= 0.03 && p.flut[1] > p.ruhe[1])) rot("P2 BLIND", p);
+            if (!(p.post > 0 && p.neuBau > 0) || p.halt > 0.001) rot("P3 TAKT", p);
+            const [f, kt] = [g.feuer || {}, g.kalt || {}];
+            if (!(f.wechsel > 0 && f.glut >= 0.5 && f.kelvin > 798 && f.esse)) rot("H1 KALT", g);
+            else if (kt.glut || kt.kelvin || !(kt.wechsel > 0 && kt.T - kt.luft < 50) || !(g.feld >= 5)) rot("H2 GLUT", g);
+            if (!k.peer || !(Math.abs(k.peer.lehne) > 0.05)) rot("K7 MITSPIELER", k.peer || null);
+            const m = k.medium; // die Kamera 3 m unter dem Spiegel sieht Unterwasser, 10 m darüber die Luft
+            if (!m || m.kameraUnten !== true || m.kameraOben !== false) rot("K5 MEDIUM", m || null);
         }
     }
-    // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf
+    // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf:
+    // unter Wasser ist die Mitternacht dunkler als die Luft darüber, der Mittag heller als die Nacht, der Tauchgang färbt die
+    // Himmels-Umgebung nicht (linear, D3: die Equirekt-Tafel der EINEN Atmosphäre folgt der Augen-Höhe in 10-m-Stufen; 1 % des
+    // hellsten Kanals)
     if (b.bild) {
         const li = b.licht;
         if (!li || !li.himmelVor || !li.himmelGetaucht)
             v.push(`K9 LEER: die Licht-Probe lief nicht (${(li && li.fehler) || "Luft oder Himmels-Umgebung fehlt"})`);
         else {
-            if (!(li.nachtUnten < li.nachtOben))
-                v.push(
-                    `K9 NACHT: unter Wasser ist die Mitternacht heller (${li.nachtUnten}) als die Luft darüber (${li.nachtOben})`
-                );
-            if (!(li.mittagUnten > li.nachtUnten * 2))
-                v.push(
-                    `K9 LITERAL: das Wasser kennt Tag und Nacht nicht (Mittag ${li.mittagUnten}, Mitternacht ${li.nachtUnten})`
-                );
-            // linear (D3: die Umgebung ist die Equirekt-Tafel der EINEN Atmosphäre, Float): 1 % des hellsten Kanals —
-            // die Tafel folgt der Augen-Höhe in 10-m-Stufen, ein Tauchgang darf sie nicht färben
+            if (!(li.nachtUnten < li.nachtOben)) rot("K9 NACHT", li);
+            if (!(li.mittagUnten > li.nachtUnten * 2)) rot("K9 LITERAL", li);
             const dh = Math.max(...li.himmelVor.map((x, i) => Math.abs(x - li.himmelGetaucht[i])));
-            if (dh > 0.01 * Math.max(...li.himmelVor))
-                v.push(
-                    `K9 HIMMEL: der Tauchgang färbt die Himmels-Umgebung (${li.himmelVor.join("/")} → ${li.himmelGetaucht.join("/")})`
-                );
+            if (dh > 0.01 * Math.max(...li.himmelVor)) rot("K9 HIMMEL", li);
         }
     }
+    // B DAS WASSER-MATERIAL: kein Zebra mit der Wasser-Uhr (Stromschnelle 3600 s gegen 60 s, der ruhige Fluss), der Sturm bewegt
+    // es, der ruhige Fluss schäumt nicht ohne Gesetz-Grund; B1 LEER: das Bild ohne Schaum nimmt der Stromschnelle ihren Schaum
+    // (das Wildwasser schäumt nach dem Gesetz) — sonst sähe B1 keinen
     if (b.bild) {
         const g = b.bild;
         if (g.fehler) v.push(`B: ${g.fehler}`);
         else {
-            const a = g.uhr60 || {},
-                z = g.uhr3600 || {};
+            const [a, z] = [g.uhr60 || {}, g.uhr3600 || {}];
             if (!(a.ruhig && a.ruhig.pixel > 1000 && a.schnelle && a.schnelle.pixel > 1000))
                 v.push("B LEER: der Fluss-Bogen deckt keine Pixel (die Probe prüfte nichts)");
             else {
-                if (!(g.kantenVerhaeltnis <= S.kantenVerhaeltnis))
-                    v.push(
-                        `B2 ZEBRA: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s ${z.schnelle.kantenDichte} = ` +
-                            `${g.kantenVerhaeltnis} × der bei 60 s (${a.schnelle.kantenDichte})`
-                    );
-                if (!(z.ruhig.kantenDichte <= S.kantenRuhig))
-                    v.push(
-                        `B2 ZEBRA: der ruhige Fluss trägt bei Wasser-Uhr 3600 s Kanten-Dichte ${z.ruhig.kantenDichte} ` +
-                            `(bei 60 s ${a.ruhig.kantenDichte})`
-                    );
-                if (!(g.sturmVerhaeltnis >= S.sturm))
-                    v.push(
-                        `B3 STURM: der Sturm bewegt das Wasser nicht (Kanten-Dichte im Sturm ${g.sturmVerhaeltnis} × der ruhigen)`
-                    );
-                if (!(a.ruhig.hellAnteil <= S.hellRuhig))
-                    v.push(
-                        `B1 SCHAUM: ${(a.ruhig.hellAnteil * 100).toFixed(1)} % des ruhigen Flusses schaumbedeckt ohne Gesetz-Grund`
-                    );
-                // B1 zählt nur, was der SCHAUM hebt (das Bild ohne Schaum daneben, `wasserBild`): nimmt dieses Bild der
-                // Stromschnelle ihren Schaum nicht (das Wildwasser schäumt nach dem Gesetz), sähe B1 keinen Schaum mehr
-                if (!(a.schnelle.hellAnteil >= S.schaumSchnelle))
-                    v.push(
-                        `B1 LEER: das Bild ohne Schaum nimmt der Stromschnelle den Schaum nicht ` +
-                            `(${(a.schnelle.hellAnteil * 100).toFixed(1)} % vom Schaum gehoben) — B1 sähe keinen`
-                    );
+                if (!(g.kantenVerhaeltnis <= S.kantenVerhaeltnis) || !(z.ruhig.kantenDichte <= S.kantenRuhig)) rot("B2 ZEBRA", g);
+                if (!(g.sturmVerhaeltnis >= S.sturm)) rot("B3 STURM", g);
+                if (!(a.ruhig.hellAnteil <= S.hellRuhig)) rot("B1 SCHAUM", a.ruhig);
+                if (!(a.schnelle.hellAnteil >= S.schaumSchnelle)) rot("B1 LEER", a.schnelle);
             }
         }
     }
-    // G — DER GRABEN AM FLUSS (F3): EINE Fläche, auf dem Spiegel, die Ruhe bald, die Wiese daneben steht
+    // G — DER GRABEN AM FLUSS (F3): EINE Fläche (G1), nie > 10 cm über dem Spiegel (G2), in Ruhe auf ihm (G3), die Ruhe binnen
+    // Sheet-Bauten (G4), die Wiese daneben fällt nie (G5)
     for (const g of b.graben ? b.graben.graeben || [b.graben] : []) {
         const wo = `der Graben ${g.abstand} m jenseits der Krone (${g.ort})`;
         if (g.fehler || !(g.nass > g.vor) || !(g.bueschel[1] > 0))
             v.push(g.fehler ? `G: ${g.fehler}` : `G LEER: ${wo} zeichnet kein neues Wasser oder trägt keine Wiese daneben`);
         if (!g.fehler) {
             if (g.doppelt > 0) v.push(`G1 ZWEI FLÄCHEN: ${wo}: an ${g.doppelt} Punkten zwei Wasser-Flächen übereinander`);
-            if (g.ueber > 0)
-                v.push(`G2 ÜBER DEM SPIEGEL: ${wo}: ${g.ueber} Punkte Wasser > 10 cm über dem Spiegel (bis ${g.ueberM} m)`);
-            if (g.abseits > 0)
-                v.push(`G3 ZWEITE FLÄCHE: ${wo}: in Ruhe ${g.abseits} Punkte > 10 cm unter dem Spiegel (bis ${g.abseitsM} m)`);
-            if (!(g.ruhe >= 0 && g.sheets <= SCHWELLE.grabenBauten))
-                v.push(`G4 UNRUHE: ${wo}: der Automat ruht ${g.ruhe < 0 ? "nie" : "nach " + g.ruhe + " Takten"} (${g.sheets} Sheet-Bauten)`);
-            if (g.wieseFaelle > 0 || g.bueschel[0] !== g.bueschel[1])
-                v.push(`G5 FLACKERN: ${wo}: die Wiese daneben fiel ${g.wieseFaelle}-mal, Büschel je Takt ${g.bueschel.join("–")}`);
+            if (g.ueber > 0) v.push(`G2 ÜBER DEM SPIEGEL: ${wo}: ${g.ueber} Punkte Wasser > 10 cm über dem Spiegel (bis ${g.ueberM} m)`);
+            if (g.abseits > 0) rot(`G3 ZWEITE FLÄCHE: ${wo}`, g);
+            if (!(g.ruhe >= 0 && g.sheets <= SCHWELLE.grabenBauten)) rot(`G4 UNRUHE: ${wo}`, g);
+            if (g.wieseFaelle > 0 || g.bueschel[0] !== g.bueschel[1]) rot(`G5 FLACKERN: ${wo}`, g);
         }
     }
+    // G6 · G7 · G8 — DER DAMM (gelaende.K2 (b), (d)): der Stausee steht auf der Überlaufhöhe (±0,1 m) über dem Fluss von
+    // vorher, stromab fließt der Fluss auf seinem Spiegel; am Fern-Ring trägt jeder Punkt unter den Säulen den Edit nach der
+    // Antwort des Fern-Fadens und am neuen Anker die Krone
+    const d = b.damm;
+    if (d && (d.fehler || !(d.saeulen >= 3))) v.push(`G6: ${d.fehler || d.saeulen + " Säulen"}`);
+    for (const u of d && !d.fehler ? d.stromauf : [])
+        if (!(Math.abs(u.wasser - u.ueberlauf) <= 0.1 && u.ueberlauf > u.fluss + 0.1)) rot("G6 KEIN STAU", u);
+    for (const u of d && !d.fehler ? d.stromab : []) if (!(Math.abs(u.wasser - u.fluss) <= 0.1)) rot("G7 KEIN ABFLUSS", u);
+    // ein Feld der Ferne, das der Befund nicht trägt, heißt beim Namen (z43 an der Radeon: „Ring undefined/undefined“)
+    const f = b.ferne && b.ferne.ring;
+    const fehlt = f ? ["punkte", "anders", "hubM", "faden"].filter((k) => !Number.isFinite(f[k])) : [];
+    if (b.ferne && !f) v.push(`G8 FERNE: ${b.ferne.fehler || "der Befund trägt keinen Ring"}`);
+    else if (fehlt.length) v.push(`G8 FERNE: das Feld ${fehlt.map((k) => "ferne.ring." + k).join(", ")} fehlt`);
+    else if (b.ferne && !(f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte))
+        v.push(`G8 FERNE: Ring ${f.anders}/${f.punkte}, Hub ${f.hubM} m, Faden ${f.faden}/${f.punkte}`);
     return v;
 }
 
@@ -662,6 +493,12 @@ function selbsttest() {
         graben: {
             graeben: [1, 3].map((abstand) => ({ abstand, ort: [-256, -1130], vor: 378, nass: 524, bueschel: [9, 9], ruhe: 4, sheets: 110 })),
         },
+        damm: {
+            saeulen: 21,
+            stromauf: [6, 12].map((d) => ({ d, wasser: 25.25, ueberlauf: 25.24, fluss: 24.88 })),
+            stromab: [6, 12].map((d) => ({ d, wasser: 24.63, fluss: 24.63 })),
+        },
+        ferne: { saeulen: 21, ring: { punkte: 5, anders: 5, hubM: 2.84, faden: 5 } },
         koerper: {
             hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
             lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
@@ -691,6 +528,8 @@ function selbsttest() {
                 { ab: 2, frei: 0.4, reihe: [{ glut: 1, stoff: "glut", licht: true }, { glut: 0.4, stoff: "stein" }] },
                 { ab: 1, reihe: [{ dampf: true }] },
             ],
+            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0 },
+            gluehen: { feuer: { wechsel: 17, glut: 0.55, kelvin: 1373, esse: "esse" }, kalt: { wechsel: 119, T: 25, luft: -1, glut: 0 }, feld: 9.8 },
         },
         licht: {
             nachtOben: 0.03,
@@ -786,6 +625,12 @@ function selbsttest() {
         ["S2 GRENZE", (b) => Object.assign(b.koerper.schmelze, { versatz: 0, neuBau: 0 })],
         ["L1 ERSTARRT NIE", (b) => (b.koerper.erstarrung[0].ab = -1)],
         ["L2 WASSER", (b) => (b.koerper.erstarrung[1].ab = 3)],
+        // stoffe.K3-2 an der Basis e7a28b06: der Spiegel eine Funktion ohne Zeit, die Esse las keine Temperatur
+        ["P1 STARR", (b) => Object.assign(b.koerper.pegel, { hub: 0, wochen: 0, fluss: 0 })],
+        ["P2 BLIND", (b) => (b.koerper.pegel.flut = [0, 182, 0.2])],
+        ["P3 TAKT", (b) => (b.koerper.pegel.halt = 0.2)],
+        ["H1 KALT", (b) => Object.assign(b.koerper.gluehen.feuer, { wechsel: 0, glut: 0, kelvin: null })],
+        ["H2 GLUT", (b) => (b.koerper.gluehen.feld = 0)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
         ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
         ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],
@@ -806,7 +651,7 @@ function selbsttest() {
         ["K12 M LEER: TIER", (b) => (b.mutation.leser.tier.n = 0)],
         ["K4 ÜBERALL 1800,1400 KLANG", (b) => (b.ueberall[1].leser.klang.nach = 0)],
         ["K4 ÜBERALL LEER", (b) => b.ueberall.pop()],
-        ["K4 LÄUFE: 58", (b) => Object.assign(b.laeufe, { ende: { see: 233, meer: 2, verloren: 58 } })],
+        ["K4 LÄUFE:", (b) => Object.assign(b.laeufe, { ende: { see: 233, meer: 2, verloren: 58 } })],
         ["K4 SENKE TROCKEN", (b) => (b.laeufe.nass = 8)],
         ["K4 BERGAUF", (b) => (b.laeufe.steigt = 551)],
         ["K4 STRÖMUNG 2700,-2100: tier treibt 0.31", (b) => (b.treibt[2].tier.mit = 0.31)],
@@ -827,7 +672,7 @@ function selbsttest() {
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
         ["B1 LEER", (b) => (b.bild.uhr60.schnelle.hellAnteil = 0.02)],
         ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
-        ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
+        ["B2 ZEBRA:", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", (b) => Object.assign(b.graben.graeben[0], { ueber: 720, ueberM: 0.76 })],
@@ -837,6 +682,12 @@ function selbsttest() {
         ["G1 ZWEI FLÄCHEN", (b) => (b.graben.graeben[0].doppelt = 2)],
         ["G LEER", (b) => (b.graben.graeben[1].nass = 378)],
         ["G: kein Fluss", (b) => (b.graben = { fehler: "kein Fluss am Ort" })],
+        // der Damm an der Basis b2c6c627: stromauf blieb der Fluss auf 24,88/24,98 m (Überlauf 25,24/25,23 m), der Ring las nur 2D
+        ["G6 KEIN STAU", (b) => Object.assign(b.damm.stromauf[0], { wasser: 24.88 })],
+        ["G7 KEIN ABFLUSS", (b) => (b.damm.stromab[1].wasser = null)],
+        ["G8 FERNE", (b) => Object.assign(b.ferne.ring, { anders: 0, hubM: 0, faden: 0 })],
+        // z43/z44: der Ferne-Teil lieferte Felder, die es nicht gab — die Wand nennt das fehlende beim Namen
+        ["G8 FERNE: das Feld ferne.ring.faden fehlt", (b) => delete b.ferne.ring.faden],
         ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
         // DIE TEILE: die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
         // trockener Ursprung in nur EINEM Teil bleibt rot im Ganzen
@@ -926,39 +777,48 @@ else lauf();
 // den Kacheln der Probe (`QUELL_KACHELN`, jede Seite stellt sie selbst her).
 const QUELL_TEILE = Math.max(1, Number(process.env.WASSER_QUELL_TEILE) || 3);
 async function quellTeil(browser, server, k, orte) {
-    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
     const kontext = await browser.createBrowserContext();
     try {
         const pg = await kontext.newPage();
         await nullRenderer(pg);
         await server.zeige(pg, 120000);
-        await pg.waitForFunction(
-            () =>
-                window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready,
-            { timeout: 600000, polling: 250 }
-        );
-        await pg.evaluate(WASSER_INSTALL);
+        await wasserDa(pg, false);
         await pg.evaluate((u) => window.__wasserStrom(u, 0.6), orte.see.ufer);
-        return await pg.evaluate(
-            (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
-            orte,
-            { k, n: QUELL_TEILE },
-            QUELL_KACHELN
-        );
+        return await quellProbe(pg, orte, { k, n: QUELL_TEILE });
     } finally {
         await kontext.close();
     }
 }
+// die Welt steht mit ihrer Hydrosphäre (und mit `bild` ihrem Renderer: auf dem Hardware-Adapter steht die Hydrosphäre vor dem
+// Backend, und `__wasserBild` riss „render() called before the backend is initialized"), die Proben sind installiert
+async function wasserDa(pg, bild) {
+    await pg.waitForFunction(
+        (bild) =>
+            window.anazhRealm &&
+            typeof window.anazhRealm._gameLoopTick === "function" &&
+            window.anazhRealm.state.hydrosphere &&
+            window.anazhRealm.state.hydrosphere.ready &&
+            (!bild || window.anazhRealm.state.rendererReady),
+        { timeout: 600000, polling: 250 },
+        bild
+    );
+    await pg.evaluate(WASSER_INSTALL);
+}
+// die Quellen eines Teils `teil` ({ k, n }, null: alle) in den Kacheln der Probe
+const quellProbe = (pg, orte, teil) =>
+    pg.evaluate(
+        (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
+        orte,
+        teil,
+        QUELL_KACHELN
+    );
 
 async function lauf() {
     const fs = require("fs");
     const path = require("path");
-    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
+    const annotation = (x) => process.env.GITHUB_ACTIONS && console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const server = statikServer();
     await server.lausche(PORT);
@@ -975,19 +835,8 @@ async function lauf() {
     let exit = 1;
     try {
         await server.zeige(page, 120000, `index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`);
-        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch): auf dem Hardware-Adapter steht die
-        // Hydrosphäre vor dem Backend, und `__wasserBild` riss „render() called before the backend is initialized".
-        await page.waitForFunction(
-            (bild) =>
-                window.anazhRealm &&
-                typeof window.anazhRealm._gameLoopTick === "function" &&
-                window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready &&
-                (!bild || window.anazhRealm.state.rendererReady),
-            { timeout: 600000, polling: 250 },
-            BILD
-        );
-        await page.evaluate(WASSER_INSTALL);
+        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch)
+        await wasserDa(page, BILD);
         if (BILD) {
             const ordner = (() => {
                 const i = process.argv.indexOf("--bilder");
@@ -996,6 +845,9 @@ async function lauf() {
             befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
             befund.regen = await page.evaluate(() => window.__wasserRegen({}));
             befund.licht = await page.evaluate(() => window.__wasserLicht({}));
+            befund.ferne = await page.evaluate(
+                async () => window.__wasserDamm({ fluss: (await window.__wasserOrte({})).fluss, ferne: true })
+            );
             for (const k of ["png60", "png3600"]) {
                 if (ordner && befund.bild[k]) {
                     fs.mkdirSync(ordner, { recursive: true });
@@ -1037,7 +889,7 @@ async function lauf() {
             if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
             if (soll("koerper"))
                 befund.koerper = await page.evaluate(
-                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte, meer: o.meer }),
+                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte, meer: o.meer, fluss: o.fluss }),
                     ORTE
                 );
             // am See der Mess-Wiese: die Höhlen darunter und daneben, das Gefährt (D10, W-W2)
@@ -1064,41 +916,34 @@ async function lauf() {
                 if (soll(art)) befund[art] = await page.evaluate((fluss, n) => window.__wasserKarte({ fluss, n }), fluss, n);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
             if (soll("quelle")) {
-                const teil0 = await page.evaluate(
-                    (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
-                    ORTE,
-                    teilen ? { k: 0, n: QUELL_TEILE } : null,
-                    QUELL_KACHELN
-                );
+                const teil0 = await quellProbe(page, ORTE, teilen ? { k: 0, n: QUELL_TEILE } : null);
                 befund.quelle = teilen ? quellTeileVereinen([teil0, ...(await Promise.all(helfer))]) : teil0;
             }
             if (soll("bach"))
                 befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
             if (soll("see"))
                 befund.see = await page.evaluate((o) => window.__wasserSee({ fenster: o.see.fenster }), ORTE);
-            // ganz zuletzt (er schneidet die Welt): der Graben am Fluss (F3)
+            // ganz zuletzt (sie schneiden und schütten die Welt): der Graben am Fluss (F3), 60 m stromab der Damm (gelaende.K2)
             if (soll("graben")) {
                 await page.evaluate((f) => window.__wasserStrom([f.x, f.z], 0.6), ORTE.fluss);
                 befund.graben = await page.evaluate((f) => window.__wasserGraben({ fluss: f }), ORTE.fluss);
             }
+            if (soll("damm")) befund.damm = await page.evaluate((f) => window.__wasserDamm({ fluss: f }), ORTE.fluss);
         }
         const v = urteil(befund);
         console.log(JSON.stringify(befund, null, 1));
+        // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
+        // und lokal grün, der Täter stand nur im Log
         if (v.length) {
             console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);
-            // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
-            // und lokal grün, der Täter stand nur im Log
-            if (process.env.GITHUB_ACTIONS)
-                for (const x of v) console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
+            v.forEach(annotation);
         } else console.log("\nWASSER-LEBEN GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
-        console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
-        if (process.env.GITHUB_ACTIONS)
-            console.log(
-                `::error title=wasser-leben${BILD ? ":bild" : ""}::ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`
-            );
+        // der Stapel nennt die Zeile, die las (aus der Seite: die Probe `__wasser*` oder der Stamm), nie nur die Meldung
+        console.log("WASSER-LEBEN ABBRUCH:", (e && (e.stack || e.message)) || e);
+        annotation(`ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});

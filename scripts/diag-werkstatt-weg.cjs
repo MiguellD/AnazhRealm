@@ -17,7 +17,7 @@
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, halteBis, pruefer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1544,10 +1544,8 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 600000 });
-    const page = await browser.newPage();
+    const { browser, page } = await nullSeite({ frist: 600000 });
     await page.setViewport({ width: 1280, height: 720 });
-    await nullRenderer(page);
     // DER EREIGNIS-STROM: jede Eingabe des Spielers (pointerdown · keydown · wheel), vor jedem Hörer der Seite gefangen
     await page.evaluateOnNewDocument(() => {
         const strom = (window.__eingabeStrom = []);

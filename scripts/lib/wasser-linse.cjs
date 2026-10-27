@@ -408,26 +408,46 @@ async function wasserKoerper(o = {}) {
         feld(10);
         aus.eis.mutation = gang();
         delete r._temperaturFeld;
-        aus.schmelze = wasserSchmelze(r, x0 + 20, mz);
+        const fl = o.fluss || (await window.__wasserOrte({})).fluss;
+        [aus.schmelze, aus.pegel] = wasserSchmelze(r, x0 + 20, mz, { see: [mx, mz], ruhe: spiegel, ufer: x0, fluss: [fl.x, fl.z] });
         aus.erstarrung = wasserErstarrung(r, [[x0, mz], [mx, mz]]);
+        aus.gluehen = await wasserGluehen(r, [x0 + 6, mz]);
     } finally {
         delete r._temperaturFeld;
         [st.seasonPhase, st.autoSeason] = jahr;
+        r._tickSeason(0); // Schneegrenze und Pegel tragen wieder die Saison der Welt
         leib.zurueck();
     }
     return aus;
 }
 
-// (12) DIE SCHMELZE ÜBER SPIELZEIT (stoffe.K3-2): das Jahr läuft im Takt der Saison (`_tickSeason`, eine Woche je Takt); am
-// Ort (x, z) je Woche der Pegel des Schnees (`_schneePegelAt`), das Tagesmittel der Luft (die Uhr und ihr Gegenüber heben den
-// Tagesgang auf), der Versatz, den die Welt trägt (`_schneeGilt`), das Weiß des Boden-Lesers (`_bodenFarbeAt` gegen den
-// Schnee der Palette) und die Chunks, die der Takt der Grenze neu baut. Die Festhalte-Probe: das Feld ohne Jahres-Welle hält
-// den Pegel (`halt` 0).
-function wasserSchmelze(r, x, z) {
-    const st = r.state;
-    const y = r._voxelSurfaceY(x, z);
+// (12) DIE SCHMELZE UND DER PEGEL ÜBER SPIELZEIT (stoffe.K3-2): das Jahr läuft im Takt der Saison (`_tickSeason`, eine Woche je
+// Takt); am Ort (x, z) je Woche der Pegel des Schnees (`_schneePegelAt`), das Tagesmittel der Luft (die Uhr und ihr Gegenüber heben
+// den Tagesgang auf), der Versatz, den die Welt trägt (`_schneeGilt`), das Weiß des Boden-Lesers (`_bodenFarbeAt` gegen den Schnee
+// der Palette) und die Chunks, die der Takt der Grenze neu baut. DER PEGEL am See P.see: je Woche der Spiegel des Gesetzes
+// (`_atlasWaterLevelAt`) über seinem Ruhe-Spiegel P.ruhe (`hub`), ob an seiner Höhe Schnee schmilzt (Kern `abfluss`; `gegen` die
+// Wochen, in denen eins ohne das andere ist), der Fluss an P.fluss (`_hydroRiverAt`), die Tafeln an den Faden (`post`) und die
+// Chunks, die der Takt des Pegels neu baut; dann der Körper (`_koerperWasser`, das gezeichnete Wasser) an der Woche des höchsten
+// Pegels und in Ruhe, die Chunks gebaut: [sein Spiegel über P.ruhe, die nassen Proben (0,25 m) vom See bis 5 m hinter das Ufer
+// P.ufer, der Bezug der Ufer-Bänder]. Die Festhalte-Probe: das Feld ohne Jahres-Welle hält Schnee und Spiegel (`halt` 0).
+// → [die Schmelze, der Pegel]
+function wasserSchmelze(r, x, z, P) {
+    const [st, K, jahr] = [r.state, window.__gelaendeCore, [r.state.seasonPhase, r.state.autoSeason]];
+    const [y, g] = [r._voxelSurfaceY(x, z), r._voxelSurfaceY(...P.see)];
     const [S, c, R] = [r.constructor.BODEN_FARBE.schnee, [0, 0, 0], wasserRund(3)];
     const spanne = (a) => R(Math.max(...a) - Math.min(...a));
+    const [post, takt, pg] = [r._voxelZustandPost, r._pegelTakt, { post: 0, neuBau: 0 }];
+    r._voxelZustandPost = (m) => {
+        if (m.delta && m.delta.pegel !== undefined) pg.post++;
+        post.call(r, m);
+    };
+    r._pegelTakt = () => {
+        const alt = st.dirtyVoxelChunks || new Set();
+        st.dirtyVoxelChunks = new Set();
+        takt.call(r);
+        pg.neuBau += st.dirtyVoxelChunks.size;
+        st.dirtyVoxelChunks = new Set([...alt, ...st.dirtyVoxelChunks]);
+    };
     const lauf = () => {
         const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, (r._lastSeasonTime = 0)];
         Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
@@ -440,31 +460,53 @@ function wasserSchmelze(r, x, z) {
                 neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
                 r._bodenFarbeAt(x, y, z, c);
                 const F = r._temperaturFeld(y, 0);
-                const t = (window.__gelaendeCore.temperaturAus(F, st.seasonPhase, 0.25) + window.__gelaendeCore.temperaturAus(F, st.seasonPhase, 0.75)) / 2;
+                const t = (K.temperaturAus(F, st.seasonPhase, 0.25) + K.temperaturAus(F, st.seasonPhase, 0.75)) / 2;
+                const a = K.abfluss(r._gelaende(), P.ruhe, Math.floor(st.seasonPhase * 365) / 365, (tr) => r._temperaturFeld(P.ruhe, tr));
                 w.push({ p: r._schneePegelAt(y), t, v: r._schneeGilt(), weiss: 1 - Math.max(...c.map((v, i) => Math.abs(v - S[i]))) });
+                Object.assign(w[k - 1], { h: R(r._atlasWaterLevelAt(...P.see, g) - P.ruhe), a: a > 0, f: (r._hydroRiverAt(...P.fluss) || {}).surfaceY, s: st.seasonPhase });
             }
         } finally {
             [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, r._lastSeasonTime] = alt;
             r._tickSeason(0);
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
-        return {
-            pegel: spanne(w.map((b) => b.p)),
-            schmilzt: n((a, b) => a.t > 0 && b.p < a.p),
-            gegen: n((a, b) => (a.t > 1.5 && b.p > a.p + 1e-6) || (a.t < -1.5 && b.p < a.p - 1e-6)),
-            versatz: spanne(w.map((b) => b.v)),
-            weiss: spanne(w.map((b) => b.weiss)),
-            neuBau,
+        return [
+            {
+                pegel: spanne(w.map((b) => b.p)),
+                schmilzt: n((a, b) => a.t > 0 && b.p < a.p),
+                gegen: n((a, b) => (a.t > 1.5 && b.p > a.p + 1e-6) || (a.t < -1.5 && b.p < a.p - 1e-6)),
+                versatz: spanne(w.map((b) => b.v)),
+                weiss: spanne(w.map((b) => b.weiss)),
+                neuBau,
+            },
+            w,
+        ];
+    };
+    const koerper = (p) => {
+        Object.assign(st, { seasonPhase: p, autoSeason: false });
+        r._tickSeason(0);
+        r._drainDirtyVoxelChunks();
+        let nass = 0;
+        for (let u = P.see[0]; u <= P.ufer + 5; u += 0.25) nass += r._koerperWasser(u, P.see[1], r._voxelSurfaceY(u, P.see[1])) > r._voxelSurfaceY(u, P.see[1]) + 0.02;
+        return [R(r._koerperWasser(...P.see, -Infinity) - P.ruhe), nass, R(r._waterLevelAt(...P.see) - P.ruhe)];
+    };
+    try {
+        const [aus, w] = lauf();
+        const top = w.reduce((b, o, i) => (o.h > w[b].h ? i : b), 0);
+        Object.assign(pg, { hub: w[top].h, wochen: w.filter((o) => o.h > 0).length, gegen: w.filter((o) => o.h > 0 !== o.a).length });
+        Object.assign(pg, { fluss: spanne(w.map((o) => o.f)), flut: koerper(w[top].s), ruhe: koerper(0.375) });
+        r._temperaturFeld = (yy, tr) => {
+            const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
+            return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
         };
-    };
-    const aus = lauf();
-    r._temperaturFeld = (yy, tr) => {
-        const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
-        return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
-    };
-    aus.halt = lauf().pegel;
-    delete r._temperaturFeld;
-    return aus;
+        const [h, wh] = lauf();
+        [aus.halt, pg.halt] = [h.pegel, Math.max(...wh.map((o) => Math.abs(o.h)))];
+        return [aus, pg];
+    } finally {
+        ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt"].forEach((k) => delete r[k]);
+        [st.seasonPhase, st.autoSeason] = jahr;
+        r._tickSeason(0);
+    }
 }
 
 // (13) DIE ERSTARRUNG ÜBER SPIELZEIT (stoffe.K3-2): die DSL gießt Lava (`lava`) an Land und ins Wasser des Sees, die Uhr läuft
@@ -497,6 +539,55 @@ function wasserErstarrung(r, orte) {
     return aus;
 }
 
+// (15) DER STAHL DER ESSE (stoffe.K3-2): eine Esse am Ufer bei (x, z), die Klinge der Schmiede in der Hand (`klinge_langschwert` aus
+// dem Buch der Foundry), mittags im Sommer (das Spieler-Wort); der Takt der Esse (`_tickEsse`) je Sekunde — `feuer`: die Hand am
+// Glutbett 60 s, `kalt`: 4,5 m vor der Esse 600 s; je die Sekunde, in der die Glut (Kern `glutAus`) an- bzw. ausgeht (`wechsel`),
+// danach die Temperatur, die Glut, das Licht (`_leuchtQuellen`: die Farbtemperatur) und die Luft des Felds an der Hand
+// (`_temperaturAt`). Die Mutation: das Feld +10 °C (die Naht `_temperaturFeld`) — derselbe Gang endet um `feld` K wärmer.
+async function wasserGluehen(r, [x, z]) {
+    const [st, K, R, E] = [r.state, window.__gelaendeCore, wasserRund(2), r.constructor.ESSE];
+    const buch = await r._foundryAwaitBook(90000);
+    if (!st.blueprints.klinge_langschwert) return { fehler: "keine Klinge der Schmiede: " + JSON.stringify(buch) };
+    const pm = st.playerMesh;
+    const [held, uhr, ort] = [st.player.equipped && st.player.equipped.held, st.timeOfDay, pm.position.clone()];
+    const esse = r.spawnArchitecture("esse", { x, y: r._voxelSurfaceY(x, z), z });
+    if (!esse) return { fehler: "die Esse stand nicht" };
+    const glut = () => (r._stahl ? K.glutAus(r._stahl.T + 273.15, E.feuerK) : 0);
+    const gang = (d, s) => {
+        pm.position.set(esse.position.x, esse.position.y, esse.position.z + d);
+        let wechsel = 0;
+        for (let t = 1; t <= s; t++) {
+            const vor = glut() > 0;
+            r._tickEsse(1);
+            if (!wechsel && glut() > 0 !== vor) wechsel = t;
+        }
+        const q = r._leuchtQuellen(pm.position.x, pm.position.y, pm.position.z, 30).find((l) => l.quelle === "stahl");
+        const T = r._stahl ? R(r._stahl.T) : null;
+        return { wechsel, T, glut: R(glut()), kelvin: q ? R(q.L.kelvin, 0) : null, luft: R(r._temperaturAt(pm.position.y)), esse: r._stahl && r._stahl.esse };
+    };
+    try {
+        r.setSeason("sommer");
+        r.setTimeOfDay(0.5);
+        r.equipHeld("klinge_langschwert");
+        r._stahl = null;
+        const aus = { stoff: r._geraetStoff(st.blueprints.klinge_langschwert), feuer: gang(1.15, 60), kalt: gang(4.5, 600) };
+        r._temperaturFeld = (y, t) => {
+            const F = r.constructor.prototype._temperaturFeld.call(r, y, t);
+            return { ...F, mittel: F.mittel + 10 };
+        };
+        r._stahl = null;
+        gang(1.15, 60);
+        aus.feld = R(gang(4.5, 600).T - aus.kalt.T);
+        return aus;
+    } finally {
+        delete r._temperaturFeld;
+        r._stahl = null;
+        r.removeArchitecture(esse, { still: true });
+        r.equipHeld(held || null);
+        r.setTimeOfDay(uhr);
+        pm.position.copy(ort);
+    }
+}
 // Der See am Ziel (die Region der Hydrosphäre, Heimat oder Kachel — der See der Landform liegt jenseits ±1024 m): der nächste
 // mit Spiegel über dem Meer und mehr als 8 Zellen; ein Fehler-Befund, wenn keiner trägt.
 function __wasserSeeAm(r, ziel) {
@@ -737,18 +828,6 @@ async function wasserGraben(o = {}) {
     const nx = -(a.z - b.z) / nl,
         nz = (a.x - b.x) / nl;
     const krone = __wasserKroneVon(r, a);
-    // die Höhen des gezeichneten Wassers über (x, z): je Netz, das den Punkt trägt, seine oberste Fläche (`_wasserNetzHoehe`,
-    // ein Netz zeichnet je Zelle ein Viereck), aufsteigend, je Fläche eine (10 cm trennen zwei)
-    const flaechen = (x, z) => {
-        const ys = [];
-        for (let dz = -1; dz <= 1; dz++)
-            for (let dx = -1; dx <= 1; dx++) {
-                const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
-                const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
-                if (y !== null) ys.push(y);
-            }
-        return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
-    };
     const messen = (px, pz) => {
         const m = { nass: 0, doppelt: 0, ueber: 0, ueberM: 0, abseits: 0, abseitsM: 0 };
         for (let gz = -9; gz <= 9; gz += 0.5)
@@ -756,7 +835,7 @@ async function wasserGraben(o = {}) {
                 const x = px + gx,
                     z = pz + gz;
                 const g = r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
-                const ys = flaechen(x, z).filter((y) => y > g + 0.1);
+                const ys = wasserFlaechen(r, x, z).filter((y) => y > g + 0.1);
                 if (!ys.length) continue;
                 const atlas = r._atlasWaterLevelAt(x, z, g);
                 const S = atlas > -Infinity ? atlas : r._hydroSpiegelQuer(x, z);
@@ -816,6 +895,101 @@ async function wasserGraben(o = {}) {
         graeben.push(Object.assign(g, { sheetMs: f2(g.sheetMs) }));
     }
     return { ort: [f2(a.x), f2(a.z)], krone: f2(krone), graeben };
+}
+
+// Die Höhen des gezeichneten Wassers über (x, z): je Netz, das den Punkt trägt, seine oberste Fläche (`_wasserNetzHoehe`, ein
+// Netz zeichnet je Zelle ein Viereck), aufsteigend, je Fläche eine (10 cm trennen zwei). Leser: Graben und Damm.
+function wasserFlaechen(r, x, z) {
+    const span = r._voxelChunkConfig(0).span;
+    const ys = [];
+    for (let dz = -1; dz <= 1; dz++)
+        for (let dx = -1; dx <= 1; dx++) {
+            const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
+            const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
+            if (y !== null) ys.push(y);
+        }
+    return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
+}
+
+// ── gelaende.K2 (b) · (d): DER DAMM AM FLUSS ── 60 m stromab des Graben-Orts (längs des Laufs) quer über den Fluss aus dem
+// Verb des Aufschüttens (DSL `voxel_fill`, r 3,5 m) je 3 m eine Säule, die Krone 3 m über dem Spiegel, so weit das Land unter
+// der Krone liegt (±30 m). (b) Der Spieler 40 m seitab, Takt um Takt, bis der Automat ruht; 6 und 12 m stromauf (längs des
+// Laufs) das GEZEICHNETE Wasser gegen die Überlaufhöhe (der niedrigste Pfad über den Boden des Feldes `_voxelSurfaceY` von
+// dort zum Fluss 12 m stromab, Gitter 0,9 m, ±50 m, halbiert auf 1 cm) und gegen den Fluss von vorher (`_hydroSpiegelQuer`),
+// 6 und 12 m stromab gegen den Fluss (der Abfluss hält). (d) `o.ferne`: der Spieler 150 m auf der Achse des Damms (dort löst
+// die Masche des Rings ihn auf: ~5 × 15 m), der Fern-Ring unter den Säulen vor dem Edit und nach der Antwort des Fern-Fadens
+// auf ihn (byte-Diff), und der Fern-Faden, der jeden späteren Ring rechnet (die Bestellung des Rings), an denselben Punkten
+// auf der Krone.
+async function wasserDamm(o = {}) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const f2 = wasserRund(2);
+    const S = (q) => r._hydroSpiegelQuer(q.x, q.z);
+    const { p, fluesse } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
+    const P = fluesse.find((f) => f.points.includes(p)).points;
+    const ab = S(P[P.indexOf(p) + 1] || p) < S(P[P.indexOf(p) - 1] || p) ? 1 : -1;
+    // der Ort d m stromab von p längs des Laufs (stromauf negativ; zwischen zwei Punkten des Laufs liegen bis 12 m)
+    const lauf = (d) => {
+        let [i, s, l] = [P.indexOf(p), Math.sign(d) * ab, Math.abs(d)];
+        for (let e; P[i + s] && (e = Math.hypot(P[i + s].x - P[i].x, P[i + s].z - P[i].z)) < l; i += s) l -= e;
+        const [q, e] = [P[i + s] || P[i], Math.hypot((P[i + s] || P[i]).x - P[i].x, (P[i + s] || P[i]).z - P[i].z) || 1];
+        return { x: P[i].x + ((q.x - P[i].x) * l) / e, z: P[i].z + ((q.z - P[i].z) * l) / e };
+    };
+    const [a, b] = [lauf(60), lauf(61)];
+    const [nx, nz] = [a.z - b.z, b.x - a.x].map((v) => v / Math.hypot(b.x - a.x, b.z - a.z));
+    const krone = S(a) + 3;
+    const saeulen = [];
+    for (let s = -30; s <= 30; s += 3) if (r._voxelSurfaceY(a.x + nx * s, a.z + nz * s) < krone) saeulen.push([a.x + nx * s, a.z + nz * s]);
+    const aus = { krone: f2(krone), saeulen: saeulen.length };
+    const takt = () => r._gameLoopTick(performance.now());
+    const ring = new Map();
+    const fr = () => st.fernRing;
+    const unter = (n) => ((q) => saeulen.some(([x, z]) => Math.hypot(q.x - x, q.z - z) < 3) && q)(r._fernRingPunkt(fr(), n)); // die ebene Krone
+    const y = (q) => fr().geos[q.s].attributes.position.getY(q.li);
+    await window.__wasserStrom([a.x + nx * (o.ferne ? 150 : 40), a.z + nz * (o.ferne ? 150 : 40)], 3);
+    if (o.ferne) {
+        await window.__gebautNach("der Fern-Ring", { fertig: () => fr() && fr().cursor >= fr().totalVerts, takt, max: 3000 });
+        for (let n = 0; n < fr().totalVerts; n++) if (unter(n)) ring.set(n, y(unter(n)));
+    }
+    for (const [x, z] of saeulen) r.dslRun(["voxel_fill", x, krone - 3.5, z, 3.5], { source: "human" });
+    if (o.ferne) {
+        // der Edit reist durch die EINE Bestellung des Rings (`_fernRingUmEdits`): die Probe wartet auf ihre Antwort, eingehängt
+        // (die Laufzeit-Marke `editFlug`, der Edit-Stand `feldEditsN` des Rings), nie auf eine Frist
+        const ed = st.worldMeta.voxelEdits;
+        await window.__gebautNach("der Edit im Fern-Ring", {
+            fertig: () => fr().feldEditsN === ed.length && !fr().editFlug && !fr().nachEdit.length,
+            takt,
+            max: 600,
+        });
+        const hub = [...ring].map(([n, v]) => y(unter(n)) - v);
+        // der Fern-Faden, der jeden späteren Ring rechnet: die EINE Bestellung des Rings (`_fernRingBestellen` — jedes Feld, das
+        // der Faden liest) an denselben Punkten unter den Säulen, ihre Fläche auf der Krone (oder über ihr: die Krone der Masche,
+        // `fernKrone`, liest das Feld, dessen Vereinigung zweier Säulen die Krone um 0,42 m hebt). z44: ein Auftrag von Hand ohne
+        // Winkel und Reihen-Faktor der Masche (`ang`, `q`) warf im Faden (`fernKrone`: „reading '0'“), die Deck-Mischung fehlte still.
+        const fa = await r._fernRingBestellen(fr(), Int32Array.from(ring.keys()));
+        aus.ring = { punkte: hub.length, anders: hub.filter(Boolean).length, hubM: f2(Math.max(0, ...hub)), faden: fa.nassY.filter((v) => v >= krone - 0.01).length };
+        return aus;
+    }
+    const ruht = () => !((st.waterCAActive ? st.waterCAActive.size : 0) + r._weltOffen().chunks + (st.pendingWaterIso ? st.pendingWaterIso.size : 0));
+    await window.__gebautNach("der Stausee", { fertig: ruht, takt, max: 900 });
+    // die Überlaufhöhe: der niedrigste Pfad über den Boden des Feldes (0,9 m, ±50 m) zum Fluss 12 m stromab, halbiert auf 1 cm
+    const N = 112;
+    const zelle = (q) => Math.round((q.x - a.x + 50) / 0.9) + Math.round((q.z - a.z + 50) / 0.9) * N;
+    const boden = Float64Array.from({ length: N * N }, (_, c) => r._voxelSurfaceY(a.x - 50 + (c % N) * 0.9, a.z - 50 + ((c / N) | 0) * 0.9));
+    const erreicht = (weg, h, da = new Uint8Array(N * N)) => {
+        for (let c; (c = weg.pop()) !== undefined; )
+            for (const nb of [c % N ? c - 1 : -1, (c + 1) % N ? c + 1 : -1, c - N, c + N])
+                if (boden[nb] <= h && !da[nb]) weg.push(nb), (da[nb] = 1);
+        return da[zelle(lauf(72))];
+    };
+    const oben = (q) => f2(wasserFlaechen(r, q.x, q.z).pop());
+    aus.stromauf = [6, 12].map((d) => {
+        let [q, lo, hi] = [lauf(60 - d), 0, krone + 1];
+        for (lo = boden[zelle(q)]; hi - lo > 0.01; ) erreicht([zelle(q)], (lo + hi) / 2) ? (hi = (lo + hi) / 2) : (lo = (lo + hi) / 2);
+        return { d, wasser: oben(q), ueberlauf: f2(hi), fluss: f2(S(q)) };
+    });
+    aus.stromab = [6, 12].map((d) => ({ d, wasser: oben(lauf(60 + d)), fluss: f2(S(lauf(60 + d))) }));
+    return aus;
 }
 
 // ── Q7-Gestalt: die Ufer-Farbe ──
@@ -3071,14 +3245,16 @@ module.exports = {
         WELT_ORTE_INSTALL +
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
         wasserRund.toString() +
+        wasserFlaechen.toString() +
         wasserZufall.toString() +
         wasserBoot.toString() +
         wasserTier.toString() +
         wasserPflanzen.toString() +
         wasserSchmelze.toString() +
         wasserErstarrung.toString() +
+        wasserGluehen.toString() +
         // jede Probe als `window.__<Name>` (der Name der Funktion ohne führende Striche)
-        Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
+        Object.entries({ wasserOrte, wasserLeser, wasserLeib, wasserMutation, wasserKarte, wasserLaeufe, wasserTreibt, wasserHoehle, wasserWagen, wasserSichtNetz, wasserFlora, wasserSee, wasserQuelle, wasserQuellTeil, wasserBach, wasserBank, wasserFluss, __wasserKroneVon, wasserUfer, wasserStrom, __wasserFlussNah, wasserGraben, wasserDamm, wasserUferFarbe, wasserKoerper, wasserBild, __wasserSeeAm, wasserLicht, wasserRegen })
             .map(([n, f]) => `window.__${n.replace(/^_+/, "")} = ${f};`)
             .join(""),
     quellTeileVereinen,

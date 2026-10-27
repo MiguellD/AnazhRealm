@@ -545,6 +545,14 @@ function spiegelDaten() {
     })();
 }
 
+// DAS URTEIL DER ARMLÄNGE (material.K2 Staffel 1, `werkbank bild --arm` → `klasse.urteil`): POSE — die Klasse steht im Ausgabe-Bild und
+// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse nyquist ≥ 0,15 und glatte Blöcke ≤ 10 %.
+// Rückgabe: die Befunde beim Namen, leer = grün.
+const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
+    (Object.keys(k).length && a.ist > 0 && a.ist <= 1.5 * a.soll + 0.1 ? [] : [`POSE ${x}: ${Object.keys(k).length} im Bild, Mitte ${a.ist} m`]).concat(
+        Object.entries(k).filter(([, m]) => !(m.nyquist >= 0.15 && m.glatt <= 0.1)).map(([n, m]) => `MIKRO ${n}: nyquist ${m.nyquist} glatt ${m.glatt}`)
+    );
+
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
 //   luma          Mittel der Luma auf der Klasse (deckung, kontrast, nyquist, silhouette, deckungUnten fielen mit A13: kein Leser)
@@ -1970,6 +1978,9 @@ function sollTafelSelbsttest(tafel, q) {
             const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
             if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
         }
+        // das Urteil der Armlänge: Korn (das Schachbrett) grün; ein Boden ohne Mikro-Term (der Verlauf) und eine Pose ohne Fels je ROT beim Namen
+        const ab = [{ boden: sb }, { boden: vl }, {}].map((klassen) => armUrteil({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen })).join("|");
+        if (ab !== "|MIKRO boden: nyquist 0 glatt 1|POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm: ${ab}`);
     }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
@@ -2514,6 +2525,7 @@ function sollIstAbweisung(alt, neu, q) {
 
 module.exports = {
     SCHWELLEN,
+    armUrteil,
     klassenMasse,
     sollTafelUrteil,
     standLeser,

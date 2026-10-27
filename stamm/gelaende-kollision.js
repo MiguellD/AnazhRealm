@@ -450,6 +450,11 @@ class AnazhRealm_gelaende_kollision {
         }
         entry._blockerReach = r;
         this._blockerNetzSetzen(entry);
+        // eine geschlossene Box (beide Achsen ≥ eine Zelle) kann stauen: die Werke des Staus (`_stauWorkClusters`) lesen die
+        // Hülle neu — nach dem Reload bekommt der Damm sie erst nach seinem Eintrag (die Liste und ihre Länge stehen da schon)
+        const zelle = this._voxelChunkConfig(0).step;
+        if (entry.blockerAABBs.some((b) => Math.min(b.maxX - b.minX, b.maxZ - b.minZ) >= zelle))
+            this._stauClusterCache = null;
     }
 
     // DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt — sie beginnt höchstens

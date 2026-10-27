@@ -20,18 +20,16 @@
 //
 //   node scripts/diag-p2p-gestalt.cjs
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const server = statikServer();
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 300000 });
-    const page = await browser.newPage();
-    await nullRenderer(page);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {

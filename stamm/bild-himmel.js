@@ -803,6 +803,7 @@ class AnazhRealm_bild_himmel {
         st.season = this._seasonName(st.seasonPhase);
         this._saisonGemalt = { phase: st.seasonPhase, su };
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
+        this._pegelTakt(); // die Schmelze speist See und Fluss (stoffe.K3-2)
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
