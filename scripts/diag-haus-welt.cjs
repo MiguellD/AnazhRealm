@@ -28,7 +28,15 @@
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, warteAufWelt, teilAus, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    nullRenderer,
+    warteAufWelt,
+    teilAus,
+    ROOT,
+    hauptLauf,
+} = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -40,6 +48,8 @@ const NUR = (process.argv.find((a) => a.startsWith("--nur=")) || "--nur=").slice
 const PHASEN = (process.argv.find((a) => a.startsWith("--phasen=")) || "--phasen=").slice(9).split(",").filter(Boolean);
 // --bild: W9 aus dem Ausgabe-Bild, echter Renderer (lokal unter dem GPU-Schloss); der Lauf fährt nur die Phase grund
 const BILD = process.argv.includes("--bild");
+// --innen: W10 je Haus des Start-Dorfs mit dem Innen-Bild (siedlung.K1 Staffel 2), echter Renderer; der Lauf fährt nur die Phase haus
+const INNEN = process.argv.includes("--innen");
 
 // DIE BASIS-ZEILEN je Defekt: [geheilte Form im Stamm, Basis-Form].
 const BASIS = {
@@ -217,9 +227,9 @@ async function proben(phasen) {
     const s = r.state;
     const A = r.constructor;
     const FC = window.__fachwerkCore;
-    // DIE PHASEN: haus (W1 W2 W4c W5 W10 je Haus), sohle, lichtung, bau (W8), w4, w4b, w6 — der Hauptlauf fährt alle, ein
-    // Selbsttest nur die seines Täters
-    const P = new Set(phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"]);
+    // DIE PHASEN: haus (W1 W2 W4c W5 W10 je Haus), start (dazu jedes Haus des Start-Dorfs), innen (sein Innen-Bild), sohle,
+    // lichtung, bau (W8), w4, w4b, w6, grund (W9) — der Hauptlauf fährt alle in zwei Welten, ein Selbsttest nur die seines Täters
+    const P = new Set(phasen);
     const o = { haeuser: [], phasen: [...P] };
     if (!FC || typeof FC.HAUS !== "function") return { fehler: "__fachwerkCore fehlt" };
     const pm = s.playerMesh;
@@ -394,8 +404,104 @@ async function proben(phasen) {
         return null;
     };
     const FUSS = A.PLAYER_FOOT_OFFSET;
-    for (const e of P.has("haus") ? H.slice(0, 8) : []) {
+    // W10 DAS START-DORF (siedlung.K1 Staffel 2): der Takt der Welt hebt es am Genesis-Ort (der Hook führt), gegangen wird JEDES
+    // Haus seines Plans — der Plan v2 im Gedächtnis des Orts (`_ortPlaene` unter `settlementCells.start.ort`), je Haus-Slot
+    // (`_slotBauplan`) das Haus an seinem Ort; ein Slot ohne Haus ist ROT. Dazu die ersten 8 des Drehbuch-Dorfs am Hang.
+    const SD = [];
+    if (P.has("start")) {
+        const takt = window.__anazhAutoSettlement;
+        window.__anazhAutoSettlement = true;
+        stell(start.x, start.y + 1, start.z);
+        const zelle = () => ((s.worldMeta && s.worldMeta.settlementCells) || {}).start;
+        await warteBis(() => !!zelle() && !r._autoSettlementQueue && !r._stlWegePending, 1, 1200);
+        window.__anazhAutoSettlement = takt;
+        const c = zelle();
+        const plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
+        const slots = ((plan && plan.slots) || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
+        o.startDorf = { slots: slots.length, fehlt: [] };
+        for (const sl of slots) {
+            const [x, z] = [c.x + sl.x, c.z + sl.z];
+            const e = s.architectures.find((a) => a.tuer && Math.hypot(a.position.x - x, a.position.z - z) < 0.05);
+            if (e) SD.push(e);
+            else o.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
+        }
+    }
+    // W10 DAS INNEN-BILD (siedlung.K1 Staffel 2, Schatten K4; `--innen`, echter Renderer): zur Stunde der Bühne zwei Schüsse aus
+    // dem Ausgabe-Pfad mit der Ego-Kamera des Spiels (`_loopCamera`) — innen 0,8 m hinter der Schwelle, der Blick zur Rückwand;
+    // außen 3 m vor dem Boden im Schatten DIESES Hauses (gegen die Sonne hinter seinem Grundriss, der Strahl zur Sonne trifft
+    // einen Werfer). Die Zahl: Median der Luminanz (sRGB linear) des Innen-Bilds ÷ Median des Schatten-Flecks außen.
+    const innenBild = async (e, tu, base, eg, i) => {
+        const T = window.THREE;
+        const [cam, fu] = [s.camera, e.fundament];
+        await window.__weltStehtNach(() => pumpe(1));
+        window.__buehne();
+        s.renderer.setAnimationLoop(null);
+        s.cameraMode = "first";
+        const S = s.directionalLight.position.clone().sub(s.directionalLight.target.position).normalize();
+        const lin = (v) => (v <= 10 ? v / 255 / 12.92 : ((v / 255 + 0.055) / 1.055) ** 2.4);
+        const median = (l) => l.sort((a, b) => a - b)[l.length >> 1];
+        const [WB, HB] = [480, 270];
+        const schuss = async (stand, ziel, name) => {
+            stell(stand.x, stand.y + FUSS, stand.z);
+            s.yaw = Math.atan2(ziel.x - stand.x, ziel.z - stand.z);
+            r._loopCamera(performance.now());
+            cam.lookAt(ziel.x, ziel.y, ziel.z);
+            cam.updateMatrixWorld(true);
+            r._schattenAlleNeu();
+            const { u8 } = await window.__ausgabeAufnahme(WB, HB, 1, { satz: "messung" });
+            const cv = Object.assign(document.createElement("canvas"), { width: WB, height: HB });
+            cv.getContext("2d").putImageData(
+                new ImageData(
+                    Uint8ClampedArray.from(u8, (q, k) => (k % 4 === 3 ? 255 : q)),
+                    WB,
+                    HB
+                ),
+                0,
+                0
+            );
+            o.innenPng.push([`innen-${i}-${name}`, cv.toDataURL("image/png")]);
+            return (px, py, rad) => {
+                const l = [];
+                for (let y = Math.max(0, py - rad); y <= Math.min(HB - 1, py + rad); y++)
+                    for (let x = Math.max(0, px - rad); x <= Math.min(WB - 1, px + rad); x++) {
+                        const k = 4 * (y * WB + x);
+                        l.push(0.2126 * lin(u8[k]) + 0.7152 * lin(u8[k + 1]) + 0.0722 * lin(u8[k + 2]));
+                    }
+                return median(l);
+            };
+        };
+        const innen = (
+            await schuss(
+                { ...welt(e, tu.x, tu.z + 0.8), y: base + eg },
+                { ...welt(e, tu.x, (fu.oz || 0) + fu.ez - 0.5), y: base + eg + 1 },
+                "innen"
+            )
+        )(WB >> 1, HB >> 1, HB >> 1);
+        // der Fleck: von der Mitte gegen die Sonne bis 1 m hinter jeden Grundriss, frei vom Bau, im Schatten
+        const d = new T.Vector3(-S.x, 0, -S.z).normalize();
+        const rc = new T.Raycaster();
+        rc.layers.set(A.SHADOW_TWIN_LAYER);
+        let f = null;
+        for (let t = 1; t < 30 && !f; t += 0.25) {
+            const [x, z] = [e.position.x + d.x * t, e.position.z + d.z * t];
+            if (r._imGrundriss(x, z, 1) || !r._landAt(x, z, 0.5)) continue;
+            const q = new T.Vector3(x, r.getTerrainHeightAt(x, z) + 0.05, z);
+            rc.set(q, S);
+            f = rc.intersectObject(s.scene, true).some((h) => h.object !== pm) ? q : null;
+            if (!f) return { innen, fehler: `kein Schatten-Fleck ${t} m gegen die Sonne` };
+        }
+        if (!f) return { innen, fehler: "kein Fleck außerhalb der Grundrisse" };
+        const st = f.clone().addScaledVector(d, 3);
+        st.y = r.getTerrainHeightAt(st.x, st.z);
+        const lese = await schuss(st, f, "aussen");
+        const v = f.clone().project(cam);
+        const aussen = lese(Math.round(((v.x + 1) / 2) * WB), Math.round(((1 - v.y) / 2) * HB), 6);
+        return { innen: +innen.toFixed(5), aussen: +aussen.toFixed(5), quote: +(innen / aussen).toFixed(3) };
+    };
+    o.innenPng = [];
+    for (const e of P.has("haus") ? [...SD, ...(P.has("innen") ? [] : H.slice(0, 8))] : []) {
         const h = { typ: e.type, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
+        h.start = SD.includes(e);
         o.haeuser.push(h);
         // die Stufe 0 holen: der Spieler steht am Haus, bis die Foundry die Hülle der Stufe 0 liefert
         stell(e.position.x, e.position.y + 3, e.position.z);
@@ -560,7 +666,7 @@ async function proben(phasen) {
                 }
             h.optikProzent = n ? Math.round((gleich / n) * 1000) / 10 : null;
         }
-        if (auf.length) {
+        if (kf || auf.length) {
             // jenseits des Schachts: um ihn herum — hinter dem Fuß des Laufs auf der Seite des Körpers, davor auf der des
             // Ziels (quer durch den Lauf stieg der Körper auf seine Tritte: Haus 732469 neben der Tür, 0,46 m)
             const hin = (name, lx, lz, soll) => {
@@ -600,6 +706,7 @@ async function proben(phasen) {
             if (k >= 29) wmax = Math.max(wmax, pm.position.y);
         }
         [s.keys.w, g.wand] = [false, Math.round((wmax - wy) * 100) / 100];
+        if (h.start && P.has("innen")) h.innen = await innenBild(e, tu, base, eg, o.haeuser.length - 1);
     }
     // W9 (Kopf): Erde 5 cm über der Diele, Raster 0,25 m; `--bild`: je Box zwei Blicke aus dem Ausgabe-Pfad (Halm-Pixel gegen
     // das Bild ohne die Büschel der Box, Boden-Pixel aus der Maske des Boden-Satzes), artifacts/haus-welt/grund-*.png
@@ -1815,7 +1922,7 @@ async function proben(phasen) {
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
-    const P = new Set(o.phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"]);
+    const P = new Set(o.phasen);
     if (P.has("haus")) {
         const hs = o.haeuser.filter((h) => !h.fehler);
         if (!(hs.length >= 6)) f.push(`Aufbau: ${hs.length} Häuser geprüft (Soll ≥ 6)`);
@@ -1838,6 +1945,15 @@ function urteil(o) {
         if (diele.length)
             f.push(
                 `W2 Diele: ${diele.length} Häuser mit dem Fuß neben der Diele (${diele.map((h) => h.typ + ":" + h.dieleCm + " cm").join(" ")})`
+            );
+        const sd = o.startDorf || { slots: 0, fehlt: [] };
+        const sdGang = hs.filter((h) => h.start && h.gang).length;
+        if (P.has("start") && (!(sd.slots >= 1) || sd.fehlt.length || sdGang !== sd.slots))
+            f.push(`W10 Start-Dorf: ${sdGang} von ${sd.slots} Häusern des Plans gegangen ${sd.fehlt.join(" ")}`);
+        const dunkel = hs.filter((h) => h.start && P.has("innen") && !(h.innen && h.innen.quote >= 0.15));
+        if (dunkel.length)
+            f.push(
+                `W10 Innen-Bild: ${dunkel.length} von ${sdGang} Häusern unter 15 % des Außen-Schattens (${dunkel.map((h) => h.typ + "@" + h.gierGrad + "° " + (h.innen ? h.innen.fehler || h.innen.quote : "—")).join(" · ")})`
             );
         const gang = hs.filter((h) => h.gang);
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
@@ -2105,7 +2221,7 @@ function zeile(o) {
     const hs = o.haeuser.filter((h) => !h.fehler);
     return (
         `${o.dorfOrt ? `Dorf-Ort ${o.dorfOrt.x}/${o.dorfOrt.z} (Gefälle ${o.dorfOrt.hang}, der Spieler bei ${o.startOrt.x}/${o.startOrt.z}) · ` : "Dorf-Ort am Start (kein Hang) · "}` +
-        `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}) · W1 (Vorplatz über der Diele ${hs.map((h) => h.vorplatzUeberM).join("/")} m)` +
+        `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}), Start-Dorf ${hs.filter((h) => h.start).length}/${o.startDorf ? o.startDorf.slots : "?"}${o.phasen.includes("innen") ? ` (innen ÷ außen ${hs.map((h) => (h.innen ? h.innen.fehler || h.innen.quote : "—")).join("/")})` : ""} · W1 (Vorplatz über der Diele ${hs.map((h) => h.vorplatzUeberM).join("/")} m)` +
         ` · W2 Diele ${hs.map((h) => h.dieleCm).join("/")} cm` +
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4 Weg ${o.w4weg ? o.w4weg.aufWeg + "/" + o.w4weg.natur + " auf " + o.w4weg.formen + " Formen" : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
@@ -2118,7 +2234,7 @@ function zeile(o) {
 }
 
 hauptLauf(async () => {
-    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
+    const browser = await starteBrowser({ art: BILD || INNEN ? "linse" : "null", frist: 900000 });
     const t0 = Date.now();
     let rot = 0;
     let selbst = [];
@@ -2132,7 +2248,7 @@ hauptLauf(async () => {
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
-            if (!BILD) await nullRenderer(page);
+            if (!BILD && !INNEN) await nullRenderer(page);
             await platz.server.zeige(page, 180000, "index.html", "networkidle0");
             await warteAufWelt(page, 180000);
             await page.evaluate(() =>
@@ -2142,8 +2258,8 @@ hauptLauf(async () => {
                     } catch {}
                 })
             );
-            if (BILD) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
-            const o = await page.evaluate(proben, phasen || null);
+            if (BILD || INNEN) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL);
+            const o = await page.evaluate(proben, phasen);
             await kontext.close();
             platz.z = null;
             for (const zeile of z.patch || []) {
@@ -2213,16 +2329,26 @@ hauptLauf(async () => {
                 .filter((k) => !NUR.length || NUR.includes(k))
                 .map((inj) => ({ inj, soll: soll[inj].slice(1), phasen: soll[inj].slice(0, 1) }));
         }
-        // der Hauptlauf zuerst (er fährt alle Phasen, die längste Welt), dann die Selbsttests — alle im Pool
-        const auftraege = [
-            (platz) => lauf(null, BILD ? ["grund", "bild"] : PHASEN.length ? PHASEN : null, platz),
-            ...selbst.map((s) => (platz) => lauf(s.inj, s.phasen, platz)),
-        ];
+        // der Hauptlauf zuerst (die längsten Welten), dann die Selbsttests — alle im Pool; der Hauptlauf in zwei Welten: das
+        // Start-Dorf wächst in der Phase start, in der anderen lässt W9 Waise es wachsen
+        const haupt = (
+            BILD
+                ? [["grund", "bild"]]
+                : INNEN
+                  ? [["haus", "start", "innen"]]
+                  : PHASEN.length
+                    ? [PHASEN]
+                    : [
+                          ["haus", "start"],
+                          ["sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"],
+                      ]
+        ).map((ph) => (platz) => lauf(null, ph, platz));
+        const auftraege = [...haupt, ...selbst.map((s) => (platz) => lauf(s.inj, s.phasen, platz))];
         const meine = auftraege.map((_, i) => i).filter(imTeil);
         const erg = new Array(auftraege.length);
         (await pool(meine.map((i) => auftraege[i]))).forEach((e, j) => (erg[meine[j]] = e));
         welten = meine.length;
-        const [haupt, ...selbstErg] = erg;
+        const selbstErg = erg.slice(haupt.length);
         if (selbst.length) {
             for (let i = 0; i < selbst.length; i++) {
                 if (!selbstErg[i]) continue; // die Welt eines anderen Teils
@@ -2242,10 +2368,16 @@ hauptLauf(async () => {
                 if (!ok) rot++;
             }
         }
-        if (haupt) {
-            const { o } = haupt;
+        for (const hl of erg.slice(0, haupt.length).filter(Boolean)) {
+            const { o } = hl;
+            fs.mkdirSync(path.join(ROOT, "artifacts/haus-welt"), { recursive: true });
+            for (const [n, png] of o.innenPng || [])
+                fs.writeFileSync(
+                    path.join(ROOT, `artifacts/haus-welt/${n}.png`),
+                    Buffer.from(png.split(",")[1], "base64")
+                );
+            delete o.innenPng;
             if (o.w9) {
-                fs.mkdirSync(path.join(ROOT, "artifacts/haus-welt"), { recursive: true });
                 o.w9.haeuser.forEach((h, i) =>
                     (h.koerper || []).forEach((b, j) => {
                         for (const [v, png] of (b.png || []).entries())
