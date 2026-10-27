@@ -628,15 +628,20 @@ class AnazhRealm_koerper_leib {
     }
     // DER FUSS SETZT AUF, WO SEINE SOHLE AM MEISTEN TRÄGT (leib.K2): beim Aufsetzen rückt der Lock längs des Blicks um bis zu
     // ± 0,12 m (je 3 cm, der kleinste Versatz zuerst) an die Stelle, an der die Gerade der Sohle die meisten ihrer Stellen trägt
-    // (`_gaitProbe`) — auf der Treppe auf den Auftritt; auf stetigem Boden (keine Stelle 5 cm unter der Sohle) bleibt der Fuß,
+    // (`_gaitProbe`) und 4 cm vor der Spitze nichts über sie steigt — auf der Treppe auf den Auftritt, die Spitze vor der
+    // Setzstufe (im späten Abrollen neigt sich die Kappe des Schuhs um ihre Höhe × sin φ nach vorn: an der Kante stand sie
+    // 13–15 cm in der nächsten Stufe); auf stetigem Boden (keine Stelle 5 cm unter der Sohle, frei vor ihr) bleibt der Fuß,
     // wo die Pose ihn setzt. Vorher fror er dort ein, wo die Pose ihn hinstellte, mitten über der Kante einer Stufe.
     _gaitSetzen(ik, probe, lock) {
         const [s, c, x, z] = [Math.sin(ik.yaw), Math.cos(ik.yaw), lock.x, lock.z];
+        const vor = ik.sohle ? ik.sohle[ik.sohle.length - 1] + 0.04 : 0;
         let best = null;
         for (const d of [0, 0.03, -0.03, 0.06, -0.06, 0.09, -0.09, 0.12, -0.12]) {
             this._gaitProbe(probe, x + d * s, z + d * c, ik);
-            if (!best || probe.traegt > best.traegt) best = { ...probe };
-            if (!ik.sohle || best.traegt === ik.sohle.length || best.luecke <= 0.05) break;
+            const wach = this._gaitBodenY(probe.x + vor * s, probe.z + vor * c);
+            probe.wert = probe.traegt + (wach > probe.g + vor * Math.tan(probe.kipp) + 0.01 ? 0 : 100);
+            if (!best || probe.wert > best.wert) best = { ...probe };
+            if (!ik.sohle || (best.wert >= 100 && (best.traegt === ik.sohle.length || best.luecke <= 0.05))) break;
         }
         Object.assign(probe, best);
         [lock.x, lock.z] = [best.x, best.z];
