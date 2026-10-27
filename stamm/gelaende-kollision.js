@@ -873,33 +873,38 @@ class AnazhRealm_gelaende_kollision {
         return out;
     }
 
+    // DIE AUFLAGE AM PUNKT: die Oberkante eines Baus, die einen Fuß bei (x, z) in der Höhe y trägt — dieselbe Regel wie Kapsel
+    // und Tier: eine ungedeckte Oberkante im Band [y − unten, y + PLAYER_STEP_UP] über dem Punkt, die höchste trägt (−Infinity
+    // ohne sie); `aus.stoff` nennt ihren Stoff. Leser: der Stoff unter dem Körper (`_kontaktStoffAt`) und der Fuß auf dem Bau
+    // (`_standSicht`: jeder Fuß auf SEINER Stufe).
+    _auflageAt(x, z, y, aus, unten = AnazhRealm.PLAYER_GROUND_SNAP) {
+        const nah = this._blockerNahe(x, z, 0, -Infinity, []);
+        let top = -Infinity;
+        for (const e of nah)
+            for (const b of e.blockerAABBs || [])
+                if (
+                    b.gedeckt !== true &&
+                    b.topY >= y - unten &&
+                    b.topY <= y + AnazhRealm.PLAYER_STEP_UP &&
+                    b.topY > top &&
+                    !(this._boxAbstand2(b, x, z) > 0)
+                ) {
+                    top = b.topY;
+                    if (aus) aus.stoff = b.stoff || this._werkStoff(e);
+                }
+        return top;
+    }
+
     // DER STOFF UNTER DEM KÖRPER (stoffe.K1): die Zeile der Stoff-Tafel, die einen Fuß, eine Pfote oder einen gleitenden Leib bei
-    // (x, z) in der Höhe y trägt. Die Auflage eines Baus — dieselbe Regel wie Kapsel und Tier: eine Oberkante im Band
-    // [y − PLAYER_GROUND_SNAP, y + PLAYER_STEP_UP] über dem Punkt, die höchste trägt — trägt den Stoff ihres Teils (`stoff`, aus
+    // (x, z) in der Höhe y trägt. Die Auflage eines Baus (`_auflageAt`) trägt den Stoff ihres Teils (`stoff`, aus
     // `_blockerComputePartAABB`; eine Box ohne Teil, die Hülle des Hauses und des Tors, den Stoff ihres Werks, `_werkStoff`);
     // sonst das Eis des gefrorenen Spiegels (`_eisAt`), das Laub des Waldbodens unter dem Kronendach (die EINE Wald-Lese-Stelle
     // `_kronenStreuAt` ≥ ½), die Wiese, wo die Boden-Karte Gras zeichnet (der Grün-Kanal des EINEN Lesers `_bodenSichtAt` ≥ ½),
     // darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
     // gestoßenen Leibs (`_kreaturStossSchritt`).
     _kontaktStoffAt(x, z, y) {
-        const lo = y - AnazhRealm.PLAYER_GROUND_SNAP;
-        const hi = y + AnazhRealm.PLAYER_STEP_UP;
-        const nah = this._blockerNahe(x, z, 0, -Infinity, []);
-        let top = -Infinity;
-        let stoff = null;
-        for (const e of nah)
-            for (const b of e.blockerAABBs || []) {
-                if (
-                    b.gedeckt === true ||
-                    !(b.topY >= lo && b.topY <= hi) ||
-                    b.topY <= top ||
-                    this._boxAbstand2(b, x, z) > 0
-                )
-                    continue;
-                top = b.topY;
-                stoff = b.stoff || this._werkStoff(e);
-            }
-        if (top > -Infinity) return stoff;
+        const aus = this._kontaktAus || (this._kontaktAus = { stoff: null });
+        if (this._auflageAt(x, z, y, aus) > -Infinity) return aus.stoff;
         if (this._eisAt(x, z, y + 0.02, 0.05) !== null) return "eis";
         const lava = this._lavaAt(x, z); // die Decke der Lava (stoffe.K3-2): glühend Glut, erstarrt Stein
         if (lava) return lava.erstarrt ? "stein" : "glut";
