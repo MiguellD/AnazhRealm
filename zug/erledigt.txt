@@ -43,3 +43,4 @@ takt10-gtx gemessen punkte dc06b495 gtx: 35 grün / 4 rot
 takt10c-gtx gemessen punkte dc06b495 gtx: 36 grün / 3 rot
 z49z50b-abab nicht-langsamer abab 6db2602c gegen cd34e72b: w-ego 2+2 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 nicht-langsamer
 takt11-gtx gemessen punkte 6db2602c gtx: 37 grün / 4 rot
+takt12-gtx gemessen punkte 9fa32207 gtx: 22 grün / 3 rot
