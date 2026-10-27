@@ -601,8 +601,8 @@ class AnazhRealm_koerper_leib {
     // Ferse bis zur Spitze längs des Blicks (`ik.sohle`, Meter vor dem Knöchel); die Gerade der Sohle (waagrecht oder durch zwei
     // Stellen, bis ± 0,45 rad — das Sprunggelenk) liegt über jeder Stelle und trägt die meisten (≤ 1 cm über ihnen), bei
     // Gleichstand die flachere: am Hang die Neigung des Hangs, auf der Treppe der Auftritt (Ferse oder Spitze über der tieferen
-    // Stufe). p.g ist ihre Höhe unter dem Knöchel, p.kipp ihre Neigung, p.traegt die Zahl der getragenen Stellen, p.luecke die
-    // größte Höhe der Sohle über einer Stelle (NaN: eine Stelle ohne Boden). Vorher las
+    // Stufe). p.g ist ihre Höhe unter dem Knöchel, p.kipp ihre Neigung, p.traegt die Zahl der getragenen Stellen, p.vorn die
+    // vorderste von ihnen (m vor dem Knöchel), p.luecke die größte Höhe der Sohle über einer Stelle (NaN: eine ohne Boden). Vorher las
     // die Probe den Punkt unter dem Knöchel und kippte nach zwei Proben ± 0,12 m: auf der Treppe stand die Spitze in der
     // nächsten Stufe (gate:koerper-stand K8 stufe p95 16 cm).
     _gaitProbe(p, x, z, ik) {
@@ -610,20 +610,20 @@ class AnazhRealm_koerper_leib {
         const [s, c] = [Math.sin(ik ? ik.yaw : 0), Math.cos(ik ? ik.yaw : 0)];
         const y = this._gaitProbeY || (this._gaitProbeY = []);
         for (let k = 0; k < u.length; k++) y[k] = this._gaitBodenY(x + u[k] * s, z + u[k] * c);
-        [p.x, p.z, p.g, p.kipp, p.traegt, p.luecke] = [x, z, NaN, 0, 0, NaN];
+        [p.x, p.z, p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [x, z, NaN, 0, 0, NaN, 0];
         if (!Number.isFinite(y[u.indexOf(0)])) return;
         for (let i = 0; i < u.length; i++)
             for (let j = i; j < u.length; j++) {
                 const b = j > i ? Math.max(-0.4831, Math.min(0.4831, (y[j] - y[i]) / (u[j] - u[i]))) : 0; // tan 0,45
-                let [a, n, l] = [-Infinity, 0, 0];
+                let [a, n, l, v] = [-Infinity, 0, 0, 0];
                 for (let k = 0; k < u.length; k++) if (y[k] - b * u[k] > a) a = y[k] - b * u[k];
                 for (let k = 0; k < u.length; k++) {
                     const h = a + b * u[k] - y[k];
-                    if (h <= 0.01) n++;
+                    if (h <= 0.01) [n, v] = [n + 1, Math.max(v, u[k])];
                     l = h > l || !(h >= 0) ? h : l;
                 }
                 if (n > p.traegt || (n === p.traegt && Math.abs(b) < Math.abs(Math.tan(p.kipp))))
-                    [p.g, p.kipp, p.traegt, p.luecke] = [a, Math.atan(b), n, l];
+                    [p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [a, Math.atan(b), n, l, v];
             }
     }
     // DER FUSS SETZT AUF, WO SEINE SOHLE AM MEISTEN TRÄGT (leib.K2): beim Aufsetzen rückt der Lock längs des Blicks um bis zu
@@ -761,14 +761,17 @@ class AnazhRealm_koerper_leib {
         this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, standL, w, rolle[0]);
         this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w, rolle[1]);
     }
-    // DIE ROLLE IN DER EBENE DER SOHLE (leib.K2): der Knöchel des rollenden Fußes steigt um heb und rückt um dx vor — längs der
-    // Geraden, auf der die Sohle ruht (`probe.kipp`), nie längs der Waagrechten; [vor, hinauf] in Metern. Vorher fehlte am Hang
-    // die Steigung × dx: die Falllinie hinauf tauchte der rollende Fuß 3–6 cm ein.
+    // DIE ROLLE IN DER EBENE DER SOHLE (leib.K2): der Knöchel des rollenden Fußes steigt und rückt vor — um die vorderste Stelle
+    // der Sohle, die trägt (`probe.vorn`; die Rolle des Gesetzes dreht um die Spitze, `_gaitSohle`, ihr Überstand darüber hinaus
+    // zieht ab: dx − Ü·(1 − cos φ), dy − Ü·sin φ), längs der Geraden, auf der die Sohle ruht (`probe.kipp`), nie längs der
+    // Waagrechten; [vor, hinauf] in Metern. Vorher fehlte am Hang die Steigung × dx (die Falllinie hinauf tauchte der rollende
+    // Fuß 3–6 cm ein), und treppab drehte er um die Spitze über der tieferen Stufe (er hob 3–12 cm von der Kante ab).
     _gaitRollung(rolle, probe, ik) {
+        if (!(rolle && rolle.roll > 0)) return [0, 0];
+        const ue = ik.sohle ? (ik.sohle[ik.sohle.length - 1] - (probe.vorn || 0)) / ik.wpl : 0;
+        const [dx, dy] = [rolle.rollDx - ue * (1 - Math.cos(rolle.roll)), rolle.heb - ue * Math.sin(rolle.roll)];
         const [c, s] = [Math.cos(probe.kipp || 0), Math.sin(probe.kipp || 0)];
-        return rolle && rolle.roll > 0
-            ? [(rolle.rollDx * c - rolle.heb * s) * ik.wpl, (rolle.heb * c + rolle.rollDx * s) * ik.wpl]
-            : [0, 0];
+        return [(dx * c - dy * s) * ik.wpl, (dy * c + dx * s) * ik.wpl];
     }
     // Der Fehlbetrag eines gelockten Fußes an R: wie weit das Becken sinken muss, damit die Kette ihn erreicht (0 = er
     // liegt in R; Infinity = er liegt vorn/hinten jenseits von R, kein Senken hilft).
