@@ -444,6 +444,8 @@ async function probe(A) {
     const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
     const stelle = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
     const fehlerZeile = (e) => String((e && e.stack) || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
+    const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
+        ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
     // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
     const aufsitzen = (gt, n = 12) => {
         const m = r.mountArchitecture(gt);
@@ -1207,7 +1209,7 @@ async function probe(A) {
                     r.processChatCommand("pflanz mir sechs birken");
                     zensus.quelle = "strom";
                     const neu = neueWerke(v0, /birke/);
-                    const chat = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    const chat = chatSeit(t0);
                     C.versuche.push({ ufer: [+PX.toFixed(1), +PZ.toFixed(1)], gewollt: 6, gesetzt: neu.length, chat });
                     for (const e of neu) r.removeArchitecture(e);
                 }
@@ -1298,7 +1300,7 @@ async function probe(A) {
                 const sprich = (satz) => {
                     const t0 = el ? el.innerText.length : 0;
                     r.processChatCommand(satz);
-                    return el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    return chatSeit(t0);
                 };
                 const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
                     const vorA = new Set(st.architectures);
@@ -1370,10 +1372,8 @@ async function probe(A) {
                     const vorA = new Set(st.architectures);
                     const t0 = el ? el.innerText.length : 0;
                     r.processChatCommand("baue dorf hier");
-                    const sofort = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
-                    const sofortGesetzt = st.architectures.filter(
-                        (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
-                    ).length;
+                    const sofort = chatSeit(t0);
+                    const sofortGesetzt = neueWerke(vorA, /^haus_/).length;
                     // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
                     let echo = "";
                     for (const weiter = window.__deckel("die Meldung des Dorfs", A.dorfMs / 50); weiter(); ) {
@@ -1382,9 +1382,7 @@ async function probe(A) {
                                 frame();
                             } catch {}
                         await sleep(50);
-                        echo = el
-                            ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(sofort.length).slice(0, 300)
-                            : "";
+                        echo = chatSeit(t0, sofort.length);
                         if (/Häuser|Haus\.|kein Haus|kein Dorf|Kein Dorf/.test(echo)) break;
                     }
                     const haeuser = neueWerke(vorA, /^haus_/);
