@@ -598,10 +598,10 @@ class AnazhRealm_koerper_leib {
     // Die Bodenprobe je Frame: der Stand-Leser ist eine Karten-Lesung (bilinear), kein Feld-Scan — der Fuß, der auf ein
     // Podest tritt, liest es im selben Frame (der frühere 0,3-m-Cache hielt den alten Boden).
     // DIE SOHLE RUHT AUF DEM, WAS UNTER IHR TRÄGT (leib.K2): der Boden des Fußes (`_gaitBodenY`) an sechs Stellen von der
-    // Ferse bis zur Spitze längs des Blicks (`ik.sohle`, Meter vor dem Knöchel); die Gerade der Sohle (der Ausgleich, sonst
-    // waagrecht oder durch zwei Stellen, bis ± 0,45 rad — das Sprunggelenk) liegt über jeder Stelle und trägt die meisten (≤ 1 cm
-    // über ihnen; der Ausgleich, bis eine andere mehr trägt): am Hang die Neigung des Hangs, auf der Treppe der Auftritt (Ferse
-    // oder Spitze über der tieferen Stufe). p.g ist ihre Höhe unter dem Knöchel, p.kipp ihre Neigung, p.traegt die Zahl der getragenen Stellen, p.vorn die
+    // Ferse bis zur Spitze längs des Blicks (`ik.sohle`, Meter vor dem Knöchel); die Gerade der Sohle (waagrecht oder durch zwei
+    // Stellen, bis ± 0,45 rad — das Sprunggelenk) liegt über jeder Stelle und trägt die meisten (≤ 1 cm über ihnen), bei
+    // Gleichstand die flachere: am Hang die Neigung des Hangs, auf der Treppe der Auftritt (Ferse oder Spitze über der tieferen
+    // Stufe). p.g ist ihre Höhe unter dem Knöchel, p.kipp ihre Neigung, p.traegt die Zahl der getragenen Stellen, p.vorn die
     // vorderste von ihnen (m vor dem Knöchel), p.luecke die größte Höhe der Sohle über einer Stelle (NaN: eine ohne Boden). Vorher las
     // die Probe den Punkt unter dem Knöchel und kippte nach zwei Proben ± 0,12 m: auf der Treppe stand die Spitze in der
     // nächsten Stufe (gate:koerper-stand K8 stufe p95 16 cm).
@@ -612,28 +612,19 @@ class AnazhRealm_koerper_leib {
         for (let k = 0; k < u.length; k++) y[k] = this._gaitBodenY(x + u[k] * s, z + u[k] * c);
         [p.x, p.z, p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [x, z, NaN, 0, 0, NaN, 0];
         if (!Number.isFinite(y[u.indexOf(0)])) return;
-        // die Gerade mit der Neigung b, über jede Stelle gehoben; sie gilt, wenn sie mehr Stellen trägt als die bisherige
-        const gerade = (b) => {
-            b = Math.max(-0.4831, Math.min(0.4831, b)); // tan 0,45
-            let [a, n, l, v] = [-Infinity, 0, 0, 0];
-            for (let k = 0; k < u.length; k++) if (y[k] - b * u[k] > a) a = y[k] - b * u[k];
-            for (let k = 0; k < u.length; k++) {
-                const h = a + b * u[k] - y[k];
-                if (h <= 0.01) [n, v] = [n + 1, Math.max(v, u[k])];
-                l = h > l || !(h >= 0) ? h : l;
-            }
-            if (n > p.traegt) [p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [a, Math.atan(b), n, l, v];
-        };
-        // zuerst der Ausgleich (der stetige Boden), dann waagrecht und durch je zwei Stellen (die Kante einer Stufe)
-        let [mu, my, m] = [0, 0, 0];
-        for (let k = 0; k < u.length; k++) if (Number.isFinite(y[k])) [mu, my, m] = [mu + u[k], my + y[k], m + 1];
-        let [suy, suu] = [0, 0];
-        for (let k = 0; k < u.length; k++)
-            if (Number.isFinite(y[k]))
-                [suy, suu] = [suy + (u[k] - mu / m) * (y[k] - my / m), suu + (u[k] - mu / m) ** 2];
-        gerade(suu > 0 ? suy / suu : 0);
         for (let i = 0; i < u.length; i++)
-            for (let j = i; j < u.length; j++) gerade(j > i ? (y[j] - y[i]) / (u[j] - u[i]) : 0);
+            for (let j = i; j < u.length; j++) {
+                const b = j > i ? Math.max(-0.4831, Math.min(0.4831, (y[j] - y[i]) / (u[j] - u[i]))) : 0; // tan 0,45
+                let [a, n, l, v] = [-Infinity, 0, 0, 0];
+                for (let k = 0; k < u.length; k++) if (y[k] - b * u[k] > a) a = y[k] - b * u[k];
+                for (let k = 0; k < u.length; k++) {
+                    const h = a + b * u[k] - y[k];
+                    if (h <= 0.01) [n, v] = [n + 1, Math.max(v, u[k])];
+                    l = h > l || !(h >= 0) ? h : l;
+                }
+                if (n > p.traegt || (n === p.traegt && Math.abs(b) < Math.abs(Math.tan(p.kipp))))
+                    [p.g, p.kipp, p.traegt, p.luecke, p.vorn] = [a, Math.atan(b), n, l, v];
+            }
     }
     // DER FUSS SETZT AUF, WO SEINE SOHLE AM MEISTEN TRÄGT (leib.K2): beim Aufsetzen rückt der Lock längs des Blicks um bis zu
     // ± 0,12 m (je 3 cm, der kleinste Versatz zuerst) an die Stelle, an der die Gerade der Sohle die meisten ihrer Stellen trägt
