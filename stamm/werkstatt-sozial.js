@@ -11,13 +11,16 @@ class AnazhRealm_werkstatt_sozial {
         if (newBtn) {
             newBtn.addEventListener("click", () => this._openNewWorldDialog());
         }
+        // TEILEN in EINER Geste: die Welt als Code (`teileWelt`), dieselbe Zeile wie das Werk der Werkstatt
+        const teilen = document.getElementById("world-teilen");
+        if (teilen) this._teilenZeile(teilen, "welt", () => this.teileWelt());
         this.updateWorldInfo();
     }
 
     // Welt-Erstellungs-Dialog (native <dialog>) mit drei Pfaden:
     //   1) Allein → private Welt (createNewWorld)
-    //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach Reload, Banner mit Einladungs-Code
-    //   3) Joinen → joinWorldFromCode (world-request → world-snapshot → _importGuestWorld → Reload)
+    //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach Reload, Host-Banner (den Code gibt `teileWelt`)
+    //   3) Joinen → der Welt-Code (`empfangeWerk` → `_weltBeitritt`: world-request → world-snapshot → _importGuestWorld → Reload)
     _openNewWorldDialog() {
         const dialog = document.getElementById("new-world-dialog");
         if (!dialog || typeof dialog.showModal !== "function") {
@@ -119,24 +122,16 @@ class AnazhRealm_werkstatt_sozial {
                 return;
             }
             statusEl.textContent = "Verbinde mit Host…";
-            const result = await this.joinWorldFromCode(code, { slugHint: slug || null });
+            const result = await this.empfangeWerk(code, { slugHint: slug || null });
             if (!result.ok) {
-                const reason = {
-                    invalid_code: "Einladungs-Code ist ungültig. Erwartet: anazh://host:port/raumId",
-                    timeout: "Timeout — Host antwortet nicht. Läuft der signaling-server beim Host?",
-                    ws_error: "Verbindung gescheitert — IP + Port + Firewall prüfen.",
-                    ws_throw: "WebSocket konnte nicht geöffnet werden.",
-                    import_failed: "Welt-Snapshot konnte nicht importiert werden.",
-                    no_websocket: "Dieser Browser unterstützt WebSocket nicht.",
-                };
-                statusEl.textContent = reason[result.reason] || `Fehler: ${result.reason}`;
+                statusEl.textContent = `${AnazhRealm.WERK_CODE.grund[result.grund.split(":")[0]]} (${result.grund})`;
                 confirmBtn.disabled = false;
                 return;
             }
             statusEl.textContent = "Welt empfangen — lade…";
             cleanup();
             dialog.close();
-            // (die Tür lädt in die Gast-Welt: `joinWorldFromCode` → `_importGuestWorld` → `_weltBetreten`)
+            // (die Tür lädt in die Gast-Welt: `_weltBeitritt` → `_importGuestWorld` → `_weltBetreten`)
         };
 
         cancelBtn.addEventListener("click", onCancel);
@@ -211,83 +206,19 @@ class AnazhRealm_werkstatt_sozial {
         this._renderGuestBanner();
     }
 
-    // Host-Banner, nur bei worldMeta.role === "host": zeigt den Einladungs-Code. URL aus den LAN-Adressen
-    // der welcome-Message des signaling-servers; Fallback: aktuelle p2p.url.
+    // Host-Banner, nur bei worldMeta.role === "host": der Stand des Raums. Den Code trägt die EINE Geste (`teileWelt`, die
+    // Teilen-Zeile der Bibliothek) — signiert, im Format jedes geteilten Werks.
     _renderHostBanner() {
         const banner = document.getElementById("world-host-banner");
         if (!banner) return;
-        const role = this.state.worldMeta && this.state.worldMeta.role;
-        if (role !== "host") {
-            banner.hidden = true;
-            banner.innerHTML = "";
-            return;
-        }
-        const worldId = this.state.worldMeta.worldId;
-        if (!worldId) {
-            banner.hidden = true;
-            return;
-        }
-        // Bevorzuge LAN-Adresse, wenn vorhanden — sonst was im URL-Feld steht.
-        const lanAddrs = (this.state.p2p && this.state.p2p.lanAddresses) || [];
-        let inviteUrl;
-        if (lanAddrs.length > 0) {
-            inviteUrl = `ws://${lanAddrs[0]}`;
-        } else {
-            inviteUrl = (this.state.p2p && this.state.p2p.url) || AnazhRealm.P2P_DEFAULT_WS_URL;
-        }
-        const code = this.makeInvitationCode(inviteUrl, worldId) || "(Code-Erzeugung fehlgeschlagen)";
-        const connected = this.state.p2p && this.state.p2p.connected;
-        const peerCount = (this.state.p2p && this.state.p2p.peers && this.state.p2p.peers.size) || 0;
-        banner.hidden = false;
-        banner.innerHTML = "";
-        const line1 = document.createElement("div");
-        line1.innerHTML = `<strong>Du hostest diese Welt.</strong> Status: ${
-            connected ? "Bereit für Mitspieler" : "Verbinde…"
-        }${peerCount > 0 ? ` (${peerCount} verbunden)` : ""}`;
-        const line2 = document.createElement("div");
-        line2.style.marginTop = "0.35em";
-        line2.textContent = "Einladungs-Code für Mitspieler:";
-        const codeRow = document.createElement("div");
-        codeRow.style.marginTop = "0.3em";
-        codeRow.style.display = "flex";
-        codeRow.style.alignItems = "center";
-        codeRow.style.flexWrap = "wrap";
-        codeRow.style.gap = "0.4em";
-        const codeEl = document.createElement("code");
-        codeEl.textContent = code;
-        codeRow.appendChild(codeEl);
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "invite-copy-btn";
-        copyBtn.textContent = "kopieren";
-        copyBtn.addEventListener("click", () => {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(code).then(
-                    () => {
-                        copyBtn.textContent = "kopiert!";
-                        setTimeout(() => (copyBtn.textContent = "kopieren"), 1500);
-                    },
-                    () => {
-                        copyBtn.textContent = "Code: " + code;
-                    }
-                );
-            } else {
-                copyBtn.textContent = "Code: " + code;
-            }
-        });
-        codeRow.appendChild(copyBtn);
-        banner.appendChild(line1);
-        banner.appendChild(line2);
-        banner.appendChild(codeRow);
-        if (lanAddrs.length === 0) {
-            const hint = document.createElement("div");
-            hint.style.marginTop = "0.4em";
-            hint.style.fontSize = "0.85em";
-            hint.style.opacity = "0.8";
-            hint.textContent =
-                "Hinweis: Server hat noch keine LAN-Adresse zurückgemeldet. Der Code zeigt deine eingestellte URL — falls 127.0.0.1, müssen Mitspieler die Lan-IP manuell ersetzen.";
-            banner.appendChild(hint);
-        }
+        const p2p = this.state.p2p || {};
+        banner.hidden = !(this.state.worldMeta && this.state.worldMeta.role === "host");
+        const peerCount = (p2p.peers && p2p.peers.size) || 0;
+        banner.innerHTML = banner.hidden
+            ? ""
+            : `<strong>Du hostest diese Welt.</strong> Status: ${p2p.connected ? "Bereit für Mitspieler" : "Verbinde…"}${
+                  peerCount > 0 ? ` (${peerCount} verbunden)` : ""
+              } — den Code gibt „Teilen" in der Bibliothek.`;
     }
 
     // Ring 11.5: Guest-Banner. Sichtbar wenn worldMeta.role === "guest".
