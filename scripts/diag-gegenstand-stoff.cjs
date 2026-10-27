@@ -36,6 +36,7 @@
 // Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
 // Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
 "use strict";
+const { urteilEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -349,7 +350,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     return aus;
 }
 async function tafel() {
-    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne, urteilEnde } = require("./lib/welt-boot.cjs");
+    const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
     const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
     const server = await statikServer().lausche(port);
     const browser = await starteBrowser({ art: "null", frist: 600000 });
