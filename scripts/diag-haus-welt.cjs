@@ -136,7 +136,7 @@ const BASIS = {
     // DIE WAND KENNT DEN WEG NICHT: Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
     weg: [['return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;', "return false;"]],
     // DAS WERK IM STEIN: der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
-    dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;", "? sy + 0.5 : pos.y;"]],
+    dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : y;", "? sy + 0.5 : y;"]],
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [
         [
