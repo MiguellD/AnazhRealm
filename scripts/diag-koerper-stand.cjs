@@ -31,6 +31,10 @@
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
 //       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm.
 //       Gemessen wird erst, wenn die Welt steht — und dort steht der Ring an seinem Ziel (`_ringWaechst`, nie an der Bildrate)
+//   K9  DER SPRUNG AUS DEM LEIB-GESETZ (leib.K2 Staffel 2, im Lauf von K8 an der Mess-Wiese): je Sicht (Ego, Third) der Sprung
+//       aus dem Sprint, je Leib der heutige, die Masse ×1,25 (`_leibMasse`) und die Kraft ×1,25 (`_sprungKraft`) — die Hüfte
+//       (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse senkt Höhe und Weite, die Kraft hebt beide
+//       (je ≥ 10 %); der Täter „sprung" ist der feste Abdruck der Seele (vor leib-k2-sprung)
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
