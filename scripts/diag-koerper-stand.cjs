@@ -29,7 +29,7 @@
 //       Größen-Band das Reh im Stand je
 //       Bein, das schlechteste; seine Sohle liegt dem Boden an, `_gaitSohlenKipp`), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
-//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json.
+//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm.
 //       Gemessen wird erst, wenn die Welt steht — und dort steht der Ring an seinem Ziel (`_ringWaechst`, nie an der Bildrate)
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
@@ -37,7 +37,6 @@
 "use strict";
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
-const path = require("path");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
@@ -1060,101 +1059,60 @@ async function rollen(n) {
         if (t) r.removeArchitecture(t);
         streuJetzt();
         R.streu = mass(streu);
+        // DER SPRUNG AUS DEM LEIB-GESETZ (K9, leib.K2 Staffel 2) an der Wiese je Sicht: aus dem Sprint, die Taste einen Takt
+        // gehalten, bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges, die Weite vom Abdruck bis
+        // zur Landung; das Gesetz ist der Scheitel des Abdrucks im Takt (v²/2g − v·dt/2, v aus `_sprungAbdruck`). Je Leib: das
+        // Gesetz, die Masse ×1,25 (das Volumen der Haut, `_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
+        if (ort !== "wiese") continue;
+        const av = [];
+        pm.traverse((q) => q.userData._leibV > 0 && av.push(q));
+        const y = () => (pm.updateMatrixWorld(true), [P.y, rig.legL.hip.getWorldPosition(v).y, s.camera.position.y]);
+        const sprung = (fm, fk, j = { hub: [0, 0, 0] }) => {
+            av.forEach((q) => (q.userData._leibV *= fm));
+            r._sprungKraft = () => fk * Object.getPrototypeOf(r)._sprungKraft.call(r);
+            setz();
+            [s.keys.w, s.keys.shift, s.yaw] = [true, true, 0];
+            for (let k = 0; k < 120; k++) takt();
+            const [y0, x0, z0, a] = [y(), P.x, P.z, r._sprungAbdruck()];
+            s.keys[" "] = true;
+            for (let k = 0; k < 300 && (!k || s.isJumping); k++, s.keys[" "] = false) {
+                takt();
+                y().forEach((h, i) => (j.hub[i] = Math.max(j.hub[i], h - y0[i])));
+            }
+            [s.keys.w, s.keys.shift, j.weite, j.gesetz] = [
+                false,
+                false,
+                Math.hypot(P.x - x0, P.z - z0),
+                (a * a) / 2 / -s.gravity - a / 120,
+            ];
+            delete r._sprungKraft;
+            av.forEach((q) => (q.userData._leibV /= fm));
+            return j;
+        };
+        o.sprung = {};
+        for (const b of ["first", "third"]) {
+            r.setCameraMode(b);
+            o.sprung[b] = { gesetz: sprung(1, 1), masse: sprung(1.25, 1), kraft: sprung(1, 1.25) };
+        }
     }
     o.nexus = r.nexus && r.nexus.knightOfTime.autonomyLevel;
     return o;
 }
 
-// ── K9 (Kopf der Datei) ──
-async function spruenge() {
-    const r = window.anazhRealm;
-    const [s, pm, W] = [r.state, r.state.playerMesh, window.__messWiese];
-    let uhr = performance.now();
-    const takt = () => {
-        try {
-            r._gameLoopTick((uhr += 1000 / 60));
-        } catch {}
-    };
-    const setz = () => {
-        pm.position.set(W[0], r._voxelSurfaceY(W[0], W[1]) + 0.6, W[1]);
-        [s._fixedSimPos, s.yaw] = [null, 0];
-        s.playerVel.setValue(0, 0, 0);
-    };
-    await window.__weltStehtNach(() => (setz(), takt()));
-    const hueft = new window.THREE.Vector3();
-    // je Sprung: die Taste einen Takt gehalten, der Leib bis zur Landung — der Hub der Kapsel, der gezeichneten Hüfte und des
-    // Auges, die Weite vom Abdruck bis zur Landung; das Gesetz ist die Höhe des Abdrucks (v²/2g, v aus `_sprungAbdruck`)
-    const sprung = (lauf) => {
-        setz();
-        [s.keys.w, s.keys.shift] = [lauf, lauf];
-        for (let k = 0; k < 120; k++) takt();
-        const y = () => (
-            pm.updateMatrixWorld(true),
-            [pm.position.y, pm.userData.rig.legL.hip.getWorldPosition(hueft).y, s.camera.position.y]
-        );
-        const [y0, x0, z0, gesetz] = [y(), pm.position.x, pm.position.z, r._sprungAbdruck() ** 2 / 2 / -s.gravity];
-        const hub = [0, 0, 0];
-        s.keys[" "] = true;
-        for (let k = 0, luft = false; k < 300 && (!luft || s.isJumping); k++, s.keys[" "] = false) {
-            takt();
-            luft = luft || s.isJumping;
-            y().forEach((v, i) => (hub[i] = Math.max(hub[i], v - y0[i])));
-        }
-        [s.keys.w, s.keys.shift] = [false, false];
-        return {
-            hoch: hub[0],
-            leib: hub[1],
-            auge: hub[2],
-            gesetz,
-            weite: Math.hypot(pm.position.x - x0, pm.position.z - z0),
-        };
-    };
-    // die Mutanten des Leib-Gesetzes: die Masse ×1,25 (das Volumen der Haut, `_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
-    const av = [];
-    pm.traverse((o) => o.userData._leibV > 0 && av.push(o));
-    const leib = (mut) => {
-        if (mut === "masse") av.forEach((o) => (o.userData._leibV *= 1.25));
-        if (mut === "kraft") r._sprungKraft = (...a) => 1.25 * Object.getPrototypeOf(r)._sprungKraft.apply(r, a);
-        const o = { stand: sprung(false), lauf: sprung(true) };
-        if (mut === "masse") av.forEach((o) => (o.userData._leibV /= 1.25));
-        if (mut === "kraft") delete r._sprungKraft;
-        return o;
-    };
-    const o = {};
-    for (const sicht of ["first", "third"]) {
-        r.setCameraMode(sicht);
-        o[sicht] = { gesetz: leib(), masse: leib("masse"), kraft: leib("kraft") };
-    }
-    return o;
-}
-
-// K9 je Sicht: das Gesetz trägt die Höhe (± 10 %, der Takt von 1/60 s schneidet den Scheitel), Leib und Auge heben sich mit
-// (≥ 80 %), die Masse ×1,25 senkt Höhe und Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
+// K9 je Sicht: die Höhe hält das Gesetz des Abdrucks auf 2 %, der Leib (Third) und das Auge (Ego) heben sich mit (≥ 80 %), die
+// Masse ×1,25 senkt Höhe und Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
 function urteilK9(o) {
-    if (!o || !o.first || !o.third) return ["K9 Aufbau: kein Sprung je Sicht"];
-    const f = [];
-    for (const [sicht, j] of Object.entries(o)) {
-        const { stand, lauf } = j.gesetz;
-        if (!(Math.abs(stand.hoch / stand.gesetz - 1) <= 0.1))
-            f.push(
-                `K9 Höhe ${sicht}: ${stand.hoch} m gegen das Gesetz ${stand.gesetz} m — Täter: der Abdruck (_sprungAbdruck)`
-            );
-        const blick = sicht === "first" ? "auge" : "leib";
-        if (!(stand[blick] >= 0.8 * stand.hoch))
-            f.push(`K9 Bild ${sicht}: ${blick} ${stand[blick]} von ${stand.hoch} m`);
-        for (const [mut, vz] of [
-            ["masse", -1],
-            ["kraft", 1],
+    const f = o ? [] : ["K9 Aufbau: kein Sprung"];
+    for (const [b, { gesetz: g, masse, kraft }] of Object.entries(o || {})) {
+        if (!(Math.abs(g.hub[0] / g.gesetz - 1) <= 0.02))
+            f.push(`K9 Höhe ${b}: ${g.hub[0]} m, das Gesetz ${g.gesetz} m`);
+        if (!(g.hub[b === "first" ? 2 : 1] >= 0.8 * g.hub[0])) f.push(`K9 Bild ${b}: Kapsel/Leib/Auge ${g.hub} m`);
+        for (const [n, j, vz] of [
+            ["masse", masse, -1],
+            ["kraft", kraft, 1],
         ])
-            for (const [art, m] of [
-                ["hoch", "stand"],
-                ["weite", "lauf"],
-            ])
-                if (!((j[mut][m][art] / j.gesetz[m][art] - 1) * vz >= 0.1))
-                    f.push(
-                        `K9 Mutante ${mut} ${sicht} ${art}: ${j[mut][m][art]} gegen ${j.gesetz[m][art]} m — Täter: ein fester Sprung`
-                    );
-        if (!(lauf.weite > 1)) f.push(`K9 Aufbau ${sicht}: Weite ${lauf.weite} m`);
+            if (!(Math.min(...[j.hub[0] / g.hub[0], j.weite / g.weite].map((q) => (q - 1) * vz)) >= 0.1))
+                f.push(`K9 Mutante ${n} ${b}: ${j.hub[0]}/${j.weite} m gegen ${g.hub[0]}/${g.weite} m`);
     }
     return f;
 }
@@ -1237,13 +1195,9 @@ const K8_ROLLEN = Object.freeze({
     huf: [3, "der Huf (_kreaturFussBoden, seine Sohle _gaitSohlenKipp)"],
     rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
-// DIE RATSCHE (spec/profiband/ratsche-boden-rolle.json, Ort × Rolle p95 cm am Kopf): eine Rolle über ihrem Soll darf nicht
-// schlechter werden (+ 15 % + 0,5 cm Streuung je Lauf); `--ratsche` schreibt den Lauf als neue Ratsche
-const RATSCHE = path.join(ROOT, "spec/profiband/ratsche-boden-rolle.json");
 function urteilK8(o, umfang) {
     if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
     const f = [];
-    const rs = fs.existsSync(RATSCHE) ? JSON.parse(fs.readFileSync(RATSCHE, "utf8")) : {};
     // die Mess-Welt ist eine Funktion des Codes: kein Wurf des Nexus nach der Wanduhr (sein Dorf am Hang: fein 30,8/31,4 cm)
     if (o.nexus)
         f.push(
@@ -1259,10 +1213,8 @@ function urteilK8(o, umfang) {
             const min = rolle === "streu" ? umfang / 2 : umfang;
             if (m && m.stecken) f.push(`K8 Steckenbleiber ${ort} ${rolle}: ${m.stecken} — Täter: der Kapsel-Schritt`);
             if (!m || !(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m ? m.n : 0} Kontakte (Soll ≥ ${min})`);
-            else if (!(m.p95 <= Math.max(soll, ((rs[ort] || {})[rolle] || 0) * 1.15 + 0.5)))
-                f.push(
-                    `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}`
-                );
+            else if (!(m.p95 <= soll))
+                f.push(`K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}) — Täter: ${wer}`);
         }
     }
     return f;
@@ -1272,7 +1224,7 @@ const zeile = (o) =>
     JSON.stringify(o, (_k, v) => (typeof v === "number" ? Math.round(v * 1000) / 1000 : v)).replace(/"/g, "");
 
 hauptLauf(async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
     try {
@@ -1291,7 +1243,7 @@ hauptLauf(async () => {
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
-            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
+            await server.zeige(page, 180000, "index.html", "networkidle0");
             await warteAufWelt(page, 180000);
             if (inj) await page.evaluate(taeter, inj);
             // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
@@ -1303,7 +1255,7 @@ hauptLauf(async () => {
                 })
             );
             const o = k8
-                ? { ...(await page.evaluate(rollen, K8_UMFANG)), sprung: await page.evaluate(spruenge) }
+                ? await page.evaluate(rollen, K8_UMFANG)
                 : await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
             return { o };
@@ -1323,7 +1275,7 @@ hauptLauf(async () => {
                 ring: ["K8 Ring wiese", "K8 Ring hang"],
                 nexus: ["K8 Aufbau: der Nexus"],
                 fuss: ["K8 fuss hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
-                sprung: ["K9 Mutante masse first hoch", "K9 Mutante kraft third weite"],
+                sprung: ["K9 Mutante masse first", "K9 Mutante kraft third"],
             };
             for (const inj of Object.keys(soll)) {
                 const k8 = soll[inj][0].startsWith("K8");
@@ -1340,20 +1292,6 @@ hauptLauf(async () => {
         const k8 = await lauf(null, true);
         const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG), ...urteilK9(k8.o.sprung)];
         console.log("  " + zeile({ ...o, k8: k8.o }));
-        if (process.argv.includes("--ratsche"))
-            fs.writeFileSync(
-                RATSCHE,
-                JSON.stringify(
-                    Object.fromEntries(
-                        ["wiese", "hang"].map((w) => [
-                            w,
-                            Object.fromEntries(Object.keys(K8_ROLLEN).map((k) => [k, k8.o[w][k].p95])),
-                        ])
-                    ),
-                    null,
-                    1
-                ) + "\n"
-            );
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
         if (process.env.KOERPER_STAND_JSON)
