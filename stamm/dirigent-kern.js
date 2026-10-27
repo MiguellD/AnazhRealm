@@ -534,7 +534,7 @@ class AnazhRealm {
                 minGapSeconds: 3.0,
             },
             // Multi-User-Sync via WebSocket-Broker (signaling-server.js): enabled startet die Verbindung,
-            // url + room steuern das Ziel; peers = Map<peerId, {pos, mesh, lastSeen}>. lastBroadcastAt
+            // url + room steuern das Ziel; peers = Map<peerId, {pos, mesh}>. lastBroadcastAt
             // drosselt Position-Updates (broadcastIntervalMs), sonst ein Paket je Frame.
             p2p: {
                 enabled: false,
