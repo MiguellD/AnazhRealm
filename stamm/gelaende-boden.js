@@ -933,7 +933,6 @@ class AnazhRealm_gelaende_boden {
     // (`_fundamentRaster`: Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) im Schritt `ORT_WAHL.grobM` und in dem der
     // Wand (0,5 m, `_fundamentLand`), `radius` die Reichweite des Grundrisses (NaN ohne) — der Ort-Faden legt es je Kandidat an.
     _ortRaster(plan) {
-        const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
         const grobM = AnazhRealm.ORT_WAHL.grobM;
         const lx = [];
         const lz = [];
@@ -941,11 +940,11 @@ class AnazhRealm_gelaende_boden {
         const wandN = [];
         const radius = [];
         for (const sl of plan.slots) {
-            const { fundament, fp } = AnazhRealm._slotGrundriss(sl);
+            const fp = this._grundrissVon(sl);
             let nG = 0;
             let nW = 0;
             if (fp) {
-                const s = fundament ? saum : 0;
+                const s = fp.saum || 0;
                 const raster = { ex: fp.ex + s, ez: fp.ez + s, ox: fp.ox, oz: fp.oz };
                 const grob = AnazhRealm._fundamentRaster(raster, sl.tuer, grobM);
                 const wand = AnazhRealm._fundamentRaster(raster, sl.tuer, 0.5);
@@ -968,7 +967,7 @@ class AnazhRealm_gelaende_boden {
     _ortTraegtWirt(k, p) {
         const frei = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
         for (const sl of k.slots) {
-            const { fp } = AnazhRealm._slotGrundriss(sl);
+            const fp = this._grundrissVon(sl);
             if (!fp) continue;
             const wx = k.ort.x + sl.x;
             const wz = k.ort.z + sl.z;
@@ -985,22 +984,20 @@ class AnazhRealm_gelaende_boden {
     // Bauten rechnet (`_bodenUmzug`: Baum, Brunnen und Bau neben einem Haus stehen dann auf dem geerdeten Grund), das Laden
     // danach für die Häuser eines Saves desselben Bodens. Gibt die Zahl der geerdeten Häuser.
     _erdbauAltOrte(liste, yVon) {
-        const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
         const platten = [];
         for (const e of liste) {
-            const f = e && e.fundament;
-            if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez) || !e.position) continue;
+            // ein Haus eines Orts trägt sein Fundament samt Saum (`_grundrissVon`: `saum`)
+            const f = e && e.position ? this._grundrissVon(e) : null;
+            if (!f || !f.saum) continue;
             const y = yVon(e);
             if (!Number.isFinite(y)) continue;
             const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
             const c = Math.cos(ry);
             const s = Math.sin(ry);
-            const lx = Number.isFinite(f.ox) ? f.ox : 0;
-            const lz = Number.isFinite(f.oz) ? f.oz : 0;
-            const cx = e.position.x + lx * c + lz * s;
-            const cz = e.position.z - lx * s + lz * c;
+            const cx = e.position.x + f.ox * c + f.oz * s;
+            const cz = e.position.z - f.ox * s + f.oz * c;
             if (!this._ortFrei(cx, cz, 0.01)) continue; // ein Erdbau trägt das Haus schon
-            platten.push({ art: "platte", cx, cz, phi: ry, ex: f.ex + saum, ez: f.ez + saum, y: y - 0.5 });
+            platten.push({ art: "platte", cx, cz, phi: ry, ex: f.ex + f.saum, ez: f.ez + f.saum, y: y - 0.5 });
         }
         if (!platten.length) return 0;
         const p0 = platten[0];
