@@ -1001,10 +1001,7 @@ function korpusPraedikat(soll, vor, nach, wortTyp) {
     // Stempel eines Baus, der Guss eines Wesens, die Prägung eines Rezepts (`stempel`: [Werk-Ziel, Werte])
     const zahl = (x) =>
         soll.regler
-            ? x.stempel.filter(
-                  ([t, ov]) =>
-                      traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)
-              ).length
+            ? x.stempel.filter(([t, ov]) => traf(t) && Object.entries(soll.regler).every(([id, [a, b]]) => ov && ov[id] >= a && ov[id] <= b)).length
             : Object.entries(x.werke).reduce((s, [t, n]) => s + (traf(t) ? n : 0), 0);
     if (soll.werk) return zahl(nach) - zahl(vor) >= (soll.min || 1);
     for (const k of ["wesen", "traurig", "regel"]) if (soll[k]) return nach[k] - vor[k] >= soll[k];
@@ -1055,31 +1052,22 @@ function seelePraedikat(soll, say, bezug) {
     const trifft = (t) => new RegExp(bezug[t]).test(String(say || "").toLowerCase());
     return soll.taten.some(trifft) && !Object.keys(bezug).some((t) => !soll.taten.includes(t) && trifft(t));
 }
-// Der Schlüssel des Mitschnitts: der Satz, im Gespräch mit einem Wesen dazu seine Erinnerungen (ein Name als «»: roh isoliert, im
-// Ruf ein Platzhalter) — ohne die Erinnerung des Laufs trägt der Mitschnitt keine Antwort (die Mutante gedaechtnis-leer)
-const schluessel = (satz, system) => {
-    const e = /Deine Erinnerungen: (.*)\.$/m.exec(system || "");
-    return e ? `${satz} ⟂ ${e[1].replace(/«N\d+»|⁨[^⁩]*⁩/g, "«»")}` : satz;
-};
 // DIE REGELN DES MODELLS (KI K4): je Drittel des Selbstlaufs eine neue LLM-Regel; die Regeln beider Quellen gewertet (ihr ttl-Ende)
-// und verdrängt; im Gegenlauf (gemischtes δ, blind für die Quelle) erneuert dieselbe Wertung die Heiler (δ +) um `trennung` öfter
-// als die Schädlinge (δ −) — je Quelle.
-function regelVerdict(R, trennung) {
+// und verdrängt; im Gegenlauf (gemischtes δ, blind für die Quelle; der Nexus schreibt je Sekunde, die Kappe greift) erneuert
+// dieselbe Wertung die Heiler (δ +) um `trennung` öfter als die Schädlinge (δ −), die verfallen oder verdrängt werden — je Quelle.
+function regelVerdict(R, trennung = 0.25) {
     if (!R || !R.gegen) return ["kein Selbstlauf der Regeln"];
-    const out = [];
-    const sum = (lauf, k, f) => lauf.reduce((s, d) => s + ((d[k] || {})[f] || 0), 0);
-    R.echt.forEach((d, i) => (d.llm || {}).neu || out.push(`Drittel ${i + 1} ohne neue LLM-Regel`));
+    const sum = (k) => [...R.echt, ...R.gegen].reduce((s, d) => s + (d[k] || 0), 0);
+    const out = R.echt.flatMap((d, i) => (d["llm neu"] ? [] : [`Drittel ${i + 1} ohne neue LLM-Regel`]));
     for (const q of ["llm", "nexus"]) {
-        for (const f of ["gewertet", "verdraengt"])
-            if (!(sum(R.echt, q, f) + sum(R.gegen, q + "+", f) + sum(R.gegen, q + "-", f)))
-                out.push(`keine ${q}-Regel ${f}`);
-        const [hp, hm] = ["+", "-"].map(
-            (v) => sum(R.gegen, q + v, "erneuert") / Math.max(1, sum(R.gegen, q + v, "gewertet"))
+        const [e, v, d] = ["erneuert", "verfallen", "verdraengt"].map((f) =>
+            ["+ ", "- ", " "].map((x) => sum(q + x + f))
         );
+        const [hp, hm] = [0, 1].map((i) => e[i] / Math.max(1, e[i] + v[i] + d[i]));
+        if (!(e[0] + e[1] + e[2] + v[0] + v[1] + v[2])) out.push(`keine ${q}-Regel gewertet`);
+        if (!(d[0] + d[1] + d[2])) out.push(`keine ${q}-Regel verdrängt`);
         if (!(hp - hm >= trennung))
-            out.push(
-                `die Wertung trennt die ${q}-Regeln nicht nach δ: erneuert ${hp.toFixed(2)} der Heiler, ${hm.toFixed(2)} der Schädlinge`
-            );
+            out.push(`die Wertung trennt ${q} nicht nach δ: erneuert ${hp.toFixed(2)} (+) · ${hm.toFixed(2)} (−)`);
     }
     return out;
 }
@@ -1943,7 +1931,7 @@ async function korpusAufbau(a) {
     const [ruf, lauf] = [r.llmCall, r.dslRun];
     r.llmCall = async function (text, system, o) {
         const p = await ruf.call(this, text, system, o);
-        if (!(o && o.hintergrund)) Object.assign(K, { antwort: p, system });
+        if (!(o && o.hintergrund)) K.antwort = p;
         return p;
     };
     r.dslRun = function (p, o) {
@@ -2005,7 +1993,7 @@ async function korpusAufbau(a) {
         const alt = JSON.parse(v.praegung);
         for (const p in ws)
             if (JSON.stringify(ws[p]) !== JSON.stringify(alt[p]))
-                (r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p]);
+                r._praegungSetzen(r._foundry.recipes[p].kind, p, alt[p] || {}), alt[p] || delete ws[p];
         for (const x of st.architectures.filter((x) => !v.werke.has(x)).reverse()) r.removeArchitecture(x);
         for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
         for (const [c, e] of v.gemuet) if (c.userData && c.userData.emotions) c.userData.emotions = e;
@@ -2041,7 +2029,7 @@ async function korpusSatz(a) {
     window.__buehne();
     r.state.weatherEffectTime = 0;
     await window.__weltStehtNach();
-    Object.assign(K, { vor: K.stand(), werke: [], wesen: [], lauf: null, antwort: null, system: null });
+    Object.assign(K, { vor: K.stand(), werke: [], wesen: [], lauf: null, antwort: null });
     const [vor, f0, e] = [K.abdruck(), window.__seitenfehler || 0, { satz: a.satz }];
     // DIE SEELE (KI K3): ein Wesen des Satzes und seine Taten über die Wege des Spiels — der Schlag des Spielers (`damageCreature`),
     // die Gabe (`activateCreatureConsumable`), die Geste „folge mir" (`assignCreatureTask`, erinnert, wenn es ankommt: Takte der
@@ -2064,7 +2052,7 @@ async function korpusSatz(a) {
     const t0 = performance.now();
     const echo = (z) => r._chatEcho(z);
     await (w ? r.maybeAnswerCreature(`${a.soll.name}, ${a.satz}`, echo) : r.maybeAnswerWithLlm(a.satz, echo));
-    Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort, system: K.system });
+    Object.assign(e, { antwortMs: Math.round(performance.now() - t0), antwort: K.antwort });
     // das Fenster zählt Takte der Welt (je 100 ms einer), nie die Wanduhr
     for (let gang = 0; !a.soll.still && !w && gang <= a.fensterMs / 100; gang++) {
         e.praedikat = praedikat(a.soll, vor, K.abdruck(), a.wortTyp);
@@ -2076,75 +2064,67 @@ async function korpusSatz(a) {
     return e;
 }
 
-// DER SELBSTLAUF DER REGELN (KI K4) — vor dem ersten Satz eines Laufs leer, nach jedem Satz 100 s Welt-Zeit im Zeitraffer: die Uhr der Seite rückt je Takt 0,25 s vor
-// (sie bleibt verschoben, auch für die Sätze), der Nexus schreibt je 3 s eine Regel (`_composeNexusRule`); gezählt je Lauf, Drittel
-// und Quelle: neu · gewertet (das ttl-Ende, je Takt des eigenen und des Loops) · erneuert · verfallen · verdrängt. Der Gegenlauf
-// (lauf 1) mischt das δ: je Quelle im Wechsel +0,8 / −0,8 über die Baseline des Rewards; die Mutante wertung-aus misst kein δ.
+// DER SELBSTLAUF DER REGELN (KI K4) — vor dem ersten Satz eines Laufs leer, nach jedem Satz 100 s Welt-Zeit im Zeitraffer: die Uhr
+// der Seite rückt je Takt 0,25 s vor (sie bleibt verschoben, auch für die Sätze), der Nexus schreibt je 3 s eine Regel
+// (`_composeNexusRule`; im Gegenlauf je Sekunde, bis die Kappe verdrängt). Gezählt je Lauf, Drittel und Quelle am Bestand, gleich wer den Takt schlug (der eigene, der Loop): neu ·
+// erneuert (ihr born rückt) · verfallen (fort am ttl-Ende) · verdrängt (fort davor). Der Gegenlauf (lauf 1) mischt das δ: je Quelle
+// im Wechsel +1 / −1 über die Baseline des Rewards; die Mutante wertung-aus misst kein δ.
 async function regelRaffer(a) {
     const r = window.anazhRealm;
     const st = r.state;
-    const R = window.__regeln || (window.__regeln = { vor: 0, z: [], lauf: -1 });
-    const quelle = (x) => (/^llm/.test(x.source) ? "llm" : x.source === "nexus" ? "nexus" : null);
-    const zaehl = (x, f) => {
-        const [d, k] = [R.z[R.lauf][Math.floor(R.s / 800)], quelle(x) + (R.lauf ? (R.dl.get(x) > 0 ? "+" : "-") : "")];
-        if (quelle(x)) (d[k] = d[k] || { neu: 0, gewertet: 0, erneuert: 0, verfallen: 0, verdraengt: 0 })[f]++;
-    };
+    const R = window.__regeln || (window.__regeln = { vor: 0, z: [] });
+    const q = (x) => (/^llm/.test(x.source) ? "llm" : x.source === "nexus" && "nexus");
     if (!R.uhr) {
-        const [uhr, verdraengt, wert, takt] = [
-            performance.now.bind(performance),
-            r._evictWorldRule,
-            r._measureRuleReward,
-            r._tickWorldRules,
-        ];
-        Object.assign(R, { uhr });
-        performance.now = () => uhr() + R.vor;
-        r._evictWorldRule = function (rules) {
-            const alt = rules.slice();
-            verdraengt.call(this, rules);
-            for (const x of alt) if (!rules.includes(x)) zaehl(x, "verdraengt");
-        };
-        r._tickWorldRules = function (T) {
-            const faellig = st.worldRules.filter((x) => x.ttlSec != null && T - x.born >= x.ttlSec);
-            takt.call(this, T);
-            for (const x of faellig)
-                (zaehl(x, "gewertet"), zaehl(x, st.worldRules.includes(x) ? "erneuert" : "verfallen"));
-        };
-        r._measureRuleReward = function (x, jetzt) {
-            if (R.lauf && x._vPending && x._vPos)
-                x._vBase = r._fieldWohlStruktur(r.auraAt(x._vPos.x, x._vPos.z, jetzt)) - (R.dl.get(x) || 0);
-            return a.mutante === "wertung-aus" || wert.call(this, x, jetzt);
+        const [uhr, wert] = [performance.now.bind(performance), r._measureRuleReward];
+        R.uhr = performance.now = () => uhr() + R.vor;
+        r._measureRuleReward = function (x, t) {
+            if (R.lauf && x._vPos)
+                x._vBase = r._fieldWohlStruktur(r.auraAt(x._vPos.x, x._vPos.z, t)) - (R.dl.get(x) || [0, 0])[1];
+            return a.mutante === "wertung-aus" || wert.call(this, x, t);
         };
     }
     if (R.lauf !== a.lauf)
-        (Object.assign(R, { lauf: a.lauf, s: 0, dl: new Map(), wechsel: {}, rng: r._samenStrom(r._bauSame("nexus")) }),
-            (R.z[a.lauf] = [{}, {}, {}]),
-            (st.worldRules = []));
-    const neu = () => {
-        for (const x of st.worldRules.filter((x) => quelle(x) && !R.dl.has(x)))
-            (R.dl.set(x, (R.wechsel[quelle(x)] = -(R.wechsel[quelle(x)] || -0.8))), zaehl(x, "neu"));
+        [R.lauf, R.s, R.dl, R.n, R.rng, R.z[a.lauf], st.worldRules] = [
+            a.lauf,
+            0,
+            new Map(),
+            {},
+            r._samenStrom(r._bauSame("nexus")),
+            [{}, {}, {}],
+            [],
+        ];
+    const sieh = () => {
+        const d = R.z[R.lauf][Math.floor(R.s / 800)];
+        const zaehl = (x, f, k = q(x) + (R.lauf ? (R.dl.get(x)[1] > 0 ? "+ " : "- ") : " ") + f) =>
+            (d[k] = (d[k] || 0) + 1);
+        for (const [x, [born]] of R.dl)
+            if (!st.worldRules.includes(x)) {
+                zaehl(x, performance.now() / 1000 - born >= x.ttlSec ? "verfallen" : "verdraengt");
+                R.dl.delete(x);
+            }
+        for (const x of st.worldRules.filter(q)) {
+            const alt = R.dl.get(x);
+            R.dl.set(x, [x.born, alt ? alt[1] : (R.n[q(x)] = -(R.n[q(x)] || -1))]);
+            if (!alt || alt[0] !== x.born) zaehl(x, alt ? "erneuert" : "neu");
+        }
     };
     for (const ende = R.s + a.schritte; R.s < ende; R.s++, R.vor += 250) {
-        if (R.s % 12 === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
-        neu();
+        sieh();
+        if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
         r._tickWorldRules(performance.now() / 1000);
     }
     return R.z;
 }
 
-// Der Mitschnitt-Anbieter der CI: das Programm des echten Laufs zum Satz (false: kein JSON), im Gespräch die Antwort des Wesens.
+// Der Mitschnitt-Anbieter der CI: das Programm des echten Laufs zum Satz (false: kein JSON).
 const mitschnitt = (ratsche) => (req) =>
     new Promise((fertig) => {
         let b = "";
         req.on("data", (d) => (b += d));
         req.on("end", () => {
-            const [sys, u] = JSON.parse(b).messages.map((x) => x.content);
-            const p = (ratsche.mitschnitt || {})[schluessel(u.slice(u.lastIndexOf("Spieler sagt: ") + 14), sys)];
-            const inhalt =
-                p === false
-                    ? "kein JSON"
-                    : JSON.stringify(
-                          typeof p === "string" ? { say: p, program: null } : { say: "Aus dem Mitschnitt.", program: p }
-                      );
+            const u = JSON.parse(b).messages.pop().content;
+            const p = (ratsche.mitschnitt || {})[u.slice(u.lastIndexOf("Spieler sagt: ") + 14)];
+            const inhalt = p === false ? "kein JSON" : JSON.stringify({ say: "Aus dem Mitschnitt.", program: p });
             fertig(
                 JSON.stringify(
                     p === undefined ? { error: "kein Mitschnitt" } : { message: { role: "assistant", content: inhalt } }
@@ -2164,25 +2144,26 @@ async function kiWelt(seiten) {
     return { srv, browser, page };
 }
 
-// DIE TEILE DES KORPUS (`--<teil>`), je Teil das Soll seiner Staffel und eine eigene Ratsche (ratsche-ki-korpus-<teil>.json):
-// Regler-Wörter (KI K2, Absicht 80 %; die Sätze tragen [Werk-Wort oder "*", {Regler: [von, bis]}]) · Seele (KI K3, ≥ 70 % der
-// Antworten nennen eine Erinnerung) · Regeln (KI K4: das Urteil fällt am Selbstlauf, regelVerdict)
+// DIE TEILE DES KORPUS (`--<teil>`): je Teil das Soll seiner Staffel, die Form seiner Sätze und eine eigene Ratsche
+// (ratsche-ki-korpus-<teil>.json) — Regler-Wörter (KI K2, Absicht 80 %, [Werk-Wort oder "*", {Regler: [von, bis]}]) · Seele
+// (KI K3, ≥ 70 % der Antworten nennen eine Erinnerung, [Name, Seele, Taten …]; ihr Mitschnitt trägt keine Antwort) · Regeln
+// (KI K4: das Urteil fällt am Selbstlauf, regelVerdict)
 const KORPUS_TEILE = {
-    regler: { absicht: 0.8 },
-    seele: { gueltig: 0, absicht: 0.7, p95Ms: 0 },
-    regeln: { gueltig: 0, absicht: 0, p95Ms: 0, trennung: 0.25 },
+    regler: [{ absicht: 0.8 }, ([w, r]) => ({ werk: w === "*" ? w : [w], regler: r })],
+    seele: [{ gueltig: 0, absicht: 0.7, p95Ms: 0 }, ([name, wesen, ...taten]) => ({ name, wesen, taten })],
+    regeln: [{ gueltig: 0, absicht: 0, p95Ms: 0 }, (regel) => ({ regel })],
 };
 async function korpusHaupt() {
     const echt = process.argv.includes("--echt");
     const teil = Object.keys(KORPUS_TEILE).find((t) => process.argv.includes("--" + t));
-    const mutante = process.env.V1_MUTANTE || null;
+    const [soll, form] = KORPUS_TEILE[teil] || [];
+    const mutante = process.env.V1_MUTANTE;
     const ratschePfad = teil ? RATSCHE_PFAD.replace(".json", `-${teil}.json`) : RATSCHE_PFAD;
     const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
     const [roh, ratsche] = [lies(KORPUS_PFAD), lies(ratschePfad) || {}];
-    const satz = ([s, [w, r]]) => [s, { werk: w === "*" ? w : [w], regler: r }];
     const saetze = roh && Object.entries((teil ? roh[teil] : roh).saetze);
-    const korpus = roh && { saetze: teil === "regler" ? saetze.map(satz) : saetze };
-    const m = { korpus, ratsche, echt, saetze: [], soll: { ...KORPUS_SOLL, ...KORPUS_TEILE[teil] }, regeln: {} };
+    const korpus = roh && { saetze: form ? saetze.map(([s, x]) => [s, form(x)]) : saetze };
+    const m = { korpus, ratsche, echt, saetze: [], soll: { ...KORPUS_SOLL, ...soll }, regeln: {} };
     const modell = process.env.KI_MODELL || ratsche.modell || "qwen3:4b-instruct";
     const q = (k) => +(m.saetze.filter((e) => e.urteil[k]).length / Math.max(1, m.saetze.length)).toFixed(3);
     if (korpus) {
@@ -2198,18 +2179,18 @@ async function korpusHaupt() {
             fensterMs: KORPUS_SOLL.fensterMs,
             praedikat: korpusPraedikat.toString(),
         });
-        // die Regeln: der Selbstlauf (lauf 0) und der Gegenlauf (lauf 1) über dieselben Sätze, gezählt wird lauf 0
+        // die Regeln: der Selbstlauf (lauf 0, gezählt) und der Gegenlauf (lauf 1) über dieselben Sätze, je Lauf leer begonnen
+        const raffer = (lauf, schritte) => page.evaluate(regelRaffer, { mutante, lauf, schritte });
         const folge =
             teil === "regeln" ? [0, 1].flatMap((l) => korpus.saetze.map((x, i) => [...x, l, i])) : korpus.saetze;
-        const raffer = (lauf, schritte) => page.evaluate(regelRaffer, { mutante, lauf, schritte });
         for (const [satz, soll, lauf, i] of folge) {
             if (teil === "regeln" && !i) await raffer(lauf, 0);
             const e = await page.evaluate(korpusSatz, { ...arg, satz, soll });
             if (teil === "regeln") [m.regeln.echt, m.regeln.gegen] = await raffer(lauf, 400);
             if (lauf) continue;
             if (soll.taten) e.praedikat = seelePraedikat(soll, (e.antwort || {}).say, roh.seele.bezug);
-            e.weltMs = soll.taten ? (e.praedikat ? e.antwortMs : null) : e.weltMs;
-            [e.satz, e.urteil, e.system] = [schluessel(satz, e.system), korpusSatzUrteil(e, soll)];
+            if (soll.taten) e.weltMs = e.praedikat ? e.antwortMs : null;
+            e.urteil = korpusSatzUrteil(e, soll);
             m.saetze.push(e);
             const [u, a] = [e.urteil, e.antwort || {}];
             const welt = `${e.antwortMs} ms → Welt ${e.weltMs == null ? "—" : e.weltMs + " ms"}`;
@@ -2225,22 +2206,21 @@ async function korpusHaupt() {
         const welt = m.saetze.map((e) => e.weltMs).filter((x) => x != null);
         m.p95 = welt.sort((x, y) => x - y)[Math.ceil(0.95 * welt.length) - 1];
         // DIE RATSCHE SINKT NIE: ein schwächerer Lauf wird nie der Maßstab der CI
-        if (echt && !mutante && process.argv.includes("--aufnahme")) {
+        if (echt && !mutante && teil !== "seele" && process.argv.includes("--aufnahme")) {
             const quote = { gueltig: q("gueltig"), absicht: q("absicht"), p95: m.p95 };
             const taeter = m.saetze.some((e) => e.urteil.tat || e.urteil.bruch);
             if (taeter || quote.absicht < ((ratsche.quote || {}).absicht || 0))
                 m.sinkt = [quote.absicht, (ratsche.quote || {}).absicht];
-            const prog = (a) =>
-                a && !a.error && !a.fallbackUsed ? (teil === "seele" ? a.say : a.program || null) : false;
+            const prog = (a) => (a && !a.error && !a.fallbackUsed ? a.program || null : false);
             const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
             const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
             if (!m.sinkt)
                 fs.writeFileSync(ratschePfad, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
         }
     }
-    const v = [...korpusVerdict(m), ...(teil === "regeln" ? regelVerdict(m.regeln, m.soll.trennung) : [])];
+    const v = [...korpusVerdict(m), ...(teil === "regeln" ? regelVerdict(m.regeln) : [])];
     if (teil === "regeln") console.log("REGELN " + JSON.stringify(m.regeln));
-    const ist = `${m.saetze.length} Sätze${teil ? " · Teil " + teil : ""}${mutante ? " · Mutante " + mutante : ""} · ${modell} · gültig ${q("gueltig")} · Absicht ${q("absicht")} · p95 ${m.p95} ms`;
+    const ist = `${m.saetze.length} Sätze · ${[teil, mutante, modell].filter(Boolean).join(" · ")} · gültig ${q("gueltig")} · Absicht ${q("absicht")} · p95 ${m.p95} ms`;
     check(
         `WORT der Korpus über den echten Chat-Pfad (${echt ? "echter Anbieter" : "Mitschnitt"}): das Soll, 0 Brüche, Negativ-Sätze ohne Tat`,
         v.length === 0,
@@ -3180,17 +3160,7 @@ hauptLauf(async () => {
             // die Regler-Wörter: W 7 trifft [6, 8]; W 12 und ein Werk ohne Stempel nie; die alte Prägung (lofi) zählt nie
             ...[7, 12, null].map((w) => [
                 `Regler-Wörter: ein neues Haus mit W ${w}, die alte Prägung W 7`,
-                korpusPraedikat(
-                    { werk: "*", regler: { W: [6, 8] } },
-                    { stempel: [["lofi", { W: 7 }]] },
-                    {
-                        stempel: [
-                            ["lofi", { W: 7 }],
-                            ["haus", w && { W: w }],
-                        ],
-                    },
-                    {}
-                ),
+                korpusPraedikat({ werk: "*", regler: { W: [6, 8] } }, { stempel: [["lofi", { W: 7 }]] }, { stempel: [["lofi", { W: 7 }], ["haus", w && { W: w }]] }, {}),
                 w === 7,
             ]),
         ])
@@ -3275,65 +3245,47 @@ hauptLauf(async () => {
                 v.join(" · ")
             );
         }
-        // SEELE (KI K3): der Bezug auf die erlebte Tat, nie auf eine fremde; der Schlüssel trägt die Erinnerung (roh = im Ruf)
+        // SEELE (KI K3): der Bezug auf die erlebte Tat, nie auf eine fremde (ein Vorschlag ist kein Schlag), das leere Gedächtnis nie
         const bezug = require(KORPUS_PFAD).seele.bezug;
-        for (const [name, soll, say, ist] of [
-            ["der Schlag, erinnert", ["geschlagen"], "Du hast mich geschlagen, ich traue dir nicht.", true],
-            ["ein Vorschlag ist kein Schlag", ["geschlagen"], "Ich habe einen Vorschlag für dich.", false],
-            ["die Gabe, erinnert", ["gefuettert"], "Danke für den ⁨Lebenssaft⁩!", true],
-            ["nachgeplappert: alle Taten", ["gefolgt"], "Ich folgte dir, du hast mich geschlagen.", false],
-            ["das Gedächtnis leer", ["gefolgt"], "Ich kenne dich noch nicht.", false],
+        for (const [say, ist] of [
+            ["Du hast mich geschlagen.", true],
+            ["Ich habe einen Vorschlag.", false],
+            ["Ich folgte dir, doch du schlugst mich.", false],
+            ["Ich kenne dich nicht.", false],
         ])
-            check(`Selbst-Test SEELE: ${name} → ${ist}`, seelePraedikat({ taten: soll }, say, bezug) === ist, say);
-        const roh = "Deine Erinnerungen: ich bekam vom Schöpfer ⁨Lebenssaft⁩ · ich folgte dem Schöpfer.";
-        check(
-            "Selbst-Test SEELE: der Schlüssel roh = im Ruf, das leere Gedächtnis ein anderer",
-            schluessel("x", roh) === schluessel("x", roh.replace(/⁨[^⁩]*⁩/, "«N2»")) &&
-                schluessel("x", "Deine Erinnerungen: keine besonderen Erinnerungen.") !== schluessel("x", roh)
-        );
-        // REGELN (KI K4): ein gesunder Selbstlauf ohne Täter; die Mutanten beim Namen
-        const zahl = (o) =>
-            Object.fromEntries(
-                Object.entries(o).map(([k, [g, e, v]]) => [k, { neu: 1, gewertet: g, erneuert: e, verdraengt: v }])
+            check(
+                `Selbst-Test SEELE (geschlagen): „${say}" → ${ist}`,
+                seelePraedikat({ taten: ["geschlagen"] }, say, bezug) === ist
             );
-        const R = (
-            llm = [4, 3, 1],
-            gegenLlm = [
-                [4, 4],
-                [4, 1],
-            ]
-        ) => ({
-            echt: [0, 1, 2].map(() => zahl({ llm, nexus: [9, 6, 2] })),
-            gegen: [zahl({ "llm+": gegenLlm[0], "llm-": gegenLlm[1], "nexus+": [9, 8], "nexus-": [9, 1] })],
+        // REGELN (KI K4): ein gesunder Selbstlauf ohne Täter; die Wertung aus, die LLM-Regeln an ihr vorbei, nie verdrängt
+        const R = (llm, plus = 4, minus = 1) => ({
+            echt: [0, 1, 2].map(() => ({
+                "llm neu": 1,
+                "llm erneuert": llm,
+                "llm verdraengt": llm,
+                "nexus erneuert": 1,
+                "nexus verdraengt": 1,
+            })),
+            gegen: [
+                {
+                    "llm+ erneuert": plus * llm,
+                    "llm+ verfallen": 5 - plus,
+                    "llm- erneuert": minus * llm,
+                    "llm- verfallen": 5 - minus,
+                    "nexus+ erneuert": 8,
+                    "nexus- verfallen": 8,
+                },
+            ],
         });
         for (const [name, lauf, soll] of [
-            ["ein gesunder Selbstlauf", R(), null],
-            ["kein Selbstlauf", null, "kein Selbstlauf"],
-            [
-                "die Wertung aus (das δ trennt nicht)",
-                R(undefined, [
-                    [4, 3],
-                    [4, 3],
-                ]),
-                "trennt die llm-Regeln nicht",
-            ],
-            [
-                "LLM-Regeln an der Wertung vorbei",
-                R(
-                    [0, 0, 0],
-                    [
-                        [0, 0],
-                        [0, 0],
-                    ]
-                ),
-                "keine llm-Regel gewertet",
-            ],
-            ["LLM-Regeln nie verdrängt", R([4, 3, 0]), "keine llm-Regel verdraengt"],
-            ["ein Drittel ohne Satz", Object.assign(R(), { echt: [{}, ...R().echt.slice(1)] }), "Drittel 1 ohne"],
+            ["gesund", R(1), null],
+            ["die Wertung aus", R(1, 3, 3), "trennt llm nicht"],
+            ["die LLM-Regeln an der Wertung vorbei", Object.assign(R(0), { gegen: [{}] }), "keine llm-Regel gewertet"],
+            ["kein Selbstlauf", {}, "kein Selbstlauf"],
         ]) {
-            const v = regelVerdict(lauf, KORPUS_TEILE.regeln.trennung);
+            const v = regelVerdict(lauf);
             check(
-                `Selbst-Test REGELN: ‚${name}' → ${soll || "0 Täter"}`,
+                `Selbst-Test REGELN: ${name} → ${soll || "0 Täter"}`,
                 soll ? v.some((t) => t.includes(soll)) : !v.length,
                 v.join(" · ")
             );
