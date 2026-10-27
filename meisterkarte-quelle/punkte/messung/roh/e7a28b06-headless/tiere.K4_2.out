@@ -1,0 +1,33 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-kreatur-takt.cjs --proben lebensraum,tagesbudget
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.5 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.7 s
+[stall-akte] Puls 20×, zuletzt vor 20.5 s — complete · renderer bereit · weltbild da · frames 621 · welt 621 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 39496 106 % · browser 16552 1 % · GPU 8652 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 36:05 gpu 8/r 143 · 36:07 gpu 8/r 171 · 36:09 gpu 12/r 147 · 36:11 gpu 2/r 233 · 36:13 gpu 2/r 210 · 36:15 gpu 1/r 285 · 36:17 gpu 1/r 359 · 36:19 gpu 2/r 354 · 36:21 gpu 1/r 332 · 36:23 gpu 1/r 302 · 36:25 gpu 1/r 145 · 36:27 gpu 1/r 118 · 36:29 gpu 2/r 151 · 36:31 gpu 1/r 108 · 36:33 gpu 1/r 100 · 36:35 gpu 1/r 112 · 36:38 gpu 1/r 116 · 36:40 gpu 1/r 106 · 36:42 gpu 1/r 98 · 36:44 gpu 1/r 100 · 36:46 gpu 1/r 98 · 36:48 gpu 1/r 95 · 36:50 gpu 1/r 99
+[stall-akte] Stapel _tickLeichname :2504 < updateCreatures :3157 < takt :245 < tagLauf :3452 < (anonym) :3485 < buehne :59 < lebenBuehnen :3379
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] Maussteuerung für Kamera initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] Chat-Steuerung initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [WARN] Der Rundblick steht nach 120 Takten ohne: der Boden wächst (25 Stücke im Bild) · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [WARN] FPS-Einbruch: 12 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Konsole log: [AnazhRealm V18.546.104] [INFO] Welt-Beziehung: Frieden
+[stall-akte] Stderr [16552:30524:1027/023640.219:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [16552:30524:1027/023640.234:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [16552:30524:1027/023640.234:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _tickLeichname :2504
+[stall-akte] Seite #2: der Puls kehrt zurück nach 23.4 s — complete · renderer bereit · weltbild da · frames 621 · welt 621 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ lebensraum {"n":783,"drin":783,"gattung":{"deer":538,"wolf":180,"bear":41,"fox":24},"klasse":{"wiese":117,"waldrand":445,"wald":180,"fluss":19,"hang":22},"geburten":213,"gruppen":148,"journal":213,"minM":130.2,"imBlick":0,"fensterMax":2.36,"fernMin":130,"baer":{"fluss":[19,19],"sonst":[194,22]},"anteil":1,"saat":"anazh-realm-seed","fensterRaum":2.5,"gegen":{"n":774,"drin":774,"gattung":{"deer":513,"bear":41,"wolf":186,"fox":34},"klasse":{"wiese":114,"waldrand":433,"hang":28,"wald":186,"fluss":13},"geburten":219,"gruppen":143,"journal":219,"minM":130.2,"imBlick":1,"fensterMax":2.45,"fernMin":130,"baer":{"fluss":[13,13],"sonst":[206,28]},"anteil":1,"saat":"lebensraum-gegen","fensterRaum":2.5}}
+  ✅ tagesbudget {"budget":{"deer":{"ruhen":0.42,"nahrung":0.498,"ziehen":0.081},"bear":{"ruhen":0.45,"nahrung":0.412,"ziehen":0.138},"fox":{"ruhen":0.598,"nahrung":0,"ziehen":0.402},"wolf":{"ruhen":0.613,"nahrung":0,"ziehen":0.387}},"soll":{"deer":{"ruhen":0.4,"nahrung":0.5,"ziehen":0.1},"bear":{"ruhen":0.45,"nahrung":0.4,"ziehen":0.15},"fox":{"ruhen":0.6,"nahrung":0,"ziehen":0.4},"wolf":{"ruhen":0.6,"nahrung":0,"ziehen":0.4}},"ruhe":[222163,2314],"truenke":[4,4,4,4,4,4,4,4,4,4,4,4],"amWasser":48,"durstAus":0}
+
+  (76 s) — Sekunden je Probe: lebensraum: 24, tagesbudget: 23
+
+✅ GRÜN — lebensraum · tagesbudget
