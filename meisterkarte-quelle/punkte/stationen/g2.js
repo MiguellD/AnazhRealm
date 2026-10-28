@@ -1836,6 +1836,11 @@ const stationen = [
     // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
     // Mutante „Bestand 0" (keine Geburt, kein Tier) ist ROT mit 0 Sichtungen. Genesis fehlt der Station: der Ring der Tore
     // liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
+    // Headless (swiftshader 320×180, die Schwelle auf 1280×720 normiert, 28.10., Zweig tier-sicht): main Ego 1 Sichtung (Hirsch
+    // 90 m), Third 3 (Hirsch 94/54/51 m), keines im Blick erschienen — ROT an Ego; mit oeko-k2-bestand (d9928c7e) Ego 3 (Bär 5 m,
+    // Wolf 19/31 m), Third 5, aber 3 bzw. 2 Tiere erschienen im Blick (die Verkörperung prüft nur den Anker der Gruppe auf „außer
+    // Blick", `_bestandLeiber` → `_kreaturWurf`) — ROT am Schlupfloch; Mutante „Bestand 0" 0 Sichtungen — ROT. Das Urteil fällt an
+    // Radeon oder GTX bei 1280×720.
     // Ports: save-server {PORT}, Werkbank {PORT}+20000.
     {
         kriterium: "tiere.K5",
