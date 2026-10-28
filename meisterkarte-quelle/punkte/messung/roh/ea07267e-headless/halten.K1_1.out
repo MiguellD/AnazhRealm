@@ -1,0 +1,167 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-kampf-gefuehl.cjs
+
+===== gate:kampf-gefuehl =====
+
+  (A) I1=[{"I1":349.92,"I2":699.84,"D1":0.763,"D2":1.08},1.414,1.414]
+  (B) {"reach":2.159,"sweep":{"okStart":true,"hits":1,"tEnd":1000.84,"tHit":1000.36},"simSteps":6,"simDelta":0.1,"handM":[0,0.088,0.174],"freeze":0.068}
+  (E) {"armRad":1.446,"rumpfRad":0.349,"fussGleitenM":2.925}
+  ✅ SELBST-TEST: der Zähl-Spion bleibt stumm
+  ✅ KONSUM: der Crosshair-Klick löst NUR aus
+  ✅ KONSUM: der Cooldown IST die Schwung-Dauer
+  ✅ KONSUM: das Stats-HUD (Angriffstempo)
+  ✅ KONSUM: die Werkstatt-Ablesung (Tempo)
+  ✅ (A) beide Fixtures liegen UNGEKLEMMT im [min,max]-Band (der Test ist ehrlich)
+  ✅ (A) Schwung-Dauer-Verhältnis ∝ √(I2/I1) ± 5 % (1.414 vs 1.414)
+  ✅ (A) die leere Faust hat die endliche Hand-Dauer (kein Instant-Prügeln)
+  ✅ (B) der Sweep trifft ein Ziel NEBEN dem Crosshair (in der Klingen-Kapsel)
+  ✅ (B) dedupliziert je Schwung: GENAU EIN Treffer (1)
+  ✅ (B) ein zweiter Schwung trifft wieder (Dedup gilt JE Schwung)
+  ✅ (B) NIE ein Ziel hinter dem Rücken (die Wand im Sweep-Chokepoint)
+  ✅ (B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (68 ms)
+  ✅ (B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)
+  ✅ SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)
+  ✅ (C) HIT-STOP: die Schwung-Phase friert
+  ✅ (C) HIT-STOP: der GANZE Leib steht
+  ✅ (C) die FIXE SIM läuft 6
+  ✅ (C) Gegenprobe: vor dem Treffer laufen Gang und Hand
+  ✅ (C) der Schwung-Tick liest den Hit-Stop aus der EINEN
+  ✅ SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)
+  ✅ (D) der EINE Fall (_kreaturFaellt)
+  ✅ (E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf
+  ✅ (E) die BEINE bleiben byte-gleich
+  ✅ (E) nach dem Schwung ist die Pose rückstandsfrei byte-alt
+
+  ── WELLE L ──
+
+  (Q8) {"zoneKopfBein":2.647,"zielKopf":0,"zielBein":0.016,"zonen":["kopf","bein"],"hangabHirsch":10,"hangabFuchs":10,"kleinFlach":10,"stopGross":59.553,"stopKeule":53.039,"keGruppe":3,"keRezepte":18,"keSpanne":6.2,"aufDerKappe":1,"nahkampfRezepte":18,"gegenwehr":7,"gegenwehrHirsch":0,"faktoren":"langschwert:0.79 saebel:0.90 degen:0.71 grossschwert:0.54 dolch:0.25 messer:0.19 streitkolben:0.41 kriegsaxt:0.89 kriegshammer:0.36 keule:0.50 faellaxt:0.80 spaltmaul:0.38 vorschlaghammer:0.55 beil:0.84 spitzhacke:0.35 spaten:0.29 schaufel:0.35 sichel:1.15","panzer":"defense 12.80→12.80 · hpMax 134.0→134.0 · damage 22.00→22.00","gueteUneins":0,"gueteGeraete":22,"gueteProben":"","pfeilVoll":23.014,"pfeilViertel":1.144,"pfeilHinterWand":0,"pfeilFrei":1,"schadensPfade":"167 Spieler-Treffer","schadensZwillinge":"–","s7":"AnazhRealm.__taeterWurf","kernOhneZone":"Bruch benannt","kernMitZone":12,"kalt":{"traf":true,"bruch":false,"zerlegt":false,"nennt":false},"s8":{"traf":false,"bruch":true,"zerlegt":false,"nennt":true},"sweepFormel":0,"typeofSelbst":"–","grobFremd":0,"grob":{"proben":11520,"ausserhalb":0,"jeL":{"wesen":1.942,"wolf":1.862,"fuchs":2.183,"baer":1.998},"taeter":[]},"s9":{"proben":768,"ausserhalb":351,"jeL":{"wesen":1.87,"wolf":1.836,"fuchs":1.907,"baer":1.998},"taeter":["wesen@0.60","wesen@0.60","wesen@0.60"]}}
+  (Q9) {"haltenKrater":0,"rmbSchwert":0,"rmbSpaten":1,"rmbHand":1,"werkstattGriffe":0,"ohneWerkstattGriffe":1}
+  (Q10) {"blick90":-89.943,"blick57":-57.296,"vorDirCos":1,"dorfCos":1,"pfeilFadenkreuz":0.008}
+  (Q11) Leib 22.00 · Wirkung/Stoß: langschwert vor 0.95/6.02,masse 0.97/6.70,tempo 1.48/7.53,eisen 0.80/6.02,schneide 0.87/6.02 · dolch vor 0.30/1.71,masse 0.37/2.11,tempo 0.30/1.71,eisen 0.27/1.62,schneide 0.28/1.62
+        hand → –: baum_eiche abbau 0.13/0.0000 stein_block abbau 0.06/0.0000 boden graben 0.11/0.0000 wiese graben 0.00/0.0000
+        langschwert → kreatur: baum_eiche abbau 0.34/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.92/0.0085 halb hieb 0.91/0.0085 leer null 0.00/0.0000
+        saebel → kreatur: baum_eiche abbau 0.38/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 1.04/0.0085 halb hieb 1.05/0.0085 leer null 0.00/0.0000
+        degen → kreatur: baum_eiche abbau 0.31/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.82/0.0085 halb hieb 0.82/0.0085 leer null 0.00/0.0000
+        grossschwert → kreatur: baum_eiche abbau 0.25/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.62/0.0085 halb hieb 0.63/0.0085 leer null 0.00/0.0000
+        dolch → kreatur: baum_eiche abbau 0.15/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.28/0.0085 halb hieb 0.28/0.0085 leer null 0.00/0.0000
+        messer → baum_eiche: baum_eiche abbau 0.16/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese pfluecken 2.00/0.0085 kreatur hieb 0.21/0.0085 leer abbau 0.00/0.0000
+        langbogen → schuss: schuss schuss 56.37/0.0180 halb schuss 56.37/0.0180 leer null 0.00/0.0000
+        kriegsbogen → schuss: schuss schuss 67.83/0.0180 halb schuss 67.83/0.0180 leer null 0.00/0.0000
+        reiterbogen → schuss: schuss schuss 43.78/0.0180 halb schuss 43.78/0.0180 leer null 0.00/0.0000
+        recurvebogen → schuss: schuss schuss 47.67/0.0180 halb schuss 47.67/0.0180 leer null 0.00/0.0000
+        streitkolben → kreatur: baum_eiche abbau 0.14/0.0085 stein_block abbau 0.15/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.47/0.0085 halb hieb 0.47/0.0085 leer null 0.00/0.0000
+        kriegsaxt → kreatur: baum_eiche abbau 0.51/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 1.03/0.0085 halb hieb 1.03/0.0085 leer null 0.00/0.0000
+        kriegshammer → kreatur: baum_eiche abbau 0.14/0.0085 stein_block abbau 0.12/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.41/0.0085 halb hieb 0.41/0.0085 leer null 0.00/0.0000
+        keule → kreatur: baum_eiche abbau 0.13/0.0180 stein_block abbau 0.09/0.0180 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.56/0.0180 halb hieb 0.56/0.0180 leer null 0.00/0.0000
+        faellaxt → baum_eiche: baum_eiche abbau 0.54/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.92/0.0085 leer abbau 0.00/0.0000
+        spaltmaul → baum_eiche: baum_eiche abbau 0.51/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.44/0.0085 leer abbau 0.00/0.0000
+        vorschlaghammer → stein_block: baum_eiche abbau 0.13/0.0085 stein_block abbau 0.11/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.65/0.0085 leer abbau 0.00/0.0000
+        beil → baum_eiche: baum_eiche abbau 0.97/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese hieb 0.00/0.0000 kreatur hieb 0.94/0.0085 leer abbau 0.00/0.0000
+        spitzhacke → stein_block: baum_eiche abbau 0.15/0.0085 stein_block abbau 0.23/0.0085 boden graben 0.28/0.0085 wiese graben 0.00/0.0085 kreatur hieb 0.40/0.0085 leer abbau 0.00/0.0000
+        spaten → boden: baum_eiche abbau 0.20/0.0085 stein_block abbau 0.06/0.0085 boden graben 0.37/0.0085 wiese graben 0.00/0.0085 kreatur hieb 0.33/0.0085 leer graben 0.00/0.0000
+        schaufel → boden: baum_eiche abbau 0.22/0.0085 stein_block abbau 0.07/0.0085 boden graben 0.45/0.0085 wiese graben 0.00/0.0085 kreatur hieb 0.40/0.0085 leer graben 0.00/0.0000
+        sichel → wiese: baum_eiche abbau 0.44/0.0085 stein_block abbau 0.06/0.0085 boden hieb 0.00/0.0000 wiese pfluecken 2.00/0.0085 kreatur hieb 1.29/0.0085 leer pfluecken 0.00/0.0000
+        form {"axtBlatt":{"baum_eiche":{"verb":"abbau","wirk":0.20274766104573116,"zehrt":0.008470588235294119},"boden":{"verb":"graben","wirk":0.3986980955869794,"zehrt":0.008470588235294119}},"spatenAxt":{"baum_eiche":{"verb":"abbau","wirk":0.4630574195197804,"zehrt":0.008470588235294119},"boden":{"verb":"hieb","wirk":0,"zehrt":0}},"gerade":{"wiese":{"verb":"hieb","wirk":0,"kraut":0,"zehrt":0}},"hohl":{"wiese":{"verb":"pfluecken","wirk":3,"kraut":3,"wieder":true,"zehrt":0.008470588235294119}},"recurve":{"schuss":{"verb":"schuss","wirk":63.28902873642477,"kraft":22,"zehrt":0.018000000000000016}}}
+        stoff {"Frank":{"stoff":"stahl","haerte":0.85,"zehrt":0.008470588235294119,"wear":0.8644705882352941,"wirk":[0.2259221400265228,0.21032033771143654]},"Nihon":{"stoff":"eisen","haerte":0.75,"zehrt":0.009600000000000053,"wear":0.8463999999999992,"wirk":[0.22989192298960776,0.21180972624316424]},"Urvolk":{"stoff":"bronze","haerte":0.55,"zehrt":0.013090909090909042,"wear":0.7905454545454553,"wirk":[0.22422429755735332,0.20034579741707323]},"weich":0.016941176470588237}
+  ✅ Q11 halten.K1: eine Kern-Zahl ändert den Treffer monoton — Masse (MAT.*.rho) den Stoß, Tempo beides, Schneide (MAT.eisen.sigY) den Schnitt; die Kraft der Führung ist der Leib (kein Spender-Fold)
+  ✅ SELBST-TEST (S12): ein fester Schaden neben dem Gesetz (_trefferWirkung ≡ 1) — die Tempo-Mutation bleibt stumm, die Linse nennt sie
+  ✅ Q11 halten.K3: das Werk wirkt nach seiner Form — Fällaxt fällt, Hacke und Hammer brechen Fels, Spaten und Schaufel graben, die umgeformte Gestalt (Grab-Blatt, Axt-Kopf) folgt der neuen Form
+  ✅ Q11 halten.K3 Sichel erntet über die echte Eingabe nach der Form — 2.00 Büschel der Mess-Wiese ins kraut, sie wachsen nach; die gerade Sichel mäht nicht, der hohle Säbel mäht
+  ✅ Q11 halten.K3 Staffel 2: jede Gestalt der Schmiede (22 von 22) wirkt nach ihrer Form an ihrem Ziel und zehrt, wo sie wirkt, nach der Härte ihrer Stoff-Zeile (bronze 0.0131 > eisen 0.0096 > stahl 0.0085 je Hieb, die halbe Härte 0.0169)
+  ✅ SELBST-TEST (S13): eine Art-Tafel neben dem Gesetz (graben nach task.art, ein Abbau-Profil für alle) — die Form-Mutation bleibt stumm, die Linse nennt sie
+  ✅ SELBST-TEST (S15): mäht, wer Sichel heißt — die Form-Mutation bleibt stumm
+  ✅ SELBST-TEST (S16): ein Verschleiß ohne Stoff (der Spender) — Bronze zehrt wie Stahl, die Linse nennt sie
+  ✅ Q11 halten.K2 Staffel 2: Klang und Funken aus dem Stoff-Paar am Bus {"stahl/holz":[{"stoffe":"stahl/holz","funken":0,"hz":954,"db":-37,"ms":0},{"stoffe":"stahl/holz","funken":0,"hz":954,"db":-37,"ms":0}],"stahl/stein":[{"stoffe":"stahl/stein","funken":24,"hz":2179,"db":-34,"ms":0},{"stoffe":"stahl/stein","funken":24,"hz":2179,"db":-34,"ms":0}],"holz/fleisch":[{"stoffe":"holz/fleisch","funken":0,"hz":192,"db":-49,"ms":0},{"stoffe":"holz/fleisch","funken":0,"hz":192,"db":-49,"ms":0}]}
+  ✅ SELBST-TEST (S19): alle Paare gleich — die Linse nennt sie
+  ✅ SELBST-TEST (S6): der Pfeil ohne Verschleiß (Faktor 1, kein Zehren) — der Satz nennt ihn
+  (Q12) Bahn {"bahn":[[25,30,0],[25,60,0],[25,144,0],[0,30,0],[0,60,0],[0,144,0],[-8,30,0],[-8,60,0],[-8,144,0]],"Wd":{"zF":17.182,"p0":[-0.082,92.963,0.58],"v0":[0,-0.37,56.373],"treffer":{"hit":true,"x":-0.082,"y":92.428,"z":17.182,"nx":0,"ny":0,"nz":-1,"t":0.835},"steckt":1,"bild":true,"anteil":0.002},"boden":3,"Td":{"n":1,"folgt":[2,0,0],"amTier":true,"imSnapshot":1,"wieder":1,"lageGleich":true,"bildWieder":true},"Sd":{"steckend":5,"imSnapshot":5,"wieder":5,"lageGleich":true,"bild":true},"Zd":{"v1":56.374,"vS1":56.374,"v2":59.735,"vS2":59.735},"f":[]}
+  ✅ Q12 halten.K4 Staffel 1: die Bahn ist die Parabel (9 Läufe ≤ 5 % des Falls, Tempo √(2E/m), Treffer-Ort) 
+  ✅ Q12 halten.K4 Staffel 2: der Pfeil steckt und bleibt (Wand, Boden, Hirsch, Speicher; Zug-Kraft aus BOGENMAT) 
+  ✅ SELBST-TEST (S14): die alte Bahn und der alte Abschied — die Linse nennt beide
+  (Q13) 88d0d844a598 → 88d0d844a598 {"sturz":[{"v":6.213,"d":0,"quelle":null},{"v":8.829,"d":10.73,"quelle":"sturz"},{"v":12.59,"d":57.043,"quelle":"sturz"},{"v":15.369,"d":101.727,"quelle":"sturz"},{"v":11.924,"d":47.663,"quelle":"sturz"}],"lage":[[29.244,0.053],[29.244,0.053]],"vorTod":{"ort":[-64.4,22.1,-1045.6],"inventar":["glut5","erde20","kraut9","holz7","stein3"],"leben":[0.64,0],"bindung":[0.12,"follow_player"],"werte":[134,146,95,12.8],"nahrung":[]},"tod":{"q":"jagd","anker":0,"rueckkehr":[true,true,true,true,true,true,true,true,true]},"q14":{"leer":[116.03,163.97,95,10.404],"werk":{"eisen":[154.868,135.763,95,15.898],"bronze":[152.719,137.036,95,15.527],"holz":[131.925,150.52,95,12.605]},"nahrung":{"kraut":[125.906,151.529,93.096,11.778],"fleisch":[127.188,150.245,92.875,11.949]},"getragen":[166.038,122.45,92.875,17.445]},"nachTod":{"ort":[0,91.8,0],"inventar":["glut5","erde20","kraut9","holz7","stein3"],"leben":[0.42,1],"bindung":[0.12,"follow_player"],"werte":[184.01,104.48,92.87,19.84],"nahrung":["consume:_k5"]},"nachReload":{"ort":[0,91.8,0],"inventar":["glut5","erde20","kraut9","holz7","stein3"],"leben":[0.42,1],"bindung":[0.12,"follow_player"],"werte":[184.01,104.48,92.87,19.84],"nahrung":["consume:_k5"]}}
+  ✅ Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand 
+  ✅ SELBST-TEST (S17): ein fester Sturz-Schaden ROT an der Reihe, ein Höhen-Zähler am Wurf
+  ✅ SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil
+  (Q14) {"leer":[116.03,163.97,95,10.404],"werk":{"eisen":[154.868,135.763,95,15.898],"bronze":[152.719,137.036,95,15.527],"holz":[131.925,150.52,95,12.605]},"nahrung":{"kraut":[125.906,151.529,93.096,11.778],"fleisch":[127.188,150.245,92.875,11.949]},"getragen":[166.038,122.45,92.875,17.445],"stand":[[184.01,104.48,92.87,19.84],[184.01,104.48,92.87,19.84],["consume:_k5"],["consume:_k5"]]}
+  ✅ Q14 halten.K5 Staffel 2: Werk und Nahrung 
+  ✅ SELBST-TEST (S20): ein Stand ohne Nahrung, eine Nahrung ohne Wirkung
+  ✅ EINHEITSBREI: Spender-Teile, ≥3 distinkte Dauern/Reichweiten/Wirkungen
+  ✅ EINHEITSBREI: die Ordnung stimmt
+  ✅ EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) 1.57 · 1.57
+  ✅ EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → die Tafel kollabiert auf die
+  ✅ Q8 K-D2: jeder Treffer trägt eine Zone
+  ✅ Q8 K-D2: die Zone wirkt
+  ✅ Q8 K-D3: hangab (Hirsch 1,6
+  ✅ Q8 K-D3: klein auf gleicher Höhe
+  ✅ Q8 K-D4: der Hit-Stop ist energie-skaliert
+  ✅ Q8 K-D5: keine Schadens-Kappe
+  ✅ Q8 K-D7: EINE Güte je Gerät
+  ✅ Q8 K-D8: der Pfeil trägt seine Energie in den
+  ✅ Q8 K-D8: eine Wand hält den Pfeil
+  (T13) {"fuchsDolch":{"sprung":0,"weg":0.014,"dv":0.379,"masse":15,"p":1.92,"m":0.05},"fuchsKeule":{"sprung":0,"weg":1.264,"dv":3.81,"masse":15,"p":21.44,"m":1.71},"baerDolch":{"sprung":0,"weg":0,"dv":0.015,"masse":335.4,"p":1.7,"m":0.05},"baerKeule":{"sprung":0,"weg":0.003,"dv":0.178,"masse":335.4,"p":20.17,"m":1.71}}
+  ✅ Q8 K-D9: der Rückstoß folgt 
+  ✅ Selbst-Test K-D9: der Befund (2,16
+  (T15) Biss: Kitz fuchs biss Δv 0.212 · wolf biss Δv 0.721 · baer biss Δv 1.365 · Spieler fuchs biss Δv 0.056 · wolf biss Δv 0.264 · baer biss Δv 0.871 m/s
+  ✅ 0710-4 T15: der Biss stößt 
+  ✅ Selbst-Test T15: der Befund (Biss
+  (T16) {"gross":[59.62,59.69,59.67,59.25,59.09,59.13,59.28,59.46,59.47,59.54,59.43,59.19,59.08,59.26,59.39],"dolch":[26.53,26.3,26.66,26.41,26.84,26.47,26.52,26.44,26.34,26.44],"detail":[{"name":"grossschwert","d":1.3,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.3,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.3,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.3,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.3,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.6,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.6,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.6,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.6,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.6,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.9,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.9,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.9,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.9,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.9,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"dolch","d":1.2,"ort":"schlagpunkt","eff":1,"v":30.6},{"name":"dolch","d":1.2,"ort":"schlagpunkt","eff":1,"v":30.5},{"name":"dolch","d":1.2,"ort":"schlagpunkt","eff":1,"v":30.7},{"name":"dolch","d":1.2,"ort":"schlagpunkt","eff":1,"v":30.5},{"name":"dolch","d":1.2,"ort":"schlagpunkt","eff":1,"v":30.8},{"name":"dolch","d":1.6,"ort":"schlagpunkt","eff":1,"v":30.6},{"name":"dolch","d":1.6,"ort":"schlagpunkt","eff":1,"v":30.6},{"name":"dolch","d":1.6,"ort":"schlagpunkt","eff":1,"v":30.6},{"name":"dolch","d":1.6,"ort":"schlagpunkt","eff":1,"v":30.5},{"name":"dolch","d":1.6,"ort":"schlagpunkt","eff":1,"v":30.6},{"name":"grossschwert","d":1.5,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":1.6,"ort":"schlagpunkt","eff":1,"v":16.5},{"name":"grossschwert","d":1.7,"ort":"schlagpunkt","eff":1,"v":16.6},{"name":"grossschwert","d":0.6,"ort":"griffnah","eff":0.67,"v":16.3}],"befund":[59.15,59.04,59.19],"nah":{"ke":38.51,"ort":"griffnah","eff":0.673,"weg":[0.43,1.14]}}
+  ✅ LF Posten 1: die Treffer-Energie folgt 
+  ✅ Selbst-Test T16: der Befund (15–91
+  (T17) {"klinge":1.66,"weit":{"treffer":0,"gesagt":["Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter.","Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,0 m vor deiner Schulter."]},"nah":{"treffer":9,"gesagt":[]},"toreZahl":0}
+  ✅ LF Posten 3: EINE Reichweite aus 
+  ✅ Selbst-Test T17: der Befund (Tor
+  (T26) {"ruecken":{"dmg":0,"ziel":false,"dot":-1},"begleiter":{"dmg":0,"ziel":false},"zuWeit":{"klinge":1,"schwung":true,"gesagt":true,"dmg":0,"verb":"hieb"},"ernte":[{"soll":"abbau","ziel":true,"ab":3.02,"verb":"abbau","dmg":0},{"soll":"pfluecken","ziel":true,"ab":2.76,"verb":"pfluecken","dmg":0},{"soll":"graben","ziel":true,"ab":2.76,"verb":"graben","dmg":0},{"soll":"hieb","fern":true,"ziel":true,"ab":7.51,"verb":"hieb","dmg":27.7}],"ernteZeugen":{"gepflueckt":1,"erde":1,"ort":0},"selbst":["kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz"],"ms":1816,"rumpf":"48/48","horizont":"48/48"}
+  ✅ K13 T26: der Hieb trifft 
+  ✅ Selbst-Test T26: der Befund (Horizont ["kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz"]
+  (T18) Pose im Treffer-Takt: [{traf:true,schneide:1,spitzeAb:0,mitteAb:0.01,zeichnet:true,imBild:true,held:studio,spalt:0,rad:0.07},{traf:true,schneide:1,spitzeAb:0,mitteAb:0.01,zeichnet:true,imBild:true,held:studio,spalt:0,rad:0.07},{traf:true,schneide:1,spitzeAb:0.01,mitteAb:0.02,zeichnet:true,imBild:true,held:studio,spalt:0,rad:0.07}]
+       Ich-Regel: {"rueckstand":false,"hautImErsten":0}
+  ✅ LF Posten 2: Pose, Treffer-Volumen und 
+  ✅ Selbst-Test T18: der Befund (Klinge
+  (T19) [{"geraet":"faust","kg":0,"zehrt":5},{"geraet":"dolch","kg":0.464,"zehrt":5.52},{"geraet":"langschwert","kg":1.387,"zehrt":6.56},{"geraet":"grossschwert","kg":2.208,"zehrt":7.48},{"geraet":"keule","kg":2.177,"zehrt":7.44},{"geraet":"vorschlaghammer","kg":6.399,"zehrt":12.19}]
+  ✅ LF Posten 8: die Ausdauer je 
+  ✅ Selbst-Test T19: der Befund (5
+  (T27) {"erst":{"hp":1.915,"st":12.188},"schritte":[{"rufer":"equipHeld an","weg":"Gerät","hp":[130.17,130.17],"st":[121.624,121.624],"mana":[28.5,28.5],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"equipHeld ab","weg":"Gerät","hp":[128.255,128.255],"st":[116.103,116.103],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"equipArmor an","weg":"Gerät","hp":[126.34,126.34],"st":[111.103,111.103],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"equipArmor ab","weg":"Gerät","hp":[124.859,124.859],"st":[106.103,106.103],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"repairHeldDevice","weg":"Gerät","hp":[122.944,122.944],"st":[100.583,100.583],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"_ichHandleOverlay","weg":"Panel","hp":[121.029,121.029],"st":[95.583,95.583],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"tickPlayerBoosts an","weg":"Boost","hp":[119.114,119.114],"st":[90.583,90.583],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"addPlayerBoost","weg":"Boost","hp":[117.199,117.199],"st":[85.583,85.583],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"tickPlayerBoosts ab","weg":"Boost","hp":[115.362,115.362],"st":[80.583,80.583],"mana":[24,24],"regen":{"hp":0,"st":0,"mana":0},"fehler":null},{"rufer":"tickPlayerVitals 1","weg":"Tod-Takt","hp":[113.805,113.805],"st":[159,163.97],"mana":[28.5,31.5],"regen":{"hp":0,"st":5,"mana":3},"fehler":null},{"rufer":"tickPlayerVitals 2","weg":"Tod-Takt","hp":[111.61,111.61],"st":[158.97,163.94],"mana":[28.5,31.5],"regen":{"hp":0,"st":5,"mana":3},"fehler":null},{"rufer":"tickPlayerVitals 3","weg":"Tod-Takt","hp":[109.416,109.416],"st":[158.94,163.91],"mana":[28.5,31.5],"regen":{"hp":0,"st":5,"mana":3},"fehler":null}],"boostAn":true,"boostAb":true}
+  ✅ K27 T27: Lebenswerte sind Zustand — Wege zur Voll-Heilung außerhalb von Wandlung und Rückkehr 0, kein Rufer hebt hp, Ausdauer oder Mana über Regen·dt
+  ✅ SELBST-TEST (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei jeder Neuberechnung) als Hülle → der erste Rufer heißt equipHeld, 4 Wege (Gerät, Panel, Boost, Tod-Takt; lebenswerte-heilt: equipHeld an (Gerät) hob hp 111.703 → 134, erlaubt + 0 (Regen·dt))
+  (T20) [{"seele":"fuchs","L":0.62,"kg":3.6,"damage":2.89,"defense":4.55,"hpMax":18.9},{"seele":"fuchs","L":1,"kg":15,"damage":7.51,"defense":7.34,"hpMax":49.2},{"seele":"fuchs","L":2,"kg":120,"damage":30.03,"defense":14.67,"hpMax":196.9},{"seele":"wolf","L":0.62,"kg":15.3,"damage":7.59,"defense":7.38,"hpMax":49.8},{"seele":"wolf","L":1,"kg":64,"damage":19.75,"defense":11.9,"hpMax":129.5},{"seele":"wolf","L":2,"kg":512.1,"damage":79.01,"defense":23.8,"hpMax":518.1},{"seele":"wesen","L":0.62,"kg":22.5,"damage":9.83,"defense":8.39,"hpMax":64.4},{"seele":"wesen","L":1,"kg":94.2,"damage":25.56,"defense":13.54,"hpMax":167.6},{"seele":"wesen","L":2,"kg":753.9,"damage":102.25,"defense":27.08,"hpMax":670.5},{"seele":"baer","L":0.62,"kg":79.9,"damage":22.9,"defense":12.82,"hpMax":150.2},{"seele":"baer","L":1,"kg":335.4,"damage":59.58,"defense":20.67,"hpMax":390.7},{"seele":"baer","L":2,"kg":2683,"damage":238.34,"defense":41.34,"hpMax":1562.8}]
+  ✅ LF Posten 6: Biss, Haut und 
+  ✅ Selbst-Test T20: der Befund (damage
+  (T21) Pfeil: {"teile":6,"unbeleuchtet":0,"wirft":6,"laenge":0.774,"farben":5,"wirtZylinder":false,"leerStill":false} · Shell eigener Pfeil false
+  ✅ LF Posten 4: der Pfeil ist 
+  ✅ Selbst-Test T21: der Befund (ein
+  (T22) Tod am Hang (Gefälle längs der Leibes-Achse): {"vornY":0,"obenY":0.12,"stromAnteil":1,"kopieOben":0.12,"liegt10s":true,"unterWesen":false,"aeltester":false,"naechster":false,"fragen":[],"zielLeichnam":false,"platzFrei":true,"nexusZaehlt":false,"alterLiegt":true}
+  ✅ LF Posten 7: ein Tier stirbt 
+  ✅ Selbst-Test T22: die Befunde (auf
+  (T23) {"jagd":[{"geste":"pounce","spalt":-0.041,"xz":1.25},{"geste":"pounce","spalt":-0.035,"xz":1.02},{"geste":"pounce","spalt":-0.024,"xz":0.98}],"beute":[{"geste":"pounce","spalt":-0.005,"xz":1.3},{"geste":"pounce","spalt":-0.034,"xz":1.3}],"gegenwehr":[{"geste":"pounce","spalt":-0.042,"xz":1.37},{"geste":"pounce","spalt":-0.043,"xz":1.37}]}
+  ✅ LF Posten 5: der Biss trifft 
+  ✅ Selbst-Test T23: der Befund (Biss
+  (T25) Wunde über den Reload: [{"seele":"wesen@1","hpAlt":124,"altVoll":1,"altHalb":0.5,"neu30":0.3},{"seele":"baer@1.75","hpAlt":153.7,"altVoll":1,"altHalb":0.5,"neu30":0.3}]
+  ✅ LF Posten 6 (Nachbesserung 2): die Wunde reist 
+  ✅ Selbst-Test T25: der Befund (ein
+  (T24) Biss-Reichweite: {"gestaltenJeTakt":0,"msJeTakt":0.019,"simsAnspruenge":0,"simsSek":10,"beute":15,"simsUeber":1.47,"simsWaagrecht":0.46,"simsReich":1.09,"simsZustaende":["jagd","hetzen"]}
+  (T24) das stehende Reh: {"versuche":6,"anspruenge":6,"bisse":6,"takte":40,"klemme":12,"je":{"1.6":{"anspruenge":3,"bisse":3},"1.3":{"anspruenge":3,"bisse":3}},"boden":{"ort":[20,0],"reh":0,"wolf":-0.01,"hop":0},"hubMaxM":0.8,"kopfSumme":{"takte":10,"rest":0.5502,"drift":0,"reihe":[0.5502,0.5502,0.5502,0.5502],"klemme":[-0.6,1],"gier":1.17}}
+  ✅ LF Posten 5 (Nachbesserung 2 
+  ✅ Selbst-Test T24: die Befunde (15
+  ✅ Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature
+  ✅ Q8 K-D3: fehlt tetrapoda trefferZone
+  ✅ Q8 T11 Lehre 14: der erste Hieb auf eine
+  ✅ Q10: der Klingen-Sweep liest _blickVorn
+  ✅ Welle L: keine typeof-Probe auf eine eigene Methode in
+  ✅ Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor
+  ✅ Gesetz #0: das Grob-Tor deckt die Gestalt
+  ✅ Q8 K-D15: die Hand ist kein Panzer
+  ✅ Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung
+  ✅ Q9 K-D1: 1st-Person — das
+  ✅ Q9 K-D17: RMB mit dem Schwert schüttet nie auf
+  ✅ Q9 V-D2: bei offener Werkstatt ist der Canvas taub
+  ✅ Q10 K-D14: die Ego-Neigung ist der Blick
+  ✅ Q10 V-D4: jedes „vor dir“ liegt vor dem Blick
+  ✅ Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz
+  ✅ SELBST-TEST (S3): _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir“ kippt hinter dich
+  ✅ SELBST-TEST (S4): _geraetGraebt ≡ wahr → das Schwert schüttet auf (die Linse sieht den Rückfall)
+  ✅ SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)
+  ✅ SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn
+  ✅ SELBST-TEST (S8): ohne Bestellung verfehlt der Hieb, und der Bruch nennt die Gattung
+  ✅ SELBST-TEST (S9): der Leib ohne Glieder (Reichweite = halb + radius) → Kopf und Rute liegen außerhalb, die Deckungs-Probe nennt sie
+
+  ✅ GRÜN — gate:kampf-gefuehl
+

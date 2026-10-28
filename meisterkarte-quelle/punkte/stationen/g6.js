@@ -2,7 +2,8 @@
 //
 // Erfasst ist jedes g6-Kriterium mit Punkten (klang K2 K4 K5, speicher K4 K5), aus der Messschuld (speicher K1 K2 = M30 M35
 // M37 M38, profiband K4 = M34 M39, klang K2 K5 = M33 M15) und aus dem Stau (hydro-faden: streaming K4 K5; speicher-journal:
-// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2). Je Kriterium und Staffel steht hier der Befehl, mit dem
+// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2; streaming-sprung: streaming K3#1;
+// ankunft-aussen: ankunft K2#1 K3#1). Je Kriterium und Staffel steht hier der Befehl, mit dem
 // der Beleg gemessen wurde.
 //
 // HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
@@ -125,7 +126,159 @@ const K4_FAHR =
     'setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); ' +
     "setTimeout(() => { z.ein = st.player.mountedArch; }, 500); }, 2000); }, 30000); }, 100); return 1;";
 
+// DIE ANKUNFT VON AUSSEN (Karte ankunft-aussen): die Kalt- und die Zweit-Zeile von diag-boot-stage — t(Kontrolle) ist die Prozess-Uhr
+// ab Navigation, als die von außen gehaltene Taste W den Leib um ≥ 0,1 m trug (nie `_weltbildDa`); was sie liest.
+const ANKUNFT_PFAD = [
+    "index.html",
+    "stamm/dirigent-*.js",
+    "stamm/studio-*.js",
+    "stamm/gelaende-*.js",
+    "stamm/bild-kosten.js",
+    "stamm/koerper-bewegung.js",
+    "foundry-bruecke.js",
+    "voxel-worker.js",
+    "scripts/diag-boot-stage.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+const HW = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
+};
+
 module.exports = [
+    // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
+    {
+        kriterium: "ankunft.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Kalt-Zeile mit Bild (`--bild`): der Schuss aus dem Ausgabe-Pfad bei t(Kontrolle von außen) und derselbe in derselben
+        // Pose nach 60 s Ruhe (der Loop läuft, die Bühne hält Mittag · Sonne · Sommer); Lücke = Anteil der Pixel, die in einem
+        // Kanal um mehr als 32 abweichen, dazu der offene Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Mutanten:
+        // `--mutante bild` (der erste Schuss endet nach 20 m) ROT, `--mutante eigenmeldung` (`_weltbildDa` ab dem Erwachen) ohne Kontrolle ROT.
+        // Soll: ≤ 2 % und nichts offen an einem Gerät. swiftshader (Cloud, ankunft-aussen 202b23be): 7,80 % Lücke, 54 Bäume und
+        // Bauten offen im Bild, t(Kontrolle) 72,47 s gegen Eigenmeldung 63,65 s; ohne Ruhe 0,00 %, Mutante bild 6,51 %.
+        befehl: ["node", "scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", "{AUS}", "--bild", "{AUS}.png"],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = HW(String(lauf.stdout || ""));
+            if (!j || !j.tK || !j.bild) return { gruen: false, zahl: "kein Bild der Kontrolle (t(Kontrolle) " + (j ? j.tK : "?") + " ms, Exit " + lauf.exit + ") · " + ad };
+            const gruen = hw && j.bild.luecke <= 0.02 && j.offen.length === 0;
+            return {
+                gruen,
+                zahl:
+                    (100 * j.bild.luecke).toFixed(2) + " % Lücke nach 60 s · offen im Bild " + (j.offen.join(" · ") || "nichts") +
+                    " · t(Kontrolle) " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " + (j.weltbildDa / 1000).toFixed(2) + " s) · " + ad,
+            };
+        },
+        pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs"],
+        quelle: "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen",
+    },
+    {
+        kriterium: "ankunft.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Zweit-Zeile (`--profil`): ein Kalt-Boot füllt das Profil bis zur Ruhe der Foundry (Platte, HTTP-Cache), dann vier
+        // Wiederkehren, je ein frischer Browser-Prozess (ein node-Lauf, ein starteBrowser) — nur die Platte bleibt; je Boot
+        // t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Vor ankunft-aussen kannte die Zeile keine Außen-t: ROT.
+        // swiftshader (Cloud, 202b23be): warm 79,17 · 83,84 s (Eigenmeldung 69,59 · 74,31 s), die Platte trägt 208/208.
+        befehl: [
+            "bash",
+            "-c",
+            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; ` +
+                `for N in 1 2 3 4; do node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; done; rm -rf "$P"`,
+        ],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const { ad, hw } = HW(t);
+            const w = [...t.matchAll(/t\(Kontrolle\) warm ([\d.]+) s von außen/g)].map((m) => +m[1]).sort((a, b) => a - b);
+            if (w.length < 4) return { gruen: false, zahl: w.length + " von 4 Wiederkehren mit Kontrolle von außen (Exit " + lauf.exit + ") · " + ad };
+            const med = (w[(w.length - 1) >> 1] + w[w.length >> 1]) / 2;
+            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ") · " + ad };
+        },
+        pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js"],
+        quelle: "1 = warm ≤ 5 s an einem Gerät",
+    },
+    // ─────────────────────────────── Streaming K3 (streaming-sprung) ───────────────────────────────
+    {
+        kriterium: "streaming.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // Karte streaming-sprung: je frische Sitzung (save-server + Werkbank --echt, Wiese Ego, Regler des Spielers nach R8)
+        // `haenger --wandern sprung --schwelle 50`: mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
+        // Gesetzes, gemessen wird die Kadenz, bis die Welt dort steht (`_weltSteht` in Bau-Ereignissen über `__deckel`, nachdem
+        // sie einmal nicht stand) + 1 s — hängt sie, bricht der Lauf laut (kein JSON, ROT); jeder
+        // Frame > 50 ms steht mit Ursache in b<N>-sprung.out, die Bauten im Haupt-Faden zählt `_syncBauten`. Vor der Karte kennt
+        // der Lauf `sprung` nicht (kein Feld `sprung` im JSON): ROT. Soll: Median der Frame-p95 aus 3 Sitzungen ≤ 50 ms, jede mit
+        // stehender Welt, Profil und ≥ 30 Bildern, am Adapter einer echten GPU. Cloud headless swiftshader am Kopf cd8a4d2c des Zweigs
+        // streaming-sprung (Wiese, 5 Läufe): die Welt steht nach 18,4–22,3 s, CPU-Takt p95 34,5–61 ms, 0 Bauten außerhalb der
+        // Sync-Stellen, Frame p95 4,6–7,5 s (Software-GPU, 3–7 Bilder im Fenster) — ROT am Adapter.
+        befehl: [
+            "bash",
+            "-c",
+            VOR +
+                "SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; " +
+                'raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk \'{print $5}\' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; ' +
+                "W() { node scripts/werkbank.cjs \"$@\"; }; " +
+                "SUM() { node -e 'try{const j=require(process.argv[1]),s=j.sprung;console.log(JSON.stringify({m:s.m,stehtS:s.stehtS&&+((s.stehtS-s.t0)/1000).toFixed(1),bau:s.bau[1].sonst-s.bau[0].sonst,frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs,profil:j.profil,ursachen:j.jeUrsache.slice(0,3).map((e)=>e.ursache+\" x\"+e.n)}))}catch(e){console.log(\"{}\")}' \"$1\"; }; " +
+                "for N in 1 2 3; do raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; " +
+                '(PORT=$SP node save-server.js > "$D/b$N-save.log" 2>&1 < /dev/null &); ' +
+                "for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; " +
+                '(node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP --ort wiese > "$D/b$N-werkbank.log" 2>&1 < /dev/null &); ' +
+                'for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/b$N-werkbank.log" 2>/dev/null && break; sleep 5; done; ' +
+                'grep -m1 "\\[linse-gpu\\]" "$D/b$N-werkbank.log"; ' +
+                'W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; ' +
+                'W umstellen --ort wiese --sicht ego > "$D/b$N-umstellen.txt" 2>&1; ' +
+                'W haenger --regler frei --tiere frei --wandern sprung --schwelle 50 --json "$D/b$N-sprung.json" > "$D/b$N-sprung.out" 2>&1; E=$?; ' +
+                'echo "SPRUNG $N EXIT=$E $(SUM "$D/b$N-sprung.json")"; ' +
+                "W stop > /dev/null 2>&1; sleep 3; raeum; done; " +
+                "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
+        ],
+        gpu: true,
+        zeit: true,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const s = [];
+            for (const m of t.matchAll(/^SPRUNG (\d) EXIT=(\d+) (\{.*\})$/gm)) {
+                let b = {};
+                try { b = JSON.parse(m[3]); } catch (_e) { b = {}; }
+                s.push(b);
+            }
+            if (s.length !== 3) return { gruen: false, zahl: s.length + " von 3 Sitzungen gemessen (kennt der Lauf --wandern sprung?)" };
+            const ok = s.filter((b) => b.m === 1000 && Number.isFinite(b.stehtS) && b.profil === true && b.frames >= 30 && b.frameMs);
+            const p95 = s.map((b) => (b.frameMs ? b.frameMs.p95 : Infinity)).sort((x, y) => x - y)[1];
+            return {
+                gruen: hw && ok.length === 3 && p95 <= 50,
+                zahl:
+                    "Frame p95 Median " + p95 + " ms (" + s.map((b) => (b.frameMs ? b.frameMs.p95 : "?")).join(" · ") + ") · CPU-Takt p95 " +
+                    s.map((b) => (b.taktMs ? b.taktMs.p95 : "?")).join(" · ") + " ms · die Welt steht nach " +
+                    s.map((b) => (b.stehtS == null ? "nie" : b.stehtS)).join(" · ") + " s · Bauten sonst " + s.map((b) => b.bau).join("/") +
+                    " · " + ok.length + " von 3 gültig · " + (s[0].ursachen || []).join(" | ") + " · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [
+            "stamm/*.js",
+            "*-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "index.html",
+            "spec/profiband/haushalt.json",
+            "scripts/werkbank.cjs",
+            "scripts/lib/haenger-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = beim Teleport um 1 km Frame p95 ≤ 50 ms an einem Gerät",
+    },
+
     // ─────────────────────────────── Streaming K4 · K5 (hydro-faden) ───────────────────────────────
     {
         kriterium: "streaming.K4",

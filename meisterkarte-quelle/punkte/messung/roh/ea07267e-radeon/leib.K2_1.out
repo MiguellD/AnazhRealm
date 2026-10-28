@@ -1,0 +1,78 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/diag-koerper-stand.cjs --k8 --bild
+[linse-gpu] amd/rdna-3
+[stall-akte] Seite #3: der Puls kehrt zurück nach 20.7 s — complete · renderer bereit · weltbild da · frames 410 · welt 4274 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 79 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #79 renderPipeline_ShadowMaterial_46
+[stall-akte] ═══ diag-koerper-stand.cjs · Seite #3 http://127.0.0.1:7764/index.html · der Puls steht seit 20.0 s
+[stall-akte] offen evaluate(rollen) seit 49.0 s
+[stall-akte] Puls 30×, zuletzt vor 20.0 s — complete · renderer bereit · weltbild da · frames 410 · welt 4274 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 79 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #79 renderPipeline_ShadowMaterial_46
+[stall-akte] Stempel 10:43:11.450 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6292 fs 60382 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:11.450 gpu.createRenderPipelineAsync #74 renderPipeline_MeshStandardNodeMaterial_407
+[stall-akte] Stempel 10:43:11.498 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 6411 fs 68349 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:11.498 gpu.createRenderPipelineAsync #75 renderPipeline_MeshPhysicalNodeMaterial_398
+[stall-akte] Stempel 10:43:11.556 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6292 fs 60478 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:11.556 gpu.createRenderPipelineAsync #76 renderPipeline_MeshStandardNodeMaterial_404
+[stall-akte] Stempel 10:43:21.416 Pipeline ShadowMaterial · instanz-zeichner · vs 6005 fs 3714 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:21.417 gpu.createRenderPipelineAsync #77 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:43:24.472 Pipeline MeshStandardNodeMaterial · streuSatz · vs 7175 fs 61663 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:24.472 gpu.createRenderPipelineAsync #78 renderPipeline_MeshStandardNodeMaterial_118
+[stall-akte] Stempel 10:43:25.598 Pipeline ShadowMaterial · geometrie-arena · vs 4329 fs 7458 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:25.598 gpu.createRenderPipelineAsync #79 renderPipeline_ShadowMaterial_46
+[stall-akte] CPU (2 s) renderer 1692 173 % · GPU 7752 9 % · browser 22504 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 42:48 gpu 101/r 739 · 42:50 gpu 300/r 233 · 42:52 gpu 364/r 163 · 42:54 gpu 406/r 654 · 42:56 gpu 139/r 468 · 42:58 gpu 29/r 328 · 43:00 gpu 461/r 614 · 43:02 gpu 173/r 265 · 43:04 gpu 73/r 171 · 43:06 gpu 4/r 126 · 43:08 gpu 4/r 115 · 43:10 gpu 4/r 191 · 43:12 gpu 100/r 187 · 43:14 gpu 3/r 119 · 43:16 gpu 3/r 106 · 43:18 gpu 3/r 109 · 43:20 gpu 3/r 104 · 43:22 gpu 32/r 496 · 43:24 gpu 51/r 233 · 43:26 gpu 41/r 163 · 43:28 gpu 4/r 109 · 43:30 gpu 5/r 115 · 43:33 gpu 4/r 104 · 43:35 gpu 4/r 105 · 43:37 gpu 3/r 104 · 43:39 gpu 3/r 106 · 43:41 gpu 4/r 242 · 43:43 gpu 3/r 122 · 43:45 gpu 3/r 104 · 43:47 gpu 9/r 173
+[stall-akte] Stapel getVertexPosition :6 < Na :6 < _computeIntersections :6 < raycast :6 < fd :6 < intersectObject :6 < gezeichnet :35 < gez :6
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [WARN] FPS-Einbruch: 8 (zuvor ~13)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [WARN] FPS-Einbruch: 7 (zuvor ~12)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_wolf steht nach 600 Takten nicht ganz (9 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Bauplan 'messtreppe' angelegt
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_fuchs steht nach 600 Takten nicht ganz (9 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Stderr [22504:8516:1028/114344.138:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [22504:8516:1028/114344.138:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in getVertexPosition :6
+[stall-akte] ═══ diag-koerper-stand.cjs · Seite #3 http://127.0.0.1:7764/index.html · der Puls steht seit 20.4 s
+[stall-akte] offen evaluate(rollen) seit 70.0 s
+[stall-akte] Puls 30×, zuletzt vor 20.4 s — complete · renderer bereit · weltbild da · frames 410 · welt 4274 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 79 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #79 renderPipeline_ShadowMaterial_46
+[stall-akte] Stempel 10:43:11.450 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6292 fs 60382 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:11.450 gpu.createRenderPipelineAsync #74 renderPipeline_MeshStandardNodeMaterial_407
+[stall-akte] Stempel 10:43:11.498 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 6411 fs 68349 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:11.498 gpu.createRenderPipelineAsync #75 renderPipeline_MeshPhysicalNodeMaterial_398
+[stall-akte] Stempel 10:43:11.556 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6292 fs 60478 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:11.556 gpu.createRenderPipelineAsync #76 renderPipeline_MeshStandardNodeMaterial_404
+[stall-akte] Stempel 10:43:21.416 Pipeline ShadowMaterial · instanz-zeichner · vs 6005 fs 3714 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:21.417 gpu.createRenderPipelineAsync #77 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:43:24.472 Pipeline MeshStandardNodeMaterial · streuSatz · vs 7175 fs 61663 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:24.472 gpu.createRenderPipelineAsync #78 renderPipeline_MeshStandardNodeMaterial_118
+[stall-akte] Stempel 10:43:25.598 Pipeline ShadowMaterial · geometrie-arena · vs 4329 fs 7458 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:43:25.598 gpu.createRenderPipelineAsync #79 renderPipeline_ShadowMaterial_46
+[stall-akte] CPU (2 s) renderer 1692 102 % · GPU 7752 3 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 43:08 gpu 4/r 115 · 43:10 gpu 4/r 191 · 43:12 gpu 100/r 187 · 43:14 gpu 3/r 119 · 43:16 gpu 3/r 106 · 43:18 gpu 3/r 109 · 43:20 gpu 3/r 104 · 43:22 gpu 32/r 496 · 43:24 gpu 51/r 233 · 43:26 gpu 41/r 163 · 43:28 gpu 4/r 109 · 43:30 gpu 5/r 115 · 43:33 gpu 4/r 104 · 43:35 gpu 4/r 105 · 43:37 gpu 3/r 104 · 43:39 gpu 3/r 106 · 43:41 gpu 4/r 242 · 43:43 gpu 3/r 122 · 43:45 gpu 3/r 104 · 43:47 gpu 9/r 173 · 43:49 gpu 5/r 105 · 43:51 gpu 3/r 104 · 43:53 gpu 3/r 107 · 43:55 gpu 4/r 112 · 43:57 gpu 3/r 102 · 43:59 gpu 3/r 102 · 44:01 gpu 3/r 108 · 44:03 gpu 3/r 102 · 44:05 gpu 3/r 105 · 44:07 gpu 3/r 157
+[stall-akte] Stapel getVertexPosition :6 < Na :6 < _computeIntersections :6 < raycast :6 < fd :6 < fd :6 < intersectObject :6 < treppe :240
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [WARN] FPS-Einbruch: 7 (zuvor ~12)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_wolf steht nach 600 Takten nicht ganz (9 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Bauplan 'messtreppe' angelegt
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_fuchs steht nach 600 Takten nicht ganz (9 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Ausgestiegen
+[stall-akte] Stderr [22504:8516:1028/114344.138:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [22504:8516:1028/114344.138:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in getVertexPosition :6
+[stall-akte] Seite #3: der Puls kehrt zurück nach 33.1 s — complete · renderer bereit · weltbild da · frames 414 · welt 4904 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 79 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #79 renderPipeline_ShadowMaterial_46
+  {k8:{wiese:{x:-280.4,z:-1045.6,neig:0,ring:[4,4],fein:{n:200,p95:1.1,median:0.1},fuss:{n:200,p95:0.7,median:0,stecken:0},huf:{n:200,p95:0.2,median:gigant 0},rad:{n:200,p95:0.2,median:0},falllinie:{n:200,p95:0.3,median:-0.2,stecken:0},stufe:{n:201,p95:0.4,median:-0.3,stecken:0},streu:{n:337,p95:0.5,median:0}},hang:{x:-526,z:-853,neig:24.4,ring:[4,4],fein:{n:200,p95:4.3,median:0.3},fuss:{n:201,p95:1.4,median:-0.8,stecken:0},huf:{n:201,p95:0.4,median:gigant 0.1},rad:{n:200,p95:2.4,median:2.1},falllinie:{n:200,p95:1.2,median:-0.9,stecken:0},stufe:{n:200,p95:1.1,median:-0.3,stecken:0},streu:{n:714,p95:1,median:0}},nexus:0}}
+✅ gate:koerper-stand grün
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 3 von 3) nach 46 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

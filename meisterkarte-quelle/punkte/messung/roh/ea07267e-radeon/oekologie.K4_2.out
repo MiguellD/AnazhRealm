@@ -1,0 +1,115 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe -e (async function wertLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, art, szene] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const erg = { art, laeufe: [] };
+const ruf = async (o) => {
+const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, ...o }) + ");" });
+if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+console.log((art === "wert" ? "WERT-GANG " : "RUDEL-GEFUEHL ") + JSON.stringify(a.ergebnis));
+erg.laeufe.push(a.ergebnis);
+return a.ergebnis;
+};
+const tor = werkbankTor(W, ["--ort", "wiese"]);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+if (art === "wert") for (const [uhr, sicht] of [[0.5, "first"], [0.5, "third"], [0.92, "first"], [0.92, "third"]]) await ruf({ uhr, sicht });
+else
+for (const sicht of ["first", "third"]) {
+const a = await ruf({ sicht });
+await ruf({ sicht, gegen: true, dauer: a.dauer, opfer: a.opfer });
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+console.log("FEHLER " + erg.fehler);
+} finally {
+tor.stop();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\ea07267e-radeon\oekologie.K4_2.json 7764 rudel function rudelGefuehl(r, T, o) {
+const s = r.state;
+const pm = s.playerMesh.position;
+const p = s.player;
+const y = (x, z) => r._voxelSurfaceY(x, z);
+if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+const takt = () => r._gameLoopTick((window.__gangUhr = (window.__gangUhr || 1e6) + 1000 / 60));
+window.__buehne();
+s.weatherEffectTime = 0;
+r._loopNexusUpdate = () => {};
+s.worldRules = [];
+s.perfRegulator = false;
+r.setGameMode(o.gegen ? "frieden" : "pfad");
+r.setCameraMode(o.sicht);
+for (const c of [...s.creatures, ...(s.leichname || [])]) r.removeCreature(c);
+s.faunaLifecycle.lastTick = 1e12;
+const n0 = (s.worldMeta.taten ||= []).length;
+p.hp = p.stats.hpMax;
+const heim = { x: o.x - 45, z: o.z };
+pm.set(heim.x + 140, y(heim.x + 140, heim.z) + 1.8, heim.z);
+s.maxCreatures = Math.max(s.maxCreatures || 0, 12);
+const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
+for (const c of woelfe) {
+c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+c.userData.nextHuntStrikeAt = 1e12;
+}
+const steh = () => pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+steh();
+for (const k in p.emotions) p.emotions[k] = 0;
+p.wohlBaseline = undefined;
+p.appraisalDelta = 0;
+const H = r.constructor._verhaltenGesetz().jagd.hetzM;
+const jaeger = () =>
+woelfe.filter((c) => c.userData._jagdZiel === "spieler" && /^(jagd|hetzen)$/.test(c.userData._motionZustand) && !c.userData.dying);
+const luecke = (R) => {
+const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+return (Math.max(...w.map((a, i) => (i + 1 < w.length ? w[i + 1] : w[0] + 2 * Math.PI) - a)) * 180) / Math.PI;
+};
+const e = () => ({ chaos: +p.emotions.chaos.toFixed(3), sorrow: +p.emotions.sorrow.toFixed(3), joy: +p.emotions.joy.toFixed(3), hope: +p.emotions.hope.toFixed(3) });
+const sit = () => +r._playerSituationWohl(r.auraAt(pm.x, pm.z)).toFixed(3);
+const aus = { woelfe: woelfe.length, gegen: !!o.gegen, sicht: s.cameraMode };
+let k = 0;
+let umstelltK = null;
+const ende = o.gegen ? Math.round(o.dauer * 60) : 36000;
+for (; k < ende && !(umstelltK !== null && k >= umstelltK + 1200); k++) {
+steh();
+takt();
+const R = jaeger();
+const nah = R.length >= 3 && R.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * H);
+if (!o.gegen && umstelltK === null && nah && luecke(R) <= 540 / R.length) umstelltK = k;
+}
+aus.dauer = +(k / 60).toFixed(2);
+aus.umstelltS = umstelltK === null ? null : +(umstelltK / 60).toFixed(2);
+aus.umstellt = +r._spielerUmstellt().toFixed(3);
+aus.furcht = e();
+const opfer = o.gegen ? woelfe.slice(0, o.opfer) : (r._spielerJaeger || []).filter((c) => woelfe.includes(c) && !c.userData.dying);
+aus.opfer = opfer.length;
+aus.situation = [sit(), +(p.wohlBaseline || 0).toFixed(3)];
+for (const c of opfer) r.damageCreature(c, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+aus.situation.push(sit());
+const vor = e();
+const gipfel = { joy: vor.joy, hope: vor.hope };
+for (let i = 0; i < 300; i++) {
+steh();
+takt();
+gipfel.joy = Math.max(gipfel.joy, p.emotions.joy);
+gipfel.hope = Math.max(gipfel.hope, p.emotions.hope);
+}
+aus.triumph = { joy: +(gipfel.joy - vor.joy).toFixed(3), hope: +(gipfel.hope - vor.hope).toFixed(3) };
+aus.chaosNach = +p.emotions.chaos.toFixed(3);
+for (const c of [...s.creatures, ...(s.leichname || [])]) r.removeCreature(c);
+s.worldMeta.taten.length = n0;
+return aus;
+}
+[linse-gpu] amd/rdna-3
+FEHLER eval: {"ms":28,"fehler":"Cannot read properties of undefined (reading 'hpMax')","stapel":["at evaluate (evaluate at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon-2\\scripts\\werkbank.cjs:1934:42), <anonymous>:1:89)","at #evaluate (C:\\Users\\micha\\
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 1 von 3) nach 106 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

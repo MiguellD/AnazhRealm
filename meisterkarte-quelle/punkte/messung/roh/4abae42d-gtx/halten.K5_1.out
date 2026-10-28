@@ -1,0 +1,17 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-kampf-gefuehl.cjs --k5
+[linse-gpu] nvidia/pascal
+  (Q13) 1566c4d6e4ba → 1566c4d6e4ba {"sturz":[{"v":6.213,"d":0,"quelle":null},{"v":8.829,"d":10.73,"quelle":"sturz"},{"v":12.59,"d":57.043,"quelle":"sturz"},{"v":15.369,"d":101.727,"quelle":"sturz"},{"v":11.924,"d":47.663,"quelle":"sturz"}],"lage":[[29.244,0.045],[29.244,0.045]],"vorTod":{"ort":[144,95.6,0],"inventar":["holz7","stein3"],"leben":[0.64,0],"bindung":[0.12,"follow_player"],"werte":[134,140,80,12.8],"nahrung":[]},"tod":{"q":"jagd","anker":0,"rueckkehr":[true,true,true,true,true,true,true,true,true]},"q14":{"leer":[116.03,157.97,84.5,10.404],"werk":{"eisen":[154.868,129.763,84.5,15.898],"bronze":[152.719,131.036,84.5,15.527],"holz":[131.925,144.52,84.5,12.605]},"nahrung":{"kraut":[125.906,151.529,93.096,11.778],"fleisch":[127.188,150.245,92.875,11.949]},"getragen":[166.038,122.45,92.875,17.445]},"nachTod":{"ort":[0,91.8,0],"inventar":["holz7","stein3"],"leben":[0.42,1],"bindung":[0.12,"follow_player"],"werte":[184.01,104.48,92.87,19.84],"nahrung":["consume:_k5"]},"nachReload":{"ort":[0,91.8,0],"inventar":["holz7","stein3"],"leben":[0.42,1],"bindung":[0.12,"follow_player"],"werte":[184.01,104.48,92.87,19.84],"nahrung":["consume:_k5"]}}
+  ✅ Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand 
+  ✅ SELBST-TEST (S17): ein fester Sturz-Schaden ROT an der Reihe, ein Höhen-Zähler am Wurf
+  ✅ SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil
+  (Q14) {"leer":[116.03,157.97,84.5,10.404],"werk":{"eisen":[154.868,129.763,84.5,15.898],"bronze":[152.719,131.036,84.5,15.527],"holz":[131.925,144.52,84.5,12.605]},"nahrung":{"kraut":[125.906,151.529,93.096,11.778],"fleisch":[127.188,150.245,92.875,11.949]},"getragen":[166.038,122.45,92.875,17.445],"stand":[[184.01,104.48,92.87,19.84],[184.01,104.48,92.87,19.84],["consume:_k5"],["consume:_k5"]]}
+  ✅ Q14 halten.K5 Staffel 2: Werk und Nahrung 
+  ✅ SELBST-TEST (S20): ein Stand ohne Nahrung, eine Nahrung ohne Wirkung
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 38333 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

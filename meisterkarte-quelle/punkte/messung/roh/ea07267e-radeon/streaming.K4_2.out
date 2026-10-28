@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden --echt
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   6.8 s · 2.70 MB/min am Empfang: Faden → Main 0.28 MB · Main → Faden 0.03 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: buch:book 0.10 MB · werk:asset 0.10 MB · buch:asset 0.04 MB · buch:settlement 0.01 MB
+         Main → Faden: werk:build-asset 0.01 MB · streu:state-set 0.00 MB · wald:state-set 0.00 MB · voxel:init 0.00 MB
+  fahrt  60.0 s · 0.83 MB/min am Empfang: Faden → Main 0.44 MB · Main → Faden 0.40 MB · Kopie 0.00 MB · Platte 0.00 MB
+         Faden → Main: voxel:chunk-mesh-result 0.19 MB · wald:wald-darts-result 0.08 MB · voxel:water-sheet-result 0.06 MB · buch:asset 0.05 MB
+         Main → Faden: speicher:? 0.12 MB · voxel:water-sheet 0.09 MB · voxel:chunk-mesh 0.08 MB · wald:wald-darts 0.06 MB
+  Fäden: buch · werk · werk · werk · voxel · streu · wald · speicher
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 4.0 ms): 1 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 87 an Sync-Stellen und Test-Nähten · 0 sonst
+  Bau-Klicks in der Fahrt: 6, die Hand 12.7 · 8.0 · 3.6 · 5.6 · 4.6 · 4.2 ms
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 0.83 MB/min ≤ 5 in der Fahrt
+
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 3 von 3) nach 22 s
