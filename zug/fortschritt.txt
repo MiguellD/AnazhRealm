@@ -762,3 +762,4 @@
 2026-10-28 23:25:21 takt19a-gtx ferne.K1#1,ferne.K1#2,ferne.K2#1 GRÜN/ROT/GRÜN 3.3 · 9/35
 2026-10-28 23:33:37 takt19a-gtx ferne.K2#2 GRÜN 8.1 · 10/35
 2026-10-28 23:35:05 takt19a-gtx ferne.K5#1 GRÜN 1.4 · 11/35
+2026-10-28 23:37:24 takt19a-gtx gelaende.K2#1 GRÜN 2.2 · 12/35
