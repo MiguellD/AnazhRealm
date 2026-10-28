@@ -1,0 +1,4 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-haus-welt.cjs --phasen=haus
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 8 Häuser, Start-Dorf 0/– · Gier 231/141/-39/-39/141/141/-39/141° · W1 Vorplatz über der Diele -0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.37/-0.36 m · W2 Diele 0/0/0/0/0/0/0/0 cm · W4c Überstand 0/0/0/0/0/0/0/0 m · W5 Optik 100/100/100/100/100/100/99.8/100 % · {"fern":{"x":212,"z":212},"W7":{"haeuser":24,"imBau":0,"zweitesDorf":30,"zweitesImBau":0}}
+  1 Welten, 4 zugleich, 34 s
+✅ gate:haus-welt grün

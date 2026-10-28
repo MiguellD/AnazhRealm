@@ -1,0 +1,79 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-praegung-welt.cjs
+[stall-akte] Seite #5 ohne Puls: Protocol error (Runtime.enable): Target closed
+
+=== (S) SELBST-TEST — der alte Riss ist ERKENNBAR (nicht vakuös) ===
+  ✅ gestrippter Entry-Stempel ⇒ EXAKT der ungeprägte Fingerabdruck — 515787a7/12 vs 515787a7/12
+  ✅ gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck — 439da209/18 vs 439da209/18
+
+=== (N) NAHT — die Prägung formt in der Hand ===
+  ✅ HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt — 439da209/18 fc241ed2/17
+
+=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===
+  ✅ wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie
+  ✅ nachträgliches präge ändert das bestehende Artefakt NICHT
+  ✅ Neu-Guss OHNE Prägung räumt den Alt-Stempel
+  ✅ auch der Schmiede-Guss stempelt (_forgeMaterialAndFreeze → _stampStudioOv)
+
+=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · Taille ===
+  ✅ spawnArchitecture stempelt den Entry (tiefe Kopie)
+  ✅ Snapshot trägt den Entry-Stempel + Restore bringt ihn zurück
+  ✅ Bauplan-Zwilling: _serializeBlueprint/_deserializeBlueprint tragen studioOv
+  ✅ Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden
+  ✅ Taille-Wand: >8-KiB-Stempel fällt am Chokepoint
+
+=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===
+  ✅ der ungeprägte Bau legt NUR den alten Schlüssel (ohne |ov:) an, geprägte NUR |ov:-Schlüssel — plain=["gt|3|1","gt|3|0"] ov=4
+  ✅ der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert
+  ✅ kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)
+  ✅ BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau — 515787a7/12 vs 515787a7/12
+
+=== (K) KI-REGLER — spawn_studio prägt ===
+  ✅ SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau · Gesetz · Wesen · Prägung), ist ROT — {"Stempel":"unbewegt","Bau":"unbewegt","Gesetz":"unbewegt","Wesen":"unbewegt","Prägung":"unbewegt"}
+  ✅ ERREICHT: 118 von 118 Zeilen von PARAMS_BY_KIND (100.0 %) erreicht — je Art vehicle 15/15 · gate 26/26 · weapon 18/18 · haus 21/21 · ausstattung 3/3 · bank 3/3 · leiter 3/3 · klang 7/7 · koerper 8/8 · kreatur 5/5 · flower 5/5 · grass 4/4 (tot 0, ohne Wort 0)
+  ✅ KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk — {"st":"erreicht","ov":{"W":6,"pitchDeg":60,"annexN":2},"genannt":["W -3→6","pitchDeg 75→60","annexN 1.6→2"],"ok":true}
+  ✅ FAIL-CLOSED: fremder Regler · Text · Liste · Art ohne Zeilen · Wesen · Prägung setzen nichts, benannt — {"fremd":true,"text":true,"liste":true,"baum":true,"wesen":true,"praegung":true}
+  ✅ PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt) — fehlt:  · Mutation true
+  ✅ KORPUS-TEIL Regler-Wörter: 24 Sätze, jeder ein Programm-Ziel
+
+=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===
+  ✅ A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB — 530 Zeichen, eigener Bauplan 845
+  ✅ B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer) — --user-data-dir=/tmp/puppeteer_dev_chrome_profile-BsxeHR,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-ZeEwvv,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-BsxeHR 0
+  ✅ SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT
+  ✅ B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss) — p-vfyx-us7bhccr{"ok":true,"id":"w-fahrzeug_gt-xajf6","name":"fahrzeug_gt","autor":"d4b1a344e8bc42b2077b412d28fddc6c0d77f502d0169ab80ff981ce649e6922","fremd":[]}
+  ✅ B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild) — 12 m 0,-0.36135814858473836,0.9835316865019835
+  ✅ ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s — 346 ms (A 561)
+  ✅ B: Stempel und Same reisen tief gleich
+  ✅ BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt) — A=9c183437/12 B=9c183437/12 ohne=515787a7/12
+  ✅ der eigene Bauplan kommt byte-gleich (kanonische Substanz)
+  ✅ WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A — 515 Zeichen
+  ✅ WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss — ccf3d079-f7de-43b8-ba0c-571a5632f84c 136 KB guest true
+  ✅ WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild — 1117 ms (A 235, B null)
+  ✅ WELT: der Leib geht unter W ≥ 1 m — 1072 ms
+
+=== (F) KORPUS fremder Codes ===
+  ✅ gross — gross · Geteiltes Werk abgewiesen: der Code ist größer als 4 KB (gross).
+  ✅ kaputt — kaputt · Geteiltes Werk abgewiesen: der Code ist beschädigt (kaputt).
+  ✅ version — version · Geteiltes Werk abgewiesen: der Code spricht eine fremde Version (version).
+  ✅ op:voxel_carve — op:voxel_carve · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:voxel_carve).
+  ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule).
+  ✅ op:player_soul — op:player_soul · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:player_soul).
+  ✅ form — form · Geteiltes Werk abgewiesen: das Programm hat nicht die Form eines Werks (form).
+  ✅ regler:segments — regler:segments · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:segments).
+  ✅ band:radstand — band:radstand · Geteiltes Werk abgewiesen: ein Regler liegt außerhalb seines Bands (band:radstand).
+  ✅ regler:cEdge — regler:cEdge · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:cEdge).
+  ✅ name — name · Geteiltes Werk abgewiesen: der Name ist kein Bauplan-Name (name).
+  ✅ teile:shape_not_allowed:evil — teile:shape_not_allowed:evil · Geteiltes Werk abgewiesen: ein Teil steht nicht im Bau-Vertrag (teile:shape_not_allowed:evil).
+  ✅ builtin:fahrzeug_gt — builtin:fahrzeug_gt · Geteiltes Werk abgewiesen: ein fremder Bauplan überschreibt keinen der Welt (builtin:fahrzeug_gt).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ unsigniert — unsigniert · Geteiltes Werk abgewiesen: der Code ist nicht signiert (unsigniert).
+  ✅ adresse — adresse · Geteiltes Werk abgewiesen: die Welt-Adresse ist ungültig (adresse).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true
+  ✅ P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)
+  ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)
+  ✅ must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt — {"ok":true,"id":"w-fahrzeug_gt-xajf6~2","name":"fahrzeug_gt","autor":"d4b1a344e8bc42b2077b412d28fddc6c0d77f502d0169ab80ff981ce649e6922","fremd":["zukunft"],"laut":"Geteiltes Werk steht: GT (von d4b1 a344 e8bc 42b2)."}
+  ✅ ein Name aus fremder Hand erreicht die KI nie (Werk steht, System-Prompt ohne ihn)
+  ✅ TÄTER-PROBE: ohne die Vertrags-Wand käme der Täter durch — das Urteil wird ROT
+
+✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen
