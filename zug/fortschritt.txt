@@ -576,3 +576,4 @@
 2026-10-28 06:57:52 takt15a-gtx gelaende.K5#2 GRÜN 5.1 · 8/23
 2026-10-28 07:03:39 takt15a-gtx halten.K1#2 ROT 5.7 · 9/23
 2026-10-28 07:09:41 takt15a-gtx halten.K2#1 ROT 5.9 · 10/23
+2026-10-28 07:10:32 takt15a-gtx halten.K5#1,halten.K5#2 ROT/ROT 0.8 · 12/23
