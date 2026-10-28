@@ -22,13 +22,14 @@
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
-const goldenFile = path.join(root, "spec/asset-contract/v4/golden", "gates.json");
 
-const frisch = vertragsKern("porta-core.js", "__portaCore");
-const PC = frisch();
+global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+const KERN = path.join(root, "porta-core.js");
+require(KERN);
+const PC = globalThis.__portaCore;
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -60,7 +61,7 @@ function buildCase(c) {
     check("porta-core geladen (__portaCore + buildInstance)", !!PC && typeof PC.buildInstance === "function");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = doppeltGebaut(CASES, buildCase, check);
+    const actual = vertragIst(CASES, buildCase, check);
 
     // 2) Seed-Invarianz (cv:4-Semantik — s. Kopf).
     let seedInv = true;
@@ -85,7 +86,7 @@ function buildCase(c) {
     );
 
     // 5) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    goldenWand(goldenFile, 4, actual, CASES.length, check);
+    goldenWand(path.join(root, "spec/asset-contract/v4/golden/gates.json"), 4, actual, check, CASES.length);
 
     // 5b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit einer Transzendenten — das Byte-Raster am Ausgang
     //     (porta-core ausRaster) hält die Ratsche auf 0 (je Lauf ein frisch geladener Kern). Die Fälle ohne
@@ -93,7 +94,7 @@ function buildCase(c) {
     await probeWand(
         "v4",
         {
-            laden: frisch,
+            laden: frischerKern(KERN, "__portaCore"),
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)

@@ -30,13 +30,14 @@
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
-const goldenFile = path.join(root, "spec/asset-contract/v5/golden", "klingen.json");
 
-const frisch = vertragsKern("schmiede-core.js", "__schmiedeCore");
-const SC = frisch();
+global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+const KERN = path.join(root, "schmiede-core.js");
+require(KERN);
+const SC = globalThis.__schmiedeCore;
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -99,7 +100,7 @@ function buildCase(c) {
     );
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = doppeltGebaut(CASES, buildCase, check);
+    const actual = vertragIst(CASES, buildCase, check);
 
     // 2) Seed-Invarianz (cv:5-Semantik — s. Kopf).
     let seedInv = true;
@@ -135,7 +136,7 @@ function buildCase(c) {
     );
 
     // 6) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    goldenWand(goldenFile, 5, actual, CASES.length, check);
+    goldenWand(path.join(root, "spec/asset-contract/v5/golden/klingen.json"), 5, actual, check, CASES.length);
 
     // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne
@@ -143,7 +144,7 @@ function buildCase(c) {
     await probeWand(
         "v5",
         {
-            laden: frisch,
+            laden: frischerKern(KERN, "__schmiedeCore"),
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)

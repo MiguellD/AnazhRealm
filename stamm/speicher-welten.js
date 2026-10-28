@@ -1040,6 +1040,7 @@ class AnazhRealm_speicher_welten {
             ["chunkRingRadius", () => zahl(st().chunkRingRadius, 4)],
             // V18.389 (P5) — die Sichtbarkeit des sauberen Perf-Panels (default an).
             ["perfPanel", () => st().perfPanel !== false],
+            ["untertitel", () => st().untertitel === true],
             // V8.28 6.G4.b — Atmosphäre-Slider (Cel-Stufen seit V18.236 und der Fog-Regler seit V18.530 gestrichen).
             // V13.9 — waterCull (uMinDepth); V18.14/.15 — die Makro-Kontext-Regler; J4 — Kavitäts-AO und Kanten-Schärfe;
             // V17.111 R1 — die Schatten-Hebel; §7.5/V18.164 — die M7-Regler (lebten nur in der Session, V8.59-Klasse);

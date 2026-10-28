@@ -181,8 +181,10 @@ class AnazhRealm_klang {
         if (teil) {
             um.folge = (teil + 1) % 4;
             if (teil === 1) um.mix = um.kern.umweltMischung(um.lage);
-            else if (teil === 2) um.graph.anwenden(um.mix, jetzt);
-            else this._tierRufTakt(um.rufDt);
+            else if (teil === 2) {
+                um.graph.anwenden(um.mix, jetzt);
+                this._untertitelStimmen(um.graph);
+            } else this._tierRufTakt(um.rufDt);
             return;
         }
         if (jetzt - um.letzteMischung < O.mischSek) return;
@@ -377,6 +379,7 @@ class AnazhRealm_klang {
         };
         um.rufeBestellt++;
         um.werkstatt.postMessage({ typ: "ruf", ruf });
+        this._untertitel("ruf", ruf.stimmung, creature.userData && creature.userData.name, ruf.pan);
         return ruf;
     }
 
@@ -473,9 +476,12 @@ class AnazhRealm_klang {
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx || !s.masterGain) return false;
         const K = AnazhRealm._umweltGesetz().kern;
-        return !!(art === "treffer"
-            ? K.trefferPaar(s.ctx, s.masterGain, tags, zu)
-            : K.substanzKlang(s.ctx, s.masterGain, art, tags || {}));
+        const q =
+            art === "treffer"
+                ? K.trefferPaar(s.ctx, s.masterGain, tags, zu)
+                : K.substanzKlang(s.ctx, s.masterGain, art, tags || {});
+        if (q) this._untertitel("substanz", art, art === "treffer" ? `${tags.name} auf ${zu.name}` : null, 0);
+        return !!q;
     }
 
     // ═══ SCHRITT-KLANG ═══
@@ -549,7 +555,8 @@ class AnazhRealm_klang {
         else k.schritte++;
         k.letzter = param;
         const sym = this.state.symphony;
-        if (sym && sym.enabled && sym.ctx && sym.masterGain) this._playSchrittOneShot(param);
+        if (sym && sym.enabled && sym.ctx && sym.masterGain && this._playSchrittOneShot(param))
+            this._untertitel("schritt", landung ? "landung" : "schritt", param.material, 0);
     }
 
     // Der Stoff am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er. Das EINE Urteil
@@ -700,6 +707,7 @@ class AnazhRealm_klang {
         for (const [e, lage] of hoert) {
             if (!stimmen.has(e)) stimmen.set(e, kern.fahrtStimme(s.ctx, s.masterGain));
             stimmen.get(e).anwenden(lage, s.ctx.currentTime);
+            this._untertitel("fahrt", lage.motor ? "motor" : "rollen", null, 0);
         }
     }
 
@@ -1535,6 +1543,7 @@ class AnazhRealm_klang {
         L.lastChordAt = t0;
         L.degree = this._lofiNextDegree(degree);
         this._lofiPlayChord(this._lofiChordFromDegree(degree), t0);
+        this._untertitel("musik", "lofi", null, 0);
         L.folge = [
             () => this._lofiPlayMelody(degree, durSec, t0),
             () => this._lofiPlayBass(degree, durSec, t0),

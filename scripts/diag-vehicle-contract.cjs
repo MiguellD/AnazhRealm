@@ -23,13 +23,14 @@
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, doppeltGebaut, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
-const goldenFile = path.join(root, "spec/asset-contract/v3/golden", "vehicles.json");
 
-const frisch = vertragsKern("vehicle-core.js", "__vehicleCore");
-const VC = frisch();
+global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+const KERN = path.join(root, "vehicle-core.js");
+require(KERN);
+const VC = globalThis.__vehicleCore;
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -58,7 +59,7 @@ function caseKey(c) {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = doppeltGebaut(CASES, buildCase, check, caseKey);
+    const actual = vertragIst(CASES, buildCase, check, caseKey);
 
     // 2) Seed-Semantik (cv:3): die GEOMETRIE ist seed-invariant.
     let seedInv = true;
@@ -76,7 +77,7 @@ function caseKey(c) {
     );
 
     // 4) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    goldenWand(goldenFile, 3, actual, CASES.length, check);
+    goldenWand(path.join(root, "spec/asset-contract/v3/golden/vehicles.json"), 3, actual, check, CASES.length);
 
     // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
@@ -84,7 +85,7 @@ function caseKey(c) {
     await probeWand(
         "v3",
         {
-            laden: frisch,
+            laden: frischerKern(KERN, "__vehicleCore"),
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)
