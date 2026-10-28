@@ -4,7 +4,11 @@
     "toleranz": 0.1,
     "messRand": 0.04,
     "stufenToleranz": 0.05,
-    "stufenQuelle": "S8 (material.K3): eine Zeile mit welt.stufeVon misst ihre Stufe (exemplar.stufe, das Auge im Abstand, aus dem der Spieler sie sieht) gegen die Welt der genannten Zeile (Stufe 0); Soll Stufe/L0 0,95–1,05 — ein LOD wechselt die Form, nie den Stoff (Lagarde & de Rousiers 2014, Frostbite: die Albedo ist ein Datum des Stoffs)",
+    "stufenQuelle": "S8 (material.K3): eine Zeile mit welt.stufeVon misst ihre Stufe (exemplar.stufe, das Auge im Abstand, aus dem der Spieler sie sieht) gegen die Welt der genannten Zeile (Stufe 0); Soll Stufe/L0 0,95–1,05 — ein LOD wechselt die Form, nie den Stoff (Lagarde & de Rousiers 2014, Frostbite: die Albedo ist ein Datum des Stoffs); je Uhr der Tafel (`uhren`: die Bühne 0,5 und 0,27 — ein Hand-Faktor je Stufe gliche den Mittag an und bräche zur zweiten Uhr), die weiteren Uhren im Ist als `uhren`",
+    "uhren": [
+        0.5,
+        0.27
+    ],
     "karte": {
         "albedo": 0.18,
         "eichRand": 0.003
@@ -293,6 +297,108 @@
             "ratsche": 0.0565
         },
         {
+            "id": "birke",
+            "gruppe": "Baum",
+            "titel": "Birke, der ganze Baum in Stufe 0 (das Soll seiner Stufen, S8)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"birke\"]"
+                },
+                "blick": "waagrecht"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_birke",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        12,
+                        -12
+                    ],
+                    "stufe": 0
+                },
+                "klasse": "^f:birke:L0$",
+                "stufen": [
+                    0
+                ],
+                "folgen": {
+                    "l1": [
+                        1,
+                        "^f:birke:L1$"
+                    ],
+                    "karte": [
+                        2,
+                        "^fimp:atlas:L2$"
+                    ]
+                },
+                "blick": "waagrecht"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/vegetation-baum.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
+            "id": "fichte",
+            "gruppe": "Baum",
+            "titel": "Fichte, der ganze Baum in Stufe 0 (das Soll seiner Stufen, S8)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"fichte\"]"
+                },
+                "blick": "waagrecht"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_fichte",
+                    "radius": 6,
+                    "nah": 25,
+                    "versatz": [
+                        -12,
+                        12
+                    ],
+                    "stufe": 0
+                },
+                "klasse": "^f:fichte:L0$",
+                "stufen": [
+                    0
+                ],
+                "folgen": {
+                    "l1": [
+                        1,
+                        "^f:fichte:L1$"
+                    ],
+                    "karte": [
+                        2,
+                        "^fimp:atlas:L2$"
+                    ]
+                },
+                "blick": "waagrecht"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/stoff-material.js",
+                "stamm/stoff-instanz.js",
+                "stamm/studio-bruecke.js",
+                "stamm/vegetation-baum.js",
+                "stamm/vegetation-streu.js"
+            ],
+            "ist": null,
+            "ratsche": null
+        },
+        {
             "id": "fels",
             "gruppe": "Fels",
             "titel": "Felszacken (Studio-Vorlage zacken; in der Welt der Felsbogen am Genesis-Ring im Formationen-Satz)",
@@ -483,7 +589,17 @@
                 },
                 "stufen": [
                     0
-                ]
+                ],
+                "folgen": {
+                    "l1": [
+                        1,
+                        "^(bauSatz|f:alemannisch:L1)$"
+                    ],
+                    "l2": [
+                        2,
+                        "^(bauSatz|f:alemannisch:L2)$"
+                    ]
+                }
             },
             "quellen": [
                 "fachwerk-core.js",
@@ -511,115 +627,31 @@
                         0
                     ]
                 },
-                "verhaeltnis": 0.9366
+                "verhaeltnis": 0.9366,
+                "folgen": {
+                    "l1": {
+                        "welt": {
+                            "Y": 0.1579,
+                            "rgb": "0.2745/0.1304/0.0873",
+                            "pixel": 161942,
+                            "stufen": [
+                                1
+                            ]
+                        }
+                    },
+                    "l2": {
+                        "welt": {
+                            "Y": 0.1568,
+                            "rgb": "0.2798/0.1269/0.0909",
+                            "pixel": 187904,
+                            "stufen": [
+                                2
+                            ]
+                        }
+                    }
+                }
             },
             "ratsche": 0.0579
-        },
-        {
-            "id": "haus-l1",
-            "gruppe": "Haus",
-            "titel": "Dasselbe Haus in seiner Stufe 1 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus); das Labor zeigt nur die L0 (ohne Aktion: der Stand der Zeile haus davor)",
-            "labor": {
-                "studio": "fachwerk"
-            },
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_alemannisch",
-                    "radius": 9,
-                    "stufe": 1
-                },
-                "klasse": "^(bauSatz|f:alemannisch:L1)$",
-                "stoff": {
-                    "seh": "stoff"
-                },
-                "stufen": [
-                    1
-                ],
-                "stufeVon": "haus"
-            },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
-            "ist": {
-                "labor": {
-                    "Y": 0.1476,
-                    "rgb": "0.2801/0.1156/0.075",
-                    "pixel": 407007
-                },
-                "welt": {
-                    "Y": 0.1579,
-                    "rgb": "0.2745/0.1304/0.0873",
-                    "pixel": 161942,
-                    "stufen": [
-                        1
-                    ]
-                },
-                "verhaeltnis": 0.9348
-            },
-            "ratsche": 0.0586
-        },
-        {
-            "id": "haus-l2",
-            "gruppe": "Haus",
-            "titel": "Dasselbe Haus in seiner Stufe 2 (S8): die Welt-Albedo gegen die der Stufe 0 (Zeile haus); das Labor zeigt nur die L0 (ohne Aktion: der Stand der Zeile haus davor)",
-            "labor": {
-                "studio": "fachwerk"
-            },
-            "welt": {
-                "exemplar": {
-                    "typ": "architektur",
-                    "name": "haus_alemannisch",
-                    "radius": 9,
-                    "stufe": 2
-                },
-                "klasse": "^(bauSatz|f:alemannisch:L2)$",
-                "stoff": {
-                    "seh": "stoff"
-                },
-                "stufen": [
-                    2
-                ],
-                "stufeVon": "haus"
-            },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js",
-                "stamm/dirigent-kern.js",
-                "stamm/dienst.js",
-                "stamm/stoff-material.js",
-                "stamm/studio-bruecke.js",
-                "stamm/siedlung-bauten.js",
-                "stamm/siedlung-satz.js",
-                "stamm/feld-leben.js",
-                "stamm/werkstatt-bauen.js"
-            ],
-            "ist": {
-                "labor": {
-                    "Y": 0.1476,
-                    "rgb": "0.2801/0.1156/0.075",
-                    "pixel": 407007
-                },
-                "welt": {
-                    "Y": 0.1568,
-                    "rgb": "0.2798/0.1269/0.0909",
-                    "pixel": 187904,
-                    "stufen": [
-                        2
-                    ]
-                },
-                "verhaeltnis": 0.9413
-            },
-            "ratsche": 0.0516
         },
         {
             "id": "lack",

@@ -39,8 +39,6 @@ const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
 const BOX_MUT = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill", "copyWithin"]);
 const BOX_ELEMENT = new Set(["find", "filter", "slice", "at", "concat", "findLast"]);
 function boxWand(quelle) {
-    const acorn = require("acorn");
-    const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
     const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const name = (m) =>
         m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
@@ -75,7 +73,7 @@ function boxWand(quelle) {
         const meld = (n, art) =>
             befunde.push({
                 methode,
-                zeile: n.loc.start.line,
+                zeile: stammLib.zeileVon(quelle, n.start),
                 art,
                 text: quelle.slice(n.start, Math.min(n.end, n.start + 80)).replace(/\s+/g, " "),
             });
@@ -108,13 +106,11 @@ function boxWand(quelle) {
             }
         });
     };
-    // je Methode einer Klasse: ihr Körper. Funktionen außerhalb der Klasse (statische Zuweisungen `AnazhRealm.x = function`,
+    // je Methode einer Klasse (die EINE Glieder-Tafel `stammLib.glieder`, je Text einmal geparst): ihr Körper. Funktionen außerhalb der Klasse (statische Zuweisungen `AnazhRealm.x = function`,
     // Modul-Funktionen) liest die Wand NICHT — dort schreibt heute keiner die Boxen (alle 6 Schreiber stehen in Methoden;
     // Integration V18.536, die Gegenprüfung fand die frühere Zeile „und je Funktion außerhalb" ohne Deckung)
-    lauf(ast, (n) => {
-        if (n.type === "MethodDefinition" && n.value && n.value.body)
-            pruefe(n.key.name || String(n.key.value), n.value.body);
-    });
+    for (const g of stammLib.glieder(quelle))
+        if (g.knoten.type === "MethodDefinition") pruefe(g.name, g.knoten.value.body);
     return { befunde, zuweisungen };
 }
 

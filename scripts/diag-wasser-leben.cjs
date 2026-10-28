@@ -36,7 +36,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -856,10 +856,7 @@ async function lauf() {
             for (const k of ["png60", "png3600"]) {
                 if (ordner && befund.bild[k]) {
                     fs.mkdirSync(ordner, { recursive: true });
-                    fs.writeFileSync(
-                        path.join(ordner, `wasser-bild-${k.slice(3)}.png`),
-                        Buffer.from(befund.bild[k].split(",")[1], "base64")
-                    );
+                    pngDatei(path.join(ordner, `wasser-bild-${k.slice(3)}.png`), befund.bild[k]);
                 }
                 delete befund.bild[k];
             }

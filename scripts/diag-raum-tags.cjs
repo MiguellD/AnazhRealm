@@ -30,15 +30,14 @@ const PORT = Number(process.env.RAUM_TAGS_PORT || 4606);
 // DIE QUELL-WAND: der Aufrufbaum von `_raumTagsRechnen` (über `this.<methode>(`), seine Eingänge und seine Tabellen.
 const MUTIERER = /^(add|delete|clear|set|push|pop|splice|shift|unshift|sort|reverse|fill|copyWithin)$/;
 function quellWand(quelle) {
-    const acorn = require("acorn");
-    const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    // der Baum und die Methoden aus der EINEN Glieder-Tafel (`stammLib.ast`/`glieder`, je Text einmal geparst)
+    const ast = stammLib.ast(quelle);
+    const zeile = (n) => stammLib.zeileVon(quelle, n.start);
     const lauf = (n, f, eltern) => (f(n, eltern), stammLib.kinder(n, (c) => lauf(c, f, n)));
     const befunde = [];
     const methoden = new Map();
-    lauf(ast, (m) => {
-        if (m.type === "MethodDefinition" && m.key && m.value && m.value.body)
-            methoden.set(m.key.name || String(m.key.value), m);
-    });
+    for (const g of stammLib.glieder(quelle))
+        if (g.knoten.type === "MethodDefinition") methoden.set(g.name, g.knoten);
     const istThis = (n) => n && n.type === "ThisExpression";
     // der Aufrufbaum: jede über `this.<name>(` gerufene Methode, transitiv
     const baum = new Set();
@@ -65,16 +64,16 @@ function quellWand(quelle) {
                     const was = eltern.property.name;
                     if (was !== "materials")
                         befunde.push(
-                            `${name} Zeile ${n.loc.start.line}: die Rechnung liest this.state.${was} — der Schlüssel kennt diesen Eingang nicht`
+                            `${name} Zeile ${zeile(n)}: die Rechnung liest this.state.${was} — der Schlüssel kennt diesen Eingang nicht`
                         );
                     return;
                 }
                 if (feld === "state" && !(weiter && !eltern.computed)) {
-                    befunde.push(`${name} Zeile ${n.loc.start.line}: die Rechnung liest this.state als Ganzes`);
+                    befunde.push(`${name} Zeile ${zeile(n)}: die Rechnung liest this.state als Ganzes`);
                     return;
                 }
                 befunde.push(
-                    `${name} Zeile ${n.loc.start.line}: die Rechnung liest das Instanz-Feld this.${feld} — der Schlüssel kennt diesen Eingang nicht`
+                    `${name} Zeile ${zeile(n)}: die Rechnung liest das Instanz-Feld this.${feld} — der Schlüssel kennt diesen Eingang nicht`
                 );
                 return;
             }
@@ -131,14 +130,12 @@ function quellWand(quelle) {
         }
         if (t)
             befunde.push(
-                `Zeile ${n.loc.start.line}: ${wie} die Tabelle AnazhRealm.${t} — die Rechnung liest sie, der Schlüssel nicht`
+                `Zeile ${zeile(n)}: ${wie} die Tabelle AnazhRealm.${t} — die Rechnung liest sie, der Schlüssel nicht`
             );
     });
     // kein Leser umgeht das Gedächtnis
-    lauf(ast, (m) => {
-        if (m.type !== "MethodDefinition" || !m.value || !m.value.body) return;
-        const name = m.key.name || String(m.key.value);
-        if (name === "computeSpatialTags") return;
+    stammLib.glieder(quelle).forEach(({ name, knoten: m }) => {
+        if (m.type !== "MethodDefinition" || name === "computeSpatialTags") return;
         lauf(m.value.body, (n) => {
             if (
                 n.type === "CallExpression" &&
@@ -147,7 +144,7 @@ function quellWand(quelle) {
                 n.callee.property.name === "_raumTagsRechnen"
             )
                 befunde.push(
-                    `${name} Zeile ${n.loc.start.line}: ruft _raumTagsRechnen vorbei am Gedächtnis (Leser fragen computeSpatialTags)`
+                    `${name} Zeile ${zeile(n)}: ruft _raumTagsRechnen vorbei am Gedächtnis (Leser fragen computeSpatialTags)`
                 );
         });
     });

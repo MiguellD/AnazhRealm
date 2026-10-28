@@ -2898,11 +2898,7 @@ class AnazhRealm_bild_himmel {
                 if (trifft(y0, y1)) st.voxelMeshCache.delete(key);
             }
         this._fernMemoGen = (this._fernMemoGen | 0) + 1;
-        const fr = st.fernRing;
-        if (fr) {
-            Object.assign(fr, { cursor: 0, auftrag: 0, flug: 0, gen: (fr.gen || 0) + 1 });
-            fr.einhaengen.length = 0;
-        }
+        if (st.fernRing) this._fernRingNeuBestellen(st.fernRing, true); // der EINE Weg (Anker und Edits stehen)
     }
 
     // DIE LINIEN DES EISES (stoffe.K3): das Gesetz des Kerns (`eisDicke` auf dem Feld dieser Naht) je Knoten der Säule

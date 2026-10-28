@@ -1055,6 +1055,10 @@ class AnazhRealm_gelaende_chunks {
     // `_buildVoxelChunkData` synchron wie zuvor (Fallback ohne Worker).
     _buildVoxelChunkData(cx, cz, lod = 0, preDensityOverride = null) {
         if (!this.state.scene) return null;
+        // DER CHUNK-STOFF IM HAUPT-FADEN (Lehre 14): jeder Bau hier zählt an seiner Sync-Stelle oder bricht laut (`_fadenUmgangen`)
+        this._fadenUmgangen(
+            this._voxelFadenTraegt() ? "Chunk-Stoff neben dem Faden" : "Chunk-Stoff, kein Faden trägt den Stand"
+        );
         const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(lod);
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
@@ -1161,18 +1165,20 @@ class AnazhRealm_gelaende_chunks {
     // DIE geteilte Build-Kaskade für Streaming UND Edit-Rebuild: 1 Worker-Mesh-Cache (Main nur
     // BufferGeometry + Architektur-Stempel + BVH) · 2 Worker-Density-Cache · 3 Sync-CPU (base-gecacht).
     // Rückgabe: "pending" · null (Fail/degeneriert) · {mesh, kind, waterCells, lod, hasBVH?}.
-    // `forceSync` (Spieler-Chunk + Test-Naht) springt direkt zu Stufe 3 (kein Worker-Roundtrip).
+    // `forceSync` (die Sync-Stelle beim Namen, `SYNC_STELLEN`; true = die Test-Naht) springt direkt zu Stufe 3 (kein
+    // Worker-Roundtrip).
     _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
         // Harte Kachel-Garantie am EINEN Build-Eingang: vor jedem Chunk-Bau steht die Hydrosphäre seines Footprints (+64 m Pad
         // für Reads über die Grenze), im Faden entstanden (Karte hydro-faden) — fehlt sie, ist sie bestellt und der Bau wartet.
         // Der Faden trägt sie vor jedem Auftrag dahinter (Nachrichten-Ordnung) → Main und Worker bauen aus derselben Kachel.
         if (!this._hydroSteht(cx, cz)) return "pending";
-        if (opts.forceSync === true) {
+        if (opts.forceSync) {
             // V18.263 — der Player-Chunk-Sync-Build ist der Freeze-Verdächtige
             // (~239 ms, blockiert den Main-Thread). Der Perf-Sense misst ihn IMMER
             // (µs-Tap), damit der Nexus die Streaming-Last kennt, nicht rät.
             const _t0 = performance.now();
-            const _r = this._buildVoxelChunkData(cx, cz, lod);
+            const stelle = opts.forceSync === true ? "naht" : opts.forceSync;
+            const _r = this._syncBauen(stelle, () => this._buildVoxelChunkData(cx, cz, lod));
             this._perfMark("syncBuild", performance.now() - _t0);
             return _r;
         }
@@ -1200,12 +1206,8 @@ class AnazhRealm_gelaende_chunks {
             preDensity = workerDensity;
         }
         // Stufe 3: der Chunk-Stoff im Haupt-Faden (base-gecacht V12.0-perf.b) — im Strom nur, wo KEIN Faden den Stand trägt
-        // (kein Worker, ein ausgehängter Faden einer Test-Naht, vor der Weltgen), und dann laut (Lehre 14): bis B-K2 baute
-        // der Strom hier still jeden Chunk bis zum Ack des Fadens (gate:worker-dichte Teil S).
-        if (!faden)
-            this._bruchMelden(
-                "VOXEL-FADEN: der Strom baut Chunk-Stoff im Haupt-Faden — kein Faden trägt den Stand (Lehre 14)"
-            );
+        // (kein Worker, ein ausgehängter Faden einer Test-Naht, vor der Weltgen), und dann laut (Lehre 14, `_fadenUmgangen` im
+        // Bau): bis B-K2 baute der Strom hier still jeden Chunk bis zum Ack des Fadens (gate:worker-dichte Teil S).
         return this._buildVoxelChunkData(cx, cz, lod, preDensity);
     }
 
@@ -2201,7 +2203,7 @@ class AnazhRealm_gelaende_chunks {
             (this.state.dirtyVoxelChunks && this.state.dirtyVoxelChunks.has(key));
         const stufe = altLod !== null && lod !== null && lod !== altLod && !formWartet;
         // synchron nur über stehender Wahrheit (`_hydroSteht`): fehlt die Hydrosphäre, wartet auch der Neubau des Fußabdrucks
-        const forceSync = opts.forceSync === true && this._hydroSteht(cx, cz);
+        const forceSync = !!opts.forceSync && this._hydroSteht(cx, cz);
         // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
         // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
         // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
@@ -2209,7 +2211,7 @@ class AnazhRealm_gelaende_chunks {
         if (forceSync) {
             // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
             if (oldEntry) this._disposeVoxelChunk(key, keepGrass, stufe);
-            const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
+            const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: opts.forceSync });
             return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod, stufe);
         }
         // Async: erst bauen/anfordern, NICHT vorher disposen.
@@ -3278,7 +3280,7 @@ class AnazhRealm_gelaende_chunks {
         }
     }
 
-    // Test-Naht: rebuildet ALLE dirty Chunks sofort mit `forceSync: true` (sonst liefe der Drain
+    // Test-Naht: rebuildet ALLE dirty Chunks sofort an der Sync-Stelle „drain" (sonst liefe der Drain
     // headless gegen den async Worker-Pfad und baute nichts). Im Spiel-Pfad NIE gerufen.
     _drainDirtyVoxelChunks() {
         if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return 0;
@@ -3290,7 +3292,7 @@ class AnazhRealm_gelaende_chunks {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            if (this._rebuildVoxelChunk(cx, cz, null, { forceSync: true })) built++;
+            if (this._rebuildVoxelChunk(cx, cz, null, { forceSync: "drain" })) built++;
         }
         // V12.0-perf.h — der Rebuild enqueued den Wasser-Iso (deferred); die
         // Test-Naht braucht ihn sofort → die Wasser-Iso-Queue mit-drainen.

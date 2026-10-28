@@ -103,11 +103,8 @@ function probe(o) {
     // jeder Schreiber-Weg des Spiels (der echte Code-Pfad, keine Abkürzung)
     const wege = {
         emotion: () => {
-            const p = st.player;
-            p.emotionLastTick = t();
-            p.emotions.sorrow = 1;
-            p.emotionLastApply.sorrow = -Infinity;
-            r.updatePlayerEmotions(t());
+            st.player.emotions.sorrow = 1;
+            r._tickWorldRules(t() + 3600);
         },
         nexus: () => {
             st.nexusWirk = 1e6;
@@ -388,8 +385,8 @@ function himmelProbe(o) {
     const trauer = {
         name: "Emotion sorrow → Regen",
         wo: "wetter",
-        quelle: "emotion:sorrow",
-        stapel: "updatePlayerEmotions",
+        quelle: "rule:emotion:sorrow",
+        stapel: "_tickWorldRules",
     };
     // beim Stapel, nicht bei der Quelle: so steht das Wesen im Buch, welchen Namen seine Quelle auch trägt
     const wesenT = {
@@ -447,7 +444,7 @@ function taeterGezaehlt(liste) {
 function urteil(S, H) {
     const rot = [];
     const SOLL_QUELLE = {
-        emotion: "emotion:sorrow",
+        emotion: "rule:emotion:sorrow",
         nexus: "nexus",
         gesetz: "rule:human",
         mensch: "human",

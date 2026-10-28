@@ -405,7 +405,7 @@ Ein Block `PORTAL_RENDER_CONFIG.placement`: wie oft, wo, wie groß.
 ### B4 — PARAMS_BY_KIND (SOLL; ab Domäne `vehicle` MUSS) · **v1.2: DIE EINE FORM**
 
 Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
-`PARAMS_BY_KIND = { <kind>: [{ id, lab, min, max, step, def?, grp?, law? }] }`.
+`PARAMS_BY_KIND = { <kind>: [{ id, lab, min, max, step, def?, grp?, law?, dyn?, uniform? }] }`.
 
 - **v1.2 (SYNERGIE-WELLE):** das flache `PARAMS`-Array (kind implizit
   aus dem ersten Rezept des Kerns geraten) ist GEFALLEN — JEDER Kern (auch ein
@@ -415,6 +415,11 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
 - Der Host (Werkstatt) baut die Regler-UI GENERISCH daraus — kein
   hartkodiertes Slider-Panel pro Domäne.
 - `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
+- `uniform: true` (studios.K2) erklärt die Zeile zum GESETZ-WERT: sie bewegt kein Bau-Byte (Byte-Beweis: ihr Schlüssel
+  `kern:art:id` steht in `reglerTot`, `gate:studio-vertrag` prüft es), der Leser nimmt sie live (Membran-Uniform, Sequenzer,
+  Fahr-Gesetz). Die Hülle wendet sie im nächsten Bild an (`nachRuhe(ids, false)` ohne Ruhe, die Ruhe schreibt nur den
+  Rückgängig-Schritt); der Griff zeigt sie ≤ 200 ms, jede andere Zeile baut neu und zeigt sich ≤ 1 s
+  (`diag-studio-huelle --engine`, die Gang-Probe). `dyn` bleibt die Fahr-Dynamik (kein Neubau in der Garage).
 - **Jede Zeile wirkt** (Studio-Welle S1, `gate:regler-wirkt`): der Werkstatt-Wert liegt in `ws.studioOv[preset]`
   als `{id: wert}` und reist über die EINE Vorschau-Quelle (`_workshopStudioPreviewFrom`). Die Mesh-Arten baut
   die Foundry (`ov {id: wert}` über build-asset); die MESHFREI-Arten (§8: koerper · kreatur · klang) gießt der
