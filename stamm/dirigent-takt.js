@@ -19,6 +19,8 @@ class AnazhRealm_dirigent_takt {
             const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const currentTime = t / 1000;
+            // DER WELT-WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht, die neue kommt an — bis sie steht, taktet keine
+            if (this._weltTausch) return;
 
             // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade

@@ -114,14 +114,14 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
 - **Die Tür:** eine fremde Welt betritt Seite und Speicher nur durch `_weltBetreten` (Welt-Tor
   ersetzen und daneben legen, Snapshot eines Mitspielers, world-pull, Beitritt per Einladung und
   Adress-Portal über `_importGuestWorld`, dessen Gast-Felder Parameter der Tür sind) — nie lädt
-  die Seite sie in sich, und `loadState` legt nichts im Speicher ab. Zuerst sichert sich die Welt
+  die Seite sie über die alte (die geht ganz, `_weltAbschied`), und `loadState` legt nichts im Speicher ab. Zuerst sichert sich die Welt
   der Seite (sie ist noch ganz sie selbst); ohne `worldId` bekommt die neue ihre eigene
   (`_neueWeltId`), nie den Platz der Welt davor (die bleibt unter ihrer Id); sie liegt, wie sie
   kam, unter ihrer Id (`_weltAblegen`, mit Probe — die EINE Ablage, neben saveState der einzige
   Schreiber einer ganzen Welt; auch Geburt, Fusion und Legacy-Migration legen durch sie ab).
-  Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und sagt es laut — kein Reload in
-  einen alten Stand. Jeder Welt-Wechsel lädt über `_weltWechselNeuLaden` neu: ab dort verweigert
-  `saveState` laut (WARN; „speichere zustand" sagt es dem Spieler), bis die Seite stirbt; der
+  Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und sagt es laut — kein Wechsel in
+  einen alten Stand. Jeder Welt-Wechsel tauscht über `_weltWechsel` am Ort: ab dort verweigert
+  `saveState` laut (WARN; „speichere zustand" sagt es dem Spieler), bis die alte Welt gegangen ist; der
   Speicher trägt nie die Mischung der Seite und der Aktiv-Zeiger nie die alte Welt
   (`gate:weltgrenze`).
 
