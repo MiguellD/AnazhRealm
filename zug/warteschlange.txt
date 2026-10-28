@@ -172,3 +172,4 @@ takt18a-gtx 1 punkte sha=79bda111008b3fc6e69fe373922640d0c23842ce geraet=gtx nur
 takt18b-gtx 1 punkte sha=79bda111008b3fc6e69fe373922640d0c23842ce geraet=gtx nur=siedlung.K5#2,leib.K1#2,leib.K2#2,halten.K2#1,halten.K5#2,fahrzeug.K5#1,tore.K3#2,spielgang.K3#1,ankunft.K2#1,ankunft.K3#1,streaming.K3#1,klang.K2#1,klang.K5#2,speicher.K1#1,speicher.K1#2,speicher.K2#1
 takt18a-gtx 0 storno
 takt18b-gtx 0 storno
+takt18c-gtx 1 punkte sha=557d4aaddd489ba2dd2cc31322e5a349348c11a8 geraet=gtx nur=gelaende.K2#1,gelaende.K2#2,gelaende.K5#2,tiere.K1#2,tiere.K3#2,tiere.K2#2,tiere.K5#1,mensch.K2#2,luftwasser.K5#1,luftwasser.K5#2,vegetation.K2#1,haar.K2#1,ferne.K2#2,fahrzeug.K3#2,fahrzeug.K4#2,siedlung.K2#2,siedlung.K5#1
