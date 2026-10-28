@@ -1718,13 +1718,14 @@ async function starte() {
                 }
                 // DIE BEDIENUNG (spielgang.K3): die HUD-Maske aus dem Bild des Spielers (Canvas + DOM, der Loop steht) — der
                 // Anteil der Pixel, die sich mit verborgenem HUD ändern —, dann HUD (Klick je Hotbar-Platz) und Menü (Tab und I,
-                // auf und zu) als echte Eingabe im laufenden Loop; die INP je Gruppe misst das Bedienungs-Ohr (`_bedienungInp`).
+                // Esc schließt) als echte Eingabe im laufenden Loop; die INP je Gruppe misst das Bedienungs-Ohr (`_bedienungInp`).
                 if (req.url === "/bedienung") {
                     const r = "window.anazhRealm";
                     await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
                     if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
                     // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
                     await page.bringToFront();
+                    await page.keyboard.press("Escape"); // jede offene Schublade fällt, wie beim Spieler
                     await page.mouse.click(page.viewport().width / 2, page.viewport().height / 2);
                     const imSpiel = await page.evaluate(`${r}.state.isPointerLocked && Promise.all(document.getAnimations().map((a) => a.finished)).then(() => true)`);
                     await page.addStyleTag({ content: "body.__ohne-hud *:not(#world-canvas) { visibility: hidden !important; }" });
@@ -1739,7 +1740,7 @@ async function starte() {
                     for (const art of ["hud", "menue"]) {
                         await page.evaluate(`${r}._inp.je.clear(); ${r}._inp.n0 = performance.interactionCount`);
                         for (let i = 0; i < +b.runden; i++)
-                            for (const ziel of art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "KeyI"]) {
+                            for (const ziel of art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "Escape"]) {
                                 await (art === "hud" ? ziel.click() : page.keyboard.press(ziel));
                                 await bilder();
                             }
