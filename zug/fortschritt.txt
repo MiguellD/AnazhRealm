@@ -748,3 +748,20 @@
 2026-10-28 22:15:46 takt18d-gtx spielgang.K3#1 ROT 1.0 · 8/16
 2026-10-28 22:17:22 takt18d-gtx ankunft.K2#1 ROT 1.5 · 9/16
 2026-10-28 22:19:08 takt18d-gtx ankunft.K3#1 ROT 1.7 · 10/16
+2026-10-28 22:23:36 takt18d-gtx streaming.K3#1 GRÜN 4.4 · 11/16
+2026-10-28 22:25:30 takt18d-gtx klang.K2#1 GRÜN 1.8 · 12/16
+2026-10-28 22:38:58 takt18d-gtx klang.K5#2 GRÜN 13.4 · 13/16
+2026-10-28 22:51:00 takt18d-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 11.9 · 15/16
+2026-10-28 22:54:39 takt18d-gtx speicher.K2#1 GRÜN 3.5 · 16/16
+2026-10-28 22:55:00 takt19a-gtx START 35 Stationen in 29 Läufen
+2026-10-28 22:55:19 takt19a-gtx affekt.K1#2 ROT 0.2 · 1/35
+2026-10-28 23:05:31 takt19a-gtx bauen.K1#2 OFFEN 10.1 · 2/35
+2026-10-28 23:14:19 takt19a-gtx bauen.K5#2 ROT 8.7 · 3/35
+2026-10-28 23:18:18 takt19a-gtx fahrzeug.K3#2 GRÜN 3.9 · 4/35
+2026-10-28 23:21:53 takt19a-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 3.4 · 6/35
+2026-10-28 23:25:21 takt19a-gtx ferne.K1#1,ferne.K1#2,ferne.K2#1 GRÜN/ROT/GRÜN 3.3 · 9/35
+2026-10-28 23:33:37 takt19a-gtx ferne.K2#2 GRÜN 8.1 · 10/35
+2026-10-28 23:35:05 takt19a-gtx ferne.K5#1 GRÜN 1.4 · 11/35
+2026-10-28 23:37:24 takt19a-gtx gelaende.K2#1 GRÜN 2.2 · 12/35
+2026-10-28 23:41:52 takt19a-gtx gelaende.K2#2 ROT 4.3 · 13/35
+2026-10-28 23:43:18 takt19a-gtx gelaende.K3#1 GRÜN 1.4 · 14/35
