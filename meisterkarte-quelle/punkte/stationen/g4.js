@@ -626,7 +626,9 @@ const alle = [
         // `damageCreature`, die Gabe `activateCreatureConsumable`, die Geste „folge mir", erinnert, wenn es beim Spieler ankommt),
         // dann die Frage im Chat an seinen Namen (`maybeAnswerCreature` → Persona-Prompt mit den letzten 8 Erinnerungen in den Worten
         // von ERINNERUNG_SATZ). Das Prädikat sucht in der Antwort den Bezug auf eine erlebte Tat und keinen auf eine fremde (das
-        // Nachplappern aller Taten fällt). Soll ≥ 70 % der Antworten; die Mutante V1_MUTANTE=gedaechtnis-leer fällt (Stub 0/12).
+        // Nachplappern aller Taten fällt). Soll ≥ 70 % der Antworten. Trocken am Kopf f1400431 gegen einen Stub-Anbieter auf
+        // 11434 (Mechanik, kein Modell): 11 von 12 GRÜN, Mutante V1_MUTANTE=gedaechtnis-leer 0 von 12 ROT; vorher (main a03b7b06)
+        // trug der Prompt „Deine Erinnerungen: ." — 0 von 12. Das Urteil mit qwen3:4b-instruct fällt am Laptop.
         befehl: [
             "bash",
             "-c",
@@ -668,7 +670,8 @@ const alle = [
         // Der Gegenlauf mischt das δ (je Quelle im Wechsel +1 / −1 über die Baseline des Rewards, der Nexus schreibt je Sekunde, die
         // Kappe verdrängt). GRÜN, wenn die WORT-Zeile des echten Anbieters ohne Täter steht: je Drittel eine neue LLM-Regel, LLM- und
         // Nexus-Regeln gewertet und verdrängt, im Gegenlauf je Quelle die Heiler um ≥ 0,25 öfter erneuert als die Schädlinge
-        // (regelVerdict). Die Mutante V1_MUTANTE=wertung-aus fällt (Stub: Heiler 0,00 · Schädlinge 0,00).
+        // (regelVerdict). Trocken am Kopf f1400431 gegen einen Stub-Anbieter (Mechanik, kein Modell): LLM-Regeln 2/2/2 je Drittel,
+        // Gegenlauf δ+ 0,75 · δ− 0,00 GRÜN; Mutante V1_MUTANTE=wertung-aus ROT (0,00 · 0,00). Das Urteil mit Modell fällt am Laptop.
         befehl: [
             "bash",
             "-c",
