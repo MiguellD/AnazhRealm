@@ -168,7 +168,9 @@ async function checkBandHydrosphere(ctx) {
             const cj = (cellIdx / hydro.dim) | 0;
             const wx = hydro.originX + (ci + 0.5) * hydro.cell;
             const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+            // der Füllstand trägt den Pegel des Sees (Schmelze und Regen, gelaende-core `pegelHub`, wetter.K3)
+            const hub = window.__gelaendeCore.pegelHub(r._gelaende(), renderedLk.level);
+            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level - hub) < 0.01;
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert den See-Wasserspiegel, nicht den Meeresspiegel.
             const cellsSet = new Set(renderedLk.cells);
             let ringChecked = false;
@@ -1158,6 +1160,10 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         // Die Suche läuft um das Ufer des Sees des Gesetzes (`__wasserOrt`): die
         // erste See-Zelle mit einem Land-Nachbarn. Ein tiefer Punkt zählt, wenn auf einer Achse binnen 9 m Land über dem
         // Spiegel steht — die Probe will den Uferweg der Kreatur (der See ist 600 m breit, seine Mitte hat kein Ufer).
+        // Tiefe und Land sind die EINE Wahrheit, die der Helfer liest (`_creatureWaterContextAt`): das Wasser am Körper
+        // (`_koerperWasser` über dem Grund, mit dem Pegel des Sees) und das Ufer, wo der Grund nicht nass ist (`_nassAt`,
+        // Marge 0,1 m). Bis wetter.K3 las die Suche das 3×3-gedehnte `_waterLevelAt` + 0,5 m: hob der Regen den See um seinen
+        // Hub (0,2 m), fand sie an der Ufer-Bank kein Land mehr, das der Helfer als Land las.
         const seeOrt = await window.__wasserOrt("see");
         let mx = 0;
         let mz = 0;
@@ -1172,7 +1178,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         }
         const land = (x, z) => {
             const ly = r._voxelSurfaceY(x, z);
-            return ly !== null && Number.isFinite(ly) && ly > r._waterLevelAt(x, z) + 0.5;
+            return ly !== null && Number.isFinite(ly) && !r._nassAt(x, z, 0.1, ly);
         };
         for (let dx = -SCAN_RANGE; dx <= SCAN_RANGE && !waterSpot; dx += SCAN_STEP) {
             for (let dz = -SCAN_RANGE; dz <= SCAN_RANGE && !waterSpot; dz += SCAN_STEP) {
@@ -1180,7 +1186,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
                 const z = mz + dz;
                 const sy = r._voxelSurfaceY(x, z);
                 if (sy === null || !Number.isFinite(sy)) continue;
-                const wy = r._waterLevelAt(x, z);
+                const wy = r._koerperWasser(x, z, sy);
                 // die Kreatur steht 0,5 m über dem Grund, der Helfer misst ab ihr: der Punkt braucht > 2 m Tiefe
                 if (!(wy - sy > 2.5)) continue;
                 if (land(x + 9, z) || land(x - 9, z) || land(x, z + 9) || land(x, z - 9)) waterSpot = { x, z, sy, wy };
@@ -1548,7 +1554,8 @@ async function checkBandWasserWahrheit(ctx) {
             gesehen.add(h);
             if (h && h.ready && h.water && h.water.waterKind) {
                 const wK = h.water.waterKind;
-                const wY = h.water.waterY;
+                // der Spiegel der Zelle wie im Kern (`koerperY`): der See trägt den Pegel (Schmelze und Regen, wetter.K3)
+                const wY = Array.from(h.water.waterY, (y, i) => (wK[i] === 2 ? y + window.__gelaendeCore.pegelHub(r._gelaende(), y) : y));
                 const hd = h.dim;
                 outer: for (let cj = 1; cj < hd - 1; cj++) {
                     for (let ci = 1; ci < hd - 1; ci++) {
@@ -1578,12 +1585,10 @@ async function checkBandWasserWahrheit(ctx) {
             const lUnder = r._atlasWaterLevelAt(shore.px, shore.pz, shore.rim - 5);
             const lOver = r._atlasWaterLevelAt(shore.px, shore.pz, shore.rim + 5);
             o.shoreLevels = { lInf, lUnder, lOver, rim: shore.rim };
-            if (lInf !== -Infinity) fail(`F2: terrainTopY=−Inf liefert Wasser an Land-Spalte (L=${lInf})`);
-            if (lUnder !== shore.rim)
-                fail(
-                    `F2: endliches topY UNTER rim verlor die Rim-Füllung (L=${lUnder}, rim=${shore.rim}) — echte Ufer müssen bleiben!`
-                );
-            if (lOver !== -Infinity) fail(`F2: topY ÜBER rim wurde nass (L=${lOver})`);
+            // terrainTopY −Inf liefert an der Land-Spalte kein Wasser, ein endliches topY UNTER rim behält die Rim-Füllung (echte
+            // Ufer bleiben), eins ÜBER rim bleibt trocken
+            if (lInf !== -Infinity || lUnder !== shore.rim || lOver !== -Infinity)
+                fail(`F2 RIM-WAND: ${JSON.stringify(o.shoreLevels)}`);
         }
         // Fluss-Wand: Bank-Punkt (centerness=0, kein Körper im 3×3) vs Kern-Punkt.
         let bank = null;
