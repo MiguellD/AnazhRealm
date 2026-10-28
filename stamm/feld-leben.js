@@ -1725,18 +1725,46 @@ class AnazhRealm_feld_leben {
         return pos - neg;
     }
 
-    // SITUATION des Spielers = Appraisal-INPUT: `lebendig` am Ort (+ HP im pfad-Modus). BEWUSST OHNE die
-    // Stimmung (`_fieldWohlErlebt`/`emotion`) — sonst Rückkopplung joy → Valenz → δ → joy (Runaway).
-    // Das Gefühl ist die Antwort auf die Situation, nicht ihr Input. ∈ [0,1].
+    // SITUATION des Spielers = Appraisal-INPUT: `lebendig` am Ort (+ HP im pfad-Modus) − das Umstellen (`_spielerUmstellt`
+    // × WERTUNG.umstellt). BEWUSST OHNE die Stimmung (`_fieldWohlErlebt`/`emotion`) — sonst Rückkopplung joy → Valenz → δ →
+    // joy (Runaway). Das Gefühl ist die Antwort auf die Situation, nicht ihr Input: schließt sich das Rudel, fällt sie (δ < 0:
+    // sorrow + chaos, die Furcht), fällt der Jäger, steigt sie gegen die lagende Baseline (δ > 0: joy + hope, der Triumph) —
+    // bis oekologie.K4#2 stempelte der Fall eines frischen Jägers den Triumph (`_feelAction`), und das Umstellen war kein
+    // Gefühl. ∈ [−umstellt, 1].
     _playerSituationWohl(aura) {
         const leb = this._fieldWohlStruktur(aura); // lebendig ∈ [0,1] (die Welt um den Spieler)
         const p = this.state.player;
         const hpMax = (p.stats && p.stats.hpMax) || 0;
+        let sit = leb;
         if (hpMax > 0 && this.getGameMode && this.getGameMode() === "pfad") {
             const hp = Math.max(0, Math.min(1, (p.hp || 0) / hpMax));
-            return leb * 0.6 + hp * 0.4;
+            sit = leb * 0.6 + hp * 0.4;
         }
-        return leb;
+        return sit - AnazhRealm.WERTUNG.umstellt * this._spielerUmstellt();
+    }
+
+    // DAS UMSTELLEN des Spielers ∈ [0, 1): seine Jäger dieses Takts (`_spielerJaeger`, gefüllt mit der EINEN Jäger-Liste im
+    // Kreatur-Takt; ein Gefallener verlässt sie mit der Liste der Wesen, `_kreaturAusListe`) — ihre Zahl sättigt (n / (n + 1), je Jäger seine Nähe, voll im Ring des
+    // Rudels 2 × jagd.hetzM), ihr Kreis schließt sich (die halbe Last trägt 1 − die größte Winkel-Lücke um ihn / 360°). Ohne
+    // Jäger 0.
+    _spielerUmstellt() {
+        const J = this._spielerJaeger;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!J || !J.length || !pm) return 0;
+        const ring = 2 * AnazhRealm._verhaltenGesetz().jagd.hetzM;
+        const w = this._umstelltWinkel || (this._umstelltWinkel = []);
+        w.length = 0;
+        let n = 0;
+        for (const c of J) {
+            const dx = c.position.x - pm.x;
+            const dz = c.position.z - pm.z;
+            n += Math.min(1, ring / Math.max(1e-3, Math.hypot(dx, dz)));
+            w.push(Math.atan2(dx, dz));
+        }
+        w.sort((a, b) => a - b);
+        let luecke = w[0] + 2 * Math.PI - w[w.length - 1];
+        for (let i = 1; i < w.length; i++) luecke = Math.max(luecke, w[i] - w[i - 1]);
+        return (n / (n + 1)) * (1 - luecke / (4 * Math.PI));
     }
 
     _wohlCellKey(x, z) {
@@ -1892,13 +1920,15 @@ class AnazhRealm_feld_leben {
         return this._brandFangen(Math.floor(x / cs), Math.floor(z / cs));
     }
 
-    _brandFangen(cx, cz) {
+    // `stoff`: der Brennstoff, den der Schritt an dieser Zelle schon las (`_brandSchritt`) — EIN Lesen je Zelle und Schritt;
+    // er ändert sich bis zum Fangen nicht (Asche schreibt nur eine brennende Zelle, und die fängt nie).
+    _brandFangen(cx, cz, stoff) {
         const st = this.state;
         const B = AnazhRealm.BRAND;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const key = cx + "," + cz;
         if (bf.has(key) || (st.naesse || 0) >= B.loescht) return null;
-        const stoff = this._brandStoff(cx, cz);
+        if (stoff === undefined) stoff = this._brandStoff(cx, cz);
         if (!(stoff >= B.minStoff)) return null;
         if (!bf.size) this._brandUhr = st.spielZeit;
         const zelle = { cx, cz, y: null, stoff, glut: 0 }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
@@ -1937,10 +1967,10 @@ class AnazhRealm_feld_leben {
                 const [nx, nz] = [z.cx + dx, z.cz + dz];
                 if (bf.has(nx + "," + nz) || this._pcgFloat(nx, nz, n) >= B.greift * z.glut) continue;
                 const s = this._brandStoff(nx, nz);
-                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz);
+                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz, s);
             }
         }
-        for (let i = 0; i < neu.length; i += 2) this._brandFangen(neu[i], neu[i + 1]);
+        for (let i = 0; i < neu.length; i += 3) this._brandFangen(neu[i], neu[i + 1], neu[i + 2]);
     }
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
@@ -2534,6 +2564,7 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
     brand: Object.freeze({ tiefe: 0.3, stunden: 72 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
+    riss: Object.freeze({ tiefe: 0.03, stunden: 24 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort
     max: 0.6,
     lebMin: 0.1,
 });
