@@ -765,3 +765,4 @@
 2026-10-28 23:37:24 takt19a-gtx gelaende.K2#1 GRÜN 2.2 · 12/35
 2026-10-28 23:41:52 takt19a-gtx gelaende.K2#2 ROT 4.3 · 13/35
 2026-10-28 23:43:18 takt19a-gtx gelaende.K3#1 GRÜN 1.4 · 14/35
+2026-10-28 23:49:11 takt19a-gtx gelaende.K5#2 GRÜN 5.8 · 15/35
