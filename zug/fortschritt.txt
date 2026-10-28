@@ -614,3 +614,4 @@
 2026-10-28 10:14:53 takt16a-gtx affekt.K1#2 ROT 0.3 · 1/36
 2026-10-28 10:19:00 takt16a-gtx bauen.K1#2 ROT 4.0 · 2/36
 2026-10-28 10:23:14 takt16a-gtx bauen.K5#2 ROT 4.2 · 3/36
+2026-10-28 10:33:24 takt16a-gtx fahrzeug.K3#1 OFFEN 10.1 · 4/36
