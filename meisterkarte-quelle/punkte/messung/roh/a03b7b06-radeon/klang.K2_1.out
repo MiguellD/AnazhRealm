@@ -1,0 +1,25 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\a03b7b06-radeon\klang.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; node "$D/m15-wind.cjs" 60
+[linse-gpu] amd/rdna-3
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":71,"steht":true},"wahl":{"hz":257.6640319824219,"kand":1,"zensus":[["wind",-34.9],["glut",-37.4],["vogel",-41.2]]},"fpsVor":118.8,"bilder":1049,"fenster":119,"r0":{"lagS":0,"r":0.8503801965803781,"n":119,"cvX":0.2532472994970204,"cvY":0.5490037601828924},"best":{"lagS":-0.5,"r":0.8545136270533313,"n":118,"cvX":0.25358640481645256,"cvY":0.5519009198661371}}
+
+--- stderr ---
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+00:58:15 CI-Ruhe: letzter CI-Job vor 8 s zu Ende - warte 172 s
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 1120 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
