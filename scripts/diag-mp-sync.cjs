@@ -39,6 +39,12 @@
 //                 ohne sie). Selbsttest am Ende: B trägt den alten Abschied → (g) ROT beim Namen. Unter Last (3 Läufe parallel,
 //                 je samt Chrome auf 2 Kernen, `taskset -c 0,1`): vorher 1 von 3 GRÜN (2× „A kennt B … keine Leitung"),
 //                 nachher 6 von 6.
+//   (h) DAS GESETZ DES SPIELERS (ultiversum.K4): A schreibt im Gespräch ein Gesetz („wann immer es zufällig passt, dann
+//                 erzähle …"), neu — sein Hash (`_regelHash`) steht in keiner Vorlage (`GESETZ_VORLAGEN` über den EINEN Satz-Parser
+//                 `_regelAusSatz`, die Gesetze, die A's Welt schon trägt); B trägt es als Gesetz von A (`_gesetzGeber`), würfelt in
+//                 jeder Scheibe der Welt-Uhr denselben Wurf wie A, obwohl B's Nexus drei Regeln mehr zählte (Täter, wenn nicht:
+//                 `_worldRuleSeed` trägt die Platz-Nummer), und die Wirkung (die Erzählung im Wissen, B's Tagebuch nennt A) steht
+//                 auf beiden Seiten. Selbsttests: A sagt die Vorlage → neu ROT; B's dsl-Kanal taub → reist ROT.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -173,6 +179,29 @@ function abdruck(bauten) {
     const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
     const leben = [...(st.lifeField || [])].map(([k, e]) => JSON.stringify([k, e.a, e.t]));
     return { edits, bauten: B.sort(), boden, zug: r._wetterZug, wetter, leben };
+}
+// (h) die Sicht einer Seite auf das Gesetz H (ohne H: das jüngste des Spielers): der Wurf der Scheiben k0 … k0+39 der Welt-Uhr,
+// ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
+// `vor`: die Hashes der Vorlagen (`GESETZ_VORLAGEN` über den EINEN Satz-Parser) und jedes Gesetzes, das die Welt schon trägt
+function gesetzSicht(H, k0) {
+    const r = anazhRealm;
+    const R = r.state.worldRules;
+    const g = R.find((x) => r._regelHash(x) === H) || (!H && R.filter((x) => x.source === "human").pop());
+    const vorlagen = r.constructor.GESETZ_VORLAGEN.map((s) => r._regelAusSatz(s).program);
+    return {
+        vor: vorlagen
+            .map(([, cond, effect]) => ({ cond, effect }))
+            .concat(R)
+            .map((x) => r._regelHash(x)),
+        H: g && r._regelHash(g),
+        k: Math.floor(r.state.spielZeit / 3),
+        wurf:
+            g &&
+            [...Array(40).keys()].map((i) => r.dslEvalCond(g.cond, r.dslCtx({ seed: r._worldRuleSeed(g, k0 + i) }))) +
+                "",
+        wirkt: !!g && g.fires > 0 && r.state.knowledgeBase.some((e) => e.content === g.effect[1]),
+        erinnert: r.state.worldJournal.entries.some((e) => e.text.startsWith("Das Gesetz von")),
+    };
 }
 // Byte-gleich je Teil des Abdrucks (JSON-Text)
 const gleichIn = (A, B) => (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]);
@@ -632,10 +661,7 @@ hauptLauf(async () => {
         const spurA = new Map(
             (await pageA.evaluate(() => anazhRealm.state.p2p._lockstepTrace || [])).map((q) => [q.q, q])
         );
-        const spurB = await pageB.evaluate(
-            (id) => anazhRealm.state.p2p.peers.get(id)?.lockstep?.trace || [],
-            idA
-        );
+        const spurB = await pageB.evaluate((id) => anazhRealm.state.p2p.peers.get(id)?.lockstep?.trace || [], idA);
         const geteilt = spurB.filter((g) => g.q >= anker && spurA.has(g.q));
         const dMax = Math.max(
             0,
@@ -895,6 +921,44 @@ hauptLauf(async () => {
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
         weich("Peers", g.A, g.B);
+
+        // ── (h) DAS GESETZ DES SPIELERS: A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
+        await pageB.evaluate(() => (anazhRealm.state.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
+        // die Seite trägt das Gesetz H (n = 0) oder es feuerte (n = 1) — oder die Welt-Uhr steht hinter der Scheibe `bis`
+        const traegt = (H, n, bis) =>
+            anazhRealm.state.worldRules.some((x) => anazhRealm._regelHash(x) === H && x.fires >= n) ||
+            anazhRealm.state.spielZeit > bis * 3;
+        const gesetz = async (satz, reist) => {
+            const { vor } = await pageA.evaluate(gesetzSicht, "", 0);
+            await sage(satz);
+            const { H, k } = await pageA.evaluate(gesetzSicht, "", 0);
+            await (reist ? waitFor(pageB, traegt, "B trägt das Gesetz von A", H, 0) : sleep(GRABEN_NACHLAUF_MS));
+            const [A, B] = [await pageA.evaluate(gesetzSicht, H, k), await pageB.evaluate(gesetzSicht, H, k)];
+            const bis = k + 2 + A.wurf.split(",").indexOf("true");
+            return { H, bis, neu: !vor.includes(H), reist: B.H === H, wurf: B.wurf === A.wurf };
+        };
+        const h = await gesetz("wann immer es zufällig passt, dann erzähle Der Fluss singt im Takt der Sterne", true);
+        // die Wirkung bis zu ihrem Ereignis: das Gesetz feuert, spätestens in der Scheibe nach dem ersten wahren Wurf — die Frist
+        // ist die Welt-Uhr, nie die Wanduhr (mit der alten Saat aus Platz-Nummer und Feuern würfelte jede Seite stets denselben
+        // Wurf: fiel er daneben, feuerte das Gesetz nie, und die Probe wartete ohne Ende)
+        for (const p of [pageA, pageB]) await waitFor(p, traegt, "das Gesetz feuert", h.H, 1, h.bis);
+        const [A, B] = [await pageA.evaluate(gesetzSicht, h.H, 0), await pageB.evaluate(gesetzSicht, h.H, 0)];
+        check(
+            "(h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden",
+            h.neu && h.reist && h.wurf && A.wirkt && B.wirkt && B.erinnert,
+            `Hash ${h.H} neu ${h.neu} · bei B ${h.reist} · Wurf in 40 Scheiben gleich ${h.wurf}${h.wurf ? "" : " — Täter _worldRuleSeed"}` +
+                ` · wirkt bei A ${A.wirkt}, bei B ${B.wirkt} · B erinnert das Gesetz von A ${B.erinnert}`
+        );
+        // die Selbsttests: A sagt die Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz
+        const v = await gesetz(await pageA.evaluate(() => anazhRealm.constructor.GESETZ_VORLAGEN[0]), true);
+        await pageB.evaluate(() => ((window.__dsl = anazhRealm._p2pMsgDsl), (anazhRealm._p2pMsgDsl = () => {})));
+        const t = await gesetz("wann immer es zufällig passt, dann erzähle Der Kanal ist taub", false);
+        await pageB.evaluate(() => (anazhRealm._p2pMsgDsl = window.__dsl));
+        check(
+            "(h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht",
+            !v.neu && v.reist && t.neu && !t.reist,
+            `Vorlage neu ${v.neu} · taub bei B ${t.reist}`
+        );
 
         // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);

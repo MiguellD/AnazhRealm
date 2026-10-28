@@ -582,6 +582,33 @@ class AnazhRealm_feld_sprache {
         return null;
     }
 
+    // DER EINE SATZ-PARSER DER GESETZE (ultiversum.K4): „wann immer X, dann Y" → {program: ["rule", X, Y, {everySec: 3}]},
+    // X über `_parseChatCondition`, Y über die Chat-Patterns (`_parseChatEffect`); ein Satz, der X oder Y nicht trägt oder den
+    // festen Kern berührte (`_isRuleEffectAllowed`), → {absage}; kein Gesetz-Satz → null. Leser: der Chat (`_chatTryRuleCommand`)
+    // und die Mehrspieler-Wand, die aus `GESETZ_VORLAGEN` die Hashes der Vorlagen baut.
+    _regelAusSatz(satz) {
+        const m = String(satz || "").match(
+            /^(?:wann\s+immer|immer\s+wenn|jedes\s*mal\s+wenn|sobald)\s+(.+?)(?:\s*,\s*(?:dann\s+|so\s+)?|\s+dann\s+)(.+?)\s*$/i
+        );
+        if (!m) return null;
+        const [condText, effText] = [m[1].trim(), m[2].trim()];
+        const cond = this._parseChatCondition(condText);
+        if (!cond)
+            return {
+                absage: `Ich verstehe die Bedingung „${condText}" noch nicht. Versuch z. B. „es regnet", „du bist traurig", „wenig Leben hier".`,
+            };
+        const effect = this._parseChatEffect(effText);
+        if (!effect)
+            return {
+                absage: `Ich verstehe die Reaktion „${effText}" noch nicht. Versuch z. B. „setze wetter sunny" oder „spawne kreaturen 3".`,
+            };
+        if (!this._isRuleEffectAllowed(effect))
+            return {
+                absage: `„${effText}" darf keine stehende Welt-Regel sein — eine Regel berührt nur die reaktive Welt (Wetter, Leben, Stimmung, Kreaturen), nicht das feste Gelände.`,
+            };
+        return { program: ["rule", cond, effect, { everySec: 3 }] };
+    }
+
     // Bedingungs-Parser Mensch→Regeln: X in "wann immer X, dann Y" → eine DSL-Bedingung (fokussierte
     // Surface-Grammatik). Unbekannt → null (der Regel-Pfad gibt sanftes Feedback). Liest das lebendige
     // Feld (field_*) UND die Stimmung (emotion_above).

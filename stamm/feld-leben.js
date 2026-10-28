@@ -812,47 +812,20 @@ class AnazhRealm_feld_leben {
         return true;
     }
 
-    // „wann immer X, dann Y" → stehende Mensch-Regel: Y über die bestehenden Chat-Patterns, X über
-    // _parseChatCondition. dslRun(source:"human") → der `rule`-Op registriert sie PERMANENT (kein ttl,
-    // geschützt vor Eviction + Fitness-Prune). Whitelist: der Effekt darf den frozen Worldgen nicht
-    // anfassen (_isRuleEffectAllowed).
+    // „wann immer X, dann Y" → stehende Mensch-Regel aus dem EINEN Satz-Parser (`_regelAusSatz`). dslRun(source:"human") →
+    // der `rule`-Op registriert sie PERMANENT (kein ttl, geschützt vor Eviction + Fitness-Prune) und reist über den dsl-Kanal
+    // zum Mitspieler (`p2pBroadcastDsl`), wo sie als sein Gesetz steht (`_gesetzGeber`).
     _chatTryRuleCommand(command, chatInput, appendChatOutput) {
-        const m = command.match(
-            /^(?:wann\s+immer|immer\s+wenn|jedes\s*mal\s+wenn|sobald)\s+(.+?)(?:\s*,\s*(?:dann\s+|so\s+)?|\s+dann\s+)(.+?)\s*$/i
-        );
-        if (!m) return false;
-        const condText = m[1].trim();
-        const effText = m[2].trim();
-        const cond = this._parseChatCondition(condText);
-        if (!cond) {
+        const g = this._regelAusSatz(command);
+        if (!g) return false;
+        if (g.program) {
+            const result = this.dslRun(g.program, { source: "human" });
             appendChatOutput(
-                `Ich verstehe die Bedingung „${condText}" noch nicht. Versuch z. B. „es regnet", „du bist traurig", „wenig Leben hier".`
+                result.ok
+                    ? `Gesetz aufgestellt — ${this.describeProgram(g.program)}.`
+                    : "Die Regel ließ sich nicht aufstellen (siehe Log)."
             );
-            chatInput.value = "";
-            return true;
-        }
-        const effect = this._parseChatEffect(effText);
-        if (!effect) {
-            appendChatOutput(
-                `Ich verstehe die Reaktion „${effText}" noch nicht. Versuch z. B. „setze wetter sunny" oder „spawne kreaturen 3".`
-            );
-            chatInput.value = "";
-            return true;
-        }
-        if (!this._isRuleEffectAllowed(effect)) {
-            appendChatOutput(
-                `„${effText}" darf keine stehende Welt-Regel sein — eine Regel berührt nur die reaktive Welt (Wetter, Leben, Stimmung, Kreaturen), nicht das feste Gelände.`
-            );
-            chatInput.value = "";
-            return true;
-        }
-        const program = ["rule", cond, effect, { everySec: 3 }];
-        const result = this.dslRun(program, { source: "human" });
-        if (result.ok) {
-            appendChatOutput(`Gesetz aufgestellt — ${this.describeProgram(program)}.`);
-        } else {
-            appendChatOutput("Die Regel ließ sich nicht aufstellen (siehe Log).");
-        }
+        } else appendChatOutput(g.absage);
         chatInput.value = "";
         return true;
     }
@@ -865,20 +838,15 @@ class AnazhRealm_feld_leben {
         if (/^(?:zeige|welche|liste|welt[-\s]*)?\s*(?:welt[-\s]*)?(?:regeln|gesetze)\??\s*$/i.test(c)) {
             const rules = this.state.worldRules || [];
             if (rules.length === 0) {
-                appendChatOutput('Noch keine Welt-Regeln. Sag z. B. „wann immer es regnet, dann setze wetter sunny".');
+                appendChatOutput(`Noch keine Welt-Regeln. Sag z. B. „${AnazhRealm.GESETZ_VORLAGEN[0]}".`);
                 chatInput.value = "";
                 return true;
             }
             appendChatOutput(`${rules.length} Welt-Regel${rules.length !== 1 ? "n" : ""}:`);
             for (const r of rules) {
                 const who =
-                    r.source === "human"
-                        ? "du"
-                        : r.source === "nexus"
-                          ? "der Nexus"
-                          : r.source && r.source.startsWith("llm")
-                            ? "Grok"
-                            : r.source;
+                    this._gesetzGeber(r) ||
+                    (r.source === "nexus" ? "der Nexus" : r.source && r.source.startsWith("llm") ? "Grok" : r.source);
                 appendChatOutput(`• ${this.describeProgram(["rule", r.cond, r.effect])} (von ${who})`);
             }
             chatInput.value = "";
