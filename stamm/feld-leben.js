@@ -2045,13 +2045,14 @@ class AnazhRealm_feld_leben {
         return this._brandFangen(Math.floor(x / cs), Math.floor(z / cs));
     }
 
-    _brandFangen(cx, cz) {
+    // `stoff`: der Brennstoff, den der Schritt schon las (`_brandSchritt`) — er wird nie zweimal gefragt
+    _brandFangen(cx, cz, stoff) {
         const st = this.state;
         const B = AnazhRealm.BRAND;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const key = cx + "," + cz;
         if (bf.has(key) || (st.naesse || 0) >= B.loescht) return null;
-        const stoff = this._brandStoff(cx, cz);
+        if (stoff === undefined) stoff = this._brandStoff(cx, cz);
         if (!(stoff >= B.minStoff)) return null;
         if (!bf.size) this._brandUhr = st.spielZeit;
         const zelle = { cx, cz, y: null, stoff, glut: 0 }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
@@ -2090,10 +2091,10 @@ class AnazhRealm_feld_leben {
                 const [nx, nz] = [z.cx + dx, z.cz + dz];
                 if (bf.has(nx + "," + nz) || this._pcgFloat(nx, nz, n) >= B.greift * z.glut) continue;
                 const s = this._brandStoff(nx, nz);
-                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz);
+                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz, s);
             }
         }
-        for (let i = 0; i < neu.length; i += 2) this._brandFangen(neu[i], neu[i + 1]);
+        for (let i = 0; i < neu.length; i += 3) this._brandFangen(neu[i], neu[i + 1], neu[i + 2]);
     }
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
