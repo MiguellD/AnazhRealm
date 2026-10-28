@@ -20,7 +20,7 @@
 //   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1628,11 +1628,7 @@ hauptLauf(async () => {
             // keine Probe
             [{}, "werkstatt · Ego · Haus: steht nicht"],
         ]);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN — die Werkstatt-Weg-Linse nennt ihre Täter beim Namen.");
+        selbsttestEnde(errs, "die Werkstatt-Weg-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }
 
@@ -1787,5 +1783,4 @@ hauptLauf(async () => {
         );
     }
     wandEnde(errs, "der Werkstatt-Weg trägt seine benannten Schnitte.");
-    process.exit(0);
 });

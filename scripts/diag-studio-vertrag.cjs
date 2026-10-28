@@ -1545,5 +1545,4 @@ function validateManifest(m, kern) {
     }
 
     wandEnde(errs, "der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, und der Selbst-Test beweist die Linse feuert.");
-    process.exit(0);
 })();

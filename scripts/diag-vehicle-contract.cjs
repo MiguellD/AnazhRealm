@@ -137,5 +137,4 @@ function caseKey(c) {
     goldenSelbsttest(actual, check);
 
     wandEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
-    process.exit(0);
 })();

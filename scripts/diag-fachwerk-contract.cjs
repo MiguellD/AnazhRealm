@@ -968,5 +968,4 @@ function bogenLinse() {
     bogenLinse();
 
     wandEnde(errs, "der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
-    process.exit(0);
 })();

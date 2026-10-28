@@ -194,5 +194,4 @@ function buildCase(c) {
     goldenSelbsttest(actual, check);
 
     wandEnde(errs, "der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
-    process.exit(0);
 })();

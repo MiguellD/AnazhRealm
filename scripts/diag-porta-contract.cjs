@@ -183,5 +183,4 @@ function buildCase(c) {
     goldenSelbsttest(actual, check);
 
     wandEnde(errs, "der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
-    process.exit(0);
 })();

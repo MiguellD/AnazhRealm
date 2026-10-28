@@ -6,7 +6,7 @@
 //   node scripts/diag-gpu-fehler.cjs --selftest          Port: GPU_FEHLER_PORT (Standard 4423)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
@@ -137,10 +137,6 @@ hauptLauf(async () => {
         /^Gerät 3 haengt gibt [^|]*$/.test(still(zwei)),
         still(zwei)
     );
-    if (errs.length) {
-        console.error("\n❌ SELBST-TEST ROT — die GPU-Fehler-Linse ist vakuös.");
-        process.exit(1);
-    }
-    console.log("\n✅ SELBST-TEST GRÜN — die GPU-Fehler-Linse nennt den fehlenden Vertex-Slot mit Pipeline und Pass.");
+    selbsttestEnde(errs, "die GPU-Fehler-Linse nennt den fehlenden Vertex-Slot mit Pipeline und Pass.");
     process.exit(0);
 });

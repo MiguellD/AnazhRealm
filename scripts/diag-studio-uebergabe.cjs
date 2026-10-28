@@ -401,5 +401,4 @@ hauptLauf(async () => {
     console.log(`      (K) ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     if (process.argv.includes("--welt")) await weltPruefen();
     wandEnde(errs, "DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich.");
-    process.exit(0);
 });
