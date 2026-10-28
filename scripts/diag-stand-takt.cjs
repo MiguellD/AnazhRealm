@@ -553,6 +553,28 @@ async function tatSeite(MESS, vorher) {
         for (const a of st.nahStreu.senken.values()) for (const [k, b] of a.bloecke) for (const id of b.ids) if (wahl(a, k + "#" + id)) s.add(k + "#" + id);
         return s.size;
     };
+    const U = vorher && vorher.ufer; // (K5) der Nachwuchs, s. u.
+    const jahr = async (mutante, F = r._feuchteAt.bind(r)) => {
+        await stehen(U);
+        const [ns, h0, ps] = [st.nahStreu, r._weltStunde(), [], r._setWeather("sunny", "human"), r.setSeason("sommer")];
+        if (mutante) r._feuchteAt = () => 0.5;
+        for (const [senke, a] of ns.senken)
+            for (const [key, b] of a.ernte && a.preset !== "stumpf" ? a.bloecke : [])
+                for (const { id, x, z } of ns.kacheln.get(key).items)
+                    if (b.ids.includes(id) && r._harvestScatterPick({ senke, key, id }))
+                        ps.push({ key, id, w: [key, F(x, z), r._bodenLichtFeld(x, z, x, z)(x, z), 0] });
+        delete r._feuchteAt;
+        const schritt = (dh) => {
+            r.setTimeOfDay((st.timeOfDay + dh / 24) % 1, "regler");
+            takt();
+            for (const p of ps) p.w[3] ||= !r._geerntetIn(p.key).has(p.id) && r._weltStunde() - h0;
+        };
+        while (ps.some((p) => !p.w[3]) && r._weltStunde() - h0 < 48) schritt(0.05);
+        while (r._weltStunde() - h0 < 8760) schritt(11);
+        await stehen(U);
+        return { jahr: r._weltStunde() - h0, da: zeichnet((a, k) => ps.some((p) => p.key + "#" + p.id === k)), p: ps.map((p) => p.w) };
+    };
+    if (U) return { echt: await jahr(false), mutante: await jahr(true) };
     const mess = (T) => {
         const d = T.staemme.map((p) => r.auraAt(p.x, p.z).lebendig - r.worldFieldAt(p.x, p.z).lebendig);
         return {
@@ -634,7 +656,7 @@ async function tatLauf(page) {
     return Object.assign(T, await page.evaluate(tatSeite, MESS, T));
 }
 
-// (K5) DER NACHWUCHS (stoffe.K5, `--nachwuchs`): am offenen Ufer `UFER` (ein Fluss 600 m nordöstlich der Mess-Wiese, der Ring
+// (K5) DER NACHWUCHS (stoffe.K5, `--nachwuchs`, die Seite der Tat mit `vorher.ufer`): am offenen Ufer `UFER` (ein Fluss 600 m nordöstlich der Mess-Wiese, der Ring
 // trägt Pflanzen der Nah-Streu vom nassen Ufer bis ins Trockene, im vollen Licht und unter Kronen) pflückt der Spieler mit dem
 // Verb der Ernte (`_harvestScatterPick`) jede Pflanze; die Uhr springt als Spieler-Wort ein Spieljahr (`setTimeOfDay` „regler":
 // 0,05 h, bis jede zurück ist, dann 11 h), je Pflanze zählt die Stunde, ab der ihre Kachel sie wieder trägt (`_geerntetIn`), am
@@ -642,40 +664,6 @@ async function tatLauf(page) {
 // und Licht liest die Linse am Gesetz (`_feuchteAt` des Prototyps, `_bodenLichtFeld`). Urteil je 4-m-Kachel (Tempo =
 // 1/Stunde): r(Tempo, Feuchte × Licht) ≥ 0,5 über alle; im Offenen (Licht ≥ 0,995, wo das Kronendach schweigt) r ≥ 0,5 und die
 // nassen (F ≥ 0,6) ≥ 1,15 × so schnell wie die trockenen (F ≤ 0,2) — die Mutante zieht dort r unter 0,2 und sie unter 1,05.
-async function nachwuchsSeite(ORT) {
-    const r = await window.__weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
-    const st = r.state;
-    let t = performance.now();
-    const takt = () => r._gameLoopTick((t += 1000 / 60));
-    const F = r._feuchteAt.bind(r);
-    st.perfRegulator = r._setWeather("sunny", "human") && r.setSeason("sommer") && false;
-    const jahr = async (mutante) => {
-        st.playerMesh.position.set(ORT.x, r._voxelSurfaceY(ORT.x, ORT.z) + 1.8, ORT.z);
-        await window.__weltStehtNach(takt);
-        const [ns, h0, ps] = [st.nahStreu, r._weltStunde(), []];
-        if (mutante) r._feuchteAt = () => 0.5;
-        for (const [senke, a] of ns.senken)
-            for (const [key, b] of a.ernte && a.preset !== "stumpf" ? a.bloecke : [])
-                for (const { id, x, z } of ns.kacheln.get(key).items)
-                    if (b.ids.includes(id) && r._harvestScatterPick({ senke, key, id }))
-                        ps.push({ key, id, w: [key, F(x, z), r._bodenLichtFeld(x, z, x, z)(x, z), 0] });
-        delete r._feuchteAt;
-        const schritt = (dh) => {
-            r.setTimeOfDay((st.timeOfDay + dh / 24) % 1, "regler");
-            takt();
-            for (const p of ps) p.w[3] ||= !r._geerntetIn(p.key).has(p.id) && r._weltStunde() - h0;
-        };
-        while (ps.some((p) => !p.w[3]) && r._weltStunde() - h0 < 48) schritt(0.05);
-        while (r._weltStunde() - h0 < 8760) schritt(11);
-        await window.__weltStehtNach(takt);
-        const da = new Set();
-        for (const a of st.nahStreu.senken.values()) for (const [k, b] of a.bloecke) for (const id of b.ids) da.add(k + id);
-        return { jahr: r._weltStunde() - h0, da: ps.filter((p) => da.has(p.key + p.id)).length, p: ps.map((p) => p.w) };
-    };
-    return { echt: await jahr(false), mutante: await jahr(true) };
-}
-
-// Das Maß eines Jahres je Kachel: Tempo (0 für nie) gegen Feuchte × Licht, r über alle und die offenen, nass durch trocken.
 function nachwuchsMass({ p, jahr, da }) {
     const m = (a, f) => a.reduce((s, x) => s + f(x), 0) / a.length;
     const kor = (Z, a = m(Z, (z) => z.fl), b = m(Z, (z) => z.t)) => {
@@ -687,14 +675,14 @@ function nachwuchsMass({ p, jahr, da }) {
     const Z = Object.values(je).map((a) => ({ fl: m(a, (q) => q.fl), t: m(a, (q) => q.t), F: m(a, (q) => q.F), L: Math.min(...a.map((q) => q.L)) }));
     const O = Z.filter((z) => z.L >= 0.995);
     const tempo = (f) => m(O.filter(f), (z) => z.t);
-    return { n: p.length, zurueck: p.filter((q) => q[3]).length, da, jahr: Math.round(jahr), zellen: Z.length, r: kor(Z), offen: O.length, rOffen: kor(O), quote: +(tempo((z) => z.F >= 0.6) / tempo((z) => z.F <= 0.2)).toFixed(3) };
+    return { n: p.length, zurueck: p.filter((q) => q[3]).length, da, jahr: Math.round(jahr), r: kor(Z), offen: O.length, rOffen: kor(O), quote: +(tempo((z) => z.F >= 0.6) / tempo((z) => z.F <= 0.2)).toFixed(3) };
 }
 
 function nachwuchsUrteil({ echt: e, mutante: m } = {}) {
-    if (!(e && m && e.n >= 30 && e.offen >= 6)) return [`LEER: ${e ? e.n + " Pflanzen, " + e.offen + " offene Kacheln" : "kein Jahr"}`];
+    if (!(e && m && e.n >= 30 && e.offen >= 6)) return ["LEER: " + JSON.stringify(e)];
     return [
         e.jahr >= 8760 && e.zurueck === e.n && e.da === e.n ? "" : `JAHR: nach ${e.jahr} h ${e.zurueck} von ${e.n} zurück, ${e.da} gezeichnet`,
-        e.r >= 0.5 && e.rOffen >= 0.5 ? "" : `KORRELATION: r ${e.r} über ${e.zellen} Kacheln, offen ${e.rOffen}`,
+        e.r >= 0.5 && e.rOffen >= 0.5 ? "" : `KORRELATION: r ${e.r}, offen ${e.rOffen}`,
         e.quote >= 1.15 ? "" : `FEUCHTE: nass ${e.quote} × trocken`,
         m.rOffen < 0.2 && m.quote < 1.05 ? "" : `MUTANTE: bei gleicher Feuchte offen r ${m.rOffen}, nass ${m.quote} × trocken`,
     ].filter(Boolean);
@@ -706,8 +694,8 @@ if (process.argv.includes("--selftest")) {
     // die Tat-Linse und die Nachwuchs-Linse: grün am Soll, je Täter rot beim Namen
     const T = (h, n = 10) => ({ gefaellt: n, gepflueckt: 30, baeumeVorher: 12, stunde: Object.assign({ baeume: 2, pflanzen: 0, stuempfe: 10, narbe: -0.2 }, h) });
     const roh = [[T({}), ""], [T({ narbe: 0 }), "NARBE"], [T({ stuempfe: 0 }), "STUMPF"], [T({ pflanzen: 9 }), "ERNTE"], [T({ baeume: 12 }), "BAUM"], [T({}, 3), "LEER"], [{}, "LEER"]];
-    const J = (e, m) => ({ echt: Object.assign({ n: 138, zurueck: 138, da: 138, jahr: 8765, zellen: 78, r: 0.83, offen: 16, rOffen: 0.99, quote: 1.3 }, e), mutante: Object.assign({ rOffen: 0, quote: 1 }, m) });
-    const nw = [[J(), ""], [J({ jahr: 400 }), "JAHR"], [J({ da: 3 }), "JAHR"], [J({ r: 0.2 }), "KORRELATION"], [J({ quote: 1 }), "FEUCHTE"], [J({}, { rOffen: 0.9 }), "MUTANTE"], [J({ offen: 0 }), "LEER"], [{}, "LEER"]];
+    const J = (e, m) => ({ echt: { n: 40, zurueck: 40, da: 40, jahr: 8760, r: 1, offen: 9, rOffen: 1, quote: 2, ...e }, mutante: { rOffen: 0, quote: 1, ...m } });
+    const nw = [[J(), ""], [J({ da: 9 }), "JAHR"], [J({ r: 0 }), "KORRELATION"], [J({ quote: 1 }), "FEUCHTE"], [J({}, { quote: 2 }), "MUTANTE"], [{}, "LEER"]];
     const falsch = (U, L) => L.filter(([b, n]) => (U(b).join() + "|").split(":")[0] !== (n || "|")).map(([, n]) => n || "GRÜN");
     selbsttestEnde([...falsch(tatUrteil, roh), ...falsch(nachwuchsUrteil, nw)], "die Tat- und die Nachwuchs-Linse nennen jeden Täter.");
     process.exit(0);
@@ -738,7 +726,7 @@ const UFER = { x: 209.4, z: -1457.5 };
         await warteAufWelt(page, 120000);
         await page.evaluate(STAND.STAND_INSTALL + require("./lib/kamera-nah.cjs").KAMERA_NAH_INSTALL);
         if (TAT) befund = await tatLauf(page);
-        else if (NACHWUCHS) befund = await page.evaluate(nachwuchsSeite, UFER);
+        else if (NACHWUCHS) befund = await page.evaluate(tatSeite, MESS, { ufer: UFER });
         else befund = await page.evaluate(
             async (MESS, TAKTE) => {
                 const r = window.anazhRealm,
