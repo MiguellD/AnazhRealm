@@ -58,95 +58,89 @@ function haengerAn() {
         H.namen.push(e);
         return e;
     };
-    const rend = window.anazhRealm && window.anazhRealm.state.renderer;
+    const rend = window.anazhRealm.state.renderer;
     // DER KNOTEN-BAU (r184 `Nodes.getForRender`): die CPU-Hälfte einer Erst-Zeichnung — der TSL-Graph des Stoffs wird zu
     // WGSL gebaut, synchron, wenn ein RenderObject zum ersten Mal zeichnet und sein Schlüssel nicht im Bau-Cache liegt.
     // Je synchronem Bau die Dauer, der Stoff und der Auftraggeber; ein asynchroner Bau (`buildAsync`, in Schritten mit
     // yieldToMain) zählt nur.
-    const N = rend && rend._nodes;
-    if (N && typeof N.getForRender === "function" && typeof N.getForRenderCacheKey === "function") {
-        const gfr = N.getForRender;
-        N.getForRender = function (ro, asyncBau) {
-            const d = this.get(ro);
-            if (d.nodeBuilderState !== undefined || this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) !== undefined)
-                return gfr.apply(this, arguments);
-            if (asyncBau) {
-                H.acc.bauAsync = (H.acc.bauAsync || 0) + 1;
-                return gfr.apply(this, arguments);
-            }
-            const t0 = performance.now();
-            const s = gfr.apply(this, arguments);
-            const ms = performance.now() - t0;
-            H.acc.bauN = (H.acc.bauN || 0) + 1;
-            H.acc.bauMs = (H.acc.bauMs || 0) + ms;
-            const e = name("bau", { label: (ro.material && (ro.material.name || ro.material.type)) || "?" });
-            if (e) e.ms = +ms.toFixed(1);
-            return s;
-        };
-    }
-    if (rend && typeof rend._renderObjectDirect === "function") {
-        const rod = rend._renderObjectDirect;
-        rend._renderObjectDirect = function (object, material, scene, camera) {
-            const vor = H.cur;
-            H.cur = { object, scene, camera };
-            try {
-                return rod.apply(this, arguments);
-            } finally {
-                H.cur = vor;
-            }
-        };
-    }
-    if (typeof GPUDevice !== "undefined") {
-        const P = GPUDevice.prototype;
-        const crp = P.createRenderPipeline;
-        P.createRenderPipeline = function (d) {
-            const t0 = performance.now();
-            const p = crp.call(this, d);
-            H.acc.pipeSync++;
-            H.acc.pipeSyncMs += performance.now() - t0;
-            name("sync", d);
-            return p;
-        };
-        const crpa = P.createRenderPipelineAsync;
-        P.createRenderPipelineAsync = function (d) {
-            H.acc.pipeAsync++;
-            name("async", d);
-            return crpa.call(this, d);
-        };
-        for (const m of ["createComputePipeline", "createComputePipelineAsync"]) {
-            const o = P[m];
-            P[m] = function (d) {
-                H.acc.compute++;
-                name(m === "createComputePipeline" ? "compute" : "compute-async", d);
-                return o.call(this, d);
-            };
+    const N = rend._nodes;
+    const gfr = N.getForRender;
+    N.getForRender = function (ro, asyncBau) {
+        const d = this.get(ro);
+        if (d.nodeBuilderState !== undefined || this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) !== undefined)
+            return gfr.apply(this, arguments);
+        if (asyncBau) {
+            H.acc.bauAsync = (H.acc.bauAsync || 0) + 1;
+            return gfr.apply(this, arguments);
         }
-        const csm = P.createShaderModule;
-        P.createShaderModule = function (d) {
-            H.acc.shader++;
-            H.acc.shaderKB += ((d && d.code && d.code.length) || 0) / 1024;
-            return csm.call(this, d);
-        };
-        const Q = GPUQueue.prototype;
-        const wb = Q.writeBuffer;
-        Q.writeBuffer = function (b, o, data, dOff, size) {
-            const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
-            H.acc.upKB += (size != null ? size * bpe : (data && data.byteLength) || 0) / 1024;
-            return wb.apply(this, arguments);
-        };
-        const wt = Q.writeTexture;
-        Q.writeTexture = function (dst, data) {
-            H.acc.texKB += ((data && data.byteLength) || 0) / 1024;
-            return wt.apply(this, arguments);
-        };
-        const cei = Q.copyExternalImageToTexture;
-        Q.copyExternalImageToTexture = function (src, dst, size) {
-            const w = Array.isArray(size) ? size[0] : (size && size.width) || 0;
-            const h = Array.isArray(size) ? size[1] || 1 : (size && size.height) || 1;
-            H.acc.texKB += (w * h * 4) / 1024;
-            return cei.apply(this, arguments);
+        const t0 = performance.now();
+        const s = gfr.apply(this, arguments);
+        const ms = performance.now() - t0;
+        H.acc.bauN = (H.acc.bauN || 0) + 1;
+        H.acc.bauMs = (H.acc.bauMs || 0) + ms;
+        const e = name("bau", { label: (ro.material && (ro.material.name || ro.material.type)) || "?" });
+        if (e) e.ms = +ms.toFixed(1);
+        return s;
+    };
+    const rod = rend._renderObjectDirect;
+    rend._renderObjectDirect = function (object, material, scene, camera) {
+        const vor = H.cur;
+        H.cur = { object, scene, camera };
+        try {
+            return rod.apply(this, arguments);
+        } finally {
+            H.cur = vor;
+        }
+    };
+    const P = GPUDevice.prototype;
+    const crp = P.createRenderPipeline;
+    P.createRenderPipeline = function (d) {
+        const t0 = performance.now();
+        const p = crp.call(this, d);
+        H.acc.pipeSync++;
+        H.acc.pipeSyncMs += performance.now() - t0;
+        name("sync", d);
+        return p;
+    };
+    const crpa = P.createRenderPipelineAsync;
+    P.createRenderPipelineAsync = function (d) {
+        H.acc.pipeAsync++;
+        name("async", d);
+        return crpa.call(this, d);
+    };
+    for (const m of ["createComputePipeline", "createComputePipelineAsync"]) {
+        const o = P[m];
+        P[m] = function (d) {
+            H.acc.compute++;
+            name(m === "createComputePipeline" ? "compute" : "compute-async", d);
+            return o.call(this, d);
         };
     }
+    const csm = P.createShaderModule;
+    P.createShaderModule = function (d) {
+        H.acc.shader++;
+        H.acc.shaderKB += ((d && d.code && d.code.length) || 0) / 1024;
+        return csm.call(this, d);
+    };
+    const Q = GPUQueue.prototype;
+    const wb = Q.writeBuffer;
+    Q.writeBuffer = function (b, o, data, dOff, size) {
+        const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
+        H.acc.upKB += (size != null ? size * bpe : (data && data.byteLength) || 0) / 1024;
+        return wb.apply(this, arguments);
+    };
+    const wt = Q.writeTexture;
+    Q.writeTexture = function (dst, data) {
+        H.acc.texKB += ((data && data.byteLength) || 0) / 1024;
+        return wt.apply(this, arguments);
+    };
+    const cei = Q.copyExternalImageToTexture;
+    Q.copyExternalImageToTexture = function (src, dst, size) {
+        const w = Array.isArray(size) ? size[0] : (size && size.width) || 0;
+        const h = Array.isArray(size) ? size[1] || 1 : (size && size.height) || 1;
+        H.acc.texKB += (w * h * 4) / 1024;
+        return cei.apply(this, arguments);
+    };
     return H;
 }
 
@@ -553,8 +547,8 @@ function haengerAuswerten(roh, spur, opts) {
             wetter: roh.wetter,
         },
         erst: roh.erst || null,
-        // DER SPRUNG (`--wandern sprung`, streaming.K3): wann die Welt am Ziel stand, die Bauten im Haupt-Faden im Fenster
-        sprung: roh.sprung && Object.assign({}, roh.sprung, { bau: roh.sprung.bau[1].sonst - roh.sprung.bau[0].sonst, rot: roh.sprung.bau[1].rot }),
+        // DER SPRUNG (`--wandern sprung`, streaming.K3): wann die Welt am Ziel stand, die Bauten im Haupt-Faden (das Urteil: die Station)
+        sprung: roh.sprung || null,
     };
 }
 
@@ -564,9 +558,6 @@ function haengerLinsenBefunde(a) {
     if (!a.profil) b.push("keine Stichproben in der Spur — TAKT und NEBEN ohne Engstelle");
     if (a.profil && a.marken !== a.takte) b.push(`${a.marken} Takt-Marken für ${a.takte} Takte — die Proben liegen nicht auf den Takten`);
     for (const p of a.probe || []) if (!p.gefunden) b.push(`Probe ${p.art} (${p.soll}) nicht beim Namen genannt`);
-    // der Sprung urteilt sein Soll an der Schwelle: Frame p95 darüber, oder die Welt stand im Fenster nie (Ankunft nach dem Sprung)
-    if (a.sprung && !(a.frameMs.p95 <= a.schwelle)) b.push(`SPRUNG: Frame p95 > ${a.schwelle} ms`);
-    if (a.sprung && a.sprung.stehtS == null) b.push("SPRUNG: die Welt steht nie");
     return b;
 }
 
@@ -581,12 +572,6 @@ function haengerTabelle(a) {
         `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern} · ` +
             `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Proben ${a.profil ? "ja" : "NEIN"} (${a.marken} Takt-Marken)`
     );
-    const S = a.sprung;
-    if (S)
-        z.push(
-            `SPRUNG ${S.m} m: Frame p95 ${a.frameMs.p95} ms · CPU-Takt p95 ${a.taktMs.p95} ms · die Welt steht nach ${S.stehtS && ((S.stehtS - S.t0) / 1000).toFixed(1)} s · ` +
-                `Bauten im Haupt-Faden ${S.bau} sonst ${S.rot.slice(0, 4).join(" | ")}`
-        );
     const pp = a.pipelines || {};
     z.push(
         `Pipelines im Lauf: ${pp.sync} synchron in ${pp.framesMitSync} Takten · ${pp.async} async · ${pp.shader} Shader-Module` +
@@ -868,12 +853,6 @@ function selbsttest() {
     if (!haengerLinsenBefunde(haengerAuswerten(roh, spurProfil(ev.slice(0, -1)), { schwelle: 100 })).length)
         f.push("eine fehlende Takt-Marke bleibt ohne Befund (die Proben lägen auf fremden Takten)");
     if (haengerLinsenBefunde(a).length) f.push("Befunde im erfundenen Lauf: " + haengerLinsenBefunde(a).join(" · "));
-    // DER SPRUNG: Frame p95 über der Schwelle und eine Welt, die am Ziel nie steht, sind ROT; steht sie, unter der Schwelle grün
-    for (const [stehtS, schwelle, n] of [[3, 1e6, 0], [null, 1e6, 1], [3, 1, 1]]) {
-        const bau = [{ sonst: 0 }, { sonst: 1, rot: [] }];
-        if (haengerLinsenBefunde(haengerAuswerten(Object.assign({ sprung: { stehtS, bau } }, roh), spurProfil(ev), { schwelle })).length !== n)
-            f.push(`Sprung (steht ${stehtS}, Schwelle ${schwelle}) nicht ${n ? "ROT" : "grün"}`);
-    }
     // ohne Profil: die Zeiten-Zerlegung allein (Takt gegen Rest) bleibt und nennt TAKT ohne Engstelle
     const ohne = haengerAuswerten(roh, null, { schwelle: 100 });
     if (ohne.haengerN !== erwartet.length || ohne.haenger[0].klasse !== "TAKT")
