@@ -1,0 +1,14 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] amd/rdna-3
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[59125],"innen":[1.604,0.116,0.075,0.186,0.159,0.093,null,0.177,0.189,0.264,null,0.128,0.208,null,0.101,null,null,null],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":43,"gesperrt":false,"ohne":0,"slots":0,"haeuser":0,"reload":0,"zugOffen":false,"ausstattung":null,"verblasst":false,"ms":2}}
+  ❌ W10 Innen-Bild: 11 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.02081867837342049/0.18008318146007007 · haus_schwarzwald 0.017314714522116487/0.23147515955763065 · haus_alpenchalet 0.01675129502237117/0.17926336692065575 · haus_schwarzwald 0.026424220034474873/undefined · haus_gotisch 0.016839104668214023/undefined · haus_schwarzwald 0.017085176734494254/0.13360542744219356 · haus_alpenchalet 0.03059051774743899/undefined · haus_alpenchalet 0.018457820677428786/0.18301101475714443 · haus_alpenchalet 0.028891235610880736/undefined · haus_schwarzwald 0.02941336794439479/undefined · haus_skandinavisch undefined/0.1935004907552889)
+  ❌ W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen true,43,false,0,false
+  ❌ W9 Ausstattung: blind — kein Brunnen, keine Laterne
+  1 Welten, 1 zugleich, 204 s
+❌ gate:haus-welt ROT (3)
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 3 von 3) nach 26 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

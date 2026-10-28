@@ -1,0 +1,11 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-kopplung.cjs
+
+===== KOPPLUNGS-LINSE (Gleiten · Wind · Gras) =====
+
+  F2 Gleiten: 45°-Wand 50 % Absichts-Tempo (frei 12.00 m → Wand 6.00 m) · Voll-Stopp-Kontrolle 0 % · Steilhang-Rutsch 6.44 m
+  F3 Wind: quer-invariant + richtungs-getrieben · Drift seeded/langsam
+  F3 Feld: Lee -40 % · Tal-Düse +20 % · Welt 0.60–1.20 · Leser 6/6 folgen ×0 (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000)
+  F4 Gras: Biegung links -0.115 / rechts +0.115 · Tick Slot 0 = Spieler
+
+  ✅ ALLE KOPPLUNGS-INVARIANTEN OK — Wände gleiten (PM_ClipVelocity), Steilhang rutscht, Wind hat EINE Richtung, Gras weicht aus
+

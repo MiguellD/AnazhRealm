@@ -1,0 +1,41 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe scripts/diag-studio-huelle.cjs --engine
+[linse-gpu] amd/rdna-3
+  garage          14 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4
+  schmiede        15 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1.25, Strg+Z → 0.95, Strg+Umschalt+Z → 1.25, Strg+Z → 0.95, Strg+Y → 1.25
+  portale         15 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1, Strg+Z → 0.95, Strg+Umschalt+Z → 1, Strg+Z → 0.95, Strg+Y → 1
+  klang            5 Anfragen · ohne three · Schieber 0.72 → 1, Strg+Z → 0.72, Strg+Umschalt+Z → 1, Strg+Z → 0.72, Strg+Y → 1
+  fachwerk         8 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js · Schieber 1500 → 2025, Strg+Z → 1500, Strg+Umschalt+Z → 2025, Strg+Z → 1500, Strg+Y → 2025
+  koerperstudio   17 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 1 → 1.15, Strg+Z → 1, Strg+Umschalt+Z → 1.15, Strg+Z → 1, Strg+Y → 1.15 · L0 39994 / 40000 △
+  tetrapoda       17 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 2.4 → 4, Strg+Z → 2.4, Strg+Umschalt+Z → 4, Strg+Z → 2.4, Strg+Y → 4 · L0 55918 / 62000 △
+  terrain         20 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/PointerLockControls.js /worlds/terrain/lib/BufferGeometryUtils.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.3 → 1, Strg+Z → 0.3, Strg+Umschalt+Z → 1, Strg+Z → 0.3, Strg+Y → 1
+  skeleton         3 Anfragen · ohne three · ohne Sitzung
+  fluid            6 Anfragen · fremd /worlds/fluid/lib/three.module.min.js /worlds/fluid/lib/three-fluid-fx.es.js /worlds/fluid/lib/three.core.min.js · ohne Sitzung
+  translated       4 Anfragen · fremd /worlds/translated/lib/three.min.js · ohne Sitzung
+✅ DER GANG: 3 von 11 Seiten ohne fremde Engine (Ratsche schmiede, portale, fachwerk, koerperstudio, tetrapoda, terrain, fluid, translated) · 8 Sitzungen
+
+--- stderr ---
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf Vorfahrt: der echt-Job (Runner.Worker) läuft
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf ?
+08:10:46 CI-Ruhe: letzter CI-Job vor 99 s zu Ende - warte 81 s
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 2569 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

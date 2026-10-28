@@ -1,0 +1,30 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\ea07267e-radeon\mensch.K5_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7754 )); W=$(( 7754 + 20000 )); export WERKBANK_PORT=$W
+raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
+stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
+ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
+trap ende EXIT; trap 'exit 143' INT TERM
+raeum; stand
+(PORT=$S node save-server.js > "$B-save.log" 2>&1 &)
+for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done
+(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > "$B-werkbank.log" 2>&1 &)
+for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
+grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung
+WERKBANK bereit: Steuer 127.0.0.1:27754 · Seite :27753
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27754) =====
+
+  ❌ begegnung undefined
+       ↳ keine Zahl
+
+  (0 s)
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 2 von 3) nach 26 s
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
