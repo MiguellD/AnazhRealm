@@ -1854,19 +1854,11 @@ async function probeLeben(expected) {
                     const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
                     const x = mitte[0] + Math.cos(w) * ring * 4;
                     const zz = mitte[1] + Math.sin(w) * ring * 4;
-                    const boden = hh(x, zz);
-                    const sp = Number.isFinite(boden) ? r._koerperWasser(x, zz, boden) : -Infinity;
-                    if (Number.isFinite(sp) && Number.isFinite(boden) && sp - boden > 1.2) {
-                        // 4 m Fahrt in +x bleiben im tiefen, stillen Wasser
-                        let tief = true;
-                        for (let d = 0; d <= 4 && tief; d++)
-                            if (
-                                !(r._koerperWasser(x + d, zz, hh(x + d, zz)) - hh(x + d, zz) > 1) ||
-                                r._waterFlowAt(x + d, zz)
-                            )
-                                tief = false;
-                        if (tief) ort = { x, z: zz, spiegel: sp };
-                    }
+                    const tief = (d) => r._koerperWasser(x + d, zz, hh(x + d, zz)) - hh(x + d, zz); // `hh` ist endlich (der Sockel)
+                    // über 1,2 m am Ort, und 4 m Fahrt in +x bleiben im tiefen (> 1 m), stillen Wasser; der Spiegel ist der JETZT
+                    // (der Pegel lebt, wetter.K3), nie der des Funds
+                    if (tief(0) > 1.2 && [0, 1, 2, 3, 4].every((d) => tief(d) > 1 && !r._waterFlowAt(x + d, zz)))
+                        ort = { x, z: zz, get spiegel() { return r._koerperWasser(x, zz, hh(x, zz)); } };
                 }
             if (ort) {
                 r.dismountArchitecture();
@@ -2326,7 +2318,9 @@ async function probeKoerper(opt) {
                 const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
                 const [x, z] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
                 if ([0, 2, 4, 6].every((d) => tief(x + d, z) > 2 && !r._waterFlowAt(x + d, z)))
-                    ort = { x, z, spiegel: r._koerperWasser(x, z, hh(x, z)) };
+                    // der Spiegel am Ort JETZT über die EINE Wasser-Wahrheit, nie der Fund-Moment: der Pegel ist eine Funktion des
+                    // Wetter-Felds (wetter.K3), die 300 Takte der Messung heben ihn im Regen bis zur Krone (+0,2 m)
+                    ort = { x, z, get spiegel() { return r._koerperWasser(x, z, hh(x, z)); } };
             }
         if (!(res.ort = ort)) throw new Error("kein See");
         const steuerRoh = A._steuerGesetz;
