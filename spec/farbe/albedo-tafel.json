@@ -54,6 +54,7 @@
                 "stamm/siedlung-ort.js": "c:0000000000000000",
                 "stamm/siedlung-bauten.js": "c:0000000000000000",
                 "stamm/siedlung-satz.js": "c:0000000000000000",
+                "stamm/siedlung-bausatz.js": "c:0000000000000000",
                 "stamm/siedlung-bewohner.js": "c:0000000000000000",
                 "stamm/vegetation-wiese.js": "c:0000000000000000",
                 "stamm/vegetation-baum.js": "c:0000000000000000",
@@ -130,6 +131,7 @@
                 "stamm/siedlung-ort.js": "c:0000000000000000",
                 "stamm/siedlung-bauten.js": "c:0000000000000000",
                 "stamm/siedlung-satz.js": "c:0000000000000000",
+                "stamm/siedlung-bausatz.js": "c:0000000000000000",
                 "stamm/siedlung-bewohner.js": "c:0000000000000000",
                 "stamm/vegetation-wiese.js": "c:0000000000000000",
                 "stamm/vegetation-baum.js": "c:0000000000000000",
@@ -448,6 +450,7 @@
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
+                "stamm/siedlung-bausatz.js",
                 "stamm/siedlung-bewohner.js",
                 "stamm/vegetation-wiese.js",
                 "stamm/vegetation-baum.js",
@@ -539,6 +542,7 @@
                 "phyto-core.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
+                "stamm/siedlung-bausatz.js",
                 "stamm/feld-leben.js"
             ],
             "ist": {
@@ -610,6 +614,7 @@
                 "stamm/studio-bruecke.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
+                "stamm/siedlung-bausatz.js",
                 "stamm/feld-leben.js",
                 "stamm/werkstatt-bauen.js"
             ],

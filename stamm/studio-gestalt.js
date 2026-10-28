@@ -176,7 +176,8 @@ class AnazhRealm_studio_gestalt {
         const baum = stage && stage.preset ? this._baumWindDaten(stage.preset, meshes) : null;
         try {
             group = new T.Group();
-            for (const m of meshes) {
+            for (let qi = 0; qi < meshes.length; qi++) {
+                const m = meshes[qi];
                 // Beipack (`{ kind: "__…" }`, das Skelett der Kreatur) ist kein Mesh — der Ofen liest es vor dem Bau.
                 // DIE EINE BEIPACK-KARTE (`FOUNDRY_BEIPACK`): jede Hülle des Gesetzbuchs hängt unter ihrem Namen an der
                 // Gruppe — `__huelle` (Welle L: die Kollision der gezeigten Stufe), `__fern` (S3: die Fernform der Stufe 3,
@@ -187,7 +188,9 @@ class AnazhRealm_studio_gestalt {
                     continue;
                 }
                 const mesh = this._foundryBuildMesh(m, baum);
-                if (mesh) group.add(mesh);
+                if (!mesh) continue;
+                mesh.userData.__quelle = qi; // der Platz des Teils in der Lieferung (der Satz-Faden rechnet aus ihr)
+                group.add(mesh);
             }
         } catch (_e) {
             throw this._stoffBruch("die Gruppe der Foundry-Lieferung", _e);
@@ -951,6 +954,9 @@ class AnazhRealm_studio_gestalt {
                     teil:
                         child.userData && typeof child.userData.__teil === "string" ? child.userData.__teil : undefined,
                     leafKey: "f:" + key + ":" + p,
+                    // die Teile der Lieferung, die das Leaf trägt (der Flatten verschmilzt sie hintereinander) — der Satz-Faden
+                    // rechnet den Block eines Slots aus genau ihnen (`_bauSatzFadenBestellen`, phyto-core `satzTeilBloecke`)
+                    quelle: Number.isInteger(child.userData.__quelle) ? [child.userData.__quelle] : null,
                     stufe: lod, // die Stufe des Leafs — der Rang seiner Gruppe im Bündel (`_buendelKinderReihe`)
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
@@ -1058,6 +1064,8 @@ class AnazhRealm_studio_gestalt {
                       foundry: true,
                       lod,
                       leaves,
+                      // der Körper des Flats (`_foundryKoerperKey`): der Satz-Faden baut ihn nach (`_bauSatzFadenBestellen`)
+                      koerper: { preset, seed: variant, lod, ov: entryOv, key },
                       huelle: group._huelle || null,
                       fern: group._fern || null,
                       wurfKosten,

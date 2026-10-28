@@ -3298,7 +3298,11 @@ class AnazhRealm_stoff_instanz {
             const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
             if (!geo) continue;
             const erst = leaves[idx[0]];
-            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
+            // die Teile der Lieferung in der Reihenfolge der Verschmelzung (`_geoVerbinden`: hintereinander)
+            const quelle = idx.every((i) => Array.isArray(leaves[i].quelle))
+                ? [].concat(...idx.map((i) => leaves[i].quelle))
+                : null;
+            leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true, quelle });
             for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
             for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
             if (geo.index) bytes += geo.index.array.byteLength;

@@ -5215,6 +5215,237 @@
         });
     }
 
+    // ═══ DER BAU-SATZ-KERN (Spike satz-faden, 28.10., additiv) ═══
+    // Die EINE Quelle der Ecken eines Bau-Satz-Bereichs: der Haupt-Faden (`_satzBlockEcken` · `_chunkSatzLege`) und der
+    // Satz-Faden (die Transport-Schale, `satzTeilBloecke`) rechnen mit DENSELBEN Funktionen — die Bytes eines Hauses im
+    // Satz sind eine Funktion seiner Vorlage und seines Slot-Stempels, gleich in welchem Faden. Befund (OMEN 22.10., GTX,
+    // Messort stadt gehend, `takt 20 --wandern bahn`): `_tickBauSatz` Spitze 8,6/9,0 ms je Takt, davon
+    // `_chunkSatzEin › _satzPacke` 3,3/3,1 und `_bauSatzBlock › _satzBlock` 3,0/3,0 — der Haupt-Faden rechnete jede Ecke
+    // zweimal (Welt-Lage, dann Vertex-Form).
+    // `out` ab `o0`, `src` die Werte der Vorlage, `n` Ecken. Lage: Position × Instanz-Matrix `e` (16 Werte, spaltenweise).
+    function satzKernLage(out, o0, src, n, e) {
+        const e0 = e[0],
+            e1 = e[1],
+            e2 = e[2],
+            e4 = e[4],
+            e5 = e[5],
+            e6 = e[6],
+            e8 = e[8],
+            e9 = e[9],
+            e10 = e[10],
+            e12 = e[12],
+            e13 = e[13],
+            e14 = e[14];
+        for (let k = 0, m = n * 3; k < m; k += 3) {
+            const x = src[k],
+                y = src[k + 1],
+                z = src[k + 2];
+            out[o0 + k] = e0 * x + e4 * y + e8 * z + e12;
+            out[o0 + k + 1] = e1 * x + e5 * y + e9 * z + e13;
+            out[o0 + k + 2] = e2 * x + e6 * y + e10 * z + e14;
+        }
+    }
+    // Normale × Normalen-Matrix `e` (9 Werte, spaltenweise), normiert.
+    function satzKernNormale(out, o0, src, n, e) {
+        const e0 = e[0],
+            e1 = e[1],
+            e2 = e[2],
+            e3 = e[3],
+            e4 = e[4],
+            e5 = e[5],
+            e6 = e[6],
+            e7 = e[7],
+            e8 = e[8];
+        for (let k = 0, m = n * 3; k < m; k += 3) {
+            const x = src[k],
+                y = src[k + 1],
+                z = src[k + 2];
+            const nx = e0 * x + e3 * y + e6 * z,
+                ny = e1 * x + e4 * y + e7 * z,
+                nz = e2 * x + e5 * y + e8 * z;
+            const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            out[o0 + k] = nx / l;
+            out[o0 + k + 1] = ny / l;
+            out[o0 + k + 2] = nz / l;
+        }
+    }
+    // Farbe × Instanz-Farbe.
+    function satzKernFarbe(out, o0, src, n, r, g, b) {
+        for (let k = 0, m = n * 3; k < m; k += 3) {
+            out[o0 + k] = src[k] * r;
+            out[o0 + k + 1] = src[k + 1] * g;
+            out[o0 + k + 2] = src[k + 2] * b;
+        }
+    }
+    // Die Normalen-Matrix der Instanz-Matrix ab `o` in `m` (16 Werte, spaltenweise) nach `out` (9 Werte): die obere 3×3,
+    // invertiert, transponiert — DIESELBE Arithmetik wie three `Matrix3.getNormalMatrix` (setFromMatrix4 · invert ·
+    // transpose, r128 wie r184), Zeichen für Zeichen; singulär → Nullen wie dort.
+    function satzNormalenMatrix(m, o, out) {
+        const e = m[o],
+            i = m[o + 1],
+            s = m[o + 2],
+            r = m[o + 4],
+            n = m[o + 5],
+            a = m[o + 6],
+            h = m[o + 9],
+            l = m[o + 10],
+            oo = m[o + 8];
+        const c = l * n - a * h,
+            u = a * oo - l * r,
+            d = h * r - n * oo,
+            p = e * c + i * u + s * d;
+        if (p === 0) {
+            for (let k = 0; k < 9; k++) out[k] = 0;
+            return out;
+        }
+        const q = 1 / p;
+        // invert (spaltenweise t0…t8), dann transpose (1↔3, 2↔6, 5↔7)
+        out[0] = c * q;
+        out[3] = (s * h - l * i) * q;
+        out[6] = (a * i - s * n) * q;
+        out[1] = u * q;
+        out[4] = (l * e - s * oo) * q;
+        out[7] = (s * r - a * e) * q;
+        out[2] = d * q;
+        out[5] = (i * oo - h * e) * q;
+        out[8] = (n * e - i * r) * q;
+        return out;
+    }
+    // Packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Vertex-Form `form` nach `dst` ab Vertex `ab` (Breite 4).
+    // EINE Quelle für Satz, Satz-Faden und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
+    // `w` (optional): ein Skalar je Vertex für die vierte Komponente (snorm8: −1…1, sonst roh; ohne: Normale 0, Farbe 1).
+    function satzPacke(form, src, is, dst, ab, n, w) {
+        const o0 = ab * 4;
+        if (form === "snorm8")
+            for (let v = 0; v < n; v++) {
+                const q = v * is,
+                    o = o0 + v * 4;
+                for (let k = 0; k < 3; k++) {
+                    const x = src[q + k];
+                    dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+                }
+                const x = w ? w[v] : 0;
+                dst[o + 3] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+            }
+        else
+            for (let v = 0; v < n; v++) {
+                const q = v * is,
+                    o = o0 + v * 4;
+                dst[o] = src[q];
+                dst[o + 1] = src[q + 1];
+                dst[o + 2] = src[q + 2];
+                dst[o + 3] = w ? w[v] : 1;
+            }
+    }
+    // DER BLOCK EINES SLOTS IM SATZ-FADEN: je Teil (ein Leaf des Wirts — `q` die Indizes seiner gelieferten Meshes in der
+    // Reihenfolge, in der der Flatten sie verschmolz) die Ecken in Welt-Lage und Vertex-Form des Satzes, dazu der Index
+    // (die Teile hintereinander, Basis versetzt, Uint32). `satz.attr` = die Attribute des Satzes [Name, Breite, Form, gis]
+    // wie der Wirt sie hält (`_chunkSatz`: s.attr); je Teil `st` = der Bau-Ort des Slots (`_bauSatzStempelIn`: Matrix 16 ·
+    // Farbe 3), `farbe` (die Gruppe trägt eine Instanz-Farbe), `fest` (die Stufen-Stempel der Vorlage, je Ecke dieselbe
+    // Zahl), `regler`/`glut` (`_satzRegler`), `aus` (die Instanz-Skalare des Slots — sie füllt der Wirt aus seinem heutigen
+    // Stempel, der Halt der Geburt kippt ihr Vorzeichen). Ein Teil, das der Faden nicht treu rechnen kann (ohne Normale —
+    // der Wirt rechnete sie mit three —, ohne Index, mit fremdem Attribut), antwortet `fehlt` mit dem Grund; der Wirt legt es
+    // auf dem Haupt-Faden. Die Arrays sind frisch je Antwort (Transfer).
+    function satzTeilBloecke(meshes, satz) {
+        const nm = new Float64Array(9);
+        const aus = [];
+        for (const t of satz.teile) {
+            const teile = [];
+            let n = 0,
+                iN = 0,
+                fehlt = null;
+            for (const qi of t.q) {
+                const m = meshes[qi];
+                const pa = m && m.position && m.position.array;
+                if (!pa) {
+                    fehlt = "Teil " + qi + " ohne Lage";
+                    break;
+                }
+                const vn = pa.length / 3;
+                if (!(m.normal && m.normal.array)) fehlt = "Teil " + qi + " ohne Normale";
+                else if (!m.index) fehlt = "Teil " + qi + " ohne Index";
+                else if (
+                    m.color &&
+                    m.color.array &&
+                    m.color.array.length >= vn * 3 &&
+                    (m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3) !== 3
+                )
+                    fehlt = "Teil " + qi + " Farbe mit Breite " + m.color.itemSize; // der Wirt legte sie nie (`_satzBlock`)
+                if (fehlt) break;
+                teile.push({ m, vn });
+                n += vn;
+                iN += m.index.length;
+            }
+            if (fehlt) {
+                aus.push({ fehlt });
+                continue;
+            }
+            const st = t.st;
+            satzNormalenMatrix(st, 0, nm);
+            const attrs = {};
+            for (const [name, is, form] of satz.attr) {
+                if (t.aus && t.aus.includes(name)) continue;
+                const roh = new Float32Array(n * is);
+                let o = 0;
+                if (name === "aRegler" || name === "aGlut") {
+                    const w = name === "aRegler" ? t.regler : t.glut;
+                    for (let v = 0; v < n; v++) for (let c = 0; c < is; c++) roh[v * is + c] = w[c];
+                } else if (t.fest && Object.prototype.hasOwnProperty.call(t.fest, name) && is === 1)
+                    roh.fill(t.fest[name]);
+                else
+                    for (const { m, vn } of teile) {
+                        if (name === "position") satzKernLage(roh, o, m.position.array, vn, st);
+                        else if (name === "normal") satzKernNormale(roh, o, m.normal.array, vn, nm);
+                        else if (name === "color") {
+                            const ca =
+                                m.color && m.color.array && m.color.array.length >= vn * 3 ? m.color.array : null;
+                            if (ca && t.farbe) satzKernFarbe(roh, o, ca, vn, st[16], st[17], st[18]);
+                            else if (ca) roh.set(ca.subarray(0, vn * 3), o);
+                            else {
+                                // die Füll-Farbe des Wirts (`_foundryBuildMesh`), dann × Instanz-Farbe wie jede Vorlage
+                                const f = budgetFuellFarbe(m.kind, m.mat);
+                                const def = new Float32Array([f[0], f[1], f[2]]);
+                                for (let v = 0; v < vn; v++)
+                                    for (let c = 0; c < 3; c++)
+                                        roh[o + v * 3 + c] = t.farbe ? def[c] * st[16 + c] : def[c];
+                            }
+                        } else {
+                            fehlt = "Attribut " + name + " ohne Quelle im Faden";
+                            break;
+                        }
+                        o += vn * is;
+                    }
+                if (fehlt) break;
+                if (!form) {
+                    attrs[name] = roh;
+                    continue;
+                }
+                const dst =
+                    form === "snorm8"
+                        ? new Int8Array(n * 4)
+                        : form === "half"
+                          ? new root.Float16Array(n * 4)
+                          : new Float32Array(n * 4);
+                satzPacke(form, roh, is, dst, 0, n, null);
+                attrs[name] = dst;
+            }
+            if (fehlt) {
+                aus.push({ fehlt });
+                continue;
+            }
+            const index = new Uint32Array(iN);
+            let io = 0,
+                basis = 0;
+            for (const { m, vn } of teile) {
+                const ia = m.index;
+                for (let i = 0; i < ia.length; i++) index[io++] = ia[i] + basis;
+                basis += vn;
+            }
+            aus.push({ n, attrs, index });
+        }
+        return aus;
+    }
+
     root.__phytoCore = {
         streuPcg: streuPcg,
         streuPcgFloat: streuPcgFloat,
@@ -5339,5 +5570,11 @@
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
+        satzKernLage: satzKernLage, // der Bau-Satz-Kern (Spike satz-faden): Haupt-Faden und Satz-Faden rechnen damit
+        satzKernNormale: satzKernNormale,
+        satzKernFarbe: satzKernFarbe,
+        satzNormalenMatrix: satzNormalenMatrix,
+        satzPacke: satzPacke,
+        satzTeilBloecke: satzTeilBloecke, // der Block eines Slots je Teil im Satz-Faden (Transport-Schale)
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

@@ -1691,30 +1691,10 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // Packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Vertex-Form `form` nach `dst` ab Vertex `ab` (Breite 4).
-    // EINE Quelle für Satz und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
+    // EINE Quelle für Satz, Satz-Faden und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
     // `w` (optional): ein Skalar je Vertex für die vierte Komponente (snorm8: −1…1, sonst roh; ohne: Normale 0, Farbe 1).
     static _satzPacke(form, src, is, dst, ab, n, w) {
-        const o0 = ab * 4;
-        if (form === "snorm8")
-            for (let v = 0; v < n; v++) {
-                const q = v * is,
-                    o = o0 + v * 4;
-                for (let k = 0; k < 3; k++) {
-                    const x = src[q + k];
-                    dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
-                }
-                const x = w ? w[v] : 0;
-                dst[o + 3] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
-            }
-        else
-            for (let v = 0; v < n; v++) {
-                const q = v * is,
-                    o = o0 + v * 4;
-                dst[o] = src[q];
-                dst[o + 1] = src[q + 1];
-                dst[o + 2] = src[q + 2];
-                dst[o + 3] = w ? w[v] : 1;
-            }
+        globalThis.__phytoCore.satzPacke(form, src, is, dst, ab, n, w); // der Bau-Satz-Kern (phyto-core, Spike satz-faden)
     }
 
     // DER VERGLEICHENDE SCHREIBER der Sätze (K71): legt `quelle` (ein Array derselben Art, oder EIN Wert für `n` Plätze) ab

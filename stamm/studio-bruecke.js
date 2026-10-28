@@ -141,6 +141,14 @@ class AnazhRealm_studio_bruecke {
                 f.pending.delete(m.reqId);
                 ps((m.type === "grund" ? m.grund : m.plan) || null);
             }
+        } else if (m.type === "asset-satz") {
+            // DER SATZ-FADEN (Spike satz-faden, `_bauSatzFaden`): je Teil der Block eines Slots (`_bauSatzFadenBestellen`)
+            const sf = f.satz;
+            const ps = sf ? sf.pending.get(m.reqId) : null;
+            if (ps) {
+                sf.pending.delete(m.reqId);
+                ps(m.teile);
+            }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
         this._foundryUhren(f);
@@ -707,6 +715,43 @@ class AnazhRealm_studio_bruecke {
             }
             return Array.from(set);
         };
+        // DER SATZ-FADEN (Spike satz-faden): ein `build-asset` mit `satz` (der Bau-Ort eines Slots je Teil, `_bauSatzFadenBestellen`)
+        // antwortet nicht mit dem Körper, sondern je Teil mit dem Block seines Slots in der Vertex-Form des Satzes samt Index
+        // (phyto-core `satzTeilBloecke`, per Transfer) — der Haupt-Faden kopiert ihn nur noch. Die Vorlagen hält der Faden
+        // selbst (Platte oder Studio, je Körper-Schlüssel, die zuletzt gefragten bis SATZ_VORLAGEN_MB), der Haupt-Faden schickt nie
+        // Bytes. Gedeckelt in Bytes, nie in Körpern: 48 Körper hielten 64 Golden-Häuser nicht — jede Bestellung baute neu
+        // (gate:chunk-satz --faden, zweites Setzen: Antwort p50 4,2 s).
+        const SATZ_VORLAGEN_MB = 64;
+        const satzVorlagen = new Map(); // Körper-Schlüssel → { meshes (schlank), bytes }
+        let satzBytes = 0;
+        const satzAuftrag = new Map(); // reqId → Körper-Schlüssel des Studio-Baus, der gerade für den Satz läuft
+        const satzMerke = (key, meshes) => {
+            const alt = satzVorlagen.get(key);
+            if (alt) {
+                satzVorlagen.delete(key);
+                satzVorlagen.set(key, alt);
+                return;
+            }
+            let bytes = 0;
+            for (const b of puffer(meshes)) bytes += b.byteLength;
+            satzVorlagen.set(key, { meshes, bytes });
+            satzBytes += bytes;
+            for (const [k, v] of satzVorlagen) {
+                if (satzBytes <= SATZ_VORLAGEN_MB * 1048576 || k === key) break;
+                satzVorlagen.delete(k);
+                satzBytes -= v.bytes;
+            }
+        };
+        const satzAntwort = (m, meshes) => {
+            const teile = W.__phytoCore.satzTeilBloecke(meshes, m.satz);
+            const transfer = [];
+            for (const t of teile)
+                if (t.attrs) {
+                    for (const k in t.attrs) transfer.push(t.attrs[k].buffer);
+                    transfer.push(t.index.buffer);
+                }
+            roh({ type: "asset-satz", world: "terrain", reqId: m.reqId, teile }, transfer);
+        };
         const antwort = (m, meshes, vonPlatte) =>
             roh(
                 {
@@ -726,6 +771,13 @@ class AnazhRealm_studio_bruecke {
             if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
                 msg.bau = true; // das Bau-Ereignis im Werk (die Liefer-Marke): nur ein Studio-Lauf antwortet hier
                 schlank(msg.meshes);
+                const satz = satzAuftrag.get(msg.reqId);
+                if (satz !== undefined) {
+                    satzAuftrag.delete(msg.reqId);
+                    if (satz.platte && msg.meshes.length) schreib(satz.platte, { meshes: msg.meshes });
+                    if (msg.meshes.length) satzMerke(satz.key, msg.meshes);
+                    return satzAntwort(satz.m, msg.meshes);
+                }
                 const auftrag = schreibAuftrag.get(msg.reqId);
                 if (auftrag !== undefined) {
                     schreibAuftrag.delete(msg.reqId);
@@ -760,12 +812,30 @@ class AnazhRealm_studio_bruecke {
             const weiter = Object.assign({}, m, { season: "summer" });
             delete weiter.platte;
             delete weiter.nurPlatte;
+            delete weiter.satz;
             const studio = () => {
                 bauten.push(() => {
                     if (typeof W.onmessage === "function") W.onmessage({ data: weiter });
                 });
                 los();
             };
+            if (m.satz) {
+                const key = typeof m.platte === "string" ? m.platte : m.presetId + "|" + m.seed + "|" + (m.lod | 0);
+                const da = satzVorlagen.get(key);
+                if (da) return (satzMerke(key, da.meshes), satzAntwort(m, da.meshes));
+                const bauen = () => {
+                    if (m.nurPlatte) return satzAntwort(m, []);
+                    satzAuftrag.set(m.reqId, { key, m, platte: typeof m.platte === "string" ? m.platte : null });
+                    studio();
+                };
+                if (typeof m.platte !== "string") return bauen();
+                return lies(m.platte).then((wert) => {
+                    const hit = wert && Array.isArray(wert.meshes) ? wert.meshes : null;
+                    if (!hit) return bauen();
+                    satzMerke(key, hit);
+                    satzAntwort(m, hit);
+                });
+            }
             if (typeof m.platte !== "string") return studio();
             if (m.vorrat) {
                 // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
