@@ -1,7 +1,6 @@
 // Stationen der Gruppe V (src/g5.js) — Welten und Wege. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten > 0 (fahrzeug.K3/K4, siedlung.K1, leib.K1/K4, halten.K1/K2), die Messschuld M36
-// (siedlung.K5) und was ein Zweig im Stau kippen soll (stadt-erwachen-2 siedlung.K5, halten-gesetz halten.K1/K3, halten-k5 halten.K5,
-// teilen-sicher ultiversum.K5, gamepad-verben leib.K5, leib-k2-fuss leib.K2, sk2-zipf siedlung.K2 Staffel 2, hk2-klang halten.K2 Staffel 2; tore-k5-zweit tore.K5 Staffel 1; tore.K5 Staffel 2 steht in fehlt). Was sich nicht als Station fassen lässt, steht in
+// Erfasst: jedes Kriterium mit Punkten > 0 und jede Staffel, die ein Zweig kippen soll — den Zweig nennt der Kommentar-Kopf
+// des Eintrags (die Aufzählung hier war bei jedem Stations-Merge ein Konflikt). Was sich nicht als Station fassen lässt, steht in
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
@@ -484,6 +483,76 @@ const stationen = [
         ],
         quelle: "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus",
     },
+    // siedlung.K1 Staffel 2 (Zweig siedlung-k1-innen): ZWEI Läufe von gate:haus-welt. (1) W10 headless, Phasen haus + start: der
+    // Takt der Welt hebt das Start-Dorf, gegangen wird JEDES Haus seines Plans (der Plan v2 im Gedächtnis des Orts unter
+    // `settlementCells.start.ort`, je Haus-Slot das Haus an seinem Ort; ein Slot ohne Haus ist ROT) von der Tür bis Keller und
+    // Dachboden, je Sim-Schritt der Hub. (2) `--bild` auf der Karte (Rezept linse, `[linse-gpu]`): W9 schießt je Haus des
+    // Start-Dorfs seine Innen-Blicke aus dem Ausgabe-Pfad (das Auge 1,3 m über der Diele), W10 dazu den Boden im Schatten
+    // zur selben Stunde (Mittag der Bühne; von DIESEM Haus gegen die Sonne der erste Boden 1 m vor jedem Bau, dessen Strahl
+    // zur Sonne einen Werfer trifft). Die Quote: dunkelster Innen-Blick ÷ Schatten-Fleck außen, Median der Luminanz (sRGB
+    // linear), Soll ≥ 0,15 je Haus. Die Cloud (swiftshader) trägt den echten Renderer nicht bis zum Bild (Ankunft 79, Karten 3 offen nach
+    // 28 066 Takten) — das Urteil fällt an Radeon und GTX. Erwartet: Quote ≥ 0,4 (M41, Radeon 23.10.: Innen-Median 0,017–0,177;
+    // Schatten-Boden 0,014–0,034 im Radeon-Bild bericht/1110-5/bilder/dorf-an.png). Headless am Zweig: 18 von 18 Häusern ganz.
+    {
+        kriterium: "siedlung.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            'A=$(cygpath -m "$1" 2> /dev/null || echo "$1"); ' +
+                'HAUS_WELT_JSON="$A.gang" node scripts/diag-haus-welt.cjs --phasen=haus,start; echo "GANG EXIT $?"; ' +
+                'HAUS_WELT_JSON="$A.bild" node scripts/diag-haus-welt.cjs --phasen=grund --bild; echo "BILD EXIT $?"; ' +
+                "node -e 'const f = require(\"fs\"), a = process.argv[1]; f.writeFileSync(a, JSON.stringify({ gang: JSON.parse(f.readFileSync(a + \".gang\")), bild: JSON.parse(f.readFileSync(a + \".bild\")) }))' \"$A\"",
+            "siedlung-k1",
+            "{AUS}",
+        ],
+        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1" },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j) => {
+            const [g, b] = [j && j.gang, j && j.bild];
+            if (!g || !b || !g.startDorf || !b.startDorf || !b.w9 || !b.w9.bild)
+                return { gruen: false, zahl: "kein JSON beider Läufe (gang: Phasen haus,start · bild: --bild mit W9)" };
+            const sd = g.startDorf;
+            const gaenge = g.haeuser.filter((h) => h.start && !h.fehler && h.gang);
+            const ganz = gaenge.filter((h) => !h.gang.fehlt.length && h.gang.hub <= 0.3);
+            const innen = b.w9.haeuser.filter((h) => h.start);
+            const dunkel = innen.filter((h) => !(h.quote >= 0.15));
+            const q = innen.map((h) => h.quote).filter(Number.isFinite).sort((x, y) => x - y);
+            const gruen =
+                sd.slots >= 1 && !sd.fehlt.length && ganz.length === sd.slots &&
+                !b.startDorf.fehlt.length && innen.length === b.startDorf.slots && !dunkel.length;
+            return {
+                gruen,
+                zahl:
+                    ganz.length + " von " + sd.slots + " Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max " +
+                    Math.max(0, ...gaenge.map((h) => h.gang.hub)).toFixed(2) + " m" + (sd.fehlt.length ? " (ohne Haus: " + sd.fehlt.join(" ") + ")" : "") +
+                    " · Innen-Bild " + (innen.length - dunkel.length) + " von " + innen.length + " lesbar (Plan " + b.startDorf.slots +
+                    "), innen ÷ Außen-Schatten min " + q[0] + " · Median " + q[q.length >> 1] + " (Soll ≥ 0,15)" +
+                    (dunkel.length ? " · dunkel: " + dunkel.map((h) => h.typ + " " + h.innen + "/" + h.aussen).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "fachwerk-core.js",
+            "foundry-core.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "stamm/kreatur-*.js",
+            "stamm/vegetation-*.js",
+        ],
+        quelle: "2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
+    },
 
     // ───────── siedlung.K5 — das erste Haus steht sofort (M36, die Stufe am Abstand) ─────────
     // Station dorf wie M36: Werkbank --echt --ort dorf, Regler frei, die Zelle −4,−6 per Zell-Info nH 12 bzw. 300, der Spieler geht mit
@@ -575,6 +644,59 @@ const stationen = [
             "spec/asset-contract/v6/golden/siedlung.json",
         ],
         quelle: "1 = Gassen-Gefälle p95 ≤ 12 % VOR der Erdbau-Glättung in ≥ 4 Saaten",
+    },
+    // siedlung.K3 Staffel 2 (Zweig siedlung-k3-hang): die Steil-Wand ist die Böschung des Erdbaus (gelaende-core ERDBAU.boeschung
+    // 0,6 statt SIEDLUNG.slopeMax 0,35), EIN Grundriss-Leser (`_grundrissVon`; `_slotGrundriss` und `_werkGrundriss` fielen).
+    // gate:settlement C-K3 (Browser, Null-Renderer): am Hang-Ort −400/−3175 die Vorräte der Welt (`_dorfBereiten`) der Zellen,
+    // deren Ort steiler liegt als 0,35 — je Dorf Steilheit, Gassen-Gefälle p95 am Grund ohne Erdbau, Erdbau-Median je Haus (m³),
+    // dazu die Zahl der Grundriss-Leser; Selbsttests: dieselben Gassen am Grund 24 m daneben ROT, die Wand 0,35 zurück ROT (am
+    // Kopf 2 statt 4 Hangdörfer). An siedlung-k3-hang: 4 Dörfer 0,38–0,57, p95 8,5–11,2 %, Erdbau 449–801 m³ (flach 86–94), 1 Leser.
+    {
+        kriterium: "siedlung.K3",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-settlement.cjs"],
+        env: { SETTLEMENT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const zeile = (re) => re.exec(out);
+            const t = zeile(/^\s*(✅|❌) C-K3: DIE TRASSE AM ORT — (\d+) Dörfer/m);
+            const h = zeile(/^\s*(✅|❌) C-K3: DIE HANGDÖRFER — (\d+) Dörfer[^\n]*?, (\d+) Grundriss-Leser — (\[.*\])\s*$/m);
+            const s1 = zeile(/^\s*(✅|❌) C-K3 Selbsttest: die Gassen am Grund 24 m daneben/m);
+            const s2 = zeile(/^\s*(✅|❌) C-K3 Selbsttest: die Wand 0,35 zurück/m);
+            let d = [];
+            try {
+                d = h ? JSON.parse(h[4]) : [];
+            } catch (_e) {
+                d = [];
+            }
+            const gruen =
+                !!t && t[1] === "✅" && !!h && h[1] === "✅" && +h[2] >= 4 && +h[3] === 1 &&
+                [s1, s2].every((s) => s && s[1] === "✅") && lauf.exit === 0;
+            return {
+                gruen,
+                zahl: h
+                    ? h[2] + " Hangdörfer " + d.map((x) => x.zelle + " " + x.hang + "/" + x.p95 + " %/" + x.erdbauM3 + " m³").join(" · ") +
+                      ", " + h[3] + " Grundriss-Leser, Selbsttests " + [s1, s2].map((s) => (s ? s[1] : "—")).join("") + ", Exit " + lauf.exit
+                    : "keine Zeile C-K3 HANGDÖRFER (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/siedlung-ort.js",
+            "stamm/gelaende-boden.js",
+            "stamm/vegetation-baum.js",
+            "stamm/feld-leben.js",
+            "stamm/studio-bruecke.js",
+            "scripts/diag-settlement.cjs",
+        ],
+        quelle: "2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei",
     },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
@@ -684,6 +806,70 @@ const stationen = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = Fuß p95 ≤ 3 cm am 25°-Hang und auf Stufen, 0 Steckenbleiber auf dem Spielgang, an einem Gerät",
+    },
+
+    // ───────── leib.K2#2 — der Sprung aus dem Leib-Gesetz (leib-k2-sprung) ─────────
+    {
+        kriterium: "leib.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // derselbe Lauf wie leib.K2#1 (Zwilling: gleicher Befehl und Umgebung, er fährt EINMAL): gate:koerper-stand K8 und K9
+        // mit --bild. K9 (an der Mess-Wiese, je Sicht Ego und Third): der Sprung aus dem Sprint, die Taste einen Takt gehalten,
+        // bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges, die Weite vom Abdruck bis zur Landung;
+        // je Leib der heutige, die Masse ×1,25 (`_leibMasse`) und die Kraft ×1,25 (`_sprungKraft`). Der Abdruck folgt dem
+        // Gesetz koerper LEIB.sprung (v = √(2d(F/m − g)), `_sprungAbdruck`). Das Urteil: der Fuß von #1 (dazu) und je Sicht
+        // das Bild (die Hüfte in Third, das Auge in Ego heben sich mit der Kapsel, ≥ 80 %), die Masse senkt Höhe UND Weite um
+        // ≥ 10 %, die Kraft hebt beide um ≥ 10 %. Headless (Null-Renderer, leib-k2-sprung 27.10.): Ego und Third 0,323/2,85 m,
+        // Masse 0,179/2,16 m, Kraft 0,504/3,45 m, Auge 0,315 m, Hüfte 0,326 m.
+        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
+        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const fuss = stationen.find((s) => s.kriterium === "leib.K2" && s.staffel === 1).urteil(j, lauf);
+            const sp = (j && j.k8 && j.k8.sprung) || {};
+            const rot = fuss.gruen ? [] : ["der Fuß (#1)"];
+            const r2 = (x) => Math.round(x * 1000) / 1000;
+            const teile = ["first", "third"].map((b) => {
+                const [g, masse, kraft] = sp[b] || [];
+                if (!g || !masse || !kraft) {
+                    rot.push((b === "first" ? "Ego" : "Third") + " ohne Sprung");
+                    return "";
+                }
+                const [h, w] = [(x) => x.hub[0], (x) => x.weite];
+                const blick = g.hub[b === "first" ? 2 : 1];
+                if (!(h(g) > 0.1 && blick >= 0.8 * h(g))) rot.push(b + " Bild " + r2(blick) + " von " + r2(h(g)) + " m");
+                if (!(h(masse) <= 0.9 * h(g) && w(masse) <= 0.9 * w(g))) rot.push(b + " Masse ×1,25 zieht den Sprung nicht");
+                if (!(h(kraft) >= 1.1 * h(g) && w(kraft) >= 1.1 * w(g))) rot.push(b + " Kraft ×1,25 zieht den Sprung nicht");
+                return (b === "first" ? "Ego " : "Third ") + [g, masse, kraft].map((x) => r2(h(x)) + "/" + r2(w(x))).join(" → ");
+            });
+            if (/^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout)) rot.push("die Linse zeichnet nie");
+            const zahl = teile.join(" · ") + " m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß " + fuss.zahl;
+            return { gruen: !rot.length, zahl: zahl + (rot.length ? " — ROT: " + rot.join(" · ") : "") };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/kreatur-verhalten.js",
+            "stamm/bau-buch.js",
+            "stamm/dienst.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "tetrapoda-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-koerper-stand.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = dazu Sprung-Höhe und -Weite aus dem Leib-Gesetz (Mutation von Leib-Masse/Kraft zieht sie), Ego und Third, beide Geräte",
     },
 
     // ───────── leib.K4 — die Kamera zu Fuß ─────────
@@ -989,6 +1175,31 @@ const stationen = [
         quelle: "2 = jede Werkzeug-Form der Schmiede, Verschleiß aus dem Stoff",
     },
 
+    // ───────── ultiversum.K2 — Welten heiraten (fusion-determ) ─────────
+    {
+        kriterium: "ultiversum.K2",
+        staffel: 1,
+        geraet: "headless",
+        // gate:praegung-welt (U) FUSION: dieselben Eltern-Bytes in ZWEI Geräten (zwei Browser-Prozesse, frische Profile) → fuseWorlds
+        // A+B (random-mix: Id, Saat, Geburt, Münzwurf) byte-gleich, B+A eine andere Welt (gerichtet: A ist die Welt der Seite), der
+        // Täter „Date.now zurück in die Geburt" ROT. Am Kopf vor fusion-determ ROT (randomUUID, Math.random-Saat, Date.now, Münzwurf
+        // aus Math.random: A+B ≠ zwischen den Geräten); an fusion-determ 21c275fb GRÜN (1150 Bytes je Gerät, Exit 0). Zwilling von ultiversum.K5#1 (ein Lauf).
+        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const soll = [/^\s*(✅|❌) FUSION A\+B byte-gleich/, /^\s*(✅|❌) GERICHTET: /, /^\s*(✅|❌) TÄTER-PROBE: Date\.now /];
+            const je = soll.map((re) => l.find((x) => re.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt: " + soll.filter((_, i) => !je[i]).map(String).join(" ") + " (Exit " + lauf.exit + ")" };
+            return { gruen: je.every((x) => /✅/.test(x)), zahl: je.map((x) => x.trim().slice(0, 100)).join(" | ") };
+        },
+        pfad: ["stamm/speicher-*.js", "stamm/netz-identitaet.js", "stamm/siedlung-ort.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten",
+    },
+
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
     {
         kriterium: "ultiversum.K5",
@@ -1115,6 +1326,80 @@ const stationen = [
         },
         pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js"],
         quelle: "1 = Fall-Schaden aus dem Aufprall-Tempo, Tod und Wiederkehr am Ort mit Zustand (Inventar, Bindung) über Speichern, an einem Gerät",
+    },
+    // halten.K5 Staffel 2 (halten-masse): derselbe Lauf `--k5` (Zwilling der Staffel 1, fährt einmal), Q14 nach dem Tod: die Werte des
+    // Leibs (hpMax · staminaMax · manaMax · defense, `recomputePlayerStats`) je Mutation — der Brustpanzer aus Eisen · Bronze · Holz,
+    // der Lebenssaft mit Kraut · Fleisch (`activateConsumable`) —, dann getragen und gegessen über den Reload (der Abdruck `werte`
+    // ohne die Wunde, die Quellen der Nahrung). GRÜN: je Mutation andere Werte als die Geschwister und der leere Leib, Werte und
+    // Nahrung nach dem Reload wie vor dem Speichern, S20 feuert. An halten-masse (headless, Null-Renderer): leer 116,0 hp ·
+    // Eisen 154,9 · Bronze 152,7 · Holz 131,9 · Kraut 125,9 · Fleisch 127,2, Stand 184,01/104,48/92,87/19,84 vor = nach; an main
+    // f1faa046 fiel die Nahrung im Reload (der Boost lebte nur auf der Wanduhr der Seite).
+    {
+        kriterium: "halten.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q14 halten\.K5 Staffel 2/.test(x));
+            const z = l.find((x) => /^\s*\(Q14\) \{/.test(x));
+            if (!q || !z) return { gruen: false, zahl: "keine Zeile Q14 halten.K5 Staffel 2 (Exit " + lauf.exit + ")" };
+            const s20 = l.some((x) => /^\s*✅/.test(x) && x.includes("SELBST-TEST (S20)"));
+            let Q = null;
+            try { Q = JSON.parse(z.trim().slice(6)); } catch (_e) { Q = null; }
+            const w = (a) => (Array.isArray(a) ? a.map((v) => (Number.isFinite(v) ? v.toFixed(1) : "?")).join("/") : "?");
+            const zahl = Q
+                ? "hpMax/staminaMax/manaMax/defense leer " + w(Q.leer) + " · Werk " + Object.entries(Q.werk || {}).map(([k, v]) => k + " " + w(v)).join(" · ") +
+                  " · Nahrung " + Object.entries(Q.nahrung || {}).map(([k, v]) => k + " " + w(v)).join(" · ") + " · Stand " + (Q.stand || []).slice(0, 2).map(w).join(" → ") +
+                  " · Nahrung im Stand " + JSON.stringify((Q.stand || []).slice(2))
+                : "Q14-Zeile ohne Zahlen";
+            const rot = /❌/.test(q) ? " · ROT: " + q.split("Werk und Nahrung ").slice(1).join("").trim() : "";
+            return { gruen: /✅/.test(q) && s20, zahl: zahl + rot + (s20 ? "" : " · Selbst-Test S20 stumm") };
+        },
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/bau-*.js"],
+        quelle: "2 = Lebenswerte lesen Werk und Nahrung (Mutation), beide Geräte",
+    },
+    // ───────── halten.K1 Staffel 2 — der Treffer aus dem Gesetz im Bild, Labor = Welt (halten-masse) ─────────
+    // gate:kampf-gefuehl --k1 (echter Renderer, ?holz=kienspan, der ewige Loop läuft): das Langschwert trifft einen Hirsch über den
+    // Klick-Dispatcher je Lauf vor · masse (MAT.*.rho × 1,25) · schneide (sigY der Stoff-Zeile × 1,5), am Treffer das Urteil des
+    // Kerns (KE · p · edgeQ), das Bild hält (PNG {AUS}-<lauf>.png, Third) und die Schneide der gezeichneten Pose; dann dieselbe
+    // Mutation im Labor (worlds/schmiede, `measure(P)`). GRÜN: jede Schneide ≥ 0,9 in der Bahn (Urteil und Bild), Labor = Welt
+    // (Masse, Fase ± 0,5 %), Masse × 1,25 in Werk und wirksamer Masse des Treffers (± 2 %), die Schneide senkt die Fase und hebt
+    // KE ÷ v², der Schaden folgt KE, S21 feuert. Das Vorher (main f1faa046): die Welt reichte edgeQ 1, die gezeichnete Pose
+    // legte die Breitseite in die Bahn (edgeQ im Treffer-Takt 0,176–0,192, T18); an halten-masse 1,000.
+    {
+        kriterium: "halten.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k1"],
+        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware", KAMPF_BILDER: "{AUS}" },
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const l = lauf.stdout.split(/\r?\n/);
+            const q = l.find((x) => /^\s*(✅|❌) Q15 halten\.K1 Staffel 2/.test(x));
+            const z = l.find((x) => /^\s*\(Q15\) \{/.test(x));
+            if (!q || !z) return { gruen: false, zahl: "keine Zeile Q15 halten.K1 Staffel 2 (Exit " + lauf.exit + ")" };
+            const s21 = l.some((x) => /^\s*✅/.test(x) && x.includes("SELBST-TEST (S21)"));
+            let K = null;
+            try { K = JSON.parse(z.trim().slice(6)); } catch (_e) { K = null; }
+            const f = (v, n = 2) => (Number.isFinite(v) ? v.toFixed(n) : "?");
+            const je = (k) => {
+                const [w, b] = [K.welt[k] || {}, K.labor[k] || {}];
+                return k + ": Treffer KE " + f(w.KE, 1) + " J · p " + f(w.p) + " · v " + f(w.v, 1) + " · Schaden " + f(w.schaden, 1) + " · edgeQ " + f(w.edgeQ, 3) +
+                    "/Bild " + f(w.schneideBild, 3) + " · Werk " + f(w.kg, 3) + " kg β " + f(w.edgeWinkel, 1) + "° · Labor " + f(b.kg, 3) + " kg β " + f(b.edgeWinkel, 1) + "°";
+            };
+            const zahl = K && K.welt && K.labor ? ["vor", "masse", "schneide"].map(je).join(" | ") : "Q15-Zeile ohne Zahlen";
+            const rot = /❌/.test(q) ? " · ROT: " + q.split("Labor-Werk ").slice(1).join("").trim() : "";
+            return { gruen: lauf.exit === 0 && /✅/.test(q) && s21, zahl: zahl + rot + (s21 ? "" : " · Selbst-Test S21 stumm") };
+        },
+        pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html"],
+        quelle: "2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
     },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
     // gate:fahr-leben K8 Reifen (--kern, Node): je Rezept und Achse die Seitenkraft des Kerns (`fahrKraefte`, dieselbe Funktion wie
@@ -1331,22 +1616,71 @@ const stationen = [
         ],
         quelle: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s",
     },
+    // ───────── tore.K5 Staffel 2 — beide Flüsse an beiden Geräten (tore-k5-welt) ─────────
+    // DIESELBE Probe wie #1 (gate:praegung-welt), B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte. Nach dem Bauplan (≤ 4 KB,
+    // Bau-Hash A = B) teilt A seine Welt in EINER Geste (Bibliothek → Teilen: dieselbe Hülle `anazh-werk:`, signiert wie jede
+    // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten`, Neuladen); die Kontrolle ist das
+    // Ereignis `_weltbildKommt` in A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m. Das Urteil
+    // verlangt jede Zeile von #1, die vier WELT-Zeilen und „B echt" (ein Lauf mit Null-Renderer zählt nie). Headless (B null)
+    // an tore-k5-welt: Bauplan 530 Zeichen, Welt-Code 515, Welt 136 KB, Kontrolle 1 610 ms, Leib 1 236 ms, Bau-Hash
+    // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
+    // der signaling-server las nur den ersten (Join-Timeout 10 s).
+    {
+        kriterium: "tore.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}", PRAEGUNG_WELT_B: "echt" },
+        gpu: true,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = [
+                ["Bauplan", /^\s*(✅|❌) A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB/],
+                ["Gerät", /^\s*(✅|❌) B ist ein ANDERES GERÄT: /],
+                ["Selbsttest", /^\s*(✅|❌) SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT/],
+                ["Signatur", /^\s*(✅|❌) B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A/],
+                ["Pose", /^\s*(✅|❌) B: gezeichnet an der eigenen Pose/],
+                ["Zeit", /^\s*(✅|❌) ZEIT: Klick bis Code \+ Enter bis gezeichnet ≤ 10 s/],
+                ["Stempel", /^\s*(✅|❌) B: Stempel und Same reisen tief gleich/],
+                ["Bau-Hash", /^\s*(✅|❌) BAU-HASH A ↔ B byte-gleich/],
+                ["Welt-Code", /^\s*(✅|❌) WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A/],
+                ["Beitritt", /^\s*(✅|❌) WELT: B steht in A's Welt \(Id, Same, Gast, > 128 KB\) und kennt A am Anschluss/],
+                ["Kontrolle", /^\s*(✅|❌) WELT: KONTROLLE ≤ 5 s — Klick bis Code \+ Enter bis zum ersten Weltbild — .*, B echt\)/],
+                ["Leib", /^\s*(✅|❌) WELT: der Leib geht unter W ≥ 1 m/],
+            ];
+            const je = soll.map(([, re]) => l.find((x) => re.test(x)));
+            const fehlt = soll.filter((_, i) => !je[i]).map(([n]) => n);
+            if (fehlt.length) return { gruen: false, zahl: "Zeile fehlt: " + fehlt.join(", ") + " (Exit " + lauf.exit + ")" };
+            const rot = soll.filter((_, i) => !/✅/.test(je[i])).map(([n]) => n);
+            const nach = (i) => je[i].split(" — ").pop().slice(0, 120);
+            return {
+                gruen: !rot.length && lauf.exit === 0,
+                zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Bauplan " + nach(0) + " · Welt-Code " + nach(8) +
+                    " · Welt " + nach(9) + " · Kontrolle " + nach(10) + " · Leib " + nach(11) + " · " + nach(7),
+            };
+        },
+        pfad: [
+            "stamm/netz-identitaet.js",
+            "stamm/netz-p2p.js",
+            "stamm/netz-portal.js",
+            "stamm/feld-dsl.js",
+            "stamm/feld-leben.js",
+            "stamm/studio-bruecke.js",
+            "stamm/werkstatt-*.js",
+            "stamm/speicher-laden.js",
+            "stamm/dirigent-ankunft.js",
+            "index.html",
+            "signaling-server.js",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
+    },
 ];
 
 module.exports = stationen;
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
-module.exports.fehlt = [
-    {
-        kriterium: "tore.K5", staffel: 2, befehl: null,
-        grund: "der Welt-Fluss hat keine Linse: der Einladungs-Code lädt die Seite neu (joinWorldFromCode → _weltWechselNeuLaden), Kontrolle ≤ 5 s verlangt das Welt-Tor ohne Neuladen; dazu beide Flüsse an zwei Geräten",
-    },
-    {
-        kriterium: "siedlung.K1", staffel: 2, befehl: null,
-        grund: "W10 geht 8 Häuser des Drehbuch-Dorfs, nicht jedes Haus des Start-Dorfs; keine Probe misst die Innen-Luma gegen den Außen-Schatten (≥ 15 %) im Ausgabe-Bild",
-    },
-    {
-        kriterium: "halten.K1", staffel: 2, befehl: null,
-        grund: "Q11 mutiert MAT (rho, sigY) und misst den Treffer headless; dass dieselbe Mutation das Labor-Werk ändert, und der Treffer im Bild beider Geräte, misst keine Linse",
-    },
-];
+module.exports.fehlt = [];
