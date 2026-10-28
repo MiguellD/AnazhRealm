@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -1214,11 +1214,7 @@ hauptLauf(async () => {
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN — die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
+        selbsttestEnde(errs, "die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }
 
@@ -1376,5 +1372,4 @@ hauptLauf(async () => {
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
-    process.exit(0);
 });

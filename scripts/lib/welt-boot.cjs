@@ -947,13 +947,15 @@ function pruefer() {
     return { errs, check, wandEnde };
 }
 
-// DAS ENDE EINER WAND (die Klasse aus 33 Linsen): ROT mit Exit 1 und jeder Verletzung beim Namen, sonst der Grün-Satz.
+// DAS ENDE EINER WAND (die Klasse aus 33 Linsen): ROT mit Exit 1 und jeder Verletzung beim Namen, sonst der Grün-Satz
+// mit Exit 0 (kein `process.exit(0)` danach).
 function wandEnde(errs, satz) {
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
         process.exit(1);
     }
     console.log("\n✅ GRÜN — " + satz);
+    process.exit(0);
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder

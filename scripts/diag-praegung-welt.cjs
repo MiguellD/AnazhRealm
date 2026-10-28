@@ -646,5 +646,4 @@ hauptLauf(async () => {
     );
 
     wandEnde(errs, "die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
-    process.exit(0);
 }, () => signal?.kill());

@@ -326,5 +326,4 @@ hauptLauf(async () => {
     check("E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle", auf === 5, `${auf}/5`);
 
     wandEnde(errs, "DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt.");
-    process.exit(0);
 });

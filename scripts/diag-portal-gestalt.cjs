@@ -334,5 +334,4 @@ hauptLauf(async () => {
 
 
     wandEnde(errs, `W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus dem lebenden Zustand) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`);
-    process.exit(0);
 });

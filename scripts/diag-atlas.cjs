@@ -142,7 +142,7 @@ function pruefe(root, opt = {}) {
         const ab =
             S.length !== teile.length
                 ? `${S.length} statt ${teile.length} Dateien`
-                : (S.find((x, i) => x.pfad !== teile[i].pfad || x.text !== teile[i].text) || {}).pfad;
+                : S.find((x, i) => x.pfad !== teile[i].pfad || x.text !== teile[i].text)?.pfad;
         if (ab) fehler.push(`R3 LISTE: S∘S⁻¹ ≠ id (${ab}) — Namen, Marker, Klassen und Naht-Rufe folgen dem Stamm`);
     } catch (e) {
         fehler.push(`R3 LISTE: ${e.message}`);
@@ -251,7 +251,7 @@ function pruefe(root, opt = {}) {
             if (st) continue;
             const z = ziele.get(l.name);
             if (z) info.lese++;
-            if (z && z.every((o) => o.idx > a.idx))
+            if (z?.every((o) => o.idx > a.idx))
                 fehler.push(`R4 ZWILLING: ${a.ort} liest beim Laden AnazhRealm.${l.name}, gesetzt erst in ${z[0].ort}`);
         }
     return { fehler, info };
@@ -262,7 +262,7 @@ function finde(root, rx) {
     const treffer = [];
     const teile = lies(root);
     const zonen = zonenVon(teile);
-    const zoneAn = (p, z) => (zonen.filter((x) => x.pfad === p && x.line <= z).pop() || {}).id || "?";
+    const zoneAn = (p, z) => zonen.filter((x) => x.pfad === p && x.line <= z).pop()?.id || "?";
     for (const t of teile) {
         const ast = acorn.parse(t.text, { ecmaVersion: "latest", sourceType: "script", locations: true });
         const nimm = (name, n, wie) => {
@@ -276,7 +276,7 @@ function finde(root, rx) {
                     const fn = new Set();
                     const zu = [];
                     stammLib.wandere(g, (n) => {
-                        if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && /Function/.test((n.init || {}).type || ""))
+                        if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && /Function/.test(n.init?.type || ""))
                             fn.add(n.id.name);
                         const l = n.type === "AssignmentExpression" ? n.left : null;
                         if (l && l.type === "MemberExpression" && l.object.type === "ThisExpression" && !l.computed) zu.push(n);
@@ -313,7 +313,7 @@ function finde(root, rx) {
                         : null;
             if (name && rx.test(name)) treffer.push(`  ${(k + ":" + n.loc.start.line).padEnd(32)} ${name}  →  Kern ${k}`);
             const arten = schluessel(n.key || n.id || {}) === "PARAMS_BY_KIND" && (n.value || n.init);
-            for (const p of (arten && arten.properties) || [])
+            for (const p of arten?.properties || [])
                 if (rx.test(schluessel(p.key)) || rx.test(k))
                     treffer.push(`  ${(k + ":" + p.loc.start.line).padEnd(32)} ${schluessel(p.key)}  →  Gesetzbuch ${daneben.includes(k) ? "neben dem" : "im"} Spiel-Manifest`);
             const iife = /Function/.test(n.type) && ahnen.length && ahnen[ahnen.length - 1].type === "CallExpression";

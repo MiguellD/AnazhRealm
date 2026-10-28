@@ -21,7 +21,7 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -67,11 +67,7 @@ hauptLauf(async () => {
         ).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 3: zweiter kerneVereinen-Ruf injiziert -> A3 feuert", a3b && a3b[1] === false, a3b && a3b[2]);
 
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf den zweiten Ingest-Pfad.");
+        selbsttestEnde(errs, "die Linse feuert auf den zweiten Ingest-Pfad.");
         process.exit(0);
     }
 
@@ -186,5 +182,4 @@ hauptLauf(async () => {
     );
 
     wandEnde(errs, "DER ZWEIT-KERN DOCKT AN: vehicle-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), der N7.5-Merge lebt am EINEN Ingest-Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id> entsteht ohne eine Zeile AnazhRealm-Edit — EINE Pipeline fuer alle Domaenen (Vertrag Phase 1).");
-    process.exit(0);
 });
