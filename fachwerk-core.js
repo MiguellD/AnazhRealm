@@ -2457,7 +2457,7 @@
     // zeichnet dort seinen Boden (Diele, Anbau-Estrich, Hof- und Flügel-Boden), 0: der Grund ist sein Boden (der Turm — seine
     // Geschossböden beginnen im ersten Stock —, das Rund — ein Kreis, keine Box —, das Pfahlhaus über dem Grund). Dazu der
     // Keller-Raum [x0, x1, z0, z1, y0, y1] (vom Kellerboden bis zur Decke auf Grade) oder null; `arten` nennt je Box ihre Masse. Nur die Basis des Stapels
-    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Plan des gesetzten Hauses (`grundPlan`), ortPlan (der
+    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Slot des gesetzten Hauses (`slotPlan`), ortPlan (der
     // Erdbau `grund`, gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
     // außerhalb jedes Grundrisses (Büschel im Anbau), der Keller war voll Erde.
     var GRUND_BODEN = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 0, rund: 0 };
@@ -4011,18 +4011,53 @@
         });
         return B;
     }
-    // DER GRUND AUS DEM PLAN (S4): das Grund-Datum eines Hauses (`grundVon`: der Körper-Satz und der Keller) aus seinem Plan
-    // (`planBau`, ~2 ms statt ~26 ms des Mass-Baus), in der Merge-Ordnung von `buildInstance` (Rezept, ov, Same). Der Wirt legt
-    // damit den Grund des gesetzten Hauses beim Setzen (`_hausGrundSetzen`), vor dem Bau der Chunks um ihn — bis S4-N2 kam er
-    // mit der Hülle des gebauten Hauses (das Vorschau-Haus am Tor: gesetzt bei 2,1 s, die Hülle bei 8,2 s, dann 6 Chunks am
-    // Spawn neu, Radeon kalt). null: kein Haus-Rezept.
-    function grundPlan(rezeptId, seed, ov) {
+    // DER SLOT EINES HAUSES (bauen.K2): die EINE Zeile, die ein Haus in einen Plan trägt — der Mass-Bau `B` (Hülle `ext`, Tür
+    // aus `dims`, Kamin, Grund-Datum), der Parameter-Vektor `hp` und der Rahmen `q` {x, z, phi} samt seiner Grundfläche `obb`.
+    // Leser: der Export des Dorfs (`exportSettlement`, je Slot des Layouts) und das gesetzte Haus (`slotPlan`) — beide gehen
+    // danach durch DENSELBEN Plan v2 (`ortPlan`: Platte, Grund, Vorplatz). `kultur`: das Rezept (ohne: hp.kultur).
+    function hausSlot(B, hp, q, obb, kultur) {
+        return {
+            x: q.x,
+            z: q.z,
+            phi: q.phi,
+            obb: obb,
+            ext: B.ext,
+            kultur: typeof kultur === "string" ? kultur : typeof hp.kultur === "string" ? hp.kultur : null,
+            seed: hp.seed >>> 0,
+            rolle: typeof hp.rolle === "string" ? hp.rolle : "wohnhaus",
+            baujahr: isFinite(hp.baujahr) ? hp.baujahr | 0 : 0,
+            ov: JSON.parse(JSON.stringify(hp)),
+            // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE + der Kern-Footprint W/D je Slot (dims-Wahrheit aus massBau) — der
+            // Host baut daraus die Blocker-Wände MIT Tür-Lücke (Betreten; Haus-lokal, vor slot.phi).
+            tuer: tuerZeile(B.dims),
+            // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) — null wenn massBau kein chimney (ROUND/modern/kuppel).
+            chimney: kaminSpitze(B.chimney),
+            // DAS GRUND-DATUM (S4, additiv): der Körper-Satz und der Keller (`grundVon`), haus-lokal vor slot.phi — ortPlan
+            // legt daraus den Erdbau `grund` (gelaende-core)
+            grund: B.grund,
+        };
+    }
+    // DAS GESETZTE HAUS ALS SLOT (bauen.K2): ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau am Tor) wird ein
+    // Ein-Slot-Plan — derselbe Mass-Bau wie das Haus im Dorf (`massBauExport`, in der Merge-Ordnung von `buildInstance`:
+    // Rezept, ov, Same), seine Grundfläche das Rechteck der Hülle um ihre Mitte in der Gier `phi` (die Formel des Layouts,
+    // `dorfLayout`), am Ursprung des Plans. Der Wirt rechnet daraus im Ort-Faden den Plan v2 (`ortPlan`) und legt dessen Erdbau
+    // — Platte, Grund und Vorplatz wie der Dorf-Slot derselben Gestalt. Bis bauen.K2 kam nur der Grund (`grundPlan`, der
+    // Plan-Bau): der Vorplatz entstand nur im Dorf. null: kein Haus-Rezept.
+    function slotPlan(rezeptId, seed, ov, phi) {
         var pre = PRESETS[rezeptId];
         if (!pre || pre.kind === "ausstattung") return null;
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
         if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
-        return planBau(p).grund;
+        var B = massBauExport(p);
+        var e = B.ext;
+        var f = isFinite(phi) ? Number(phi) : 0;
+        var c = Math.cos(f);
+        var s = Math.sin(f);
+        var lcx = (e.x0 + e.x1) / 2;
+        var lcz = (e.z0 + e.z1) / 2;
+        var obb = { cx: lcx * c + lcz * s, cz: -lcx * s + lcz * c, phi: f, ex: (e.x1 - e.x0) / 2, ez: (e.z1 - e.z0) / 2 };
+        return hausSlot(B, p, { x: 0, z: 0, phi: f }, obb, rezeptId);
     }
 
     // DIE TÜR-ZEILE (DORF-ERLEBNIS, die EINE Formel): Haustür (Rechteck, Front −z) und Hintertür samt Kern-Footprint W/D,
@@ -6403,31 +6438,16 @@
             if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
             var hp = plan.houses[i];
             slotVon[i] = slots.length;
-            slots.push({
-                x: q.x,
-                z: q.z,
-                phi: q.phi,
-                obb:
+            slots.push(
+                hausSlot(
+                    Bs[i],
+                    hp,
+                    q,
                     plan.norm.gap <= 0.6 && hp.brandwand
                         ? obbAnDerBrandwand(q.obb, hp.brandwand, ext[i], Bs[i].wandX)
-                        : { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez },
-                ext: ext[i],
-                kultur: typeof hp.kultur === "string" ? hp.kultur : null,
-                seed: hp.seed >>> 0,
-                rolle: typeof hp.rolle === "string" ? hp.rolle : "wohnhaus",
-                baujahr: isFinite(hp.baujahr) ? hp.baujahr | 0 : 0,
-                ov: JSON.parse(JSON.stringify(hp)),
-                // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE + der Kern-Footprint
-                // W/D je Slot (dims-Wahrheit aus massBau) — der Host baut daraus die
-                // Blocker-Wände MIT Tür-Lücke (Betreten; Haus-lokal, vor slot.phi).
-                tuer: tuerZeile(Bs[i].dims),
-                // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
-                // null wenn massBau kein chimney (ROUND/modern/kuppel).
-                chimney: kaminSpitze(Bs[i].chimney),
-                // DAS GRUND-DATUM (S4, additiv): der Körper-Satz und der Keller (`grundVon`), haus-lokal vor slot.phi — ortPlan
-                // legt daraus den Erdbau `grund` (gelaende-core)
-                grund: Bs[i].grund,
-            });
+                        : { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez }
+                )
+            );
         }
         var aus = {
             seed: plan.seed,
@@ -6929,7 +6949,9 @@
             ob = sl.obb;
             var tu = sl.tuer;
             var grund = grunde[si];
-            var y = hy[si] !== null ? hy[si] : r6(median(grund));
+            // DER BODEN DES HAUSES: die Höhe seiner Gasse, ohne Gasse der Median seines Grundrisses — das gesetzte Haus
+            // (`slotPlan`) bringt seinen Boden mit (`sl.y`, wohin der Spieler es setzte; ein Slot des Exports trägt keinen)
+            var y = isFinite(sl.y) ? r6(sl.y) : hy[si] !== null ? hy[si] : r6(median(grund));
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
@@ -7205,7 +7227,7 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
-        grundPlan: grundPlan, // der Grund des gesetzten Hauses aus seinem Plan (S4) — der Wirt legt ihn beim Setzen
+        slotPlan: slotPlan, // das gesetzte Haus als Ein-Slot-Plan (bauen.K2) — der Wirt rechnet daraus den Plan v2 und legt dessen Erdbau
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,

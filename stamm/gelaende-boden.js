@@ -672,7 +672,8 @@ class AnazhRealm_gelaende_boden {
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
     // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
     // `removeArchitecture` nimmt ihn mit, die Gedächtnisse am Ort fallen wie beim Legen (`_erdbauWirkt`). Die Platte des Orts
-    // (seine Fläche) bleibt. Vorher überlebte der Grund den Bau: der gezeichnete Boden blieb geschnitten, der Keller hohl —
+    // (seine Fläche) bleibt; der Ein-Slot-Ort des gesetzten Hauses (`haus:`: Platte, Grund, Vorplatz, bauen.K2) fällt ganz —
+    // sonst trüge sein Schlüssel die Platte weiter, und ein Haus am selben Ort legte nie wieder einen Grund. Vorher überlebte der Grund den Bau: der gezeichnete Boden blieb geschnitten, der Keller hohl —
     // ein Loch in der Welt, wo das Haus stand.
     _erdbauGrundFaellt(entry) {
         const wm = this.state.worldMeta;
@@ -689,14 +690,15 @@ class AnazhRealm_gelaende_boden {
                 i += liste.length;
                 continue;
             }
+            const ganz = k.startsWith("haus:");
             for (const q of liste) {
-                if (sein(q)) {
+                if (ganz || sein(q)) {
                     weg.push(q);
                     ohne.push(i);
                 }
                 i++;
             }
-            const rest = liste.filter((q) => !sein(q));
+            const rest = ganz ? [] : liste.filter((q) => !sein(q));
             if (rest.length) wm.erdbau[k] = rest;
             else delete wm.erdbau[k];
         }
