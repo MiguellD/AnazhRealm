@@ -1200,3 +1200,6 @@
 2026-10-28 14:37:06 takt17-farm mensch.K2#1 GRÜN 2.1 · 25/92
 2026-10-28 14:37:14 takt17-farm tiere.K1#1 GRÜN 0.3 · 26/92
 2026-10-28 14:37:24 takt17-farm tiere.K3#1 GRÜN 0.4 · 27/92
+2026-10-28 14:37:33 takt17-farm oekologie.K3#1 GRÜN 0.3 · 28/92
+2026-10-28 14:37:41 takt17-farm oekologie.K3#2 GRÜN 0.3 · 29/92
+2026-10-28 14:37:50 takt17-farm tiere.K2#1 GRÜN 1.8 · 30/92
