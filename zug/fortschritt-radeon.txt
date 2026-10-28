@@ -1189,3 +1189,4 @@
 2026-10-28 14:35:34 takt17-farm feld.K1#2 GRÜN 0.3 · 15/92
 2026-10-28 14:35:40 takt17-farm feld.K4#1 GRÜN 0.6 · 16/92
 2026-10-28 14:35:48 takt17-farm feld.K4#2 GRÜN 0.6 · 17/92
+2026-10-28 14:35:42 takt17-farm ENDE 84 grün / 8 rot · 63.9 min
