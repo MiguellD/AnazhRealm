@@ -1154,11 +1154,12 @@ const WEG_FAHRT = {
         await klicke(page, await finde(page, "#workshop-action-zone " + knopf), "#workshop-action-zone");
     },
     ki: async (page, name) => (await bauWeg(page, "herkunft", "ki", name), sage(page, "ich wünsche mir hier ein werk")),
-    // der Teilen-Knopf der Werkstatt (die souveräne Geste bestätigt der Dialog), sein Code in den Chat
+    // der Teilen-Knopf der Werkstatt aus der EINEN Teilen-Zeile (`_teilenZeile`, Werk und Welt, `data-teilen`; die souveräne
+    // Geste bestätigt der Dialog), sein Code in den Chat
     async geteilt(page, name) {
         await bauWeg(page, "herkunft", "geteilt", name);
-        await WEG_FAHRT.werkstatt(page, name, 0, ".workshop-teilen-btn");
-        const code = await (await page.waitForFunction(() => document.querySelector(".workshop-teilen-code").textContent)).jsonValue();
+        await WEG_FAHRT.werkstatt(page, name, 0, 'button[data-teilen="werk"]');
+        const code = await (await page.waitForFunction(() => document.querySelector('code[data-teilen="werk"]').textContent)).jsonValue();
         if (!code.startsWith("anazh-werk:")) throw new Error(code);
         await bauWeg(page, "oben");
         await taste(page, "KeyB");
