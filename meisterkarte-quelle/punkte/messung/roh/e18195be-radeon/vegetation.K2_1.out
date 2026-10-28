@@ -1,0 +1,35 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe -e (async function boeLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, mutante] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const tor = werkbankTor(W, ["--ort", "wiese"]);
+let erg;
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+await werkbankRuf(W, "/umstellen", { ort: "wiese" });
+if (mutante === "wind0") await werkbankRuf(W, "/eval", { code: "r._windWob = () => 0; return 1;" });
+const b = await werkbankRuf(W, "/bild", {
+px: M.x, py: "+1.6", pz: M.z, lx: M.blick.x, ly: "+0", lz: M.blick.z, wahl: 0, zeit: 0.25, datei: aus.replace(/\.json$/, "") + "-boe.png",
+});
+erg = b.zeit ? Object.assign({ abnahme: b.abnahme, mutante: mutante || null }, b.zeit) : { fehler: String(b.fehler || "keine Zeit-Messung").slice(0, 400) };
+} catch (e) {
+erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+} finally {
+tor.stop();
+}
+console.log("BOE-ZEIT " + JSON.stringify(erg));
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\vegetation.K2_1.json 7764
+[linse-gpu] amd/rdna-3
+BOE-ZEIT {"fehler":"keine Zeit-Messung"}
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 1 von 3) nach 23 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

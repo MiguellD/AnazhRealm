@@ -1,0 +1,191 @@
+{
+ "plan": "material.K1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "welt": {
+  "echt": true,
+  "geraet": "amd rdna-3",
+  "eichung": 0.1799
+ },
+ "labor": {
+  "echt": true,
+  "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "eichung": {
+   "terrain": 0.1799,
+   "garage": 0.1799,
+   "portale": 0.1799,
+   "schmiede": 0.1799,
+   "fachwerk": 0.1799,
+   "koerperstudio": 0.1799,
+   "tetrapoda": 0.1799
+  },
+  "fehler": []
+ },
+ "zeilen": [
+  {
+   "id": "rinde",
+   "L": 0.0893,
+   "W": 0.0872,
+   "v": 0.9765,
+   "band": [
+    0.07,
+    0.12
+   ],
+   "quelle": "Karte material (aaaa): Rinde 0,07–0,12",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "laub",
+   "L": 0.1784,
+   "W": 0.1651,
+   "v": 0.9254,
+   "band": [
+    0.15,
+    0.26
+   ],
+   "quelle": "Karte material (aaaa): Laub/Gras 0,15–0,26",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "birke",
+   "L": 0.2928,
+   "W": 0.2941,
+   "v": 1.0044,
+   "band": null,
+   "quelle": null,
+   "bandOk": false,
+   "inBand": false
+  },
+  {
+   "id": "fichte",
+   "L": 0.1056,
+   "W": 0.0998,
+   "v": 0.9451,
+   "band": null,
+   "quelle": null,
+   "bandOk": false,
+   "inBand": false
+  },
+  {
+   "id": "fels",
+   "L": 0.2444,
+   "W": 0.2389,
+   "v": 0.9775,
+   "band": [
+    0.1,
+    0.3
+   ],
+   "quelle": "Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "boden",
+   "L": 0.0832,
+   "W": 0.0856,
+   "v": 1.0288,
+   "band": [
+    0.0123,
+    0.871
+   ],
+   "quelle": "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "haus",
+   "L": 0.1491,
+   "W": 0.1592,
+   "v": 1.0677,
+   "band": [
+    0.0123,
+    0.871
+   ],
+   "quelle": "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "lack",
+   "L": 0.0166,
+   "W": 0.0164,
+   "v": 0.988,
+   "band": [
+    0.0123,
+    0.871
+   ],
+   "quelle": "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "tor",
+   "L": 0.6496,
+   "W": 0.6493,
+   "v": 0.9995,
+   "band": [
+    0.25,
+    0.95
+   ],
+   "quelle": "Buntmetall (gegenstand-stoff BAND buntmetall; PBR-Tafeln: Messing/Bronze F0 ~0,8)",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "haut",
+   "L": 0.0607,
+   "W": 0.0609,
+   "v": 1.0033,
+   "band": [
+    0.0123,
+    0.871
+   ],
+   "quelle": "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "fell",
+   "L": 0.1637,
+   "W": 0.1849,
+   "v": 1.1295,
+   "band": [
+    0.0123,
+    0.871
+   ],
+   "quelle": "Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871",
+   "bandOk": true,
+   "inBand": true
+  },
+  {
+   "id": "klinge",
+   "L": 0.3518,
+   "W": 0.3493,
+   "v": 0.9929,
+   "band": [
+    0.3,
+    0.95
+   ],
+   "quelle": "blankes Metall (gegenstand-stoff BAND blank; PBR-Tafeln: Eisen F0 0,56)",
+   "bandOk": true,
+   "inBand": true
+  }
+ ],
+ "eichung": {
+  "soll": 0.18,
+  "rand": 0.003,
+  "welt": 0.1799,
+  "labor": {
+   "terrain": 0.1799,
+   "garage": 0.1799,
+   "portale": 0.1799,
+   "schmiede": 0.1799,
+   "fachwerk": 0.1799,
+   "koerperstudio": 0.1799,
+   "tetrapoda": 0.1799
+  },
+  "gruen": true
+ },
+ "fehler": null
+}
