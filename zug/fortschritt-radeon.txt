@@ -1089,3 +1089,4 @@
 2026-10-28 14:22:05 takt17-farm gelaende.K1#2 GRÜN 1.6 · 2/92
 2026-10-28 14:22:13 takt17-farm gelaende.K4#1 GRÜN 0.3 · 3/92
 2026-10-28 14:22:19 takt17-farm gelaende.K4#2 GRÜN 1.4 · 4/92
+2026-10-28 14:22:27 takt17-farm gelaende.K5#1 GRÜN 2.1 · 5/92
