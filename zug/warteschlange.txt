@@ -181,3 +181,4 @@ takt18e-gtx 1 punkte sha=557d4aaddd489ba2dd2cc31322e5a349348c11a8 geraet=gtx nur
 z63-abab 1 abab A=557d4aaddd489ba2dd2cc31322e5a349348c11a8 B=675a38892ba6eea63eb65ceefb16c14a2537ba40 zellen=w-ego,d-ego,stadt
 z63-abab 0 storno
 z63-abab2 2 abab A=557d4aaddd489ba2dd2cc31322e5a349348c11a8 B=675a38892ba6eea63eb65ceefb16c14a2537ba40 zellen=w-ego,d-ego,stadt
+takt18e-gtx 0 storno
