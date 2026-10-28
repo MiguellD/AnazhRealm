@@ -766,6 +766,74 @@ const zeilenVon = (lauf, marke) =>
         .filter((z) => z.startsWith(marke + " {"))
         .map((z) => JSON.parse(z.slice(marke.length + 1)));
 
+// ───────── HAAR UND FELL IN DER SOLL-TAFEL (haar.K1#1, haar.K2#1; Zweig haar-fell-soll) ─────────
+// EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server an der Mess-Wiese, 1920×1080; zwei Schüsse der Klasse aus dem
+// Ausgabe-Pfad (`werkbank bild --klasse … --ist <id>`), nach jedem das Urteil der EINEN Soll-Tafel (abnahme-urteil
+// `sollTafelUrteil`, K5) als Zeile „<NAME> {…}": `strich` (die Kohärenz des Strichs im Inneren der Maske) gegen das Band,
+// das die Linse aus der REF rechnet (spec/abnahme/ref-<id>.png), bei haar dazu die Albedo (die Zeile haar der Albedo-Tafel).
+// `vorher` stellt die Szene (bash-Zeilen), `schuesse` je Name die Argumente von `werkbank bild` (die Kamera aus `$K`).
+const sollUrteil = (id, name) =>
+    "node -e 'const AU = require(\"./scripts/lib/abnahme-urteil.cjs\"); const u = AU.sollTafelUrteil(require(\"./spec/abnahme/soll-tafel.json\"), " +
+    "AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === \"" + id + "\"); console.log(\"" + name + " \" + " +
+    "JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'";
+function sollKlasseStation(o) {
+    return {
+        kriterium: o.kriterium,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; git checkout spec/abnahme/soll-tafel.json; }",
+                "trap ende EXIT; trap 'exit 143' INT TERM",
+                "raeum; stand",
+                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
+                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+                "grep -E 'WERKBANK bereit|linse-gpu' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
+                ...o.vorher,
+                ...Object.entries(o.schuesse).flatMap(([n, a]) => [
+                    "node scripts/werkbank.cjs bild " + a + " --wahl 0 --klasse '" + o.klasse + "' --ist " + o.id + " --datei \"$B-" + n + ".png\" > \"$B-" + n + ".txt\" 2>&1; echo \"BILD " + n + " $?\"",
+                    sollUrteil(o.id, n.toUpperCase()),
+                ]),
+            ].join("\n"),
+        ],
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const z = Object.keys(o.schuesse).map((n) => [n, jsonZeile(lauf.stdout, new RegExp("^" + n.toUpperCase() + " "))]);
+            return {
+                gruen: z.every(([, x]) => x && x.urteil === "GRÜN"),
+                zahl: z
+                    .map(([n, x]) => n + " " + (x ? x.urteil + " strich " + x.ist + " Soll [" + x.band + "]" + (x.grund ? " — " + x.grund : "") + (x.teile ? " · " + x.teile : "") : "ohne Zeile (Exit " + lauf.exit + ")"))
+                    .join(" · "),
+            };
+        },
+        pfad: [
+            ...o.pfad,
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "save-server.js",
+            "spec/abnahme/soll-tafel.json",
+            "spec/abnahme/ref-" + o.id + ".png",
+            "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: o.quelle,
+    };
+}
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -2107,6 +2175,36 @@ const stationen = [
     ],
     quelle: "1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand",
     },
+    // haar.K1 Staffel 1 — der Wolf aus dem Gesetz der Tetrapoda (fellStreu) 3 m vor dem Ego-Auge, gehalten; arm: die Kamera 0,7 m
+    // vor seinem Fell im Ego-Blick (`--arm`), third: 4 m quer zu seinem Leib in Augenhöhe des Third. Soll: strich der REF
+    // ref-fell.png ± 20 % (headless/swiftshader am Kopf haar-fell-soll: siehe Abgabe-Rumpf).
+    sollKlasseStation({
+        kriterium: "haar.K1",
+        id: "fell",
+        klasse: "^tier:wolf$",
+        vorher: [
+            "node scripts/werkbank.cjs umstellen --ort wiese --sicht ego > \"$B-umstellen.txt\" 2>&1",
+            "K=$(node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, \"happy\", \"wolf\", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__tiereHalten(); const b = new T.Box3().setFromObject(c).getCenter(new T.Vector3()), a = c.rotation.y, cx = b.x + Math.cos(a) * 4, cz = b.z - Math.sin(a) * 4; return [cx, r._voxelSurfaceY(cx, cz) + 1.7, cz, b.x, b.y, b.z].map((v) => +v.toFixed(2));' | erg); echo \"WOLF $K\"",
+        ],
+        schuesse: {
+            arm: "0 0 0 0 0 0 --arm 0.7",
+            third: "$(node -e 'console.log(JSON.parse(process.argv[1]).join(\" \"))' \"$K\")",
+        },
+        pfad: ["tetrapoda-core.js", "stamm/kreatur-*.js"],
+        quelle: "1 = Klasse fell in der Soll-Tafel (Soll aus externer REF), GRÜN auf Armlänge (0,7 m) und im Third (4 m) an einem Gerät",
+    }),
+    // haar.K2 Staffel 1 — das Haar des Spielers (haarStreu, Genom START_PARAMS): arm die Kamera 0,7 m vor dem Gesicht
+    // (`--gesicht 0.7`), third 4 m hinter dem Kopf (`--gesicht -4`, der Blick des Third); der Kopf in Stoffen, die Klasse
+    // spieler:kopf/hair. Soll: strich der REF ref-haar.png ± 20 % UND die Albedo der Zeile haar der Albedo-Tafel im Natur-Band.
+    sollKlasseStation({
+        kriterium: "haar.K2",
+        id: "haar",
+        klasse: "^spieler:kopf/hair$",
+        vorher: ["node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1"],
+        schuesse: { arm: "0 0 0 0 0 0 --gesicht 0.7 --spieler", third: "0 0 0 0 0 0 --gesicht -4 --spieler" },
+        pfad: ["koerper-core.js", "stamm/koerper-*.js", "spec/farbe/albedo-tafel.json"],
+        quelle: "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät",
+    }),
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
