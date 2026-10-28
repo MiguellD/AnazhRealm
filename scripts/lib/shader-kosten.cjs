@@ -695,9 +695,7 @@ function shaderKostenSeite(o) {
         };
         const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
         try {
-            st.scene.traverse((n) => {
-                if (n.isBundleGroup) n.needsUpdate = true;
-            });
+            window.__bundlesNeu();
             for (let i = 0; i < Math.max(1, opt.frames || 1); i++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 r._loopRender();

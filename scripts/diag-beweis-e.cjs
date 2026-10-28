@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const fs = require("fs");
@@ -182,13 +182,6 @@ const SCHUSS_FN = async (kam) => {
         set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
         if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
     }
-    const cv = document.createElement("canvas");
-    cv.width = 640;
-    cv.height = 360;
-    const ctx = cv.getContext("2d");
-    const img = ctx.createImageData(640, 360);
-    img.data.set(u8.subarray(0, 640 * 360 * 4)); // WebGPU-Readback ist TOP-DOWN (diag-blick-Messwert)
-    ctx.putImageData(img, 0, 0);
     const wm = r.state.weltMarch;
     const fp = r.state.feldPass;
     zahlen.weltMarch = wm
@@ -202,7 +195,8 @@ const SCHUSS_FN = async (kam) => {
     try {
         zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch {}
-    return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
+    // WebGPU-Readback ist TOP-DOWN (diag-blick-Messwert)
+    return { ok: true, farben: set.size, nonzero, png: window.__png(u8, 640, 360), zahlen };
 };
 
 hauptLauf(async () => {
@@ -678,7 +672,7 @@ hauptLauf(async () => {
             return;
         }
         const file = path.join(OUT, `e-${TAG}-${klasse}-${art}.png`);
-        fs.writeFileSync(file, Buffer.from(s.png.split(",")[1], "base64"));
+        pngDatei(file, s.png);
         const substanz = s.farben >= 8 && s.nonzero > 50;
         if (!substanz) rot++;
         bericht.schuesse[`${klasse}-${art}`] = {

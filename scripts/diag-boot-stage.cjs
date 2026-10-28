@@ -22,7 +22,7 @@
 // (der Erst-Boot füllt die Platte ganz); am Zweit-Boot urteilt sie: ≥ 95 % von der Platte, kein Auftrag verschluckt.
 // --selftest verschluckt eine Lieferung (Null-Renderer) — die Zeile ist ROT beim Namen.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -191,20 +191,13 @@ async function kaltLauf() {
                     r._schattenAlleNeu();
                     auf = await window.__ausgabeAufnahme(W, H, 1);
                 }
-                const cv = document.createElement("canvas");
-                cv.width = W;
-                cv.height = H;
-                const ctx = cv.getContext("2d");
-                const img = ctx.createImageData(W, H);
-                img.data.set(auf.u8.subarray(0, W * H * 4));
-                ctx.putImageData(img, 0, 0);
-                return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
+                return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: window.__png(auf.u8, W, H) };
             },
             ECHT ? 960 : 640,
             ECHT ? 540 : 360
         );
         if (bildInfo && bildInfo.png) {
-            fs.writeFileSync(path.resolve(bildDatei), Buffer.from(bildInfo.png.split(",")[1], "base64"));
+            pngDatei(path.resolve(bildDatei), bildInfo.png);
             delete bildInfo.png;
         }
     }

@@ -28,7 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -52,13 +52,11 @@ const MASKE_MIN = 2000;
 // DIE QUELL-WAND (AST): jede Zuweisung an `….normalBias` steht im Gesetz (`_schattenNormalBias` oder einer Methode, die es
 // ruft und nur dessen Ergebnis schreibt) — kein fester Meter-Wert neben dem Gesetz.
 function quellWand(quelle) {
-    const acorn = require("acorn");
-    const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
     const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const befunde = [];
-    lauf(ast, (m) => {
-        if (m.type !== "MethodDefinition" || !m.value || !m.value.body) return;
-        const name = m.key.name || String(m.key.value);
+    // je Methode einer Klasse aus der EINEN Glieder-Tafel (`stammLib.glieder`, je Text einmal geparst)
+    stammLib.glieder(quelle).forEach(({ name, knoten: m }) => {
+        if (m.type !== "MethodDefinition") return;
         lauf(m.value.body, (n) => {
             if (n.type !== "AssignmentExpression" || n.left.type !== "MemberExpression" || n.left.computed) return;
             // der Tiefen-Bias einer Schatten-Karte (`….shadow.bias`, `sh.bias`) steht nur im Gesetz (`_schattenBias`)
@@ -68,7 +66,7 @@ function quellWand(quelle) {
             ) {
                 if (name !== "_schattenBias")
                     befunde.push(
-                        `${name} Zeile ${n.loc.start.line}: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — ${quelle
+                        `${name} Zeile ${stammLib.zeileVon(quelle, n.start)}: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — ${quelle
                             .slice(n.start, n.end)
                             .replace(/\s+/g, " ")
                             .slice(0, 80)}`
@@ -79,7 +77,7 @@ function quellWand(quelle) {
             const rechts = quelle.slice(n.right.start, n.right.end);
             if (!/_schattenNormalBias\(/.test(rechts))
                 befunde.push(
-                    `${name} Zeile ${n.loc.start.line}: schreibt normalBias ohne das Gesetz — ${quelle
+                    `${name} Zeile ${stammLib.zeileVon(quelle, n.start)}: schreibt normalBias ohne das Gesetz — ${quelle
                         .slice(n.start, n.end)
                         .replace(/\s+/g, " ")
                         .slice(0, 80)}`
@@ -500,11 +498,7 @@ async function probe(cfg) {
         return o;
     };
     const png = (u8, ueber) => {
-        const cv = document.createElement("canvas");
-        cv.width = W;
-        cv.height = H;
-        const ctx = cv.getContext("2d");
-        const img = ctx.createImageData(W, H);
+        const img = { data: new Uint8ClampedArray(W * H * 4) };
         img.data.set(u8.subarray(0, W * H * 4));
         if (ueber)
             for (let i = 0; i < W * H; i++) {
@@ -514,8 +508,7 @@ async function probe(cfg) {
                     img.data[i * 4] = 255; // gemessen, nicht erwartet: rot
                 }
             }
-        ctx.putImageData(img, 0, 0);
-        return cv.toDataURL("image/png");
+        return window.__png(img.data, W, H);
     };
     // castShadow eines gesetzten Baus an/aus (je Instanz-Gruppe seiner Slots, das Bundle zeichnet neu)
     const merk = new Map();
@@ -1321,7 +1314,7 @@ hauptLauf(async () => {
         for (const bi of S.bilder)
             for (const k of ["mit", "ueber", "leer"])
                 if (bi[k])
-                    fs.writeFileSync(path.join(OUT, `${bi.name}-${k}.png`), Buffer.from(bi[k].split(",")[1], "base64"));
+                    pngDatei(path.join(OUT, `${bi.name}-${k}.png`), bi[k]);
     console.log("=== DER SCHATTEN KLEINER WERFER — der Bias als Gesetz der Kaskade (echter Renderer) ===");
     console.log(
         `  Renderer: die GPU des Rechners · ${W}×${H} · ${Math.round((Date.now() - t0) / 1000)} s · ` +

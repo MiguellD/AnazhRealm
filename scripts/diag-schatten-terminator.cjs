@@ -69,7 +69,7 @@ const schuss = async (staerke) => {
 const meshes = [];
 st.scene.traverse((o) => { if (o.isMesh || o.isSprite || o.isPoints) meshes.push(o); });
 const visAlt = new Map(meshes.map((m) => [m, m.visible]));
-const bundles = () => st.scene.traverse((o) => { if (o.isBundleGroup) o.needsUpdate = true; });
+const bundles = window.__bundlesNeu;
 for (const m of meshes) m.visible = visAlt.get(m) && m.name === "bodenSatz";
 bundles();
 let an, aus;

@@ -69,17 +69,9 @@ hauptLauf(async () => {
                     set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
                     if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
                 }
-                // PNG über Canvas. GEMESSEN: der WebGPU-
-                // Readback liefert die Zeilen bereits TOP-DOWN — kein Y-Flip
+                // das PNG (`__png`). GEMESSEN: der WebGPU-Readback liefert die Zeilen bereits TOP-DOWN — kein Y-Flip
                 // (der WebGL-Erfahrungswert „bottom-up" gilt hier nicht).
-                const cv = document.createElement("canvas");
-                cv.width = w;
-                cv.height = h;
-                const ctx = cv.getContext("2d");
-                const img = ctx.createImageData(w, h);
-                img.data.set(u8.subarray(0, w * h * 4));
-                ctx.putImageData(img, 0, 0);
-                return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png") };
+                return { ok: true, farben: set.size, nonzero, png: window.__png(u8, w, h) };
             };
 
             // Blick einrichten: Augenhöhe in den Wald ODER auf den Boden.
