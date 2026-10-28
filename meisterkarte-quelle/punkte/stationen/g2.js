@@ -2176,33 +2176,35 @@ const stationen = [
     quelle: "1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand",
     },
     // haar.K1 Staffel 1 — der Wolf aus dem Gesetz der Tetrapoda (fellStreu) 3 m vor dem Ego-Auge, gehalten; arm: die Kamera 0,7 m
-    // vor seinem Fell im Ego-Blick (`--arm`), third: 4 m quer zu seinem Leib in Augenhöhe des Third. Soll: strich der REF
-    // ref-fell.png ± 20 % (headless/swiftshader am Kopf haar-fell-soll: siehe Abgabe-Rumpf).
+    // vor seinem Fell quer zum Leib, 0,5 m über seiner Mitte; third: 4 m quer, 1 m darüber (der Blick des Third). Soll: strich der REF
+    // ref-fell.png ± 20 % = [0,4358; 0,6538]. Headless/swiftshader (kienspan, 1920×1080, Spawn) am Kopf haar-fell-soll: arm
+    // 0,3026 (vor dem Strich der Schale 0,2804), third 0,2518 — ROT erwartet, bis die Strähne Kontrast gegen die Unterwolle trägt.
     sollKlasseStation({
         kriterium: "haar.K1",
         id: "fell",
         klasse: "^tier:wolf$",
         vorher: [
             "node scripts/werkbank.cjs umstellen --ort wiese --sicht ego > \"$B-umstellen.txt\" 2>&1",
-            "K=$(node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, \"happy\", \"wolf\", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__tiereHalten(); const b = new T.Box3().setFromObject(c).getCenter(new T.Vector3()), a = c.rotation.y, cx = b.x + Math.cos(a) * 4, cz = b.z - Math.sin(a) * 4; return [cx, r._voxelSurfaceY(cx, cz) + 1.7, cz, b.x, b.y, b.z].map((v) => +v.toFixed(2));' | erg); echo \"WOLF $K\"",
+            "K=$(node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, \"happy\", \"wolf\", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__tiereHalten(); const b = new T.Box3().setFromObject(c), m = b.getCenter(new T.Vector3()), g = b.getSize(new T.Vector3()), q = g.x > g.z; const kam = (d, h) => [m.x + (q ? 0 : d), m.y + h, m.z + (q ? d : 0), m.x, m.y, m.z].map((v) => +v.toFixed(2)); return { arm: kam(0.7 + Math.min(g.x, g.z) / 2, 0.5), third: kam(4 + Math.min(g.x, g.z) / 2, 1) };' | erg); echo \"WOLF $K\"",
         ],
         schuesse: {
-            arm: "0 0 0 0 0 0 --arm 0.7",
-            third: "$(node -e 'console.log(JSON.parse(process.argv[1]).join(\" \"))' \"$K\")",
+            arm: "$(node -e 'console.log(JSON.parse(process.argv[1]).arm.join(\" \"))' \"$K\")",
+            third: "$(node -e 'console.log(JSON.parse(process.argv[1]).third.join(\" \"))' \"$K\")",
         },
-        pfad: ["tetrapoda-core.js", "stamm/kreatur-*.js"],
+        pfad: ["tetrapoda-core.js", "foundry-core.js", "stamm/kreatur-*.js", "stamm/studio-bruecke.js"],
         quelle: "1 = Klasse fell in der Soll-Tafel (Soll aus externer REF), GRÜN auf Armlänge (0,7 m) und im Third (4 m) an einem Gerät",
     }),
     // haar.K2 Staffel 1 — das Haar des Spielers (haarStreu, Genom START_PARAMS): arm die Kamera 0,7 m vor dem Gesicht
     // (`--gesicht 0.7`), third 4 m hinter dem Kopf (`--gesicht -4`, der Blick des Third); der Kopf in Stoffen, die Klasse
-    // spieler:kopf/hair. Soll: strich der REF ref-haar.png ± 20 % UND die Albedo der Zeile haar der Albedo-Tafel im Natur-Band.
+    // spieler:kopf/hair. Soll: strich der REF ref-haar.png ± 20 % = [0,3554; 0,533] UND die Albedo der Zeile haar der Albedo-Tafel
+    // im Natur-Band [0,01; 0,3] — die Zeile fehlt (die Tafel misst nur ganz auf der Karte), ROT „albedo: … ohne Ist“ bis sie steht.
     sollKlasseStation({
         kriterium: "haar.K2",
         id: "haar",
         klasse: "^spieler:kopf/hair$",
         vorher: ["node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1"],
         schuesse: { arm: "0 0 0 0 0 0 --gesicht 0.7 --spieler", third: "0 0 0 0 0 0 --gesicht -4 --spieler" },
-        pfad: ["koerper-core.js", "stamm/koerper-*.js", "spec/farbe/albedo-tafel.json"],
+        pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js", "spec/farbe/albedo-tafel.json"],
         quelle: "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät",
     }),
 ];
