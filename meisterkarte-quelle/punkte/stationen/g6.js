@@ -132,13 +132,14 @@ module.exports = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // Karte streaming-sprung: je frische Sitzung (save-server + Werkbank --echt, Wiese Ego, Regler des Spielers nach R8)
-        // `haenger 60 --wandern sprung --schwelle 50`: mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
-        // Gesetzes, gemessen wird die Kadenz, bis die Welt dort steht (`_weltSteht`, nachdem sie einmal nicht stand) + 1 s; jeder
+        // `haenger --wandern sprung --schwelle 50`: mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
+        // Gesetzes, gemessen wird die Kadenz, bis die Welt dort steht (`_weltSteht` in Bau-Ereignissen über `__deckel`, nachdem
+        // sie einmal nicht stand) + 1 s — hängt sie, bricht der Lauf laut (kein JSON, ROT); jeder
         // Frame > 50 ms steht mit Ursache in b<N>-sprung.out, die Bauten im Haupt-Faden zählt `_syncBauten`. Vor der Karte kennt
         // der Lauf `sprung` nicht (kein Feld `sprung` im JSON): ROT. Soll: Median der Frame-p95 aus 3 Sitzungen ≤ 50 ms, jede mit
-        // stehender Welt, Profil und ≥ 30 Bildern, am Adapter einer echten GPU. Cloud headless swiftshader am Kopf des Zweigs
-        // streaming-sprung (Wiese, 3 Läufe): die Welt steht nach 18,4–20 s, CPU-Takt p95 39–61 ms, 0 Bauten außerhalb der
-        // Sync-Stellen, Frame p95 7,4 s (Software-GPU, 3 Bilder im Fenster) — ROT am Adapter.
+        // stehender Welt, Profil und ≥ 30 Bildern, am Adapter einer echten GPU. Cloud headless swiftshader am Kopf cd8a4d2c des Zweigs
+        // streaming-sprung (Wiese, 5 Läufe): die Welt steht nach 18,4–22,3 s, CPU-Takt p95 34,5–61 ms, 0 Bauten außerhalb der
+        // Sync-Stellen, Frame p95 4,6–7,5 s (Software-GPU, 3–7 Bilder im Fenster) — ROT am Adapter.
         befehl: [
             "bash",
             "-c",
@@ -155,7 +156,7 @@ module.exports = [
                 'grep -m1 "\\[linse-gpu\\]" "$D/b$N-werkbank.log"; ' +
                 'W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; ' +
                 'W umstellen --ort wiese --sicht ego > "$D/b$N-umstellen.txt" 2>&1; ' +
-                'W haenger 60 --regler frei --tiere frei --wandern sprung --schwelle 50 --json "$D/b$N-sprung.json" > "$D/b$N-sprung.out" 2>&1; E=$?; ' +
+                'W haenger --regler frei --tiere frei --wandern sprung --schwelle 50 --json "$D/b$N-sprung.json" > "$D/b$N-sprung.out" 2>&1; E=$?; ' +
                 'echo "SPRUNG $N EXIT=$E $(SUM "$D/b$N-sprung.json")"; ' +
                 "W stop > /dev/null 2>&1; sleep 3; raeum; done; " +
                 "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
