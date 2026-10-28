@@ -18,7 +18,8 @@
 //        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
-//   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN)
+//   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
+//        die gtx-Hälften ohne frische Messung am Kopf, deren Ausgang über die Punkte entscheiden kann (Frische-Urteil der Buchung)
 //   node punkte.cjs plan --kopf <neu> --vorher <alt>   der Mess-Plan nach einem Zug: je GPU-Gerät die Stationen, die Punkte halten
 //        oder gewinnen können (Staffel 1 auf EINEM Gerät, Zeit-Stationen auf der GTX, rote ohne Heil-Versuch nie)
 //   node punkte.cjs gruppen --geraet radeon|gtx|headless [--nur id,id]   je Zeile die Ids EINES Laufs (Zwillinge zusammen, Reihe von
@@ -868,7 +869,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
     return (st, g) => {
         const id = schluessel(st);
         const tot = opt.tot ? opt.tot(st) : [];
-        if (tot.length) return { gruen: false, ungemessen: true, grund: pfadGrund(tot, "am Kopf") };
+        if (tot.length) return { gruen: false, ungemessen: true, tot: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe);
         let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [];
         const frisch = [];
@@ -895,21 +896,26 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
     };
 }
 
+// DIE PUNKTE-REGEL (R2) eines Kriteriums — die EINE für die Buchung und für gtx-nutzen: sts die Stationen des Kriteriums,
+// urteil(st, g) → { gruen } je Station und Gerät. 1 = jede Staffel-1-Station auf mindestens einem Gerät grün · 2 = dazu jede
+// Staffel-2-Station auf JEDEM Gerät grün · sonst 0
+function stufen(sts, urteil) {
+    const stufe = (n, alle) => {
+        const xs = sts.filter((s) => s.staffel === n);
+        const r = xs.map((s) => ({ s, je: geraeteVon(s).map((g) => ({ g, e: urteil(s, g) })) }));
+        const ok = xs.length > 0 && r.every((x) => (alle ? x.je.every((y) => y.e.gruen) : x.je.some((y) => y.e.gruen)));
+        return { ok, r };
+    };
+    const s1 = stufe(1, false), s2 = stufe(2, true);
+    return { s1, s2, punkte: s1.ok && s2.ok ? 2 : s1.ok ? 1 : 0 };
+}
+
 function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = [], opt = {}) {
     const stand = frischUrteil(messungen, geaendert, hilfe, opt);
     const je = {};
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
-        const sts = stationen.filter((s) => s.kriterium === k);
-        const stufe = (n, alle) => {
-            const xs = sts.filter((s) => s.staffel === n);
-            const r = xs.map((s) => ({ s, je: geraeteVon(s).map((g) => ({ g, e: stand(s, g) })) }));
-            const ok = xs.length > 0 && r.every((x) => (alle ? x.je.every((y) => y.e.gruen) : x.je.some((y) => y.e.gruen)));
-            return { ok, r };
-        };
-        const s1 = stufe(1, false);
-        const s2 = stufe(2, true);
-        const punkte = s1.ok && s2.ok ? 2 : s1.ok ? 1 : 0;
+        const { s1, s2, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
         const teile = [];
         const offen = [];
         // eine erfüllte Stufe nennt ihre Grünen, eine offene jedes fehlende Gerät beim Grund
@@ -924,7 +930,9 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
         je[k] = {
             punkte,
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
-            stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null })))),
+            // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
+            stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
+                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}) })))),
         };
     }
     return { kopf, je };
@@ -970,16 +978,31 @@ function weltDateien(namen, diffText) {
     });
 }
 
-// die GTX-Stationen, deren Messung am Kopf Punkte ändern KANN (26.10.: takt5z maß 43 Stationen in ~6 h, auch Staffel 1 hinter
-// grüner Radeon): Staffel 1 nur, wo kein anderes Gerät grün ist; Staffel 2 nur, wo Staffel 1 steht und jedes andere Gerät grün ist
+// die GTX-Stationen, deren Messung am Kopf Punkte ändern KANN — gefragt am EINEN Frische-Urteil der Buchung (s = buchen(…), je
+// Station und Gerät gruen/ungemessen/tot) und an ihrer EINEN Punkte-Regel (stufen): eine gtx-Hälfte steht in der Liste, wenn sie
+// am Kopf keine frische Messung trägt und eine Belegung der übrigen ungemessenen Hälften (sie fahren im selben Takt auf Radeon
+// und Farm) ihren Ausgang über die Punkte des Kriteriums entscheiden lässt. Frisch Gemessenes ist Tatsache, eine Messung am Kopf
+// wiederholte es (26.10.: takt5z maß 43 Stationen in ~6 h, auch Staffel 1 hinter grüner Radeon). 27.10.: das alte Urteil daneben
+// verlangte Radeon-Hälfte und Staffel 1 JETZT grün — am Kopf a03b7b06 waren sie R6-alt und fuhren im selben Takt, 9 Staffeln 2
+// mit alter gtx-Hälfte fehlten in der Liste, gebucht Σ 113 statt ≥ 123
 function gtxNutzen(s) {
     const ja = [], nein = [];
+    const wo = (id, g) => id + "|" + g;
     for (const [k, e] of Object.entries(s.je)) {
-        const ids = [...new Set(e.stationen.filter((x) => x.geraet === "gtx").map((x) => x.id))];
-        const s1 = e.stationen.some((x) => x.id === k + "#1" && x.gruen);
-        for (const id of ids) {
-            const andere = e.stationen.filter((x) => x.id === id && x.geraet !== "gtx");
-            const nutzt = id.endsWith("#1") ? !andere.some((x) => x.gruen) : s1 && andere.length > 0 && andere.every((x) => x.gruen);
+        const ids = [...new Set(e.stationen.map((x) => x.id))];
+        const sts = ids.map((id) => ({ kriterium: k, staffel: Number(id.slice(id.lastIndexOf("#") + 1)), geraet: e.stationen.filter((x) => x.id === id).map((x) => x.geraet) }));
+        const ist = new Map(e.stationen.map((x) => [wo(x.id, x.geraet), x]));
+        const offen = e.stationen.filter((x) => x.ungemessen && !x.tot).map((x) => wo(x.id, x.geraet));
+        for (const id of ids.filter((i) => ist.has(wo(i, "gtx")))) {
+            const ich = wo(id, "gtx"), rest = offen.filter((w) => w !== ich);
+            let nutzt = false;
+            for (let b = 0; offen.includes(ich) && !nutzt && b < 1 << rest.length; b++) {
+                const p = (gtx) => stufen(sts, (st, g) => {
+                    const w = wo(schluessel(st), g), i = rest.indexOf(w);
+                    return { gruen: w === ich ? gtx : i >= 0 ? ((b >> i) & 1) === 1 : ist.get(w).gruen };
+                }).punkte;
+                nutzt = p(true) !== p(false);
+            }
             (nutzt ? ja : nein).push(id);
         }
     }
@@ -1465,14 +1488,30 @@ async function selbsttest() {
     pruef("GEN registriert → Maschine, sonst Hand", k1.punkte === 2 && k1.maschine && k1.beleg === "Maschine: z" && k2 === k0, JSON.stringify([k1, k2]));
     const pf = standPruefen(stand, "ffff0000", new Set(["gelaende.K4"]));
     pruef("GEN Kopf ungleich ist ROT", pf.some((f) => /Kopf abcd1234/.test(f)), pf.join(" | "));
-    const X = (id, geraet, gruen) => ({ id, geraet, gruen });
+    // X: eine Hälfte am Kopf — gruen frisch gemessen, alt ohne frische Messung (das Frische-Urteil der Buchung: ungemessen)
+    const X = (id, geraet, gruen, alt) => ({ id, geraet, gruen: !!gruen, ...(alt ? { ungemessen: true } : {}) });
     const nz = gtxNutzen({ je: {
-        "a.K1": { stationen: [X("a.K1#1", "radeon", true), X("a.K1#1", "gtx", false), X("a.K1#2", "radeon", true), X("a.K1#2", "gtx", false)] },
-        "b.K1": { stationen: [X("b.K1#1", "radeon", false), X("b.K1#1", "gtx", false), X("b.K1#2", "radeon", true), X("b.K1#2", "gtx", false)] },
-        "c.K1": { stationen: [X("c.K1#1", "headless", true), X("c.K1#2", "radeon", false), X("c.K1#2", "gtx", false)] },
+        "a.K1": { stationen: [X("a.K1#1", "radeon", true), X("a.K1#1", "gtx", false, 1), X("a.K1#2", "radeon", true), X("a.K1#2", "gtx", false, 1)] },
+        "b.K1": { stationen: [X("b.K1#1", "radeon", false), X("b.K1#1", "gtx", false, 1), X("b.K1#2", "radeon", true), X("b.K1#2", "gtx", false, 1)] },
+        "c.K1": { stationen: [X("c.K1#1", "headless", true), X("c.K1#2", "radeon", false), X("c.K1#2", "gtx", false, 1)] },
+        "d.K1": { stationen: [X("d.K1#1", "headless", false), X("d.K1#2", "radeon", true), X("d.K1#2", "gtx", false, 1)] },
+        "e.K1": { stationen: [X("e.K1#1", "headless", true), X("e.K1#2", "radeon", true), X("e.K1#2", "gtx", true)] },
+        "f.K1": { stationen: [X("f.K1#1", "headless", true), X("f.K1#2", "radeon", true), { ...X("f.K1#2", "gtx", false, 1), tot: true }] },
     } });
-    pruef("GTX-NUTZEN Staffel 1 hinter grüner Radeon fällt, Staffel 2 nur über stehender 1 und grüner Radeon",
-        nz.ja.join() === "a.K1#2,b.K1#1" && nz.nein.join() === "a.K1#1,b.K1#2,c.K1#2", JSON.stringify(nz));
+    pruef("GTX-NUTZEN Staffel 1 hinter grüner Radeon fällt, Staffel 2 nur, wo Staffel 1 stehen kann und die Radeon-Hälfte nicht frisch rot ist; frisch Gemessenes und die Wand PFAD nie",
+        nz.ja.join() === "a.K1#2,b.K1#1,b.K1#2" && nz.nein.join() === "a.K1#1,c.K1#2,d.K1#2,e.K1#2,f.K1#2", JSON.stringify(nz));
+    // DIE KLASSE 27.10. (a03b7b06, gebucht Σ 113 statt ≥ 123): eine Staffel 2 mit alter gtx-Hälfte steht in der Liste — vor dem
+    // Takt (Radeon-Hälfte und Staffel 1 R6-alt, sie fahren im selben Takt) wie nach ihm (Radeon frisch grün); frisch gemessen nie.
+    // Durch die echte Buchung (frischUrteil, R6), nicht an Hand gesetzten Zuständen
+    {
+        const r6 = (sha) => (sha === "v1" ? ["stamm/wasser-hydro.js"] : []);
+        const vorher = ["radeon", "gtx"].flatMap((g) => [M("v1", g, "gelaende.K4#1", s1, true), M("v1", g, "gelaende.K4#2", s2, true)]);
+        const amKopf = (g, id, st) => M("k0", g, id, st, true, "2026-10-23T12:00:00Z");
+        const nach = [...vorher, amKopf("radeon", "gelaende.K4#1", s1), amKopf("radeon", "gelaende.K4#2", s2), amKopf("gtx", "gelaende.K4#1", s1)];
+        const [a, z, c] = [vorher, nach, [...nach, amKopf("gtx", "gelaende.K4#2", s2)]].map((ms) => gtxNutzen(buchen("kopf", [s1, s2], ms, r6, h)));
+        pruef("GTX-NUTZEN Staffel 2 mit R6-alter gtx-Hälfte steht in der Liste, gleich ob die Radeon-Hälfte alt oder frisch grün ist; frisch gemessen nie",
+            a.ja.join() === "gelaende.K4#1,gelaende.K4#2" && z.ja.join() === "gelaende.K4#2" && c.ja.length === 0, JSON.stringify([a.ja, z.ja, c.ja]));
+    }
     const P = (k, s, ge) => ({ kriterium: k, staffel: s, geraet: ge, befehl: ["node"], gpu: true });
     const V = (id, g, gruen) => ({ id, geraet: g, gruen, zahl: gruen ? "ok" : "rot" });
     const vor = [V("a.K1#1", "radeon", true), V("a.K1#1", "gtx", true), V("a.K1#2", "radeon", true), V("a.K1#2", "gtx", true),

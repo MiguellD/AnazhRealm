@@ -549,3 +549,6 @@
 2026-10-28 02:29:48 z55n-abab d-ego(4+4) LANGSAMER 11.0 · verlängert (4+4)
 2026-10-28 02:30:02 takt14c-gtx START 10 Stationen in 10 Läufen
 2026-10-28 02:38:13 takt14c-gtx ferne.K2#2 GRÜN 8.1 · 1/10
+2026-10-28 02:51:41 takt14c-gtx klang.K5#2 GRÜN 13.4 · 2/10
+2026-10-28 02:55:03 takt14c-gtx material.K1#2 GRÜN 3.3 · 3/10
+2026-10-28 02:59:27 takt14c-gtx mensch.K2#2 GRÜN 4.3 · 4/10
