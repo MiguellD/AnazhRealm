@@ -1312,3 +1312,4 @@
 2026-10-28 15:35:08 takt17-radeon klang.K4#1 GRÜN 3.2 · 55/57
 2026-10-28 15:35:33 takt17-radeon halten.K5#2 GRÜN 1.7 · 56/57
 2026-10-28 15:36:08 takt17-radeon wetter.K2#1 GRÜN 3.7 · 57/57
+2026-10-28 15:36:15 takt17-radeon ENDE 40 grün / 17 rot · 120.5 min
