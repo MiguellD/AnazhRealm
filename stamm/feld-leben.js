@@ -2107,8 +2107,8 @@ class AnazhRealm_feld_leben {
     // in `worldMeta.taten` ({ tat, x, z, h, … }, `h` die Welt-Stunde) und reist mit jedem Save und Reload (der Speicher trägt
     // das worldMeta). Aus ihr folgt alles: die NARBE im Feld (`auraAt` senkt lebendig um `_narbeAt`), die fehlende Pflanze
     // (`_geerntetIn`), der Stumpf und der Wald, der den Baum nicht neu pflanzt (`_tatAm`). Sie heilt in SPIELZEIT, linear über
-    // ihre Dauer: die Stunden ihrer Klasse (`TAT_NARBE`) durch das frozen lebendig des Orts — der Nachwuchs folgt dem Feld, gleich
-    // für jeden Peer und jeden Reload; geheilt fällt sie (`_tickScatterRegrow`). Bis feld.K4 lebte die Ernte im Session-Gedächtnis
+    // ihre Dauer: die Stunden ihrer Klasse (`TAT_NARBE`) durch den Wuchs des Orts (Feuchte × Licht, `_tatDauer`, stoffe.K5), gleich
+    // für jeden Reload; geheilt fällt sie (`_tickScatterRegrow`). Bis feld.K4 lebte die Ernte im Session-Gedächtnis
     // (FORAGE.regrowMs, 300 s Wanduhr), das Fällen schrieb nichts ins Feld (Mess-Wiese, Null-Renderer, main f7dd313c: 8 Bäume
     // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
 
@@ -2156,7 +2156,7 @@ class AnazhRealm_feld_leben {
         for (; J.n < n; J.n++) {
             const a = L[J.n];
             if (!a || !N[a.tat] || !Number.isFinite(a.x + a.z + a.h)) continue;
-            J.dauer.set(a, N[a.tat].stunden / Math.max(N.lebMin, this.worldFieldAt(a.x, a.z).lebendig));
+            J.dauer.set(a, this._tatDauer(a));
             const k = this._lifeCellKey(a.x, a.z);
             if (!J.je.has(k)) J.je.set(k, []);
             J.je.get(k).push(a);
@@ -2633,8 +2633,8 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
 });
 
 // TAT_NARBE — die Narbe je Tat-Klasse (feld.K4, `_tatSchreiben`): `tiefe` senkt lebendig in der 16-m-Zelle der Tat, `stunden`
-// ist ihre Dauer in Welt-Stunden bei lebendig 1 (die Dauer = stunden / max(lebMin, frozen lebendig): wo das Feld lebt, heilt
-// es schneller). Ein Baum hält die Lichtung Spieltage, eine gepflückte Pflanze Stunden; `max` kappt die Narbe einer Zelle.
+// ist ihre Dauer in Welt-Stunden bei vollem Wuchs (die Dauer = stunden / max(lebMin, Wuchs), `_tatDauer`: wo Wasser und Licht
+// sind, heilt es schneller). Ein Baum hält die Lichtung Spieltage, eine gepflückte Pflanze Stunden; `max` kappt die Narbe einer Zelle.
 AnazhRealm.TAT_NARBE = Object.freeze({
     faellen: Object.freeze({ tiefe: 0.12, stunden: 48 }),
     ernten: Object.freeze({ tiefe: 0.01, stunden: 3 }),
