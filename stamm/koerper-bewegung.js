@@ -56,6 +56,24 @@ class AnazhRealm_koerper_bewegung {
         return v < 1.2 ? null : v;
     }
 
+    // DIE KRAFT DER BEINE (N, leib.K2): die Sprungkraft der Seele (`state.jumpPower`, das Abdruck-Tempo, das sie dem
+    // Bezugs-Leib gibt) als Kraft nach koerper LEIB.sprung — F = refKg · (refG + v² / 2d); Leser: `_sprungAbdruck`.
+    _sprungKraft() {
+        const G = AnazhRealm.Gesetz("koerper:LEIB.sprung", null) || AnazhRealm._kernPflichtBruch("koerper:LEIB.sprung");
+        return G.refKg * (G.refG + this.state.jumpPower ** 2 / (2 * G.abdruckM));
+    }
+
+    // DER ABDRUCK (m/s, leib.K2): die Beine strecken den Leib über den Abdruck-Weg d mit der Kraft F gegen sein Gewicht —
+    // ½ m v² = (F − m g) d, v = √(2 d (F/m − g)) mit der EINEN Masse des Leibs (`_leibMasse`; im Schritt des Mitspieler-Geists
+    // die Masse seines Leibs aus dem Anker, `_geistKg`) und der Schwere der Welt.
+    // Ein schwererer Leib springt niedriger und kürzer, stärkere Beine höher und weiter; vorher sprang jeder Leib mit
+    // dem festen Tempo der Seele (Mensch 2,6 m/s, 0,32 m, ob 89 oder 111 kg).
+    _sprungAbdruck() {
+        const m = this.state._geistKg || this._leibMasse(this.state.playerMesh);
+        const a = this._sprungKraft() / m - Math.abs(this.state.gravity);
+        return Math.sqrt(2 * AnazhRealm.Gesetz("koerper:LEIB.sprung", null).abdruckM * Math.max(0, a));
+    }
+
     handleJump(currentTime) {
         // ### Sprunglogik ###
         // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
@@ -69,7 +87,7 @@ class AnazhRealm_koerper_bewegung {
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
                 // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
                 if (!this._canSoulJumpFromSlope()) return;
-                const jumpV = this._sprungDeckenKlemme(this.state.jumpPower);
+                const jumpV = this._sprungDeckenKlemme(this._sprungAbdruck());
                 if (jumpV === null) return; // keine Kopffreiheit — kein Sprung
                 // Feld-nativ: der Sprung-Impuls schreibt die vertikale Velocity in
                 // `state.playerVel.y` — `_stepCharacter` übernimmt sie als frischen Sprung
@@ -91,7 +109,7 @@ class AnazhRealm_koerper_bewegung {
 
     // ═══ PARKOUR — DER LUFT-SPRUNG ═══
     // Auf frischen Space-Druck in der Luft (der Boden-Sprung läuft über handleJump): WANDSPRUNG zuerst
-    // (Kapsel-Kontakt jünger als parkour.kontaktFrischeSec → jumpPower·wandsprungMul + Abstoß entlang der
+    // (Kapsel-Kontakt jünger als parkour.kontaktFrischeSec → Abdruck·wandsprungMul + Abstoß entlang der
     // Kontakt-Normale; der Kontakt wird VERBRAUCHT), sonst DOPPELSPRUNG (doppelspruenge je Luftphase,
     // die Landung füllt auf). Decken-Klemme via _sprungDeckenKlemme; Gesetze aus _parkourGesetz.
     _parkourLuftsprung() {
@@ -101,7 +119,6 @@ class AnazhRealm_koerper_bewegung {
         if (s.playerUnderwater || !s.playerVel) return false;
         if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
         const nowS = s._simZeit;
-        const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
         // Das Frische-Fenster wohnt im parkour-Gesetz (gilt auch fürs Klettern); das Feld steht in der
         // Gültigkeits-Wand von _parkourGesetz — kein lokaler Fallback.
         const frisch = P.kontaktFrischeSec;
@@ -122,7 +139,7 @@ class AnazhRealm_koerper_bewegung {
         } else {
             return false;
         }
-        const jumpV = this._sprungDeckenKlemme(jp * mul);
+        const jumpV = this._sprungDeckenKlemme(this._sprungAbdruck() * mul);
         if (jumpV === null) return false;
         const v = s.playerVel;
         s.playerVel.setValue(v.x() + abX, jumpV, v.z() + abZ);

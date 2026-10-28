@@ -37,6 +37,7 @@ const root = path.resolve(__dirname, "..");
 // (STUDIO_VERTRAG/PORTAL_RENDER_CONFIG/PRESETS) ohne dessen Edit.
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
 const CORES = MANIFEST.map((c) => ({
+    id: c.id,
     file: c.vertrag,
     deps: (Array.isArray(c.scripts) ? c.scripts : []).filter((s) => s !== c.vertrag),
     ns: c.ns || undefined,
@@ -59,12 +60,20 @@ function absorber() {
 
 // Alle Kerne in EINEM Kontext wie im Main-Thread — die Seh-Klassen (BUDGET_GESETZ.seh, S3) und die Linse EIN WERT lesen sie.
 const KERNE = (() => {
-    const ctx = vm.createContext({ THREE: absorber(), console: { log() {}, warn() {}, error() {} }, performance: { now: () => 0 } });
+    const ctx = vm.createContext({
+        THREE: absorber(),
+        console: { log() {}, warn() {}, error() {} },
+        performance: { now: () => 0 },
+    });
     ctx.self = ctx;
     ctx.globalThis = ctx;
     for (const f of new Set(MANIFEST.flatMap((c) => c.scripts || [])))
         vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f, timeout: 30000 });
-    return Object.fromEntries(Object.keys(ctx).filter((k) => /^__\w+Core$/.test(k)).map((k) => [k, ctx[k]]));
+    return Object.fromEntries(
+        Object.keys(ctx)
+            .filter((k) => /^__\w+Core$/.test(k))
+            .map((k) => [k, ctx[k]])
+    );
 })();
 const SEH_KLASSEN = KERNE.__phytoCore.BUDGET_GESETZ.seh.slice();
 
@@ -73,7 +82,10 @@ const SEH_KLASSEN = KERNE.__phytoCore.BUDGET_GESETZ.seh.slice();
 // mit ≥ 2 markanten Zahlen (eine Reihe zählt doppelt) unter den Schlüsseln eines Kern-Objekts — ein MUSTER, nie ein Name (Lehre 7).
 function einWertTaeter(dateien, kerne) {
     const { kinder } = stammLib;
-    const asts = dateien.map((d) => ({ ...d, ast: require("acorn").parse(d.src, { ecmaVersion: "latest", locations: true }) }));
+    const asts = dateien.map((d) => ({
+        ...d,
+        ast: require("acorn").parse(d.src, { ecmaVersion: "latest", locations: true }),
+    }));
     const istAR = (n) => n.type === "Identifier" && n.name === "AnazhRealm";
     const istGesetz = (m) => m.type === "MemberExpression" && istAR(m.object) && m.property.name === "Gesetz";
     const KONST = new Set();
@@ -81,7 +93,11 @@ function einWertTaeter(dateien, kerne) {
         if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && istAR(n.left.object))
             KONST.add(n.left.property.name);
         if ((n.type === "PropertyDefinition" || n.kind === "get") && n.static && n.key) KONST.add(n.key.name);
-        const dp = n.type === "CallExpression" && n.callee.property && n.callee.property.name === "defineProperty" && n.arguments;
+        const dp =
+            n.type === "CallExpression" &&
+            n.callee.property &&
+            n.callee.property.name === "defineProperty" &&
+            n.arguments;
         if (dp && istAR(dp[0]) && dp[1].type === "Literal") KONST.add(dp[1].value); // auch eine Getter-Konstante ist definiert
         kinder(n, sammle);
     };
@@ -90,7 +106,9 @@ function einWertTaeter(dateien, kerne) {
     const zahl = (n) =>
         n.type === "Literal" && typeof n.value === "number"
             ? n.value
-            : n.type === "UnaryExpression" && n.operator === "-" && n.argument.type === "Literal" ? -n.argument.value : null;
+            : n.type === "UnaryExpression" && n.operator === "-" && n.argument.type === "Literal"
+              ? -n.argument.value
+              : null;
     const literal = (n) =>
         zahl(n) != null ||
         (n.type === "Literal" && n.value !== null && !n.regex) ||
@@ -101,11 +119,18 @@ function einWertTaeter(dateien, kerne) {
         if (n.type === "UnaryExpression" && n.operator === "+") return quelle(n.argument, al);
         if (n.type === "Identifier") return al.get(n.name) || (/^__\w+Core$/.test(n.name) ? n.name : null);
         if (n.type === "LogicalExpression")
-            return n.operator === "&&" ? quelle(n.right, al) : literal(n.right) || n.right.raw === "null" ? quelle(n.left, al) : null;
+            return n.operator === "&&"
+                ? quelle(n.right, al)
+                : literal(n.right) || n.right.raw === "null"
+                  ? quelle(n.left, al)
+                  : null;
         if (n.type === "CallExpression") return istGesetz(n.callee) ? "Gesetz" : null;
         if (n.type !== "MemberExpression" || n.computed) return null;
         const [o, p] = [n.object, n.property.name];
-        if (istAR(o) || (o.type === "MemberExpression" && o.object.type === "ThisExpression" && o.property.name === "constructor"))
+        if (
+            istAR(o) ||
+            (o.type === "MemberExpression" && o.object.type === "ThisExpression" && o.property.name === "constructor")
+        )
             return konst(p) ? "AnazhRealm." + p : null;
         if (o.type === "Identifier" && /^(globalThis|window|self)$/.test(o.name))
             return /^(__\w+Core|[A-Z][A-Z0-9_]*)$/.test(p) ? p : null;
@@ -129,12 +154,15 @@ function einWertTaeter(dateien, kerne) {
     const taeter = [];
     for (const { name, src, ast } of asts) {
         const melde = (n, art, q) =>
-            taeter.push(`${name}:${n.loc.start.line} ${art} ${q} — ${src.slice(n.start, n.end).replace(/\s+/g, " ").slice(0, 80)}`);
+            taeter.push(
+                `${name}:${n.loc.start.line} ${art} ${q} — ${src.slice(n.start, n.end).replace(/\s+/g, " ").slice(0, 80)}`
+            );
         const w = (n, al) => {
             if (/^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(n.type)) al = new Map(al);
             if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && quelle(n.init, al))
                 al.set(n.id.name, quelle(n.init, al));
-            const kette = (k) => quelle(k, al) || (k.type === "LogicalExpression" && k.operator !== "&&" ? kette(k.right) : null);
+            const kette = (k) =>
+                quelle(k, al) || (k.type === "LogicalExpression" && k.operator !== "&&" ? kette(k.right) : null);
             const qe = n.type === "LogicalExpression" && n.operator !== "&&" && literal(n.right) && kette(n.left);
             if (qe) melde(n, "ersatz", qe); // auch am Ende einer Kette (a || K || "")
             const qk = n.type === "ConditionalExpression" && literal(n.alternate) && quelle(n.consequent, al);
@@ -143,19 +171,28 @@ function einWertTaeter(dateien, kerne) {
             if (fb && !(fb.type === "Literal" && fb.value === null)) melde(n, "gesetz-ersatz", "Gesetz");
             if (n.type === "CatchClause" && !n.body.body.length && al.get("\0in") === "Gesetz")
                 melde(n, "stiller-catch", "AnazhRealm.Gesetz");
-            if (n.type === "AssignmentExpression" && istGesetz(n.left)) return w(n.right, new Map(al).set("\0in", "Gesetz"));
+            if (n.type === "AssignmentExpression" && istGesetz(n.left))
+                return w(n.right, new Map(al).set("\0in", "Gesetz"));
             if (n.type === "ObjectExpression") {
                 const z = [];
                 for (const p of n.properties) {
                     const k = p.type === "Property" && p.key && (p.key.name || p.key.value);
-                    const reihe = k && p.value.type === "ArrayExpression" && p.value.elements.length > 2 && p.value.elements;
-                    if (reihe && reihe.every((e) => e && zahl(e) != null)) z.push([k, reihe.map(zahl)], [k, reihe.map(zahl)]);
-                    else if (k && zahl(p.value) != null && ![0, 1, -1, 0.5, 2].includes(zahl(p.value)) && !/^(min|max|step|lo|hi)$/.test(k))
+                    const reihe =
+                        k && p.value.type === "ArrayExpression" && p.value.elements.length > 2 && p.value.elements;
+                    if (reihe && reihe.every((e) => e && zahl(e) != null))
+                        z.push([k, reihe.map(zahl)], [k, reihe.map(zahl)]);
+                    else if (
+                        k &&
+                        zahl(p.value) != null &&
+                        ![0, 1, -1, 0.5, 2].includes(zahl(p.value)) &&
+                        !/^(min|max|step|lo|hi)$/.test(k)
+                    )
                         z.push([k, zahl(p.value)]);
                 }
                 for (const T of z.length > 1 ? tafeln : []) {
                     const g = z.filter(([k, v]) => gleich(v, T.o[k]));
-                    if (g.length > 1) melde(n, "zwilling", T.weg + " {" + [...new Set(g.map((e) => e[0]))].join(", ") + "}");
+                    if (g.length > 1)
+                        melde(n, "zwilling", T.weg + " {" + [...new Set(g.map((e) => e[0]))].join(", ") + "}");
                 }
             }
             kinder(n, (c) => w(c, al));
@@ -259,7 +296,13 @@ function gesetzKernErklaert(doc) {
 }
 
 // Reine Validierungs-Funktion (auch der Selbst-Test ruft sie) → Verletzungsliste.
-function validateManifest(m) {
+// B4 `uniform: true` — DER GESETZ-WERT (studios.K2: ein Griff zeigt ihn ≤ 200 ms, ohne Neubau): nur `true`, und der Byte-Beweis
+// steht in der Ratsche — die Zeile bewegt an keinem Rezept ihrer Art ein Bau-Byte (spec/vertraege/ratsche.json reglerTot, gemessen
+// von gate:regler-wirkt). Eine Zeile, die Bytes bewegt, braucht den Neubau und trägt die Schranke von 1 s.
+const REGLER_OHNE_BYTE = new Set(
+    Object.keys(JSON.parse(fs.readFileSync(path.join(root, "spec/vertraege/ratsche.json"), "utf8")).reglerTot.tot)
+);
+function validateManifest(m, kern) {
     const v = [];
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.presets || typeof m.presets !== "object" || Object.keys(m.presets).length < 1)
@@ -373,62 +416,55 @@ function validateManifest(m) {
             let vor = null;
             let abVor = null;
             for (const st of stufen) {
+                const zv = (t) => v.push(`B2c: lod.budget.${k}[${st}]${t}`); // die Zeile beim Namen
                 const z = B[k] && B[k][st];
                 if (!z || typeof z !== "object") {
-                    v.push(`B2c: lod.budget.${k}[${st}] fehlt (jede deklarierte Stufe trägt eine Zeile)`);
+                    zv(` fehlt (jede deklarierte Stufe trägt eine Zeile)`);
                     vor = null;
                     continue;
                 }
-                if (!(Number.isInteger(z.tris) && z.tris > 0))
-                    v.push(`B2c: lod.budget.${k}[${st}].tris muss eine ganze Zahl > 0 sein`);
-                if (!(Number.isInteger(z.draws) && z.draws >= 1))
-                    v.push(`B2c: lod.budget.${k}[${st}].draws muss eine ganze Zahl ≥ 1 sein`);
+                if (!(Number.isInteger(z.tris) && z.tris > 0)) zv(`.tris muss eine ganze Zahl > 0 sein`);
+                if (!(Number.isInteger(z.draws) && z.draws >= 1)) zv(`.draws muss eine ganze Zahl ≥ 1 sein`);
                 if (!(z.schatten === false || (Number.isInteger(z.schatten) && stufen.indexOf(z.schatten) >= 0)))
-                    v.push(`B2c: lod.budget.${k}[${st}].schatten muss eine deklarierte Stufe oder false sein`);
+                    zv(`.schatten muss eine deklarierte Stufe oder false sein`);
                 // Der Zwilling wirft selbst (der Host zieht ihn als Schatten-Gestalt; ein Kreis 0→1→0 liefe endlos).
                 else if (
                     z.schatten !== false &&
                     z.schatten !== st &&
                     !(B[k][z.schatten] && B[k][z.schatten].schatten === z.schatten)
                 )
-                    v.push(
-                        `B2c: lod.budget.${k}[${st}].schatten — der Zwilling (Stufe ${z.schatten}) wirft nicht selbst`
-                    );
+                    zv(`.schatten — der Zwilling (Stufe ${z.schatten}) wirft nicht selbst`);
                 if ("karte" in z) {
-                    if (z.karte !== true) v.push(`B2c: lod.budget.${k}[${st}].karte ist nur als true erlaubt`);
+                    if (z.karte !== true) zv(`.karte ist nur als true erlaubt`);
                     else if (st !== stufen[stufen.length - 1] || z.schatten !== false)
-                        v.push(
-                            `B2c: lod.budget.${k}[${st}].karte — nur die letzte Stufe ist Karte, und sie wirft nicht`
-                        );
+                        zv(`.karte — nur die letzte Stufe ist Karte, und sie wirft nicht`);
                 }
                 // S3 haus — DIE NUR-WURF-STUFE (B2): nur `true`, nur an der Stufe 3, sie wirft selbst, nie Karte; eine Stufe 3
                 // ohne `nurWurf` wäre eine gezeigte Stufe jenseits der Grob-Stufe
                 if ("nurWurf" in z) {
-                    if (z.nurWurf !== true) v.push(`B2c: lod.budget.${k}[${st}].nurWurf ist nur als true erlaubt`);
-                    else if (st !== 3) v.push(`B2c: lod.budget.${k}[${st}].nurWurf — nur die Stufe 3 ist NUR-WURF`);
+                    if (z.nurWurf !== true) zv(`.nurWurf ist nur als true erlaubt`);
+                    else if (st !== 3) zv(`.nurWurf — nur die Stufe 3 ist NUR-WURF`);
                     else {
-                        if (z.schatten !== st)
-                            v.push(`B2c: lod.budget.${k}[${st}].nurWurf — die Stufe wirft selbst (schatten ${st})`);
-                        if ("karte" in z)
-                            v.push(`B2c: lod.budget.${k}[${st}].nurWurf mit karte — die Wurf-Stufe ist nie Karte`);
+                        if (z.schatten !== st) zv(`.nurWurf — die Stufe wirft selbst (schatten ${st})`);
+                        if ("karte" in z) zv(`.nurWurf mit karte — die Wurf-Stufe ist nie Karte`);
                     }
                 } else if (st === 3) v.push(`B2: lod.kindStages.${k} — die Stufe 3 trägt nurWurf (nie Anzeige)`);
                 if (
                     "blattKarte" in z &&
                     !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte))
                 )
-                    v.push(`B2c: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
+                    zv(`.blattKarte muss endlich > 0 sein`);
                 // S3: die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
                 // Stufe / der Nah-Stufe, in (0, 1)), geruest (Röhren ab geruest·trunkR, in (0, 1)), wedel (der Nadel-Ast als
                 // Strähne: ab in [0, 1), teile ganz >= 1, breite > 0, nadel > 0 m, rand >= 0 Nadel-Größen, winkel in (0°, 45°),
                 // holz in [0, 1) — Gegenprüfung R1: der Wedel kreuzt ±winkel aus der Lotrechten, seine Breite ist die Hülle der
                 // Nadel-Wolke, seine Farbe das Mittel aus Nadel und Holz).
                 if ("lagen" in z && !(typeof z.lagen === "number" && z.lagen > 0 && isFinite(z.lagen)))
-                    v.push(`B2c: lod.budget.${k}[${st}].lagen muss endlich > 0 sein`);
+                    zv(`.lagen muss endlich > 0 sein`);
                 if ("quote" in z && !(typeof z.quote === "number" && z.quote > 0 && z.quote < 1))
-                    v.push(`B2c: lod.budget.${k}[${st}].quote muss in (0, 1) liegen`);
+                    zv(`.quote muss in (0, 1) liegen`);
                 if ("geruest" in z && !(typeof z.geruest === "number" && z.geruest > 0 && z.geruest < 1))
-                    v.push(`B2c: lod.budget.${k}[${st}].geruest muss in (0, 1) liegen`);
+                    zv(`.geruest muss in (0, 1) liegen`);
                 if ("wedel" in z) {
                     const w = z.wedel;
                     if (
@@ -442,19 +478,19 @@ function validateManifest(m) {
                         !(w.spalte > 0 && isFinite(w.spalte)) ||
                         !(w.holz >= 0 && w.holz < 1)
                     )
-                        v.push(
-                            `B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45), spalte (> 0) und holz in [0, 1) tragen`
+                        zv(
+                            `.wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45), spalte (> 0) und holz in [0, 1) tragen`
                         );
                 }
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
                 if ("dichte" in z) {
                     const d = z.dichte;
                     if (!d || typeof d !== "object" || !Object.keys(d).length)
-                        v.push(`B2c: lod.budget.${k}[${st}].dichte muss ein Objekt je Kronen-Art sein`);
+                        zv(`.dichte muss ein Objekt je Kronen-Art sein`);
                     else
                         for (const art of Object.keys(d))
                             if (!(typeof d[art] === "number" && d[art] > 0 && d[art] <= 1))
-                                v.push(`B2c: lod.budget.${k}[${st}].dichte.${art} muss in (0, 1] liegen`);
+                                zv(`.dichte.${art} muss in (0, 1] liegen`);
                 }
                 // S7: die Regler der Nahkrone — rinde {ast, reisig} in trunkR (0 < reisig < ast < 1), straehne {teile
                 // ganz >= 1, breite > 0} in Blattlaengen (die Baum-Zeilen dazu holz in [0, 1): der Holz-Anteil an der Farbe der
@@ -462,7 +498,7 @@ function validateManifest(m) {
                 if ("rinde" in z) {
                     const r = z.rinde;
                     if (!r || !(r.reisig > 0 && r.reisig < r.ast && r.ast < 1))
-                        v.push(`B2c: lod.budget.${k}[${st}].rinde muss 0 < reisig < ast < 1 tragen`);
+                        zv(`.rinde muss 0 < reisig < ast < 1 tragen`);
                 }
                 if ("straehne" in z) {
                     const r = z.straehne;
@@ -472,12 +508,10 @@ function validateManifest(m) {
                         !(r.breite > 0 && isFinite(r.breite)) ||
                         (k === "tree" && !(r.holz >= 0 && r.holz < 1))
                     )
-                        v.push(
-                            `B2c: lod.budget.${k}[${st}].straehne muss teile (ganz >= 1), breite (> 0) und am Baum holz in [0, 1) tragen`
-                        );
+                        zv(`.straehne muss teile (ganz >= 1), breite (> 0) und am Baum holz in [0, 1) tragen`);
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
-                    v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
+                    zv(`.boden muss in [0, 1) liegen`);
                 // S3: die Rispe des Grases — Grannen (ganz >= 1) und Segmente je Rispe (ganz 1..3: die Stufe tastet
                 // die EINE Kurve der Granne in 3 Segmenten ab, sie verfeinert nie), die Breite der Granne in Einheiten der
                 // vollen (> 0); emitGrass liest sie je gelieferter Stufe.
@@ -491,9 +525,7 @@ function validateManifest(m) {
                         r.segmente > 3 ||
                         !(r.breite > 0 && isFinite(r.breite))
                     )
-                        v.push(
-                            `B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz, 1..3) und breite (> 0) tragen`
-                        );
+                        zv(`.rispe muss grannen, segmente (ganz, 1..3) und breite (> 0) tragen`);
                 }
                 // W6: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
                 // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
@@ -501,7 +533,7 @@ function validateManifest(m) {
                     "ringToleranz" in z &&
                     !(typeof z.ringToleranz === "number" && z.ringToleranz > 0 && z.ringToleranz < 0.01)
                 )
-                    v.push(`B2c: lod.budget.${k}[${st}].ringToleranz muss in (0, 0,01) Baumhoehen liegen`);
+                    zv(`.ringToleranz muss in (0, 0,01) Baumhoehen liegen`);
                 // W6: der Wurf-Teil — Straenge ab durchmesserM Welt-Durchmesser werfen (der Kaskaden-Texel k0);
                 // nur eine Stufe, die selbst wirft, kann einen Wurf-Teil nennen.
                 // S3 — das EINE Wurf-Gesetz in zwei Formen, dieselbe Regel (nur eine Stufe, die selbst wirft, nennt ihn):
@@ -519,50 +551,45 @@ function validateManifest(m) {
                             s.some((x) => SEH_KLASSEN.indexOf(x) < 0) ||
                             new Set(s).size !== s.length
                         )
-                            v.push(`B2c: lod.budget.${k}[${st}].wurf.seh muss eine Teilmenge der Seh-Klassen sein`);
+                            zv(`.wurf.seh muss eine Teilmenge der Seh-Klassen sein`);
                     } else if (
                         !w ||
                         !(typeof w.durchmesserM === "number" && w.durchmesserM > 0 && isFinite(w.durchmesserM))
                     )
-                        v.push(`B2c: lod.budget.${k}[${st}].wurf.durchmesserM muss endlich > 0 sein`);
+                        zv(`.wurf.durchmesserM muss endlich > 0 sein`);
                     if (w && z.schatten !== Number(st))
-                        v.push(
-                            `B2c: lod.budget.${k}[${st}].wurf — nur eine Stufe, die selbst wirft, nennt einen Wurf-Teil`
-                        );
-                    if (w && "teil" in w && w.teil !== "schatten")
-                        v.push(`B2c: lod.budget.${k}[${st}].wurf.teil muss "schatten" sein`);
+                        zv(`.wurf — nur eine Stufe, die selbst wirft, nennt einen Wurf-Teil`);
+                    if (w && "teil" in w && w.teil !== "schatten") zv(`.wurf.teil muss "schatten" sein`);
                     if (
                         w &&
                         "teil" in w &&
                         !(Number.isInteger(w.tris) && w.tris > 0 && w.lagen > 0 && isFinite(w.lagen))
                     )
-                        v.push(`B2c: lod.budget.${k}[${st}].wurf mit teil trägt tris (ganz > 0) und lagen (> 0)`);
+                        zv(`.wurf mit teil trägt tris (ganz > 0) und lagen (> 0)`);
                 }
                 // S3 (DARF): die Stufen-Grenze — ab `ab` m × Körpergröße trägt die Stufe das Bild (die Gelenk-Gestalt
                 // liest sie, `_gelenkStufe`): endlich > 0, nie an der ersten Stufe, streng steigend über die Stufen.
                 if ("ab" in z) {
-                    if (!(typeof z.ab === "number" && z.ab > 0 && isFinite(z.ab)))
-                        v.push(`B2c: lod.budget.${k}[${st}].ab muss endlich > 0 sein`);
-                    else if (st === stufen[0]) v.push(`B2c: lod.budget.${k}[${st}].ab — die erste Stufe beginnt bei 0`);
-                    else if (abVor !== null && !(z.ab > abVor))
-                        v.push(`B2c: lod.budget.${k}[${st}].ab steigt nicht streng (${abVor} → ${z.ab})`);
+                    if (!(typeof z.ab === "number" && z.ab > 0 && isFinite(z.ab))) zv(`.ab muss endlich > 0 sein`);
+                    else if (st === stufen[0]) zv(`.ab — die erste Stufe beginnt bei 0`);
+                    else if (abVor !== null && !(z.ab > abVor)) zv(`.ab steigt nicht streng (${abVor} → ${z.ab})`);
                     if (typeof z.ab === "number") abVor = z.ab;
                 }
                 // das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
                 if (("schnitt" in z || "rute" in z) && !(z.schnitt > 0 && z.rute > z.schnitt && z.rute < 1))
-                    v.push(`B2c: lod.budget.${k}[${st}] muss 0 < schnitt < rute < 1 tragen`);
+                    zv(` muss 0 < schnitt < rute < 1 tragen`);
                 // W8 — `band` = das Profi-Band-Ziel der Stufe, solange die gebaute Huelle (`tris`) darueber liegt:
                 // ganze Zahl > 0 und < tris (erreicht die Stufe das Band, faellt das Feld und tris IST das Band).
                 if (
                     "band" in z &&
                     !(Number.isInteger(z.band) && z.band > 0 && Number.isInteger(z.tris) && z.band < z.tris)
                 )
-                    v.push(`B2c: lod.budget.${k}[${st}].band muss eine ganze Zahl > 0 und < tris sein`);
+                    zv(`.band muss eine ganze Zahl > 0 und < tris sein`);
                 if ("deckung" in z) {
                     const d = z.deckung;
                     if (!Array.isArray(d) || d.length !== 2 || !(d[0] > 0 && d[0] <= 1 && d[1] >= 1 && isFinite(d[1])))
-                        v.push(`B2c: lod.budget.${k}[${st}].deckung muss ein Band [lo<=1<=hi] sein`);
+                        zv(`.deckung muss ein Band [lo<=1<=hi] sein`);
                 }
                 if (vor) {
                     if (!(z.tris < vor.z.tris))
@@ -646,32 +673,30 @@ function validateManifest(m) {
             const BB = L.budget || {};
             for (const id in pl.boden) {
                 const z = pl.boden[id] || {};
+                const bv = (t) => v.push(`B3b: placement.boden.${id}${t}`);
                 const pre = m.presets && m.presets[id];
                 if (!pre) {
-                    v.push(`B3b: placement.boden.${id} — kein Preset dieses Kerns`);
+                    bv(` — kein Preset dieses Kerns`);
                     continue;
                 }
                 const st = ksB[pre.kind];
-                if (!Array.isArray(st) || !st.length)
-                    v.push(`B3b: placement.boden.${id} — kind ${pre.kind} ohne kindStages`);
+                if (!Array.isArray(st) || !st.length) bv(` — kind ${pre.kind} ohne kindStages`);
                 else
                     for (const sv of st)
-                        if (!(BB[pre.kind] && BB[pre.kind][sv]))
-                            v.push(`B3b: placement.boden.${id} — Budget ${pre.kind}[${sv}] fehlt`);
+                        if (!(BB[pre.kind] && BB[pre.kind][sv])) bv(` — Budget ${pre.kind}[${sv}] fehlt`);
                 if (!(BB.gestalten && Number.isInteger(BB.gestalten[id]) && BB.gestalten[id] >= 1))
-                    v.push(`B3b: placement.boden.${id} — keine eigene Gestalten-Zeile`);
-                if (z.ring !== "nah" && z.ring !== "wald") v.push(`B3b: placement.boden.${id}.ring muss nah|wald sein`);
-                if (!(typeof z.dichte === "number" && z.dichte > 0))
-                    v.push(`B3b: placement.boden.${id}.dichte muss Zahl > 0 sein`);
+                    bv(` — keine eigene Gestalten-Zeile`);
+                if (z.ring !== "nah" && z.ring !== "wald") bv(`.ring muss nah|wald sein`);
+                if (!(typeof z.dichte === "number" && z.dichte > 0)) bv(`.dichte muss Zahl > 0 sein`);
                 if (z.weite !== undefined && !(typeof z.weite === "number" && z.weite > 0))
-                    v.push(`B3b: placement.boden.${id}.weite muss Zahl > 0 sein`);
+                    bv(`.weite muss Zahl > 0 sein`);
                 if (!Array.isArray(z.skala) || z.skala.length !== 2 || !(z.skala[0] > 0 && z.skala[0] <= z.skala[1]))
-                    v.push(`B3b: placement.boden.${id}.skala muss [min ≤ max] > 0 sein`);
+                    bv(`.skala muss [min ≤ max] > 0 sein`);
                 for (const band of ["licht", "feucht", "ufer", "fels"]) {
                     const t = z[band];
                     if (t === undefined) continue;
                     if (!Array.isArray(t) || t.length !== 4 || !(t[0] <= t[1] && t[1] <= t[2] && t[2] <= t[3]))
-                        v.push(`B3b: placement.boden.${id}.${band} muss ein Trapez [a ≤ b ≤ c ≤ d] sein`);
+                        bv(`.${band} muss ein Trapez [a ≤ b ≤ c ≤ d] sein`);
                 }
             }
         }
@@ -695,6 +720,12 @@ function validateManifest(m) {
                         v.push(`B4: PARAMS_BY_KIND.${kind}-Eintrag ohne id/lab`);
                     else if (!(typeof p.min === "number" && typeof p.max === "number" && p.min < p.max))
                         v.push(`B4: PARAMS_BY_KIND.${kind} "${p.id}" min/max ungültig`);
+                    else if (p.uniform !== undefined && p.uniform !== true)
+                        v.push(`B4: PARAMS_BY_KIND.${kind} "${p.id}" uniform ist nur true`);
+                    else if (p.uniform && !REGLER_OHNE_BYTE.has(`${kern}:${kind}:${p.id}`))
+                        v.push(
+                            `B4: PARAMS_BY_KIND.${kind} "${p.id}" uniform ohne Byte-Beweis (${kern}:${kind}:${p.id} fehlt in reglerTot — die Zeile baut neu)`
+                        );
                 }
             }
     }
@@ -948,7 +979,9 @@ function validateManifest(m) {
             continue;
         }
         const funktionsKern = m.funktion || entry.funktion === true;
-        const viol = funktionsKern ? validateFunktionsKern(m, entry, gesetzKernErklaert(doc)) : validateManifest(m);
+        const viol = funktionsKern
+            ? validateFunktionsKern(m, entry, gesetzKernErklaert(doc))
+            : validateManifest(m, entry.id);
         const lodM = m.cfg && m.cfg.lod;
         if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
         else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
@@ -970,7 +1003,6 @@ function validateManifest(m) {
                 n >= 1 && (typeof m.build === "function" || m.meshfrei === true)
             );
     }
-
 
     // W8 — JEDER Kern mit Gestalt trägt sein Budget (B2c), jeder Zweit-Kern seine Gestalten je Rezept: die
     // Studio-Übertragung ist kein offener Rest mehr. Klang trägt keine Gestalt (keine kindStages) und kein Budget.
@@ -1088,7 +1120,9 @@ function validateManifest(m) {
     }
     // EIN WERT, EINE STELLE (K2) — die Linse (`einWertTaeter`) über dem Code-Baum des Stamms; Kommentare zitieren straflos.
     (function einWertEineStelle() {
-        const dateien = stammLib.dateien(root).map((d) => ({ name: d, src: fs.readFileSync(path.join(root, d), "utf8") }));
+        const dateien = stammLib
+            .dateien(root)
+            .map((d) => ({ name: d, src: fs.readFileSync(path.join(root, d), "utf8") }));
         const taeter = einWertTaeter(dateien, KERNE);
         check(
             "EIN WERT, EINE STELLE: kein Ersatz-Literal auf eine Konstante, kein Gesetz-Ersatz, kein stiller catch im Gesetz-Leser, kein Zahlen-Zwilling eines Kerns",
@@ -1099,7 +1133,9 @@ function validateManifest(m) {
             "AnazhRealm.EINS = 1; AnazhRealm.T = { x: 2 }; AnazhRealm.W = { cell: 12, pack: 1.16 }; AnazhRealm.Gesetz = function (p) { try { return p; } catch (_e) {} };\n" +
             "Object.defineProperty(AnazhRealm, 'DP', { get() { const k = globalThis.__koerperCore || null; return (k && k.DIAL_MAP) || []; } });\n" +
             "class Z { f() { const D = AnazhRealm.T; return [AnazhRealm.EINS || 3, Number.isFinite(D.x) ? D.x : 4, (AnazhRealm.T || {}).x, AnazhRealm.Gesetz('t:X', 7), globalThis.HIMMEL_GESETZ || { projY: 0.16 }, this.u || AnazhRealm.DP || '']; } }";
-        const arten = einWertTaeter([{ name: "probe.js", src: probe }], KERNE).map((t) => t.split(" ").slice(1, 3).join(" "));
+        const arten = einWertTaeter([{ name: "probe.js", src: probe }], KERNE).map((t) =>
+            t.split(" ").slice(1, 3).join(" ")
+        );
         check(
             "SELBST-TEST: neun Formen (||, Kette, Getter-Konstante, isFinite, (K || {}), Gesetz-Ersatz, stiller catch, globalThis, Zahlen-Zwilling) feuern beim Namen",
             "ersatz AnazhRealm.EINS|ersatz AnazhRealm.DP|ersatz __koerperCore.DIAL_MAP|ersatz AnazhRealm.T|ersatz AnazhRealm.T.x|ersatz HIMMEL_GESETZ|gesetz-ersatz Gesetz|stiller-catch AnazhRealm.Gesetz|zwilling __phytoCore.FOREST_PACK"
@@ -1176,6 +1212,29 @@ function validateManifest(m) {
         lehren: null,
     };
     const bv = validateManifest(broken);
+    // B4 uniform — eine Zeile, die Bytes bewegt (porta:gate:k ist nicht in reglerTot), als Gesetz-Wert erklärt, und ein falscher Wert.
+    const bvU = validateManifest(
+        {
+            vertrag: 1,
+            presets: { a: { kind: "gate" } },
+            build: function () {},
+            paramsByKind: {
+                gate: [
+                    { id: "k", lab: "Spitze", min: 1, max: 3.4, uniform: true },
+                    { id: "wave", lab: "Welle", min: 0, max: 1, uniform: 1 },
+                    { id: "swirl", lab: "Sog", min: 0, max: 1, uniform: true },
+                ],
+            },
+        },
+        "porta"
+    );
+    check(
+        "SELBST-TEST B4 uniform: der Neubau als Gesetz-Wert und uniform ≠ true werden erkannt, die Ratschen-Zeile nicht",
+        bvU.some((s) => s.includes('"k" uniform ohne Byte-Beweis')) &&
+            bvU.some((s) => s.includes('"wave" uniform ist nur true')) &&
+            !bvU.some((s) => s.includes('"swirl"')),
+        bvU.join(" | ")
+    );
     // B2c — ein zweites Budget: Regler-Form (nadelKarte) und steigende draws.
     const bvB = validateManifest({
         vertrag: 1,
@@ -1415,8 +1474,15 @@ function validateManifest(m) {
         // (K42: __replyBuildAsset lebt in der Brücke) und phyto-core im Selbsttest
         const absenz = (pgW, pcW) => {
             const v = [];
-            if (!stammLib.fehlt({ ausser: /if \(isZweitKern\) \{/ }, /budgetErzwingen\(/, { datei: "foundry-bruecke.js", wandel: pgW }))
-                v.push(`budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (${stammLib.fehlt.wo}) — die Pflanzen-Zeile ist der Bau-Regler`);
+            if (
+                !stammLib.fehlt({ ausser: /if \(isZweitKern\) \{/ }, /budgetErzwingen\(/, {
+                    datei: "foundry-bruecke.js",
+                    wandel: pgW,
+                })
+            )
+                v.push(
+                    `budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (${stammLib.fehlt.wo}) — die Pflanzen-Zeile ist der Bau-Regler`
+                );
             if (!stammLib.fehlt(null, /seh: Object\.freeze\(\[[^\]]*"laub"/, { datei: "phyto-core.js", wandel: pcW }))
                 v.push(`die Seh-Klasse laub lebt in BUDGET_GESETZ.seh (${stammLib.fehlt.wo})`);
             return v;
@@ -1450,8 +1516,15 @@ function validateManifest(m) {
                 },
             },
         });
-        const falten = absenz((t) => t.replace("const isZweitKern = !!zweit;", "const isZweitKern = !!zweit;\n            PC.budgetErzwingen(meshes, null);"));
-        const laub = absenz(undefined, (t) => t.replace('seh: Object.freeze(["stoff",', 'seh: Object.freeze(["laub", "stoff",'));
+        const falten = absenz((t) =>
+            t.replace(
+                "const isZweitKern = !!zweit;",
+                "const isZweitKern = !!zweit;\n            PC.budgetErzwingen(meshes, null);"
+            )
+        );
+        const laub = absenz(undefined, (t) =>
+            t.replace('seh: Object.freeze(["stoff",', 'seh: Object.freeze(["laub", "stoff",')
+        );
         check(
             "SELBST-TEST: die S3-Wand feuert (Baum-Zeile ohne lagen/geruest/blattKarte/wedel/quote/wurf.teil, mit nadelKarte und dichte.laub · Fels zweistufig · Pflanzen-Falten · Seh-Klasse laub)",
             [

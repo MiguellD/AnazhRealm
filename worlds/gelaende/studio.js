@@ -514,7 +514,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             },
             anwenden: entwurfAusWerten,
         });
-        st.sitz.leiste($(".sitzung"), { seed: false });
+        st.sitz.leiste($(".sitzung"), { seed: false, ab: false }); // A/B trägt die Reihe oben: A ist hier die gebaute WELT
         abR.appendChild(
             knopf("⚂ Saat", "eine neue Saat würfeln", () => {
                 const z = (k) =>
