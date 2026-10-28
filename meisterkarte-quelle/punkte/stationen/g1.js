@@ -1,6 +1,6 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3, stoffe K3;
+// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K3 K5, physik K1 K2, feld K2 K3, stoffe K3;
 // physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
@@ -748,6 +748,48 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose",
+    },
+
+    // ── wetter.K3 ── gate:wasser-leben P4 im Block koerper (Null-Renderer, Mess-Wiese): das Wort des Spielers „Sturm", 20 min
+    // Welt-Uhr im Takt des Regens (`_tickRain` je 5 s) — der Regen des Wetter-Felds ist ein Term im Abfluss neben der Schmelze
+    // (gelaende-core `abfluss`, `regenAbfluss`: ein linearer Speicher des Einzugsgebiets), die Pegel-Tafel folgt ihm je Stufe und
+    // reist in den Faden; gemessen der Spiegel des Kerns (`_waterLevelAt`) am Bach der Mess-Wiese über dem trockenen, das Regen-
+    // Feld gehalten (der Sturm regnet nicht) hebt er nichts. An main ea07267e ROT (keine Probe: der Abfluss trug nur die Schmelze);
+    // am Zweig pegel-regen df64100a +0,2 m (die Krone des Betts, `pegelTafel`), 26 Tafeln an den Faden, gehalten 0.
+    {
+        kriterium: "wetter.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            const p = (b && b.koerper && b.koerper.pegel) || {};
+            const rg = p.regen;
+            if (!rg) return { gruen: false, zahl: "keine Regen-Probe am Bach (koerper.pegel.regen fehlt, Exit " + lauf.exit + ")" };
+            return {
+                gruen: rg.hub >= 0.2 && rg.post > 0 && rg.fest <= 0.001 && !/P4 REGEN/.test(lauf.stdout),
+                zahl:
+                    "Bach +" + rg.hub + " m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), " + rg.post +
+                    " Tafeln an den Faden · Regen-Feld gehalten +" + rg.fest + " m · Exit " + lauf.exit,
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/wasser-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Pegel am Bach +≥ 0,2 m nach 20 min Sturm an einem Ort",
     },
 
     // ── wetter.K5 ── gate:kopplung F3: die Phase am Verhalten (quer gleich, längs verschieden, die Richtung dreht mit, Saat)

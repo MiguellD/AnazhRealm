@@ -1,0 +1,58 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-kampf-gefuehl.cjs --k1
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ diag-kampf-gefuehl.cjs · Seite #3 http://127.0.0.1:7754/index.html?holz=kienspan · evaluate(K1_BILD) riss nach 300.0 s: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+[stall-akte] offen evaluate(K1_BILD) seit 302.0 s
+[stall-akte] Puls 335×, zuletzt vor 0.2 s — complete · verborgen · renderer bereit · weltbild da · frames 952 · welt 3311 Takte · Ruhe 32 · zuletzt Fege-Takt deckWache 5888/5952 · programme 62 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #62 renderPipeline_MeshPhysicalNodeMaterial_130
+[stall-akte] Stempel 05:58:22.724 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 5726 fs 43141 Zeichen · 3 Lichter
+[stall-akte] Stempel 05:58:22.724 gpu.createRenderPipelineAsync #57 renderPipeline_MeshStandardNodeMaterial_124
+[stall-akte] Stempel 05:58:22.860 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 5842 fs 50997 Zeichen · 3 Lichter
+[stall-akte] Stempel 05:58:22.860 gpu.createRenderPipelineAsync #58 renderPipeline_MeshPhysicalNodeMaterial_125
+[stall-akte] Stempel 05:58:22.937 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 5726 fs 43237 Zeichen · 3 Lichter
+[stall-akte] Stempel 05:58:22.937 gpu.createRenderPipelineAsync #59 renderPipeline_MeshStandardNodeMaterial_131
+[stall-akte] Stempel 05:58:23.076 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 4776 fs 29157 Zeichen · 3 Lichter
+[stall-akte] Stempel 05:58:23.076 gpu.createRenderPipelineAsync #60 renderPipeline_MeshStandardNodeMaterial_126
+[stall-akte] Stempel 05:58:23.168 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 4776 fs 29157 Zeichen · 3 Lichter
+[stall-akte] Stempel 05:58:23.168 gpu.createRenderPipelineAsync #61 renderPipeline_MeshStandardNodeMaterial_127
+[stall-akte] Stempel 05:58:23.416 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 5322 fs 46227 Zeichen · 3 Lichter
+[stall-akte] Stempel 05:58:23.416 gpu.createRenderPipelineAsync #62 renderPipeline_MeshPhysicalNodeMaterial_130
+[stall-akte] CPU (2 s) GPU 17444 53 % · renderer 20724 37 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 02:35 gpu 49/r 35 · 02:37 gpu 53/r 38 · 02:39 gpu 53/r 39 · 02:41 gpu 53/r 38 · 02:43 gpu 53/r 38 · 02:45 gpu 53/r 39 · 02:47 gpu 53/r 38 · 02:49 gpu 50/r 36 · 02:51 gpu 51/r 36 · 02:53 gpu 50/r 35 · 02:55 gpu 50/r 36 · 02:57 gpu 50/r 36 · 02:59 gpu 53/r 38 · 03:01 gpu 51/r 37 · 03:03 gpu 52/r 38 · 03:05 gpu 53/r 38 · 03:07 gpu 54/r 38 · 03:09 gpu 53/r 38 · 03:11 gpu 54/r 38 · 03:13 gpu 52/r 36 · 03:15 gpu 53/r 37 · 03:17 gpu 53/r 38 · 03:19 gpu 53/r 37 · 03:21 gpu 53/r 37 · 03:23 gpu 54/r 37 · 03:25 gpu 53/r 36 · 03:27 gpu 53/r 36 · 03:29 gpu 49/r 35 · 03:31 gpu 49/r 35 · 03:33 gpu 50/r 34
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] AUSGABE: rg11b10ufloat, das Gerät rundet gegen null — Ausgleich 1.0056/1.0056/1.0113
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] KAMIN-RAUCH: 1 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [ERROR] BEWOHNER: das Wege-Netz von „Steintal" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Stern-Feld erstellt — 2803 InstancedMesh-Billboards (V10.0-i.a, WGSL-konformer Soft-Falloff)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [WARN] FPS-Einbruch: 3 (zuvor ~5)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.114] [INFO] Flugschreiber LECK-VERDACHT — LECK: Heap +8.29 MB/s über 22s — der größte Wächst: architectures 93→432 (+339 über 22s).
+[stall-akte] Stderr [6932:6660:1028/065934.364:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [6932:6660:1028/065934.405:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [6932:6660:1028/065934.407:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [6932:6660:1028/065956.176:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [6932:6660:1028/070054.638:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [6932:6660:1028/070226.397:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.2 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 05:58:23.416 gpu.createRenderPipelineAsync #62 renderPipeline_MeshPhysicalNodeMaterial_130
+
+===== gate:kampf-gefuehl =====
+
+FEHLER: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+
+  ── WELLE L ──
+
+FEHLER: die Welle-L-Proben liefen nicht
+
+  ❌ ROT — gate:kampf-gefuehl
+
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  8901 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

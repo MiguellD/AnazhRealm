@@ -1,0 +1,209 @@
+{
+ "haeuser": [
+  {
+   "typ": "haus_italienisch",
+   "gierGrad": 231,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0,
+    "fehlt": [],
+    "keller": false,
+    "dach": false,
+    "x": 0.25000000000000006,
+    "z": -0.19999999999999996,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  },
+  {
+   "typ": "haus_italienisch",
+   "gierGrad": 141,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0.182373046875,
+    "fehlt": [],
+    "keller": false,
+    "dach": false,
+    "wo": "lauf 1: Fuß 2.01 → 2.19 m",
+    "x": 0.49104,
+    "z": -3.100000000000001,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.37,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  },
+  {
+   "typ": "haus_italienisch",
+   "gierGrad": -39,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0.19677734375,
+    "fehlt": [],
+    "keller": true,
+    "dach": false,
+    "wo": "keller-kopf: Fuß -1.22 → -1.02 m",
+    "x": -0.20210999999999996,
+    "z": 1.3399999999999999,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  },
+  {
+   "typ": "haus_italienisch",
+   "gierGrad": -39,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0,
+    "fehlt": [],
+    "keller": false,
+    "dach": false,
+    "x": 0.25000000000000006,
+    "z": -0.7,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  },
+  {
+   "typ": "haus_provenzalisch",
+   "gierGrad": 141,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0.19677734375,
+    "fehlt": [],
+    "keller": true,
+    "dach": true,
+    "x": -0.37389,
+    "z": -0.5099999999999998,
+    "wo": "keller-auf: Fuß -2.20 → -2.01 m",
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  },
+  {
+   "typ": "haus_provenzalisch",
+   "gierGrad": 141,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0,
+    "fehlt": [],
+    "keller": false,
+    "dach": false,
+    "x": 0.25000000000000006,
+    "z": -0.19999999999999996,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  },
+  {
+   "typ": "haus_italienisch",
+   "gierGrad": -39,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0.19677734375,
+    "fehlt": [],
+    "keller": true,
+    "dach": false,
+    "wo": "keller-kopf: Fuß -1.22 → -1.02 m",
+    "x": -0.23696999999999996,
+    "z": 1.3399999999999999,
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.37,
+   "grundrissUeberM": 0,
+   "optikProzent": 99.8
+  },
+  {
+   "typ": "haus_provenzalisch",
+   "gierGrad": 141,
+   "start": false,
+   "stufe": 0,
+   "huelle": 0,
+   "saat": true,
+   "tiere": [],
+   "gang": {
+    "hub": 0.19677734375,
+    "fehlt": [],
+    "keller": true,
+    "dach": false,
+    "x": 0.5693699999999999,
+    "z": -1.520000000000001,
+    "wo": "keller-auf: Fuß -2.20 → -2.01 m",
+    "wand": 0.78
+   },
+   "dieleCm": 0,
+   "vorplatzUeberM": -0.36,
+   "grundrissUeberM": 0,
+   "optikProzent": 100
+  }
+ ],
+ "phasen": [
+  "haus"
+ ],
+ "dorfOrt": {
+  "x": -129,
+  "z": -94,
+  "hang": 0.598
+ },
+ "startOrt": {
+  "x": 0,
+  "z": 0
+ },
+ "gesamt": 24,
+ "w7": {
+  "haeuser": 24,
+  "imBau": 0,
+  "taeter": [],
+  "zweitesDorf": 30,
+  "zweitesImBau": 0
+ },
+ "fernOrt": {
+  "x": 212,
+  "z": 212
+ }
+}

@@ -1,0 +1,9 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-kreatur-takt.cjs --proben rudel
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ rudel     {"woelfe":6,"ohnePirsch":[0,0],"pirschS":0,"umstelltS":17.4,"lueckeBeimBiss":125}
+
+  (14 s) — Sekunden je Probe: rudel: 1
+
+✅ GRÜN — rudel
