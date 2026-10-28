@@ -167,3 +167,4 @@ z61b-abab2 2 abab A=e18195be8b143f9d333de6ea8a8b43dea93dd198 B=d882a080f29148c7f
 z58c-z60-abab 0 storno
 z61b-abab2 0 storno
 takt17n-gtx 1 punkte sha=e18195be8b143f9d333de6ea8a8b43dea93dd198 geraet=gtx nur=fahrzeug.K3#2,fahrzeug.K4#2,ferne.K2#2,gelaende.K5#2,klang.K4#2,klang.K5#2,luftwasser.K5#1,luftwasser.K5#2,material.K1#1,material.K1#2,mensch.K2#2,siedlung.K2#2,siedlung.K5#2,speicher.K1#2,tiere.K1#2,tiere.K2#2,tiere.K3#2,tore.K3#2
+z58c-z61-abab 2 abab A=ea07267e8a2953458963e1811a2df6741ed7aa48 B=d882a080f29148c7ff5a887df9674bbb9811c5ac zellen=w-ego,d-ego,stadt
