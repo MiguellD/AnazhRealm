@@ -659,8 +659,7 @@ const { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LABOR } = require("./lib/kampf-
 const NUR_K5 = process.argv.includes("--k5");
 // (Q15) `--k1` fährt nur den Treffer im Bild je Mutation und das Labor — mit dem echten Renderer (die Station halten.K1 am Gerät)
 const NUR_K1 = process.argv.includes("--k1");
-// das Bild der Linse im Maß der Werkbank (headless 640 × 360): auf swiftshader glitt die Ankunft bei 800 × 600 in 300 s 53 von
-// 90 Bildern, die Welt stand nie
+// das Bild der Linse (Rezept linse, 800 × 600: die Mitte frei von der Oberfläche — bei 640 × 360 deckte die Konsole den Treffer)
 const BILD = NUR_K5 || NUR_K1;
 
 // (Q15) halten.K1 Staffel 2, je Soll beim Namen: im Takt des Spiels trifft das Langschwert in jedem Lauf (vor · masse · schneide),
@@ -735,11 +734,7 @@ async function k1Ende(browser, K) {
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({
-        art: BILD ? "linse" : "null",
-        frist: 300000,
-        viewport: BILD ? { width: 640, height: 360 } : undefined,
-    });
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     if (!BILD) await nullRenderer(page); // GPU-frei, Produktions-Boot
