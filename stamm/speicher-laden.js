@@ -1067,6 +1067,7 @@ class AnazhRealm_speicher_laden {
         this.state = neu;
         for (const k of Object.keys(this)) if (!bleibtFeld(k)) delete this[k];
         for (const k of G.gedaechtnis) this[k] = null;
+        if (this._takt) this._gameLoopTick = this._takt; // was eine Linse am Takt hängte, fällt mit der Welt
     }
 
     // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht

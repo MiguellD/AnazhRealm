@@ -2140,8 +2140,10 @@ hauptLauf(async () => {
             const stationen = JSON.parse(
                 liesText(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"))
             ).stationen;
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechsel`: Zeiger,
-            // Sperre, Tausch am Ort) — ein Speichern der alten Welt im Wechsel setzte den Zeiger sonst zurück
+            // Geboren wie im Spiel aus einer frischen Standard-Welt (der Selbsttest verfälschte den Kern des Fadens, und der Faden
+            // bleibt der Seite): importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechsel`: Zeiger, Sperre,
+            // Tausch am Ort) — ein Speichern der alten Welt im Wechsel setzte den Zeiger sonst zurück
+            await frischBoot(page, url);
             const id = await page.evaluate((json) => {
                 const r = window.anazhRealm;
                 const res = r.importWorldBeside(json);

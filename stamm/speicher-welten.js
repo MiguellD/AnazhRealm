@@ -2744,7 +2744,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_hydroWelt",
         "_stauHoert",
         "_fernMemoGen",
-        "_gameLoopTick",
+        "_takt",
         "_gpuLeine",
         "_ltObs",
         "_ltAcc",
