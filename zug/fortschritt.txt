@@ -599,3 +599,4 @@
 2026-10-28 08:35:35 takt15b-gtx profiband.K4#1 ROT 14.4 · 10/24
 2026-10-28 08:56:00 takt15b-gtx profiband.K4#2 ROT 20.3 · 11/24
 2026-10-28 09:01:20 takt15b-gtx siedlung.K1#2 ROT 5.2 · 12/24
+2026-10-28 09:12:48 takt15b-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 11.4 · 14/24
