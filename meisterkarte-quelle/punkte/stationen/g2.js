@@ -1827,6 +1827,69 @@ const stationen = [
         quelle: "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
     },
 
+    // ───────── tiere.K5 Staffel 1 — Begegnung im Bild (Zweig tier-sicht, `werkbank lauf --wandern kreis`) ─────────
+    // EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
+    // Bestand des Spiels (`--tiere frei`, das Bestands-Gesetz; keine Tiere der Bühne). Je Sicht (Ego, Third) `umstellen --ort
+    // wiese` und `lauf 600 --ein 20 --wandern kreis`: der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
+    // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (zwei Schüsse mit und ohne
+    // Tiere unter der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in
+    // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
+    // Mutante „Bestand 0" (keine Geburt, kein Tier) ist ROT mit 0 Sichtungen. Genesis fehlt der Station: der Ring der Tore
+    // liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
+    // Ports: save-server {PORT}, Werkbank {PORT}+20000.
+    {
+        kriterium: "tiere.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+                "trap ende EXIT; trap 'exit 143' INT TERM",
+                "raeum; stand",
+                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S --ort wiese > \"$B-werkbank.log\" 2>&1 &)",
+                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "grep -E '^\\[linse-gpu\\] ' \"$B-werkbank.log\"",
+                "node scripts/werkbank.cjs fenster 1280 720 > /dev/null 2>&1",
+                "for SICHT in ego third; do node scripts/werkbank.cjs umstellen --ort wiese --sicht $SICHT > \"$B-umstellen-$SICHT.txt\" 2>&1; node scripts/werkbank.cjs lauf 600 --ein 20 --tiere frei --wandern kreis > \"$B-kreis-$SICHT.txt\" 2>&1; echo \"KREIS-$SICHT EXIT=$? $(grep -E '^KREIS ' \"$B-kreis-$SICHT.txt\" | cut -c7-)\"; done",
+            ].join("\n"),
+        ],
+        gpu: true,
+        zeit: false,
+        minuten: 30,
+        urteil: (j, lauf) => {
+            const K = ["ego", "third"].map((s) => [s, jsonZeile(lauf.stdout, new RegExp("^KREIS-" + s + " "))]);
+            const fehlt = K.filter(([, k]) => !k || !Array.isArray(k.gesehen));
+            if (fehlt.length) return { gruen: false, zahl: "keine KREIS-Zeile in " + fehlt.map(([s]) => s).join(", ") + " (Exit " + lauf.exit + ")" };
+            const gut = (s, k) => k.gesehen.length >= 3 && k.imBlick === 0 && k.spielS >= 600 && k.sicht === { ego: "first", third: "third" }[s];
+            return {
+                gruen: K.every(([s, k]) => gut(s, k)),
+                zahl: K.map(([s, k]) => s + " (" + k.sicht + ") " + k.gesehen.length + " Sichtungen in " + k.spielS + " Spiel-s (" + k.gesehen.map((g) => g.join(" ")).join(" · ") +
+                    "), " + k.schuesse + " Schuss-Paare, Bestand bis " + k.max + ", im Blick erschienen " + k.imBlick).join(" | "),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/bild-*.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/dirigent-takt.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät",
+    },
+
     // ───────── affekt.K1 — die Wertung antwortet am Ort (affekt-k1-ort) ─────────
     {
         kriterium: "affekt.K1",
