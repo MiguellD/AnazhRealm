@@ -2463,7 +2463,7 @@ class AnazhRealm_koerper_bewegung {
             pwv: [0, 0, 0],
             R: new Float64Array(9),
             Iw: new Float64Array(9),
-            boxen: [],
+            bauten: [],
             nachbarn: [],
             boden: 0,
             welt: false,
@@ -2605,11 +2605,11 @@ class AnazhRealm_koerper_bewegung {
         }
         const nah = this._blockerNahe(p[0], p[2], K.rad + weg, -Infinity, this._freiNah || (this._freiNah = []));
         const reitet = this.state.player && this.state.player.mountedArch;
-        K.boxen.length = 0;
+        K.bauten.length = 0;
         for (const e of nah)
             if (!e._frei && !(reitet != null && e.id === reitet))
                 for (const b of e.blockerAABBs || [])
-                    if (b.topY > p[1] - K.rad - weg && b.botY < p[1] + K.rad + weg) K.boxen.push(b, e);
+                    if (b.topY > p[1] - K.rad - weg && b.botY < p[1] + K.rad + weg) K.bauten.push(b, e);
         nah.length = 0;
         const st = this._stoff(
             this._kontaktStoffAt(p[0], p[2], K.boden),
@@ -2738,9 +2738,9 @@ class AnazhRealm_koerper_bewegung {
                     }
                 n = this._freiVier(C, n0, n);
                 // die Boxen der Bauten
-                for (let b = 0; b < K.boxen.length; b += 2) {
-                    const box = K.boxen[b];
-                    const bs = this._stoff(box.stoff || this._werkStoff(K.boxen[b + 1]), "die Box reibt nicht");
+                for (let b = 0; b < K.bauten.length; b += 2) {
+                    const box = K.bauten[b];
+                    const bs = this._stoff(box.stoff || this._werkStoff(K.bauten[b + 1]), "die Box reibt nicht");
                     const muK = Math.sqrt((bs && bs.mu > 0 ? bs.mu : 0) * K.mu);
                     n0 = n;
                     for (let i = 0; i < pw.length; i += 3)
@@ -3342,8 +3342,8 @@ AnazhRealm.STOSS = Object.freeze({
 // Kiste über der Seite der unteren); die erlaubte Durchdringung slop und der Anteil beta, mit dem der Lage-Impuls den Rest je
 // Teil-Schritt heraushebt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig unter ruheMs (jeder Punkt),
 // nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach stempelM Weg. Gemessen am Stapel
-// aus 5 Kisten (Node, flacher Boden, 30 Saaten Gier und Versatz): 10 cm Spalt ruhen nach ≤ 1,07 s, 30 cm nach 1,35 s im
-// Median; wach (ohne Schlaf) zittert der Stapel 0,001 cm.
+// aus 5 Kisten (Node, flacher Boden, 30 Saaten Gier und Versatz): 10 cm Spalt stehen 30 von 30 und ruhen nach ≤ 1,07 s, 30 cm Spalt
+// stehen 29 von 30, Median 1,35 s (ein 2,4 m hoher Turm schaukelt danach bis 4 s aus); wach (ohne Schlaf) zittert er 0,001 cm.
 AnazhRealm.FREI = Object.freeze({
     teile: 4,
     gaenge: 8,

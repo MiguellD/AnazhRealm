@@ -1487,6 +1487,7 @@ async function probeLeben(expected) {
                     if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
                 }
                 m.gasseTiere = Math.max(m.gasseTiere, n);
+                if (h.je) h.je(ziel);
                 vPrev = v;
                 m.schritte++;
             }, () => {
@@ -1551,6 +1552,46 @@ async function probeLeben(expected) {
                 r.removeCreature(c);
             },
         });
+        // K3 (physik.K3) DER FREIE KÖRPER (`_freiSchritt`), gemessen am Zustand des Lösers: (1) 5 Kisten fallen gestapelt in der
+        // Gasse (10 cm Spalt, Gier und Versatz fest): bis alle schlafen, ihr Weg 3 s danach; wach (ohne Schlaf) ihr Weg von 2 bis
+        // 4 s; die untere am Boden, jede auf der darunter (Höhen-Abstand der Schwerpunkte weniger beider halber Höhe). (2) das Fass
+        // ist ein Hindernis der Stoß-Probe: der größte Winkel seiner Achse zur Lotrechten. Mutanten: Schwere 0, ohne Stoß.
+        if (gasse) {
+            const stapel = (wach) => {
+                const [x, zz] = [gasse.x + gasse.ux * 12, gasse.z + gasse.uz * 12];
+                const K = [0, 1, 2, 3, 4].map((k) => r.spawnArchitecture("kiste", { x: x + 0.03 * Math.sin(k), y: hh(x, zz) + 0.6 + 0.7 * k, z: zz }, { silent: true, precise: true, rotationY: k * 1.3 })._frei);
+                const lage = () => K.map((k) => k.p.slice());
+                const o = { m: K[0].m, ruheS: null, zittern: 0 };
+                let [a, t0] = [null, tMs];
+                bilder(wach ? 120 : 240, () => (o.ruheS === null && K.every((k) => k.schlaf) && ([o.ruheS, a] = [(tMs - t0) / 1000, lage()]), true));
+                bilder(a || wach ? 180 : 0, () => (a = a || lage(), (o.zittern = Math.max(o.zittern, ...K.map((k, j) => Math.hypot(...k.p.map((v, d) => v - a[j][d]))))), true));
+                o.boden = K[0].p[1] - K[0].hy - r._koerperBodenUnter(K[0].p[0], K[0].p[1], K[0].p[2]);
+                o.fugen = K.slice(1).map((k, j) => k.p[1] - K[j].p[1] - k.hy - K[j].hy);
+                for (const k of K) r.removeArchitecture(k.e, { still: true });
+                return o;
+            };
+            const [FREI, schwere] = [A.FREI, st.gravity];
+            S.frei = { kisten: stapel(false) };
+            A.FREI = Object.freeze({ ...FREI, ruheS: Infinity });
+            S.frei.wachZittern = stapel(true).zittern;
+            [A.FREI, st.gravity] = [FREI, 0];
+            S.frei.schwerelos = stapel(false);
+            st.gravity = schwere;
+            const fass = async () => {
+                let kipp = 0;
+                const m = await stossProbe({
+                    setzen: (x, zz) => r.spawnArchitecture("fass", { x, y: hh(x, zz) + 0.5, z: zz }, { silent: true, precise: true }),
+                    lage: (e) => ({ x: e.position.x, z: e.position.z }),
+                    weg: (e) => r.removeArchitecture(e),
+                    je: (e) => (kipp = Math.max(kipp, (Math.acos(Math.min(1, e._frei.R[4])) * 180) / Math.PI)),
+                });
+                return m && { kipp, vVor: m.vVor, vNach: m.vNach, weg: m.zielWeg };
+            };
+            S.frei.fass = await fass();
+            r._freiStoss = () => {}; // die Mutante: der Wagen stößt den freien Körper nicht
+            S.frei.fassOhneStoss = await fass();
+            delete r._freiStoss;
+        }
         // L6 SPIELER UND WAGEN: (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
         // die Fahrt in den Wagen (er prallt ab, statt in die Box zu drücken), die Handbremse hält den Wagen (sie nimmt den
         // Stoß eines Menschen auf), der Spieler steckt nicht in ihm; (b) ein GT, angestoßen mit 5 m/s, rutscht auf den
@@ -2415,96 +2456,4 @@ async function probeKoerper(opt) {
     return res;
 }
 
-// physik.K3 (`--frei`): DER FREIE KÖRPER in der Welt — der Löser (`_freiSchritt`) im echten Spiel-Takt (`_gameLoopTick`, 60 fps),
-// Boden und Bauten des Gesetzes, die Stoff-Tafel; gemessen am Zustand des Lösers. (1) 5 Kisten fallen gestapelt (10 cm Spalt, Gier
-// und Versatz fest): die Zeit, bis alle schlafen, ihr Weg 3 s danach; wach (ohne Schlaf) ihr Weg von 2 bis 4 s; die untere am
-// Boden, jede auf der darunter (die Fuge: der Höhen-Abstand der Schwerpunkte weniger beider halber Höhe; 2° Neigung kosten 0,4 mm).
-// (2) der GT fährt mit 6 m/s und Gas auf ein Fass, bis es sich regt: der größte Winkel seiner Achse zur Lotrechten, das
-// Tempo beider beim Stoß. Mutanten: Schwere 0 (die Kisten ruhen nicht am Boden), der Stoß am freien Körper aus (das Fass steht).
-async function probeFrei(opt) {
-    await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
-    const A = Object.getPrototypeOf(r).constructor;
-    const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
-    const res = { err: null };
-    let tMs = performance.now();
-    const bilder = (n, je = () => {}) => {
-        for (let i = 0; i < n; i++) je(i, r._gameLoopTick((tMs += 1000 / 60)));
-    };
-    const [schwere, FREI] = [st.gravity, A.FREI];
-    try {
-        r._setWeather("sunny", "human");
-        st.weatherTransition = null;
-        r.setTimeOfDay(0.5, "human");
-        const S = (res.start = window.__strecke(opt.messort, 16, 0.16, 0.05, true));
-        const hh = (dx) => r.getTerrainHeightAt(S.x + dx, S.z);
-        st.playerMesh.position.set(S.x - 4, hh(-4) + 1.2, S.z);
-        await window.__weltStehtNach(() => bilder(1));
-        // die Bahn frei: was dort mit einer Hülle steht (Natur), fällt; nur die Werke der Probe stehen
-        const eigen = new Set();
-        const setze = (typ, dx, y, gier) => {
-            for (const e of st.architectures.slice())
-                if (!eigen.has(e) && e.blockerAABBs && Math.abs(e.position.z - S.z) < 6 && Math.abs(e.position.x - S.x - 16) < 24)
-                    r.removeArchitecture(e, { still: true });
-            const e = r.spawnArchitecture(typ, { x: S.x + dx + 0.03 * Math.sin(gier), y, z: S.z + 0.03 * Math.cos(gier) }, { silent: true, precise: true, rotationY: gier });
-            eigen.add(e);
-            return e;
-        };
-        const stapel = (wach) => {
-            const K = [0, 1, 2, 3, 4].map((k) => setze("kiste", 20, hh(20) + 0.5 + 0.1 * (k + 1) + 0.6 * k, k * 1.3)._frei);
-            const lage = () => K.map((k) => k.p.slice());
-            const zittern = (a) => Math.max(...K.map((k, i) => Math.hypot(k.p[0] - a[i][0], k.p[1] - a[i][1], k.p[2] - a[i][2])));
-            const o = { m: K[0].m, ruheS: null, zittern: 0 };
-            let a = null;
-            bilder(wach ? 120 : 240, (i) => o.ruheS === null && K.every((k) => k.schlaf) && ([o.ruheS, a] = [(i + 1) / 60, lage()]));
-            if (wach) a = lage();
-            if (a) bilder(wach ? 120 : 180, () => (o.zittern = Math.max(o.zittern, zittern(a))));
-            o.boden = K[0].p[1] - K[0].hy - r._koerperBodenUnter(K[0].p[0], K[0].p[1], K[0].p[2]);
-            o.fugen = K.slice(1).map((k, i) => k.p[1] - K[i].p[1] - k.hy - K[i].hy);
-            for (const k of K) r.removeArchitecture(k.e, { still: true });
-            return o;
-        };
-        const fass = async () => {
-            const fz = setze("fass", 10, hh(10) + 0.5, 0)._frei;
-            const w = setze("fahrzeug_gt", 0, hh(0) + 0.5, 0);
-            await window.__gebautNach(w);
-            if (!(r.mountArchitecture(w) || {}).ok) throw new Error("kein Ritt");
-            bilder(12);
-            w._fahr.vlong = 6;
-            st.playerVel.setValue(6, st.playerVel.y(), 0);
-            st.keys.w = true;
-            const o = { m: fz.m, kipp: 0, vFass: 0, vWagen: null };
-            bilder(240, () => {
-                const vf = Math.hypot(fz.v[0], fz.v[2]);
-                if (o.vWagen === null && vf > 0.05) [o.vWagen, st.keys.w, o.bis] = [Math.abs(w._fahr.vlong), false, 12];
-                if (o.bis > 0 && o.bis--) o.vFass = Math.max(o.vFass, vf);
-                o.kipp = Math.max(o.kipp, (Math.acos(Math.max(-1, Math.min(1, fz.R[4]))) * 180) / Math.PI);
-            });
-            st.keys.w = false;
-            r.dismountArchitecture();
-            r.removeArchitecture(w, { still: true });
-            r.removeArchitecture(fz.e, { still: true });
-            return o;
-        };
-        res.kisten = stapel(false);
-        A.FREI = Object.freeze({ ...FREI, ruheS: Infinity }); // wach: der Löser ohne Schlaf
-        res.wachZittern = stapel(true).zittern;
-        A.FREI = FREI;
-        st.gravity = 0;
-        res.schwerelos = stapel(false);
-        st.gravity = schwere;
-        res.fass = await fass();
-        r._freiStoss = () => {}; // die Mutante: der Wagen stößt den freien Körper nicht
-        res.fassOhneStoss = await fass();
-    } catch (e) {
-        res.err = String((e && e.stack) || e);
-    } finally {
-        [st.gravity, A.FREI] = [schwere, FREI];
-        delete r._freiStoss;
-    }
-    return res;
-}
-
-module.exports = { probeLeben, probeKoerper, probeFrei, tempoVerdict, tempoSpion, kernTempo, ruckJeBild };
+module.exports = { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo, ruckJeBild };

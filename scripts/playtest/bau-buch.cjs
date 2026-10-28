@@ -383,19 +383,14 @@ async function checkBandV1779RoleFitQuality(ctx) {
         const blade = {
             name: "_rf_blade",
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.6 } },
-                {
-                    shape: "cone",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 1.2 },
-                    size: { x: 0.2, y: 0.1, z: 0.6 },
-                },
+                __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.6),
+                __teil("cone", "eisen", 0, 0, 1.2, 0.2, 0.1, 0.6),
             ],
         };
         const blob = {
             name: "_rf_blob",
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+                __teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2),
             ],
         };
         // (1) die Passung diskriminiert über die FORM (gleiches Material eisen, andere Form)
@@ -410,13 +405,13 @@ async function checkBandV1779RoleFitQuality(ctx) {
         const plate = {
             name: "_rf_plate",
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } },
+                __teil("box", "eisen", 0, 0, 0, 1.5, 0.3, 1.0),
             ],
         };
         const soft = {
             name: "_rf_soft",
             parts: [
-                { shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } },
+                __teil("box", "leder", 0, 0, 0, 1.5, 0.3, 1.0),
             ],
         };
         out.armorDiscriminates = r._blueprintRoleFit(plate, "armor") > r._blueprintRoleFit(soft, "armor");
@@ -424,12 +419,7 @@ async function checkBandV1779RoleFitQuality(ctx) {
         const deadC = {
             name: "_rf_dead",
             parts: [
-                {
-                    shape: "sphere",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.5, y: 0.5, z: 0.5 },
-                },
+                __teil("sphere", "stein", 0, 0, 0, 0.5, 0.5, 0.5),
             ],
         };
         out.consumableDiscriminates =
@@ -481,50 +471,40 @@ async function checkBandV1780FormAxes(ctx) {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const mk = (parts) => ({ name: "_u1", parts });
         const blade = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.8 } },
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.4 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.8),
+            __teil("cone", "eisen", 0, 0, 1.4, 0.2, 0.1, 0.6),
         ]);
         const cube = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+            __teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2),
         ]);
         const column = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
-            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
-            { shape: "box", material: "stein", position: { x: 0, y: 2, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+            __teil("box", "stein", 0, 0, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 1, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 2, 0, 0.6, 1, 0.6),
         ]);
         const wideBase = mk([
-            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: 0, y: 1.5, z: 0 }, size: { x: 2, y: 0.6, z: 2 } },
+            __teil("box", "stein", -1.5, 0, -1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 1.5, 0, -1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", -1.5, 0, 1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 1.5, 0, 1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 0, 1.5, 0, 2, 0.6, 2),
         ]);
         const body = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            {
-                shape: "cylinder",
-                material: "stein",
-                position: { x: -0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "stein",
-                position: { x: 0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
+            __teil("box", "stein", 0, 1, 0, 0.8, 1.6, 0.5),
+            __teil("cylinder", "stein", -0.7, 1, 0, 0.3, 1.2, 0.3),
+            __teil("cylinder", "stein", 0.7, 1, 0, 0.3, 1.2, 0.3),
         ]);
         const lump = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-            { shape: "box", material: "stein", position: { x: 1.4, y: 1.2, z: 1.0 }, size: { x: 0.6, y: 0.6, z: 0.6 } },
+            __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+            __teil("box", "stein", 1.4, 1.2, 1.0, 0.6, 0.6, 0.6),
         ]);
         const container = mk([
-            { shape: "box", material: "quarz", position: { x: -1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
-            { shape: "box", material: "quarz", position: { x: 1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
-            { shape: "box", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 0.2, z: 2 } },
+            __teil("box", "quarz", -1, 1, 0, 0.2, 2, 2),
+            __teil("box", "quarz", 1, 1, 0, 0.2, 2, 2),
+            __teil("box", "quarz", 0, 0, 0, 2, 0.2, 2),
         ]);
         const solid = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } },
+            __teil("box", "stein", 0, 0, 0, 2, 2, 2),
         ]);
         const V = (b) => r._blueprintProductVector(b);
         const out = {};
@@ -589,11 +569,11 @@ async function checkBandV1781RoleRegister(ctx) {
         );
         const mk = (parts) => ({ name: "_u2", parts });
         const blade = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
+            __teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
         ]);
         const block = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } },
+            __teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4),
         ]);
         // TIEFE: das volle Profil — die Klinge ist eine bessere WAFFE, der Block ein besseres BAUWERK
         const bladeWeapon = r._blueprintRoleFit(blade, "weapon");
@@ -608,15 +588,15 @@ async function checkBandV1781RoleRegister(ctx) {
         out.inRange = bladeWeapon <= cfg.max + 1e-9 && blockWeapon >= cfg.min - 1e-9;
         // vehicle — die neuen Form-Achsen (spread) tragen die neue Rolle
         const vehicleForm = mk([
-            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 0.5, z: 2 } },
+            __teil("box", "eisen", -1.5, 0, -1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 1.5, 0, -1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", -1.5, 0, 1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 1.5, 0, 1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 0, 1, 0, 3, 0.5, 2),
         ]);
         const mast = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
-            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
+            __teil("box", "eisen", 0, 0, 0, 0.4, 1, 0.4),
+            __teil("box", "eisen", 0, 1, 0, 0.4, 1, 0.4),
         ]);
         out.vehicleDiscriminates = r._blueprintRoleFit(vehicleForm, "vehicle") > r._blueprintRoleFit(mast, "vehicle");
         out.vehVals = `Basis=${round(r._blueprintRoleFit(vehicleForm, "vehicle"))} Mast=${round(r._blueprintRoleFit(mast, "vehicle"))}`;
@@ -657,14 +637,14 @@ async function checkBandV1782CatalystReadout(ctx) {
         const round = (x) => Math.round((x || 0) * 100) / 100;
         const mk = (parts) => ({ name: "_u3", parts });
         const blade = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
+            __teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
         ]);
         const ball = mk([
-            { shape: "sphere", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            __teil("sphere", "leder", 0, 0, 0, 1, 1, 1),
         ]);
         const block = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } },
+            __teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4),
         ]);
         const out = {};
         const spec = r._blueprintRoleSpectrum(blade);
@@ -751,12 +731,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         delete r.state.blueprints["_v1785_undo"];
         r.createBlueprint("_v1785_undo", "Undo-Test");
         // ein stumpfer, dichter eisen-Block → der Form nach „architecture" (kein Pointed-Blade-Gate)
-        r.addPartToBlueprint("_v1785_undo", {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        });
+        r.addPartToBlueprint("_v1785_undo", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         const ub = r.state.blueprints["_v1785_undo"];
         out.roleBeforeApply = r.computeBlueprintRole(ub); // erwartet: architecture
         // (#1a) removePartOp auf der Grund-Kette → nichts zu entfernen
@@ -910,12 +885,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         // ein eigener eisen-Bauplan
         delete r.state.blueprints["_wp88"];
         r.createBlueprint("_wp88", "WP88");
-        r.addPartToBlueprint("_wp88", {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        });
+        r.addPartToBlueprint("_wp88", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
         r.setGameMode("schöpfer");
         const menuS = r._workshopProcessesForMenu();
@@ -1502,24 +1472,9 @@ async function checkBandWave5(ctx) {
         // Bounding-Box-Mathematik: Compound mit drei Parts
         const testBp = {
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 2, y: 2, z: 2 },
-                },
-                {
-                    shape: "cone",
-                    material: "eisen",
-                    position: { x: 0, y: 3, z: 0 },
-                    size: { x: 1, y: 2, z: 1 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "bronze",
-                    position: { x: 4, y: 0, z: 0 },
-                    size: { x: 1, y: 2, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 2, 2, 2),
+                __teil("cone", "eisen", 0, 3, 0, 1, 2, 1),
+                __teil("cylinder", "bronze", 4, 0, 0, 1, 2, 1),
             ],
         };
         const bb = r._compoundBoundingBox(testBp);
@@ -1533,24 +1488,9 @@ async function checkBandWave5(ctx) {
         out.cylAtOutside = labelsCyl.has("at_outside");
 
         // Kontakt-Check: zwei berührende Boxen
-        const pA = {
-            shape: "box",
-            material: "stein",
-            position: { x: 0, y: 0, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        };
-        const pB = {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0.9, y: 0, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        };
-        const pC = {
-            shape: "box",
-            material: "eisen",
-            position: { x: 5, y: 0, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        };
+        const pA = __teil("box", "stein", 0, 0, 0, 1, 1, 1);
+        const pB = __teil("box", "eisen", 0.9, 0, 0, 1, 1, 1);
+        const pC = __teil("box", "eisen", 5, 0, 0, 1, 1, 1);
         out.contactsTouching = r._partsAreInContact(pA, pB);
         out.contactsRespectsGap = !r._partsAreInContact(pA, pC);
 
@@ -1558,18 +1498,8 @@ async function checkBandWave5(ctx) {
         // → magieleitung sollte räumlich höher sein als atomar.
         const tipBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.3, y: 3, z: 0.3 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.3, 3, 0.3),
+                __teil("pyramid", "quarz", 0, 2, 0, 0.5, 1, 0.5),
             ],
         };
         const atomar = r.computeCompoundTags(tipBp);
@@ -1579,18 +1509,8 @@ async function checkBandWave5(ctx) {
         // geprüft wird nur: pointed-at-bottom trägt kein at_top (kein Spitze-Bonus).
         const noTipBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.3, y: 3, z: 0.3 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("cylinder", "holz", 0, 2, 0, 0.3, 3, 0.3),
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
             ],
         };
         const labelsBottomPyr = r._classifyPartPosition(noTipBp.parts[1], r._compoundBoundingBox(noTipBp));
@@ -1601,24 +1521,9 @@ async function checkBandWave5(ctx) {
         // at_outside (xz-Distanz vom Compound-Zentrum), der mittlere nicht.
         const outsideBp = {
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: -3, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 3, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", -3, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 3, 0, 0, 1, 1, 1),
             ],
         };
         const outsideBB = r._compoundBoundingBox(outsideBp);
@@ -1647,13 +1552,7 @@ async function checkBandWave5(ctx) {
             label: "Atomar-Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: r._defaultPartOpChain(),
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1, { opChain: r._defaultPartOpChain() }),
             ],
         };
         r.selectBlueprintForEdit("wave5b-atomar");
@@ -1751,19 +1650,9 @@ async function checkBandWave5(ctx) {
         const bellBp = {
             parts: [
                 // große Quarz-Glocke
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 3, y: 3, z: 3 },
-                },
+                __teil("sphere", "quarz", 0, 1, 0, 3, 3, 3),
                 // kleiner Bronze-Klöppel im Inneren
-                {
-                    shape: "sphere",
-                    material: "bronze",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.4, y: 0.4, z: 0.4 },
-                },
+                __teil("sphere", "bronze", 0, 1, 0, 0.4, 0.4, 0.4),
             ],
         };
         const pairs = r._findHollowPairs(bellBp);
@@ -1775,18 +1664,8 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: zwei sphere nebeneinander, KEIN Hohlraum
         const sideBySideBp = {
             parts: [
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: -2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "sphere",
-                    material: "bronze",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("sphere", "quarz", -2, 0, 0, 1, 1, 1),
+                __teil("sphere", "bronze", 2, 0, 0, 1, 1, 1),
             ],
         };
         out.noHollowWhenSeparate = r._findHollowPairs(sideBySideBp).length === 0;
@@ -1794,24 +1673,9 @@ async function checkBandWave5(ctx) {
         // Prinzip 3: Y-Achsen-Symmetrie. Stab aus 3 Zylindern entlang Y.
         const staffBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 0, 1, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 0, 2, 0, 0.3, 1, 0.3),
             ],
         };
         out.staffHasSymmetry = r._hasYAxisSymmetry(staffBp);
@@ -1821,18 +1685,8 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: zwei Zylinder weit auseinander → keine Symmetrie
         const wideBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: -5, y: 0, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 5, y: 0, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
+                __teil("cylinder", "holz", -5, 0, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 5, 0, 0, 0.3, 1, 0.3),
             ],
         };
         out.wideNoSymmetry = !r._hasYAxisSymmetry(wideBp);
@@ -1840,30 +1694,10 @@ async function checkBandWave5(ctx) {
         // Prinzip 5: Resonanz-Array — 4 Pyramiden auf einem Kreis um die Mitte
         const arrayBp = {
             parts: [
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: -2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: 2 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: -2 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, 2, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, -2, 0.5, 1, 0.5),
             ],
         };
         out.arrayDetected = r._hasResonantArray(arrayBp);
@@ -1874,42 +1708,17 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: nur 2 Pyramiden → kein Array
         const twoBp = {
             parts: [
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: -2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -2, 0, 0, 0.5, 1, 0.5),
             ],
         };
         out.twoNoArray = !r._hasResonantArray(twoBp);
         // Negativ-Test: 3 Pyramiden auf unterschiedlichen Radien
         const unevenBp = {
             parts: [
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: -5, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: 8 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -5, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, 8, 0.5, 1, 0.5),
             ],
         };
         out.unevenNoArray = !r._hasResonantArray(unevenBp);
@@ -1926,18 +1735,8 @@ async function checkBandWave5(ctx) {
             [0, 2],
             [0, -2],
         ]) {
-            glockenspielBp.parts.push({
-                shape: "sphere",
-                material: "quarz",
-                position: { x: cx, y: 1, z: cz },
-                size: { x: 1.2, y: 1.2, z: 1.2 },
-            });
-            glockenspielBp.parts.push({
-                shape: "sphere",
-                material: "bronze",
-                position: { x: cx, y: 1, z: cz },
-                size: { x: 0.3, y: 0.3, z: 0.3 },
-            });
+            glockenspielBp.parts.push(__teil("sphere", "quarz", cx, 1, cz, 1.2, 1.2, 1.2));
+            glockenspielBp.parts.push(__teil("sphere", "bronze", cx, 1, cz, 0.3, 0.3, 0.3));
         }
         const glockAtomar = r.computeCompoundTags(glockenspielBp);
         const glockSpatial = r.computeSpatialTags(glockenspielBp);
@@ -2006,18 +1805,8 @@ async function checkBandWave5(ctx) {
             label: "W5A Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0.95, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0.95, 0, 0, 1, 1, 1),
             ],
             connections: [],
         };
@@ -2033,18 +1822,8 @@ async function checkBandWave5(ctx) {
             label: "W5A Soft",
             builtIn: false,
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "leder",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "leder",
-                    position: { x: 0.95, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("cylinder", "leder", 0, 0, 0, 1, 1, 1),
+                __teil("box", "leder", 0.95, 0, 0, 1, 1, 1),
             ],
             connections: [],
         };
@@ -2068,8 +1847,8 @@ async function checkBandWave5(ctx) {
         const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
         const touchingBp = {
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 1, 0, 1, 1, 1),
             ],
         };
         out.validRejectsUnknownType =
@@ -2130,18 +1909,8 @@ async function checkBandWave5(ctx) {
             label: "W5A Weak",
             builtIn: false,
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.2, y: 0.2, z: 0.2 },
-                },
-                {
-                    shape: "box",
-                    material: "holz",
-                    position: { x: 0.18, y: 0, z: 0 },
-                    size: { x: 0.2, y: 0.2, z: 0.2 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.2, 0.2, 0.2),
+                __teil("box", "holz", 0.18, 0, 0, 0.2, 0.2, 0.2),
             ],
             connections: [{ type: "sewing", partA: 0, partB: 1 }],
         };
@@ -2401,24 +2170,9 @@ async function checkBandWave5(ctx) {
             label: "Bug1 Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 1, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 1, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 2, 0, 0, 1, 1, 1),
             ],
             connections: [
                 { type: "hafting", partA: 0, partB: 1 },
@@ -2439,24 +2193,9 @@ async function checkBandWave5(ctx) {
             label: "Shift Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 1, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 1, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 2, 0, 0, 1, 1, 1),
             ],
             connections: [{ type: "hafting", partA: 1, partB: 2 }],
         };
@@ -2472,13 +2211,7 @@ async function checkBandWave5(ctx) {
             role: "tool",
             toolMeta: { opName: "bug2-op", opClass: "subtractive" },
             parts: [
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
-                },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
             ],
             connections: [],
         };
@@ -2502,13 +2235,7 @@ async function checkBandWave5(ctx) {
             role: "tool",
             toolMeta: { opName: "noisy-op", opClass: "subtractive" },
             parts: [
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
-                },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
             ],
             connections: [],
         };
@@ -2518,12 +2245,7 @@ async function checkBandWave5(ctx) {
             label: "Plain Blueprint",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
             ],
             connections: [],
         };
@@ -3143,30 +2865,14 @@ async function checkBandWaves9And10a(ctx) {
 
             // Parts ohne opChain → 1.0 ("geboren")
             const partsBornless = [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "sphere",
-                    material: "knochen",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 1, 0, 1, 1, 1),
+                __teil("sphere", "knochen", 0, 1, 0, 1, 1, 1),
             ];
             out.partsNoChainIs1 = r._compoundAvgPrecisionFromParts(partsBornless) === 1.0;
 
             // Parts mit Hand-opChain (cap 0.4) → 0.4
             const partsHand = [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }],
-                },
+                __teil("box", "stein", 0, 1, 0, 1, 1, 1, { opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }] }),
             ];
             out.partsHandIs04 = Math.abs(r._compoundAvgPrecisionFromParts(partsHand) - 0.4) < 0.001;
 
@@ -3324,8 +3030,8 @@ async function checkBandM2RollenWahrheit(ctx) {
         // (Σ-Substanz-Volumen statt Hüll-Volumen).
         const mk = (d) => ({
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
-                { shape: "box", material: "eisen", position: { x: d, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                __teil("box", "eisen", 0, 0, 0, 0.4, 0.4, 0.4),
+                __teil("box", "eisen", d, 0, 0, 0.4, 0.4, 0.4),
             ],
         });
         out.exploitTot = Math.abs(r._compoundSizeFactor(mk(0.5)) - r._compoundSizeFactor(mk(10))) < 1e-9;
