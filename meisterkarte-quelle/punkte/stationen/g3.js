@@ -807,8 +807,8 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // wetter-sicht: der Wetter-Zug als Spielgang — klar 5 s, dann Regen und wieder klar als Wort des Spielers (`--wetter rainy
-        // --zug`), je Wort 60 s der Welt-Uhr im echten Takt (`_gameLoopTick`, 0,1 s) über die 45-s-Transition des Spiels, die Uhr
-        // steht auf Mittag; je Sekunde die Leuchtdichte des Ausgabe-Bilds (linear). Das Urteil: der größte Sprung |log2 Y_k/Y_k−1| je
+        // --zug`), je Wort ≥ 60 s der Welt-Uhr im echten Takt (`_gameLoopTick`, 0,1 s) über die Transition des Spiels (45 s, das Gemüt
+        // moduliert sie), bis das Wort steht; die Uhr steht auf Mittag; je Sekunde die Leuchtdichte des Ausgabe-Bilds (linear). Das Urteil: der größte Sprung |log2 Y_k/Y_k−1| je
         // Sekunde ≤ 0,1 EV/s, und beide Wörter standen am Ende ihrer Phase (sonst misst die Reihe keinen Übergang)
         befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
         env: { MSYS2_ARG_CONV_EXCL: "*" },
