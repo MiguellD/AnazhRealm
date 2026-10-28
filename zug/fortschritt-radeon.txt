@@ -1440,3 +1440,4 @@
 2026-10-28 19:36:41 takt18-radeon fahrzeug.K5#1 GRÜN 4.3 · 13/47
 2026-10-28 19:37:15 takt18-radeon haar.K1#1 GRÜN 4.8 · 14/47
 2026-10-28 20:00:25 takt18-radeon tiere.K5#1 ROT 28.0 · 15/47
+2026-10-28 20:23:42 takt18-radeon haar.K2#1 ROT 47.0 · 16/47
