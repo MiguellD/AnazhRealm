@@ -884,13 +884,11 @@ async function checkBandEarlyRingsAndUi(ctx) {
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
 
-        // Reset: für deterministische Tests alle Werte + Cooldowns löschen.
+        // Reset: für deterministische Tests alle Werte + die Takte der Gesetze des Gemüts löschen.
         for (const k of Object.keys(r.state.player.emotions)) {
             r.state.player.emotions[k] = 0;
         }
-        r.state.player.emotionLastApply.joy = -Infinity;
-        r.state.player.emotionLastApply.sorrow = -Infinity;
-        r.state.player.emotionLastApply.chaos = -Infinity;
+        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         r.state.player.emotionLastTick = -Infinity;
 
         // (a) collectPlayerEmotions reagiert auf deutsche Stichwörter
@@ -920,9 +918,9 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r._wetterFreigeben("human");
         r.state.weather = "sunny";
         r.state.player.emotions.sorrow = 0.9;
-        r.state.player.emotionLastApply.sorrow = -Infinity;
         r.state.player.emotionLastTick = 199;
         r.updatePlayerEmotions(200);
+        r._tickWorldRules(200); // das Gesetz des Gemüts `emotion:sorrow` (affekt.K2)
         out.sorrowAfterTick = r.state.player.emotions.sorrow;
         const sorrowWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
         r.state.spielZeit += r.constructor.WETTER_ZUG_SEK;
@@ -933,8 +931,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         //     darf nicht wieder feuern (kein neuer Wunsch).
         r.state.weather = "sunny";
         r.state.wetterWunsch = null;
-        r.state.player.emotionLastTick = 204;
-        r.updatePlayerEmotions(205);
+        r._tickWorldRules(205);
         out.cooldownRespected = r.state.weather === "sunny" && r.state.wetterWunsch === null;
 
         // (e) DSL-Condition emotion_above
@@ -1016,26 +1013,24 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
         // (a) awe > 0.7 → skybox-Farbe wird gesetzt
         for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
-        for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
-        p.emotionLastTick = 299;
         // skybox_color setzt eine fadende state.skyTint-Tönung (blendet in den Tag-Nacht-Himmel): der
         // awe-Trigger ["skybox_color","#d4a3ff"] → skyTint + skyTintTarget > 0.
         r.state.skyTint = null;
         r.state.skyTintTarget = 0;
-        r.updatePlayerEmotions(300);
+        r._tickWorldRules(300);
         out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
         // (b) hope > 0.7 → wetter sunny + kreaturen happy (das Wetter wünscht die Emotion, der Wetter-Zug zieht es —
         // die Welt schreibt das Wetter nie selbst)
-        for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         p.emotions.hope = 0.9;
         r._wetterFreigeben("human");
         r.state.weather = "rainy";
         r.state.creatureEmotions = r.state.creatures.map(() => "sad");
-        p.emotionLastTick = 399;
-        r.updatePlayerEmotions(400);
+        r._tickWorldRules(400);
         const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
         const hopeWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
         r.state.spielZeit += r.constructor.WETTER_ZUG_SEK;
@@ -1045,15 +1040,14 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
         // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere — jedes Tier trägt den Hauch, und sein
         // Charakter-Tempo LIEST ihn (im Band).
-        for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         p.emotions.peace = 0.9;
         // den Hauch zurücksetzen, damit der Vergleich verlässlich ist
         const tempoVor = r.state.creatures.map((cr) => {
             if (cr.userData) cr.userData.tempoHauch = 1;
             return r._creatureMoveCharacter(cr).speedMul;
         });
-        p.emotionLastTick = 499;
-        r.updatePlayerEmotions(500);
+        r._tickWorldRules(500);
         const W = r.constructor._verhaltenGesetz().wandern;
         const allSlowed =
             r.state.creatures.length > 0 &&
@@ -1592,13 +1586,16 @@ async function checkBandEarlyRingsAndUi(ctx) {
             sliders.cooldown.value = "60";
             sliders.cooldown.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        out.cooldownUpdatesState = r.state.player.emotionApplyCooldown === 60;
+        out.cooldownUpdatesState =
+            r.state.player.emotionApplyCooldown === 60 &&
+            r.state.worldRules.filter((g) => /^emotion:/.test(g.source) && g.everySec === 60).length === 6;
 
         // Cleanup: defaults wiederherstellen, damit weitere Tests
         // konsistent sind (falls dieser Test vorgezogen wird).
         r.state.player.emotionThreshold = 0.7;
         r.state.player.emotionDecayPerSec = 0.005;
         r.state.player.emotionApplyCooldown = 30;
+        r._gemuetGesetze();
 
         return out;
     });

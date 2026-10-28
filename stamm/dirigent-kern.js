@@ -55,6 +55,7 @@ class AnazhRealm {
         AnazhRealm._wurfEbene();
         // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — der Loop schreibt sie je Takt, jedes Bild liest sie
         this._bildZeit = 0;
+        this._taktZeit = 0; // DIE UHR DES TAKTS (`_taktUhr`): der Stempel des Loops, auf dem Regel und Nexus altern
         this.state = {
             // ### Kern ###
             renderer: null,
@@ -506,6 +507,9 @@ class AnazhRealm {
                 // Delta + Player-Activity und finalisiert die Fitness.
                 pendingOutcomes: [],
                 outcomeFinalizationDelay: 5.0,
+                // die Zahl der finalisierten Outcomes: der Finalizer schreibt Fitness in History und Fähigkeit an ihrem Platz —
+                // die Marke des Stands (`_standZeilen` dslHistory · dslAbilities) liest sie
+                finalisiert: 0,
             },
             // Stehendes Regel-Registry: je Regel eine nicht verfallende Bindung Bedingung → Effekt,
             // {id, cond, effect, everySec, lastFired, fires, source, ttlSec?, born} (cond/effect = DSL-AST).
@@ -706,17 +710,7 @@ class AnazhRealm {
                 mood: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, // W3 — die langsame Grundstimmung (EMA der Emotion, reaktiv)
                 emotionDecayPerSec: 0.005,
                 emotionLastTick: -Infinity,
-                // Ring 3 V2: alle sechs Achsen koppeln. Jede hat ihren eigenen
-                // Cooldown, damit das Wechselspiel mehrerer Achsen nicht eine
-                // einzige still hält.
-                emotionLastApply: {
-                    joy: -Infinity,
-                    awe: -Infinity,
-                    sorrow: -Infinity,
-                    hope: -Infinity,
-                    peace: -Infinity,
-                    chaos: -Infinity,
-                },
+                // der Takt und die Schwelle der Gesetze des Gemüts (`_gemuetGesetze`, je Achse ein Gesetz mit eigenem Takt)
                 emotionApplyCooldown: 30,
                 emotionThreshold: 0.7,
                 // Boosts = temporäre Tag-Modifikationen {source, tagDelta, expiresAt, label}. Quellen: Emotion

@@ -48,7 +48,7 @@ class AnazhRealm_feld_dsl {
         return {
             state: this.state,
             realm: this,
-            startTime: performance.now() / 1000,
+            startTime: this._taktUhr(),
             rng: this._samenStrom(typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl")),
             budget: opts.budget || this.dslDefaultBudget(),
             log: opts.log || [],
@@ -65,7 +65,7 @@ class AnazhRealm_feld_dsl {
 
     dslRun(program, opts = {}) {
         const ctx = this.dslCtx(opts);
-        const startedAt = performance.now() / 1000;
+        const startedAt = this._taktUhr();
         const fpsBefore = this.state.fps || 0;
         const startY = this.state.playerMesh ? this.state.playerMesh.position.y : 0;
         const creaturesBefore = this.state.creatures.length;
@@ -510,7 +510,7 @@ class AnazhRealm_feld_dsl {
             ctx.log.push({ event: "budget_exceeded", budget: "concurrent", program_id: ctx.programId });
             return;
         }
-        const runAt = performance.now() / 1000 + Math.max(0, delaySeconds);
+        const runAt = this._taktUhr() + Math.max(0, delaySeconds);
         this.state.dsl.pending.push({ runAt, program, ctx });
     }
 
@@ -550,7 +550,7 @@ class AnazhRealm_feld_dsl {
         if (ttlSec == null && source.startsWith("llm")) {
             ttlSec = Math.round((cfg.ruleTtlMin + cfg.ruleTtlMax) / 2);
         }
-        const now = performance.now() / 1000;
+        const now = this._taktUhr();
         // Dedup: dieselbe Regel nicht doppelt — refresh (TTL-Fenster + Raten)
         // statt push. Die Signatur ist billig (Registrierung ist selten, nie
         // pro Frame).
@@ -758,11 +758,13 @@ class AnazhRealm_feld_dsl {
         const avgMs = (rule.costMsSum || 0) / fires;
         const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
         const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
-        // Der WERT ist die diskriminierende Achse: valueScore zentriert bei 0.5 = neutral (unbewiesene
-        // Regeln überleben → keine Monokultur), >0.5 Heiler, <0.5 Schädling; cost + success bleiben Wächter.
-        // Ergebnis: neutral → 0.7, Heiler → 1.0, Schädling → 0.4.
+        // Der WERT entscheidet (die EINE Wertung δ, `_measureRuleReward`): valueScore 0.5 + 0.5·value, neutral 0.5 = die
+        // Erneuerungs-Schwelle; Kosten und Erfolg mindern ihn nur (Produkt) — erneuert wird, wessen δ seine Kosten trägt.
+        // Ergebnis: Heiler → 1.0, neutral → knapp unter 0.5, Schädling → 0. Bis affekt.K3 die Summe 0.6·Wert + 0.25·Erfolg +
+        // 0.15·Kosten (neutral 0.7, Schädling 0.4): jede feuernde Regel bis value −0.67 wurde erneuert, die Welt wählte nichts
+        // (Zeitraffer an a03b7b06, 30 min: Anteil value > 0 0,80 → 0,75, mit gemischtem δ 0,59 → 0,52).
         const valueScore = 0.5 + 0.5 * Math.max(-1, Math.min(1, rule.value || 0));
-        return Number((0.6 * valueScore + 0.25 * successScore + 0.15 * costScore).toFixed(3));
+        return Number((valueScore * successScore * costScore).toFixed(3));
     }
 
     // Reward des letzten Feuerns (Advantage, REINFORCE mit Baseline): δ = wohlStruktur(jetzt) −
@@ -2235,7 +2237,7 @@ class AnazhRealm_feld_dsl {
         this._dslConditionsCache = {
             fps_below: ([value], ctx) => (ctx.state.fps || 0) < Number(value),
             weather_is: ([name], ctx) => ctx.state.weather === name,
-            time_passed: ([seconds], ctx) => performance.now() / 1000 - ctx.startTime >= Number(seconds),
+            time_passed: ([seconds], ctx) => this._taktUhr() - ctx.startTime >= Number(seconds),
             creatures_count_above: ([value], ctx) => ctx.state.creatures.length > Number(value),
             player_y_below: ([value], ctx) => {
                 const y = ctx.state.playerMesh ? ctx.state.playerMesh.position.y : 0;
@@ -2245,10 +2247,12 @@ class AnazhRealm_feld_dsl {
             // Ring 3: Nexus reagiert auf Player-Emotionen. `emotion_above`
             // gibt true, wenn die Achse über der Schwelle liegt. Unbekannte
             // Achsen → false (kein throw, damit DSL-Programme robust bleiben).
+            // Ohne Schwelle gilt die des Spielers (`emotionThreshold`, sein Schieber) — die Gesetze des Gemüts (`_gemuetGesetze`).
             emotion_above: ([name, threshold], ctx) => {
-                const e = ctx.state.player && ctx.state.player.emotions;
+                const p = ctx.state.player;
+                const e = p && p.emotions;
                 if (!e || typeof e[name] !== "number") return false;
-                return e[name] > Number(threshold);
+                return e[name] > Number(threshold ?? p.emotionThreshold);
             },
             // Feld-Bedingungen: field_above/field_below([axis, value, posNode?]) lesen über auraAt (Default
             // at_player) eine frozen Achse (lebendig/dichte/glut/magieleitung) oder eine räumliche Emotions-
