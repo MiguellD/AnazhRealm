@@ -257,7 +257,7 @@ function lauf(k) {
         // DER SPRUNG (`wandern: "sprung"`, streaming.K3): mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
         // Gesetzes (der Loop übernimmt den Teleport, `_loopFixedStep`); gemessen wird die Kadenz, während die Welt dort neu
         // entsteht, dazu nach wie vielen s sie steht (A9 `_weltSteht`) und jeder Bau im Haupt-Faden (`_syncBauten`).
-        const sprung = k.wandern === "sprung" ? { m: 1000 } : null;
+        const sprung = k.wandern === "sprung" ? { m: 1000, stehtS: null } : null;
         const kette = window.__ortBahn || [[ort.x, ort.z], [ort.x, ort.z - 60]];
         const laenge = kette.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - kette[i][0], q[1] - kette[i][1]), 0);
         // DER WEG des Spielers im Mess-Fenster (die Bahn oder ein Geher von außen) — „Weg 0 m" nennt eine stehende Zerlegung
@@ -406,22 +406,19 @@ function lauf(k) {
                 Object.assign(sprung, { t0: performance.now(), bau: r._syncBauten() });
             }
             messen = uhr.messen = true;
-            // der Sprung misst, bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dazu 1 s — höchstens `sek`
+            // der Sprung misst, bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dazu 1 s (Deckel `sek`)
             for (let ende = performance.now() + k.sek * 1000; performance.now() < ende; ) {
                 await sleep(sprung ? 250 : ende - performance.now());
-                if (!sprung || sprung.stehtS != null) continue;
+                if (!sprung || sprung.stehtS) continue;
                 if (!r._weltSteht()) sprung.offen = true;
-                else if (sprung.offen) {
-                    sprung.stehtS = +((performance.now() - sprung.t0) / 1000).toFixed(1);
-                    ende = Math.min(ende, performance.now() + 1000);
-                }
+                else if (sprung.offen) ende = (sprung.stehtS = performance.now()) + 1000;
             }
             messen = uhr.messen = false;
             if (H) H.an = false;
             const haenger = H && {
                 takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-                sprung: sprung && { m: sprung.m, stehtS: sprung.stehtS ?? null, bau: [sprung.bau, r._syncBauten()] },
+                sprung: sprung && Object.assign(sprung, { bau: [sprung.bau, r._syncBauten()] }),
                 loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
                 erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),
