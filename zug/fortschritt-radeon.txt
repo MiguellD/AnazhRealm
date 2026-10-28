@@ -1496,3 +1496,4 @@
 2026-10-28 22:14:26 takt19-radeon gelaende.K2#2 ROT 4.3 · 2/71
 2026-10-28 22:15:09 takt19-radeon luftwasser.K5#2 GRÜN 0.7 · 3/71
 2026-10-28 22:58:53 takt19-radeon bauen.K1#2 ROT 43.7 · 4/71
+2026-10-28 23:05:13 takt19-radeon siedlung.K5#1 GRÜN 6.3 · 5/71
