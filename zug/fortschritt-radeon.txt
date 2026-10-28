@@ -1236,3 +1236,4 @@
 2026-10-28 14:42:25 takt17-farm bauen.K5#1 GRÜN 3.6 · 61/92
 2026-10-28 14:42:30 takt17-farm studios.K5#1 GRÜN 0.3 · 62/92
 2026-10-28 14:42:36 takt17-farm studios.K5#2 GRÜN 0.3 · 63/92
+2026-10-28 14:42:44 takt17-farm siedlung.K1#1 GRÜN 0.6 · 64/92
