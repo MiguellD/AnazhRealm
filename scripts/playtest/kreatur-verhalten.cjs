@@ -1267,18 +1267,17 @@ async function checkBandPhaseEThreat(ctx) {
             // es an die 1.0-Decke getrieben haben, dann wäre kein Anstieg messbar.
             p.hp = (p.stats.hpMax || 100) * 0.2;
             p.emotions.sorrow = 0;
-            const sor0 = p.emotions.sorrow || 0;
             wolf.userData.nextHuntStrikeAt = 0;
             beiss(wolf);
-            out.fearFelt = (p.emotions.sorrow || 0) > sor0;
-            // (5) der TRIUMPH: ein frischer Jäger fällt von Spieler-Hand → joy steigt.
-            // joy ebenso ZUERST auf 0 (dieselbe Decken-Konfundierung) → der Anstieg ist messbar.
-            p.hp = p.stats.hpMax || 100;
-            p.emotions.joy = 0;
-            const joy0 = p.emotions.joy || 0;
+            out.fearFelt = p.emotions.sorrow > 0;
+            // (5) der TRIUMPH aus der Situation (oekologie.K4#2, kein Stempel): der Jäger am Spieler senkt sie
+            // (`_spielerUmstellt`), sein Fall von Spieler-Hand hebt sie
+            r._spielerJaeger = [wolf];
+            const sit = () => r._playerSituationWohl(r.auraAt(pm.x, pm.z));
+            const sit0 = sit();
             r.damageCreature(wolf, 9999, { source: "player" });
             spawned[0] = null;
-            out.triumphFelt = (p.emotions.joy || 0) > joy0;
+            out.triumphFelt = sit() > sit0;
         } finally {
             for (const c of spawned) {
                 if (c) r.removeCreature(c);

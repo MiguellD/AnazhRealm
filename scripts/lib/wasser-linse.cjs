@@ -795,6 +795,7 @@ async function wasserStrom(ort, hoehe) {
     await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], 2048));
     const worker = st.voxelWorker;
     st.voxelWorker = null;
+    r._syncStelle = "naht"; // der Faden hängt aus: der Ring baut an der Test-Naht (`SYNC_STELLEN`, streaming.K4)
     for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await sleep(0)) {
         try {
             r._gameLoopTick(performance.now());
@@ -805,6 +806,7 @@ async function wasserStrom(ort, hoehe) {
         if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
     }
     st.voxelWorker = worker;
+    r._syncStelle = null;
 }
 
 // ── F3: DER GRABEN AM FLUSS ── Je ein Graben 1 m und 3 m jenseits der Krone (`__wasserKroneVon`, je eine Bank)
@@ -1335,19 +1337,8 @@ async function wasserBild(o = {}) {
                 pixel: np,
             };
         };
-        return { ruhig: zone(1), schnelle: zone(2), png: o.png ? bildDaten(px) : null };
-    };
-    // Das Bild selbst (für den Bericht): das Render-Ziel als PNG (linear, ungetont — ein Vergleichs-Bild, kein Look).
-    const bildDaten = (px) => {
-        const c = document.createElement("canvas");
-        c.width = W;
-        c.height = H;
-        const ctx = c.getContext("2d");
-        const im = ctx.createImageData(W, H);
-        im.data.set(px.subarray(0, W * H * 4));
-        for (let p = 3; p < W * H * 4; p += 4) im.data[p] = 255;
-        ctx.putImageData(im, 0, 0);
-        return c.toDataURL("image/png");
+        // das Bild selbst (für den Bericht): das Render-Ziel als PNG (linear, ungetont — ein Vergleichs-Bild, kein Look)
+        return { ruhig: zone(1), schnelle: zone(2), png: o.png ? window.__png(px, W, H) : null };
     };
     let a, b, sturm;
     // Der Wind des Wetters (W-R3): ruhig (Sonne, 0,06) für beide Uhren, dann derselbe Bogen im Sturm (1,0). Vor der
@@ -1823,6 +1814,7 @@ function wasserSichtNetz() {
         if (bereit.has(key)) return;
         const w = st.voxelWorker;
         st.voxelWorker = null;
+        r._syncStelle = "naht";
         const ring = [];
         try {
             for (let dz = -1; dz <= 1; dz++)
@@ -1842,6 +1834,7 @@ function wasserSichtNetz() {
             }
         } finally {
             st.voxelWorker = w;
+            r._syncStelle = null;
         }
         for (const [nx, nz] of ring) {
             netze.delete(nx + "," + nz);

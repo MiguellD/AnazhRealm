@@ -143,7 +143,7 @@ function kenntMitGestalt(id, rechnet) {
             ? "keine Leitung"
             : !rtc.open
               ? `Leitung ${rtc.pc.connectionState} ohne offenen Kanal`
-              : rechnet && !(e.lockstep && e.lockstep.seeded)
+              : rechnet && !e.lockstep?.seeded
                 ? "Ghost ohne Anker"
                 : "";
     return !__marke;
@@ -271,8 +271,8 @@ function installiere(alteTuer) {
         mp.wahrBeimZeichnen.set(
             entry.peerId,
             !!(
-                (ls && ls.seeded && ls.x === 0 && ls.z === 0) ||
-                (entry.snapBuf && entry.snapBuf.some((q) => q.x === 0 && q.z === 0)) ||
+                (ls?.seeded && ls.x === 0 && ls.z === 0) ||
+                entry.snapBuf?.some((q) => q.x === 0 && q.z === 0) ||
                 (oz && oz.x === 0 && oz.z === 0)
             )
         );
@@ -285,7 +285,7 @@ function installiere(alteTuer) {
         for (const [pid, e] of p2p.peers) {
             mp.peerTakte++;
             const ls = e.lockstep;
-            const ortBekannt = mp.ortGesehen.has(pid) || !!(ls && ls.seeded && ls.doneSeq >= 0);
+            const ortBekannt = mp.ortGesehen.has(pid) || !!(ls?.seeded && ls.doneSeq >= 0);
             for (const o of [e.mesh, e.nameLabel]) {
                 if (!o || !o.parent || !o.visible) continue;
                 const wirklich = mp.wahrBeimZeichnen.get(pid) === true;
@@ -493,7 +493,7 @@ hauptLauf(async () => {
         // am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
         const vibeMs = await waitFor(
             pageB,
-            (id) => !!(anazhRealm.state.p2p.peers.get(id) || {}).vibeVerified,
+            (id) => !!anazhRealm.state.p2p.peers.get(id)?.vibeVerified,
             "B verifiziert A's Vibe-Pass",
             idA
         ).catch(() => -1);
@@ -522,7 +522,7 @@ hauptLauf(async () => {
             await kennt(pageB, idA, true, "B rechnet A mit Gestalt über die Leitung");
             await pageA.bringToFront();
             const vorLauf = await pageA.evaluate(() => {
-                if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                if (document.activeElement?.blur) document.activeElement.blur();
                 window.__mpP = undefined;
                 const p = anazhRealm.state.playerMesh.position;
                 return { x: p.x, z: p.z };
@@ -611,8 +611,8 @@ hauptLauf(async () => {
                 pageB,
                 (id, q) => {
                     const p2p = anazhRealm.state.p2p;
-                    const ls = (p2p.peers.get(id) || {}).lockstep || {};
-                    return !(p2p.rtcPeers.get(id) || {}).open || (ls.seeded && ls.doneSeq >= q);
+                    const ls = p2p.peers.get(id)?.lockstep || {};
+                    return !p2p.rtcPeers.get(id)?.open || (ls.seeded && ls.doneSeq >= q);
                 },
                 "B: der erste Anker von A nach der Stille",
                 idA,
@@ -633,7 +633,7 @@ hauptLauf(async () => {
             (await pageA.evaluate(() => anazhRealm.state.p2p._lockstepTrace || [])).map((q) => [q.q, q])
         );
         const spurB = await pageB.evaluate(
-            (id) => ((anazhRealm.state.p2p.peers.get(id) || {}).lockstep || {}).trace || [],
+            (id) => anazhRealm.state.p2p.peers.get(id)?.lockstep?.trace || [],
             idA
         );
         const geteilt = spurB.filter((g) => g.q >= anker && spurA.has(g.q));

@@ -277,8 +277,11 @@ class AnazhRealm_kreatur_verhalten {
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
         if (!fearActive && dist > witterung) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
-        // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt)
-        const menace = FG.bedrohung(e, NAT);
+        // DIE BEDROHUNG der Aura (tetrapoda bedrohung — dieselbe, die den Abdruck am Ort wiegt). DIE FURCHT DER BEUTE SCHRECKT
+        // IHREN JÄGER NIE (oekologie.K4#2): wer den Spieler jetzt pirscht oder hetzt, liest seine Aura nicht — er ist Beute wie
+        // jedes Tier (keine Beute trägt ihre Aura in die Wariness ihres Jägers); der Hieb (fearActive) und die Erinnerung
+        // schrecken weiter. Bis oekologie.K4#2 verscheuchte die Furcht des Umstellten (chaos × menaceFromChaos) sein Rudel.
+        const menace = (this._spielerJaeger || []).includes(creature) ? 0 : FG.bedrohung(e, NAT);
         // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
         // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
         // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
@@ -2047,7 +2050,11 @@ class AnazhRealm_kreatur_verhalten {
         const dx = player.x - creature.position.x;
         const dz = player.z - creature.position.z;
         const dist = Math.hypot(dx, dz);
-        if (dist <= haltDist) return out.set(0, 0, 0);
+        if (dist <= haltDist) {
+            // DAS WESEN ERINNERT, WEM ES FOLGTE (KI K3): angekommen beim Spieler, einmal je Auftrag — das Gespräch liest es
+            if (!task.erinnert) ((task.erinnert = true), this._creatureRemember(creature, "gefolgt", {}));
+            return out.set(0, 0, 0);
+        }
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
         return this._kreaturZiel(out, dx, dz, dist - haltDist, speed, creature);
@@ -2508,7 +2515,8 @@ class AnazhRealm_kreatur_verhalten {
         const hasPending =
             Array.isArray(this.state._pendingCreatureSnapshots) && this.state._pendingCreatureSnapshots.length > 0;
         if (headless || hasPending) {
-            this.spawnCreatures(count);
+            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`); der Restore gießt laut, wo das Memo fehlt
+            this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures(count));
             return;
         }
         this.clearCreatures();
@@ -3138,14 +3146,29 @@ class AnazhRealm_kreatur_verhalten {
         // ihr ruht kein Tier (`_kreaturRuht`, K59: der Biss liest die Glieder der Beute). EINE Liste je Takt, VOR der Ruhe.
         const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
         jaeger.length = 0;
+        // DIE JÄGER DES SPIELERS dieses Takts (oekologie.K4#2): wer ihn pirscht oder hetzt und wessen Jagd auf ihn läuft — auch
+        // zwischen den Ansprüngen, bis das Gesetz sie endet (`_kreaturJagdEndet`: dauerS, oder ruheS ohne Hetze). Leser: sein
+        // Umstellen (`_spielerUmstellt`) und die Wariness des Jägers (die Furcht der Beute schreckt ihn nicht).
+        const spielerJaeger = this._spielerJaeger || (this._spielerJaeger = []);
+        spielerJaeger.length = 0;
+        const jetzt = this.state.creatureAnimationTime;
+        const ruheS = AnazhRealm._jagdGesetz().J.ruheS;
         // DER WEITESTE RAUM dieses Takts (Lehre 25: billige Filter zuerst): die Separation und der freie Weg prüfen ein
         // Paar erst genau (`_kreaturRaum` des anderen), wenn es näher steht als der eigene Raum + dieser — vorher fragte
         // jedes Tier den Raum JEDES anderen (40 Tiere: 1 600 Rufe je Takt).
         let raumMax = 0;
         for (const c of this.state.creatures) {
-            const zj = c && c.userData && c.userData._motionZustand;
-            if (zj === "jagd" || zj === "hetzen") jaeger.push(c);
-            if (c && c.userData) raumMax = Math.max(raumMax, this._kreaturRaum(c));
+            const u = c && c.userData;
+            if (!u) continue;
+            const zj = u._motionZustand;
+            const jagt = zj === "jagd" || zj === "hetzen";
+            if (jagt) jaeger.push(c);
+            if (
+                (jagt && u._jagdZiel === "spieler") ||
+                (u._jagd && u._jagd.ziel === "spieler" && jetzt - u._jagd.zuletzt <= ruheS)
+            )
+                spielerJaeger.push(c);
+            raumMax = Math.max(raumMax, this._kreaturRaum(c));
         }
         this._raumMaxTakt = raumMax;
         // DER RUHENDE LEIB (K59): wer außer Bild, fern und ohne Zustand ist, ruht in diesem Takt — VOR dem Ziegel (ein
@@ -3778,6 +3801,7 @@ AnazhRealm._furchtGesetz = function () {
         F.erinnerung &&
         Number.isFinite(F.erinnerung.geschlagen) &&
         Number.isFinite(F.erinnerung.gefuettert) &&
+        Number.isFinite(F.erinnerung.gewalt) &&
         Number.isFinite(F.deckel) &&
         Number.isFinite(F.fluchtJeFurcht) &&
         F.riss &&

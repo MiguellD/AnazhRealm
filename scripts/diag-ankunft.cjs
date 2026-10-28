@@ -30,12 +30,12 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
-const { errs, check, rotAus } = pruefer()
+const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 function ladeschirmVerdict(m) {
@@ -1882,8 +1882,7 @@ hauptLauf(async () => {
             rot.filter((w) => !w[1]).length === 4,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
-        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-        console.log("\n✅ SELBST-TEST GRÜN — die Ankunfts-Linse nennt ihre Täter beim Namen.");
+        selbsttestEnde(errs, "die Ankunfts-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }
 
@@ -1961,7 +1960,5 @@ hauptLauf(async () => {
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
     zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
-    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-    console.log("\n✅ GRÜN — die Ankunft trägt ihre benannten Schnitte.");
-    process.exit(0);
+    wandEnde(errs, "die Ankunft trägt ihre benannten Schnitte.");
 });

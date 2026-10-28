@@ -6,7 +6,7 @@
 // über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen; jede Wand mit ihrer
 // Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -507,7 +507,29 @@ hauptLauf(async () => {
         return [da, r.state.worldMeta, !!(await window.__anschluss(r, autor))];
     }, a.autor);
     const geht = await halteBis(pageB, { taste: "w", ziel: async () => (await window.__seitenTakt(), window.__weg() >= 1) });
-
+    // ===== (U) FUSION: dieselben Eltern-Bytes in beiden Geräten → A+B (random-mix: Id, Saat, Geburt, Münzwurf) · B+A · der Täter =====
+    const [uA, uB] = await Promise.all(
+        [page, pageB].map((seite) =>
+            seite.evaluate(() => {
+                const r = window.anazhRealm;
+                for (const x of "ab") {
+                    const dslHistory = [..."123456"].map((n) => x + n);
+                    localStorage.setItem(r.worldStorageKey(x + "-eltern"), JSON.stringify({ worldMeta: { bornAt: 9 }, dslHistory }));
+                }
+                const kind = (a, b) => {
+                    const f = r.fuseWorlds(a + "-eltern", b + "-eltern", "random-mix", { reload: false });
+                    const json = f.ok && localStorage.getItem(r.worldStorageKey(f.worldId));
+                    if (f.ok) r.deleteWorld(f.worldId);
+                    return json;
+                };
+                const echt = r._fusionGenerateIdentity; // der Täter: die Geburt wieder aus der Wanduhr
+                r._fusionGenerateIdentity = (...a) => ({ ...echt.apply(r, a), bornAt: Date.now() });
+                const uhr = kind("a", "b");
+                delete r._fusionGenerateIdentity;
+                return [kind("a", "b"), kind("b", "a"), uhr];
+            })
+        )
+    );
     const ger = [page, pageB, await (await browser.createBrowserContext()).newPage()].map(geraet); // C: B als Kontext im Chrome von A
     await browser.close();
     await browserB.close();
@@ -593,6 +615,11 @@ hauptLauf(async () => {
     check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", ms <= 5000, `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
     check("WELT: der Leib geht unter W ≥ 1 m", geht.erreicht, `${geht.ms} ms`);
 
+    console.log("\n=== (U) FUSION auf zwei Geräten ===");
+    check("FUSION A+B byte-gleich", gleich(uA[0], uB[0]), `${uA[0]?.length} Bytes`);
+    check("GERICHTET: B+A ≠ A+B", gleich(uA[1], uB[1]) && uA[1] !== uA[0]);
+    check("TÄTER-PROBE: Date.now in der Geburt ist ROT", uB[2] && !gleich(uB[2], uA[0]));
+
     console.log("\n=== (F) KORPUS fremder Codes ===");
     // ein Fall hält, wenn der Code abgewiesen ist, beim erwarteten Namen, und der Spieler ihn hört — sonst ist die Probe ROT
     const haelt = (f) => f?.ok === false && f.grund === f.soll && f.laut.includes(f.grund);
@@ -618,10 +645,5 @@ hauptLauf(async () => {
         b.taeter?.ok && !haelt(b.taeter)
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
-    process.exit(0);
+    wandEnde(errs, "die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
 }, () => signal?.kill());

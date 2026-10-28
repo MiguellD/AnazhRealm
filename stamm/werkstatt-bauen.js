@@ -440,8 +440,8 @@ class AnazhRealm_werkstatt_bauen {
         }
         // Das Werk steht: das nächste Setzen zieht seinen eigenen Samen, das Phantom zeigt ihn (ein Wurf der Werkstatt
         // bleibt stehen, wie gewürfelt).
-        if (bm.setzSame && bm.setzSame.art === name) {
-            bm.setzSame = null;
+        if (bm.setzSame && bm.setzSame[name]) {
+            delete bm.setzSame[name];
             this._bauPhantomNeu();
         }
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
@@ -727,14 +727,19 @@ class AnazhRealm_werkstatt_bauen {
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
         // DIE TAT BLEIBT (feld.K4): ein gefällter Baum ist eine Tat der Welt am Ort — Narbe im Feld, Stumpf in der Nah-Streu, und
-        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`)
-        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry))
-            this._tatSchreiben("faellen", entry.position.x, entry.position.z, {
-                s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
-            });
+        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`); von Spieler-Hand gewertet wie jede Tat (`_handTat`)
+        const p = entry.position;
+        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry)) {
+            const faellen = () =>
+                this._tatSchreiben("faellen", p.x, p.z, {
+                    s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
+                });
+            if (harvester === "player") this._handTat("faellen", p, faellen);
+            else faellen();
+        }
         // ein anderer Wurf des Gesetzes (Fels, Busch, Glut, Bau eines Orts) bleibt abgebaut: der Boot wirft ihn neu, die Tat
         // sperrt ihn (`_tatSperrt`, speicher.K3)
-        else if (entry._ausGesetz) this._tatSchreiben("abbauen", entry.position.x, entry.position.z);
+        else if (entry._ausGesetz) this._tatSchreiben("abbauen", p.x, p.z);
         // Nur der Spieler fühlt die Ernte (joy + hope, skaliert mit dem Ertrag); Kreaturen nicht.
         if (harvester === "player") {
             const mag =
@@ -2587,7 +2592,7 @@ class AnazhRealm_werkstatt_bauen {
         const messen = () => {
             const lauf = (this._wsKostenLauf = (this._wsKostenLauf || 0) + 1);
             const bp = bpName ? this.state.blueprints[bpName] : null;
-            const gestalt = this._foundryVariantFor(this._werkSame(bp, bpName || preset), preset);
+            const gestalt = this._foundryVariantFor(this._vorschauSame(bp, bpName || preset), preset);
             if (gestalt == null) return;
             const ov = this._workshopStudioOvFor(preset);
             for (const s of stufen)

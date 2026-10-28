@@ -164,7 +164,8 @@ async function checkBandRing2Extended(ctx) {
     } else {
         check("Chat→DSL: 'Setze Wetter rainy' → ['weather','rainy']", phase3Results.parseWeatherOk);
         check("Chat→DSL: 'Spawne Kreaturen 3' → repeat+spawn_creature", phase3Results.parseSpawnOk);
-        check("Chat→DSL: unbekannter Befehl liefert null (kein Match)", phase3Results.parseUnknownReturnsNull);
+        // Chat→DSL: unbekannter Befehl liefert null (kein Match)
+        check("Chat→DSL: unbekannter Befehl liefert null", phase3Results.parseUnknownReturnsNull);
         check(
             "processChatCommand routet Welt-Befehl auf dslRun",
             phase3Results.chatRoutedToDsl,
@@ -187,16 +188,19 @@ async function checkBandRing2Extended(ctx) {
             "Phase 4: Save enthält keine Legacy-abilities-Namensliste mehr",
             phase3Results.savedNoLegacyAbilitiesList
         );
+        // Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)
         check(
-            "Gesten: ✦-Abzeichen + 'vor Xs' (einmalige Tat, sichtbar WANN sie wirkte)",
+            "Gesten: ✦-Abzeichen + 'vor Xs'",
             phase3Results.gestenKindBadge && phase3Results.gestenWhen
         );
+        // Gesten: jede Geste direkt vergessbar (✕) + die Liste hat 'leeren'
         check(
-            "Gesten: jede Geste direkt vergessbar (✕) + die Liste hat 'leeren'",
+            "Gesten: jede Geste direkt vergessbar + die Liste hat 'leeren'",
             phase3Results.gestenHasForget && phase3Results.gestenClearBtn
         );
+        // Gesten: Liste auf 6 gekappt + '+N ältere' (wächst nicht aus dem Bild)
         check(
-            "Gesten: Liste auf 6 gekappt + '+N ältere' (wächst nicht aus dem Bild)",
+            "Gesten: Liste auf 6 gekappt + '+N ältere'",
             phase3Results.gestenCapped
         );
         check("Gesten: ✕ vergisst eine Geste wirklich", phase3Results.gestenForgetWorks);
@@ -301,7 +305,8 @@ async function checkBandRing2Extended(ctx) {
             phase7Results.highBeatsLow,
             `high/low Ratio=${phase7Results.highBeatsLowRatio.toFixed(2)} (Erwartung > 2.0)`
         );
-        check("Phase 7: Selektion deckt alle Einträge ab (keine null-Returns)", phase7Results.selectionCoversAll);
+        // Phase 7: Selektion deckt alle Einträge ab (keine null-Returns)
+        check("Phase 7: Selektion deckt alle Einträge ab", phase7Results.selectionCoversAll);
         check("Phase 7: Mutation behält 'chain' als Wurzel bei Chain-Programmen", phase7Results.mutationKeepsChainRoot);
         check("Phase 7: Mutation behält Array-Strukturen bei Sub-Programmen", phase7Results.mutationKeepsArrayChildren);
         check(
@@ -430,7 +435,8 @@ async function checkBandV1722NexusEyes(ctx) {
     check("Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
     check("Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
     check("Nexus-Augen: neutrales Feld → freie erkundende Palette", res.neutralPalette);
-    check("Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
+    // Nexus-Augen: komponiert weiter valide DSL (backward-compat)
+    check("Nexus-Augen: komponiert weiter valide DSL", res.composesValid);
 }
 
 async function checkBandWelle6HCreatureLlm(ctx) {
@@ -537,47 +543,60 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
+        // Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown
         check(
-            "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
+            "_findCreatureByName exact + case-insensitive + null bei unknown",
             wave6hP2eV1Results.findExact && wave6hP2eV1Results.findCaseInsensitive && wave6hP2eV1Results.findUnknown
         );
+        // Welle 6.H P2E V1: _parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab
         check(
-            "Welle 6.H P2E V1: _parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab",
+            "_parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab",
             wave6hP2eV1Results.parseComma &&
                 wave6hP2eV1Results.parseColon &&
                 wave6hP2eV1Results.parseRejectsNonAddress &&
                 wave6hP2eV1Results.parseAllowsHyphensUnderscores
         );
+        // Welle 6.H P2E V1: Persona-Prompt enthält Name + Soul-Label + Alter
         check(
-            "Welle 6.H P2E V1: Persona-Prompt enthält Name + Soul-Label + Alter",
+            "Persona-Prompt enthält Name + Soul-Label + Alter",
             wave6hP2eV1Results.promptHasName && wave6hP2eV1Results.promptHasSoulLabel && wave6hP2eV1Results.promptHasAge
         );
-        check("Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)", wave6hP2eV1Results.promptHasStats);
+        // Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)
+        check("Persona-Prompt enthält Stats-Schicht", wave6hP2eV1Results.promptHasStats);
+        // Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)
         check(
-            "Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)",
+            "Persona-Prompt enthält Specs-Schicht",
             wave6hP2eV1Results.promptHasSpecs
         );
+        // Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)
         check(
-            "Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)",
+            "Persona-Prompt enthält Equipped-Schicht",
             wave6hP2eV1Results.promptHasEquipped
         );
-        check("Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)", wave6hP2eV1Results.promptHasBoost);
-        check("Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug", wave6hP2eV1Results.promptHasMemory);
-        check("Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)", wave6hP2eV1Results.promptHasWeather);
+        // Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)
+        check("Persona-Prompt enthält Boost-Schicht", wave6hP2eV1Results.promptHasBoost);
+        // Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug
+        check("Persona-Prompt enthält Memory-Auszug", wave6hP2eV1Results.promptHasMemory);
+        // Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)
+        check("Persona-Prompt enthält Welt-Kontext", wave6hP2eV1Results.promptHasWeather);
+        // Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)
         check(
-            "Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)",
+            "Persona-Prompt instruiert JSON-Format",
             wave6hP2eV1Results.promptInstructsJson
         );
+        // Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist
         check(
-            "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
+            "Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
             wave6hP2eV1Results.promptForbidsProgram
         );
+        // Welle 6.H P2E V1: maybeAnswerCreature ohne aktive LLM → höflicher Hinweis (kein API-Call)
         check(
-            "Welle 6.H P2E V1: maybeAnswerCreature ohne aktive LLM → höflicher Hinweis (kein API-Call)",
+            "maybeAnswerCreature ohne aktive LLM → höflicher Hinweis",
             wave6hP2eV1Results.llmOffPolite && wave6hP2eV1Results.llmOffNoCall
         );
+        // Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'
         check(
-            "Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
+            "maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
             wave6hP2eV1Results.unknownPolite
         );
     } else {
@@ -676,31 +695,38 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
+        // Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)
         check(
-            "Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)",
+            "@Name text → erkannt als explizite Adresse",
             wave6hP2eV11Results.atPatternMatches
         );
+        // Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt
         check(
-            "Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt",
+            "@Name, text + @Name: text Varianten unterstützt",
             wave6hP2eV11Results.atPatternWithComma && wave6hP2eV11Results.atPatternWithColon
         );
+        // Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)
         check(
-            "Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)",
+            "Name, text bleibt rückwärts-kompatibel",
             wave6hP2eV11Results.fallbackComma
         );
+        // Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)
         check(
-            "Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)",
+            "'Bran wie gehts' wird NICHT als Adresse missverstanden",
             wave6hP2eV11Results.noTrennerRejected
         );
-        check("Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt", wave6hP2eV11Results.atWithoutNameRejected);
+        // Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt
+        check("'@ hallo' ohne Name wird abgelehnt", wave6hP2eV11Results.atWithoutNameRejected);
+        // Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-fuchs/.soul-wesen/.soul-baer auf creature-name
         check(
-            "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-fuchs/.soul-wesen/.soul-baer auf creature-name",
+            "Liste rendert Soul-Klassen .soul-fuchs/.soul-wesen/.soul-baer auf creature-name",
             wave6hP2eV11Results.spriteHasSoulClass &&
                 wave6hP2eV11Results.wesenHasSoulClass &&
                 wave6hP2eV11Results.geistHasSoulClass
         );
+        // Welle 6.H P2E V1.1: Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>
         check(
-            "Welle 6.H P2E V1.1: Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>",
+            "Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>",
             wave6hP2eV11Results.chatLineAdded &&
                 wave6hP2eV11Results.chatHasSoulSpan &&
                 wave6hP2eV11Results.chatLineHasName
@@ -855,45 +881,55 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
+        // Welle 6.H P2E V2 (NULL): wesen-Stimme + default-Fallback (sprite/geist-Stimmen gefallen)
         check(
-            "Welle 6.H P2E V2 (NULL): wesen-Stimme + default-Fallback (sprite/geist-Stimmen gefallen)",
+            "wesen-Stimme + default-Fallback",
             wave6hP2eV2Results.hasSpriteVariants &&
                 wave6hP2eV2Results.hasWesenVariants &&
                 wave6hP2eV2Results.hasGeistVariants &&
                 wave6hP2eV2Results.hasDefaultFallback
         );
+        // Welle 6.H P2E V2: Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement
         check(
-            "Welle 6.H P2E V2: Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement",
+            "Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement",
             wave6hP2eV2Results.firstSpeechOk &&
                 wave6hP2eV2Results.chatLineAdded &&
                 wave6hP2eV2Results.lineHasSpriteSoul &&
                 wave6hP2eV2Results.lineHasName &&
                 wave6hP2eV2Results.templateReplaced
         );
+        // Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab
         check(
-            "Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab",
+            "Per-Kreatur-Throttle lehnt sofortige Zweit-Aussage ab",
             wave6hP2eV2Results.perCreatureThrottle
         );
+        // Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab
         check(
-            "Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab",
+            "Global-Throttle lehnt andere Kreatur sofort nach erster Aussage ab",
             wave6hP2eV2Results.globalThrottle
         );
+        // Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)
         check(
-            "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
+            "Toggle OFF → keine proaktive Sprache",
             wave6hP2eV2Results.toggleOffSilent
         );
-        check("Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
+        // Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop
+        check("Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
+        // Welle 6.H P2E V2 (NULL): Gattung ohne eigene Stimme spricht den default-Pool
         check(
-            "Welle 6.H P2E V2 (NULL): Gattung ohne eigene Stimme spricht den default-Pool",
+            "Gattung ohne eigene Stimme spricht den default-Pool",
             wave6hP2eV2Results.geistUsedGeistPool
         );
+        // Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache
         check(
-            "Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache",
+            "Hook _onCreatureLevelUp triggert proaktive Sprache",
             wave6hP2eV2Results.levelUpHookFired
         );
-        check("Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost", wave6hP2eV2Results.boostHookFired);
+        // Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost
+        check("Hook applyCreatureBoost triggert bei NEUEM Boost", wave6hP2eV2Results.boostHookFired);
+        // Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)
         check(
-            "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
+            "applyCreatureBoost mit SELBER Quelle → KEINE erneute Sprache",
             wave6hP2eV2Results.boostRefreshSilent
         );
     } else {
@@ -1053,66 +1089,77 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     });
 
     if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
+        // Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)
         check(
-            "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
+            "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops",
             wave6hP2eV3Results.weatherAllowed &&
                 wave6hP2eV3Results.voxelCarveAllowed &&
                 wave6hP2eV3Results.voxelFillAllowed &&
                 wave6hP2eV3Results.spawnBlueprintAllowed &&
                 wave6hP2eV3Results.chainAllowed
         );
+        // Welle 6.H P2E V3: Whitelist verbietet player_speed + define_blueprint + set_mode (Spieler-/Welt-Wissen-Eingriff blockiert)
         check(
-            "Welle 6.H P2E V3: Whitelist verbietet player_speed + define_blueprint + set_mode (Spieler-/Welt-Wissen-Eingriff blockiert)",
+            "Whitelist verbietet player_speed + define_blueprint + set_mode",
             wave6hP2eV3Results.playerSpeedForbidden &&
                 wave6hP2eV3Results.defineBlueprintForbidden &&
                 wave6hP2eV3Results.setModeForbidden
         );
+        // Welle 6.H P2E V3 + V9.36: Validator akzeptiert erlaubte Programme (weather, chain, voxel_carve)
         check(
-            "Welle 6.H P2E V3 + V9.36: Validator akzeptiert erlaubte Programme (weather, chain, voxel_carve)",
+            "Welle 6.H P2E V3 + V9.36: Validator akzeptiert erlaubte Programme",
             wave6hP2eV3Results.allowsWeather && wave6hP2eV3Results.allowsChain && wave6hP2eV3Results.allowsTerrain
         );
+        // Welle 6.H P2E V3: Validator lehnt verbotene Ops ab + nennt forbiddenOp
         check(
-            "Welle 6.H P2E V3: Validator lehnt verbotene Ops ab + nennt forbiddenOp",
+            "Validator lehnt verbotene Ops ab + nennt forbiddenOp",
             wave6hP2eV3Results.rejectsPlayerSpeed && wave6hP2eV3Results.rejectsDefine
         );
+        // Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)
         check(
-            "Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)",
+            "Validator erkennt verbotene Op TIEF im Chain",
             wave6hP2eV3Results.rejectsNestedForbidden
         );
+        // Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus
         check(
-            "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
+            "Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
             wave6hP2eV3Results.promptMentionsProgram &&
                 wave6hP2eV3Results.promptListsOps &&
                 wave6hP2eV3Results.promptMentionsModus
         );
+        // Welle 6.H P2E V3: schöpfer-Modus → auto-execute als Welt: gegen das Wort des Spielers hält das Wetter (Hinweis) + chat-Hinweis-Zeile + Memory auto_executed_action
         check(
-            "Welle 6.H P2E V3: schöpfer-Modus → auto-execute als Welt: gegen das Wort des Spielers hält das Wetter (Hinweis) + chat-Hinweis-Zeile + Memory auto_executed_action",
+            "schöpfer-Modus → auto-execute als Welt: gegen das Wort des Spielers hält das Wetter + chat-Hinweis-Zeile + Memory auto_executed_action",
             wave6hP2eV3Results.autoHaeltWort &&
                 wave6hP2eV3Results.autoHinweisWort &&
                 wave6hP2eV3Results.autoChatLineAdded &&
                 wave6hP2eV3Results.memoryHasAutoExecuted,
             `hält ${wave6hP2eV3Results.autoHaeltWort} · Hinweis ${wave6hP2eV3Results.autoHinweisWort}`
         );
+        // Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)
         check(
-            "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",
+            "pfad-Modus → KEIN auto-execute, statt Buttons gerendert",
             wave6hP2eV3Results.pfadDoesNotAutoExecute &&
                 wave6hP2eV3Results.pfadRendersButtons &&
                 wave6hP2eV3Results.memoryHasProposed
         );
+        // Welle 6.H P2E V3: Defense-in-Depth — verbotenes Programm wird AUCH im schöpfer-Modus blockiert + proposal_blocked-Memory
         check(
-            "Welle 6.H P2E V3: Defense-in-Depth — verbotenes Programm wird AUCH im schöpfer-Modus blockiert + proposal_blocked-Memory",
+            "Defense-in-Depth",
             wave6hP2eV3Results.forbiddenBlockedEvenInSchöpfer &&
                 wave6hP2eV3Results.memoryHasBlocked &&
                 wave6hP2eV3Results.memoryGrew
         );
+        // Welle 6.H P2E V3: Accept-Button-Click führt Programm aus + accepted_action-Memory
         check(
-            "Welle 6.H P2E V3: Accept-Button-Click führt Programm aus + accepted_action-Memory",
+            "Accept-Button-Click führt Programm aus + accepted_action-Memory",
             wave6hP2eV3Results.acceptButtonExists &&
                 wave6hP2eV3Results.acceptClickExecutes &&
                 wave6hP2eV3Results.memoryHasAccepted
         );
+        // Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)
         check(
-            "Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)",
+            "Reject-Button-Click → rejected_action-Memory",
             wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
         );
     } else {
@@ -1212,28 +1259,33 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v805Results && !v805Results.error) {
+        // V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)
         check(
-            "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
+            "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas",
             v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
         );
+        // V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)
         check(
-            "V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)",
+            "V8.05: Stats-Panel im DOM + NACH Canvas",
             v805Results.statsInDom && v805Results.statsAfterCanvas
         );
         check(
             "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
             v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
         );
+        // V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)
         check(
-            "V8.05 (V17.91): der alte Detail-Editor ist entfernt (#workshop-editor + Toggle weg)",
+            "V8.05: der alte Detail-Editor ist entfernt",
             v805Results.editorRemoved
         );
+        // V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste
         check(
-            "V8.05 (V17.91): Undo/Redo + Löschen wohnen in der Top-Leiste",
+            "V8.05: Undo/Redo + Löschen wohnen in der Top-Leiste",
             v805Results.topBarUndoRedo && v805Results.topBarDeleteBlueprint
         );
+        // V8.05: Del-Button im DOM + initial disabled (keine Selection)
         check(
-            "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
+            "V8.05: Del-Button im DOM + initial disabled",
             v805Results.delBtnInDom && v805Results.delBtnInitiallyDisabled
         );
         check(
@@ -1297,20 +1349,24 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v806Results && !v806Results.error) {
+        // V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)
         check(
-            "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
+            "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar",
             v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
         );
+        // V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)
         check(
-            "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons (4 Modi + Snap + Zentrieren + Undo + Redo + ▶ Gelenk-Probe + Klonen + Neu + Löschen)",
+            "V8.06/V17.91/V18.110/W-G: Mode-Bar hat 12 Buttons",
             v806Results.sevenButtonsInBar
         );
         check(
             `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
             v806Results.rightPaletteWider
         );
-        check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
-        check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
+        // V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)
+        check("V8.06: Mode-Bar hat Hintergrund-Farbe", v806Results.modeBarHasBg);
+        // V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)
+        check("V8.06: Stats-Panel hat dunklen Hintergrund", v806Results.statsHasDarkBg);
     } else if (v806Results && v806Results.error) {
         check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
@@ -1385,20 +1441,26 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v807Results && !v807Results.error) {
-        check("V8.07: Klone-Button IMMER enabled (auch bei built-in)", v807Results.cloneBtnAlwaysEnabled);
-        check("V8.07: Neu-Button IMMER enabled (auch bei built-in)", v807Results.newBtnAlwaysEnabled);
-        check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
+        // V8.07: Klone-Button IMMER enabled (auch bei built-in)
+        check("V8.07: Klone-Button IMMER enabled", v807Results.cloneBtnAlwaysEnabled);
+        // V8.07: Neu-Button IMMER enabled (auch bei built-in)
+        check("V8.07: Neu-Button IMMER enabled", v807Results.newBtnAlwaysEnabled);
+        // V8.07: Mode-Buttons (Move/...) disabled bei built-in
+        check("V8.07: Mode-Buttons disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
         check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
         check(
             `Spec-Sheet: ${v807Results.tagChipsCount} Profil-/Resonanz-Balken mit Fill + Stufen-Klasse`,
             v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
         );
-        check("Spec-Sheet: Qualitäts-Sterne sind ★/☆ (5 Zeichen)", v807Results.starsAreGlyphs);
+        // Spec-Sheet: Qualitäts-Sterne sind ★/☆ (5 Zeichen)
+        check("Spec-Sheet: Qualitäts-Sterne sind ★/☆", v807Results.starsAreGlyphs);
+        // _workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)
         check(
-            "_workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline (CSS-Rahmen trägt jetzt)",
+            "_workshopApplyDefaultSizeOnce räumt die stale Resize-Größe + Inline",
             v807Results.defaultOverridesStale
         );
-        check("idempotent — zweiter Apply lässt keine Inline-Größe zurück", v807Results.idempotentAfterApply);
+        // idempotent — zweiter Apply lässt keine Inline-Größe zurück
+        check("idempotent", v807Results.idempotentAfterApply);
     } else if (v807Results && v807Results.error) {
         check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
     }
@@ -1462,8 +1524,9 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check("Schicht 2: Anthropic-Response extrahiert text-Block", llmResults.anthropicExtract);
         check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
         check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
+        // Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)
         check(
-            "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)",
+            "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON",
             llmResults.parserDetectsError
         );
         check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
@@ -1555,32 +1618,38 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v795Results && !v795Results.error) {
+        // V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)
         check(
-            "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)",
+            "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat",
             v795Results.epRespectsApiPath
         );
         check(
             "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
             v795Results.epRespectsV1Path
         );
+        // V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)
         check(
-            "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)",
+            "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format",
             v795Results.extractsOpenAi
         );
+        // V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)
         check(
-            "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)",
+            "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format",
             v795Results.extractsOllamaGenerate
         );
+        // V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)
         check(
-            "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)",
+            "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → ''",
             v795Results.extractsEmpty
         );
+        // V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)
         check(
-            "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)",
+            "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800",
             v795Results.bodyNativeHasOptions && v795Results.bodyNativeNoMaxTokens
         );
+        // V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800 (KEIN options-Feld)
         check(
-            "V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800 (KEIN options-Feld)",
+            "V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800",
             v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
         );
         check(
@@ -1657,8 +1726,9 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     });
 
     if (v797AutoResults && !v797AutoResults.error) {
+        // V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)
         check(
-            "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)",
+            "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT",
             v797AutoResults.proxyUsedForCloud
         );
     } else if (v797AutoResults && v797AutoResults.error) {
@@ -1722,19 +1792,23 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V7.98 Parser: <think>...</think>-Block wird gestripped, dahinter liegendes JSON sauber geparst",
             v798Results.thinkStripped
         );
-        check("V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)", v798Results.thinkingStripped);
+        // V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)
+        check("V7.98 Parser: <thinking>-Variante wird auch erkannt", v798Results.thinkingStripped);
+        // V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')
         check(
-            "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')",
+            "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback",
             v798Results.plainTextFallback
         );
         check(
             "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
             v798Results.thinkPlusPlain
         );
-        check("V7.98 Parser: Markdown-Fence (```json …```) wird gestripped", v798Results.fenceStripped);
+        // V7.98 Parser: Markdown-Fence (```json …```) wird gestripped
+        check("V7.98 Parser: Markdown-Fence wird gestripped", v798Results.fenceStripped);
         check("V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis", v798Results.emptyHasError);
+        // V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)
         check(
-            "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
+            "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback",
             v798Results.emptyJsonFallsBackToText
         );
     } else if (v798Results && v798Results.error) {

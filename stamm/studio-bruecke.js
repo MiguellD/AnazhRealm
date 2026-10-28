@@ -3044,7 +3044,12 @@ class AnazhRealm_studio_bruecke {
                             const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(FS.hashC)))
                                 .sub(0.5)
                                 .mul(FS.mitte);
-                            const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
+                            // der Strich: die Locke längs des Kamms (Lage − Wurzel quer zur Normale) gestreckt, flächentreu
+                            const q = TSL.fract(p).sub(0.5).sub(mitte);
+                            const kv = TSL.positionGeometry.sub(TSL.attribute("aWurzel", "vec3"));
+                            const kq = kv.sub(TSL.normalGeometry.mul(kv.dot(TSL.normalGeometry)));
+                            const ql = q.dot(kq.div(kq.length().max(1e-6)));
+                            const dist = q.dot(q).sub(ql.mul(ql)).mul(FS.strich).add(ql.mul(ql).div(FS.strich)).sqrt();
                             const radius = aS.y
                                 .sqrt()
                                 .mul(FS.radius)

@@ -31,6 +31,7 @@ class AnazhRealm_dirigent_takt {
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
+            this._taktZeit = currentTime; // DIE UHR DES TAKTS (`_taktUhr`) — die Bühne hält die Bild-Uhr, nie sie
 
             // Error-Boundary des ewigen Loops: ein einziger Throw in einem Frame-Schritt bräche den
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
@@ -447,6 +448,14 @@ class AnazhRealm_dirigent_takt {
               fr.nachEdit.length +
               (fr.cursor < fr.totalVerts ? 1 : 0)
             : 0;
+        // DER FLUG IST DER FADEN (heil-horizont): zählt der Ring mehr Bestellungen im Flug, als der Fern-Faden trägt, ist eine
+        // verloren — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie, und der Horizont stünde nie mehr (CI 40594858957:
+        // „Horizont offen 1“, erst nach 3 729 Takten beim Deckel); laut am Ereignis, beim Namen
+        const faden = fr && this._nebenFaeden ? this._nebenFaeden.get("fern") : null;
+        if (fr && fr.flug + (fr.editFlug | 0) > (faden ? faden.pending.size : 0))
+            this._bruchMelden(
+                "HORIZONT: der Fern-Ring zählt eine Bestellung im Flug, die der Fern-Faden nicht trägt — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie"
+            );
         o.wald =
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
@@ -679,14 +688,14 @@ class AnazhRealm_dirigent_takt {
                     name: evolution.name,
                     program: evolution.program,
                     source: evolution.source || "nexus",
-                    createdAt: evolution.createdAt || performance.now() / 1000,
+                    createdAt: evolution.createdAt || this._taktUhr(),
                     fitness: initialFitness,
                 };
                 this.state.dsl.abilities.push(abilityEntry);
                 const historyEntry = {
                     id: evolution.name,
                     program: evolution.program,
-                    at: performance.now() / 1000,
+                    at: this._taktUhr(),
                     outcome: result.outcome,
                     ok: result.ok,
                     fitness: initialFitness,
@@ -1132,6 +1141,14 @@ class AnazhRealm_dirigent_takt {
     // ein Zustand reist: Wetter, Leben, Brand und Nässe folgen ihr als Funktion.
     _weltUhrNimm(t) {
         if (Number.isFinite(t) && t > this.state.spielZeit) this.state.spielZeit = t;
+    }
+
+    // DIE UHR DES TAKTS (s): der Stempel, den der Loop jedem Glied als `currentTime` reicht (`_taktZeit`), vor dem ersten Takt
+    // die Wanduhr (dieselbe Achse wie der rAF-Stempel). Wer gegen `currentTime` altert (die Geburt einer Welt-Regel, ein
+    // geplanter DSL-Schritt, die Evolution des Nexus), wird auf ihr geboren — bis affekt.K3 auf der Wanduhr: unter einem Takt,
+    // der schneller geht als die Wand (der Zeitraffer der Linse), verfiel jede Nexus-Regel im ersten Takt nach der Geburt.
+    _taktUhr() {
+        return this._taktZeit || performance.now() / 1000;
     }
 
     // FRAME-BUDGET-POOL: EINE Quelle für „wie viel ms hat dieser Frame für aufschiebbare Arbeit".

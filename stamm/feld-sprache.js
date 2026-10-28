@@ -828,8 +828,11 @@ class AnazhRealm_feld_sprache {
             // δ ist die Änderungs-Responsivität (aufblühende Region → joy-Puls, verdorrende/Wunde → sorrow-Puls).
             // Die Baseline lagt (playerTau) → Gewöhnung fällt heraus (anhaltend Gutes: δ → 0).
             const sit = this._playerSituationWohl(aura);
+            // das Umstellen dieses Takts (sein Teil der Situation) und seine Erwartung, die mit der Baseline läuft
+            const dr = AnazhRealm.WERTUNG.umstellt * this._spielerUmstellt();
             if (typeof p.wohlBaseline !== "number") {
                 p.wohlBaseline = sit; // Cold-Start: die erste Situation IST die Erwartung (kein δ)
+                p.umstelltErwartet = dr;
             } else {
                 let dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
                 // Den ROHEN Situations-δ (VOR der Stimmungs-Tönung) als kurze EMA halten — die Erlebnis-Tendenz
@@ -842,18 +845,25 @@ class AnazhRealm_feld_sprache {
                 // Bewertung (in trüber Stimmung fühlt sich Gutes kleiner an). Bei konstanter Situation keine
                 // Kongruenz — sonst spontaner Stimmungs-Runaway.
                 if (Math.abs(dsig) > dead) dsig += AnazhRealm.EMOTION_MOOD_CONGRUENCE * this._moodValence();
+                // DIE FURCHT UND IHR ENDE (oekologie.K4#2): den Teil des δ, den das Umstellen gegen seine Erwartung trägt (f), erlebt
+                // er als Furcht (chaos, verfliegt schnell) statt als Trauer (sorrow, bleibt); fällt das Umstellen, löst derselbe
+                // Teil die Furcht. Bis oekologie.K4#2 war jeder Abfall zu zwei Dritteln Trauer: nach 30 s im Ring stand sorrow
+                // auf 1, und die Kohärenz schluckte den Triumph nach dem Fall der Jäger (joy 0 bei δ +0,16).
+                const f = Math.max(0, Math.min(1, ((p.umstelltErwartet || 0) - dr) / dsig));
                 if (dsig > dead) {
                     const g = AnazhRealm.WERTUNG.appraisalGain * (dsig - dead) * delta;
                     p.emotions.joy = Math.min(1, (p.emotions.joy || 0) + g);
                     p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + g * 0.6);
+                    p.emotions.chaos = Math.max(0, (p.emotions.chaos || 0) - g * f);
                 } else if (dsig < -dead) {
                     const g = AnazhRealm.WERTUNG.appraisalGain * (-dsig - dead) * delta;
-                    p.emotions.sorrow = Math.min(1, (p.emotions.sorrow || 0) + g);
-                    p.emotions.chaos = Math.min(1, (p.emotions.chaos || 0) + g * 0.5);
+                    p.emotions.sorrow = Math.min(1, (p.emotions.sorrow || 0) + g * (1 - f));
+                    p.emotions.chaos = Math.min(1, (p.emotions.chaos || 0) + g * (0.5 + 0.5 * f));
                 }
                 // Baseline NACH dem δ aktualisieren (sie lagt → δ hält an → Gewöhnung über τ).
                 const aPl = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.playerTau);
                 p.wohlBaseline += aPl * (sit - p.wohlBaseline);
+                p.umstelltErwartet = (p.umstelltErwartet || 0) + aPl * (dr - (p.umstelltErwartet || 0));
             }
             // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2): beim Betreten der Zelle und
             // beim Verlassen — dazwischen trägt die lazy EMA die Zeit (ein Blick nach Δt gleicht jedem Blick dazwischen bei
@@ -923,24 +933,33 @@ class AnazhRealm_feld_sprache {
                 p.mood[k] = (p.mood[k] || 0) + aMood * ((p.emotions[k] || 0) - (p.mood[k] || 0));
             }
         }
+    }
 
-        const trigger = (axis, program) => {
-            if (p.emotions[axis] < p.emotionThreshold) return;
-            const last = p.emotionLastApply[axis] ?? -Infinity;
-            if (currentTime - last < p.emotionApplyCooldown) return;
-            this.dslRun(program, { source: `emotion:${axis}` });
-            p.emotionLastApply[axis] = currentTime;
-            this.log(`Emotion '${axis}' triggert Welt-Effekt (Wert ${p.emotions[axis].toFixed(2)})`, "INFO");
+    // DIE GESETZE DES GEMÜTS (affekt.K2): die Emotion formt die Welt über Welt-Regeln mit Quelle — je Achse EIN Gesetz
+    // `emotion:<Achse>` (Bedingung `emotion_above <Achse>` an der Schwelle des Spielers, Takt = sein Cooldown) durch die EINE Tür
+    // `_registerWorldRule`, angepinnt (die Verdrängung schont sie): gewertet, gespeichert, geteilt und im Gesetze-Pult pausierbar
+    // wie jedes Gesetz; der Wunsch, den es
+    // wirkt, trägt seine Quelle („rule:emotion:sorrow", `_setWeather`). Bis affekt.K2 feuerte `updatePlayerEmotions` sechs feste
+    // Trigger an der Regel-Welt vorbei (`dslRun`): nicht teilbar, nicht gewertet, nicht abschaltbar. Idempotent (die Signatur
+    // dedupt, ein zweiter Ruf setzt den Takt) — beim Erwachen der Welt, nach dem Laden und vom Cooldown-Schieber.
+    _gemuetGesetze() {
+        const takt = { everySec: this.state.player.emotionApplyCooldown };
+        const wirkung = {
+            joy: ["skybox_color", "#f7d358"], // warmes Gelb
+            awe: ["skybox_color", AnazhRealm.ACHSEN_FARBE.magieleitung], // magisches Lila (die EINE Tabelle)
+            sorrow: ["weather", "rainy"],
+            hope: ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]],
+            peace: ["creatures_speed_mul", 0.7],
+            chaos: ["creatures_speed_mul", 1.5],
         };
-        // Ring 3 V2: alle sechs Achsen koppeln. Jede löst eine andere Art
-        // von Welt-Wirkung aus, damit sich die emotionalen Zustände nicht
-        // überlagern und sichtbar bleiben.
-        trigger("joy", ["skybox_color", "#f7d358"]); // warmes Gelb
-        trigger("awe", ["skybox_color", AnazhRealm.ACHSEN_FARBE.magieleitung]); // magisches Lila (die EINE Tabelle)
-        trigger("sorrow", ["weather", "rainy"]);
-        trigger("hope", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]);
-        trigger("peace", ["creatures_speed_mul", 0.7]);
-        trigger("chaos", ["creatures_speed_mul", 1.5]);
+        for (const axis of AnazhRealm.EMOTION_AXES) {
+            const g = this._registerWorldRule(["emotion_above", axis], wirkung[axis], takt, {
+                source: `emotion:${axis}`,
+                log: [],
+                programId: "gemuet",
+            });
+            if (g) g.pinned = true;
+        }
     }
 
     // === Der fusionierte READOUT ===
@@ -1152,6 +1171,19 @@ class AnazhRealm_feld_sprache {
         return tat;
     }
 
+    // DIE HAND TUT (affekt K1#2): eine Tat der eigenen Hand des Spielers — fällen (`harvestArchitecture`), töten
+    // (`_creatureCombatDeath`) — ist dieselbe Tat wie ein Welt-Akt: ihr Ort, die Situation davor, ihr Effekt (`wirken`), ihre
+    // Wertung (`_tatWerten`, Quelle „human" wie der Satz des Spielers). Die Narbe senkt das Leben des Orts: die schädliche Tat
+    // wertet negativ, der Chor des Orts verstummt. Bis affekt.K1#2 wertete nur `dslEval` — ein gefällter Baum und ein getötetes
+    // Tier blieben ohne δ.
+    _handTat(op, pos, wirken) {
+        const ctx = { source: "human", tat: null };
+        const tat = this._tatBeginnt(op, [], ctx);
+        this._tatOrt(tat, pos, "hand");
+        wirken();
+        this._tatWerten(tat, ctx, true);
+    }
+
     // Der Ort der Tat (aus `dslEvalPos`: der erste Ort, den ihr Effekt auflöst, bevor er schreibt) und die Situation, die sie dort
     // vorfindet. `knoten` ist der Auflöser (at_field_need, at_player …) — die Stimme nennt ihn als Ursache.
     _tatOrt(tat, pos, knoten) {
@@ -1330,6 +1362,10 @@ AnazhRealm.WERTUNG = Object.freeze({
     fieldTau: 120,
     playerTau: 30,
     pruneAgeSec: 180,
+    // DAS UMSTELLEN (oekologie.K4#2): so weit senkt ein geschlossenes Rudel die Situation des Spielers (`_spielerUmstellt`
+    // ∈ [0, 1) × umstellt) — ein Rudel im Ring 0,4–0,6 unter die Baseline, die Furcht; sein Fall hebt sie zurück über die
+    // Baseline, die ihr nachlief (playerTau), der Triumph (Mess-Wiese: Ego joy + hope +0,31, bei 0,5 +0,02 bis +0,13).
+    umstellt: 1,
     // V17.43 Phase 2 — die EMA-Rate, mit der rule.value den per-Feuern gemessenen
     // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
     // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1]. Dieselbe Rate lernt die Erwartung eines
@@ -1380,7 +1416,6 @@ AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
     damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
     attack: { chaos: 0.08 }, // V17.54 Kampf D — angreifen (Zorn/Kampf-Intensität); + Waffen-härte via die W2-Brücke
     threatened: { sorrow: 0.14, chaos: 0.12 }, // PHASE E — gejagt + niedrige HP: die FURCHT (der damage-Affekt, durch HP differenziert)
-    triumph: { joy: 0.16, hope: 0.1 }, // PHASE E — die Bedrohung bezwungen: Triumph/Erleichterung (der positive δ)
     create: { joy: 0.1, hope: 0.1 }, // V17.46 — einen Bauplan ERSCHAFFEN (Werkstatt/Chat): der Stolz (× Komplexität)
     loss: { sorrow: 0.15 }, // V17.48 — den Verlust einer Kreatur (× Magnitude ∝ Bindung × Vitalität)
 });

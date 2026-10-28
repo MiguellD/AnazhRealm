@@ -165,7 +165,19 @@ async function stand() {
     await r._speicherStill();
     return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
 }
-const WARTEN_SEITE = `window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+// DAS BILD ALS PNG: in jeder Seite `window.__png(u8, W, H)` — RGBA-Bytes W×H (ein Schuss, eine Maske) deckend als Daten-URL,
+// in Node `pngDatei(datei, url)` schreibt sie; bis dahin baute jede Bild-Linse ihre Leinwand und ihren Puffer selbst
+function png(u8, W, H) {
+    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+    const d = Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v));
+    cv.getContext("2d").putImageData(new ImageData(d, W, H), 0, 0);
+    return cv.toDataURL("image/png");
+}
+// ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
+// Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
+const bundlesNeu = () => window.anazhRealm.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
+const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -932,14 +944,13 @@ function pruefer() {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
         if (!ok) errs.push(name);
     };
-    // der rote Schluss einer Linse: trägt sie Befunde, steht `rot` auf stderr und der Lauf endet mit Exit 1
-    const rotAus = (rot) => {
-        if (errs.length) {
-            console.error(rot);
-            process.exit(1);
-        }
-    };
-    return { errs, check, rotAus };
+    return { errs, check, wandEnde };
+}
+
+// DAS ENDE EINER WAND: das EINE Urteil (`urteilEnde`) über die gesammelten Verletzungen — ROT mit Exit 1 und jeder
+// Verletzung beim Namen, sonst der Grün-Satz mit Exit 0 (kein `process.exit(0)` danach).
+function wandEnde(errs, satz) {
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — " + satz);
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
@@ -1018,6 +1029,25 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
+// Schalter), die Vorgabe
+const argOpt = (k, d) => {
+    const a = process.argv;
+    const i = a.indexOf(k);
+    return i >= 0 && a[i + 1] && !a[i + 1].startsWith("--") ? a[i + 1] : d;
+};
+// DAS EINE URTEIL AM ENDE einer Linse: `urteilEnde(rot, roteZeile, grueneZeile)` — rot (Zahl, Liste der Länge oder wahr) nennt die
+// rote Zeile auf stderr und endet mit Exit 1, sonst die grüne auf stdout mit Exit 0 (Lehre 9: der Exit spricht); eine Zeile, die
+// nur auf ihrer Seite gilt (sie liest den Befund), steht als Funktion und wird erst dort gelesen
+const urteilEnde = (rot, roteZeile, grueneZeile) => {
+    const z = (x) => (typeof x === "function" ? x() : x);
+    if (rot) {
+        console.error(z(roteZeile));
+        process.exit(1);
+    }
+    console.log(z(grueneZeile));
+    process.exit(0);
+};
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
 function werkbankRuf(port, weg, nutzlast) {
     return new Promise((res, rej) => {
@@ -1176,6 +1206,7 @@ module.exports = {
     GPU_REZEPTE,
     CODE_OF_SEITE,
     WARTEN_SEITE,
+    pngDatei,
     statikServer,
     starteBrowser,
     warteAufWelt,
@@ -1187,11 +1218,14 @@ module.exports = {
     pruefer,
     taeterFaelle,
     selbsttestEnde,
+    wandEnde,
     startProc,
     eigenePorte,
     sleep,
     laufUhr,
     hauptLauf,
+    urteilEnde,
+    argOpt,
     waitFor,
     werkbankTor,
     werkbankRuf,
@@ -1301,7 +1335,7 @@ async function selbsttest() {
         .filter(([, c]) => adressZwilling(c))
         .map(([f]) => f)
         .join(", ");
-    const FREMD = "diag-koerper-stand.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const FREMD = "werkbank.cjs";
     const gepflanzt = [
         "statikServer(); await new Promise((r) => s.listen(1, r));",
         "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",

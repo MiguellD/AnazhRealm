@@ -2,8 +2,8 @@ class AnazhRealm_speicher_welten {
     // ===== ATLAS · Speicher/welten — Snapshot · IndexedDB · Welt-Index · Manifest · Serialisierung =====
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     // DIE IDENTITÄT EINER WELT: eine neue worldId (UUID, ohne crypto ein Zufalls-Stempel). Leser: der Boot einer frischen
-    // Welt, die Geburt, die Migration, daneben legen, die Fusion und die Tür `_weltBetreten` (eine Welt ohne Id bekommt
-    // ihre eigene, nie den Platz der Welt davor).
+    // Welt, die Geburt, die Migration, daneben legen und die Tür `_weltBetreten` (eine Welt ohne Id bekommt ihre eigene,
+    // nie den Platz der Welt davor). Die Fusion würfelt nicht: ihre Id ist eine Funktion der Eltern (`_fusionGenerateIdentity`).
     static _neueWeltId() {
         try {
             if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -836,6 +836,8 @@ class AnazhRealm_speicher_welten {
                               z: st().playerMesh.position.z,
                           }
                         : { x: 0, y: 5, z: 0 },
+                // der Augenblick: jeder Stand des Takts fragt die Lage selbst (der Besen nie)
+                { augenblick: true },
             ],
             // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
             ["bodenGeneration", () => globalThis.__gelaendeCore.BODEN_GENERATION],
@@ -903,7 +905,13 @@ class AnazhRealm_speicher_welten {
             ],
             // die Edits im Stand des Speicher-Fadens: kompakt, angehängt (speicher-faden.js) — nur dort ein eigener Teil
             ["voxelEdits", null],
-            ["dslAbilities", () => st().dsl.abilities.slice(-200), angehaengt(() => st().dsl.abilities)],
+            // der Finalizer schreibt die Fitness an ihren Platz (`finalisiert`): seit affekt.K3 finalisiert er auf der Uhr des
+            // Takts auch unter einem Takt der Linse, und der Stand des Fadens verpasste die Fitness (diag-persistence D)
+            [
+                "dslAbilities",
+                () => st().dsl.abilities.slice(-200),
+                { marke: () => [...angehaengt(() => st().dsl.abilities).marke(), st().dsl.finalisiert] },
+            ],
             [
                 "dslHistory",
                 () => st().dsl.history.slice(-st().dsl.historyCap),
@@ -913,6 +921,7 @@ class AnazhRealm_speicher_welten {
                         st().dsl.history.length,
                         st().dsl.history.at(-1),
                         st().dsl.historyCap,
+                        st().dsl.finalisiert,
                     ],
                 },
             ],
@@ -1001,8 +1010,13 @@ class AnazhRealm_speicher_welten {
             // alte Stand trug den 8-min-Tag und hielte ihn fest).
             // DIE WELT-UHR (feld.K2#2) reist: nach dem Reload laufen Front, Zug, Leben und Brand an ihr weiter (`_weltUhrNimm`);
             // der Übergang des Wetter-Zugs ist ihre Funktion (der erste Takt zieht ihn neu), darum reist weatherTransition nicht.
-            ["spielZeit", () => st().spielZeit],
-            ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5)],
+            ["spielZeit", () => st().spielZeit, { augenblick: true }],
+            ["timeOfDay", () => (typeof st().timeOfDay === "number" ? st().timeOfDay : 0.5), { augenblick: true }],
+            // DAS JAHR DER WELT (speicher.K4): die Phase der Saison reist — ohne sie begann jede Wiederkehr am Sommer-Anfang
+            // (0,375), und der Pegel des Jahrs (`_pegelTafel`: die Schmelze hebt See und Fluss) zeichnete Ufer, Wasser und den
+            // Boden der Gruben am Fluss anders als vor dem Speichern (Grube am Bach der Mess-Wiese: der Boden-Chunk 777 → 774
+            // Ecken, bild-diff 4,2 %).
+            ["seasonPhase", () => (typeof st().seasonPhase === "number" ? st().seasonPhase : null)],
             ["dayLengthMinutes", () => st().dayLengthMinutes],
             // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
             ["wetterWort", () => st().wetterWort || null],
@@ -1243,19 +1257,8 @@ class AnazhRealm_speicher_welten {
                 null,
                 {
                     liste: () => Object.values(st().blueprints || {}).filter((bp) => bp && !bp.builtIn),
-                    // in der Hand: getragen, in der Hotbar, im Inventar (ein Hieb zehrt am Bauplan)
-                    hand: () => {
-                        const p = st().player || {};
-                        const bps = st().blueprints || {};
-                        const namen = [p.equipped && p.equipped.held, p.equipped && p.equipped.armor].concat(
-                            st().hotbar || [],
-                            (p.inventory || []).map((s) => s && s.blueprintName)
-                        );
-                        return namen
-                            .filter((n) => typeof n === "string" && bps[n] && !bps[n].builtIn)
-                            .map((n) => bps[n]);
-                    },
-                    alle: (K) => K.geaendert.has("playerInventory"),
+                    // regte sich die Hand, fragt der Stand jeden Bauplan; den Hieb, der am Bauplan zehrt, fegt der Besen
+                    alle: (K) => K.geaendert.includes("playerInventory"),
                     marke: (bp) => {
                         const m = Object.values(bp);
                         const pm = bp.portalMeta;
@@ -1307,8 +1310,8 @@ class AnazhRealm_speicher_welten {
                                       : null
                               )
                         : [],
-                // ein eigenes Feld: seine Änderung fragt jeden Bauplan (`alle` der Baupläne)
-                {},
+                // ein eigenes Feld des Augenblicks: seine Änderung fragt jeden Bauplan (`alle` der Baupläne) und jedes Feld
+                { augenblick: true },
             ],
         ]);
     }
@@ -1317,9 +1320,9 @@ class AnazhRealm_speicher_welten {
     // änderte (eine Marke erspart den Bau); je Liste die Menge (ihre Ordnung nur, wenn sie sich änderte) und die Glieder, deren
     // JSON sich änderte; die Edits als Anhang (x, y, z, r, Modus) seit dem letzten Stand. `voll`: alles SENDEN (der Faden hält
     // kein Modell dieser Welt) — serialisiert wird auch dann nur, was sich seit dem Gedächtnis änderte (der Besen backt ab dem
-    // Boot vor). `takt` (die Sicherung des Takts): die Glieder hat der Besen im Leerlauf geprüft (`_standFegen`) —
-    // gefragt werden nur neue, die Baupläne in der Hand und, wo das Inventar sich regte, jeder Bauplan (ein Akt, der Material
-    // zahlt und einen Bauplan ändert, steht ganz im Stand oder gar nicht). → die Nachricht (die Teile als EINE Zeichenkette,
+    // Boot vor). `takt` (die Sicherung des Takts): die ruhigen Felder und die Glieder hat der Besen im Leerlauf geprüft
+    // (`_standFegen`) — gefragt werden der Augenblick, neue Glieder und, wo das Inventar sich regte, alles (ein Akt, der
+    // Material zahlt und einen Bauplan ändert, steht ganz im Stand oder gar nicht). → die Nachricht (die Teile als EINE Zeichenkette,
     // speicher-faden.js nennt die Zahl) und die Transfers der Edits.
     _standAenderung(voll, takt) {
         const S = this._speicher;
@@ -1340,40 +1343,60 @@ class AnazhRealm_speicher_welten {
         K.bodenNeu = S.bodenGen !== S.bodenGemessen;
         S.bodenGemessen = S.bodenGen;
         const [stuecke, teile, listenStuecke, listen] = [[], [], [], {}];
-        const feld = (z) => {
+        // die Zeilen der Tafel nach Art (gemerkt, bis die Tafel wächst): der Augenblick, der Kopf, die ruhigen Felder
+        if (!S.klassen || S.klassen.n !== tafel.length) {
+            const C = (S.klassen = { n: tafel.length, augenblick: [], kopf: [], ruhig: [], listen: [], ausListen: [] });
+            for (const z of tafel) {
+                const a = z[2];
+                if (a && a.liste) C.listen.push(z);
+                else if (z[1])
+                    (!a ? C.kopf : a.augenblick ? C.augenblick : a.ausListen ? C.ausListen : C.ruhig).push(z);
+            }
+            Object.assign(S, { kopf: null, ordnung: null });
+        }
+        const C = S.klassen;
+        // ein Feld mit eigener Art: gefragt (`fragen`) oder aus dem Gedächtnis, das der Besen fegte — gesendet, was der Faden
+        // nicht hält (neu gefragt und anders, gefegt, oder alles bei `voll`)
+        const feld = (z, fragen) => {
             const k = z[0];
-            const alt = S.zeilen.get(k);
-            const marke = z[2].marke ? z[2].marke(K) : null;
-            let json = alt && alt.json;
-            if (!marke || !alt || !gleich(alt.marke, marke)) {
-                const v = z[1](true, K);
-                json = v === undefined ? undefined : JSON.stringify(v);
-                S.zeilen.set(k, { marke, json });
-                if (alt && alt.json !== json) K.geaendert.add(k);
-                else if (alt && !voll) return;
-            } else if (!voll) return;
-            if (json === undefined) return;
+            let neu = S.gefegt.delete(k) || voll;
+            if (fragen || !S.zeilen.has(k)) neu = this._standFrage(z, K) || neu;
+            const json = S.zeilen.get(k).json;
+            if (!neu || json === undefined) return;
             teile.push(k);
             stuecke.push(json);
         };
-        // (1) DER KOPF: jedes Feld ohne Art in EINEM Objekt, EIN JSON, EIN Vergleich (einzeln kostete ein Feld im Interpreter
-        // ~40 Operationen — der Stand läuft alle 5 s und wird nie optimiert); der Faden setzt es als Felder ohne Klammern ein
-        const kopf = {};
-        for (let i = 0; i < tafel.length; i++)
-            if (tafel[i][1] && !tafel[i][2]) kopf[tafel[i][0]] = tafel[i][1](true, K);
-        const kopfJson = JSON.stringify(kopf).slice(1, -1);
-        if (voll || S.kopf !== kopfJson) {
-            S.kopf = kopfJson;
-            teile.push("");
-            stuecke.push(kopfJson);
+        // (1) DER AUGENBLICK DES STANDS (speicher.K2): im Takt fragt der Stand nur die Felder, die jeder Stand trägt (Art
+        // `augenblick`: Lage, Uhr, die Hand); jedes ruhige Feld und den Kopf fragt der Besen im Leerlauf reihum (`_standFegen`)
+        // wie die Glieder der Listen — bis speicher-zwei fragte jeder Stand die ganze Tafel: je Stand p50 0,325 / max 0,6 ms im
+        // Haupt-Faden (headless im Takt des Autosaves, 2 kB Kopf, sonst nichts Neues), seither p50 0,09–0,12 / max 0,26 ms und
+        // sein Versand ein eigenes Bild. REGTE SICH DIE HAND (das Inventar), fragt er alles: ein Akt, der Material zahlt, steht
+        // ganz im Stand.
+        for (const z of C.augenblick) feld(z, true);
+        const alles = !takt || voll || K.geaendert.includes("playerInventory");
+        // (2) DER KOPF: die Felder ohne Art, je Feld sein Stück JSON (gefragt oder gefegt), EIN Text, EIN Vergleich — neu
+        // zusammengesetzt nur, wenn ein Stück sich regte; der Faden setzt ihn als Felder ohne Klammern ein
+        if (alles || S.kopf === null || S.kopfNeu) {
+            S.kopfNeu = false;
+            const kopf = [];
+            for (const z of C.kopf) {
+                if (alles || !S.kopfStuecke.has(z[0])) this._standFrage(z, K);
+                const s = S.kopfStuecke.get(z[0]);
+                if (s) kopf.push(s);
+            }
+            const kopfJson = kopf.join(",");
+            if (voll || S.kopf !== kopfJson) {
+                S.kopf = kopfJson;
+                teile.push("");
+                stuecke.push(kopfJson);
+            }
         }
-        // die Felder mit eigener Art (Marke oder eigenes Urteil), die aus keiner Liste folgen
-        for (let i = 0; i < tafel.length; i++) if (tafel[i][1] && tafel[i][2] && !tafel[i][2].ausListen) feld(tafel[i]);
+        // die ruhigen Felder mit eigener Art (Marke oder eigenes Urteil), die aus keiner Liste folgen
+        if (alles || S.gefegt.size) for (const z of C.ruhig) feld(z, alles);
         // (2) die Listen
-        for (let i = 0; i < tafel.length; i++) {
-            const k = tafel[i][0];
-            const art = tafel[i][2];
-            if (!art || !art.liste) continue;
+        for (const z of C.listen) {
+            const k = z[0],
+                art = z[2];
             const L = this._standListe(k);
             const ganz = !takt || (art.alle && art.alle(K));
             const neu = [];
@@ -1387,12 +1410,6 @@ class AnazhRealm_speicher_welten {
                 m.json = json;
                 return true;
             };
-            // die Baupläne in der Hand zuerst (ein Hieb zehrt): ihre Änderung geht mit den gefegten
-            if (art.hand && !ganz)
-                for (const g of art.hand(K)) {
-                    const m = L.memo.get(g);
-                    if (m && pruefe(g, m)) L.gefegt.add(m);
-                }
             const menge = art.menge ? art.menge(K) : L.menge;
             const neueMenge = ganz || !L.glieder || !gleich(L.menge, menge);
             if (voll || neueMenge) {
@@ -1447,7 +1464,7 @@ class AnazhRealm_speicher_welten {
             K.listenZahl[k] = L.glieder.length;
         }
         // (3) die Felder, die aus den Listen folgen
-        for (let i = 0; i < tafel.length; i++) if (tafel[i][2] && tafel[i][2].ausListen) feld(tafel[i]);
+        for (const z of C.ausListen) feld(z, true);
         // (4) die Edits: angehängt seit dem letzten Stand, ganz, wenn ihre Liste neu ist
         let edits = null;
         const eds = wm.voxelEdits || null;
@@ -1470,19 +1487,22 @@ class AnazhRealm_speicher_welten {
         }
         E.ref = eds;
         E.n = zahl;
-        // die Ordnung der Tafel: der Kopf an der Stelle seines ersten Felds, jede Liste, die Edits, jedes eigene Feld mit Wert
-        const ordnung = [];
-        let mitKopf = false;
-        for (let i = 0; i < tafel.length; i++) {
-            const k = tafel[i][0];
-            const art = tafel[i][2];
-            if (k === "voxelEdits" || (art && art.liste)) ordnung.push(k);
-            else if (art) S.zeilen.get(k).json !== undefined && ordnung.push(k);
-            else if (!mitKopf) mitKopf = ordnung.push("") > 0;
-        }
+        // die Ordnung der Tafel: der Kopf an der Stelle seines ersten Felds, jede Liste, die Edits, jedes eigene Feld mit Wert —
+        // neu nur, wo ein Feld seinen Wert gewann oder verlor (`_standFrage`) oder die Tafel wuchs
         const daten = stuecke.concat(listenStuecke).join("\u0001");
         const nachricht = { teile, listen, daten };
-        if (voll || !gleich(S.ordnung, ordnung)) nachricht.ordnung = S.ordnung = ordnung;
+        if (voll || !S.ordnung) {
+            const ordnung = [];
+            let mitKopf = false;
+            for (const z of tafel) {
+                const k = z[0],
+                    art = z[2];
+                if (k === "voxelEdits" || (art && art.liste)) ordnung.push(k);
+                else if (art) S.zeilen.get(k).json !== undefined && ordnung.push(k);
+                else if (!mitKopf) mitKopf = ordnung.push("") > 0;
+            }
+            nachricht.ordnung = S.ordnung = ordnung;
+        }
         const transfer = [];
         if (edits) {
             nachricht.edits = edits;
@@ -1494,14 +1514,46 @@ class AnazhRealm_speicher_welten {
     // Der Kontext eines Stands und eines Besen-Schritts: die Bauten des Stands, die Spanne der Chunks, die Generationen der
     // Listen, die Felder, die sich in diesem Stand änderten.
     _standKontext() {
+        const r = this;
         return {
             bauten: this._standBauten(),
             bodenNeu: true,
-            span: this._voxelChunkConfig(0).span,
+            // die Spanne erst, wenn ein Boden gefragt wird (der Augenblick des Stands fragt keinen)
+            get span() {
+                if (this._span === undefined) this._span = r._voxelChunkConfig(0).span;
+                return this._span;
+            },
             listenGen: {},
             listenZahl: {},
-            geaendert: new Set(),
+            geaendert: [],
         };
+    }
+
+    // EIN Feld der Tafel gefragt (der Augenblick des Stands oder der Besen): sein JSON neu, wo es keine Marke hat oder sie sich
+    // regte; ein Feld des Kopfs hält sein Stück (`"k":JSON`, leer ohne Wert). → anders als sein Gedächtnis (ein neues immer)?
+    _standFrage(z, K) {
+        const S = this._speicher;
+        const k = z[0],
+            wert = z[1],
+            art = z[2];
+        if (!art) {
+            const j = JSON.stringify(wert(true, K));
+            const s = j === undefined ? "" : JSON.stringify(k) + ":" + j;
+            if (S.kopfStuecke.get(k) === s) return false;
+            S.kopfStuecke.set(k, s);
+            return (S.kopfNeu = true);
+        }
+        const alt = S.zeilen.get(k);
+        const marke = art.marke ? art.marke(K) : null;
+        if (marke && alt && alt.marke && marke.length === alt.marke.length && marke.every((v, j) => v === alt.marke[j]))
+            return false;
+        const v = wert(true, K);
+        const json = v === undefined ? undefined : JSON.stringify(v);
+        S.zeilen.set(k, { marke, json });
+        if (!alt || (alt.json === undefined) !== (json === undefined)) S.ordnung = null;
+        if (alt && alt.json === json) return false;
+        if (alt) K.geaendert.push(k);
+        return true;
     }
 
     // Das Gedächtnis einer Liste im Stand (ihre Glieder, Menge, Ordnung, je Glied Seriennummer, Marke und JSON; die gefegten).
@@ -1549,12 +1601,22 @@ class AnazhRealm_speicher_welten {
                   : Math.max(0, abstand - (performance.now() - F.runde));
         if (ruhe() > 0) return ruhe();
         const K = this._standKontext();
-        while ((F.guthaben >= 1 || F.i >= F.reihe.length) && (frist.timeRemaining() > 1 || frist.didTimeout)) {
+        // JE BILD HÖCHSTENS `fegeMs` (speicher.K2): was fällig bleibt, fegt das nächste Fenster (die Ruhe ist dann 0)
+        const bis = performance.now() + AnazhRealm.STAND_TAKT.fegeMs;
+        for (
+            let n = 0;
+            (F.guthaben >= 1 || F.i >= F.reihe.length) &&
+            (frist.timeRemaining() > 1 || frist.didTimeout) &&
+            (!n++ || performance.now() < bis);
+        ) {
             if (F.i >= F.reihe.length) {
                 F.reihe = [];
                 F.i = 0;
                 F.runde = jetzt;
-                for (const [k, , art] of this._standTafel()) {
+                for (const z of this._standTafel()) {
+                    const [k, wert, art] = z;
+                    // ein ruhiges Feld ist ein Glied ohne Liste (der Augenblick und was aus den Listen folgt fragt der Stand)
+                    if (wert && !(art && (art.ausListen || art.augenblick))) F.reihe.push([null, null, z]);
                     if (!art || !art.liste) continue;
                     const L = this._standListe(k);
                     if (!L.glieder) {
@@ -1571,13 +1633,17 @@ class AnazhRealm_speicher_welten {
             }
             const [L, art, g] = F.reihe[F.i++];
             F.guthaben--;
-            const m = this._standGlied(L, g);
-            const marke = art.marke(g, m, K);
-            const gleich = m.json !== null && marke && marke.length === (m.marke || []).length;
-            if (gleich && marke.every((v, j) => v === m.marke[j])) continue;
-            m.marke = marke;
-            const json = JSON.stringify(art.glied(g));
-            if (json !== m.json) ((m.json = json), L.gefegt.add(m));
+            if (!L) {
+                if (this._standFrage(g, K) && g[2]) S.gefegt.add(g[0]);
+            } else {
+                const m = this._standGlied(L, g);
+                const marke = art.marke(g, m, K);
+                const gleich = m.json !== null && marke && marke.length === (m.marke || []).length;
+                if (gleich && marke.every((v, j) => v === m.marke[j])) continue;
+                m.marke = marke;
+                const json = JSON.stringify(art.glied(g));
+                if (json !== m.json) ((m.json = json), L.gefegt.add(m));
+            }
             if (frist.didTimeout) return ruhe();
         }
         return ruhe();
@@ -1586,7 +1652,7 @@ class AnazhRealm_speicher_welten {
     // DER SPEICHER-FADEN (speicher-faden.js, Lehre 24): lazy geboren, EIN Faden je Seite; jede Antwort löst die Zusage ihrer
     // Nachricht. Ein verworfener Stand bricht laut (`_bruchMelden`) und lässt das Modell fallen: die nächste Sicherung sendet
     // die Welt ganz. Ohne Platte (null-origin der inneren Welt) sagt es die Seite einmal laut.
-    _speicherAuftrag(nachricht, transfer = [], zusage = true) {
+    _speicherAuftrag(nachricht, transfer = [], zusage = true, spaeter = false) {
         const S = this._speicherZustand();
         if (!S.faden) {
             S.faden = new Worker(`speicher-faden.js?v=${AnazhRealm.VERSION}`, { name: "speicher" });
@@ -1609,6 +1675,11 @@ class AnazhRealm_speicher_welten {
             };
         }
         nachricht.n = ++S.n;
+        // DER STAND DES BESENS REIST IM NÄCHSTEN FENSTER (`spaeter`, speicher.K2): sein Bild trägt das Zusammensetzen, das
+        // nächste den Klon an den Faden (postMessage allein ~0,03–0,05 ms headless); jede Nachricht danach schickt ihn vorher —
+        // die Ordnung der Ops bleibt, die Schranke (`_speicherStill`) steht hinter ihm
+        S.schicke();
+        if (spaeter) return void (S.unterwegs = [Object.assign(nachricht, { leise: true }), transfer]);
         // ohne Zusage (der Stand, die Ablage, das Löschen): niemand wartet, der Faden antwortet nur den Bruch (`leise`); die
         // Schranke (`_speicherStill`) steht hinter jeder früheren Nachricht
         if (!zusage) return S.faden.postMessage(Object.assign(nachricht, { leise: true }), transfer);
@@ -1620,7 +1691,8 @@ class AnazhRealm_speicher_welten {
 
     // Die Sicherung der lebenden Welt an den Faden: die Änderung seit dem letzten Stand (ganz, wenn der Faden kein Modell
     // dieser Welt hält). DER RUF DES TAKTS (Autosave, Edit-Timer; Lehre 14) merkt nur, DASS ein Stand aussteht — ihn setzt der
-    // Besen im nächsten Leerlauf-Fenster mit Platz zusammen (`_standNachholen`), spätestens nach `STAND_TAKT.fristMs`; jeder
+    // Besen in seinem nächsten Fenster mit Platz zusammen (`_standNachholen`; er schläft höchstens 1 s, darum weckt ihn der Ruf
+    // nicht mehr: clearTimeout und Leerlauf-Auftrag waren das halbe Bild des Rufs), spätestens nach `STAND_TAKT.fristMs`; jeder
     // andere Ruf, die Schranke (`_speicherStill`) und das Verlassen setzen ihn vorher synchron. Bis speicher-takt setzte jeder
     // Ruf den Stand im Takt zusammen: je Ruf p95 5 ms auf der Radeon (speicher.K2, eeaff9d6). PLATTE VOR ZEIGER: aufgeschoben
     // wird nur, wo der Zeiger (`anazhRealmActiveWorld`) schon auf dieser Welt steht — der Stand, nach dem saveState den Zeiger
@@ -1633,7 +1705,7 @@ class AnazhRealm_speicher_welten {
                 welt,
                 bis: (S.ausstehend || { bis: performance.now() + AnazhRealm.STAND_TAKT.fristMs }).bis,
             };
-            return S.wecken();
+            return;
         }
         S.ausstehend = null;
         this._standSenden(welt, at, takt);
@@ -1643,17 +1715,17 @@ class AnazhRealm_speicher_welten {
     // eine halb geladene (die Sperre des Ladens verlangt ihn nach dem Laden ganz). DER STEMPEL IST DAS ZUSAMMENSETZEN: der Stand
     // trägt die Welt dieses Augenblicks, also seine Zeit — bis zum Schnitt trug er die des Rufs (bis `fristMs` älter als sein
     // Inhalt; gate:persistence (T) 6 halbe Schreiben in 8 Toden, die Rettungs-Kette verglich `lastPlayed` mit einer Lüge).
-    _standNachholen() {
+    _standNachholen(spaeter = false) {
         const S = this._speicher;
         const a = S && S.ausstehend;
         if (!a) return;
         S.ausstehend = null;
         if (this._ladeSperre) return void (this._ladeSperre.verlangt = true);
         if (this.state.worldMeta && this.state.worldMeta.worldId === a.welt)
-            this._standSenden(a.welt, Date.now(), true);
+            this._standSenden(a.welt, Date.now(), true, spaeter);
     }
 
-    _standSenden(welt, at, takt) {
+    _standSenden(welt, at, takt, spaeter = false) {
         const S = this._speicher;
         // voll: der Faden hält kein Modell dieser Welt — die Gedächtnisse der Seite bleiben, gesendet wird alles
         const voll = S.welt !== welt;
@@ -1662,7 +1734,7 @@ class AnazhRealm_speicher_welten {
         Object.assign(nachricht, { op: "stand", welt, at, voll });
         S.welt = welt;
         S.at = at;
-        this._speicherAuftrag(nachricht, transfer, false);
+        this._speicherAuftrag(nachricht, transfer, false, spaeter);
     }
 
     // Was die Seite vom Faden weiß: das Modell der Welt (`welt`, das JSON je Feld, die Glieder je Liste, die gesendeten Edits).
@@ -1677,36 +1749,44 @@ class AnazhRealm_speicher_welten {
                 at: 0,
                 seriell: 0,
                 zeilen: new Map(),
+                kopfStuecke: new Map(),
+                gefegt: new Set(),
                 listen: new Map(),
                 edits: { ref: null, n: 0 },
                 ordnung: null,
+                unterwegs: null,
+                // der zusammengesetzte Stand des Besens an den Faden (vor jeder anderen Nachricht und im nächsten Fenster)
+                schicke() {
+                    if (!this.unterwegs) return;
+                    const [m, t] = this.unterwegs;
+                    this.unterwegs = null;
+                    this.faden.postMessage(m, t);
+                },
             })
         );
     }
 
     // Der Besen läuft ab dem Boot in Leerlauf-Fenstern (ohne die API im nächsten Task: ohne Frist) — EINMAL gestartet; er
-    // schläft, bis wieder ein Glied fällig ist, und der Ruf des Takts weckt ihn (`S.wecken`). Zuerst der ausstehende Stand des
-    // Takts: in einem Fenster mit `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
+    // schläft, bis wieder ein Glied fällig ist (höchstens 1 s). Zuerst der ausstehende Stand des Takts: in einem Fenster mit
+    // `STAND_TAKT.platzMs` Platz, sonst nach seiner Frist.
     _standBesen() {
         const S = this._speicherZustand();
-        if (S.wecken) return;
-        S.schlaf = null;
+        if (S.besen) return;
+        S.besen = true;
         const lauf = (f) => {
             const [frist, T] = [f || { timeRemaining: () => 0, didTimeout: true }, AnazhRealm.STAND_TAKT];
+            // JE BILD EIN SCHRITT (speicher.K2: kein Bild trägt mehr als ~0,1 ms): das Zusammensetzen, der Versand, das Fegen
+            if (S.unterwegs) return void (S.schicke(), this._imLeerlauf(lauf, T.fristMs));
             const a = S.ausstehend;
-            if (a && (frist.didTimeout || performance.now() >= a.bis || frist.timeRemaining() >= T.platzMs))
-                this._standNachholen();
+            if (a && (frist.didTimeout || performance.now() >= a.bis || frist.timeRemaining() >= T.platzMs)) {
+                this._standNachholen(true);
+                if (S.unterwegs) return this._imLeerlauf(lauf, T.fristMs);
+            }
             // fällig Gewordenes sammelt sich (`schlafMs`): ein Fenster prüft mehrere Glieder statt eines je Bild
             const ruhe = this._standFegen(frist);
             if (S.ausstehend) return this._imLeerlauf(lauf, Math.max(1, S.ausstehend.bis - performance.now()));
             const ms = ruhe > 0 ? Math.min(Math.max(ruhe, T.schlafMs), 1000) : 0;
-            S.schlaf = setTimeout(() => ((S.schlaf = null), this._imLeerlauf(lauf, 1000)), ms);
-        };
-        S.wecken = () => {
-            if (S.schlaf === null) return;
-            clearTimeout(S.schlaf);
-            S.schlaf = null;
-            this._imLeerlauf(lauf, AnazhRealm.STAND_TAKT.fristMs);
+            setTimeout(() => this._imLeerlauf(lauf, 1000), ms);
         };
         this._imLeerlauf(lauf, 1000);
     }
@@ -2662,8 +2742,8 @@ AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX = 8192;
 // Die leere Reihe der Stand-Tafel (eine Marke vergleicht Identität: nie je Ruf ein neues [])
 AnazhRealm.STAND_LEER = Object.freeze([]);
 // DER STAND DES TAKTS im Leerlauf (`_standSichern`): spätestens `fristMs` nach dem Ruf, vorher nur in einem Fenster mit `platzMs`;
-// der Besen schläft, bis ein Glied fällig ist, mindestens `schlafMs`
-AnazhRealm.STAND_TAKT = Object.freeze({ fristMs: 1000, platzMs: 4, schlafMs: 100 });
+// der Besen schläft, bis ein Glied fällig ist, mindestens `schlafMs`, und fegt je Fenster höchstens `fegeMs`
+AnazhRealm.STAND_TAKT = Object.freeze({ fristMs: 1000, platzMs: 4, schlafMs: 100, fegeMs: 0.05 });
 AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     "name",
     "label",

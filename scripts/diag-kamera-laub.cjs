@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -1192,7 +1192,7 @@ hauptLauf(async () => {
         ]);
         // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
         // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
-        // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
+        // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös), die
         // Beweisbilder vom 13.10. (spec/abnahme) fallen ROT, und die Aufnahme misst, urteilt und wirft (der Vor-Stand ohne Wurf feuert).
         const AU = require("./lib/abnahme-urteil.cjs");
         const fdir = path.join(root, "spec", "abnahme");
@@ -1214,11 +1214,7 @@ hauptLauf(async () => {
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN — die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
+        selbsttestEnde(errs, "die Kamera-Laub-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }
 
@@ -1375,10 +1371,5 @@ hauptLauf(async () => {
         check(`K3 NP-03 0 von ${NINJA_WP.length * 4} Posen mit Park-Geometrie zwischen Blickziel und Kamera oder um die Kamera, NP-02 der Tunnel bleibt zu`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
-    process.exit(0);
+    wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
 });

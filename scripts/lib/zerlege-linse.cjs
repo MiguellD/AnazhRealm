@@ -858,7 +858,6 @@ function zerlegeInventur(k) {
         const r = window.anazhRealm;
         const st = r.state;
         const rend = st.renderer;
-        if (!rend.backend || !rend.backend.device) return { fehler: "kein GPU-Device" };
         rend.setAnimationLoop(null);
         window.__buehne();
         const uhr = window.__passUhr();
@@ -927,7 +926,6 @@ function zerlegeMessen(k) {
         const r = window.anazhRealm;
         const st = r.state;
         const rend = st.renderer;
-        if (!rend.backend || !rend.backend.device) return { fehler: "kein GPU-Device" };
         rend.setAnimationLoop(null);
         window.__buehne();
         const vorher = window.__zerlegeZustand();
@@ -939,10 +937,7 @@ function zerlegeMessen(k) {
             p1 = mi * T.fernFaktor;
         const kgv = (p0 * p1) / ggt(p0, p1);
         const n = Math.ceil(Math.max(1, k.n || 12) / kgv) * kgv;
-        const bundlesNeu = () =>
-            st.scene.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundlesNeu = window.__bundlesNeu;
         const zeichnet = (o) => o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
         // DIE KETTE UMBAUEN: der Ausgabe-Knoten (bzw. eine Kante seines Graphen) ändert sich, die Pipeline baut ihr
         // Fragment neu (`_update`); die TRAA-Haken des alten Kontexts reisen mit (ein Bau aus dem Cache ruft `setup` nie).
@@ -1117,14 +1112,7 @@ function zerlegeMessen(k) {
                 wieseRuht();
             }
             await lese();
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const ctx = cv.getContext("2d");
-            const img = ctx.createImageData(W, H);
-            img.data.set(auf.u8.subarray(0, W * H * 4));
-            ctx.putImageData(img, 0, 0);
-            return { u8: auf.u8, png: cv.toDataURL("image/png") };
+            return { u8: auf.u8, png: window.__png(auf.u8, W, H) };
         };
         const aenderung = (a, b) => {
             let n0 = 0,

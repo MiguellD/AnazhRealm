@@ -17,14 +17,14 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
 const server = statikServer();
 
-const { errs, check, rotAus } = pruefer()
+const { errs, check } = pruefer();
 /// ===== TEIL S: die statischen Gesetze — die Absenz über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
 // constitution N1 wörtlich; die Wirkung der Policy beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum.
@@ -47,8 +47,7 @@ hauptLauf(async () => {
         // V6: portalMeta in der Donor-Zeile -> S6 feuert beim Namen
         const s6 = staticLaws((t) => stammLib.ersetze(t, null, /(\n {4}tor_basis: \{)/, "$1\n        portalMeta: {},"))[0];
         check("Selbst-Test 6: portalMeta in tor_basis -> S6 feuert", !s6[1], s6[2]);
-        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf die abgeschriebene Stufen-Liste.");
+        selbsttestEnde(errs, "die Linse feuert auf die abgeschriebene Stufen-Liste.");
         process.exit(0);
     }
 
@@ -60,135 +59,18 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
-    await page.evaluate(`window.__assetSeite = ${kernStufen.assetSeite}`);
-    const out = await page.evaluate(async () => {
-        const res = { b: {}, d: {}, p: {}, e: {}, f: {} };
-        await window.__weltDa();
-        const r = window.anazhRealm;
-        const A = r.constructor;
-        const f = r._ensureAssetFoundry();
-        // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.drachentor && rc && rc.lod && rc.lod.kindStages; });
-        const rc = A._studioRenderConfig;
-        const ks = rc && rc.lod ? rc.lod.kindStages : null;
-        // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
-        res.b.kind = f && f.recipes && f.recipes.drachentor ? f.recipes.drachentor.kind : null;
-        res.b.orders =
-            f && f.recipes && f.recipes.drachentor && f.recipes.drachentor.s ? f.recipes.drachentor.s.orders : null;
-        res.b.gateCount =
-            f && f.recipes
-                ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "gate").length
-                : 0;
-        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
-        // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
-        try {
-            const bp = r.state.blueprints && r.state.blueprints.tor_drachentor;
-            res.d.blueprint = !!bp;
-            res.d.autoSpecies = bp ? bp._foundryAutoSpecies : null;
-            res.d.grownSpecies = bp ? bp._grownSpecies || null : "kein-bp";
-            res.d.label = bp ? bp.label : null;
-            res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND,
-            // die Substanz lebt in KIND_SUBSTANCE, der Klon traegt byte-gleiche Parts.
-            const KS = r.constructor.KIND_SUBSTANCE || {};
-            res.d.donorAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
-            res.d.substanzParts = KS.tor_basis && Array.isArray(KS.tor_basis.parts) ? KS.tor_basis.parts.length : 0;
-            res.d.clonePartsMatch =
-                !!bp && !!KS.tor_basis && JSON.stringify(bp.parts) === JSON.stringify(KS.tor_basis.parts);
-            res.d.presetResolves = r._foundryPresetFor("tor_drachentor");
-            res.d.entryResolves = r._foundryPresetForEntry({ type: "tor_drachentor" });
-        } catch (e) {
-            res.d.err = (e && e.message) || String(e);
-        }
-        // ===== P: die PLACE-AUFLOESUNG (N5.6 — site als Daten, streut nicht) =====
-        try {
-            const pol = r._placePolicyFor(f.recipes.drachentor);
-            res.p.mode = pol.mode;
-            res.p.siteTag = pol.siteTag;
-            res.p.dispatch = r._placeDispatch(pol, { id: "drachentor" });
-            r._forestExtraCache = null;
-            res.p.inExtras = r._forestExtraSpecies().some((e) => String(e.species).indexOf("tor_") === 0);
-            r._forestExtraCache = null;
-        } catch (e) {
-            res.p.err = (e && e.message) || String(e);
-        }
-        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup, `kernStufen.assetSeite`) =====
-        res.e = await window.__assetSeite("drachentor");
-        // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 klemmt auf Stufe 0 =====
-        try {
-            if (!f.requested) f.requested = new Set();
-            const before = new Set(f.requested);
-            r._foundryFlattenFor({ seed: 7 }, "drachentor", 2);
-            const fresh = Array.from(f.requested).filter((k) => !before.has(k));
-            res.f.key = fresh.find((k) => k.startsWith("drachentor|")) || null;
-        } catch (e) {
-            res.f.err = (e && e.message) || String(e);
-        }
-        return res;
-    });
+    const W = { bp: "tor_drachentor", donor: "tor_basis", preset: "drachentor", praefix: "tor_", wahl: 2, name: "ein Tor", art: "gate", anzahl: 7, teile: 4, label: "Drachentor", place: { mode: "site", siteTag: "tor", dispatch: null } };
+    const out = await page.evaluate(kernStufen.epsilonSeite, W);
     // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
     const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
     server.close();
 
-    check(
-        "B: das LIVE-Buch traegt drachentor als kind:gate (Worker-Draht lebt)",
-        out.b.kind === "gate",
-        String(out.b.kind)
-    );
-    check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.orders === 2, String(out.b.orders));
-    check("B: alle 7 Tor-Ordnungen im Buch", out.b.gateCount === 7, String(out.b.gateCount));
-    const ksGate = out.b.ks ? JSON.stringify(out.b.ks.gate) : "fehlt";
-    check(
-        "B: kindStages.gate == die Deklaration von porta-core (N7.5-Merge am Ingest; 3 = NUR-WURF)",
-        ksGate === kern.gate,
-        `${ksGate} (Kern ${kern.gate})`
-    );
-    kernStufen.stufenUrteil(check, out.b.ks, kern);
-    check(
-        "D: Auto-Blueprint tor_drachentor registriert (Donor-Klon)",
-        out.d.blueprint === true && out.d.parts >= 4,
-        out.d.err || `parts=${out.d.parts}`
-    );
-    check("D: die Herkunfts-Marke sitzt (_foundryAutoSpecies == drachentor)", out.d.autoSpecies === "drachentor");
-    check(
-        "D: KEIN _grownSpecies (ein Tor ist keine gewachsene Art)",
-        out.d.grownSpecies === null,
-        String(out.d.grownSpecies)
-    );
-    check("D: das Label reist aus dem Rezept (lab == Drachentor)", out.d.label === "Drachentor", String(out.d.label));
-    check(
-        "D: der Alt-Donor tor_basis ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (4 Parts)",
-        out.d.donorAbsent === true && out.d.substanzParts === 4,
-        `substanzParts=${out.d.substanzParts}`
-    );
-    check(
-        "D: der Auto-Klon traegt die Substanz byte-gleich (tor_drachentor.parts == KIND_SUBSTANCE.tor_basis.parts)",
-        out.d.clonePartsMatch === true
-    );
-    check(
-        "D: die generische tor_-Regel loest auf (tor_drachentor -> drachentor)",
-        out.d.presetResolves === "drachentor",
-        String(out.d.presetResolves)
-    );
-    check(
-        "D: der Entry-Pfad loest auf (_foundryPresetForEntry)",
-        out.d.entryResolves === "drachentor",
-        String(out.d.entryResolves)
-    );
-    check(
-        'P: die Place-Aufloesung liest die Rezept-DATEN (mode "site" + siteTag "tor")',
-        out.p.mode === "site" && out.p.siteTag === "tor",
-        out.p.err || `${out.p.mode}/${out.p.siteTag}`
-    );
-    check(
-        "P: site streut NICHT (Dispatch null, N5.6 — die Welt-Nische ist der benannte Folge-Anschluss)",
-        out.p.dispatch === null,
-        String(out.p.dispatch)
-    );
-    check("P: keine tor_-Nische in der Wald-Liste", out.p.inExtras === false);
-    kernStufen.assetUrteil(check, out.e, "das Tor-Asset");
+    kernStufen.epsilonUrteil(check, out, W, kern);
+    check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.s.orders === 2, String(out.b.s.orders));
+    const ksGate = JSON.stringify(out.b.ks.gate);
+    check("B: kindStages.gate == die Deklaration von porta-core (N7.5-Merge am Ingest; 3 = NUR-WURF)", ksGate === kern.gate, `${ksGate} (Kern ${kern.gate})`);
     const fSoll = kern.gate ? kernStufen.geklemmteStufe(kern.gate, 2) : null;
     check(
         `F: die Distanz-Wahl 2 klemmt fuer kind:gate auf die groesste deklarierte Stufe ≤ 2 (${fSoll})`,
@@ -196,9 +78,5 @@ hauptLauf(async () => {
         out.f.err || String(out.f.key)
     );
 
-    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-    console.log(
-        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Tor-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — porta-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), tor_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6)."
-    );
-    process.exit(0);
+    wandEnde(errs, "DER ε-BEWEIS STEHT: die Tor-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — porta-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), tor_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6).");
 });

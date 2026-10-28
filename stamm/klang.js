@@ -237,15 +237,16 @@ class AnazhRealm_klang {
         return a * sk * sk;
     }
 
-    // Der RECHTS-Vektor des Ohrs (waagerecht, aus der Kamera-Blickrichtung): Panorama einer Richtung (ux, uz) =
-    // ux·x + uz·z (−1 links … +1 rechts). Ohne Kamera {0, 0} — alles mittig.
-    _umweltRechts() {
+    // DER RAUM AM OHR (klang.K3, der EINE Richtungs-Weg jeder gerichteten Stimme und jedes Rufs): das Panorama eines
+    // Abstands (dx, dz) zum Ohr = seine Richtung auf dem waagerechten RECHTS-Vektor der Kamera (−1 links … +1 rechts), am
+    // Ohr selbst und ohne Kamera mittig. Linse: diag-klang-zensus (Ra).
+    _umweltPanorama() {
         const cam = this.state.camera;
-        if (!cam) return { x: 0, z: 0 };
         const v = this._umweltBlick || (this._umweltBlick = new THREE.Vector3());
-        cam.getWorldDirection(v);
-        const l = Math.hypot(v.x, v.z);
-        return l > 1e-6 ? { x: -v.z / l, z: v.x / l } : { x: 0, z: 0 };
+        if (cam) cam.getWorldDirection(v);
+        const l = cam ? Math.hypot(v.x, v.z) : 0;
+        const [rx, rz] = l > 1e-6 ? [-v.z / l, v.x / l] : [0, 0];
+        return (dx, dz, d = Math.hypot(dx, dz)) => (d > 1e-3 ? Math.max(-1, Math.min(1, (dx * rx + dz * rz) / d)) : 0);
     }
 
     // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: der
@@ -263,8 +264,7 @@ class AnazhRealm_klang {
         const pz = pm.position.z;
         const wf = this._weatherFieldFor(this.state.weather);
         const wind = this._windAt(px, pz, this._bildZeit);
-        const re = this._umweltRechts();
-        const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
+        const pan = this._umweltPanorama();
         // Der Ring: stilles Wasser (Ufer) — Abstand, Anteil, Richtung; ein fließender Punkt zählt nie als Ufer.
         const R = um.ring;
         const ufer = { d: Infinity, anteil: 0, pan: 0 };
@@ -297,7 +297,7 @@ class AnazhRealm_klang {
             if (fl) {
                 fluss.d = Math.max(0, rand.dist - rand.halfW);
                 fluss.tempo = Math.hypot(fl.x, fl.z);
-                fluss.pan = pan(-gx / g, -gz / g);
+                fluss.pan = pan(-gx, -gz);
             }
         }
         // Der nächste Wasserfall der Region (wenige je Kachel).
@@ -309,7 +309,7 @@ class AnazhRealm_klang {
             if (d < fall.d) {
                 fall.d = d;
                 fall.hoehe = Math.max(0, wfall.topY - wfall.bottomY);
-                fall.pan = d > 1e-3 ? pan((wfall.x - px) / d, (wfall.z - pz) / d) : 0;
+                fall.pan = pan(wfall.x - px, wfall.z - pz);
             }
         }
         // Die nächste Glut — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche, gestempelt beim Eintritt;
@@ -320,7 +320,7 @@ class AnazhRealm_klang {
             const dh = Math.hypot(v.x - px, v.z - pz);
             voegel.push({
                 d: Math.hypot(dh, v.y - pm.position.y),
-                pan: dh > 1e-3 ? pan((v.x - px) / dh, (v.z - pz) / dh) : 0,
+                pan: pan(v.x - px, v.z - pz),
             });
         }
         const glut = { d: Infinity, flaeche: 0, pan: 0 };
@@ -330,7 +330,7 @@ class AnazhRealm_klang {
             if (d < glut.d) {
                 glut.d = d;
                 glut.flaeche = this._glutFlaeche(e);
-                glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
+                glut.pan = pan(e.position.x - px, e.position.z - pz);
             }
         }
         return {
@@ -341,9 +341,10 @@ class AnazhRealm_klang {
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
-            // die Luft am Ohr (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt — die
-            // Grillen schweigen über dem gefrorenen Bergsee
-            temperatur: this._temperaturAt(pm.position.y, 0),
+            // die Wärme der Grillen (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt, mit
+            // der Trägheit ihres Lebensraums (klang:UMWELT.stimmen.grille.traegTage, der Boden ihrer Röhre) — die Sommernacht der
+            // Wiese zirpt, über dem gefrorenen Bergsee schweigen sie
+            temperatur: this._temperaturAt(pm.position.y, AnazhRealm._umweltGesetz().UMWELT.stimmen.grille.traegTage),
             voegel,
             ufer,
             fluss,
@@ -369,12 +370,11 @@ class AnazhRealm_klang {
         const dz = pm ? creature.position.z - pm.position.z : 0;
         const d = Math.hypot(dx, dz);
         if (!(um.kern.tierRufPegel(d) >= AnazhRealm._umweltGesetz().UMWELT.hoerschwelleDb)) return null;
-        const re = this._umweltRechts();
         const ruf = {
             laengeM: this._creatureKoerperLaenge(creature),
             stimmung: stimmung || this._tierStimmung(creature),
             d,
-            pan: d > 1e-3 ? Math.max(-1, Math.min(1, (dx * re.x + dz * re.z) / d)) : 0,
+            pan: this._umweltPanorama()(dx, dz),
             saat: (um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0),
         };
         um.rufeBestellt++;

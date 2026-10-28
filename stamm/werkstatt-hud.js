@@ -478,6 +478,7 @@ class AnazhRealm_werkstatt_hud {
         });
         wireTuningSlider("tune-cooldown", "tune-cooldown-v", (v) => {
             p.emotionApplyCooldown = v;
+            this._gemuetGesetze();
         });
 
         // Quick-Action-, Kreatur- und Bauwerk-Buttons teilen den

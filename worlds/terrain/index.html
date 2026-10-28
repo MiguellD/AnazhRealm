@@ -13,7 +13,7 @@
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 />
 <title>Phytogenesis &amp; Lithos — AnazhRealm-Portal</title>
-<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.113">
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.119">
 <style>
 body{margin:0;overflow:hidden;background:#070908}canvas{display:block}
 #loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#6a9a5a;font-family:monospace;font-size:14px;z-index:200;letter-spacing:2px}
@@ -100,19 +100,19 @@ body{margin:0;overflow:hidden;background:#070908}canvas{display:block}
      (trusted-Portal → allow-same-origin), CSP 'self' deckt den ../../-Pfad. Ein Edit
      an einem Rezept in phyto-core.js fliesst hier UND in AnazhRealm — kein Nachbau,
      kein Drift. Vor phytogenesis.js geladen, damit dessen Delegatoren __phytoCore sehen. -->
-<script src="../../phyto-core.js?v=18.546.113"></script>
+<script src="../../phyto-core.js?v=18.546.119"></script>
 <!-- P2: der Studio-Generator-Kern (foundry-core.js) VOR phytogenesis.js — die Shell liest seine
      Top-Level-Globals (buildInstance, PRESETS, growTreeNodes, …); ein Edit am Wuchs/Asset fliesst
      hier UND im Foundry-Worker (dieselbe Datei). -->
 <!-- K17: das Gelände-Gesetzbuch (gelaende-core.js) VOR foundry-core — der Fels-Stoff der Gestalten (`felsStoffNetz`)
      liest dasselbe Gesetz wie der Welt-Boden. -->
-<script src="../../gelaende-core.js?v=18.546.113"></script>
-<script src="../../foundry-core.js?v=18.546.113"></script>
+<script src="../../gelaende-core.js?v=18.546.119"></script>
+<script src="../../foundry-core.js?v=18.546.119"></script>
 <!-- K42: die Foundry-Brücke (foundry-bruecke.js) — der Bau-Teil, den der Foundry-Worker OHNE dieses Labor lädt
      (Wirts-Globale des Kerns, der Studio-Bäcker, die Asset-Kanäle). Das Labor liest sie, kein Zwilling. -->
-<script src="../../foundry-bruecke.js?v=18.546.113"></script>
+<script src="../../foundry-bruecke.js?v=18.546.119"></script>
 <!-- K47: die EINE Studio-Hülle (Regler-Generator · Sitzung mit Undo · Kosten-Leiste · Portal-Brücke + DSL-Adapter). -->
-<script src="../huelle/huelle.js?v=18.546.113"></script>
-<script src="phytogenesis.js?v=18.546.113"></script>
+<script src="../huelle/huelle.js?v=18.546.119"></script>
+<script src="phytogenesis.js?v=18.546.119"></script>
 </body>
 </html>

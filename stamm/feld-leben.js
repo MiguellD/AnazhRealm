@@ -231,7 +231,7 @@ class AnazhRealm_feld_leben {
         if (!Array.isArray(node)) return "etwas";
         const op = node[0];
         const a = node.slice(1);
-        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1]})`;
+        if (op === "emotion_above") return `${a[0]} hoch ist (>${a[1] ?? "deiner Schwelle"})`;
         if (op === "fps_below") return `die FPS unter ${a[0]} fallen`;
         if (op === "player_y_below") return `der Spieler unter Höhe ${a[0]} ist`;
         if (op === "weather_is") return `das Wetter „${a[0]}" ist`;
@@ -346,7 +346,7 @@ class AnazhRealm_feld_leben {
     }
 
     selfAwarenessAnalyze() {
-        const currentTime = performance.now() / 1000;
+        const currentTime = this._taktUhr();
         if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
             return; // Strengere Debounce: Nur einmal alle 2 Sekunden analysieren
         }
@@ -402,7 +402,8 @@ class AnazhRealm_feld_leben {
             // zweiter, kaputter fps-Regler (Physik heilt keinen Render-Freeze) — der eine
             // Perf-Regelkreis (V18.263) regelt die fps. Der Loop-Trigger ist mit weg.
         };
-        this.state.nexusLastEvolution = performance.now() / 1000;
+        this.state.nexusLastEvolution = this._taktUhr();
+        this._gemuetGesetze(); // die Gesetze des Gemüts erwachen mit der Welt (affekt.K2)
         this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
     }
 
@@ -458,7 +459,7 @@ class AnazhRealm_feld_leben {
             name: `evo_${this.state.dsl.nextEntryId++}`,
             program,
             source: "nexus",
-            createdAt: performance.now() / 1000,
+            createdAt: this._taktUhr(),
         };
     }
 
@@ -1725,18 +1726,46 @@ class AnazhRealm_feld_leben {
         return pos - neg;
     }
 
-    // SITUATION des Spielers = Appraisal-INPUT: `lebendig` am Ort (+ HP im pfad-Modus). BEWUSST OHNE die
-    // Stimmung (`_fieldWohlErlebt`/`emotion`) — sonst Rückkopplung joy → Valenz → δ → joy (Runaway).
-    // Das Gefühl ist die Antwort auf die Situation, nicht ihr Input. ∈ [0,1].
+    // SITUATION des Spielers = Appraisal-INPUT: `lebendig` am Ort (+ HP im pfad-Modus) − das Umstellen (`_spielerUmstellt`
+    // × WERTUNG.umstellt). BEWUSST OHNE die Stimmung (`_fieldWohlErlebt`/`emotion`) — sonst Rückkopplung joy → Valenz → δ →
+    // joy (Runaway). Das Gefühl ist die Antwort auf die Situation, nicht ihr Input: schließt sich das Rudel, fällt sie (δ < 0:
+    // sorrow + chaos, die Furcht), fällt der Jäger, steigt sie gegen die lagende Baseline (δ > 0: joy + hope, der Triumph) —
+    // bis oekologie.K4#2 stempelte der Fall eines frischen Jägers den Triumph (`_feelAction`), und das Umstellen war kein
+    // Gefühl. ∈ [−umstellt, 1].
     _playerSituationWohl(aura) {
         const leb = this._fieldWohlStruktur(aura); // lebendig ∈ [0,1] (die Welt um den Spieler)
         const p = this.state.player;
         const hpMax = (p.stats && p.stats.hpMax) || 0;
+        let sit = leb;
         if (hpMax > 0 && this.getGameMode && this.getGameMode() === "pfad") {
             const hp = Math.max(0, Math.min(1, (p.hp || 0) / hpMax));
-            return leb * 0.6 + hp * 0.4;
+            sit = leb * 0.6 + hp * 0.4;
         }
-        return leb;
+        return sit - AnazhRealm.WERTUNG.umstellt * this._spielerUmstellt();
+    }
+
+    // DAS UMSTELLEN des Spielers ∈ [0, 1): seine Jäger dieses Takts (`_spielerJaeger`, gefüllt mit der EINEN Jäger-Liste im
+    // Kreatur-Takt; ein Gefallener verlässt sie mit der Liste der Wesen, `_kreaturAusListe`) — ihre Zahl sättigt (n / (n + 1), je Jäger seine Nähe, voll im Ring des
+    // Rudels 2 × jagd.hetzM), ihr Kreis schließt sich (die halbe Last trägt 1 − die größte Winkel-Lücke um ihn / 360°). Ohne
+    // Jäger 0.
+    _spielerUmstellt() {
+        const J = this._spielerJaeger;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!J || !J.length || !pm) return 0;
+        const ring = 2 * AnazhRealm._verhaltenGesetz().jagd.hetzM;
+        const w = this._umstelltWinkel || (this._umstelltWinkel = []);
+        w.length = 0;
+        let n = 0;
+        for (const c of J) {
+            const dx = c.position.x - pm.x;
+            const dz = c.position.z - pm.z;
+            n += Math.min(1, ring / Math.max(1e-3, Math.hypot(dx, dz)));
+            w.push(Math.atan2(dx, dz));
+        }
+        w.sort((a, b) => a - b);
+        let luecke = w[0] + 2 * Math.PI - w[w.length - 1];
+        for (let i = 1; i < w.length; i++) luecke = Math.max(luecke, w[i] - w[i - 1]);
+        return (n / (n + 1)) * (1 - luecke / (4 * Math.PI));
     }
 
     _wohlCellKey(x, z) {
@@ -1892,13 +1921,15 @@ class AnazhRealm_feld_leben {
         return this._brandFangen(Math.floor(x / cs), Math.floor(z / cs));
     }
 
-    _brandFangen(cx, cz) {
+    // `stoff`: der Brennstoff, den der Schritt an dieser Zelle schon las (`_brandSchritt`) — EIN Lesen je Zelle und Schritt;
+    // er ändert sich bis zum Fangen nicht (Asche schreibt nur eine brennende Zelle, und die fängt nie).
+    _brandFangen(cx, cz, stoff) {
         const st = this.state;
         const B = AnazhRealm.BRAND;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const key = cx + "," + cz;
         if (bf.has(key) || (st.naesse || 0) >= B.loescht) return null;
-        const stoff = this._brandStoff(cx, cz);
+        if (stoff === undefined) stoff = this._brandStoff(cx, cz);
         if (!(stoff >= B.minStoff)) return null;
         if (!bf.size) this._brandUhr = st.spielZeit;
         const zelle = { cx, cz, y: null, stoff, glut: 0 }; // y: die Höhe des Herds, gefragt erst vom Licht (`_leuchtQuellen`)
@@ -1937,10 +1968,10 @@ class AnazhRealm_feld_leben {
                 const [nx, nz] = [z.cx + dx, z.cz + dz];
                 if (bf.has(nx + "," + nz) || this._pcgFloat(nx, nz, n) >= B.greift * z.glut) continue;
                 const s = this._brandStoff(nx, nz);
-                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz);
+                if (this._pcgFloat(nz, nx, n) < s) neu.push(nx, nz, s);
             }
         }
-        for (let i = 0; i < neu.length; i += 2) this._brandFangen(neu[i], neu[i + 1]);
+        for (let i = 0; i < neu.length; i += 3) this._brandFangen(neu[i], neu[i + 1], neu[i + 2]);
     }
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
@@ -2290,8 +2321,9 @@ class AnazhRealm_feld_leben {
     // `pos` selbst, sonst den nächsten in Ringen um den geklemmten Ort (1,5 m Schritt bis zur Reichweite des Grundrisses + 3 m
     // + Weg der Klemme, zwölf Richtungen ab dem Winkel `wurf()`, dem Strom des Samens). Geurteilt wird am Ort NACH der Spieler-Klemme der Wurzel
     // (`_structureSpawnPos`), wie die Wurzel urteilt (`_werkImWasser`). „am Wasser" liefert den Fleck 2 m hinter dem Ufer —
-    // ein Stamm steht dort, ein Haus reicht 4–6 m ins Wasser. Rückgabe { x, y, z } (y wie `pos` über dem Boden) oder null
-    // (kein tragender Ort in Reichweite). Ein Werk ohne Grundriss-Gesetz: `pos` geklemmt.
+    // ein Stamm steht dort, ein Haus reicht 4–6 m ins Wasser. Rückgabe { x, y, z } (y der Fuß des Werks auf der obersten Fläche,
+    // `_werkFuss` — nie die Höhe des Verlangten: `at_player_forward` trägt die des Spielers) oder null (kein tragender Ort in
+    // Reichweite). Ein Werk ohne Grundriss-Gesetz: `pos` geklemmt.
     // DAS MASS IST DER GEKLEMMTE ORT `p0` (werk-ufer): wo die Wurzel das Werk hinstellt, ist `pos` nach der Spieler-Klemme;
     // die Ringe liegen um `p0`, so weit, dass sie den Grundriss um `pos` decken, und jeder Kandidat misst sich (geklemmt) an
     // `p0`. Gemessen an `pos` lag jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, alle fast gleich weit — das Maß
@@ -2299,13 +2331,12 @@ class AnazhRealm_feld_leben {
     _werkOrtSuchen(type, pos, opts, wurf) {
         const sc = opts && Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         const klemme = (p) => this._structureSpawnPos(type, p, { state: this.state }, sc);
+        const fuss = (q) => ({ x: q.x, y: this._werkFuss(q.x, q.z, q.y), z: q.z });
         const p0 = klemme(pos);
         const g = this._werkGrundriss(type, opts);
-        if (!g) return p0;
-        if (!this._werkImWasser(type, p0, opts)) return p0;
+        if (!g || !this._werkImWasser(type, p0, opts)) return fuss(p0);
         const reich =
             Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3 + Math.hypot(p0.x - pos.x, p0.z - pos.z);
-        const h0 = this.getTerrainHeightAt(p0.x, p0.z);
         const a0 = wurf() * Math.PI * 2;
         const kand = [];
         for (let r = 1.5; r <= reich; r += 1.5) {
@@ -2316,13 +2347,12 @@ class AnazhRealm_feld_leben {
                 const a = a0 + (k * 2 * Math.PI) / n;
                 const x = p0.x + Math.cos(a) * r;
                 const z = p0.z + Math.sin(a) * r;
-                const h = this.getTerrainHeightAt(x, z);
-                const q = klemme({ x, y: Number.isFinite(h) && Number.isFinite(h0) ? p0.y + h - h0 : p0.y, z });
+                const q = klemme({ x, y: p0.y, z });
                 kand.push([Math.hypot(q.x - p0.x, q.z - p0.z), q]);
             }
         }
         kand.sort((a, b) => a[0] - b[0]);
-        for (const [, q] of kand) if (!this._werkImWasser(type, q, opts)) return q;
+        for (const [, q] of kand) if (!this._werkImWasser(type, q, opts)) return fuss(q);
         return null;
     }
 
@@ -2611,6 +2641,7 @@ AnazhRealm.TAT_NARBE = Object.freeze({
     abbauen: Object.freeze({ tiefe: 0, stunden: Infinity }), // ein Wurf des Gesetzes, abgebaut: er kehrt nie zurück (speicher.K3)
     brand: Object.freeze({ tiefe: 0.3, stunden: 72 }), // die Asche (`_brandSchritt`): solange sie liegt, brennt die Zelle nicht
     lava: Object.freeze({ tiefe: 0.5, stunden: Infinity }), // die Lava (`_lavaGiessen`): erstarrt bleibt sie Stein
+    riss: Object.freeze({ tiefe: 0.03, stunden: 24 }), // ein Tod von Spieler-Hand (`_creatureCombatDeath`): ein Leben fehlt dem Ort
     max: 0.6,
     lebMin: 0.1,
 });

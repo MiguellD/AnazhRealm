@@ -41,16 +41,12 @@
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d;
-};
 const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
@@ -359,7 +355,7 @@ async function fahreWeg(browser, weg, schein) {
     const lege = async (fn, ...a) => (await page.evaluate(fn, ...a)) || [];
     try {
         verzoegerung = 0;
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
@@ -624,7 +620,7 @@ async function fahreWeg(browser, weg, schein) {
 
 hauptLauf(async () => {
     const tStart = Date.now();
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B, keine Welt geht verloren =========");
     console.log(`  Baum: ${root}`);

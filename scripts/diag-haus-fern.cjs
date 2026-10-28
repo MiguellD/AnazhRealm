@@ -30,6 +30,7 @@
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
+const { wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -165,7 +166,7 @@ const SAMEN = [1, 7];
 
 // ── Geometrie einer gebauten Gruppe: die Dreiecke der Meshes, die in der Welt werfen (das Wurf-Recht des Wirts,
 //    `_foundryBuildMesh`: eine Lichtquelle — Seh-Klasse glut — und ein durchsichtiger Stoff werfen nie). ──
-function dreiecke(g, nurWerfer) {
+function dreiecke(g, nurWerfer, stoff) {
     const out = [];
     g.updateMatrixWorld(true);
     g.traverse((o) => {
@@ -174,26 +175,33 @@ function dreiecke(g, nurWerfer) {
         // um ihren Ort doppelt versetzt (Bake-Lage + Scharnier); ihr Wurf ist der der Tür im Haus
         for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
         const m = o.material || {};
-        const seh = m.userData && m.userData.__seh;
-        if (nurWerfer && (o.castShadow === false || seh === "glut" || (m.transparent && m.opacity < 1))) return;
-        const P = o.geometry.attributes.position.array;
+        const ud = m.userData || {};
+        if (nurWerfer && (o.castShadow === false || ud.__seh === "glut" || (m.transparent && m.opacity < 1))) return;
+        const { position: P, color: C } = o.geometry.attributes;
         const I = o.geometry.index ? o.geometry.index.array : null;
         const e = o.matrixWorld.elements;
-        const n = I ? I.length : P.length / 3;
-        const w = new Float64Array(n * 3);
+        const n = I ? I.length : P.count;
+        const [w, c, mc] = [new Float64Array(n * 3), new Float32Array(n * 3), m.color ? m.color.toArray() : [1, 1, 1]];
         for (let i = 0; i < n; i++) {
             const k = (I ? I[i] : i) * 3;
-            const x = P[k],
-                y = P[k + 1],
-                z = P[k + 2];
-            w[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
-            w[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-            w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+            const [x, y, z] = [P.array[k], P.array[k + 1], P.array[k + 2]];
+            for (let j = 0; j < 3; j++) {
+                w[i * 3 + j] = e[j] * x + e[4 + j] * y + e[8 + j] * z + e[12 + j];
+                c[i * 3 + j] = (C ? C.array[k + j] : 1) * mc[j];
+            }
         }
-        out.push(w);
+        // mit `stoff` die Stoff-Antwort je Ecke: Farbe, Deckkraft, Glut, Zweiseitigkeit
+        const al = m.transparent && m.opacity < 1 ? m.opacity : 1;
+        out.push(stoff ? { w, c, al, gl: ud.__licht === "fenster" ? GLUT : null, zwei: m.side === T.DoubleSide } : w);
     });
     return out;
 }
+// die Fläche eines Dreiecks der Liste `w` ab `i`: das Kreuzprodukt seiner Kanten und dessen Länge (2 × Fläche)
+const kreuz = (w, i) => {
+    const [a, b] = [0, 1].map((s) => [3, 4, 5].map((j) => w[i + j + 3 * s] - w[i + j - 3]));
+    const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    return [n, Math.hypot(...n)];
+};
 const anzahl = (tl) => tl.reduce((s, w) => s + w.length / 9, 0);
 
 // ── Das Raster (Kanten-Funktionen je Dreieck, Pixel-Mitte): `abb(x, y, z) → [u, v]` bildet in die Ebene ab ──
@@ -297,10 +305,7 @@ function firstAchse(tl) {
         az = 0;
     for (const w of tl)
         for (let i = 0; i < w.length; i += 9) {
-            const e1 = [w[i + 3] - w[i], w[i + 4] - w[i + 1], w[i + 5] - w[i + 2]];
-            const e2 = [w[i + 6] - w[i], w[i + 7] - w[i + 1], w[i + 8] - w[i + 2]];
-            const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
-            const l = Math.hypot(n[0], n[1], n[2]);
+            const [n, l] = kreuz(w, i);
             if (l < 1e-9) continue;
             const ny = Math.abs(n[1] / l);
             if (ny < 0.15 || ny > 0.98) continue;
@@ -408,10 +413,7 @@ function innen(tl, M) {
     };
     for (const w of tl)
         for (let i = 0; i < w.length; i += 9) {
-            const e1 = [w[i + 3] - w[i], w[i + 4] - w[i + 1], w[i + 5] - w[i + 2]];
-            const e2 = [w[i + 6] - w[i], w[i + 7] - w[i + 1], w[i + 8] - w[i + 2]];
-            const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
-            const l = Math.hypot(n[0], n[1], n[2]);
+            const [n, l] = kreuz(w, i);
             if (l < 1e-9) continue;
             const ny = n[1] / l;
             // eine senkrechte Fläche, die das Wand-Band schneidet (ihre Ecken dürfen darüber und darunter liegen)
@@ -469,38 +471,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 const GLAS_R = 0.05;
-function stoffFlaechen(g) {
-    const out = [];
-    g.updateMatrixWorld(true);
-    g.traverse((o) => {
-        if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-        for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
-        const m = o.material || {};
-        const ud = m.userData || {};
-        const al = m.transparent && m.opacity < 1 ? m.opacity : 1;
-        const mc = m.color ? [m.color.r, m.color.g, m.color.b] : [1, 1, 1];
-        const gl = ud.__licht === "fenster" ? GLUT : null;
-        const P = o.geometry.attributes.position.array;
-        const C = o.geometry.attributes.color ? o.geometry.attributes.color.array : null;
-        const I = o.geometry.index ? o.geometry.index.array : null;
-        const e = o.matrixWorld.elements;
-        const n = I ? I.length : P.length / 3;
-        const w = new Float64Array(n * 3),
-            c = new Float32Array(n * 3);
-        for (let i = 0; i < n; i++) {
-            const k = (I ? I[i] : i) * 3;
-            const x = P[k],
-                y = P[k + 1],
-                z = P[k + 2];
-            w[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
-            w[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-            w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-            for (let j = 0; j < 3; j++) c[i * 3 + j] = (C ? C[k + j] : 1) * mc[j];
-        }
-        out.push({ w, c, al, gl, zwei: m.side === T.DoubleSide });
-    });
-    return out;
-}
+const stoffFlaechen = (g) => dreiecke(g, false, true);
 // ein Fenster: je Pixel die Mischung von vorn → Summen (Tag-Farbe, Glut) über das Rechteck
 const FACH = 0.5;
 function stoffFaecher(F) {
@@ -617,8 +588,13 @@ function glasUrteil(G, f) {
     }
 }
 
+// ── S8 DER STUFEN-TON (material.K3): je gezeigter Stufe die Leuchtdichte, die ein Auge von außen an den tragenden Stoffen
+//    sieht — die EINE Rechnung des Kerns (`sichtTon`: Z-Puffer, 9 Blicke, Stoff und Metall) über den Rollen der Stufe
+//    (`buildStufe`, der Bau hinter buildInstance). Soll: Stufe/L0 im Band `stufenToleranz` der Albedo-Tafel (dieselbe Zahl wie
+//    die Welt-Seite). Vor dem Akt: hochhaus L1/L0 0,777, volle_moderne L2/L0 0,824.
+
 // ── Ein Haus-Fall → seine Zahlen ──
-function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt) {
+function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
     const B = LOD.budget.haus;
     const g = {};
     const tuer = {};
@@ -642,6 +618,10 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt) {
     const z = { id, seed, wurf: {}, kosten: {}, befund: [] };
     if (glasDefekt) glasDefekt(g, M.H);
     z.glas = [0, 1, 2].map((s) => glasJeStufe(g[s], M.H.windows || []));
+    z.ton = [0, 1, 2].map((s) => {
+        const a = FC.sichtTon(tonDefekt ? tonDefekt(FC.buildStufe(p, s), s) : FC.buildStufe(p, s)).alle;
+        return luma(a) / a[3];
+    });
     const wurfJe = {}; // je Werfer-Stufe einmal gerechnet (alle Stufen zeigen auf dieselbe)
     for (const s of [0, 1, 2]) {
         const w = B[s] ? B[s].schatten : undefined;
@@ -680,6 +660,9 @@ function hausUrteil(z) {
     if (!(z.innen.wand <= SOLL.wand + RASTER)) f.push(`Wand ${f3(z.innen.wand)} m (Soll ≤ ${SOLL.wand})`);
     if (!(z.innen.dach <= SOLL.dach + RASTER)) f.push(`Dach ${f3(z.innen.dach)} m über der Haut − 3 cm`);
     glasUrteil(z.glas, f);
+    for (const s of [1, 2])
+        if (!(Math.abs(z.ton[s] / z.ton[0] - 1) <= require("../spec/farbe/albedo-tafel.json").stufenToleranz))
+            f.push(`Stufen-Ton L${s}/L0 ${f3(z.ton[s] / z.ton[0])}`);
     for (const s of [0, 1, 2]) {
         const weg = z.tuer[s].filter((d) => !(d <= SOLL.tuer));
         if (weg.length)
@@ -748,8 +731,11 @@ function selbsttest() {
         grp.updateMatrixWorld(true);
         return grp;
     };
-    const z = hausFall("alemannisch", 1, aufgeblaeht);
+    // S8 im selben Fall: die L2 ein Fünftel dunkler (der Ton der Stufe-1-Fassade vor S8: L2/L0 0,788)
+    const dunkler = (G, s) => (s === 2 && Object.values(G).forEach((r) => r.col && r.col.forEach((c, i, a) => (a[i] = c * 0.8))), G);
+    const z = hausFall("alemannisch", 1, aufgeblaeht, null, null, dunkler);
     const u = hausUrteil(z);
+    if (!u.some((x) => /^Stufen-Ton L2/.test(x))) fehler.push("S8: L2 × 0,8 nicht rot");
     if (!u.some((x) => /Aufblähung/.test(x))) fehler.push("A: ein aufgeblähter Körper (Massen-Hülle) ist nicht rot");
     if (!u.some((x) => /First der Stufe 3 quer/.test(x))) fehler.push("F: ein quer gedeckter Körper ist nicht rot");
     if (!u.some((x) => /^Wand /.test(x))) fehler.push("I: eine Wand vor der Grundriss-Ebene ist nicht rot");
@@ -875,15 +861,10 @@ function selbsttest() {
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
-    if (rot.length) {
-        console.log(`\n❌ ROT — ${rot.length} Befunde:`);
-        for (const r of rot.slice(0, 80)) console.log("   " + r);
-        if (rot.length > 80) console.log(`   … und ${rot.length - 80} weitere`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
+    wandEnde(
+        rot,
+        "jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
     );
 })();

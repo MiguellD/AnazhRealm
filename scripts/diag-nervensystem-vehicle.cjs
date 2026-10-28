@@ -21,14 +21,14 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
 const server = statikServer();
 
-const { errs, check, rotAus } = pruefer()
+const { errs, check } = pruefer();
 // ===== TEIL A: die statischen Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes Glied wirft beim
 // Namen; die Präsenzen beweist der lebende Draht B-F). (A10, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint —
 // hält gate:pipeline-constitution N1 wörtlich.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
@@ -67,8 +67,7 @@ hauptLauf(async () => {
         ).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 3: zweiter kerneVereinen-Ruf injiziert -> A3 feuert", a3b && a3b[1] === false, a3b && a3b[2]);
 
-        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf den zweiten Ingest-Pfad.");
+        selbsttestEnde(errs, "die Linse feuert auf den zweiten Ingest-Pfad.");
         process.exit(0);
     }
 
@@ -80,26 +79,13 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
-    await page.evaluate(`window.__assetSeite = ${kernStufen.assetSeite}`);
+    const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
+    const eps = await page.evaluate(kernStufen.epsilonSeite, W);
     const out = await page.evaluate(async () => {
-        const res = { b: {}, c: {}, d: {}, e: {}, f: {} };
-        await window.__weltDa();
+        const res = { c: {}, d: {}, f: {} };
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.gt && rc && rc.lod && rc.lod.kindStages; });
-        const rc = A._studioRenderConfig;
-        const ks = rc && rc.lod ? rc.lod.kindStages : null;
-        // ===== B: das Buch + der Merge KOMMEN AN =====
-        res.b.gtKind = f && f.recipes && f.recipes.gt ? f.recipes.gt.kind : null;
-        res.b.gtRadstand = f && f.recipes && f.recipes.gt && f.recipes.gt.s ? f.recipes.gt.s.radstand : null;
-        res.b.vehicleCount =
-            f && f.recipes
-                ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "vehicle").length
-                : 0;
-        res.b.ksVehicle = ks ? JSON.stringify(ks.vehicle) : null;
-        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== C: die MERGE-SEMANTIK direkt (first-wins + disjunkt), mit Restore =====
         try {
             const orig = A._studioRenderConfig;
@@ -123,28 +109,9 @@ hauptLauf(async () => {
         } catch (e) {
             res.c.err = (e && e.message) || String(e);
         }
-        // ===== D: der AUTO-BLUEPRINT =====
+        // ===== D (dazu): Idempotenz + Probe-Preset =====
         try {
-            const bp = r.state.blueprints && r.state.blueprints.fahrzeug_gt;
-            res.d.blueprint = !!bp;
-            res.d.autoSpecies = bp ? bp._foundryAutoSpecies : null;
-            res.d.grownSpecies = bp ? bp._grownSpecies || null : "kein-bp";
-            res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND,
-            // die Substanz lebt in KIND_SUBSTANCE, der Klon traegt byte-gleiche Parts.
-            const KS = A.KIND_SUBSTANCE || {};
-            res.d.donorAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
-            res.d.substanzParts =
-                KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
-            res.d.clonePartsMatch =
-                !!bp && !!KS.fahrzeug_wagen && JSON.stringify(bp.parts) === JSON.stringify(KS.fahrzeug_wagen.parts);
-            res.d.cloneConnMatch =
-                !!bp &&
-                !!KS.fahrzeug_wagen &&
-                JSON.stringify(bp.connections || null) === JSON.stringify(KS.fahrzeug_wagen.connections || null);
-            res.d.presetResolves = r._foundryPresetFor("fahrzeug_gt");
-            res.d.entryResolves = r._foundryPresetForEntry({ type: "fahrzeug_gt" });
-            // Idempotenz + Probe-Preset (Injektion == der Schoepfer legt ein Preset im Kern an):
+            // Injektion == der Schoepfer legt ein Preset im Kern an
             if (f && f.recipes) {
                 f.recipes.probemobil = { kind: "vehicle", lab: "Probemobil", s: {}, fx: {} };
                 const n1 = r._foundryAutoRegisterSpecies(f.recipes);
@@ -161,22 +128,6 @@ hauptLauf(async () => {
             }
         } catch (e) {
             res.d.err = (e && e.message) || String(e);
-        }
-        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup, `kernStufen.assetSeite`) =====
-        res.e = await window.__assetSeite("gt");
-        // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 fordert NIE Stufe-2-
-        // Geometrie (FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
-        // vehicle impostor:true; jede Stufe jedes Rezepts baut Teile: gate:regler-wirkt STUFEN]; ein Wirts-L1-
-        // GRADE-Request bleibt erlaubt — "L1/L2 gradet der Wirt", vehicle-core B2).
-        // Die Probe wanderte mit dem Gesetz: vorher klemmte [0] hart. =====
-        try {
-            if (!f.requested) f.requested = new Set();
-            const before = new Set(f.requested);
-            r._foundryFlattenFor({ seed: 7 }, "gt", 2);
-            const fresh = Array.from(f.requested).filter((k) => !before.has(k));
-            res.f.gtKey = fresh.find((k) => k.startsWith("gt|")) || null;
-        } catch (e) {
-            res.f.err = (e && e.message) || String(e);
         }
         // Unbekannter kind OHNE jeden kindStages-/Budget-Eintrag (N7.5-[0]): die Stufen-Klammer klemmt fail-closed
         // auf [0]; den Wurf trägt kein Wirts-Literal mehr (W8-Integration: `_WIRT_WURF` fiel) — der Flatten bricht
@@ -206,15 +157,9 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    check(
-        "B: das LIVE-Buch traegt gt als kind:vehicle (Worker-Draht lebt)",
-        out.b.gtKind === "vehicle",
-        String(out.b.gtKind)
-    );
-    check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", out.b.gtRadstand === 2.9, String(out.b.gtRadstand));
-    check("B: alle 5 Fahrzeug-Gattungen im Buch", out.b.vehicleCount === 5, String(out.b.vehicleCount));
-    check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
-    kernStufen.stufenUrteil(check, out.b.ks, kern);
+    kernStufen.epsilonUrteil(check, eps, W, kern);
+    check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", eps.b.s.radstand === 2.9, String(eps.b.s.radstand));
+    check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", JSON.stringify(eps.b.ks.vehicle) === "[0,1]", JSON.stringify(eps.b.ks.vehicle));
     check(
         "C: first-wins — ein Zweit-Kern ueberschreibt NIE (tree bleibt [7,8])",
         out.c.treeKept === "[7,8]",
@@ -222,44 +167,13 @@ hauptLauf(async () => {
     );
     check("C: disjunkter kind kommt an (tor == [1])", out.c.torMerged === "[1]", String(out.c.torMerged));
     check("C: der Chokepoint mergt über das Gesetz kerneVereinen (Konsum)", out.c.gesetz === 1, String(out.c.gesetz));
-    check(
-        "D: Auto-Blueprint fahrzeug_gt registriert (Donor-Klon)",
-        out.d.blueprint === true && out.d.parts >= 4,
-        out.d.err || `parts=${out.d.parts}`
-    );
-    check("D: die Herkunfts-Marke sitzt (_foundryAutoSpecies == gt)", out.d.autoSpecies === "gt");
-    check(
-        "D: KEIN _grownSpecies (ein Fahrzeug ist keine gewachsene Art)",
-        out.d.grownSpecies === null,
-        String(out.d.grownSpecies)
-    );
-    check(
-        "D: der Alt-Donor fahrzeug_wagen ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (17 Parts)",
-        out.d.donorAbsent === true && out.d.substanzParts === 17,
-        `substanzParts=${out.d.substanzParts}`
-    );
-    check(
-        "D: der Auto-Klon traegt die Substanz byte-gleich (fahrzeug_gt parts+connections == KIND_SUBSTANCE.fahrzeug_wagen)",
-        out.d.clonePartsMatch === true && out.d.cloneConnMatch === true
-    );
-    check(
-        "D: die generische fahrzeug_-Regel loest auf (fahrzeug_gt -> gt)",
-        out.d.presetResolves === "gt",
-        String(out.d.presetResolves)
-    );
-    check(
-        "D: der Entry-Pfad loest auf (_foundryPresetForEntry)",
-        out.d.entryResolves === "gt",
-        String(out.d.entryResolves)
-    );
     check("D: Probe-Preset registriert + idempotent", out.d.probeRegistered === true && out.d.idempotent === true);
     check("D: das Label reist aus dem Rezept (lab)", out.d.probeLabel === "Probemobil", String(out.d.probeLabel));
-    kernStufen.assetUrteil(check, out.e, "das Fahrzeug-Asset");
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
         // Körper-Schlüssel preset|gestalt|stufe[|ov]; die Anfrage MUSS entstehen (sonst prüfte F nichts)
-        !!out.f.gtKey && !/^[^|]*\|[^|]*\|2(\||$)/.test(out.f.gtKey),
-        out.f.err || String(out.f.gtKey)
+        !!eps.f.key && !/^[^|]*\|[^|]*\|2(\||$)/.test(eps.f.key),
+        eps.f.err || String(eps.f.key)
     );
     check(
         "F: unbekannter kind OHNE Eintrag klemmt fail-closed auf [0] und bricht ohne Budget laut (kein Wirts-Wurf)",
@@ -267,9 +181,5 @@ hauptLauf(async () => {
         `Stufe ${out.f.torStufe} · ${out.f.torBruch || "kein Bruch"} · Anfragen ${out.f.torKeys}`
     );
 
-    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-    console.log(
-        "\n✅ GRÜN — DER ZWEIT-KERN DOCKT AN: vehicle-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), der N7.5-Merge lebt am EINEN Ingest-Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id> entsteht ohne eine Zeile AnazhRealm-Edit — EINE Pipeline fuer alle Domaenen (Vertrag Phase 1)."
-    );
-    process.exit(0);
+    wandEnde(errs, "DER ZWEIT-KERN DOCKT AN: vehicle-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), der N7.5-Merge lebt am EINEN Ingest-Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id> entsteht ohne eine Zeile AnazhRealm-Edit — EINE Pipeline fuer alle Domaenen (Vertrag Phase 1).");
 });

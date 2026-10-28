@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -132,7 +132,7 @@ const SOLL = {
         "nexus → player_speed",
         "nexus → skybox_color",
     ],
-    emotion: ["emotion:chaos → creatures_speed_mul"],
+    emotion: ["rule:emotion:chaos → creatures_speed_mul"],
     gesetz: ["rule:human → spawn_creature"],
     mensch: ["human → spawn_tree", "human → spawn_creature"],
     mitspieler: [
@@ -236,12 +236,9 @@ async function probe(GESCHICKT) {
             r._loopNexusUpdate();
         },
         emotion: () => {
-            const p = st.player;
-            p.emotionLastTick = t();
-            p.emotions.chaos = 1;
-            p.emotionLastApply.chaos = -Infinity;
-            r.updatePlayerEmotions(t());
-            p.emotions.chaos = 0;
+            st.player.emotions.chaos = 1;
+            r._tickWorldRules(t() + 3600); // das Gesetz des Gemüts `emotion:chaos` (affekt.K2)
+            st.player.emotions.chaos = 0;
         },
         gesetz: () => {
             r.dslRun(["rule", ["weather_is", "sunny"], GESETZ], { source: "human" });
@@ -540,13 +537,5 @@ hauptLauf(async () => {
         console.log(`  ${w.gruen ? "✅" : "❌"} tat-${k.toLowerCase()} ${JSON.stringify(w)}`);
     }
     rot.push(...tu.map((x) => "(T) " + x));
-    if (rot.length) {
-        console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\nGRÜN — unter der Bühne läuft kein Welt-Akt durch, jeder steht beim Namen seiner Quelle; ohne Halt wirkt das Spiel wie immer."
-    );
-    process.exit(0);
+    wandEnde(rot, "unter der Bühne läuft kein Welt-Akt durch, jeder steht beim Namen seiner Quelle; ohne Halt wirkt das Spiel wie immer.");
 });

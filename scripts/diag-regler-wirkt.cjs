@@ -61,7 +61,7 @@ function zeileTeil(n, wert, ids) {
 // Das Urteil eines Teils: neu ist, was die ganze Ratsche nicht kennt; geheilt, was der Teil trägt und nicht mehr misst.
 function vergleichTeil(jetzt, ratsche, ids, teil = TEIL) {
     const v = vergleich(jetzt, { tot: ratsche });
-    const eigen = (n) => zeileTeil(n, (ratsche || {})[n], ids) === teil;
+    const eigen = (n) => zeileTeil(n, ratsche?.[n], ids) === teil;
     return { neu: v.neu, geheilt: v.geheilt.filter(eigen), ok: !v.neu.length && !v.geheilt.some(eigen), eigen };
 }
 // Der Kern je Art, wie die Brücke die Tabellen sammelt (`__mergeParamsMap`: die Zweit-Kerne in Manifest-Reihenfolge,
@@ -112,7 +112,7 @@ async function imStamm(cb) {
             () => {
                 const r = window.anazhRealm;
                 const f = r && r._foundry;
-                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
+                return !!(f?.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
             },
             { timeout: 240000, polling: 250 }
         );
@@ -173,7 +173,7 @@ function ofenMessen(page, opts) {
                 text(x.type);
                 text(x.visible ? 1 : 0);
                 for (const e of x.matrixWorld.elements) zahl(e);
-                if (x.userData && x.userData.__kaltPlatzhalter) aus.platzhalter++;
+                if (x.userData?.__kaltPlatzhalter) aus.platzhalter++;
                 if (!x.isMesh || !x.geometry) return;
                 aus.teile++;
                 const at = x.geometry.attributes;
@@ -188,8 +188,8 @@ function ofenMessen(page, opts) {
                 }
                 if (x.geometry.index) puffer(x.geometry.index.array);
                 for (const m of Array.isArray(x.material) ? x.material : [x.material]) {
-                    if (m && m.color && typeof m.color.getHexString === "function") text(m.color.getHexString());
-                    if (m && m.userData && m.userData.__klasse) text(m.userData.__klasse);
+                    if (m?.color && typeof m.color.getHexString === "function") text(m.color.getHexString());
+                    if (m?.userData?.__klasse) text(m.userData.__klasse);
                 }
             });
             const hex = (x) => ("0000000" + (x >>> 0).toString(16)).slice(-8);
@@ -203,8 +203,10 @@ function ofenMessen(page, opts) {
             const fehler = [];
             const budget = [];
             r.log = function (m, lvl) {
-                // Der Budget-Bruch (Studio-Vertrag B2c: die Stufe über ihrer Zeile) ist ein eigenes Urteil — der Guss steht.
-                if (lvl === "ERROR") (/^BUDGET-BRUCH /.test(String(m)) ? budget : fehler).push(String(m).slice(0, 200));
+                // Der Budget-Bruch (Studio-Vertrag B2c: die Stufe über ihrer Zeile) ist ein eigenes Urteil — der Guss steht;
+                // der Guss im Haupt-Faden („FADEN-UMGANGEN", streaming.K4) ebenso
+                if (lvl === "ERROR" && !/^FADEN-UMGANGEN/.test(m))
+                    (/^BUDGET-BRUCH /.test(String(m)) ? budget : fehler).push(String(m).slice(0, 200));
                 return P.log.apply(this, arguments);
             };
             const hatte = Object.prototype.hasOwnProperty.call(ws.studioOv, preset);
@@ -217,7 +219,7 @@ function ofenMessen(page, opts) {
             try {
                 g = r._workshopStudioPreviewFrom(preset, seedVon(preset), lod, r._workshopStudioOvFor(preset));
             } catch (e) {
-                wurf = String((e && e.message) || e).slice(0, 160);
+                wurf = String(e?.message || e).slice(0, 160);
             } finally {
                 if (hatte) ws.studioOv[preset] = alt;
                 else delete ws.studioOv[preset];
@@ -244,10 +246,10 @@ function ofenMessen(page, opts) {
         // Die Täter (Selbsttest), am echten Ofen eingespielt und danach entfernt.
         const altBaecker = B.koerper;
         if (o.taeter === "ohneOv") r._studioPraegung = () => null;
-        if (o.taeter && o.taeter.bruch) {
+        if (o.taeter?.bruch) {
             r.constructor._tierOfenMemo && r.constructor._tierOfenMemo.clear();
             B.koerper = function (core, id, seed, lod, ov) {
-                if (ov && ov.dials && ov.dials[o.taeter.bruch] === o.taeter.wert) throw new Error("Täter: der Mensch-Bäcker wirft");
+                if (ov?.dials && ov.dials[o.taeter.bruch] === o.taeter.wert) throw new Error("Täter: der Mensch-Bäcker wirft");
                 return altBaecker.apply(this, arguments);
             };
         }
@@ -453,7 +455,7 @@ async function stufenMessen(h, opts) {
             );
     });
     for (const pl of plan) {
-        const t0 = (je.get(pl.p + "|" + pl.r + "|0") || {}).tris;
+        const t0 = je.get(pl.p + "|" + pl.r + "|0")?.tris;
         const q = arten[pl.art].quote;
         if (pl.s in STUFEN_QUOTE && !pl.nurAbdruck && !pl.zeile.nurWurf && t0 > 0 && !(q[pl.s] && q[pl.s].q >= pl.k.tris / t0))
             q[pl.s] = { q: pl.k.tris / t0, wo: pl.p + (pl.r ? " " + pl.r.join("=") : "") };
@@ -494,9 +496,9 @@ function stammRegel() {
     };
 }
 function budgetVonArt(rc, art) {
-    const L = (rc && rc.lod) || {};
-    if (L.budget && L.budget[art]) return L.budget[art];
-    for (const k in L.zusatzBudget || {}) if (L.zusatzBudget[k] && L.zusatzBudget[k][art]) return L.zusatzBudget[k][art];
+    const L = rc?.lod || {};
+    if (L.budget?.[art]) return L.budget[art];
+    for (const k in L.zusatzBudget || {}) if (L.zusatzBudget[k]?.[art]) return L.zusatzBudget[k][art];
     return null;
 }
 function wurfAus(st, regel) {
@@ -601,7 +603,7 @@ const bricht = (z) => z.bricht.length > 0;
 const tot = (z) => !z.wirkt && !bricht(z);
 // Das Urteil gegen die Ratsche (rein, ohne Browser): neu tot = rot, geheilt = rot bis die Zeile fällt.
 function vergleich(tot, ratsche) {
-    const bekannt = new Set(Object.keys((ratsche && ratsche.tot) || {}));
+    const bekannt = new Set(Object.keys(ratsche?.tot || {}));
     const jetzt = new Set(tot);
     const neu = [...jetzt].filter((n) => !bekannt.has(n)).sort();
     const geheilt = [...bekannt].filter((n) => !jetzt.has(n)).sort();
@@ -789,7 +791,7 @@ hauptLauf(async () => {
         process.exit(0);
     }
     const ratsche = ratscheLesen();
-    const ids = (m.stufen.arten[HAUS] || {}).ids;
+    const ids = m.stufen.arten[HAUS]?.ids;
     const v = vergleichTeil(toteZ.map(name), ratsche.tot, ids);
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
     for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);

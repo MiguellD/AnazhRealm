@@ -127,11 +127,14 @@ async function checkRing2Dsl(ctx) {
     if (!dslResults) {
         check("DSL-Smoketest erreichbar", false, "dslRun nicht aufrufbar");
     } else {
-        check("Welt-Identität (worldId) gesetzt", dslResults.worldIdSet);
+        // Welt-Identität (worldId) gesetzt
+        check("Welt-Identität gesetzt", dslResults.worldIdSet);
         check("Welt-Slug gesetzt", dslResults.slugSet);
-        check("DSL-Effekt: weather wirkt auf state (Satz des Spielers)", dslResults.weatherEffect);
+        // DSL-Effekt: weather wirkt auf state (Satz des Spielers)
+        check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
+        // Leben-Schau 2: ein Programm ohne Quelle (die Welt) schreibt das Wetter nie selbst — es wünscht
         check(
-            "Leben-Schau 2: ein Programm ohne Quelle (die Welt) schreibt das Wetter nie selbst — es wünscht",
+            "Leben-Schau 2: ein Programm ohne Quelle schreibt das Wetter nie selbst",
             dslResults.weltWuenscht
         );
         check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
@@ -154,8 +157,9 @@ async function checkRing2Dsl(ctx) {
             // FPS-Drop-Handler kann während des Wait-Intervalls neue
             // Legacy-Evolutionen in die Queue schieben — wir prüfen
             // daher Effekt (history grew), nicht Queue-Tiefe.
+            // Nexus-Loop verarbeitet DSL-Evolution (history wächst)
             check(
-                "Nexus-Loop verarbeitet DSL-Evolution (history wächst)",
+                "Nexus-Loop verarbeitet DSL-Evolution",
                 phase2Results.historyLen > dslResults.histBefore,
                 `history before=${dslResults.histBefore}, after=${phase2Results.historyLen}`
             );
@@ -224,11 +228,16 @@ async function checkBandV1723Harmony(ctx) {
         r.state.maxCreatures = capR;
         return out;
     });
-    check("Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht himmelTint", res.skyTintSet);
-    check("Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
-    check("Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
-    check("Harmonie: die Sky-FARBE cross-fadet (Farbwechsel springt nicht, er fadet)", res.colorCrossFades);
-    check("Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)", res.spawnRings);
+    // Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht himmelTint
+    check("Harmonie: skybox_color setzt eine Tönung, snappt nicht himmelTint", res.skyTintSet);
+    // Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)
+    check("Harmonie: die Sky-Tönung rampt smooth hoch", res.skyRamped);
+    // Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)
+    check("Harmonie: die Sky-Tönung fadet", res.skyDecays);
+    // Harmonie: die Sky-FARBE cross-fadet (Farbwechsel springt nicht, er fadet)
+    check("Harmonie: die Sky-FARBE cross-fadet", res.colorCrossFades);
+    // Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)
+    check("Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm", res.spawnRings);
 }
 
 // Feld-Richtung: der Nexus trägt Leben zum BEDARF (at_field_need = ärmster Punkt im Ring). Beweis:
@@ -257,12 +266,14 @@ async function checkBandV1726FieldDirection(ctx) {
         }
         return out;
     });
+    // Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)
     check(
-        "Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
+        "Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring",
         res.needIsMin,
         `needLeb=${res.needLeb} == min=${res.minLeb}`
     );
-    check("Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring (Radius 50)", res.onRing);
+    // Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring (Radius 50)
+    check("Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring", res.onRing);
 }
 
 // Emotion aus dem SEIN: alle sechs Achsen speisen sich aus TATEN (ACTION_TO_EMOTION an jeder
@@ -299,11 +310,13 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         reset();
         return out;
     });
-    check("Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht (ueber alle Achsen)", res.allSixAxes);
+    // Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht (ueber alle Achsen)
+    check("Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht", res.allSixAxes);
     check("Taten: bauen → joy + hope", res.buildJoyHope);
     check("Taten: Schaden/Gefahr → sorrow + chaos", res.damageSorrowChaos);
     check("Taten: erkunden → awe", res.exploreAwe);
-    check("Taten: Leben spawnen (Spieler) → joy + peace", res.lifeJoyPeace);
+    // Taten: Leben spawnen (Spieler) → joy + peace
+    check("Taten: Leben spawnen → joy + peace", res.lifeJoyPeace);
     check("Taten: sich verbuenden → peace", res.bondPeace);
 }
 
@@ -433,15 +446,18 @@ async function checkBandV1733WorldRules(ctx) {
         return out;
     });
 
+    // Welt-Regeln: WORLD_RULES-Konfig + Registry + Tick verdrahtet (im Loop)
     check(
-        "Welt-Regeln: WORLD_RULES-Konfig + Registry + Tick verdrahtet (im Loop)",
+        "Welt-Regeln: WORLD_RULES-Konfig + Registry + Tick verdrahtet",
         res.cfgWired && res.registryArray && res.tickWired
     );
+    // Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)
     check(
-        "Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
+        "Welt-Regeln: `rule` REGISTRIERT",
         res.regOk && res.registeredOne && res.notFiredOnRegister
     );
-    check("Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird (sorrow>0.5 → rainy)", res.firesWhenTrue);
+    // Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird (sorrow>0.5 → rainy)
+    check("Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird", res.firesWhenTrue);
     check("Welt-Regeln: das everySec-Gate verhindert Per-Frame-Feuern", res.everySecGate);
     check("Welt-Regeln: bei falscher Bedingung feuert die Regel nicht", res.skipsWhenFalse);
     check("Welt-Regeln: ttlSec entfernt die abgelaufene Regel", res.ttlRegistered && res.ttlRemoves);
@@ -450,17 +466,21 @@ async function checkBandV1733WorldRules(ctx) {
         res.budgetRegistered && res.budgetCaps,
         `fired=${res.firedCount} budget=4`
     );
-    check("Welt-Regeln: Dedup — dieselbe Regel zweimal bleibt EIN Eintrag", res.dedup);
+    // Welt-Regeln: Dedup — dieselbe Regel zweimal bleibt EIN Eintrag
+    check("Welt-Regeln: Dedup", res.dedup);
+    // Welt-Regeln: Cap haelt (Runaway-Schutz), Mensch-Regel ueberlebt die Nexus-Flut
     check(
-        "Welt-Regeln: Cap haelt (Runaway-Schutz), Mensch-Regel ueberlebt die Nexus-Flut",
+        "Welt-Regeln: Cap haelt, Mensch-Regel ueberlebt die Nexus-Flut",
         res.capHolds && res.humanSurvives
     );
+    // Welt-Regeln: Re-Entrancy — eine vom Effekt erzeugte Regel feuert nicht im selben Tick
     check(
-        "Welt-Regeln: Re-Entrancy — eine vom Effekt erzeugte Regel feuert nicht im selben Tick",
+        "Welt-Regeln: Re-Entrancy",
         res.reentrancyNoCascade && res.childRegistered && res.childFiresNextFrame
     );
+    // Welt-Regeln: deterministische Regel-RNG (stabil pro fireIndex, variiert ueber die Zeit)
     check(
-        "Welt-Regeln: deterministische Regel-RNG (stabil pro fireIndex, variiert ueber die Zeit)",
+        "Welt-Regeln: deterministische Regel-RNG",
         res.seedStable && res.seedVariesPerFire && res.rngDeterministic
     );
 }
@@ -590,22 +610,27 @@ async function checkBandV1734FieldRules(ctx) {
     });
 
     check("Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
+    // Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)
     check(
-        "Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)",
+        "Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck",
         res.depositLifeReadBack
     );
+    // Feld-Regeln: deposit_emotion → field_above(emotion) liest es zurueck, RAEUMLICH (A != B)
     check(
-        "Feld-Regeln: deposit_emotion → field_above(emotion) liest es zurueck, RAEUMLICH (A != B)",
+        "Feld-Regeln: deposit_emotion → field_above liest es zurueck, RAEUMLICH",
         res.depositEmotionReadBack && res.depositEmotionSpatial,
         `sorrowB=${res.emoSorrowB}`
     );
-    check("Feld-Regeln: Default-Position einer Feld-Op ist at_player (nicht der Ursprung)", res.defaultAtPlayer);
+    // Feld-Regeln: Default-Position einer Feld-Op ist at_player (nicht der Ursprung)
+    check("Feld-Regeln: Default-Position einer Feld-Op ist at_player", res.defaultAtPlayer);
+    // Feld-Regeln: die HEILUNGS-Regel schliesst den Loop (field_below lebendig → deposit_life → steigt → stoppt)
     check(
-        "Feld-Regeln: die HEILUNGS-Regel schliesst den Loop (field_below lebendig → deposit_life → steigt → stoppt)",
+        "Feld-Regeln: die HEILUNGS-Regel schliesst den Loop",
         res.healRose && res.healStopped,
         `T=${res.healT} seed=${res.healSeed}`
     );
-    check("Feld-Regeln: invalide emotion-Achse → no-op (kein throw, kein Feld-Schreiben)", res.invalidAxisNoop);
+    // Feld-Regeln: invalide emotion-Achse → no-op (kein throw, kein Feld-Schreiben)
+    check("Feld-Regeln: invalide emotion-Achse → no-op", res.invalidAxisNoop);
 }
 
 // Der Nexus EVOLVIERT Regeln: _composeNexusRule komponiert aus Feld-Bedingungen + -Effekten
@@ -682,6 +707,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
             ruleE.lastFired = -Infinity;
             r._tickWorldRules(now());
         }
+        ruleE.value = 0.4; // bewährt: ihr δ trägt ihre Kosten (die Wertung selbst prüft V1743)
         out.fitnessFires = (ruleE.fires || 0) >= 1;
         out.fitnessHigh = r._worldRuleFitness(ruleE) >= cfg.renewFitness;
         out.fitnessVal = r._worldRuleFitness(ruleE);
@@ -752,41 +778,51 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
         return out;
     });
 
+    // Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)
     check(
-        "Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)",
+        "Nexus-Regeln: dslComposeRule liefert eine gueltige Regel",
         res.composeStruct
     );
+    // Nexus-Regeln: der Nexus SCHREIBT das Feld (deposit_life + deposit_emotion komponiert)
     check(
-        "Nexus-Regeln: der Nexus SCHREIBT das Feld (deposit_life + deposit_emotion komponiert)",
+        "Nexus-Regeln: der Nexus SCHREIBT das Feld",
         res.effWritesField
     );
-    check("Nexus-Regeln: der Nexus LIEST das Feld (field_below/field_above komponiert)", res.condReadsField);
+    // Nexus-Regeln: der Nexus LIEST das Feld (field_below/field_above komponiert)
+    check("Nexus-Regeln: der Nexus LIEST das Feld", res.condReadsField);
+    // Nexus-Regeln: generateEvolution mischt Regeln + Gesten (der composeRuleProb-Hook)
     check(
-        "Nexus-Regeln: generateEvolution mischt Regeln + Gesten (der composeRuleProb-Hook)",
+        "Nexus-Regeln: generateEvolution mischt Regeln + Gesten",
         res.evoMix,
         `rules=${res.ruleCount}/80`
     );
+    // Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit
     check(
-        "Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit",
+        "Nexus-Regeln: per-Regel-Fitness",
         res.fitnessFires && res.fitnessHigh,
         `fit=${res.fitnessVal}`
     );
+    // Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)
     check(
-        "Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)",
+        "Nexus-Regeln: Erneuerung",
         res.renewSurvives
     );
-    check("Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende", res.inertExpires);
+    // Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende
+    check("Nexus-Regeln: Verfall", res.inertExpires);
+    // Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt
     check(
-        "Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt",
+        "Nexus-Regeln: Verfall",
         res.erroringExpires,
         `fit=${res.erroringFitness}`
     );
+    // Nexus-Regeln: dslMutate haelt die Regel-Form (Nachkomme bleibt eine Regel, kein throw)
     check(
-        "Nexus-Regeln: dslMutate haelt die Regel-Form (Nachkomme bleibt eine Regel, kein throw)",
+        "Nexus-Regeln: dslMutate haelt die Regel-Form",
         res.mutateKeepsRule
     );
+    // Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel (frisch oder Nachkomme)
     check(
-        "Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel (frisch oder Nachkomme)",
+        "Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel",
         res.composeNexusRule
     );
 }
@@ -895,24 +931,32 @@ async function checkBandV1736HumanRules(ctx) {
         return out;
     });
 
+    // Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)
     check(
-        "Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)",
+        "Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung",
         res.condParse
     );
+    // Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns (jeder Effekt wird Regel-fähig)
     check(
-        "Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns (jeder Effekt wird Regel-fähig)",
+        "Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns",
         res.effParse
     );
-    check("Mensch-Regeln: Whitelist-Wand — reaktive Effekte erlaubt, frozen Worldgen abgelehnt", res.whitelist);
+    // Mensch-Regeln: Whitelist-Wand — reaktive Effekte erlaubt, frozen Worldgen abgelehnt
+    check("Mensch-Regeln: Whitelist-Wand", res.whitelist);
+    // V17.36 Mensch-Regeln: „wann immer X, dann Y" erstellt eine Mensch-Regel (source=human, permanent)
     check(
-        'V17.36 Mensch-Regeln: „wann immer X, dann Y" erstellt eine Mensch-Regel (source=human, permanent)',
+        "V17.36 Mensch-Regeln: „wann immer X, dann Y\" erstellt eine Mensch-Regel",
         res.ruleCreated
     );
-    check("Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick (rainy → sunny)", res.ruleFires);
-    check("Mensch-Regeln: describeProgram(rule) ist menschen-lesbar", res.describeReadable, res.descSample);
-    check('V17.36 Mensch-Regeln: „zeige regeln" listet die aktiven Gesetze (von wem)', res.rulesListed);
+    // Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick (rainy → sunny)
+    check("Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick", res.ruleFires);
+    // Mensch-Regeln: describeProgram(rule) ist menschen-lesbar
+    check("Mensch-Regeln: describeProgram ist menschen-lesbar", res.describeReadable, res.descSample);
+    // V17.36 Mensch-Regeln: „zeige regeln" listet die aktiven Gesetze (von wem)
+    check("V17.36 Mensch-Regeln: „zeige regeln\" listet die aktiven Gesetze", res.rulesListed);
+    // Mensch-Regeln: ein unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel
     check(
-        "Mensch-Regeln: ein unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel",
+        "Mensch-Regeln: ein unsicherer Effekt wird abgelehnt",
         res.unsafeRejected
     );
     check("Mensch-Regeln: eine unbekannte Bedingung → sanftes Feedback, keine Regel", res.unknownCond);
@@ -1015,28 +1059,34 @@ async function checkBandV1737RulesUI(ctx) {
         return out;
     });
 
-    check("Hof-Partitur: zwei Gruppen (Deine Gesetze | Der Nexus erprobt)", res.twoGroups);
+    // Hof-Partitur: zwei Gruppen (Deine Gesetze | Der Nexus erprobt)
+    check("Hof-Partitur: zwei Gruppen", res.twoGroups);
     check(
         "Hof-Partitur: die Nexus-Experimente auf Top-5 gekappt + '+N weitere'-Zeile",
         res.nexusCappedTopN && res.nexusHasMoreLine
     );
+    // Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip (V17.31 Konsum)
     check(
-        "Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip (V17.31 Konsum)",
+        "Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip",
         res.nexusValueChipSorted
     );
     check("Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
     check("Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
+    // Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)
     check(
-        "Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
+        "Gesetze-UI: eine Mensch-Regel rendert als Row mit ✕",
         res.humanRow
     );
-    check("Gesetze-UI: eine Nexus-Regel ist gelistet + DIREKT steuerbar (📌+⏸+✕, kein ▶)", res.nexusRow);
+    // Gesetze-UI: eine Nexus-Regel ist gelistet + DIREKT steuerbar (📌+⏸+✕, kein ▶)
+    check("Gesetze-UI: eine Nexus-Regel ist gelistet + DIREKT steuerbar", res.nexusRow);
+    // Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel (Event-Delegation), Nexus bleibt
     check(
-        "Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel (Event-Delegation), Nexus bleibt",
+        "Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel, Nexus bleibt",
         res.forgetWorks && res.nexusSurvives
     );
+    // Gesetze-UI: beide Sektionen (Faehigkeiten + Gesetze) sind einklappbar (collapsible-header)
     check(
-        "Gesetze-UI: beide Sektionen (Faehigkeiten + Gesetze) sind einklappbar (collapsible-header)",
+        "Gesetze-UI: beide Sektionen sind einklappbar",
         res.collapsibleHeaders
     );
 }
@@ -1165,27 +1215,34 @@ async function checkBandV1739RulesUX(ctx) {
         return out;
     });
 
-    check("Gesetze-UX: Persistenz-Label — permanent / verfaellt in ~Ns / pausiert", res.labels);
+    // Gesetze-UX: Persistenz-Label — permanent / verfaellt in ~Ns / pausiert
+    check("Gesetze-UX: Persistenz-Label", res.labels);
     check("Gesetze-UX: ein PAUSIERTES Gesetz feuert nicht; reaktiviert feuert es wieder", res.pauseWorks);
+    // Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel (pinned + permanent)
     check(
-        "Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel (pinned + permanent)",
+        "Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel",
         res.pinAdopts && res.pinPermLabel
     );
+    // Gesetze-UX: die Eviction schuetzt eine angepinnte Regel (ueberlebt die Nexus-Flut)
     check(
-        "Gesetze-UX: die Eviction schuetzt eine angepinnte Regel (ueberlebt die Nexus-Flut)",
+        "Gesetze-UX: die Eviction schuetzt eine angepinnte Regel",
         res.pinnedSurvivesEviction
     );
+    // Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar (⏸+✕ in JEDEM Modus, kein pin-zuerst)
     check(
-        "Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar (⏸+✕ in JEDEM Modus, kein pin-zuerst)",
+        "Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar",
         res.ephemeralControllable
     );
+    // Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich (auch in frieden)
     check(
-        "Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich (auch in frieden)",
+        "Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich",
         res.ephemeralForgetWorks
     );
-    check("Gesetze-UX: Sortierung — angepinnte Favoriten rendern zuerst", res.sortPinnedFirst);
+    // Gesetze-UX: Sortierung — angepinnte Favoriten rendern zuerst
+    check("Gesetze-UX: Sortierung", res.sortPinnedFirst);
+    // Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore (die Schoepfer-Wahl bleibt)
     check(
-        "Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore (die Schoepfer-Wahl bleibt)",
+        "Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore",
         res.persistFlags
     );
 }
@@ -1242,16 +1299,20 @@ async function checkBandV1740LlmRules(ctx) {
         return out;
     });
 
+    // KI-Regeln: die UNIVERSELLE Whitelist (in _registerWorldRule) — LLM-Regel mit frozen-Effekt abgelehnt, reaktiver passiert
     check(
-        "KI-Regeln: die UNIVERSELLE Whitelist (in _registerWorldRule) — LLM-Regel mit frozen-Effekt abgelehnt, reaktiver passiert",
+        "KI-Regeln: die UNIVERSELLE Whitelist",
         res.unsafeRejected && res.safeRegistered
     );
+    // KI-Regeln: eine LLM-Regel ist EPHEMER per Default (fitness-getestet + adoptierbar)
     check(
-        "KI-Regeln: eine LLM-Regel ist EPHEMER per Default (fitness-getestet + adoptierbar)",
+        "KI-Regeln: eine LLM-Regel ist EPHEMER per Default",
         res.llmEphemeral
     );
-    check("KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
-    check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
+    // KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)
+    check("KI-Regeln: die LLM-Regel ist voll funktional", res.llmFires);
+    // V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)
+    check("V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok\"", res.consoleLabel);
 }
 
 // Gesetzes-Faden, zwei Konsumenten der EINEN Spur lastFired/fires: (a) _worldRuleActivityLabel zeigt
@@ -1360,36 +1421,41 @@ async function checkBandV1741RuleThread(ctx) {
         return out;
     });
 
+    // Gesetzes-Faden: _worldRuleActivityLabel ist LIVE (ruht / ⚡ feuert / ⚡ aktiv · N× / pausiert)
     check(
-        "Gesetzes-Faden: _worldRuleActivityLabel ist LIVE (ruht / ⚡ feuert / ⚡ aktiv · N× / pausiert)",
+        "Gesetzes-Faden: _worldRuleActivityLabel ist LIVE",
         res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
     );
+    // V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum
     check(
-        'V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum',
+        "V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert\" + pulst",
         res.domShowsFeuert
     );
+    // Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST (Live-ness im Diff, kein manueller Reset)
     check(
-        "Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST (Live-ness im Diff, kein manueller Reset)",
+        "Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST",
         res.signatureLive
     );
+    // V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte")
     check(
-        'V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte")',
+        "V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung",
         res.journalAwoke
     );
+    // Gesetzes-Faden: idempotent — dieselbe Regel neu aufgestellt + gefeuert schreibt KEINE zweite Erinnerung
     check(
-        "Gesetzes-Faden: idempotent — dieselbe Regel neu aufgestellt + gefeuert schreibt KEINE zweite Erinnerung",
+        "Gesetzes-Faden: idempotent",
         res.journalIdempotent
     );
+    // Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)
     check(
-        "Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)",
+        "Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung",
         res.nexusNoJournal
     );
 }
 
 // Lokal-attribuierte Regel-Fitness: reward = struktureller δ am Effekt-Ort über die Baseline, EMA in
-// rule.value; _worldRuleFitness = viability-Floor + value-Bonus (valueScore zentriert 0.5 → neutral
-// überlebt, keine Monokultur). Geprüft: Heiler/neutral/Schädling diskriminieren; die Eviction wirft
-// den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
+// rule.value; _worldRuleFitness = valueScore × Erfolg × Kosten (neutral knapp unter der Schwelle). Geprüft: Heiler/neutral/
+// Schädling diskriminieren; die Eviction wirft den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
 async function checkBandV1743RuleFitness(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1401,11 +1467,10 @@ async function checkBandV1743RuleFitness(ctx) {
         const fHeal = r._worldRuleFitness(mkF(1));
         const fNeutral = r._worldRuleFitness(mkF(0));
         const fHarm = r._worldRuleFitness(mkF(-1));
-        out.fitnessDiscriminates =
-            fHeal > 0.9 && fNeutral > 0.6 && fNeutral < 0.8 && fHarm < 0.5 && fHeal > fNeutral && fNeutral > fHarm;
-        // renewFitness 0.5: Heiler+neutral überleben, Schädling verfällt
-        out.harmerDecays =
-            fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
+        out.fitnessDiscriminates = fHeal > 0.9 && fNeutral > 0.4 && fHarm < 0.1 && fHeal > fNeutral && fNeutral > fHarm;
+        // renewFitness 0.5: der Heiler überlebt, neutral (sein δ trägt die Kosten nicht) und Schädling verfallen
+        const renew = r.constructor.WORLD_RULES.renewFitness;
+        out.harmerDecays = fHarm < renew && fNeutral < renew && fHeal >= renew;
 
         // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
         const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
@@ -1491,32 +1556,39 @@ async function checkBandV1743RuleFitness(ctx) {
         return out;
     });
 
+    // Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)
     check(
-        "Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)",
+        "Wertung: _worldRuleFitness DISKRIMINIERT",
         res.fitnessDiscriminates
     );
+    // Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness (Schädling und neutral verfallen, affekt.K3)
     check(
-        "Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)",
+        "Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness",
         res.harmerDecays
     );
+    // Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)
     check(
-        "Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)",
+        "Wertung: _ruleRewardPos misst am Effekt-Ort bzw. an der Spieler-Position",
         res.rewardPosFromEffect && res.rewardPosFallbackPlayer
     );
+    // Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)
     check(
-        "Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)",
+        "Wertung: END-TO-END",
         res.healerPositiveValue
     );
+    // Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert
     check(
-        "Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert",
+        "Wertung: eine neutrale Regel akkumuliert ~0 Wert",
         res.neutralZeroValue
     );
+    // Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt
     check(
-        "Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt",
+        "Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag; Mensch/pinned geschützt",
         res.evictsLowestValue && res.evictProtectsHuman
     );
+    // Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)
     check(
-        "Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)",
+        "Wertung: rule.value ist reaktiv",
         res.valueNotInSnapshot
     );
 }
@@ -1538,7 +1610,6 @@ async function checkBandV1745EmotionCore(ctx) {
         const savedEmo = { ...p.emotions };
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedApply = { ...(p.emotionLastApply || {}) };
         const savedLife = r.state.lifeField;
         const savedWohl = r.state.wohlBaseline;
         const savedEmoField = r.state.emotionField;
@@ -1595,16 +1666,13 @@ async function checkBandV1745EmotionCore(ctx) {
         p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
         const pm = r.state.playerMesh.position;
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
-        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 }; // Trigger unterdrücken
         setEmo({ joy: 0.8, sorrow: 0.8 }); // joy + Gegenpol
         p.wohlBaseline = sit; // δ=0 → kein Appraisal
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 9000;
         r.updatePlayerEmotions(9001);
         const joyWithOpp = p.emotions.joy;
         setEmo({ joy: 0.8 }); // joy allein
         p.wohlBaseline = sit;
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 9000;
         r.updatePlayerEmotions(9001);
         const joyAlone = p.emotions.joy;
@@ -1615,7 +1683,6 @@ async function checkBandV1745EmotionCore(ctx) {
         setEmo(savedEmo);
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
-        p.emotionLastApply = savedApply;
         p.hp = savedHp;
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
@@ -1623,41 +1690,54 @@ async function checkBandV1745EmotionCore(ctx) {
         return out;
     });
 
-    check("Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)", res.geoComplete);
+    // Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)
+    check("Emotion-Kern: EMOTION_GEOMETRY vollständig", res.geoComplete);
+    // Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell
     check(
-        "Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell",
+        "Emotion-Kern: prinzipielle Valenz-Vorzeichen",
         res.geoValenceSigns
     );
+    // Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)
     check(
-        "Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)",
+        "Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol",
         res.geoArousalOpposed
     );
+    // Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)
     check(
-        "Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)",
+        "Emotion-Kern: Readout",
         res.clearDominant
     );
-    check("Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)", res.bittersweetValenceCancels);
+    // Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)
+    check("Emotion-Kern: FUSION", res.bittersweetValenceCancels);
+    // Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)
     check(
-        "Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)",
+        "Emotion-Kern: FUSION",
         res.bittersweetIntensityHigh
     );
+    // V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)
     check(
-        'V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)',
+        "V17.45 Emotion-Kern: FUSION",
         res.bittersweetLabel
     );
-    check('V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"', res.calmReadout);
+    // V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"
+    check("V17.45 Emotion-Kern: Ruhe", res.calmReadout);
+    // Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)
     check(
-        "Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)",
+        "Emotion-Kern: KONSUM",
         res.promptClear
     );
-    check("Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)", res.promptMix);
-    check("Emotion-Kern: KONSUM — die KI kennt die Ruhe", res.promptCalm);
+    // Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)
+    check("Emotion-Kern: KONSUM", res.promptMix);
+    // Emotion-Kern: KONSUM — die KI kennt die Ruhe
+    check("Emotion-Kern: KONSUM", res.promptCalm);
+    // Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)
     check(
-        "Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)",
+        "Emotion-Kern: Kohärenz",
         res.coherenceDamps
     );
+    // Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)
     check(
-        "Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)",
+        "Emotion-Kern: Kohärenz",
         res.singleNotDamped
     );
 }
@@ -1734,30 +1814,41 @@ async function checkBandV1746EmotionSubstance(ctx) {
         r.state.emotionField = savedEmoField;
         return out;
     });
+    // Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt
     check(
-        "Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt",
+        "Substanz: lebendig → peace, dichte → hope",
         res.lebendigPeace && res.dichteHope
     );
-    check("Substanz: brennbar → chaos + awe (Gefahr-Thrill)", res.brennbarChaos);
-    check("Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)", res.noLebInDichte);
-    check("Substanz: die Magnitude skaliert den Beitrag linear (Kathedrale > Box)", res.magnitudeScales);
-    check("Substanz: Tag-Stärke >1 geklemmt (Richtung); die Komplexität trägt die Magnitude", res.tagsClamped);
-    check("Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)", res.woodMorePeace);
+    // Substanz: brennbar → chaos + awe (Gefahr-Thrill)
+    check("Substanz: brennbar → chaos + awe", res.brennbarChaos);
+    // Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)
+    check("Substanz: die Achsen sind sauber getrennt", res.noLebInDichte);
+    // Substanz: die Magnitude skaliert den Beitrag linear (Kathedrale > Box)
+    check("Substanz: die Magnitude skaliert den Beitrag linear", res.magnitudeScales);
+    // Substanz: Tag-Stärke >1 geklemmt (Richtung); die Komplexität trägt die Magnitude
+    check("Substanz: Tag-Stärke >1 geklemmt; die Komplexität trägt die Magnitude", res.tagsClamped);
+    // Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)
+    check("Substanz: KONSUM", res.woodMorePeace);
+    // Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl
     check(
-        "Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl",
+        "Substanz: KONSUM",
         res.stoneMoreHope
     );
-    check("Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)", res.magnitudeEndToEnd);
+    // Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)
+    check("Substanz: KONSUM", res.magnitudeEndToEnd);
+    // Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)
     check(
-        "Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)",
+        "Substanz: der schöpferische Akt → Stolz + Substanz-Färbung",
         res.createPride
     );
+    // Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)
     check(
-        "Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)",
+        "Substanz: KEIN Regress",
         res.noRegressBuild
     );
+    // Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION
     check(
-        "Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION",
+        "Substanz: Fallback",
         res.fallbackExplore
     );
 }
@@ -1777,7 +1868,6 @@ async function checkBandV1747FastSlow(ctx) {
         const savedMood = p.mood ? { ...p.mood } : null;
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedApply = { ...(p.emotionLastApply || {}) };
         const savedLife = r.state.lifeField;
         const savedWohl = r.state.wohlBaseline;
         const savedEmoField = r.state.emotionField;
@@ -1789,7 +1879,6 @@ async function checkBandV1747FastSlow(ctx) {
             if (!p.mood) p.mood = {};
             for (const k of AX) p.mood[k] = o[k] || 0;
         };
-        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 };
         r.state.lifeField = new Map();
         p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
         const pm = r.state.playerMesh.position;
@@ -1803,7 +1892,6 @@ async function checkBandV1747FastSlow(ctx) {
         setEmo({ chaos: 0.8, sorrow: 0.8 });
         setMood({});
         p.wohlBaseline = sit; // δ=0 → kein Appraisal
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 7000;
         r.updatePlayerEmotions(7010); // 10s
         out.fearFadesFasterThanGrief = p.emotions.chaos < p.emotions.sorrow - 0.03;
@@ -1813,7 +1901,6 @@ async function checkBandV1747FastSlow(ctx) {
         setEmo({ joy: 1 });
         setMood({});
         p.wohlBaseline = sit;
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 7100;
         r.updatePlayerEmotions(7110); // ein einzelner 10s-Tick: die mood lagt
         const moodAfter1 = p.mood.joy;
@@ -1829,14 +1916,12 @@ async function checkBandV1747FastSlow(ctx) {
         // (4) STIMMUNGS-KONGRUENZ: eine trübe Stimmung dämpft die Freude eines guten Ereignisses
         setEmo({});
         setMood({});
-        p.emotionLastApply = { ...supApply };
         p.wohlBaseline = sit - 0.1; // ein REALES gutes Ereignis (δ_base = +0.1)
         p.emotionLastTick = 7800;
         r.updatePlayerEmotions(7801);
         const joyNeutralMood = p.emotions.joy;
         setEmo({});
         setMood({ sorrow: 0.9 }); // trübe Grundstimmung
-        p.emotionLastApply = { ...supApply };
         p.wohlBaseline = sit - 0.1; // dasselbe gute Ereignis
         p.emotionLastTick = 7800;
         r.updatePlayerEmotions(7801);
@@ -1847,7 +1932,6 @@ async function checkBandV1747FastSlow(ctx) {
         // erzeugt KEINE Emotion (die Kongruenz ist gegated → die V17.44-Feedback-Lehre)
         setEmo({});
         setMood({ sorrow: 0.9 });
-        p.emotionLastApply = { ...supApply };
         p.wohlBaseline = sit; // δ_base = 0 (kein Ereignis)
         p.emotionLastTick = 8000;
         for (let i = 1; i <= 60; i++) r.updatePlayerEmotions(8000 + i);
@@ -1862,7 +1946,6 @@ async function checkBandV1747FastSlow(ctx) {
 
         // (7) V17.30 heil: anhaltendes Tun erreicht weiter 0.7
         setEmo({});
-        p.emotionLastApply = {};
         for (let i = 0; i < 10; i++) r._feelAction("build");
         out.triggerReachable = p.emotions.joy >= 0.7;
 
@@ -1871,41 +1954,49 @@ async function checkBandV1747FastSlow(ctx) {
         if (savedMood) setMood(savedMood);
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
-        p.emotionLastApply = savedApply;
         p.hp = savedHp;
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
         r.state.emotionField = savedEmoField;
         return out;
     });
-    check("Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)", res.decayTable);
+    // Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)
+    check("Fast/Slow: EMOTION_DECAY-Tabelle", res.decayTable);
+    // Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]
     check(
-        "Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]",
+        "Fast/Slow: KONSUM",
         res.fearFadesFasterThanGrief
     );
-    check("Fast/Slow: beide Achsen zerfallen (Decay wirkt)", res.bothDecayed);
+    // Fast/Slow: beide Achsen zerfallen (Decay wirkt)
+    check("Fast/Slow: beide Achsen zerfallen", res.bothDecayed);
+    // Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)
     check(
-        "Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)",
+        "Fast/Slow: die STIMMUNG ist eine langsame EMA",
         res.moodLagsEmotion
     );
+    // Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)
     check(
-        "Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)",
+        "Fast/Slow: KONSUM",
         res.moodConverges
     );
+    // Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)
     check(
-        "Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)",
+        "Fast/Slow: KONSUM",
         res.moodColorsAppraisal
     );
+    // Fast/Slow: KEIN Runaway — eine trübe Stimmung bei konstanter Situation manufakturiert KEINE Emotion (V17.44-Lehre)
     check(
-        "Fast/Slow: KEIN Runaway — eine trübe Stimmung bei konstanter Situation manufakturiert KEINE Emotion (V17.44-Lehre)",
+        "Fast/Slow: KEIN Runaway",
         res.noMoodRunaway
     );
+    // Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)
     check(
-        "Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)",
+        "Fast/Slow: KONSUM",
         res.promptHasMood && res.promptHasAcute
     );
+    // Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle
     check(
-        "Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle",
+        "Fast/Slow: V17.30 heil",
         res.triggerReachable
     );
 }
@@ -2023,32 +2114,42 @@ async function checkBandV1748Social(ctx) {
         r.state.creatureEmotions = savedCreatureEmotions;
         return out;
     });
-    check("Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)", res.happyLifts);
-    check("Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)", res.sadGrieves);
+    // Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)
+    check("Soziales: KONSUM", res.happyLifts);
+    // Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)
+    check("Soziales: KONSUM", res.sadGrieves);
+    // G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben — ein awe-fühlendes Wesen steckt mit AWE an (binär unmöglich)
     check(
-        "G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben — ein awe-fühlendes Wesen steckt mit AWE an (binär unmöglich)",
+        "G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben",
         res.vecContagionAwe
     );
+    // G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat (ACTION_TO_EMOTION.damage → Vektor; 'sad' fällt aus der Valenz-Projektion)
     check(
-        "G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat (ACTION_TO_EMOTION.damage → Vektor; 'sad' fällt aus der Valenz-Projektion)",
+        "G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat",
         res.creatureFeelsDamage
     );
+    // Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)
     check(
-        "Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)",
+        "Soziales: gebounded",
         res.contagionBounded
     );
+    // Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)
     check(
-        "Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)",
+        "Soziales: KONSUM",
         res.bondWeights
     );
-    check("Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
+    // Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)
+    check("Soziales: eine WARTENDE Kreatur baut keine Bindung auf", res.waitNoBond);
+    // Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)
     check(
-        "Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)",
+        "Soziales: KONSUM",
         res.bondLossHurts
     );
-    check("Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)", res.tendComforts);
+    // Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)
+    check("Soziales: KONSUM", res.tendComforts);
+    // Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht
     check(
-        "Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht",
+        "Soziales: kein Trost ohne Trübsal",
         res.noTendWhenOk
     );
 }
@@ -2105,18 +2206,22 @@ async function checkBandG8R2SovereignWall(ctx) {
         check("G8 R2: Sovereign-Wall-Sonde lief", false, "evaluate warf");
         return;
     }
+    // G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)
     check(
-        "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic (die Wand)",
+        "G8 R2: DISJUNKT von dslEffects ∪ NON_BROADCASTABLE ∪ dslComposeAtomic",
         res.notDslOp && res.notBroadcast && res.notComposed
     );
-    check("G8 R2: ein souveräner Op im DSL wird sovereign_blocked (nie ausgeführt)", res.dslBlocks);
+    // G8 R2: ein souveräner Op im DSL wird sovereign_blocked (nie ausgeführt)
+    check("G8 R2: ein souveräner Op im DSL wird sovereign_blocked", res.dslBlocks);
     check("G8 R2: in einer Kette fällt der souveräne Op, der legitime läuft", res.chainBlocksSovereignNotRest);
+    // G8 R2: die Host-Geste (skipConfirm→ok · Nicht-souverän→verweigert)
     check(
-        "G8 R2: die Host-Geste (skipConfirm→ok · Nicht-souverän→verweigert)",
+        "G8 R2: die Host-Geste",
         res.gestureSkipConfirm && res.gestureRefusesUnknown
     );
+    // G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen (blockiert beim Feuern)
     check(
-        "G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen (blockiert beim Feuern)",
+        "G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen",
         res.ruleEffectBlocked
     );
 }

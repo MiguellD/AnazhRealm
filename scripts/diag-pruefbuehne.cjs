@@ -38,15 +38,11 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d;
-};
 const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
@@ -1391,13 +1387,6 @@ async function lichtLauf() {
                         PL && PL.programs
                             ? [PL.programs.vertex.size, PL.programs.fragment.size, PL.caches ? PL.caches.size : null]
                             : null;
-                    const cv = document.createElement("canvas");
-                    cv.width = w;
-                    cv.height = h;
-                    const ctx = cv.getContext("2d");
-                    const img = ctx.createImageData(w, h);
-                    img.data.set(u8.subarray(0, w * h * 4));
-                    ctx.putImageData(img, 0, 0);
                     const eigen = pool.find((p) => Math.hypot(p.x - f.x, p.z - f.z) <= 1.5);
                     return {
                         himmel: himmelL,
@@ -1417,7 +1406,7 @@ async function lichtLauf() {
                         nah: nahZahl,
                         zaehl,
                         boden: [...bodenWgsl.keys()],
-                        png: cv.toDataURL("image/png"),
+                        png: window.__png(u8, w, h),
                     };
                 }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
             );
@@ -1461,16 +1450,7 @@ async function lichtLauf() {
             } finally {
                 if (nahLos) nahLos();
             }
-            const cv = document.createElement("canvas");
-            cv.width = 960;
-            cv.height = 540;
-            const ctx = cv.getContext("2d");
-            const bild = (a) => {
-                const img = ctx.createImageData(960, 540);
-                img.data.set(a.u8.subarray(0, 960 * 540 * 4));
-                ctx.putImageData(img, 0, 0);
-                return cv.toDataURL("image/png");
-            };
+            const bild = (a) => window.__png(a.u8, 960, 540);
             const figur = bild(auf);
             if (wolf) r.removeCreature(wolf);
             cam.position.set(f.x - 6, g(f.x - 6, f.z) + 1.7, f.z);
@@ -1488,8 +1468,8 @@ async function lichtLauf() {
             }
             return { figur, sechs: bild(auf) };
         }, ECHT ? 0 : S0_NAH_M);
-        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-figur.png", Buffer.from(pngs.figur.split(",")[1], "base64"));
-        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-6m.png", Buffer.from(pngs.sechs.split(",")[1], "base64"));
+        pngDatei(BILD.replace(/\.png$/, "") + "-figur.png", pngs.figur);
+        pngDatei(BILD.replace(/\.png$/, "") + "-6m.png", pngs.sechs);
     }
     await browser.close();
     server.close();
@@ -1500,7 +1480,7 @@ async function lichtLauf() {
             befunde.push(`S0 Bild (${k}): ${e.fehler}`);
             continue;
         }
-        if (BILD) fs.writeFileSync(BILD.replace(/\.png$/, "") + (k === "sauber" ? "" : "-" + k) + ".png", Buffer.from(e.png.split(",")[1], "base64"));
+        if (BILD) pngDatei(BILD.replace(/\.png$/, "") + (k === "sauber" ? "" : "-" + k) + ".png", e.png);
         delete e.png;
         const wer = {
             sauber: "      ",

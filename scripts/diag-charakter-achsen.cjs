@@ -30,7 +30,7 @@ const SC = globalThis.__schmiedeCore;
 const VC = globalThis.__vehicleCore;
 const KC = globalThis.__klangCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 function fp(g) {
     const h = crypto.createHash("sha256");
     let n = 0;
@@ -89,10 +89,4 @@ check(
 const kaputtGleich = fp(SC.buildInstance("langschwert", 7, 0, { __tradition: "Nihon" })) === frank;
 check("SELBST-TEST: Nihon==Frank würde erkannt (die T-Probe feuert)", kaputtGleich === false);
 
-if (errs.length) {
-    console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-    process.exit(1);
-}
-console.log(
-    "\n✅ GRÜN — die Charakter-Achsen der Studios sind welt-wählbar: die Tradition FORMT (5 unverwechselbare Klingen-Sprachen, ov-frei byte-stabil), die Kulturen tragen ihre Dial-Vektoren, und die Genres stehen im Buch."
-);
+wandEnde(errs, "die Charakter-Achsen der Studios sind welt-wählbar: die Tradition FORMT (5 unverwechselbare Klingen-Sprachen, ov-frei byte-stabil), die Kulturen tragen ihre Dial-Vektoren, und die Genres stehen im Buch.");

@@ -38,7 +38,7 @@
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
@@ -330,9 +330,7 @@ async function hellProbe() {
         rend.setRenderObjectFunction(rofWelt);
         window.__erstRuhe = ruheWelt;
         // ein Bündel, das unter dem Filter neu aufnahm, trug nur die gemessenen Bürger: jedes nimmt beim nächsten Zeichnen neu auf
-        st.scene.traverse((o) => {
-            if (o.isBundleGroup) o.needsUpdate = true;
-        });
+        window.__bundlesNeu();
     }
 }
 // Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,
@@ -788,11 +786,5 @@ hauptLauf(async () => {
     await browser.close();
     if (!process.argv.includes("--ohne-blick")) await blickStufe(check);
     server.close();
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B)."
-    );
+    wandEnde(errs, "das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B).");
 });

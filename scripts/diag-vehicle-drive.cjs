@@ -2,7 +2,7 @@
 // Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
 // Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
@@ -10,7 +10,7 @@ const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PORT = Number(process.env.DRIVE_PORT || 4411);
 const server = statikServer();
 
-const { errs, check, rotAus } = pruefer()
+const { errs, check } = pruefer();
 
 // ── DIE DIVERGENZ-LINSE: welche drive-Skalare weichen vom Soll ab? (===, byte) ──
 const DRIVE_KEYS = ["topSpeedMul", "kAcc", "kBrake", "mass", "vmax"];
@@ -172,8 +172,7 @@ hauptLauf(async () => {
             "Selbst-Test 13 (B-f): ‚keine Hang-Probe gefunden' → die Stand-Linse feuert",
             standVerdict({ proben: 0, spaltM: 0 }).length === 1
         );
-        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf beide Verletzungs-Klassen.");
+        selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
 
@@ -431,27 +430,7 @@ hauptLauf(async () => {
             // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
             // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
             // der kleinsten Stufe (die Welt ist hügelig: 30 % Steigung findet sich auf jeder 72-m-Geraden).
-            const mo = expected.messort;
-            let start = null;
-            for (let ring = 0; ring <= 4; ring++) {
-                for (let k = 0; k < (ring ? 8 : 1); k++) {
-                    const cx = mo[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
-                    const cz = mo[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
-                    let trocken = true;
-                    let stufe = 0;
-                    for (const dz of [-3, 0, 3]) {
-                        let vor = null;
-                        for (let s = 0; s <= 36 && trocken; s++) {
-                            const hx = r.getTerrainHeightAt(cx + s * 2, cz + dz);
-                            const ws = r._atlasWaterLevelAt(cx + s * 2, cz + dz, hx);
-                            if (!Number.isFinite(hx) || (Number.isFinite(ws) && ws > hx - 0.3)) trocken = false;
-                            if (vor !== null) stufe = Math.max(stufe, Math.abs(hx - vor));
-                            vor = hx;
-                        }
-                    }
-                    if (trocken && (!start || stufe < start.stufe)) start = { x: cx, z: cz, stufe };
-                }
-            }
+            const start = window.__strecke(expected.messort, 4);
             res.gefuehl = { spawned: false, start };
             if (!start) throw new Error("keine trockene Strecke um die Mess-Wiese");
             pm.set(start.x, r.getTerrainHeightAt(start.x, start.z) + 1, start.z);
@@ -687,9 +666,5 @@ hauptLauf(async () => {
             `größter Rad-Spalt ${(st.spaltM || 0).toFixed(3)} m über ${st.proben || 0} Hang-Proben (Steigung ${JSON.stringify(st.steigung || [])}, je ${JSON.stringify(st.je || [])})${sv.length ? " — Täter: " + sv.join(", ") : ""}`
     );
 
-    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-    console.log(
-        "\n✅ GRÜN — DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad."
-    );
-    process.exit(0);
+    wandEnde(errs, "DAS LAB-FAHRPROFIL FÜHRT (N6/H7): EINE Formel (exportDrive aus carPhys+FAHR+Federrate, dieselben Primitive wie die Probefahrt), die Bruecke rechnet sie beim Buch-Bau (kein Duplikat), _vehicleProfile faehrt die Lab-Werte, ohne Buch bleibt die Emergenz byte-gleich — der Bewegungs-Loop ist EIN Pfad.");
 });

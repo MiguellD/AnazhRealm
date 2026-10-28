@@ -5,7 +5,7 @@
 //   stand  { version, sha }            der Stand aus dem LAUFENDEN Spiel (AnazhRealm.VERSION), die SHA setzt der Node-Aufrufer
 //   buehne { saison, wetter, uhr, tiereGehalten }
 //   geraet { backend, adapter, leinwand }
-//   bild   { w, h, mittel, sigma, schwarz, weiss, kanten }   Luma der sRGB-Ausgabe (0–255), Anteile, Kanten-Gitter 32×18
+//   bild   { w, h, mittel, sigma, schwarz, weiss }   Luma der sRGB-Ausgabe (0–255), Anteile
 //   sicht  { radius, deckung, taeter }  der Anteil des Schirms, den Laub · Rinde · Fels näher als `radius` am Auge decken
 //                                      (scripts/lib/kamera-nah.cjs, dieselbe Formel wie gate:kamera-laub), Täter beim Namen
 //   ziel   { name, imBild, ndc, frei, vor, abstand } | null     das benannte Ziel: im Bild und ohne Verdecker davor
@@ -124,8 +124,7 @@ function abnahmeUrteil(m, S) {
 }
 
 // DIE BILD-MASSE (rein; in der Seite als `__bildMasse`): Luma je Pixel der sRGB-Ausgabe (Rec. 709 auf den 0–255-Werten, wie
-// `werkbank bild`), Mittel, σ, Anteil abgesoffen (< 4) und ausgebrannt (> 251), dazu das Kanten-Gitter 32×18 (Gradient-Betrag
-// der Block-Mittel) für das Bild-Paar.
+// `werkbank bild`), Mittel, σ, Anteil abgesoffen (< 4) und ausgebrannt (> 251).
 function bildMasse(u8, W, H) {
     const n = W * H;
     if (!u8 || !n || u8.length < n * 4) return null;
@@ -133,33 +132,13 @@ function bildMasse(u8, W, H) {
         s2 = 0,
         sw = 0,
         ws = 0;
-    const GW = 32,
-        GH = 18;
-    const blk = new Float64Array(GW * GH);
-    const cnt = new Float64Array(GW * GH);
-    for (let y = 0; y < H; y++) {
-        const gy = Math.min(GH - 1, Math.floor((y * GH) / H));
-        for (let x = 0; x < W; x++) {
-            const i = (y * W + x) * 4;
-            const l = 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-            s += l;
-            s2 += l * l;
-            if (l < 4) sw++;
-            if (l > 251) ws++;
-            const g = gy * GW + Math.min(GW - 1, Math.floor((x * GW) / W));
-            blk[g] += l;
-            cnt[g]++;
-        }
+    for (let i = 0; i < n * 4; i += 4) {
+        const l = luma709(u8, i);
+        s += l;
+        s2 += l * l;
+        if (l < 4) sw++;
+        if (l > 251) ws++;
     }
-    for (let g = 0; g < GW * GH; g++) blk[g] = cnt[g] ? blk[g] / cnt[g] : 0;
-    const kanten = [];
-    for (let gy = 0; gy < GH; gy++)
-        for (let gx = 0; gx < GW; gx++) {
-            const a = blk[gy * GW + gx];
-            const dx = gx + 1 < GW ? blk[gy * GW + gx + 1] - a : 0;
-            const dy = gy + 1 < GH ? blk[(gy + 1) * GW + gx] - a : 0;
-            kanten.push(Math.round(Math.hypot(dx, dy) * 10) / 10);
-        }
     const mittel = s / n;
     return {
         w: W,
@@ -168,56 +147,7 @@ function bildMasse(u8, W, H) {
         sigma: +Math.sqrt(Math.max(0, s2 / n - mittel * mittel)).toFixed(1),
         schwarz: +(sw / n).toFixed(4),
         weiss: +(ws / n).toFixed(4),
-        kanten,
     };
-}
-
-// DAS BILD-PAAR (rein): vorher↔nachher unter gleichen Bedingungen. ROT: ein Bild ohne Abnahme GRÜN, ein Stand ohne Version
-// oder SHA, Lage oder Blick verschieden (1 cm, 0,1°), Bühne verschieden, die Kanten der beiden Bilder korrelieren unter 0,5
-// (Posen-Drift: ein anderes Bild, kein Paar).
-function paarUrteil(a, b, S) {
-    const rot = [];
-    for (const [k, m] of [
-        ["vorher", a],
-        ["nachher", b],
-    ]) {
-        const u = abnahmeUrteil(m, S);
-        if (!u.ok) rot.push(`${k}: ${u.rot.map((r) => r.grund).join(" · ")}`);
-        if (!m || !m.stand || !m.stand.version || !m.stand.sha)
-            rot.push(`${k}: Stand ohne Version und SHA aus dem laufenden Spiel`);
-    }
-    if (a && b && a.pose && b.pose) {
-        const d = Math.hypot(...a.pose.kamera.map((v, i) => v - b.pose.kamera[i]));
-        const c = a.pose.blick.reduce((s, v, i) => s + v * b.pose.blick[i], 0);
-        if (d > 0.01) rot.push(`Lage verschieden ${d.toFixed(3)} m`);
-        if (c < Math.cos((0.1 * Math.PI) / 180))
-            rot.push(`Blick verschieden ${((Math.acos(Math.min(1, c)) * 180) / Math.PI).toFixed(2)}°`);
-    } else rot.push("Pose ungemessen");
-    if (a && b && a.buehne && b.buehne) {
-        for (const k of ["saison", "wetter"])
-            if (a.buehne[k] !== b.buehne[k]) rot.push(`Bühne ${k} ${a.buehne[k]} ≠ ${b.buehne[k]}`);
-        if (Math.abs((a.buehne.uhr || 0) - (b.buehne.uhr || 0)) > 0.001)
-            rot.push(`Bühne uhr ${a.buehne.uhr} ≠ ${b.buehne.uhr}`);
-    }
-    const ka = a && a.bild && a.bild.kanten;
-    const kb = b && b.bild && b.bild.kanten;
-    let korr = null;
-    if (ka && kb && ka.length === kb.length && ka.length) {
-        const n = ka.length;
-        const ma = ka.reduce((s, v) => s + v, 0) / n;
-        const mb = kb.reduce((s, v) => s + v, 0) / n;
-        let sab = 0,
-            saa = 0,
-            sbb = 0;
-        for (let i = 0; i < n; i++) {
-            sab += (ka[i] - ma) * (kb[i] - mb);
-            saa += (ka[i] - ma) ** 2;
-            sbb += (kb[i] - mb) ** 2;
-        }
-        korr = saa > 0 && sbb > 0 ? sab / Math.sqrt(saa * sbb) : 0;
-        if (korr < 0.5) rot.push(`Kanten-Korrelation ${korr.toFixed(2)} < 0,5 (Posen-Drift)`);
-    } else rot.push("Kanten ungemessen");
-    return { ok: rot.length === 0, rot, korr: korr == null ? null : +korr.toFixed(3) };
 }
 
 // PNG lesen (Node, nur zlib) — die Fixture-Bilder der Linse: 8 Bit, RGB oder RGBA, ohne Interlace.
@@ -402,22 +332,6 @@ function abnahmeSelbsttest(fixtureDir) {
     if (!abnahmeUrteil(ms, SCHWELLEN).ok) v.push("messung: Schwarzbild fälschlich ROT");
     ms.stand = null;
     if (abnahmeUrteil(ms, SCHWELLEN).ok) v.push("messung: fehlender Stand ist grün");
-    // das Bild-Paar: gleich grün; Posen-Drift, fremde Kanten und ein Stand ohne SHA ROT
-    const a = gesund(),
-        b = gesund();
-    if (!paarUrteil(a, b, SCHWELLEN).ok) v.push(`Paar gesund: ROT — ${paarUrteil(a, b, SCHWELLEN).rot.join(" · ")}`);
-    const b2 = gesund();
-    b2.pose.kamera = [10.4, 2, 10];
-    if (!paarUrteil(a, b2, SCHWELLEN).rot.some((x) => x.startsWith("Lage"))) v.push("Paar: Lage-Drift nicht ROT");
-    const b3 = gesund();
-    const quer = new Uint8Array(W * H * 4);
-    for (let i = 0; i < W * H; i++)
-        (quer.fill(((i % W) * 37 + Math.floor(i / W) * 91) % 256, i * 4, i * 4 + 3), (quer[i * 4 + 3] = 255));
-    b3.bild = bildMasse(quer, W, H);
-    if (!paarUrteil(a, b3, SCHWELLEN).rot.some((x) => x.startsWith("Kanten"))) v.push("Paar: fremdes Bild nicht ROT");
-    const b4 = gesund();
-    b4.stand.sha = null;
-    if (!paarUrteil(a, b4, SCHWELLEN).rot.some((x) => x.includes("SHA"))) v.push("Paar: Stand ohne SHA nicht ROT");
     // DIE FIXTURES: die Beweisbilder vom 13.10. — jede fällt ROT mit ihrem erwarteten Grund
     if (fixtureDir) {
         const fs = require("fs");
@@ -437,6 +351,18 @@ function abnahmeSelbsttest(fixtureDir) {
 
 // ═══ DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle"; spec/abnahme/soll-tafel.json) ═══
 //
+// DIE sRGB-KURVE (IEC 61966-2-1), EINE für jede Linse (rein, in der Seite global über ABNAHME_INSTALL): `srgbLin` ein Byte
+// 0–255 → linear, `linSrgb` linear → 0–1.
+const srgbLin = (u) => (u <= 10.31475 ? u / 3294.6 : ((u / 255 + 0.055) / 1.055) ** 2.4);
+const linSrgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
+// DIE LUMA (Rec. 709) der drei Kanäle ab Index i (ein Byte-Bild oder ein Tripel), EINE für jede Linse (in der Seite global)
+const luma709 = (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+// CIELAB (D65) eines linearen Tripels → [L*, a*, b*], EINE für jede Linse (in der Seite global)
+const cielab = (c) => {
+    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+};
 // DIE KLASSEN-TEILUNG (rein, in der Seite als `__klassenTeilung`): welche Klasse ein Pixel des Ausgabe-Bilds zeichnet, aus
 // Schüssen derselben Pose unter EINER Uhr (`__ausgabeAufnahme` unter der Bühne: dieselbe Zeit, dieselbe TRAA-Folge, dieselbe
 // Dither-Phase je Schuss; `werkbank bild --klasse`): G die Szene, die gemessenen Klassen ohne Schattenwurf; O_k dieselbe ohne
@@ -561,7 +487,7 @@ const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
 function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
-    for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
+    for (let p = 0; p < W * H; p++) L[p] = luma709(F, p * 4);
     let n = 0,
         s = 0;
     for (let y = 0; y < H; y++)
@@ -621,19 +547,12 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     let wt = 0,
         wtZiel = 0,
         cs = 0;
-    const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-    const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
     let cab = 0;
     const weissIn = (U, p) => {
-        const R = lin(U[p * 4]),
-            G2 = lin(U[p * 4 + 1]),
-            B = lin(U[p * 4 + 2]);
-        const fy = fl(0.2126 * R + 0.7152 * G2 + 0.0722 * B);
-        const a = 500 * (fl((0.4124 * R + 0.3576 * G2 + 0.1805 * B) / 0.95047) - fy),
-            b = 200 * (fy - fl((0.0193 * R + 0.1192 * G2 + 0.9505 * B) / 1.08883));
+        const [L, a, b] = cielab([0, 1, 2].map((k) => srgbLin(U[p * 4 + k])));
         cab = Math.hypot(a, b);
-        if (0.2126 * U[p * 4] + 0.7152 * U[p * 4 + 1] + 0.0722 * U[p * 4 + 2] > 240) return true;
-        return 116 * fy - 16 >= 50 && cab < 5;
+        if (luma709(U, p * 4) > 240) return true;
+        return L >= 50 && cab < 5;
     };
     for (let p = 0; p < W * H; p++) {
         if (m[p] !== 1) continue;
@@ -648,8 +567,15 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
     // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
     // → klein. `kante` ist das Mittel über den Rand, `kr` die Zahl seiner Pixel (die Tafel fasst Teil-Klassen über sie).
+    // DER STRICH IM INNEREN (haar.K1/K2, Fell und Haar): derselbe Tensor auf der LUMA des Bilds, je Pixel, dessen Fenster ganz
+    // in der Klasse liegt — Σ √((Jxx − Jyy)² + 4 Jxy²) / Σ (Jxx + Jyy), die Kohärenz nach der Energie gewogen: Strähnen und
+    // Fell-Strich, die gleich laufen → groß, eine glatte Schale oder Rauschen → klein (die Fläche trägt keine Energie).
+    // `strich` dieses Mittel, `si` die Zahl der inneren Pixel.
     let kr = 0,
-        ks = 0;
+        ks = 0,
+        si = 0,
+        sz = 0,
+        sn = 0;
     {
         const sig = 2,
             R = 6,
@@ -680,7 +606,9 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
             }
             for (let i = 0; i < gk.length; i++) gk[i] /= gs;
             const t = new Float32Array(w * h),
-                sm = new Float32Array(w * h);
+                sm = new Float32Array(w * h),
+                lu = new Float32Array(w * h),
+                w1 = w + 1;
             for (let y = 0; y < h; y++)
                 for (let x = 0; x < w; x++) {
                     let a = 0;
@@ -689,6 +617,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                         a += gk[i + R] * (m[(y0 + y) * W + x0 + xx] === 1 ? 1 : 0);
                     }
                     t[y * w + x] = a;
+                    lu[y * w + x] = L[(y0 + y) * W + x0 + x];
                 }
             for (let y = 0; y < h; y++)
                 for (let x = 0; x < w; x++) {
@@ -696,36 +625,44 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     for (let i = -R; i <= R; i++) a += gk[i + R] * t[Math.min(h - 1, Math.max(0, y + i)) * w + x];
                     sm[y * w + x] = a;
                 }
-            // die Summen-Tafeln der Tensor-Teile (Fenster in O(1))
-            const w1 = w + 1,
-                Sxx = new Float64Array(w1 * (h + 1)),
-                Syy = new Float64Array(w1 * (h + 1)),
-                Sxy = new Float64Array(w1 * (h + 1));
-            for (let y = 0; y < h; y++)
-                for (let x = 0; x < w; x++) {
-                    const p = y * w + x;
-                    const gx = x > 0 && x < w - 1 ? (sm[p + 1] - sm[p - 1]) / 2 : 0,
-                        gy = y > 0 && y < h - 1 ? (sm[p + w] - sm[p - w]) / 2 : 0;
-                    const q = (y + 1) * w1 + x + 1;
-                    Sxx[q] = gx * gx + Sxx[q - 1] + Sxx[q - w1] - Sxx[q - w1 - 1];
-                    Syy[q] = gy * gy + Syy[q - 1] + Syy[q - w1] - Syy[q - w1 - 1];
-                    Sxy[q] = gx * gy + Sxy[q - 1] + Sxy[q - w1] - Sxy[q - w1 - 1];
-                }
-            const box = (S, a0, b0, a1, b1) => S[(b1 + 1) * w1 + a1 + 1] - S[b0 * w1 + a1 + 1] - S[(b1 + 1) * w1 + a0] + S[b0 * w1 + a0];
+            // DER TENSOR eines Felds f (w × h): die Summen-Tafeln seiner Teile gx², gy², gx·gy und der Maske (das Fenster in O(1));
+            // `J(x, y)` → [Jxx, Jyy, Jxy, Pixel der Klasse] im Fenster 17 × 17 um das Pixel
+            const tensor = (f) => {
+                const S = [0, 1, 2, 3].map(() => new Float64Array(w1 * (h + 1))),
+                    J = new Float64Array(4);
+                for (let y = 0; y < h; y++)
+                    for (let x = 0; x < w; x++) {
+                        const p = y * w + x,
+                            q = (y + 1) * w1 + x + 1;
+                        J[0] = x > 0 && x < w - 1 ? (f[p + 1] - f[p - 1]) / 2 : 0;
+                        J[1] = y > 0 && y < h - 1 ? (f[p + w] - f[p - w]) / 2 : 0;
+                        [J[2], J[3]] = [J[0] * J[1], m[(y0 + y) * W + x0 + x] === 1 ? 1 : 0];
+                        [J[0], J[1]] = [J[0] * J[0], J[1] * J[1]];
+                        for (let k = 0; k < 4; k++) S[k][q] = J[k] + S[k][q - 1] + S[k][q - w1] - S[k][q - w1 - 1];
+                    }
+                return (x, y) => {
+                    const a0 = Math.max(0, x - r),
+                        a1 = Math.min(w - 1, x + r),
+                        b0 = Math.max(0, y - r),
+                        b1 = Math.min(h - 1, y + r);
+                    for (let k = 0; k < 4; k++)
+                        J[k] = S[k][(b1 + 1) * w1 + a1 + 1] - S[k][b0 * w1 + a1 + 1] - S[k][(b1 + 1) * w1 + a0] + S[k][b0 * w1 + a0];
+                    return J;
+                };
+            };
+            const Jm = tensor(sm),
+                Jl = tensor(lu);
             const aus = (x, y) =>
                 x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1);
             for (let y = Math.max(1, by0); y <= Math.min(H - 2, by1); y++)
                 for (let x = Math.max(1, bx0); x <= Math.min(W - 2, bx1); x++) {
-                    if (m[y * W + x] !== 1 || !(aus(x - 1, y) || aus(x + 1, y) || aus(x, y - 1) || aus(x, y + 1))) continue;
-                    const lx = x - x0,
-                        ly = y - y0;
-                    const a0 = Math.max(0, lx - r),
-                        a1 = Math.min(w - 1, lx + r),
-                        b0 = Math.max(0, ly - r),
-                        b1 = Math.min(h - 1, ly + r);
-                    const jxx = box(Sxx, a0, b0, a1, b1),
-                        jyy = box(Syy, a0, b0, a1, b1),
-                        jxy = box(Sxy, a0, b0, a1, b1);
+                    if (m[y * W + x] !== 1) continue;
+                    const [lx, ly] = [x - x0, y - y0];
+                    const [lxx, lyy, lxy, n2] = Jl(lx, ly);
+                    if (n2 === (2 * r + 1) ** 2 && lxx + lyy > 1e-12)
+                        [si, sz, sn] = [si + 1, sz + Math.sqrt((lxx - lyy) ** 2 + 4 * lxy * lxy), sn + lxx + lyy];
+                    if (!(aus(x - 1, y) || aus(x + 1, y) || aus(x, y - 1) || aus(x, y + 1))) continue;
+                    const [jxx, jyy, jxy] = Jm(lx, ly);
                     const tr = jxx + jyy;
                     if (!(tr > 1e-12)) continue;
                     kr++;
@@ -795,7 +732,6 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         spiegelEbene: sa && sa.yw != null ? +sa.yw.toFixed(3) : null,
         sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
         zweiton: n ? r4(zt / n) : null,
-        zt,
         weiss: n ? r4(wt / n) : null,
         wt,
         wtZiel: ohne ? wtZiel : null,
@@ -804,6 +740,8 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         luma: mittel == null ? null : +mittel.toFixed(2),
         kante: kr ? r4(ks / kr) : null,
         kr,
+        strich: sn > 0 ? r4(sz / sn) : null,
+        si,
         bloecke: mk[0],
         glatt: mk[0] ? r4(mk[1] / mk[0]) : null,
         nyquist: mk[2] + mk[3] > 0 ? r4(mk[2] / (mk[2] + mk[3])) : null,
@@ -822,14 +760,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
 //   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
 //                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
 function gesichtMasse(F, teil, W, H, proben, haarK) {
-    const lin = (v) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : Math.pow((v / 255 + 0.055) / 1.055, 2.4));
-    const lab = (c) => {
-        const X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047,
-            Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
-            Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
-        const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-        return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
-    };
+    const lab = cielab;
     const px = (x, y) => y * W + x;
     const sicht = (p) => teil[px(p.x, p.y)] === p.k;
     const farbMittel = (liste) => {
@@ -839,7 +770,7 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
             const i = px(p.x, p.y);
             if (seen.has(i)) continue;
             seen.add(i);
-            for (let ch = 0; ch < 3; ch++) c[ch] += lin(F[i * 4 + ch]);
+            for (let ch = 0; ch < 3; ch++) c[ch] += srgbLin(F[i * 4 + ch]);
         }
         return seen.size ? { lab: lab(c.map((v) => v / seen.size)), n: seen.size } : null;
     };
@@ -877,7 +808,7 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
             } else if (t === p.k) {
                 kal++;
                 const i = px(p.x, p.y);
-                const c = lab([lin(F[i * 4]), lin(F[i * 4 + 1]), lin(F[i * 4 + 2])]);
+                const c = lab([srgbLin(F[i * 4]), srgbLin(F[i * 4 + 1]), srgbLin(F[i * 4 + 2])]);
                 if (d2(c, haar.lab) < d2(c, wange.lab)) h++;
             }
         }
@@ -907,12 +838,8 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
 // Flächen-Mittel in linearem Licht nach CIELAB D65; die Kachel k = [Proben, Σcos h, Σsin h, bunte Proben] zählt den Farbton
 // h = atan2(b*, a*) der Proben mit Buntheit C* > 5. Rein (läuft auch in der Seite, ABNAHME_INSTALL).
 function farbtonProbe(k, u8, i, W) {
-    const lin = (u) => (u <= 10.31475 ? u / 3294.6 : Math.pow((u / 255 + 0.055) / 1.055, 2.4));
-    const [r, g, b] = [0, 1, 2].map((c) => [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + lin(u8[i + d + c]) / 4, 0));
-    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-    const fy = f(0.2126 * r + 0.7152 * g + 0.0722 * b),
-        A = 500 * (f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047) - fy),
-        B = 200 * (fy - f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883)),
+    const [r, g, b] = [0, 1, 2].map((c) => [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + srgbLin(u8[i + d + c]) / 4, 0));
+    const [, A, B] = cielab([r, g, b]),
         C = Math.hypot(A, B);
     k[0]++;
     if (C > 5) [k[1], k[2], k[3]] = [k[1] + A / C, k[2] + B / C, k[3] + 1];
@@ -1013,7 +940,17 @@ function sollRechnung(r) {
         for (let x = b[0]; x <= b[1] + 1e-9; x += 0.4) max = Math.max(max, zweitonNatur(+x.toFixed(2)));
         return { band: [null, max] };
     }
-    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, zweiton1f)` };
+    // ref { bild, mass, rand } (haar.K1/K2): das Maß der REF (ein Foto unter spec/, Herkunft in der Quelle), mit derselben
+    // Funktion über das ganze Bild gemessen — das Band ist [REF × (1 − rand), REF × (1 + rand)]; die Tafel trägt nie die Zahl
+    if (r.art === "ref") {
+        const fs = require("fs"),
+            pfad = require("path").join(__dirname, "..", "..", String(r.bild));
+        const b = /^spec\/[\w\-/]+\.png$/.test(r.bild) && fs.existsSync(pfad) ? pngLesen(fs.readFileSync(pfad)) : null,
+            x = b ? klassenMasse(b.u8, new Uint8Array(b.W * b.H).fill(1), b.W, b.H)[r.mass] : null;
+        if (!(x > 0 && r.rand > 0 && r.rand < 1)) return { fehler: `ref: ${r.bild} liest ${r.mass} ${x} (rand ${r.rand})` };
+        return { band: [1 - r.rand, 1 + r.rand].map((v) => +(x * v).toFixed(4)) };
+    }
+    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, zweiton1f, ref)` };
 }
 const ZWEITON_NATUR = new Map();
 function zweitonNatur(beta) {
@@ -1100,29 +1037,14 @@ function aperturSchuesse(ma, q) {
 // die Tafel schreibt (`mass.messung`, `werkbank bild --klasse … --ist <id>` bzw. `werkbank licht --ist <id>`), oder der Zeile
 // einer anderen Tafel (`mass.rohdatei`: die Albedo-Tafel). Ein Ist von Hand gibt es nicht. Rückgabe { ist, taeter, anteil,
 // teile, fehler }.
-const SOLL_MASSE = Object.freeze([
-    "laiWirk",
-    "farbtonStreuung",
-    "zweiton",
-    "kante",
-    "milchweiss",
-    "oeffnungBunt",
-    "zielTreue",
-    "lichtVerhaeltnis",
-    "schattenAnteil",
-    "umgebungAzimut",
-    "albedoVerhaeltnis",
-    "albedo",
-    "gesicht",
-    "spiegelTreue",
-]);
-// DIE AUFLÖSUNG je Maß: der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
+// DIE AUFLÖSUNG je Maß (ihre Schlüssel sind die Maße der Tafel): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
 // endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
 const MASS_AUFLOESUNG = Object.freeze({
     laiWirk: 0.05,
     farbtonStreuung: 0.1,
     zweiton: 0.01,
     kante: 0.01,
+    strich: 0.01,
     milchweiss: 0.01,
     oeffnungBunt: 0.5,
     zielTreue: 0.02,
@@ -1158,6 +1080,50 @@ function bildMessungFehler(me) {
 const pixelSumme = (me, re) =>
     Object.entries(me.klassen).reduce((a, [n, k]) => a + (!re || re.test(n) ? k.pixel || 0 : 0), 0);
 const flaeche = (me) => me.leinwand[0] * me.leinwand[1];
+// DAS MITTEL ÜBER DIE APERTUR (D8: milchweiss · oeffnungBunt · zielTreue): je Schuss × Klasse der Stufen-Schüsse
+// (`aperturSchuesse`) `je(k, s, n)` → { fehler } oder [Zähler, Gewicht, Teil, Rang, Täter]; das Ist Σ Zähler / Σ Gewicht auf
+// `stellen` Stellen, der Täter Schuss × Klasse mit dem größten Rang.
+function aperturMittel(ma, q, stellen, je) {
+    const A = aperturSchuesse(ma, q);
+    if (A.fehler) return A;
+    let z = 0,
+        g = 0,
+        arg = null;
+    const teile = [];
+    for (const { s, ap } of A.schuesse)
+        for (const [n, k] of ap) {
+            const x = je(k, s, n);
+            if (x.fehler) return x;
+            [z, g] = [z + x[0], g + x[1]];
+            teile.push(`${s} ${n} ${x[2]}`);
+            if (!arg || x[3] > arg[0]) arg = [x[3], `${n} in ${s} (${x[4]})`];
+        }
+    return { ist: +(z / g).toFixed(stellen), taeter: arg[1], anteil: A.anteil, teile: teile.join(" · "), bloecke: A.bloecke, offen: A.offen };
+}
+// DAS MITTEL EINER GRÖSSE der Teil-Klassen (`klassenMasse`), gewogen mit ihrer Zahl `n`; der Täter die Teil-Klasse (≥ 5 % der
+// Pixel), die auf der Seite `dreh` am weitesten liegt (1 die größte, −1 die kleinste).
+function teilMittel(ma, g, n, dreh, was) {
+    const me = ma.messung;
+    const f = bildMessungFehler(me);
+    if (f) return { fehler: f };
+    let s = 0,
+        nr = 0,
+        arg = null;
+    const px = pixelSumme(me);
+    for (const [k, z] of Object.entries(me.klassen)) {
+        if (z[g] === undefined) return { fehler: `die Messung ohne ${g} (${k}) — vor dem Maß gemessen` };
+        if (z[g] === null) continue;
+        s += z[g] * z[n];
+        nr += z[n];
+        if (z.pixel >= 0.05 * px && (!arg || dreh * z[g] > dreh * arg[1])) arg = [k, z[g], z[n]];
+    }
+    if (!nr) return { fehler: `die Klasse zeigt keine ${was}` };
+    return {
+        ist: +(s / nr).toFixed(4),
+        taeter: arg ? `${arg[0]} (${g} ${arg[1]} über ${arg[2]} ${was})` : null,
+        anteil: px / flaeche(me),
+    };
+}
 const MASS_RECHNER = {
     // DIE DECKUNG DER WIESE als wirksamer Blatt-Flächen-Index (Nilson 1971: Lücke P(θ) = exp(−G·LAI/cos θ)): je Abstands-Band
     // (`werkbank bild --abstand`: der Strahl des Pixels bis zum gezeichneten Boden, `_bodenSichtAt`) die Lücke P = Grund /
@@ -1263,51 +1229,16 @@ const MASS_RECHNER = {
             anteil: pixelSumme(me) / flaeche(me),
         };
     },
-    // DER ZWEITON-ANTEIL der Klasse (`klassenMasse` zweiton über die Summen ihrer Teil-Klassen): der Anteil ihrer Pixel im
+    // DER ZWEITON-ANTEIL der Klasse (`klassenMasse` zweiton über die Pixel ihrer Teil-Klassen): der Anteil ihrer Pixel im
     // sichtbaren Dither-Raster; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit dem höchsten Anteil.
-    zweiton(ma) {
-        const me = ma.messung;
-        const f = bildMessungFehler(me);
-        if (f) return { fehler: f };
-        let zt = 0,
-            arg = null;
-        const px = pixelSumme(me);
-        for (const [n, k] of Object.entries(me.klassen)) {
-            if (k.zt == null) return { fehler: `die Messung ohne Zweiton (${n}) — vor K63-n2 gemessen` };
-            zt += k.zt;
-            if (k.pixel >= 0.05 * px && (!arg || k.zweiton > arg[1])) arg = [n, k.zweiton];
-        }
-        if (!px) return { fehler: "die Klasse zeigt kein Pixel" };
-        return {
-            ist: +(zt / px).toFixed(4),
-            taeter: arg ? `${arg[0]} (${Math.round(arg[1] * 1000) / 10} % ihrer Pixel im Raster)` : null,
-            anteil: px / flaeche(me),
-        };
-    },
+    zweiton: (ma) => teilMittel(ma, "zweiton", "pixel", 1, "Pixel"),
     // DIE KANTE DER SILHOUETTE (K68-n2; `klassenMasse` kante über die Rand-Pixel ihrer Teil-Klassen gemittelt): wie gerade der
     // Umriss der Krone gegen das Außen läuft; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit der geradesten Kante.
-    kante(ma) {
-        const me = ma.messung;
-        const f = bildMessungFehler(me);
-        if (f) return { fehler: f };
-        let s = 0,
-            nr = 0,
-            arg = null;
-        const px = pixelSumme(me);
-        for (const [n, k] of Object.entries(me.klassen)) {
-            if (k.kr == null) return { fehler: `die Messung ohne Kante (${n}) — vor K68-n2 gemessen` };
-            if (k.kante == null) continue;
-            s += k.kante * k.kr;
-            nr += k.kr;
-            if (k.pixel >= 0.05 * px && (!arg || k.kante > arg[1])) arg = [n, k.kante, k.kr];
-        }
-        if (!nr) return { fehler: "die Klasse zeigt keinen Rand gegen das Außen" };
-        return {
-            ist: +(s / nr).toFixed(4),
-            taeter: arg ? `${arg[0]} (kante ${arg[1]} über ${arg[2]} Rand-Pixel)` : null,
-            anteil: px / flaeche(me),
-        };
-    },
+    kante: (ma) => teilMittel(ma, "kante", "kr", 1, "Rand-Pixel"),
+    // DER STRICH IM INNEREN (haar.K1/K2; `klassenMasse` strich über die inneren Pixel ihrer Teil-Klassen gemittelt): wie gleich
+    // Fell-Strich und Strähnen laufen, gegen die REF; der Täter die Teil-Klasse mit dem stumpfsten Strich. Die Albedo daneben (das
+    // Haar: `rohdatei`, seine Zeile der Albedo-Tafel) urteilt die Tafel als Neben-Größe.
+    strich: (ma) => (ma.messung == null ? { ungemessen: true } : teilMittel(ma, "strich", "si", -1, "inneren Pixel")),
     // MILCHWEISS (K63-n4; Prüfer K63 R3: die weiße Tafel der Tore hieß „geheilt", weil die Kamera den Spieler mitnahm — der
     // Portal-Nebel wacht am SPIELER, nicht am Auge): der Anteil der Apertur-Pixel (`rechnung.apertur`: Membran und Nebel), die
     // als Weiß lesen statt als Farbe (`klassenMasse` wt), über die Schüsse JE STUFE (`messung.L<n>`, die Tore des Schusses in
@@ -1315,98 +1246,39 @@ const MASS_RECHNER = {
     // PORTAL_RENDER_CONFIG lod.kindStages.gate ab der Stufe `ab`) — eine Stufe ohne Schuss lässt das Maß offen (ROT), ein
     // Schuss, der seine Tore in einer anderen Stufe zeigt, ist ein Bruch. Der Täter ist Schuss × Klasse mit den meisten weißen
     // Pixeln, der Bildanteil der Schuss mit der größten Apertur.
-    milchweiss(ma, q) {
-        const A = aperturSchuesse(ma, q);
-        if (A.fehler) return A;
-        let w = 0,
-            px = 0,
-            arg = null;
-        const teile = [];
-        for (const { s, ap } of A.schuesse)
-            for (const [n, k] of ap) {
-                if (k.wt == null) return { fehler: `${s}: die Messung ohne Milchweiß (${n}) — vor K63-n4 gemessen` };
-                if (k.wtZiel == null)
-                    return {
-                        fehler: `${s}: die Messung ohne das Bild ohne Film (${n}) — vor D8 gemessen, ein blasses Ziel läse als Milch`,
-                    };
-                w += k.wt;
-                px += k.pixel;
-                teile.push(
-                    `${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px, Ziel weiß ${(k.wtZiel / Math.max(1, k.pixel)).toFixed(2)})`
-                );
-                if (!arg || k.wt > arg[2]) arg = [s, n, k.wt, k.pixel];
-            }
-        return {
-            ist: +(w / px).toFixed(4),
-            taeter: `${arg[1]} in ${arg[0]} (${arg[2]} von ${arg[3]} Pixeln weiß)`,
-            anteil: A.anteil,
-            teile: teile.join(" · "),
-            bloecke: A.bloecke,
-            offen: A.offen,
-        };
-    },
+    milchweiss: (ma, q) =>
+        aperturMittel(ma, q, 4, (k, s, n) =>
+            k.wt == null
+                ? { fehler: `${s}: die Messung ohne Milchweiß (${n}) — vor K63-n4 gemessen` }
+                : k.wtZiel == null
+                  ? { fehler: `${s}: die Messung ohne das Bild ohne Film (${n}) — vor D8 gemessen, ein blasses Ziel läse als Milch` }
+                  : [k.wt, k.pixel, `${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px, Ziel weiß ${(k.wtZiel / Math.max(1, k.pixel)).toFixed(2)})`, k.wt, `${k.wt} von ${k.pixel} Pixeln weiß`]
+        ),
     // DIE BUNTE ÖFFNUNG (D8, Soll-Tafel tor-bunt; Nordstern §4.8 „die Membran zeigt das Ziel wie ein Seifenfilm"): das Mittel der
     // Buntheit C*ab (`klassenMasse` bunt) über alle Apertur-Pixel der Stufen-Schüsse — dieselben Schüsse wie milchweiss
     // (`aperturSchuesse`). Eine Öffnung, die ihr Ziel zeigt, trägt seine Farbe; Milch, Nebel und unbuntes Grau lesen ≈ 0. Der
     // Täter ist Schuss × Klasse mit der kleinsten Buntheit.
-    oeffnungBunt(ma, q) {
-        const A = aperturSchuesse(ma, q);
-        if (A.fehler) return A;
-        let cs = 0,
-            px = 0,
-            arg = null;
-        const teile = [];
-        for (const { s, ap } of A.schuesse)
-            for (const [n, k] of ap) {
-                if (k.bunt == null) return { fehler: `${s}: die Messung ohne Buntheit (${n}) — vor D8 gemessen` };
-                cs += k.bunt * k.pixel;
-                px += k.pixel;
-                teile.push(`${s} ${n} C*ab ${k.bunt} (${k.pixel} px)`);
-                if (!arg || k.bunt < arg[2]) arg = [s, n, k.bunt, k.pixel];
-            }
-        return {
-            ist: +(cs / px).toFixed(2),
-            taeter: `${arg[1]} in ${arg[0]} (C*ab ${arg[2]} über ${arg[3]} Pixel)`,
-            anteil: A.anteil,
-            teile: teile.join(" · "),
-            bloecke: A.bloecke,
-            offen: A.offen,
-        };
-    },
+    oeffnungBunt: (ma, q) =>
+        aperturMittel(ma, q, 2, (k, s, n) =>
+            k.bunt == null
+                ? { fehler: `${s}: die Messung ohne Buntheit (${n}) — vor D8 gemessen` }
+                : [k.bunt * k.pixel, k.pixel, `C*ab ${k.bunt} (${k.pixel} px)`, -k.bunt, `C*ab ${k.bunt} über ${k.pixel} Pixel`]
+        ),
     // DIE TREUE ZUM ZIEL (D8, Soll-Tafel tor-ziel): je Apertur-Klasse die Rang-Korrelation (Spearman) zwischen dem Bild der Öffnung
     // und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft (`werkbank bild`: `ziel` { r, pixel, grund } je
     // Klasse) — rang-treu, damit Belichtung, Tonkurve und sRGB (monoton) das Maß nicht tragen. Hält die Welt kein Ziel-Panorama (die
     // Membran liest keinen Studio-Export), liest die Klasse r 0 und ist der Täter beim Namen; ein Schuss ohne `ziel` stammt von
     // vor D8.
-    zielTreue(ma, q) {
-        const zahl = (x) => typeof x === "number" && Number.isFinite(x);
-        const A = aperturSchuesse(ma, q);
-        if (A.fehler) return A;
-        let rs = 0,
-            px = 0,
-            arg = null;
-        const teile = [];
-        for (const { s, ap } of A.schuesse)
-            for (const [n, k] of ap) {
-                const z = k.ziel;
-                if (z === undefined) return { fehler: `${s}: die Messung ohne Ziel (${n}) — vor D8 gemessen` };
-                if (!z || typeof z !== "object") return { fehler: `${s}: das Ziel von ${n} ist keine Messung` };
-                const r = zahl(z.r) ? z.r : 0;
-                const p = zahl(z.pixel) && z.pixel > 0 ? z.pixel : k.pixel;
-                rs += r * p;
-                px += p;
-                teile.push(`${s} ${n} r ${zahl(z.r) ? z.r : "—"}${z.grund ? " (" + z.grund + ")" : ""} (${p} px)`);
-                if (!arg || r < arg[2]) arg = [s, n, r, p, z.grund || null];
-            }
-        return {
-            ist: +(rs / px).toFixed(3),
-            taeter: `${arg[1]} in ${arg[0]} (r ${arg[2]} über ${arg[3]} Pixel${arg[4] ? " — " + arg[4] : ""})`,
-            anteil: A.anteil,
-            teile: teile.join(" · "),
-            bloecke: A.bloecke,
-            offen: A.offen,
-        };
-    },
+    zielTreue: (ma, q) =>
+        aperturMittel(ma, q, 3, (k, s, n) => {
+            const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+            const z = k.ziel;
+            if (z === undefined) return { fehler: `${s}: die Messung ohne Ziel (${n}) — vor D8 gemessen` };
+            if (!z || typeof z !== "object") return { fehler: `${s}: das Ziel von ${n} ist keine Messung` };
+            const r = zahl(z.r) ? z.r : 0;
+            const p = zahl(z.pixel) && z.pixel > 0 ? z.pixel : k.pixel;
+            return [r * p, p, `r ${zahl(z.r) ? z.r : "—"}${z.grund ? " (" + z.grund + ")" : ""} (${p} px)`, -r, `r ${r} über ${p} Pixel${z.grund ? " — " + z.grund : ""}`];
+        }),
     // DAS GESICHT IM BILD (K63-n2, `werkbank bild --gesicht`): die Züge des Kopfs, wie die Ausgabe sie zeigt (`gesichtMasse`:
     // Iris frei, Lippe und Höhle gegen die Wange in CIELAB, das Haar über der Haarlinie), je Zug gegen sein Band in KOPF_SOLL —
     // GELESEN (`verweis.felder`), nie kopiert. Das Ist = Anteil der Züge im Band; der Täter der Zug am weitesten draußen (in
@@ -1439,35 +1311,19 @@ const MASS_RECHNER = {
         }
         return { ist: +(drin / n).toFixed(3), taeter: arg ? arg[0] : null, teile: teile.join(" · ") };
     },
-    // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz).
-    // Trägt die Klasse daneben die Größen der Licht-Bilanz (D3: `schattenAnteil`, `umgebungAzimut`), urteilt das Maß über alle:
-    // eine Größe außerhalb ihres Bands hält es offen — ROT mit ihrem Namen, nie GRÜN.
-    lichtVerhaeltnis(ma, q, band, sb, baender) {
+    // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz);
+    // ihre Größen daneben (D3: `schattenAnteil`, `umgebungAzimut`) urteilt die Tafel als Neben-Größen (`sollTafelUrteil`).
+    lichtVerhaeltnis(ma) {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
         for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
         if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
             return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
         const ist = +(me.E_alle / me.E_umgebung).toFixed(3);
-        const teile = [`lichtVerhaeltnis ${ist}`];
-        const draussen = [];
-        for (const g of ["schattenAnteil", "umgebungAzimut"]) {
-            const b = baender && baender[g];
-            if (!b) continue;
-            const x = MASS_RECHNER[g](ma);
-            if (x.fehler) {
-                draussen.push(`${g}: ${x.fehler}`);
-                continue;
-            }
-            const [u, o] = b.band;
-            teile.push(`${g} ${x.ist} [${u == null ? "–" : u}; ${o == null ? "–" : o}]`);
-            if ((u != null && x.ist < u) || (o != null && x.ist > o)) draussen.push(`${g} ${x.ist} außerhalb (${x.taeter})`);
-        }
         return {
             ist,
             taeter: `E Himmel ${me.E_umgebung} gegen E Sonne ${+(me.E_alle - me.E_umgebung).toFixed(2)}`,
-            teile: teile.join(" · "),
-            offen: draussen.length ? draussen.join(" · ") : null,
+            teile: `lichtVerhaeltnis ${ist}`,
         };
     },
     // DER SCHATTEN-ANTEIL (D3): die waagrechte 18-%-Karte im Schatten (der Himmel allein) gegen die besonnte — der Diffus-
@@ -1791,7 +1647,7 @@ function sollTafelUrteil(tafel, q) {
             : null;
         const bruch = (f) => void fehler.push(`${wo}: ${f}`);
         const ma = Object.assign({}, k.mass, { messung: schussVon(kl, (k.mass || {}).messung, bruch) });
-        if (!SOLL_MASSE.includes(ma.name)) fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${SOLL_MASSE.join(", ")})`);
+        if (!MASS_AUFLOESUNG[ma.name]) fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${Object.keys(MASS_AUFLOESUNG).join(", ")})`);
         for (const f of ["ist", "teile", "taeter"])
             if (ma[f] !== undefined)
                 fehler.push(`${wo}: das Maß trägt „${f}" von Hand — Ist und Täter rechnet die Linse aus der Rohdatei`);
@@ -1807,6 +1663,18 @@ function sollTafelUrteil(tafel, q) {
             : ma.messung == null && !ma.rohdatei
               ? { ungemessen: true }
               : rechner(ma, q, sb ? sb.band : null, sb, baender);
+        // DIE NEBEN-GRÖSSEN: trägt die Klasse neben dem Maß weitere Größen mit Rechner (die Licht-Bilanz D3: schattenAnteil,
+        // umgebungAzimut; das Haar: die Albedo seiner Zeile), urteilt das Maß über alle — eine Größe außerhalb ihres Bands,
+        // ungemessen oder veraltet hält es offen: ROT mit ihrem Namen, nie GRÜN
+        for (const [g, b] of Object.entries(baender))
+            if (g !== (ma.soll || ma.name) && MASS_RECHNER[g] && !r.fehler && !r.ungemessen) {
+                const x = MASS_RECHNER[g](ma, q),
+                    [u, o] = b.band;
+                const aus = x.fehler || (x.bloecke && messStand(x.bloecke, x.quellen, q));
+                r.teile = `${r.teile ? r.teile + " · " : ""}${g} ${aus ? "—" : x.ist} [${u == null ? "–" : u}; ${o == null ? "–" : o}]`;
+                const raus = aus ? `${g}: ${aus}` : (u != null && x.ist < u) || (o != null && x.ist > o) ? `${g} ${x.ist} außerhalb (${x.taeter})` : null;
+                if (raus) r.offen = r.offen ? `${r.offen} · ${raus}` : raus;
+            }
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
         const ist = zahl(r.ist) ? r.ist : null;
         // der Stand der Messung: veraltet oder ungeprüft ist ROT ohne Wirkung (die Zahl bleibt sichtbar)
@@ -2150,6 +2018,13 @@ function sollTafelSelbsttest(tafel, q) {
             v.push(`Maß kante: die Karte liest ${kq.kante}, gedreht ${kd.kante} (Soll > 0,75, gleich)`);
         const ka = klassenMasse(F0, q0, n, n, halb);
         if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr)) v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
+        // DER STRICH (haar.K1/K2): Streifen in der Karte (vor Schwarz — der Rand trägt nichts) → ≥ 0,9 und gedreht gleich,
+        // weißes Rauschen → ≤ 0,2, die glatte Karte trägt keinen
+        const streif = (a) =>
+            klassenMasse(Uint8Array.from({ length: n * n * 4 }, (_, i) => (i % 4 > 2 ? 255 : q0[i >> 2] ? 128 + 80 * Math.sin(0.9 * (((i >> 2) % n) * Math.cos(a) + (i >> 2) / n * Math.sin(a))) : 0)), q0, n, n).strich;
+        const sk = [streif(0), streif(0.6), klassenMasse(rauschBild(n, 0, 7919), q0, n, n).strich, kq.strich];
+        if (!(sk[0] >= 0.9 && Math.abs(sk[0] - sk[1]) < 0.05 && sk[2] <= 0.2 && sk[3] === null))
+            v.push(`Maß strich: Streifen ${sk[0]}, gedreht ${sk[1]}, Rauschen ${sk[2]}, glatt ${sk[3]}`);
         const linie = (beta) => {
             let s = 0;
             for (let saat = 1; saat <= 4; saat++) {
@@ -2318,7 +2193,7 @@ function sollTafelSelbsttest(tafel, q) {
             "das Maß sieht den benannten Mangel nicht",
             (t) => {
                 const k = mitMangel(t);
-                for (const z of Object.values(k.mass.messung.klassen)) z.zt = 0;
+                for (const z of Object.values(k.mass.messung.klassen)) z.zweiton = 0;
                 frisch(k, k.mass.messung);
             },
             "es sieht ihn nicht",
@@ -2332,7 +2207,7 @@ function sollTafelSelbsttest(tafel, q) {
             "geheilt neben einem roten Maß",
             (t) => {
                 const k = mitMangel(t);
-                for (const z of Object.values(k.mass.messung.klassen)) z.zt = z.pixel; // jedes Pixel im Raster: ROT, was die Tafel auch misst
+                for (const z of Object.values(k.mass.messung.klassen)) z.zweiton = 1; // jedes Pixel im Raster: ROT, was die Tafel auch misst
                 frisch(k, k.mass.messung);
                 heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]);
             },
@@ -2407,10 +2282,24 @@ function sollTafelSelbsttest(tafel, q) {
             if (!z3 || z3.urteil !== "GRÜN") v.push(`${k3.id}: eine Wiese ohne Lücke ist nicht GRÜN (${z3 && z3.ist})`);
         }
     }
+    // DER STRICH IN DER TAFEL (haar.K1/K2): fell frisch gemessen im Band der REF GRÜN, darunter ROT; haar trägt daneben die
+    // Albedo seiner Zeile — fehlt sie in der Albedo-Tafel, ist es ROT mit ihrem Namen, nie GRÜN
+    if (tafel && finde(klon(), (k) => k.id === "haar")) {
+        const t5 = klon(),
+            z5 = (id, s) => {
+                const k = finde(t5, (x) => x.id === id);
+                k.mass.messung = { werkzeug: "bild", datum: 1, geraet: {}, leinwand: [9, 9], schwelle: 1, rauschen: { anteil: 0 }, klassen: { w: { pixel: 9, strich: s, si: 9 } } };
+                frisch(k, k.mass.messung);
+                return sollTafelUrteil(t5, q).zeilen.find((x) => x.id === id);
+            };
+        const [fg, fr, hr] = [z5("fell", 0.54), z5("fell", 0.2), z5("haar", 0.44)];
+        if (!(fg.urteil === "GRÜN" && fr.urteil === "ROT" && hr.urteil === "ROT" && /albedo: /.test(hr.grund)))
+            v.push(`Maß strich: fell 0,54 ${fg.urteil} (${fg.grund}), 0,2 ${fr.urteil}, haar ohne Albedo-Zeile ${hr.urteil} (${hr.grund})`);
+    }
     if (tafel && mitMangel(klon())) {
         const t4 = klon();
         const k4 = mitMangel(t4);
-        for (const z of Object.values(k4.mass.messung.klassen)) z.zt = 0;
+        for (const z of Object.values(k4.mass.messung.klassen)) z.zweiton = 0;
         frisch(k4, k4.mass.messung);
         k4.wirkung.mangel = undefined;
         const gruen = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
@@ -2539,8 +2428,16 @@ module.exports = {
     pngLesen,
     fixtureMessung,
     abnahmeSelbsttest,
+    srgbLin,
+    linSrgb,
+    luma709,
+    cielab,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
+        `window.srgbLin = ${srgbLin};` +
+        `window.linSrgb = ${linSrgb};` +
+        `window.luma709 = ${luma709};` +
+        `window.cielab = ${cielab};` +
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +

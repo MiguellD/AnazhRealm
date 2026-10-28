@@ -20,7 +20,7 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -103,11 +103,8 @@ function probe(o) {
     // jeder Schreiber-Weg des Spiels (der echte Code-Pfad, keine Abkürzung)
     const wege = {
         emotion: () => {
-            const p = st.player;
-            p.emotionLastTick = t();
-            p.emotions.sorrow = 1;
-            p.emotionLastApply.sorrow = -Infinity;
-            r.updatePlayerEmotions(t());
+            st.player.emotions.sorrow = 1;
+            r._tickWorldRules(t() + 3600);
         },
         nexus: () => {
             st.nexusWirk = 1e6;
@@ -388,8 +385,8 @@ function himmelProbe(o) {
     const trauer = {
         name: "Emotion sorrow → Regen",
         wo: "wetter",
-        quelle: "emotion:sorrow",
-        stapel: "updatePlayerEmotions",
+        quelle: "rule:emotion:sorrow",
+        stapel: "_tickWorldRules",
     };
     // beim Stapel, nicht bei der Quelle: so steht das Wesen im Buch, welchen Namen seine Quelle auch trägt
     const wesenT = {
@@ -447,7 +444,7 @@ function taeterGezaehlt(liste) {
 function urteil(S, H) {
     const rot = [];
     const SOLL_QUELLE = {
-        emotion: "emotion:sorrow",
+        emotion: "rule:emotion:sorrow",
         nexus: "nexus",
         gesetz: "rule:human",
         mensch: "human",
@@ -593,15 +590,9 @@ hauptLauf(async () => {
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
     const rot = urteil(S, H);
-    if (rot.length) {
-        console.error(`\nROT (${rot.length}):`);
-        for (const e of rot.slice(0, 60)) console.error("  • " + e);
-        if (rot.length > 60) console.error(`  … und ${rot.length - 60} weitere`);
-        process.exit(1);
-    }
-    console.log(
-        "\nGRÜN — unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +
+    wandEnde(
+        rot,
+        "unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +
             " wünscht nur, jeder Schreiber steht beim Namen."
     );
-    process.exit(0);
 });

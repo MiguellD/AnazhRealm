@@ -52,6 +52,9 @@ class AnazhRealm_kreatur_leben {
         const em = this.state.creatureEmotions;
         if (Array.isArray(em) && idx < em.length) em.splice(idx, 1);
         if (Number.isInteger(this._kreaturTaktI) && idx <= this._kreaturTaktI) this._kreaturTaktI--;
+        // … und die Jäger des Spielers dieses Takts (`_spielerJaeger`): ein Gefallener umstellt ihn nicht mehr
+        const sj = this._spielerJaeger ? this._spielerJaeger.indexOf(creature) : -1;
+        if (sj >= 0) this._spielerJaeger.splice(sj, 1);
         return true;
     }
 
@@ -504,7 +507,7 @@ class AnazhRealm_kreatur_leben {
             label: meta.label || bp.label || blueprintName,
         });
         // DAS WESEN ERINNERT, WER ES FÜTTERTE (Ökologie K3): die Gabe senkt die Furcht vor dem Spieler (`_kreaturFurchtErinnert`)
-        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName });
+        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName, label: bp.label });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 
@@ -737,6 +740,7 @@ class AnazhRealm_kreatur_leben {
         if (typeof creature.userData.hp !== "number") creature.userData.hp = stats.hpMax; // lazy-init (Restore/alt)
         const dealt = this._ruestungDaempft(amount, stats.defense);
         creature.userData.hp -= dealt;
+        if (opts.source === "player") this._bewohnerZeuge(creature.position); // wer es sieht, erinnert es (mensch.K5)
         if (creature.userData.hp <= 0) {
             this._creatureCombatDeath(creature, opts.source || "unknown");
             return { ok: true, dealt, killed: true };
@@ -834,24 +838,18 @@ class AnazhRealm_kreatur_leben {
             const bond = Math.min(1, Math.max(0, (creature.userData && creature.userData.bond) || 0));
             const guiltMag = leb * (0.4 + 0.6 * bond);
             if (guiltMag > 0.02) this._feelAction("loss", { magnitude: guiltMag });
-            // TRIUMPH: jagte das gefallene Wesen dich FRISCH (lastHuntAt im Fenster), wirkt sein Fall als
-            // Erleichterung (joy+hope). Unabhängig von der Schuld — beides darf zugleich feuern.
+            // jagte das gefallene Wesen dich FRISCH (lastHuntAt im Fenster), sagt es das Tagebuch; der TRIUMPH selbst ist kein
+            // Stempel mehr — der Fall löst das Umstellen in der Situation (`_spielerUmstellt`), ihr δ hebt joy + hope
             const lastHunt = creature.userData && creature.userData.lastHuntAt;
             if (
                 Number.isFinite(lastHunt) &&
                 this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
-            ) {
-                this._feelAction("triumph", { magnitude: 1 });
+            )
                 this.journalAppend(
                     "relationship",
                     AnazhRealm._datum`Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`
                 );
-            }
         }
-        // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
-        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`)
-        if (creature.position)
-            this._depositEmotion(creature.position.x, creature.position.z, AnazhRealm._furchtGesetz().F.riss);
         if (typeof this.journalAppend === "function") {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", AnazhRealm._datum`${name} fiel im Kampf${lootSummary}.`, {
@@ -859,7 +857,19 @@ class AnazhRealm_kreatur_leben {
                 loot,
             });
         }
-        this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
+        // DER ORT ERINNERT DEN RISS (Ökologie K3, tetrapoda FURCHT_GESETZ.riss): der Tod im Kampf prägt die Emotion des Schadens
+        // in die Zelle des Falls (`_depositEmotion`) — die Beute meidet sie, bis der Abdruck verblasst (`_kreaturFurchtOrt`).
+        // Von Spieler-Hand ist der Fall eine Tat (`_handTat`, affekt K1#2): sein Fehlen geht ins Leben des Orts (die Narbe
+        // `TAT_NARBE.riss`, `_tatSchreiben`), gewertet an der Situation davor und danach — der Riss senkt sie, der Fall eines
+        // Jägers löst sein Umstellen. Der Riss eines Jägers der Wildnis ist ihr Kreislauf (der Kadaver nährt), keine Narbe: mit
+        // ihr kippte die Kaskade (gate:kreatur-takt kaskade, Wölfe −0,52 statt 0).
+        const p = creature.position;
+        const fall = () => {
+            if (p) this._depositEmotion(p.x, p.z, AnazhRealm._furchtGesetz().F.riss);
+            this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
+        };
+        if (source === "player" && p) this._handTat("toeten", p, () => (this._tatSchreiben("riss", p.x, p.z), fall()));
+        else fall();
     }
 
     // ═══ DER FALL — EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — K-D19) ═══
@@ -2976,6 +2986,31 @@ AnazhRealm.CREATURE_NAME_POOL = Object.freeze([
     "Toren",
     "Tara",
 ]);
+// DIE ERINNERUNG IN WORTEN (KI K3): je Typ von `_creatureRemember` EIN Satz im Präteritum ohne Subjekt (1. und 3. Person
+// gleich) — der Persona-Prompt liest „ich …", die Geschichte im Hof „… vor 5s"; Namen reisen als Datum. Bis KI K3 kannte der
+// Prompt 8 von 18 Typen: geschlagen und gefüttert (die Furcht des Wesens liest sie) fielen still aus dem Gespräch.
+AnazhRealm.ERINNERUNG_SATZ = Object.freeze({
+    geschlagen: () => "wurde vom Schöpfer geschlagen",
+    gefuettert: (c) => AnazhRealm._datum`bekam vom Schöpfer ${c.label || c.gabe}`,
+    gefolgt: () => "folgte dem Schöpfer",
+    gathered: (c) => AnazhRealm._datum`sammelte ${c.material || c.blueprintName}`,
+    built: (c) => AnazhRealm._datum`baute ${c.blueprint}`,
+    delivered: () => "übergab dem Schöpfer Material",
+    took_materials: (c) => AnazhRealm._datum`nahm Material für ${c.blueprint}`,
+    no_material: (c) => AnazhRealm._datum`fand kein ${c.material}`,
+    no_blueprint: (c) => AnazhRealm._datum`kannte den Bauplan ${c.blueprint} nicht`,
+    no_inventory_for_build: () => "bekam vom Schöpfer kein Material",
+    no_water: () => "fand kein Wasser",
+    drank: () => "trank am Ufer",
+    spoken: () => "sprach mit dem Schöpfer",
+    spoke_proactive: () => "sprach den Schöpfer von selbst an",
+    spoken_rare_event: () => "sprach über einen bedeutsamen Moment",
+    proposed_action: () => "schlug dem Schöpfer eine Tat vor",
+    proposal_blocked: () => "schlug eine Tat vor, die nicht geschah",
+    rejected_action: () => "schlug eine Tat vor, die der Schöpfer verwarf",
+    accepted_action: () => "sah meinen Vorschlag vom Schöpfer angenommen",
+    auto_executed_action: () => "veränderte die Welt für den Schöpfer",
+});
 // W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
 // Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
