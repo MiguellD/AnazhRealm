@@ -429,7 +429,8 @@ async function wasserKoerper(o = {}) {
 // Wochen, in denen eins ohne das andere ist), der Fluss an P.fluss (`_hydroRiverAt`), die Tafeln an den Faden (`post`) und die
 // Chunks, die der Takt des Pegels neu baut; dann der Körper (`_koerperWasser`, das gezeichnete Wasser) an der Woche des höchsten
 // Pegels und in Ruhe, die Chunks gebaut: [sein Spiegel über P.ruhe, die nassen Proben (0,25 m) vom See bis 5 m hinter das Ufer
-// P.ufer, der Bezug der Ufer-Bänder]. Die Festhalte-Probe: das Feld ohne Jahres-Welle hält Schnee und Spiegel (`halt` 0).
+// P.ufer, der Bezug der Ufer-Bänder]; dann der Regen am Bach (R, wetter.K3). Die Festhalte-Probe: das Feld ohne Jahres-Welle
+// hält Schnee und Spiegel (`halt` 0).
 // → [die Schmelze, der Pegel]
 function wasserSchmelze(r, x, z, P) {
     const [st, K, jahr] = [r.state, window.__gelaendeCore, [r.state.seasonPhase, r.state.autoSeason]];
@@ -495,6 +496,20 @@ function wasserSchmelze(r, x, z, P) {
         const top = w.reduce((b, o, i) => (o.h > w[b].h ? i : b), 0);
         Object.assign(pg, { hub: w[top].h, wochen: w.filter((o) => o.h > 0).length, gegen: w.filter((o) => o.h > 0 !== o.a).length });
         Object.assign(pg, { fluss: spanne(w.map((o) => o.f)), flut: koerper(w[top].s), ruhe: koerper(0.375) });
+        // R (wetter.K3) DER REGEN SPEIST DEN BACH: das Wort des Spielers „Sturm", 20 min Welt-Uhr im Takt des Regens (`_tickRain`
+        // je 5 s): der Spiegel am Bach P.fluss (`_waterLevelAt`) über dem trockenen (`hub`), die Tafeln an den Faden (`post`), das
+        // gezeichnete Wasser am See (`koerper`, wie P2); das Regen-Feld gehalten (der Sturm regnet nicht), hebt er nichts (`fest`).
+        const sturm = () => {
+            const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
+            const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
+            wort("stormy", 0);
+            for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
+            const aus = { hub: R(r._waterLevelAt(...P.fluss) - vor), post: pg.post - p0, koerper: koerper(0.375)[0] };
+            return wort("sunny", 1e6), aus;
+        };
+        pg.regen = sturm();
+        r._weatherFieldFor = () => r.constructor.prototype._weatherFieldFor.call(r, "sunny");
+        pg.regen.fest = sturm().hub;
         r._temperaturFeld = (yy, tr) => {
             const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
             return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
@@ -503,7 +518,7 @@ function wasserSchmelze(r, x, z, P) {
         [aus.halt, pg.halt] = [h.pegel, Math.max(...wh.map((o) => Math.abs(o.h)))];
         return [aus, pg];
     } finally {
-        ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt"].forEach((k) => delete r[k]);
+        ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt", "_weatherFieldFor"].forEach((k) => delete r[k]);
         [st.seasonPhase, st.autoSeason] = jahr;
         r._tickSeason(0);
     }

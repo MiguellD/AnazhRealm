@@ -1613,10 +1613,13 @@ const TAT = process.argv.includes("--tat");
                             st.weatherEffectTime = -1e9;
                             st.weatherTransition = null;
                         };
-                        // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2)
+                        // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2); das Wort
+                        // senkt See und Fluss (wetter.K3: der Regen des Felds ist ein Term des Pegels) — die Neubauten der Chunks am
+                        // Wasser kommen, bis die Welt steht (an der Mess-Wiese 12 Chunks, nach 60 Takten warteten noch 3)
                         wort("sunny");
                         r._naesseTakt(1e6);
                         await simPhase(60); // jede Sim geht ihren Gang bis an ihren Fixpunkt
+                        await window.__weltStehtNach(takt);
                         aus.simRuhe = Object.assign(await simPhase(3600), { vorher });
                         const weck = async (n, ereignis) => {
                             ereignis();
@@ -1629,6 +1632,7 @@ const TAT = process.argv.includes("--tat");
                         wort("sunny");
                         r._naesseTakt(1e6);
                         await simPhase(5);
+                        await window.__weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
                         W.regen.nachher = await simPhase(60);
                         const fr = st.foliageRadius;
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };

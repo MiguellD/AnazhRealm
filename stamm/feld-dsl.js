@@ -59,6 +59,7 @@ class AnazhRealm_feld_dsl {
             // die gerade wirkt (`dslEval` → `_tatBeginnt`) — die Stimme des Felds nennt Gesetz und Ursache aus ihnen
             regel: opts.regel || null,
             grund: opts.grund || null,
+            weil: null,
             tat: null,
         };
     }
@@ -302,8 +303,11 @@ class AnazhRealm_feld_dsl {
             return;
         }
         ctx.budget.depthLeft--;
-        // DIE TAT (affekt K1/K4): ein Welt-Akt wird hier EINE Tat — ihr Ort, ihre Wertung am Ort und ihre Zeile (`_tatWerten`)
-        const tat = weltakt ? this._tatBeginnt(String(op), args, ctx) : null;
+        // DIE TAT (affekt K1/K4): ein Welt-Akt wird hier EINE Tat — ihr Ort, ihre Wertung am Ort und ihre Zeile (`_tatWerten`);
+        // das Wetter auch (kein Welt-Akt: es hält sein eigener Schreiber `_setWeather`, nie die Liste). Was der Effekt ins Log
+        // legt, ist sein Bericht: was er hielt, verweigerte oder wirklich setzte (`_tatWerten`)
+        const tat = weltakt || op === "weather" ? this._tatBeginnt(String(op), args, ctx) : null;
+        const logVor = ctx.log.length;
         let gelungen = true;
         try {
             fn.call(this, args, ctx);
@@ -314,7 +318,7 @@ class AnazhRealm_feld_dsl {
             if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
             else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
-        if (tat) this._tatWerten(tat, ctx, gelungen);
+        if (tat) this._tatWerten(tat, ctx, gelungen, ctx.log.slice(logVor));
         ctx.budget.depthLeft++;
     }
 
@@ -502,7 +506,10 @@ class AnazhRealm_feld_dsl {
             else keep.push(entry);
         }
         this.state.dsl.pending = keep;
-        for (const entry of ready) this.dslEval(entry.program, entry.ctx);
+        for (const entry of ready) {
+            entry.ctx.weil = entry.weil;
+            this.dslEval(entry.program, entry.ctx);
+        }
     }
 
     dslSchedule(delaySeconds, program, ctx) {
@@ -511,7 +518,7 @@ class AnazhRealm_feld_dsl {
             return;
         }
         const runAt = this._taktUhr() + Math.max(0, delaySeconds);
-        this.state.dsl.pending.push({ runAt, program, ctx });
+        this.state.dsl.pending.push({ runAt, program, ctx, weil: ctx.weil });
     }
 
     // ### Welt-Regeln ###
@@ -868,6 +875,8 @@ class AnazhRealm_feld_dsl {
                     return;
                 }
                 const ok = this._setWeather(name, quelle);
+                // die Welt schreibt das Wetter nie selbst, sie wünscht es (die Stimme sagt es so, `_feldStimmeZeile`)
+                if (ctx && ctx.tat) ctx.tat.wunsch = ok === "wunsch";
                 if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
                 else if (ctx && ok === false) ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
             },
@@ -1910,9 +1919,15 @@ class AnazhRealm_feld_dsl {
                 }
                 this.dslEval(items[items.length - 1].effect, ctx);
             },
+            // die Bedingung, die den Zweig wählte, ist die Ursache seiner Taten (`ctx.weil`, die Stimme nennt sie)
             when: ([condition, thenBranch, elseBranch], ctx) => {
-                if (this.dslEvalCond(condition, ctx)) this.dslEval(thenBranch, ctx);
-                else if (elseBranch) this.dslEval(elseBranch, ctx);
+                const ja = this.dslEvalCond(condition, ctx);
+                const zweig = ja ? thenBranch : elseBranch;
+                if (!zweig) return;
+                const weil = ctx.weil;
+                ctx.weil = { cond: condition, ja };
+                this.dslEval(zweig, ctx);
+                ctx.weil = weil;
             },
             // rule-Primitiv: ein when, das nicht verfällt — registriert Bedingung → Effekt in
             // state.worldRules, _tickWorldRules prüft fortlaufend. Mensch + Nexus nutzen DENSELBEN Pfad.

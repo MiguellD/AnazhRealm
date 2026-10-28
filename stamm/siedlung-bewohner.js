@@ -49,10 +49,11 @@ class AnazhRealm_siedlung_bewohner {
     // gewandt) und das Werk ihres Berufs (`berufVon`): die Station vor dem Haus ihrer Rolle (Schmiede, Kirche, Gasthaus — ein
     // zweiter Stand vor der eigenen Tür) · markt der Stand auf dem Platz · feld ein Stand im nächsten Acker des Plans · hof
     // der Stand vor der Tür. Jeder Stand ist frei: kein Grundriss eines Baus (`_imGrundriss`, mit dem Saum des Leibs), Land
-    // (`_landAt`) und der persönliche Raum (`BEWOHNER.raumM`) zu jedem anderen; wer im Ring um die Tür keinen findet, steht
-    // weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`). IN RATEN (Lehre 14,
-    // stadt-takt: die Stadt legte ihre Liste in EINEM Takt, ~16 ms): nach jedem Haus gibt die Liste den Takt zurück
-    // (`yield`), der Bewohner-Takt legt höchstens `BEWOHNER.haeuserJeTakt` Häuser je Takt.
+    // (`_landAt`), der persönliche Raum (`BEWOHNER.raumM`) zu jedem anderen und ein Knoten des Wege-Netzes in gerader Linie
+    // frei (die Frage von `_bewohnerAnschluss`: wer dort steht, geht von dort fort); wer im Ring um die Tür
+    // keinen findet, steht weiter draußen — nie still weg. Wo er bei seiner Geburt steht, sagt die Uhr (`_bewohnerZiel`).
+    // IN RATEN (Lehre 14, stadt-takt: die Stadt legte ihre Liste in EINEM Takt, ~16 ms): nach jedem Haus gibt die Liste den
+    // Takt zurück (`yield`), der Bewohner-Takt legt höchstens `BEWOHNER.haeuserJeTakt` Häuser je Takt.
     *_bewohnerListe(S) {
         const FC = globalThis.__fachwerkCore;
         if (!FC || typeof FC.leuteVon !== "function") return AnazhRealm._kernPflichtBruch("fachwerk:leuteVon");
@@ -64,9 +65,11 @@ class AnazhRealm_siedlung_bewohner {
         // DIE GASSE BLEIBT FREI (mensch.K3 Staffel 2): kein Stand näher als `gasseFreiM` an der Mitte einer Straße oder eines
         // Feldwegs des Plans — wer steht, steht am Rand, die Spuren der Gehenden (`spurM`) gehen an ihm vorbei
         const gassen = [];
+        const knoten = []; // die Knoten des Wege-Netzes (`_bewohnerNetz`: je Punkt der Straßen und Feldwege)
         for (const rd of (plan.roads || []).concat(plan.feldwege || []))
-            for (let i = 1; i < (rd.pts || []).length; i++) {
+            for (let i = 0; i < (rd.pts || []).length; i++) {
                 const [a, e] = [rd.pts[i - 1], rd.pts[i]];
+                if (e && Number.isFinite(e.x) && Number.isFinite(e.z)) knoten.push({ x: S.ox + e.x, z: S.oz + e.z });
                 if (a && e) gassen.push([S.ox + a.x, S.oz + a.z, S.ox + e.x, S.oz + e.z]);
             }
         const G2 = BW.gasseFreiM * BW.gasseFreiM;
@@ -102,7 +105,18 @@ class AnazhRealm_siedlung_bewohner {
             if (amRand && amWeg(x, z)) return false;
             const g = this._imGrundriss(x, z, BW.saumM);
             const q = { x, z };
-            return g !== "haus" && g !== "bau" && this._landAt(x, z, 0.2) && !this._bewohnerWand(q, q, true);
+            if (g === "haus" || g === "bau" || !this._landAt(x, z, 0.2) || this._bewohnerWand(q, q, true)) return false;
+            // DER STAND HÄNGT AM NETZ (siedlung.K3): am Hang lag der Stand des Besuchs hinter dem Haus, dessen Tür er besuchte —
+            // frei, Land, ohne Wand, und keiner der `anschlussN` nächsten Knoten in gerader Linie frei (das Start-Dorf am Hang,
+            // haus_schwarzwald #724672: vier Besuchs-Stände 16–20 m hinter seiner Rückwand, die Knoten jenseits). Der Weg
+            // dorthin riss (`_bewohnerStrecke`: kein Weg), der Leib blieb am Acker stehen (wohnhaus/feld #45665: 80 % seiner
+            // Soll-Orte, 54 m neben sich nach der Wiederkehr). Ohne Netz (ein Plan ohne Wege) trägt die Gerade allein.
+            if (!knoten.length) return true;
+            return knoten
+                .map((k) => ({ k, d: (k.x - x) ** 2 + (k.z - z) ** 2 }))
+                .sort((a, b) => a.d - b.d)
+                .slice(0, BW.anschlussN)
+                .some((c) => !this._bewohnerWand(q, c.k));
         };
         const nimm = (o) => {
             if (o) legen(o.x, o.z);
@@ -186,15 +200,15 @@ class AnazhRealm_siedlung_bewohner {
             return null;
         };
         // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) — am Rand der Gasse; wo der Ring
-        // das nicht trägt, in der Gasse und in weiteren Ringen
-        const ringStand = (g, wort, tx, tz, ux, uz) => {
+        // das nicht trägt, in der Gasse und in weiteren Ringen; `gilt` (x, z): was der Stand darüber hinaus tragen muss
+        const ringStand = (g, wort, tx, tz, ux, uz, gilt = null) => {
             for (const amRand of [true, false])
                 for (let v = 0; v < (amRand ? 64 : 128); v++) {
                     const vor = 1.2 + (v >> 3) * 1.5 + g.axis(wort + "vor" + v) * 2;
                     const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (2 + (v >> 3));
                     const x = tx + ux * vor - uz * quer;
                     const z = tz + uz * vor + ux * quer;
-                    if (frei(x, z, amRand))
+                    if ((!gilt || gilt(x, z)) && frei(x, z, amRand))
                         return nimm({ x, z, blick: Math.atan2(ux, uz) + (g.axis(wort + "dreh") - 0.5) * 1.6 });
                 }
             return null;
@@ -246,7 +260,11 @@ class AnazhRealm_siedlung_bewohner {
         // ihnen und seinem Werk (der Plan hält ihn `besuchH` dort: der Gang hin trägt nur einen Teil davon, er kommt an und
         // steht), sonst vor der nächsten der fernen, sonst vor der fernsten — gewählt, wenn jeder seinen Stand vor der eigenen
         // Tür, am Platz und am Werk hat (der Besuch nimmt keinem den Platz). Bis mensch.K3 Staffel 2 galt keine Obergrenze: der
-        // Markthändler #85460 der Stadt ging 127 m in der Stunde seines Besuchs und kam nie an.
+        // Markthändler #85460 der Stadt ging 127 m in der Stunde seines Besuchs und kam nie an. DER STAND TRÄGT DIE FERNE
+        // (siedlung.K3): `besuchM` misst der Stand selbst, nicht nur die Tür, vor der er liegt — am Hang drängten sich drei Türen
+        // um eine Gasse, der Ring vor ihnen wuchs bis 25 m, und der Besuch des Gasthauses #419347 lag 31,8 m von seiner Tür
+        // (der Tag 95 m, Soll ≥ 100); die weite Tür hält ihn auch in `besuchWeitM` (der Markthändler oben). Nur der Rest
+        // (keine ferne Tür) steht, wo sein Ring ihn trägt.
         const mitte = pz ? { x: S.ox + pz.cx, z: S.oz + pz.cz } : null;
         const besuchStand = (g, T, W) => {
             const ab = (h, o) => (o ? Math.hypot(h.tx - o.x, h.tz - o.z) : NaN);
@@ -259,8 +277,13 @@ class AnazhRealm_siedlung_bewohner {
                 .sort((a, b) => reich(a) - reich(b));
             const k = weit.length ? g.int("besuch", 0, weit.length - 1) : 0;
             const rest = andere.filter((h) => fern(h) < BW.besuchM);
+            // der Stand trägt dieselben Grenzen wie die Tür, vor der er liegt (die weite: fern und reich, die ferne: fern)
+            const pkt = (x, z) => ({ tx: x, tz: z });
+            const fernStand = (x, z) => fern(pkt(x, z)) >= BW.besuchM;
+            const weitStand = (x, z) => fernStand(x, z) && reich(pkt(x, z)) <= BW.besuchWeitM;
             for (const h of weit.slice(k).concat(weit.slice(0, k), fernNah, rest)) {
-                const o = ringStand(g, "b", h.tx, h.tz, h.ux, h.uz);
+                const gilt = weit.includes(h) ? weitStand : fernNah.includes(h) ? fernStand : null;
+                const o = ringStand(g, "b", h.tx, h.tz, h.ux, h.uz, gilt);
                 if (o) return o;
             }
             return null;
@@ -316,6 +339,17 @@ class AnazhRealm_siedlung_bewohner {
             b.orte.besuch = besuchStand(...besuche[i]);
         }
         return liste;
+    }
+
+    // DIE HÄUSER STEHEN MIT IHRER HÜLLE (siedlung.K3): die Liste entsteht, wenn jedes Haus ihres Plans seine Studio-Hülle trägt
+    // (`_hausHuelleSetzen`: die Boxen seiner Wände im Blocker-Netz) — ihre Regeln fragen die Wände (`frei`, die Linie zum Netz).
+    // Bis siedlung-k3-hang entstand die erste Liste vor den Hüllen (das Start-Dorf am Hang: 18 von 18 Häusern ohne Hülle), jede
+    // nach einer Abwesenheit mit ihnen: die erste stellte Stände hinter Hauswände, die zweite andere (die Wiederkehr 21 m).
+    _bewohnerHuellenDa(S) {
+        const samen = S.hausSamen || (S.hausSamen = new Set(S.plan.slots.map((sl) => sl.seed >>> 0)));
+        for (const e of this.state.architectures || [])
+            if (e && e.tuer && samen.has(e.seed >>> 0) && !e._hausHuelle) return false;
+        return true;
     }
 
     // DIE VORLAGEN DER GESTALTEN im Faden (der Mensch-Ofen der Foundry, nah zuerst — nie ein Guss im Haupt-Faden): je Stufe
@@ -703,6 +737,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (d2 > A.nearM * A.nearM) continue;
                 const q = this._autoSettlementQueue;
                 if (q && q.cellKey === S.key) continue; // die Häuser wachsen noch
+                if (!S.listeWerk && !this._bewohnerHuellenDa(S)) continue; // die Häuser stehen erst mit ihrer Hülle
                 if (!S.listeWerk) S.listeWerk = this._bewohnerListe(S);
                 let w = null;
                 for (let k = 0; k <= BW.haeuserJeTakt && !(w && w.done); k++) w = S.listeWerk.next();
@@ -779,6 +814,9 @@ class AnazhRealm_siedlung_bewohner {
                     this._bewohnerAnkunft(S, b, stunde, echt, p);
                     b.lageNeu = true;
                     anders = true;
+                    // die nächste Ankunft sieht ihn, wo er ankam (das Raster entstand vor ihr)
+                    const k = Math.floor(g.position.x / BW.rasterM) * 2097152 + Math.floor(g.position.z / BW.rasterM);
+                    if (!b.drinnen) (R.get(k) || (R.set(k, []), R.get(k))).push(b);
                 }
                 const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
                 // DIE TÜR (mensch.K3 Staffel 2): wer hinaus soll (`_bewohnerZiel`), tritt aus ihr, wenn keiner in ihr und vor
@@ -1123,6 +1161,24 @@ class AnazhRealm_siedlung_bewohner {
             b.drehen = null;
         }
         b.zielUhr = NaN; // er steht, wo sein Tag ihn jetzt sieht: nichts aufzuholen
+        // DIE ANKUNFT NIMMT KEINEM DEN RAUM (mensch.K3 Staffel 2, siedlung.K3): der Tag ist f(Same, t) ohne die anderen — zwei
+        // Wege, die dasselbe Netz-Stück teilen, setzten zwei Ankommende 0,57 m auseinander (das Hangdorf um 12,50 Uhr: der
+        // Feldarbeiter #809070 und der Hofmann #724672 auf dem Umweg um #809070, Berührung vor dem ersten Schritt). Wer neben
+        // einem steht, der schon draußen ist (`_bewohnerNaechster`, das Raster des Takts samt der Ankommenden), tritt beiseite
+        // wie der Stehende im Gedränge (`_bewohnerPlatz`: der Ring bis 1,8 m, frei von Wand und Leib); sein Weg nimmt ihn
+        // zurück auf seine Linie (`_bewohnerLinie`).
+        const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
+        const g0 = { x: g.position.x, z: g.position.z };
+        if (!b.drinnen && S.raster && this._bewohnerNaechster(S, b, g0.x, g0.z) < K)
+            for (let r = 0.6, fort = false; r <= 1.81 && !fort; r += 0.6)
+                for (let i = 0; i < 12 && !fort; i++) {
+                    const P = { x: g0.x + Math.cos((i * Math.PI) / 6) * r, z: g0.z + Math.sin((i * Math.PI) / 6) * r };
+                    if (this._bewohnerNaechster(S, b, P.x, P.z) < K) continue;
+                    if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g0, P)) continue;
+                    g.position.x = P.x;
+                    g.position.z = P.z;
+                    fort = true;
+                }
         // die Stufe am Ende neu (der Schritt fragt die Stufe ab der Höhe seines letzten Stands — nach einem Weg ohne
         // Zwischenschritte läge die Frage am Hang unter oder über ihr)
         this._bewohnerStellen(b, g, g.position.x, g.position.z);
@@ -2131,7 +2187,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf") · perTick Häuser je Idle-Tick ·
 // drosselTakte das Tempo über dem Frame-Budget.
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
-// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax) lebt EINMAL in
+// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
 // DIE BEWOHNER (Meisterkarte mensch.K1, `_tickBewohner`): gestalten = die Gestalten je Siedlung (Vorlagen im Ofen, je
 // Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon) · platzAnteil = so viele
