@@ -165,7 +165,19 @@ async function stand() {
     await r._speicherStill();
     return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
 }
-const WARTEN_SEITE = `window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+// DAS BILD ALS PNG: in jeder Seite `window.__png(u8, W, H)` — RGBA-Bytes W×H (ein Schuss, eine Maske) deckend als Daten-URL,
+// in Node `pngDatei(datei, url)` schreibt sie; bis dahin baute jede Bild-Linse ihre Leinwand und ihren Puffer selbst
+function png(u8, W, H) {
+    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+    const d = Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v));
+    cv.getContext("2d").putImageData(new ImageData(d, W, H), 0, 0);
+    return cv.toDataURL("image/png");
+}
+// ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
+// Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
+const bundlesNeu = () => window.anazhRealm.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
+const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1169,6 +1181,7 @@ module.exports = {
     GPU_REZEPTE,
     CODE_OF_SEITE,
     WARTEN_SEITE,
+    pngDatei,
     statikServer,
     starteBrowser,
     warteAufWelt,
@@ -1294,7 +1307,7 @@ async function selbsttest() {
         .filter(([, c]) => adressZwilling(c))
         .map(([f]) => f)
         .join(", ");
-    const FREMD = "diag-koerper-stand.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const FREMD = "werkbank.cjs";
     const gepflanzt = [
         "statikServer(); await new Promise((r) => s.listen(1, r));",
         "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",

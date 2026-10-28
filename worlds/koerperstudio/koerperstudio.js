@@ -187,7 +187,9 @@ function gestaltNeu(){
   s0.liste.forEach(function(n){n.castShadow=BZ[STUFEN[0]].schatten===STUFEN[0];});
   s1.liste.forEach(function(n){n.castShadow=z1.schatten===STUFEN[1]&&(!seh||seh.indexOf(n.userData.__seh)>=0);});
   gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null};
-  if(kosten){kosten.messen({traverse:function(f){s0.liste.forEach(f);}},STUFEN[0]);kosten.messen({traverse:function(f){s1.liste.forEach(f);}},STUFEN[1]);}
+  if(kosten){kosten.messen({traverse:function(f){s0.liste.forEach(f);}},STUFEN[0]);kosten.messen({traverse:function(f){s1.liste.forEach(f);}},STUFEN[1]);
+    /* die Fern-Stufen zeigt das Labor nicht — die Leiste misst sie am Welt-Guss derselben Dials (eine Wegwerf-Gestalt) */
+    STUFEN.slice(2).forEach(function(s){var g=BAKERS_BY_KIND.koerper(KC,'mensch',0,s,ov);g.traverse(function(n){if(n.isMesh)n.castShadow=BZ[s].schatten===s;});kosten.messen(g,s,true);});}
   scene.add(gestalt.root);stufeSchalten();
 }
 function updateLabel(){const lbl=document.getElementById('presetLabel');const age=Math.round(18+params.age*62);let body='athletisch',gen='Mann';if(params.mass>0.6)body='übergewichtig';else if(params.mass<0.2)body='mager';else if(params.tone>0.7)body='muskulös';else if(params.tone<0.3)body='schlank';if(params.gender<0.3)gen='Frau';else if(params.gender<0.6)gen='androgyn';lbl.textContent=`${body} ${gen} · ${age}`;}
@@ -204,7 +206,7 @@ function fmtVal(k){if(k==='height')return params.height.toFixed(2);if(k==='age')
 var _gussT=null;function gussBald(){clearTimeout(_gussT);_gussT=setTimeout(gestaltNeu,150);}
 const sitz=AnazhHuelle.sitzung({werte:params,anwenden:()=>{syncUI();gestaltNeu();}});sitz.leiste(document.getElementById('sitzung'));
 const KPARAMS=window.__koerperCore.PARAMS_BY_KIND.koerper;
-const kosten=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:BZ,stufen:STUFEN,quelle:'gemessen an der gezeigten Gestalt = dem Welt-Guss (foundry-core BAKERS_BY_KIND.koerper, dieselben Dials und Farben, Saat 0): L0 nah, L1 jenseits '+BZ[STUFEN[1]].ab+' (± '+Math.round(BZ.hyst*100)+' %) und als Wurf'});
+const kosten=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:BZ,stufen:STUFEN,renderer:renderer,quelle:'gemessen an der gezeigten Gestalt = dem Welt-Guss (foundry-core BAKERS_BY_KIND.koerper, dieselben Dials und Farben, Saat 0): L0 nah, L1 jenseits '+BZ[STUFEN[1]].ab+' (± '+Math.round(BZ.hyst*100)+' %) und als Wurf'});
 const reglerKoerper=['KOERPER','POSE','HAAR'].map(g=>AnazhHuelle.regler(document.getElementById(g==='KOERPER'?'reglerKoerper':g==='POSE'?'reglerPose':'reglerHaar'),KPARAMS.filter(z=>z.grp===g),{werte:params,sitzung:sitz,gruppen:false,zuruecksetzen:false,ruheMs:150,format:z=>fmtVal(z.id),bei:()=>updateLabel(),nachRuhe:()=>gussBald()}));
 function syncUI(){reglerKoerper.forEach(r=>r.sync());}
 const HAARSTILE=[...document.querySelectorAll('#hairStyles button')].map(b=>b.dataset.h);

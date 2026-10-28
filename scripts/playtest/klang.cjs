@@ -9,7 +9,8 @@ async function checkBandW4LofiPad(ctx) {
     const { page, check } = ctx;
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
     // Pad-Layer (~60 BPM); die Akkordfolge wächst aus Tonleiter + funktionaler Markov-Kette (seed- +
-    // emotion-getrieben), kein fester Akkord-Satz.
+    // emotion-getrieben), kein fester Akkord-Satz. Je Probe EINE Zeile der Seite: ihr Satz und ihr Urteil (dazu, wo nötig,
+    // der Grund) — der Richter liest sie in ihrer Folge.
     const w4v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -18,32 +19,29 @@ async function checkBandW4LofiPad(ctx) {
         // die Konstanten-Zwillinge LOFI_SCALE/LOFI_BPM sind ABWESEND — Skala
         // und Tempo wohnen im klang-Gesetzbuch (SCALES/scaleFor · GENRES).
         const harmony = AnazhRealm.LOFI_HARMONY;
-        out.scaleHarmonyDefined =
+        out["W4 V3: LOFI_SCALE abwesend, LOFI_HARMONY frozen"] =
             AnazhRealm.LOFI_SCALE === undefined &&
             Array.isArray(harmony) &&
             harmony.length === 7 &&
             Object.isFrozen(harmony) &&
             harmony.every((t) => Array.isArray(t) && t.length >= 1);
-        out.bpmDefined = AnazhRealm.LOFI_BPM === undefined;
+        out["W4 V2: LOFI_BPM abwesend"] = AnazhRealm.LOFI_BPM === undefined;
         // Die SKALA führt das Studio-Klang-Rezept (_lofiActiveScale; warmes Buch → Blues) → die
         // Konstanten-Proben laufen mit VERSTECKTEM Rezept (sichern + wiederherstellen); die
         // Studio-Skalen-Probe steht daneben.
         const fK = r._foundry;
-        const prevLofi = fK && fK.recipes ? fK.recipes.lofi : undefined;
+        const prevLofi = fK?.recipes?.lofi;
         if (prevLofi) delete fK.recipes.lofi;
         // Tests wandern 19.07. (ZWILLINGS-ABSCHIED): kaltes Studio-Preset ⇒
         // die KERN-Wahrheit des Host-Genres antwortet (Blues-Skala, fail-
         // closed) — der byte-alte A-Moll-Konstanten-Pfad ist gefallen.
         const prevKSP = r._klangStudioPreset;
         r._klangStudioPreset = () => null;
-        // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen (Kern: Blues).
-        const deg0 = r._lofiChordFromDegree(0);
-        const deg3 = r._lofiChordFromDegree(3);
-        out.chordFromDegree =
-            JSON.stringify(deg0) === JSON.stringify([0, 5, 7, 12]) &&
-            JSON.stringify(deg3) === JSON.stringify([6, 10, 15, 18]);
+        // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen (Kern: Blues), Stufe 0 und 3.
+        out["W4 V3: _lofiChordFromDegree stapelt Terzen"] =
+            JSON.stringify([0, 3].map((d) => r._lofiChordFromDegree(d))) === "[[0,5,7,12],[6,10,15,18]]";
         // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven (6-Ton-Blues: idx 6 → +12).
-        out.scaleSemitone =
+        out["W4 V3: _lofiScaleSemitone wickelt Oktaven"] =
             r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(6) === 12 && r._lofiScaleSemitone(2) === 5;
         r._klangStudioPreset = prevKSP;
         if (prevLofi) fK.recipes.lofi = prevLofi;
@@ -51,111 +49,77 @@ async function checkBandW4LofiPad(ctx) {
         // Der Groove wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER.Swing); die Konstanten-Zwillinge
         // LOFI_GROOVE_PATTERN/GROOVE_SWING sind ABWESEND.
         const gp = AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
-        out.grooveDefined =
+        out["W4 V3: RHYTHMUS_MUSTER.Swing trägt den Groove"] =
             AnazhRealm.LOFI_GROOVE_PATTERN === undefined &&
             AnazhRealm.GROOVE_SWING === undefined &&
             !!gp &&
-            Array.isArray(gp.kick) &&
-            Array.isArray(gp.snare) &&
-            Array.isArray(gp.hihat) &&
-            gp.kick.length >= 1 &&
-            gp.snare.length >= 1 &&
-            gp.hihat.length >= 1;
+            ["kick", "snare", "hihat"].every((k) => Array.isArray(gp[k]) && gp[k].length >= 1);
         // Swing: ein gerader Schritt liegt auf dem Schlag, ein
         // Off-Beat (ungerade) wird verzögert; swing 0.5 = gerade.
-        out.grooveStepTime =
+        out["W4 V3: _grooveStepTime swingt den Off-Beat"] =
             r._grooveStepTime(0, 1, 0.58) === 0 &&
             r._grooveStepTime(2, 1, 0.58) === 2 &&
             r._grooveStepTime(1, 1, 0.58) > r._grooveStepTime(1, 1, 0.5) &&
             r._grooveStepTime(1, 1, 0.5) === 1;
-        // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
-        const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
-        out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
-        out.rootIsA = Math.abs(freqs[0] - 110) < 0.01;
-        // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
-        const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
-        out.majorLeanRaisesThird = freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
+        // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110; major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
+        const [freqs, freqsMajor] = [false, true].map((dur) => r._lofiChordFreqs([0, 3, 7, 10], dur));
+        out["W4 V2: _lofiChordFreqs liefert positive Frequenzen"] = freqs.length === 4 && freqs.every((f) => f > 0);
+        out["W4 V2: die Akkord-Wurzel ist A (≈110 Hz)"] = Math.abs(freqs[0] - 110) < 0.01;
+        out["W4 V2: hope hebt die Terz"] = freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
         // _lofiChordDurationMs — sorrow verlangsamt das Tempo. Das Tempo führt das Studio-Genre
         // (_klangStudioPreset, lofi bpm 78; kaltes Buch → fail-closed); die Erwartung liest DIESELBE Quelle
         // (kein Timing-Flake, das Buch lädt async).
         const emo = r.state.player.emotions;
-        const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
+        const eBefore = { ...emo };
         const kStudio = r._klangStudioPreset();
-        const kBpm = kStudio && Number.isFinite(kStudio.bpm) && kStudio.bpm > 0 ? kStudio.bpm : 78;
-        const baseExpected = (60000 / kBpm) * 4;
+        const kBpm = Number.isFinite(kStudio?.bpm) && kStudio.bpm > 0 ? kStudio.bpm : 78;
         emo.sorrow = 0;
         const durCalm = r._lofiChordDurationMs();
         emo.sorrow = 1;
         const durSad = r._lofiChordDurationMs();
-        out.sorrowSlowsTempo = durSad > durCalm && durSad <= baseExpected * 1.5 + 1;
+        out["W4 V2: sorrow verlangsamt"] = durSad > durCalm && durSad <= (60000 / kBpm) * 4 * 1.5 + 1;
         // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
-        if (r.state.symphony && r.state.symphony.enabled) {
-            r.disposeSymphony();
-        }
-        emo.joy = 0;
-        emo.hope = 0;
-        emo.sorrow = 0;
+        if (r.state.symphony?.enabled) r.disposeSymphony();
+        Object.assign(emo, { joy: 0, hope: 0, sorrow: 0 });
         r.initSymphony();
         const sym = r.state.symphony;
-        out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
-        if (out.symphonyReady) {
-            out.lofiLayerBuilt =
-                !!sym.lofi &&
-                !!sym.lofi.gain &&
-                !!sym.lofi.filter &&
-                !!sym.lofi.melodyGain &&
-                // die Lead-Stimme sitzt über dem Pad.
-                sym.lofi.melodyGain.gain.value >= 0.2 &&
-                // die Groove-Schicht + Noise-Puffer.
-                !!sym.lofi.grooveGain &&
-                !!sym.lofi.noiseBuffer &&
-                // die Bass-Schicht.
-                !!sym.lofi.bassGain &&
-                sym.lofi.degree === 0 &&
-                typeof sym.lofi.rngState === "number";
+        if (!(sym?.enabled && sym.ctx))
+            out["W4 V2: Symphony im Headless initialisierbar"] = [false, "initSymphony nicht bereit"];
+        else {
+            // die Lofi-Schichten beweist ihr Spiel (`_lofiTick` spielt einen Akkord, unten), nicht ihre Existenz
             // W4 V3 Phase 2 — die Melodie: Form (startet + endet
             // auf einem Akkord-Ton, aufsteigende Startzeiten, über
             // dem Pad), emotion-gesteuerte Dichte.
             const mel = r._lofiMelodyNotes(0, 4);
-            const chordTones = [0, 2, 4, 6];
-            let melAsc = true;
-            for (let i = 1; i < mel.length; i++) if (mel[i].start <= mel[i - 1].start) melAsc = false;
-            out.melodyShape =
+            const akkordTon = (nt) => [0, 2, 4, 6].includes(nt?.idx);
+            out["W4 V3: Melodie-Form"] =
                 Array.isArray(mel) &&
                 mel.length >= 1 &&
-                mel.every((nt) => nt.freq > 200) &&
-                melAsc &&
-                chordTones.indexOf(mel[0].idx) >= 0 &&
-                chordTones.indexOf(mel[mel.length - 1].idx) >= 0;
-            // Dichte folgt der Emotion — über 8 Phrasen summiert
+                mel.every((nt, i) => nt.freq > 200 && !(i && nt.start <= mel[i - 1].start)) &&
+                akkordTon(mel[0]) &&
+                akkordTon(mel.at(-1));
+            // Dichte folgt der Emotion — die Noten über 8 Phrasen bei Freude j und Frieden f summiert
             // (joy belebt, peace lässt Pausen): robust statistisch.
-            emo.joy = 1;
-            emo.peace = 0;
-            let melJoyTotal = 0;
-            for (let i = 0; i < 8; i++) melJoyTotal += r._lofiMelodyNotes(0, 4).length;
-            emo.joy = 0;
-            emo.peace = 1;
-            let melPeaceTotal = 0;
-            for (let i = 0; i < 8; i++) melPeaceTotal += r._lofiMelodyNotes(0, 4).length;
-            emo.joy = 0;
-            emo.peace = 0;
-            out.melodyDensityEmotion = melJoyTotal > melPeaceTotal;
+            const dichte = (j, f) => {
+                Object.assign(emo, { joy: j, peace: f });
+                let n = 0;
+                for (let i = 0; i < 8; i++) n += r._lofiMelodyNotes(0, 4).length;
+                return n;
+            };
+            out["W4 V3: Melodie-Dichte folgt der Emotion"] = dichte(1, 0) > dichte(0, 1);
+            Object.assign(emo, { joy: 0, peace: 0 });
             // Rhythmus + Dynamik: über 12 Phrasen gibt es
             // verschiedene Noten-LÄNGEN (Halbtakt/Viertel) UND
             // verschiedene Lautstärken (starker vs schwacher Takt).
-            const durSet = new Set();
-            const velSet = new Set();
-            for (let i = 0; i < 12; i++) {
-                for (const nt of r._lofiMelodyNotes(0, 4)) {
-                    durSet.add(Math.round(nt.dur * 100));
-                    velSet.add(Math.round(nt.vel * 100));
-                }
-            }
-            out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
+            const [durSet, velSet] = [new Set(), new Set()];
+            for (let i = 0; i < 12; i++)
+                for (const nt of r._lofiMelodyNotes(0, 4))
+                    (durSet.add(Math.round(nt.dur * 100)), velSet.add(Math.round(nt.vel * 100)));
+            out["W4 V3: Melodie mit Rhythmus und Dynamik"] = durSet.size >= 2 && velSet.size >= 2;
             // W4 V4 — die Musik hört die Welt: das Welt-Feld
             // liefert vier geclampte Achsen.
             const wf = r._lofiWorldField();
-            out.worldFieldShape =
+            out["W4 V4: _lofiWorldField geclampt"] =
                 !!wf &&
                 ["lebendig", "dichte", "glut", "magieleitung"].every(
                     (k) => typeof wf[k] === "number" && wf[k] >= 0 && wf[k] <= 1
@@ -165,33 +129,33 @@ async function checkBandW4LofiPad(ctx) {
             // wird die HOST-Markov-Kette (kaltes Studio); bar-Zähler zurücksetzen.
             r._klangStudioPreset = () => null;
             sym.lofi.bar = 0;
-            // helle Stufen (III/VI) unter n Zügen ab dem RNG-Zustand `saat`, bei Freude/Hoffnung `froh` und Trauer `trauer`
-            const hell = (saat, n, froh, trauer) => {
+            const origField = r._lofiWorldField;
+            // helle Stufen (III/VI) unter n Zügen ab dem RNG-Zustand `saat`, bei Freude/Hoffnung `froh`, Trauer `trauer` und
+            // dem Welt-Feld `feld` (ohne: das der Welt)
+            const hell = (saat, n, froh, trauer, feld) => {
+                r._lofiWorldField = feld ? () => feld : origField;
                 Object.assign(emo, { joy: froh, hope: froh, sorrow: trauer });
                 sym.lofi.rngState = saat;
                 let c = 0;
-                for (let i = 0; i < n; i++) if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(r._lofiNextDegree(0)) >= 0) c++;
+                for (let i = 0; i < n; i++) if (AnazhRealm.LOFI_BRIGHT_DEGREES.includes(r._lofiNextDegree(0))) c++;
+                r._lofiWorldField = origField;
                 return c;
             };
-            const origField = r._lofiWorldField;
             const neutralF = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
-            // (a) volle Emotion-Helligkeit, neutrales Welt-Feld
-            r._lofiWorldField = () => neutralF;
-            const brightEmotionFull = hell(4242, 500, 1, 0);
-            // (b) neutrale Emotion, volle Welt-Feld-Helligkeit
-            r._lofiWorldField = () => ({ lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 });
-            const brightWorldFull = hell(4242, 500, 0, 0);
+            // (a) volle Emotion-Helligkeit, neutrales Welt-Feld · (b) neutrale Emotion, volle Welt-Feld-Helligkeit ·
             // (c) neutrale Emotion, neutrales Welt-Feld
-            r._lofiWorldField = () => neutralF;
-            const brightFieldNeutral = hell(4242, 500, 0, 0);
-            r._lofiWorldField = origField;
-            out.emotionDominatesWorldBias = brightEmotionFull > brightWorldFull;
-            out.worldFieldBiasesHarmony = brightWorldFull > brightFieldNeutral;
+            const [emotionVoll, weltVoll, neutral] = [
+                [1, neutralF],
+                [0, { lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 }],
+                [0, neutralF],
+            ].map(([froh, feld]) => hell(4242, 500, froh, 0, feld));
+            out["W4 V4: das Welt-Feld biast die Harmonie"] = weltVoll > neutral;
+            out["W4 V4: die Emotion dominiert"] = emotionVoll > weltVoll;
             // W4 V3 — _lofiNextDegree liefert eine in der Markov-
             // Kette erreichbare Stufe (0..6).
-            const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
-            const nd = r._lofiNextDegree(0);
-            out.nextDegreeValid = allowed.indexOf(nd) >= 0;
+            out["W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe"] = AnazhRealm.LOFI_HARMONY[0]
+                .map((t) => t[0])
+                .includes(r._lofiNextDegree(0));
             // W4 V3 — Determinismus: selber rngState → selbe Folge.
             const folge = () => {
                 sym.lofi.rngState = 12345;
@@ -199,11 +163,11 @@ async function checkBandW4LofiPad(ctx) {
                 for (let i = 0; i < 6; i++) q.push(r._lofiNextDegree(q[i]));
                 return q.join();
             };
-            out.harmonyDeterministic = folge() === folge();
+            out["W4 V3: die Harmonie ist seed-deterministisch"] = folge() === folge();
             // W4 V3 — Emotion biast die Harmonie: bei joy/hope
             // erscheinen helle Stufen (III/VI) häufiger als bei
             // sorrow (selber RNG-Strom → fairer Vergleich).
-            out.emotionBiasesHarmony = hell(777, 300, 1, 0) > hell(777, 300, 0, 1);
+            out["W4 V3: Emotion biast die Harmonie"] = hell(777, 300, 1, 0) > hell(777, 300, 0, 1);
             r._klangStudioPreset = prevKSP;
             sym.lofi.bar = 0;
             // _lofiTick spielt den ersten Akkord (lastChordAt=
@@ -211,89 +175,22 @@ async function checkBandW4LofiPad(ctx) {
             sym.lofi.degree = 0;
             sym.lofi.lastChordAt = -Infinity;
             r._lofiTick();
-            out.tickPlaysChord =
-                sym.lofi.lastChordAt > -Infinity &&
-                Number.isInteger(sym.lofi.degree) &&
-                sym.lofi.degree >= 0 &&
-                sym.lofi.degree <= 6;
+            const deg = sym.lofi.degree;
+            out["W4 V3: _lofiTick spielt einen Akkord"] =
+                sym.lofi.lastChordAt > -Infinity && Number.isInteger(deg) && deg >= 0 && deg <= 6;
             // Ein zweiter Tick sofort danach spielt NICHT (Dauer nicht um).
-            const degAfter = sym.lofi.degree;
             r._lofiTick();
-            out.tickThrottled = sym.lofi.degree === degAfter;
+            out["W4 V2: _lofiTick ist akkord-dauer-gedrosselt"] = sym.lofi.degree === deg;
             // disposeSymphony räumt die Lofi-Schicht.
             r.disposeSymphony();
-            out.disposeClearsLofi = sym.lofi === null;
+            out["W4 V2: disposeSymphony räumt die Lofi-Schicht"] = sym.lofi === null;
         }
-        emo.joy = eBefore.joy;
-        emo.hope = eBefore.hope;
-        emo.sorrow = eBefore.sorrow;
-        emo.peace = eBefore.peace;
+        Object.assign(emo, eBefore);
         return out;
     });
-    if (!w4v2Results || w4v2Results.error) {
-        check("W4 V2/V3 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
-    } else {
-        check(
-            "W4 V3: LOFI_SCALE abwesend (Zwilling fiel 19.07.) + LOFI_HARMONY (7 Stufen) frozen",
-            w4v2Results.scaleHarmonyDefined
-        );
-        check("W4 V2: LOFI_BPM abwesend (Zwilling fiel 19.07.)", w4v2Results.bpmDefined);
-        check(
-            "W4 V3: _lofiChordFromDegree stapelt Terzen (kaltes Preset → Kern-Blues [0,5,7,12])",
-            w4v2Results.chordFromDegree
-        );
-        check("W4 V3: _lofiScaleSemitone wickelt Oktaven (6-Ton-Blues: idx 6 → +12)", w4v2Results.scaleSemitone);
-        check(
-            "W4 V3 Phase 3: RHYTHMUS_MUSTER.Swing (Kern) trägt kick/snare/hihat — LOFI_GROOVE_PATTERN/GROOVE_SWING abwesend",
-            w4v2Results.grooveDefined
-        );
-        check(
-            "W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)",
-            w4v2Results.grooveStepTime
-        );
-        check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
-        check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
-        check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
-        check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
-        if (w4v2Results.symphonyReady) {
-            check(
-                "W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)",
-                w4v2Results.lofiLayerBuilt
-            );
-            check(
-                "W4 V3 Phase 2: _lofiMelodyNotes — Phrase startet + endet auf Akkord-Ton, steigt zeitlich",
-                w4v2Results.melodyShape
-            );
-            check(
-                "W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)",
-                w4v2Results.melodyDensityEmotion
-            );
-            check(
-                "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
-                w4v2Results.melodyRhythmDynamics
-            );
-            check("W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)", w4v2Results.worldFieldShape);
-            check(
-                "W4 V4 Sub-2: das Welt-Feld biast die Harmonie (helles Feld → mehr helle Stufen)",
-                w4v2Results.worldFieldBiasesHarmony
-            );
-            check(
-                "W4 V4 Sub-2: die Emotion bleibt der dominante Bias (Emotion 0.8 > Welt-Feld 0.4)",
-                w4v2Results.emotionDominatesWorldBias
-            );
-            check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
-            check(
-                "W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)",
-                w4v2Results.harmonyDeterministic
-            );
-            check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
-            check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
-            check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
-            check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
-        } else {
-            check("W4 V2: Symphony im Headless initialisierbar", false, "initSymphony nicht bereit");
-        }
-    }
+    if (!w4v2Results || w4v2Results.error)
+        check("W4 V2/V3 erreichbar", false, w4v2Results?.error || "page.evaluate fehlgeschlagen");
+    else for (const [satz, urteil] of Object.entries(w4v2Results)) check(satz, ...[urteil].flat());
 }
 
 // Der Fuß spielt den Boden, nicht die Uhr — eingefaltet aus gate:schritt-klang (D3b, Orakel Tier-1 #7): die drei Schritt-Klang-
@@ -311,7 +208,7 @@ async function checkBandSchrittKlang(ctx) {
         const o = { checks: {} };
         if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
         const T = A.SCHRITT_KLANG;
-    
+
         // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
         // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0; Boden und Wasser am Fuß trägt die Stoff-Linse) ──
         o.checks.keineEigeneUhr = window.__fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
@@ -319,31 +216,21 @@ async function checkBandSchrittKlang(ctx) {
         o.checks.simUnberuehrt = window.__fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
         // Stimme-aus fail-closed an der Stimme selbst (headless: nie aktiviert)
         o.checks.stimmeFailClosed = r._playSchrittOneShot({ gain: 0.05 }) === false && !s.symphony.enabled;
-    
+
         // ── Bühne: human-Rig + gestubbte Velocity (das koerper-Linsen-Muster) ──
         const p = s.player;
         if (!p || !s.playerMesh) return { error: "kein Spieler" };
         const savedSoul = p.soul;
         if (!s.playerMesh.userData.rig) r.applyPlayerSoul("human");
-        const pmesh = s.playerMesh;
-        if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
-        const saved = {
-            vel: s.playerVel,
-            uw: s.playerUnderwater,
-            mounted: p.mountedArch,
-            walkPhase: p.walkPhase,
-            gaitW: p._gaitW,
-            lastTick: p.animationLastTick,
-            isInAir: s.isInAir,
-            fieldVy: s._fieldVy,
-            schritt: s._schrittKlang,
-            hitStop: p._hitStopUntil,
-        };
-        s.playerUnderwater = false;
-        p.mountedArch = null;
-        p._hitStopUntil = 0;
-        s.isInAir = false;
-        s._fieldVy = 0;
+        if (!s.playerMesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
+        // die Bühne je Träger (Zustand, Spieler) beim Namen ihrer Felder — gesichert, gesetzt, am Ende zurück
+        const merk = (t, k) => Object.fromEntries(k.map((f) => [f, t[f]]));
+        const saved = [
+            [s, merk(s, ["playerVel", "playerUnderwater", "isInAir", "_fieldVy", "_schrittKlang"])],
+            [p, merk(p, ["mountedArch", "walkPhase", "_gaitW", "animationLastTick", "_hitStopUntil"])],
+        ];
+        Object.assign(s, { playerUnderwater: false, isInAir: false, _fieldVy: 0 });
+        Object.assign(p, { mountedArch: null, _hitStopUntil: 0 });
         let vStub = 0;
         s.playerVel = { x: () => vStub, z: () => 0, y: () => 0 };
         const z = () => s._schrittKlang || { schritte: 0, landungen: 0, letzter: null };
@@ -358,12 +245,11 @@ async function checkBandSchrittKlang(ctx) {
             p.animationLastTick = -Infinity;
             r.animatePlayerSoul(t0); // dt=0 — ankert ohne Ereignis
             const ph0 = p.walkPhase;
-            const n = Math.round(sek * 60);
-            for (let k = 1; k <= n; k++) r.animatePlayerSoul(t0 + k / 60);
+            for (let k = 1; k <= Math.round(sek * 60); k++) r.animatePlayerSoul(t0 + k / 60);
             return { ph0, ph1: p.walkPhase };
         };
         const halbe = (lauf) => Math.floor(lauf.ph1 / Math.PI) - Math.floor(lauf.ph0 / Math.PI);
-    
+
         // ── (A) SCHRITT-TAKT: N Halbzyklen ⇒ N Ereignisse (±1), zwei Tempi ──
         frisch();
         const lauf6 = fahre(6, 2.0, 100);
@@ -376,7 +262,7 @@ async function checkBandSchrittKlang(ctx) {
         o.takt = { n6, soll6, n3, soll3 };
         o.checks.aTakt6 = soll6 >= 3 && Math.abs(n6 - soll6) <= 1;
         o.checks.aTakt3 = soll3 >= 1 && Math.abs(n3 - soll3) <= 1;
-    
+
         // ── (B) STAND/SCHLEICHEN/LUFT/SCHWIMMEN: 0 Ereignisse ──
         frisch();
         fahre(0, 1.0, 300);
@@ -396,10 +282,10 @@ async function checkBandSchrittKlang(ctx) {
         fahre(6, 1.0, 600);
         s.playerUnderwater = false;
         o.checks.bSchwimmNull = z().schritte === 0;
-    
+
         // ── (C) der Deckel der Landung (das Timbre je Stoff misst die Stoff-Linse am Klang: gate:gegenstand-stoff --tafel) ──
         o.checks.cDeckel = r._schrittKlangParams("stein", true, 1000).gain <= T.gainDeckel + 1e-12;
-    
+
         // ── (E) STIMME-AUS-WAND: Ereignis zählt, der Klang-Aufruf unterbleibt ──
         let calls = 0;
         const savedPlay = r._playSchrittOneShot;
@@ -408,15 +294,15 @@ async function checkBandSchrittKlang(ctx) {
             return true;
         };
         const sym = s.symphony;
-        const savedSym = { enabled: sym.enabled, ctx: sym.ctx, masterGain: sym.masterGain };
+        const savedSym = merk(sym, ["enabled", "ctx", "masterGain"]);
         sym.enabled = false;
         frisch();
         fahre(6, 1.0, 1200);
         o.stummSchritte = z().schritte;
         o.checks.eStummZaehlt = o.stummSchritte >= 1 && calls === 0;
         sym.enabled = true; // Stimme an (Fake-Naht — der Spy fängt VOR WebAudio)
-        if (!sym.ctx) sym.ctx = { __fake: true };
-        if (!sym.masterGain) sym.masterGain = { __fake: true };
+        sym.ctx ||= { __fake: true };
+        sym.masterGain ||= { __fake: true };
         calls = 0;
         frisch();
         fahre(6, 1.0, 1300);
@@ -424,10 +310,8 @@ async function checkBandSchrittKlang(ctx) {
         o.anCalls = calls;
         o.checks.eAnRuft = o.anSchritte >= 1 && calls === o.anSchritte;
         r._playSchrittOneShot = savedPlay; // restaurieren (Gate-Hook-Lehre)
-        sym.enabled = savedSym.enabled;
-        sym.ctx = savedSym.ctx;
-        sym.masterGain = savedSym.masterGain;
-    
+        Object.assign(sym, savedSym);
+
         // ── (S1) SELBST-TEST: Gang-Gesetz mit ω ≡ 0 ⇒ trotz Tempo + Boden 0 Schritte ──
         const savedRate = r._gaitGesetz;
         r._gaitGesetz = () => ({ omega: 0, S: 0, schritt: 0, tast: 0.5, hub: 0 });
@@ -436,20 +320,11 @@ async function checkBandSchrittKlang(ctx) {
         r._gaitGesetz = savedRate; // restaurieren (Gate-Hook-Lehre)
         o.s1Phase = laufStub.ph1 - laufStub.ph0;
         o.checks.s1LinseFeuert = o.s1Phase === 0 && z().schritte === 0;
-    
+
         // ── Bühne restaurieren ──
-        s.playerVel = saved.vel;
-        s.playerUnderwater = saved.uw;
-        p.mountedArch = saved.mounted;
-        p.walkPhase = saved.walkPhase;
-        p._gaitW = saved.gaitW;
-        p.animationLastTick = saved.lastTick;
-        s.isInAir = saved.isInAir;
-        s._fieldVy = saved.fieldVy;
-        s._schrittKlang = saved.schritt;
-        p._hitStopUntil = saved.hitStop;
+        for (const [t, w] of saved) Object.assign(t, w);
         if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
-    
+
         return o;
     });
     if (!out || out.error) return check("Schritt-Klang: die Bühne steht (human-Rig, gestubbte Velocity)", false, out ? out.error : "keine Antwort der Seite");
@@ -457,13 +332,13 @@ async function checkBandSchrittKlang(ctx) {
     const alle = (...k) => k.filter((x) => c[x] !== true);
     const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");
     const konsum = alle("keineEigeneUhr", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
-    check("Schritt-Klang: der EINE Tick trägt keine eigene Uhr, die EINE Stimme keinen zweiten AudioContext und hält still, solange die Symphonie ruht; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
+    check("Schritt-Klang: Absenz-Wachen und Stimme-aus", !konsum.length, zeig(konsum));
     const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
     check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
     const timbre = alle("cDeckel");
     check("Schritt-Klang (C): die Landung bleibt unter dem gainDeckel", !timbre.length, zeig(timbre));
     const stimme = alle("eStummZaehlt", "eAnRuft", "s1LinseFeuert");
-    check(`Schritt-Klang (E) + S1: Stimme aus zählt ohne Aufruf, Stimme an ruft EINMAL je Schritt (${out.anCalls}/${out.anSchritte}), ω ≡ 0 ⇒ 0 Schritte`, !stimme.length, zeig(stimme));
+    check(`Schritt-Klang (E) + S1: ${out.anCalls}/${out.anSchritte} Aufrufe je Schritt, ω ≡ 0 ⇒ 0`, !stimme.length, zeig(stimme));
 }
 
 module.exports = {
