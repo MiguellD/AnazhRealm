@@ -26,25 +26,7 @@ class AnazhRealm_siedlung_satz {
         const buch = this._foundry && this._foundry.recipes ? this._foundry.recipes : null;
         const rec = buch ? buch[m[1]] : null;
         const name = rec ? AnazhRealm.BAU_SATZ[rec.kind] : null;
-        if (!name) return null;
-        const wurf = leaf.shadowTwin === true;
-        // DER EINE SATZ-STOFF (K43-2): ein gezeigter Bereich zeichnet im Stoff seiner KLASSE (`_satzStoff`: Art · Seh-Klasse ·
-        // Seite · Durchsicht · was der Stoff sonst webt), seine Regler (Rauheit · Metall · Deckkraft · Glut) reisen je Ecke
-        // (`aRegler`, `aGlut`, `_bauSatzBlock`). Vorher war die Art die uuid des Studio-Stoffs: jede Glut-Stärke ein Satz.
-        const satzMat = wurf ? leaf.mat : this._satzStoff(leaf.mat);
-        const art = wurf
-            ? "bauWurf|" + leaf.mat.uuid + "|S"
-            : name + "|" + satzMat.userData.satzSchluessel + (castShadow ? "|w" : "|-");
-        const st = this.state;
-        if (!st.satzStoffe) st.satzStoffe = new Map();
-        if (!st.satzStoffe.has(art))
-            st.satzStoffe.set(
-                art,
-                wurf
-                    ? { name: "bauWurf", mat: leaf.mat, wurf: true, nurWurf: true, attr: AnazhRealm.BAU_WURF_ATTR }
-                    : { name, mat: satzMat, wurf: !!castShadow }
-            );
-        return art;
+        return name ? this._bauSatzStoffArt(name, leaf.mat, castShadow, leaf.shadowTwin === true) : null;
     }
 
     // DER SATZ-STOFF EINES STUDIO-STOFFS (K43-2): derselbe Bau des Wirts (`_foundryTreeMaterial`) ohne die Regler, die je

@@ -40,6 +40,11 @@
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
 //       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.
+//   (s) DER STADT-KÖRPER (Spike stadt-koerper, `_stadtKoerperBestellen`) — ein Markt (Saat 11, nH 20: 24 Slots) als EIN Körper:
+//       je Slot sein Gitter byte-gleich zu `huelle()` + `huelleGeoms` des reinen Kerns in Node (die Umgebung des Foundry-
+//       Fadens; der Haupt-Faden der Welt rechnet denselben Ton anders — Befund 28.10.: die Farbe von 19 der 24 Slots), je
+//       Slot eine Zelle, Dreiecke ≤ Stufe 3 des Gesetzbuchs × Slots, ≤ 2 Befehle je Stoff, das Einhängen ≤ dem Takt eines
+//       Zug-Schritts; er hängt vor dem Zensus, (f) und (n) prüfen ihn im Satz. Die Mutante (ein Slot fehlt) fällt ROT.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einer selbst zeichnenden Streu-Senke, einem Block ohne Bereich, einer
 // Fern-Deko, einer
@@ -52,6 +57,15 @@ const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pru
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
+
+// (s) Das Urteil über einen Stadt-Körper (rein): `soll`/`ist` je Slot [slot, pos, nrm, col, idx], dazu die Zahlen der Seite.
+const bytes = (a, i) => Buffer.from((i > 3 ? Uint32Array : Float32Array).from(a).buffer);
+function koerperUrteil(K) {
+    const ist = new Map(K.ist.map((c) => [c[0], c]));
+    const v = K.soll.flatMap((q) => (ist.has(q[0]) ? [1, 2, 3, 4].filter((i) => !bytes(q[i], i).equals(bytes(ist.get(q[0])[i], i))).map((i) => `STADT-KÖRPER: Slot ${q[0]} Teil ${i} nicht byte-gleich zu huelle()`) : [`STADT-KÖRPER: Slot ${q[0]} fehlt`]));
+    if (!K.soll.length || K.zellen !== K.soll.length || K.dreiecke > K.deckel || K.befehle > 2) v.push(`STADT-KÖRPER: ${K.zellen} Zellen · ${K.dreiecke}/${K.deckel} Dreiecke · ${K.befehle} Befehle`);
+    return v;
+}
 
 // Das Urteil über einen Zensus: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(z) {
@@ -371,6 +385,9 @@ function selbsttest() {
         },
     ];
     taeterFaelle(neuFaelle, urteilNeu, { fehler });
+    const kGruen = () => ({ soll: [[0, [700.25], [1], [0.5], [0]], [1, [], [], [], []]], ist: [[0, [700.25], [1], [0.5], [0]], [1, [], [], [], []]], zellen: 2, dreiecke: 1, deckel: 96, befehle: 1 });
+    const koerper = [{ name: "STADT-KÖRPER treu", z: kGruen(), muss: null }, ["ein Slot fehlt", (z) => z.ist.pop(), [/Slot 1 fehlt/]], ["eine Ecke um 1 ULP", (z) => (z.ist[0][1][0] += 2 ** -14), [/Slot 0 Teil 1/]], ["drei Befehle", (z) => (z.befehle = 3), [/3 Befehle/]]];
+    taeterFaelle(koerper, koerperUrteil, { fehler, klon: kGruen });
     selbsttestEnde(fehler);
 }
 
@@ -405,6 +422,18 @@ const { errs, check } = pruefer();
                     r._gameLoopTick(performance.now());
                 } catch {}
             });
+            // (s) DER STADT-KÖRPER des Markts am Spieler: je Zelle ihr Gitter, je Slot, was Node zum Soll braucht
+            const A = r.constructor, pm = s.playerMesh.position, y = r.getTerrainHeightAt(pm.x, pm.z);
+            const v2 = Object.assign(window.__fachwerkCore.exportSettlement({ seed: 11, nH: 20, epoche: window.__fachwerkCore.siedlungsEpoche(11) }), { version: 2, ort: { x: pm.x, z: pm.z } });
+            v2.slots = v2.slots.map((q) => Object.assign({}, q, { y }));
+            const k = await r._stadtKoerperBestellen("ort:linse", v2), B = k.bereiche[0], ks = s.chunkSaetze.get(B.art), g = ks.bloecke.get(B.key).geom, gr = g.zellen;
+            const deckel = A._studioRenderConfig.lod.budget[r._foundry.recipes[v2.slots[0].kultur].kind][3].tris * v2.slots.length;
+            res.stadt = { zellen: gr.length - 1, deckel, dreiecke: k.mass.dreiecke, befehle: 1 + ks.spec.schatten * 3, mass: k.mass, taktMs: A.AUTO_SETTLEMENT.taktMs, pruef: [], ist: [] };
+            for (let j = 0, I, v0; j + 1 < gr.length && (I = Array.from(g.index.array.subarray(gr[j], gr[j + 1]))); j++) {
+                const q = v2.slots[B.slots[j]], aus = (n) => Array.from(g.attributes[n].array.subarray((v0 = Math.min(...I)) * 3, (Math.max(...I) + 1) * 3));
+                res.stadt.pruef.push([B.slots[j], q.kultur, q.seed >>> 0, A._stempelVon(q.ov) || null, { phi: q.phi || 0, x: q.x, z: q.z }, [pm.x, y, pm.z]]);
+                res.stadt.ist.push([B.slots[j], aus("position"), aus("normal"), aus("color"), I.map((i) => i - v0)]);
+            }
             for (let i = 0; i < 60; i++) if (!r._tickPendingWaterIso(8)) break;
             // Die Nah-Streu: der Kachel-Ring um die Kamera, bis Studio-Teile ankommen und nichts mehr offen ist.
             for (let i = 0; i < 900; i++) {
@@ -1633,5 +1662,17 @@ const { errs, check } = pruefer();
         !!wa2 && wa2.haupt > 0,
         wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
+    // (s) das Soll im reinen Kern (Node: three r128, phyto-core, fachwerk-core — die Umgebung des Foundry-Fadens)
+    globalThis.THREE = require("../worlds/terrain/lib/three-r128.min.js");
+    require("../phyto-core.js");
+    require("../fachwerk-core.js");
+    const FC = globalThis.__fachwerkCore, st = out.stadt, m = st.mass;
+    st.soll = st.pruef.map(([slot, kultur, seed, ov, q, o]) => {
+        const G = FC.huelleGeoms(FC.huelle(kultur, seed, ov).teile, {}, q).putz;
+        return [slot, G.pos.map((w, i) => w + o[i % 3]), G.nrm, G.col, G.idx];
+    });
+    const sv = koerperUrteil(st).concat(m.einMs > st.taktMs ? [`Einhängen ${m.einMs} ms`] : []);
+    check(`(s) STADT-KÖRPER — ${st.soll.length} Slots byte-gleich zu huelle(), ${st.dreiecke} ≤ ${st.deckel} Dreiecke, ${st.befehle} Befehl je Stoff, Faden ${Math.round(m.faden.huelle)} ms, Einhängen ${m.einMs.toFixed(2)} ≤ ${st.taktMs} ms`, !sv.length, sv.join(" · "));
+    check("(s) Mutante: ein Slot fehlt — die Byte-Probe fällt ROT beim Namen", /fehlt/.test(koerperUrteil(Object.assign({}, st, { ist: st.ist.slice(1) }))[0]), "");
     wandEnde(errs, "der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.");
 })();

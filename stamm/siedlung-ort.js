@@ -2515,6 +2515,117 @@ class AnazhRealm_siedlung_ort {
         M.set(key, v);
         return v.fertig;
     }
+    // DER STADT-KÖRPER (Spike stadt-koerper, Rang 3 „Luft holen"): vor `AUTO_SETTLEMENT.nearM` existiert kein Haus einer Stadt —
+    // vom Gipfel-Blick 0 Häuser. Der Plan v2 eines städtischen Orts (`staedtisch`), sobald seine Wahl steht (`_ortMitTrasse`;
+    // der Ort, der wiederkehrt: `_tickAutoSettlement`), bestellt im Foundry-Faden die Hüllen ALLER Slots als EINEN Körper
+    // (Kanal `stadt-koerper`: je Slot das unveränderte Kern-Gesetz `huelle()`, die Stufe 3 in Welt-Lage, EIN Transferable);
+    // er hängt je Stoff als EIN Bereich im Bau-Satz (`_stadtKoerperEin`). Ein Vorrat-Auftrag (Rang ∞, nah zuerst geht vor); bis er hängt, steht die Welt nicht (die Foundry
+    // zählt ihn). Nicht in diesem Spike: Wach/Schlaf (der Körper bleibt, wo Häuser stehen — er liegt in ihnen,
+    // `KOERPER_INNEN`) und der Tod des Haus-Ziegels (`_archFoundryZiegel`). Rückgabe: die Zusage des Körpers oder null.
+    _stadtKoerperBestellen(ort, v2) {
+        if (!v2 || !v2.staedtisch || !v2.ort || !Array.isArray(v2.slots) || !v2.slots.length) return null;
+        const K = this._stadtKoerper || (this._stadtKoerper = new Map());
+        if (K.has(ort)) return K.get(ort).fertig;
+        const f = this._ensureAssetFoundry();
+        if (!f || !f.ready || !f.worker || !f.recipes) return null;
+        // die Satz-Art der Studio-Art seiner Häuser (`BAU_SATZ`, das Rezept des ersten Slots; ein Plan trägt EINE Art)
+        const rec = f.recipes[v2.slots[0].kultur];
+        const name = rec ? AnazhRealm.BAU_SATZ[rec.kind] : null;
+        if (!name) return null;
+        const tb = performance.now();
+        const k = {
+            ort,
+            name,
+            slots: v2.slots.length,
+            bereiche: [],
+            fehlt: [],
+            mass: null,
+            bestellMs: 0,
+            fertig: null,
+        };
+        const msg = {
+            type: "stadt-koerper",
+            ox: v2.ort.x,
+            oz: v2.ort.z,
+            // derselbe Stempel nennt denselben Körper der Foundry (`_stempelVon`, wie das Haus des Slots)
+            slots: v2.slots.map((sl) => ({
+                kultur: sl.kultur,
+                seed: sl.seed >>> 0,
+                ov: AnazhRealm._stempelVon(sl.ov) || null,
+                x: sl.x,
+                y: sl.y,
+                z: sl.z,
+                phi: sl.phi || 0,
+            })),
+            attr: AnazhRealm.BAU_SATZ_ATTR.map((a) => [a[0], a[1]]),
+        };
+        const t0 = performance.now();
+        this._stadtKoerperFlug = (this._stadtKoerperFlug | 0) + 1; // die Welt steht ohne ihn (`_weltOffen`)
+        k.fertig = this._foundryAuftrag(
+            f,
+            "stk-",
+            msg,
+            null,
+            AnazhRealm.STADT_KOERPER.fristMs,
+            `FOUNDRY TIMEOUT: stadt-koerper(${ort}) nach ${AnazhRealm.STADT_KOERPER.fristMs / 1000} s Arbeit ohne Reply → null`
+        )
+            .then((m) => (m ? this._stadtKoerperEin(k, m, performance.now() - t0) : null))
+            .finally(() => this._stadtKoerperFlug--);
+        k.bestellMs = performance.now() - tb; // die Slot-Zeilen und — ist die Bahn frei — der Klon des Auftrags
+        K.set(ort, k);
+        return k.fertig;
+    }
+    // DAS EINHÄNGEN des Körpers `m` (die Antwort des Fadens): je Stoff der Studio-Stoff des Wirts (`_foundryTreeMaterial`, wie
+    // jedes Teil eines Studio-Körpers), seine Art im Bau-Satz (`_bauSatzStoffArt`, ohne Wurf: der Wurf-Satz trägt den
+    // Schatten), die Regler des Stoffs je Ecke (`_satzRegler`, `_satzKernFuell`) und EIN Bereich `stadt:<ort>:<rolle>` mit
+    // je Slot einer Zelle (`_chunkSatzEin`). Ein Slot ohne Hülle bricht laut. Rückgabe: der Körper `k` mit seinem Maß.
+    _stadtKoerperEin(k, m, flugMs) {
+        const t0 = performance.now();
+        if (!(m.buf instanceof ArrayBuffer) || !Array.isArray(m.stoffe))
+            throw this._stoffBruch(`der Stadt-Körper ${k.ort} kam ohne Puffer (stadt-koerper)`);
+        k.fehlt = m.fehlt || [];
+        if (k.fehlt.length)
+            this._bruchMelden(
+                `STADT-KÖRPER: ${m.fehlt.length} Slots von ${k.ort} ohne Hülle (Slot ${m.fehlt.join(" · ")})`
+            );
+        const span = this._voxelChunkConfig().span;
+        const chunk = Math.floor(m.ox / span) + "," + Math.floor(m.oz / span);
+        let dreiecke = 0,
+            stoffMs = 0,
+            satzMs = 0;
+        for (const s of m.stoffe) {
+            const ts = performance.now();
+            const mat = this._foundryTreeMaterial(s.kind, s.mat);
+            const art = this._bauSatzStoffArt(k.name, mat, false, false);
+            stoffMs += performance.now() - ts;
+            const attributes = {};
+            for (const [nm, is] of AnazhRealm.BAU_SATZ_ATTR)
+                attributes[nm] = { array: new Float32Array(m.buf, s.attr[nm], s.n * is), itemSize: is, count: s.n };
+            const R = AnazhRealm._satzRegler(mat);
+            AnazhRealm._satzKernFuell(attributes.aRegler.array, s.n, 3, R.regler);
+            AnazhRealm._satzKernFuell(attributes.aGlut.array, s.n, 3, R.glut);
+            const geom = {
+                attributes,
+                index: { array: new Uint32Array(m.buf, s.index, s.m) },
+                zellen: new Uint32Array(m.buf, s.grenzen, s.k + 1),
+            };
+            const key = "stadt:" + k.ort + ":" + s.rolle;
+            const te = performance.now();
+            this._chunkSatzEin(art, key, geom, chunk);
+            satzMs += performance.now() - te;
+            k.bereiche.push({ art, key, rolle: s.rolle, slots: s.slots, n: s.n, m: s.m });
+            dreiecke += s.m / 3;
+        }
+        // das Maß: das Einhängen ganz, darin der Stoff (Bau des Satz-Stoffs beim ersten Mal) und der Satz (`_chunkSatzEin`)
+        const einMs = performance.now() - t0;
+        k.mass = { einMs, stoffMs, satzMs, flugMs, faden: m.ms, dreiecke, bytes: m.buf.byteLength };
+        this.log(
+            `STADT-KÖRPER ${k.ort}: ${k.slots} Slots, ${dreiecke} Dreiecke in ${k.bereiche.length} Bereich(en), ` +
+                `Faden ${Math.round(m.ms.huelle)} ms, Einhängen ${k.mass.einMs.toFixed(2)} ms`,
+            "INFO"
+        );
+        return k;
+    }
     // DIE TRASSE AM ORT DES PLANS (siedlung.K3): der Export liest das Höhen-Raster um `ort` (`_foundryRequestSettlement`), die
     // Ort-Wahl (`_ortWahl`, ohne Erdbau) rückt den Plan bis 128 m an den nächsten Ort, der jedes Haus trägt — dort folgten seine
     // Gassen dem Grund des Wunschs (Node, vier Saaten: Gefälle p95 am Ort des Rasters 5,7–9,3 %, 16 m daneben bis 23,7 %).
@@ -2538,8 +2649,12 @@ class AnazhRealm_siedlung_ort {
             const wm = this.state.worldMeta;
             if (wm && wm.erdbau && wm.erdbau[AnazhRealm._ortSchluessel(plan, ort)] && this._ortPlaene)
                 this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort));
-            await this._ortWahl(plan, o, false, frei);
-            if (o.x === ort.x && o.z === ort.z) return { plan, ort };
+            const v2 = await this._ortWahl(plan, o, false, frei);
+            // die Wahl steht: der Plan v2 dieses Orts wird Welt — ist er städtisch, sein Körper (`_stadtKoerperBestellen`)
+            if (o.x === ort.x && o.z === ort.z) {
+                this._stadtKoerperBestellen(AnazhRealm._ortSchluessel(plan, ort), v2);
+                return { plan, ort };
+            }
             mass.versatzM.push(+Math.hypot(o.x - ort.x, o.z - ort.z).toFixed(1));
             this._ortPlaene.delete(AnazhRealm._ortSchluessel(plan, ort)); // ihr Plan v2 wird nie Welt
             ort = o;
@@ -2826,6 +2941,7 @@ class AnazhRealm_siedlung_ort {
                         Object.keys(E).find((e) => e.startsWith(`ort:${c.seed >>> 0}:`)) ||
                         AnazhRealm._ortSchluessel(plan2, anker);
                     const so = { autonomous: !!c.autonomous };
+                    this._stadtKoerperBestellen(AnazhRealm._ortSchluessel(plan2, { x: c.x, z: c.z }), v2); // der Ort kehrt wieder
                     if (this._autoSettlementQueue || this._autoSettlementPendingKey) return;
                     const w = this._dorfWasserUrteil(v2.erdbau);
                     const gang = this._dorfErwachen(v2, anker, ort, k, w, so);
@@ -3051,6 +3167,9 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     // Über dem Frame-Budget trägt jeder drosselTakte-te Takt einen Slot (das Tempo fällt, die Siedlung entsteht).
     drosselTakte: 8,
 });
+// DER STADT-KÖRPER (`_stadtKoerperBestellen`): die Frist seines Auftrags (Arbeits-Uhr, `_foundryFrist`) — je Slot bakt `huelle()`
+// sein Ton-Soll (Node, Metropole 2,−14, 377 Slots: 138 s, ein Turm bis 3,7 s); die 45 s eines Körpers reichen ihm nie.
+AnazhRealm.STADT_KOERPER = Object.freeze({ fristMs: 600000 });
 // DER EINE SIEDLUNGS-GESETZ-LESER (Zensus 17.07.): das Memo setzt der Buch-Ingest (`_foundryIngestSiedlung`, validiert
 // ganz-oder-gar-nicht); kaltes Buch → null: ohne Gesetz entsteht kein Dorf (fail-closed, die Leser prüfen), nie ein
 // Ersatz-Gesetz.

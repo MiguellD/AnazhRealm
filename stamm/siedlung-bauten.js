@@ -1468,6 +1468,29 @@ class AnazhRealm_siedlung_bauten {
         throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
 
+    // DIE ART EINES STUDIO-STOFFS IM BAU-SATZ (der Schlüssel seines Satzes, sein Eintrag in `satzStoffe`): `name` die Satz-Art
+    // der Studio-Art (`BAU_SATZ`), `wurf` der Schatten-Zwilling (S3). Leser: die Gruppe (`_bauSatzArt`) und der Stadt-Körper
+    // (`_stadtKoerperEin`) — derselbe Stoff liegt im selben Satz.
+    // DER EINE SATZ-STOFF (K43-2): ein gezeigter Bereich zeichnet im Stoff seiner KLASSE (`_satzStoff`: Art · Seh-Klasse ·
+    // Seite · Durchsicht · was der Stoff sonst webt), seine Regler (Rauheit · Metall · Deckkraft · Glut) reisen je Ecke
+    // (`aRegler`, `aGlut`, `_bauSatzBlock`). Vorher war die Art die uuid des Studio-Stoffs: jede Glut-Stärke ein Satz.
+    _bauSatzStoffArt(name, mat, castShadow, wurf) {
+        const satzMat = wurf ? mat : this._satzStoff(mat);
+        const art = wurf
+            ? "bauWurf|" + mat.uuid + "|S"
+            : name + "|" + satzMat.userData.satzSchluessel + (castShadow ? "|w" : "|-");
+        const st = this.state;
+        if (!st.satzStoffe) st.satzStoffe = new Map();
+        if (!st.satzStoffe.has(art))
+            st.satzStoffe.set(
+                art,
+                wurf
+                    ? { name: "bauWurf", mat, wurf: true, nurWurf: true, attr: AnazhRealm.BAU_WURF_ATTR }
+                    : { name, mat: satzMat, wurf: !!castShadow }
+            );
+        return art;
+    }
+
     // Der Satz einer Art (lazy): EIN Szenen-Kind, frustumCulled=false (die Wahl je Pass trifft der Abschnitt).
     _chunkSatz(art) {
         const st = this.state;

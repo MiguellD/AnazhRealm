@@ -444,12 +444,13 @@ function foundryModus() {
 }
 // DUAL-TRANSPORT (der P0/P2-Weg zu foundry-core): DIESELBE Brücke antwortet im iframe
 // (window.parent.postMessage) UND im Worker (self.postMessage) — EIN Protokoll, kein zweiter Pfad.
+// Das dritte Argument (optional) ist die Transfer-Liste (der Stadt-Körper reicht seinen EINEN Puffer zero-copy).
 const foundryPost =
         typeof window !== "undefined"
-            ? (p) => {
-                  if (window.parent && window.parent !== window) window.parent.postMessage(p, "*");
+            ? (p, _ziel, transfer) => {
+                  if (window.parent && window.parent !== window) window.parent.postMessage(p, "*", transfer);
               }
-            : (p) => self.postMessage(p);
+            : (p, _ziel, transfer) => self.postMessage(p, transfer);
 /* ==========================================================================
    DIE ASSET-KANÄLE (W12-Protokoll, Foundry-Teil) — `foundryKanal(msg)` beantwortet jeden Kanal der Tabelle und
    meldet true; alles andere (enter · dsl) gehört dem Labor-Portal (phytogenesis.js).
@@ -484,6 +485,109 @@ const foundryKanal = (() => {
             }
         }
         __post({ type: "grund", world: "terrain", reqId: msg.reqId, grund }, "*");
+    }
+    // DER STADT-KÖRPER (Spike stadt-koerper): die Stadt als EIN Körper aus ihrem Plan — je Slot das unveränderte Kern-Gesetz
+    // `huelle(kultur, seed, ov)` und sein Gitter (`huelleGeoms`, die Stufe 3: gedreht um phi, an x/z des Plans, gerastert),
+    // GENERISCH beim ERSTEN Manifest-Kern mit beiden Formeln. Je Rolle des Gitters (die Stufe 3 trägt EINE: ihr Stoff) ein
+    // Abschnitt in EINEM ArrayBuffer, Welt-Lage = Gitter + (ox, Slot-y, oz), die Attribute in der Reihe von `msg.attr` (der
+    // Bau-Satz des Wirts: position · normal · color aus dem Gitter, jedes andere 0 — die Regler des Stoffs legt der Wirt),
+    // dahinter der Index (Uint32, je Slot um seinen Ecken-Anfang verschoben) und die Grenzen der Slots im Index (je Slot eine
+    // Zelle). Zurück geht EIN Transferable. Ein Slot je Rate (`setTimeout`): ein Turm bakt für sein Ton-Soll seine Stufe 0
+    // (`sollTon`, bis 3,7 s), die Aufträge der Bahn laufen dazwischen. Ein Slot ohne Hülle fällt laut in `fehlt`.
+    function __replyStadtKoerper(msg) {
+        let kern = null;
+        for (const zk of __zweitKerne())
+            if (typeof zk.kern.huelle === "function" && typeof zk.kern.huelleGeoms === "function") {
+                kern = zk.kern;
+                break;
+            }
+        const slots = Array.isArray(msg.slots) ? msg.slots : [];
+        const attr = Array.isArray(msg.attr) ? msg.attr : [];
+        const rollen = new Map(); // Rolle → [{ G, y, i }]
+        const fehlt = [];
+        const ms = { huelle: 0, packen: 0, maxSlot: 0 };
+        let i = 0;
+        const rate = () => {
+            if (i < slots.length) {
+                const sl = slots[i];
+                const t0 = performance.now();
+                const h = kern ? kern.huelle(sl.kultur, sl.seed, sl.ov || null) : null;
+                if (!h || !Array.isArray(h.teile)) fehlt.push(i);
+                else {
+                    const geoms = kern.huelleGeoms(h.teile, {}, { phi: sl.phi || 0, x: sl.x, z: sl.z });
+                    for (const r in geoms) {
+                        if (!geoms[r].vo) continue;
+                        if (!rollen.has(r)) rollen.set(r, []);
+                        rollen.get(r).push({ G: geoms[r], y: sl.y, i });
+                    }
+                }
+                const dt = performance.now() - t0;
+                ms.huelle += dt;
+                ms.maxSlot = Math.max(ms.maxSlot, dt);
+                i++;
+                setTimeout(rate, 0);
+                return;
+            }
+            const t1 = performance.now();
+            const stoffe = [];
+            let bytes = 0;
+            for (const [r, L] of rollen) {
+                let n = 0,
+                    m = 0;
+                for (const s of L) (n += s.G.vo), (m += s.G.idx.length);
+                const st = { rolle: r, n, m, k: L.length, slots: L.map((s) => s.i), attr: {} };
+                for (const [name, is] of attr) (st.attr[name] = bytes), (bytes += n * is * 4);
+                st.index = bytes;
+                bytes += m * 4;
+                st.grenzen = bytes;
+                bytes += (L.length + 1) * 4;
+                stoffe.push([st, L]);
+            }
+            const buf = new ArrayBuffer(bytes);
+            for (const [st, L] of stoffe) {
+                const mat = kern._mmFor ? kern._mmFor(st.rolle) : null;
+                st.kind = __assetMaterialKind(mat);
+                st.mat = mat ? __assetStoff(mat, true) : null;
+                const A = {};
+                for (const [name, is] of attr) A[name] = new Float32Array(buf, st.attr[name], st.n * is);
+                const idx = new Uint32Array(buf, st.index, st.m);
+                const gr = new Uint32Array(buf, st.grenzen, st.k + 1);
+                let v0 = 0,
+                    i0 = 0;
+                L.forEach((s, j) => {
+                    const G = s.G;
+                    if (A.position)
+                        for (let k = 0; k < G.vo; k++) {
+                            A.position[(v0 + k) * 3] = G.pos[k * 3] + msg.ox;
+                            A.position[(v0 + k) * 3 + 1] = G.pos[k * 3 + 1] + s.y;
+                            A.position[(v0 + k) * 3 + 2] = G.pos[k * 3 + 2] + msg.oz;
+                        }
+                    if (A.normal) A.normal.set(G.nrm, v0 * 3);
+                    if (A.color) A.color.set(G.col, v0 * 3);
+                    for (let k = 0; k < G.idx.length; k++) idx[i0 + k] = G.idx[k] + v0;
+                    v0 += G.vo;
+                    i0 += G.idx.length;
+                    gr[j + 1] = i0;
+                });
+            }
+            ms.packen = performance.now() - t1;
+            __post(
+                {
+                    type: "stadt-koerper",
+                    world: "terrain",
+                    reqId: msg.reqId,
+                    ox: msg.ox,
+                    oz: msg.oz,
+                    buf,
+                    stoffe: stoffe.map((x) => x[0]),
+                    fehlt,
+                    ms,
+                },
+                "*",
+                [buf]
+            );
+        };
+        rate();
     }
     // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
     // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
@@ -781,6 +885,62 @@ const foundryKanal = (() => {
         if (mat.userData && mat.userData.__stoff === "schatten") return "schatten";
         return "unknown";
     }
+    // DIE MATERIAL-REGLER FLIESSEN MIT (einspeisung der regler): die echten MeshStandard-Parameter
+    // dieses Materials als reine Daten -> AnazhRealm baut EXAKT dasselbe Material. Fels matt,
+    // Kristall glaenzend+facettiert (flatShading), Gras env-gedaempft — alles OHNE hartkodiertes
+    // per-kind-Raten in AnazhRealm. Editiert der Schoepfer eine Roughness/Metalness hier, folgt es.
+    // Gelesen von `__extractAssetMesh` (je Mesh) und vom Stadt-Körper (`__replyStadtKoerper`: der Stoff seiner Rolle).
+    function __assetStoff(mat, zweitKern) {
+        const s = {
+            roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
+            metalness: typeof mat.metalness === "number" ? mat.metalness : 0,
+            flatShading: !!mat.flatShading,
+            envMapIntensity: typeof mat.envMapIntensity === "number" ? mat.envMapIntensity : 1,
+            side: typeof mat.side === "number" ? mat.side : 0, // 0 Front · 1 Back · 2 Double
+            alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
+            hasNormalMap: !!mat.normalMap,
+        };
+        // W7b — die MATERIAL-FARBE reist additiv mit (must-ignore fuer Alt-Leser), aber NUR
+        // fuer ZWEIT-KERN-Meshes (der Dispatch-Flag, NICHT der Material-kind: Fels/Kristall
+        // sind ebenfalls kind "unknown" und leben byte-exakt in den v1-Asset-Goldens —
+        // gate:asset-contract, 52 sha256 ueber den Reply, gemessen). Fahrzeug-Materialien
+        // (paint/glass/clay) sind uniform ohne Vertex-Colors; der Empfaenger
+        // (_foundryBuildGroup) fuellt daraus das color-Attribut. Die Komponenten sind LINEAR:
+        // das Gesetzbuch rechnet sein Paletten-Hex (sRGB-Absicht) selbst um (das FARB-GESETZ,
+        // W5: vehicle-core/schmiede-core `stoffFarbe`, fachwerk `_lin`), die Bruecke reicht sie roh.
+        if (zweitKern && mat.color && typeof mat.color.r === "number")
+            s.color = [mat.color.r, mat.color.g, mat.color.b];
+        // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;
+        // Pflanzen/Fahrzeuge tragen schwarz → Feld fehlt → Replies byte-gleich).
+        if (zweitKern && mat.userData && mat.userData.__webe) s.webe = mat.userData.__webe;
+        // DIE SEH-KLASSE reist mit (Integration W8, must-ignore): was der Stoff dem AUGE ist (auge · glas · metall ·
+        // haar · haut · glut · stoff), gestempelt vom Gesetzbuch (material.userData.__seh) — das Budget-Gesetz faltet
+        // nur innerhalb EINER. Pflanzen tragen das Feld nie (ihre Replies bleiben byte-alt, gate:asset-contract).
+        if (zweitKern && mat.userData && typeof mat.userData.__seh === "string") s.seh = mat.userData.__seh;
+        // DAS LEUCHT-GESETZ reist mit (Architektur-Welle 05.10., must-ignore): ein Stoff, der in seiner Vertex-Farbe
+        // leuchtet (fachwerk `feuer`: Glut, Flamme, Herdfeuer), trägt die Stärke — die Welt webt emissiveNode = Farbe ×
+        // leucht. Stoffe ohne das Feld (Pflanzen, jede andere Glut) bleiben byte-alt.
+        if (zweitKern && mat.userData && typeof mat.userData.__leucht === "number") s.leucht = mat.userData.__leucht;
+        // DAS LEUCHTQUELLEN-GESETZ reist mit (K11, must-ignore): ein Stoff, der nach einem Zeitplan glüht (fachwerk `glas`:
+        // das wache Fenster), trägt den Namen seines Emitter-Datums (LICHT_GESETZ) — die Welt webt ihm die Glut der Tageszeit.
+        if (zweitKern && mat.userData && typeof mat.userData.__licht === "string") s.licht = mat.userData.__licht;
+        if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
+            s.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
+            s.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
+        }
+        // DER KLARLACK UND DIE DURCHSICHT REISEN MIT (W5 Gegenstände, additiv, must-ignore): ein Zweit-Kern-Stoff
+        // mit Klarlack (Fahrzeug-Lack, Klingen-Stahl) oder Durchsicht (Scheibe, Fenster, Glimm-Scheibe) trägt sie als
+        // Daten — der Wirt baut dasselbe Material (phyto-core `budgetRegler`: cc · ccr · op). Ohne sie war der Lack
+        // in der Welt ein Metall ohne Lackschicht (Tiefschwarz spiegelte nichts) und jede Scheibe eine Wand.
+        // Pflanzen tragen die Felder nie (ihre Replies bleiben byte-alt).
+        if (zweitKern && typeof mat.clearcoat === "number" && mat.clearcoat > 0) {
+            s.clearcoat = mat.clearcoat;
+            s.clearcoatRoughness = typeof mat.clearcoatRoughness === "number" ? mat.clearcoatRoughness : 0;
+        }
+        if (zweitKern && mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1)
+            s.opacity = mat.opacity;
+        return s;
+    }
     function __extractAssetMesh(mesh, zweitKern, basisInv) {
         const geo = mesh.geometry;
         if (!geo || !geo.attributes || !geo.attributes.position) return null;
@@ -817,61 +977,8 @@ const foundryKanal = (() => {
                 break;
             }
         }
-        // DIE MATERIAL-REGLER FLIESSEN MIT (einspeisung der regler): die echten MeshStandard-Parameter
-        // dieses Materials als reine Daten -> AnazhRealm baut EXAKT dasselbe Material. Fels matt,
-        // Kristall glaenzend+facettiert (flatShading), Gras env-gedaempft — alles OHNE hartkodiertes
-        // per-kind-Raten in AnazhRealm. Editiert der Schoepfer eine Roughness/Metalness hier, folgt es.
         const mat = mesh.material;
-        if (mat) {
-            out.mat = {
-                roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
-                metalness: typeof mat.metalness === "number" ? mat.metalness : 0,
-                flatShading: !!mat.flatShading,
-                envMapIntensity: typeof mat.envMapIntensity === "number" ? mat.envMapIntensity : 1,
-                side: typeof mat.side === "number" ? mat.side : 0, // 0 Front · 1 Back · 2 Double
-                alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
-                hasNormalMap: !!mat.normalMap,
-            };
-            // W7b — die MATERIAL-FARBE reist additiv mit (must-ignore fuer Alt-Leser), aber NUR
-            // fuer ZWEIT-KERN-Meshes (der Dispatch-Flag, NICHT der Material-kind: Fels/Kristall
-            // sind ebenfalls kind "unknown" und leben byte-exakt in den v1-Asset-Goldens —
-            // gate:asset-contract, 52 sha256 ueber den Reply, gemessen). Fahrzeug-Materialien
-            // (paint/glass/clay) sind uniform ohne Vertex-Colors; der Empfaenger
-            // (_foundryBuildGroup) fuellt daraus das color-Attribut. Die Komponenten sind LINEAR:
-            // das Gesetzbuch rechnet sein Paletten-Hex (sRGB-Absicht) selbst um (das FARB-GESETZ,
-            // W5: vehicle-core/schmiede-core `stoffFarbe`, fachwerk `_lin`), die Bruecke reicht sie roh.
-            if (zweitKern && mat.color && typeof mat.color.r === "number")
-                out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
-            // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;
-            // Pflanzen/Fahrzeuge tragen schwarz → Feld fehlt → Replies byte-gleich).
-            if (zweitKern && mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
-            // DIE SEH-KLASSE reist mit (Integration W8, must-ignore): was der Stoff dem AUGE ist (auge · glas · metall ·
-            // haar · haut · glut · stoff), gestempelt vom Gesetzbuch (material.userData.__seh) — das Budget-Gesetz faltet
-            // nur innerhalb EINER. Pflanzen tragen das Feld nie (ihre Replies bleiben byte-alt, gate:asset-contract).
-            if (zweitKern && mat.userData && typeof mat.userData.__seh === "string") out.mat.seh = mat.userData.__seh;
-            // DAS LEUCHT-GESETZ reist mit (Architektur-Welle 05.10., must-ignore): ein Stoff, der in seiner Vertex-Farbe
-            // leuchtet (fachwerk `feuer`: Glut, Flamme, Herdfeuer), trägt die Stärke — die Welt webt emissiveNode = Farbe ×
-            // leucht. Stoffe ohne das Feld (Pflanzen, jede andere Glut) bleiben byte-alt.
-            if (zweitKern && mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
-            // DAS LEUCHTQUELLEN-GESETZ reist mit (K11, must-ignore): ein Stoff, der nach einem Zeitplan glüht (fachwerk `glas`:
-            // das wache Fenster), trägt den Namen seines Emitter-Datums (LICHT_GESETZ) — die Welt webt ihm die Glut der Tageszeit.
-            if (zweitKern && mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht;
-            if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
-                out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
-                out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
-            }
-            // DER KLARLACK UND DIE DURCHSICHT REISEN MIT (W5 Gegenstände, additiv, must-ignore): ein Zweit-Kern-Stoff
-            // mit Klarlack (Fahrzeug-Lack, Klingen-Stahl) oder Durchsicht (Scheibe, Fenster, Glimm-Scheibe) trägt sie als
-            // Daten — der Wirt baut dasselbe Material (phyto-core `budgetRegler`: cc · ccr · op). Ohne sie war der Lack
-            // in der Welt ein Metall ohne Lackschicht (Tiefschwarz spiegelte nichts) und jede Scheibe eine Wand.
-            // Pflanzen tragen die Felder nie (ihre Replies bleiben byte-alt).
-            if (zweitKern && typeof mat.clearcoat === "number" && mat.clearcoat > 0) {
-                out.mat.clearcoat = mat.clearcoat;
-                out.mat.clearcoatRoughness = typeof mat.clearcoatRoughness === "number" ? mat.clearcoatRoughness : 0;
-            }
-            if (zweitKern && mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1)
-                out.mat.opacity = mat.opacity;
-        }
+        if (mat) out.mat = __assetStoff(mat, zweitKern);
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
         // aWind/aCenter/aType und was sonst am Mesh haengt) — engine-neutral. ELEMENT-WEISE
@@ -1172,6 +1279,8 @@ const foundryKanal = (() => {
         "export-settlement": __replySettlement,
         // DER GRUND-PLAN-KANAL (S4): der Grund eines gesetzten Hauses aus seinem Plan, vor seinem Bau (`_hausGrundSetzen`)
         "grund-plan": __replyGrundPlan,
+        // DER STADT-KÖRPER (Spike stadt-koerper): die Hüllen aller Slots eines Plans als EIN Körper, EIN Transferable
+        "stadt-koerper": __replyStadtKoerper,
     };
     return (msg) => {
         if (!msg || typeof msg !== "object" || !Object.prototype.hasOwnProperty.call(KANAL, msg.type)) return false;

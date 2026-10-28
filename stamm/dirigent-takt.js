@@ -432,6 +432,11 @@ class AnazhRealm_dirigent_takt {
               (f.buch ? 1 : 0)
             : 0;
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
+        // DER STADT-KÖRPER (`_stadtKoerperBestellen`) ist Fernform im Hintergrund: sein Auftrag (je Slot `huelle()`, eine Stadt
+        // nH 300 rund 90 s Faden) hält die Welt nicht — sie steht ohne ihn, er hängt, wenn er kommt. Gezählt hielt er sie
+        // (gate:settlement C-K5b: 600 Gänge Foundry offen 6 — die Großstadt des Vorlaufs bakte noch); wer ihn braucht, wartet
+        // auf seine Zusage (`_stadtKoerper`).
+        o.foundry -= this._stadtKoerperFlug | 0;
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
         // DER STAU IM FADEN (`_stauFelder`): sein Auftrag baut, bis die Felder ankamen (`_stauAn`) — bis ci-werk-wasser stand die

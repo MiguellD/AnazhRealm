@@ -133,13 +133,14 @@ class AnazhRealm_studio_bruecke {
                     f.nachAtlas.push(() => p(meshes));
                 else p(meshes);
             }
-        } else if (m.type === "settlement" || m.type === "grund") {
+        } else if (m.type === "settlement" || m.type === "grund" || m.type === "stadt-koerper") {
             // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung (fachwerk exportSettlement, generisch
-            // über die Zweit-Kern-Schleife der Brücke); der Grund-Plan-Kanal (S4): der Grund eines gesetzten Hauses.
+            // über die Zweit-Kern-Schleife der Brücke); der Grund-Plan-Kanal (S4): der Grund eines gesetzten Hauses; der
+            // Stadt-Körper (`_stadtKoerperBestellen`): die ganze Antwort, ihr Puffer kam per Transfer.
             const ps = f.pending.get(m.reqId);
             if (ps) {
                 f.pending.delete(m.reqId);
-                ps((m.type === "grund" ? m.grund : m.plan) || null);
+                ps((m.type === "grund" ? m.grund : m.type === "settlement" ? m.plan : m) || null);
             }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
