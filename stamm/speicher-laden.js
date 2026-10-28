@@ -997,8 +997,10 @@ class AnazhRealm_speicher_laden {
         this._renderWorkshopDOM();
         this._updateBuildModeHud();
         this._weltWechselSperre = false;
+        // das Start-Dorf der neuen Welt wartet am Buch wie beim Boot (init, B5): das Buch steht schon, sein Wecker läuft im selben
+        // Augenblick der Ankunft wie dort (nach dem Stand, vor dem Gelände)
+        this._startDorfAmBuch();
         await this._weltAnkunft();
-        this._startDorfAmBuch(); // das Start-Dorf der neuen Welt (init: der erste Wartende am Buch, B5)
         this._weltAnschluss(verbunden);
         this._weltTausch = false;
     }
