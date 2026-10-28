@@ -194,6 +194,7 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
 const evalRuf = (code) => rufe("/eval", { code });
+const ergebnis = (a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
 const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stringify(t, null, 1)), process.exit(gruen ? 0 : 1));
 // `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
@@ -274,8 +275,9 @@ function lauf(k) {
         // DIE SICHTUNG: ein Tier (`_tierBaum`, die Klasse `tier:` der Teilung) deckt ≥ 200 px der Klassen-Maske am Maß 1280×720 —
         // zwei Schüsse des Ausgabe-Pfads unter der EINEN Uhr, mit und ohne Tiere (`toggleCreatures`, das Wort des Spiels: Leib,
         // Feld und Satz), geteilt von `__klassenTeilung`; ein Pixel gehört dem nächsten Tier, dessen Körper-Kugel
-        // (`_kreaturAusserBlick`) ihn deckt. Geschossen wird höchstens alle 2 Spiel-s und nur, wenn die Kugel eines ungesehenen
-        // Tiers im Blick 200 px decken KANN. `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
+        // (`_kreaturAusserBlick`) ihn deckt. Geschossen wird höchstens alle 2 Spiel-s und nur, wenn ein ungesehenes Tier im Blick
+        // 200 px decken KANN: seine Gestalt passt in 2 · Reichweite × Höhe (`_kreaturLeib`; die Kugel R = Reichweite + Höhe/2, ihre
+        // Mitte Höhe/2 über dem Fuß). `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
         const kreisGang = async () => {
             const T = window.THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
             const [W, H] = [db.x, db.y].map(Math.round), soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
@@ -296,8 +298,8 @@ function lauf(k) {
                         if (!alt.has(c)) alt.add(c), (kreis.imBlick += blick ? 1 : 0);
                         if (!blick || kreis.gesehen.has(c) || s < naechst) continue;
                         const d = v.set(c.position.x, c.position.y + u._ruheKugelH, c.position.z).distanceTo(cam.position);
-                        const rp = (u._ruheKugelR * H) / (2 * d * Math.tan((cam.fov * Math.PI) / 360));
-                        if (Math.PI * rp * rp >= soll) v.project(cam), kand.push({ c, d, rp, x: ((v.x + 1) * W) / 2, y: ((1 - v.y) * H) / 2, px: 0 });
+                        const f = H / (2 * d * Math.tan((cam.fov * Math.PI) / 360)), rp = u._ruheKugelR * f;
+                        if (4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll) v.project(cam), kand.push({ c, d, rp, x: ((v.x + 1) * W) / 2, y: ((1 - v.y) * H) / 2, px: 0 });
                     }
                     if (!kand.length) continue;
                     naechst = s + 2;
@@ -3202,7 +3204,7 @@ hauptLauf(async () => {
             for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
                 await rufe("/umstellen", { ort, sicht: "ego" });
                 const a = await kurve(argv.includes("--kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
-                const m = (welt[ort] = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" });
+                const m = (welt[ort] = ergebnis(a));
                 for (const z of m.zeilen || []) {
                     if (z.png) pngAb(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), z.png);
                     delete z.png;
@@ -3262,7 +3264,7 @@ hauptLauf(async () => {
                     await rufe("/umstellen", { x: s[0], z: s[2] });
                 }
                 const a = await lauf({ ort, png: !!opt("--bilder") });
-                welt[ort] = Object.assign(a.ergebnis || { fehler: a.fehler || "kein Ergebnis" }, dach && { dachBauten: dach });
+                welt[ort] = Object.assign(ergebnis(a), dach && { dachBauten: dach });
                 for (const [i, png] of (welt[ort].png || []).entries())
                     pngAb(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass"][i]}.png`), png);
                 delete welt[ort].png;
@@ -3285,7 +3287,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const luft = async (o) =>
-            ((a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" })(await evalRuf(`const kantenLinie = ${LL.kantenLinie}; return await (${LL.luftTiefe})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}; return await (${LL.luftTiefe})(${JSON.stringify(o)});`));
         let m;
         try {
             await rufe("/umstellen", { ort: opt("--ort", "genesis"), sicht: "ego" });
