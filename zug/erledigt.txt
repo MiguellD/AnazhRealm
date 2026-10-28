@@ -56,3 +56,4 @@ z56-abab nicht-langsamer abab 9e92be45 gegen a03b7b06: w-ego 4+4 nicht-langsamer
 takt15a-gtx gemessen punkte ea07267e gtx: 9 grün / 14 rot
 takt15b-gtx gemessen punkte ea07267e gtx: 20 grün / 27 rot
 takt16a-gtx gemessen punkte 4abae42d gtx: 21 grün / 11 rot
+takt17c-gtx gemessen punkte e18195be gtx: 13 grün / 8 rot
