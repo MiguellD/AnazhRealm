@@ -1401,6 +1401,47 @@ const stationen = [
         pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html"],
         quelle: "2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
     },
+    // ───────── fahrzeug.K5 — Rückmeldung: der Körper fühlt die Fahrt (fahr-rueckmeldung) ─────────
+    // (1) gate:fahr-leben --rueckmeldung (Rezept linse, `[linse-gpu]`): der GT fährt Glatt (auf dem Weg der Strecke, Vollgas), Drift
+    // (12 m daneben auf der Wiese: Vollgas, dann Handbremse und volle Lenkung) und Hang (bergauf); je Kanal das Paar an seinem
+    // Ausgang und die Mutante (Kopplung aus) ROT — RM2 die Federung im gezeichneten Bild (die Instanz-Matrix eines Aufbau-Blatts
+    // gegen den Rahmen der Räder, je Ecke der Hülle): Drift-Wank ≥ 3 mm und ≥ 1,5× Glatt, die Antwort auf den Boden-Stoß
+    // (vehicle-core `bodenStoss` ≥ 10 m/s²) ≥ 5 mm auf Glatt und am Hang; RM3 das Rumble an einem Pad mit Stub-vibrationActuator:
+    // Drift stark ≥ 0,5, Glatt ≤ 0,1, das schwache Summen im Bild des Stoßes ≥ 0,4; RM1 die Stimme der Fahrt im Sattel, still
+    // danach. (2) Der Motor-Klang am Klang-Abgriff: gate:klang-zensus (F) — der Grundton je Drehzahl am Master-Bus
+    // (OfflineAudioContext), Hz je 1000 Upm fest ± 2 % über ≥ 4 Stufen (Mutante S13 „motor stumm“). An main ea07267e ROT (RM2
+    // 0 Stöße: der Aufbau folgte jeder Unebenheit starr, die Antwort der Mutante 1,0–2,7 mm; RM3 kein Summen); am Zweig headless
+    // Antwort Glatt/Hang 7,2/7,7 mm, Summen 0,54–0,60, Drift-Wank 8,6 gegen 0,5 mm, Rumble Drift 1,0 gegen Glatt 0,004;
+    // swiftshader dasselbe Urteil (Antwort 8,0/9,9 mm). Erwartet an Radeon und GTX: RM1–RM3 ✅ und die Zeile (F) ohne „motor stumm“.
+    {
+        kriterium: "fahrzeug.K5", staffel: 1, geraet: ["radeon", "gtx"],
+        befehl: ["bash", "-c", [
+            'echo "@@PUNKTE@@ RM"; timeout 900 node scripts/diag-fahr-leben.cjs --rueckmeldung; echo "@@PUNKTE@@ EXIT $?"',
+            'echo "@@PUNKTE@@ KLANG"; KLANG_ZENSUS_PORT=$(({PORT} + 1)) timeout 1500 node scripts/diag-klang-zensus.cjs; echo "@@PUNKTE@@ EXIT $?"',
+        ].join("\n")],
+        env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 30,
+        urteil: (j, lauf) => {
+            const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const rm = jsonZeile(teil("RM"), /^RUECKMELDUNG /);
+            const gruen3 = [1, 2, 3].map((n) => new RegExp("^\\s*✅ RM" + n + " ", "m").test(teil("RM")));
+            const motor = (teil("KLANG").match(/^── \(F\) DER KÖRPER KLINGT: Motor ([\d.]+) Hz je 1000 Upm/m) || [])[1];
+            const stumm = /F motor stumm/.test(teil("KLANG"));
+            if (!rm || !rm.echt) return { gruen: false, zahl: "keine Zeile RUECKMELDUNG (Exit " + lauf.exit + ")" };
+            const w = (r, n, k) => (r && r[n] ? r[n][k] : "?");
+            const [e, m] = [rm.echt, rm.mutiert];
+            return {
+                gruen: gruen3.every(Boolean) && !!motor && !stumm,
+                zahl:
+                    "Federung im Bild: Drift-Wank " + w(e, "drift", "wankMm") + " gegen Glatt " + w(e, "glatt", "wankMm") + " mm, Stoß-Antwort Glatt/Hang " +
+                    w(e, "glatt", "antwortMm") + "/" + w(e, "hang", "antwortMm") + " mm (Mutante " + w(m, "glatt", "antwortMm") + "/" + w(m, "hang", "antwortMm") +
+                    ") · Rumble Drift " + w(e, "drift", "stark") + " gegen Glatt " + w(e, "glatt", "stark") + ", Summen " + w(e, "glatt", "summen") + "/" +
+                    w(e, "hang", "summen") + " (Mutante " + w(m, "drift", "stark") + ", " + w(m, "glatt", "summen") + ") · Motor " + (motor ? (+motor).toFixed(1) : "?") +
+                    " Hz je 1000 Upm (klang-zensus F" + (stumm ? ", STUMM" : "") + ") · RM1–3 " + gruen3.map((g) => (g ? "✅" : "❌")).join(""),
+            };
+        },
+        pfad: [...FAHRT, "stamm/klang.js", "klang-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "scripts/diag-klang-zensus.cjs"],
+        quelle: "1 = ≥ 3 Kanäle mit gemessenem Paar aus dem Ausgabe-Pfad bzw. am Klang-Abgriff",
+    },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
     // gate:fahr-leben K8 Reifen (--kern, Node): je Rezept und Achse die Seitenkraft des Kerns (`fahrKraefte`, dieselbe Funktion wie
     // Probefahrt und Welt) über den Schlupf 0,1–30°; das Urteil liest `REIFEN {achsen:[{wo, spitze, abfall}], hz, kostenUs}` —
