@@ -37,16 +37,13 @@
 // PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
-const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
-const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
-const goldenFile = path.join(goldenDir, "haeuser.json");
-// DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
-const goldenAusFile = path.join(goldenDir, "ausstattung.json");
+// die Goldens der Häuser und der AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens)
+const golden = (n) => path.join(root, "spec/asset-contract/v6/golden", n + ".json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 const KERN = path.join(root, "fachwerk-core.js");
@@ -648,25 +645,7 @@ function bogenLinse() {
     );
 
     // 8) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    if (!fs.existsSync(goldenFile) || process.env.MINT_FORCE === "1") {
-        fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(
-            goldenFile,
-            JSON.stringify(
-                { cv: 6, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall", cases: actual },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(
-            `  🧊 GOLDEN GEMINTET (${Object.keys(actual).length} Fälle) → ${path.relative(root, goldenFile)} — ab jetzt EINGEFROREN`
-        );
-    }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
-    check("Golden trägt cv:6 + alle Fälle", golden.cv === 6 && Object.keys(golden.cases).length === CASES.length);
-    const diffs = compare(golden, actual);
-    check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
-    for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
+    goldenWand(golden("haeuser"), 6, actual, check, CASES.length);
 
     // 9) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
@@ -917,39 +896,14 @@ function bogenLinse() {
         "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle (weniger Scheite, kleinere Flamme)",
         ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
     );
-    if (!fs.existsSync(goldenAusFile) || process.env.MINT_FORCE === "1") {
-        fs.writeFileSync(
-            goldenAusFile,
-            JSON.stringify(
-                {
-                    cv: 6,
-                    minted: "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)",
-                    cases: ausIst,
-                },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(`  🧊 GOLDEN GEMINTET (${Object.keys(ausIst).length} Fälle) → ${path.relative(root, goldenAusFile)}`);
-    }
-    const goldenAus = JSON.parse(fs.readFileSync(goldenAusFile, "utf8"));
-    const diffsAus = compare(goldenAus, ausIst);
-    check(
-        `Ausstattungs-Goldens byte-exakt (${Object.keys(goldenAus.cases).length} Fälle)`,
-        diffsAus.length === 0 && Object.keys(goldenAus.cases).length === AUS_CASES.length,
-        diffsAus[0] || ""
-    );
+    goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)");
 
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
     //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
     //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
     //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
-    const frisch = () => {
-        delete require.cache[require.resolve(KERN)];
-        require(KERN);
-        return globalThis.__fachwerkCore;
-    };
+    const frisch = frischerKern(KERN, "__fachwerkCore");
     const fingerAlle = (K, faelle) => {
         const r = {};
         for (const c of faelle) {

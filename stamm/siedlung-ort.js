@@ -1424,31 +1424,6 @@ class AnazhRealm_siedlung_ort {
         return out;
     }
 
-    // DER GRUNDRISS EINES SLOTS (haus-lokal): das obb des Exports um seine Mitte — die obb-Mitte (Siedlungs-Rahmen wie
-    // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}. Ohne obb
-    // (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes Werks an der Wurzel aus den
-    // Optionen liest (`_werkGrundriss`). `fundament` nur mit obb (das Haus eines Orts trägt den Saum seines Erdbaus).
-    // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und die Ort-Wahl (`_ortRaster`, `_ortTraegtWirt`).
-    static _slotGrundriss(slot) {
-        const ry = slot.phi || 0;
-        const rc = Math.cos(ry);
-        const rs = Math.sin(ry);
-        const obb = slot.obb;
-        const tu = slot.tuer;
-        let fundament = null;
-        if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
-            const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
-            const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
-            fundament = { ex: obb.ex, ez: obb.ez, ox: dxw * rc - dzw * rs, oz: dxw * rs + dzw * rc };
-        }
-        const fp =
-            fundament ||
-            (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
-                ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
-                : null);
-        return { fundament, fp };
-    }
-
     _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
         // DER BODEN DES PLANS (K10): der Slot trägt seine Höhe `y` aus dem Plan v2 (fachwerk `ortPlan`, `_ortPlanSetzen`) — die
@@ -1472,12 +1447,11 @@ class AnazhRealm_siedlung_ort {
         if (!name) return zu(); // fail-closed
         const ry = slot.phi || 0;
         const tu = slot.tuer;
-        const { fundament, fp } = AnazhRealm._slotGrundriss(slot);
+        const fp = this._grundrissVon(slot);
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
-        if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0))
-            return zu();
+        if (!this._fundamentLand(wx, wz, ry, fp, tu, (fp && fp.saum) || 0)) return zu();
         if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return zu();
         // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
         // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
@@ -1501,7 +1475,8 @@ class AnazhRealm_siedlung_ort {
                 silent: true,
                 autonomous: !!(so && so.autonomous),
                 ausGesetz: true, // der Bau eines Orts kehrt aus dessen Gedächtnis wieder (speicher.K3), der Stand trägt ihn nie
-                fundament,
+                // das Fundament des Hauses eines Orts (die obb des Exports; ein fremder Export ohne obb trägt keins)
+                fundament: fp && fp.saum ? { ex: fp.ex, ez: fp.ez, ox: fp.ox, oz: fp.oz } : null,
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
                 tuer: slot.tuer || undefined,
@@ -2076,7 +2051,13 @@ class AnazhRealm_siedlung_ort {
         return Math.max(0, reich(A, nH) - reich(A, A.nHMin + A.nHSpan - 1));
     }
     // Site-Wände am Anker (die Slot-Wände prüft `_spawnSettlementSlot` je Haus zusätzlich). `noSpawnClear`
-    // öffnet NUR dem Start-Dorf die Spawn-Klar-Wand; Wasser/Steil bleiben für jede Site dieselbe Wand.
+    // öffnet NUR dem Start-Dorf die Spawn-Klar-Wand; Wasser und Hang bleiben für jede Site dieselbe Wand. DIE STEIL-WAND IST DIE
+    // BÖSCHUNG DES ERDBAUS (siedlung.K3): ein Ort steht am Hang, solange er flacher liegt als die Böschung, mit der sein Erdbau den
+    // Grund schließt (gelaende-core `ERDBAU.boeschung`, 0,6) — steiler schließen die Kegel nie, die Böschung eines Hauses hangauf
+    // begräbt die Tür des nächsten (Mess-Dorf −4,−4 am Anker, Neigung 0,81: zwei Scheunen mit 6,1 und 4,7 m Absatz). Die Trasse
+    // lenkt seine Gassen (fachwerk `trasseLenk`), der Erdbau seiner Platten trägt jedes Haus (`ortPlan`; Node, 55 Zellen um den
+    // Ursprung: zwischen 0,35 und 0,46 hielten alle 13 Gassen ≤ 12 % und jede Tür). Bis siedlung-k3-hang wies eine eigene Zahl
+    // (`SIEDLUNG.slopeMax` 0,35) jeden Ort steiler als 0,35 ab.
     // DER GENESIS-ORT (EINE Quelle): die Mitte der Start-Plattform — dort kommt der Spieler an, um sie stehen die
     // Kern-Portale (Schöpfer V18.486: „die kernportale um die genesis-plattform anordnen"), um sie bleibt die
     // Warmup-Welt dorffrei und wächst das Start-Dorf. Ohne Plattform der Welt-Ursprung. Bis 06.10. lasen diese vier
@@ -2101,13 +2082,10 @@ class AnazhRealm_siedlung_ort {
             if (Math.hypot(x - g.x, z - g.z) < A.spawnClearM + mehrM) return false; // die Warmup-Welt bleibt dorffrei
         }
         if (!this._landAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
-        const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
-        // ZENSUS 17.07. — die Steil-Wand ist fachwerk-Gesetz (SIEDLUNG.slopeMax).
-        const SG = AnazhRealm._siedlungGesetz();
-        return !!SG && !(Number.isFinite(slope) && slope > SG.slopeMax); // flach genug
+        return !!AnazhRealm._siedlungGesetz() && !(this._slopeAt(x, z) > globalThis.__gelaendeCore.ERDBAU.boeschung);
     }
-    // Site-Suche: der flache, trockene Fleck NAHE des Ankers statt Tod an einem Punkt (sonst fällt die
-    // Mehrheit der Zellen an der Steil-Wand). Γ5 aus dem Zell-Seed: Anker zuerst, dann je Probe-Ring
+    // Site-Suche: der trockene, tragende Fleck NAHE des Ankers statt Tod an einem Punkt (am Ufer, über der Böschung).
+    // Γ5 aus dem Zell-Seed: Anker zuerst, dann je Probe-Ring
     // 4 Proben (Phase aus Seed, Ring 2 um 45° verdreht) durch `_autoSettlementSiteOk`. null = kein Dorf.
     _autoSettlementFindSite(info) {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (siteProbeR)
@@ -2684,7 +2662,7 @@ class AnazhRealm_siedlung_ort {
             this._kappeOffen(neu.length, ueber || performance.now() - t0 >= A.taktMs ? 1 : A.perTick);
         ) {
             const sl = q.plan.slots[q.reihe[q.idx]];
-            const { fp } = AnazhRealm._slotGrundriss(sl);
+            const fp = this._grundrissVon(sl);
             const p = pm && pm.position;
             // der Zug, der wiederkehrt (`q.wieder`), hebt das Haus, das schon stand, als der Spieler kam — auch um ihn
             if (
@@ -2715,7 +2693,7 @@ class AnazhRealm_siedlung_ort {
             const d2 = (x - p.x) ** 2 + (z - p.z) ** 2;
             if (!pm || !Number.isFinite(d2)) return d2;
             if (this._imErstenBlick(x + vx, z + vz, 0, true)) return d2;
-            const { fp } = AnazhRealm._slotGrundriss(s);
+            const fp = this._grundrissVon(s);
             return this._imErstenBlick(x + vx, z + vz, fp ? Math.hypot(fp.ex, fp.ez) : 0, true)
                 ? d2 + aus
                 : d2 + 2 * aus;

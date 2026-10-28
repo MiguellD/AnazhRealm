@@ -21,7 +21,8 @@
 //                   Fluss-Orten treiben Schwimmer, Boot und Tier > 0,5 m in 90 Takten, ohne Strömung nicht.
 //   E (stoffe.K3)   im Winter trägt das Eis den Gang und die Tiere am Spiegel (±5 cm); das Feld +10 °C bricht ihn ein.
 //   S · L · P · H   (stoffe.K3-2) der Schnee schmilzt über 0 °C, die Lava erstarrt am Wasser schneller; die Schmelze hebt See
-//                   und Fluss (der Körper liest das gezeichnete Wasser gehoben); der Stahl der Esse glüht und erkaltet am Feld.
+//                   und Fluss (der Körper liest das gezeichnete Wasser gehoben); der Stahl der Esse glüht und erkaltet am Feld;
+//                   P4 (wetter.K3) 20 min Sturm heben den Bach ≥ 0,2 m, das gehaltene Regen-Feld nichts.
 //   G (F3)          der Graben am Fluss (1 m und 3 m jenseits der Krone, der Weg des Grabe-Hiebs): EINE Wasser-Fläche, nie über
 //                   dem Spiegel, in Ruhe auf ihm; der Automat ruht binnen Takten; die Wiese daneben fällt nie.
 //   G6 · G7 · G8    der Damm aus dem Verb (gelaende.K2 (b), (d)): stromauf steht der Stausee auf der Überlaufhöhe (±0,1 m),
@@ -73,7 +74,8 @@ function urteil(b) {
     const v = [];
     const S = SCHWELLE;
     const rot = (name, o) => v.push(`${name}: ${JSON.stringify(o)}`);
-    if (b.hashSin) v.push(`B6 HASH: das Wasser-Rauschen rechnet mit sin (${b.hashSin}) — auf echter GPU ungenau`);
+    const fehl = (name, o) => o.fehler && v.push(`${name}: ${o.fehler}`); // der Befund trägt seinen Fehler beim Namen
+    if (b.hashSin) rot("B6 HASH", b.hashSin); // das Wasser-Rauschen rechnet mit sin — auf echter GPU ungenau
     // F9 — die Pflanzen im gezeichneten Wasser (Nah-Streu ohne Ufer-Band, Nah-Wiese): je Gebiet ihre Zahl und das Wasser
     // über dem Fuß; LEER, wenn das Gebiet weniger Pflanzen trägt, als dort stehen (die Probe prüfte nichts)
     const florUrteil = (wo, fl, minStreu, minWiese) => {
@@ -91,8 +93,7 @@ function urteil(b) {
     };
     if (b.fluss) {
         const f = b.fluss;
-        if (f.fehler) v.push(`F: ${f.fehler}`);
-        else {
+        if (!fehl("F", f)) {
             if (!(f.schritte > 1000)) rot("F LEER", f);
             if (!(f.anteilSteigend <= S.steigend)) rot("F1 BERGAUF", f);
             if (!(f.buckelP90M <= S.buckelP90)) rot("F2 BUCKEL", f);
@@ -112,7 +113,7 @@ function urteil(b) {
             // SPRUNG: breiter oder tiefer als die Hülle des Gesetzes (`huelle0` am Ursprung); BUCKEL: ein Zufluss im Kanal eines
             // breiteren Flusses hebt dessen Spiegel (er nahm den Spiegel seiner ungefrästen Ufer)
             if (q.spruenge > 0) rot("F5 SPRUNG", q);
-            if (q.trocken > 0) v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
+            if (q.trocken > 0) rot("F5 TROCKEN", q); // `trocken` Quellen tragen auf ihren ersten 16 m kein Wasser
             if (!(q.buckel <= 0)) rot("F5 BUCKEL", q);
             quer("F5", "auf den Quell-Läufen", q);
         }
@@ -144,8 +145,7 @@ function urteil(b) {
     }
     if (b.uferFarbe) {
         const u = b.uferFarbe;
-        if (u.fehler) v.push(`U: ${u.fehler}`);
-        else {
+        if (!fehl("U", u)) {
             if (!(u.schritte > 5000)) rot("U LEER", u.schritte);
             if (u.spruenge > 0) rot("U1 UFER-SPRUNG", u); // die Boden-Farbe springt quer zum Fluss (Luma-Stufe je 2 cm)
             const sf = u.schilf;
@@ -153,7 +153,7 @@ function urteil(b) {
             else if (!(sf.schritte > 5000)) rot("U3 LEER", sf.schritte);
             else if (sf.spruenge > 0) rot("U3 SCHILF-SPRUNG", sf); // das Ufer-Band der Nah-Streu springt (Gewicht-Stufe je 2 cm)
             const p = u.paritaet;
-            if (!p || !(p.vertices > 1000)) v.push("U2 LEER: die Farb-Parität verglich keinen Ufer-Chunk");
+            if (!p || !(p.vertices > 1000)) rot("U2 LEER", p || null); // die Farb-Parität verglich keinen Ufer-Chunk
             else if (p.abweichend > 0) rot("U2 ZWEI FARBEN", p); // der Worker färbt Ufer-Vertices anders als der Main
         }
     }
@@ -165,8 +165,7 @@ function urteil(b) {
     }
     if (b.hoehle) {
         const hh = b.hoehle;
-        if (hh.fehler) v.push(`K10: ${hh.fehler}`);
-        else {
+        if (!fehl("K10", hh)) {
             // trockene Höhlen unter und neben dem See: keine Probe trägt Körper-Wasser, Spieler, Kamera, Tier und Wagen trocken
             if (!(hh.proben >= 20)) rot("K10 LEER", hh.proben);
             else if (hh.nass > 0) rot("K10 HÖHLE", hh);
@@ -177,14 +176,13 @@ function urteil(b) {
             if (ti.schwimmt > 0) rot("K10 TIER", ti);
             // der Wagen (wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden (`_fahrTiefe`)
             const wa = hh.wagen;
-            if (!wa) v.push("K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand");
+            if (!wa) rot("K10 WAGEN LEER", null); // keine Tiefe am Wagen (`_fahrTiefe`) im Stand
             else if (wa.nass > 0) rot("K10 WAGEN", wa);
         }
     }
     if (b.wagen) {
         const w = b.wagen;
-        if (w.fehler) v.push(`K11: ${w.fehler}`);
-        else {
+        if (!fehl("K11", w)) {
             const [g, bo, rd, ba] = [w.wagen || {}, w.boot || {}, w.rand || {}, w.bugAb];
             if (g.fehler) v.push(`K11: ${g.fehler}`);
             else if (g.afloat) rot("K11 STRASSENWAGEN SCHWIMMT", g); // der GT treibt im See
@@ -199,8 +197,7 @@ function urteil(b) {
     }
     if (b.leser) {
         const l = b.leser;
-        if (l.fehler) v.push(`K12: ${l.fehler}`);
-        else {
+        if (!fehl("K12", l)) {
             // der Klang (`_nassAt`) hört Wasser, wie der Körper es trägt; das Sheet des Küsten-Aquifers trägt den Körper
             if (!(l.spalten >= 5000 && l.nass >= 500)) rot("K12 LEER", l);
             if (l.klang > 0) rot("K12 KLANG", l);
@@ -259,12 +256,11 @@ function urteil(b) {
     }
     if (b.koerper) {
         const k = b.koerper;
-        if (k.fehler) v.push(`K: ${k.fehler}`);
-        else {
+        if (!fehl("K", k)) {
             // K1 nie geerdet unter der Brustkorb-Linie · K2 in Ruhe an ihr · K3 Kraulen hält das Gesetz · K4 das Eintauchen klingt ·
             // K6 jedes Tier an seiner Wasserlinie (auch ohne Gestalt-Baum) · K7 der Mitspieler lehnt sich · K5 die Kamera taucht
             const [h, l, c, e] = [k.hinein || {}, k.lage || {}, k.kraulen || {}, k.eintauchen || {}];
-            if (!(h.schwimmFrames > 0)) v.push("K LEER: der Gang erreichte kein Wasser (die Probe prüfte nichts)");
+            if (!(h.schwimmFrames > 0)) rot("K LEER", h); // der Gang erreichte kein Wasser (die Probe prüfte nichts)
             if (h.tiefGeerdet > 0 || h.augenUnterGeerdet > 0) rot("K1 AM GRUND", h);
             if (!(Math.abs(l.fussUnterSpiegelP50 - l.sollFussUnterSpiegel) <= S.lageToleranz)) rot("K2 ZELL-DACH", l);
             if (l.augenUnter > 0) rot("K2 UNTERGEHEN", l);
@@ -276,30 +272,32 @@ function urteil(b) {
                 if (t.amGrund) rot("K6 AM GRUND", t);
                 else if (!(Math.abs(t.sohleUnterSpiegel - t.wasserlinie) <= S.tierLinie)) rot("K6 LAGE", t);
             const bl = k.baumlos;
-            if (!bl || !Number.isFinite(bl.sohleUnterSpiegel)) v.push("K6 LEER: die Probe des Wesens ohne Gestalt-Baum lief nicht");
+            if (!bl || !Number.isFinite(bl.sohleUnterSpiegel)) rot("K6 LEER", bl || null); // das Wesen ohne Gestalt-Baum lief nicht
             else if (!(Math.abs(bl.sohleUnterSpiegel - bl.soll) <= S.tierLinie)) rot("K6 BAUMLOS", bl);
             const { winter: w = {}, mutation: mu = {}, tier: et = [], uebergang: ue = {}, meer: me = {} } = k.eis || {};
-            if (!(w.seeFrames >= 120 && et.length === 3)) v.push(`E LEER: ${w.seeFrames} Schritte über dem See, ${et.length} Tiere`);
-            else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05))
-                v.push(`E1 EINBRUCH: bei ${w.temperatur} °C ${w.schwimmFrames} Schritte schwimmend, ${w.luft} in der Luft, Füße bis ${w.maxM} m vom Spiegel`);
-            for (const t of et) if (t.schwimmt || !(Math.abs(t.sohleUnterSpiegel) <= 0.05)) v.push(`E3 TIER: ${t.seele} ${t.sohleUnterSpiegel} m im Eis`);
-            if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) v.push(`E2 BLIND: +10 °C (${mu.temperatur} °C), ${mu.schwimmFrames} Schritte schwimmend`);
-            if (!(ue.erster >= 0) || !(ue.traegt - ue.erster >= 2) || ue.wechsel !== 2 || Math.max(...ue.tagesgang))
-                v.push(`E4 KANTE: ${JSON.stringify(ue)}`);
-            if (!(me.kalt > 0) || me.traegt || !(me.tiefst > me.gefrier)) v.push(`E5 MEER: ${JSON.stringify(me)}`);
+            // E LEER: < 120 Schritte über dem See oder nicht 3 Tiere · E1: unter 0 °C schwimmt, fliegt oder sinkt der Gang (Füße
+            // > 5 cm vom Spiegel) · E3: ein Tier schwimmt im Eis · E2: +10 °C bricht nicht ein
+            if (!(w.seeFrames >= 120 && et.length === 3)) rot("E LEER", [w.seeFrames, et.length]);
+            else if (!(w.temperatur < 0) || w.schwimmFrames || w.luft || !(w.maxM <= 0.05)) rot("E1 EINBRUCH", w);
+            for (const t of et) if (t.schwimmt || !(Math.abs(t.sohleUnterSpiegel) <= 0.05)) rot("E3 TIER", t);
+            if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) rot("E2 BLIND", mu);
+            if (!(ue.erster >= 0) || !(ue.traegt - ue.erster >= 2) || ue.wechsel !== 2 || Math.max(...ue.tagesgang)) rot("E4 KANTE", ue);
+            if (!(me.kalt > 0) || me.traegt || !(me.tiefst > me.gefrier)) rot("E5 MEER", me);
             // stoffe.K3-2: der Schnee schmilzt über 0 °C und die Grenze liest ihn; die Lava erstarrt, am Wasser schneller
             const sm = k.schmelze || {};
-            if (!(sm.pegel > 0.01 && sm.schmilzt > 0) || sm.gegen || !(sm.halt <= 0.001)) v.push(`S1 EINGEFROREN: ${JSON.stringify(sm)}`);
-            if (!(sm.versatz >= 20 && sm.weiss >= 0.3 && sm.neuBau > 0)) v.push(`S2 GRENZE: ${JSON.stringify(sm)}`);
+            if (!(sm.pegel > 0.01 && sm.schmilzt > 0) || sm.gegen || !(sm.halt <= 0.001)) rot("S1 EINGEFROREN", sm);
+            if (!(sm.versatz >= 20 && sm.weiss >= 0.3 && sm.neuBau > 0)) rot("S2 GRENZE", sm);
             const [la, ls] = (k.erstarrung || []).map((o) => [o.ab, o.frei, o.reihe[0], o.reihe[o.reihe.length - 1]]);
             if (!la || !(la[2].glut >= 0.95 && la[2].stoff === "glut" && la[2].licht && !la[2].dampf && la[0] > 0) || la[3].stoff !== "stein" || la[3].licht || la[3].glut > la[1] + 0.01)
-                v.push(`L1 ERSTARRT NIE: ${JSON.stringify(la)}`);
-            else if (!(ls[2].dampf && ls[0] >= 0 && ls[0] < la[0])) v.push(`L2 WASSER: ${JSON.stringify(ls)}`);
+                rot("L1 ERSTARRT NIE", la);
+            else if (!(ls[2].dampf && ls[0] >= 0 && ls[0] < la[0])) rot("L2 WASSER", ls);
             // P die Schmelze speist See und Fluss, der Körper liest das gezeichnete Wasser · H der Stahl glüht in der Esse
             const { pegel: p = {}, gluehen: g = {} } = k;
             if (!(p.hub >= 0.1 && p.wochen > 0 && p.fluss > 0) || p.gegen > 1) rot("P1 STARR", p);
             else if (!(p.flut[0] >= p.hub - 0.03 && p.flut[2] === p.flut[0] && p.ruhe[0] <= 0.03 && p.flut[1] > p.ruhe[1])) rot("P2 BLIND", p);
             if (!(p.post > 0 && p.neuBau > 0) || p.halt > 0.001) rot("P3 TAKT", p);
+            const rg = p.regen || {}; // wetter.K3: 20 min Sturm heben Bach und gezeichneten See ≥ 0,2 m, das gehaltene Regen-Feld nichts
+            if (!(rg.hub >= 0.2 && rg.koerper >= rg.hub - 0.03 && rg.post > 0 && rg.fest <= 0.001)) rot("P4 REGEN", rg);
             const [f, kt] = [g.feuer || {}, g.kalt || {}];
             if (!(f.wechsel > 0 && f.glut >= 0.5 && f.kelvin > 798 && f.esse)) rot("H1 KALT", g);
             else if (kt.glut || kt.kelvin || !(kt.wechsel > 0 && kt.T - kt.luft < 50) || !(g.feld >= 5)) rot("H2 GLUT", g);
@@ -315,7 +313,7 @@ function urteil(b) {
     if (b.bild) {
         const li = b.licht;
         if (!li || !li.himmelVor || !li.himmelGetaucht)
-            v.push(`K9 LEER: die Licht-Probe lief nicht (${(li && li.fehler) || "Luft oder Himmels-Umgebung fehlt"})`);
+            rot("K9 LEER", li || null); // die Licht-Probe lief nicht, oder Luft oder Himmels-Umgebung fehlt
         else {
             if (!(li.nachtUnten < li.nachtOben)) rot("K9 NACHT", li);
             if (!(li.mittagUnten > li.nachtUnten * 2)) rot("K9 LITERAL", li);
@@ -328,11 +326,10 @@ function urteil(b) {
     // (das Wildwasser schäumt nach dem Gesetz) — sonst sähe B1 keinen
     if (b.bild) {
         const g = b.bild;
-        if (g.fehler) v.push(`B: ${g.fehler}`);
-        else {
+        if (!fehl("B", g)) {
             const [a, z] = [g.uhr60 || {}, g.uhr3600 || {}];
             if (!(a.ruhig && a.ruhig.pixel > 1000 && a.schnelle && a.schnelle.pixel > 1000))
-                v.push("B LEER: der Fluss-Bogen deckt keine Pixel (die Probe prüfte nichts)");
+                rot("B LEER", null); // der Fluss-Bogen deckt keine Pixel (die Probe prüfte nichts)
             else {
                 if (!(g.kantenVerhaeltnis <= S.kantenVerhaeltnis) || !(z.ruhig.kantenDichte <= S.kantenRuhig)) rot("B2 ZEBRA", g);
                 if (!(g.sturmVerhaeltnis >= S.sturm)) rot("B3 STURM", g);
@@ -346,10 +343,10 @@ function urteil(b) {
     for (const g of b.graben ? b.graben.graeben || [b.graben] : []) {
         const wo = `der Graben ${g.abstand} m jenseits der Krone (${g.ort})`;
         if (g.fehler || !(g.nass > g.vor) || !(g.bueschel[1] > 0))
-            v.push(g.fehler ? `G: ${g.fehler}` : `G LEER: ${wo} zeichnet kein neues Wasser oder trägt keine Wiese daneben`);
+            v.push(g.fehler ? `G: ${g.fehler}` : `G LEER: ${wo}`); // er zeichnet kein neues Wasser oder trägt keine Wiese daneben
         if (!g.fehler) {
-            if (g.doppelt > 0) v.push(`G1 ZWEI FLÄCHEN: ${wo}: an ${g.doppelt} Punkten zwei Wasser-Flächen übereinander`);
-            if (g.ueber > 0) v.push(`G2 ÜBER DEM SPIEGEL: ${wo}: ${g.ueber} Punkte Wasser > 10 cm über dem Spiegel (bis ${g.ueberM} m)`);
+            if (g.doppelt > 0) rot(`G1 ZWEI FLÄCHEN: ${wo}`, g); // an `doppelt` Punkten zwei Wasser-Flächen übereinander
+            if (g.ueber > 0) rot(`G2 ÜBER DEM SPIEGEL: ${wo}`, g); // `ueber` Punkte > 10 cm über dem Spiegel (bis `ueberM`)
             if (g.abseits > 0) rot(`G3 ZWEITE FLÄCHE: ${wo}`, g);
             if (!(g.ruhe >= 0 && g.sheets <= SCHWELLE.grabenBauten)) rot(`G4 UNRUHE: ${wo}`, g);
             if (g.wieseFaelle > 0 || g.bueschel[0] !== g.bueschel[1]) rot(`G5 FLACKERN: ${wo}`, g);
@@ -366,10 +363,10 @@ function urteil(b) {
     // ein Feld der Ferne, das der Befund nicht trägt, heißt beim Namen (z43 an der Radeon: „Ring undefined/undefined“)
     const f = b.ferne && b.ferne.ring;
     const fehlt = f ? ["punkte", "anders", "hubM", "faden"].filter((k) => !Number.isFinite(f[k])) : [];
-    if (b.ferne && !f) v.push(`G8 FERNE: ${b.ferne.fehler || "der Befund trägt keinen Ring"}`);
+    if (b.ferne && !f) rot("G8 FERNE", b.ferne); // der Befund trägt keinen Ring
     else if (fehlt.length) v.push(`G8 FERNE: das Feld ${fehlt.map((k) => "ferne.ring." + k).join(", ")} fehlt`);
     else if (b.ferne && !(f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte))
-        v.push(`G8 FERNE: Ring ${f.anders}/${f.punkte}, Hub ${f.hubM} m, Faden ${f.faden}/${f.punkte}`);
+        rot("G8 FERNE", f);
     return v;
 }
 
@@ -528,7 +525,7 @@ function selbsttest() {
                 { ab: 2, frei: 0.4, reihe: [{ glut: 1, stoff: "glut", licht: true }, { glut: 0.4, stoff: "stein" }] },
                 { ab: 1, reihe: [{ dampf: true }] },
             ],
-            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0 },
+            pegel: { hub: 0.2, wochen: 3, gegen: 0, post: 31, neuBau: 9, fluss: 0.2, flut: [0.2, 185, 0.2], ruhe: [0, 182, 0], halt: 0, regen: { hub: 0.2, post: 20, koerper: 0.2, fest: 0 } },
             gluehen: { feuer: { wechsel: 17, glut: 0.55, kelvin: 1373, esse: "esse" }, kalt: { wechsel: 119, T: 25, luft: -1, glut: 0 }, feld: 9.8 },
         },
         licht: {
@@ -629,6 +626,10 @@ function selbsttest() {
         ["P1 STARR", (b) => Object.assign(b.koerper.pegel, { hub: 0, wochen: 0, fluss: 0 })],
         ["P2 BLIND", (b) => (b.koerper.pegel.flut = [0, 182, 0.2])],
         ["P3 TAKT", (b) => (b.koerper.pegel.halt = 0.2)],
+        // wetter.K3 an der Basis ea07267e: der Abfluss trug nur die Schmelze — der Sturm hob den Bach nicht
+        ["P4 REGEN", (b) => Object.assign(b.koerper.pegel.regen, { hub: 0, post: 0 })],
+        ["P4 REGEN", (b) => (b.koerper.pegel.regen.fest = 0.2)],
+        ["P4 REGEN", (b) => (b.koerper.pegel.regen.koerper = 0)],
         ["H1 KALT", (b) => Object.assign(b.koerper.gluehen.feuer, { wechsel: 0, glut: 0, kelvin: null })],
         ["H2 GLUT", (b) => (b.koerper.gluehen.feld = 0)],
         ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
@@ -732,7 +733,8 @@ function selbsttest() {
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
     if (quelleSin) fehler.push("B6 HASH an der Quelle: " + quelleSin);
-    // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
+    // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher (die Zeile
+    // trägt [Quellen aus 2 Teilen, Breite p50, max, die abweichenden Felder, die erste Röte])
     {
         const q = gut.quelle;
         const halb = (k) => (k === "huelle0" || k === "regionen" || k === "kacheln" ? q[k] : null);
@@ -760,7 +762,7 @@ function selbsttest() {
         const v = urteil(Object.assign(kopie(), { quelle: m }));
         const ok = !fehlt.length && !v.length && m.breiteP50 === 2 && m.breiteMax === 2.75 && m.tiefeMax === 0.33;
         console.log(
-            `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze (${m.quellen} Quellen aus 2 Teilen, Breite p50 ${m.breiteP50} m, max ${m.breiteMax} m)${fehlt.length ? " — weichen ab: " + fehlt.join(", ") : ""}${v.length ? " — rot: " + v[0] : ""}`
+            `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze ${JSON.stringify([m.quellen, m.breiteP50, m.breiteMax, fehlt, v[0]])}`
         );
         if (!ok) fehler.push("die Teile urteilen anders als das Ganze");
     }
@@ -803,6 +805,9 @@ async function wasserDa(pg, bild) {
         bild
     );
     await pg.evaluate(WASSER_INSTALL);
+    // DAS WETTER DER WAND (Wand 3, R9): das Wort des Spielers „sonnig", trocken — der Regen hebt See und Fluss (wetter.K3, P4
+    // misst ihn eigens); nie das Wetter des Starts
+    await pg.evaluate(() => (window.anazhRealm._setWeather("sunny", "human"), window.anazhRealm._naesseTakt(1e6)));
 }
 // die Quellen eines Teils `teil` ({ k, n }, null: alle) in den Kacheln der Probe
 const quellProbe = (pg, orte, teil) =>
