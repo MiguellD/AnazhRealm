@@ -17,7 +17,7 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -25,7 +25,7 @@ const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
-const { errs, check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 const ohneKommentare = stammLib.ohneKommentare;
 
@@ -3303,6 +3303,6 @@ hauptLauf(async () => {
         `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
     );
     if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
-    ende("der v1-Pfad trägt seine benannten Schnitte.");
+    wandEnde(errs, "der v1-Pfad trägt seine benannten Schnitte.");
     process.exit(0);
 });

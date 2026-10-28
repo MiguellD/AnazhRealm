@@ -6,14 +6,14 @@
 // über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen; jede Wand mit ihrer
 // Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
 // jede Zeile, die kein Programm erreicht, beim Namen ihres Befunds (keine Ausnahme: seit KI K2 trägt jede Zeile ein Welt-Werk)
 const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
 
-const { check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 // Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot).
 function proben() {
@@ -645,6 +645,6 @@ hauptLauf(async () => {
         b.taeter?.ok && !haelt(b.taeter)
     );
 
-    ende("die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
+    wandEnde(errs, "die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen");
     process.exit(0);
 }, () => signal?.kill());

@@ -21,14 +21,14 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
 const server = statikServer();
 
-const { errs, check, ende } = pruefer();
+const { errs, check } = pruefer();
 // ===== TEIL A: die statischen Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes Glied wirft beim
 // Namen; die Präsenzen beweist der lebende Draht B-F). (A10, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint —
 // hält gate:pipeline-constitution N1 wörtlich.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
@@ -185,6 +185,6 @@ hauptLauf(async () => {
         `Stufe ${out.f.torStufe} · ${out.f.torBruch || "kein Bruch"} · Anfragen ${out.f.torKeys}`
     );
 
-    ende("DER ZWEIT-KERN DOCKT AN: vehicle-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), der N7.5-Merge lebt am EINEN Ingest-Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id> entsteht ohne eine Zeile AnazhRealm-Edit — EINE Pipeline fuer alle Domaenen (Vertrag Phase 1).");
+    wandEnde(errs, "DER ZWEIT-KERN DOCKT AN: vehicle-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), der N7.5-Merge lebt am EINEN Ingest-Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id> entsteht ohne eine Zeile AnazhRealm-Edit — EINE Pipeline fuer alle Domaenen (Vertrag Phase 1).");
     process.exit(0);
 });

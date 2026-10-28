@@ -25,12 +25,12 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
 
-const { errs, check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 // Der DECKEL (aus der Messung, mit Marge): 8-9 Haeuser auf der Fernstufe = ~28k Tris
 // gemessen → Deckel 70k (×2.5 Marge). Die Fernstufe selbst: L2 ≤ 8k Tris je Haus.
@@ -513,6 +513,6 @@ hauptLauf(async () => {
         if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
 
-    ende("DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt.");
+    wandEnde(errs, "DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt.");
     process.exit(0);
 });

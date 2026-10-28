@@ -20,7 +20,7 @@
 //   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -31,7 +31,7 @@ const ECHT = process.argv.includes("--echt");
 const BILD = ECHT || process.argv.includes("--bild"); // der Bild-Weg (L-BILD) auf swiftshader, mit --echt auf der Karte
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // Meisterkarte Bauen K3: 5 stabil, 5 instabil, die Wirkungen
 
-const { errs, check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const SAETZE = ["hain", "insel", "fraktal", "ki ohne Seed"];
@@ -1786,6 +1786,6 @@ hauptLauf(async () => {
             `Statik ${vP.richtig}/10 · Wirkung ${5 - vP.wirkung.length}/5 — ${JSON.stringify(pm).slice(0, 2400)}${t.length ? " — Täter: " + t : ""}`
         );
     }
-    ende("der Werkstatt-Weg trägt seine benannten Schnitte.");
+    wandEnde(errs, "der Werkstatt-Weg trägt seine benannten Schnitte.");
     process.exit(0);
 });

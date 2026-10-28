@@ -27,11 +27,11 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über ERSTARREN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4427.
-const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
-const { check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 (async () => {
     await server.lausche(PORT);
@@ -253,5 +253,5 @@ const { check, ende } = pruefer();
         L.selbstTestGesehen === true
     );
 
-    ende("kein Todes-Spiral, kein hartes Erstarren im headless-Pfad, die Membran kompiliert genau einmal. (Was diese Linse NICHT sieht: GPU-seitige Freezes — dafür trägt der Flugschreiber anazhRealmPerf.json vom echten Holz.)");
+    wandEnde(errs, "kein Todes-Spiral, kein hartes Erstarren im headless-Pfad, die Membran kompiliert genau einmal. (Was diese Linse NICHT sieht: GPU-seitige Freezes — dafür trägt der Flugschreiber anazhRealmPerf.json vom echten Holz.)");
 })();

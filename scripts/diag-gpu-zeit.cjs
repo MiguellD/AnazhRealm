@@ -34,7 +34,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
-const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const server = statikServer();
 
@@ -225,12 +225,9 @@ const { errs, check } = pruefer();
         out.selbstTestKaputtFaellt === true && out.selbstTestSenseKaputt === true
     );
 
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — die GPU-Zeit ist gemessen statt geglaubt: timestamp-query fail-soft angefordert, " +
+    wandEnde(
+        errs,
+        "die GPU-Zeit ist gemessen statt geglaubt: timestamp-query fail-soft angefordert, " +
             "async gelesen (der Loop blockt nie), gpuMs als eigene perfSense-Phase mit Quelle-Feld " +
             '("echt"|"proxy") in Trace, worst-Frames und Panel; headless bleibt sauber Proxy.'
     );

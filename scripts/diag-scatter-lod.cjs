@@ -26,13 +26,13 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const server = statikServer();
 
-const { check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     // ── F (Absenz über den EINEN Helfer): kein zweiter Keying-Ort — die Konstante lesen NUR der Key (`_archFernRegionKey`)
@@ -577,5 +577,5 @@ hauptLauf(async () => {
 
     await browser.close();
     server.close();
-    ende("die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei), die Promotion liest den ganzen Region-Fächer, und die Fern-Gruppen tragen die Super-Region-Diät (EIN Keying-Chokepoint, Bilanz dicht).");
+    wandEnde(errs, "die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei), die Promotion liest den ganzen Region-Fächer, und die Fern-Gruppen tragen die Super-Region-Diät (EIN Keying-Chokepoint, Bilanz dicht).");
 });

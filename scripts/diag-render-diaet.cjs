@@ -30,7 +30,7 @@
 //
 //   node scripts/diag-render-diaet.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
@@ -39,7 +39,7 @@ const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 const RD_FAMILIEN_ANKER = 1;
 const server = statikServer();
 
-const { check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     // ── Q: die Quell-Absenz über den EINEN Helfer (Chokepoint-Disziplin, kein Parallelpfad): kein dritter setColorAt-Pfad
@@ -402,5 +402,5 @@ hauptLauf(async () => {
 
     await browser.close();
     server.close();
-    ende("die Render-Diät steht: EIN geteiltes Material je Tag-Signatur (der Selbst-Test beweist, dass die Linse das alte Je-Farbe-ein-Material-Muster erkannt hätte), die Material-Familien kollabieren je Signatur (Anker nur-sinkend), und jede Instanz trägt ihre Part-Farbe über den EINEN Tint-Kanal — Farb-Wahrheit statt Grau-Einheitsbrei.");
+    wandEnde(errs, "die Render-Diät steht: EIN geteiltes Material je Tag-Signatur (der Selbst-Test beweist, dass die Linse das alte Je-Farbe-ein-Material-Muster erkannt hätte), die Material-Familien kollabieren je Signatur (Anker nur-sinkend), und jede Instanz trägt ihre Part-Farbe über den EINEN Tint-Kanal — Farb-Wahrheit statt Grau-Einheitsbrei.");
 });

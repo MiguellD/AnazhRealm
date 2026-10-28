@@ -4,12 +4,12 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 
-const { errs, check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
@@ -2546,6 +2546,6 @@ hauptLauf(async () => {
         for (const l of bahn.log || []) console.log("  · " + l);
     }
     if (bahn.err) check("F Probe ohne Ausnahme", false, String(bahn.err).split("\n")[0]);
-    ende("der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken.");
+    wandEnde(errs, "der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken.");
     process.exit(0);
 });

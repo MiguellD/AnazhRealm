@@ -48,7 +48,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -383,7 +383,7 @@ if (process.argv.includes("--selftest")) {
 const PORT = Number(process.env.CHUNK_SATZ_PORT) || 4483;
 const server = statikServer();
 
-const { check, ende } = pruefer();
+const { errs, check } = pruefer();
 
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
@@ -1633,5 +1633,5 @@ const { check, ende } = pruefer();
         !!wa2 && wa2.haupt > 0,
         wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
-    ende("der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.");
+    wandEnde(errs, "der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.");
 })();
