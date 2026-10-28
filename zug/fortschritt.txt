@@ -634,3 +634,4 @@
 2026-10-28 11:52:03 takt16a-gtx klang.K5#2 OFFEN 17.2 · 24/36
 2026-10-28 12:02:26 takt16a-gtx leib.K1#1 OFFEN 10.1 · 25/36
 2026-10-28 12:18:27 takt16a-gtx leib.K1#2 GRÜN 15.9 · 26/36
+2026-10-28 12:21:30 takt16a-gtx leib.K2#1,leib.K2#2 GRÜN/GRÜN 3.0 · 28/36
