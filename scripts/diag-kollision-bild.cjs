@@ -30,8 +30,8 @@
 //       bei 144 · 60 · 30 fps und dem Takt-Deckel: nach jedem Sim-Schritt und jedem Bild Eindringen ≤ EINDRING_M, kein
 //       Durchtritt, Spalt ≤ SPALT_M (sonst vakuös); DAS BILD: Wagen und Bär an der Mauer — an jedem Bild, in dem sie anliegen,
 //       ihre gezeichneten Ecken (Zeichner-Matrix, Skin) gegen das gezeichnete Mesh der Mauer: Spalt ≤ SPALT_M, Eindringen ≤
-//       EINDRING_M; was die Welt nicht trägt, steht OFFEN mit Zahl (die Station physik.K2#2 urteilt), kein Bild ist ROT; das
-//       Tempo × 1,2 des Wagens urteilt die Station an der Zeile (vmax und Faktor stehen dort);
+//       EINDRING_M, sonst ROT beim Namen (BILD ≠ KOLLISION; die Hülle ist die gezeichnete Gestalt: `_tierUmriss`,
+//       `_fahrBildUmriss`); das Tempo × 1,2 des Wagens urteilt die Station physik.K2#2 an der Zeile (vmax und Faktor stehen dort);
 //       (T) der Fuchs mit EINEM Schritt je Takt (`LEIB_TEIL` ohne Teil-Schritt) MUSS durch die Mauer;
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // `--bild` (physik.K2 Staffel 2, beide Geräte): die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot
@@ -42,8 +42,8 @@
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Blocker ohne Bild, Bild ohne
 // Blocker, Baum ohne Stamm, fremde Gestalt, leere Zählung, stumpfer Schmuggel (Fels und Tor), fehlende Klasse, Bau auf dem
 // Haupt-Thread, Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel, kein Bild an der
-// Mauer, ein Ausgabe-Bild ohne Wagen, ein Bild-Lauf ohne Karte — MUSS rot fallen und ihn beim Namen nennen; der Leib im Bild
-// in der Mauer steht OFFEN beim Namen.
+// Mauer, der Leib im Bild in der Mauer, ein Ausgabe-Bild ohne Wagen, ein Bild-Lauf ohne Karte — MUSS rot fallen und ihn beim
+// Namen nennen.
 //   node scripts/diag-kollision-bild.cjs [--selftest | --bild]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -113,7 +113,7 @@ function tempoUrteil(T) {
         else if (!(z.tief <= EINDRING_M)) v.push(`(V) EINDRINGEN: ${wer} — ${z.tief} m`);
         if (!(z.spalt <= SPALT_M)) v.push(`(V) VAKUÖS: ${wer} (Spalt ${z.spalt} m)`);
         if (b && !(b.spalt <= SPALT_M && b.tief <= EINDRING_M))
-            v.push(`OFFEN (V) BILD ≠ KOLLISION: ${wer} — im Bild Spalt ${b.spalt} m, Eindringen ${b.tief} m`);
+            v.push(`(V) BILD ≠ KOLLISION: ${wer} — im Bild Spalt ${b.spalt} m, Eindringen ${b.tief} m`);
     }
     for (const p of ["wagen|mauer", "gestossen|mauer"])
         if (!T.zeilen.some((z) => z.bild && schluessel(z).startsWith(p))) v.push(`(V) KEIN BILD: ${p}`);
@@ -132,8 +132,7 @@ const QUELLE = {
     felsOhneTypListe: "`_felsBlockerParts` trägt eine Typ-Liste (`_var`)",
     partsSkala: "der Parts-Pfad liest `_studioWeltSkala` nicht",
 };
-// Das Urteil über einen Befund: Liste der Verstöße (leer = grün; OFFEN steht mit Zahl, nie grün gezählt, die Station von
-// physik.K2 Staffel 2 urteilt es). Rein, im Selbsttest wie im Lauf.
+// Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
     const v = [];
     const z = b.zensus || {};
@@ -479,7 +478,7 @@ async function tempo(K) {
     // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen der Rahmen seiner Hülle
     const leibKreise = (c) => {
         const [l, p] = [r._kreaturLeib(c, 0, {}), c.position];
-        return { l, p, kreise: [-1, 0, 1].map((o) => [p.x + l.fx * o * l.halb, p.z + l.fz * o * l.halb, l.radius]) };
+        return { l, p, kreise: [l.mitte - l.halb, l.mitte, l.vorn].map((d) => [p.x + l.fx * d, p.z + l.fz * d, l.radius]) };
     };
     const tierK = (c) => () => {
         const { l, p, kreise } = leibKreise(c);
@@ -495,7 +494,8 @@ async function tempo(K) {
     };
     const wagenK = (e) => () => {
         const [p, h, s, c] = [simLage(), r._fahrHuelle(e), Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
-        const re = { cx: p.x + s * h.mitte, cz: p.z + c * h.mitte, c, s, hx: h.hw, hz: h.hl, stufe: h.stufe };
+        // das gerundete Rechteck der Hülle (`_fahrHuelle`): sein inneres Rechteck und der Eck-Radius `rund`
+        const re = { cx: p.x + s * h.mitte, cz: p.z + c * h.mitte, c, s, hx: h.hw - h.rund, hz: h.hl - h.rund, rund: h.rund, stufe: h.stufe };
         return { mx: re.cx, mz: re.cz, y0: e._fahr.y + h.stufe, y1: e._fahr.y + h.dach, re };
     };
     // DAS EINDRINGEN in eine Box; außer Band −Infinity (die Regeln der Hüllen: die Stufe trägt, der Wagen überrollt Dünneres)
@@ -503,7 +503,7 @@ async function tempo(K) {
         if (h ? !(b.topY > k.y0 && b.botY < k.y1) || b.dick < h.stufe : !(b.topY > k.y0 + STUFE && b.botY < k.y1)) return -Infinity;
         if (!h) return Math.max(...k.kreise.map(([x, z, rr]) => rr - zuBox(R, x, z)));
         const achsen = [R, h].flatMap((Q) => [[Q.c, -Q.s], [Q.s, Q.c]]);
-        return Math.min(...achsen.map(([ux, uz]) => weite(R, ux, uz) + weite(h, ux, uz) - Math.abs((h.cx - R.cx) * ux + (h.cz - R.cz) * uz)));
+        return Math.min(...achsen.map(([ux, uz]) => weite(R, ux, uz) + weite(h, ux, uz) + h.rund - Math.abs((h.cx - R.cx) * ux + (h.cz - R.cz) * uz)));
     };
     // DER DURCHTRITT: die Mitte jenseits der Mitte des Ziels `b`, an einer gedrehten WAND jenseits ihrer Mittel-Ebene
     const werkH = (e, b, wand) => {
@@ -522,7 +522,7 @@ async function tempo(K) {
             let t = -Infinity;
             for (let i = 0; i <= 8; i++) {
                 const [x, z] = [a[0] + ((b[0] - a[0]) * i) / 8, a[1] + ((b[1] - a[1]) * i) / 8];
-                if (k.re) t = Math.max(t, l.radius - zuBox(k.re, x, z));
+                if (k.re) t = Math.max(t, l.radius + k.re.rund - zuBox(k.re, x, z));
                 else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.radius - Math.hypot(kx - x, kz - z));
             }
             return t;
@@ -801,7 +801,7 @@ async function tempo(K) {
     if (S && S.png && process.env.KOLLISION_BILD_PNG)
         require("fs").writeFileSync(process.env.KOLLISION_BILD_PNG, Buffer.from(S.png.split(",")[1], "base64"));
     if (S) console.log(`  Stoß im Ausgabe-Bild: ${S.fehler || `Wagen ${S.px.wagen} px · Bär ${S.px.gestossen} px in 640×360 · ${S.zeile}`}`);
-    const v = urteil(befund).filter((x) => !x.startsWith("OFFEN") || console.log("  " + x));
+    const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ KOLLISION = BILD ROT:\n  " + v.join("\n  "));
         process.exit(1);

@@ -179,10 +179,16 @@ class AnazhRealm_koerper_bewegung {
     // DER UMRISS eines Wagens im Fahrt-Rahmen (m): Bug, Heck, halbe Breite, Dach — ein Studio-Wagen aus dem Gesetz seiner
     // Hülle (vehicle-core exportDrive.huelle × Größe), sonst aus der Gestalt des Bauplans. Leser: die Hülle des Ritts und des
     // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imWagen`: kein Wurf der Natur in einem Wagen).
+    // DER UMRISS IST DIE GEZEICHNETE GESTALT (physik.K2 Staffel 2, Bild = Kollision): steht das Bild des Studio-Wagens
+    // (`_fahrBildUmriss`), ist der Umriss seine Spanne — die Hardpoints der Hülle (NOSE, TAIL, bw) liegen innen: der GT trägt
+    // Stoßfänger und Spiegel 0,14 m vor dem Bug, 0,15 m hinter dem Heck und 0,10 m neben der Flanke, und im Bild stak er
+    // 0,039 m in der Mauer. Vor dem Bild (der Platz, den die Welt beim Setzen sucht) trägt das Gesetz der Hülle.
     _fahrUmriss(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        const b = h ? this._fahrBildUmriss(entry) : null;
+        if (b) return { bug: b.bug * sc, heck: b.heck * sc, hw: b.hw * sc, dach: b.dach * sc, rund: b.rund * sc };
         if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX)
             return {
                 bug: h.noseX * sc,
@@ -201,24 +207,76 @@ class AnazhRealm_koerper_bewegung {
         };
     }
 
+    // DAS BILD DES WAGENS im Vorlagen-Raum (Bug +x, m bei Größe 1): die Spanne der Teile, die seine gezeichnete Stufe trägt
+    // (der Foundry-Flat, aus dem `_archInstanceUpdate` die Instanzen setzt — jede Box der Teil-Geometrie in ihrer Matrix,
+    // die Räder an ihren Ecken), am Flat gemerkt (jeder Wagen derselben Gestalt teilt ihn). null, solange er nicht gezeichnet
+    // ist.
+    _fahrBildUmriss(entry) {
+        if (!entry.instanced || !entry.instFoundry) return null;
+        const pr = this._foundryPresetForEntry(entry);
+        const flat = pr
+            ? this._foundryFlattenFor(entry, pr, Number.isFinite(entry._servedLod) ? entry._servedLod : 0)
+            : null;
+        if (!flat || !flat.leaves || !flat.leaves.length) return null;
+        if (flat._fahrUmriss) return flat._fahrUmriss;
+        const B = new THREE.Box3();
+        const b = new THREE.Box3();
+        for (const lf of flat.leaves) {
+            if (lf.shadowTwin || !lf.geom) continue;
+            if (!lf.geom.boundingBox) lf.geom.computeBoundingBox();
+            B.union(b.copy(lf.geom.boundingBox).applyMatrix4(lf.localMatrix));
+        }
+        if (B.isEmpty()) return null;
+        const u = { bug: B.max.x, heck: B.min.x, hw: Math.max(B.max.z, -B.min.z), dach: B.max.y, rund: 0 };
+        // DIE ECKEN (`rund`, der Eck-Radius): das Bild ist im Grundriss rund — je Richtung (c, s) seine Stütze (der äußerste
+        // Vertex) gegen die des Rechtecks; der größte Radius, mit dem das gerundete Rechteck jedes Bild umschließt
+        // (h_Rechteck − rund · (|c| + |s| − 1) ≥ h_Bild, 64 Richtungen). Mit scharfen Ecken hielt der GT an der 11,5° schrägen
+        // Mauer im Bild 0,084 m Spalt.
+        const N = 64;
+        const S = new Float64Array(N).fill(-Infinity);
+        const C = Float64Array.from({ length: N }, (_, i) => Math.cos((2 * Math.PI * i) / N));
+        const Sn = Float64Array.from({ length: N }, (_, i) => Math.sin((2 * Math.PI * i) / N));
+        const v = new THREE.Vector3();
+        for (const lf of flat.leaves) {
+            const P = !lf.shadowTwin && lf.geom && lf.geom.attributes.position;
+            for (let j = 0; P && j < P.count; j++) {
+                v.fromBufferAttribute(P, j).applyMatrix4(lf.localMatrix);
+                for (let i = 0; i < N; i++) {
+                    const h = v.x * C[i] + v.z * Sn[i];
+                    if (h > S[i]) S[i] = h;
+                }
+            }
+        }
+        let rund = Math.min(u.hw, (u.bug - u.heck) / 2);
+        for (let i = 0; i < N; i++) {
+            const [c, s] = [C[i], Sn[i]];
+            const ecke = Math.abs(c) + Math.abs(s) - 1;
+            if (ecke > 1e-3) rund = Math.min(rund, ((c > 0 ? u.bug : u.heck) * c + u.hw * Math.abs(s) - S[i]) / ecke);
+        }
+        u.rund = Math.max(0, rund);
+        flat._fahrUmriss = u;
+        return u;
+    }
+
     // Die Hülle aus dem Gesetz (je Eintrag einmal, `mountArchitecture` setzt sie frisch): der Ritt liest sie über
     // `_fahrHuelle`, der Platz eines Wagens, den die Welt hinstellt (`_fahrPlatzFrei`), schon vor der ersten Fahrt.
     _fahrHuelleBau(entry, G) {
         if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
-        const { bug, heck, hw, dach } = this._fahrUmriss(entry);
+        const { bug, heck, hw, dach, rund = 0 } = this._fahrUmriss(entry);
         // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
         const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * G.radR;
-        // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
-        // Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
+        // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken (auf ihrer Rundung, `rund`), Bug-
+        // und Heck-Mitte und je Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
         const umriss = [];
         const s2 = Math.SQRT1_2;
+        const ein = rund * (1 - s2); // die Rundung der Ecke unter 45° (innen vor der scharfen Ecke)
         for (const [l, nl] of [
             [bug, 1],
             [heck, -1],
         ]) {
             umriss.push({ l, q: 0, nl, nq: 0 });
-            umriss.push({ l, q: hw, nl: nl * s2, nq: s2 });
-            umriss.push({ l, q: -hw, nl: nl * s2, nq: -s2 });
+            umriss.push({ l: l - nl * ein, q: hw - ein, nl: nl * s2, nq: s2 });
+            umriss.push({ l: l - nl * ein, q: -(hw - ein), nl: nl * s2, nq: -s2 });
         }
         for (const t of [0.25, 0.5, 0.75])
             for (const sq of [-1, 1]) umriss.push({ l: heck + (bug - heck) * t, q: sq * hw, nl: 0, nq: sq });
@@ -228,6 +286,7 @@ class AnazhRealm_koerper_bewegung {
             mitte: (bug + heck) / 2,
             hl: (bug - heck) / 2,
             hw,
+            rund, // der Eck-Radius des Grundrisses (das gerundete Rechteck, `_fahrBildUmriss`)
             dach,
             stufe,
             umriss,
@@ -271,7 +330,10 @@ class AnazhRealm_koerper_bewegung {
         for (let i = 0; i < 4; i++) {
             const ux = i === 0 ? b1x : i === 1 ? b2x : i === 2 ? h.fX : h.qX;
             const uz = i === 0 ? b1z : i === 1 ? b2z : i === 2 ? h.fZ : h.qZ;
-            const rO = h.hl * Math.abs(h.fX * ux + h.fZ * uz) + h.hw * Math.abs(h.qX * ux + h.qZ * uz);
+            const rO =
+                (h.hl - h.rund) * Math.abs(h.fX * ux + h.fZ * uz) +
+                (h.hw - h.rund) * Math.abs(h.qX * ux + h.qZ * uz) +
+                h.rund;
             const rA = ex * Math.abs(b1x * ux + b1z * uz) + ez * Math.abs(b2x * ux + b2z * uz);
             const d = cx * ux + cz * uz;
             const ov = rO + rA - Math.abs(d);
@@ -434,8 +496,8 @@ class AnazhRealm_koerper_bewegung {
             }
         }
         // (3) KREATUREN — das Rechteck gegen den LEIB eines Wesens (D2, Welle L): `_kreaturLeib`, die EINE Größe je Tier, mit
-        // der das Tier selbst gegen jede Hülle löst (`_kreaturHuellenKontakt`) — drei Achsen längs seiner Gier (−halb · 0 ·
-        // +halb), je Achse sein Radius, die Höhe vom Fuß bis zum Kopf; das Band der Hülle zählt wie eine Box für das Tier
+        // der das Tier selbst gegen jede Hülle löst (`_kreaturHuellenKontakt`) — drei Achsen längs seiner Gier (mitte −halb · mitte ·
+        // mitte +halb), je Achse sein Radius, die Höhe vom Fuß bis zum Kopf; das Band der Hülle zählt wie eine Box für das Tier
         // (über der Stufe seines Fußes, unter seinem Kopf). Je Achse der nächste Punkt des Rechtecks; liegt die Achse im
         // Rechteck, der kürzeste Weg hinaus. Vorher ein ZWEITER Leib: der Kreis VERHALTEN.separation × bodySize um die
         // Mitte (beim Bären 0,64 m gegen den Leib-Radius 0,19 m — der Wagen hielt 0,46 m vor der Flanke).
@@ -463,6 +525,7 @@ class AnazhRealm_koerper_bewegung {
                     const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
                     leib.radius = AnazhRealm.PLAYER_WALL_RADIUS;
                     leib.halb = 0;
+                    leib.mitte = 0;
                     leib.hoehe = 2 * fd + stufeTier;
                     leib.fx = 0;
                     leib.fz = 1;
@@ -472,14 +535,16 @@ class AnazhRealm_koerper_bewegung {
                     leib.fuss = cr.position.y;
                 }
                 if (k.oben <= leib.fuss + stufeTier || k.unten >= leib.fuss + leib.hoehe) continue;
-                const rc = leib.radius;
+                // das gerundete Rechteck: der Leib-Kreis gegen das innere Rechteck mit Radius + Eck-Radius
+                const rc = leib.radius + k.rund;
+                const [hl, hw] = [k.hl - k.rund, k.hw - k.rund];
                 for (let o = leib.halb > 0 ? -1 : 0; o <= (leib.halb > 0 ? 1 : 0); o++) {
-                    const dx = cr.position.x + leib.fx * o * leib.halb - (pos.x + fX * k.mitte);
-                    const dz = cr.position.z + leib.fz * o * leib.halb - (pos.z + fZ * k.mitte);
+                    const dx = cr.position.x + leib.fx * (leib.mitte + o * leib.halb) - (pos.x + fX * k.mitte);
+                    const dz = cr.position.z + leib.fz * (leib.mitte + o * leib.halb) - (pos.z + fZ * k.mitte);
                     const l = dx * fX + dz * fZ;
                     const q = dx * qX + dz * qZ;
-                    const cl = Math.max(-k.hl, Math.min(k.hl, l));
-                    const cq = Math.max(-k.hw, Math.min(k.hw, q));
+                    const cl = Math.max(-hl, Math.min(hl, l));
+                    const cq = Math.max(-hw, Math.min(hw, q));
                     const d = Math.hypot(l - cl, q - cq);
                     let sl = 0;
                     let sq = 0;
@@ -487,10 +552,10 @@ class AnazhRealm_koerper_bewegung {
                         if (d >= rc) continue;
                         sl = (-(l - cl) / d) * (rc - d);
                         sq = (-(q - cq) / d) * (rc - d);
-                    } else if (k.hl - Math.abs(l) < k.hw - Math.abs(q)) {
-                        sl = -(l >= 0 ? 1 : -1) * (k.hl - Math.abs(l) + rc);
+                    } else if (hl - Math.abs(l) < hw - Math.abs(q)) {
+                        sl = -(l >= 0 ? 1 : -1) * (hl - Math.abs(l) + rc);
                     } else {
-                        sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
+                        sq = -(q >= 0 ? 1 : -1) * (hw - Math.abs(q) + rc);
                     }
                     let sx = sl * fX + sq * qX;
                     let sz = sl * fZ + sq * qZ;
@@ -577,6 +642,9 @@ class AnazhRealm_koerper_bewegung {
                         : this._terrainMaterialAt(pos.x, pos.z, fz.y + k.stufe);
             }
         }
+        // DER AUFPRALL WIRD GEZEICHNET (physik.K2 Staffel 2): prallt der gerittene Wagen in diesem Schritt ab, zeigt das Bild
+        // den Kontakt (`_loopFixedStep`: α = 1)
+        if (meldet && aufprall > 0) this.state._fixedAufprall = true;
         if (meldet && aufprall >= ST.ereignisMs)
             this._stossEreignis(
                 gegnerStoff,

@@ -887,6 +887,7 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
+            st._fixedAufprall = false;
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
@@ -895,8 +896,12 @@ class AnazhRealm_dirigent_takt {
         // bei hartem Cap den Rest-Akkumulator verwerfen (Zeit fallen lassen statt einholen → kein Spiral)
         if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator > 0) st._fixedAccumulator = 0;
         st._fixedSimTime = simTime;
-        // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur
-        st._fixedAlpha = FIXED_DT > 0 ? 1 + st._fixedAccumulator / FIXED_DT : 1;
+        // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur.
+        // DER AUFPRALL WIRD GEZEICHNET (physik.K2 Staffel 2, Bild = Kollision): prallte der Körper im LETZTEN Schritt ab
+        // (`_fixedAufprall`, die Hülle des Wagens), zeigt dieses Bild den Kontakt (α = 1); das nächste interpoliert ab ihm
+        // weiter, nie zurück. Vorher lag das einzige Bild am Kontakt zwischen dem Zustand davor und dem Kontakt: der GT
+        // prallte mit 19,6 m/s in EINEM Schritt von der Mauer ab, und im Bild blieb er 5–11 cm vor ihr.
+        st._fixedAlpha = st._fixedAufprall || !(FIXED_DT > 0) ? 1 : 1 + st._fixedAccumulator / FIXED_DT;
         return steps;
     }
 

@@ -1822,6 +1822,39 @@ class AnazhRealm_koerper_leib {
         t0._beinMass = mass;
         return mass;
     }
+    // DER UMRISS DER GESTALT (physik.K2 Staffel 2, Bild = Kollision): die kleinste Leib-Kapsel um das, was gezeichnet wird —
+    // jeder Vertex jedes Meshes des Klons `wurzel` in der Stand-Pose des Kerns (die Haut und die Schalen des Fells,
+    // geskinnt; der gestoßene Leib gleitet in ihr, `_animateTierBaum`) im Rahmen des Rumpfs, waagrecht:
+    // `seite` die halbe Breite (der Radius), `vorn`/`hinten` die Enden der Kapsel längs der Gier (+z die Schnauze), so weit
+    // hinaus, dass ihre runden Enden jeden Vertex umschließen (die kantige Keule des Bären, nicht nur die Spitze der Rute).
+    // In Metern (× f), memoisiert an der Vorlage. Leser: der Leib (`_kreaturLeib`) — vorher hielt er 0,3 und 0,8
+    // Hüft-Höhen, und im Bild stak der an die Mauer gestoßene Bär 0,17 m in ihr.
+    static _tierUmriss(t0, wurzel, f) {
+        if (t0._umriss) return t0._umriss;
+        wurzel.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(wurzel.matrixWorld).invert();
+        const [m, v] = [new THREE.Matrix4(), new THREE.Vector3()];
+        const punkte = [];
+        let r = 0;
+        wurzel.traverse((n) => {
+            if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
+            m.multiplyMatrices(inv, n.matrixWorld);
+            for (let i = 0, N = n.geometry.attributes.position.count; i < N; i++) {
+                n.getVertexPosition(i, v).applyMatrix4(m);
+                punkte.push(v.x, v.z);
+                if (Math.abs(v.x) > r) r = Math.abs(v.x);
+            }
+        });
+        // die Achsen-Enden: ein Vertex (x, z) liegt in der Kapsel, wenn das Ende höchstens √(r² − x²) vor bzw. hinter ihm liegt
+        let [a, b] = [-Infinity, Infinity];
+        for (let i = 0; i < punkte.length; i += 2) {
+            const w = Math.sqrt(Math.max(0, r * r - punkte[i] * punkte[i]));
+            a = Math.max(a, punkte[i + 1] - w);
+            b = Math.min(b, punkte[i + 1] + w);
+        }
+        t0._umriss = { vorn: (a + r) * f, hinten: (b - r) * f, seite: r * f };
+        return t0._umriss;
+    }
     // DIE KÖRPER-KUGEL TRÄGT DIE BEINE (K3): die Kugel der Hüllen (`_ofenAssembleAsset`, Bind-Hülle × 1,25) reichte nicht
     // an das gestreckte Bein — am Hirsch lag die hintere Pfote im vorwärts gehenden Schritt bis 0,18 m außerhalb (die Probe
     // gate:kreatur-kosten (R)). Je Bein das Hüft-Gelenk und die gestreckte Kette (Glieder und Sohle, die Länge, über die
@@ -1861,6 +1894,11 @@ class AnazhRealm_koerper_leib {
     _animateTierBaum(group, t, walkPhase, moving, emotions) {
         const tb = group && group.userData && group.userData._tierBaum;
         if (!tb || !tb.teile) return;
+        // DER STOSS IST KEIN GANG (physik.K2 Staffel 2, Bild = Kollision): trägt ein Stoß den Leib (`_stossV`), gleitet er in
+        // der Stand-Pose des Kerns — der Pose, an der sein Umriss gemessen ist (`_tierUmriss`, der Leib jeder Hülle); der Gang
+        // setzt danach frisch an. Vorher las der Gang das Gleiten als Lauf, die Anker hielten die Pfoten am alten Ort: die
+        // Beine des mit 16 m/s an die Mauer gestoßenen Bären spreizten bis 0,87 m, und im Bild stak er 0,17 m in ihr.
+        if (group.userData._stossV) return this._tierBaumNeutralStance(group);
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         const T = tb.teile;
         // KREATUR-LEBEN/SCHWIMM-HEIMAT — der Körper-Zustand des Halters
@@ -2530,6 +2568,10 @@ class AnazhRealm_koerper_leib {
                         return R;
                     })()),
             };
+            // der Umriss der gezeichneten Gestalt bei Größe 1 (m), in der Stand-Pose — der Leib, mit dem das Tier jede Hülle
+            // berührt (`_kreaturLeib`)
+            this._tierBaumNeutralStance(group2);
+            group2.userData._tierBaum.umriss = AnazhRealm._tierUmriss(t0, klon, f2);
             this._gelenkStufe(group2, 0);
             return group2;
         }
