@@ -1315,21 +1315,21 @@
     // Überschuss (nicht gerechnet). Jede Schmelze über 0,6 mm am Tag füllt das Bett bis zur Krone (0,2 m): das Frühjahr hebt See
     // und Fluss bordvoll, solange der Schnee an ihrer Höhe Wasser trägt.
     // DIE TAFEL (`pegelTafel`): der Hub je `dy` m Höhe von `unter` unter dem Meer bis `ueber` darüber, in Stufen von `stufe` m, zum
-    // Tagesmittel der Saison; null, wo kein Wasser steigt. Die Lage trägt sie (`L.pegel`: der Wirt zieht sie je Tag der Welt und je Stufe des
+    // Tagesmittel der Saison; null, wo kein Wasser steigt. Die Lage trägt sie (`L.pegel`: der Wirt zieht sie je Tag der Welt und je Stempel des
     // Regens nach, der Faden bekommt sie im Stand). `pegelHub` liest sie, linear zwischen den Metern: der Spiegel jedes Sees (`koerperY`) und
     // jedes Flusses (`flussAm`, `spiegelQuer`, `flussRand`) — nie das Bett (`flussKanal`). Der Hub hängt am Spiegel allein: ein ebener Fluss-Abschnitt
     // hebt sich eben, und stromab steigt kein Spiegel — der Hub fällt mit der Höhe höchstens 0,2 m je Meter (die Linie der
     // Schmelze rampt über 0,09 K, 0,8 m Höhe).
-    // DER REGEN (wetter.K3, `regenAbfluss`): der zweite Term des Abflusses neben der Schmelze, an jeder Höhe gleich (das Wetter-Wort
+    // DER REGEN (wetter.K3, `pegelRegen`): der zweite Term des Abflusses neben der Schmelze, an jeder Höhe gleich (das Wetter-Wort
     // gilt der ganzen Seite). Der Regen der Stärke 1 (das Wetter-Feld `rain`, der Sturm) fällt mit 10 mm je Stunde, 0,3 davon
-    // fließt ab (Abfluss-Beiwert der Wiese): `regen` m je Tag. Das Einzugsgebiet ist EIN linearer Speicher (Nash) mit der
-    // Konstante `speicherS` (s Welt-Uhr): der Abfluss strebt mit e^(−dt/k) zu Regen · `regen` und läuft ohne Regen ebenso ab —
-    // der Sturm füllt das Bett nach ~6 min bis zur Krone, der Landregen (0,6) nach ~10 min, der Niesel (0,12) nach ~50 min; nach
-    // 20 min Sturm steht es ~13 h an der Krone und sinkt über ~2 Tage. Unter `regenStufe` (dort hebt er < eine halbe `stufe`)
-    // steht der Speicher auf 0, dem Fixpunkt, an dem der Regen schläft. Die Lag-Zeit wächst nicht mit dem Einzugsgebiet A (nicht
-    // gerechnet). `pegelRegen` reicht der Tafel den Term auf `regenStufe` gerundet und am Abfluss gedeckelt, der allein die Krone
-    // füllt — darüber trägt jede Höhe die Krone, die Tafel bleibt (der Wirt rechnet sie je Stufe, nie je Bild).
-    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01, regen: 0.072, speicherS: 43200, regenStufe: 1e-5 });
+    // fließt ab (Abfluss-Beiwert der Wiese): `regen` m je Tag. Das Einzugsgebiet steht im Gleichgewicht mit dem Regen des Felds
+    // (Abfluss = Regen · Beiwert): der Term ist eine FUNKTION des Wetter-Felds wie das Wetter der Welt-Uhr (feld.K2#2) — kein
+    // Speicher, der je Seite integriert und reist, keine Arbeit, solange das Feld steht. Der Sturm (1), der Landregen (0,6) und
+    // der Niesel (0,12) füllen das Bett bis zur Krone, sobald ihr Feld gilt (über den Übergang des Worts); ohne Regen fällt der
+    // Spiegel mit dem Feld. Die Lag-Zeit des Einzugsgebiets (Füllen und Ablaufen über Stunden) ist nicht gerechnet. `pegelRegen`
+    // reicht der Tafel den Term auf die Stufe des Hubs (`stufe`) quantisiert: der Abfluss, dessen Regen allein den Hub k · `stufe`
+    // trägt — die Tafel kennt höchstens Krone / `stufe` + 1 Regen-Stempel, der Wirt rechnet sie je Stempel, nie je Bild.
+    const PEGEL = Object.freeze({ spende: 0.0009, unter: 40, ueber: 300, dy: 1, stufe: 0.01, regen: 0.072 });
     function abfluss(L, y, saison, feld, regen) {
         if (!Number.isFinite(y) || !Number.isFinite(saison)) throw new Error("gelaende-core abfluss: Höhe oder Saison fehlt");
         const r = regen > 0 ? regen : 0;
@@ -1338,13 +1338,6 @@
         const t = F.mittel - F.kuehlung + F.jahr.amp * Math.cos(2 * Math.PI * (saison - F.jahr.gipfel) - F.jahr.spaet);
         return SCHMELZE.gradTag * Math.max(0, t) + r;
     }
-    function regenAbfluss(q0, rain, dtS) {
-        const q = q0 > 0 ? q0 : 0;
-        if (!(dtS > 0)) return q;
-        const ziel = rain > 0 ? PEGEL.regen * rain : 0;
-        const n = ziel + (q - ziel) * Math.exp(-dtS / PEGEL.speicherS);
-        return ziel === 0 && n < PEGEL.regenStufe ? 0 : n;
-    }
     // Das Bett der Hydrosphäre: [Tiefe T, Freibord f, Krone] (`pegelTafel`, `pegelRegen`).
     function pegelBett(L) {
         const H = L.hydroGesetz;
@@ -1352,12 +1345,13 @@
             throw new Error("gelaende-core pegelTafel: das Gesetz der Hydrosphäre fehlt (kanalTiefe, Freibord)");
         return [H.kanalTiefe, H.spiegelFreibord, Math.min(H.spiegelFreibord * H.kanalTiefe, H.dammFreibord)];
     }
-    function pegelRegen(L, q) {
-        if (!(q > 0)) return 0;
+    function pegelRegen(L, rain) {
+        if (!(rain > 0)) return 0;
         const P = PEGEL;
         const [T, f, krone] = pegelBett(L);
-        const voll = P.spende * (Math.pow(1 + krone / ((1 - f) * T), 1 / 0.6) - 1);
-        return Math.round(Math.min(q, voll + P.regenStufe) / P.regenStufe) * P.regenStufe;
+        const tf = (1 - f) * T;
+        const k = Math.round(Math.min(krone, tf * (Math.pow(1 + (P.regen * rain) / P.spende, 0.6) - 1)) / P.stufe);
+        return k > 0 ? P.spende * (Math.pow(1 + (k * P.stufe) / tf, 1 / 0.6) - 1) : 0;
     }
     function pegelTafel(L, saison, feldAt, regen) {
         const P = PEGEL;
@@ -5905,7 +5899,6 @@
         schneeVersatz: schneeVersatz,
         PEGEL: PEGEL,
         abfluss: abfluss,
-        regenAbfluss: regenAbfluss,
         pegelRegen: pegelRegen,
         pegelTafel: pegelTafel,
         pegelHub: pegelHub,

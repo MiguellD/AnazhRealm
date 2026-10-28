@@ -991,9 +991,9 @@ dem Versatz der Schneegrenze `schneeVersatz` (den `schnee` liest), die Lava `LAV
 Zeile `stein` des Wirts, an der Luft und unter Dampf am Wasser, die Glut über dem Draper-Punkt) — ihr Gang und ihre Glut als EIN
 Gesetz jedes heißen Körpers `waermeGang`/`glutAus` (die Lava, der Stahl der Esse) —, der Pegel `PEGEL`/`abfluss`/`pegelTafel`/
 `pegelHub` (stoffe.K3-2: der Abfluss der Schmelze hebt den Spiegel jedes Sees und Flusses nach Manning bis zur Krone des Betts;
-die Lage trägt die Tafel des Tags, `L.pegel`, der Spiegel des Kerns liest sie, nie das Bett) mit dem Regen `regenAbfluss`/
-`pegelRegen` (wetter.K3: der Regen des Wetter-Felds als zweiter Term des Abflusses, ein linearer Speicher des Einzugsgebiets auf
-der Welt-Uhr, an der Krone gedeckelt), die
+die Lage trägt die Tafel des Tags, `L.pegel`, der Spiegel des Kerns liest sie, nie das Bett) mit dem Regen `pegelRegen`
+(wetter.K3: der Regen des Wetter-Felds als zweiter Term des Abflusses, eine Funktion des Felds auf der Stufe des Hubs, an der
+Krone gedeckelt), die
 Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DIE HYDROSPHÄRE (Karte hydro-faden): das
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet

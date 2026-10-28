@@ -910,8 +910,8 @@ class AnazhRealm_bild_himmel {
     }
     _tickRain() {
         const st = this.state;
-        // DIE RUHE IST DER FIXPUNKT (feld.K3): regnet es nicht, steht die Nässe an ihrem Ziel (trocken) und ist der Speicher des
-        // Pegels leer (`regenAbfluss`, wetter.K3), schläft der Regen samt Nässe, Dach-Pool und Pegel, bis das Wort, sein
+        // DIE RUHE IST DER FIXPUNKT (feld.K3): regnet es nicht und steht die Nässe an ihrem Ziel (trocken), schläft der Regen
+        // samt Nässe, Dach-Pool und Pegel (wetter.K3: sein Regen ist eine Funktion des Felds, das steht), bis das Wort, sein
         // Übergang oder die Nässe sich ändern (`_regenRuht`); die Uhr der Nässe geht mit, damit das nächste Wort ab seinem Takt
         // benetzt. Bis feld.K3 rechnete er in jedem Bild Feld, Nässe und Pool
         // (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 21 600 Rufe).
@@ -925,8 +925,7 @@ class AnazhRealm_bild_himmel {
         const wf = this._weatherFieldFor(st.weather);
         if (!(wf.rain > 0.01)) {
             if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
-            if (st.naesse === 0 && !st.regenAbfluss && !st.weatherTransition)
-                this._regenRuht = { wort: st.weather, naesse: 0 };
+            if (st.naesse === 0 && !st.weatherTransition) this._regenRuht = { wort: st.weather, naesse: 0 };
             return;
         }
         const sys = this._ensureRainSystem();
@@ -2994,7 +2993,7 @@ class AnazhRealm_bild_himmel {
         st.naesse = Math.abs(n - ziel) < N.ruhe ? ziel : n; // am Ziel steht sie (der Fixpunkt, an dem der Regen schläft)
         this._ensureAtmoUniforms().naesse.value = st.naesse;
         this._dachTakt();
-        this._regenAbflussTakt(dt, wf.rain); // der Regen speist See und Fluss (wetter.K3)
+        this._pegelTakt(); // der Regen des Felds speist See und Fluss (wetter.K3) — neu nur an einem neuen Stempel (`pegelRegen`)
         return st.naesse;
     }
 
