@@ -194,7 +194,7 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
 const evalRuf = (code) => rufe("/eval", { code });
-const ergebnis = (a) => ergebnis(a);
+const ergebnis = (a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
 const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stringify(t, null, 1)), process.exit(gruen ? 0 : 1));
 // `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
