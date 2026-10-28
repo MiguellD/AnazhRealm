@@ -87,7 +87,7 @@ function urteil(b) {
     const m = (x) => (Number.isFinite(x) ? x.toFixed(2) : String(x));
     // K — der Konsum am Ruf: jeder Leser ruft sein Gesetz
     const KO = b.konsum;
-    if (!KO || KO.fehler || !Object.keys(KO).length) v.push(`K LEER: der Konsum am Ruf wurde nicht gemessen (${(KO && KO.fehler) || "keine Probe"})`);
+    if (!KO || KO.fehler || !Object.keys(KO).length) v.push(`K LEER: der Konsum am Ruf wurde nicht gemessen (${KO?.fehler || "keine Probe"})`);
     else for (const [k, ok] of Object.entries(KO)) if (!ok) v.push(`KONSUM: ${k} — der Leser ruft sein Gesetz nicht`);
     // H
     const H = b.hain;
@@ -443,7 +443,7 @@ async function probe(A) {
     };
     const neueWerke = (vor, art = /./) => st.architectures.filter((e) => e && !vor.has(e) && art.test(e.type)); // seit `vor`
     const stelle = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z); // der Spieler steht am Ort
-    const fehlerZeile = (e) => String((e && e.stack) || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
+    const fehlerZeile = (e) => String(e?.stack || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
     const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
         ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
     // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
@@ -557,8 +557,8 @@ async function probe(A) {
     const anDerWand = (e) => {
         const bp = st.blueprints && st.blueprints[e.type];
         const p =
-            bp && typeof bp.studioGestalt === "string" && FCw && FCw.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
-        return !!(p && p.fx && p.fx.place && p.fx.place.siteTag === "wand");
+            bp && typeof bp.studioGestalt === "string" && FCw?.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
+        return !!(p?.fx?.place && p.fx.place.siteTag === "wand");
     };
     const traegerHaus = (e) => {
         for (const h of st.architectures) {
@@ -690,7 +690,7 @@ async function probe(A) {
             zensus.quelle = "strom";
             satz.orte++;
             satz.haeuser += neu.length;
-            const zeile = o && o.lastElementChild ? o.lastElementChild.textContent : null;
+            const zeile = o?.lastElementChild ? o.lastElementChild.textContent : null;
             const haeuser = neu.map((e) => {
                 const ab = wasserAbstand(e.position.x, e.position.z);
                 if (ab > A.satzAbstandMax)
@@ -732,8 +732,7 @@ async function probe(A) {
         const bautenAm = (x, z) =>
             st.architectures.filter(
                 (a) =>
-                    a &&
-                    a.position &&
+                    a?.position &&
                     !r._istNatur(a) &&
                     r._grundrissVon(a) &&
                     Math.hypot(a.position.x - x, a.position.z - z) <= 25
@@ -788,13 +787,12 @@ async function probe(A) {
                 out.hain.satz = neu.length; // die Eichen des Satzes (die Bau-Eiche steht mit in der Flut-Probe)
                 // der Satz des Ergebnisses (`_ergebnisSatz`): die Linse nennt den Grund jeder gefallenen Eiche beim Namen
                 const co = document.getElementById("chat-output");
-                out.hain.chat = co && co.lastElementChild ? co.lastElementChild.textContent : null;
+                out.hain.chat = co?.lastElementChild ? co.lastElementChild.textContent : null;
                 // und die Bauten mit Grundriss am Ufer (≤ 25 m): wer die Würfe trug
                 out.hain.bauten = st.architectures
                     .filter(
                         (a) =>
-                            a &&
-                            a.position &&
+                            a?.position &&
                             !r._istNatur(a) &&
                             r._grundrissVon(a) &&
                             Math.hypot(a.position.x - hx, a.position.z - hz) <= 25
@@ -1011,7 +1009,7 @@ async function probe(A) {
                 ansaugGT = gt;
                 out.ansaug = ansaug;
             } catch (e) {
-                out.ansaug = { fehler: String((e && e.message) || e) };
+                out.ansaug = { fehler: String(e?.message || e) };
             }
         // ── Z: das Dorf am Fluss ──
         if (soll("zensus"))
@@ -1020,7 +1018,7 @@ async function probe(A) {
                 await r.spawnSettlement({ seed: 7, nH: 18, position: { x: X, y: r._voxelSurfaceY(X, Z), z: Z } });
                 zensus.quelle = "strom";
             } catch (e) {
-                zensus.fehler = "Dorf: " + String((e && e.message) || e);
+                zensus.fehler = "Dorf: " + String(e?.message || e);
             }
         // ── S: der Haus-Satz am Schau-Ort und an der Furt (dieselbe gestreamte Welt), gemessen, solange sie steht ──
         if (soll("satz"))
@@ -1157,7 +1155,7 @@ async function probe(A) {
                         ]),
                 };
             } catch (e) {
-                out.wagen = { fehler: String((e && e.message) || e) };
+                out.wagen = { fehler: String(e?.message || e) };
             }
         // ── S: der Haus-Satz am See (−906/−634, eine eigene gestreamte Welt) ──
         if (soll("satz"))
@@ -1287,7 +1285,7 @@ async function probe(A) {
                     ueberSpiegel: +(p.y - r._koerperWasser(p.x, p.z, g)).toFixed(2),
                 };
             } catch (e) {
-                out.ansaug.aussteigen = { fehler: String((e && e.message) || e) };
+                out.ansaug.aussteigen = { fehler: String(e?.message || e) };
             }
         // ── E: DAS ERGEBNIS JEDES SETZ-OPS — je Op ein erzwungener Fehl-Grund (die Obergrenze der
         //    Kreaturen, das kalte Buch, ein unbekannter Bauplan, der See), gesprochen wie der Spieler; der Chat sagt die
@@ -1405,7 +1403,7 @@ async function probe(A) {
                 const plan = await r._foundryRequestSettlement({ seed: A.rand.seed, nH });
                 let mx = 0;
                 let mz = 0;
-                const slots = (plan && plan.slots) || [];
+                const slots = plan?.slots || [];
                 // der Anker so, dass das Haus des Plans, das am weitesten zum See weist, am Seeufer steht (das Rand-Haus)
                 const [ex0, ez0] = A.rand.ufer;
                 const ul = Math.hypot(A.rand.see[0] - ex0, A.rand.see[1] - ez0) || 1;
@@ -1495,7 +1493,7 @@ async function probe(A) {
                     vor = z;
                 }
                 geladen = new Set();
-                for (const [k, e] of st.voxelChunks) if (e && e.waterCells) geladen.add(k);
+                for (const [k, e] of st.voxelChunks) if (e?.waterCells) geladen.add(k);
                 vor = zaehlen();
                 // DIE ZELLEN SELBST: je geladenem Chunk die Zahl seiner Wasser-Zellen — ändert das Dorf sie (der Erdbau
                 // am Ufer rückt einen Grund unter Wasser in eine andere Zelle), ist das Wecken des Automaten verdient
@@ -1525,9 +1523,9 @@ async function probe(A) {
                 // Wasser, nicht den Deckel
                 const Klasse = r.constructor;
                 const deckel = Klasse.MAX_NEXUS_STRUCTURES;
-                const autos = () => st.architectures.filter((e) => e && e.autonomous).length;
+                const autos = () => st.architectures.filter((e) => e?.autonomous).length;
                 const autosVor = autos();
-                const erdbauVor = new Set(Object.keys((st.worldMeta && st.worldMeta.erdbau) || {}));
+                const erdbauVor = new Set(Object.keys(st.worldMeta?.erdbau || {}));
                 Klasse.MAX_NEXUS_STRUCTURES = Infinity;
                 try {
                     zensus.quelle = "Nexus-Dorf";
@@ -1574,7 +1572,7 @@ async function probe(A) {
                 const GK = window.__gelaendeCore;
                 const ZM = GK.ERDBAU.zelleM;
                 let nassImErdbau = 0;
-                const erdbauNeu = Object.keys((st.worldMeta && st.worldMeta.erdbau) || {}).filter(
+                const erdbauNeu = Object.keys(st.worldMeta?.erdbau || {}).filter(
                     (k) => !erdbauVor.has(k)
                 );
                 for (const key of erdbauNeu) {
@@ -1600,7 +1598,7 @@ async function probe(A) {
                     randHaus: randHaus
                         ? `${randHaus.type} #${randHaus.id} (${randHaus.position.x.toFixed(1)}/${randHaus.position.z.toFixed(1)})`
                         : null,
-                    huelle: !!(randHaus && randHaus._hausHuelle),
+                    huelle: !!randHaus?._hausHuelle,
                     // der Nexus-Deckel: so viele autonome Bauten vor und nach dem Dorf — über dem Deckel fiele das Fernste
                     deckel: { max: deckel, autosVor, autosNach, ueber: Math.max(0, autosNach - deckel) },
                     invalidierungen: inv.n,
@@ -1685,7 +1683,7 @@ async function probe(A) {
                 for (const e of neueWerke(vorA)) r.removeArchitecture(e);
                 // der losgelassene Wagen (der GT der Ansaugung) rechnet im Nachlauf mit der Tiefe am Wagen
                 const gt = ansaugGT;
-                if (gt && gt._fahr) {
+                if (gt?._fahr) {
                     try {
                         r.dismountArchitecture();
                     } catch {
@@ -1694,7 +1692,7 @@ async function probe(A) {
                     (r._fahrLos || (r._fahrLos = new Set())).add(gt);
                     gt._fahr.vlong = 4;
                 }
-                K["_fahrNachlauf → _fahrTiefe"] = !!(gt && gt._fahr) && ruft(r, "_fahrNachlauf", "_fahrTiefe", [1 / 60]);
+                K["_fahrNachlauf → _fahrTiefe"] = !!gt?._fahr && ruft(r, "_fahrNachlauf", "_fahrTiefe", [1 / 60]);
                 out.konsum = K;
             } catch (e) {
                 out.konsum = { fehler: fehlerZeile(e) };
@@ -2472,7 +2470,7 @@ async function lauf() {
         } else console.log("\nWERK-IM-WASSER GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
-        console.log("WERK-IM-WASSER ABBRUCH:", (e && e.message) || e);
+        console.log("WERK-IM-WASSER ABBRUCH:", e?.message || e);
         exit = 2;
     } finally {
         await browser.close().catch(() => {});

@@ -477,7 +477,7 @@ function saumProbe(ort) {
         window.__buehne();
         const dev = rend.backend.device;
         const gpuFehler = [];
-        const gpuHoer = (e) => gpuFehler.push(String((e.error && e.error.message) || e.message || e).slice(0, 240));
+        const gpuHoer = (e) => gpuFehler.push(String(e.error?.message || e.message || e).slice(0, 240));
         dev.addEventListener("uncapturederror", gpuHoer);
         const cam = st.camera;
         const { x: x0, y: y0, z: z0 } = ort; // die Bühne der Wand (`buehne`): ihr Wasser ist flüssig
@@ -514,7 +514,7 @@ function saumProbe(ort) {
         const aufnahme = async () => {
             for (let i = 0; i < 3; i++) {
                 setzeKamera();
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
                 r._loopRender();
             }
             setzeKamera();
@@ -584,7 +584,7 @@ function buehne(nFrames, nachtLicht) {
         window.__buehne();
         const gpuFehler = [];
         const dev = rend.backend.device;
-        const gpuHoer = (e) => gpuFehler.push(String((e.error && e.error.message) || e.message || e).slice(0, 240));
+        const gpuHoer = (e) => gpuFehler.push(String(e.error?.message || e.message || e).slice(0, 240));
         dev.addEventListener("uncapturederror", gpuHoer);
         // Die Kamera hoch über dem Boden (nichts von der Welt zwischen ihr und der Bühne), Blick waagrecht nach −z — und das
         // Wasser der Bühne flüssig (stoffe.K3): 10 m unter der tiefsten Höhe, über der Eis beginnt (`_eisLinien`, die Linie
@@ -639,7 +639,7 @@ function buehne(nFrames, nachtLicht) {
             return kopieRoh.apply(this, a);
         };
         const frame = () => {
-            if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+            if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
             r._loopRender();
         };
         const canvasTiefe = () => {
@@ -653,7 +653,7 @@ function buehne(nFrames, nachtLicht) {
             let n = 0,
                 b = 0;
             for (const [t, v] of rend.info.memoryMap)
-                if (t && t.isTexture && t.renderTarget && t.renderTarget.isPostProcessingRenderTarget) {
+                if (t?.isTexture && t.renderTarget?.isPostProcessingRenderTarget) {
                     n++;
                     b += typeof v === "number" ? v : 0;
                 }
@@ -694,7 +694,7 @@ function buehne(nFrames, nachtLicht) {
                 const m = [px(15, 11), px(16, 11), px(15, 12), px(16, 12)];
                 s.mitte = [0, 1, 2].map((c) => Math.round(m.reduce((a, p) => a + p[c], 0) / 4));
             } catch (e) {
-                s.fehler.push("Aufnahme: " + String((e && e.message) || e).slice(0, 200));
+                s.fehler.push("Aufnahme: " + String(e?.message || e).slice(0, 200));
             }
             await dev.queue.onSubmittedWorkDone();
             s.tiefenKopien = kopien;
@@ -754,7 +754,7 @@ function buehne(nFrames, nachtLicht) {
             // ERROR. Die Wand nimmt den Hörer fort, kehrt zur Kette zurück und verlangt beides; ihre ERROR-Zeile ist die einzige,
             // die das Urteil duldet.
             const leinwand = rend.getCanvasTarget();
-            const hoerer = (leinwand._listeners && leinwand._listeners.dispose) || [];
+            const hoerer = leinwand._listeners?.dispose || [];
             const fort = hoerer.filter((h) => /_frameBufferTargets\.delete\(/.test(Function.prototype.toString.call(h)));
             for (const h of fort) leinwand.removeEventListener("dispose", h);
             const driftFehler = [];
@@ -923,7 +923,7 @@ function buehne(nFrames, nachtLicht) {
             const t0 = performance.now();
             const r = await window.__weltDa((r) => {
                 const st = r.state;
-                return !!(st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera);
+                return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });
             return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
         });
@@ -939,7 +939,7 @@ function buehne(nFrames, nachtLicht) {
         await page.evaluate(async () => {
             const r = window.anazhRealm;
             for (let i = 0; i < 6; i++) {
-                if (r.state.renderer._nodes && r.state.renderer._nodes.nodeFrame)
+                if (r.state.renderer._nodes?.nodeFrame)
                     r.state.renderer._nodes.nodeFrame.update();
                 r._loopRender();
                 await sleep(50);
@@ -983,7 +983,7 @@ function buehne(nFrames, nachtLicht) {
                 `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %)`
             );
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: e?.message || String(e) };
     }
     await browser.close();
     server.close();

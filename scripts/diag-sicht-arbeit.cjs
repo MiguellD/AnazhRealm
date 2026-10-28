@@ -64,7 +64,7 @@ function urteil(b) {
                     `nicht, was die Maske vom Auge dieses Frames behält: ${BT.namen.join(", ")} (Kante: ${BT.fall})`
             );
         const BO = b.blendeTreueOhneRand;
-        if (BT && BT.fall && BT.gehalten && !(BO && BO.loecher > 0))
+        if (BT?.fall && BT.gehalten && !(BO && BO.loecher > 0))
             v.push(
                 "LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts " +
                     `(${BO ? BO.loecher : "?"} Löcher) — die Blende-Treue prüft die Kante nicht`
@@ -73,8 +73,8 @@ function urteil(b) {
     const I = b.instanzTreue;
     if (!I || !(I.faelle && I.faelle.length >= 2))
         v.push(
-            `LEER: Instanz-Treue ohne beide Fälle (${I && I.faelle ? I.faelle.join(", ") : "keine Messung"})` +
-                (I && I.leichen && I.leichen.length
+            `LEER: Instanz-Treue ohne beide Fälle (${I?.faelle ? I.faelle.join(", ") : "keine Messung"})` +
+                (I?.leichen && I.leichen.length
                     ? ` — ohne Prüfung: ${I.leichen.join(" · ")} (eine leere Gruppe zeichnet in keinem Pass)`
                     : "") +
                 " — (I) prüfte nicht alles"
@@ -877,7 +877,7 @@ const server = statikServer();
                     for (const g of r._instanzWahlGruppen())
                         if (g.wahl === "schatten" && g.mesh) wahl.push(["k" + i, g, g.mesh.count]);
                     r._chunkSatzPass(c, false, i, S);
-                    if (bunde && bunde.size) {
+                    if (bunde?.size) {
                         r._werferWahlPass(bunde, S);
                         // die Wahl der Werfer: die ruhenden Werfer und die werfenden Bündel (die Treue vergleicht sie)
                         const ruhen = S.ab.map((o) => o.id).sort((x, y) => x - y);
@@ -896,7 +896,7 @@ const server = statikServer();
             const reif = () => {
                 for (let f = 0; f < 400; f++) {
                     frame();
-                    const offen = s.hoehle && s.hoehle.offen ? s.hoehle.offen.length : 0;
+                    const offen = s.hoehle?.offen ? s.hoehle.offen.length : 0;
                     if (offen === 0) break;
                 }
             };
@@ -958,7 +958,7 @@ const server = statikServer();
             // gate:hoehlen-sicht) und Instanzen, die das Gesetz ohne jeden Rand im Frustum dieses Blicks trifft und die
             // gehaltene Wahl nicht zeichnet.
             {
-                const gen = () => (r._passLagen && r._passLagen.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+                const gen = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
                 const neuAnker = () => {
                     stelle(0, 0);
                     if (r._passLagen) r._passLagen.clear();
@@ -1048,7 +1048,7 @@ const server = statikServer();
                         return P._instanzWahlPass.apply(this, a);
                     } catch (e) {
                         I.wuerfe++;
-                        nenne("Wurf: " + ((e && e.message) || e));
+                        nenne("Wurf: " + (e?.message || e));
                     }
                 };
                 const pruefe = (g, fall) => {
@@ -1166,7 +1166,7 @@ const server = statikServer();
             // die Stellvertreter-Kaskaden stehen entlang des Lichts (ihre Mitte ein halbes Feld vor dem Auge)
             stelle(0, 0);
             const dl = st.directionalLight;
-            if (dl && dl.target) {
+            if (dl?.target) {
                 const tagLang = 60 * 60 * (st.dayLengthMinutes || r.constructor.DAY_LENGTH_DEFAULT_MINUTES);
                 st.timeOfDay = 0.42;
                 if (st.world) st.world.timeOfDay = 0.42;
@@ -1239,10 +1239,10 @@ const server = statikServer();
             // legt es je Frame aus der Kamera) atmen ±1 mm quer, unter dem Halt: keine Lage ändert sich, die Kette arbeitet
             // nicht, und die Linse nennt es weder Kamera noch Blende.
             const lu = st.lodUniforms;
-            aus.augeAn = !!(lu && lu.uLodAuge && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5);
+            aus.augeAn = !!(lu?.uLodAuge && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5);
             if (aus.augeAn) {
                 const augeVorher = lu.uLodAuge.value.clone();
-                const genHaupt = () => (r._passLagen && r._passLagen.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+                const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
                 try {
                     stelle(0, 0);
                     cam.getWorldPosition(lu.uLodAuge.value);
@@ -1426,7 +1426,7 @@ const server = statikServer();
             return aus;
         }, MESS);
     } catch (e) {
-        befund = { fehler: (e && e.message) || String(e) };
+        befund = { fehler: e?.message || String(e) };
     }
     await browser.close();
     server.close();

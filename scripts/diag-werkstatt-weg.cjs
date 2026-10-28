@@ -81,7 +81,7 @@ function wortVerdict(m) {
         else if (e.art !== art) out.push(`„${w}" → ${e.ziel} (Art ${e.art}, Soll ${art})`);
     }
     for (const w of WORT_UNBEKANNT)
-        if (m.woerter && m.woerter[w] && m.woerter[w].ziel) out.push(`„${w}" → ${m.woerter[w].ziel} (geraten)`);
+        if (m.woerter?.[w] && m.woerter[w].ziel) out.push(`„${w}" → ${m.woerter[w].ziel} (geraten)`);
     if (!(m.arten > 0)) out.push("keine platzierbare Studio-Art im Buch (Vorbedingung)");
     if (m.artenOhneWort && m.artenOhneWort.length)
         out.push(`Studio-Arten ohne Wort: ${m.artenOhneWort.slice(0, 6).join(", ")}`);
@@ -107,6 +107,10 @@ const WEGE = ["werkstatt", "rezeptbuch", "hotbar"];
 const LAGEN = ["schöpfer", "frieden mit Material", "frieden ohne Material", "pfad"];
 const WERKE = { Eiche: "baum_eiche", Haus: "haus_alemannisch", GT: "fahrzeug_gt", Teil: "eigen_huette" };
 const SICHTEN = ["Ego", "Third"];
+// DAS RASTER der Läufe: je Lage × Weg × Werk × Sicht ein Ort [lage, weg, werk, sicht]; `zelle` liest, `lege` setzt den Lauf dort
+const raster = (lagen, wege) => lagen.flatMap((l) => wege.flatMap((w) => Object.keys(WERKE).flatMap((k) => SICHTEN.map((s) => [l, w, k, s]))));
+const zelle = (m, [a, b, c, d]) => m?.[a]?.[b]?.[c]?.[d];
+const lege = (m, [a, b, c, d], e) => ((((m[a] ||= {})[b] ||= {})[c] ||= {})[d] = e);
 // Die eigenen Werke aus Grundformen [x, y, z, sx, sy, sz]: die Hütte (vier Wände, ein Dach) und die Brücke des Prüf-Satzes (kein
 // Gesetzbuch trägt eine Welt-Brücke: die Brücken des Ort-Plans reisen unkonsumiert).
 const TEILE = {
@@ -131,7 +135,7 @@ const verbVerdict = (m) =>
     HERKUNFT.flatMap((h) =>
         SICHTEN.flatMap((s) =>
             Object.entries(VERBEN).flatMap(([w, [, verb]]) => {
-                const [e, wo] = [((((m || {}).verbenJe || {})[h] || {})[s] || {})[w] || {}, `${h} · ${s} · ${w}`];
+                const [e, wo] = [m?.verbenJe?.[h]?.[s]?.[w] || {}, `${h} · ${s} · ${w}`];
                 return e.steht !== 1 ? [`${wo}: ${e.fehler || "steht nicht"}`] : e.verb ? [] : [`${wo} × ${verb}: ${e.warum}`];
             })
         )
@@ -140,33 +144,28 @@ const EINGABEN_SOLL = 3; // Meisterkarte Bauen K1: vom Willen zum stehenden Werk
 function wegVerdict(m) {
     if (ungelaufen(m)) return ["start"];
     const out = konsumTaeter(m.konsum);
-    for (const lage of LAGEN)
-        for (const weg of WEGE)
-            for (const werk of Object.keys(WERKE))
-                for (const sicht of SICHTEN) {
-                    const e = ((((m.wege || {})[lage] || {})[weg] || {})[werk] || {})[sicht];
-                    const wo = `${lage} · ${weg} · ${werk} · ${sicht}: `;
-                    const t = (x) => out.push(wo + x);
-                    if (!e) {
-                        t("nicht gelaufen");
-                        continue;
-                    }
-                    if (e.fehler) t(e.fehler.slice(0, 90));
-                    if (e.unecht > 0) t(`${e.unecht} Ereignis(se) ohne Spieler (isTrusted false)`);
-                    if (!(e.eingaben > 0)) t("kein echtes Eingabe-Ereignis — der Weg lief ohne Spieler");
-                    if (lage === "frieden ohne Material") {
-                        if (e.steht > 0) t("steht ohne Material");
-                        if (!/fehlt/i.test(`${e.zeile} ${e.gesperrt}`)) t(`stumme Absage („${kurz(e.zeile)}")`);
-                        if (e.bauModus && weg !== "hotbar") t("der Weg führt in einen Bau-Modus, der nur ablehnen kann");
-                        continue;
-                    }
-                    if (e.steht !== 1) t(`${e.steht} Werk(e) stehen (Soll 1)${e.imInventar ? ", das Werk liegt im Inventar" : ""}`);
-                    else if (e.eingaben > EINGABEN_SOLL) t(`${e.eingaben} Eingaben bis zum stehenden Werk (Soll ≤ ${EINGABEN_SOLL}: ${e.folge})`);
-                    // das Gesetz des Modus: frieden und pfad zahlen genau einmal, frei baut nur schöpfer
-                    for (const [mt, n] of Object.entries(e.kosten || {}))
-                        if (((e.verbraucht || {})[mt] || 0) !== (lage === "schöpfer" ? 0 : n))
-                            t(lage === "schöpfer" ? "schöpfer zahlt" : `${mt} ${(e.verbraucht || {})[mt] || 0}× gezogen (Soll ${n})`);
-                }
+    for (const wo of raster(LAGEN, WEGE)) {
+        const [lage, weg] = wo;
+        const [e, t] = [zelle(m.wege, wo), (x) => out.push(`${wo.join(" · ")}: ${x}`)];
+        if (!e) {
+            t("nicht gelaufen");
+            continue;
+        }
+        if (e.fehler) t(e.fehler.slice(0, 90));
+        if (e.unecht > 0) t(`${e.unecht} Ereignis(se) ohne Spieler (isTrusted false)`);
+        if (!(e.eingaben > 0)) t("kein echtes Eingabe-Ereignis — der Weg lief ohne Spieler");
+        if (lage === "frieden ohne Material") {
+            if (e.steht > 0) t("steht ohne Material");
+            if (!/fehlt/i.test(`${e.zeile} ${e.gesperrt}`)) t(`stumme Absage („${kurz(e.zeile)}")`);
+            if (e.bauModus && weg !== "hotbar") t("der Weg führt in einen Bau-Modus, der nur ablehnen kann");
+            continue;
+        }
+        if (e.steht !== 1) t(`${e.steht} Werk(e) stehen (Soll 1)${e.imInventar ? ", das Werk liegt im Inventar" : ""}`);
+        else if (e.eingaben > EINGABEN_SOLL) t(`${e.eingaben} Eingaben bis zum stehenden Werk (Soll ≤ ${EINGABEN_SOLL}: ${e.folge})`);
+        // das Gesetz des Modus: frieden und pfad zahlen genau einmal, frei baut nur schöpfer
+        for (const [mt, n] of Object.entries(e.kosten || {}))
+            if ((e.verbraucht?.[mt] || 0) !== (lage === "schöpfer" ? 0 : n)) t(lage === "schöpfer" ? "schöpfer zahlt" : `${mt} ${e.verbraucht?.[mt] || 0}× gezogen (Soll ${n})`);
+    }
     // Ein Gerät aus der Hotbar (frieden, ohne Material): der Griff schmiedet und sagt, was fehlt.
     const ge = m.geraet || {};
     if (!ge.name) out.push("kein ungeschmiedetes Gerät mit Kosten (Vorbedingung)");
@@ -184,8 +183,8 @@ function wegVerdict(m) {
     if (tl.farbe !== "rot") out.push(`das Phantom über der Lichtung steht ${tl.farbe} (Soll rot)`);
     if (ph.farbe !== "grün") out.push(`das Phantom am freien Ort steht ${ph.farbe} (Soll grün)`);
     // Grün heißt: das Setzen trägt (Auflage 2) — ohne Material lehnt es ab, das Phantom steht rot.
-    const ohne = (((m.wege || {})["frieden ohne Material"] || {}).hotbar || {}).Eiche || {};
-    if ((ohne.Ego || {}).farbe !== "rot") out.push(`das Phantom ohne Material steht ${(ohne.Ego || {}).farbe} (Soll rot)`);
+    const ohne = zelle(m.wege, ["frieden ohne Material", "hotbar", "Eiche", "Ego"])?.farbe;
+    if (ohne !== "rot") out.push(`das Phantom ohne Material steht ${ohne} (Soll rot)`);
     if (l.steht > 0) out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
     if (!/Lichtung/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${kurz(l.zeile)}")`);
     return out;
@@ -199,17 +198,11 @@ const PHASEN = ["eingabe", "steht", "l0", "bild", "gpu"]; // der Weg der UI · d
 const bildVerdict = (m) =>
     ungelaufen(m)
         ? ["start"]
-        : WEGE.flatMap((weg) =>
-              BILD_LAGEN.flatMap((lage) =>
-                  Object.keys(WERKE).flatMap((werk) =>
-                      SICHTEN.flatMap((sicht) => {
-                          const e = m.wege?.[lage]?.[weg]?.[werk]?.[sicht] || { fehler: "nicht gelaufen" };
-                          const t = e.fehler || (e.unecht > 0 || !(e.eingaben > 0) ? "kein echter Weg" : e.eingaben > EINGABEN_SOLL ? `${e.eingaben} Eingaben` : !e.bau ? "kein Bild mit dem Werk in L0" : e.bau !== e.soll && "das Bild zeigt nicht den L0-Bau");
-                          return t ? [`${weg} · ${lage} · ${werk} · ${sicht}: ${t}`] : [];
-                      })
-                  )
-              )
-          );
+        : raster(BILD_LAGEN, WEGE).flatMap((wo) => {
+              const e = zelle(m.wege, wo) || { fehler: "nicht gelaufen" };
+              const t = e.fehler || (e.unecht > 0 || !(e.eingaben > 0) ? "kein echter Weg" : e.eingaben > EINGABEN_SOLL ? `${e.eingaben} Eingaben` : !e.bau ? "kein Bild mit dem Werk in L0" : e.bau !== e.soll && "das Bild zeigt nicht den L0-Bau");
+              return t ? [`${wo.join(" · ")}: ${t}`] : [];
+          });
 
 // Brennglas: { plattform: {steht, maxWaerme, zeilen}, linse: {glimmtBei, brenntBei, steht, zeileGlimmt, zeileBrennt},
 // nacht: {waerme, steht}, kuehlung: {nachFokus, nachKuehlen} }.
@@ -359,10 +352,8 @@ async function probe(argW) {
         weiter() &&
         !(
             st.playerMesh &&
-            r._foundry &&
-            r._foundry.recipes &&
-            st.blueprints &&
-            st.blueprints.baum_eiche &&
+            r._foundry?.recipes &&
+            st.blueprints?.baum_eiche &&
             r._genesisPlattform()
         );
 
@@ -479,7 +470,7 @@ async function probe(argW) {
             await fn(m);
             m.gestartet = true;
         } catch (e) {
-            m.err = (e && e.stack) || String(e);
+            m.err = e?.stack || String(e);
         }
     };
     // ── D10: der Same eines Satzes ──
@@ -774,7 +765,10 @@ async function probe(argW) {
     await abschnitt("brenn", {}, async (m) => {
         const wetterAlt = st.weather;
         const zeitAlt = st.timeOfDay;
-        const takt = (s) => r._tickFocusingAffordances(s);
+        // n Sekunden-Takte des Brennglas-Gesetzes
+        const takt = (n = 1) => {
+            for (let s = 0; s < n; s++) r._tickFocusingAffordances(1);
+        };
         try {
             st.weather = "sunny";
             // (1) Die Eiche 2,4 m vor der Plattform-Mitte (direkt gesetzt: der Bau-Modus hält die Lichtung frei): ein sonniger Tag.
@@ -792,7 +786,7 @@ async function probe(argW) {
                 let nach = null;
                 for (let s = 0; s < 480; s++) {
                     st.timeOfDay = s / 480;
-                    takt(1);
+                    takt();
                     maxW = Math.max(maxW, eiche.heatBuildup || 0);
                     if (!st.architectures.includes(eiche)) {
                         nach = s;
@@ -808,20 +802,20 @@ async function probe(argW) {
             // darunter — gesetzt über den Bau-Weg (der Prüf-Satz `Brennglas`; ohne Beine schwebte sie und stürzte).
             const L0 = { x: frei.x + 30, y: frei.y, z: frei.z };
             const linse = setze("Brennglas", satz.wirkung.Brennglas, L0.x, L0.z);
-            m.linse = { gesetzt: !!(linse && linse.affordances && linse.affordances.focusing) };
+            m.linse = { gesetzt: !!linse?.affordances?.focusing };
             const baum = () => r.spawnArchitecture("baum_eiche", { x: L0.x + 0.3, y: L0.y, z: L0.z }, { silent: true });
             if (m.linse.gesetzt) {
                 // Nachts: 30 s Sonne-Wetter ohne Sonne.
                 const b0 = baum();
                 st.timeOfDay = 0.0;
-                for (let s = 0; s < 30; s++) takt(1);
+                takt(30);
                 m.nacht = { waerme: +(b0.heatBuildup || 0).toFixed(3), steht: st.architectures.includes(b0) };
                 // Kühlung: 10 s im Brennpunkt (Mittag), dann 30 s Nacht.
                 st.timeOfDay = 0.5;
-                for (let s = 0; s < 10; s++) takt(1);
+                takt(10);
                 const nachFokus = +(b0.heatBuildup || 0).toFixed(3);
                 st.timeOfDay = 0.0;
-                for (let s = 0; s < 30; s++) takt(1);
+                takt(30);
                 m.kuehlung = { nachFokus, nachKuehlen: +(b0.heatBuildup || 0).toFixed(3) };
                 if (st.architectures.includes(b0)) r.removeArchitecture(b0);
                 // Mittag: glimmen, dann brennen — im Spieler-Kanal.
@@ -832,7 +826,7 @@ async function probe(argW) {
                 let glimmt = null;
                 let brennt = null;
                 for (let s = 1; s <= 40 && st.architectures.includes(b1); s++) {
-                    takt(1);
+                    takt();
                     if (
                         glimmt == null &&
                         zeilen()
@@ -855,7 +849,7 @@ async function probe(argW) {
                 // Regen zu Mittag: kein Licht bündelt sich, die Eiche steht nach 30 s (die Sonne entzündete sie nach `brenntBei`)
                 const b2 = baum();
                 st.weather = "rainy";
-                for (let s = 0; s < 30; s++) takt(1);
+                takt(30);
                 if ((m.regen = st.architectures.includes(b2))) r.removeArchitecture(b2);
             }
             if (linse) r.removeArchitecture(linse);
@@ -905,7 +899,7 @@ async function probe(argW) {
         }
         // DIE SCHALE: 60 s Regen, 30 s Sonne; die Schale mit Loch daneben
         const [sch, loch] = [setze("Schale", satz.wirkung.Schale, frei.x + 12, frei.z), setze("Schale mit Loch", satz.wirkung["Schale mit Loch"], frei.x + 12, frei.z + 5)];
-        const F = (e) => (e && e._gesetz && e._gesetz.gefaess) || { wasser: 0 };
+        const F = (e) => e?._gesetz?.gefaess || { wasser: 0 };
         st.weather = "rainy";
         const regen = (takte(60, 1), F(sch).wasser);
         st.weather = "sunny";
@@ -1032,7 +1026,7 @@ function wegHelfer(arg) {
     }
     window.__bauWeg = {
         // kein Stoff der Szene trägt einen Schwellen-Knoten: die Zahl regiert den Schnitt (das Phantom erbt nie 0,5, K68-N1; A3)
-        konsum: () => ((n) => (st.scene.traverse((o) => (n += o.material && o.material.alphaTestNode ? 1 : 0)), { "Stoff → alphaTest": n === 0 }))(0),
+        konsum: () => ((n) => (st.scene.traverse((o) => (n += o.material?.alphaTestNode ? 1 : 0)), { "Stoff → alphaTest": n === 0 }))(0),
         // o = { lage, weg, name, sicht, ort, slot }; die Werkstatt zeigt ein anderes Werk (der Wille wählt), der Hotbar-Weg
         // setzt das Werk in der Hotbar voraus, die Katalog-Wege finden es selbst
         vorbereiten(o) {
@@ -1274,7 +1268,7 @@ async function wegLauf(page, o) {
         const an = o.verb && (await bauWeg(page, "an", o.verb));
         if (an) Object.assign(e, an === true ? (await (VERB_TASTE[o.verb] || geh)(page), await bauWeg(page, "verb", o.verb)) : { warum: an });
     } catch (err) {
-        e.fehler = String((err && err.message) || err);
+        e.fehler = String(err?.message || err);
     }
     Object.assign(e, await bauWeg(page, "lesen"));
     await bauWeg(page, "abschluss");
@@ -1286,20 +1280,17 @@ async function wegProbe(page, frei, bild) {
     m.konsum = await bauWeg(page, "konsum");
     // L-WERKSTATT (ohne --verben); `bild` (der Bild-Weg): nur dieser Weg, je Lage mit Bau, ohne die Proben daneben
     if (!NUR_VERBEN) {
-        for (const lage of bild ? BILD_LAGEN : LAGEN)
-            for (const weg of bild ? [bild] : WEGE)
-                for (const [werk, name] of Object.entries(WERKE))
-                    for (const sicht of SICHTEN) {
-                        const phantom = lage === "schöpfer" && weg === "hotbar" && werk === "Eiche" && sicht === "Ego";
-                        const e = await wegLauf(page, { lage, weg, name, sicht, phantom });
-                        // der Bild-Weg: je Lauf seine Zeile, und der nächste beginnt an der ruhenden Welt (das Abräumen des Werks
-                        // füllt die Natur nach — 18 Aufträge vor der Wurf-Stufe des nächsten Hauses, Konsum-Probe 27.10.)
-                        const z = e.zeiten || [];
-                        if (bild) console.log(`  [bild] ${weg} · ${lage} · ${werk} · ${sicht} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ${PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`);
-                        if (bild) await page.evaluate(() => window.__weltStehtNach());
-                        if (phantom) m.phantom = e.phantom;
-                        (((m.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = e;
-                    }
+        for (const wo of raster(bild ? BILD_LAGEN : LAGEN, bild ? [bild] : WEGE)) {
+            const [lage, weg, werk, sicht] = wo;
+            const phantom = wo.join() === "schöpfer,hotbar,Eiche,Ego";
+            const e = lege(m.wege, wo, await wegLauf(page, { lage, weg, name: WERKE[werk], sicht, phantom }));
+            // der Bild-Weg: je Lauf seine Zeile, und der nächste beginnt an der ruhenden Welt (das Abräumen des Werks füllt die
+            // Natur nach — 18 Aufträge vor der Wurf-Stufe des nächsten Hauses, Konsum-Probe 27.10.)
+            const z = e.zeiten || [];
+            if (bild) console.log(`  [bild] ${wo.join(" · ")} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ${PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`);
+            if (bild) await page.evaluate(() => window.__weltStehtNach());
+            if (phantom) m.phantom = e.phantom;
+        }
         if (bild) return Object.assign(m, await bauWeg(page, "ende"), { gestartet: true });
         // Ein Gerät aus der Hotbar in frieden ohne Material: der Griff schmiedet — und sagt, was fehlt.
         const geraet = await bauWeg(page, "geraet");
@@ -1466,15 +1457,9 @@ hauptLauf(async () => {
             sucheHaus: 32,
             lichtung: { wand: "lichtung", steht: 0, zeile: "Eiche: die Lichtung bleibt frei", toenung: { stoffe: 2, lesen: 2, farbe: "rot" } },
         };
-        for (const lage of LAGEN)
-            for (const weg of WEGE)
-                for (const werk of Object.keys(WERKE))
-                    for (const sicht of SICHTEN)
-                        (((gesundG.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] =
-                            lage === "frieden ohne Material"
-                                ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" }
-                                : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST };
-        const mitG = (wo, e, rest, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(wo.split(" · ").reduce((o, k) => o[k], b.wege), e), rest ? [b, wo + ": " + rest] : b);
+        for (const [lage, weg, ...rest] of raster(LAGEN, WEGE))
+            lege(gesundG.wege, [lage, weg, ...rest], lage === "frieden ohne Material" ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" } : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST });
+        const mitG = (wo, e, rest, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(zelle(b.wege, wo.split(" · ")), e), rest ? [b, wo + ": " + rest] : b);
         const mitL = (e) => Object.assign(JSON.parse(JSON.stringify(gesundG)), e);
         familie("L-Werkstatt", wegVerdict, gesundG, [
             // ein Weg mit einem zusätzlichen Bestätigungs-Klick
@@ -1515,18 +1500,17 @@ hauptLauf(async () => {
             [mitL({ konsum: { "Stoff → alphaTest": false } }), "Konsum: Stoff → alphaTest"],
         ]);
         // L-Bild: gesund ohne Täter; das Bild zeigt den Spender, ein Klick zu viel, kein Bild
-        const bi = (wo, e) => {
-            const m = { gestartet: true, wege: {} };
-            for (const lage of BILD_LAGEN) for (const weg of WEGE) for (const werk in WERKE) for (const sicht of SICHTEN) (((m.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = { eingaben: 3, bau: "b", soll: "b" };
-            return (Object.assign(wo.split(" · ").reduce((o, k) => o[k], m.wege), e), m);
+        const bi = (wo, e, rest, m = { gestartet: true, wege: {} }) => {
+            for (const z of raster(BILD_LAGEN, WEGE)) lege(m.wege, z, { eingaben: 3, bau: "b", soll: "b" });
+            return [(Object.assign(zelle(m.wege, wo.split(" · ")), e), m), wo + ": " + rest];
         };
-        familie("L-Bild", bildVerdict, bi("pfad", {}), [
+        familie("L-Bild", bildVerdict, bi("pfad · hotbar · Eiche · Ego", {})[0], [
             // der Spender im Bild
-            [bi("pfad · hotbar · Eiche · Third", { bau: "x" }), "hotbar · pfad · Eiche · Third: das Bild zeigt nicht"],
+            bi("pfad · hotbar · Eiche · Third", { bau: "x" }, "das Bild zeigt nicht"),
             // ein Klick zu viel
-            [bi("pfad · rezeptbuch · GT · Ego", { eingaben: 4 }), "rezeptbuch · pfad · GT · Ego: 4 Eingaben"],
+            bi("pfad · rezeptbuch · GT · Ego", { eingaben: 4 }, "4 Eingaben"),
             // kein Bild
-            [bi("pfad · werkstatt · Teil · Ego", { bau: undefined }), "werkstatt · pfad · Teil · Ego: kein Bild"],
+            bi("pfad · werkstatt · Teil · Ego", { bau: undefined }, "kein Bild"),
         ]);
         // Der Same des Werks: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundK = {
@@ -1626,18 +1610,13 @@ hauptLauf(async () => {
             gruender: { breit: 0.2, hoch: 0 },
         };
         const mitP = (k, o) => ({ ...gesundP, [k]: { ...gesundP[k], ...o } });
-        for (const [bruch, soll] of [
-            [gesundP, ""],
+        familie("Prüf-Satz", (m, v = pruefVerdict(m, gesundB)) => [...v.statik, ...v.wirkung], gesundP, [
             [mitP("statik", { "überlanger Kragarm": z("instabil", true) }), "überlanger Kragarm"],
             [mitP("statik", { Bogen: z("stabil", false) }), "Bogen"],
             [mitP("konsum", { k: false }), "Konsum"],
             [mitP("rad", { rad: { weg: 0, hinab: 0, neigung: 0 } }), "Rad"],
             [mitP("schale", { regen: 0 }), "Schale"],
-        ]) {
-            const v = pruefVerdict(bruch, gesundB);
-            const t = [...v.statik, ...v.wirkung];
-            check(`Selbst-Test Prüf-Satz: ${soll || "gesund"} → ${soll ? "Täter" : "0 Täter"}`, soll ? t.some((x) => x.startsWith(soll)) : !t.length, t.join(" · "));
-        }
+        ]);
         // L-Verben: gesund ohne Täter; ein Werk ohne Policy (das Tor ohne Portal) ist rot an seinem Verb, eines, das nicht steht, am Setzen
         const je = (f) => Object.fromEntries(HERKUNFT.map((h) => [h, Object.fromEntries(SICHTEN.map((s) => [s, f(h + s)]))]));
         const mitV = (o) => ({ verbenJe: je((hs) => ({ ...Object.fromEntries(Object.keys(VERBEN).map((w) => [w, { steht: 1, verb: true }])), ...(hs === "kiThird" ? o : {}) })) });
@@ -1694,7 +1673,7 @@ hauptLauf(async () => {
                 for (const lage in m.wege) Object.assign((gm.wege[lage] ||= {}), m.wege[lage]);
                 Object.assign(gm.konsum, m.konsum);
             } catch (e) {
-                gm.err = `${gm.err || ""}${weg}: ${(e && e.stack) || e} | `;
+                gm.err = `${gm.err || ""}${weg}: ${e?.stack || e} | `;
             }
             await browser.close();
             roh(gm);
@@ -1711,7 +1690,7 @@ hauptLauf(async () => {
     try {
         out.weg = await wegProbe(page, out.frei);
     } catch (e) {
-        out.weg = { err: (e && e.stack) || String(e) };
+        out.weg = { err: e?.stack || String(e) };
     }
     await browser.close();
     server.close();
@@ -1741,7 +1720,7 @@ hauptLauf(async () => {
                 `Math.random-Züge ${SAETZE.map((s) => `${s} ${sm.zuege[s]}`).join(" · ")} · Hain ${sm.hainBaeume} Bäume, Samen ${JSON.stringify(sm.samen)}, Orte ±${sm.ortAbweichung} m · KI ohne Seed ±${sm.kiOrtAbweichung} m`
         );
         const wm = out.wort || {};
-        const bekannt = Object.keys(WORT_SOLL).filter((w) => wm.woerter && wm.woerter[w] && wm.woerter[w].ziel).length;
+        const bekannt = Object.keys(WORT_SOLL).filter((w) => wm.woerter?.[w] && wm.woerter[w].ziel).length;
         abschnitt(
             "L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG",
             "L-Wortschatz",
@@ -1759,7 +1738,7 @@ hauptLauf(async () => {
         // je Weg (die tragenden Lagen): stehend / Läufe, Eingaben min–max (die Zeit bis zum Bild urteilt L-BILD, --bild)
         const jeWeg = () =>
             WEGE.map((w) => {
-                const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values((gm.wege || {})[x][w]).flatMap(Object.values));
+                const l = LAGEN.filter((x) => x !== "frieden ohne Material").flatMap((x) => Object.values(gm.wege?.[x][w]).flatMap(Object.values));
                 const n = l.map((e) => e.eingaben);
                 return `${w} ${l.filter((e) => e.steht === 1).length}/${l.length} stehen, Eingaben ${Math.min(...n)}–${Math.max(...n)}`;
             });
@@ -1794,7 +1773,7 @@ hauptLauf(async () => {
             brennVerdict(bm),
             "Brennglas die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag, die gebaute Linse brennt zu Mittag und sagt es, nachts und bei Regen nie, außerhalb kühlt es",
             () =>
-                `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Regen: die Eiche ${bm.regen ? "steht" : "verbrannte"} · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen}`
+                `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Regen: die Eiche ${bm.regen ? "steht" : "verbrannte"} · Nacht Wärme ${bm.nacht?.waerme} · Kühlung ${bm.kuehlung?.nachFokus} → ${bm.kuehlung?.nachKuehlen}`
         );
         console.log("=== PRÜF-SATZ — STATIK UND WIRKUNG AUS DER FORM, IN DER WELT (Bauen K3) ===");
         const pm = out.pruef || {};

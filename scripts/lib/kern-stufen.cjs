@@ -55,14 +55,14 @@ async function epsilonSeite(w) {
     const A = r.constructor;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
-    const fehler = (x) => (x && x.message) || String(x);
+    const fehler = (x) => x?.message || String(x);
     const rez = f.recipes[w.preset];
     const out = { b: { kind: rez.kind, s: rez.s, anzahl: Object.values(f.recipes).filter((x) => x && x.kind === rez.kind).length, ks: JSON.parse(JSON.stringify(A._studioRenderConfig.lod.kindStages)) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
     const { d, p, e } = out;
     try {
         const B = r.state.blueprints || {};
         const bp = B[w.bp];
-        const sub = (A.KIND_SUBSTANCE || {})[w.donor];
+        const sub = A.KIND_SUBSTANCE?.[w.donor];
         const gleich = (k) => !!bp && !!sub && JSON.stringify(bp[k] || null) === JSON.stringify(sub[k] || null);
         Object.assign(d, {
             blueprint: !!bp,
@@ -96,10 +96,10 @@ async function epsilonSeite(w) {
             const n = (e.meshCount[L] = Array.isArray(meshes) ? meshes.length : -1);
             e.fern = e.fern || (n > 0 && meshes.some((m) => m && m.kind === "__fern" && m.huelle && Array.isArray(m.huelle.teile)));
             if (L !== (w.stufen || [0])[0] || !(n > 0)) continue;
-            e.hasMatColor = meshes.some((m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
+            e.hasMatColor = meshes.some((m) => m?.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
             const g = r._foundryBuildGroup(meshes);
-            e.groupChildren = g && g.children ? g.children.length : 0;
-            e.allHaveColor = !!g && g.children.every((ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color));
+            e.groupChildren = g?.children ? g.children.length : 0;
+            e.allHaveColor = !!g && g.children.every((ch) => !!ch.geometry?.attributes?.color);
             if (g) g.traverse((o) => o.isMesh && o.geometry && o.geometry.dispose()); // kein Leck in der Probe
         }
     } catch (x) {
