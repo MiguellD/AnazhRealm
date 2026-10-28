@@ -165,7 +165,7 @@ const SAMEN = [1, 7];
 
 // ── Geometrie einer gebauten Gruppe: die Dreiecke der Meshes, die in der Welt werfen (das Wurf-Recht des Wirts,
 //    `_foundryBuildMesh`: eine Lichtquelle — Seh-Klasse glut — und ein durchsichtiger Stoff werfen nie). ──
-function dreiecke(g, nurWerfer) {
+function dreiecke(g, nurWerfer, stoff) {
     const out = [];
     g.updateMatrixWorld(true);
     g.traverse((o) => {
@@ -174,26 +174,33 @@ function dreiecke(g, nurWerfer) {
         // um ihren Ort doppelt versetzt (Bake-Lage + Scharnier); ihr Wurf ist der der Tür im Haus
         for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
         const m = o.material || {};
-        const seh = m.userData && m.userData.__seh;
-        if (nurWerfer && (o.castShadow === false || seh === "glut" || (m.transparent && m.opacity < 1))) return;
-        const P = o.geometry.attributes.position.array;
+        const ud = m.userData || {};
+        if (nurWerfer && (o.castShadow === false || ud.__seh === "glut" || (m.transparent && m.opacity < 1))) return;
+        const { position: P, color: C } = o.geometry.attributes;
         const I = o.geometry.index ? o.geometry.index.array : null;
         const e = o.matrixWorld.elements;
-        const n = I ? I.length : P.length / 3;
-        const w = new Float64Array(n * 3);
+        const n = I ? I.length : P.count;
+        const [w, c, mc] = [new Float64Array(n * 3), new Float32Array(n * 3), m.color ? m.color.toArray() : [1, 1, 1]];
         for (let i = 0; i < n; i++) {
             const k = (I ? I[i] : i) * 3;
-            const x = P[k],
-                y = P[k + 1],
-                z = P[k + 2];
-            w[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
-            w[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-            w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+            const [x, y, z] = [P.array[k], P.array[k + 1], P.array[k + 2]];
+            for (let j = 0; j < 3; j++) {
+                w[i * 3 + j] = e[j] * x + e[4 + j] * y + e[8 + j] * z + e[12 + j];
+                c[i * 3 + j] = (C ? C.array[k + j] : 1) * mc[j];
+            }
         }
-        out.push(w);
+        // mit `stoff` die Stoff-Antwort je Ecke: Farbe, Deckkraft, Glut, Zweiseitigkeit
+        const al = m.transparent && m.opacity < 1 ? m.opacity : 1;
+        out.push(stoff ? { w, c, al, gl: ud.__licht === "fenster" ? GLUT : null, zwei: m.side === T.DoubleSide } : w);
     });
     return out;
 }
+// die Fläche eines Dreiecks der Liste `w` ab `i`: das Kreuzprodukt seiner Kanten und dessen Länge (2 × Fläche)
+const kreuz = (w, i) => {
+    const [a, b] = [0, 1].map((s) => [3, 4, 5].map((j) => w[i + j + 3 * s] - w[i + j - 3]));
+    const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    return [n, Math.hypot(...n)];
+};
 const anzahl = (tl) => tl.reduce((s, w) => s + w.length / 9, 0);
 
 // ── Das Raster (Kanten-Funktionen je Dreieck, Pixel-Mitte): `abb(x, y, z) → [u, v]` bildet in die Ebene ab ──
@@ -297,10 +304,7 @@ function firstAchse(tl) {
         az = 0;
     for (const w of tl)
         for (let i = 0; i < w.length; i += 9) {
-            const e1 = [w[i + 3] - w[i], w[i + 4] - w[i + 1], w[i + 5] - w[i + 2]];
-            const e2 = [w[i + 6] - w[i], w[i + 7] - w[i + 1], w[i + 8] - w[i + 2]];
-            const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
-            const l = Math.hypot(n[0], n[1], n[2]);
+            const [n, l] = kreuz(w, i);
             if (l < 1e-9) continue;
             const ny = Math.abs(n[1] / l);
             if (ny < 0.15 || ny > 0.98) continue;
@@ -408,10 +412,7 @@ function innen(tl, M) {
     };
     for (const w of tl)
         for (let i = 0; i < w.length; i += 9) {
-            const e1 = [w[i + 3] - w[i], w[i + 4] - w[i + 1], w[i + 5] - w[i + 2]];
-            const e2 = [w[i + 6] - w[i], w[i + 7] - w[i + 1], w[i + 8] - w[i + 2]];
-            const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
-            const l = Math.hypot(n[0], n[1], n[2]);
+            const [n, l] = kreuz(w, i);
             if (l < 1e-9) continue;
             const ny = n[1] / l;
             // eine senkrechte Fläche, die das Wand-Band schneidet (ihre Ecken dürfen darüber und darunter liegen)
@@ -469,38 +470,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 const GLAS_R = 0.05;
-function stoffFlaechen(g) {
-    const out = [];
-    g.updateMatrixWorld(true);
-    g.traverse((o) => {
-        if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-        for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
-        const m = o.material || {};
-        const ud = m.userData || {};
-        const al = m.transparent && m.opacity < 1 ? m.opacity : 1;
-        const mc = m.color ? [m.color.r, m.color.g, m.color.b] : [1, 1, 1];
-        const gl = ud.__licht === "fenster" ? GLUT : null;
-        const P = o.geometry.attributes.position.array;
-        const C = o.geometry.attributes.color ? o.geometry.attributes.color.array : null;
-        const I = o.geometry.index ? o.geometry.index.array : null;
-        const e = o.matrixWorld.elements;
-        const n = I ? I.length : P.length / 3;
-        const w = new Float64Array(n * 3),
-            c = new Float32Array(n * 3);
-        for (let i = 0; i < n; i++) {
-            const k = (I ? I[i] : i) * 3;
-            const x = P[k],
-                y = P[k + 1],
-                z = P[k + 2];
-            w[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
-            w[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-            w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-            for (let j = 0; j < 3; j++) c[i * 3 + j] = (C ? C[k + j] : 1) * mc[j];
-        }
-        out.push({ w, c, al, gl, zwei: m.side === T.DoubleSide });
-    });
-    return out;
-}
+const stoffFlaechen = (g) => dreiecke(g, false, true);
 // ein Fenster: je Pixel die Mischung von vorn → Summen (Tag-Farbe, Glut) über das Rechteck
 const FACH = 0.5;
 function stoffFaecher(F) {
