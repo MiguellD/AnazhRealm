@@ -973,19 +973,21 @@ function selbsttestKopf(urteile = kopfUrteil) {
     return f;
 }
 
+// die Vorbereitung eines Fixture-Jobs (Checkout, Node, System-Libs, Dependencies), dahinter seine Schritte
+const prep = (...schritte) => [
+    { uses: "actions/checkout@v4" },
+    { uses: "actions/setup-node@v4" },
+    { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
+    { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
+    ...schritte,
+];
 function selbsttest() {
-    const prep = () => [
-        { uses: "actions/checkout@v4" },
-        { uses: "actions/setup-node@v4" },
-        { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
-        { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
-    ];
     const gut = () => ({
         jobs: {
             puls: {
                 strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
                 "timeout-minutes": 10,
-                steps: prep().concat([{ name: "Lint", if: "matrix.gruppe == 1", run: "npm run lint" }]),
+                steps: prep({ name: "Lint", if: "matrix.gruppe == 1", run: "npm run lint" }),
             },
             kopf: kopfJob(),
             voll: {
@@ -993,11 +995,11 @@ function selbsttest() {
                 if: VOLL_NACH_KOPF,
                 strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
                 "timeout-minutes": 30,
-                steps: prep().concat([
+                steps: prep(
                     { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
                     { name: "B", if: "matrix.gruppe == 2", run: "npm run gate:b" },
                     { name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" },
-                ]),
+                ),
             },
         },
     });
@@ -1015,7 +1017,7 @@ function selbsttest() {
             "runs-on": ["self-hosted", "echt-gpu"],
             "timeout-minutes": 30,
             env,
-            steps: prep().concat([schritt]),
+            steps: prep(schritt),
         });
     };
     const faelle = [
@@ -1155,20 +1157,14 @@ function selbsttest() {
 
 // (T) Die Waage gegen ein Fixture.
 function selbsttestWaage() {
-    const prep = () => [
-        { uses: "actions/checkout@v4" },
-        { uses: "actions/setup-node@v4" },
-        { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
-        { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
-    ];
     const schritt = (name, g) => ({ name, if: `matrix.gruppe == ${g}`, run: `npm run gate:${name}` });
     const doc = () => ({
         jobs: {
-            puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep().concat([schritt("Lint", 1)]) },
+            puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep(schritt("Lint", 1)) },
             voll: {
                 if: VOLL_WENN,
                 strategy: { matrix: { gruppe: [1, 2] } },
-                steps: prep().concat([schritt("A", 1), schritt("B", 2), schritt("C", 1)]),
+                steps: prep(schritt("A", 1), schritt("B", 2), schritt("C", 1)),
             },
         },
     });
@@ -1183,7 +1179,7 @@ function selbsttestWaage() {
         d.jobs.echt = {
             needs: KOPF_JOB,
             if: ECHT_WENN,
-            steps: prep().concat([{ name: "W", run: "npm run gate:w:echt" }]),
+            steps: prep({ name: "W", run: "npm run gate:w:echt" }),
         };
         [z.echt, z.schritte.W] = [{ vorbereitung_s: 100 }, { s, gruppe: "echt" }];
     };
@@ -1399,12 +1395,6 @@ function selbsttestPlaytest() {
         "playtest:fast": "node scripts/playtest-fast.cjs",
         "gate:a": "node scripts/a.cjs",
     };
-    const prep = () => [
-        { uses: "actions/checkout@v4" },
-        { uses: "actions/setup-node@v4" },
-        { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
-        { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
-    ];
     const traeger = () => ({
         name: "Voller Playtest",
         if: "matrix.gruppe == 2",
@@ -1418,20 +1408,20 @@ function selbsttestPlaytest() {
                 puls: {
                     strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
                     "timeout-minutes": 10,
-                    steps: prep().concat([{ name: "Schnell", if: "matrix.gruppe == 1", run: "npm run playtest:fast" }]),
+                    steps: prep({ name: "Schnell", if: "matrix.gruppe == 1", run: "npm run playtest:fast" }),
                 },
                 voll: {
                     if: VOLL_WENN,
                     strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
                     "timeout-minutes": 30,
-                    steps: prep().concat([{ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, traeger()]),
+                    steps: prep({ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, traeger()),
                 },
             },
         },
     });
     const nacht = () => ({
         on: { schedule: [{ cron: "30 3 * * *" }] },
-        jobs: { nacht: { steps: prep().concat([{ name: "Nacht-Playtest", run: "npm run playtest" }]) } },
+        jobs: { nacht: { steps: prep({ name: "Nacht-Playtest", run: "npm run playtest" }) } },
     });
     const V = (d) => d["check.yml"].jobs.voll;
     const T = (d) => V(d).steps[V(d).steps.length - 1];
