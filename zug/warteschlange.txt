@@ -180,3 +180,4 @@ z62b-abab2 2 abab A=d882a080f29148c7ff5a887df9674bbb9811c5ac B=557d4aaddd489ba2d
 takt18e-gtx 1 punkte sha=557d4aaddd489ba2dd2cc31322e5a349348c11a8 geraet=gtx nur=fahrzeug.K3#1,fahrzeug.K4#1,ferne.K1#1,ferne.K1#2,ferne.K2#1,gelaende.K3#1,halten.K5#1,klang.K4#1,klang.K4#2,leib.K1#1,leib.K2#1,leib.K4#1,leib.K4#2,licht.K2#1,licht.K2#2,material.K1#1,material.K1#2,material.K3#1,material.K3#2,mensch.K1#1,profiband.K4#1,profiband.K4#2,schatten.K1#1,speicher.K2#2,tore.K3#1,wetter.K2#1
 z63-abab 1 abab A=557d4aaddd489ba2dd2cc31322e5a349348c11a8 B=675a38892ba6eea63eb65ceefb16c14a2537ba40 zellen=w-ego,d-ego,stadt
 z63-abab 0 storno
+z63-abab2 2 abab A=557d4aaddd489ba2dd2cc31322e5a349348c11a8 B=675a38892ba6eea63eb65ceefb16c14a2537ba40 zellen=w-ego,d-ego,stadt
