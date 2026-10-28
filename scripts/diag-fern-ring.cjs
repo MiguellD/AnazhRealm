@@ -31,6 +31,9 @@
 //       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
 //   (11) DAS DACH IST DER BESTAND — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
 //       Generator auf 192 × 192 m um den Spieler stehen lässt (0,8–1,25); Selbsttest: die Geburt als Deckung fällt rot.
+//   (15) DER HORIZONT STEHT NACH DEM SCHNEE — ein Edit-Auftrag fliegt, die Schneegrenze bestellt den Ring im selben Takt
+//       neu: am Ereignis (der Fern-Faden hat jede Bestellung beantwortet, der Ring hängt ganz) zählt er nichts im Flug (am
+//       Stamm 9e92be45 ROT: editFlug 1, der Horizont stand nie mehr).
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
@@ -61,6 +64,11 @@ hauptLauf(async () => {
         const F = r.constructor.FERN_RING;
         // je Schale ihre volle Geometrie (der Träger: das ganze Index-Muster); vor der Teilung (K16 Runde 3) je Schale ein Mesh
         const geosVon = (f) => f.geos || f.meshes.map((m) => m.geometry);
+        // DAS EINE QUANTIL der Linse: p der sortierten Werte (am Rand geklemmt), leer NaN
+        const quantil = (a, p) => (
+            a.sort((x, y) => x - y),
+            a.length ? a[Math.min(a.length - 1, Math.floor(p * a.length))] : NaN
+        );
         // DER FLUSS IN DER MASCHE als Erwartung der Linse (die Formel des Fern-Fadens `fernFlussDeckung`, B2): der Anteil einer
         // Masche (halbe Kante hs), den das Wasser des nächsten Segments deckt (`_hydroDistAt`)
         const flussDeckungL = (x, z, hs, aus) => {
@@ -85,7 +93,12 @@ hauptLauf(async () => {
         // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
         // DER TAKT DES RINGS bis zur Bedingung (Deckel: `ms` / 16 Takte ohne Offenes): je Takt die Zahl der eingehängten Punkte
-        const pumpe = async (pos, fertig, ms, takt = () => r._tickFernRing(pos)) => {
+        const pumpe = async (
+            pos,
+            fertig = (f) => f.cursor >= f.totalVerts,
+            ms = 120000,
+            takt = () => r._tickFernRing(pos)
+        ) => {
             let takte = 0;
             let maxD = 0;
             let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
@@ -103,7 +116,7 @@ hauptLauf(async () => {
         {
             r._tickFernRing(r.state.playerMesh.position);
             if (!r.state.fernRing) return { fatal: "Hook an, aber kein fernRing entstand" };
-            const b = await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
+            const b = await pumpe(r.state.playerMesh.position);
             ticks = b.takte + 1;
             maxDelta = b.maxD;
         }
@@ -273,10 +286,7 @@ hauptLauf(async () => {
                     if (fr.nass[g]) nass0++;
                     if (h === h) hs.push(h);
                 }
-                if (nass0 < 50 && hs.length) {
-                    hs.sort((a, b) => a - b);
-                    wlW = hs[Math.floor(hs.length * 0.1)];
-                }
+                if (nass0 < 50 && hs.length) wlW = quantil(hs, 0.1);
             }
             res.wasserSpiegel = { welt: +wl0.toFixed(2), probe: +wlW.toFixed(2) };
             r.state.waterLevel = wlW;
@@ -426,7 +436,7 @@ hauptLauf(async () => {
         // ===== (7) DER NEUBAU AUS DEM FADEN: nach dem Dispose entsteht der Ring wieder ganz (B2) =====
         r._tickFernRing(r.state.playerMesh.position);
         const fr7 = r.state.fernRing;
-        await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
+        await pumpe(r.state.playerMesh.position);
         res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts && fr7.ready === true);
 
         // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
@@ -605,7 +615,7 @@ hauptLauf(async () => {
             r._fernRingDispose();
             const pos9 = r.state.playerMesh.position;
             r._tickFernRing(pos9);
-            await pumpe(pos9, (f) => f.cursor >= f.totalVerts, 120000);
+            await pumpe(pos9);
             // DIE DECK-WACHE SCHWINGT EIN: der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
             // Takt (`_fernRingFeldY`, FERN_RING.feldJeTakt) — wie im Spiel nach jedem Anker: die Linse pumpt, bis jeder
             // Rand-Punkt sie trägt (höchstens 3 000 Takte), und nennt die Takte und die Kosten einer Spalten-Probe.
@@ -948,19 +958,14 @@ hauptLauf(async () => {
                 }
             }
             res.zeit9 = [Math.round(tPump9 - t09), Math.round(performance.now() - tPump9)]; // ms: Ring bauen · Proben
-            stufen.sort((a, b) => a - b);
-            const q = (p) => (stufen.length ? stufen[Math.min(stufen.length - 1, Math.floor(p * stufen.length))] : NaN);
             res.nahtN = stufen.length;
             res.nahtBias = stufen.length ? bias / stufen.length : NaN;
-            selbst.sort((a, b) => a - b);
-            sehne.sort((a, b) => a - b);
-            res.nahtSehneP95 = sehne.length ? sehne[Math.floor(0.95 * sehne.length)] : NaN;
-            res.nahtSelbstP95 = selbst.length ? selbst[Math.floor(0.95 * selbst.length)] : NaN;
-            res.nahtP50 = q(0.5);
-            res.nahtP95 = q(0.95);
-            res.nahtMax = stufen.length ? stufen[stufen.length - 1] : NaN;
-            eigen.sort((a, b) => a - b);
-            res.nahtEigenP95 = eigen.length ? eigen[Math.floor(0.95 * eigen.length)] : NaN;
+            res.nahtSehneP95 = quantil(sehne, 0.95);
+            res.nahtSelbstP95 = quantil(selbst, 0.95);
+            res.nahtP50 = quantil(stufen, 0.5);
+            res.nahtP95 = quantil(stufen, 0.95);
+            res.nahtMax = quantil(stufen, 1);
+            res.nahtEigenP95 = quantil(eigen, 0.95);
             res.durchN = durch[1];
             res.durchAnteil = durch[1] ? durch[0] / durch[1] : NaN;
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
@@ -1121,6 +1126,15 @@ hauptLauf(async () => {
             // am Nachbarn so weit wie über vier (≈ 1).
             const dachRand = r.constructor.SCATTER.outerM;
             const W9 = r.constructor.FERN_RING.winkel;
+            const idxVon = (X) => {
+                let a1 = 0;
+                let a4 = 0;
+                for (let a = 0; a < W9; a++) {
+                    a1 += (X[(a + 1) % W9] - X[a]) ** 2;
+                    a4 += (X[(a + 4) % W9] - X[a]) ** 2;
+                }
+                return Math.sqrt(a1 / a4);
+            };
             const indizes = [];
             for (let s = 0; s < 2; s++) {
                 const sh = fr9.schalen[s];
@@ -1141,29 +1155,12 @@ hauptLauf(async () => {
                         L[a] = 0.2126 * f(0) + 0.7152 * f(1) + 0.0722 * f(2);
                     }
                     if (nass > W9 / 4) continue;
-                    let s1 = 0;
-                    let s4 = 0;
-                    for (let a = 0; a < W9; a++) {
-                        const d1 = L[(a + 1) % W9] - L[a];
-                        const d4 = L[(a + 4) % W9] - L[a];
-                        s1 += d1 * d1;
-                        s4 += d4 * d4;
-                    }
-                    if (s4 > 0) indizes.push(Math.sqrt(s1 / s4));
+                    const ix = idxVon(L);
+                    if (Number.isFinite(ix)) indizes.push(ix);
                 }
             }
-            indizes.sort((a, b) => a - b);
             {
                 // SELBSTTEST des Index: ein gefaltetes Mosaik (Pseudo-Zufall je Punkt) springt ≥ 0,8, eine glatte Reihe ≤ 0,3.
-                const idxVon = (X) => {
-                    let a1 = 0;
-                    let a4 = 0;
-                    for (let a = 0; a < W9; a++) {
-                        a1 += (X[(a + 1) % W9] - X[a]) ** 2;
-                        a4 += (X[(a + 4) % W9] - X[a]) ** 2;
-                    }
-                    return Math.sqrt(a1 / a4);
-                };
                 let h = 12345;
                 const zufall = Float64Array.from(
                     { length: W9 },
@@ -1173,8 +1170,8 @@ hauptLauf(async () => {
                 res.streifenSelbst = [idxVon(zufall), idxVon(glatt)];
             }
             res.streifenN = indizes.length;
-            res.streifenMedian = indizes.length ? indizes[Math.floor(indizes.length / 2)] : NaN;
-            res.streifenP90 = indizes.length ? indizes[Math.floor(indizes.length * 0.9)] : NaN;
+            res.streifenMedian = quantil(indizes, 0.5);
+            res.streifenP90 = quantil(indizes, 0.9);
         } catch (e9) {
             res.nahtErr = String((e9 && e9.stack) || e9).slice(0, 400);
         }
@@ -1287,7 +1284,7 @@ hauptLauf(async () => {
         // Selbsttest: die alte Regel (kein Anteil, keine Senkung) verfehlt jeden deutlichen Fluss-Punkt.
         try {
             const frW = r.state.fernRing;
-            await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
+            await pumpe(r.state.playerMesh.position);
             const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
             // die Erwartung je Punkt aus dem Fern-Faden: der Fluss-Anteil der Masche (Slot 7 mit Fuß) und das Land der Masche
             // (die Teile ohne Fluss-Anteil), an der Höhe, die der Ring dem Punkt gab
@@ -1410,6 +1407,26 @@ hauptLauf(async () => {
             res.binnen = w;
         } catch (e14) {
             res.binnenErr = String((e14 && e14.stack) || e14).slice(0, 400);
+        }
+        // ===== (15) DER HORIZONT STEHT NACH DEM SCHNEE (heil-horizont) =====
+        // Der Spieler baut (ein Edit: der Ring bestellt die Ecken um ihn, `editFlug` 1) und im SELBEN Takt wandert die
+        // Schneegrenze (`setSeason`, dann der Takt der Saison wie im Frame-Plan nach dem Horizont-Takt: `_schneeTakt` bestellt
+        // den Ring neu). Geurteilt wird am EREIGNIS: hat der Fern-Faden jede Bestellung beantwortet und hängt der Ring ganz, zählt
+        // er nichts mehr im Flug — [im Flug, Generation vorher, nachher, editFlug]. Bis heil-horizont setzte der Schnee-Takt die
+        // Bestellung neben `_fernRingNeuBestellen` zurück: am Stamm 9e92be45 [1, 0, 1, 1], der Horizont stand nie mehr.
+        try {
+            const f = r.state.fernRing;
+            const pos = r.state.playerMesh.position;
+            const phase = r.state.seasonPhase;
+            r._addVoxelEdit(f.anchorX + 300, r.state.terrainBaseHeight, f.anchorZ, 6, "fill");
+            r._tickFernRing(pos); // der Horizont-Takt bestellt die Ecken um den Edit
+            res.horizont = [f.editFlug, f.gen | 0];
+            r.setSeason(phase < 0.5 ? "winter" : "summer");
+            r._tickSeason(performance.now());
+            await pumpe(pos, (g) => !r._nebenFaeden.get("fern").pending.size && g.cursor >= g.totalVerts);
+            res.horizont.push(f.gen | 0, f.editFlug);
+        } catch (e15) {
+            res.horizont = [String(e15)];
         }
         r._fernRingDispose();
         res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
@@ -1649,6 +1666,12 @@ hauptLauf(async () => {
                     : "")
         );
     }
+    const hz = out.horizont || [];
+    check(
+        "15: DER HORIZONT STEHT NACH DEM SCHNEE — ein Edit-Auftrag fliegt, die Schneegrenze bestellt neu (`_fernRingNeuBestellen`)",
+        hz[0] > 0 && hz[2] > hz[1] && hz[3] === 0,
+        `[im Flug, Generation vorher, nachher, editFlug] ${hz}`
+    );
 
     wandEnde(errs, "DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
             "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +

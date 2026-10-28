@@ -1304,7 +1304,7 @@ async function selbsttest() {
         .filter(([, c]) => adressZwilling(c))
         .map(([f]) => f)
         .join(", ");
-    const FREMD = "diag-koerper-stand.cjs, diag-weltgrenze.cjs, werkbank.cjs";
+    const FREMD = "werkbank.cjs";
     const gepflanzt = [
         "statikServer(); await new Promise((r) => s.listen(1, r));",
         "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",

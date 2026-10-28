@@ -29,15 +29,18 @@
 //       Größen-Band das Reh im Stand je
 //       Bein, das schlechteste; seine Sohle liegt dem Boden an, `_gaitSohlenKipp`), das Rad
 //       (der tiefste Vertex je Reifen des GT in Fahrt), der Fuß der Streu (jede Instanz im Stand, nach Gang und Fahrt); die
-//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm. Über dem Soll hält die Ratsche spec/profiband/ratsche-boden-rolle.json.
+//       Feinform (Mesh gegen `_voxelSurfaceY`) ≤ 5 cm.
 //       Gemessen wird erst, wenn die Welt steht — und dort steht der Ring an seinem Ziel (`_ringWaechst`, nie an der Bildrate)
+//   K9  DER SPRUNG AUS DEM LEIB-GESETZ (leib.K2 Staffel 2, im Lauf von K8 an der Mess-Wiese): je Sicht (Ego, Third) der Sprung
+//       aus dem Sprint, je Leib der heutige, die Masse ×1,25 (`_leibMasse`) und die Kraft ×1,25 (`_sprungKraft`) — die Hüfte
+//       (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse senkt Höhe und Weite, die Kraft hebt beide
+//       (je ≥ 10 %); der Täter „sprung" ist der feste Abdruck der Seele (vor leib-k2-sprung)
 //   --selftest: je Defekt trägt die Welt den Leser vor seiner Heilung als Laufzeit-Stub (`taeter`) — GENAU
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
-const path = require("path");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
@@ -48,33 +51,15 @@ const BILD = process.argv.includes("--bild");
 const DORF_ZUG = messort("wiese").dorfZug;
 const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
-// DIE KARTE DES EIGNERS (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
-// `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst (Seite: `window.__eignerKarte`, Proben und Täter „rand").
+// DIE KARTE DES EIGNERS (die Karte des Chunks unter dem Punkt, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
+// `_bodenSichtAt` über alle Nachbarn — die Linse fragt den EINEN Karten-Leser des Spiels für den Eigner allein, ohne das Gewicht
+// der Stufe (`_bodenKarteBilinear`, Stufe 0; Seite: `window.__eignerKarte`, Proben und Täter „rand").
 function eignerKarte(r, x, z) {
-    const s = r.state;
     const span = r._voxelChunkConfig(0).span;
-    const cx = Math.floor(x / span);
-    const cz = Math.floor(z / span);
-    const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
-    const m = e && e.surfMap;
-    if (!m) return null;
-    const C = r._voxelChunkConfig(e.lod || 0);
-    const T = r.constructor.BODEN_KARTE_TEILUNG;
-    const h = C.step / T;
-    const M = T * (C.dim + 3) + 1;
-    const u = (x - (cx * C.span - C.step)) / h;
-    const v = (z - (cz * C.span - C.step)) / h;
-    const i = Math.floor(u);
-    const j = Math.floor(v);
-    if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
-    const ka = m[i + j * M];
-    const kb = m[i + 1 + j * M];
-    const kc = m[i + (j + 1) * M];
-    const kd = m[i + 1 + (j + 1) * M];
-    if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
-    const fu = u - i;
-    const fv = v - j;
-    return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
+    const [cx, cz] = [Math.floor(x / span), Math.floor(z / span)];
+    const e = r.state.voxelChunks && r.state.voxelChunks.get(`${cx},${cz}`);
+    const k = e && e.surfMap && r._bodenKarteBilinear(e, cx, cz, x, z, null, 0);
+    return k ? k.y : null;
 }
 
 // DER GEZEICHNETE BODEN (Seite: `window.__gezeichnet`, K6 und K8): ein Strahl lotrecht auf das Mesh des Eigners und seiner unteren
@@ -204,6 +189,8 @@ function taeter(inj) {
             this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
         };
     // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
+    // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts
+    if (inj === "sprung") r._sprungAbdruck = () => r.state.jumpPower;
     if (inj === "nexus") {
         r.state.nexusEvolutionInterval = 5;
         r.evolveNexus = function (t) {
@@ -688,17 +675,7 @@ async function proben(mitWiese, umfang) {
                             });
                         }
                     }
-        o.k6leser = {
-            n: leser.n,
-            fehl: leser.fehl,
-            ueberhang: leser.ueberhang,
-            kante: leser.kante,
-            maxCm: Math.round(leser.max * 1000) / 10,
-            wo: leser.wo,
-            stufen: leser.stufen || null,
-            mitte: [Math.round(mitte.x), Math.round(mitte.z)],
-            meshe: G.meshe,
-        };
+        o.k6leser = { ...leser, maxCm: Math.round(leser.max * 1000) / 10, mitte: [mitte.x, mitte.z], meshe: G.meshe };
     }
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
@@ -1058,6 +1035,33 @@ async function rollen(n) {
         if (t) r.removeArchitecture(t);
         streuJetzt();
         R.streu = mass(streu);
+        // DER SPRUNG AUS DEM LEIB-GESETZ (K9, leib.K2 Staffel 2) an der Wiese je Sicht: aus dem Sprint, die Taste einen Takt
+        // gehalten, bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges und die Weite vom Abdruck bis
+        // zur Landung, je Leib: der heutige, die Masse ×1,25 (`_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
+        if (ort !== "wiese") continue;
+        const y = () => (pm.updateMatrixWorld(true), [P.y, rig.legL.hip.getWorldPosition(v).y, s.camera.position.y]);
+        const sprung = (fm, fk, j = { hub: [0, 0, 0] }) => {
+            const L = Object.getPrototypeOf(r);
+            [r._leibMasse, r._sprungKraft] = [(k) => fm * L._leibMasse.call(r, k), () => fk * L._sprungKraft.call(r)];
+            setz();
+            [s.keys.w, s.keys.shift, s.yaw] = [true, true, 0];
+            for (let k = 0; k < 120; k++) takt();
+            const [y0, x0, z0] = [y(), P.x, P.z];
+            s.keys[" "] = true;
+            for (let k = 0; k < 300 && (!k || s.isJumping); k++, s.keys[" "] = false) {
+                takt();
+                y().forEach((h, i) => (j.hub[i] = Math.max(j.hub[i], h - y0[i])));
+            }
+            [s.keys.w, s.keys.shift, j.weite] = [false, false, Math.hypot(P.x - x0, P.z - z0)];
+            delete r._leibMasse;
+            delete r._sprungKraft;
+            return j;
+        };
+        o.sprung = {};
+        for (const b of ["first", "third"]) {
+            r.setCameraMode(b);
+            o.sprung[b] = [sprung(1, 1), sprung(1.25, 1), sprung(1, 1.25)];
+        }
     }
     o.nexus = r.nexus && r.nexus.knightOfTime.autonomyLevel;
     return o;
@@ -1066,49 +1070,43 @@ async function rollen(n) {
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
-    if (!o.k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${o.k1.traeger})`);
-    if (!(Math.abs(o.k1.beckenCm) <= 1))
-        f.push(`K1 Becken auf dem Träger: ${o.k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
-    if (!o.k1.sprungLuft) f.push("K1 Aufbau: der Sprung hebt die Kapsel nicht in die Luft");
-    else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1))
-        f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
+    // ein fehlender Teil liest {}, ein fehlender Wert NaN — nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
+    const { k1, k2 = {}, k3 = {}, k4 = {}, k4b = {}, k4c = {}, k5 = {}, k6leser: L = {} } = o;
+    const zahl = (x) => x ?? NaN;
+    if (!k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${k1.traeger})`);
+    if (!(Math.abs(k1.beckenCm) <= 1))
+        f.push(`K1 Becken auf dem Träger: ${k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
+    if (!k1.sprungLuft) f.push("K1 Aufbau: der Sprung hebt die Kapsel nicht in die Luft");
+    else if (!(Math.abs(k1.sprungBeckenCm) <= 1))
+        f.push(`K1 Becken im Sprung: ${k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
     if (!o.hoehle) f.push("K2 Aufbau: keine Höhle im Raster");
     else {
-        // ein fehlender Wert ist nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
-        if (!o.k2 || o.k2.abstandCm == null || !(o.k2.abstandCm <= 10))
-            f.push(
-                `K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`
-            );
-        if (!o.k3 || o.k3.abstandM == null || !(o.k3.abstandM <= 0.15))
-            f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
+        if (!(zahl(k2.abstandCm) <= 10))
+            f.push(`K2 Fuß-Probe in der Höhle: ${k2.abstandCm} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
+        if (!(zahl(k3.abstandM) <= 0.15)) f.push(`K3 Tier in der Höhle: ${k3.abstandM} m über dem Höhlen-Boden`);
     }
     if (!o.hang) f.push("K4 Aufbau: keine Hang-Stelle im Raster");
     else {
-        if (!o.k4 || !(o.k4.leibMedianCm <= 6))
+        if (!(zahl(k4.leibMedianCm) <= 6))
+            f.push(`K4 Leib gegen die Karte: Median ${k4.leibMedianCm} cm (der Leib steht auf dem Gesetz)`);
+        if (!(k4b.treppeCm <= 8))
+            f.push(`K4 Treppe: ${k4b.treppeCm} cm Sprung je Takt über die Neigung hinaus (Träger: ${k4b.traeger})`);
+        if (!(k4c.fugen >= 20)) f.push(`K4 Aufbau: ${k4c.fugen} Fugen im Umkreis (Soll ≥ 20)`);
+        else if (k4c.traegt > 0)
             f.push(
-                `K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`
-            );
-        if (!o.k4b || !(o.k4b.treppeCm <= 8))
-            f.push(
-                `K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus (Träger: ${o.k4b ? o.k4b.traeger : "?"})`
-            );
-        if (!o.k4c || !(o.k4c.fugen >= 20))
-            f.push(`K4 Aufbau: ${o.k4c ? o.k4c.fugen : "?"} Fugen im Umkreis (Soll ≥ 20)`);
-        else if (o.k4c.traegt > 0)
-            f.push(
-                `K4 Fuge: ${o.k4c.traegt} von ${o.k4c.fugen} Fugen tragen einen Leib — Täter ${o.k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
+                `K4 Fuge: ${k4c.traegt} von ${k4c.fugen} Fugen tragen einen Leib — Täter ${k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
             );
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
-        else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
+        else if (!(Math.abs(k5.gegenStandCm) <= 3) || !(k5.wegMinCm >= -5))
             f.push(
-                `K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.gegenStandCm : "?"} cm über ihrem Stand-Kontakt, auf dem Weg ${o.k5 ? o.k5.wegMinCm + " … " + o.k5.wegMaxCm : "?"} cm (Soll ± 3, Weg ≥ −5)`
+                `K5 Tod-Lage: die tiefste Stelle liegt ${k5.gegenStandCm} cm über ihrem Stand-Kontakt, auf dem Weg ${k5.wegMinCm} … ${k5.wegMaxCm} cm (Soll ± 3, Weg ≥ −5)`
             );
     }
-    if (!o.k6leser || !(o.k6leser.n >= 300) || o.k6leser.fehl > 0)
+    if (!(L.n >= 300) || L.fehl > 0)
         f.push(
-            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}, Karten dort ${o.k6leser && o.k6leser.stufen ? o.k6leser.stufen.join(" · ") : "?"}, Mitte ${o.k6leser && o.k6leser.mitte ? o.k6leser.mitte.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
+            `K6 Leser im Rand-Streifen: ${L.fehl} von ${L.n} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${L.maxCm} cm bei ${L.wo}, Karten dort ${L.stufen}, Mitte ${L.mitte}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
         );
-    if (!o.k6leser || !(o.k6leser.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
+    if (!(L.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
     // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
     // −278/−1038 trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
@@ -1141,13 +1139,9 @@ const K8_ROLLEN = Object.freeze({
     huf: [3, "der Huf (_kreaturFussBoden, seine Sohle _gaitSohlenKipp)"],
     rad: [3, "das Rad (_archRadMatrix: der Reifen auf _standSicht)"],
 });
-// DIE RATSCHE (spec/profiband/ratsche-boden-rolle.json, Ort × Rolle p95 cm am Kopf): eine Rolle über ihrem Soll darf nicht
-// schlechter werden (+ 15 % + 0,5 cm Streuung je Lauf); `--ratsche` schreibt den Lauf als neue Ratsche
-const RATSCHE = path.join(ROOT, "spec/profiband/ratsche-boden-rolle.json");
-function urteilK8(o, umfang) {
+function urteilK8(o) {
     if (!o || !o.wiese || !o.hang) return ["K8 Aufbau: Mess-Wiese oder 25°-Hang fehlt"];
     const f = [];
-    const rs = fs.existsSync(RATSCHE) ? JSON.parse(fs.readFileSync(RATSCHE, "utf8")) : {};
     // die Mess-Welt ist eine Funktion des Codes: kein Wurf des Nexus nach der Wanduhr (sein Dorf am Hang: fein 30,8/31,4 cm)
     if (o.nexus)
         f.push(
@@ -1159,15 +1153,25 @@ function urteilK8(o, umfang) {
             f.push(`K8 Ring ${ort}: ${ring} von ${ziel} — Täter: _ringWaechst (der Ring wächst bis zum Ziel)`);
         for (const [rolle, [soll, wer]] of Object.entries(K8_ROLLEN)) {
             // die Deko-Streu über den Chunks (64–194 m) trägt an der Wiese (einer Aue) gut 100 Instanzen: die Hälfte des Umfangs
-            const m = o[ort][rolle];
-            const min = rolle === "streu" ? umfang / 2 : umfang;
-            if (m && m.stecken) f.push(`K8 Steckenbleiber ${ort} ${rolle}: ${m.stecken} — Täter: der Kapsel-Schritt`);
-            if (!m || !(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m ? m.n : 0} Kontakte (Soll ≥ ${min})`);
-            else if (!(m.p95 <= Math.max(soll, ((rs[ort] || {})[rolle] || 0) * 1.15 + 0.5)))
-                f.push(
-                    `K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}, Ratsche ${(rs[ort] || {})[rolle]}) — Täter: ${wer}`
-                );
+            const m = o[ort][rolle] || {};
+            const min = rolle === "streu" ? K8_UMFANG / 2 : K8_UMFANG;
+            if (m.stecken) f.push(`K8 Steckenbleiber ${ort} ${rolle}: ${m.stecken} — Täter: der Kapsel-Schritt`);
+            if (!(m.n >= min)) f.push(`K8 Aufbau ${ort} ${rolle}: ${m.n} Kontakte (Soll ≥ ${min})`);
+            else if (!(m.p95 <= soll))
+                f.push(`K8 ${rolle} ${ort}: p95 ${m.p95} cm (Median ${m.median}, Soll ≤ ${soll}) — Täter: ${wer}`);
         }
+    }
+    // K9 je Sicht: der Leib (Third) und das Auge (Ego) heben sich mit der Kapsel (≥ 80 %), die Masse ×1,25 senkt Höhe und
+    // Weite, die Kraft ×1,25 hebt sie (je ≥ 10 %)
+    if (!o.sprung) f.push("K9 Aufbau: kein Sprung");
+    for (const [b, [g, masse, kraft]] of Object.entries(o.sprung || {})) {
+        if (!(g.hub[b === "first" ? 2 : 1] >= 0.8 * g.hub[0])) f.push(`K9 Bild ${b}: Kapsel/Leib/Auge ${g.hub} m`);
+        for (const [n, j, vz] of [
+            ["masse", masse, -1],
+            ["kraft", kraft, 1],
+        ])
+            if (!((j.hub[0] / g.hub[0] - 1) * vz >= 0.1 && (j.weite / g.weite - 1) * vz >= 0.1))
+                f.push(`K9 Mutante ${n} ${b}: ${j.hub[0]}/${j.weite} gegen ${g.hub[0]}/${g.weite} m`);
     }
     return f;
 }
@@ -1176,7 +1180,7 @@ const zeile = (o) =>
     JSON.stringify(o, (_k, v) => (typeof v === "number" ? Math.round(v * 1000) / 1000 : v)).replace(/"/g, "");
 
 hauptLauf(async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
     try {
@@ -1195,7 +1199,7 @@ hauptLauf(async () => {
             await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.evaluateOnNewDocument(`window.__eignerKarte = ${eignerKarte.toString()};`);
             await page.evaluateOnNewDocument(`window.__gezeichnet = ${gezeichnet.toString()};`);
-            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
+            await server.zeige(page, 180000, "index.html", "networkidle0");
             await warteAufWelt(page, 180000);
             if (inj) await page.evaluate(taeter, inj);
             // die Welt einschwingen: sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
@@ -1227,13 +1231,13 @@ hauptLauf(async () => {
                 ring: ["K8 Ring wiese", "K8 Ring hang"],
                 nexus: ["K8 Aufbau: der Nexus"],
                 fuss: ["K8 fuss hang", "K8 Aufbau hang stufe", "K8 Aufbau wiese stufe"],
+                sprung: ["K9 Mutante masse first", "K9 Mutante kraft third"],
             };
             for (const inj of Object.keys(soll)) {
-                const k8 = soll[inj][0].startsWith("K8");
+                const k8 = /^K[89]/.test(soll[inj][0]);
                 const { o } = await lauf(inj, k8);
-                const f = k8 ? urteilK8(o, K8_UMFANG) : urteil(o);
-                const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
-                const ok = fehlt.length === 0;
+                const f = k8 ? urteilK8(o) : urteil(o);
+                const ok = soll[inj].every((x) => f.some((y) => y.startsWith(x)));
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
                 console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${beleg}`);
                 if (!ok) rot++;
@@ -1241,22 +1245,8 @@ hauptLauf(async () => {
         }
         const { o } = NUR_K8 ? { o: null } : await lauf(null);
         const k8 = await lauf(null, true);
-        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o, K8_UMFANG)];
+        const f = [...(o ? urteil(o) : []), ...urteilK8(k8.o)];
         console.log("  " + zeile({ ...o, k8: k8.o }));
-        if (process.argv.includes("--ratsche"))
-            fs.writeFileSync(
-                RATSCHE,
-                JSON.stringify(
-                    Object.fromEntries(
-                        ["wiese", "hang"].map((w) => [
-                            w,
-                            Object.fromEntries(Object.keys(K8_ROLLEN).map((k) => [k, k8.o[w][k].p95])),
-                        ])
-                    ),
-                    null,
-                    1
-                ) + "\n"
-            );
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
         if (process.env.KOERPER_STAND_JSON)

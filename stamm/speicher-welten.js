@@ -2,8 +2,8 @@ class AnazhRealm_speicher_welten {
     // ===== ATLAS · Speicher/welten — Snapshot · IndexedDB · Welt-Index · Manifest · Serialisierung =====
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
     // DIE IDENTITÄT EINER WELT: eine neue worldId (UUID, ohne crypto ein Zufalls-Stempel). Leser: der Boot einer frischen
-    // Welt, die Geburt, die Migration, daneben legen, die Fusion und die Tür `_weltBetreten` (eine Welt ohne Id bekommt
-    // ihre eigene, nie den Platz der Welt davor).
+    // Welt, die Geburt, die Migration, daneben legen und die Tür `_weltBetreten` (eine Welt ohne Id bekommt ihre eigene,
+    // nie den Platz der Welt davor). Die Fusion würfelt nicht: ihre Id ist eine Funktion der Eltern (`_fusionGenerateIdentity`).
     static _neueWeltId() {
         try {
             if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();

@@ -1951,6 +1951,16 @@ class AnazhRealm_feld_dsl {
         return y;
     }
 
+    // DER FUSS EINES WERKS, das ein Programm setzt (der Satz, die KI, der geteilte Code, der Tempel, der Nexus): die oberste Fläche
+    // an (x, z) — der tragende Bau (`_bauDachUnter`) über dem Boden —, + 0,5 (der Eintrag steht 0,5 über seiner Sohle); ohne
+    // Oberfläche `y`. Leser: `_dslSpawnStudioItems` und `_werkOrtSuchen` (jeder Ort, den es nennt). Bis 27.10. trug ein Werk aus
+    // spawn_blueprint die Fußhöhe des Spielers (`at_player_forward`): die geteilte Podestleiter stand 1,55 m über dem Hang,
+    // ihre unterste Stufe außer Schritt-Reichweite (diag-werkstatt-weg L-VERBEN, geteilt × Leiter).
+    _werkFuss(x, z, y) {
+        const sy = this._voxelSurfaceY(x, z);
+        return Number.isFinite(sy) ? this._bauDachUnter(x, z, sy) + 0.5 : y;
+    }
+
     // Die Regler des Programms (`ov`) prägen über den EINEN Stempel; jede Klemme steht beim Namen im Log, ein fremder Regler
     // setzt nichts (der Grund `regler`, das Log nennt ihn und die Regler der Art). Ein Same null ist keiner (Lehre 17).
     // DAS WERK JE ART (KIND_POLICY `werk`, KI K2): eine Gattung erscheint als Wesen, ihr Stempel ist der Guss (`_dslWesenSetzen`);
@@ -2023,8 +2033,7 @@ class AnazhRealm_feld_dsl {
                 continue;
             }
             ctx.budget.spawnsLeft--;
-            const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
-            const y = Number.isFinite(sy) ? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;
+            const y = this._werkFuss(x, z, pos.y);
             if (!opts) {
                 opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2, werk: !this._feldHandelt(ctx) };
                 if (istBaum) opts.scale = 0.8 + wurf() * 0.45;
