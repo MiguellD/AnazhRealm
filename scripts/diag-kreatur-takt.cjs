@@ -16,6 +16,9 @@ const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
+// DER ORT der Probe (`--ort stadt-voll`: die volle Stadt der Probe bewohner, am Schirm des Profi-Bands) und seine Täter
+const ORT = opt("--ort", null);
+const taeterVon = (p) => TAETER[ORT ? `${p}@${ORT}` : p];
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
 const RAMPE = JSON.parse(
@@ -69,7 +72,7 @@ const gewaehlt = (() => {
 async function headless(laeufe) {
     const server = statikServer();
     await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    const { browser, page } = await nullSeite({ frist: 900000, viewport: ORT ? { width: 1920, height: 1080 } : undefined });
     page.setDefaultTimeout(880000);
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
@@ -177,16 +180,16 @@ hauptLauf(async () => {
     // in ihm und gibt je Täter seine Sicht (`sicht`); das Wort, das ihn nennt, bleibt in Node
     const [laeufe, faelle] = [[], []];
     if (SELBST) {
-        const ohne = gewaehlt.filter((p) => !(TAETER[p] && TAETER[p].length));
+        const ohne = gewaehlt.filter((p) => !(taeterVon(p) && taeterVon(p).length));
         if (ohne.length) {
             console.log(`❌ SELBST-TEST: Proben ohne Täter: ${ohne.join(", ")} — die Linse wäre ungeprüft`);
             process.exit(1);
         }
     }
     for (const p of gewaehlt) {
-        const [T, ein] = [SELBST ? TAETER[p] : [[null]], SELBST && EIN_LAUF.includes(p)];
-        if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t) });
-        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t }) - 1, t, re }); // prettier-ignore
+        const [T, ein] = [SELBST ? taeterVon(p) : [[null]], SELBST && EIN_LAUF.includes(p)];
+        if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t), ort: ORT });
+        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT }) - 1, t, re }); // prettier-ignore
     }
     const t0 = Date.now();
     const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);
