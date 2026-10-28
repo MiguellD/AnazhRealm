@@ -659,6 +659,8 @@ const { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LABOR } = require("./lib/kampf-
 const NUR_K5 = process.argv.includes("--k5");
 // (Q15) `--k1` fährt nur den Treffer im Bild je Mutation und das Labor — mit dem echten Renderer (die Station halten.K1 am Gerät)
 const NUR_K1 = process.argv.includes("--k1");
+// das Bild der Linse (Rezept linse, 800 × 600: die Mitte frei von der Oberfläche — bei 640 × 360 deckte die Konsole den Treffer)
+const BILD = NUR_K5 || NUR_K1;
 
 // (Q15) halten.K1 Staffel 2, je Soll beim Namen: im Takt des Spiels trifft das Langschwert in jedem Lauf (vor · masse · schneide),
 // die Schneide liegt im Urteil UND in der gezeichneten Pose in der Bahn (≥ 0,9); die Masse (MAT.*.rho × 1,25) hebt das Werk in
@@ -669,13 +671,12 @@ const NUR_K1 = process.argv.includes("--k1");
 const K1_SOLL = { bahn: 0.9, gleich: 0.005, masse: 1.25, band: 0.02 };
 function k1Verdict(K) {
     const [W, L] = [K.welt, K.labor];
-    if (!W.vor || !L.vor) return ["keine Messung"];
     const v = [];
     const rel = (a, b) => Math.abs(a / b - 1);
     for (const l of ["vor", "masse", "schneide"]) {
         const [w, b] = [W[l], L[l]];
         if (!w || !w.traf) {
-            v.push(l + "-traf");
+            v.push(l + (w && w.abbruch ? "-abbruch: " + w.abbruch : "-traf"));
             continue;
         }
         if (!(w.edgeQ >= K1_SOLL.bahn && w.schneideBild >= K1_SOLL.bahn)) v.push(l + "-bahn");
@@ -696,18 +697,20 @@ function k1Verdict(K) {
     if (z.some((x) => !(rel(wirk(x), wirk(W.vor)) <= 1e-3))) v.push("schaden");
     return v;
 }
-// der Lauf: je Mutation ein Hieb im Takt des Spiels, das gehaltene Bild (Third) als PNG neben {AUS}, dann das Labor
+// der Lauf: je Mutation ein Hieb im Takt des Spiels, das gehaltene Bild (Third) als PNG neben {AUS}, dann das Labor; der Tab des
+// Labors verbarg die Welt (rAF schlief, K1_BILD stand 300 s) — die Welt zeichnet vorn wie die Werkbank, das Labor misst ohne Bild,
+// ein Abbruch des Bilds steht beim Namen im Urteil
 async function k1Lauf(browser, page) {
     const K = { welt: {}, labor: {} };
     const aus = process.env.KAMPF_BILDER || require("path").join(require("os").tmpdir(), "kampf-k1");
     const lab = await browser.newPage();
     await server.zeige(lab, 120000, "worlds/schmiede/index.html", "load");
+    await page.bringToFront();
     for (const l of ["vor", "masse", "schneide"]) {
-        K.welt[l] = await page.evaluate(K1_BILD, l);
+        K.welt[l] = await page.evaluate(K1_BILD, l).catch((e) => ({ abbruch: e.message.split("\n")[0] }));
         if (K.welt[l].traf) await page.screenshot({ path: `${aus}-${l}.png` });
         K.labor[l] = await lab.evaluate(K1_LABOR, l);
     }
-    await page.evaluate(K1_BILD, null);
     return K;
 }
 async function k1Ende(browser, K) {
@@ -722,33 +725,28 @@ async function k1Ende(browser, K) {
     check(
         W.vor.traf &&
             k1Verdict({ ...K, welt: { ...W, vor: { ...W.vor, schneideBild: 0.18 } } }).includes("vor-bahn") &&
+            k1Verdict({ ...K, welt: { ...W, vor: { abbruch: "x" } } }).includes("vor-abbruch: x") &&
             k1Verdict({ ...K, labor: { ...L, masse: L.vor } }).includes("masse-labor"),
-        "SELBST-TEST (S21): die Breitseite im Bild, ein Labor ohne Mutation"
+        "SELBST-TEST (S21): die Breitseite im Bild, ein Bild ohne Frame, ein Labor ohne Mutation"
     );
     process.exit(ok ? 0 : 1);
 }
 
 (async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: NUR_K5 || NUR_K1 ? "linse" : "null", frist: 300000 });
+    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
-    if (!NUR_K5 && !NUR_K1) await nullRenderer(page); // GPU-frei, Produktions-Boot
+    if (!BILD) await nullRenderer(page); // GPU-frei, Produktions-Boot
     let out;
     let welle = null;
     let k5 = null;
     try {
-        await server.zeige(page, 120000, `index.html${NUR_K5 || NUR_K1 ? "?holz=kienspan" : ""}`, "networkidle0");
+        await server.zeige(page, 120000, `index.html${BILD ? "?holz=kienspan" : ""}`, "networkidle0");
         await warteAufWelt(page, 120000);
-        // Warmup: die Welt settled pumpen.
-        await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            await window.__weltStehtNach(() => {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
-            }); // die Welt steht (welt-boot)
-        });
+        // die Welt steht (das EINE Einschwingen, welt-boot): Takt um Takt ein Bild des Loops — der Takt von Hand in Mikro-Tasks
+        // gab dem echten Renderer nie ein Bild frei (`--k1` swiftshader: „DIE WELT STEHT NICHT nach 17181 Takten", ankunft 83 offen)
+        await page.evaluate(() => window.__weltStehtNach());
 
         // SYNCHRON messen (keine awaits — der rAF-Loop kann nicht dazwischenfunken).
         if (NUR_K5) return k5Ende(browser, await k5Lauf(page));
@@ -1076,6 +1074,7 @@ async function k1Ende(browser, K) {
         k5 = await k5Lauf(page).catch((e) => console.log("  (Q13) ABBRUCH " + e.message));
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
+        if (NUR_K1) return k1Ende(browser, { welt: { vor: { abbruch: out.error } }, labor: {} });
     }
     await browser.close();
     server.close();
@@ -1089,57 +1088,49 @@ async function k1Ende(browser, K) {
         console.log(`  (A) I1=${json([out.dauer, out.dauerRatio, out.dauerSoll])}`);
         zeig("B", out, "reach sweep simSteps simDelta handM freeze");
         zeig("E", out.pose);
-        // "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft"
-        check(c.ruftSelbst, "SELBST-TEST: der Zähl-Spion bleibt stumm");
-        // "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)"
-        check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus");
-        // "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)"
-        check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST die Schwung-Dauer");
-        // "KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle"
-        check(c.hudLiestQuelle, "KONSUM: das Stats-HUD (Angriffstempo)");
-        // "KONSUM: die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle"
-        check(c.werkstattLiestQuelle, "KONSUM: die Werkstatt-Ablesung (Tempo)");
-        check(c.aBeideUngeklemmt, "(A) beide Fixtures liegen UNGEKLEMMT im [min,max]-Band (der Test ist ehrlich)");
-        check(
-            c.aVerhaeltnisWurzelI,
-            `(A) Schwung-Dauer-Verhältnis ∝ √(I2/I1) ± 5 % (${out.dauerRatio.toFixed(3)} vs ${out.dauerSoll.toFixed(3)})`
-        );
-        check(c.aFaustDauer, "(A) die leere Faust hat die endliche Hand-Dauer (kein Instant-Prügeln)");
-        check(c.bTrifftNeben, "(B) der Sweep trifft ein Ziel NEBEN dem Crosshair (in der Klingen-Kapsel)");
-        check(c.bDedupEinmal, `(B) dedupliziert je Schwung: GENAU EIN Treffer (${out.sweep.hits})`);
-        check(c.bZweiterSchwungTrifft, "(B) ein zweiter Schwung trifft wieder (Dedup gilt JE Schwung)");
-        check(c.bNieRuecken, "(B) NIE ein Ziel hinter dem Rücken (die Wand im Sweep-Chokepoint)");
-        check(
-            c.bHitStopGesetzt,
-            `(B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (${out.freeze !== null ? (out.freeze * 1000).toFixed(0) + " ms" : "kein Treffer"})`
-        );
-        check(c.bKameraImpuls, "(B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)");
-        check(
-            c.s2LinseFeuert,
-            "SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)"
-        );
-        // "(C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)"
-        check(c.cSchwungFriert, "(C) HIT-STOP: die Schwung-Phase friert");
-        // "(C) HIT-STOP: der GANZE Leib steht (Gang-Phase und Hand Δ=0, das Ziel gleitet)"
-        check(c.cGangFriert, "(C) HIT-STOP: der GANZE Leib steht");
-        // `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
-        check(c.cSimLaeuftWeiter, `(C) die FIXE SIM läuft ${out.simSteps}`);
-        // "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand"
-        check(c.cGegenprobeLaeuft, "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand");
-        // "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)"
-        check(c.anzeigeLiestHitStop, "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN");
-        check(
-            c.s1LinseFeuert,
-            "SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)"
-        );
-        // "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
-        check(c.todKipptStattDespawn, "(D) der EINE Fall (_kreaturFaellt)");
-        // "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)"
-        check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf");
-        // "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)"
-        check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich");
-        // "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt"
-        check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
+        for (const [k, satz] of Object.entries({
+            // "SELBST-TEST: der Zähl-Spion bleibt stumm, wenn der Leser den Versorger nicht ruft"
+            ruftSelbst: "SELBST-TEST: der Zähl-Spion bleibt stumm",
+            // "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)"
+            klickLoestNurAus: "KONSUM: der Crosshair-Klick löst NUR aus",
+            // "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)"
+            cooldownLiestQuelle: "KONSUM: der Cooldown IST die Schwung-Dauer",
+            // "KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle"
+            hudLiestQuelle: "KONSUM: das Stats-HUD (Angriffstempo)",
+            // "KONSUM: die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle"
+            werkstattLiestQuelle: "KONSUM: die Werkstatt-Ablesung (Tempo)",
+            aBeideUngeklemmt: "(A) beide Fixtures liegen UNGEKLEMMT im [min,max]-Band (der Test ist ehrlich)",
+            aVerhaeltnisWurzelI: `(A) Schwung-Dauer-Verhältnis ∝ √(I2/I1) ± 5 % (${out.dauerRatio.toFixed(3)} vs ${out.dauerSoll.toFixed(3)})`,
+            aFaustDauer: "(A) die leere Faust hat die endliche Hand-Dauer (kein Instant-Prügeln)",
+            bTrifftNeben: "(B) der Sweep trifft ein Ziel NEBEN dem Crosshair (in der Klingen-Kapsel)",
+            bDedupEinmal: `(B) dedupliziert je Schwung: GENAU EIN Treffer (${out.sweep.hits})`,
+            bZweiterSchwungTrifft: "(B) ein zweiter Schwung trifft wieder (Dedup gilt JE Schwung)",
+            bNieRuecken: "(B) NIE ein Ziel hinter dem Rücken (die Wand im Sweep-Chokepoint)",
+            bHitStopGesetzt: `(B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (${out.freeze !== null ? (out.freeze * 1000).toFixed(0) + " ms" : "kein Treffer"})`,
+            bKameraImpuls: "(B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)",
+            s2LinseFeuert: "SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)",
+            // "(C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)"
+            cSchwungFriert: "(C) HIT-STOP: die Schwung-Phase friert",
+            // "(C) HIT-STOP: der GANZE Leib steht (Gang-Phase und Hand Δ=0, das Ziel gleitet)"
+            cGangFriert: "(C) HIT-STOP: der GANZE Leib steht",
+            // `(C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (${out.simSteps} Schritte, Fixed-Akku-Probe)`
+            cSimLaeuftWeiter: `(C) die FIXE SIM läuft ${out.simSteps}`,
+            // "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand"
+            cGegenprobeLaeuft: "(C) Gegenprobe: vor dem Treffer laufen Gang und Hand",
+            // "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN Quelle (_hitStopFactor)"
+            anzeigeLiestHitStop: "(C) der Schwung-Tick liest den Hit-Stop aus der EINEN",
+            s1LinseFeuert:
+                "SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)",
+            // "(D) der EINE Fall (_kreaturFaellt) kippt nach dem Gefälle (_fieldGradient am Spion), keiner despawnt selbst"
+            todKipptStattDespawn: "(D) der EINE Fall (_kreaturFaellt)",
+            // "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)"
+            eArmHebt: "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf",
+            // "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)"
+            eBeineByteGleich: "(E) die BEINE bleiben byte-gleich",
+            // "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt"
+            eRueckstandsfrei: "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt",
+        }))
+            check(c[k], satz);
     }
     console.log("\n  ── WELLE L ──\n");
     if (!welle) {
