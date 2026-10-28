@@ -1643,6 +1643,67 @@ module.exports = [
         ],
         quelle: "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5)",
     },
+    // ── physik.K3 ── gate:fahr-leben --frei (Null-Renderer, im Spiel-Takt `_gameLoopTick`): DER FREIE KÖRPER — der EINE Löser
+    // `_freiSchritt` (stamm/koerper-bewegung.js: Starrkörper mit Quaternion, Sequential Impulses, Schlaf), auf dem Boden des
+    // Gesetzes und den Blocker-Boxen, mit der Stoff-Tafel; der Wagen stößt über seine EINE Hülle und das EINE Impuls-Gesetz
+    // (`_freiStoss`). 5 Kisten (Bauplan kiste, 42 kg) fallen gestapelt (10 cm Spalt): bis alle schlafen, ihr Weg 3 s danach, wach
+    // (ohne Schlaf) ihr Weg von 2 bis 4 s, die untere am Boden und jede auf der darunter (±2 cm); der GT fährt auf ein Fass (45 kg):
+    // der größte Winkel seiner Achse. Mutanten im selben Lauf: Schwere 0 (die Kisten ruhen nicht am Boden), der Stoß am freien Körper
+    // aus (das Fass steht). Gemessen wird der Zustand des Lösers, nie ein Bild. An main 675a3889 ROT (die Linse kennt `--frei` nicht,
+    // die Welt keinen Bauplan kiste und kein `_freiSchritt`: „keine FREI-Zeile"); am Zweig w3t-koerper GRÜN: Ruhe 0,78 s, Zittern 0 cm, wach 0 cm, Fugen ≤ 1 mm, GT 9,19 →
+    // Fass 8,49 m/s, 172°; Schwere 0: Boden 0,10 m, ohne Stoß 2,2°.
+    {
+        kriterium: "physik.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --frei; echo "FREI EXIT $?"'],
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const F = jsonZeile(lauf.stdout, /^FREI \{/);
+            const [k, f, s, o] = F ? [F.kisten || {}, F.fass || {}, F.schwerelos || {}, F.fassOhneStoss || {}] : [];
+            if (!F || !k.fugen) return { gruen: false, zahl: "keine FREI-Zeile (Exit " + lauf.exit + ")" };
+            const amBoden = (x) => x.ruheS !== null && x.ruheS <= 2 && [x.boden, ...x.fugen].every((d) => Math.abs(d) <= 0.02);
+            const gruen =
+                lauf.exit === 0 &&
+                /FREI EXIT 0\b/.test(lauf.stdout) &&
+                amBoden(k) &&
+                k.zittern <= 0.01 &&
+                F.wachZittern <= 0.01 &&
+                f.kipp > 45 &&
+                !amBoden(s) &&
+                o.kipp < 45;
+            const z = (x, n) => (Number.isFinite(x) ? x.toFixed(n) : String(x));
+            return {
+                gruen,
+                zahl:
+                    "5 Kisten ruhen nach " + z(k.ruheS, 2) + " s, Zittern " + z(k.zittern * 100, 2) + " cm (wach " +
+                    z(F.wachZittern * 100, 2) + "), Boden " + z(k.boden, 3) + " m, Fugen " + k.fugen.map((d) => z(d, 3)).join("/") +
+                    " m · Wagen " + z(f.vWagen, 2) + " → Fass " + z(f.vFass, 2) + " m/s, Kipp " + z(f.kipp, 1) + "° · Mutanten: Schwere 0 Boden " +
+                    z(s.boden, 3) + " m, ohne Stoß " + z(o.kipp, 1) + "°",
+            };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/bau-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/vegetation-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "vehicle-core.js",
+            "gelaende-core.js",
+            "scripts/diag-fahr-leben.cjs",
+            "scripts/lib/fahr-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/wasser-linse.cjs",
+        ],
+        quelle: "1 = Körper fallen und ruhen (5 Kisten ≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -1652,4 +1713,5 @@ module.exports.fehlt = [
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K2", staffel: 2, befehl: null, grund: "nicht gebaut (w3s-feuer baute Staffel 1): Fels und Wasser halten die Front (kein Bett, `_brandStoff`), aber keine Probe misst es; nasses Gras hält nur über die EINE globale Nässe (kein Feld je Ort); der Regen löscht das Laub erst nach 196 s (Erlöschungs-Feuchte 0,25 auf der Nässe-Kurve benetzenS 150, gate:stand-takt an w3s-feuer); die Asche ist eine Narbe im lebendig (keine Albedo im Boden-Stoff); Rauch und Knistern lesen den Brand nicht; 2 000 brennende Zellen ≤ 0,5 ms an der GTX-CPU ungemessen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
+    { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
 ];
