@@ -161,3 +161,4 @@ takt17a-gtx 0 storno
 takt17b-gtx 0 storno
 takt17c-gtx 1 punkte sha=e18195be8b143f9d333de6ea8a8b43dea93dd198 geraet=gtx nur=gelaende.K2#1,gelaende.K2#2,gelaende.K5#2,tiere.K1#2,tiere.K3#2,tiere.K2#2,affekt.K1#2,oekologie.K4#2,mensch.K2#2,luftwasser.K5#1,luftwasser.K5#2,vegetation.K2#1,haar.K1#1,haar.K2#1,ferne.K2#2,material.K3#2,material.K1#2,studios.K2#2,bauen.K5#2,fahrzeug.K3#2,fahrzeug.K4#2,siedlung.K2#2,siedlung.K5#1
 takt17d-gtx 1 punkte sha=e18195be8b143f9d333de6ea8a8b43dea93dd198 geraet=gtx nur=siedlung.K5#2,halten.K2#1,halten.K5#1,halten.K5#2,halten.K1#2,fahrzeug.K5#1,tore.K3#2,spielgang.K3#1,ankunft.K2#1,ankunft.K3#1,streaming.K3#1,streaming.K4#2,klang.K2#1,klang.K4#2,klang.K5#2,speicher.K1#1,speicher.K1#2,speicher.K2#1,speicher.K2#2,speicher.K4#2,vegetation.K4#2,leib.K2#2,siedlung.K1#2
+z61b-abab 1 abab A=e18195be8b143f9d333de6ea8a8b43dea93dd198 B=d882a080f29148c7ff5a887df9674bbb9811c5ac zellen=w-ego,d-ego,stadt
