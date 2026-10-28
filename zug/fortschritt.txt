@@ -684,3 +684,4 @@
 2026-10-28 15:26:44 takt17d-gtx halten.K1#2 GRÜN 0.8 · 5/23
 2026-10-28 15:37:05 takt17d-gtx VORFAHRT fahrzeug.K5#1 verloren 0.2
 2026-10-28 15:37:39 takt17d-gtx fahrzeug.K5#1 OFFEN 10.8 · 6/23
+2026-10-28 15:47:54 takt17d-gtx tore.K3#2 OFFEN 10.1 · 7/23
