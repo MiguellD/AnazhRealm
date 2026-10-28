@@ -645,3 +645,4 @@
 2026-10-28 12:40:01 takt16b-gtx START 36 Stationen in 32 Läufen
 2026-10-28 12:44:22 takt16b-gtx material.K1#2 ROT 4.2 · 1/36
 2026-10-28 12:50:09 takt16b-gtx material.K2#1 ROT 5.7 · 2/36
+2026-10-28 12:53:43 takt16b-gtx material.K3#1 GRÜN 3.5 · 3/36
