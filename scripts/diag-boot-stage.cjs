@@ -476,6 +476,6 @@ hauptLauf(async () => {
         console.log("⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.");
         process.exit(1);
     }
-    console.log(`✅ „Volle Bühne" ist jetzt ein Prädikat mit Zeitleiste — Kriterium 2 ist messbar.`);
+    console.log(`✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);
     process.exit(0);
 });
