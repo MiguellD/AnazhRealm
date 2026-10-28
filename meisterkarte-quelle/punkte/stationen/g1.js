@@ -285,7 +285,9 @@ module.exports = [
     },
 
     // ── gelaende.K2 Staffel 2 ── (a) der Graben im Ausgabe-Bild wie Staffel 1 (dasselbe eingefrorene Mess-Bahn-Skript m2-graben.cjs,
-    // Third und als Ego-Kopie mit der Sicht "first"), (b) und (d) über die Wasser-Wand des Spiel-Baums (gate:wasser-leben, Zweig
+    // Third und mit `--sicht first` im Ich-Auge: die Kamera des Spiels am Kopf, der Blick nach unten auf den Boden vor dem Leib, der
+    // Stand 2,2 m vom Graben-Punkt mit freier Abnahme des Blicks — die sed-Kopie stellte die Third-Pose ins Ich-Auge, ein Hasel
+    // 1–2 m vor dem Auge ließ die Aufnahme vor dem ersten Graben werfen: Ego 0/0 am 27.10.), (b) und (d) über die Wasser-Wand des Spiel-Baums (gate:wasser-leben, Zweig
     // gk2-damm): G6/G7 der Damm aus dem Verb (`voxel_fill`) 60 m stromab des Graben-Orts — stromauf das gezeichnete Wasser auf der
     // Überlaufhöhe (Minimax über den Boden des Feldes) ±0,1 m über dem Fluss von vorher, stromab der Fluss auf seinem Spiegel —, G8
     // der Fern-Ring unter den Säulen im Takt des Edits (byte-Diff) und der Fern-Faden an den Säulen-Mitten auf der Krone (--bild
@@ -297,7 +299,7 @@ module.exports = [
         befehl: [
             "bash",
             "-c",
-            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; sed -e 's/"third"/"first"/g' -e 's/m2-graben[.]json/m2-graben-ego.json/' -e 's/m2-s/m2e-s/g' "$D/m2-graben.cjs" > "$D/m2-graben-ego.cjs"; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben-ego.cjs"; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
+            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben.cjs" --sicht first; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
         ],
         gpu: true,
         zeit: true,
@@ -305,16 +307,19 @@ module.exports = [
         urteil: (j, lauf) => {
             if (!j) return { gruen: false, zahl: "keine Ausgabe (Exit " + lauf.exit + ")" };
             // (a) je Sicht dasselbe Urteil wie Staffel 1
-            const graben = (m) => {
-                const g = (m && Array.isArray(m.graeben) ? m.graeben : []).filter((x) => x.verb === "graben");
+            const graben = (m, sicht) => {
+                const g = (m && Array.isArray(m.graeben) ? m.graeben : []).filter((x) => x.verb === "graben" && (!sicht || x.sicht === sicht));
                 const neu = g.filter((x) => x.nassEnde > x.nassVor);
                 const je = (a) => neu.filter((x) => x.abstand === a && x.gefuelltMs != null && x.gefuelltMs <= 2000).length;
                 const ok =
                     g.length >= 8 && Math.max(...g.map((x) => x.doppeltMax)) === 0 && Math.max(...g.map((x) => x.ueberMax)) === 0 &&
-                    g.every((x) => x.bilder > 0) && neu.every((x) => x.gefuelltMs != null && x.gefuelltMs <= 2000) && je(1) >= 1 && je(3) >= 1;
-                return { ok, zahl: g.length + "/" + (m && m.graeben ? m.graeben.length : 0) + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + ")" };
+                    g.every((x) => x.bilder > 0) && neu.every((x) => x.gefuelltMs != null && x.gefuelltMs <= 2000) && je(1) >= 1 && je(3) >= 1 &&
+                    (!sicht || [1, 3].every((a) => g.some((x) => x.abstand === a && (x.bild || []).includes("2s"))));
+                // Ego: je Abstand ein Bild 2 s nach dem Klick von einem freien Stand (die Abnahme des Blicks, m2-graben --sicht first)
+                const bild = sicht ? ", Bild " + g.filter((x) => (x.bild || []).includes("2s")).map((x) => "s" + x.saat + "/" + x.abstand + " m").join(" ") : "";
+                return { ok, zahl: g.length + "/" + (m && m.graeben ? m.graeben.length : 0) + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + bild + ")" };
             };
-            const [t, e] = [graben(j.third), graben(j.ego)];
+            const [t, e] = [graben(j.third), graben(j.ego, "first")];
             // (b) G6 · G7 — (d) G8, wie die Wand sie urteilt
             const d = j.damm || {};
             const auf = d.stromauf || [];
@@ -324,13 +329,14 @@ module.exports = [
                 auf.every((u) => Math.abs(u.wasser - u.ueberlauf) <= 0.1 && u.ueberlauf > u.fluss + 0.1) &&
                 ab.every((u) => Math.abs(u.wasser - u.fluss) <= 0.1);
             const f = (j.ferne && j.ferne.ring) || {};
-            const fern = f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === j.ferne.saeulen;
+            // der Faden je Ring-Punkt wie die Wand (diag-wasser-leben G8: faden === punkte), nicht je Säule (5/21 am 27.10. war die Station)
+            const fern = f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte;
             return {
                 gruen: t.ok && e.ok && b && fern,
                 zahl:
                     "(a) Third " + t.zahl + " · Ego " + e.zahl + " · (b) stromauf " + auf.map((u) => u.wasser + "/" + u.ueberlauf).join(", ") +
                     " m Wasser/Überlauf über Fluss " + auf.map((u) => u.fluss).join(", ") + ", stromab " + ab.map((u) => u.wasser + "/" + u.fluss).join(", ") +
-                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + (j.ferne ? j.ferne.saeulen : "?"),
+                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + f.punkte + " an " + (j.ferne ? j.ferne.saeulen : "?") + " Säulen",
             };
         },
         pfad: [
