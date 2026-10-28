@@ -2677,8 +2677,7 @@ function kontaktSicht(o) {
         sc.add(pf);
         st.playerMesh.visible = false;
         PU.bloomStrength.value = 0;
-        const db = rend.getDrawingBufferSize(new T.Vector2());
-        const [W, H] = [db.x, db.y];
+        const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
         const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
@@ -2748,10 +2747,10 @@ function kontaktSicht(o) {
                     };
                     for (const s of liste) {
                         const abc = [];
-                        for (let u = -0.7; u <= 0.7; u += 0.003) {
-                            v.copy(F).addScaledVector(d, 0.25 + s).addScaledVector(b, u).project(cam);
-                            abc.push([probe(A), probe(B), probe(C)]);
-                        }
+                        // je Punkt das Mittel längs der Kante (±2 cm, der Halbschatten steht dort): das Rauschen der gedrehten
+                        // Vogel-Punkte fällt, die Breite ist die des Bilds, das das Auge nach der zeitlichen Auflösung sieht
+                        for (let u = -0.7; u <= 0.7; u += 0.003)
+                            abc.push([A, B, C].map((L) => [-2, -1, 0, 1, 2].reduce((m, e) => (v.copy(F).addScaledVector(d, 0.25 + s + e / 100).addScaledVector(b, u).project(cam), m + probe(L) / 5), 0)));
                         linien.push([s, +((0.25 + s) / Math.hypot(S.x, S.z)).toFixed(2), ...kanten(abc)]);
                     }
                 }
@@ -2784,7 +2783,6 @@ function kontaktSicht(o) {
             cam.updateProjectionMatrix();
             cam.updateMatrixWorld(true);
         }
-        aus.version = r.constructor.VERSION;
         return aus;
     })();
 }
