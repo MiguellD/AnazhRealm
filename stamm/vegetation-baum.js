@@ -1847,17 +1847,50 @@ class AnazhRealm_vegetation_baum {
         return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
     }
 
-    // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
-    // dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1): der GENESIS-PLATZ, die Scheibe des Bauplans
-    // (cylinder, size.x = Durchmesser × die Größe des Eintrags) und der Ring der Tore um sie (`GENESIS_PLATZ`: Kreis plus
-    // Tiefe eines Tors), `lichtung` = sein Radius (die Wand fragt dort die Krone) — oder, für jeden anderen Bau, die Hülle
-    // seiner Blocker-Boxen (`welt`: achsparallel in der Welt, K52). Null für Natur, für was fährt (der Wagen urteilt über
-    // `_imWagen`, er räumt nichts) und für einen Bau ohne Boxen.
-    _grundrissVon(e) {
-        if (!e || !e.position) return null;
+    // DER EINE GRUNDRISS-LESER (siedlung.K3): die Fläche, auf der ein Bau steht — halbe Maße und Mitte, bau-lokal {ex, ez, ox,
+    // oz} — aus jeder Quelle, die sie trägt. Bis siedlung-k3-hang lasen drei Leser dieselbe Zeile je auf ihre Art (der Slot,
+    // der Eintrag, das Werk vor dem Bau). Der SLOT eines Exports: seine obb um ihre Mitte (Siedlungs-Rahmen wie slot.x/z; sie
+    // liegt bis 1,8 m neben dem Haus-Ursprung, das Hof-Haus 4 m), gedreht in den Rahmen des Hauses. Das FUNDAMENT eines
+    // Eintrags oder der Optionen eines Werks (die Siedlung reicht es aus der obb des Exports). Beide tragen `saum`: das Haus
+    // eines Orts steht auf der Platte seines Erdbaus, dem Grundriss samt dem Saum des Orts-Gesetzes (fachwerk
+    // `ORT_GESETZ.saumM`). Die HÜLLE eines Hauses, dann der Kern seiner TÜR-Zeile (`tuer` reist mit). Mit `art` (der Typ eines
+    // Werks VOR seinem Bau, `seed` sein Same) spricht danach das Gesetzbuch der Architektur: ein HAUS misst seinen Mass-Bau
+    // (fachwerk `massBau(hausParams(Rezept, Stempel))` mit der Gestalt seines Samens — dieselbe Zeile, aus der der Export sein
+    // obb und seine Tür nimmt, und der Bau, den der Worker für diesen Samen baut: `_foundryVariantFor`), die AUSSTATTUNG ihre
+    // Trittfläche (`fx.tritt` × Größe); beides × die Welt-Skala der Gestalt × die Größe, gemerkt je Gestalt, Same, Größe und
+    // Stempel. Ohne `art` die LICHTUNG eines Baus, dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1):
+    // der GENESIS-PLATZ, die Scheibe des Bauplans (cylinder, size.x = Durchmesser × die Größe des Eintrags) und der Ring der Tore
+    // um sie (`GENESIS_PLATZ`: Kreis plus Tiefe eines Tors), `lichtung` = sein Radius (die Wand fragt dort die Krone) — oder,
+    // für jeden anderen Bau, die Hülle seiner Blocker-Boxen (`welt`: achsparallel in der Welt, K52). Null für Natur, für was
+    // fährt (der Wagen urteilt über `_imWagen`, er räumt nichts), für einen Bau ohne Boxen und ein Werk ohne Grundriss-Gesetz.
+    _grundrissVon(e, art, seed) {
+        if (!e) return null;
+        const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
+        const ob = e.obb;
+        if (ob && Number.isFinite(ob.ex) && Number.isFinite(ob.ez) && ob.ex > 0 && ob.ez > 0) {
+            const rc = Math.cos(e.phi || 0);
+            const rs = Math.sin(e.phi || 0);
+            const dxw = Number.isFinite(ob.cx) ? ob.cx - e.x : 0;
+            const dzw = Number.isFinite(ob.cz) ? ob.cz - e.z : 0;
+            return {
+                ex: ob.ex,
+                ez: ob.ez,
+                ox: dxw * rc - dzw * rs,
+                oz: dxw * rs + dzw * rc,
+                saum,
+                tuer: e.tuer || null,
+            };
+        }
         const f = e.fundament;
         if (f && Number.isFinite(f.ex) && Number.isFinite(f.ez))
-            return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
+            return {
+                ex: f.ex,
+                ez: f.ez,
+                ox: Number.isFinite(f.ox) ? f.ox : 0,
+                oz: Number.isFinite(f.oz) ? f.oz : 0,
+                saum,
+                tuer: e.tuer || null,
+            };
         // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament-Zeile (gesetzt vom Spieler, der KI,
         // einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der Mess-Wiese). Die festen Boxen
         // der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle — vor dem Kern der Tür-Zeile, die die
@@ -1892,7 +1925,64 @@ class AnazhRealm_vegetation_baum {
             if (fp) return fp;
         }
         const t = e.tuer;
-        if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
+        if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
+            return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0, tuer: t };
+        if (art !== undefined) {
+            const g = this._grundrissGesetz(art);
+            if (!g) return null;
+            const { preset, pre, rec } = g;
+            const same = Number.isFinite(seed) ? seed : e.seed;
+            const gestalt = this._foundryVariantFor(Number.isFinite(same) ? same : 0, preset);
+            if (gestalt == null) return null; // Buch kalt: kein Grundriss, kein Urteil (die Wurzel blockiert den Bau ohnehin)
+            const ov = e.studioOv && typeof e.studioOv === "object" && !Array.isArray(e.studioOv) ? e.studioOv : null;
+            const k =
+                (this._foundryWorldScaleMatrix(preset).elements[0] || 1) *
+                (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1);
+            const key = `${preset}|${gestalt}|${k}|${ov ? JSON.stringify(ov) : ""}`;
+            const M = this._grundrissGesetzMerker || (this._grundrissGesetzMerker = new Map());
+            if (M.has(key)) return M.get(key);
+            let fp = null;
+            if (rec.kind === "haus") {
+                const hausParams =
+                    AnazhRealm.Gesetz("fachwerk:hausParams", null) ||
+                    AnazhRealm._kernPflichtBruch("fachwerk:hausParams");
+                const massBau =
+                    AnazhRealm.Gesetz("fachwerk:massBau", null) || AnazhRealm._kernPflichtBruch("fachwerk:massBau");
+                const p = hausParams(pre, ov);
+                if (!(ov && ov.seed != null)) p.seed = gestalt;
+                const B = massBau(p);
+                const x = B && B.ext;
+                if (x && [x.x0, x.x1, x.z0, x.z1].every(Number.isFinite)) {
+                    const dm = B.dims && B.dims.tuer;
+                    fp = {
+                        ex: ((x.x1 - x.x0) / 2) * k,
+                        ez: ((x.z1 - x.z0) / 2) * k,
+                        ox: ((x.x0 + x.x1) / 2) * k,
+                        oz: ((x.z0 + x.z1) / 2) * k,
+                        tuer:
+                            dm && [dm.x, dm.z, dm.w].every(Number.isFinite)
+                                ? { x: dm.x * k, z: dm.z * k, w: dm.w * k }
+                                : null,
+                    };
+                }
+            } else {
+                const tr = pre.fx && pre.fx.tritt;
+                const gr =
+                    (ov && Number.isFinite(ov.groesse)
+                        ? ov.groesse
+                        : pre.s && Number.isFinite(pre.s.groesse)
+                          ? pre.s.groesse
+                          : 1) * k;
+                if (tr && tr.typ === "kreis" && tr.r > 0)
+                    fp = { ex: tr.r * gr, ez: tr.r * gr, ox: 0, oz: 0, tuer: null };
+                else if (tr && tr.ex > 0 && tr.ez > 0)
+                    fp = { ex: tr.ex * gr, ez: tr.ez * gr, ox: 0, oz: 0, tuer: null };
+            }
+            if (M.size >= 256) M.clear();
+            M.set(key, fp);
+            return fp;
+        }
+        if (!e.position) return null;
         const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;

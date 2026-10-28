@@ -3269,7 +3269,7 @@ class AnazhRealm_siedlung_satz {
             position = this._structureSpawnPos(type, position, { state: this.state }, scale);
         }
         // DIE WASSER-WAND DER WERKE an der Wurzel (Schau-2 wasser-wahrheit, Gegenprüfung): ein NEUES Werk mit Grundriss-Gesetz
-        // (Haus, Tempel, Ausstattung — `_werkGrundriss`), dessen Ort die Welt wählt (der Satz, der Nexus, ein Programm, die
+        // (Haus, Tempel, Ausstattung — `_grundrissVon` mit der Art), dessen Ort die Welt wählt (der Satz, der Nexus, ein Programm, die
         // Siedlung, eine Kreatur), steht mit dem ganzen Fundament auf dem Land — geurteilt am Ort NACH der Spieler-Klemme
         // (sie schob ein Haus vom Spieler weg ins Wasser). Ein Werk mit eigener id steht, wo es gewollt oder gespeichert ist:
         // der Bau-Modus und sein Mitspieler (string-id), der Reload (precise + id), die Tor-Vorschau. Befund: der Satz fragte
