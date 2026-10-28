@@ -29,12 +29,12 @@ const server = statikServer();
 // langlebiges CDP-Promise (die „Promise was collected"-Falle bei Minuten-Jobs).
 async function runJob(page, fn, arg) {
     await page.evaluate(
-        (src, a) => {
+        (src, vok, a) => {
             window.__jobDone = false;
             window.__jobOut = null;
-            const f = new Function("return (" + src + ")")();
+            const [f, V] = [src, vok].map((s) => new Function("return (" + s + ")")());
             Promise.resolve()
-                .then(() => f(a))
+                .then(() => f(a, V))
                 .then((o) => {
                     window.__jobOut = o || {};
                     window.__jobDone = true;
@@ -45,6 +45,7 @@ async function runJob(page, fn, arg) {
                 });
         },
         fn.toString(),
+        vokabular.toString(),
         arg === undefined ? null : arg
     );
     await page.waitForFunction(() => window.__jobDone, { timeout: 0, polling: 400 });
@@ -53,15 +54,37 @@ async function runJob(page, fn, arg) {
 
 // ===== Die Band-Jobs (laufen 1:1 im Browser; nur `arg` reist hinein) =====
 
-// Gemeinsames Vokabular jedes Jobs: Boot abwarten, Hasher, Chunk-Pumpe.
-// (Als Quelltext-Präambel in jeden Job kopiert — Jobs reisen als Strings.)
-async function jobKalt() {
+// DAS VOKABULAR der Jobs, EINMAL: Boot abwarten (der Faden bereit und worldgen-synchron, sonst null), der Hasher
+// (der EINE Abdruck, welt-boot) und die Chunk-Pumpe — `runJob` reicht es jedem Job als zweites Argument (Jobs reisen
+// als Strings; bis hierher stand es als kopierte Präambel in jedem Job).
+async function vokabular() {
     /* eslint-disable no-undef */
     const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const st = r.state;
-    await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
-    if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
-        return { err: "Voxel-Worker wurde nicht ready/worldgen-synced" };
+    const bereit = () => st.voxelWorkerReady && st.voxelWorkerWorldgenSynced;
+    await window.__weltDa(bereit);
+    const chunk = (cx, cz) => (st.voxelChunks && st.voxelChunks.get(cx + "," + cz)) || null;
+    const posHashOf = (cx, cz) => {
+        const e = chunk(cx, cz);
+        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null;
+    };
+    const pumpChunk = async (cx, cz, ms) => {
+        for (const weiter = window.__deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {
+            const e = chunk(cx, cz);
+            if (e && (e.mesh || e.empty)) return e;
+            r._ensureVoxelChunkAt(cx, cz, 0);
+            await sleep(25);
+        }
+        return chunk(cx, cz);
+    };
+    return bereit() ? { r, st, posHashOf, pumpChunk } : null;
+}
+
+async function jobKalt(_, V) {
+    /* eslint-disable no-undef */
+    const W = await V();
+    if (!W) return { err: "Voxel-Worker wurde nicht ready/worldgen-synced" };
+    const { r, st, posHashOf, pumpChunk } = W;
     const { span } = r._voxelChunkConfig(0);
     const pm = st.playerMesh;
     const pcx = pm ? Math.floor(pm.position.x / span) : 0;
@@ -74,20 +97,6 @@ async function jobKalt() {
         [pcx + 3, pcz + 3],
         [pcx - 3, pcz - 3],
     ].filter(([cx, cz]) => !st.voxelChunks || !st.voxelChunks.has(cx + "," + cz));
-    const posHashOf = (cx, cz) => {
-        const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
-        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
-    };
-    const pumpChunk = async (cx, cz, ms) => {
-        const key = cx + "," + cz;
-        for (const weiter = window.__deckel(`der Chunk ${key}`, ms / 25); weiter(); ) {
-            const e = st.voxelChunks && st.voxelChunks.get(key);
-            if (e && (e.mesh || e.empty)) return e;
-            r._ensureVoxelChunkAt(cx, cz, 0);
-            await sleep(25);
-        }
-        return (st.voxelChunks && st.voxelChunks.get(key)) || null;
-    };
     const t0 = performance.now();
     const probes = [];
     for (const [cx, cz] of cands) {
@@ -141,29 +150,13 @@ async function jobKalt() {
     };
 }
 
-async function jobWarm(kaltIn) {
+async function jobWarm(kaltIn, V) {
     /* eslint-disable no-undef */
-    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
-    const st = r.state;
-    await window.__weltDa(() => !(!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced));
-    if (!st.voxelWorkerReady || !st.voxelWorkerWorldgenSynced)
-        return { err: "Voxel-Worker wurde nicht ready/worldgen-synced (warm)" };
+    const W = await V();
+    if (!W) return { err: "Voxel-Worker wurde nicht ready/worldgen-synced (warm)" };
+    const { r, st, posHashOf, pumpChunk } = W;
     if (st.worldMeta.seed !== kaltIn.seed)
         return { err: "Reload lud eine ANDERE Welt (Seed " + st.worldMeta.seed + " != " + kaltIn.seed + ")" };
-    const posHashOf = (cx, cz) => {
-        const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
-        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null; // der EINE Abdruck (welt-boot)
-    };
-    const pumpChunk = async (cx, cz, ms) => {
-        const key = cx + "," + cz;
-        for (const weiter = window.__deckel(`der Chunk ${key}`, ms / 25); weiter(); ) {
-            const e = st.voxelChunks && st.voxelChunks.get(key);
-            if (e && (e.mesh || e.empty)) return e;
-            r._ensureVoxelChunkAt(cx, cz, 0);
-            await sleep(25);
-        }
-        return (st.voxelChunks && st.voxelChunks.get(key)) || null;
-    };
     const [A, B] = kaltIn.probes;
     const preBuilt =
         !!st.voxelChunks && (st.voxelChunks.has(A[0] + "," + A[1]) || st.voxelChunks.has(B[0] + "," + B[1]));

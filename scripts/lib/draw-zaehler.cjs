@@ -197,9 +197,7 @@ function drawZensus(opts) {
         const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
         let frameMs = null;
         try {
-            st.scene.traverse((n) => {
-                if (n.isBundleGroup) n.needsUpdate = true;
-            });
+            window.__bundlesNeu();
             r._schattenAlleNeu();
             if (q) await q.onSubmittedWorkDone();
             const t0 = performance.now();

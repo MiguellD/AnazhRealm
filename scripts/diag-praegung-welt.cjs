@@ -507,7 +507,29 @@ hauptLauf(async () => {
         return [da, r.state.worldMeta, !!(await window.__anschluss(r, autor))];
     }, a.autor);
     const geht = await halteBis(pageB, { taste: "w", ziel: async () => (await window.__seitenTakt(), window.__weg() >= 1) });
-
+    // ===== (U) FUSION: dieselben Eltern-Bytes in beiden Geräten → A+B (random-mix: Id, Saat, Geburt, Münzwurf) · B+A · der Täter =====
+    const [uA, uB] = await Promise.all(
+        [page, pageB].map((seite) =>
+            seite.evaluate(() => {
+                const r = window.anazhRealm;
+                for (const x of "ab") {
+                    const dslHistory = [..."123456"].map((n) => x + n);
+                    localStorage.setItem(r.worldStorageKey(x + "-eltern"), JSON.stringify({ worldMeta: { bornAt: 9 }, dslHistory }));
+                }
+                const kind = (a, b) => {
+                    const f = r.fuseWorlds(a + "-eltern", b + "-eltern", "random-mix", { reload: false });
+                    const json = f.ok && localStorage.getItem(r.worldStorageKey(f.worldId));
+                    if (f.ok) r.deleteWorld(f.worldId);
+                    return json;
+                };
+                const echt = r._fusionGenerateIdentity; // der Täter: die Geburt wieder aus der Wanduhr
+                r._fusionGenerateIdentity = (...a) => ({ ...echt.apply(r, a), bornAt: Date.now() });
+                const uhr = kind("a", "b");
+                delete r._fusionGenerateIdentity;
+                return [kind("a", "b"), kind("b", "a"), uhr];
+            })
+        )
+    );
     const ger = [page, pageB, await (await browser.createBrowserContext()).newPage()].map(geraet); // C: B als Kontext im Chrome von A
     await browser.close();
     await browserB.close();
@@ -592,6 +614,11 @@ hauptLauf(async () => {
     check("WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss", worldId === wId && seed === wSame && role === "guest" && w[2] && kb > 128, `${worldId} ${kb} KB ${role} ${w[2]}`);
     check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", ms <= 5000, `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
     check("WELT: der Leib geht unter W ≥ 1 m", geht.erreicht, `${geht.ms} ms`);
+
+    console.log("\n=== (U) FUSION auf zwei Geräten ===");
+    check("FUSION A+B byte-gleich", gleich(uA[0], uB[0]), `${uA[0]?.length} Bytes`);
+    check("GERICHTET: B+A ≠ A+B", gleich(uA[1], uB[1]) && uA[1] !== uA[0]);
+    check("TÄTER-PROBE: Date.now in der Geburt ist ROT", uB[2] && !gleich(uB[2], uA[0]));
 
     console.log("\n=== (F) KORPUS fremder Codes ===");
     // ein Fall hält, wenn der Code abgewiesen ist, beim erwarteten Namen, und der Spieler ihn hört — sonst ist die Probe ROT

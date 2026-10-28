@@ -359,7 +359,7 @@ async function fahreWeg(browser, weg, schein) {
     const lege = async (fn, ...a) => (await page.evaluate(fn, ...a)) || [];
     try {
         verzoegerung = 0;
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await server.zeige(page, 60000);
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
@@ -624,7 +624,7 @@ async function fahreWeg(browser, weg, schein) {
 
 hauptLauf(async () => {
     const tStart = Date.now();
-    await new Promise((r) => server.listen(PORT, r));
+    await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B, keine Welt geht verloren =========");
     console.log(`  Baum: ${root}`);

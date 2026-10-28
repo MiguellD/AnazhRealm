@@ -412,6 +412,47 @@ class AnazhRealm_dienst {
         }, AnazhRealm.BRUCH_WIEDER_MS);
     }
 
+    // DER FADEN UMGANGEN (streaming.K4, Lehre 14): jeder Bau im Haupt-Faden, für den ein Faden zuständig ist — der Chunk-Stoff
+    // (`_buildVoxelChunkData`) und der Guss des Bäckers ohne Vorlage im Memo —, meldet sich hier. An einer der benannten
+    // Sync-Stellen (`SYNC_STELLEN`, gesetzt über `_syncBauen`) zählt er je Stelle in `_syncBau`; sonst bricht er laut beim Namen
+    // seines Rufers über den EINEN Melder: das Buch („FADEN-UMGANGEN", `_bruchBuch`) IST der Zähler, den die Faden-Linse im
+    // echten Fenster liest (`diag-worker-dichte --faden --echt`, `werkbank eval`).
+    _fadenUmgangen(was) {
+        const s = this._syncStelle;
+        if (AnazhRealm.SYNC_STELLEN.includes(s)) {
+            const z = this._syncBau || (this._syncBau = {});
+            z[s] = (z[s] || 0) + 1;
+            return;
+        }
+        const rufer = new Error().stack
+            .split("\n")
+            .map((l) => (/at (?:new )?(?:[\w$]+\.)*([\w$]+) \(/.exec(l) || [])[1])
+            .find((n) => n && !AnazhRealm.SYNC_KETTE.includes(n));
+        const wo = s ? ` an der unbenannten Sync-Stelle „${s}“` : "";
+        this._bruchMelden(`FADEN-UMGANGEN: ${was} im Haupt-Faden${wo} — ${rufer || "?"} (Lehre 14)`);
+    }
+    // DER LESER DES ZÄHLERS: die Bauten je Sync-Stelle und die laut gebrochenen beim Namen (`werkbank eval
+    // 'return r._syncBauten()'`, die Faden-Linse); `voll`: das Buch hält BRUCH_BUCH_MAX Meldungen, ein volles vergisst
+    _syncBauten() {
+        const buch = [...(this._bruchBuch || [])];
+        const rot = buch.filter(([t]) => t.startsWith("FADEN-UMGANGEN"));
+        return {
+            stellen: Object.assign({}, this._syncBau),
+            sonst: rot.reduce((n, [, e]) => n + e.n, 0),
+            rot: rot.map(([t, e]) => `${e.n}× ${t}`),
+            voll: buch.length >= AnazhRealm.BRUCH_BUCH_MAX,
+        };
+    }
+    _syncBauen(stelle, bau) {
+        const alt = this._syncStelle;
+        this._syncStelle = stelle;
+        try {
+            return bau();
+        } finally {
+            this._syncStelle = alt;
+        }
+    }
+
     // Defer-Helper für JEDEN GPU-Dispose (Geometry/Material/Texture): WebGPU zerstört Buffer sofort bei
     // `.dispose()`, Submits laufen aber async → in `pendingDisposals` sammeln, Drain erst nach
     // `device.queue.onSubmittedWorkDone()` im Render-Loop.

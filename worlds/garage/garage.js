@@ -248,7 +248,7 @@ function syncSliders(){regler.sync();}
 // Die Kosten-Leiste der Hülle: die WELT-Gestalt (buildInstance des Kerns mit P als ov — derselbe Bau wie der Foundry-Worker)
 // gegen die Budget-Zeile je Stufe; neu gemessen, wenn der Regler-Zug ruht.
 const kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:VC.PORTAL_RENDER_CONFIG.lod.budget.vehicle,
-  stufen:VC.PORTAL_RENDER_CONFIG.lod.kindStages.vehicle,bauen:s=>VC.buildInstance(presetId,1,s,P),
+  stufen:VC.PORTAL_RENDER_CONFIG.lod.kindStages.vehicle,bauen:s=>VC.buildInstance(presetId,1,s,P),renderer:R,
   quelle:'gemessen an der Welt-Gestalt (vehicle-core buildInstance, Same 1); Befehle nach dem Budget-Gesetz ≤ Zeile'});
 
 // ════════════════════════════════════════════════════════════════════
