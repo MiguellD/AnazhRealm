@@ -386,7 +386,61 @@ function goldenSelbsttest(actual, check) {
     check("SELBST-TEST: objects-Drift wird erkannt", rot({ cases: actual }, t2, "objects"));
 }
 
+// DAS IST der Vertrags-Linsen (porta · schmiede · vehicle): jeder Fall gebaut und zweimal gefingert, der Determinismus im Lauf
+// beim Namen → { Schlüssel: Fingerabdruck }. Bis zur Decke w3s-sukzession trug jede Linse diese Schleife selbst.
+function goldenIst(faelle, bauen, check, finger = fingerabdruck, schluessel = fallSchluessel) {
+    const ist = {};
+    let gleich = true;
+    for (const c of faelle) {
+        const [a, b] = [finger(bauen(c)), finger(bauen(c))];
+        gleich = gleich && a.sha256 === b.sha256;
+        ist[schluessel(c)] = a;
+    }
+    check(`Determinismus: jeder der ${faelle.length} Fälle baut doppelt byte-gleich`, gleich);
+    return ist;
+}
+
+// DIE GOLDEN-WAND der Vertrags-Linsen (fachwerk · porta · schmiede · vehicle): das Golden `datei` (ab der Wurzel) friert beim
+// ersten Lauf ein (oder MINT_FORCE=1, ein benannter Vertrags-Akt), danach urteilt sie byte-exakt gegen das Ist — das cv des
+// Kopfs und jeder Fall am Golden, jede Abweichung beim Namen, und ihr Selbst-Test (`goldenSelbsttest`) am Ist. Bis zur Decke
+// w3s-sukzession schrieb jede Linse Einfrieren, Lesen und Vergleich selbst (fünf Mal).
+function goldenWand(datei, ist, kopf, check, name = "Goldens") {
+    const [fs, voll] = [require("fs"), require("path").join(__dirname, "..", "..", datei)];
+    if (!fs.existsSync(voll) || process.env.MINT_FORCE === "1") {
+        fs.mkdirSync(require("path").dirname(voll), { recursive: true });
+        fs.writeFileSync(voll, JSON.stringify({ ...kopf, cases: ist }, null, 2) + "\n");
+        console.log(`  🧊 GOLDEN GEMINTET (${Object.keys(ist).length} Fälle) → ${datei} — ab jetzt EINGEFROREN`);
+    }
+    const golden = JSON.parse(fs.readFileSync(voll, "utf8"));
+    const diffs = goldenVergleich(golden, ist);
+    check(`${name} tragen cv:${kopf.cv} + alle Fälle`, golden.cv === kopf.cv && Object.keys(golden.cases).length === Object.keys(ist).length);
+    check(`${name} byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs.join(" · "));
+    goldenSelbsttest(ist, check);
+}
+
+// DIE PROBE EINES STUDIO-KERNS (fachwerk · porta · schmiede · vehicle): die Wand `probeWand` über den je Lauf frisch geladenen
+// Kern (`kern` die Datei, `ns` sein Name auf globalThis) — jeder Fall `bau(K, c)` gefingert, danach `weg(g)`; am Ende trägt
+// `ns` wieder den Kern der Linse. Bis zur Decke w3s-sukzession lud und baute jede Linse selbst.
+async function kernProbe(satz, kern, ns, faelle, bau, check, finger = fingerabdruck, schluessel = fallSchluessel, weg = () => {}) {
+    const eigen = globalThis[ns];
+    const laden = () => (delete require.cache[require.resolve(kern)], require(kern), globalThis[ns]);
+    const bauen = (K) => {
+        const r = {};
+        for (const c of faelle) {
+            const g = bau(K, c);
+            r[schluessel(c)] = finger(g).sha256;
+            weg(g);
+        }
+        return r;
+    };
+    await probeWand(satz, { laden, bauen }, check);
+    globalThis[ns] = eigen;
+}
+
 module.exports = {
+    kernProbe,
+    goldenIst,
+    goldenWand,
     plattformProbe,
     installiereDrift,
     FUNKTIONEN,

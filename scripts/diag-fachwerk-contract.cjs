@@ -37,16 +37,11 @@
 // PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
-const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
+const { kernProbe, fingerabdruck, goldenWand, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
-const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
-const goldenFile = path.join(goldenDir, "haeuser.json");
-// DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
-const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 const KERN = path.join(root, "fachwerk-core.js");
@@ -648,29 +643,7 @@ function bogenLinse() {
     );
 
     // 8) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    if (!fs.existsSync(goldenFile) || process.env.MINT_FORCE === "1") {
-        fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(
-            goldenFile,
-            JSON.stringify(
-                { cv: 6, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall", cases: actual },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(
-            `  🧊 GOLDEN GEMINTET (${Object.keys(actual).length} Fälle) → ${path.relative(root, goldenFile)} — ab jetzt EINGEFROREN`
-        );
-    }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
-    check("Golden trägt cv:6 + alle Fälle", golden.cv === 6 && Object.keys(golden.cases).length === CASES.length);
-    const diffs = compare(golden, actual);
-    check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
-    for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
-
-    // 9) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
-    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
-    goldenSelbsttest(actual, check);
+    goldenWand("spec/asset-contract/v6/golden/haeuser.json", actual, { cv: 6, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall" }, check);
 
     // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear" (der Bake `_colFor` legt das
     //     Paletten-Hex nie roh in den Vertex). Gemessen wird, was die Welt liest: je Kultur
@@ -917,52 +890,19 @@ function bogenLinse() {
         "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle (weniger Scheite, kleinere Flamme)",
         ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
     );
-    if (!fs.existsSync(goldenAusFile) || process.env.MINT_FORCE === "1") {
-        fs.writeFileSync(
-            goldenAusFile,
-            JSON.stringify(
-                {
-                    cv: 6,
-                    minted: "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)",
-                    cases: ausIst,
-                },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(`  🧊 GOLDEN GEMINTET (${Object.keys(ausIst).length} Fälle) → ${path.relative(root, goldenAusFile)}`);
-    }
-    const goldenAus = JSON.parse(fs.readFileSync(goldenAusFile, "utf8"));
-    const diffsAus = compare(goldenAus, ausIst);
-    check(
-        `Ausstattungs-Goldens byte-exakt (${Object.keys(goldenAus.cases).length} Fälle)`,
-        diffsAus.length === 0 && Object.keys(goldenAus.cases).length === AUS_CASES.length,
-        diffsAus[0] || ""
-    );
+    // DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens
+    const kopfAus = { cv: 6, minted: "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)" };
+    goldenWand("spec/asset-contract/v6/golden/ausstattung.json", ausIst, kopfAus, check, "Ausstattungs-Goldens");
 
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
     //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
     //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
     //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
-    const frisch = () => {
-        delete require.cache[require.resolve(KERN)];
-        require(KERN);
-        return globalThis.__fachwerkCore;
-    };
-    const fingerAlle = (K, faelle) => {
-        const r = {};
-        for (const c of faelle) {
-            const g = K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
-            r[caseKey(c)] = fingerprint(g).sha256;
-            disposeGroup(g);
-        }
-        return r;
-    };
+    const bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
     const PROBE_HAUS = CASES.filter((c) => !c.ov && c.seed === 7 && KULTUREN.indexOf(c.rezeptId) % 4 === 0);
-    await probeWand("v6", { laden: frisch, bauen: (K) => fingerAlle(K, PROBE_HAUS) }, check);
-    await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
-    globalThis.__fachwerkCore = FC;
+    await kernProbe("v6", KERN, "__fachwerkCore", PROBE_HAUS, bau, check, fingerprint, caseKey, disposeGroup);
+    await kernProbe("v6a", KERN, "__fachwerkCore", AUS_CASES, bau, check, fingerprint, caseKey, disposeGroup);
 
     // 12) DER BOGEN IM VERBAND
     bogenLinse();
