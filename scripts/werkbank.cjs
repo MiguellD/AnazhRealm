@@ -384,7 +384,7 @@ function lauf(k) {
             if (k.spur) await window.__spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
-            const erst0 = E && ERST.map((x) => E[x] || 0), probe = [];
+            const erst0 = ERST.map((x) => E[x] || 0), probe = [];
             const tMess0 = performance.now();
             if (H) {
                 H.namen.length = 0;
@@ -420,7 +420,7 @@ function lauf(k) {
                 chunks: st.voxelChunks.size,
                 sprung: sprung && Object.assign(sprung, { bau: [sprung.bau, r._syncBauten()] }),
                 loadScale: +st.perfSense.loadScale.toFixed(2),
-                erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
+                erst: Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),
             };
             for (const m of ["anazh-takt", "anazh-bild", "anazh-leer"]) performance.clearMarks(m);
@@ -478,10 +478,7 @@ function lauf(k) {
                 ),
                 // Die Pass-Stempel gelten nur, wenn im Fenster kein Pass ohne Abfrage blieb (ein voller Pool schreibt
                 // seine Stempel in fremde Plätze — `__stempelWache`).
-                stempel: s0 && s1
-                    ? { imLauf: s1.ueberlauf - s0.ueberlauf, seitBoot: s1.ueberlauf, spitze: s1.spitze, pool: s1.pool,
-                        gueltig: s1.ueberlauf === s0.ueberlauf }
-                    : null,
+                stempel: { imLauf: s1.ueberlauf - s0.ueberlauf, seitBoot: s1.ueberlauf, spitze: s1.spitze, pool: s1.pool, gueltig: s1.ueberlauf === s0.ueberlauf },
                 befehle: passZahl("dc"),
                 dreiecke: passZahl("tri"),
                 vramMB: {
