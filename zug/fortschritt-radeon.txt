@@ -1079,3 +1079,4 @@
 2026-10-28 13:40:43 takt17-radeon gelaende.K2#2 ROT 4.9 · 1/57
 2026-10-28 13:41:18 takt17-radeon luftwasser.K5#2 GRÜN 0.6 · 2/57
 2026-10-28 13:43:35 takt17-radeon studios.K2#2 GRÜN 2.3 · 3/57
+2026-10-28 13:49:35 takt17-radeon siedlung.K5#2 GRÜN 6.0 · 4/57
