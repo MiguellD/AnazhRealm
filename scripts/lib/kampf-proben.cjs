@@ -100,6 +100,11 @@ async function WELLE_L(ort) {
         return orig.damagePlayer.call(this, amount, source);
     };
     const tiere = [];
+    // die Wesen der Probe hält die Probe: der Lebenszyklus nimmt sie in den Bestand ihrer Region, aber er zeichnet sie nicht
+    // ab, solange die Probe sie zwischen zwei Klicks parkt (fern, außer Blick — oekologie.K2#2: dort lebt ein Tier als Zahl)
+    r._bestandEntkoerpern = function (c) {
+        if (!tiere.includes(c)) return A.prototype._bestandEntkoerpern.call(this, c);
+    };
     // JE PRÜFUNG IHR EIGENER ABBRUCH: fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
     // sich mit dem Fehler, und die übrigen laufen weiter.
     const teil = async (name, f) => {
@@ -3070,6 +3075,7 @@ async function WELLE_L(ort) {
         delete r._beginPlayerSwing;
         delete r.dslRun;
         delete r.damagePlayer;
+        delete r._bestandEntkoerpern;
         for (const c of tiere) if (c.parent) r.removeCreature(c); // die Wesen und die Gefallenen
         for (const pf of (s._pfeile || []).slice()) r._pfeilDespawn(pf);
         if (s._pfeile) s._pfeile.length = 0;
