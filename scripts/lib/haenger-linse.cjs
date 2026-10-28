@@ -58,95 +58,89 @@ function haengerAn() {
         H.namen.push(e);
         return e;
     };
-    const rend = window.anazhRealm && window.anazhRealm.state.renderer;
+    const rend = window.anazhRealm.state.renderer;
     // DER KNOTEN-BAU (r184 `Nodes.getForRender`): die CPU-Hälfte einer Erst-Zeichnung — der TSL-Graph des Stoffs wird zu
     // WGSL gebaut, synchron, wenn ein RenderObject zum ersten Mal zeichnet und sein Schlüssel nicht im Bau-Cache liegt.
     // Je synchronem Bau die Dauer, der Stoff und der Auftraggeber; ein asynchroner Bau (`buildAsync`, in Schritten mit
     // yieldToMain) zählt nur.
-    const N = rend && rend._nodes;
-    if (N && typeof N.getForRender === "function" && typeof N.getForRenderCacheKey === "function") {
-        const gfr = N.getForRender;
-        N.getForRender = function (ro, asyncBau) {
-            const d = this.get(ro);
-            if (d.nodeBuilderState !== undefined || this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) !== undefined)
-                return gfr.apply(this, arguments);
-            if (asyncBau) {
-                H.acc.bauAsync = (H.acc.bauAsync || 0) + 1;
-                return gfr.apply(this, arguments);
-            }
-            const t0 = performance.now();
-            const s = gfr.apply(this, arguments);
-            const ms = performance.now() - t0;
-            H.acc.bauN = (H.acc.bauN || 0) + 1;
-            H.acc.bauMs = (H.acc.bauMs || 0) + ms;
-            const e = name("bau", { label: (ro.material && (ro.material.name || ro.material.type)) || "?" });
-            if (e) e.ms = +ms.toFixed(1);
-            return s;
-        };
-    }
-    if (rend && typeof rend._renderObjectDirect === "function") {
-        const rod = rend._renderObjectDirect;
-        rend._renderObjectDirect = function (object, material, scene, camera) {
-            const vor = H.cur;
-            H.cur = { object, scene, camera };
-            try {
-                return rod.apply(this, arguments);
-            } finally {
-                H.cur = vor;
-            }
-        };
-    }
-    if (typeof GPUDevice !== "undefined") {
-        const P = GPUDevice.prototype;
-        const crp = P.createRenderPipeline;
-        P.createRenderPipeline = function (d) {
-            const t0 = performance.now();
-            const p = crp.call(this, d);
-            H.acc.pipeSync++;
-            H.acc.pipeSyncMs += performance.now() - t0;
-            name("sync", d);
-            return p;
-        };
-        const crpa = P.createRenderPipelineAsync;
-        P.createRenderPipelineAsync = function (d) {
-            H.acc.pipeAsync++;
-            name("async", d);
-            return crpa.call(this, d);
-        };
-        for (const m of ["createComputePipeline", "createComputePipelineAsync"]) {
-            const o = P[m];
-            P[m] = function (d) {
-                H.acc.compute++;
-                name(m === "createComputePipeline" ? "compute" : "compute-async", d);
-                return o.call(this, d);
-            };
+    const N = rend._nodes;
+    const gfr = N.getForRender;
+    N.getForRender = function (ro, asyncBau) {
+        const d = this.get(ro);
+        if (d.nodeBuilderState !== undefined || this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) !== undefined)
+            return gfr.apply(this, arguments);
+        if (asyncBau) {
+            H.acc.bauAsync = (H.acc.bauAsync || 0) + 1;
+            return gfr.apply(this, arguments);
         }
-        const csm = P.createShaderModule;
-        P.createShaderModule = function (d) {
-            H.acc.shader++;
-            H.acc.shaderKB += ((d && d.code && d.code.length) || 0) / 1024;
-            return csm.call(this, d);
-        };
-        const Q = GPUQueue.prototype;
-        const wb = Q.writeBuffer;
-        Q.writeBuffer = function (b, o, data, dOff, size) {
-            const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
-            H.acc.upKB += (size != null ? size * bpe : (data && data.byteLength) || 0) / 1024;
-            return wb.apply(this, arguments);
-        };
-        const wt = Q.writeTexture;
-        Q.writeTexture = function (dst, data) {
-            H.acc.texKB += ((data && data.byteLength) || 0) / 1024;
-            return wt.apply(this, arguments);
-        };
-        const cei = Q.copyExternalImageToTexture;
-        Q.copyExternalImageToTexture = function (src, dst, size) {
-            const w = Array.isArray(size) ? size[0] : (size && size.width) || 0;
-            const h = Array.isArray(size) ? size[1] || 1 : (size && size.height) || 1;
-            H.acc.texKB += (w * h * 4) / 1024;
-            return cei.apply(this, arguments);
+        const t0 = performance.now();
+        const s = gfr.apply(this, arguments);
+        const ms = performance.now() - t0;
+        H.acc.bauN = (H.acc.bauN || 0) + 1;
+        H.acc.bauMs = (H.acc.bauMs || 0) + ms;
+        const e = name("bau", { label: (ro.material && (ro.material.name || ro.material.type)) || "?" });
+        if (e) e.ms = +ms.toFixed(1);
+        return s;
+    };
+    const rod = rend._renderObjectDirect;
+    rend._renderObjectDirect = function (object, material, scene, camera) {
+        const vor = H.cur;
+        H.cur = { object, scene, camera };
+        try {
+            return rod.apply(this, arguments);
+        } finally {
+            H.cur = vor;
+        }
+    };
+    const P = GPUDevice.prototype;
+    const crp = P.createRenderPipeline;
+    P.createRenderPipeline = function (d) {
+        const t0 = performance.now();
+        const p = crp.call(this, d);
+        H.acc.pipeSync++;
+        H.acc.pipeSyncMs += performance.now() - t0;
+        name("sync", d);
+        return p;
+    };
+    const crpa = P.createRenderPipelineAsync;
+    P.createRenderPipelineAsync = function (d) {
+        H.acc.pipeAsync++;
+        name("async", d);
+        return crpa.call(this, d);
+    };
+    for (const m of ["createComputePipeline", "createComputePipelineAsync"]) {
+        const o = P[m];
+        P[m] = function (d) {
+            H.acc.compute++;
+            name(m === "createComputePipeline" ? "compute" : "compute-async", d);
+            return o.call(this, d);
         };
     }
+    const csm = P.createShaderModule;
+    P.createShaderModule = function (d) {
+        H.acc.shader++;
+        H.acc.shaderKB += ((d && d.code && d.code.length) || 0) / 1024;
+        return csm.call(this, d);
+    };
+    const Q = GPUQueue.prototype;
+    const wb = Q.writeBuffer;
+    Q.writeBuffer = function (b, o, data, dOff, size) {
+        const bpe = (data && data.BYTES_PER_ELEMENT) || 1;
+        H.acc.upKB += (size != null ? size * bpe : (data && data.byteLength) || 0) / 1024;
+        return wb.apply(this, arguments);
+    };
+    const wt = Q.writeTexture;
+    Q.writeTexture = function (dst, data) {
+        H.acc.texKB += ((data && data.byteLength) || 0) / 1024;
+        return wt.apply(this, arguments);
+    };
+    const cei = Q.copyExternalImageToTexture;
+    Q.copyExternalImageToTexture = function (src, dst, size) {
+        const w = Array.isArray(size) ? size[0] : (size && size.width) || 0;
+        const h = Array.isArray(size) ? size[1] || 1 : (size && size.height) || 1;
+        H.acc.texKB += (w * h * 4) / 1024;
+        return cei.apply(this, arguments);
+    };
     return H;
 }
 
@@ -533,6 +527,7 @@ function haengerAuswerten(roh, spur, opts) {
         bildTaktMs: +periode.toFixed(1),
         frames: gerendert.length,
         frameMs: quantil(dts).zahl,
+        taktMs: quantil(T.c1.map((x, q) => x - T.c0[q])).zahl,
         haengerN: haenger.length,
         jeKlasse: Object.fromEntries(KLASSEN.map((kl) => [kl, haenger.filter((h) => h.klasse === kl).length])),
         jeUrsache: [...jeUrsache.values()]
@@ -552,6 +547,8 @@ function haengerAuswerten(roh, spur, opts) {
             wetter: roh.wetter,
         },
         erst: roh.erst || null,
+        // DER SPRUNG (`--wandern sprung`, streaming.K3): wann die Welt am Ziel stand, die Bauten im Haupt-Faden (das Urteil: die Station)
+        sprung: roh.sprung || null,
     };
 }
 

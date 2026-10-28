@@ -18,7 +18,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -104,12 +104,12 @@ function urteil(z) {
                 `EINMAL ${pfad}: der Frame nach einer Attribut-Änderung frischt ${e1.danach}× ein zweites Mal auf (Soll 0: ${namen(e1.wer)}) — ein Refresh ohne Änderung, die Geometrie zweimal geprüft`
             );
         if ((zl.uploadGeteilt || 0) !== 0) v.push(`STAND ${pfad}: ${zl.uploadGeteilt} Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)`);
-        const a = (s.aenderung || {})[pfad] || {};
+        const a = s.aenderung?.[pfad] || {};
         if (!(a.diaet >= BILD_SOLL))
             v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
             v.push(`ÄNDERUNG ${pfad}: mit gemutetem Melder zeichnet die Diät ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
-        const n = (s.verschachtelt || {})[pfad] || {};
+        const n = s.verschachtelt?.[pfad] || {};
         if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
         if (!(n.diaet >= BILD_SOLL))
             v.push(
@@ -227,7 +227,7 @@ function buehne() {
             const ros = new Set();
             st.scene.traverse((o) => {
                 for (const q of [o, o.__zeichner])
-                    for (const ro of (q && q.__renderObjekte) || []) if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
+                    for (const ro of q?.__renderObjekte || []) if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
             });
             for (const ro of ros) {
                 const n = ro.material.name || ro.object.name || ro.object.type;
@@ -357,7 +357,7 @@ function buehne() {
         let aufnahmeKontext = null;
         const rbRoh = rend._renderBundle;
         rend._renderBundle = function (bundle, sc, l) {
-            if (sc && sc.overrideMaterial) z.unterOverride++;
+            if (sc?.overrideMaterial) z.unterOverride++;
             const alt = aufnahmeKontext;
             if (!sc.overrideMaterial) aufnahmeKontext = this._currentRenderContext;
             try {
@@ -393,7 +393,7 @@ function buehne() {
         const zaehlUm = (bahn) =>
             function (sc, c, f) {
                 if (sc && sc === st.scene && !sc.overrideMaterial) spielBilder++;
-                if (sc && sc.overrideMaterial) {
+                if (sc?.overrideMaterial) {
                     if (sc.overrideMaterial.isShadowPassMaterial) stoffe.add(sc.overrideMaterial);
                     if (aufnahmeKontext) z.schattenRenders++;
                 }
@@ -767,7 +767,7 @@ function buehne() {
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
             const r = await window.__weltDa((r) => {
-                return !!(r && r.state && r.state.rendererReady && r.state._weltbildDa && r.state.renderer && r.state.renderer.backend);
+                return !!(r?.state?.rendererReady && r.state._weltbildDa && r.state.renderer?.backend);
             });
             r.state.renderer.setAnimationLoop(null);
             const be = r.state.renderer.backend;
@@ -789,7 +789,7 @@ function buehne() {
         log(`Stand: ${JSON.stringify(out.stand)}`);
         log(`B-K1 ${JSON.stringify([out.schluessel, out.wurf])}`);
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: e?.message || String(e) };
     }
     await browser.close();
     server.close();
@@ -799,13 +799,9 @@ function buehne() {
     }
     const v = urteil(out);
     for (const d of vendorDrift) v.push(`VENDOR-DRIFT: ${d}`);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ GRÜN — LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
+    wandEnde(
+        v,
+        `LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SCHLÜSSEL · WURF halten. ` +

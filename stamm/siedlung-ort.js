@@ -1988,13 +1988,16 @@ class AnazhRealm_siedlung_ort {
     // (`_bauSame("bau:" + name)`, derselbe Strom wie der Standard-Same der Wurzel) — Phantom, Setzen und Nachricht an den
     // Mitspieler lesen ihn, nach dem Setzen zieht das nächste Phantom neu. Befund: jedes Setzen derselben Eiche stand als
     // dieselbe Gestalt mit derselben Tönung (vorher wählte Math.random zwischen zwei Gestalten und streute ±8 %). Ohne
-    // `bm` (Vorschau, Hand) zeigt der Name das Werk der Art; ein Wurf der Werkstatt steht genau so, wie gewürfelt.
+    // `bm` (Hand) zeigt der Name das Werk der Art; ein Wurf der Werkstatt steht genau so, wie gewürfelt.
+    // DER SAME DES NÄCHSTEN SETZENS JE ART (`bm.setzSame[art]`, bauen.K1): Phantom, Werkstatt-Vorschau und Kosten-Leiste lesen
+    // ihn für jede Zeile — ein Platz für alle Arten zog bei jedem Zeilen-Wechsel (Eiche → Fels → Eiche) den nächsten Samen des
+    // Welt-Stroms, die Eiche zeigte eine neue Gestalt ohne Karte (gate:s4-impostor-workshop B), der Strom lief ohne Setzen.
     _werkSame(bp, name, bm) {
         const wurf = bp ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase : null;
         const art = name != null ? name : bp && bp.name;
         if (wurf == null && bm) {
-            if (!bm.setzSame || bm.setzSame.art !== art) bm.setzSame = { art, same: this._bauSame("bau:" + art) };
-            return bm.setzSame.same;
+            const je = bm.setzSame || (bm.setzSame = {});
+            return je[art] || (je[art] = this._bauSame("bau:" + art));
         }
         const s = String(wurf != null ? wurf : art);
         let h = 0;

@@ -40,7 +40,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
@@ -1073,12 +1073,5 @@ hauptLauf(async () => {
         `  Quelle: ${befund.quelle.length ? befund.quelle.join(" · ") : "die Körper-Schritte lesen den Boden unter dem Körper"}`
     );
     const v = urteil(befund);
-    if (v.length) {
-        console.log("\n❌ FALL-WÄCHTER ROT:\n  " + v.join("\n  "));
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach."
-    );
-    process.exit(0);
+    urteilEnde(v.length, "\n❌ FALL-WÄCHTER ROT:\n  " + v.join("\n  "), "\n✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach.");
 });

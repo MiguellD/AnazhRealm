@@ -713,6 +713,20 @@ class AnazhRealm_siedlung_bewohner {
         let wege = 0;
         let ankuenfte = 0;
         const NF = this._bewohnerFeldGrenze();
+        // DER SPIELER IST EIN LEIB (mensch.K5, „Ausweichen ohne Berührung"): sein Lauf dieses Takts (`_spielerLageAlt`, der
+        // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus (`voraus`) — jeder Bewohner weicht ihm wie einem
+        // Gehenden mit Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`); steht er (unter 0,2 m/s,
+        // die Schwelle des Laufs `_kreaturLaufTakt`), geht man um ihn wie um einen Stehenden (`weg` leer, `_bewohnerUm`)
+        const sa = this._spielerLageAlt;
+        const SP =
+            this._bewohnerSpieler || (this._bewohnerSpieler = { leib: pm, voraus: {}, wi: 0, same: -1, spieler: true });
+        [SP.leib, SP.vx, SP.vz, SP.rueck] = [pm, sa ? sa.vx : 0, sa ? sa.vz : 0, Infinity];
+        [SP.voraus.x, SP.voraus.z] = [p.x + SP.vx * BW.ausweichS, p.z + SP.vz * BW.ausweichS];
+        const spV = Math.hypot(SP.vx, SP.vz);
+        SP.weg = spV > 0.2 ? SP.zug || (SP.zug = [SP.voraus]) : null;
+        const FG = AnazhRealm._furchtGesetz().F;
+        const kDeckel =
+            2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + BW.spielerRaumM * (1 + FG.deckel * FG.fluchtJeFurcht);
         for (const S of alle.values()) {
             const d2 = (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2;
             if (d2 > (A.nearM * BW.fernFaktor) ** 2) {
@@ -827,27 +841,41 @@ class AnazhRealm_siedlung_bewohner {
                 // wartete (`_bewohnerAusweichen`), fand ihn um 21,71 Uhr Takt für Takt wieder dort (wohnhaus #809070, 10
                 // Spielminuten 0 m)
                 const w = b.platz;
+                // der Abstand zum Spieler nur, wo er zählen kann (der Deckel des Furcht-Gesetzes: der weiteste Raum)
+                const nahS = !b.drinnen && (bd2 < (kDeckel + spV * BW.ausweichS) ** 2 || (w && w.spieler));
+                const kS = nahS ? this._bewohnerSpielerAbstand(b) : kDeckel;
+                // wohin der geht, dem er Platz machte: der Spieler `ausweichS` voraus, der Bewohner zum nächsten Punkt
+                const wv =
+                    w && (w.spieler ? SP.voraus : w.weg && !w.drinnen && w.wi < w.weg.length ? w.weg[w.wi] : null);
                 if (
                     w &&
                     b.da &&
                     !b.weg &&
                     this._bewohnerNaechster(S, b, b.ziel.x, b.ziel.z) >= BW.tuerFreiM &&
                     !(
-                        w.weg &&
+                        wv &&
                         w.leib &&
-                        !w.drinnen &&
-                        w.wi < w.weg.length &&
                         this._streckeBoxAbstand2(
                             { minX: b.ziel.x, maxX: b.ziel.x, minZ: b.ziel.z, maxZ: b.ziel.z },
                             w.leib.position.x,
                             w.leib.position.z,
-                            w.weg[w.wi].x,
-                            w.weg[w.wi].z
+                            wv.x,
+                            wv.z
                         ) <
-                            (2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.11) ** 2
+                            ((w.spieler ? kS : 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) + 0.1) ** 2
                     )
                 )
                     [b.platz, b.da] = [false, false];
+                // PLATZ FÜR DEN SPIELER (mensch.K5): wer steht und in dessen Abstand der Weg des Spielers führt (`ausweichS`
+                // voraus), tritt beiseite — der billige Filter zuerst (Lehre 25)
+                const gp = g.position;
+                if (
+                    nahS &&
+                    !b.weg &&
+                    bd2 < (kS + spV * BW.ausweichS) ** 2 &&
+                    this._streckeBoxAbstand2({ minX: gp.x, maxX: gp.x, minZ: gp.z, maxZ: gp.z }, p.x, p.z, SP.voraus.x, SP.voraus.z) < kS * kS // prettier-ignore
+                )
+                    this._bewohnerPlatz(S, b, p, SP.voraus, SP, kS);
                 // DER GANG: ein neues Ziel sucht seinen Weg (gedeckelt je Takt), der Weg trägt den Leib im Tempo des Gesetzes
                 if (!b.da && !b.weg && !b.hinaus && wege < BW.wegeJeTakt) {
                     this._bewohnerWeg(S, b);
@@ -928,6 +956,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (!istNah) continue;
                 // der Leib zieht seine Matrizen selbst nach (K59 `_ruhendeWurzel`): nach jeder Pose und jedem Schritt
                 let neu = b.lageNeu === true;
+                let gepost = false;
                 b.lageNeu = false;
                 if (!this._gelenkStufe(g, b.d2)) {
                     const u = g.userData;
@@ -939,9 +968,10 @@ class AnazhRealm_siedlung_bewohner {
                         b.animDt = 0;
                         const gang = this._gaitTick(g, b, geht ? (b.tempoJetzt ?? b.tempo) : 0, dtA, null);
                         this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, geht, false, null, gang);
-                        neu = true;
+                        neu = gepost = true;
                     }
                 }
+                if (this._bewohnerKopf(b, delta, p, gepost)) neu = true; // die Begegnung: Kopf und Rumpf über der Pose
                 if (neu) this._leibMatrix(g);
                 if (neu && (b.weg || b._gaitW > 0)) bewegt.push(b); // sein Wurf geht im Satz mit
             }
@@ -979,6 +1009,63 @@ class AnazhRealm_siedlung_bewohner {
         } else g.rotation.y += Math.sign(dw) * om;
         if (echt && !b.nah && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
         return true;
+    }
+
+    // DIE BEGEGNUNG (mensch.K5 Staffel 1): tritt der Spieler auf `begegnungM` heran oder macht er ihm Platz (`platz`), wendet
+    // der Lebende (die Nah-Wahl) sich ihm zu — mit `kopfRadS`, der Kopf bis `kopfMaxRad` über dem Rumpf, darüber hinaus der Rumpf
+    // bis `rumpfMaxRad` über dem Becken; steht er und liegt der Spieler jenseits, wendet er sich mit dem Leib (`drehen`, die
+    // Wendegrenze des Steuer-Gesetzes); geht der Spieler fort (jenseits + `nahHystM`), kehrt der Blick zurück, und wer an seinem
+    // Ort steht, schaut wieder auf sein Ziel. Der Kopf-Knoten trägt seine Gier über der Pose (die Pose setzt ihn auf 0,
+    // `_animateHumanoidRig`), der Rumpf seine in jeder Pose (`gepost`) dazu. Liefert, ob sich die Lage änderte.
+    _bewohnerKopf(b, dt, p, gepost) {
+        const g = b.leib;
+        const r = g.userData.rig;
+        const k = r && r.head;
+        if (!k) return false;
+        const BW = AnazhRealm.BEWOHNER;
+        const war = b.begegnet;
+        b.begegnet =
+            !b.drinnen &&
+            (b.d2 < (BW.begegnungM + (war ? BW.nahHystM : 0)) ** 2 || (b.platz && b.platz === this._bewohnerSpieler));
+        let soll = 0;
+        if (b.begegnet) {
+            const a = Math.atan2(p.x - g.position.x, p.z - g.position.z);
+            let da = a - g.rotation.y;
+            da -= Math.PI * 2 * Math.round(da / (Math.PI * 2));
+            const voll = BW.kopfMaxRad + BW.rumpfMaxRad;
+            soll = Math.max(-voll, Math.min(voll, da));
+            if (!b.weg && Math.abs(da) > voll) b.drehen = a;
+        } else if (war && b.da && !b.weg && !b.platz && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick;
+        const om = BW.kopfRadS * dt;
+        b.kopfY = (b.kopfY || 0) + Math.max(-om, Math.min(om, soll - (b.kopfY || 0)));
+        const kopf = Math.max(-BW.kopfMaxRad, Math.min(BW.kopfMaxRad, b.kopfY));
+        let neu = false;
+        if (gepost && b.kopfY !== kopf && r.spine)
+            [r.spine.rotation.y, neu] = [r.spine.rotation.y + b.kopfY - kopf, true];
+        if (k.rotation.y !== kopf) [k.rotation.y, neu] = [kopf, true];
+        return neu;
+    }
+
+    // DER ABSTAND ZUM SPIELER (mensch.K5, „die Erinnerung lenkt den Abstand"): dem Gehenden zwei Kapseln und der persönliche
+    // Raum `spielerRaumM`, geweitet um die erinnerte Furcht seines Leibs — das EINE Furcht-Gesetz (`_kreaturFurchtErinnert`:
+    // tetrapoda furchtErinnert über sein Gedächtnis, `fluchtJeFurcht` je Einheit), wie es Witterung und Flucht eines Tiers weitet;
+    // dem Stehenden die Kapseln wie jedem Stehenden (wer in der Gasse steht, sperrt sie nicht).
+    _bewohnerSpielerAbstand(b) {
+        if (!(this._bewohnerSpieler && this._bewohnerSpieler.weg)) return 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
+        const furcht = Math.max(0, this._kreaturFurchtErinnert(b.leib));
+        const raum = AnazhRealm.BEWOHNER.spielerRaumM * (1 + furcht * AnazhRealm._furchtGesetz().F.fluchtJeFurcht);
+        return 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01 + raum;
+    }
+
+    // DIE ZEUGEN (mensch.K5): jeder Bewohner draußen auf `zeugeM` um den Ort o, an dem der Spieler ein Wesen schlägt
+    // (`damageCreature`), erinnert die Gewalt — das EINE Gedächtnis (`_creatureRemember` auf seinem Leib), das Furcht-Gesetz wiegt
+    // sie (`gewalt`); bei der nächsten Begegnung lässt er dem Spieler mehr Raum (`_bewohnerSpielerAbstand`).
+    _bewohnerZeuge(o) {
+        const R2 = AnazhRealm.BEWOHNER.zeugeM ** 2;
+        for (const S of (this._bewohnerSiedlungen || new Map()).values())
+            for (const b of S.liste || [])
+                if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2)
+                    this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
     }
 
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
@@ -1456,6 +1543,18 @@ class AnazhRealm_siedlung_bewohner {
                 for (const o of S.raster.get((ix + i) * 2097152 + iz + j) || [])
                     if (o !== b && !o.drinnen && o.leib)
                         if ((o.leib.position.x - p.x) ** 2 + (o.leib.position.z - p.z) ** 2 < reich) nb.push(o);
+        // DER SPIELER (mensch.K5): ein Leib mit Vorrang; die Vorschau der Berührung hält ihm seinen Abstand frei
+        // (`_bewohnerSpielerAbstand`, der weiche Raum — wer schon näher ist, achtet nur noch die Kapsel), die Wache und der
+        // Umweg die Kapsel: wo die Gasse den Raum nicht trägt, geht er knapp vorbei, nie steckt er
+        const SP = this._bewohnerSpieler;
+        let [kS, sD2] = [K, Infinity];
+        if (SP && SP.leib) {
+            const vor = (v + Math.hypot(SP.vx, SP.vz)) * BW.ausweichS;
+            sD2 = (SP.leib.position.x - p.x) ** 2 + (SP.leib.position.z - p.z) ** 2;
+            if (sD2 < (4 + vor) ** 2) kS = this._bewohnerSpielerAbstand(b); // 4 m: jenseits des weitesten Raums
+            if (sD2 < (kS + vor) ** 2) nb.push(SP);
+        }
+        const kO = (o) => (o === SP && sD2 >= kS * kS ? kS : K);
         if (!nb.length) return null;
         // DER BESETZTE PUNKT: steht ein Leib auf dem nächsten Punkt seines Wegs und ist er neben ihm (näher als zwei Kapseln),
         // gilt der Punkt als erreicht, wenn das Bein von hier zum übernächsten frei ist — das Bein des Tags beginnt an ihm, und
@@ -1476,8 +1575,9 @@ class AnazhRealm_siedlung_bewohner {
         // kein Leib steht (`_bewohnerUm`)
         const um = this._bewohnerUm(b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
-        // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`)
-        if (um && this._bewohnerPlatz(S, um, p, q, b)) return { vx: 0, vz: 0 };
+        // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
+        // der Spieler nie — um ihn tastet das Ausweichen)
+        if (um && !um.spieler && this._bewohnerPlatz(S, um, p, q, b)) return { vx: 0, vz: 0 };
         // DIE WACHE: der Schritt mit (cx, cz) endet in keiner Kapsel (wer schon zu nah ist, entfernt sich) — sonst der, in
         // dessen Kapsel er endete
         const wache = (cx, cz) => {
@@ -1498,7 +1598,7 @@ class AnazhRealm_siedlung_bewohner {
                 const [rx, rz] = [o.leib.position.x - p.x, o.leib.position.z - p.z];
                 const [ux, uz] = [cx - (o.vx || 0), cz - (o.vz || 0)];
                 const nah = rx * ux + rz * uz;
-                const c = rx * rx + rz * rz - K * K;
+                const c = rx * rx + rz * rz - kO(o) ** 2;
                 const aa = ux * ux + uz * uz;
                 if (nah <= 0 || aa < 1e-12) continue;
                 if (c <= 0) return 0;
@@ -1603,19 +1703,21 @@ class AnazhRealm_siedlung_bewohner {
         return steht.o;
     }
 
-    // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt auf den nächsten Punkt im Ring um sich (bis 1,8 m), der mehr als
-    // zwei Kapseln neben dem Bein p → q des Gehenden liegt, frei von Wand und Leib ist und den er frei erreicht (`platz`; wer
-    // schon beiseite steht, tritt wieder); ist sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er zurück
-    // (`_tickBewohner`). Liefert, ob er Platz macht.
-    _bewohnerPlatz(S, o, p, q, fuer) {
+    // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt auf den nächsten Punkt der Ringe um sich (je 0,6 m bis 1,8 m; für
+    // den Spieler je 0,3 m bis über seinen Abstand `kF` hinaus), der mehr als `kF` (zwei Kapseln; dem Spieler sein Abstand,
+    // `_bewohnerSpielerAbstand`) neben dem Bein p → q des Gehenden liegt, frei von Wand und Leib ist und den er frei erreicht
+    // (`platz`; wer schon beiseite steht, tritt wieder); ist sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er
+    // zurück (`_tickBewohner`). Liefert, ob er Platz macht.
+    _bewohnerPlatz(S, o, p, q, fuer, kF = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) {
         if (o.platz && o.weg) return true; // er tritt schon beiseite
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const g = { x: o.leib.position.x, z: o.leib.position.z };
-        for (let r = 0.6; r <= 1.81; r += 0.6)
+        const dr = fuer && fuer.spieler ? 0.3 : 0.6; // dem Spieler auf 0,3 m genau: sein Abstand trägt die Erinnerung
+        for (let r = dr; r <= Math.max(1.81, kF + 0.61); r += dr)
             for (let i = 0; i < 12; i++) {
                 const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
                 const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
-                if (this._streckeBoxAbstand2(pkt, p.x, p.z, q.x, q.z) < (K + 0.1) ** 2) continue;
+                if (this._streckeBoxAbstand2(pkt, p.x, p.z, q.x, q.z) < (kF + 0.1) ** 2) continue;
                 if (this._bewohnerNaechster(S, o, P.x, P.z) < K) continue;
                 if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P)) continue;
                 Object.assign(o, {
@@ -2133,7 +2235,12 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // (`_bewohnerAusweg`) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
 // passt zwischen beide (`_bewohnerStandPruefen`) · umRandM = so weit über zwei Kapseln geht er am Stehenden vorbei
 // (`_bewohnerUm`) · linieM = so weit voraus auf seinem Bein liegt der Punkt, auf den zurückgeht, wer auswich
-// (`_bewohnerLinie`).
+// (`_bewohnerLinie`). DIE BEGEGNUNG (mensch.K5): begegnungM = so nah tritt der Spieler heran, bis der Bewohner ihm den Kopf
+// zuwendet (zurück jenseits + nahHystM) · kopfMaxRad = so weit dreht der Kopf über dem Rumpf (die Halswirbelsäule ~70°),
+// rumpfMaxRad = so weit der Rumpf über dem Becken (~25°), jenseits wendet sich, wer steht, mit dem Leib · kopfRadS = so schnell dreht der Kopf (Blickwendungen des Kopfs 200–300°/s,
+// Zangemeister & Stark 1982) · spielerRaumM = der persönliche Raum über zwei Kapseln, den er dem Spieler lässt (Hall 1966:
+// die persönliche Distanz ab 0,45 m), geweitet von der erinnerten Furcht (`_bewohnerSpielerAbstand`) · zeugeM = so weit sieht
+// er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`).
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 4,
     platzAnteil: 0.45,
@@ -2179,4 +2286,10 @@ AnazhRealm.BEWOHNER = Object.freeze({
     umRandM: 0.15,
     linieM: 2,
     sohleM: 0.008,
+    begegnungM: 3,
+    kopfMaxRad: 1.2,
+    rumpfMaxRad: 0.45,
+    kopfRadS: 4.5,
+    spielerRaumM: 0.5,
+    zeugeM: 25,
 });

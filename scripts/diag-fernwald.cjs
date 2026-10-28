@@ -32,7 +32,7 @@
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
@@ -696,12 +696,5 @@ hauptLauf(async () => {
         E.kachel ? "" : "keine Probe"
     );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.join(", ")}`);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`
-    );
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.join(", ")}`, () => `\n✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (${A.ok} Bäume), kein Satz, kein Pop am Radius.`);
 });

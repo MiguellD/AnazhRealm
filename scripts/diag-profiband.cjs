@@ -46,6 +46,7 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
+const { selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const DZ = require("./lib/draw-zaehler.cjs");
@@ -1184,11 +1185,7 @@ function selbsttest() {
 
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
-    if (rot.length) {
-        console.log(`⛔ DIE BAND-WAND ist blind: ${rot.length} von ${tests.length} Selbsttests feuern nicht`);
-        process.exit(1);
-    }
-    console.log(`✅ SELBST-TEST: die Band-Wand feuert (${tests.length}/${tests.length})`);
+    selbsttestEnde(rot.map((x) => x.name), `die Band-Wand feuert (${tests.length}/${tests.length})`);
 }
 
 function main() {

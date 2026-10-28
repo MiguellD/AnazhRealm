@@ -440,8 +440,8 @@ class AnazhRealm_werkstatt_bauen {
         }
         // Das Werk steht: das nächste Setzen zieht seinen eigenen Samen, das Phantom zeigt ihn (ein Wurf der Werkstatt
         // bleibt stehen, wie gewürfelt).
-        if (bm.setzSame && bm.setzSame.art === name) {
-            bm.setzSame = null;
+        if (bm.setzSame && bm.setzSame[name]) {
+            delete bm.setzSame[name];
             this._bauPhantomNeu();
         }
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).
@@ -2592,7 +2592,7 @@ class AnazhRealm_werkstatt_bauen {
         const messen = () => {
             const lauf = (this._wsKostenLauf = (this._wsKostenLauf || 0) + 1);
             const bp = bpName ? this.state.blueprints[bpName] : null;
-            const gestalt = this._foundryVariantFor(this._werkSame(bp, bpName || preset), preset);
+            const gestalt = this._foundryVariantFor(this._vorschauSame(bp, bpName || preset), preset);
             if (gestalt == null) return;
             const ov = this._workshopStudioOvFor(preset);
             for (const s of stufen)
