@@ -2155,7 +2155,9 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
 // Pixel, die Kante `kantenLinie`. Misst eine Sicht kein Band (zur tiefen Sonne liegt die In-Streuung in der Kompression), schießt
 // sie mit Blende 1/4 nach; der Bloom ruht, seine Schwelle bricht die Linearität (zur Sonne 7° hob er T bei 8 km um 70 %).
 // DIE SICHT IM WETTER (Ferne K5): `o.wetter` ist das Wort des Spielers für die Bühne; je Sicht die Sichtweite am Bezugsniveau
-// −ln(kontrast)/β je Pixel der Szene mit T_grün in 0,02…0,95 (β = −ln T / (g·d·Spektrum grün)), der Median.
+// −ln(kontrast)/β je Pixel der Szene mit T_grün in 0,05…0,95 (β = −ln T / (g·d·Spektrum grün)), der Median. Der Sturm ist dunkel
+// (Mittag: In-Streuung sRGB ≈ 20): seine Sicht schießt mit Blende 16 (linear, T ist ein Verhältnis), blickt 8° hinab (die Bänder
+// 0,4–1,5 km) und verlangt ≥ 12 Stufen zwischen L0 und S im grünen Kanal.
 function luftTiefe(o) {
     return (async () => {
         const r = window.anazhRealm;
@@ -2227,7 +2229,7 @@ function luftTiefe(o) {
             cam.fov = 16;
             cam.updateProjectionMatrix();
             cam.position.set(gx, gy, gz);
-            cam.lookAt(gx + Math.sin(az) * 1e3, gy - 44, gz - Math.cos(az) * 1e3);
+            cam.lookAt(gx + Math.sin(az) * 1e3, gy - (o.wetter ? 140 : 44), gz - Math.cos(az) * 1e3);
             cam.updateMatrixWorld(true);
         };
         const s = new T.Vector3();
@@ -2287,7 +2289,8 @@ function luftTiefe(o) {
                     sa.forEach((x, c) => inS[c].push(x));
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
                     const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
-                    if (t.szene && tc[1] > 0.02 && tc[1] < 0.95) sb.push((-Math.log(R.kontrast) * t.g * t.d * U.spektrum.value.y) / -Math.log(tc[1]));
+                    const tg = Math.abs(L0[i + 1] - S[i + 1]) >= 12 && (l[1] - sa[1]) / (l0[1] - sa[1]);
+                    if (t.szene && tg > 0.05 && tg < 0.95) sb.push((-Math.log(R.kontrast) * t.g * t.d * U.spektrum.value.y) / -Math.log(tg));
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
@@ -2321,7 +2324,7 @@ function luftTiefe(o) {
                 const so = uhr(u);
                 for (let k = 0; k < 4; k++) {
                     const az = so.az + (k * Math.PI) / 2;
-                    let z = await sicht(az, 1);
+                    let z = await sicht(az, o.wetter ? 16 : 1);
                     if (z.baender.every((b) => b.n < R.mindest.n)) z = await sicht(az, 0.25);
                     zeilen.push(Object.assign({ uhr: u, sonne: so.sonne, az: k * 90 }, z));
                 }
