@@ -59,3 +59,4 @@ takt16a-gtx gemessen punkte 4abae42d gtx: 21 grün / 11 rot
 takt17c-gtx gemessen punkte e18195be gtx: 13 grün / 8 rot
 takt17d-gtx gemessen punkte e18195be gtx: 25 grün / 17 rot
 takt17n-gtx gemessen punkte e18195be gtx: 29 grün / 17 rot
+takt18c-gtx gemessen punkte 557d4aad gtx: 13 grün / 3 rot

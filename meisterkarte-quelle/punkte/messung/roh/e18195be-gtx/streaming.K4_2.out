@@ -1,0 +1,34 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden --echt
+[linse-gpu] nvidia/pascal
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1705,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1710,"soll":1700}]
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   7.3 s · 10.20 MB/min am Empfang: Faden → Main 0.90 MB · Main → Faden 0.28 MB · Kopie 0.06 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.38 MB · buch:asset 0.25 MB · ort:ort-wahl-result 0.12 MB · buch:book 0.10 MB
+         Main → Faden: ort:ort-wahl 0.06 MB · voxel:state-update 0.03 MB · ort:state-update 0.03 MB · streu:state-update 0.03 MB
+         Kopie: buch:export-settlement 0.06 MB
+  gang   120.0 s · 1.35 MB/min am Empfang: Faden → Main 1.32 MB · Main → Faden 1.18 MB · Kopie 0.20 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.51 MB · ort:ort-wahl-result 0.34 MB · buch:asset 0.28 MB · buch:settlement 0.10 MB
+         Main → Faden: voxel:spiegel-feld 0.59 MB · ort:ort-wahl 0.20 MB · speicher:? 0.11 MB · werk:build-asset 0.04 MB
+         Kopie: buch:export-settlement 0.15 MB · voxel:spiegel-feld 0.05 MB
+  fahrt  60.0 s · 3.14 MB/min am Empfang: Faden → Main 1.43 MB · Main → Faden 1.45 MB · Kopie 0.26 MB · Platte 0.00 MB
+         Faden → Main: ort:ort-wahl-result 0.40 MB · werk:asset 0.35 MB · buch:asset 0.22 MB · voxel:chunk-mesh-result 0.17 MB
+         Main → Faden: voxel:spiegel-feld 0.33 MB · ort:ort-wahl 0.22 MB · voxel:water-sheet 0.17 MB · voxel:state-update 0.08 MB
+         Kopie: buch:export-settlement 0.17 MB · werk:export-settlement 0.09 MB
+  Fäden: buch · werk · werk · voxel · ort · streu · fern · feld · wald · speicher · voxel
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 4.3 ms): 1 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 5 an Sync-Stellen und Test-Nähten · 0 sonst {"naht":5}
+  Bau-Klicks in der Fahrt: 6, die Hand 20.1 · 5.4 · 6.0 · 8.3 · 3.9 · 5.6 ms
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 3.14 MB/min ≤ 5 in der Fahrt
+
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  5285 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

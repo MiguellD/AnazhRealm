@@ -720,3 +720,21 @@
 2026-10-28 18:29:55 takt17n-gtx tiere.K2#2 GRÜN 3.3 · 16/18
 2026-10-28 18:32:13 takt17n-gtx tiere.K3#2 GRÜN 2.2 · 17/18
 2026-10-28 18:33:48 takt17n-gtx tore.K3#2 GRÜN 1.5 · 18/18
+2026-10-28 20:33:58 takt18c-gtx START 17 Stationen in 16 Läufen
+2026-10-28 20:36:24 takt18c-gtx gelaende.K2#1 GRÜN 2.3 · 1/17
+2026-10-28 20:41:01 takt18c-gtx gelaende.K2#2 ROT 4.5 · 2/17
+2026-10-28 20:46:49 takt18c-gtx gelaende.K5#2 GRÜN 5.5 · 3/17
+2026-10-28 20:48:53 takt18c-gtx tiere.K1#2 GRÜN 2.0 · 4/17
+2026-10-28 20:51:18 takt18c-gtx tiere.K3#2 GRÜN 2.3 · 5/17
+2026-10-28 20:57:43 takt18c-gtx tiere.K2#2 GRÜN 6.3 · 6/17
+2026-10-28 21:08:07 takt18c-gtx tiere.K5#1 OFFEN 10.2 · 7/17
+2026-10-28 21:12:47 takt18c-gtx mensch.K2#2 GRÜN 4.6 · 8/17
+2026-10-28 21:13:04 takt18c-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 10/17
+2026-10-28 21:14:11 takt18c-gtx vegetation.K2#1 ROT 1.0 · 11/17
+2026-10-28 21:15:32 takt18c-gtx haar.K2#1 ROT 1.3 · 12/17
+2026-10-28 21:23:43 takt18c-gtx ferne.K2#2 GRÜN 8.1 · 13/17
+2026-10-28 21:27:35 takt18c-gtx fahrzeug.K3#2 GRÜN 3.8 · 14/17
+2026-10-28 21:31:09 takt18c-gtx fahrzeug.K4#2 GRÜN 3.5 · 15/17
+2026-10-28 21:33:13 takt18c-gtx siedlung.K2#2 GRÜN 1.9 · 16/17
+2026-10-28 21:38:54 takt18c-gtx siedlung.K5#1 GRÜN 5.6 · 17/17
+2026-10-28 21:39:18 takt18d-gtx START 16 Stationen in 15 Läufen

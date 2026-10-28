@@ -1,0 +1,56 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-studio-huelle.cjs --engine
+[linse-gpu] nvidia/pascal
+=== H7 DIE SITZUNG — Saat 420670, die Zeit geurteilt (Karte)
+  ⏱ garage         Griff → Bild p95 Gesetz-Wert 41 ms · Neubau 369 ms · 20 Griffe mit Bild · Neuladen 15/15
+  garage          14 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28992","deckel":"32000","gezeichnet":"28992"},{"stufe":"1","leiste":"9924","deckel":"10600","gezeichnet":"9924"}]
+  ⏱ schmiede       Griff → Bild p95 Gesetz-Wert – ms · Neubau 49 ms · 20 Griffe mit Bild · Neuladen 11/11
+  schmiede        15 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1.25, Strg+Z → 0.95, Strg+Umschalt+Z → 1.25, Strg+Z → 0.95, Strg+Y → 1.25, A → 0.95, B → 1.25 · Kosten [{"stufe":"0","leiste":"18824","deckel":"22000","gezeichnet":"18824"}]
+  ⏱ portale        Griff → Bild p95 Gesetz-Wert 15 ms · Neubau 288 ms · 20 Griffe mit Bild · Neuladen 26/26
+  portale         15 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1, Strg+Z → 0.95, Strg+Umschalt+Z → 1, Strg+Z → 0.95, Strg+Y → 1, A → 0.95, B → 1 · Kosten [{"stufe":"0","leiste":"18702","deckel":"76000","gezeichnet":"18702"},{"stufe":"1","leiste":"6446","deckel":"34000","gezeichnet":"6446"},{"stufe":"2","leiste":"2738","deckel":"12500","gezeichnet":"2738"},{"stufe":"3","leiste":"7488","deckel":"12000","gezeichnet":"7488"}]
+  ⏱ klang          Griff → Bild p95 Gesetz-Wert 7 ms · Neubau – ms · 20 Griffe mit Bild · Neuladen 7/7
+  klang            5 Anfragen · ohne three · Schieber 0.72 → 1, Strg+Z → 0.72, Strg+Umschalt+Z → 1, Strg+Z → 0.72, Strg+Y → 1, A → 0.72, B → 1
+[stall-akte] ═══ diag-studio-huelle.cjs · Seite #12 http://127.0.0.1:7754/worlds/fachwerk/index.html · der Puls steht seit 20.8 s
+[stall-akte] offen goto(http://127.0.0.1:7754/worlds/fachwerk/index.html) seit 22.9 s
+[stall-akte] Puls 1×, zuletzt vor 20.8 s — Dokument beginnt
+[stall-akte] Stempel 13:35:42.204 gl.linkProgram #1
+[stall-akte] Stempel 13:35:42.209 gl.getProgramParameter (synchron #1)
+[stall-akte] Stempel 13:35:42.439 gl.linkProgram #2
+[stall-akte] Stempel 13:35:42.651 gl.linkProgram #3
+[stall-akte] Stempel 13:35:42.702 gl.linkProgram #4
+[stall-akte] Stempel 13:35:42.766 gl.linkProgram #5
+[stall-akte] Stempel 13:35:42.865 gl.linkProgram #6
+[stall-akte] CPU (2 s) GPU 19716 106 % · browser 8180 5 % · renderer 16220 3 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 35:04 gpu 95/r 76 · 35:06 gpu 61/r 147 · 35:08 gpu 110/r 64 · 35:10 gpu 50/r 144 · 35:12 gpu 122/r 62 · 35:14 gpu 43/r 153 · 35:16 gpu 79/r 87 · 35:18 gpu 65/r 124 · 35:20 gpu 64/r 129 · 35:22 gpu 85/r 111 · 35:24 gpu 91/r 104 · 35:26 gpu 72/r 131 · 35:28 gpu 65/r 108 · 35:30 gpu 73/r 120 · 35:32 gpu 72/r 126 · 35:34 gpu 23/r 129 · 35:36 gpu 104/r 79 · 35:38 gpu 69/r 99 · 35:40 gpu 54/r 125 · 35:42 gpu 87/r 72 · 35:44 gpu 116/r 73 · 35:46 gpu 103/r 1 · 35:48 gpu 103/r 2 · 35:50 gpu 103/r 3 · 35:52 gpu 104/r 2 · 35:54 gpu 104/r 2 · 35:56 gpu 103/r 2 · 35:58 gpu 103/r 1 · 36:00 gpu 103/r 1 · 36:02 gpu 104/r 2
+[stall-akte] Stapel (anonym) :6 < setup :6 < renderBufferDirect :6 < Ct :6 < Rt :6 < render :6 < frame :988
+[stall-akte] Stderr [8180:3972:1028/143345.707:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [8180:3972:1028/143345.707:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [8180:3972:1028/143345.707:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [8180:3972:1028/143345.755:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [8180:3972:1028/143345.755:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [8180:3972:1028/143409.832:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [8180:3972:1028/143504.562:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in (anonym) :6
+[stall-akte] Seite #12: der Puls kehrt zurück nach 45.3 s — loading · anazhRealm — · programme 6 · gl-sync 18 · zuletzt gl.linkProgram #6
+  ⏱ fachwerk       Griff → Bild p95 Gesetz-Wert – ms · Neubau 4876 ms · 20 Griffe mit Bild · Neuladen 28/28
+  fachwerk         8 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js · Schieber 1500 → 2025, Strg+Z → 1500, Strg+Umschalt+Z → 2025, Strg+Z → 1500, Strg+Y → 2025, A → 1500, B → 2025 · Kosten [{"stufe":"0","leiste":"60328","deckel":"132000","gezeichnet":"60328"},{"stufe":"1","leiste":"14440","deckel":"44000","gezeichnet":"14440"},{"stufe":"2","leiste":"3536","deckel":"7250","gezeichnet":"3536"},{"stufe":"3","leiste":"52","deckel":"96","gezeichnet":"52"}]
+  ⏱ koerperstudio  Griff → Bild p95 Gesetz-Wert – ms · Neubau 2481 ms · 20 Griffe mit Bild · Neuladen 8/8
+  koerperstudio   17 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 1 → 1.15, Strg+Z → 1, Strg+Umschalt+Z → 1.15, Strg+Z → 1, Strg+Y → 1.15, A → 1, B → 1.15 · Kosten [{"stufe":"0","leiste":"39994","deckel":"40000","gezeichnet":"39994"},{"stufe":"1","leiste":"13997","deckel":"14000","gezeichnet":"13997"},{"stufe":"2","leiste":"1695","deckel":"1700","gezeichnet":"1695"},{"stufe":"3","leiste":"736","deckel":"760","gezeichnet":"736"}]
+  ⏱ tetrapoda      Griff → Bild p95 Gesetz-Wert – ms · Neubau 1439 ms · 20 Griffe mit Bild · Neuladen 5/5
+  tetrapoda       17 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 2.4 → 4, Strg+Z → 2.4, Strg+Umschalt+Z → 4, Strg+Z → 2.4, Strg+Y → 4, A → 2.4, B → 4 · Kosten [{"stufe":"0","leiste":"55918","deckel":"62000","gezeichnet":"55918"},{"stufe":"1","leiste":"5982","deckel":"7000","gezeichnet":"5982"}]
+  ⏱ terrain        Griff → Bild p95 Gesetz-Wert – ms · Neubau 843 ms · 20 Griffe mit Bild · Neuladen 11/11
+  terrain         20 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/PointerLockControls.js /worlds/terrain/lib/BufferGeometryUtils.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.3 → 1, Strg+Z → 0.3, Strg+Umschalt+Z → 1, Strg+Z → 0.3, Strg+Y → 1, A → 0.3, B → 1 · Kosten [{"stufe":"0","leiste":"6710","deckel":"12000","gezeichnet":"6710"},{"stufe":"1","leiste":"1322","deckel":"2900","gezeichnet":"1322"},{"stufe":"2","leiste":"2","deckel":"2","gezeichnet":"2"}]
+  skeleton         3 Anfragen · ohne three · ohne Sitzung
+  fluid            6 Anfragen · fremd /worlds/fluid/lib/three.module.min.js /worlds/fluid/lib/three-fluid-fx.es.js /worlds/fluid/lib/three.core.min.js · ohne Sitzung
+  translated       4 Anfragen · fremd /worlds/translated/lib/three.min.js · ohne Sitzung
+❌ H7 fachwerk: p95 Neubau 4876 ms > 1000 ms
+❌ H7 koerperstudio: p95 Neubau 2481 ms > 1000 ms
+❌ H7 tetrapoda: p95 Neubau 1439 ms > 1000 ms
+❌ DER GANG: 3 von 11 Seiten ohne fremde Engine · 8 Sitzungen
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 61051 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

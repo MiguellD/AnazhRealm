@@ -1,0 +1,202 @@
+{
+ "sha": "557d4aaddd489ba2dd2cc31322e5a349348c11a8",
+ "geraet": "gtx",
+ "zeit": "2026-10-28T20:33:19.768Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 2065 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 50–420.5 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 2.26,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T19:34:08.365Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "zahl": "(a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0, Bild ) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.33 m, Faden 5/5 an 21 Säulen",
+   "exit": 1,
+   "minuten": 4.44,
+   "grund": "ROT: (a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0, Bild ) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.33 m, Faden 5/5 an 21 Säulen",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T19:36:34.273Z",
+   "abdruck": "c2446a63171f",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 5.47,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T19:41:20.838Z",
+   "abdruck": "d5a271d92c25",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K1#2": {
+   "gruen": true,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ GRÜN am Hang 17.7° -62.4/-36, Flucht bei 14.2 m: 43 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (851 px) · 43.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (872 px) · 45.8 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (744 px)",
+   "exit": 0,
+   "minuten": 1.95,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T19:46:56.217Z",
+   "abdruck": "2c38cafe8615",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2831/1200/5948/4051 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 91.8 σ 38.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.119 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 2.27,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T19:49:01.324Z",
+   "abdruck": "a99597ca60dd",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 12.9 s, 3 fressen: tier:wolf 10667 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.33 m · Luma 81.4 σ 36.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.119 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 6.3,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T19:51:24.700Z",
+   "abdruck": "6f4d55252639",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 4.55,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:08:13.951Z",
+   "abdruck": "dc99c476be49",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "luftwasser.K5#1": {
+   "gruen": true,
+   "zahl": "Schwarm-Takt 0.15 ms je Takt (Median, p95 0.215) bei 100 Gliedern im Blick in jeder Reihe, 673 Paare der Separation, Auge 51.1 m (Soll ≤ 0,3 ms, 100 im Bild)",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:12:53.586Z",
+   "abdruck": "5683af1b7eb3",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "luftwasser.K5#2": {
+   "gruen": true,
+   "zahl": "Klasse vogel 1 Befehle {\"haupt\":1}, 500 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:12:53.586Z",
+   "abdruck": "c287869fc49a",
+   "port": 7754,
+   "bahn": "allein",
+   "zwilling": "luftwasser.K5#1"
+  },
+  "vegetation.K2#1": {
+   "gruen": false,
+   "zahl": "ohne Zeit-Messung: keine Zeit-Messung",
+   "exit": 0,
+   "minuten": 1,
+   "grund": "ROT: ohne Zeit-Messung: keine Zeit-Messung",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:13:10.261Z",
+   "abdruck": "db7a139acb70",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich null Soll [0.3554,0.533] — strich ungemessen · third ROT strich null Soll [0.3554,0.533] — strich ungemessen",
+   "exit": 0,
+   "minuten": 1.24,
+   "grund": "ROT: arm ROT strich null Soll [0.3554,0.533] — strich ungemessen · third ROT strich null Soll [0.3554,0.533] — strich ungemessen",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:14:17.044Z",
+   "abdruck": "bd2f8de9436d",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 8.06,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:15:38.217Z",
+   "abdruck": "dad9cf32497f",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K3#2": {
+   "gruen": true,
+   "zahl": "Drift Kamera ≤ 7° neben dem Fahrtvektor (Schlupf bis 8°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov]",
+   "exit": 0,
+   "minuten": 3.74,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:23:50.424Z",
+   "abdruck": "3a58d98e9e1c",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K4#2": {
+   "gruen": true,
+   "zahl": "nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.32 m je Bild, Azimut nach 10 Bildern 0.9° · Hang 17.4°",
+   "exit": 0,
+   "minuten": 3.45,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:27:42.150Z",
+   "abdruck": "b8dfe1a249ab",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "siedlung.K2#2": {
+   "gruen": true,
+   "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 94 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
+   "exit": 0,
+   "minuten": 1.94,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:31:16.547Z",
+   "abdruck": "b846e8481015",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 70.3 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 184.1 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.58,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:33:19.768Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7754,
+   "bahn": "allein"
+  }
+ },
+ "ungemessen": {
+  "tiere.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "exit": 1,
+   "minuten": 10.16,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "zeit": "2026-10-28T19:57:57.188Z",
+   "abdruck": "7ae3b93258dd",
+   "port": 7754,
+   "bahn": "1/1"
+  }
+ }
+}

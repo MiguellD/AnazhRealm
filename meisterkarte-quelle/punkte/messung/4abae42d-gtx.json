@@ -1,7 +1,7 @@
 {
  "sha": "4abae42d1ffce063bc3026fe5d463ea1a3180b42",
  "geraet": "gtx",
- "zeit": "2026-10-28T11:35:24.474Z",
+ "zeit": "2026-10-28T12:23:45.460Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K1#2": {
@@ -372,6 +372,134 @@
    "abdruck": "7d958f1a0783",
    "port": 7754,
    "bahn": "1/1"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 4.24,
+   "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T11:40:07.659Z",
+   "abdruck": "03c706724ee9",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.0032 nyquist 0.1494 (Arm 0.5), 1 m glatt 0.0018 nyquist 0.1504 (Arm 1), 2 m glatt 0.0007 nyquist 0.15 (Arm 1.889) · fels 0.5 m glatt 0 nyquist 0.143 (Arm 0.499), 1 m glatt 0.0002 nyquist 0.1224 (Arm 0.996), 2 m glatt 0 nyquist 0.1425 (Arm 1.99) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 5.68,
+   "grund": "ROT: boden 0.5 m glatt 0.0032 nyquist 0.1494 (Arm 0.5), 1 m glatt 0.0018 nyquist 0.1504 (Arm 1), 2 m glatt 0.0007 nyquist 0.15 (Arm 1.889) · fels 0.5 m glatt 0 nyquist 0.143 (Arm 0.499), 1 m glatt 0.0002 nyquist 0.1224 (Arm 0.996), 2 m glatt 0 nyquist 0.1425 (Arm 1.99) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T11:44:28.469Z",
+   "abdruck": "db1cd34d4849",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 3.46,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T11:50:15.479Z",
+   "abdruck": "c1c161cacf47",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 0.992/l2 0.984 · birke@0.5 l1 0.993/karte 1.002 · fichte@0.5 l1 0.994/karte 0.997 · haus@0.27 l1 0.992/l2 0.984 · birke@0.27 l1 0.994/karte 1.003 · fichte@0.27 l1 0.995/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 3.44,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T11:53:49.290Z",
+   "abdruck": "505daa48f370",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 27 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 31 Menschen im Bild, 8 gehend, 113.4 fps",
+   "exit": 0,
+   "minuten": 4.52,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T11:57:22.467Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.389 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 4.15,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T12:02:02.153Z",
+   "abdruck": "dc99c476be49",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "keine Zeile der Probe begegnung im Fenster (Exit 1)",
+   "exit": 1,
+   "minuten": 0.24,
+   "grund": "ROT: keine Zeile der Probe begegnung im Fenster (Exit 1)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T12:06:17.509Z",
+   "abdruck": "6f31c91e91f0",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "oekologie.K4#2": {
+   "gruen": false,
+   "zahl": "Läufe 0/4 (Exit 0)",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: Läufe 0/4 (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T12:06:38.753Z",
+   "abdruck": "ada5c828a722",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.092 m, Eindringen max 0.035 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#926 — im Bild Spalt 0 )",
+   "exit": 1,
+   "minuten": 2.35,
+   "grund": "ROT: Wagen fahrzeug_supersport 19.63 m/s (vmax 16.36 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 16.37 m/s · im Bild an der Mauer: Wagen Spalt max 0.092 m, Eindringen max 0.035 m; Bär Spalt max 0 m, Eindringen max 0.171 m · 7 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#926 — im Bild Spalt 0 )",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T12:06:53.345Z",
+   "abdruck": "b10c0629d940",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Sitzungen ohne Frame > 100 ms (max 124.9 · 125 · 133.3 · 116.1 ms; Hänger 1/1/1/1)",
+   "exit": 0,
+   "minuten": 14.27,
+   "grund": "ROT: 0 von 4 Sitzungen ohne Frame > 100 ms (max 124.9 · 125 · 133.3 · 116.1 ms; Hänger 1/1/1/1)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T12:09:22.182Z",
+   "abdruck": "3b1e54b5711e",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 141.7/1.21 % · s1 fahrt 150/49.34 % · s2 geh 199.9/1.19 % · s2 fahrt 149.9/45.70 % · s3 geh 158.3/1.38 % · s3 fahrt 133.3/54.71 % · s4 geh 108.4/1.39 % · s4 fahrt 158.4/49.97 %); ROT s1 geh: max 141.7 ms, 1.21 % > 33 ms | s1 fahrt: max 150 ms, 49.34 % > 33 ms | s2 geh: max 199.9 ms, 1.19 % > 33 ms | s2 fahrt: max 149.9 ms, 45.70 % > 33 ms | s3 geh: max 158.3 ms, 1.38 % > 33 ms | s3 fahrt: max 133.3 ms, 54.71 % > 33 ms | s4 geh: max 108.4 ms, 1.39 % > 33 ms | s4 fahrt: max 158.4 ",
+   "exit": 0,
+   "minuten": 20.01,
+   "grund": "ROT: 0 von 8 Läufen ohne Frame > 100 ms und ≤ 1 % > 33 ms mit Sicht-Wechsel und Einsteigen (max ms/Anteil: s1 geh 141.7/1.21 % · s1 fahrt 150/49.34 % · s2 geh 199.9/1.19 % · s2 fahrt 149.9/45.70 % · s3 geh 158.3/1.38 % · s3 fahrt 133.3/54.71 % · s4 geh 108.4/1.39 % · s4 fahrt 158.4/49.97 %); ROT s1 geh: max 141.7 ms, 1.21 % > 33 ms | s1 fahrt: max 150 ms, 49.34 % > 33 ms | s2 geh: max 199.9 ms, 1.19 % > 33 ms | s2 fahrt: max 149.9 ms, 45.70 % > 33 ms | s3 geh: max 158.3 ms, 1.38 % > 33 ms | s3 fahrt: max 133.3 ms, 54.71 % > 33 ms | s4 geh: max 108.4 ms, 1.39 % > 33 ms | s4 fahrt: max 158.4 ",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T12:23:45.460Z",
+   "abdruck": "b35c7ee98fac",
+   "port": 7754,
+   "bahn": "allein"
   }
  },
  "ungemessen": {

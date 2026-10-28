@@ -699,6 +699,42 @@ const stationen = [
         quelle: "2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei",
     },
 
+    // ───────── siedlung.K4 — durch die Jahrhunderte (Zweig w3s-jahrhunderte: die Chronik im fachwerk-core) ─────────
+    // gate:settlement Teil J (`--nur-j`, Node, kein Browser): je Saat (8) dieselbe Zelle unter 1320 · 1560 · 1860 · 1935 (die
+    // Epochen ohne Zahl — die Chronik ihrer Region, `chronikJahr`); je Paar die Überdeckung je Slot (3 × 3 Punkte des
+    // Grundrisses im Grundriss des jüngeren), die kleinste ≥ 0,8; die Mutante ohne Erbe (jede Epoche ihr eigener Plan) bricht
+    // sie (< 0,8). J2: moderne ergibt stadt mit Turm, vier Epochen vier Kirchen, jedes Baujahr bis zum Schnitt, kein Turm vor
+    // 1905, keine Halle vor 1850, die Kultur aus REGION_HIST ihres Baujahrs, die Kleidung die Tracht der Epoche; die Mutante
+    // (Turm von 1455, keine Tracht) fällt beim Namen. Am Kopf vor w3s-jahrhunderte: 0,222 und 162 Brüche (ROT); am Zweig
+    // 0,915, ohne Erbe 0,274, 0 Brüche.
+    {
+        kriterium: "siedlung.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-settlement.cjs", "--nur-j"],
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = jsonZeile(out, /^JAHRESRINGE /);
+            const j1 = /^\s*(✅|❌) J1 JAHRESRINGE/m.exec(out);
+            const j2 = /^\s*(✅|❌) J2 EPOCHE: (\d+) Brüche, die Mutante (\d+)/m.exec(out);
+            const gruen =
+                !!z && z.min >= 0.8 && z.ohneErbe < 0.8 && Array.isArray(z.fehl) && !z.fehl.length &&
+                !!j1 && j1[1] === "✅" && !!j2 && j2[1] === "✅" && +j2[3] > 0 && lauf.exit === 0;
+            return {
+                gruen,
+                zahl: z
+                    ? "Überdeckung je Slot " + z.min + " über " + (z.paare || []).length + " Saaten × 3 Paare (ohne Erbe " + z.ohneErbe +
+                      "), Rolle/Bauart/Kleidung " + (z.fehl || []).length + " Brüche" + (j2 ? ", Mutante " + j2[3] : "") + ", Exit " + lauf.exit
+                    : "keine Zeile JAHRESRINGE (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: ["fachwerk-core.js", "scripts/diag-settlement.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export",
+    },
+
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
     {
         kriterium: "leib.K1",

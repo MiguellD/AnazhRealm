@@ -1,0 +1,17 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] nvidia/pascal
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,93],"gegenprobe":[59180],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41180,1335,18663,39130],[23183,309,5501,39267]]],["fluss",0,0,[[28211,1299,28106,56697],[5859,600,5748,64365]]]],"innen":[1.556,0.113,0.072,0.138,0.162,0.1,null,0.145,0.152,0.577,null,0.152,0.077,null,0.63,null,0.156,null],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":96,"gesperrt":true,"ohne":32,"slots":36,"haeuser":4,"reload":4,"zugOffen":true,"ausstattung":{"brunnen":[4,4],"laternen":[24,24],"staende":[3,3]},"verblasst":true,"ms":46104}}
+  ❌ W10 Innen-Bild: 11 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.02096608187400727/0.1849191841614575 · haus_schwarzwald 0.017314714522116487/0.23972294565535326 · haus_schwarzwald 0.026698077647319417/0.19300404478449024 · haus_alpenchalet 0.01675129502237117/0.16821683376424953 · haus_schwarzwald 0.026424220034474873/undefined · haus_schwarzwald 0.026698077647319417/0.18455054601704168 · haus_gotisch 0.01668603491462573/undefined · haus_alpenchalet 0.01741919079166659/0.22577006245830183 · haus_alpenchalet 0.03059051774743899/undefined · haus_alpenchalet 0.028725144791351048/undefined · haus_skandinavisch undefined/0.20345561883292124)
+  ❌ W9 Wasser: [["see",0,0,[[41180,1335,18663,39130],[23183,309,5501,39267]]],["fluss",0,0,[[28211,1299,28106,56697],[5859,600,5748,64365]]]]
+  ❌ W9 Waise: 32 von 96 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  1 Welten, 1 zugleich, 354 s
+❌ gate:haus-welt ROT (4)
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 10153 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
