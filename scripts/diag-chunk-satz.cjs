@@ -228,46 +228,20 @@ function selbsttest() {
     const fehler = [];
     if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
-        {
-            name: "voxelChunk:0,0:lod0 direkt in der Szene",
-            z: {
+        ["voxelChunk:0,0:lod0 direkt in der Szene", {
                 ...gruen,
                 boden: { objekte: 2, namen: ["bodenSatz", "voxelChunk:0,0:lod0"] },
                 voxelChunkNamen: ["voxelChunk:0,0:lod0"],
-            },
-            muss: [/BODEN: 2 Objekte.*voxelChunk:0,0:lod0/, /BODEN: 1 `voxelChunk:`-Objekte.*voxelChunk:0,0:lod0/],
-        },
-        {
-            name: "Gruppe x#0@p:0,0",
-            z: { ...gruen, pGruppen: ["x#0@p:0,0"] },
-            muss: [/BAU: 1 Instanz-Gruppen mit `@p:`.*x#0@p:0,0/],
-        },
-        {
-            name: "eine Streu-Senke zeichnet selbst",
-            z: { ...gruen, streuNah: { "blume:1:L2:0": 1 } },
-            muss: [/STREU: 1 Nah-Streu-Objekte zeichnen selbst .*blume:1:L2:0/],
-        },
-        {
-            name: "ein Block ohne Bereich im Streu-Satz",
-            z: {
+            }, [/BODEN: 2 Objekte.*voxelChunk:0,0:lod0/, /BODEN: 1 `voxelChunk:`-Objekte.*voxelChunk:0,0:lod0/]],
+        ["Gruppe x#0@p:0,0", { ...gruen, pGruppen: ["x#0@p:0,0"] }, [/BAU: 1 Instanz-Gruppen mit `@p:`.*x#0@p:0,0/]],
+        ["eine Streu-Senke zeichnet selbst", { ...gruen, streuNah: { "blume:1:L2:0": 1 } }, [/STREU: 1 Nah-Streu-Objekte zeichnen selbst .*blume:1:L2:0/]],
+        ["ein Block ohne Bereich im Streu-Satz", {
                 ...gruen,
                 streuSatz: { bloecke: 12, imSatz: 11, ohneBereich: ["farn:2:L1:0@-226,-212"], doppelt: [] },
-            },
-            muss: [/STREU-SATZ: 1 Blöcke ohne treuen Bereich — farn:2:L1:0@-226,-212/],
-        },
-        {
-            name: "die Fern-Deko lebt",
-            z: { ...gruen, fern: { blume: 1 } },
-            muss: [/STREU: 1 Fern-Deko-InstancedMeshes/],
-        },
-        {
-            name: "Deck-Zwilling lebt",
-            z: { ...gruen, deck: 3 },
-            muss: [/STREU: 3 Deck-Streu-InstancedMeshes/],
-        },
-        {
-            name: "zwei Tor-Stoffe derselben Klasse, getrennt durch ihre Glut-Stärke",
-            z: {
+            }, [/STREU-SATZ: 1 Blöcke ohne treuen Bereich — farn:2:L1:0@-226,-212/]],
+        ["die Fern-Deko lebt", { ...gruen, fern: { blume: 1 } }, [/STREU: 1 Fern-Deko-InstancedMeshes/]],
+        ["Deck-Zwilling lebt", { ...gruen, deck: 3 }, [/STREU: 3 Deck-Streu-InstancedMeshes/]],
+        ["zwei Tor-Stoffe derselben Klasse, getrennt durch ihre Glut-Stärke", {
                 ...gruen,
                 satzStoff: {
                     saetze: 5,
@@ -275,24 +249,16 @@ function selbsttest() {
                     ohneRegler: ["bauSatz|probe|-"],
                     untreu: ["f:maurentor:L1 (Rauheit 0,28 statt 0,59)"],
                 },
-            },
-            muss: [
+            }, [
                 /SATZ-STOFF: 1 Stoff-Klassen zeichnen in mehr als einem Bau-Satz.*v:metall/,
                 /SATZ-STOFF: 1 Bau-Sätze ohne Regler je Ecke.*bauSatz|probe/,
                 /SATZ-STOFF: 1 Gruppen tragen nicht die Regler ihres Stoffs.*maurentor/,
-            ],
-        },
-        {
-            name: "eine Felszacken-Gestalt zeichnet als eigene Gruppe",
-            z: {
+            ]],
+        ["eine Felszacken-Gestalt zeichnet als eigene Gruppe", {
                 ...gruen,
                 bauSatz: { gruppen: 3, imSatz: 2, selbst: ["f:zacken:L0 (f:zacken|4|0:0)"], ohneBereich: [] },
-            },
-            muss: [/BAU-SATZ: 1 Gruppen einer Satz-Art zeichnen selbst.*f:zacken:L0/],
-        },
-        {
-            name: "ein Haus ohne Bereich im Satz",
-            z: {
+            }, [/BAU-SATZ: 1 Gruppen einer Satz-Art zeichnen selbst.*f:zacken:L0/]],
+        ["ein Haus ohne Bereich im Satz", {
                 ...gruen,
                 bauSatz: {
                     gruppen: 3,
@@ -300,12 +266,8 @@ function selbsttest() {
                     selbst: [],
                     ohneBereich: ["f:griechisch:L2 (f:griechisch|4|2|ov:x:0)"],
                 },
-            },
-            muss: [/BAU-SATZ: 1 Satz-Gruppen ohne treuen Bereich.*f:griechisch:L2/],
-        },
-        {
-            name: "der Boden-Satz trägt Normale und Farbe in Float32 (die Form vor K44)",
-            z: {
+            }, [/BAU-SATZ: 1 Satz-Gruppen ohne treuen Bereich.*f:griechisch:L2/]],
+        ["der Boden-Satz trägt Normale und Farbe in Float32 (die Form vor K44)", {
                 ...gruen,
                 vertexForm: [
                     { satz: "bodenSatz", attr: "position", form: "float32x3", bytes: 12, mb: 2.6 },
@@ -316,16 +278,12 @@ function selbsttest() {
                     { satz: "bodenSatz", attr: "aSchutt", form: "float32x1", bytes: 4, mb: 0.9 },
                     { satz: "bodenSatz", attr: "aMorphWeight", form: "float32x1", bytes: 4, mb: 0.9 },
                 ],
-            },
-            muss: [
+            }, [
                 /VERTEX-FORM: bodenSatz normal float32x3 \(Soll nint8x4\)/,
                 /VERTEX-FORM: bodenSatz color float32x3 \(Soll float16x4\)/,
                 /VERTEX-FORM: der Boden-Satz trägt 60 B je Vertex/,
-            ],
-        },
-        {
-            name: "L0 bis Ring 2 und L1 in Ring 3 (die Kette vor K51), jenseits der Halte-Grenze",
-            z: {
+            ]],
+        ["L0 bis Ring 2 und L1 in Ring 3 (die Kette vor K51), jenseits der Halte-Grenze", {
                 ...gruen,
                 stufen: {
                     ...gruen.stufen,
@@ -335,21 +293,11 @@ function selbsttest() {
                         { key: "-17,-20", ring: 3, d: 108, lod: 1, dreiecke: 1404 },
                     ],
                 },
-            },
-            muss: [
+            }, [
                 /BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 64\.8 m L0 \(Soll ≥ L1\)/,
-            ],
-        },
-        {
-            name: "das Naht-Band brückt, wo der Morph beide Enden trägt",
-            z: { ...gruen, stufen: { ...gruen.stufen, ohneNot: [{ key: "stitch:-19,-18", n: 712 }] } },
-            muss: [/BODEN-STUFEN: 712 Naht-Brücken ohne Not.*stitch:-19,-18 712/],
-        },
-        {
-            name: "das Naht-Band zeichnet als eigenes Mesh (kein Bereich im Boden-Satz)",
-            z: { ...gruen, stufen: { ...gruen.stufen, ohneSatz: ["-19,-18"] } },
-            muss: [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/],
-        },
+            ]],
+        ["das Naht-Band brückt, wo der Morph beide Enden trägt", { ...gruen, stufen: { ...gruen.stufen, ohneNot: [{ key: "stitch:-19,-18", n: 712 }] } }, [/BODEN-STUFEN: 712 Naht-Brücken ohne Not.*stitch:-19,-18 712/]],
+        ["das Naht-Band zeichnet als eigenes Mesh (kein Bereich im Boden-Satz)", { ...gruen, stufen: { ...gruen.stufen, ohneSatz: ["-19,-18"] } }, [/BODEN-STUFEN: 1 Naht-Bänder ohne Bereich im Boden-Satz — -19,-18/]],
     ];
     taeterFaelle(faelle, urteil, { fehler });
     // (j) die Neuschreib-Wand: Ruhe ist grün; die alte Verdrängung (die Kaskaden schreiben einander je Frame neu) und
@@ -359,16 +307,8 @@ function selbsttest() {
             name: "die ruhige Messung",
             z: { ruhe: [{ "haupt>haupt": 1335096, "k0>k0": 1758984 }, {}, {}], druck: [{ "k1>k1": 4096 }, {}] },
         },
-        {
-            name: "die Kaskaden verdrängen einander je Frame",
-            z: { druck: [{ "k0>k0": 1758984 }, { "k1>k1": 1090140 }, { "k0>k0": 1758984 }] },
-            muss: [/NEUSCHREIBEN \(druck, Frame 2\): k1 schrieb seinen Abschnitt — 1090140 B/, /Frame 3\): k0 schrieb/],
-        },
-        {
-            name: "ein Schatten-Pass schreibt den Abschnitt eines anderen",
-            z: { ruhe: [{}, { "k1>k0": 4096 }] },
-            muss: [/NEUSCHREIBEN \(ruhe, Frame 2\): k1 schrieb den Abschnitt von k0 — 4096 B/],
-        },
+        ["die Kaskaden verdrängen einander je Frame", { druck: [{ "k0>k0": 1758984 }, { "k1>k1": 1090140 }, { "k0>k0": 1758984 }] }, [/NEUSCHREIBEN \(druck, Frame 2\): k1 schrieb seinen Abschnitt — 1090140 B/, /Frame 3\): k0 schrieb/]],
+        ["ein Schatten-Pass schreibt den Abschnitt eines anderen", { ruhe: [{}, { "k1>k0": 4096 }] }, [/NEUSCHREIBEN \(ruhe, Frame 2\): k1 schrieb den Abschnitt von k0 — 4096 B/]],
     ];
     taeterFaelle(neuFaelle, urteilNeu, { fehler });
     selbsttestEnde(fehler);

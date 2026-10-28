@@ -383,7 +383,7 @@ function selbsttest() {
         ["gelöschte Attribute", Object.assign({}, gruen, { zahl: { pruef: 85, geloescht: 5 }, geloescht: "bauSatz" }), /GELÖSCHT: 5 .*bauSatz/],
         ["statische Regung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, regungOhne: 1 }, regungOhne: ["haus Lage: 1"] }), /REGUNG OHNE MELDUNG: haus Lage/],
     ];
-    require("./welt-boot.cjs").taeterFaelle(faelle.map(([name, z, muss]) => ({ name, z, muss })), diaetUrteil, { fehler });
+    require("./welt-boot.cjs").taeterFaelle(faelle, diaetUrteil, { fehler });
     // Drehen und Gehen dürfen Arbeit tragen (die Änderung) — das Urteil fällt dort nie über Wiederholung.
     if (diaetUrteil(Object.assign({}, gruen, { modus: "drehen", zahl: { pruef: 120, wiederholtKnoten: 5, ohne: 3 } })).length)
         fehler.push("Drehen fällt rot über Wiederholung oder Refresh ohne Änderung");

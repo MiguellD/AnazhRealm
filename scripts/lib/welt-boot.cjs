@@ -953,14 +953,15 @@ function wandEnde(errs, satz) {
     urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — " + satz);
 }
 
-// DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
-// `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
-// der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
+// DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat | z, muss]` (eine Funktion ist die Tat an einem frischen
+// `klon()`, sonst der Zustand selbst) oder `{ name, z, muss }` (z wie er ist, auch eine Funktion) das Urteil; jedes `muss` (ein
+// Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht der Fall beim Namen in `fehler`.
+// `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
 function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
-        const z = tat ? klon() : f.z;
-        if (tat) tat(z);
+        const z = tat instanceof Function ? klon() : tat || f.z;
+        if (tat instanceof Function) tat(z);
         const v = urteil(z);
         const fehlt =
             muss == null ? v.slice(0, v.length && 1) : [].concat(muss).filter((re) => !v.some((s) => re.test(s)));

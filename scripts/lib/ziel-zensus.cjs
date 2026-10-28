@@ -914,27 +914,18 @@ function selbsttest() {
     if (u0.rot.length) fehler.push("der saubere Lauf fällt rot: " + u0.rot.join(" · "));
     console.log(`  ${u0.rot.length ? "❌" : "✅"} sauberer Lauf → ${u0.rot.join(" · ") || "grün"}`);
     const faelle = [
-        { name: "Ziel ohne Leser", z: { ohneLeser: true }, muss: /OHNE LESER: x:ohne-leser/ },
-        { name: "Bloom in Leinwand-Größe", z: { bloom: true }, muss: /VOLLE AUFLÖSUNG: x:bloom/ },
-        { name: "Tiefe ohne Nutzung", z: { tiefeOhne: true }, muss: /TIEFE OHNE LESER: x:tiefe-ohne/ },
-        { name: "doppelte Tiefe", z: { kopie: true }, muss: /DOPPELTE TIEFE: x:tiefe-kopie .* ist eine Kopie von depth,/ },
-        { name: "teilbares Paar", z: { paar: true }, muss: /TEILBAR: x:paar-a und x:paar-b/ },
-        { name: "32 bit mit 16-bit-Inhalt", z: { f32: true }, muss: /FORMAT: x:f32 .* trägt nur 16-bit-Inhalt/ },
-        { name: "Textur ohne Erzeuger", z: { ohneErzeuger: true }, muss: /ERZEUGER: #11/ },
-        { name: "blindes Bündel", z: { blind: 3 }, muss: /3 Bündel ohne bekannten Inhalt/ },
-        { name: "zu kurzes Fenster", z: { frames: 2 }, muss: /nur 2 Frames/ },
-        { name: "Attrappe ohne Umleitungs-Marke", z: { attrappe: "ohne" }, muss: /TIEFE OHNE LESER: x:attrappe .* geschrieben, nie gelesen/ },
-        {
-            name: "Szenen-Ziel in 64 bit auf einem rg11b10-Gerät",
-            z: { geraet: { rg11b10: true } },
-            muss: /AUSGABE-FORMAT: output \(rgba16float 1920×1080, 15\.82 MB\) .*\(−7\.91 MB/,
-        },
-        {
-            // der Schmuggel des echten Frames: ein eigenes 64-bit-Ziel als Szenen-Ziel ausgewiesen, das echte bleibt rg11b10
-            name: "ausgewiesenes Szenen-Ziel in 64 bit",
-            z: { geraet: { rg11b10: true, ausgabeId: 13 }, ausgabe: "rg11b10ufloat", ausgewiesen: true },
-            muss: /AUSGABE-FORMAT: x:ausgabe \(rgba16float/,
-        },
+        ["Ziel ohne Leser", { ohneLeser: true }, /OHNE LESER: x:ohne-leser/],
+        ["Bloom in Leinwand-Größe", { bloom: true }, /VOLLE AUFLÖSUNG: x:bloom/],
+        ["Tiefe ohne Nutzung", { tiefeOhne: true }, /TIEFE OHNE LESER: x:tiefe-ohne/],
+        ["doppelte Tiefe", { kopie: true }, /DOPPELTE TIEFE: x:tiefe-kopie .* ist eine Kopie von depth,/],
+        ["teilbares Paar", { paar: true }, /TEILBAR: x:paar-a und x:paar-b/],
+        ["32 bit mit 16-bit-Inhalt", { f32: true }, /FORMAT: x:f32 .* trägt nur 16-bit-Inhalt/],
+        ["Textur ohne Erzeuger", { ohneErzeuger: true }, /ERZEUGER: #11/],
+        ["blindes Bündel", { blind: 3 }, /3 Bündel ohne bekannten Inhalt/],
+        ["zu kurzes Fenster", { frames: 2 }, /nur 2 Frames/],
+        ["Attrappe ohne Umleitungs-Marke", { attrappe: "ohne" }, /TIEFE OHNE LESER: x:attrappe .* geschrieben, nie gelesen/],
+        ["Szenen-Ziel in 64 bit auf einem rg11b10-Gerät", { geraet: { rg11b10: true } }, /AUSGABE-FORMAT: output \(rgba16float 1920×1080, 15\.82 MB\) .*\(−7\.91 MB/],
+        ["ausgewiesenes Szenen-Ziel in 64 bit", { geraet: { rg11b10: true, ausgabeId: 13 }, ausgabe: "rg11b10ufloat", ausgewiesen: true }, /AUSGABE-FORMAT: x:ausgabe \(rgba16float/],
     ];
     require("./welt-boot.cjs").taeterFaelle(faelle, (m) => (({ z, lesen }) => zielUrteil(z, lesen).rot)(bau(m)), { fehler });
     // Grün mit Hinweis: die markierte Attrappe (die Umleitung), das Szenen-Ziel in rg11b10 auf dem Gerät mit Feature, die

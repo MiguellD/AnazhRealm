@@ -90,31 +90,11 @@ function selbsttest() {
         return z;
     };
     const faelle = [
-        {
-            name: "Dichte ohne Wand (V18.538)",
-            z: mit("kopf", { dichteJeTakt: 0.52, stempelDichteJeTakt: 0.52 }),
-            muss: /DICHTE ATMET: .* 52\.0 %/,
-        },
-        {
-            name: "Stempel je Takt durch die Dichte",
-            z: mit("kopf", { stempelDichteJeTakt: 0.5, archLodJeTakt: 47.5 }),
-            muss: /STAND WACH: .* 50.0 % .* geht 47.5 von/,
-        },
-        {
-            name: "Lage fällt je Takt",
-            z: mit("kopf", { lageJeTakt: 0.5, abschnittJeTakt: 4.5 }),
-            muss: /LAGE FÄLLT: .* 50\.0 %/,
-        },
-        {
-            name: "Welt ohne Baum",
-            z: mit("", { blind: "kein Baum der Stufen-Wahl in der Welt" }),
-            muss: /BLIND: kein Baum/,
-        },
-        {
-            name: "Gegenprobe blind",
-            z: mit("gegenprobe", { dichteJeTakt: 0.02 }),
-            muss: /GEGENPROBE: die stoßende Dichte fällt nicht/,
-        },
+        ["Dichte ohne Wand (V18.538)", mit("kopf", { dichteJeTakt: 0.52, stempelDichteJeTakt: 0.52 }), /DICHTE ATMET: .* 52\.0 %/],
+        ["Stempel je Takt durch die Dichte", mit("kopf", { stempelDichteJeTakt: 0.5, archLodJeTakt: 47.5 }), /STAND WACH: .* 50.0 % .* geht 47.5 von/],
+        ["Lage fällt je Takt", mit("kopf", { lageJeTakt: 0.5, abschnittJeTakt: 4.5 }), /LAGE FÄLLT: .* 50\.0 %/],
+        ["Welt ohne Baum", mit("", { blind: "kein Baum der Stufen-Wahl in der Welt" }), /BLIND: kein Baum/],
+        ["Gegenprobe blind", mit("gegenprobe", { dichteJeTakt: 0.02 }), /GEGENPROBE: die stoßende Dichte fällt nicht/],
     ];
     taeterFaelle(faelle, urteil, { fehler });
     selbsttestEnde(fehler);

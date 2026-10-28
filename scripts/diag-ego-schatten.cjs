@@ -125,19 +125,19 @@ function selbsttest() {
     };
     // prettier-ignore
     const faelle = [
-        { name: "main (der Wurf geht mit der Haut)", z: mit("fein.kopf.ego", { wurf: 0 }), muss: /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/ },
-        { name: "nur der Rumpf wirft", z: mit("fein.kopf", { iou: 0.62 }), muss: /UMRISS: .* IoU 0\.62/ },
-        { name: "Leib vor dem Auge", z: mit("fein.kopf.ego", { leibPx: 12 }), muss: /AUGE: .* 12 Bildpunkte vor dem Auge/ },
-        { name: "Leib-Mesh auf Ebene 0", z: mit("fein.kopf.ego", { leibAufNull: 3 }), muss: /AUGE: .* 3 sichtbare Leib-Meshes auf Ebene 0/ },
-        { name: "Gerät verborgen", z: mit("fein.kopf", { geraet: 4 }), muss: /GERÄT: .* Maske 4 statt 1/ },
-        { name: "Zwilling geweckt", z: mit("fein.kopf", { zwilling: 5 }), muss: /ZWILLING: .* Maske 5/ },
-        { name: "visible geschaltet", z: mit("fein.kopf", { zurueck: "die Regel schaltet visible an 2 Knoten" }), muss: /ZURÜCK: die Regel schaltet visible/ },
-        { name: "Haupt-Kamera sieht die Zwillings-Ebene", z: mit("fein", { vertrag: "die Haupt-Kamera sieht Ebene 2" }), muss: /VERTRAG: die Haupt-Kamera sieht Ebene 2/ },
-        { name: "Bühne ohne Schatten", z: mit("fein.dritt", { wurf: 3 }), muss: /BLIND: die 3rd-Person wirft auf der Bühne 3 px/ },
-        { name: "Gegenprobe blind", z: mit("fein.gegenprobe.0.m.ego", { wurf: 1500 }), muss: /GEGENPROBE: die Regel „main: visible" fällt nicht/ },
-        { name: "Grob-Leib liest die Karte des vorigen Schusses (CI Gruppe 17)", z: mit("grob.kopf.ego", { wurf: 0, leibPx: 1075 }), muss: /grob: LEIB WIRFT NICHT: .*0 px/ },
-        { name: "Bühne schreitet nicht (Gegenprobe Karte steht blind)", z: mit("grob.gegenprobe.5.m.ego", { wurf: 754 }), muss: /GEGENPROBE: die Regel „Karte steht" fällt nicht/ },
-        { name: "Bühne am falschen Leib", z: mit("fein", { stufe: 1 }), muss: /STUFE: die Bühne „fein" misst .* nahStufe 1/ },
+        ["main (der Wurf geht mit der Haut)", mit("fein.kopf.ego", { wurf: 0 }), /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/],
+        ["nur der Rumpf wirft", mit("fein.kopf", { iou: 0.62 }), /UMRISS: .* IoU 0\.62/],
+        ["Leib vor dem Auge", mit("fein.kopf.ego", { leibPx: 12 }), /AUGE: .* 12 Bildpunkte vor dem Auge/],
+        ["Leib-Mesh auf Ebene 0", mit("fein.kopf.ego", { leibAufNull: 3 }), /AUGE: .* 3 sichtbare Leib-Meshes auf Ebene 0/],
+        ["Gerät verborgen", mit("fein.kopf", { geraet: 4 }), /GERÄT: .* Maske 4 statt 1/],
+        ["Zwilling geweckt", mit("fein.kopf", { zwilling: 5 }), /ZWILLING: .* Maske 5/],
+        ["visible geschaltet", mit("fein.kopf", { zurueck: "die Regel schaltet visible an 2 Knoten" }), /ZURÜCK: die Regel schaltet visible/],
+        ["Haupt-Kamera sieht die Zwillings-Ebene", mit("fein", { vertrag: "die Haupt-Kamera sieht Ebene 2" }), /VERTRAG: die Haupt-Kamera sieht Ebene 2/],
+        ["Bühne ohne Schatten", mit("fein.dritt", { wurf: 3 }), /BLIND: die 3rd-Person wirft auf der Bühne 3 px/],
+        ["Gegenprobe blind", mit("fein.gegenprobe.0.m.ego", { wurf: 1500 }), /GEGENPROBE: die Regel „main: visible" fällt nicht/],
+        ["Grob-Leib liest die Karte des vorigen Schusses (CI Gruppe 17)", mit("grob.kopf.ego", { wurf: 0, leibPx: 1075 }), /grob: LEIB WIRFT NICHT: .*0 px/],
+        ["Bühne schreitet nicht (Gegenprobe Karte steht blind)", mit("grob.gegenprobe.5.m.ego", { wurf: 754 }), /GEGENPROBE: die Regel „Karte steht" fällt nicht/],
+        ["Bühne am falschen Leib", mit("fein", { stufe: 1 }), /STUFE: die Bühne „fein" misst .* nahStufe 1/],
     ];
     taeterFaelle(faelle, urteilJeStufe, { fehler });
     selbsttestEnde(fehler);
