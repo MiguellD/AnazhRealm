@@ -1718,7 +1718,7 @@ async function zensus(page, browser, ergebnis) {
                 q.loop = true;
                 return an(q, 0);
             };
-            window.__selbst = [window.zwillingDrohne(), window.stummeSchleife()];
+            window.__selbst = [zwillingDrohne(), stummeSchleife()];
         });
         const dS = { wiese: await messeOrt(page, "wiese", orte.wiese, { stehend: true }) };
         await page.evaluate(() => __selbst.forEach((q) => q.stop()));
