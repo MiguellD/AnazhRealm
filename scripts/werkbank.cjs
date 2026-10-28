@@ -97,6 +97,7 @@ const HL = require("./lib/haenger-linse.cjs");
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
 // der Ordner einer Datei, die das Werkzeug schreibt
 const ordnerFuer = (datei) => fs.mkdirSync(path.dirname(datei), { recursive: true });
+const jsonAb = (datei, o) => (ordnerFuer(datei), fs.writeFileSync(datei, JSON.stringify(o, null, 1)));
 // die Ablage der Werkbank (artifacts/werkbank) und ein Bild aus einer Daten-URL dorthin, wo der Aufrufer es will
 const ablage = (...teile) => path.join(root, "artifacts", "werkbank", ...teile);
 const pngAb = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
@@ -200,7 +201,7 @@ const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stri
 // `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
 const eigeneWelt = async (tor) => (argv.includes("--eigen") ? ((tor = werkbankTor(PORT)), await tor.bereit, tor.stop) : null);
 // `--datei`: das Ergebnis dorthin; das Ende eines Urteils `{ urteil, befunde }` unter seinem Namen
-const dateiAb = (o) => opt("--datei") && fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(o, null, 1));
+const dateiAb = (o) => opt("--datei") && jsonAb(path.resolve(opt("--datei")), o);
 const urteilEnde = (name, u) => endeMit(`${name} ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`, u.urteil === "GRUEN");
 
 // Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
@@ -274,8 +275,10 @@ function lauf(k) {
         let snap = H && Object.assign({}, H.acc), probeTakt = 0;
         // DIE SICHTUNG: ein Tier (`_tierBaum`, die Klasse `tier:` der Teilung) deckt ≥ 200 px der Klassen-Maske am Maß 1280×720 —
         // zwei Schüsse des Ausgabe-Pfads unter der EINEN Uhr, mit und ohne Tiere (`toggleCreatures`, das Wort des Spiels: Leib,
-        // Feld und Satz), geteilt von `__klassenTeilung`; ein Pixel gehört dem nächsten Tier, dessen Körper-Kugel
-        // (`_kreaturAusserBlick`) ihn deckt. Geschossen wird höchstens alle 2 Spiel-s und nur, wenn ein ungesehenes Tier im Blick
+        // Feld und Satz), geteilt von `__klassenTeilung`; ein Pixel gehört unter ALLEN Tieren im Blick dem, dessen Körper-Kugel
+        // (`_kreaturAusserBlick`) ihn deckt und dessen Mitte im Bild ihm relativ zum Radius am nächsten liegt (ein Glied des
+        // Verbands schluckt nie die Pixel seiner Nachbarn); der Schatten am Boden zählt mit (mittags unter dem Leib, im flachen
+        // Blick verkürzt). Geschossen wird höchstens alle 2 Spiel-s und nur, wenn ein ungesehenes Tier im Blick
         // 200 px decken KANN: seine Gestalt passt in 2 · Reichweite × Höhe (`_kreaturLeib`; die Kugel R = Reichweite + Höhe/2, ihre
         // Mitte Höhe/2 über dem Fuß). `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
         const kreisGang = async () => {
@@ -296,12 +299,13 @@ function lauf(k) {
                     for (const c of st.creatures) {
                         const u = c.userData, blick = u._tierBaum && !r._kreaturAusserBlick(c, fr, 0);
                         if (!alt.has(c)) alt.add(c), (kreis.imBlick += blick ? 1 : 0);
-                        if (!blick || kreis.gesehen.has(c) || s < naechst) continue;
+                        if (!blick) continue;
                         const d = v.set(c.position.x, c.position.y + u._ruheKugelH, c.position.z).distanceTo(cam.position);
-                        const f = H / (2 * d * Math.tan((cam.fov * Math.PI) / 360)), rp = u._ruheKugelR * f;
-                        if (4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll) v.project(cam), kand.push({ c, d, rp, x: ((v.x + 1) * W) / 2, y: ((1 - v.y) * H) / 2, px: 0 });
+                        const f = H / (2 * d * Math.tan((cam.fov * Math.PI) / 360)), neu = !kreis.gesehen.has(c) && s >= naechst;
+                        v.project(cam);
+                        kand.push({ c, d, rp: u._ruheKugelR * f, x: ((v.x + 1) * W) / 2, y: ((1 - v.y) * H) / 2, px: 0, neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });
                     }
-                    if (!kand.length) continue;
+                    if (!kand.some((q) => q.neu)) continue;
                     naechst = s + 2;
                     kreis.halt = ++kreis.schuesse;
                     const G = await schuss();
@@ -309,13 +313,13 @@ function lauf(k) {
                     const O = await schuss().finally(() => r.toggleCreatures(true));
                     kreis.halt = 0;
                     const { teil } = window.__klassenTeilung(G, [O], W, H, 18);
-                    kand.sort((a, b) => a.d - b.d);
                     for (let p = 0; p < W * H; p++) {
-                        const q = teil[p] && kand.find((q) => (q.x - (p % W)) ** 2 + (q.y - Math.floor(p / W)) ** 2 <= q.rp * q.rp);
+                        let q = null, e = 1;
+                        if (teil[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
                         if (q) q.px++;
                     }
                     for (const q of kand)
-                        if (q.px >= soll) kreis.gesehen.set(q.c, [q.c.userData.soul, Math.round((q.px * 200) / soll) + " px", Math.round(q.d) + " m", Math.round(s) + " s"]);
+                        if (q.neu && q.px >= soll) kreis.gesehen.set(q.c, [q.c.userData.soul, Math.round((q.px * 200) / soll) + " px", Math.round(q.d) + " m", Math.round(s) + " s"]);
                 }
             } finally {
                 taste("keyup");
@@ -2239,8 +2243,7 @@ async function starte() {
                         welt,
                     };
                     const datei = path.resolve(b.datei || path.join(ordner, `welt-${Date.now()}.json`));
-                    ordnerFuer(datei);
-                    fs.writeFileSync(datei, JSON.stringify(messung, null, 1));
+                    jsonAb(datei, messung);
                     // Das Urteil gegen das LABOR-Ist der Tafel (die Labor-Seite misst diag-albedo-tafel.cjs --labor).
                     const g = { labor: {}, welt, karten: {}, eichung: { welt: eichung, labor: {} } };
                     for (const z of t.zeilen) if (z.ist) g.labor[z.id] = z.ist.labor;
@@ -2676,8 +2679,7 @@ async function starte() {
                     const datei = path.resolve(
                         b.json || ablage(`ziele-${Date.now()}.json`)
                     );
-                    ordnerFuer(datei);
-                    fs.writeFileSync(datei, JSON.stringify({ zensus: z, lesen, urteil: u, selbst, rest }, null, 1));
+                    jsonAb(datei, { zensus: z, lesen, urteil: u, selbst, rest });
                     return send({
                         ok: selbst ? selbstOk : u.rot.length === 0,
                         tabelle: ZZ.zielTabelle(u, z),
@@ -2804,24 +2806,16 @@ async function starte() {
                         const datei = path.resolve(
                             b.json || ablage(`zerlegen-${Date.now()}.json`)
                         );
-                        ordnerFuer(datei);
-                        fs.writeFileSync(
-                            datei,
-                            JSON.stringify(
-                                {
-                                    echt: ECHT,
-                                    boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
-                                    inventur: inv,
-                                    schalter: sch,
-                                    auswertung: a,
-                                    roh,
-                                    selbsttest: selbst,
-                                    stempel: stempelZ,
-                                },
-                                null,
-                                1
-                            )
-                        );
+                        jsonAb(datei, {
+                            echt: ECHT,
+                            boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                            inventur: inv,
+                            schalter: sch,
+                            auswertung: a,
+                            roh,
+                            selbsttest: selbst,
+                            stempel: stempelZ,
+                        });
                         let tabelle = ZL.zerlegeTabelle(a, inv, sch);
                         if (selbst)
                             tabelle +=
@@ -2908,14 +2902,7 @@ async function starte() {
                     ordnerFuer(datei);
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
-                    fs.writeFileSync(
-                        datei,
-                        JSON.stringify(
-                            Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen } }, a),
-                            null,
-                            1
-                        )
-                    );
+                    jsonAb(datei, Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen } }, a));
                     const { tabelle, befunde, cpuMs, taeter } = a;
                     return send({ tabelle, befunde, cpuMs, taeter, wetterHalt: roh.wetterHalt, datei });
                 }
