@@ -447,6 +447,14 @@ class AnazhRealm_dirigent_takt {
               fr.nachEdit.length +
               (fr.cursor < fr.totalVerts ? 1 : 0)
             : 0;
+        // DER FLUG IST DER FADEN (heil-horizont): zählt der Ring mehr Bestellungen im Flug, als der Fern-Faden trägt, ist eine
+        // verloren — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie, und der Horizont stünde nie mehr (CI 40594858957:
+        // „Horizont offen 1“, erst nach 3 729 Takten beim Deckel); laut am Ereignis, beim Namen
+        const faden = fr && this._nebenFaeden ? this._nebenFaeden.get("fern") : null;
+        if (fr && fr.flug + (fr.editFlug | 0) > (faden ? faden.pending.size : 0))
+            this._bruchMelden(
+                "HORIZONT: der Fern-Ring zählt eine Bestellung im Flug, die der Fern-Faden nicht trägt — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie"
+            );
         o.wald =
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
