@@ -4250,6 +4250,7 @@ function kostenMessen() {
             budget: L.budget[kind],
             stufen: L.kindStages[kind],
             bauen: laborGestaltDerStufe,
+            renderer: () => renderer,
             titel: "KOSTEN JE STUFE · " + kind,
             quelle:
                 "gemessen an der Labor-Gestalt je Stufe (dieselben Dials, derselbe Same) gegen die Budget-Zeile des Kerns (PORTAL_RENDER_CONFIG.lod.budget." +

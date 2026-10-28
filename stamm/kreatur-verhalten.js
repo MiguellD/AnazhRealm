@@ -2050,7 +2050,11 @@ class AnazhRealm_kreatur_verhalten {
         const dx = player.x - creature.position.x;
         const dz = player.z - creature.position.z;
         const dist = Math.hypot(dx, dz);
-        if (dist <= haltDist) return out.set(0, 0, 0);
+        if (dist <= haltDist) {
+            // DAS WESEN ERINNERT, WEM ES FOLGTE (KI K3): angekommen beim Spieler, einmal je Auftrag — das Gespräch liest es
+            if (!task.erinnert) ((task.erinnert = true), this._creatureRemember(creature, "gefolgt", {}));
+            return out.set(0, 0, 0);
+        }
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
         return this._kreaturZiel(out, dx, dz, dist - haltDist, speed, creature);
@@ -2511,7 +2515,8 @@ class AnazhRealm_kreatur_verhalten {
         const hasPending =
             Array.isArray(this.state._pendingCreatureSnapshots) && this.state._pendingCreatureSnapshots.length > 0;
         if (headless || hasPending) {
-            this.spawnCreatures(count);
+            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`); der Restore gießt laut, wo das Memo fehlt
+            this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures(count));
             return;
         }
         this.clearCreatures();

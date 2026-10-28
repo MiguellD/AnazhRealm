@@ -339,9 +339,10 @@ class AnazhRealm_klang {
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
             sonne: this._sonnenRichtung().y, // die Sonnenhöhe (sin) der EINEN Tag-Achse, mit der Neigung der Bahn
-            // die Luft am Ohr (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt — die
-            // Grillen schweigen über dem gefrorenen Bergsee
-            temperatur: this._temperaturAt(pm.position.y, 0),
+            // die Wärme der Grillen (stoffe.K3): das EINE Temperatur-Feld an der Höhe des Spielers zu Saison und Uhr der Welt, mit
+            // der Trägheit ihres Lebensraums (klang:UMWELT.stimmen.grille.traegTage, der Boden ihrer Röhre) — die Sommernacht der
+            // Wiese zirpt, über dem gefrorenen Bergsee schweigen sie
+            temperatur: this._temperaturAt(pm.position.y, AnazhRealm._umweltGesetz().UMWELT.stimmen.grille.traegTage),
             voegel,
             ufer,
             fluss,

@@ -830,11 +830,7 @@ function laborLaubGegenlicht(o) {
             }
         // das Bild je Lage (sRGB, Rest magenta; WebGL liest von unten)
         const png = (px) => {
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const cx = cv.getContext("2d");
-            const img = cx.createImageData(W, H);
+            const img = { data: new Uint8ClampedArray(W * H * 4) };
             const enc = (v) =>
                 Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
             for (let y = 0; y < H; y++)
@@ -847,8 +843,7 @@ function laborLaubGegenlicht(o) {
                     img.data[q + 2] = da ? enc(px[i + 2]) : 255;
                     img.data[q + 3] = 255;
                 }
-            cx.putImageData(img, 0, 0);
-            return cv.toDataURL("image/png");
+            return window.__png(img.data, W, H);
         };
         return {
             bilder: o.bilder ? { gegen: png(ge), auf: png(au) } : undefined,

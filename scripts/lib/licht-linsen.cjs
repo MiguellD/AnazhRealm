@@ -47,11 +47,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         dunkR = rest.filter((p) => Y(p) < med);
     const yAll = pix.map(Y).sort((a, b) => a - b);
     const q = (f) => (yAll.length ? +yAll[Math.min(yAll.length - 1, Math.floor(f * yAll.length))].toFixed(3) : null);
-    const cv = document.createElement("canvas");
-    cv.width = W;
-    cv.height = H;
-    const ctx = cv.getContext("2d");
-    const img = ctx.createImageData(W, H);
+    const img = { data: new Uint8ClampedArray(W * H * 4) };
     for (let i = 0; i < W * H; i++) {
         const o = i * 4;
         // Die Zeilen des Ziels laufen von unten nach oben (WebGL) bzw. oben nach unten (WebGPU) — das Bild ist nur
@@ -64,7 +60,6 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
             img.data[o + c] = Math.round(255 * srgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
         img.data[o + 3] = 255;
     }
-    ctx.putImageData(img, 0, 0);
     return {
         name,
         pixel: pix.length,
@@ -73,7 +68,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         hell: fmt(mittel(hellR), hellR.length),
         dunkel: fmt(mittel(dunkR), dunkR.length),
         Yq: [q(0.05), q(0.25), q(0.5), q(0.75), q(0.95)].join("/"),
-        png: cv.toDataURL("image/png"),
+        png: window.__png(img.data, W, H),
     };
 }
 
@@ -669,6 +664,7 @@ function albedoSicht(opts) {
 
 // DAS ZIEL DER FAMILIE (Halb-Float W × H; Albedo-Sicht, Licht-Bilanz, Nah-Fern und Laub lesen es): `zeichne(cam)` die Szene
 // hinein, `lies()` dicht als Float32 (die Zeilen liegen auf 256 Byte, 8 Byte je Pixel), `bundles()` frischt jede Bündel-Gruppe
+// (`window.__bundlesNeu`, welt-boot)
 function linsenZiel(W, H) {
     const T = window.THREE,
         { renderer: rend, scene: sc } = window.anazhRealm.state,
@@ -689,10 +685,7 @@ function linsenZiel(W, H) {
                 s = px.length > W * 4 * H ? Math.ceil(W / 32) * 128 : W * 4;
             return Float32Array.from({ length: W * 4 * H }, (_x, i) => T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]));
         },
-        bundles: () =>
-            sc.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            }),
+        bundles: window.__bundlesNeu, // das EINE Bündel-Neu der Seite (welt-boot)
         // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
         // Pipeline asynchron und zeichnet nichts, und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren
         // Frame, bis nichts mehr baut — dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs). Die
@@ -881,14 +874,7 @@ function tagKurve(o) {
                     Y: +lum(s.slice(1), 1 / n).toPrecision(4),
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
-                if (o.png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    const ctx = cv.getContext("2d");
-                    const img = ctx.createImageData(W, H);
-                    img.data.set(u8.subarray(0, W * H * 4));
-                    ctx.putImageData(img, 0, 0);
-                    z.png = cv.toDataURL("image/png");
-                }
+                if (o.png) z.png = window.__png(u8, W, H);
                 zeilen.push(z);
             }
         } finally {
@@ -1614,11 +1600,7 @@ function laubGegenlicht(opts) {
             await zl.ruhe(cam, wer);
             for (let k = 0; k < 3; k++) zl.zeichne(cam);
             const px = await zl.lies();
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const cx = cv.getContext("2d");
-            const img = cx.createImageData(W, H);
+            const img = { data: new Uint8ClampedArray(W * H * 4) };
             const enc = (v) =>
                 Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
             const Yp = new Float32Array(W * H).fill(-1),
@@ -1641,8 +1623,7 @@ function laubGegenlicht(opts) {
                     }
                     img.data[o + 3] = 255;
                 }
-            cx.putImageData(img, 0, 0);
-            return { Yp, Cp, png: cv.toDataURL("image/png") };
+            return { Yp, Cp, png: window.__png(img.data, W, H) };
         };
         try {
             for (const m of alle) m.visible = laub.includes(m);
@@ -2622,11 +2603,7 @@ function naesseSicht(o) {
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
-            png: o.png ? [klar, frisch, nass].map((u8) => {
-                const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
-                return cv.toDataURL("image/png");
-            }) : undefined,
+            png: o.png ? [klar, frisch, nass].map((u8) => window.__png(u8, W, H)) : undefined,
         };
     })();
 }
@@ -2774,11 +2751,7 @@ function kontaktSicht(o) {
                     breiten.sort((x, y) => x - y);
                     p[ebene] = { halbschattenCm: breiten.length ? +breiten[breiten.length >> 1].toFixed(1) : null, kanten: 2 * breiten.length, von };
                 }
-                if (png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(png, (q, i) => (i % 4 === 3 ? 255 : q)), W, H), 0, 0);
-                    p.png = cv.toDataURL("image/png");
-                }
+                if (png) p.png = window.__png(png, W, H);
             }
         } finally {
             [dl.intensity, PU.bloomStrength.value, cam.fov, st.playerMesh.visible] = [I0, bloom0, fov0, true];

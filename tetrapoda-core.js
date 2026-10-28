@@ -2383,6 +2383,9 @@
     // um zulauf schmaler; sie endet bei ende + endeSpanne × Hash der Länge; die Schalen unter wolle decken, wo die Dichte
     // über wolleAb liegt. Ton Wurzel → Spitze = Ton × (wurzel → spitze) — gemessen V18.497 (Fell-Linse 4 m, 0,55 → 1,1
     // las 28,1 = Parität zur Haut). Bis K45 standen die Zahlen als Literale im Stamm (AnazhRealm.FELL_SCHALE + TSL).
+    // DER STRICH (haar.K1): das Haar liegt — die Locke ist flächentreu längs der Legerichtung gestreckt (√strich längs, 1/√strich
+    // quer); die Legerichtung liest der Stoff aus der Schale selbst (der Teil von Lage − Wurzel quer zur Normale: der Kamm des
+    // Ofens, Lean ∝ t²). Bis haar-fell-soll war die Locke rund: das Fell las als Filz, Strich-Kohärenz 0,28 gegen die REF 0,54.
     var FELL_SCHALE = Object.freeze({
         wurzel: 0.55,
         spitze: 1.1,
@@ -2396,6 +2399,7 @@
         endeSpanne: 0.45,
         wolle: 0.34,
         wolleAb: 0.05,
+        strich: 4,
     });
 
     // ════════════════════════════════════════════════════════════════════

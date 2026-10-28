@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullSeite, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
@@ -36,6 +36,7 @@ const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const argv = process.argv.slice(2);
 const opt = require("./lib/welt-boot.cjs").argOpt; // der EINE Argument-Leser
 const SELBSTTEST = argv.includes("--selftest");
+const ECHT = argv.includes("--echt");
 const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
 const ABDRUCK = opt("--abdruck", null);
 const JSON_AUS = opt("--json", null);
@@ -494,7 +495,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
 
 // TEIL S (Lehre 14, B-K2): kein Chunk-Stoff im Haupt-Faden vor dem Ack des Fadens. Der Ack hängt, der Strom fragt den
 // Spieler-Chunk in L3 und die Dichte: Soll pending, kein voller Stand (`voxelWorkerStateGen`), die Dichte kommt, und der Boot
-// meldete keinen VOXEL-FADEN-Bruch. DIE REIHE (streaming.K5, Lehre 24): der Auftrag geht im Ruf hinaus (`sofort`) — wartet er
+// meldete keinen Bau am Faden vorbei („FADEN-UMGANGEN", `_fadenUmgangen`). DIE REIHE (streaming.K5, Lehre 24): der Auftrag geht im Ruf hinaus (`sofort`) — wartet er
 // einen Mikro-Takt, überholt ihn eine Freigabe im selben Takt (`zellen-frei`), das Wasser-Blatt fragt nach, und der Main klont
 // die Zellen des Fadens zurück (an 607d0c73 0,27 MB je Minute Fahrt). `urform` (Selbsttest): Stufe 3, ein init vor dem Ack und
 // der wartende Auftrag (die Form bis sk5-kopie).
@@ -519,7 +520,7 @@ async function strom(page, urform) {
         delete w.postMessage;
         delete r._voxelFadenAuftrag;
         const da = (await d).length > 0; // der Auftrag reist hinter dem init, der hängende Ack hält ihn nie
-        const bruch = [...(r._bruchBuch || new Map()).keys()].filter((t) => t.startsWith("VOXEL-FADEN")).length;
+        const bruch = [...(r._bruchBuch || new Map()).keys()].filter((t) => t.startsWith("FADEN-UMGANGEN")).length;
         return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${s.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch} · Reihe ${reihe}`;
     }, urform);
 }
@@ -1683,16 +1684,16 @@ async function gebaut(page) {
 
 // ── DER FADEN TRÄGT DIE BYTES (`--faden`, Streaming H3) ──
 // K4: eine Hydrosphäre (Heimat, Kachel) oder ein Feld des Staus (`waterStau`, der Damm am Fluss), das nicht als Faden-Nachricht
-//     kam, und ein Bau im Haupt-Faden (Chunk-Stoff `_buildVoxelChunkData`, Guss aus `BAKERS_BY_KIND`) außerhalb von `FADEN_SYNC`
-//     ist ROT beim Namen des Rufers (über der Bau-Kette `_rebuildVoxelChunk` → `_acquireVoxelChunkBuild`) — auch in den sechs
-//     echten Bau-Klicks der Fahrt (bau-faden: bis dahin baute jeder seinen Fußabdruck synchron, `_syncRebuildEditFootprint`,
-//     215 ms je Klick); ein Takt des Staus (`_stauFelder`) je Damm-Edit über 8 ms im Haupt-Faden ist ebenso ROT.
+//     kam, ist ROT beim Namen des Rufers; jeden Bau im Haupt-Faden (Chunk-Stoff, Guss des Bäckers) zählt das Spiel selbst
+//     (`_fadenUmgangen`: je Sync-Stelle in `_syncBau`, sonst laut im Buch „FADEN-UMGANGEN") — die Linse liest den Zähler nach
+//     der Ankunft, 2 min Gang, einer Minute Fahrt mit sechs echten Bau-Klicks (bau-faden: bis dahin baute jeder seinen
+//     Fußabdruck synchron, 215 ms je Klick) und dem Damm; ein Takt des Staus (`_stauFelder`) je Damm-Edit über 8 ms ist ROT.
 // K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
-//   --faden [--selftest]   ein injizierter Hydro-Bau, synchroner Fußabdruck, ein Stau-Feld im Haupt-Faden und Klon (3 MB tief
-//                          in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen ROT beim Namen.
-const FADEN_SYNC = ["spawnArchitecture", "_drainDirtyVoxelChunks", "init", "_bootDeferCreatures", "wasserStrom"];
+//   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
+//                          Stau-Feld im Haupt-Faden und Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen
+//                          ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen, da) {
     if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
@@ -1715,9 +1716,9 @@ function fadenHuelle(klonBytes) {
         return roh(m, tr);
     };
 }
-function fadenSeite(bytesQ, huelleQ, sync) {
+function fadenSeite(bytesQ, huelleQ) {
     const klonBytes = new Function("return " + bytesQ)();
-    const F = (window.__faden = { fenster: "boot", t: {}, faeden: [], hydro: { faden: 0, rot: [] }, bau: { sync: 0, rot: [] }, klick: [], stau: { faden: 0, rot: [], ms: 0 } });
+    const F = (window.__faden = { fenster: "boot", t: {}, faeden: [], hydro: { faden: 0, rot: [] }, klick: [], stau: { faden: 0, rot: [], ms: 0 } });
     Error.stackTraceLimit = 40; // die Kette bis zur Sync-Stelle (V8 hält sonst 10 Rahmen)
     const von = new WeakSet();
     const bytes = new WeakSet();
@@ -1726,8 +1727,8 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         w[art][k] = (w[art][k] || 0) + b;
     };
     // der Rufer: der erste Rahmen aus dem Stamm (der Vendor ist nie der Täter), sonst der erste benannte außerhalb dieser Haken
-    // die Rahmen dieser Haken und der Bau-Kette (`_rebuildVoxelChunk` → `_acquireVoxelChunkBuild`) sind nie der Täter
-    const kette = /^(rufer|pruefe|set|zaehle|fadenBau|fadenGuss|kopie|construct|zu|_acquireVoxelChunkBuild|_rebuildVoxelChunk)$/;
+    // die Rahmen dieser Haken sind nie der Täter
+    const kette = /^(rufer|pruefe|set|kopie|construct|zu)$/;
     const rufer = () => {
         const z = new Error().stack.split("\n").slice(1);
         const n = (l) => ((n) => n.slice(n.lastIndexOf(".") + 1))((/at (?:new )?([^\s(]+)/.exec(l) || [])[1] || "");
@@ -1868,7 +1869,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
         K.prototype.constructor = P;
         window[n] = P;
     }
-    // K4: woher kommt jede Hydrosphäre, wer baut Chunk-Stoff im Haupt-Faden
+    // K4: woher kommt jede Hydrosphäre
     const pruefe = (wo, h, Z = F.hydro) => {
         if (!h || typeof h !== "object") return;
         if (von.has(h)) Z.faden++;
@@ -1905,33 +1906,14 @@ function fadenSeite(bytesQ, huelleQ, sync) {
             stau = v;
         });
         const P = Object.getPrototypeOf(r);
-        // ein Bau im Haupt-Faden: an einer Sync-Stelle oder Test-Naht (ein Rahmen trägt ihren Namen) gezählt, sonst ROT
-        const zaehle = (was) => {
-            const namen = new Error().stack.split("\n").map((l) => ((/at (?:new )?\S*?([\w$]+) \(/.exec(l) || [])[1]));
-            if (sync.some((n) => namen.includes(n))) F.bau.sync++;
-            else F.bau.rot.push(`${was} · ${rufer()}`);
-        };
-        // der Guss des Bäckers im Haupt-Faden (der Ofen verfehlte sein Memo); `_ofenAssembleAsset` ist Verbrauch
-        const [bau, B] = [P._buildVoxelChunkData, globalThis.BAKERS_BY_KIND];
         const stauTakt = P._stauFelder;
-        if (typeof bau !== "function" || !B || !B.kreatur || !B.koerper || !stauTakt) return (F.blind = "die Bau-Haken greifen nicht");
+        if (!stauTakt || !P._syncBauten) return (F.blind = "kein Zähler im Spiel");
         // der Takt des Staus je Damm-Edit (Lehre 14): sein längster Ruf im Fenster „damm" ist die Zahl, über 8 ms ROT
         P._stauFelder = function stauZeit() {
             const t0 = performance.now();
             stauTakt.call(this);
             if (F.fenster === "damm") F.stau.ms = Math.max(F.stau.ms, performance.now() - t0);
         };
-        P._buildVoxelChunkData = function fadenBau(...a) {
-            zaehle(`Chunk ${a[0]},${a[1]}`);
-            return bau.apply(this, a);
-        };
-        for (const art of ["kreatur", "koerper"]) {
-            const guss = B[art];
-            B[art] = function fadenGuss(...a) {
-                zaehle(`Guss ${a[1]}`);
-                return guss.apply(this, a);
-            };
-        }
         F.haken = true;
     };
     let real;
@@ -1943,7 +1925,7 @@ function fadenSeite(bytesQ, huelleQ, sync) {
 }
 async function faden(page, url) {
     // KALT: der Ursprung ohne Welt räumt Abbild und Platten, dann der erste Boot
-    await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle), FADEN_SYNC);
+    await page.evaluateOnNewDocument(fadenSeite, String(klonBytes), String(fadenHuelle));
     await page.goto(url.replace("index.html", "cores.manifest.json"), { timeout: 60000 });
     await page.evaluate(() =>
         Promise.all(
@@ -1953,9 +1935,10 @@ async function faden(page, url) {
         ).then(() => localStorage.clear())
     );
     await page.goto(url, LADEN);
-    // die Fahrt in Takten (K-WANDUHR): eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten
-    const takt = (n) =>
-        page.evaluate(async (n) => {
+    // Gang und Fahrt in Takten (K-WANDUHR, 30 Takte je s): 2 min Gang bei 2 m/s = 240 m nach Norden in 3 600 Takten, dann
+    // eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten mit den Bau-Klicks
+    const takt = (n, dx = 960, dz = 0) =>
+        page.evaluate(async (n, dx, dz) => {
             await window.__weltDa(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function");
             const r = window.anazhRealm;
             const p = r.state.playerMesh.position;
@@ -1967,15 +1950,18 @@ async function faden(page, url) {
             r.state.pitch = -Math.PI / 2; // der Blick senkrecht nach unten: ein Bau-Klick setzt den Block unter den Spieler
             for (let k = 0, t; k < n; k++) {
                 await window.__seitenTakt();
-                p.x += 960 / n;
+                p.x += dx / n;
+                p.z -= dz / n;
                 const y = r._voxelSurfaceY(p.x, p.z);
                 if (Number.isFinite(y)) p.y = y + 1.8;
-                if (k % 300 === 150 && ((t = performance.now()), r.tryMousePlace())) window.__faden.klick.push(performance.now() - t);
+                if (dx && k % 300 === 150 && ((t = performance.now()), r.tryMousePlace())) window.__faden.klick.push(performance.now() - t);
             }
-            return n ? 60000 : performance.now();
-        }, n);
+            return n ? (n / 30) * 1000 : performance.now();
+        }, n, dx, dz);
     const fenster = async (name) => page.evaluate((n) => (window.__faden.fenster = n), name);
     const dauer = { boot: await takt(0) };
+    await fenster("gang");
+    dauer.gang = await takt(3600, 0, 240);
     await fenster("fahrt");
     dauer.fahrt = await takt(1800);
     // K4 STAU (gelaende.K2, Lehre 14): der Damm des Verbs am Fluss nächst der Mess-Wiese (`__wasserDamm`, je 3 m eine Säule)
@@ -2001,7 +1987,10 @@ async function faden(page, url) {
             })();
             (function injizierterFussabdruck() {
                 const p = r.state.lastPlayerVoxelChunk;
-                r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: true });
+                r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: "injiziert" });
+            })();
+            (function injizierterGuss() {
+                r._ofenMenschTemplate({ t: t0 }, 0, 0, 3, true);
             })();
             const w = new Worker(
                 URL.createObjectURL(
@@ -2023,7 +2012,8 @@ async function faden(page, url) {
             return performance.now() - t0;
         });
     }
-    const F = await page.evaluate(() => JSON.parse(JSON.stringify(window.__faden)));
+    // K4 BAU: der Zähler des Spiels (`_fadenUmgangen`) — je Sync-Stelle `_syncBau`, sonst das Buch „FADEN-UMGANGEN"
+    const F = await page.evaluate(() => JSON.parse(JSON.stringify({ ...window.__faden, bau: window.anazhRealm._syncBauten() })));
     const mb = (b) => (b / 1e6).toFixed(2);
     const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
     const proMin = {};
@@ -2054,22 +2044,23 @@ async function faden(page, url) {
     for (const [name, Z] of [["Hydrosphären", F.hydro], [`Stau-Felder (Damm, ${stauTakt})`, F.stau]])
         console.log(`  ${name}: ${Z.faden} aus dem Faden · ${Z.rot.length} im Haupt-Faden${Z.rot.length ? " — " + Z.rot.join(" | ") : ""}`);
     console.log(
-        `  Bauten im Haupt-Faden (Chunk-Stoff, Guss): ${F.bau.sync} an Sync-Stellen und Test-Nähten · ${F.bau.rot.length} sonst${F.bau.rot.length ? " — " + F.bau.rot.slice(0, 6).join(" | ") : ""}`
+        `  Bauten im Haupt-Faden (Chunk-Stoff, Guss): ${summe(F.bau.stellen)} an Sync-Stellen und Test-Nähten · ${F.bau.sonst} sonst ${JSON.stringify(F.bau.stellen)}${F.bau.rot.length ? " — " + F.bau.rot.slice(0, 6).join(" | ") : ""}`
     );
-    const k4 = F.hydro.rot.concat(F.bau.rot, F.stau.rot).filter((x) => !/injizierte/.test(x));
+    const k4 = F.hydro.rot.concat(F.stau.rot, F.bau.rot).filter((x) => !/injizierte/.test(x)).reduce((a, x) => a + (parseInt(x) || 1), 0);
     console.log(
         `  Bau-Klicks in der Fahrt: ${F.klick.length}, die Hand ${F.klick.map((m) => m.toFixed(1)).join(" · ")} ms`
     );
     const blind =
         F.blind ||
         (!F.haken && "die Haken sitzen nicht") ||
+        (F.bau.voll && "das Buch ist voll") ||
         (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen") ||
         (!summe((F.t.fahrt || {}).empfang) && "kein Empfang in der Fahrt") ||
         (F.klick.length < 6 && "die Bau-Klicks der Fahrt bauten nicht") ||
         (!F.stau.faden && "kein Feld des Staus aus dem Faden");
-    let rot = !!blind || k4.length > 0 || proMin.fahrt > FADEN_SOLL;
+    let rot = !!blind || k4 > 0 || proMin.fahrt > FADEN_SOLL;
     if (blind) console.log(`  ⛔ BLIND: ${blind}`);
-    if (k4.length) console.log(`  ⛔ K4: ${k4.length} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
+    if (k4) console.log(`  ⛔ K4: ${k4} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
     if (proMin.fahrt > FADEN_SOLL)
         console.log(`  ⛔ K5: ${mb(proMin.fahrt)} MB/min am Empfang in der Fahrt > ${mb(FADEN_SOLL)}`);
     if (SELBSTTEST) {
@@ -2079,13 +2070,14 @@ async function faden(page, url) {
         const sieht =
             nennt(F.hydro.rot, "injizierteHydro") &&
             nennt(F.bau.rot, "injizierterFussabdruck") &&
+            nennt(F.bau.rot, "injizierterGuss") &&
             nennt(F.stau.rot, "injiziertesStauFeld") &&
             klon >= 5.9e6 &&
             (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
             summe(S.kopie) >= 5.9e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
     }
@@ -2098,7 +2090,10 @@ async function faden(page, url) {
 hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
     await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ art: "standard", frist: 900000 });
+    // `--faden --echt`: das Fenster an der echten GPU (die Adapter-Zeile `[linse-gpu]`), jede andere Probe am Null-Renderer
+    const browser = await starteBrowser({ art: ECHT ? "echt" : "standard", headless: !ECHT, frist: 900000 });
+    const page = await browser.newPage();
+    if (!ECHT) await nullRenderer(page);
     // der EINE Abdruck der Seite (SHA-256 eines Felds, hex) für Probe und Studio
     await page.evaluateOnNewDocument(() => {
         window.__sha = async (a) =>

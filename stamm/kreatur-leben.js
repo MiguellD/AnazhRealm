@@ -507,7 +507,7 @@ class AnazhRealm_kreatur_leben {
             label: meta.label || bp.label || blueprintName,
         });
         // DAS WESEN ERINNERT, WER ES FÜTTERTE (Ökologie K3): die Gabe senkt die Furcht vor dem Spieler (`_kreaturFurchtErinnert`)
-        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName });
+        if (ok) this._creatureRemember(creature, "gefuettert", { gabe: blueprintName, label: bp.label });
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 
@@ -2986,6 +2986,31 @@ AnazhRealm.CREATURE_NAME_POOL = Object.freeze([
     "Toren",
     "Tara",
 ]);
+// DIE ERINNERUNG IN WORTEN (KI K3): je Typ von `_creatureRemember` EIN Satz im Präteritum ohne Subjekt (1. und 3. Person
+// gleich) — der Persona-Prompt liest „ich …", die Geschichte im Hof „… vor 5s"; Namen reisen als Datum. Bis KI K3 kannte der
+// Prompt 8 von 18 Typen: geschlagen und gefüttert (die Furcht des Wesens liest sie) fielen still aus dem Gespräch.
+AnazhRealm.ERINNERUNG_SATZ = Object.freeze({
+    geschlagen: () => "wurde vom Schöpfer geschlagen",
+    gefuettert: (c) => AnazhRealm._datum`bekam vom Schöpfer ${c.label || c.gabe}`,
+    gefolgt: () => "folgte dem Schöpfer",
+    gathered: (c) => AnazhRealm._datum`sammelte ${c.material || c.blueprintName}`,
+    built: (c) => AnazhRealm._datum`baute ${c.blueprint}`,
+    delivered: () => "übergab dem Schöpfer Material",
+    took_materials: (c) => AnazhRealm._datum`nahm Material für ${c.blueprint}`,
+    no_material: (c) => AnazhRealm._datum`fand kein ${c.material}`,
+    no_blueprint: (c) => AnazhRealm._datum`kannte den Bauplan ${c.blueprint} nicht`,
+    no_inventory_for_build: () => "bekam vom Schöpfer kein Material",
+    no_water: () => "fand kein Wasser",
+    drank: () => "trank am Ufer",
+    spoken: () => "sprach mit dem Schöpfer",
+    spoke_proactive: () => "sprach den Schöpfer von selbst an",
+    spoken_rare_event: () => "sprach über einen bedeutsamen Moment",
+    proposed_action: () => "schlug dem Schöpfer eine Tat vor",
+    proposal_blocked: () => "schlug eine Tat vor, die nicht geschah",
+    rejected_action: () => "schlug eine Tat vor, die der Schöpfer verwarf",
+    accepted_action: () => "sah meinen Vorschlag vom Schöpfer angenommen",
+    auto_executed_action: () => "veränderte die Welt für den Schöpfer",
+});
 // W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
 // Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;

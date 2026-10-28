@@ -203,8 +203,10 @@ function ofenMessen(page, opts) {
             const fehler = [];
             const budget = [];
             r.log = function (m, lvl) {
-                // Der Budget-Bruch (Studio-Vertrag B2c: die Stufe über ihrer Zeile) ist ein eigenes Urteil — der Guss steht.
-                if (lvl === "ERROR") (/^BUDGET-BRUCH /.test(String(m)) ? budget : fehler).push(String(m).slice(0, 200));
+                // Der Budget-Bruch (Studio-Vertrag B2c: die Stufe über ihrer Zeile) ist ein eigenes Urteil — der Guss steht;
+                // der Guss im Haupt-Faden („FADEN-UMGANGEN", streaming.K4) ebenso
+                if (lvl === "ERROR" && !/^FADEN-UMGANGEN/.test(m))
+                    (/^BUDGET-BRUCH /.test(String(m)) ? budget : fehler).push(String(m).slice(0, 200));
                 return P.log.apply(this, arguments);
             };
             const hatte = Object.prototype.hasOwnProperty.call(ws.studioOv, preset);

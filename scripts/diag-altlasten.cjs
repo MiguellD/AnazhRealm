@@ -1502,8 +1502,7 @@ const ENTSORGUNG_BESITZER = {
 };
 // Die Entsorgungen des Stamms beim Namen: [{ methode, art: "geometry" | "material", zeile, text }].
 function entsorgungen(srcRoh) {
-    const acorn = require("acorn");
-    const ast = acorn.parse(srcRoh, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    const ast = stammLib.ast(srcRoh); // der EINE Parser des Stamms (je Text einmal)
     const ueberall = (n, f) => {
         f(n);
         kinder(n, (c) => ueberall(c, f));
@@ -1583,7 +1582,12 @@ function entsorgungen(srcRoh) {
             else if ((p === "_queueDispose" || p === "_queueGeometryDispose") && n.arguments[0])
                 art = artVon(n.arguments[0], bind);
             if (art)
-                funde.push({ methode, art, zeile: n.loc.start.line, text: srcRoh.slice(n.start, n.end).slice(0, 90) });
+                funde.push({
+                    methode,
+                    art,
+                    zeile: stammLib.zeileVon(srcRoh, n.start),
+                    text: srcRoh.slice(n.start, n.end).slice(0, 90),
+                });
         });
     };
     const besuche = (n) => {
@@ -3611,8 +3615,7 @@ function main() {
         // Stoff-Bauers), jeder an seiner Zeile; (3) eine tote Zeile der bewussten Zweige ist rot; (4) ein toter
         // Fehler-Marker in einem Prüf-Skript ist rot; der Stamm heute steht ohne Fang. Zwei Läufe der Wand.
         {
-            const acorn = require("acorn");
-            const ast = acorn.parse(stamm, { ecmaVersion: "latest", sourceType: "script", locations: true });
+            const ast = stammLib.ast(stamm);
             const brueche = [];
             const geh = (n) => {
                 let k = null;
@@ -3642,7 +3645,7 @@ function main() {
                     ort = n.right;
                 }
                 if (k && /this\._(stoffBruch|blendeBruch)\(/.test(stamm.slice(k.start, k.end)))
-                    brueche.push({ k, zeile: ort.loc.start.line });
+                    brueche.push({ k, zeile: stammLib.zeileVon(stamm, ort.start) });
                 kinder(n, geh);
             };
             geh(ast);
