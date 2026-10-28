@@ -34,7 +34,7 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
@@ -1432,14 +1432,9 @@ hauptLauf(async () => {
             `    ${g.padEnd(11)} Griffe je Ruf an die ferne Menge: Takt ${Nz.takt[g]} · main ${Nz.orakel[g]} (${S.naehe.fern[g]} ihres Namens)`
         );
     const rot = urteil(S, stamm);
-    if (rot.length) {
-        console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\nGRÜN — der Brennglas-Takt urteilt byte-gleich wie die Schleife über den Bestand und fasst nur seine Betroffenen an; " +
+    wandEnde(
+        rot,
+        "der Brennglas-Takt urteilt byte-gleich wie die Schleife über den Bestand und fasst nur seine Betroffenen an; " +
             "die Klasse fragt das Verzeichnis."
     );
-    process.exit(0);
 });

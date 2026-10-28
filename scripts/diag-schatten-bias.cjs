@@ -28,7 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1342,13 +1342,5 @@ hauptLauf(async () => {
     for (const e of S.echt || []) console.log(`  echt: ${JSON.stringify(e)}`);
     console.log(`  Bilder: ${OUT}`);
     const rot = urteil(S, Q);
-    if (rot.length) {
-        console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\nGRÜN — kleine Werfer werfen ihren Schatten, große Flächen tragen keine Akne; der Bias ist das Gesetz der Kaskade."
-    );
-    process.exit(0);
+    wandEnde(rot, "kleine Werfer werfen ihren Schatten, große Flächen tragen keine Akne; der Bias ist das Gesetz der Kaskade.");
 });

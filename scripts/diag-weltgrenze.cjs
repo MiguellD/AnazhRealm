@@ -41,7 +41,7 @@
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, opt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");

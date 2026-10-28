@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, opt, booteWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");

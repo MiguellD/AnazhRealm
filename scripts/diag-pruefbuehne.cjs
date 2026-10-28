@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, pngDatei, opt, booteWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 

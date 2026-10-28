@@ -740,6 +740,7 @@ class AnazhRealm_kreatur_leben {
         if (typeof creature.userData.hp !== "number") creature.userData.hp = stats.hpMax; // lazy-init (Restore/alt)
         const dealt = this._ruestungDaempft(amount, stats.defense);
         creature.userData.hp -= dealt;
+        if (opts.source === "player") this._bewohnerZeuge(creature.position); // wer es sieht, erinnert es (mensch.K5)
         if (creature.userData.hp <= 0) {
             this._creatureCombatDeath(creature, opts.source || "unknown");
             return { ok: true, dealt, killed: true };

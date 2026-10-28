@@ -27,7 +27,7 @@
 //   node scripts/diag-reconnect.cjs
 "use strict";
 const stammLib = require("./lib/stamm.cjs");
-const { hauptLauf, ROOT: root } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ROOT: root, wandEnde } = require("./lib/welt-boot.cjs");
 
 const stammSrc = stammLib.text(root);
 
@@ -631,12 +631,5 @@ hauptLauf(async () => {
         check("D Selbsttest: ein Hand-Setzer sieht ROT", !mitHand[0], mitHand[1]);
     }
 
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — ein Netz-Blip beendet die Ko-Präsenz nicht mehr still: der WS-Riss rejoint mit 1·2·4·…≤30 s + seeded Jitter (bewusstes close bleibt endgültig), der failed-Übergang heilt via restartIce+Re-Offer genau einmal je Flanke (Backoff dahinter), und der Nicht-Lockstep-pos-Pfad rendert butterweich aus dem 120-ms-Snapshot-Puffer."
-    );
-    process.exit(0);
+    wandEnde(errs, "ein Netz-Blip beendet die Ko-Präsenz nicht mehr still: der WS-Riss rejoint mit 1·2·4·…≤30 s + seeded Jitter (bewusstes close bleibt endgültig), der failed-Übergang heilt via restartIce+Re-Offer genau einmal je Flanke (Backoff dahinter), und der Nicht-Lockstep-pos-Pfad rendert butterweich aus dem 120-ms-Snapshot-Puffer.");
 });

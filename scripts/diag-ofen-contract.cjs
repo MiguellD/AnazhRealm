@@ -28,6 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
+const { selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const vm = require("vm");
@@ -338,13 +339,7 @@ function taeterRinde(sb) {
             s4.gebrochen > 0 && s4.gpu > 0 && !!s4.sha && s4.sha.startsWith(RINDE_SHA),
             `${s4.ms} ms`
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log(
-            "\n✅ SELBST-TEST GRÜN — ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen."
-        );
+        selbsttestEnde(errs, "ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.");
         process.exit(0);
     }
 
@@ -417,12 +412,5 @@ function taeterRinde(sb) {
         check
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Ofen-Vertrag steht: Tier und Mensch gießen je Stoff-Klasse × Gelenk, je Gelenk und je Beipack byte-gleich zum Golden, deterministisch und samen-invariant; Math.pow erreicht keine Klasse."
-    );
-    process.exit(0);
+    wandEnde(errs, "der Ofen-Vertrag steht: Tier und Mensch gießen je Stoff-Klasse × Gelenk, je Gelenk und je Beipack byte-gleich zum Golden, deterministisch und samen-invariant; Math.pow erreicht keine Klasse.");
 })();

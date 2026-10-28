@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 "use strict";
+const { wandEnde } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
@@ -540,13 +541,9 @@ function main() {
     if (d1.length !== 1 || !d1[0].includes("scripts/x.cjs trägt 4001") || d2)
         errs.push(`Selbsttest der Datei-Decke versagt (d1=${d1.length} d2=${d2})`);
 
-    if (errs.length) {
-        console.error("gate:betriebsgesetz ROT");
-        for (const e of errs) console.error("  - " + e);
-        process.exit(1);
-    }
-    console.log(
-        `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
+    wandEnde(
+        errs,
+        `gate:betriebsgesetz — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
             `Wachstum ${gemessen.join(" · ")} · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + ` +
             `Wachstums-Wand + Zitat-Wand + Stripper-Wand (${stripperDateien} Skripte, EIN Stripper, Tafel) stehen (Doku: ${dokuZeile}) · Selbsttest feuert`
     );

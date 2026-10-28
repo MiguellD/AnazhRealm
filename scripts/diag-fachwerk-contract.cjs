@@ -53,7 +53,7 @@ const KERN = path.join(root, "fachwerk-core.js");
 require(KERN);
 const FC = globalThis.__fachwerkCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -967,12 +967,5 @@ function bogenLinse() {
     // 12) DER BOGEN IM VERBAND
     bogenLinse();
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
-    );
-    process.exit(0);
+    wandEnde(errs, "der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

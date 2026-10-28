@@ -24,7 +24,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -766,11 +766,7 @@ const VERHALTEN = [
 ];
 
 hauptLauf(async () => {
-    const errs = [];
-    const check = (name, ok, detail) => {
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok) errs.push(name);
-    };
+    const { errs, check } = pruefer();
     if (process.argv.includes("--selftest")) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
         // Ein Bruch, dessen Anker im Quelltext fehlt, läuft ins Leere: er bricht den Selbsttest beim Namen.
@@ -984,11 +980,7 @@ hauptLauf(async () => {
                 `lang ${v8.fadenMs && v8.fadenMs.lang} ms)`,
             ohneFaden !== schale && v8.faden === false
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Wand ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN — die Wand feuert auf jede injizierte Bruch-Klasse.");
+        selbsttestEnde(errs, "die Wand feuert auf jede injizierte Bruch-Klasse.");
         process.exit(0);
     }
     console.log("=== FLUSS-WAND — statisch ===");
@@ -1021,9 +1013,5 @@ hauptLauf(async () => {
         `  Boot: ${w.boot.posts} Aufträge · ${w.bootMB.toFixed(1)} MB Antworten · Karten ${JSON.stringify(w.karten)}`
     );
     for (const [n, ok, d] of urteilWelt(w)) check(n, ok, d);
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Gesetz(e) verletzt.`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.");
+    wandEnde(errs, "der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.");
 });

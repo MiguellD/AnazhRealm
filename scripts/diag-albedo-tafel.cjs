@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { statikServer, starteBrowser, hauptLauf, sleep, pngDatei, opt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -484,11 +484,7 @@ window.__bereit = true;
     }
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
-    if (rot.length) {
-        console.log(`⛔ DIE ALBEDO-WAND ist blind: ${rot.length} von ${tests.length} Selbsttests feuern nicht`);
-        process.exit(1);
-    }
-    console.log(`✅ SELBST-TEST: die Albedo-Wand feuert (${tests.length}/${tests.length})`);
+    selbsttestEnde(rot.map((x) => x.name), `die Albedo-Wand feuert (${tests.length}/${tests.length})`);
 }
 
 // Die gespeicherte Tafel als Messung (für das Urteil ohne GPU).
