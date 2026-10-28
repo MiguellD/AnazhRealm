@@ -406,13 +406,13 @@ function lauf(k) {
                 Object.assign(sprung, { t0: performance.now(), bau: r._syncBauten() });
             }
             messen = uhr.messen = true;
-            // der Sprung misst, bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dazu 1 s (Deckel `sek`)
-            for (let ende = performance.now() + k.sek * 1000; performance.now() < ende; ) {
-                await sleep(sprung ? 250 : ende - performance.now());
-                if (!sprung || sprung.stehtS) continue;
-                if (!r._weltSteht()) sprung.offen = true;
-                else if (sprung.offen) ende = (sprung.stehtS = performance.now()) + 1000;
+            // der Sprung misst in Bau-Ereignissen (`__deckel`), bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dann 1 s
+            if (sprung) {
+                for (const weiter = window.__deckel("der Sprung um 1 km"); weiter() && !(sprung.offen && r._weltSteht()); await sleep(250))
+                    sprung.offen ||= !r._weltSteht();
+                sprung.stehtS = performance.now();
             }
+            await sleep(sprung ? 1000 : k.sek * 1000);
             messen = uhr.messen = false;
             if (H) H.an = false;
             const haenger = H && {
