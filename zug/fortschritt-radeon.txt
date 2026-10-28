@@ -1213,3 +1213,4 @@
 2026-10-28 14:38:59 takt17-farm oekologie.K1#2 GRÜN 0.9 · 38/92
 2026-10-28 14:39:35 takt17-farm oekologie.K5#1 GRÜN 0.2 · 39/92
 2026-10-28 14:39:42 takt17-farm oekologie.K5#2 GRÜN 0.3 · 40/92
+2026-10-28 14:39:50 takt17-farm oekologie.K4#1 GRÜN 0.1 · 41/92
