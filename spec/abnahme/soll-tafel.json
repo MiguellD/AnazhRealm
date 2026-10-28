@@ -2534,7 +2534,7 @@
                 "name": "strich",
                 "werkzeug": "Station haar.K1#1 (werkbank bild --klasse '^tier:wolf$' --ist fell, 0,7 m und 4 m)"
             },
-            "quellen": ["tetrapoda-core.js", "stamm/kreatur-leben.js", "stamm/stoff-material.js"]
+            "quellen": ["tetrapoda-core.js", "foundry-core.js", "stamm/studio-bruecke.js"]
         },
         {
             "id": "haar",
@@ -2580,7 +2580,7 @@
                 },
                 "werkzeug": "Station haar.K2#1 (werkbank bild --gesicht 0.7 und -4 --spieler --ist haar)"
             },
-            "quellen": ["koerper-core.js", "stamm/koerper-leib.js", "stamm/stoff-material.js"]
+            "quellen": ["koerper-core.js", "stamm/koerper-leib.js", "stamm/studio-bruecke.js"]
         }
     ]
 }
