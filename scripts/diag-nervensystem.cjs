@@ -12,8 +12,7 @@
 //   E2 (AUF ALLEN WEGEN): je Weg der Bau-Hash der gezeigten Stufe — Werkstatt · KI-Satz (die Antwort der KI ein fester
 //     DSL-Text, das Prompt lehrt das Wort) · Foundry (build-asset L0–L2 = die gezeigten Stufen) · P2P (ein Mitspieler baut das
 //     Werk byte-gleich) — und der Atlas nennt die EINE Quelle.
-const {
-    statikServer,
+const { statikServer,
     starteBrowser,
     nullRenderer,
     startProc,
@@ -22,6 +21,7 @@ const {
     ROOT,
     hauptLauf,
     sleep,
+    wandEnde,
 } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 const fs = require("fs");
@@ -325,12 +325,6 @@ hauptLauf(async () => {
     const auf = e.wege.filter((w) => w.ok).length + (e.atlas === NEUN);
     check("E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle", auf === 5, `${auf}/5`);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt."
-    );
+    wandEnde(errs, "DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt.");
     process.exit(0);
 });

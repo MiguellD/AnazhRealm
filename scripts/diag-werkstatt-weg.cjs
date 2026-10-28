@@ -19,7 +19,7 @@
 //   --verben fährt NUR L-VERBEN, mit echtem Renderer (die Karte; Meisterkarte Bauen K5 Staffel 2 auf beiden Geräten).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, starteBrowser, nullRenderer } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, starteBrowser, nullRenderer, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -1681,10 +1681,6 @@ hauptLauf(async () => {
             `Statik ${vP.richtig}/10 · Wirkung ${5 - vP.wirkung.length}/5 — ${JSON.stringify(pm).slice(0, 2400)}${t.length ? " — Täter: " + t : ""}`
         );
     }
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — der Werkstatt-Weg trägt seine benannten Schnitte.");
+    wandEnde(errs, "der Werkstatt-Weg trägt seine benannten Schnitte.");
     process.exit(0);
 });

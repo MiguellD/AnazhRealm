@@ -944,7 +944,16 @@ function pruefer() {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
         if (!ok) errs.push(name);
     };
-    return { errs, check };
+    return { errs, check, wandEnde };
+}
+
+// DAS ENDE EINER WAND (die Klasse aus 33 Linsen): ROT mit Exit 1 und jeder Verletzung beim Namen, sonst der Grün-Satz.
+function wandEnde(errs, satz) {
+    if (errs.length) {
+        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
+        process.exit(1);
+    }
+    console.log("\n✅ GRÜN — " + satz);
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
@@ -1193,6 +1202,7 @@ module.exports = {
     pruefer,
     taeterFaelle,
     selbsttestEnde,
+    wandEnde,
     startProc,
     eigenePorte,
     sleep,
