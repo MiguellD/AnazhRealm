@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c A=$(cygpath -m "$1" 2> /dev/null || echo "$1"); HAUS_WELT_JSON="$A.gang" node scripts/diag-haus-welt.cjs --phasen=haus,start; echo "GANG EXIT $?"; HAUS_WELT_JSON="$A.bild" node scripts/diag-haus-welt.cjs --phasen=grund --bild; echo "BILD EXIT $?"; node -e 'const f = require("fs"), a = process.argv[1]; f.writeFileSync(a, JSON.stringify({ gang: JSON.parse(f.readFileSync(a + ".gang")), bild: JSON.parse(f.readFileSync(a + ".bild")) }))' "$A" siedlung-k1 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\ea07267e-gtx\siedlung.K1_2.json
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 26 Häuser, Start-Dorf 18/18 · Gier -11/81/103/168/11/-78/-170/102/102/168/-91/3/-13/81/-179/-96/180/-77/231/141/-39/-39/141/141/-39/141° · W1 Vorplatz über der Diele -0.36/-0.36/-0.36/-0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.36/-0.36/-0.37/-0.37/-0.36/-0.36/-0.36/-0.37/-0.37/-0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.37/-0.36 m · W2 Diele 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0 cm · W4c Überstand 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0 m · W5 Optik 100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/99.8/100 % · {"fern":{"x":212,"z":212},"W7":{"haeuser":24,"imBau":0,"zweitesDorf":30,"zweitesImBau":0}}
+  ❌ W10 Wand: haus_provenzalisch 0.48 · haus_italienisch 0.27 · haus_provenzalisch 0.4 m geklettert (Soll > 0,5)
+  1 Welten, 1 zugleich, 86 s
+❌ gate:haus-welt ROT (1)
+GANG EXIT 1
+[linse-gpu] nvidia/pascal
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[59077],"innen":[1.348,1.145,0.352,0.133,0.527,0.099,null,0.16,0.301,0.326,null,0.178,0.07,null,null,null,0.148,null],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":43,"gesperrt":false,"ohne":0,"slots":0,"haeuser":0,"reload":0,"zugOffen":false,"ausstattung":null,"verblasst":false,"ms":4}}
+  ❌ W10 Innen-Bild: 10 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.025670140140767263/0.19281514677069392 · haus_alpenchalet 0.01675129502237117/0.16964629460157538 · haus_schwarzwald 0.026424220034474873/undefined · haus_gotisch 0.016839104668214023/undefined · haus_alpenchalet 0.01741919079166659/0.24749251699689423 · haus_alpenchalet 0.03059051774743899/undefined · haus_alpenchalet 0.01834824743636766/undefined · haus_alpenchalet 0.028691697580376006/undefined · haus_schwarzwald 0.02941336794439479/0.19815681046398959 · haus_skandinavisch undefined/0.23657482230772042)
+  ❌ W9 Waise: blind — Start, Gründe, Sperre, Reload, Verblassen true,43,false,0,false
+  ❌ W9 Ausstattung: blind — kein Brunnen, keine Laterne
+  1 Welten, 1 zugleich, 219 s
+❌ gate:haus-welt ROT (3)
+BILD EXIT 1
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 23819 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
