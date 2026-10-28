@@ -29,13 +29,11 @@
 // byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Seit S1 Wände driften alle Transzendenten: pow
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
-const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsEnde } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
-const goldenDir = path.join(root, "spec/asset-contract/v5/golden");
-const goldenFile = path.join(goldenDir, "klingen.json");
+const goldenFile = path.join(root, "spec/asset-contract/v5/golden", "klingen.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 const KERN = path.join(root, "schmiede-core.js");
@@ -103,15 +101,7 @@ function buildCase(c) {
     );
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = {};
-    let determin = true;
-    for (const c of CASES) {
-        const f1 = fingerprint(buildCase(c));
-        const f2 = fingerprint(buildCase(c));
-        if (f1.sha256 !== f2.sha256) determin = false;
-        actual[caseKey(c)] = f1;
-    }
-    check(`Determinismus: jeder der ${CASES.length} Fälle baut doppelt byte-gleich`, determin);
+    const actual = doppeltGebaut(CASES, buildCase, check);
 
     // 2) Seed-Invarianz (cv:5-Semantik — s. Kopf).
     let seedInv = true;
@@ -147,25 +137,7 @@ function buildCase(c) {
     );
 
     // 6) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    if (!fs.existsSync(goldenFile) || process.env.MINT_FORCE === "1") {
-        fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(
-            goldenFile,
-            JSON.stringify(
-                { cv: 5, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall", cases: actual },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(
-            `  🧊 GOLDEN GEMINTET (${Object.keys(actual).length} Fälle) → ${path.relative(root, goldenFile)} — ab jetzt EINGEFROREN`
-        );
-    }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
-    check("Golden trägt cv:5 + alle Fälle", golden.cv === 5 && Object.keys(golden.cases).length === CASES.length);
-    const diffs = compare(golden, actual);
-    check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
-    for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
+    goldenWand(goldenFile, 5, actual, CASES.length, check);
 
     // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne
@@ -193,12 +165,5 @@ function buildCase(c) {
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
-    );
-    process.exit(0);
+    vertragsEnde(errs, "der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

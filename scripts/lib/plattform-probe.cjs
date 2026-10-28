@@ -386,7 +386,50 @@ function goldenSelbsttest(actual, check) {
     check("SELBST-TEST: objects-Drift wird erkannt", rot({ cases: actual }, t2, "objects"));
 }
 
+// DIE GOLDEN-WAND der Vertrags-Linsen (porta · schmiede · vehicle · fachwerk; je Linse eine eigene Kopie war ein Zwilling):
+// `doppeltGebaut` baut jeden Fall zweimal (Determinismus im Lauf) und gibt das Ist (Fingerabdruck je Schlüssel); `goldenWand`
+// mintet das Golden `datei` (cv, sha256 je Fall), wenn es fehlt (oder MINT_FORCE=1), sonst vergleicht sie byte-exakt —
+// Version, Zahl der Fälle (n) und jede Abweichung beim Namen.
+function doppeltGebaut(faelle, bau, check, schluessel = fallSchluessel) {
+    const ist = {};
+    let gleich = true;
+    for (const c of faelle) {
+        const [f1, f2] = [bau(c), bau(c)].map((g) => fingerabdruck(g));
+        gleich &&= f1.sha256 === f2.sha256;
+        ist[schluessel(c)] = f1;
+    }
+    check(`Determinismus: jeder der ${faelle.length} Fälle baut doppelt byte-gleich`, gleich);
+    return ist;
+}
+function goldenWand(datei, cv, ist, n, check) {
+    const fs = require("fs");
+    const path = require("path");
+    if (!fs.existsSync(datei) || process.env.MINT_FORCE === "1") {
+        fs.mkdirSync(path.dirname(datei), { recursive: true });
+        fs.writeFileSync(datei, JSON.stringify({ cv, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall", cases: ist }, null, 2) + "\n");
+        console.log(`  🧊 GOLDEN GEMINTET (${Object.keys(ist).length} Fälle) → ${path.relative(path.join(__dirname, "..", ".."), datei)} — ab jetzt EINGEFROREN`);
+    }
+    const golden = JSON.parse(fs.readFileSync(datei, "utf8"));
+    check(`Golden trägt cv:${cv} + alle Fälle`, golden.cv === cv && Object.keys(golden.cases).length === n);
+    const diffs = goldenVergleich(golden, ist);
+    check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
+    for (const d of diffs.slice(1)) console.log(`      ↳ ${d}`);
+}
+
+// das Ende einer Vertrags-Linse: ROT mit der Zahl der Verletzungen, sonst GRÜN mit ihrem Satz
+function vertragsEnde(errs, satz) {
+    if (errs.length) {
+        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
+        process.exit(1);
+    }
+    console.log(`\n✅ GRÜN — ${satz}`);
+    process.exit(0);
+}
+
 module.exports = {
+    vertragsEnde,
+    doppeltGebaut,
+    goldenWand,
     plattformProbe,
     installiereDrift,
     FUNKTIONEN,

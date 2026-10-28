@@ -59,6 +59,37 @@ function rangZensus(FC, o = {}) {
     return Object.assign(Z, { ok: Z.mitStadt >= (N * 6) / 8, zipf: { zeta, ki, je: Z.je, n: Z.n, export: ex, gruen } });
 }
 
+// ===== TEIL J (siedlung.K4): DIE JAHRESRINGE — je Saat dieselbe Zelle unter 1320 · 1560 · 1860 · 1935 (die Epochen ohne Zahl:
+// die Chronik ihrer Region, fachwerk `chronikJahr`). Je Paar (älter, jünger) die Überdeckung je Slot — der Anteil der 3 × 3
+// Punkte seines Grundrisses (Ecken, Kanten-Mitten, Mitte), die ein Grundriss des jüngeren trägt —, über den älteren Kern
+// gemittelt (Soll ≥ 0,8, die kleinste über Saaten und Paare). Die Epoche bestimmt Rolle, Bauart und Kleidung: jedes Baujahr
+// bis zum Schnitt (jahr + spanne), kein Turm vor 1905, keine Halle vor 1850, die Kultur aus der Historie ihres Baujahrs
+// (REGION_HIST; die Kirche trägt die Marke ihrer Epoche: vier Epochen, vier Kirchen), die Kleidung die Tracht der Epoche;
+// moderne ergibt stadt und trägt den Turm. `ohneErbe` (die Mutante): jede Epoche ein eigener Plan mit ihrer Zahl.
+const JAHRESRINGE = ["mittelalter", "hanse", "gruenderzeit", "moderne"];
+function jahresringe(FC, o = {}) {
+    const J = { paare: [], fehl: [] };
+    for (const seed of o.saaten || [1, 2, 3, 5, 7, 11, 13, 17]) {
+        const P = JAHRESRINGE.map((epoche) => (o.ex || FC.exportSettlement)({ seed, epoche, nH: o.ohneErbe && FC.DORF({ seed, epoche }).houses.length }));
+        J.paare.push(
+            P.slice(1).map((jung, k) => {
+                const d = P[k].slots.flatMap(({ obb: b }) => [-1, 0, 1, -1, 0, 1, -1, 0, 1].map((u, i) => lokal(0, 0, -b.phi, u * b.ex, ((i / 3) | 0) * b.ez - b.ez)).map(([x, z]) => jung.slots.some((t) => FC.distPunktOBB(b.cx + x, b.cz + z, t.obb) < 1e-6)));
+                return +(d.filter(Boolean).length / d.length).toFixed(3);
+            })
+        );
+        const kirchen = new Set(P.map((x) => x.slots.find((s) => s.rolle === "kirche")?.kultur)).size;
+        P.forEach((x, k) => {
+            const fehl = (w) => J.fehl.push(`${seed}/${JAHRESRINGE[k]}: ${w}`);
+            if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[JAHRESRINGE[k]].tracht)) fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
+            if (k === 3 && (x.groesse !== "stadt" || kirchen < 4 || !x.slots.some((s) => s.rolle === "turm"))) fehl(`${x.groesse}, ${kirchen} Kirchen`);
+            for (const s of x.slots)
+                if (s.baujahr > x.jahr + x.spanne || s.baujahr < { turm: 1905, halle: 1850 }[s.rolle] || !(/kirche|scheune/.test(s.rolle) || FC.REGION_HIST[x.region].reduce((q, [ab, n]) => (s.baujahr < ab ? q : n), []).includes(s.kultur)))
+                    fehl(`${s.rolle} ${s.kultur} ${s.baujahr}`);
+        });
+    }
+    return Object.assign(J, { min: Math.min(...J.paare.flat()) });
+}
+
 // DAS GASSEN-GEFÄLLE (siedlung.K3, rein): p95 in % von |Δ grund| / Länge über jeden Schritt ≥ 0,5 m jeder Gasse des Plans v2
 // (plan-lokal um `v2.ort`), `grund(x, z)` die Welt-Höhe ohne Erdbau — der Boden, dem die Trasse folgt.
 function gassenGefaelle(v2, grund) {
@@ -975,14 +1006,21 @@ hauptLauf(async () => {
         process.exit(0);
     }
 
+    // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
+    // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
+    console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
+    const mut = (dp) => ((x) => ({ ...x, kleidung: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(FC.exportSettlement(dp));
+    const [J, J0, Jm] = [{}, { ohneErbe: 1 }, { ex: mut, saaten: [5] }].map((o) => jahresringe(FC, o));
+    console.log("JAHRESRINGE " + JSON.stringify({ min: J.min, paare: J.paare, ohneErbe: J0.min, fehl: J.fehl }));
+    check(`J1 JAHRESRINGE ${J.min} (Soll ≥ 0,8; ohne Erbe ${J0.min})`, J.min >= 0.8 && J0.min < 0.8);
+    check(`J2 EPOCHE: ${J.fehl.length} Brüche, die Mutante ${Jm.fehl.length}`, !J.fehl.length && /turm \S+ 1455/.test(Jm.fehl) && /Kleidung null/.test(Jm.fehl));
+    if (process.argv.includes("--nur-j")) process.exit(errs.length ? 1 : 0);
+
     console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
     const Z = rangZensus(FC);
-    const [mod, alt] = [{ seed: 5, epoche: "moderne" }, { seed: 5 }].map(FC.exportSettlement);
+    const alt = FC.exportSettlement({ seed: 5 }); // „moderne" ohne Zahl ergibt stadt: Teil J
     check(`Z1 RANG: binnen 2 km eine ummauerte Stadt in ${Z.mitStadt}/8 Saaten (Soll ≥ 6)`, Z.ok, Z.saaten.join(" · "));
-    check(
-        `Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl ${mod.groesse}, ohne Epoche ${alt.slots.length} Slots (18 Häuser)`,
-        mod.groesse === "stadt" && alt.slots.length === 21
-    );
+    check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 21);
     console.log("ZIPF " + JSON.stringify(Z.zipf));
     check(
         `Z3 ZIPF: ζ ${Z.zipf.zeta} [${Z.zipf.ki.join("; ")}] über ${Z.je.length} Saaten × 32 × 32 km (Soll 0,8–1,2), ${Z.zipf.export}`,

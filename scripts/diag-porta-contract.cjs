@@ -21,13 +21,11 @@
 // Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte — die Goldens tragen
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
-const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsEnde } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
-const goldenDir = path.join(root, "spec/asset-contract/v4/golden");
-const goldenFile = path.join(goldenDir, "gates.json");
+const goldenFile = path.join(root, "spec/asset-contract/v4/golden", "gates.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 const KERN = path.join(root, "porta-core.js");
@@ -64,15 +62,7 @@ function buildCase(c) {
     check("porta-core geladen (__portaCore + buildInstance)", !!PC && typeof PC.buildInstance === "function");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = {};
-    let determin = true;
-    for (const c of CASES) {
-        const f1 = fingerprint(buildCase(c));
-        const f2 = fingerprint(buildCase(c));
-        if (f1.sha256 !== f2.sha256) determin = false;
-        actual[caseKey(c)] = f1;
-    }
-    check(`Determinismus: jeder der ${CASES.length} Fälle baut doppelt byte-gleich`, determin);
+    const actual = doppeltGebaut(CASES, buildCase, check);
 
     // 2) Seed-Invarianz (cv:4-Semantik — s. Kopf).
     let seedInv = true;
@@ -97,25 +87,7 @@ function buildCase(c) {
     );
 
     // 5) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    if (!fs.existsSync(goldenFile) || process.env.MINT_FORCE === "1") {
-        fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(
-            goldenFile,
-            JSON.stringify(
-                { cv: 4, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall", cases: actual },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(
-            `  🧊 GOLDEN GEMINTET (${Object.keys(actual).length} Fälle) → ${path.relative(root, goldenFile)} — ab jetzt EINGEFROREN`
-        );
-    }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
-    check("Golden trägt cv:4 + alle Fälle", golden.cv === 4 && Object.keys(golden.cases).length === CASES.length);
-    const diffs = compare(golden, actual);
-    check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
-    for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
+    goldenWand(goldenFile, 4, actual, CASES.length, check);
 
     // 5b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit einer Transzendenten — das Byte-Raster am Ausgang
     //     (porta-core ausRaster) hält die Ratsche auf 0 (je Lauf ein frisch geladener Kern). Die Fälle ohne
@@ -182,12 +154,5 @@ function buildCase(c) {
     //    Selbst-Test auch auf einem roten Stand misst, was er misst).
     goldenSelbsttest(actual, check);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
-    );
-    process.exit(0);
+    vertragsEnde(errs, "der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

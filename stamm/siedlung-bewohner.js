@@ -29,11 +29,19 @@ class AnazhRealm_siedlung_bewohner {
         } finally {
             this._activePeerUebergabe = alt;
         }
+        // DIE TRACHT DER EPOCHE (siedlung.K4): der Plan trägt die Kleidung seines Jahrs (fachwerk `kleidung`) — ihr Schnitt
+        // kleidet jede Gestalt, die Farbe des Genoms fällt in ihre Farben
+        const T = S.plan.kleidung;
+        if (!T || !Array.isArray(T.farben) || !T.farben.length || !kc.CLOTH_COLORS)
+            return AnazhRealm._kernPflichtBruch("fachwerk:kleidung");
+        const tuch = Object.keys(kc.CLOTH_COLORS);
         const aus = [];
         for (let gi = 0; gi < AnazhRealm.BEWOHNER.gestalten; gi++) {
             const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`);
             gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
-            const ov = this._dialsAusGenom(gen);
+            const ov = Object.assign(this._dialsAusGenom(gen), { top: T.top, bottom: T.bottom, shoes: T.shoes });
+            for (const k of ["topColor", "bottomColor", "shoeColor"])
+                if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length];
             const dB = Object.assign({}, buch || {}, ov);
             const dK = Object.assign({}, kc.START_PARAMS, dB);
             const f = this._menschGussFarben(dB);
