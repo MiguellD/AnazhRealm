@@ -456,7 +456,7 @@ module.exports = {
           punkte: 0,
           staffel: "1 = Welten, Regeln und Baupläne liegen signiert vor, je Gesetz ≤ 8 KB, auffindbar über einen Code · 2 = forkbar mit Herkunfts-Kette, offen lesbar",
           messung: "Größe je Eintrag, Signatur-Prüfung, Fork mit Herkunft.",
-          beleg: "signBlueprint (`stamm/netz-identitaet.js:546`), world-bundle-Pull (`netz-p2p.js:911`); eine Bibliothek gibt es nicht.",
+          beleg: "w3s-bibliothek 24b9ccaa: die Bibliothek ist EIN Verzeichnis über der EINEN Hülle des Teilens (`stamm/netz-identitaet.js` bibliothekLege · bibliothekFinde · bibliothekForke, Eingang `_bibliothekPruefe`, Signatur `_werkCode`), Eintrag = Gesetz (Bauplan-Programm, rule-Programm, Welt: Saat · Gelände · Wetter · Regeln · Akten aus der Stand-Tafel), Code = SHA-256 der Bytes; praegung-welt --bibliothek: Welt 1041 B, Regel 335 B, Bauplan 428 B, Mesh 17850 B ROT, Byte-Mutante ROT an der Signatur, Fork mit Kette [Welt, Fork]. Offen: die Feed-Karte und der Pull eines Codes über das Mesh.",
           schlupfloch: "Mesh-Bytes statt Gesetz in der Bibliothek: die Größe je Eintrag.",
           aenderung: "Neu (V06; Schöpfer: „die Bibliothek von Alexandria, voll open source“)."
         },
