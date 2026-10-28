@@ -165,3 +165,4 @@ z61b-abab 1 abab A=e18195be8b143f9d333de6ea8a8b43dea93dd198 B=d882a080f29148c7ff
 z61b-abab 0 storno
 z61b-abab2 2 abab A=e18195be8b143f9d333de6ea8a8b43dea93dd198 B=d882a080f29148c7ff5a887df9674bbb9811c5ac zellen=w-ego,d-ego,stadt
 z58c-z60-abab 0 storno
+z61b-abab2 0 storno
