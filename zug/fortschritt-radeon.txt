@@ -1608,3 +1608,4 @@
 2026-10-28 23:47:04 takt19-farm-nach ENDE 1 grün / 0 rot · 10.5 min
 2026-10-28 23:59:59 takt19-radeon profiband.K4#1 GRÜN 13.9 · 13/71
 2026-10-29 00:21:08 takt19-radeon profiband.K4#2 ROT 21.1 · 14/71
+2026-10-29 00:23:51 takt19-radeon klang.K2#1 GRÜN 2.7 · 15/71
