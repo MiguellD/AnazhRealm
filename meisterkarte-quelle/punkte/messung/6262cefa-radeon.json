@@ -1,0 +1,45 @@
+{
+ "sha": "6262cefaccf7bcd0171734787ffa420251c9c3c3",
+ "geraet": "radeon",
+ "zeit": "2026-10-28T02:21:24.164Z",
+ "host": "MiguellD",
+ "je": {
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 37 · ego/hieb 28.7 · Bild 16.6/16.5/16.5 ms · Hit-Stop im schlechtesten Lauf 10 Bilder · im Spiel Halt gesetzt 58-mal (151–170 ms, gleitet bis 0 mm je Takt) / 59-mal (150–167 ms, gleitet bis 0 mm je Takt) / 59-mal (154–174 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 12.43,
+   "gpu": "amd/rdna-3",
+   "warten": 1.73,
+   "zeit": "2026-10-28T02:08:58.340Z",
+   "abdruck": "631137359d80",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K5#1": {
+   "gruen": true,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba",
+   "exit": 0,
+   "minuten": 3.17,
+   "gpu": "amd/rdna-3",
+   "warten": 1.62,
+   "zeit": "2026-10-28T02:21:24.164Z",
+   "abdruck": "b8c2b35ae818",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "halten.K5#2": {
+   "gruen": true,
+   "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
+   "exit": 0,
+   "minuten": 3.17,
+   "gpu": "amd/rdna-3",
+   "warten": 1.62,
+   "zeit": "2026-10-28T02:21:24.164Z",
+   "abdruck": "170c52cff9e7",
+   "port": 7754,
+   "bahn": "1/1",
+   "zwilling": "halten.K5#1"
+  }
+ }
+}
