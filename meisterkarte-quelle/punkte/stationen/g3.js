@@ -774,6 +774,69 @@ const stationen = [
         quelle: "2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
     },
     {
+        kriterium: "ferne.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // wetter-sicht: die Luft-Linse vom Hügel (Genesis + 120 m) mit dem Spieler-Wort Sturm (`--wetter stormy`, die Bühne über den
+        // EINEN Wetter-Schreiber), Uhr 0,5, 4 Azimute ab der Sonne; je Sicht die Sichtweite am Bezugsniveau aus dem Kontrast-Abfall
+        // im Bild, −ln 0,02 · g·d / −ln T_grün je Pixel der Szene (T 0,02…0,95, T = (L − S)/(L0 − S) aus drei Schüssen), der Median;
+        // das Urteil der Median der Azimute (≥ 10 Pixel, ≥ 3 Azimute) gegen 1 500 m ±15 %
+        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        gpu: true,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = /^SICHT (GRUEN|ROT) · ([^\r\n]+)/m.exec(lauf.stdout);
+            if (!z) return { gruen: false, zahl: "keine SICHT-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const s = ((j && j.zeilen) || []).map((x) => x.sicht).filter((x) => x && x.m != null && x.n >= 10).map((x) => x.m).sort((a, b) => a - b);
+            const m = s.length >= 3 ? s[s.length >> 1] : null;
+            const gruen = hw && z[1] === "GRUEN" && m != null && Math.abs(m / 1500 - 1) <= 0.15;
+            return {
+                gruen,
+                zahl: "Sicht im Sturm " + (m == null ? "ungemessen" : Math.round(m) + " m") + " (Azimute " + s.map(Math.round).join("/") + ", Soll 1 500 m ±15 %), " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/farbe/luft-referenz.json"],
+        quelle: "1 = im Sturm Sicht 1,5 km ±15 % im Bild an einem Gerät",
+    },
+    {
+        kriterium: "licht.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // wetter-sicht: der Wetter-Zug als Spielgang — klar 5 s, dann Regen und wieder klar als Wort des Spielers (`--wetter rainy
+        // --zug`), je Wort 60 s der Welt-Uhr im echten Takt (`_gameLoopTick`, 0,1 s) über die 45-s-Transition des Spiels, die Uhr
+        // steht auf Mittag; je Sekunde die Leuchtdichte des Ausgabe-Bilds (linear). Das Urteil: der größte Sprung |log2 Y_k/Y_k−1| je
+        // Sekunde ≤ 0,1 EV/s, und beide Wörter standen am Ende ihrer Phase (sonst misst die Reihe keinen Übergang)
+        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = /^ZUG (GRUEN|ROT) · ([^\r\n]+)/m.exec(lauf.stdout);
+            if (!z) return { gruen: false, zahl: "keine ZUG-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            const x = (j && j.reihe) || [];
+            const ev = x.slice(1).map((y, i) => Math.abs(Math.log2(y.Y / x[i].Y)) / (y.t - x[i].t));
+            const max = ev.length ? Math.max(...ev) : null;
+            const stand = x.some((y) => y.wetter === "rainy" && y.zug === 1) && x.length > 2 && x[x.length - 1].wetter === "sunny" && x[x.length - 1].zug === 1;
+            const hub = x.length ? Math.log2(Math.max(...x.map((y) => y.Y)) / Math.min(...x.map((y) => y.Y))) : null;
+            const gruen = hw && z[1] === "GRUEN" && stand && max != null && max <= 0.1;
+            return {
+                gruen,
+                zahl:
+                    "größter Sprung " + (max == null ? "ungemessen" : max.toFixed(3) + " EV/s") + " (Soll ≤ 0,1) · Hub klar ↔ Regen " +
+                    (hub == null ? "–" : hub.toFixed(2) + " EV") + " · " + x.length + " s, Wörter " + (stand ? "standen" : "standen NICHT") + " · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "phyto-core.js"],
+        quelle: "1 = der Wetter-Zug klar → Regen → klar ohne Sprung > 0,1 EV/s an einem Gerät",
+    },
+    {
         kriterium: "material.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
