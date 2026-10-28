@@ -589,3 +589,4 @@
 2026-10-28 08:02:42 takt15a-gtx luftwasser.K5#1 GRÜN 0.2 · 23/23
 2026-10-28 08:03:02 takt15b-gtx START 24 Stationen in 22 Läufen
 2026-10-28 08:03:20 takt15b-gtx luftwasser.K5#2 GRÜN 0.2 · 1/24
+2026-10-28 08:06:41 takt15b-gtx material.K1#1,material.K1#2 GRÜN/GRÜN 3.3 · 3/24
