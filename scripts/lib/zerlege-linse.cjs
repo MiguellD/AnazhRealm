@@ -858,7 +858,6 @@ function zerlegeInventur(k) {
         const r = window.anazhRealm;
         const st = r.state;
         const rend = st.renderer;
-        if (!rend.backend || !rend.backend.device) return { fehler: "kein GPU-Device" };
         rend.setAnimationLoop(null);
         window.__buehne();
         const uhr = window.__passUhr();
@@ -927,7 +926,6 @@ function zerlegeMessen(k) {
         const r = window.anazhRealm;
         const st = r.state;
         const rend = st.renderer;
-        if (!rend.backend || !rend.backend.device) return { fehler: "kein GPU-Device" };
         rend.setAnimationLoop(null);
         window.__buehne();
         const vorher = window.__zerlegeZustand();
