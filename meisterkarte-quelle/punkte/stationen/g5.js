@@ -1627,8 +1627,8 @@ const stationen = [
     // an tore-k5-welt: Bauplan 530 Zeichen, Welt-Code 515, Welt 136 KB, Kontrolle 1 610 ms, Leib 1 236 ms, Bau-Hash
     // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
     // der signaling-server las nur den ersten (Join-Timeout 10 s). Am 27.10. ROT an Radeon und GTX an der Kontrolle (der
-    // Beitritt lud die Seite neu, Zweit-Boot GTX 12,0 s); tore-k5-tuer: Kontrolle headless 2001 → 906–969 ms, B auf
-    // swiftshader-WebGPU 83,4/74,9 → 68,7/40,0 s (ABAB, Zwischenstand), Bau-Hash 9c183437/12 = 9c183437/12.
+    // Beitritt lud die Seite neu, Zweit-Boot GTX 12,0 s); tore-k5-tuer (ABAB): Kontrolle headless 2110/1932 → 943/1064 ms,
+    // B auf swiftshader-WebGPU 73,4/73,5 → 40,1/44,8 s, Bau-Hash 9c183437/12 = 9c183437/12, 0 Navigationen.
     {
         kriterium: "tore.K5",
         staffel: 2,
