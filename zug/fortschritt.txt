@@ -688,3 +688,4 @@
 2026-10-28 15:50:56 takt17d-gtx spielgang.K3#1 ROT 2.9 · 8/23
 2026-10-28 15:51:39 takt17d-gtx ankunft.K2#1 ROT 0.6 · 9/23
 2026-10-28 15:53:25 takt17d-gtx ankunft.K3#1 ROT 1.7 · 10/23
+2026-10-28 16:04:42 takt17d-gtx streaming.K3#1 ROT 11.2 · 11/23
