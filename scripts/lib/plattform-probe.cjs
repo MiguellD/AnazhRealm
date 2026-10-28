@@ -356,7 +356,7 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
 // Prägung — je Linse eine eigene Zeile war ein Zwilling.
 const fallSchluessel = (c) => `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 
-// DER GOLDEN-VERGLEICH der Vertrags-Linsen (fachwerk · porta · schmiede · vehicle; auch ihr Selbst-Test ruft ihn): die
+// DER GOLDEN-VERGLEICH der Golden-Wand (`goldenWand`, auch ihr Selbst-Test ruft ihn): die
 // Fälle des Goldens gegen das Ist (sha256, dann objects/vertices) → Abweichungsliste.
 function goldenVergleich(golden, actual) {
     const bad = [];
@@ -446,7 +446,5 @@ module.exports = {
     FUNKTIONEN,
     probeWand,
     fingerabdruck,
-    goldenVergleich,
-    goldenSelbsttest,
     fallSchluessel,
 };
