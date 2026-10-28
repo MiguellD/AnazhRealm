@@ -1,0 +1,762 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-wasser-leben.cjs --nur mutation,ueberall,laeufe,treibt
+  Orte aus der Welt: {"mess":[-280.4,-1045.6],"see":{"x":1816,"z":-6168,"tiefe":3.4,"level":0.9304924564577954,"ufer":[1866,-6168],"mitte":[1816,-6168],"fenster":[1826,-6208,1906,-6128]},"fluss":{"x":-258.4,"z":-1132.8,"breite":4.2},"bach":{"x":-269.2,"z":-1127.4},"kueste":[1537,10609],"meer":[1896,8776]}
+{
+ "hashSin": null,
+ "orte": {
+  "mess": [
+   -280.4,
+   -1045.6
+  ],
+  "see": {
+   "x": 1816,
+   "z": -6168,
+   "tiefe": 3.4,
+   "level": 0.9304924564577954,
+   "ufer": [
+    1866,
+    -6168
+   ],
+   "mitte": [
+    1816,
+    -6168
+   ],
+   "fenster": [
+    1826,
+    -6208,
+    1906,
+    -6128
+   ]
+  },
+  "fluss": {
+   "x": -258.4,
+   "z": -1132.8,
+   "breite": 4.2
+  },
+  "bach": {
+   "x": -269.2,
+   "z": -1127.4
+  },
+  "kueste": [
+   1537,
+   10609
+  ],
+  "meer": [
+   1896,
+   8776
+  ]
+ },
+ "mutation": {
+  "punkte": 50,
+  "versuche": 546,
+  "rho": 3,
+  "tief": 3,
+  "leser": {
+   "leib": {
+    "wer": "der Sim-Schritt (`_stepFixedSim` → playerUnderwater)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "kamera": {
+    "wer": "das Medium der Kamera (`_applyDayNightToScene`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "tier": {
+    "wer": "der Kreatur-Takt (`updateCreatures` → schwimmen)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "wagen": {
+    "wer": "die Tiefe am Wagen (`_fahrTiefe`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "scheu": {
+    "wer": "die Ufer-Scheu (`_creatureWaterContextAt`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "trinken": {
+    "wer": "das Trink-Ziel (`_findNearestWaterPoint`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "klang": {
+    "wer": "die Nässe des Klangs (`_nassAt`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "schritt": {
+    "wer": "das Material des Schritts (`_schrittMaterialAt`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "wand": {
+    "wer": "die Natur-Wand (`_naturWand` → `_stammFussLand`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "land": {
+    "wer": "das Land der Streu und der Werke (`_landAt`)",
+    "n": 50,
+    "vor": 0,
+    "nach": 50,
+    "bsp": null
+   },
+   "kontrolle": {
+    "wer": "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
+    "n": 50,
+    "vor": 0,
+    "nach": 0,
+    "bsp": [
+     1913.6,
+     -6144.5
+    ]
+   }
+  },
+  "flora": {
+   "vor": {
+    "wiese": 592,
+    "streu": 138,
+    "warten": 0
+   },
+   "nach": {
+    "wiese": 0,
+    "streu": 0,
+    "warten": 0
+   }
+  }
+ },
+ "laeufe": {
+  "laeufe": 293,
+  "ende": {
+   "see": 291,
+   "meer": 2
+  },
+  "nass": 10,
+  "trocken": [],
+  "schritte": 59638,
+  "steigt": 0,
+  "senken": 10
+ },
+ "ueberall": [
+  {
+   "ort": [
+    -404.4190077111125,
+    1635.4962307959795
+   ],
+   "punkte": 50,
+   "versuche": 162,
+   "rho": 3,
+   "tief": 3,
+   "leser": {
+    "leib": {
+     "wer": "der Sim-Schritt (`_stepFixedSim` → playerUnderwater)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kamera": {
+     "wer": "das Medium der Kamera (`_applyDayNightToScene`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "tier": {
+     "wer": "der Kreatur-Takt (`updateCreatures` → schwimmen)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wagen": {
+     "wer": "die Tiefe am Wagen (`_fahrTiefe`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "scheu": {
+     "wer": "die Ufer-Scheu (`_creatureWaterContextAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "trinken": {
+     "wer": "das Trink-Ziel (`_findNearestWaterPoint`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "klang": {
+     "wer": "die Nässe des Klangs (`_nassAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "schritt": {
+     "wer": "das Material des Schritts (`_schrittMaterialAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wand": {
+     "wer": "die Natur-Wand (`_naturWand` → `_stammFussLand`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "land": {
+     "wer": "das Land der Streu und der Werke (`_landAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kontrolle": {
+     "wer": "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
+     "n": 50,
+     "vor": 0,
+     "nach": 0,
+     "bsp": [
+      -356.8,
+      1659
+     ]
+    }
+   },
+   "flora": {
+    "vor": {
+     "wiese": 529,
+     "streu": 118,
+     "warten": 0
+    },
+    "nach": {
+     "wiese": 0,
+     "streu": 0,
+     "warten": 0
+    }
+   }
+  },
+  {
+   "ort": [
+    -4851.779082790017,
+    -1713.1000142544508
+   ],
+   "punkte": 50,
+   "versuche": 115,
+   "rho": 3,
+   "tief": 3,
+   "leser": {
+    "leib": {
+     "wer": "der Sim-Schritt (`_stepFixedSim` → playerUnderwater)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kamera": {
+     "wer": "das Medium der Kamera (`_applyDayNightToScene`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "tier": {
+     "wer": "der Kreatur-Takt (`updateCreatures` → schwimmen)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wagen": {
+     "wer": "die Tiefe am Wagen (`_fahrTiefe`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "scheu": {
+     "wer": "die Ufer-Scheu (`_creatureWaterContextAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "trinken": {
+     "wer": "das Trink-Ziel (`_findNearestWaterPoint`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "klang": {
+     "wer": "die Nässe des Klangs (`_nassAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "schritt": {
+     "wer": "das Material des Schritts (`_schrittMaterialAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wand": {
+     "wer": "die Natur-Wand (`_naturWand` → `_stammFussLand`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "land": {
+     "wer": "das Land der Streu und der Werke (`_landAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kontrolle": {
+     "wer": "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
+     "n": 50,
+     "vor": 0,
+     "nach": 0,
+     "bsp": [
+      -4804.2,
+      -1689.6
+     ]
+    }
+   },
+   "flora": {
+    "vor": {
+     "wiese": 1283,
+     "streu": 91,
+     "warten": 0
+    },
+    "nach": {
+     "wiese": 0,
+     "streu": 0,
+     "warten": 0
+    }
+   }
+  },
+  {
+   "ort": [
+    -1883.2992604002357,
+    -3574.386262334883
+   ],
+   "punkte": 50,
+   "versuche": 115,
+   "rho": 3,
+   "tief": 3,
+   "leser": {
+    "leib": {
+     "wer": "der Sim-Schritt (`_stepFixedSim` → playerUnderwater)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kamera": {
+     "wer": "das Medium der Kamera (`_applyDayNightToScene`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "tier": {
+     "wer": "der Kreatur-Takt (`updateCreatures` → schwimmen)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wagen": {
+     "wer": "die Tiefe am Wagen (`_fahrTiefe`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "scheu": {
+     "wer": "die Ufer-Scheu (`_creatureWaterContextAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "trinken": {
+     "wer": "das Trink-Ziel (`_findNearestWaterPoint`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "klang": {
+     "wer": "die Nässe des Klangs (`_nassAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "schritt": {
+     "wer": "das Material des Schritts (`_schrittMaterialAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wand": {
+     "wer": "die Natur-Wand (`_naturWand` → `_stammFussLand`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "land": {
+     "wer": "das Land der Streu und der Werke (`_landAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kontrolle": {
+     "wer": "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
+     "n": 50,
+     "vor": 0,
+     "nach": 0,
+     "bsp": [
+      -1835.7,
+      -3550.8
+     ]
+    }
+   },
+   "flora": {
+    "vor": {
+     "wiese": 579,
+     "streu": 99,
+     "warten": 0
+    },
+    "nach": {
+     "wiese": 0,
+     "streu": 0,
+     "warten": 0
+    }
+   }
+  },
+  {
+   "ort": [
+    -3462.308962829411,
+    -770.664501003921
+   ],
+   "punkte": 50,
+   "versuche": 116,
+   "rho": 3,
+   "tief": 3,
+   "leser": {
+    "leib": {
+     "wer": "der Sim-Schritt (`_stepFixedSim` → playerUnderwater)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kamera": {
+     "wer": "das Medium der Kamera (`_applyDayNightToScene`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "tier": {
+     "wer": "der Kreatur-Takt (`updateCreatures` → schwimmen)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wagen": {
+     "wer": "die Tiefe am Wagen (`_fahrTiefe`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "scheu": {
+     "wer": "die Ufer-Scheu (`_creatureWaterContextAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "trinken": {
+     "wer": "das Trink-Ziel (`_findNearestWaterPoint`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "klang": {
+     "wer": "die Nässe des Klangs (`_nassAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "schritt": {
+     "wer": "das Material des Schritts (`_schrittMaterialAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wand": {
+     "wer": "die Natur-Wand (`_naturWand` → `_stammFussLand`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "land": {
+     "wer": "das Land der Streu und der Werke (`_landAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kontrolle": {
+     "wer": "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
+     "n": 50,
+     "vor": 0,
+     "nach": 0,
+     "bsp": [
+      -3414.7,
+      -747.1
+     ]
+    }
+   },
+   "flora": {
+    "vor": {
+     "wiese": 2040,
+     "streu": 107,
+     "warten": 0
+    },
+    "nach": {
+     "wiese": 0,
+     "streu": 0,
+     "warten": 0
+    }
+   }
+  },
+  {
+   "ort": [
+    426.32313910871744,
+    4322.918521240354
+   ],
+   "punkte": 50,
+   "versuche": 161,
+   "rho": 3,
+   "tief": 3,
+   "leser": {
+    "leib": {
+     "wer": "der Sim-Schritt (`_stepFixedSim` → playerUnderwater)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kamera": {
+     "wer": "das Medium der Kamera (`_applyDayNightToScene`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "tier": {
+     "wer": "der Kreatur-Takt (`updateCreatures` → schwimmen)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wagen": {
+     "wer": "die Tiefe am Wagen (`_fahrTiefe`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "scheu": {
+     "wer": "die Ufer-Scheu (`_creatureWaterContextAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "trinken": {
+     "wer": "das Trink-Ziel (`_findNearestWaterPoint`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "klang": {
+     "wer": "die Nässe des Klangs (`_nassAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "schritt": {
+     "wer": "das Material des Schritts (`_schrittMaterialAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "wand": {
+     "wer": "die Natur-Wand (`_naturWand` → `_stammFussLand`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "land": {
+     "wer": "das Land der Streu und der Werke (`_landAt`)",
+     "n": 50,
+     "vor": 0,
+     "nach": 50,
+     "bsp": null
+    },
+    "kontrolle": {
+     "wer": "das Gesetz allein (`_atlasWaterLevelAt`, die Kontrolle)",
+     "n": 50,
+     "vor": 0,
+     "nach": 0,
+     "bsp": [
+      384.1,
+      4329.8
+     ]
+    }
+   },
+   "flora": {
+    "vor": {
+     "wiese": 2067,
+     "streu": 101,
+     "warten": 0
+    },
+    "nach": {
+     "wiese": 0,
+     "streu": 0,
+     "warten": 0
+    }
+   }
+  }
+ ],
+ "treibt": [
+  {
+   "ort": [
+    3457.6100118762506,
+    1813.5446588726093
+   ],
+   "strom": 1.2,
+   "schwimmer": {
+    "mit": 1.8,
+    "ohne": 0
+   },
+   "boot": {
+    "mit": 1.8,
+    "ohne": 0
+   },
+   "tier": {
+    "mit": 1.8,
+    "ohne": 0
+   }
+  },
+  {
+   "ort": [
+    3624.0371536755474,
+    5618.965243273502
+   ],
+   "strom": 1.2,
+   "schwimmer": {
+    "mit": 1.629,
+    "ohne": 0
+   },
+   "boot": {
+    "mit": 1.666,
+    "ohne": 0
+   },
+   "tier": {
+    "mit": 1.666,
+    "ohne": 0
+   }
+  },
+  {
+   "ort": [
+    1425.6915375851834,
+    2541.074935818907
+   ],
+   "strom": 1.2,
+   "schwimmer": {
+    "mit": 1.114,
+    "ohne": 0
+   },
+   "boot": {
+    "mit": 1.758,
+    "ohne": 0
+   },
+   "tier": {
+    "mit": 1.758,
+    "ohne": 0
+   }
+  },
+  {
+   "ort": [
+    -4983.767377571855,
+    -5179.618371230752
+   ],
+   "strom": 1.1999999999999997,
+   "schwimmer": {
+    "mit": 1.315,
+    "ohne": 0
+   },
+   "boot": {
+    "mit": 1.666,
+    "ohne": 0
+   },
+   "tier": {
+    "mit": 1.666,
+    "ohne": 0
+   }
+  }
+ ]
+}
+
+WASSER-LEBEN GRÜN
