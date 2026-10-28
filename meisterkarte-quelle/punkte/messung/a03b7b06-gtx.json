@@ -1,7 +1,7 @@
 {
  "sha": "a03b7b0626826d1dd47c21a85bdcf123ecae6e39",
  "geraet": "gtx",
- "zeit": "2026-10-28T00:32:21.396Z",
+ "zeit": "2026-10-28T02:23:06.790Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "tore.K5#2": {
@@ -364,6 +364,116 @@
    "gpu": "nvidia/pascal",
    "zeit": "2026-10-28T00:32:21.396Z",
    "abdruck": "e03a045fab93",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 8.08,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T01:30:07.837Z",
+   "abdruck": "dad9cf32497f",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "klang.K5#2": {
+   "gruen": true,
+   "zahl": "Klang-Takt p95 gehen 0.14 · fahrt 0.15 · nacht 0.14 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0)",
+   "exit": 0,
+   "minuten": 13.37,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T01:38:18.945Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 3.26,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T01:51:47.720Z",
+   "abdruck": "03c706724ee9",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.987), Wege je Tag 6–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.204 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 4.3,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T01:55:09.490Z",
+   "abdruck": "dc99c476be49",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 3.631 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 11.15,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T01:59:33.539Z",
+   "abdruck": "347160cebd7c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "tiere.K1#2": {
+   "gruen": true,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ GRÜN am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (903 px) · 44.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (599 px) · 46.2 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (640 px)",
+   "exit": 0,
+   "minuten": 1.99,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T02:10:50.008Z",
+   "abdruck": "2c38cafe8615",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 12.8 s, 3 fressen: tier:wolf 10765 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.21 m · Luma 80.2 σ 36.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.113 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 6.17,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T02:12:56.114Z",
+   "abdruck": "6f4d55252639",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2862/1213/6007/4044 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 91.9 σ 38.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.113 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 2.19,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T02:19:12.450Z",
+   "abdruck": "a99597ca60dd",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tore.K3#2": {
+   "gruen": true,
+   "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+   "exit": 0,
+   "minuten": 1.51,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T02:21:30.224Z",
+   "abdruck": "4a0e91ccdc14",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.3 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 5.27,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T02:23:06.790Z",
+   "abdruck": "d5a271d92c25",
    "port": 7754,
    "bahn": "1/1"
   }
