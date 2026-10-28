@@ -819,7 +819,6 @@ async function wasserStrom(ort, hoehe) {
 async function wasserGraben(o = {}) {
     const r = window.anazhRealm;
     const st = r.state;
-    const span = r._voxelChunkConfig(0).span;
     const K = r.constructor.NAH_WIESE.kachel;
     const HIEB = 3.5; // das Maß des Grabe-Hiebs
     const AUSSEN = HIEB + 4 * r._voxelChunkConfig(0).step;

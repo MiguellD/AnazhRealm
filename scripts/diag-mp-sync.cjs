@@ -823,7 +823,7 @@ hauptLauf(async () => {
             Promise.all(
                 [pageA, pageB].map((p) => p.evaluate((v) => ((window.__ruht = v), anazhRealm.state.spielZeit), v))
             );
-        const feldVergleich = async (wann) => {
+        const feldVergleich = async (wann, soll = true) => {
             const T = Math.max(...(await ruhe(true)));
             await sleep(GRABEN_NACHLAUF_MS);
             const [A, B] = await Promise.all([pageA, pageB].map((p) => p.evaluate(feldAbdruck, T)));
@@ -832,8 +832,7 @@ hauptLauf(async () => {
                 (k) => `${k} ${B[k].filter((z) => A[k].includes(z)).length}/${A[k].length}/${B[k].length}`
             );
             const gleich = A.lifeField.length > 0 && satz.every((z) => /(\d+)\/\1\/\1$/.test(z));
-            if (wann) check(`(f) ${wann}: Teil-Simulationen gleich`, gleich, satz.join(" · "));
-            return [gleich, satz.join(" · ")];
+            check(`(f) ${wann}`, gleich === soll, satz.join(" · "));
         };
 
         // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
@@ -916,7 +915,7 @@ hauptLauf(async () => {
                     : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`) +
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
-        await feldVergleich("Peers");
+        await feldVergleich("Peers: Teil-Simulationen gleich");
 
         // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);
@@ -965,7 +964,7 @@ hauptLauf(async () => {
             !!R && teile.every(rg),
             R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
-        if (R) await feldVergleich("Reload mitten im Sturm");
+        if (R) await feldVergleich("Reload mitten im Sturm: Teil-Simulationen gleich");
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
@@ -996,8 +995,7 @@ hauptLauf(async () => {
             s.a.length > 0 && !["edits", "bauten", "zug"].some(s.gleich),
             satz(s.gleich)
         );
-        const [fGleich, fSatz] = await feldVergleich();
-        check("(f) Selbsttest: B nimmt keine Feld-Akte → (f) ROT", !fGleich, fSatz);
+        await feldVergleich("Selbsttest: B nimmt keine Feld-Akte → Teil-Simulationen ROT", false);
         // DAS NETZ-LOG beider Seiten (B vor und nach dem Reload): jede Art ist erlaubt, sonst eine Zustands-Nachricht
         const netz = async () => {
             const n = { A: await pageA.evaluate(() => window.__netz), B: Object.assign({}, netzB) };

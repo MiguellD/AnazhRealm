@@ -271,8 +271,9 @@ async function checkBandV1742Wohl(ctx) {
             Math.abs(r._fieldWohlErlebt({ emotion: { awe: 1 } })) < 1e-9; // awe ambivalent → 0
 
         // --- (2) die Feld-Baseline: Cold-Start = erste Beobachtung ---
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
+        // die Baseline läuft auf der Welt-Uhr: ein Blick dt s nach dem vorigen dreht sie vor (`spielZeit`, sie geht nie zurück)
+        const saved = [r.state.lifeField, r.state.wohlBaseline];
+        const blick = (x, z, dt) => ((r.state.spielZeit += dt), r._observeFieldWohl(x, z));
         r.state.lifeField = new Map();
         r.state.wohlBaseline = new Map();
         // eine Zelle mit Headroom (frozen lebendig < 0.7) finden
@@ -290,17 +291,17 @@ async function checkBandV1742Wohl(ctx) {
                 break;
             }
         }
-        const b0 = r._observeFieldWohl(sx, sz, 0);
+        const b0 = blick(sx, sz, 0);
         out.coldStart = Math.abs(b0 - struktur0) < 1e-6 && Math.abs(r._fieldWohlBaselineAt(sx, sz) - struktur0) < 1e-6;
 
         // --- (3) stabiler Input → die Baseline HÄLT (kein Drift ohne Änderung) ---
-        r._observeFieldWohl(sx, sz, 1);
+        blick(sx, sz, 1);
         out.stableHolds = Math.abs(r._fieldWohlBaselineAt(sx, sz) - struktur0) < 1e-3;
 
         // --- (4) ein Sprung (Leben deponiert) → die Baseline TRACKT, aber LAGGT (EMA) ---
         r._depositLife(sx, sz, 0.6);
         const strukturHigh = r._fieldWohlStruktur(r.auraAt(sx, sz, 1));
-        const pre = r._observeFieldWohl(sx, sz, 3); // Δt=2s ≪ fieldTau → kleiner Schritt
+        const pre = blick(sx, sz, 2); // Δt=2s ≪ fieldTau → kleiner Schritt
         const bAfter = r._fieldWohlBaselineAt(sx, sz);
         out.tracksAndLags =
             strukturHigh > struktur0 + 0.05
@@ -309,16 +310,15 @@ async function checkBandV1742Wohl(ctx) {
                 : true; // kein Headroom an diesem Spot → vacuously ok (selten)
 
         // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle fällt, sobald ein Blick nach ihrem Tod schreibt (`_feldTod`) ---
-        r._observeFieldWohl(9 * W.cell, 9 * W.cell, 0);
-        r._observeFieldWohl(sx, sz, W.pruneAgeSec + 2 * r.constructor.FELD_TOD_EIMER_S);
+        blick(9 * W.cell, 9 * W.cell, 0);
+        blick(sx, sz, W.pruneAgeSec + 2 * r.constructor.FELD_TOD_EIMER_S);
         out.prunes = !r.state.wohlBaseline.has("9,9");
 
         // (Die SPIELER-Baseline + ihr Appraisal-Konsum sind Phase 3 → getestet in
         // checkBandV1744Appraisal, mit der Situations-Semantik statt der Stimmung.)
 
         // restore
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
+        [r.state.lifeField, r.state.wohlBaseline] = saved;
         return out;
     });
 
