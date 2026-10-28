@@ -772,18 +772,19 @@ class AnazhRealm_kreatur_verhalten {
         this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse`, "INFO");
     }
 
-    // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Leibs um seine Lage (|mitte| + halb +
-    // Radius — die waagrechte Spanne der Gestalt, _kreaturLeib; die Art und die Größe tragen sie über die Hüft-Höhe L) ×
-    // VERHALTEN.separation.raumKugel. Der Paar-Raum zweier Tiere ist die Summe; der Spieler hält den Raum seiner Wand-Kapsel
-    // (_spielerRaum). Darin stößt die Separation, die Herde zieht nicht, die Neugier hält an. Vorher galt für jede Art
-    // 1,6 m × bodySize (die neugierige Schar kroch auf 0,7 m zusammen, Leben-Schau 07.10.). Gecacht je L.
+    // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Vierbeiners in Hüft-Höhen (0,8 L + der
+    // Rumpf 0,3 L, mindestens 0,12 m; die Art und die Größe tragen sie über die Hüft-Höhe L) × VERHALTEN.separation.raumKugel.
+    // Der Paar-Raum zweier Tiere ist die Summe; der Spieler hält den Raum seiner Wand-Kapsel (_spielerRaum). Darin stößt die
+    // Separation, die Herde zieht nicht, die Neugier hält an. Er ist ein Maß des Verhaltens, nicht der Leib, mit dem das Tier
+    // berührt (`_kreaturLeib`, die gezeichnete Gestalt, physik.K2): an ihm sind Herde, Jagd und Tages-Budget geeicht — las er
+    // den gezeichneten Leib, riss das Rudel 10 von 60 Mal statt 18 (Soll 0,2–0,4, gate:kreatur-takt jagdkreis). Vorher galt
+    // für jede Art 1,6 m × bodySize (die neugierige Schar kroch auf 0,7 m zusammen, Leben-Schau 07.10.). Gecacht je L.
     _kreaturRaum(creature, L) {
         const ud = creature.userData || (creature.userData = {});
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         if (ud._raumL === l && Number.isFinite(ud._raum)) return ud._raum;
-        const lb = this._kreaturLeib(creature, l, this._kreaturRaumLeib || (this._kreaturRaumLeib = {}));
         ud._raumL = l;
-        ud._raum = (Math.abs(lb.mitte) + lb.halb + lb.radius) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
+        ud._raum = (0.8 * l + Math.max(0.12, 0.3 * l)) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
         return ud._raum;
     }
 

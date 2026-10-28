@@ -1824,22 +1824,33 @@ class AnazhRealm_koerper_leib {
     }
     // DER UMRISS DER GESTALT (physik.K2 Staffel 2, Bild = Kollision): die kleinste Leib-Kapsel um das, was gezeichnet wird —
     // jeder Vertex jedes Meshes des Klons `wurzel` in der Stand-Pose des Kerns (die Haut und die Schalen des Fells,
-    // geskinnt; der gestoßene Leib gleitet in ihr, `_animateTierBaum`) im Rahmen des Rumpfs, waagrecht:
+    // geskinnt; der gestoßene Leib gleitet in ihr, `_animateTierBaum`) im Rahmen des Rumpfs, waagrecht, AUSSER DEN FREIEN
+    // GLIEDERN (`frei`: Kopf und Rute, jedes Glied unter ihnen; ein Vertex zählt zu dem Knochen, der ihn am stärksten trägt):
+    // sie weichen im Kontakt aus, das Maul berührt den Leib der Beute — deckte die Kapsel die Schnauze, hielt Leib an Leib
+    // den Wolf vom Kitz fern (gate:kreatur-takt jagdkreis: 11 von 20 Rissen, 4 Jagden ohne Ende).
     // `seite` die halbe Breite (der Radius), `vorn`/`hinten` die Enden der Kapsel längs der Gier (+z die Schnauze), so weit
     // hinaus, dass ihre runden Enden jeden Vertex umschließen (die kantige Keule des Bären, nicht nur die Spitze der Rute).
     // In Metern (× f), memoisiert an der Vorlage. Leser: der Leib (`_kreaturLeib`) — vorher hielt er 0,3 und 0,8
     // Hüft-Höhen, und im Bild stak der an die Mauer gestoßene Bär 0,17 m in ihr.
-    static _tierUmriss(t0, wurzel, f) {
+    static _tierUmriss(t0, wurzel, frei, f) {
         if (t0._umriss) return t0._umriss;
+        const K = new Set();
+        for (const g of frei) if (g) g.traverse((n) => K.add(n));
         wurzel.updateMatrixWorld(true);
         const inv = new THREE.Matrix4().copy(wurzel.matrixWorld).invert();
         const [m, v] = [new THREE.Matrix4(), new THREE.Vector3()];
         const punkte = [];
         let r = 0;
         wurzel.traverse((n) => {
-            if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
+            if (!n.isMesh || !n.geometry || !n.geometry.attributes.position || K.has(n)) return;
             m.multiplyMatrices(inv, n.matrixWorld);
+            const [ix, w] = [n.geometry.attributes.skinIndex, n.geometry.attributes.skinWeight];
             for (let i = 0, N = n.geometry.attributes.position.count; i < N; i++) {
+                if (n.isSkinnedMesh && ix && w) {
+                    let k = 0;
+                    for (let j = 1; j < 4; j++) if (w.getComponent(i, j) > w.getComponent(i, k)) k = j;
+                    if (K.has(n.skeleton.bones[ix.getComponent(i, k)])) continue;
+                }
                 n.getVertexPosition(i, v).applyMatrix4(m);
                 punkte.push(v.x, v.z);
                 if (Math.abs(v.x) > r) r = Math.abs(v.x);
@@ -2571,7 +2582,7 @@ class AnazhRealm_koerper_leib {
             // der Umriss der gezeichneten Gestalt bei Größe 1 (m), in der Stand-Pose — der Leib, mit dem das Tier jede Hülle
             // berührt (`_kreaturLeib`)
             this._tierBaumNeutralStance(group2);
-            group2.userData._tierBaum.umriss = AnazhRealm._tierUmriss(t0, klon, f2);
+            group2.userData._tierBaum.umriss = AnazhRealm._tierUmriss(t0, klon, [teile.headGroup, ...tailSegs], f2);
             this._gelenkStufe(group2, 0);
             return group2;
         }
