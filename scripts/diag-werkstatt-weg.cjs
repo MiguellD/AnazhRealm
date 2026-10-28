@@ -1158,8 +1158,8 @@ const WEG_FAHRT = {
     // Geste bestätigt der Dialog), sein Code in den Chat
     async geteilt(page, name) {
         await bauWeg(page, "herkunft", "geteilt", name);
-        await WEG_FAHRT.werkstatt(page, name, 0, 'button[data-teilen="werk"]');
-        const code = await (await page.waitForFunction(() => document.querySelector('code[data-teilen="werk"]').textContent)).jsonValue();
+        await WEG_FAHRT.werkstatt(page, name, 0, "button[data-teilen=werk]");
+        const code = await (await page.waitForFunction(() => document.querySelector("code[data-teilen=werk]").textContent)).jsonValue();
         if (!code.startsWith("anazh-werk:")) throw new Error(code);
         await bauWeg(page, "oben");
         await taste(page, "KeyB");
