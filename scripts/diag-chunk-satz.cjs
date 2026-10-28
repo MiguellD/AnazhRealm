@@ -45,6 +45,19 @@
 // Fern-Deko, einer
 // selbst zeichnenden Satz-Gruppe (`f:zacken:L0`) und einem Haus ohne Bereich MUSS rot fallen und jeden Täter mit
 // Namen und Zahl nennen — eine Wand, die hier nicht feuert, ist selbst rot.
+//   (q) DER SATZ-FADEN (Spike satz-faden): jedes Golden-Haus der Stufe 2 (spec/asset-contract/v6 haeuser.json: 32 Kulturen ×
+//       2 Samen) gesetzt, der Satz-Faden rechnet je Teil den Block seines Slots, der Takt kopiert ihn (`_bauSatzFadenEin`);
+//       jeder Bereich trägt Byte für Byte, was der alte Haupt-Faden-Weg rechnet (`bereichTreu`, Schritt 1). Im selben Lauf
+//       der Selbsttest: zwei Ecken eines Blocks tauschen ihre Normalen — der Vergleich nennt das Teil.
+// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
+// direkt in der Szene, einer Gruppe `x#0@p:0,0`, einer selbst zeichnenden Streu-Senke, einem Block ohne Bereich, einer
+// Fern-Deko, einer
+// selbst zeichnenden Satz-Gruppe (`f:zacken:L0`) und einem Haus ohne Bereich MUSS rot fallen und jeden Täter mit
+// Namen und Zahl nennen — eine Wand, die hier nicht feuert, ist selbst rot.
+//   (q) DER SATZ-FADEN (Spike satz-faden): jedes Golden-Haus der Stufe 2 (spec/asset-contract/v6 haeuser.json: 32 Kulturen ×
+//       2 Samen) gesetzt, der Satz-Faden rechnet je Teil den Block seines Slots, der Takt kopiert ihn (`_bauSatzFadenEin`);
+//       (f) rechnet jeden seiner Bereiche über den alten Haupt-Faden-Weg nach, hier Byte für Byte (`bereichTreu`, Schritt 1);
+//       `_tickBauSatz` derselben Gruppen, kopiert gegen gerechnet, steht als Richtwert in der Zeile. `--mutante` tauscht in einem Block die Normalen zweier Ecken: ROT beim Namen.
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -381,6 +394,8 @@ if (process.argv.includes("--selftest")) {
 }
 
 const PORT = Number(process.env.CHUNK_SATZ_PORT) || 4483;
+// (q) die Golden-Häuser der Stufe 2 („<Kultur>-s<Same>-L2")
+const FAELLE = Object.keys(require("../spec/asset-contract/v6/golden/haeuser.json").cases).filter((k) => /L2$/.test(k));
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -394,7 +409,7 @@ const { errs, check } = pruefer();
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
-        out = await page.evaluate(async () => {
+        out = await page.evaluate(async (faelle) => {
             const r = window.anazhRealm,
                 s = r.state;
             const res = {};
@@ -422,6 +437,14 @@ const { errs, check } = pruefer();
             r._tickChunkSatz();
 
             // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).
+            // die erste Instanz, erster Vertex: Geometrie × Matrix von Hand (unabhängig vom Kern), in Welt-Lage im Pool
+            const ersteEcke = (e, geo, satz, b) => {
+                const q = geo.attributes.position.array;
+                const w = satz.geom.attributes.position.array;
+                return [0, 1, 2].every(
+                    (c) => Math.abs(w[b.vStart * 3 + c] - (e[c] * q[0] + e[4 + c] * q[1] + e[8 + c] * q[2] + e[12 + c])) <= 1e-3
+                );
+            };
             const zensus = () => {
                 const bodenMat = s.voxelChunkMaterial;
                 const z = {
@@ -542,20 +565,11 @@ const { errs, check } = pruefer();
                         // der Schatten-Zwilling einer Satz-Art (die NUR-WURF-Stufe 3, S3 haus) lebt im Wurf-Satz `bauWurf`
                         // seines Stoffs (`_bauSatzArt`), jede gezeigte Gruppe im Satz ihrer Art
                         const satzName = g.shadowTwin ? "bauWurf" : SATZ[rec.kind];
-                        let treu = !!b && b.vAnzahl === n * g.liveCount && satz.mesh.name === satzName;
-                        if (treu) {
-                            // die erste Instanz, erster Vertex: Geometrie × Instanz-Matrix, in Welt-Lage im Pool
-                            const e = g.mesh.instanceMatrix.array;
-                            const q = g.geom.attributes.position.array;
-                            const w = satz.geom.attributes.position.array;
-                            const o = b.vStart * 3;
-                            const soll = [
-                                e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12],
-                                e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13],
-                                e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14],
-                            ];
-                            for (let c = 0; c < 3; c++) if (Math.abs(w[o + c] - soll[c]) > 1e-3) treu = false;
-                        }
+                        const treu =
+                            !!b &&
+                            b.vAnzahl === n * g.liveCount &&
+                            satz.mesh.name === satzName &&
+                            ersteEcke(g.mesh.instanceMatrix.array, g.geom, satz, b);
                         if (treu) z.bauSatz.imSatz++;
                         else z.bauSatz.ohneBereich.push(name);
                         // (n) die erste Ecke trägt die Regler des Studio-Stoffs der Gruppe (snorm8: 1/127)
@@ -574,7 +588,7 @@ const { errs, check } = pruefer();
                         }
                     }
                 // (c) DER STREU-SATZ: jeder Block mit Pflanzen lebt als Bereich im Satz seines Stoffs — n × Vertices der
-                // Gestalt, die erste Pflanze, erster Vertex: Geometrie × Matrix, in Welt-Lage im Pool; je Stoff EIN Satz.
+                // Gestalt, die erste Pflanze in Welt-Lage im Pool (`ersteEcke`); je Stoff EIN Satz.
                 z.streuSatz = { bloecke: 0, imSatz: 0, ohneBereich: [], doppelt: [] };
                 const stoffe = new Map();
                 if (s.chunkSaetze)
@@ -592,19 +606,8 @@ const { errs, check } = pruefer();
                             const satz = s.chunkSaetze ? s.chunkSaetze.get(a.satz) : null;
                             const bb = satz ? satz.bloecke.get(a.key + "@" + kk) : null;
                             const n = a.geo.attributes.position.count;
-                            let treu = !!bb && bb.vAnzahl === n * b.n && satz.spec.mat === a.mat;
-                            if (treu) {
-                                const e = b.matrizen;
-                                const q = a.geo.attributes.position.array;
-                                const w = satz.geom.attributes.position.array;
-                                const o = bb.vStart * 3;
-                                const soll = [
-                                    e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12],
-                                    e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13],
-                                    e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14],
-                                ];
-                                for (let c = 0; c < 3; c++) if (Math.abs(w[o + c] - soll[c]) > 1e-3) treu = false;
-                            }
+                            const treu =
+                                !!bb && bb.vAnzahl === n * b.n && satz.spec.mat === a.mat && ersteEcke(b.matrizen, a.geo, satz, bb);
                             if (treu) z.streuSatz.imSatz++;
                             else z.streuSatz.ohneBereich.push(a.key + "@" + kk);
                         }
@@ -816,7 +819,7 @@ const { errs, check } = pruefer();
             // EIN BEREICH TREU im Satz: seine Views zeigen byte-gleich in die Satz-Arrays an seiner Lage, sein Index ist der
             // Chunk-Index um den Bereichs-Anfang verschoben (als Multimenge), die Viertel liegen als Läufe hintereinander und
             // decken ihn lückenlos — (f) für jeden Bereich jedes Satzes, (k) nach dem Verdichten.
-            const bereichTreu = (satz, b) => {
+            const bereichTreu = (satz, b, schritt = 97) => {
                 const geo = satz.mesh.geometry;
                 if (satz.bloecke.get(b.key) !== b) return false;
                 // ein FLÜCHTIGER Block (K69, `_satzBlock`) hält seine Werte nicht: die Linse rechnet ihn aus seiner Quelle
@@ -857,11 +860,11 @@ const { errs, check } = pruefer();
                             b.vAnzahl,
                             fa.w ? g.attributes[fa.w].array : undefined
                         );
-                        for (let i = 0; i < soll.length; i += 97) if (soll[i] !== dst[b.vStart * 4 + i]) return false;
+                        for (let i = 0; i < soll.length; i += schritt) if (soll[i] !== dst[b.vStart * 4 + i]) return false;
                         continue;
                     }
                     if (src.length !== b.vAnzahl * is || src.buffer !== dst.buffer) return false;
-                    for (let i = 0; i < src.length; i += 97) if (src[i] !== dst[b.vStart * is + i]) return false;
+                    for (let i = 0; i < src.length; i += schritt) if (src[i] !== dst[b.vStart * is + i]) return false;
                 }
                 const li = g.index.array;
                 if (li.length !== b.iAnzahl || b.idx.length !== b.iAnzahl) return false;
@@ -873,6 +876,79 @@ const { errs, check } = pruefer();
                 }
                 return o === b.iAnzahl;
             };
+            // ── (q) DER SATZ-FADEN: die Golden-Häuser der Stufe 2 außerhalb der Welt-Liste (kein Cull, keine Stufen-Wahl greift
+            // sie) im Raster um den Spieler, jede Lage, Drehung, Skala und Tönung anders; der Faden rechnet, der Takt legt jede
+            // Gruppe ganz neu (kopiert gegen gerechnet gemessen), `bereichTreu` Byte für Byte gegen den alten Weg
+            {
+                const pm = s.playerMesh.position;
+                const H = faelle.map((name, k) => [
+                    name.split("-")[0],
+                    name,
+                    {
+                        type: "haus_" + name.split("-")[0],
+                        rotationY: k * 2.4,
+                        scale: 1 + (k % 3) / 8,
+                        studioOv: { __gestalt: parseInt(name.split("-s")[1]) },
+                        position: { x: pm.x + ((k % 8) - 3.5) * 18, y: 12 + k / 7, z: pm.z + ((k >> 3) - 3.5) * 18 },
+                        tintH: 0.9,
+                        tintS: 0.8,
+                        tintV: k % 2,
+                    },
+                ]);
+                const fl = new Map();
+                await window.__gebautNach("die Golden-Häuser", {
+                    bau: () => H.forEach(([kult, , e]) => fl.get(e) || fl.set(e, r._foundryFlattenFor(e, kult, 2))),
+                    fertig: () => H.every(([, , e]) => fl.get(e) != null),
+                    offen: () => true,
+                });
+                const F = (res.faden = { fehlt: [] });
+                const refs = [];
+                for (const [, name, e] of H)
+                    if (fl.get(e) && fl.get(e).lod === 2) {
+                        r._archInstanceAdd(e, fl.get(e));
+                        e.instSlots.forEach((ref, t) => ref.faden && refs.push([name + " Teil " + t, ref]));
+                    } else F.fehlt.push(name + " ohne L2");
+                await window.__gebautNach("die Blöcke des Satz-Fadens", {
+                    fertig: () => refs.every(([, ref]) => ref.faden.da),
+                    offen: () => true,
+                });
+                const voll = refs.filter(([n, ref]) => ref.faden.bloecke || !F.fehlt.push(n + ": " + ref.faden.fehlt));
+                const G = new Map(voll.map(([n, ref]) => [s.archInstanceGroups.get(ref.key), n]));
+                // der Takt legt jede Gruppe ganz neu (`_bauSatzLege` → `_bauSatzFadenEin`): kopiert er alle Ecken, und trägt jeder
+                // Bereich Byte für Byte, was der alte Weg rechnet? DER SELBSTTEST IM LAUF: in einem Block tauschen zwei Ecken
+                // ihre Normalen — der Vergleich fällt rot beim Namen, getauscht zurück wieder grün.
+                const Z = r._satzFadenZahl();
+                const lege = () => {
+                    for (const g of G.keys()) {
+                        r._chunkSatzAus(g.satz, g.key);
+                        r._bauSatzMarke(g.key, g.satz);
+                    }
+                    const k0 = Z.kopiert;
+                    r._tickBauSatz(Infinity);
+                    return Z.kopiert - k0;
+                };
+                const untreu = () =>
+                    [...G]
+                        .filter(([g]) => !bereichTreu(s.chunkSaetze.get(g.satz), s.chunkSaetze.get(g.satz).bloecke.get(g.key), 1))
+                        .map((x) => x[1]);
+                r._tickBauSatz(Infinity);
+                F.teile = refs.length;
+                F.kopiert = lege() === [...G.keys()].reduce((a, g) => a + g.geom.attributes.position.count, 0) ? voll.length : 0;
+                F.untreu = untreu();
+                const N = voll[0][1].faden.bloecke.attrs.normal;
+                let j = 1;
+                while (N[j * 4] === N[0]) j++;
+                const tausch = () => {
+                    for (let c = 0; c < 4; c++) [N[c], N[j * 4 + c]] = [N[j * 4 + c], N[c]];
+                };
+                tausch();
+                lege();
+                F.mutante = untreu();
+                tausch();
+                lege();
+                F.geheilt = untreu().length === 0;
+                for (const satz of s.chunkSaetze.values()) r._chunkSatzBereit(satz); // die Ordnung, wie der Render-Takt sie legt
+            }
             res.saetze = [];
             if (s.chunkSaetze)
                 for (const [art, satz] of s.chunkSaetze) {
@@ -1278,7 +1354,7 @@ const { errs, check } = pruefer();
             res.wurf = wurfProbe(true);
             res.wurfAlt = wurfProbe(false);
             return res;
-        });
+        }, FAELLE);
         // (o) DER STUFEN-SPRUNG: das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
         // gezeichnete Fläche (Lage + (Ziel − Lage) · `_morphFaktor`, die Boden-Karte des Stoffs) vor dem Wechsel gegen die des
         // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
@@ -1504,6 +1580,14 @@ const { errs, check } = pruefer();
         fo(SP.ohne)
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
+    const F = out.faden;
+    const fv = F.fehlt.concat(F.untreu);
+    check(
+        `(q) SATZ-FADEN — ${FAELLE.length} Golden-Häuser L2 byte-gleich aus dem Faden kopiert`,
+        !fv.length && F.teile > 0 && F.kopiert === F.teile,
+        fv.slice(0, 4).join(" · ") || `${F.kopiert}/${F.teile} Teile`
+    );
+    check("(q) Selbsttest: zwei Ecken tauschen ihre Normalen — rot beim Namen, zurück grün", F.mutante.length === 1 && F.geheilt, F.mutante + "");
     check(
         "(h) BAU-SATZ — der gesetzte Studio-Bau lebt (Satz-Arten im Ring), jede Gruppe als Bereich im Satz ihres Stoffs",
         z.bauSatz.gruppen > 0 && z.bauSatz.imSatz === z.bauSatz.gruppen,

@@ -1052,6 +1052,13 @@ function checkAliasArten(core) {
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
 const stripComments = stammLib.ohneKommentare;
 const { kinder } = stammLib;
+// DIE GLIED-FRAGEN der AST-Wände: der Name eines nicht berechneten Glieds `x.name` (sonst null) — als Ruf `x.name(…)`, als
+// Ziel `x.name = …`, als Ruf am Stamm `this.name(…)`; der Träger eines Rufs (`a.b(…)`, `x.a.b(…)`: a) oder "".
+const glied = (m) => (m && m.type === "MemberExpression" && !m.computed ? m.property.name : null);
+const rufGlied = (e) => (e && e.type === "CallExpression" ? glied(e.callee) : null);
+const zielGlied = (e) => (e && e.type === "AssignmentExpression" ? glied(e.left) : null);
+const stammGlied = (e) => (rufGlied(e) !== null && e.callee.object.type === "ThisExpression" ? rufGlied(e) : null);
+const rufTraeger = (e) => (e.callee.object.type === "Identifier" ? e.callee.object.name : glied(e.callee.object) || "");
 
 // `auch`: ein Name, der zusätzlich in einer Studio-Datei außerhalb der Stamm-Liste fiel (dort gilt NUR er — das Labor
 // trägt eigene Namen, die im Stamm gefallen sind).
@@ -1879,10 +1886,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     };
     // ein Promise-Fang: `….catch((e) => …)` — sein Rückruf ist ein catch, die Kette davor sein Block
     const istPromiseFang = (n) =>
-        n.type === "CallExpression" &&
-        n.callee.type === "MemberExpression" &&
-        !n.callee.computed &&
-        n.callee.property.name === "catch" &&
+        rufGlied(n) === "catch" &&
         n.arguments.length >= 1 &&
         /Function/.test(n.arguments[0].type);
     // AUFGESCHOBEN läuft, was der Versuch nur ablegt: eine Funktion als Wert eines Objekts (`{ render: () => … }`), an ein
@@ -2003,70 +2007,19 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 RENDER_KLASSE.test(e.callee.property.name)
             )
                 hit = "baut " + e.callee.property.name;
-            else if (
-                e.type === "AssignmentExpression" &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                e.left.property.name === "needsUpdate"
-            )
-                hit = "lädt hoch (needsUpdate)";
-            else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                GEO_SCHREIBEN.test(e.callee.property.name) &&
-                GEO_TRAEGER.test(
-                    e.callee.object.type === "Identifier"
-                        ? e.callee.object.name
-                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
-                          ? e.callee.object.property.name
-                          : ""
-                )
-            )
-                hit = "schreibt die Geometrie (" + e.callee.property.name + ")";
-            else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                e.callee.property.name === "postMessage" &&
-                /worker/i.test(
-                    e.callee.object.type === "Identifier"
-                        ? e.callee.object.name
-                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
-                          ? e.callee.object.property.name
-                          : ""
-                )
-            )
+            else if (zielGlied(e) === "needsUpdate") hit = "lädt hoch (needsUpdate)";
+            else if (GEO_SCHREIBEN.test(rufGlied(e)) && GEO_TRAEGER.test(rufTraeger(e)))
+                hit = "schreibt die Geometrie (" + rufGlied(e) + ")";
+            else if (rufGlied(e) === "postMessage" && /worker/i.test(rufTraeger(e)))
                 hit = "schickt dem Faden einen Bau-Auftrag (postMessage)";
-            else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                RENDER_LAUF.test(e.callee.property.name)
-            ) {
-                const o = e.callee.object;
-                const t =
-                    o.type === "Identifier"
-                        ? o.name
-                        : o.type === "MemberExpression" && !o.computed
-                          ? o.property.name
-                          : "";
-                if (RENDER_TRAEGER.test(t)) hit = "läuft den Render-Graphen (" + t + "." + e.callee.property.name + ")";
-            }
+            else if (RENDER_LAUF.test(rufGlied(e)) && RENDER_TRAEGER.test(rufTraeger(e)))
+                hit = "läuft den Render-Graphen (" + rufTraeger(e) + "." + rufGlied(e) + ")";
         });
         return hit;
     };
     const ruft = (n) => {
         const s = new Set();
-        geheVersuch(n, (e) => {
-            if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression" &&
-                !e.callee.computed
-            )
-                s.add(e.callee.property.name);
-        });
+        geheVersuch(n, (e) => stammGlied(e) !== null && s.add(stammGlied(e)));
         return s;
     };
     // DIE HÜLLE: jede Methode, die den Render-Graphen baut — direkt oder über JEDES Ruf-Glied (Fixpunkt, keine Tiefe:
@@ -2085,22 +2038,8 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         const s = new Set();
         if (!startetFaden(n)) return s;
         gehe(n, (e) => {
-            if (
-                e.type === "AssignmentExpression" &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                e.left.property.name === "onmessage" &&
-                /Function/.test(e.right.type)
-            )
-                gehe(e.right, (c) => {
-                    if (
-                        c.type === "CallExpression" &&
-                        c.callee.type === "MemberExpression" &&
-                        c.callee.object.type === "ThisExpression" &&
-                        !c.callee.computed
-                    )
-                        s.add(c.callee.property.name);
-                });
+            if (zielGlied(e) === "onmessage" && /Function/.test(e.right.type))
+                gehe(e.right, (c) => stammGlied(c) !== null && s.add(stammGlied(c)));
         });
         return s;
     };
@@ -2161,20 +2100,12 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             let ziel = null;
             let fn = null;
             let art = null;
-            if (
-                e.type === "AssignmentExpression" &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                /Function/.test(e.right.type)
-            ) {
+            if (zielGlied(e) !== null && /Function/.test(e.right.type)) {
                 ziel = text(e.left.object);
                 fn = e.right;
-                art = e.left.property.name;
+                art = zielGlied(e);
             } else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                e.callee.property.name === "addEventListener" &&
+                rufGlied(e) === "addEventListener" &&
                 e.arguments.length >= 2 &&
                 e.arguments[0].type === "Literal" &&
                 /Function/.test(e.arguments[1].type)
@@ -2185,16 +2116,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             }
             const f = ziel && faeden.get(ziel);
             if (!f) return;
-            if (art === "onmessage")
-                gehe(fn, (c) => {
-                    if (
-                        c.type === "CallExpression" &&
-                        c.callee.type === "MemberExpression" &&
-                        c.callee.object.type === "ThisExpression" &&
-                        !c.callee.computed
-                    )
-                        f.rufe.add(c.callee.property.name);
-                });
+            if (art === "onmessage") gehe(fn, (c) => stammGlied(c) !== null && f.rufe.add(stammGlied(c)));
             else if (HOERER.test(art)) f.hoerer.push({ art, fn });
         });
         return [...faeden].map(([w, f]) => Object.assign({ w }, f));
@@ -2252,11 +2174,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         });
     };
     const istErrorLog = (e) =>
-        e.type === "CallExpression" &&
-        e.callee.type === "MemberExpression" &&
-        e.callee.object.type === "ThisExpression" &&
-        !e.callee.computed &&
-        e.callee.property.name === "log" &&
+        stammGlied(e) === "log" &&
         e.arguments.length >= 2 &&
         e.arguments[1].type === "Literal" &&
         e.arguments[1].value === "ERROR";
@@ -2273,17 +2191,9 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         !!e &&
         (istErrorLog(e) ||
             (e.type === "AwaitExpression" && lautE(e.argument)) ||
-            (e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression" &&
-                !e.callee.computed &&
-                bruchHelfer.has(e.callee.property.name) &&
-                e.callee.property.name !== "log"));
+            (bruchHelfer.has(stammGlied(e)) && stammGlied(e) !== "log"));
     const istSchlangeZurueck = (e) =>
-        e.type === "CallExpression" &&
-        e.callee.type === "MemberExpression" &&
-        !e.callee.computed &&
-        e.callee.property.name === "push" &&
+        rufGlied(e) === "push" &&
         /Queue|Schlange/.test(srcRoh.slice(e.callee.object.start, e.callee.object.end));
     const wiederholt = (s) =>
         !!s &&
@@ -2298,9 +2208,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 e.operator === "===" &&
                 e.right.type === "Literal" &&
                 e.right.value === true &&
-                e.left.type === "MemberExpression" &&
-                !e.left.computed &&
-                e.left.property.name === "stoff" &&
+                glied(e.left) === "stoff" &&
                 e.left.object.type === "Identifier"
             )
                 aus.add(e.left.object.name);
@@ -2405,16 +2313,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             continue;
         }
         const logs = [];
-        flach(m.value.body, (n) => {
-            if (
-                n.type === "CallExpression" &&
-                n.callee.type === "MemberExpression" &&
-                n.callee.object.type === "ThisExpression" &&
-                !n.callee.computed &&
-                n.callee.property.name === "log"
-            )
-                logs.push(n);
-        });
+        flach(m.value.body, (n) => stammGlied(n) === "log" && logs.push(n));
         // DIE FRIST (Prüfer K22-3): ein Zähler ist nur laut, wenn eine Frist (setTimeout) ihn meldet — sonst blieb eine Folge,
         // die vor der nächsten Meldung endete, still. Jeder this.log der Frist meldet ERROR, mindestens einer steht.
         let zaehlt = null;
@@ -2428,29 +2327,11 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 n.arguments.length &&
                 /Function/.test(n.arguments[0].type)
             )
-                gehe(n.arguments[0], (c) => {
-                    if (
-                        c.type === "CallExpression" &&
-                        c.callee.type === "MemberExpression" &&
-                        c.callee.object.type === "ThisExpression" &&
-                        !c.callee.computed &&
-                        c.callee.property.name === "log"
-                    )
-                        fristLogs.push(c);
-                });
+                gehe(n.arguments[0], (c) => stammGlied(c) === "log" && fristLogs.push(c));
         });
         // still ist jeder this.log des Melders, der nicht ERROR meldet — auch in einer inneren Funktion (der Frist)
         const alleLogs = [];
-        gehe(m.value.body, (n) => {
-            if (
-                n.type === "CallExpression" &&
-                n.callee.type === "MemberExpression" &&
-                n.callee.object.type === "ThisExpression" &&
-                !n.callee.computed &&
-                n.callee.property.name === "log"
-            )
-                alleLogs.push(n);
-        });
+        gehe(m.value.body, (n) => stammGlied(n) === "log" && alleLogs.push(n));
         const still = alleLogs.filter((n) => !istErrorLog(n));
         const fristFehlt = !!zaehlt && !fristLogs.some(istErrorLog);
         zaehltMit = true;
@@ -2504,13 +2385,9 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             if (
                 n.type === "VariableDeclarator" &&
                 n.id.type === "Identifier" &&
-                n.init &&
-                n.init.type === "CallExpression" &&
-                n.init.callee.type === "MemberExpression" &&
-                n.init.callee.object.type === "ThisExpression" &&
-                !n.init.callee.computed
+                stammGlied(n.init) !== null
             )
-                vars.set(n.id.name, n.init.callee.property.name);
+                vars.set(n.id.name, stammGlied(n.init));
         });
         if (!vars.size) continue;
         // gefragt ist der Knoten selbst (`if (v)`, `v ? … : …`, `v && …`), nie ein Glied seines Vertrags (`v.roughNode` trägt
@@ -2598,14 +2475,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         const stoff = stoffMethode.has(m);
         // (b) die Fehler-Variable — im ganzen Stamm
         gehe(m.value, (n) => {
-            if (
-                n.type === "AssignmentExpression" &&
-                n.left.type === "MemberExpression" &&
-                !n.left.computed &&
-                n.left.object.type === "Identifier" &&
-                n.left.object.name === "window" &&
-                /^__\w*(Error|Fehler)/.test(n.left.property.name)
-            )
+            if (/^__\w*(Error|Fehler)/.test(zielGlied(n)) && n.left.object.type === "Identifier" && n.left.object.name === "window")
                 fund("Fehler-Variable", name, n, `window.${n.left.property.name} (kein Spiel-Leser)`);
         });
         // (a) der Fang: im Stoff jeder catch, sonst jeder catch, dessen Versuch den Render-Graphen baut (try-Block,
@@ -2638,14 +2508,8 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             // meldet dort; geprüft werden Ketten aus fremder Quelle (fetch, ein Versprechen von außen).
             const glieder = [];
             let wurzel = istPromiseFang(n) ? n.callee.object : null;
-            while (
-                wurzel &&
-                wurzel.type === "CallExpression" &&
-                wurzel.callee.type === "MemberExpression" &&
-                !wurzel.callee.computed &&
-                /^(then|catch|finally)$/.test(wurzel.callee.property.name)
-            ) {
-                if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
+            while (/^(then|catch|finally)$/.test(rufGlied(wurzel))) {
+                if (rufGlied(wurzel) === "then") glieder.push(wurzel.arguments[0]);
                 wurzel = wurzel.callee.object;
             }
             const stammRuf = (e) =>
@@ -3641,23 +3505,10 @@ function main() {
                 if (n.type === "TryStatement" && n.handler) {
                     k = n.handler.body;
                     ort = n.handler;
-                } else if (
-                    n.type === "CallExpression" &&
-                    n.callee.type === "MemberExpression" &&
-                    !n.callee.computed &&
-                    n.callee.property.name === "catch" &&
-                    n.arguments.length >= 1 &&
-                    /Function/.test(n.arguments[0].type)
-                ) {
+                } else if (rufGlied(n) === "catch" && n.arguments.length >= 1 && /Function/.test(n.arguments[0].type)) {
                     k = n.arguments[0].body;
                     ort = n.arguments[0];
-                } else if (
-                    n.type === "AssignmentExpression" &&
-                    n.left.type === "MemberExpression" &&
-                    !n.left.computed &&
-                    /^(onerror|onmessageerror)$/.test(n.left.property.name) &&
-                    /Function/.test(n.right.type)
-                ) {
+                } else if (/^(onerror|onmessageerror)$/.test(zielGlied(n)) && /Function/.test(n.right.type)) {
                     // der Fehler-Hörer eines Fadens (Fortsetzung der Nachbesserung 2): sein Fang ist sein Rumpf
                     k = n.right.body;
                     ort = n.right;
