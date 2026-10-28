@@ -713,3 +713,4 @@
 2026-10-28 17:57:10 takt17n-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 8/18
 2026-10-28 18:01:52 takt17n-gtx material.K1#1,material.K1#2 ROT/ROT 4.6 · 10/18
 2026-10-28 18:06:00 takt17n-gtx mensch.K2#2 GRÜN 4.0 · 11/18
+2026-10-28 18:07:59 takt17n-gtx siedlung.K2#2 GRÜN 1.9 · 12/18
