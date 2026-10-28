@@ -36,7 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -813,12 +813,11 @@ const server = statikServer();
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
-    let befund = null;
-    try {
+    const befund = await befundVon(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         await page.evaluate(SICHT.SICHT_INSTALL);
-        befund = await page.evaluate(async (MESS) => {
+        const befund = await page.evaluate(async (MESS) => {
             const r = window.anazhRealm,
                 st = r.state,
                 T = window.THREE;
@@ -1425,15 +1424,8 @@ const server = statikServer();
                 : null;
             return aus;
         }, MESS);
-    } catch (e) {
-        befund = { fehler: e?.message || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
+        return befund;
+    }, browser, server, { feld: "fehler" });
     const zeile = (n, x) =>
         `  ${n.padEnd(7)} ${x.frames} Frames · Pässe ${x.paesse.mittel} · Arbeit Ø ${x.arbeit.mittel} (Median ${x.arbeit.median}, ` +
         `max ${x.arbeit.max}) · Höhlen-Sicht ${x.hoehlenSicht.mittel} + Licht ${x.hoehlenSichtLicht.mittel} · Abschnitte ` +

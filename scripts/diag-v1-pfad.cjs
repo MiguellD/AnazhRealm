@@ -1080,14 +1080,7 @@ async function probe(arg) {
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
+    const tick = __takte;
     // ── V-D1: die Ankunft ──
     try {
         const m = { gestartet: false };

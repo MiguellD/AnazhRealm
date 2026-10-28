@@ -24,7 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, bildSeite, uferStellen, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const stammLib = require("./lib/stamm.cjs");
@@ -313,9 +313,7 @@ function rundungProbe() {
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
+    const { browser, page } = await bildSeite({ art: "linse", frist: 900000 }, 320, 240);
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
     const T0 = Date.now();

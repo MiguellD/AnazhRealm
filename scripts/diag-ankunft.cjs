@@ -388,36 +388,12 @@ async function probe(arg) {
     await window.__weltDa();
     const r = window.anazhRealm;
     const st = r.state;
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
+    const tick = __takte;
     // eine Taste an `ziel` (keydown · keyup · keypress) und der Fokus beim Namen
     const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
     const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
     // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let n = 0;
-        lieferer[name] = function (...x) {
-            n++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return n > 0;
-    };
+    const ruft = (...a) => __rufZahl(...a) > 0;
     const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
     const buch = await r._foundryAwaitBook(45000);
     await tick(30, 30);

@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, bildSeite, ROOT: root, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const fs = require("fs");
@@ -202,9 +202,7 @@ const SCHUSS_FN = async (kam) => {
 hauptLauf(async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
-    const page = await browser.newPage();
-    await page.setViewport({ width: W, height: H });
+    const { browser, page } = await bildSeite({ art: "linse", frist: PROTO_MS }, W, H);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler

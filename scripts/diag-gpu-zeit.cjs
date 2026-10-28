@@ -34,7 +34,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
-const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const server = statikServer();
 
@@ -44,11 +44,10 @@ const { errs, check } = pruefer();
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     page.setDefaultTimeout(280000);
-    let out = null;
-    try {
+    const out = await befundVon(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
-        out = await page.evaluate(async () => {
+        const out = await page.evaluate(async () => {
             const r = window.anazhRealm;
             const res = {};
             // dieselbe Quelle-Prüfung für Echt-Lauf UND Selbst-Test (EINE Linse):
@@ -163,17 +162,8 @@ const { errs, check } = pruefer();
             r.state.perfSense.gpuQuelle = savedQ;
             return res;
         });
-    } catch (e) {
-        out = { error: (e && e.message) || String(e) };
-    }
-    await browser.close();
-    server.close();
-
-    console.log("\n===== GPU-ZEIT-WELLE — echtes gpuMs (timestamp-query) statt Subtraktions-Proxy =====\n");
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+        return out;
+    }, browser, server, { kopf: "\n===== GPU-ZEIT-WELLE — echtes gpuMs (timestamp-query) statt Subtraktions-Proxy =====\n" });
     check(
         `(2) perfSense führt gpuMs als eigene Phase (EWMA ${out.senseGpuMs != null ? (+out.senseGpuMs).toFixed(2) : "—"} ms · max ${out.senseGpuMax != null ? (+out.senseGpuMax).toFixed(1) : "—"})`,
         Number.isFinite(out.senseGpuMs) && Number.isFinite(out.senseGpuMax)

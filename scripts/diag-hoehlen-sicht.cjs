@@ -622,7 +622,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, warteAufWelt, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
@@ -639,11 +639,10 @@ const server = statikServer();
     const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
     await page.evaluateOnNewDocument(installHoehlenStrahl);
-    let befund = null;
-    try {
+    const befund = await befundVon(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
-        befund = await page.evaluate(async (ORTE) => {
+        const befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;
             let HINAUS = null;
             const r = window.anazhRealm,
@@ -1638,15 +1637,8 @@ const server = statikServer();
             })();
             return aus;
         }, ORTE);
-    } catch (e) {
-        befund = { fehler: e?.message || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
+        return befund;
+    }, browser, server, { feld: "fehler" });
     console.log(`  Ring ${befund.ringChunks} Chunks, ${befund.bereiche} Boden-Bereiche`);
     for (const sp of befund.spiegel)
         console.log(

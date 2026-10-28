@@ -18,7 +18,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, bildSeite, laufUhr, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -751,17 +751,14 @@ function buehne() {
 (async () => {
     console.log("=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
+    const { browser, page } = await bildSeite({ art: "linse", frist: 600000 }, 320, 240);
     const vendorDrift = [];
     page.on("console", (m) => {
         const t = m.text();
         if (/Vendor-Drift/.test(t)) vendorDrift.push(t.slice(0, 200));
     });
-    let out = null;
     const log = laufUhr();
-    try {
+    const out = await befundVon(async () => {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
@@ -781,22 +778,15 @@ function buehne() {
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
         log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
         await page.evaluate(DIAET_INSTALL);
-        out = await page.evaluate(buehne);
+        const out = await page.evaluate(buehne);
         log(
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
         );
         log(`Stand: ${JSON.stringify(out.stand)}`);
         log(`B-K1 ${JSON.stringify([out.schluessel, out.wurf])}`);
-    } catch (e) {
-        out = { error: e?.message || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+        return out;
+    }, browser, server);
     const v = urteil(out);
     for (const d of vendorDrift) v.push(`VENDOR-DRIFT: ${d}`);
     wandEnde(

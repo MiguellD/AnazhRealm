@@ -11,14 +11,13 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, startProc, eigenePorte, waitFor, hauptLauf, pruefer } = require("./lib/welt-boot.cjs");
+const { ROOT, meshPaar, waitFor, hauptLauf, pruefer } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
 // Der Klon, in dem die Linse liegt, und der Port je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server
 // ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT). die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des
 // Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
-let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "smoke-webrtc-room";
 // die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
@@ -103,25 +102,10 @@ const W17JS_WORLD_HTML = `<!doctype html>
 
 hauptLauf(async () => {
     const { errs: failures, check } = pruefer();
-    [PORT, SIGNAL_PORT] = await eigenePorte("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT");
-    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-
-    console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-
-    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
+    const { saveServer, signaling, browser, seiten, beitritt } = await meshPaar("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT", { art: "webgl" });
 
     try {
-        const pageA = await browser.newPage();
-        const pageB = await browser.newPage();
-        await pageA.setViewport({ width: 1024, height: 640 });
-        await pageB.setViewport({ width: 1024, height: 640 });
-
-        console.log("Lade beide Spielseiten ...");
-        await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+        const [pageA, pageB] = await seiten();
         // Welt + window.anazhRealm initialisieren lassen — bis init durchlief (`_gameLoopTick`): init wartet auf den
         // IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft; ein Raum-Beitritt davor fiele in
         // init hinein (die Auto-Verbindung baute ihn neu).
@@ -136,23 +120,9 @@ hauptLauf(async () => {
             "Seite B initialisiert"
         );
 
-        // Beide Seiten in DENSELBEN Raum bringen (worldId unterscheidet sich
-        // pro Seite — der roomOverride zwingt sie zusammen).
-        const joinRoom = (wsUrl, room) => {
-            const r = window.anazhRealm;
-            r.state.p2p.url = wsUrl;
-            r.state.p2p.roomOverride = room;
-            r.initP2PSync(null);
-            return r.state.p2p.peerId;
-        };
-        const peerIdA = await pageA.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        const peerIdB = await pageB.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        console.log(`Seite A peerId=${peerIdA}, Seite B peerId=${peerIdB}`);
-
-        // Auf den WebRTC-Handshake warten: beide Seiten müssen meshActive
-        // melden (alle Peer-Kanäle offen).
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
+        // Beide Seiten in DENSELBEN Raum bringen (worldId unterscheidet sich pro Seite — der roomOverride zwingt sie
+        // zusammen) und auf den WebRTC-Handshake warten: beide Seiten müssen meshActive melden (alle Peer-Kanäle offen).
+        const [peerIdA] = await beitritt(pageA, pageB, ROOM);
         check("Seite A: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
         check("Seite B: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
 

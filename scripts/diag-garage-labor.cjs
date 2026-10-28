@@ -4,7 +4,7 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, bildSeite, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -69,9 +69,7 @@ hauptLauf(async () => {
     }
 
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 120000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 720 });
+    const { browser, page } = await bildSeite({ art: "linse", frist: 120000 }, 1280, 720);
     await server.zeige(page, 60000, "worlds/garage/index.html", "load");
     await page.waitForFunction(() => typeof window.__vehicleCore === "object" && document.querySelector("canvas"), {
         timeout: 30000,

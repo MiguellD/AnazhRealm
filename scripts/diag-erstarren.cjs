@@ -27,7 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über ERSTARREN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4427.
-const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
@@ -37,12 +37,11 @@ const { errs, check } = pruefer();
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     page.setDefaultTimeout(280000);
-    let out = null;
-    try {
+    const out = await befundVon(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
 
-        out = await page.evaluate(async () => {
+        const out = await page.evaluate(async () => {
             const r = window.anazhRealm,
                 s = r.state;
             const res = {};
@@ -204,17 +203,8 @@ const { errs, check } = pruefer();
             r._membranMaterialFor = origMat;
             return res;
         });
-    } catch (e) {
-        out = { error: (e && e.message) || String(e) };
-    }
-    await browser.close();
-    server.close();
-
-    console.log("\n===== P0 — DIE ERSTARREN-LINSE (kalter Boot · Wander-Lauf · Membran-Wand) =====\n");
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+        return out;
+    }, browser, server, { kopf: "\n===== P0 — DIE ERSTARREN-LINSE (kalter Boot · Wander-Lauf · Membran-Wand) =====\n" });
     const L = out.lauf;
     console.log(
         `  Lauf: ${L.n} Ticks · Q1-Mittel ${L.q1} ms · Q4-Mittel ${L.q4} ms · max ${L.max} ms · >250 ms: ${L.ueber250} (${(L.anteil * 100).toFixed(1)} %)`

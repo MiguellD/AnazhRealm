@@ -339,14 +339,7 @@ async function probe(argW) {
     const r = window.anazhRealm;
     const st = r.state;
     const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
+    const tick = __takte;
     for (
         const weiter = window.__deckel("Buch, Leib und Eiche", 900);
         weiter() &&
@@ -444,24 +437,7 @@ async function probe(argW) {
         }
     };
     // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let k = 0;
-        lieferer[name] = function (...x) {
-            k++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return k > 0;
-    };
+    const ruft = (...a) => __rufZahl(...a) > 0;
     // je Abschnitt EIN Befund: gestartet erst am Ende, ein Wurf trägt seinen Stapel
     const abschnitt = async (k, m, fn) => {
         out[k] = m = { gestartet: false, ...m };

@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, bootBisFaden, nullRenderer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
@@ -63,27 +63,7 @@ const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 
 // Boot bis die Welt steht und der Worker den Worldgen-Stand trägt (der Null-Renderer wie im Playtest: die Probe
 // braucht keinen Render, nur Main und Worker).
-async function boote(page) {
-    return page.evaluate(async () => {
-        const start = performance.now();
-        await window.__weltDa(); // nach dem Erwachen des Boots
-        for (const weiter = window.__deckel("der Boot des Voxel-Fadens", 7500); weiter(); ) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Boot reift */
-                }
-                const s = r.state;
-                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
-                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
-            }
-            await sleep(16);
-        }
-        return { ok: false };
-    });
-}
+const boote = (page) => bootBisFaden(page, "der Boot des Voxel-Fadens");
 
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck, zwilling = false) {

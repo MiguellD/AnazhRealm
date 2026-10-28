@@ -13,7 +13,7 @@
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, webGpuProbe, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
@@ -682,16 +682,7 @@ hauptLauf(async () => {
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
     await server.zeige(page, 60000, "index.html?holz=kienspan");
 
-    const gpu = await page.evaluate(async () => {
-        if (!navigator.gpu) return "kein navigator.gpu";
-        try {
-            const a = await navigator.gpu.requestAdapter();
-            return a ? "adapter ok" : "kein adapter";
-        } catch (e) {
-            return "adapter-wurf: " + (e && e.message);
-        }
-    });
-    console.log("WebGPU-Probe:", gpu);
+    await webGpuProbe(page);
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};

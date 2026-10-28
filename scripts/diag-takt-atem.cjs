@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem; Port TAKT_ATEM_PORT, 4399)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, rotListe, bildSeite, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -266,12 +266,9 @@ function atem() {
 (async () => {
     console.log("=== TAKT-ATEM — der Regler atmet, der Takt rechnet nur, was sich ändert ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
-    let out = null;
+    const { browser, page } = await bildSeite({ art: "linse", frist: 600000 }, 320, 180);
     const log = laufUhr();
-    try {
+    const out = await befundVon(async () => {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // die Welt steht: Renderer, Foundry-Buch, Sätze und Bäume der Stufen-Wahl; danach ruht der Spiel-Loop
         const bereit = await page.evaluate(async () => {
@@ -321,27 +318,16 @@ function atem() {
         log(
             `Welt bereit nach ${Math.round(bereit.ms / 1000)} s (${bereit.baeume} Bäume der Stufen-Wahl, Bestand ${bereit.bestand} ruht)`
         );
-        out = await page.evaluate(atem);
+        const out = await page.evaluate(atem);
         if (out.kopf) {
             log(`Welt: ${JSON.stringify(out.welt)} · ${out.ms} ms für zwei Läufe zu ${out.kopf.takte} Takten`);
             log(`Kopf: ${JSON.stringify(out.kopf)}`);
             log(`Gegenprobe (stoßende Dichte): ${JSON.stringify(out.gegenprobe)}`);
         }
-    } catch (e) {
-        out = { error: (e && e.message) || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+        return out;
+    }, browser, server);
     const v = urteil(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const k = out.kopf;
     console.log(
         `\n✅ GRÜN — unter atmendem Regler (${k.takte} gezählte Takte auf stehenden Stufen 1 → 0,1 → 1) wechselt die Dichte in ${pz(k.dichteJeTakt)} ` +

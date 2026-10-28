@@ -149,7 +149,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, rotListe, bildSeite, laufUhr } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -511,12 +511,9 @@ function buehne(arg) {
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
-    let out = null;
+    const { browser, page } = await bildSeite({ art: "linse", frist: 600000 }, 320, 180);
     const log = laufUhr();
-    try {
+    const out = await befundVon(async () => {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);
         // DER LEIB JE STUFE (B5): in der Ego-Sicht trägt der Spieler vor dem Bild die Grobstufe als Nah-Gestalt (`nahStufe` 1),
@@ -547,7 +544,7 @@ function buehne(arg) {
                     webgpu: st.renderer.backend.isWebGPUBackend === true,
                 };
             }, stufe);
-        out = {};
+        const out = {};
         for (const [name, stufe] of STUFEN) {
             const b = await halt(stufe);
             if (!b.ok) throw new Error(`der Leib der Stufe ${stufe} (${name}) stand nach 240 s nicht`);
@@ -576,21 +573,10 @@ function buehne(arg) {
                 log(`Bilder (RGBA 192×108) in ${d}`);
             }
         }
-    } catch (e) {
-        out = { error: e?.message || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+        return out;
+    }, browser, server);
     const v = urteilJeStufe(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const [g, f] = [out.grob, out.fein];
     console.log(
         `\n✅ GRÜN — in der Ego-Sicht wirft der Leib Schatten am Boden, grob ${g.kopf.ego.wurf} px (IoU ${g.kopf.iou}) und fein ` +

@@ -6,7 +6,7 @@
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss
 //   SUBSTANZ trägt (nicht leer/uniform — sonst Exit 1 mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, bildSeite, webGpuProbe, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -22,23 +22,12 @@ const server = statikServer();
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: W, height: H });
+    const { browser, page } = await bildSeite({ art: "linse", frist: 600000 }, W, H);
     // KEIN Null-Renderer — die Augen brauchen den echten (WebGPU via swiftshader-Vulkan).
     await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
-    const gpu = await page.evaluate(async () => {
-        if (!navigator.gpu) return "kein navigator.gpu";
-        try {
-            const a = await navigator.gpu.requestAdapter();
-            return a ? "adapter ok" : "kein adapter";
-        } catch (e) {
-            return "adapter-wurf: " + (e && e.message);
-        }
-    });
-    console.log("WebGPU-Probe:", gpu);
+    await webGpuProbe(page);
 
     const out = await page.evaluate(
         async (zeitArg, blickArg) => {

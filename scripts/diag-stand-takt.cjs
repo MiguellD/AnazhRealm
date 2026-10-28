@@ -28,7 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -660,13 +660,12 @@ const TAT = process.argv.includes("--tat");
         window.__anazhFernRing = true; // der Fern-Ring (die Saum-Wache) läuft auch ohne GPU — sein Haken
         window.__anazhAutoSettlement = false; // kein Start-Dorf: was es baut, hinge an der Bildrate (die Mess-Bühne)
     });
-    let befund = null;
-    try {
+    const befund = await befundVon(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         await page.evaluate(STAND.STAND_INSTALL + require("./lib/kamera-nah.cjs").KAMERA_NAH_INSTALL);
-        if (TAT) befund = await tatLauf(page);
-        else befund = await page.evaluate(
+        if (TAT) return tatLauf(page);
+        return page.evaluate(
             async (MESS, TAKTE) => {
                 const r = window.anazhRealm,
                     st = r.state;
@@ -1750,15 +1749,7 @@ const TAT = process.argv.includes("--tat");
             MESS,
             STAND.TAKTE
         );
-    } catch (e) {
-        befund = { fehler: e?.message || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
+    }, browser, server, { feld: "fehler" });
     if (TAT) {
         const v = tatUrteil(befund);
         const { staemme, ernte, ...zeile } = befund;

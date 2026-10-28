@@ -177,7 +177,43 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => window.anazhRealm.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+// DER SPION AM RUF (`__rufZahl(wer, methode, lieferer, name, args)`, bis hier dreimal wortgleich): lieferer[name] zählt (und
+// delegiert), solange wer.methode(...args) läuft — die Zahl der Rufe
+function ruft(wer, methode, lieferer, name, args) {
+    const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
+    const echt = lieferer[name];
+    let n = 0;
+    lieferer[name] = function (...x) {
+        n++;
+        return echt.apply(this, x);
+    };
+    try {
+        wer[methode](...args);
+    } catch {
+        /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
+    } finally {
+        if (eigen) lieferer[name] = echt;
+        else delete lieferer[name];
+    }
+    return n;
+}
+// DIE TAKTE VON HAND (`__takte(n, ms)`, bis hier dreimal wortgleich): n Takte des Spiel-Loops, je `ms` (30) Schlaf dazwischen
+async function takte(n, ms) {
+    for (let i = 0; i < n; i++) {
+        try {
+            window.anazhRealm._gameLoopTick(performance.now());
+        } catch {}
+        await sleep(ms || 30);
+    }
+}
+// DER ZUFALL MIT FESTEM SAMEN (`__rng(samen)`, mulberry32, bis hier dreimal wortgleich)
+const rng = (s) => () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let x = Math.imul(s ^ (s >>> 15), 1 | s);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+};
+const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__rufZahl = ${ruft}; window.__takte = ${takte}; window.__rng = ${rng};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -829,6 +865,50 @@ async function nullSeite(opts) {
     await nullRenderer(page);
     return { browser, page };
 }
+// DIE BILD-SEITE: der Browser im Rezept der Linse (`opts` wie `starteBrowser`, ihr `art` steht in ihr) und seine erste Seite
+// in `width`×`height` — bis hier dreizehnmal wortgleich.
+async function bildSeite(opts, width, height) {
+    const browser = await starteBrowser(opts);
+    const page = await browser.newPage();
+    await page.setViewport({ width, height });
+    return { browser, page };
+}
+// DIE WEBGPU-PROBE der Seite (diag-blick · diag-hitch-telemetrie, bis hier zweimal wortgleich): der Adapter beim Namen als Zeile
+async function webGpuProbe(page) {
+    const gpu = await page.evaluate(async () => {
+        if (!navigator.gpu) return "kein navigator.gpu";
+        try {
+            const a = await navigator.gpu.requestAdapter();
+            return a ? "adapter ok" : "kein adapter";
+        } catch (e) {
+            return "adapter-wurf: " + (e && e.message);
+        }
+    });
+    console.log("WebGPU-Probe:", gpu);
+}
+// DER BOOT BIS ZUM VOXEL-FADEN (diag-pruefbuehne · diag-worker-dichte, bis hier zweimal wortgleich): die Welt steht und der
+// Worker trägt den Worldgen-Stand (der Loop von Hand getaktet) → { ok, ms, seed }; `name` nennt das Warten (der Deckel).
+function bootBisFaden(page, name) {
+    return page.evaluate(async (name) => {
+        const start = performance.now();
+        await window.__weltDa(); // nach dem Erwachen des Boots
+        for (const weiter = window.__deckel(name, 7500); weiter(); ) {
+            const r = window.anazhRealm;
+            if (r && typeof r._gameLoopTick === "function") {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch {
+                    /* der Boot reift */
+                }
+                const s = r.state;
+                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
+                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
+            }
+            await sleep(16);
+        }
+        return { ok: false };
+    }, name);
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
         timeout: frist,
@@ -1104,6 +1184,71 @@ async function waitFor(page, fn, label, ...args) {
     await page.evaluate(() => (window.__weltDaWartet = null)).catch(() => {});
     return Date.now() - t0;
 }
+// DER BEFUND EINER BÜHNEN-LINSE (bis hier neunmal wortgleich): `rumpf()` liefert ihn, ein Wurf wird `{ [feld]: Meldung }`;
+// danach schließen Browser und Server, die Überschrift `kopf` steht, und ein leerer Befund oder einer mit Fehler endet mit
+// seiner Zeile und Exit 1 — `feld` "error" („FEHLER:") oder "fehler" („❌ LAUF-FEHLER:").
+async function befundVon(rumpf, browser, server, { feld = "error", kopf } = {}) {
+    let b = null;
+    try {
+        b = await rumpf();
+    } catch (e) {
+        b = { [feld]: (e && e.message) || String(e) };
+    }
+    await browser.close();
+    server.close();
+    if (kopf) console.log(kopf);
+    if (!b || b[feld]) {
+        if (feld === "error") console.log("FEHLER:", b ? b.error : "?");
+        else console.log("❌ LAUF-FEHLER: " + (b ? b.fehler : "kein Befund"));
+        process.exit(1);
+    }
+    return b;
+}
+// DIE ROTE LISTE einer Bühnen-Linse (bis hier viermal wortgleich): je Verletzung eine Zeile, Exit 1 — leer nichts.
+function rotListe(v) {
+    if (!v.length) return;
+    console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
+    for (const s of v) console.log("   • " + s);
+    process.exit(1);
+}
+// DAS MESH-PAAR der WebRTC-Linsen (smoke-webrtc · smoke-copresence — bis hier zweimal wortgleich): die eigenen Ports
+// (`portVar`, `signalVar`), save-server und signaling-server als Kinder, der Browser im Rezept der Linse (`opts`, ihr `art`
+// steht in ihr — ci-klasse liest es dort). `seiten()` öffnet die zwei
+// Spielseiten (1024×640, geladen bis domcontentloaded); `beitritt(pageA, pageB, raum)` bringt beide in DENSELBEN Raum (der
+// roomOverride zwingt sie zusammen) und wartet, bis das Mesh auf beiden steht → [peerIdA, peerIdB].
+async function meshPaar(portVar, signalVar, opts) {
+    const [port, signal] = await eigenePorte(portVar, signalVar);
+    const env = { PORT: String(port), ANAZH_SIGNALING_PORT: String(signal) };
+    console.log("Starte save-server + signaling-server ...");
+    const saveServer = await startProc("save-server.js", /läuft/, env);
+    const signaling = await startProc("signaling-server.js", /lauscht/, env);
+    const browser = await starteBrowser(Object.assign({ zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] }, opts)); // prettier-ignore
+    const seiten = async () => {
+        const [pageA, pageB] = [await browser.newPage(), await browser.newPage()];
+        await pageA.setViewport({ width: 1024, height: 640 });
+        await pageB.setViewport({ width: 1024, height: 640 });
+        console.log("Lade beide Spielseiten ...");
+        for (const p of [pageA, pageB])
+            await p.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        return [pageA, pageB];
+    };
+    const beitritt = async (pageA, pageB, raum) => {
+        const joinRoom = (wsUrl, room) => {
+            const r = window.anazhRealm;
+            r.state.p2p.url = wsUrl;
+            r.state.p2p.roomOverride = room;
+            r.initP2PSync(null);
+            return r.state.p2p.peerId;
+        };
+        const peerIdA = await pageA.evaluate(joinRoom, `ws://127.0.0.1:${signal}`, raum);
+        const peerIdB = await pageB.evaluate(joinRoom, `ws://127.0.0.1:${signal}`, raum);
+        console.log(`Seite A peerId=${peerIdA}, Seite B peerId=${peerIdB}`);
+        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
+        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
+        return [peerIdA, peerIdB];
+    };
+    return { saveServer, signaling, browser, seiten, beitritt };
+}
 
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
 // (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`; der REST
@@ -1212,6 +1357,9 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
+    bildSeite,
+    bootBisFaden,
+    webGpuProbe,
     halteBis,
     buehne,
     uferStellen,
@@ -1227,6 +1375,9 @@ module.exports = {
     urteilEnde,
     argOpt,
     waitFor,
+    meshPaar,
+    befundVon,
+    rotListe,
     werkbankTor,
     werkbankRuf,
     teilAus,

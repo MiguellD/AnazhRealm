@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, befundVon, rotListe, bildSeite, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -905,18 +905,15 @@ function buehne(nFrames, nachtLicht) {
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
     );
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
+    const { browser, page } = await bildSeite({ art: "linse", frist: 900000 }, 320, 240);
     // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
     const konsolenFehler = [];
     page.on("console", (m) => {
         const t = m.text();
         if (m.type() === "error" || /\[ERROR\]/.test(t)) konsolenFehler.push(t.slice(0, 240));
     });
-    let out = null;
     const log = laufUhr();
-    try {
+    const out = await befundVon(async () => {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).
         const bereit = await page.evaluate(async () => {
@@ -932,7 +929,7 @@ function buehne(nFrames, nachtLicht) {
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
-        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
+        const out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
         await page.setViewport({ width: 321, height: 241 });
@@ -982,22 +979,11 @@ function buehne(nFrames, nachtLicht) {
             log(
                 `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %)`
             );
-    } catch (e) {
-        out = { error: e?.message || String(e) };
-    }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+        return out;
+    }, browser, server);
     out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const a = out.ausgabe.abtastungen;
     console.log(
         `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +

@@ -201,7 +201,7 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, rotListe, bildSeite, selbsttest: selbstMarke, laufUhr } = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -599,9 +599,7 @@ async function verdeckungPhase(opts) {
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 1200000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
+    const { browser, page } = await bildSeite({ art: "linse", frist: 1200000 }, 320, 180);
     await page.evaluateOnNewDocument(sammlerInstall);
     const log = laufUhr();
     const out = { phasen: {} };
@@ -668,11 +666,7 @@ async function verdeckungPhase(opts) {
     server.close();
     const v = urteil(out);
     log(v.length ? "ROT" : "GRÜN");
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const A = out.phasen.ablauf;
     const Lz = out.phasen.letzter.z;
     console.log(

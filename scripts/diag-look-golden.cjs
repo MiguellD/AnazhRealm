@@ -28,7 +28,7 @@
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
 //   node scripts/diag-look-golden.cjs --mint      → mintet das Golden aus dem aktuellen Render
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, bildSeite, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -145,9 +145,7 @@ async function renderLuma() {
     // Port über LOOK_GOLDEN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4320.
     const PORT = Number(process.env.LOOK_GOLDEN_PORT || 4320);
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "standard", frist: 600000, zusatz: ["--use-angle=swiftshader"] });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 640, height: 400 });
+    const { browser, page } = await bildSeite({ art: "standard", frist: 600000, zusatz: ["--use-angle=swiftshader"] }, 640, 400);
     let luma = null;
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");

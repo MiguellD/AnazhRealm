@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, bootBisFaden, starteBrowser, hauptLauf, argOpt: opt, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -72,27 +72,7 @@ const WUERFE = [
 ];
 
 // Boot bis die Welt steht (der Null-Renderer wie im Playtest: Würfe sind Zustand, kein Bild).
-async function boote(page) {
-    return page.evaluate(async () => {
-        const start = performance.now();
-        await window.__weltDa(); // nach dem Erwachen des Boots
-        for (const weiter = window.__deckel("der Boot der Prüfbühne", 7500); weiter(); ) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Boot reift */
-                }
-                const s = r.state;
-                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
-                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
-            }
-            await sleep(16);
-        }
-        return { ok: false };
-    });
-}
+const boote = (page) => bootBisFaden(page, "der Boot der Prüfbühne");
 
 // (5) DIE S4-PROBE: die Hindernis-Station steht, wie ihre Spec sagt (spec/pruefbuehne/stationen.json `s4-hindernisse`) —
 // je Körper sein Bau (der Bauplan der Saat) in der Station, je Teil seine Blocker-Box (die Wahrheit, die Leib-Löser, Kapsel,

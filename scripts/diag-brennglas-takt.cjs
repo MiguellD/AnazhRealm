@@ -534,13 +534,7 @@ async function probe() {
         }
         return b;
     };
-    let s = 0x6c61;
-    const rng = () => {
-        s = (s + 0x6d2b79f5) | 0;
-        let x = Math.imul(s ^ (s >>> 15), 1 | s);
-        x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
-        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
+    const rng = __rng(0x6c61);
     // der Spieler je Ruf frisch (`st.playerMesh` wird während der Probe ersetzt — der Avatar baut neu; ein gemerktes Mesh
     // bewegte eine Leiche, die Tür-Probe stand am alten Ort)
     const stelle = (x, z) => st.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1.2, z);

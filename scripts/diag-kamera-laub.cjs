@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, bildSeite, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -1221,9 +1221,7 @@ hauptLauf(async () => {
 
     const t0 = Date.now();
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 720 });
+    const { browser, page } = await bildSeite({ art: BILD ? "linse" : "null", frist: 900000 }, 1280, 720);
     if (!BILD) await nullRenderer(page);
     await page.evaluateOnNewDocument(() => {
         window.__anazhAutoSettlement = false; // der Dorf-Zug ruht: die Häuser der Mess-Wiese setzt die Linse (fest)
