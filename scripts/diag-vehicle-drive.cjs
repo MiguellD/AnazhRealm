@@ -434,27 +434,7 @@ hauptLauf(async () => {
             // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
             // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
             // der kleinsten Stufe (die Welt ist hügelig: 30 % Steigung findet sich auf jeder 72-m-Geraden).
-            const mo = expected.messort;
-            let start = null;
-            for (let ring = 0; ring <= 4; ring++) {
-                for (let k = 0; k < (ring ? 8 : 1); k++) {
-                    const cx = mo[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
-                    const cz = mo[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
-                    let trocken = true;
-                    let stufe = 0;
-                    for (const dz of [-3, 0, 3]) {
-                        let vor = null;
-                        for (let s = 0; s <= 36 && trocken; s++) {
-                            const hx = r.getTerrainHeightAt(cx + s * 2, cz + dz);
-                            const ws = r._atlasWaterLevelAt(cx + s * 2, cz + dz, hx);
-                            if (!Number.isFinite(hx) || (Number.isFinite(ws) && ws > hx - 0.3)) trocken = false;
-                            if (vor !== null) stufe = Math.max(stufe, Math.abs(hx - vor));
-                            vor = hx;
-                        }
-                    }
-                    if (trocken && (!start || stufe < start.stufe)) start = { x: cx, z: cz, stufe };
-                }
-            }
+            const start = window.__strecke(expected.messort, 4);
             res.gefuehl = { spawned: false, start };
             if (!start) throw new Error("keine trockene Strecke um die Mess-Wiese");
             pm.set(start.x, r.getTerrainHeightAt(start.x, start.z) + 1, start.z);

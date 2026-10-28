@@ -490,6 +490,27 @@ function weltOrt(art, opts) {
     return window.__weltOrte(art, Object.assign({}, opts, { anzahl: 1 }))[0] || null;
 }
 
+// DIE STRECKE der Fahr-Proben (`window.__strecke`): je Kandidat in Ringen zu 32 m um `mitte` (bis `ringe`) 72 m in +x, je 2 m und
+// ±3 m daneben trocken (der Spiegel des Gesetzes liegt ≥ 0,3 m unter dem Grund), Stufe ≤ stufeMax je 2 m und Quergefälle ≤ querMax
+// je m; die kleinste Stufe — mit `naechster` im nächsten Ring, der einen trägt. Leser: gate:fahr-leben, gate:vehicle-drive B-e.
+function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechster = false) {
+    const r = window.anazhRealm;
+    let best = null;
+    for (let ring = 0; ring <= ringe && !(naechster && best); ring++)
+        for (let k = 0; k < (ring ? 8 : 1); k++) {
+            const [x, z] = [mitte[0] + Math.cos((k * Math.PI) / 4) * ring * 32, mitte[1] + Math.sin((k * Math.PI) / 4) * ring * 32];
+            let [stufe, quer, vor] = [0, 0, null];
+            for (let s = 0; s <= 36 && stufe < Infinity; s++) {
+                const h = [-3, 0, 3].map((dz) => r.getTerrainHeightAt(x + s * 2, z + dz));
+                if (h.some((y, j) => !Number.isFinite(y) || r._atlasWaterLevelAt(x + s * 2, z + 3 * j - 3, y) > y - 0.3)) stufe = Infinity;
+                else if (vor) stufe = Math.max(stufe, ...h.map((y, j) => Math.abs(y - vor[j])));
+                [vor, quer] = [h, Math.max(quer, Math.abs(h[2] - h[0]) / 6)];
+            }
+            if (stufe <= stufeMax && quer <= querMax && (!best || stufe < best.stufe)) best = { x, z, stufe, quer };
+        }
+    return best;
+}
+
 // DIE MITTE DER WELT: der Ursprung des Gesetzes (s. `weltOrte`) — die EINE Mitte jeder Orts-Suche einer Probe
 const WELT_MITTE = [0, 0];
 const WIESE = messort("wiese");
@@ -510,5 +531,6 @@ module.exports = {
         WIESE_INSTALL +
         `window.__weltMitte = ${JSON.stringify(WELT_MITTE)};` +
         `window.__weltOrte = ${weltOrte.toString()};` +
-        `window.__weltOrt = ${weltOrt.toString()};`,
+        `window.__weltOrt = ${weltOrt.toString()};` +
+        `window.__strecke = ${strecke.toString()};`,
 };
