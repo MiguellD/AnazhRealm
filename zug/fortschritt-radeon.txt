@@ -1499,3 +1499,4 @@
 2026-10-28 23:05:13 takt19-radeon siedlung.K5#1 GRÜN 6.3 · 5/71
 2026-10-28 23:05:18 takt19-radeon siedlung.K5#2 GRÜN 6.3 · 6/71
 2026-10-28 23:12:19 takt19-radeon leib.K1#1 ROT 7.1 · 7/71
+2026-10-28 23:17:21 takt19-farm gelaende.K1#1 GRÜN 0.7 · 1/99
