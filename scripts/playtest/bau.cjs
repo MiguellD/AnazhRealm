@@ -6,12 +6,11 @@
 const { safeEvaluate } = require("../playtest.cjs");
 
 async function checkBandWaves1to3(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welt-Journal ###
-    const journalResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const journalResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
@@ -56,8 +55,7 @@ async function checkBandWaves1to3(ctx) {
     }
 
     // ### Fraktale Baupläne + Schöpfer-DSL-Ops ###
-    const wave2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave2Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // C — Validation lehnt unbekannte Shape ab
@@ -158,8 +156,7 @@ async function checkBandWaves1to3(ctx) {
     }
 
     // ### Welt-Initiative + Welt-Tor ###
-    const wave3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave3Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // E — neue Trigger im pool + triggers-Map
@@ -257,10 +254,8 @@ async function checkBandWaves1to3(ctx) {
 // `workshopDomain`; Vorbild _isPortalShaped). Geprüft: die fünf Built-in-Werkstätten treffen ihre
 // Domäne (Tag-Drift-Wächter), die Regel diskriminiert nach Substanz, das Gate liest sie end-to-end.
 async function checkBandV1767WorkshopDomainEmergent(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const savedMode = r.getGameMode();
         const pm = r.state.playerMesh && r.state.playerMesh.position;
@@ -325,7 +320,6 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
         delete blu.__wd_work;
         r.state.architectures = savedArch;
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "R1: der Resonanz-Kern rechnet ein gewichtetes Skalarprodukt (mit Invers-Achse: {a:2,b:3}·{a:1,b:-1} = -1)",
@@ -480,12 +474,11 @@ async function checkBandOmegaGrammatik(ctx) {
 }
 
 async function checkBandWave10b(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Compound-Tag-Affordances (Erkennung + UI) ###
-    const wave10bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave10bResults = await ctx.welt((r) => {
         if (!r) return null;
         const AR = r.constructor;
         const out = {};
@@ -1134,8 +1127,7 @@ async function checkBandWave10b(ctx) {
         // ── W10 ext. — radiating ──
         check(
             "W10 ext.: radiating trägt Label + Schwellen",
-            wave10bResults.radiatingLabel &&
-                wave10bResults.radiatingThresholds
+            wave10bResults.radiatingLabel && wave10bResults.radiatingThresholds
         );
         check(
             "W10 ext.: ein radialer Quarz-Cluster (≥3 Parts, gespreizt) → radiating=true",
@@ -1208,8 +1200,7 @@ async function checkBandWave10b(ctx) {
         // ── W10 ext. balancing ──
         check(
             "W10 ext.: balancing trägt Label 'gründend' + Schwellen",
-            wave10bResults.balancingLabel &&
-                wave10bResults.balancingThresholds
+            wave10bResults.balancingLabel && wave10bResults.balancingThresholds
         );
         check(
             "W10 ext.: eine breite flache schwere Stein-Plattform → balancing=true",
@@ -1227,8 +1218,7 @@ async function checkBandWave10b(ctx) {
         // ── W10 ext. lifting ──
         check(
             "W10 ext.: lifting trägt Label 'hebend' + Schwellen",
-            wave10bResults.liftingLabel &&
-                wave10bResults.liftingThresholds
+            wave10bResults.liftingLabel && wave10bResults.liftingThresholds
         );
         check(
             "W10 ext.: ein magie-geladener leichter Quarz-Cone-Cluster → lifting=true",
@@ -1263,12 +1253,10 @@ async function checkBandWave10b(ctx) {
     }
 
     // ### Welt-Reaktionen (die Mount-Absagen + zoom) ###
-    const wave10b3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave10b3Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
-
             // der fahrbare Bauplan für die Reichweite (100 m fern)
             if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
             r.cloneBlueprint("stein_block", "test_10b3_far");
@@ -1347,10 +1335,8 @@ async function checkBandWave10b(ctx) {
 // REIST (must-preserve) und beeinflusst KEINE Kern-Lesart (must-ignore, behavioral: bit-gleiche
 // Rolle/Kosten/Tags/Vektor mit und ohne fremden Tag).
 async function checkBandTailleOmega6(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const mkMat = (name, extraTags) => {
             r.state.materials[name] = {
                 name,
@@ -1406,7 +1392,6 @@ async function checkBandTailleOmega6(ctx) {
         delete r.state.blueprints[b.name];
         delete r.state.materials["_o6_rein"];
         delete r.state.materials["_o6_fremd"];
-        return out;
     });
     if (!res) {
         check("Ω6: Namensraum-Sonde lief", false, "evaluate warf");
@@ -1491,14 +1476,21 @@ async function checkBandPsi0Winkel(ctx) {
     // Ψ1 — das EINE argmax-Organ: die ~7 Inline-
     // Loops sind VERDICHTET. KONSUM aller Leser am Ruf + die Organ-
     // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
-    const psi1 = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const psi1 = await ctx.welt((r, out) => {
         // ein Werk aus zwei Parts (Eisen-Block + Holz-Stiel): jeder Leser ruft das Organ unbedingt
-        const bpK = { name: "_psi1", connections: [], parts: [
-            { shape: "box", material: "eisen", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-            { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
-        ] };
+        const bpK = {
+            name: "_psi1",
+            connections: [],
+            parts: [
+                { shape: "box", material: "eisen", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                {
+                    shape: "cylinder",
+                    material: "holz",
+                    position: { x: 0, y: 1.6, z: 0 },
+                    size: { x: 0.2, y: 1.2, z: 0.2 },
+                },
+            ],
+        };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
         // das Temperament fiel aus dem Organ (Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
         // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
@@ -1516,7 +1508,6 @@ async function checkBandPsi0Winkel(ctx) {
         out.floorStrikt = r._resonateArgmax(v, tab, { floor: 3 }).key === null; // 3 > 3 ist falsch
         out.refsNorm = r._resonateArgmax(v, tab, { refs: { y: 10 }, refDefault: 1 }).key === "x"; // 2/1 > 3/10
         out.subset = r._resonateArgmax(v, tab, { keys: ["x"] }).key === "x";
-        return out;
     });
     check(
         "Ψ1 das EINE argmax-Organ: alle 6 Inline-Leser konsumieren _resonateArgmax (Domäne·GapHint·FormRolle·Implement·Op·Motion)",
@@ -1532,10 +1523,8 @@ async function checkBandPsi0Winkel(ctx) {
 // Regression wird als Λ-Klassifikation rot, nicht versteckt in fremden Source-Probes.
 // Λ.1: ein humanoider Körper (lebendige Masse mittig) ist body-shaped, ein Stein-Tempel nicht.
 async function checkBandLambda1LivingCenter(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // Humanoid Body — anatomisch (Kopf/Rumpf oben, Beine unten, fleisch).
         const humanoid = {
             parts: [
@@ -1609,7 +1598,6 @@ async function checkBandLambda1LivingCenter(ctx) {
             Number.isFinite(T.livingMassMin) &&
             Number.isFinite(T.livingCenterMinY) &&
             Number.isFinite(T.livingCenterMaxY);
-        return out;
     });
     check(
         "Λ.1 LivingCenter: humanoide Body (fleisch, lebendig-Masse mittig) ist body-shaped",
@@ -1626,10 +1614,8 @@ async function checkBandLambda1LivingCenter(ctx) {
 }
 
 async function checkBandV18266RockDetail(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
             g && g.attributes && g.attributes.position
@@ -1655,20 +1641,22 @@ async function checkBandV18266RockDetail(ctx) {
         out.bigHigher = out.bigTris >= 60; // det 1 (≥ 60, behält Facetten)
         out.smallCheaperThanBig = out.smallTris * 3 <= out.bigTris; // 4× billiger
         out.overrideHonored = out.overrideTris >= 60; // noiseDetail:1 erzwingt det 1 trotz kleiner Grösse
-        return out;
     });
     check(`kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
     check(
         `grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
         res.bigHigher === true && res.smallCheaperThanBig === true
     );
-    check(
-        "explizites noiseDetail bleibt Intent-Override",
-        res.overrideHonored === true
-    );
+    check("explizites noiseDetail bleibt Intent-Override", res.overrideHonored === true);
 }
 
 module.exports = {
-    checkBandWaves1to3, checkBandV1767WorkshopDomainEmergent, checkBandOmegaGrammatik, checkBandWave10b,
-    checkBandTailleOmega6, checkBandPsi0Winkel, checkBandLambda1LivingCenter, checkBandV18266RockDetail,
+    checkBandWaves1to3,
+    checkBandV1767WorkshopDomainEmergent,
+    checkBandOmegaGrammatik,
+    checkBandWave10b,
+    checkBandTailleOmega6,
+    checkBandPsi0Winkel,
+    checkBandLambda1LivingCenter,
+    checkBandV18266RockDetail,
 };

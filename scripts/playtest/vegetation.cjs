@@ -8,9 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
 // Radius (mit der gemessenen Render-Kapazität) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         if (!r || !r.state) return { error: "no realm" };
         const st = r.state;
         const out = {};
@@ -253,9 +252,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
 // am Spieler wird gesetzt (deterministisch), der Takt baut ihre Blöcke in die Senken (InstancedMesh je Art × Gestalt ×
 // Stufe × Teil), Entsorgen und Neubau halten die Block-Tabelle dicht. Headless ist pixel-blind — hier die Struktur.
 async function checkBandNahStreu(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt(async (r) => {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
@@ -480,10 +478,8 @@ async function checkBandNahStreu(ctx) {
 // Pflanze), Ertrag je Studio-kind (STREU_ERNTE: kraut · stein · holz), Session-Gedächtnis + Regrow (nicht
 // persistiert); gepflücktes kraut speist den Trank-Bauplan durchs Mach-Tor.
 async function checkBandV18133Forage(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden): die erste Pflanze einer
         // erntbaren Senke pflücken.
         let pick = null;
@@ -537,7 +533,6 @@ async function checkBandV18133Forage(ctx) {
         } else {
             out.measured = false;
         }
-        return out;
     });
     if (!res) {
         check("Foraging: Sonde lief", false, "evaluate warf");
@@ -552,9 +547,8 @@ async function checkBandV18133Forage(ctx) {
 // Γ-M STRATA: y-abhängige Material-Wahl im Boden — nahe der Oberfläche kann erde gewinnen, tief
 // dominiert stein. Alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
 async function checkBandV18197GammaMStrata(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -619,9 +613,8 @@ async function checkBandV18197GammaMStrata(ctx) {
 // V18.199 LICHEN). Vertikale Eisenadern in tiefen Bergregionen — vollendet
 // die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
 async function checkBandV18200GammaMIronBands(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -733,11 +726,8 @@ async function checkBandV18200GammaMIronBands(ctx) {
 // `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
 // Sprache. Tag-neutral via material-Konsistenz (holz+laub).
 async function checkBandV18205Gamma7Grammatik(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (G2) Determinismus: gleiche seed → gleiche parts
         const p1 = r._growTreeBlueprint("eiche", "seed-a");
         const p2 = r._growTreeBlueprint("eiche", "seed-a");
@@ -815,7 +805,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
         const hMax = Math.max(...heights);
         out.heightSpread = Number((hMax - hMin).toFixed(2));
         out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
-        return out;
     });
 
     check("(G2) Determinismus: gleiche seed → identische parts", res.deterministic === true);
@@ -836,11 +825,8 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
 // gen≥5 (alte Welten bit-identisch). grownBlueprints persistiert NUR Metadaten (parts re-wachsen
 // f(seed)) → bleibt unter dem 256-KB-pinCurrentWorld-Cap.
 async function checkBandV18211SkeletonGrammar(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (S1) K24: jede Kern-Art wächst aus dem Gesetzbuch — `_phytoArt` löst den Welt-Namen auf die Rezept-Zeile der
         // Studio-Tafel auf (die Stamm-Grammatik ist gefallen, der Richter liest treeParams der Art).
         out.sixSpecies = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
@@ -889,8 +875,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
             r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
         }
-
-        return out;
     });
 
     check(
@@ -914,9 +898,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 // Gigant-Restsubschritte: Ω-K2 Baum-Füße · Ω-W vertieftes Wind · Ω-H Promotion-Provenienz ·
 // Ω-C Canopy-Shell (als ABWESENHEIT geprüft).
 async function checkBandV18212GigantRestsubschritte(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1019,9 +1002,8 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 // Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel: sie hatte keinen
 // Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
 async function checkBandV18215AtemberaubenderWald(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1080,9 +1062,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
 // farn_busch/blume_gross); scheitert die Baum-Probe, wächst am selben Slot ein Busch. Die Wände
 // prüfen Substanz (Grammar + Params + Variation) + Pipeline (candidates + Sub-Spawn-Pfad).
 async function checkBandV18216KarstUndUnderstory(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1197,9 +1178,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
 // worldMeta.variantSeed. Ein berührter Baum re-wächst BIT-GENAU aus variantSeed[index] (kein
 // Sprung); zwei Peers mit gleichem worldSeed bauen den IDENTISCHEN Pool.
 async function checkBandV18217VariantenPool(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1370,9 +1350,8 @@ async function checkBandV18217VariantenPool(ctx) {
 // LOD-Stufen: 3 LODs pro Variante (Hero/Mittel/Far) — Geometrie-Beschneidung + Variant-LOD-Builder
 // + Distanz-Chooser mit Hysterese.
 async function checkBandV18218LODStufen(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1559,11 +1538,8 @@ async function checkBandV18218LODStufen(ctx) {
 // Scatter-Bitmask + Cap + Lookup · Ω-H Promotion + Snapshot · Canopy-Chunk-Streaming — jeder
 // Helper mit echtem Konsumenten im Loop oder Spawn-Pfad.
 async function checkBandV18219bisVollendung(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
         // KONSUM: ein Takt des Loops (Phasen → Frame-Scheduler → Job-Registry) ruft den LOD-Tick.
         out.lodTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickArchitectureLOD", [performance.now()]);
@@ -1624,8 +1600,6 @@ async function checkBandV18219bisVollendung(ctx) {
         } finally {
             if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
         }
-
-        return out;
     });
 
     // LOD-Activation
@@ -1660,9 +1634,8 @@ async function checkBandV18219bisVollendung(ctx) {
 // Kristallisation (Seelen-Band). KONSUM: Instanzen entstehen, Cells promovieren zu echten Einträgen,
 // identische Geometrie (kein Sprung), bit-genauer Determinismus.
 async function checkBandV18224ScatterPromotion(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1856,11 +1829,8 @@ async function checkBandV18224ScatterPromotion(ctx) {
 // durchbricht; Geologie nur auf Land, nicht auf wind-wiegender Vegetation. KONSUM: der Fels
 // emergiert, die Streu liest rockExposure, die Geologie ist gegated.
 async function checkBandWahrerAnblickFels(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (A) Ω-O15 prozedurale Fels-Geometrie
         const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
         out.rockGeomBuilt = !!(geom && geom.attributes && geom.attributes.position);
@@ -1898,8 +1868,6 @@ async function checkBandWahrerAnblickFels(ctx) {
         out.staticLods = !!(lods && lods[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
         out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
-
-        return out;
     });
 
     check("Ω-OPSIS S6 (A1) noiserock baut eine Geometrie", res.rockGeomBuilt === true);
@@ -1917,11 +1885,8 @@ async function checkBandWahrerAnblickFels(ctx) {
 // Laub-Vertiefung: Rinden-Maserung (axiale Borke-Bänder + radialer Streifen) + blatt-geformte Card.
 // Proben: KONSUM in den Geometrie-Buildern + behavioral (Tube + Card aus dem gewachsenen Skelett).
 async function checkBandWahrerAnblickLaub(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card. Foundry-ON gäbe der
         // Chokepoint null (die Probe wäre vakuös grün) → der lokale Hook hält den Beweis am Leben.
         let tubeOk = false,
@@ -1955,8 +1920,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
         out.tubeOk = tubeOk;
         out.cardOk = cardOk;
         out.taperProven = taperProven;
-
-        return out;
     });
 
     check("Ω-OPSIS S3-Laub (B1) gewachsener Baum baut die Rinden-Tube", res.tubeOk === true);

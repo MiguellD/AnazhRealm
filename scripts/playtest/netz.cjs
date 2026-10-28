@@ -5,17 +5,14 @@
 
 const fs = require("fs");
 const path = require("path");
-const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 async function checkBandW13W14VibePassLibrary(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Vibe-Pass: die souveräne Avatar-Identität ###
-    const w13p1Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w13p1Results = await ctx.welt(async (r, out) => {
         // Identität ist nach init bereit.
         const vp = r.state.vibePass;
         out.ready = !!vp && vp.ready === true;
@@ -81,7 +78,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!document.getElementById("vibe-pass-export") &&
             !!document.getElementById("vibe-pass-import") &&
             !!document.getElementById("vibe-pass-file-input");
-        return out;
     });
 
     if (w13p1Results && !w13p1Results.error) {
@@ -108,9 +104,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     }
 
     // ### Bauplan-Signaturen ###
-    const w13p2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w13p2Results = await ctx.welt(async (r, out) => {
         // Einen eigenen Bauplan mit einem Part anlegen.
         if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
         r.createBlueprint("_w13p2", "W13P2-Werk");
@@ -185,7 +179,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.uiSigBtn = !!machZone && !!machZone.querySelector(".workshop-sig-btn");
         delete r.state.blueprints["_w13p2"];
         delete r.state.blueprints["_w13p2clone"];
-        return out;
     });
 
     if (w13p2Results && !w13p2Results.error) {
@@ -215,9 +208,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     }
 
     // ### Vibe-Pass-Identität im Multi-User ###
-    const w13p3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w13p3Results = await ctx.welt(async (r, out) => {
         const p2p = r.state.p2p;
         // Peer-Entry trägt die Vibe-Pass-Felder.
         const probe = r._p2pEnsurePeerEntry("_w13p3probe");
@@ -310,7 +301,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         }
         p2p.enabled = origEnabled;
         p2p.peerId = origPeerId;
-        return out;
     });
 
     if (w13p3Results && !w13p3Results.error) {
@@ -343,9 +333,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     // den Relay des signaling-servers (vibe mit peerId-Stempel) urteilt gate:mp-sync am echten Broker.
 
     // ### Bibliothek: browsbare Welt-Registry ###
-    const w14Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w14Results = await ctx.welt((r, out) => {
         const REG = r.constructor.WORLD_REGISTRY;
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
@@ -496,8 +484,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             r.renderLibraryUI();
         }
         // der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
-        out.feedPreviewPanel =
-            !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
+        out.feedPreviewPanel = !!document.querySelector(".feed-left .feed-preview-panel #feed-preview-canvas");
         const recForFocus = r._feedItems().find((x) => x.kind === "recipe");
         if (recForFocus) {
             const recCard = stream.querySelector(".feed-recipe");
@@ -589,7 +576,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             const s = r.state.player.inventory[i];
             if (s && s.blueprintName === "portal_fluid") r.state.player.inventory[i] = null;
         }
-        return out;
     });
 
     if (w14Results && !w14Results.error) {
@@ -678,9 +664,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     }
 
     // ### Welt-Manifest-Signatur ###
-    const w14p2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w14p2Results = await ctx.welt(async (r, out) => {
         const REG = r.constructor.WORLD_REGISTRY;
         // _canonicalManifest deterministisch + ignoriert world/desc.
         const c1 = r._canonicalManifest(REG.fluid);
@@ -762,7 +746,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         delete r.state.signedWorlds.fluid;
         delete r.state.signedWorlds.terrain;
         r._saveSignedWorlds();
-        return out;
     });
 
     if (w14p2Results && !w14p2Results.error) {
@@ -795,9 +778,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     }
 
     // ### das Schaffen reist mit ###
-    const w13v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w13v2Results = await ctx.welt((r, out) => {
         const baseP = r._portalEnterPayload();
         out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
         out.payloadVibeId = typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
@@ -827,7 +808,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "schmiede-hammer");
         for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
         delete r.state.tools._w14tool;
-        return out;
     });
 
     if (w13v2Results && !w13v2Results.error) {
@@ -843,9 +823,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     }
 
     // ### fremde Welten empfangen ###
-    const w14p3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const w14p3Results = await ctx.welt(async (r, out) => {
         const REG = r.constructor.WORLD_REGISTRY;
         // Vorzustand säubern.
         r.state.customWorlds = {};
@@ -979,7 +957,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             }
         }
         r.renderLibraryUI();
-        return out;
     });
 
     if (w14p3Results && !w14p3Results.error) {
@@ -1041,9 +1018,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 // Die Wand: der private Schlüssel / die Identität lecken NIE in einen
 // Welt-Snapshot oder Portal-Payload (GEMESSEN-schon-wahr, jetzt eingefroren).
 async function checkBandG8R0Sovereign(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const K = r.constructor;
         const out = {};
         // (1) SOVEREIGN_STATE benannt + eingefroren + die kanonischen Schlüssel.
@@ -1106,9 +1082,8 @@ async function checkBandG8R0Sovereign(ctx) {
 // Artefakt mit ihm in der Kette aus) · Quarantäne (4c: der welt-exponierte LLM formuliert keinen
 // souveränen Akt).
 async function checkBandG8R4Immunity(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const K = r.constructor;
         const out = {};
         // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
@@ -1183,10 +1158,7 @@ async function checkBandG8R4Immunity(ctx) {
         check("G8 R4: Immunsystem-Sonde lief", false, "evaluate warf");
         return;
     }
-    check(
-        "G8 R4: revokedKeys im innersten Ring + NIE im Snapshot",
-        res.revokedInRing && res.revokedNotInSnapshot
-    );
+    check("G8 R4: revokedKeys im innersten Ring + NIE im Snapshot", res.revokedInRing && res.revokedNotInSnapshot);
     check(
         "G8 R4 (4a): die Herkunftskette baut sich (Ursprung → Überträger, dedup) + zeigt die Lineage",
         res.chainBuilds && res.summaryShowsLineage
@@ -1210,17 +1182,14 @@ async function checkBandG8R4Immunity(ctx) {
 // Antikörper-Archiv. Kein neuer Apparat — eine neue ROLLE für die Invarianten-
 // Maschinerie: jeder Erreger impft bei jedem Push, ein Regress ist sofort rot.
 async function checkBandG8R5LivingImmune(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const corpus = r._robustnessCorpus();
         out.fourClasses = Array.isArray(corpus) && corpus.length === 4;
         out.allLive = corpus.every((c) => c.live === true);
         const mechs = corpus.map((c) => String(c.mechanism));
         out.allMechanisms = ["M1", "M2", "M3", "M4"].every((m) => mechs.some((x) => x.indexOf(m) >= 0));
         out.classIds = corpus.map((c) => c.id).join(",");
-        return out;
     });
     if (!res) {
         check("G8 R5: Immun-Archiv-Sonde lief", false, "evaluate warf");
@@ -1242,9 +1211,8 @@ async function checkBandG8R5LivingImmune(ctx) {
 // station + roleManual, schmuggelt ein portalMeta-Origin, trägt ein Gott-Material (härte=10⁶) und
 // ein revoziertes Ketten-Glied → Rolle lokal emergiert, Portal sanitisiert, Klemme am Leser, Sieb.
 async function checkBandTailleOmega3(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt(async (r) => {
         const C = r.constructor;
         const out = {};
         const KEVIL = "ef".repeat(32);
@@ -1396,7 +1364,7 @@ async function checkBandTailleOmega3(ctx) {
 // der heutige Code lesen; beide Signaturen verifizieren "valid", der Snapshot-Kopf trägt ⊇ das
 // goldene Schema, jeder goldene p2p-Typ hat Handler + pv-Stempel. Bricht das: Taille verletzt.
 async function checkBandTailleGolden(ctx) {
-    const { page, check } = ctx;
+    const { check } = ctx;
     // Leuchtturm: jeder im signaling-server gelesene `msg.type === "X"`-Typ MUSS in §7 der Taille-Spec
     // dokumentiert sein (ein Broker-Typ ohne Andock-Vertrag ist der Riss von morgen); plus der
     // Ein-Befehl-Self-Host existiert.
@@ -1434,68 +1402,59 @@ async function checkBandTailleGolden(ctx) {
         return;
     }
     check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", true);
-    const res = await safeEvaluate(
-        page,
-        async (g) => {
-            const r = window.anazhRealm;
-            const out = {};
-            // (1) der goldene Bauplan: lesbar + Signatur EWIG "valid" + die
-            // Kette lebt + der Admit-Pfad (Re-Derive) bricht die Echtheit nicht.
-            const deser = r._deserializeBlueprint(g.blueprint);
-            out.bpReadable = !!deser && deser.parts.length === 3 && deser.connections.length === 2;
-            out.bpProvenance = !!deser && Array.isArray(deser.provenance) && deser.provenance.length === 1;
-            out.bpSigValid = deser ? (await r.verifyBlueprintSignature(deser)) === "valid" : false;
-            const admitted = r._admitForeignArtifact(g.blueprint);
-            out.bpAdmitValid =
-                !!admitted &&
-                admitted.roleClaimed === "weapon" &&
-                (await r.verifyBlueprintSignature(admitted)) === "valid";
-            // (2) das goldene Manifest: die Sanitize nimmt es + Signatur "valid".
-            const man = r._sanitizeImportedManifest({ ...g.manifest, id: "taille-golden-band" });
-            out.manReadable = !!man && !!man.signature;
-            out.manSigValid = man
-                ? await r._vibeVerify(r._canonicalManifest({ ...g.manifest }), man.signature, man.authorPubKey)
-                : false;
-            // (3) der Snapshot-Kopf: das heutige Schema ⊇ das goldene (additiv
-            // wachsen erlaubt, verlieren = Taille verletzt) + Typen kompatibel.
-            const snap = r.buildStateSnapshot();
-            const missing = [];
-            for (const k of Object.keys(g.snapshotHead.schema)) {
-                const want = g.snapshotHead.schema[k];
-                const v = snap[k];
-                const got = Array.isArray(v) ? "array" : v === null ? "null" : typeof v;
-                if (v === undefined || (got !== want && want !== "null" && got !== "null"))
-                    missing.push(`${k}:${want}→${got}`);
-            }
-            out.snapKeys = missing.length === 0;
-            out.snapMissing = missing.join(",");
-            const wmKeys = Object.keys(snap.worldMeta || {});
-            out.snapWorldMeta = g.snapshotHead.worldMetaKeys.every((k) => wmKeys.includes(k));
-            // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
-            // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
-            out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
-            // am Ruf: je goldenem Typ erreicht ein Umschlag über den echten Kanal-Eingang seinen Handler (kanal-exklusiv steht an
-            // der Liste KANAL, sonst die Registry hinter der ALLOWED-Durchreichung)
-            const H = r.constructor.P2P_MESSAGE_HANDLERS;
-            const KANAL = { "social-rating": "_socialRatingReceive" };
-            const dead = g.envelopes.types
-                .map((t) => t.type)
-                .filter((t) => {
-                    const prov = KANAL[t] || H[t];
-                    const roh = JSON.stringify({ type: t });
-                    return !(
-                        typeof prov === "string" &&
-                        typeof r[prov] === "function" &&
-                        window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh])
-                    );
-                });
-            r._p2pRemovePeer("__golden");
-            out.typesAlive = dead.length === 0;
-            out.deadTypes = dead.join(",");
-            return out;
-        },
-        golden
-    );
+    const res = await ctx.welt(async (r, out, g) => {
+        // (1) der goldene Bauplan: lesbar + Signatur EWIG "valid" + die
+        // Kette lebt + der Admit-Pfad (Re-Derive) bricht die Echtheit nicht.
+        const deser = r._deserializeBlueprint(g.blueprint);
+        out.bpReadable = !!deser && deser.parts.length === 3 && deser.connections.length === 2;
+        out.bpProvenance = !!deser && Array.isArray(deser.provenance) && deser.provenance.length === 1;
+        out.bpSigValid = deser ? (await r.verifyBlueprintSignature(deser)) === "valid" : false;
+        const admitted = r._admitForeignArtifact(g.blueprint);
+        out.bpAdmitValid =
+            !!admitted && admitted.roleClaimed === "weapon" && (await r.verifyBlueprintSignature(admitted)) === "valid";
+        // (2) das goldene Manifest: die Sanitize nimmt es + Signatur "valid".
+        const man = r._sanitizeImportedManifest({ ...g.manifest, id: "taille-golden-band" });
+        out.manReadable = !!man && !!man.signature;
+        out.manSigValid = man
+            ? await r._vibeVerify(r._canonicalManifest({ ...g.manifest }), man.signature, man.authorPubKey)
+            : false;
+        // (3) der Snapshot-Kopf: das heutige Schema ⊇ das goldene (additiv
+        // wachsen erlaubt, verlieren = Taille verletzt) + Typen kompatibel.
+        const snap = r.buildStateSnapshot();
+        const missing = [];
+        for (const k of Object.keys(g.snapshotHead.schema)) {
+            const want = g.snapshotHead.schema[k];
+            const v = snap[k];
+            const got = Array.isArray(v) ? "array" : v === null ? "null" : typeof v;
+            if (v === undefined || (got !== want && want !== "null" && got !== "null"))
+                missing.push(`${k}:${want}→${got}`);
+        }
+        out.snapKeys = missing.length === 0;
+        out.snapMissing = missing.join(",");
+        const wmKeys = Object.keys(snap.worldMeta || {});
+        out.snapWorldMeta = g.snapshotHead.worldMetaKeys.every((k) => wmKeys.includes(k));
+        // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
+        // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
+        out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
+        // am Ruf: je goldenem Typ erreicht ein Umschlag über den echten Kanal-Eingang seinen Handler (kanal-exklusiv steht an
+        // der Liste KANAL, sonst die Registry hinter der ALLOWED-Durchreichung)
+        const H = r.constructor.P2P_MESSAGE_HANDLERS;
+        const KANAL = { "social-rating": "_socialRatingReceive" };
+        const dead = g.envelopes.types
+            .map((t) => t.type)
+            .filter((t) => {
+                const prov = KANAL[t] || H[t];
+                const roh = JSON.stringify({ type: t });
+                return !(
+                    typeof prov === "string" &&
+                    typeof r[prov] === "function" &&
+                    window.__consumes(r, "_p2pHandleChannelMessage", r, prov, ["__golden", roh])
+                );
+            });
+        r._p2pRemovePeer("__golden");
+        out.typesAlive = dead.length === 0;
+        out.deadTypes = dead.join(",");
+    }, golden);
     if (!res) {
         check("Ω4: Konformanz-Sonde lief", false, "evaluate warf");
         return;
@@ -1516,10 +1475,8 @@ async function checkBandTailleGolden(ctx) {
 // Welt, Portal = Hyperlink, Adresse = URL). Taille-konform additiv (alte Builds ignorieren neue
 // worldMeta-Felder); Bann/Kick/Adress-Setter sind R2 — KEIN DSL-Op trägt sie (die Wand).
 async function checkBandPhiArchipel(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         const AR = window.AnazhRealm || r.constructor;
 
         // (P1) FROZEN-Stufen-Sätze existieren + sind genau die Wörter aus dem Plan.
@@ -1675,7 +1632,6 @@ async function checkBandPhiArchipel(ctx) {
 
         // Aufräumen — die signierte Test-Adresse aus der aktiven Welt entfernen.
         r.state.worldMeta.worldAddress = null;
-        return out;
     });
 
     check(
@@ -1732,9 +1688,8 @@ async function checkBandPhiArchipel(ctx) {
 // aufgelöste Köpfe: Broker-Antwort, Client-Cache) · Φ5 Mittragen (Welten pinnen, mittragend
 // antworten).
 async function checkBandPhiArchipelV2(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt(async (r) => {
         const AR = window.AnazhRealm || r.constructor;
         const out = {};
 
@@ -1967,11 +1922,8 @@ async function checkBandPhiArchipelV2(ctx) {
 // Signatur + Provenance). Materialisiert wird jeder Slot ein eigenes Portal mit entry-level
 // portalMeta (_enterPortal: entry → bauplan-portalMeta-Coalesce).
 async function checkBandPhi7PortalHalls(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         // (H1) state.portalHalls ist eine Map (initial leer im Boot).
         out.hallMap = r.state.portalHalls instanceof Map;
 
@@ -2136,8 +2088,6 @@ async function checkBandPhi7PortalHalls(ctx) {
         r.state.portalHalls.delete("fremd-halle");
         // Test-Bauplan, wenn von uns erzeugt, lassen wir liegen (kein Müll;
         // andere Tests dürfen ihn finden — _enterPortalToAddress nutzt ihn nicht).
-
-        return out;
     });
 
     check(
@@ -2183,11 +2133,8 @@ async function checkBandPhi7PortalHalls(ctx) {
 // Stichproben-Verify gegen die LOKAL nachgerechnete Wahrheit (verifizieren ist O(Build), schummeln
 // gegen den Hash unmöglich); (b) Playtest-Lauf-Beiträge signiert + Commit + Resultat.
 async function checkBandPhi6ComputeSpende(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         // (K1) Daten-Modelle existieren (Map + Array, initial leer).
         out.contribMap = r.state.computeContributions instanceof Map;
         out.runArray = Array.isArray(r.state.playtestContributions);
@@ -2320,8 +2267,6 @@ async function checkBandPhi6ComputeSpende(ctx) {
         r.state.playtestContributions = r.state.playtestContributions.filter(
             (e) => e.commit !== "abc12345" && e.commit !== "xyz98765"
         );
-
-        return out;
     });
 
     check(

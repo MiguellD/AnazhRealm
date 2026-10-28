@@ -3,18 +3,13 @@
 // 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
 // gate:kreatur-takt kaskade).
 async function checkBandV1725FieldReaders(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
-        return out;
     });
     check("mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
 }
@@ -23,10 +18,8 @@ async function checkBandV1725FieldReaders(ctx) {
 // damage/speed/hpMax — schwere Keule langsam-wuchtig, leichte harte Klinge schnell. Geprüft: Profile
 // differenzieren durch DIESELBE Pipeline für Spieler + Kreatur, sichtbar in der UI.
 async function checkBandV1751CombatStats(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const S = r.constructor.STAT_FROM_TAGS;
 
         // (2) Substanz-Differenzierung (der KERN — die Tabelle IST die Regel):
@@ -70,7 +63,6 @@ async function checkBandV1751CombatStats(ctx) {
         r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
 
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
-        return out;
     });
     check(
         "Kampf A: KONSUM — eine schwere dichte Keule hat MEHR Rückschlag als eine leichte Klinge (Masse)",
@@ -110,10 +102,8 @@ async function checkBandV1751CombatStats(ctx) {
 // die Rüstung dämpft (`dealt = roh² / (roh + defense)`, Welle L K-D5 — die flache Wand max(1, roh − defense) fiel); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
 // Spieler-Töter, removeCreature). Konsument ist der damage_creature-DSL-Op.
 async function checkBandV1753CreatureCombat(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const matUnits = (inv) =>
@@ -196,7 +186,6 @@ async function checkBandV1753CreatureCombat(ctx) {
         if (r.state.creatures.indexOf(c3) !== -1) r.removeCreature(c3);
         for (let i = 0; i < invBefore.length; i++) p.inventory[i] = invBefore[i];
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
-        return out;
     });
     check("Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
     check("Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
@@ -207,10 +196,7 @@ async function checkBandV1753CreatureCombat(ctx) {
         "Kampf C: KONSUM — ein Spieler-Kill (hp≤0) KIPPT die Kreatur (dying), der Abschied räumt sie nach der Frist",
         res.killRemoves
     );
-    check(
-        "Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)",
-        res.lootToInventory
-    );
+    check("Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)", res.lootToInventory);
     check("Kampf C: ein Welt-/DSL-Tod gibt KEIN Loot (nur der Spieler erntet)", res.noLootForWorldKill);
     check("Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
 }
@@ -220,10 +206,8 @@ async function checkBandV1753CreatureCombat(ctx) {
 // harvest, sonst carve. Affekt: Zorn ∝ Waffen-Härte beim Angriff, SCHULD ∝ lebendig×bond beim Töten
 // eines friedlichen Wesens.
 async function checkBandV1754PlayerAttack(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const e = p.emotions;
@@ -326,7 +310,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         r.state.lifeField = savedLife;
         r.state.emotionField = savedEmoField;
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
-        return out;
     });
     check(
         "Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
@@ -352,14 +335,13 @@ async function checkBandV1754PlayerAttack(ctx) {
 }
 
 async function checkBandWelle6HBuildAndPersist(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
     // Umkehrung von gather: Phasen take (zum Spieler) → walk (weg) → spawn (Architektur am Kreatur-Ort);
     // _buildMaterialGate ist EINE Funktion für Spieler-confirmBuild und die Kreatur-take-Phase.
-    const wave6hP2b2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2b2Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -581,31 +563,16 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     if (wave6hP2b2Results && !wave6hP2b2Results.error) {
         check("CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
         check("AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
-        check(
-            "_buildCreatureTaskArgs(build, string) → {blueprint}",
-            wave6hP2b2Results.argsBuildString
-        );
-        check(
-            "_buildCreatureTaskArgs(build, number) droppt arg",
-            wave6hP2b2Results.argsBuildNumberDropped
-        );
+        check("_buildCreatureTaskArgs(build, string) → {blueprint}", wave6hP2b2Results.argsBuildString);
+        check("_buildCreatureTaskArgs(build, number) droppt arg", wave6hP2b2Results.argsBuildNumberDropped);
         check("_buildCreatureTaskArgs(build, '') droppt arg", wave6hP2b2Results.argsBuildEmptyDropped);
-        check(
-            "_describeCreatureTaskArg(build, X) zeigt 'Bauplan X'",
-            wave6hP2b2Results.descBuildShowsBlueprint
-        );
-        check(
-            "build ohne blueprint → null + Task fällt auf wander",
-            wave6hP2b2Results.buildEmptyFallsToWander
-        );
+        check("_describeCreatureTaskArg(build, X) zeigt 'Bauplan X'", wave6hP2b2Results.descBuildShowsBlueprint);
+        check("build ohne blueprint → null + Task fällt auf wander", wave6hP2b2Results.buildEmptyFallsToWander);
         check(
             "build mit unbekanntem Bauplan → wander + 'no_blueprint'-Erinnerung",
             wave6hP2b2Results.unknownBpFallsToWander && wave6hP2b2Results.memHasNoBlueprint
         );
-        check(
-            "take-Phase weit weg → Vektor zum Spieler hin",
-            wave6hP2b2Results.takePhaseTowardsPlayer
-        );
+        check("take-Phase weit weg → Vektor zum Spieler hin", wave6hP2b2Results.takePhaseTowardsPlayer);
         check(
             "take-Phase Geschwindigkeit ~ CREATURE_BUILD_SPEED (body-moduliert P2F.1)",
             wave6hP2b2Results.takePhaseSpeed
@@ -618,10 +585,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "pfad mit Material → carrying.kind='build' + blueprint gesetzt",
             wave6hP2b2Results.takeSetsCarrying && wave6hP2b2Results.takeCarryingHasBp
         );
-        check(
-            "pfad: Material wird aus Spieler-Inventar konsumiert",
-            wave6hP2b2Results.takeConsumesPfad
-        );
+        check("pfad: Material wird aus Spieler-Inventar konsumiert", wave6hP2b2Results.takeConsumesPfad);
         check("'took_materials'-Erinnerung gespeichert", wave6hP2b2Results.memHasTook);
         check(
             "schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
@@ -629,18 +593,12 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2b2Results.schoepferCarryingHasMaterials &&
                 wave6hP2b2Results.schoepferCarryingFree
         );
-        check(
-            "schöpfer: Inventar bleibt unangetastet (kostenlos)",
-            wave6hP2b2Results.schoepferInventoryUntouched
-        );
+        check("schöpfer: Inventar bleibt unangetastet (kostenlos)", wave6hP2b2Results.schoepferInventoryUntouched);
         check(
             "walk-Phase mit carrying → Vektor WEG vom Spieler ~ BUILD_SPEED (body-moduliert P2F.1)",
             wave6hP2b2Results.walkPhaseAwayFromPlayer && wave6hP2b2Results.walkPhaseSpeed
         );
-        check(
-            "spawn-Phase bei placement_dist → Architektur entsteht",
-            wave6hP2b2Results.spawnPhaseGrowsWorld
-        );
+        check("spawn-Phase bei placement_dist → Architektur entsteht", wave6hP2b2Results.spawnPhaseGrowsWorld);
         check(
             "spawn-Phase clearet carrying + fällt auf wander zurück",
             wave6hP2b2Results.spawnPhaseClearsCarrying && wave6hP2b2Results.spawnPhaseFallsToWander
@@ -650,15 +608,9 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             wave6hP2b2Results.memHasBuilt && wave6hP2b2Results.journalHasBuilt
         );
         check("DSL creature_task_nearest('build', bp) wirkt", wave6hP2b2Results.dslNearestSetsBuild);
-        check(
-            "build-Ops bleiben in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
-            wave6hP2b2Results.opsAreNonBroadcast
-        );
+        check("build-Ops bleiben in NON_BROADCASTABLE_OPS (Multi-User-Safety)", wave6hP2b2Results.opsAreNonBroadcast);
         check("Chat 'baue X' → creature_task_nearest build X", wave6hP2b2Results.chatBauePattern);
-        check(
-            "Chat 'alle bauen X' → creature_task_all build X",
-            wave6hP2b2Results.chatAlleBauenPattern
-        );
+        check("Chat 'alle bauen X' → creature_task_all build X", wave6hP2b2Results.chatAlleBauenPattern);
         check("describeProgram zeigt 'Bauplan' + name", wave6hP2b2Results.describeProgramShowsBp);
         check("Status-Bar zeigt 'N bauen' bei build-Tasks", wave6hP2b2Results.statusShowsBauen);
         check(
@@ -671,10 +623,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2b2Results.uiBuildSelectHasOptions &&
                 wave6hP2b2Results.uiBuildButtonsCount
         );
-        check(
-            "Journal-Label (wird zur Schoepferin) beim build-Wechsel",
-            wave6hP2b2Results.journalHasSchoepferin
-        );
+        check("Journal-Label (wird zur Schoepferin) beim build-Wechsel", wave6hP2b2Results.journalHasSchoepferin);
         check(
             "free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
             wave6hP2b2Results.symbolicCostHasMultiple
@@ -686,8 +635,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
     // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material, build:blueprint): Speed-Bonus
     // je Level, Audio + Journal beim Level-Up, UI-Pills; Levels sind abgeleitet, nie separat gespeichert.
-    const wave6hP2dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2dResults = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -862,10 +810,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
 
     if (wave6hP2dResults && !wave6hP2dResults.error) {
         check("skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
-        check(
-            "der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)",
-            wave6hP2dResults.levelUpRuft
-        );
+        check("der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)", wave6hP2dResults.levelUpRuft);
         check("skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
         check(
             "skillKeyForMemory failures (no_material, delivered) → null",
@@ -877,10 +822,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
         );
         check("computeSpecs zählt built nach blueprint", wave6hP2dResults.countsBuiltSteinBlock);
-        check(
-            "failures (no_material, no_blueprint) zählen NICHT in specs",
-            wave6hP2dResults.failuresIgnored
-        );
+        check("failures (no_material, no_blueprint) zählen NICHT in specs", wave6hP2dResults.failuresIgnored);
         check(
             "Level 0 für leeren Skill + Sub-Threshold (2<3)",
             wave6hP2dResults.level0Empty && wave6hP2dResults.level0Sub
@@ -903,10 +845,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "speedMultiplier wander/null-args → 1.0",
             wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
         );
-        check(
-            "3. erfolgreicher gather → Level-Up im _creatureRemember",
-            wave6hP2dResults.rememberTriggersLevel
-        );
+        check("3. erfolgreicher gather → Level-Up im _creatureRemember", wave6hP2dResults.rememberTriggersLevel);
         check(
             "Level-Up schreibt growth-Journal-Eintrag mit Sammler/key/Stufe",
             wave6hP2dResults.journalHasLvlUp && wave6hP2dResults.journalGrew
@@ -915,10 +854,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "Failure-Memory triggert KEIN Level + KEIN Journal",
             wave6hP2dResults.failureNoLevel && wave6hP2dResults.failureJournalUntouched
         );
-        check(
-            "UI .creature-specs Spans existieren bei Kreaturen mit Specs",
-            wave6hP2dResults.uiSpecsSpansExist
-        );
+        check("UI .creature-specs Spans existieren bei Kreaturen mit Specs", wave6hP2dResults.uiSpecsSpansExist);
         check(
             "UI .creature-spec.creature-spec-gather + .creature-spec-build Pills",
             wave6hP2dResults.uiHasGatherPills && wave6hP2dResults.uiHasBuildPills
@@ -927,18 +863,9 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "Pills zeigen Sammler/Bauer + Level (L1..L5)",
             wave6hP2dResults.uiPillTextOk && wave6hP2dResults.uiBuildPillTextOk
         );
-        check(
-            "Anzahl .creature-specs Spans = Anzahl Kreaturen mit Specs",
-            wave6hP2dResults.uiSpansMatchSpecCount
-        );
-        check(
-            "KEINE Persistenz im buildStateSnapshot (Vision §1.1)",
-            wave6hP2dResults.snapshotHasNoSpecs
-        );
-        check(
-            "KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
-            wave6hP2dResults.noSpecDslOp
-        );
+        check("Anzahl .creature-specs Spans = Anzahl Kreaturen mit Specs", wave6hP2dResults.uiSpansMatchSpecCount);
+        check("KEINE Persistenz im buildStateSnapshot (Vision §1.1)", wave6hP2dResults.snapshotHasNoSpecs);
+        check("KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)", wave6hP2dResults.noSpecDslOp);
     } else if (wave6hP2dResults && wave6hP2dResults.error) {
         check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
     }
@@ -946,8 +873,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
     // Kreatur-Identitäten überleben Reload: der Save trägt {name, soul, memory, position, bornAt} je
     // Kreatur (~1 KB), Memory-Cap 200; tote Kreaturen (removeCreature) fallen aus dem Save.
-    const wave6hP2d1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2d1Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -1095,18 +1021,12 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "_restoreCreatureFromSnapshot rekonstruiert Kreatur + wächst Liste",
             wave6hP2d1Results.restoreReturnsCreature && wave6hP2d1Results.restoreGrowsList
         );
-        check(
-            "Restore übernimmt Name + Soul",
-            wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
-        );
+        check("Restore übernimmt Name + Soul", wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk);
         check("Restore übernimmt Memory (Länge + Inhalt)", wave6hP2d1Results.restoreMemoryOk);
         check("Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
         check("Restore übernimmt bornAt + alterS", wave6hP2d1Results.restoreBornAtOk);
         check("Specs aus restoriertem Memory korrekt re-derived", wave6hP2d1Results.specsReDerived);
-        check(
-            "buildStateSnapshot trägt volles Kreatur-Schema",
-            wave6hP2d1Results.snapshotHasFullCreatures
-        );
+        check("buildStateSnapshot trägt volles Kreatur-Schema", wave6hP2d1Results.snapshotHasFullCreatures);
         check(
             "removeCreature entfernt aus state.creatures + Snapshot",
             wave6hP2d1Results.victimRemovedFromSnap &&
@@ -1120,28 +1040,21 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2d1Results.pendingClearedAfterRestore &&
                 wave6hP2d1Results.restoredCreatureHasMemory
         );
-        check(
-            "Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)",
-            wave6hP2d1Results.cap200Enforced
-        );
-        check(
-            "Restore mit übergroßem memory wird auf 200 gekappt",
-            wave6hP2d1Results.oversizedRestoredCappedAt200
-        );
+        check("Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)", wave6hP2d1Results.cap200Enforced);
+        check("Restore mit übergroßem memory wird auf 200 gekappt", wave6hP2d1Results.oversizedRestoredCappedAt200);
     } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
         check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
     }
 }
 
 async function checkBandWelle6HCreatureStats(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
     // Kreatur, Spieler und Architektur sind Compound aus parts × Material × Form; Stats kommen aus
     // derselben STAT_FROM_TAGS-Pipeline; Body-Speed-Mul (stats.speed/7) wirkt im Tick neben Spec-Mul.
-    const wave6hP2f1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2f1Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -1262,42 +1175,24 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
             wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
         );
-        check(
-            "Soul-Diskrimination — Sprite schneller als Wesen",
-            wave6hP2f1Results.spriteFasterThanWesen
-        );
+        check("Soul-Diskrimination — Sprite schneller als Wesen", wave6hP2f1Results.spriteFasterThanWesen);
         check(
             "Soul-Diskrimination — Wesen ≠ Sprite in mind. 1 Stat (emergent)",
             wave6hP2f1Results.wesenSpriteDiscriminated
         );
         check("Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
         check("Tags in [0, 2] (clamped + Spec-Bonus tolerant)", wave6hP2f1Results.tagsInBounds);
-        check(
-            "_refreshCreatureStatsCache schreibt userData.stats",
-            wave6hP2f1Results.cacheWritesStats
-        );
+        check("_refreshCreatureStatsCache schreibt userData.stats", wave6hP2f1Results.cacheWritesStats);
         check("_creatureBodySpeedMultiplier > 0 für alle Seelen", wave6hP2f1Results.bodyMulPositive);
-        check(
-            "Sprite-bodyMul > Wesen-bodyMul (Vision: leichte Form schneller)",
-            wave6hP2f1Results.spriteBodyMulHigher
-        );
+        check("Sprite-bodyMul > Wesen-bodyMul (Vision: leichte Form schneller)", wave6hP2f1Results.spriteBodyMulHigher);
         check(
             "Tick — Sprite läuft schneller als Wesen (selbe Task, body-mul wirkt)",
             wave6hP2f1Results.tickSpriteFaster
         );
         check("Tick — Wesen bei ~BUILD_SPEED (bodyMul ≈ 1)", wave6hP2f1Results.tickWesenAtBase);
-        check(
-            "Spec-Bonus emergiert in stats.magieleitung (Wissen leitet)",
-            wave6hP2f1Results.specBonusMagieleitung
-        );
-        check(
-            "UI — alle creature-rows haben title-Tooltip mit Stats",
-            wave6hP2f1Results.uiRowsHaveStatsTitle
-        );
-        check(
-            "Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
-            wave6hP2f1Results.sameStatKeysAsPlayer
-        );
+        check("Spec-Bonus emergiert in stats.magieleitung (Wissen leitet)", wave6hP2f1Results.specBonusMagieleitung);
+        check("UI — alle creature-rows haben title-Tooltip mit Stats", wave6hP2f1Results.uiRowsHaveStatsTitle);
+        check("Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)", wave6hP2f1Results.sameStatKeysAsPlayer);
     } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
         check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
     }
@@ -1305,8 +1200,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
     // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
     // Kreaturen tragen Werkzeug + Rüstung wie der Spieler: equipped Compound-Tags stacken mit
     // TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT; Persistenz via _serializeCreature → snap.equipped.
-    const wave6hP2f2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2f2Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -1462,10 +1356,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
                 wave6hP2f2Results.unequipArmorOk &&
                 wave6hP2f2Results.unequipInvalidSlotRejected
         );
-        check(
-            "Tool-Equipped ändert computeCreatureStats (Stats-Stacking)",
-            wave6hP2f2Results.toolStatsChanged
-        );
+        check("Tool-Equipped ändert computeCreatureStats (Stats-Stacking)", wave6hP2f2Results.toolStatsChanged);
         check("Tool mit stein-Tag erhöht HP-Stat (dichte-Bonus)", wave6hP2f2Results.toolHpHigher);
         check(
             "Armor-Equipped ändert computeCreatureStats",
@@ -1475,10 +1366,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "DSL creature_equip_tool + creature_unequip wirken",
             wave6hP2f2Results.dslEquipToolOk && wave6hP2f2Results.dslUnequipOk
         );
-        check(
-            "alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
-            wave6hP2f2Results.opsNonBroadcast
-        );
+        check("alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)", wave6hP2f2Results.opsNonBroadcast);
         check(
             "describeProgram zeigt Werkzeug/Rüstung/Slot",
             wave6hP2f2Results.descEquipTool && wave6hP2f2Results.descEquipArmor && wave6hP2f2Results.descUnequip
@@ -1487,10 +1375,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "_serializeCreature schreibt equipped + Restore übernimmt es",
             wave6hP2f2Results.snapHasEquipped && wave6hP2f2Results.restoreKeepsEquippedTool
         );
-        check(
-            "Restore lässt unbekanntes Tool silent fallen (defensive)",
-            wave6hP2f2Results.restoreSilentDropsUnknown
-        );
+        check("Restore lässt unbekanntes Tool silent fallen (defensive)", wave6hP2f2Results.restoreSilentDropsUnknown);
         check(
             "UI — .creature-equipped Wraps + .creature-equip-tool Pills",
             wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
@@ -1502,8 +1387,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
     // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
     // Boost = `computeCompoundTags(consumableBp) × scale` — kein Hardcode, keine Tabelle. Bauplan mit
     // role:"consumable" + consumableMeta; RMB + Hotbar-Konsumable + Raycast-Kreatur = Übergabe.
-    const wave6hP2f3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2f3Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -1667,10 +1551,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
             wave6hP2f3Results.applyOk && wave6hP2f3Results.boostsListed && wave6hP2f3Results.boostHasSource
         );
-        check(
-            "applyCreatureBoost mit leerem tagDelta → lehnt ab",
-            wave6hP2f3Results.emptyBoostRejected
-        );
+        check("applyCreatureBoost mit leerem tagDelta → lehnt ab", wave6hP2f3Results.emptyBoostRejected);
         check(
             "Selbe source dedupliziert (verlängert + tagDelta-Update)",
             wave6hP2f3Results.dedupeBySource && wave6hP2f3Results.deltaUpdated
@@ -1685,10 +1566,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "activateCreatureConsumable wendet emergenten Boost auf Kreatur an",
             wave6hP2f3Results.activateOk && wave6hP2f3Results.boostOnCreature
         );
-        check(
-            "Konsumable hebt Kreatur-Stats sichtbar (HP+ via dichte-Boost)",
-            wave6hP2f3Results.consumableLiftsStats
-        );
+        check("Konsumable hebt Kreatur-Stats sichtbar (HP+ via dichte-Boost)", wave6hP2f3Results.consumableLiftsStats);
         check(
             "nicht-consumable Bauplan → activate lehnt ab (not_marked_as_consumable)",
             wave6hP2f3Results.nonConsumableRejected
@@ -1712,10 +1590,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
                 wave6hP2f3Results.pfadRejectsWithoutPotion &&
                 wave6hP2f3Results.pfadConsumes
         );
-        check(
-            "UI — .creature-boost Pills in der Liste bei aktiven Boosts",
-            wave6hP2f3Results.uiHasBoostPills
-        );
+        check("UI — .creature-boost Pills in der Liste bei aktiven Boosts", wave6hP2f3Results.uiHasBoostPills);
     } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
         check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
     }
@@ -1725,9 +1600,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
 // der Steh-Anatomie (+0.9); (2) SPIELER-KLEMME an der Kreatur-Wurzel: kein frisches Wesen
 // materialisiert IM Spieler (≥ 3 m radial); Restore/Peer-Sicht bleiben PRECISE (bit-treu).
 async function checkBandWDRittSpawn(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
         // (1) die Sitz-Hüfte beweist gate:vehicle-drive am Aufsitzen (sitzKern); (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
@@ -1757,9 +1631,8 @@ async function checkBandWDRittSpawn(ctx) {
 // KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
 // Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
 async function checkBandV18208CreatureSizeSymmetry(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1830,10 +1703,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         return out;
     });
 
-    check(
-        `(C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`,
-        res.creatureSoulsExists === true
-    );
+    check(`(C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`, res.creatureSoulsExists === true);
     check(`(C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
     check(`(C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
     // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor ≥ 2" / Spanne 0.5).
@@ -1849,7 +1719,12 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
 }
 
 module.exports = {
-    checkBandV1725FieldReaders, checkBandV1751CombatStats, checkBandV1753CreatureCombat, checkBandV1754PlayerAttack,
-    checkBandWelle6HBuildAndPersist, checkBandWelle6HCreatureStats, checkBandWDRittSpawn,
+    checkBandV1725FieldReaders,
+    checkBandV1751CombatStats,
+    checkBandV1753CreatureCombat,
+    checkBandV1754PlayerAttack,
+    checkBandWelle6HBuildAndPersist,
+    checkBandWelle6HCreatureStats,
+    checkBandWDRittSpawn,
     checkBandV18208CreatureSizeSymmetry,
 };

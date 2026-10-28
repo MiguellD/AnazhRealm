@@ -121,8 +121,8 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
-    // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit, der Spieler an P0 — der Ecke von vier Regionen,
-    // dem TAL —, ab Takt `ab` lebendig × ½; gemessen wird der Bestand der nahen Regionen (ihr Verzeichnis, gezeichnet oder nicht,
+    // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit, der Spieler an P0 — der Ecke von vier nahen
+    // Regionen —, ab Takt `ab` lebendig × ½; gemessen wird der Bestand des Tals (sein Verzeichnis, gezeichnet oder nicht,
     // oekologie.K2#2) und je Takt die Kosten des Lebenszyklus ──
     const zeitraffer = () => {
         if (taeter === "bestand-nahrung") decke("_kreaturNahrung", () => () => 0.5);
@@ -163,7 +163,11 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             r._faunaStroeme = { seed: s.worldMeta.seed, rng };
             [s._creatureNetSeq, s.spielZeit, s.faunaLifecycle] = [1e4 * saat, 0, { lastTick: 0 }];
             [s.lifeField, s.faunaBestand] = [];
+            // DAS TAL: von den nahen Regionen die mit der größten Kapazität des Rotwilds, leer gelesen — dort misst die Kaskade
             const [n, ms, nah] = [[], [], r._bestandNah()];
+            const tal = nah.reduce((a, b) =>
+                r._kreaturBestand(null, b).deer.K > r._kreaturBestand(null, a).deer.K ? b : a
+            );
             let [kappe, K] = [0, 0];
             for (let k = 0; k < takte; k++) {
                 halb = k >= ab;
@@ -172,29 +176,37 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 const t0 = performance.now();
                 r.tickFaunaLifecycle();
                 ms.push(performance.now() - t0);
-                if (eingriff) eingriff(k, nah);
+                if (eingriff) eingriff(k, nah, tal);
                 for (const c of s.leichname.slice()) r.removeCreature(c);
                 // der Leerlauf zwischen den Takten (`_imLeerlauf` kommt im Zeitraffer nie): die Tod-Lage der Entfernten fällt
                 r._todLageTick();
                 // DER AUSBRUCH: über 3 × die Kapazität der Region (+ 10) bricht der Bestand über seine Nahrung aus — dort misst der
                 // Lauf nichts mehr (bis oekologie.K2#2 die Körper an der Kosten-Kappe, die heute nur zeichnet)
-                if (k % 36 === 0) K = nah.reduce((p, key) => Object.values(r._kreaturBestand(null, key)).reduce((q, b) => q + b.K, p), 0); // prettier-ignore
-                const je = nah.flatMap((key) => (s.faunaBestand.regionen[key] || { tiere: [] }).tiere.map((t) => t.g));
-                if (je.length > 3 * K + 10 && ++kappe) break;
+                if (k % 36 === 0) K = Object.values(r._kreaturBestand(null, tal)).reduce((q, b) => q + b.K, 0);
+                const je = { alle: 0 };
+                for (const t of (s.faunaBestand.regionen[tal] || { tiere: [] }).tiere) {
+                    je.alle++;
+                    je[t.g] = (je[t.g] || 0) + 1;
+                }
+                if (je.alle > 3 * K + 10 && ++kappe) break;
                 n.push(je);
             }
             for (const c of s.creatures.slice()) r.removeCreature(c);
             const mittel = (a, b, g) =>
-                +(n.slice(a, b).reduce((p, je) => p + je.filter((x) => !g || x === g).length, 0) / (b - a)).toFixed(2);
+                +(n.slice(a, b).reduce((p, je) => p + (je[g || "alle"] || 0), 0) / (b - a)).toFixed(2);
             return { kappe, mittel, tod, ms, nah };
         };
     };
     // je nahe Region verlassen n Tiere der Art den Bestand (der Eingriff der Kaskade: gejagt, entfernt) — ein gezeichnetes fällt
+
+    // je nahe Region verlassen n Tiere der Art den Bestand (der Eingriff der Kaskade: gejagt, entfernt), ihr Leib mit ihnen
     const nimm = (art, n) => (k, nah) => {
         for (const R of nah.map((key) => s.faunaBestand.regionen[key]).filter(Boolean))
-            for (const t of R.tiere.filter((t) => t.g === art).slice(0, n))
-                if (t.leib) r._creatureCombatDeath(t.leib, "jagd");
+            for (const t of R.tiere.filter((t) => t.g === art).slice(0, n)) {
+                const c = t.leib;
+                if (c) (r._bestandAus(c), r.removeCreature(c));
                 else R.tiere.splice(R.tiere.indexOf(t), 1);
+            }
     };
     // DER EFFEKT eines Gegenlaufs: das Mittel der Differenzen je Saat durch das Mittel des Grundlaufs und sein Intervall — die
     // Ordnungs-Statistik [kleinste, größte Differenz] (über 8 Saaten deckt sie den Median mit 1 − 2 · 0,5⁸ = 99,2 %), mit `t`
@@ -214,8 +226,8 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
     // Jungwuchs: die Äsung des Tals, wie die Kapazität des Rotwilds sie liest (K ∝ Σ Lebensraum × Äsung). Bis oekologie.K2#2
     // EIN Revier um den Spieler und nur die 6. Stunde — ein Rudel (3–6 Wölfe) über einer Kapazität von 1–5 kommt und geht in
     // Minuten. DER BESTAND (oekologie.K2#2: überall; fern als Zahl, nah als Körper): dieselben Läufe gezeichnet unter der Kappe
-    // des Spiels (20, dirigent-kern maxCreatures), dazu die Mutante „Kappe halbiert“ (Soll: je Takt dieselben Tiere in jeder
-    // nahen Region); je 100 s der Stunden 2–6 die vier nahen und vier ferne Regionen (eine Kachel Abstand: `_bestandRegion` holt
+    // des Spiels (20, dirigent-kern maxCreatures), dazu die Mutante „Kappe halbiert“ — die Wölfe entfernt unter halber Kappe (Soll:
+    // je Takt dieselben Tiere in jeder nahen Region wie unter der ganzen; 28.10. fiel hier ein Eingriff, der den Leib nicht nahm); je 100 s der Stunden 2–6 die vier nahen und vier ferne Regionen (eine Kachel Abstand: `_bestandRegion` holt
     // nach, was sie versäumte, ohne Leib) gegen die halbe Nahrung (Soll: weniger an jedem Ort); je Takt die Leiber (≤ Kappe,
     // jeder aus einer nahen Region) und die Kosten des Lebenszyklus ──
     await buehne("kaskade", async () => {
@@ -235,8 +247,8 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         const L = {};
         for (const [name, eingriff] of Object.entries({
             grund: null,
-            kappeHalb: null,
             ohneWolf: nimm("wolf"),
+            kappeHalb: nimm("wolf"),
             bejagt: (k, nah) => k % 3 || nimm("deer", 1)(k, nah),
             halb: null,
             mutante: nimm("wolf"),
@@ -246,21 +258,19 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             for (let i = 1; i <= (taeter ? 4 : 8); i++) {
                 s.maxCreatures = name === "kappeHalb" ? 10 : 20;
                 const z = { jung: 0, spur: [], orte: [], leiber: 0, fremd: 0 };
-                const l = lauf(i, name === "grund" ? 2880 : 2160, name === "halb" ? 360 : Infinity, (k, nah) => {
+                const l = lauf(i, name === "grund" ? 2880 : 2160, name === "halb" ? 360 : Infinity, (k, nah, tal) => {
                     if (eingriff) eingriff(k, nah);
-                    if (k >= 1080 && k < 2160)
-                        z.jung += nah.reduce((p, key) => p + r._kreaturBestand(null, key).deer.K, 0) / 1080;
+                    if (k >= 1080 && k < 2160) z.jung += r._kreaturBestand(null, tal).deer.K / 1080;
                     const R = [...nah, ...fern].map((key, j) => (j < nah.length || k % 10 ? s.faunaBestand.regionen[key] : (ruhigSpieler(), r._bestandRegion(key))) || { tiere: [] }); // prettier-ignore
                     if (k >= 720 && k < 2160 && !(k % 10)) R.forEach((Rj, j) => (z.orte[j] = (z.orte[j] || 0) + Rj.tiere.length / 144)); // prettier-ignore
-                    z.spur.push(
-                        R.slice(0, nah.length)
-                            .map((Rj) => Rj.tiere.map((t) => t.id).join())
-                            .join("|")
-                    );
+                    if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(R.slice(0, nah.length).map((Rj) => Rj.tiere.map((t) => t.id).join()).join("|")); // prettier-ignore
                     z.leiber = Math.max(z.leiber, s.creatures.length);
-                    z.fremd += s.creatures.filter((c) => !nah.includes(c.userData._bestand.id.split(".")[0])).length;
+                    z.fremd += s.creatures.filter((c) => c.userData._bestand && !nah.includes(c.userData._bestand.id.split(".")[0])).length; // prettier-ignore
                 });
                 L[name].push(Object.assign(l, z));
+                // zwischen den Läufen eine Aufgaben-Grenze (der EINE Schlaf der Seite): erst dort räumt die Speicher-Bereinigung die
+                // Leiber eines Laufs — ohne sie wuchs die Seite über die Läufe bis 4 GB (28.10., vier Regionen)
+                await sleep(1);
             }
         }
         const richtung = (b, g, soll) => {
@@ -284,7 +294,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             hungertod: G[0].tod, // je Hungertod aller Läufe
             bestand: {
                 nah: G[0].nah.length,
-                anders: H.reduce((p, h, i) => p + h.spur.filter((x, k) => x !== G[i].spur[k]).length, 0),
+                anders: H.reduce((p, h, i) => p + h.spur.filter((x, k) => x !== L.ohneWolf[i].spur[k]).length, 0),
                 takte: H.reduce((p, h) => p + h.spur.length, 0),
                 leiber: [G, H].map((X) => Math.max(...X.map((l) => l.leiber))),
                 zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce((a, b) => a + b, 0), 0) / G.length).toFixed(1),

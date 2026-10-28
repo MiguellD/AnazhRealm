@@ -9,10 +9,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Neuheit (visitedRegions) + Distanz vom Ursprung + Kühnheit (karge/glut-Aura via auraAt);
 // Konsum: kühnes Erkunden ≫ Pendeln (awe).
 async function checkBandV1749Adventure(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const E = r.constructor.EXPLORE;
         const pm = r.state.playerMesh.position;
@@ -89,7 +87,6 @@ async function checkBandV1749Adventure(ctx) {
         pm.x = savedPos.x;
         pm.y = savedPos.y;
         pm.z = savedPos.z;
-        return out;
     });
     check("Abenteuer: EXPLORE-Config (Neuheit > Wiederkehr, max > min)", res.config);
     check("Abenteuer: KONSUM — eine NEUE Region staunt mehr als eine Wiederkehr (Neuheit)", res.noveltyGrades);
@@ -97,10 +94,7 @@ async function checkBandV1749Adventure(ctx) {
         "Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
         res.adventureGrades
     );
-    check(
-        "Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
-        res.boldnessGrades
-    );
+    check("Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)", res.boldnessGrades);
     check(
         "Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
         res.exploreScales
@@ -110,21 +104,19 @@ async function checkBandV1749Adventure(ctx) {
 
 // Der Voxel-Boden (P1 + P2b) und die Abwesenheit des Heightfields.
 async function checkBandVoxelTerrainCore(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
     // Beweist echte Höhlen/Überhänge aus 3D-Dichte-Feld + Surface-Nets-Mesher. Vorab alle
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
-    await page.evaluate(() => {
-        const r = window.anazhRealm;
+    await ctx.welt((r) => {
         if (r && r.state && r.state.voxelChunks) {
             for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
-    const voxelP1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const voxelP1Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
 
@@ -374,8 +366,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
     // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
     // Parallel, hinter dem Flag — jeder Schritt reversibel.
-    const voxelP2bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const voxelP2bResults = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         // Voxel ist permanent (keine Toggle-Methoden): der Ring ist beim Init gefüllt
@@ -695,8 +686,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // ### Voxel permanent + irreversibel (kein Toggle) ###
     // Voxel ist beim Init aktiv, `worldMeta.voxelTerrain` immer true (Zwangs-Migration in
     // `ensureWorldMeta`); Toggle-Methoden + `voxel terrain on/off`-Chat-Befehl sind weg.
-    const voxelV935ToggleResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const voxelV935ToggleResults = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         // Voxel ist beim Init aktiv (kein toggle nötig).
@@ -734,8 +724,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Eine Voxel-Welt baut keine Heightfield-Chunks und keine heightData (groundHeightField null,
     // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
     // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
-    const voxelP5c1Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
+    const voxelP5c1Results = await ctx.welt(async (r) => {
         if (!r || !r.state) return null;
         const out = {};
 
@@ -794,8 +783,7 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Die toten Heightfield-Methoden + der `terrainMaterial`-Setzer sind weg; die Vision-Schichten
     // leben in den Voxel-Pendants (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
     // `_attachVoxelFieldColors`).
-    const voxelV939Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const voxelV939Results = await ctx.welt((r) => {
         if (!r) return null;
         return {
             // populateChunkVegetation nennt noch ein Log-Text des Stamms, darum steht sie hier und nicht in gate:altlasten
@@ -822,9 +810,8 @@ async function checkBandVoxelTerrainCore(ctx) {
 // statt 124 (8× weniger Cells). Span (43.2 m) + vertikaler Range (223.2 m) bleiben konstant
 // → Chunks world-aligned über die LOD-Grenze.
 async function checkBandWellePerf3bDistanceLod(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Config-Trennung LOD 0 vs LOD 1
@@ -926,9 +913,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
 // der Regler ruht wie unter `__weltStehtNach`) wächst der Ring Schale um Schale bis zum Ziel, sobald die jetzige steht — nie
 // darüber, nie zurück unter Last; eine ungebaute Schale hält ihn, der gesenkte Regler des Spielers gilt sofort.
 async function checkBandJedesHolzExistenzBoden(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const st = r.state;
         const F = [
             "renderer",
@@ -981,9 +967,8 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
 // Wasser-Cells leben IMMER auf LOD 0, unabhängig vom Terrain-LOD des Chunks — sonst klafft die
 // Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
 async function checkBandWelle993WaterLodSeam(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt(async (r) => {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
@@ -1037,9 +1022,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
 // User-Decke (400 m) trägt jede Kaskade hinter der Kontakt-Kaskade ≥ 10 % der Tiefe. Die CSM-Init
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
         out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
@@ -1109,10 +1093,8 @@ async function checkBandV18130CsmShadow(ctx) {
 // f(seed, Koordinate) — peer-identisch, egal wann berechnet) Seen · Flüsse · Erosion; eine
 // mitwandernde Region bräche den Determinismus. Voller Beweis: die Sonde diag-ferne-seen (git-Archiv).
 async function checkBandV18132FerneSeen(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
             return out;
@@ -1155,7 +1137,11 @@ async function checkBandV18132FerneSeen(ctx) {
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
-        const g = [cx * cfg.span - cfg.step, (r.state.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
+        const g = [
+            cx * cfg.span - cfg.step,
+            (r.state.terrainBaseHeight || 0) - cfg.floorDrop,
+            cz * cfg.span - cfg.step,
+        ];
         g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
         const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
         r.state.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
@@ -1167,8 +1153,9 @@ async function checkBandV18132FerneSeen(ctx) {
         r.state.voxelWorker = alt;
         const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
         out.workerMirror =
-            !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
-        return out;
+            !wk || typeof wk === "string"
+                ? String(wk)
+                : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
     });
     if (!res) {
         check("Ferne Seen: Sonde lief", false, "evaluate warf");
@@ -1198,10 +1185,8 @@ async function checkBandV18132FerneSeen(ctx) {
 // Trägheit), der Sattel führt die Bewegung (EINE Quelle), Gelenke fahren mit (Phase ∝ Weg). Reiter
 // + Gefährt sind EINS: Kollision ruht im Sattel, unerntbar.
 async function checkBandV18150Ride(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const pm = r.state.playerMesh.position;
         const savedMounted = r.state.player.mountedArch;
         let entry = null;
@@ -1304,7 +1289,6 @@ async function checkBandV18150Ride(ctx) {
             delete r.state.blueprints._t_ride_wagen;
             r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
         }
-        return out;
     });
     check("Fahr-Tiefe: das Profil emergiert (4× Rad → Tempo ×>1.3 · rollt aus · träge)", res.profile);
     check(
@@ -1325,9 +1309,8 @@ async function checkBandV18150Ride(ctx) {
 }
 
 async function checkBandGammaGenese(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
         const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
@@ -1458,8 +1441,7 @@ async function checkBandGammaGenese(ctx) {
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
     );
     // Γ1-Lesart-4 BODEN-ATMET: die Feuchte zieht die EINE Boden-Farbe zur feuchten Erde (BODEN_FARBE.wet) — am Ruf gemessen.
-    const zugNass = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const zugNass = await ctx.welt((r) => {
         const pm = r.state.playerMesh.position;
         const y = r._voxelSurfaceY(pm.x, pm.z) ?? pm.y;
         const farbe = (f) => {
@@ -1480,8 +1462,7 @@ async function checkBandGammaGenese(ctx) {
     // fiel; die Welt liest die Großform des Gelände-Kerns (Splines über Kontinentalität und Erosion, das Flussnetz zuerst).
     // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
     // der Ebene (Relief-Minimum).
-    const resG4 = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const resG4 = await ctx.welt((r) => {
         const G = window.__gelaendeCore;
         const out = {};
         out.struct = typeof G.grossform === "function" && Array.isArray(G.LANDFORM_REGLER);
@@ -1566,9 +1547,8 @@ async function checkBandGammaGenese(ctx) {
 // Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
 async function checkBandV18199GammaMLichen(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1656,9 +1636,8 @@ async function checkBandV18199GammaMLichen(ctx) {
 // Pfade: Fluss-Bänke sind getrampelte Erde, lawful aus dem Drainage-Netz: _pathFieldAt → der Boden
 // packt (packedDirt, Main ↔ Worker bit-identisch) + das Gras weicht. Proben: KONSUM + Feld-Logik.
 async function checkBandWahrerAnblickPfade(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -1682,7 +1661,8 @@ async function checkBandWahrerAnblickPfade(ctx) {
                 delete r._pathFieldAt;
             }
         };
-        const dD = (c) => Math.hypot(c[0] - A.BODEN_FARBE.dirt[0], c[1] - A.BODEN_FARBE.dirt[1], c[2] - A.BODEN_FARBE.dirt[2]);
+        const dD = (c) =>
+            Math.hypot(c[0] - A.BODEN_FARBE.dirt[0], c[1] - A.BODEN_FARBE.dirt[1], c[2] - A.BODEN_FARBE.dirt[2]);
         let d0 = 0;
         let d1 = 0;
         for (let gx = -200; gx <= 200; gx += 37) {
@@ -1725,13 +1705,25 @@ async function checkBandWahrerAnblickPfade(ctx) {
 // Face-Nachbarn teilen ihre Boundary-Verts float-exakt (pad+crop); in der Rand-Schale rechnet der Gradient via sample()
 // (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale.
 async function checkBandSeamNormal(ctx) {
-    const { page, check } = ctx;
-    const out = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const out = await ctx.welt((r) => {
         const { dim, step, span, dimY, floorDrop } = r._voxelChunkConfig(0);
         const oy = (r.state.terrainBaseHeight || 0) - floorDrop;
         const fullSample = (x, y, z) => r._terrainDensityAt(x, y, z);
-        const build = (cx, cz) => r._voxelChunkGeometry(cx * span - step, oy, cz * span - step, dim + 3, dimY, dim + 3, step, fullSample, 1, null, 1);
+        const build = (cx, cz) =>
+            r._voxelChunkGeometry(
+                cx * span - step,
+                oy,
+                cz * span - step,
+                dim + 3,
+                dimY,
+                dim + 3,
+                step,
+                fullSample,
+                1,
+                null,
+                1
+            );
         const q = (v) => Math.round(v * 1e5) / 1e5;
         const EPS = 1e-4;
         // je Face-Paar die Normal-Konformanz an den geteilten Boundary-Verts (axis 0 = x-Face, 2 = z-Face)
@@ -1742,7 +1734,8 @@ async function checkBandSeamNormal(ctx) {
                 const nrm = geom.attributes.normal.array;
                 for (let i = 0; i < p.length; i += 3) {
                     const a = axis === 0 ? p[i] : p[i + 2];
-                    if (a >= plane - EPS && a <= plane + step + EPS) m.set(q(p[i]) + "," + q(p[i + 1]) + "," + q(p[i + 2]), [nrm[i], nrm[i + 1], nrm[i + 2]]);
+                    if (a >= plane - EPS && a <= plane + step + EPS)
+                        m.set(q(p[i]) + "," + q(p[i + 1]) + "," + q(p[i + 2]), [nrm[i], nrm[i + 1], nrm[i + 2]]);
                 }
                 return m;
             };
@@ -1751,7 +1744,10 @@ async function checkBandSeamNormal(ctx) {
             for (const [k, na] of collect(gA)) {
                 const nb = mb.get(k);
                 if (!nb) continue;
-                angs.push((Math.acos(Math.max(-1, Math.min(1, na[0] * nb[0] + na[1] * nb[1] + na[2] * nb[2]))) * 180) / Math.PI);
+                angs.push(
+                    (Math.acos(Math.max(-1, Math.min(1, na[0] * nb[0] + na[1] * nb[1] + na[2] * nb[2]))) * 180) /
+                        Math.PI
+                );
             }
             angs.sort((x, y) => x - y);
             return { matched: angs.length, max: angs.length ? +angs[angs.length - 1].toFixed(3) : null };
@@ -1765,11 +1761,19 @@ async function checkBandSeamNormal(ctx) {
     });
     const TOL = 1.0; // konform = Rand-Normalen praktisch identisch (vor G1: bis 69°)
     const fails = [];
-    for (const [lbl, f] of [["x-Face", out && out.xFace], ["z-Face", out && out.zFace]]) {
+    for (const [lbl, f] of [
+        ["x-Face", out && out.xFace],
+        ["z-Face", out && out.zFace],
+    ]) {
         if (!f || f.matched < 20) fails.push(`${lbl}: nur ${f && f.matched} geteilte Verts (vakuös)`);
         else if (f.max > TOL) fails.push(`${lbl}: Rand-Normalen bis ${f.max}° > ${TOL}° (Lichtungs-Naht)`);
     }
-    check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
+    check(
+        "G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)",
+        fails.length === 0,
+        fails.join(" · ") ||
+            `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`
+    );
 }
 
 // Der Tod-Zensus — eingefaltet aus gate:tod-zensus: ein Leichnam behielt 90 s die Darstellung
@@ -2109,7 +2113,14 @@ async function checkBandTodZensus(ctx) {
             );
             // EINE RÄUM-METHODE, Konsum am Ruf: der Fall räumt über _leibZeichenFrei
             let raeumt = 0;
-            decke("_leibZeichenFrei", (alt) => function (...a) { raeumt++; return alt.apply(this, a); });
+            decke(
+                "_leibZeichenFrei",
+                (alt) =>
+                    function (...a) {
+                        raeumt++;
+                        return alt.apply(this, a);
+                    }
+            );
             const lastSoll = ALLE.reduce(
                 (a, [, c]) => a + ((c.userData.carrying && c.userData.carrying.materials.holz) || 0),
                 0
@@ -2208,10 +2219,12 @@ async function checkBandTodZensus(ctx) {
                 if (d < grenze * (1 - H)) {
                     zaehl.nah++;
                     if (!nahZeigt) melde(klasse, `${txt}: die Grobstufe liegt nah (Grenze ${grenze.toFixed(1)} m)`);
-                    if (!(caster(c) > 0)) melde("schatten", `${txt}: nah ohne Schatten-Werfer (0 Meshes mit castShadow)`);
+                    if (!(caster(c) > 0))
+                        melde("schatten", `${txt}: nah ohne Schatten-Werfer (0 Meshes mit castShadow)`);
                 } else if (d > grenze * (1 + H)) {
                     zaehl.fern++;
-                    if (!fernZeigt) melde(klasse, `${txt}: die volle Gestalt liegt fern (Grenze ${grenze.toFixed(1)} m)`);
+                    if (!fernZeigt)
+                        melde(klasse, `${txt}: die volle Gestalt liegt fern (Grenze ${grenze.toFixed(1)} m)`);
                 }
             };
             for (let k = 0; k < n; k++) {
@@ -2329,8 +2342,10 @@ async function checkBandTodZensus(ctx) {
         const v = [];
         if (!(z.tot && z.tot.A && z.tot.B && z.tot.C))
             v.push(`vakuös: nicht alle drei gefallen (${JSON.stringify(z.tot)})`);
-        if (!(z.zeichenVorher >= 6)) v.push(`vakuös: die lebenden Tiere trugen nur ${z.zeichenVorher} Sprites (Soll 6)`);
-        if (!(z.knochen >= 30)) v.push(`vakuös: die Gefallenen tragen nur ${z.knochen} Knochen (die Haltung sähe nichts)`);
+        if (!(z.zeichenVorher >= 6))
+            v.push(`vakuös: die lebenden Tiere trugen nur ${z.zeichenVorher} Sprites (Soll 6)`);
+        if (!(z.knochen >= 30))
+            v.push(`vakuös: die Gefallenen tragen nur ${z.knochen} Knochen (die Haltung sähe nichts)`);
         if (!(z.hopBeimTod > 0.3)) v.push(`vakuös: B starb nicht im Sprung (Hüpfer ${z.hopBeimTod} m)`);
         if (!(z.nahGeprueft >= 300 && z.fernGeprueft >= 300))
             v.push(`vakuös: ${z.nahGeprueft} nahe und ${z.fernGeprueft} ferne Leichnam-Takte geprüft (Soll je ≥ 300)`);
@@ -2345,8 +2360,11 @@ async function checkBandTodZensus(ctx) {
                 `last: von ${z.last.soll} Holz der Gefallenen fielen ${z.last.zurueck} an den Spieler zurück, ${z.last.journal} von 3 Journal-Einträgen`
             );
         if (!Array.isArray(z.raeumer) || z.raeumer.length || !(z.raeumt > 0))
-            v.push(`raeumen: neben _leibZeichenFrei (${z.raeumt} Rufe im Fall) räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode`);
-        for (const k of KLASSEN) if (z.verstoss && z.verstoss[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
+            v.push(
+                `raeumen: neben _leibZeichenFrei (${z.raeumt} Rufe im Fall) räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode`
+            );
+        for (const k of KLASSEN)
+            if (z.verstoss && z.verstoss[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
         return { ok: v.length === 0, grund: v.join(" · ") };
     };
     const KLASSEN = [
@@ -2378,13 +2396,21 @@ async function checkBandTodZensus(ctx) {
     ];
     const lauf = (t) => safeEvaluate(page, `(${todZensus})(window.anazhRealm, window.THREE, ${JSON.stringify(t)})`);
     const u = urteil(await lauf(null));
-    check("Tod-Zensus: der Leichnam liegt in der Stufe seines Abstands, wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme", u.ok, u.ok ? "" : u.grund.slice(0, 300));
+    check(
+        "Tod-Zensus: der Leichnam liegt in der Stufe seines Abstands, wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme",
+        u.ok,
+        u.ok ? "" : u.grund.slice(0, 300)
+    );
     const blind = [];
     for (const [t, re] of TAETER) {
         const v = urteil(await lauf(t));
         if (v.ok || !re.test(v.grund)) blind.push(`${t}: ${v.ok ? "unsichtbar" : v.grund.slice(0, 120)}`);
     }
-    check(`Tod-Zensus SELBSTTEST: ${TAETER.length} Täter beim Namen (der alte Defekt je Probe ROT aus ihrem Grund)`, blind.length === 0, blind.join(" · "));
+    check(
+        `Tod-Zensus SELBSTTEST: ${TAETER.length} Täter beim Namen (der alte Defekt je Probe ROT aus ihrem Grund)`,
+        blind.length === 0,
+        blind.join(" · ")
+    );
 }
 
 // Die Bewegungs-Garantie unter Last (P1) — eingefaltet aus gate:move-under-load: `_gameLoopTick(t)` mit 330-ms-Sprüngen (die 3-FPS-Realität), W gehalten: (a) die Bewegung
@@ -2393,183 +2419,198 @@ async function checkBandTodZensus(ctx) {
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast(ctx) {
     const { page, check } = ctx;
-    const out = await safeEvaluate(page, async (selftest) => {
-        const r = window.anazhRealm,
-            s = r.state;
-        const mesh = s.playerMesh;
-        if (!mesh || !s.playerVel) return { error: "kein Spieler" };
-        const span = r._voxelChunkConfig(0).span;
-        const tick = (t) => {
-            try {
-                r._gameLoopTick(t);
-            } catch {}
-        };
-    
-        // einen settled LAND-Spot finden (deterministisch, über Wasser) — nahe (Szenario a)
-        const findLand = (x0, x1, zJit) => {
-            for (let i = 0; i < 400; i++) {
-                const x = x0 + ((i * 53) % (x1 - x0));
-                const z = ((i * 31) % 120) - 60 + zJit;
-                const h = r.getTerrainHeightAt(x, z);
-                if (Number.isFinite(h) && r._landAt(x, z)) return { x, y: h + 1.5, z };
-            }
-            return null;
-        };
-        const nearSpot = findLand(-40, 40, 0);
-        // FERN-Spot (Szenario b): weit außerhalb des gebauten Rings — dort existiert kein Chunk.
-        const farSpot = findLand(560, 720, 500);
-        // kein Ersatz-Ort: findet die Suche kein Land, bricht die Probe laut
-        if (!nearSpot || !farSpot) throw new Error(`move-under-load: kein Land fuer den ${nearSpot ? "FERN" : "NAH"}-Spot (findLand)`);
-    
-        const resetSim = (spot) => {
-            mesh.position.set(spot.x, spot.y, spot.z);
-            s.playerVel.setValue(0, 0, 0);
-            s._fieldVy = 0;
-            s._fieldWasGrounded = false;
-            s._groundedCache = false;
-            s.isInAir = false;
-            s.isJumping = false;
-            s.onSteepSlope = false;
-            s._jumpPressedAt = -Infinity;
-            s._spaceWasDown = false;
-            s.yaw = 0;
-            s.keys = { w: true }; // W gehalten (die Walk-Linsen-Simulation)
-            s._fixedAccumulator = 0;
-            s._fixedSimPos = null;
-            s._fixedPrevPos = null;
-            s._fixedSimTime = 0;
-        };
-        const simPos = () => {
-            const p = s._fixedSimPos || mesh.position;
-            return { x: p.x, y: p.y, z: p.z };
-        };
-    
-        // DER SCHWERE LAUF: 60 Ticks à 330 ms (3 FPS). pin=true (Selbst-Test) setzt die
-        // Position nach jedem Tick zurück — die Linse MUSS das als „keine Bewegung" sehen.
-        const heavyRun = (spot, ticks, pin) => {
-            resetSim(spot);
-            let t = performance.now();
-            tick(t); // Baseline-Tick (setzt lastTime im Loop-Closure)
-            resetSim(spot); // der Baseline-Tick darf die Messung nicht verschieben
-            const start = simPos();
-            let minY = start.y,
-                clipTicks = 0,
-                overBudgetSeen = false;
-            for (let i = 0; i < ticks; i++) {
-                tick((t += 330));
-                if (pin) {
-                    mesh.position.set(spot.x, spot.y, spot.z);
-                    if (s._fixedSimPos) s._fixedSimPos.set(spot.x, spot.y, spot.z);
-                    if (s._fixedPrevPos) s._fixedPrevPos.set(spot.x, spot.y, spot.z);
-                }
-                const p = simPos();
-                if (p.y < minY) minY = p.y;
-                // Körper-Mitte im Soliden = geclippt (die Disziplin: _fieldSolid,
-                // NICHT getTerrainHeightAt — letzteres lügt am Überhang).
-                if (r._fieldSolid(p.x, p.y + 0.9, p.z)) clipTicks++;
-                if (s._frameOverBudget) overBudgetSeen = true;
-            }
-            const end = simPos();
-            return {
-                movedXZ: Math.hypot(end.x - start.x, end.z - start.z),
-                start,
-                end,
-                minY,
-                clipTicks,
-                overBudgetSeen,
+    const out = await safeEvaluate(
+        page,
+        async (selftest) => {
+            const r = window.anazhRealm,
+                s = r.state;
+            const mesh = s.playerMesh;
+            if (!mesh || !s.playerVel) return { error: "kein Spieler" };
+            const span = r._voxelChunkConfig(0).span;
+            const tick = (t) => {
+                try {
+                    r._gameLoopTick(t);
+                } catch {}
             };
-        };
-    
-        const o = {};
-    
-        // ── (a) BEWEGUNG UNTER LAST (gebaute Welt) ──
-        o.a = heavyRun(nearSpot, 60, false);
-    
-        // ── SELBST-TEST: gepinnte Position → die Bewegungs-Garantie MUSS rot lesen ──
-        if (selftest) o.pinned = heavyRun(nearSpot, 20, true);
-    
-        // ── (b)+(c) OHNE GEBAUTEN SPIELER-CHUNK: gestallter Worker + Fern-Teleport ──
-        const savedWorker = s.voxelWorker;
-        const stalled = { postMessage() {}, terminate() {} }; // schluckt jede Anfrage — der Mesh kommt NIE
-        s.voxelWorker = stalled;
-        const farKey = `${Math.floor(farSpot.x / span)},${Math.floor(farSpot.z / span)}`;
-        // Prämisse sichern: dort steht KEIN Chunk (weit außerhalb des Rings)
-        const preEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
-        o.premiseNoChunk = !preEntry || !preEntry.mesh;
-        o.b = heavyRun(farSpot, 60, false);
-        const postEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
-        // die Prämisse HIELT über den ganzen Lauf (der Stall wirkte — kein Sync-Leck)
-        o.premiseHeld = !postEntry || !postEntry.mesh;
-        o.pendingAfter = s.voxelMeshPending ? s.voxelMeshPending.size : 0;
-        // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
-        s.voxelWorker = savedWorker;
-    
-        // ── (d) DIE PAUSE: der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
-        // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
-        // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
-        // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.
-        const K = r.constructor;
-        const pauseLauf = (deckelAus) => {
-            resetSim(nearSpot);
-            s.keys = {};
-            const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
-            const W = [];
-            const absage = [];
-            const opt = { precise: true, bodySize: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
-            const maxAlt = s.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
-            s.maxCreatures = Math.max(maxAlt, s.creatures.length + 4);
-            for (let i = 0; i < 24 && W.length < 4; i++) {
-                const a = (i * 2.399963) % (2 * Math.PI);
-                const x = nearSpot.x + Math.sin(a) * 22;
-                const z = nearSpot.z + Math.cos(a) * 22;
-                if (!r._landAt(x, z)) continue;
-                const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", opt);
-                if (!c) continue;
-                c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
-                W.push(c);
-            }
-            // KI-ABSICHT UND LEBENS-UHR RUHEN (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu, statt dass der 10-s-Takt
-            // jede fällige Aktion startet (tempo 0); `lastTick` ∞ hält den Lebenszyklus, der den ältesten Wolf ohne Beute nähme
-            const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
-            const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
-            const leben = s.faunaLifecycle || {};
-            const lebenAlt = leben.lastTick;
-            leben.lastTick = Infinity;
-            let t = performance.now();
-            for (let k = 0; k < 40; k++) {
+
+            // einen settled LAND-Spot finden (deterministisch, über Wasser) — nahe (Szenario a)
+            const findLand = (x0, x1, zJit) => {
+                for (let i = 0; i < 400; i++) {
+                    const x = x0 + ((i * 53) % (x1 - x0));
+                    const z = ((i * 31) % 120) - 60 + zJit;
+                    const h = r.getTerrainHeightAt(x, z);
+                    if (Number.isFinite(h) && r._landAt(x, z)) return { x, y: h + 1.5, z };
+                }
+                return null;
+            };
+            const nearSpot = findLand(-40, 40, 0);
+            // FERN-Spot (Szenario b): weit außerhalb des gebauten Rings — dort existiert kein Chunk.
+            const farSpot = findLand(560, 720, 500);
+            // kein Ersatz-Ort: findet die Suche kein Land, bricht die Probe laut
+            if (!nearSpot || !farSpot)
+                throw new Error(`move-under-load: kein Land fuer den ${nearSpot ? "FERN" : "NAH"}-Spot (findLand)`);
+
+            const resetSim = (spot) => {
+                mesh.position.set(spot.x, spot.y, spot.z);
+                s.playerVel.setValue(0, 0, 0);
+                s._fieldVy = 0;
+                s._fieldWasGrounded = false;
+                s._groundedCache = false;
+                s.isInAir = false;
+                s.isJumping = false;
+                s.onSteepSlope = false;
+                s._jumpPressedAt = -Infinity;
+                s._spaceWasDown = false;
+                s.yaw = 0;
+                s.keys = { w: true }; // W gehalten (die Walk-Linsen-Simulation)
+                s._fixedAccumulator = 0;
+                s._fixedSimPos = null;
+                s._fixedPrevPos = null;
+                s._fixedSimTime = 0;
+            };
+            const simPos = () => {
+                const p = s._fixedSimPos || mesh.position;
+                return { x: p.x, y: p.y, z: p.z };
+            };
+
+            // DER SCHWERE LAUF: 60 Ticks à 330 ms (3 FPS). pin=true (Selbst-Test) setzt die
+            // Position nach jedem Tick zurück — die Linse MUSS das als „keine Bewegung" sehen.
+            const heavyRun = (spot, ticks, pin) => {
+                resetSim(spot);
+                let t = performance.now();
+                tick(t); // Baseline-Tick (setzt lastTime im Loop-Closure)
+                resetSim(spot); // der Baseline-Tick darf die Messung nicht verschieben
+                const start = simPos();
+                let minY = start.y,
+                    clipTicks = 0,
+                    overBudgetSeen = false;
+                for (let i = 0; i < ticks; i++) {
+                    tick((t += 330));
+                    if (pin) {
+                        mesh.position.set(spot.x, spot.y, spot.z);
+                        if (s._fixedSimPos) s._fixedSimPos.set(spot.x, spot.y, spot.z);
+                        if (s._fixedPrevPos) s._fixedPrevPos.set(spot.x, spot.y, spot.z);
+                    }
+                    const p = simPos();
+                    if (p.y < minY) minY = p.y;
+                    // Körper-Mitte im Soliden = geclippt (die Disziplin: _fieldSolid,
+                    // NICHT getTerrainHeightAt — letzteres lügt am Überhang).
+                    if (r._fieldSolid(p.x, p.y + 0.9, p.z)) clipTicks++;
+                    if (s._frameOverBudget) overBudgetSeen = true;
+                }
+                const end = simPos();
+                return {
+                    movedXZ: Math.hypot(end.x - start.x, end.z - start.z),
+                    start,
+                    end,
+                    minY,
+                    clipTicks,
+                    overBudgetSeen,
+                };
+            };
+
+            const o = {};
+
+            // ── (a) BEWEGUNG UNTER LAST (gebaute Welt) ──
+            o.a = heavyRun(nearSpot, 60, false);
+
+            // ── SELBST-TEST: gepinnte Position → die Bewegungs-Garantie MUSS rot lesen ──
+            if (selftest) o.pinned = heavyRun(nearSpot, 20, true);
+
+            // ── (b)+(c) OHNE GEBAUTEN SPIELER-CHUNK: gestallter Worker + Fern-Teleport ──
+            const savedWorker = s.voxelWorker;
+            const stalled = { postMessage() {}, terminate() {} }; // schluckt jede Anfrage — der Mesh kommt NIE
+            s.voxelWorker = stalled;
+            const farKey = `${Math.floor(farSpot.x / span)},${Math.floor(farSpot.z / span)}`;
+            // Prämisse sichern: dort steht KEIN Chunk (weit außerhalb des Rings)
+            const preEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
+            o.premiseNoChunk = !preEntry || !preEntry.mesh;
+            o.b = heavyRun(farSpot, 60, false);
+            const postEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
+            // die Prämisse HIELT über den ganzen Lauf (der Stall wirkte — kein Sync-Leck)
+            o.premiseHeld = !postEntry || !postEntry.mesh;
+            o.pendingAfter = s.voxelMeshPending ? s.voxelMeshPending.size : 0;
+            // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
+            s.voxelWorker = savedWorker;
+
+            // ── (d) DIE PAUSE: der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
+            // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
+            // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
+            // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.
+            const K = r.constructor;
+            const pauseLauf = (deckelAus) => {
+                resetSim(nearSpot);
+                s.keys = {};
+                const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
+                const W = [];
+                const absage = [];
+                const opt = { precise: true, bodySize: 1, absage: (g) => absage.push(`Wolf-Spawn abgesagt: ${g}`) };
+                const maxAlt = s.maxCreatures; // RAUM für die vier Wölfe: die Population ist nicht die Frage der Linse (zurück unten)
+                s.maxCreatures = Math.max(maxAlt, s.creatures.length + 4);
+                for (let i = 0; i < 24 && W.length < 4; i++) {
+                    const a = (i * 2.399963) % (2 * Math.PI);
+                    const x = nearSpot.x + Math.sin(a) * 22;
+                    const z = nearSpot.z + Math.cos(a) * 22;
+                    if (!r._landAt(x, z)) continue;
+                    const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", opt);
+                    if (!c) continue;
+                    c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
+                    W.push(c);
+                }
+                // KI-ABSICHT UND LEBENS-UHR RUHEN (W10): `_verhaltenNext` ∞ würfelt die Aktions-Uhr neu, statt dass der 10-s-Takt
+                // jede fällige Aktion startet (tempo 0); `lastTick` ∞ hält den Lebenszyklus, der den ältesten Wolf ohne Beute nähme
+                const RUHIG = { _verhaltenAktion: null, _verhaltenNext: Infinity, _hopV: 0, _hopH: 0 };
+                const ruhig = () => W.forEach((c) => Object.assign(c.userData, RUHIG));
+                const leben = s.faunaLifecycle || {};
+                const lebenAlt = leben.lastTick;
+                leben.lastTick = Infinity;
+                let t = performance.now();
+                for (let k = 0; k < 40; k++) {
+                    ruhig();
+                    tick((t += 1000 / 60));
+                }
+                const vor = W.map((c) => [c.position.x, c.position.z]);
+                const vVor = W.map((c) => (c.userData._steuer ? c.userData._steuer.v : 0));
+                const grenze = W.map((c) => K._steuerGesetz().sprintTempo(r._kreaturHueftL(c)) * deckel);
+                const alt = K.TAKT_DECKEL_S;
+                if (deckelAus) K.TAKT_DECKEL_S = Infinity;
                 ruhig();
-                tick((t += 1000 / 60));
-            }
-            const vor = W.map((c) => [c.position.x, c.position.z]);
-            const vVor = W.map((c) => (c.userData._steuer ? c.userData._steuer.v : 0));
-            const grenze = W.map((c) => K._steuerGesetz().sprintTempo(r._kreaturHueftL(c)) * deckel);
-            const alt = K.TAKT_DECKEL_S;
-            if (deckelAus) K.TAKT_DECKEL_S = Infinity;
-            ruhig();
-            tick((t += 10000)); // DIE PAUSE: 10 s Wanduhr ohne Takt
-            if (deckelAus) K.TAKT_DECKEL_S = alt;
-            const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
-            // DIE VORBEDINGUNG DES TÄTERS, laut: jeder Wolf lief vor der Pause auf seinem Lage-Pfad und blieb im Pausen-Takt auf
-            // ihm (keine Aktion, Tempo > 0) — sonst urteilt die Linse nichts, und sein Name steht im Urteil
-            leben.lastTick = lebenAlt;
-            const halt = W.map((c, i) => {
-                const u = c.userData;
-                if (!s.creatures.includes(c)) return `Wolf ${i}: fiel im Pausen-Takt`;
-                if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
-                return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
-            }).filter(Boolean).concat(absage);
-            for (const c of W) r.removeCreature(c);
-            s.maxCreatures = maxAlt;
-            const ueber = weg.filter((w, i) => !(w <= grenze[i] + 0.05)).length;
-            return { n: W.length, deckel, weg, grenze, vVor, ueber, halt, max: Math.max(0, ...weg) };
-        };
-        o.d = pauseLauf(false);
-        if (selftest) o.dAus = pauseLauf(true);
-        return o;
-    }, true);
-    if (!out || out.error) return check("Bewegung unter Last: die Bühne steht (Land für NAH und FERN)", false, out ? out.error : "keine Antwort der Seite");
+                tick((t += 10000)); // DIE PAUSE: 10 s Wanduhr ohne Takt
+                if (deckelAus) K.TAKT_DECKEL_S = alt;
+                const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
+                // DIE VORBEDINGUNG DES TÄTERS, laut: jeder Wolf lief vor der Pause auf seinem Lage-Pfad und blieb im Pausen-Takt auf
+                // ihm (keine Aktion, Tempo > 0) — sonst urteilt die Linse nichts, und sein Name steht im Urteil
+                leben.lastTick = lebenAlt;
+                const halt = W.map((c, i) => {
+                    const u = c.userData;
+                    if (!s.creatures.includes(c)) return `Wolf ${i}: fiel im Pausen-Takt`;
+                    if (u._verhaltenAktion) return `Wolf ${i}: Aktion ${u._verhaltenAktion.name}`;
+                    return vVor[i] > 0 && u._steuer && u._steuer.v > 0 ? null : `Wolf ${i}: steht (vVor ${vVor[i]})`;
+                })
+                    .filter(Boolean)
+                    .concat(absage);
+                for (const c of W) r.removeCreature(c);
+                s.maxCreatures = maxAlt;
+                const ueber = weg.filter((w, i) => !(w <= grenze[i] + 0.05)).length;
+                return { n: W.length, deckel, weg, grenze, vVor, ueber, halt, max: Math.max(0, ...weg) };
+            };
+            o.d = pauseLauf(false);
+            if (selftest) o.dAus = pauseLauf(true);
+            return o;
+        },
+        true
+    );
+    if (!out || out.error)
+        return check(
+            "Bewegung unter Last: die Bühne steht (Land für NAH und FERN)",
+            false,
+            out ? out.error : "keine Antwort der Seite"
+        );
     const { a, b, d, pinned: p, dAus: da } = out;
-    check(`Bewegung unter Last (a): > 1 m über 60 schwere Ticks (${a.movedXZ.toFixed(2)} m), die Last war ECHT (_frameOverBudget stand)`, a.movedXZ > 1.0 && a.overBudgetSeen === true);
+    check(
+        `Bewegung unter Last (a): > 1 m über 60 schwere Ticks (${a.movedXZ.toFixed(2)} m), die Last war ECHT (_frameOverBudget stand)`,
+        a.movedXZ > 1.0 && a.overBudgetSeen === true
+    );
     check(
         `Bewegung unter Last (b)(c): ohne Chunk-Mesh (Stall hielt) trägt die feld-native Kollision (${b.movedXZ.toFixed(2)} m), nie im Soliden (${b.clipTicks} Clip-Ticks), nie Void (minY ${b.minY.toFixed(1)})`,
         out.premiseNoChunk && out.premiseHeld && b.movedXZ > 1.0 && b.clipTicks === 0 && b.minY > -60
@@ -2577,7 +2618,11 @@ async function checkBandBewegungUnterLast(ctx) {
     check(
         `Bewegung unter Last (d) DIE PAUSE: kein Wolf springt im ersten Takt weiter als Sprint × Takt-Deckel (max ${d.max.toFixed(2)} m, ${d.ueber}/${d.n} drüber)`,
         d.n >= 3 && d.ueber === 0 && !d.halt.length,
-        d.halt.length ? `Vorbedingung: ${d.halt.join(" · ")}` : d.ueber ? "Täter: startEternalLoop, ungedeckeltes delta → updateCreatures" : ""
+        d.halt.length
+            ? `Vorbedingung: ${d.halt.join(" · ")}`
+            : d.ueber
+              ? "Täter: startEternalLoop, ungedeckeltes delta → updateCreatures"
+              : ""
     );
     check(
         `Bewegung unter Last SELBSTTEST: die gepinnte Position liest als keine Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m), ohne Takt-Deckel springt JEDER Wolf (${da ? da.ueber : "?"}/${da ? da.n : "?"})`,
@@ -2587,8 +2632,18 @@ async function checkBandBewegungUnterLast(ctx) {
 }
 
 module.exports = {
-    checkBandV1749Adventure, checkBandVoxelTerrainCore, checkBandWellePerf3bDistanceLod,
-    checkBandJedesHolzExistenzBoden, checkBandWelle993WaterLodSeam, checkBandV18130CsmShadow,
-    checkBandV18132FerneSeen, checkBandV18150Ride, checkBandGammaGenese, checkBandV18199GammaMLichen,
-    checkBandWahrerAnblickPfade, checkBandSeamNormal, checkBandTodZensus, checkBandBewegungUnterLast,
+    checkBandV1749Adventure,
+    checkBandVoxelTerrainCore,
+    checkBandWellePerf3bDistanceLod,
+    checkBandJedesHolzExistenzBoden,
+    checkBandWelle993WaterLodSeam,
+    checkBandV18130CsmShadow,
+    checkBandV18132FerneSeen,
+    checkBandV18150Ride,
+    checkBandGammaGenese,
+    checkBandV18199GammaMLichen,
+    checkBandWahrerAnblickPfade,
+    checkBandSeamNormal,
+    checkBandTodZensus,
+    checkBandBewegungUnterLast,
 };

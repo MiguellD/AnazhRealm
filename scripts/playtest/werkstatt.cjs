@@ -58,12 +58,11 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
 }
 
 async function checkBandCadWorkshop(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
-    const wave6bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6bResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
@@ -73,7 +72,6 @@ async function checkBandCadWorkshop(ctx) {
             out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
             out.defaultManipulatorMode = ws.manipulatorMode;
             out.defaultSnapEnabled = ws.snapEnabled;
-
 
             // --- Phase 2: Konstanten ---
             const AR = r.constructor;
@@ -379,8 +377,7 @@ async function checkBandCadWorkshop(ctx) {
     }
 
     // ### Resize-Handles (Konsole + Drawer) + Background-Fix ###
-    const resizeResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const resizeResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
@@ -443,10 +440,7 @@ async function checkBandCadWorkshop(ctx) {
             `Rahmen: die ${resizeResults.drawerCount} V18-Drawer tragen einen HÖHEN-Griff (.resize-b, symmetrie-treu, kein .resize-bl)`,
             resizeResults.noDrawerHasHandle
         );
-        check(
-            "Resize: installResizeHandles ist idempotent (kein Duplikat)",
-            resizeResults.consoleHandleNotDuplicated
-        );
+        check("Resize: installResizeHandles ist idempotent (kein Duplikat)", resizeResults.consoleHandleNotDuplicated);
         check("Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
         check(
             "BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
@@ -461,8 +455,7 @@ async function checkBandCadWorkshop(ctx) {
     }
 
     // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
-    const omniResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const omniResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
@@ -523,8 +516,7 @@ async function checkBandCadWorkshop(ctx) {
     }
 
     // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
-    const v801Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const v801Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
@@ -611,12 +603,10 @@ async function checkBandCadWorkshop(ctx) {
     }
 
     // ### Shape-Drag-Drop + Klick-Klick-Connection ###
-    const v802Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const v802Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
-
             // Shape-Palette: 9 Cards im DOM
             const palette = document.getElementById("workshop-shape-palette");
             if (palette) {
@@ -740,10 +730,7 @@ async function checkBandCadWorkshop(ctx) {
             "Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
             v802Results.allNineShapesPresent
         );
-        check(
-            "Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
-            v802Results.dropOnBuiltInRejected
-        );
+        check("Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)", v802Results.dropOnBuiltInRejected);
         check(
             "Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
             v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
@@ -753,10 +740,7 @@ async function checkBandCadWorkshop(ctx) {
             "Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
             v802Results.connectModeAccepted && v802Results.modeIsConnect
         );
-        check(
-            "Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
-            v802Results.connectFirstSetTo0
-        );
+        check("Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source", v802Results.connectFirstSetTo0);
         check("Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
         check(
             "V8.02/V18.110: Popover hat 11 Type-Buttons (8 Prozess + 3 C7-Punkte) + 1 Cancel (= 12 total)",
@@ -780,12 +764,10 @@ async function checkBandCadWorkshop(ctx) {
 
     // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
     //             seitliche Material/Color-Palette
-    const v803Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const v803Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         try {
-
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
@@ -869,10 +851,7 @@ async function checkBandCadWorkshop(ctx) {
             "Alle 3 Sub-Paletten im DOM (shape/material/color)",
             v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
         );
-        check(
-            "Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
-            v803Results.paletteBeforePreview
-        );
+        check("Side-Palette steht VOR Preview im DOM (flex-row → visuell links)", v803Results.paletteBeforePreview);
         check(
             `Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
             v803Results.matCardsMatchState
@@ -894,8 +873,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     void errors;
     void finalState;
     // ### Player-Emotionen → Welt ###
-    const ring3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
+    const ring3Results = await ctx.welt(async (r) => {
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
 
@@ -1015,8 +993,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### Achsen-Vollabdeckung + Generator-Modulation ###
-    const ring3v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const ring3v2Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
         const p = r.state.player;
@@ -1147,8 +1124,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### anazhSymphony ###
-    const ring4Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const ring4Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.symphony) return null;
         const out = {};
 
@@ -1224,8 +1200,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
-    const uiResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const uiResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         const topbar = document.getElementById("topbar");
@@ -1340,8 +1315,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     // ### UI-Putz — Emotion-Klarheit (Legende + FP-sichtbares Feedback) ###
     // Die Balken tragen deutsche Namen + Wirkungs-Tooltip (Legende); ein Bildschirmrand-Schimmer + Label
     // zeigen die dominante Emotion in JEDER Kamera (via _emotionState — dieselbe Quelle wie KI/Journal).
-    const emoClarityResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const emoClarityResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         const spieler = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
@@ -1416,8 +1390,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
-    const uiActionsResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const uiActionsResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
 
@@ -1477,8 +1450,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### UI V1 — Abilities-Liste + Save/Load ###
-    const uiAbilitiesResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const uiAbilitiesResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         const container = document.getElementById("status-abilities");
@@ -1607,8 +1579,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     }
 
     // ### UI V1 — Live-Tuning Slider ###
-    const uiTuningResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const uiTuningResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         const sliders = {
@@ -1758,10 +1729,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
 // Kanonische), LWW pro (Ziel, Schlüssel) = CRDT-tauglich; kanal-exklusiv + rate-gegated;
 // revozierte Schlüssel fallen aus der Wertung. End-to-end mit ZWEITER Identität.
 async function checkBandV18134Social(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
         if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
             out.unmeasurable = true;
@@ -1808,7 +1777,6 @@ async function checkBandV18134Social(ctx) {
             r.state.socialRatings = saved || new Map();
             r._saveSocialRatings();
         }
-        return out;
     });
     if (!res) {
         check("Sozial: Sonde lief", false, "evaluate warf");
@@ -1831,10 +1799,8 @@ async function checkBandV18134Social(ctx) {
 // im Welt-Snapshot; das Mesh-Folgen ist die spaetere Stufe). Ein 🔖-Toggle
 // pro Feed-Karte + der „Gemerkt"-Kind-Chip, der Filter liest das dataset.
 async function checkBandV18135Bookmarks(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // Toggle-Roundtrip + Persistenz (localStorage, global).
         const id = "band135:test";
         const was = r._feedBookmarked(id);
@@ -1848,26 +1814,20 @@ async function checkBandV18135Bookmarks(ctx) {
         const off = r._toggleFeedBookmark(id);
         out.toggleOff = off === false && r._feedBookmarked(id) === false;
         if (was) r._toggleFeedBookmark(id); // Zustand wiederherstellen
-        return out;
     });
     if (!res) {
         check("Lesezeichen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check(
-        "Lesezeichen: Toggle-Roundtrip + globale Persistenz",
-        res.toggleOn && res.persisted && res.toggleOff
-    );
+    check("Lesezeichen: Toggle-Roundtrip + globale Persistenz", res.toggleOn && res.persisted && res.toggleOff);
 }
 
 // FOLGEN: das Merken einer IDENTITÄT (pubkey), privat-lokal (anazh.feedFollows, nie im Snapshot).
 // KONSUM: „Gefolgt“-Chip + Filter über data-followed; die Karte trägt den Toggle (nie auf eigenen
 // Werken); Folgen schreibt witness.
 async function checkBandV18142Follow(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
         const pub = "ab".repeat(32);
         const was = r._feedFollowed(pub);
@@ -1893,7 +1853,6 @@ async function checkBandV18142Follow(ctx) {
         // NIE im Welt-Snapshot (das Lesezeichen/Wertungs-Muster).
         const snap = r.buildStateSnapshot();
         out.notInSnapshot = !("feedFollows" in snap);
-        return out;
     });
     if (!res) {
         check("Folgen: Sonde lief", false, "evaluate warf");
@@ -1910,10 +1869,8 @@ async function checkBandV18142Follow(ctx) {
 // Ed25519-Identität: eigenes Wort signiert + bezeugt · fremdes verifiziert · Tamper bricht ·
 // Rückruf siebt · Batch/Handler/onopen verdrahtet · der Text bleibt DATEN (textContent-Wand).
 async function checkBandV18143Comments(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         const S = r.constructor.SOCIAL;
         out.config = Number.isFinite(S.maxComments) && Number.isFinite(S.maxCommentLen) && S.maxCommentsShown > 0;
         out.canonical = r._socialCommentCanonical({ id: "a", t: 5, pub: "p", x: "x|y" }) === "comment|a|5|p|x|y";
@@ -1961,9 +1918,18 @@ async function checkBandV18143Comments(ctx) {
         // (4) die Verdrahtung am Ruf: der Kanal reicht social-comment an den Empfang + onopen-Batch; das fremde Wort steht im
         // Panel als TEXT, nie als Element (XSS-Wand).
         const roh = JSON.stringify({ type: "social-comment", c: { id: "band143:ziel" } });
-        out.handlerWired = window.__consumes(r, "_p2pHandleChannelMessage", r, "_socialCommentReceive", ["peerZensus143", roh]);
+        out.handlerWired = window.__consumes(r, "_p2pHandleChannelMessage", r, "_socialCommentReceive", [
+            "peerZensus143",
+            roh,
+        ]);
         const X = "<img src=x onerror=window.__xss143=1><b>boese</b>";
-        r.state.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", { id: "band143:xss", x: X, t: 1, pub: "ab".repeat(32), sig: "x" });
+        r.state.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", {
+            id: "band143:xss",
+            x: X,
+            t: 1,
+            pub: "ab".repeat(32),
+            sig: "x",
+        });
         const panel = document.createElement("div");
         r._renderFeedCommentsPanel(panel, { id: "band143:xss" }, null);
         const tx = panel.querySelector(".feed-comment-text");
@@ -1971,7 +1937,6 @@ async function checkBandV18143Comments(ctx) {
         // restore
         r.state.socialComments = saved;
         r._saveSocialComments();
-        return out;
     });
     if (!res) {
         check("Kommentare: Sonde lief", false, "evaluate warf");
@@ -2007,10 +1972,8 @@ async function checkBandV18143Comments(ctx) {
 // Gemeinschafts-Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 · Gesprächs-Puls
 // gedeckelt). Kein Server, keine Black-Box.
 async function checkBandV18147ForYou(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (2)-(3) BEHAVIORAL mit injizierten Signalen (restauriert).
         const savedFollows = r.state.feedFollows;
         const savedBookmarks = r.state.feedBookmarks;
@@ -2028,7 +1991,6 @@ async function checkBandV18147ForYou(ctx) {
             r.state.feedFollows = savedFollows;
             r.state.feedBookmarks = savedBookmarks;
         }
-        return out;
     });
     check("Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
     check("Für dich: das Merken hebt (+2)", res.bookmarkBoost);
@@ -2038,10 +2000,8 @@ async function checkBandV18147ForYou(ctx) {
 // Emotion-Track auf dunklem Grund · Boost-Chips mit Effekt + LIVE-Restzeit · Equip/Pickup →
 // Sofort-Refresh · Hof-Gemüt als HP-artiger Balken (Umwidmen: eigener W12-Test).
 async function checkBandM5HudPolitur(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (1) der RESIZE-Sprung ist tot: 1-px-Drag an der EINGEKLAPPTEN Konsole
         // (105 px) bleibt bei ~105 (nie die harte 180er-Min).
         const consoleEl = document.getElementById("console");
@@ -2123,7 +2083,6 @@ async function checkBandM5HudPolitur(ctx) {
             parseInt(efill.style.width, 10) > 30 &&
             /%$/.test(ebar.querySelector(".value").textContent.trim());
         if (c) r.removeCreature(c);
-        return out;
     });
     check(
         "M5 HUD: der Resize-Sprung ist tot — die eingeklappte Konsole (105 px) bleibt beim Drag-Start stehen",
@@ -2222,10 +2181,8 @@ async function checkBandM4SuchKern(ctx) {
 // (live) und HOF (statisch); die NATUR ruht als <details>; Lesbarkeit KONSUM-bewiesen (die Farbe
 // IST hell, nicht „Token gesetzt“); die Werte-Balken tragen sichtbare Füllung.
 async function checkBandWBHofKarte(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
         // den maxCreatures-Cap (20) für die EINE Test-Kreatur
@@ -2261,7 +2218,6 @@ async function checkBandWBHofKarte(ctx) {
         r.state.creatures = (r.state.creatures || []).filter((x) => x !== c);
         // Das ICH konsumiert weiter live: 6 Reihen im #status-emotions (bestehende
         // Invarianten prüfen das mit — hier nur der Renderer-Konsum oben).
-        return out;
     });
     check(
         `W-B Hof-Karte: 6 Gefühls-Reihen an der Stelle der Natur, joy-Balken eingebrannt 80% (Reihen ${res.sechsReihen} · gefüllt ${res.joyGefuellt})`,
@@ -2281,10 +2237,8 @@ async function checkBandWBHofKarte(ctx) {
 // Fehlschlag in der zugeklappten Konsole); (b) EIN Boost-Band, Abgelaufene werden entfernt;
 // (c) Haupthand/Nebenhand benannt; (e) Label == Tat (vehicle → „Fertigen“); (h) der WARUM-CHIP.
 async function checkBandWCIchWahrheit(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand).
         out.formatter =
             /sammeln|fehlt/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
@@ -2314,8 +2268,13 @@ async function checkBandWCIchWahrheit(ctx) {
         const panF = document.createElement("div");
         r._workshopAppendFertigenRow(panF, bpArmor);
         const bF = panF.querySelector("button.workshop-fertigen");
-        out.konsumenten = !!sel && !!bR && !!bF && window.__consumes(sel, "dispatchEvent", r, "_showMachTorHint", [new Event("change")]) &&
-            window.__consumes(bR, "click", r, "_showMachTorHint", []) && window.__consumes(bF, "click", r, "_showMachTorHint", []);
+        out.konsumenten =
+            !!sel &&
+            !!bR &&
+            !!bF &&
+            window.__consumes(sel, "dispatchEvent", r, "_showMachTorHint", [new Event("change")]) &&
+            window.__consumes(bR, "click", r, "_showMachTorHint", []) &&
+            window.__consumes(bF, "click", r, "_showMachTorHint", []);
         r.state.player.inventory = savedInv;
         if (bpArmor && Number.isFinite(savedForged)) bpArmor.forgedPrecision = savedForged;
         r.setGameMode(savedMode);
@@ -2367,9 +2326,16 @@ async function checkBandWCIchWahrheit(ctx) {
         const panW = document.createElement("div");
         r._specRenderBody(panW, r.state.blueprints.trank_lebenssaft);
         const wl = panW.querySelector(".spec-why-line");
-        out.warumFlaechen = !!wl && traegt(wl.textContent) &&
-            window.__consumes(r, "_specRenderBody", r, "_blueprintRoleWhy", [document.createElement("div"), r.state.blueprints.trank_lebenssaft]);
-        const chipB = r._feedRecipeCard({ kind: "recipe", prof: r._recipeProfile(r.state.blueprints.trank_lebenssaft) }).querySelector(".feed-role-chip");
+        out.warumFlaechen =
+            !!wl &&
+            traegt(wl.textContent) &&
+            window.__consumes(r, "_specRenderBody", r, "_blueprintRoleWhy", [
+                document.createElement("div"),
+                r.state.blueprints.trank_lebenssaft,
+            ]);
+        const chipB = r
+            ._feedRecipeCard({ kind: "recipe", prof: r._recipeProfile(r.state.blueprints.trank_lebenssaft) })
+            .querySelector(".feed-role-chip");
         out.warumKarten = traegt(r._recipeRow("trank_lebenssaft", "drink").title) && !!chipB && traegt(chipB.title);
         // (g) bei Ruhe verlässt das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade, sonst ein
         // unsichtbares Loch in der Leiste); Wieder-Entzünden holt es zurück. End-VERHALTEN, nicht Existenz.
@@ -2393,7 +2359,6 @@ async function checkBandWCIchWahrheit(ctx) {
             for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = saved[k];
             r._updateEmotionFeedback();
         }
-        return out;
     });
     check(
         "W-C(a) Mach-Tor: EIN Formatter (_machTorHint: Material + ⚒ Station) + drei Inline-Konsumenten (Slot·Rezept·FERTIGEN)",
@@ -2429,200 +2394,239 @@ async function checkBandRezeptKatalog(ctx) {
     const { page, check } = ctx;
     // die porta-PARAMS-Länge als unabhängige Node-Referenz (derselbe Lade-Pfad wie im Worker, nur ohne Browser)
     require(path.join(SKRIPTE, "..", "porta-core.js"));
-    const pp = globalThis.__portaCore && globalThis.__portaCore.PARAMS_BY_KIND && globalThis.__portaCore.PARAMS_BY_KIND.gate;
+    const pp =
+        globalThis.__portaCore && globalThis.__portaCore.PARAMS_BY_KIND && globalThis.__portaCore.PARAMS_BY_KIND.gate;
     const portaParamsLen = Array.isArray(pp) ? pp.length : -1;
-    const out = (await safeEvaluate(page, async (portaLen) => {
-        const res = { a: {}, b: {}, c: {}, d: {}, e: {} };
-        // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
-        const r = await window.__weltDa();
-        const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.drachentor && f.recipes.gras && f.paramsByKind && f.paramsByKind.gate && !f._vorrat));
-    
-        // ===== (a) paramsByKind: gate + vehicle als Regler-DATEN =====
-        const pk = f.paramsByKind || {};
-        const rowOk = (d, needDef) =>
-            !!d &&
-            typeof d.id === "string" &&
-            typeof d.min === "number" &&
-            typeof d.max === "number" &&
-            (!needDef || typeof d.def === "number");
-        res.a.gateLen = Array.isArray(pk.gate) ? pk.gate.length : -1;
-        res.a.vehicleLen = Array.isArray(pk.vehicle) ? pk.vehicle.length : -1;
-        res.a.gateRowsOk = Array.isArray(pk.gate) && pk.gate.every((d) => rowOk(d, true));
-        res.a.vehicleRowsOk = Array.isArray(pk.vehicle) && pk.vehicle.every((d) => rowOk(d, false));
-        res.a.gateMatchesNode = res.a.gateLen === portaLen;
-        res.a.gateHasGrp = Array.isArray(pk.gate) && pk.gate.some((d) => typeof d.grp === "string" && d.grp);
-        // ERFINDER-WELLE („blume z.B. keine regler?") — die PFLANZEN-Tabellen reisen
-        // (PARAMS_BY_KIND des Primaer-Kerns): flower + grass als Regler-DATEN.
-        res.a.flowerLen = Array.isArray(pk.flower) ? pk.flower.length : -1;
-        res.a.flowerRowsOk = Array.isArray(pk.flower) && pk.flower.every((d) => rowOk(d, true));
-        res.a.grassLen = Array.isArray(pk.grass) ? pk.grass.length : -1;
-    
-        // ===== (b) OV-ROUNDTRIP: mass-Override aendert die Geometrie, Cache bleibt rein =====
-        const csum = (meshes) => {
-            let s = 0,
-                n = 0;
-            for (const m of meshes || []) {
-                const a = m && m.position && m.position.array;
-                if (!a) continue;
-                n += a.length;
-                for (let i = 0; i < a.length; i += 13) s += a[i];
-            }
-            return { s: Math.round(s * 1000) / 1000, n };
-        };
-        try {
-            const m0 = await Promise.race([r._foundryRequest("drachentor", 7, 0), sleep(45000)]);
-            // Schluessel-SET vorher (nicht nur die Groesse: Hintergrund-Ticks duerfen fremde
-            // Keys anlegen — die Wand ist, dass der OV-Request KEINEN drachentor-Key legt).
-            const keysBefore = new Set(f.cache.keys());
-            const reqBefore = new Set(f.requested ? Array.from(f.requested) : []);
-            const mOv = await Promise.race([
-                r._foundryRequest("drachentor", 7, 0, { mass: 0.02 }),
-                sleep(45000),
-            ]);
-            res.b.meshes0 = Array.isArray(m0) ? m0.length : -1;
-            res.b.meshesOv = Array.isArray(mOv) ? mOv.length : -1;
-            res.b.sum0 = csum(m0);
-            res.b.sumOv = csum(mOv);
-            res.b.differ =
-                Array.isArray(m0) &&
-                Array.isArray(mOv) &&
-                (res.b.sum0.s !== res.b.sumOv.s || res.b.sum0.n !== res.b.sumOv.n);
-            const addedCache = Array.from(f.cache.keys()).filter((k) => !keysBefore.has(k));
-            const addedReq = (f.requested ? Array.from(f.requested) : []).filter((k) => !reqBefore.has(k));
-            res.b.cacheKeysAfter = f.cache.size;
-            res.b.addedCache = addedCache;
-            res.b.cacheClean = addedCache.every((k) => k.indexOf("drachentor|") !== 0);
-            res.b.requestedClean = addedReq.every((k) => k.indexOf("drachentor|") !== 0);
-            // der ov-Kanal erreicht auch den PFLANZEN-Pfad
-            // (Bruecke reicht msg.ov an foundry-core.buildInstance): die Blume formt.
-            const bKeysBefore = new Set(f.cache.keys());
-            const b0 = await Promise.race([r._foundryRequest("blume", 3, 0), sleep(45000)]);
-            const bOv = await Promise.race([
-                r._foundryRequest("blume", 3, 0, { height: 2.2, bloomCount: 9 }),
-                sleep(45000),
-            ]);
-            res.b.blume0 = csum(b0);
-            res.b.blumeOv = csum(bOv);
-            res.b.blumeDiffer =
-                Array.isArray(b0) &&
-                Array.isArray(bOv) &&
-                (res.b.blume0.s !== res.b.blumeOv.s || res.b.blume0.n !== res.b.blumeOv.n);
-            const bAdded = Array.from(f.cache.keys()).filter((k) => !bKeysBefore.has(k));
-            // der DEFAULT-Zug darf cachen (Welt-Pfad), der ov-Zug NIE: genau EIN blume-Key.
-            res.b.blumeCacheClean = bAdded.filter((k) => k.indexOf("blume|") === 0).length <= 1;
-        } catch (e) {
-            res.b.err = (e && e.message) || String(e);
-        }
-    
-        // ===== (c) KATALOG: Studio-Rezepte-Sektion + Donor-Abschied im DOM =====
-        try {
-            r._renderWorkshopDOM();
-            const list = document.getElementById("workshop-list");
-            res.c.farnRow = !!(list && list.querySelector('.workshop-studio-recipe-row[data-recipe="farn"]'));
-            res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
-            res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
-            res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
-            // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
-            const KS = r.constructor.KIND_SUBSTANCE || {};
-            res.c.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
-            res.c.torBasisAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
-            res.c.wagenSubstanzParts =
-                KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
-            res.c.torSubstanzParts = KS.tor_basis && Array.isArray(KS.tor_basis.parts) ? KS.tor_basis.parts.length : 0;
-        } catch (e) {
-            res.c.err = (e && e.message) || String(e);
-        }
-    
-        // ===== (d) REGLER: tor_drachentor → Slider aus der PARAMS-Tabelle + ov treibt die Vorschau =====
-        try {
-            const ok = r.selectBlueprintForEdit("tor_drachentor");
-            res.d.selected = ok === true;
-            const panel = document.getElementById("workshop-recipe-panel");
-            res.d.panelVisible = !!(panel && !panel.hidden);
-            res.d.sliderCount = panel ? panel.querySelectorAll(".workshop-studio-param-row").length : -1;
-            // Programmatischer ov: mass ans Maximum → Vorschau-Rebuild mit ov (cache-frei).
-            const ws = r._ensureWorkshopState();
-            ws.studioOv["drachentor"] = { mass: 1.0 };
-            let rebuilds = 0;
-            const orig = r._workshopRebuildPreviewMesh.bind(r);
-            r._workshopRebuildPreviewMesh = function () {
-                rebuilds++;
-                return orig();
+    const out = (await safeEvaluate(
+        page,
+        async (portaLen) => {
+            const res = { a: {}, b: {}, c: {}, d: {}, e: {} };
+            // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
+            const r = await window.__weltDa();
+            const f = r._ensureAssetFoundry();
+            await window.__weltDa(
+                () =>
+                    !!(
+                        f &&
+                        f.ready &&
+                        f.recipes &&
+                        f.recipes.drachentor &&
+                        f.recipes.gras &&
+                        f.paramsByKind &&
+                        f.paramsByKind.gate &&
+                        !f._vorrat
+                    )
+            );
+
+            // ===== (a) paramsByKind: gate + vehicle als Regler-DATEN =====
+            const pk = f.paramsByKind || {};
+            const rowOk = (d, needDef) =>
+                !!d &&
+                typeof d.id === "string" &&
+                typeof d.min === "number" &&
+                typeof d.max === "number" &&
+                (!needDef || typeof d.def === "number");
+            res.a.gateLen = Array.isArray(pk.gate) ? pk.gate.length : -1;
+            res.a.vehicleLen = Array.isArray(pk.vehicle) ? pk.vehicle.length : -1;
+            res.a.gateRowsOk = Array.isArray(pk.gate) && pk.gate.every((d) => rowOk(d, true));
+            res.a.vehicleRowsOk = Array.isArray(pk.vehicle) && pk.vehicle.every((d) => rowOk(d, false));
+            res.a.gateMatchesNode = res.a.gateLen === portaLen;
+            res.a.gateHasGrp = Array.isArray(pk.gate) && pk.gate.some((d) => typeof d.grp === "string" && d.grp);
+            // ERFINDER-WELLE („blume z.B. keine regler?") — die PFLANZEN-Tabellen reisen
+            // (PARAMS_BY_KIND des Primaer-Kerns): flower + grass als Regler-DATEN.
+            res.a.flowerLen = Array.isArray(pk.flower) ? pk.flower.length : -1;
+            res.a.flowerRowsOk = Array.isArray(pk.flower) && pk.flower.every((d) => rowOk(d, true));
+            res.a.grassLen = Array.isArray(pk.grass) ? pk.grass.length : -1;
+
+            // ===== (b) OV-ROUNDTRIP: mass-Override aendert die Geometrie, Cache bleibt rein =====
+            const csum = (meshes) => {
+                let s = 0,
+                    n = 0;
+                for (const m of meshes || []) {
+                    const a = m && m.position && m.position.array;
+                    if (!a) continue;
+                    n += a.length;
+                    for (let i = 0; i < a.length; i += 13) s += a[i];
+                }
+                return { s: Math.round(s * 1000) / 1000, n };
             };
-            let g = r._workshopFoundryPreviewGroup("tor_drachentor");
-            await window
-                .__gebautNach("die Vorschau des Drachentors", {
+            try {
+                const m0 = await Promise.race([r._foundryRequest("drachentor", 7, 0), sleep(45000)]);
+                // Schluessel-SET vorher (nicht nur die Groesse: Hintergrund-Ticks duerfen fremde
+                // Keys anlegen — die Wand ist, dass der OV-Request KEINEN drachentor-Key legt).
+                const keysBefore = new Set(f.cache.keys());
+                const reqBefore = new Set(f.requested ? Array.from(f.requested) : []);
+                const mOv = await Promise.race([r._foundryRequest("drachentor", 7, 0, { mass: 0.02 }), sleep(45000)]);
+                res.b.meshes0 = Array.isArray(m0) ? m0.length : -1;
+                res.b.meshesOv = Array.isArray(mOv) ? mOv.length : -1;
+                res.b.sum0 = csum(m0);
+                res.b.sumOv = csum(mOv);
+                res.b.differ =
+                    Array.isArray(m0) &&
+                    Array.isArray(mOv) &&
+                    (res.b.sum0.s !== res.b.sumOv.s || res.b.sum0.n !== res.b.sumOv.n);
+                const addedCache = Array.from(f.cache.keys()).filter((k) => !keysBefore.has(k));
+                const addedReq = (f.requested ? Array.from(f.requested) : []).filter((k) => !reqBefore.has(k));
+                res.b.cacheKeysAfter = f.cache.size;
+                res.b.addedCache = addedCache;
+                res.b.cacheClean = addedCache.every((k) => k.indexOf("drachentor|") !== 0);
+                res.b.requestedClean = addedReq.every((k) => k.indexOf("drachentor|") !== 0);
+                // der ov-Kanal erreicht auch den PFLANZEN-Pfad
+                // (Bruecke reicht msg.ov an foundry-core.buildInstance): die Blume formt.
+                const bKeysBefore = new Set(f.cache.keys());
+                const b0 = await Promise.race([r._foundryRequest("blume", 3, 0), sleep(45000)]);
+                const bOv = await Promise.race([
+                    r._foundryRequest("blume", 3, 0, { height: 2.2, bloomCount: 9 }),
+                    sleep(45000),
+                ]);
+                res.b.blume0 = csum(b0);
+                res.b.blumeOv = csum(bOv);
+                res.b.blumeDiffer =
+                    Array.isArray(b0) &&
+                    Array.isArray(bOv) &&
+                    (res.b.blume0.s !== res.b.blumeOv.s || res.b.blume0.n !== res.b.blumeOv.n);
+                const bAdded = Array.from(f.cache.keys()).filter((k) => !bKeysBefore.has(k));
+                // der DEFAULT-Zug darf cachen (Welt-Pfad), der ov-Zug NIE: genau EIN blume-Key.
+                res.b.blumeCacheClean = bAdded.filter((k) => k.indexOf("blume|") === 0).length <= 1;
+            } catch (e) {
+                res.b.err = (e && e.message) || String(e);
+            }
+
+            // ===== (c) KATALOG: Studio-Rezepte-Sektion + Donor-Abschied im DOM =====
+            try {
+                r._renderWorkshopDOM();
+                const list = document.getElementById("workshop-list");
+                res.c.farnRow = !!(list && list.querySelector('.workshop-studio-recipe-row[data-recipe="farn"]'));
+                res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
+                res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
+                res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
+                // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
+                const KS = r.constructor.KIND_SUBSTANCE || {};
+                res.c.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
+                res.c.torBasisAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
+                res.c.wagenSubstanzParts =
+                    KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
+                res.c.torSubstanzParts =
+                    KS.tor_basis && Array.isArray(KS.tor_basis.parts) ? KS.tor_basis.parts.length : 0;
+            } catch (e) {
+                res.c.err = (e && e.message) || String(e);
+            }
+
+            // ===== (d) REGLER: tor_drachentor → Slider aus der PARAMS-Tabelle + ov treibt die Vorschau =====
+            try {
+                const ok = r.selectBlueprintForEdit("tor_drachentor");
+                res.d.selected = ok === true;
+                const panel = document.getElementById("workshop-recipe-panel");
+                res.d.panelVisible = !!(panel && !panel.hidden);
+                res.d.sliderCount = panel ? panel.querySelectorAll(".workshop-studio-param-row").length : -1;
+                // Programmatischer ov: mass ans Maximum → Vorschau-Rebuild mit ov (cache-frei).
+                const ws = r._ensureWorkshopState();
+                ws.studioOv["drachentor"] = { mass: 1.0 };
+                let rebuilds = 0;
+                const orig = r._workshopRebuildPreviewMesh.bind(r);
+                r._workshopRebuildPreviewMesh = function () {
+                    rebuilds++;
+                    return orig();
+                };
+                let g = r._workshopFoundryPreviewGroup("tor_drachentor");
+                await window.__gebautNach("die Vorschau des Drachentors", {
                     fertig: () => !!(g = r._workshopFoundryPreviewGroup("tor_drachentor")) && g !== "pending",
                     takt: () => sleep(200),
                     max: 225,
                 });
-            r._workshopRebuildPreviewMesh = orig;
-            res.d.rebuilds = rebuilds;
-            res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;
-            res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.indexOf("{") >= 0);
-            delete ws.studioOv["drachentor"];
-        } catch (e) {
-            res.d.err = (e && e.message) || String(e);
-        }
-    
-        // ===== (e) INTERIM: kalte Auswahl → pending, KEINE Donor-Part-Meshes =====
-        try {
-            const ws = r._ensureWorkshopState();
-            res.e.gtExists = !!(r.state.blueprints && r.state.blueprints.fahrzeug_gt);
-            // Kuenstlich kalt: alle gt-Cache-/Wachen-Keys raus (der naechste Blick zieht neu).
-            for (const k of Array.from(f.cache.keys())) if (k.indexOf("gt|") === 0) f.cache.delete(k);
-            if (f.requested) for (const k of Array.from(f.requested)) if (k.indexOf("gt|") === 0) f.requested.delete(k);
-            const probe = r._workshopFoundryPreviewGroup("fahrzeug_gt");
-            res.e.probePending = probe === "pending";
-            // Behavioral mit Minimal-Buehne: rebuild lässt die Buehne LEER (kein 17-Teile-Wagen).
-            const prevSel = ws.selectedBlueprint;
-            const prevRec = ws.selectedRecipe;
-            ws.selectedBlueprint = "fahrzeug_gt";
-            ws.selectedRecipe = null;
-            ws.preview = {
-                scene: {
-                    add() {},
-                    remove() {},
-                },
-                partMeshes: new Map(),
-                origColors: new Map(),
-                orbit: { target: { x: 0, y: 0, z: 0 }, dist: 6 },
-                dirty: false,
-                currentMesh: null,
-            };
-            r._workshopRebuildPreviewMesh();
-            res.e.stageEmpty = ws.preview.currentMesh === null;
-            res.e.partMeshCount = ws.preview.partMeshes.size;
-            res.e.pendingFlag = r._wsStudioPending === true;
-            const statusEl = document.getElementById("workshop-studio-status");
-            res.e.statusText = statusEl ? statusEl.textContent : null;
-            // Aufraeumen: Buehne + Auswahl zurueck.
-            ws.preview = null;
-            ws.selectedBlueprint = prevSel;
-            ws.selectedRecipe = prevRec;
-            r._wsStudioPending = false;
-            r._workshopStudioStatusSync();
-        } catch (e) {
-            res.e.err = (e && e.message) || String(e);
-        }
-        return res;
-    }, portaParamsLen)) || { fatal: "keine Antwort der Seite" };
+                r._workshopRebuildPreviewMesh = orig;
+                res.d.rebuilds = rebuilds;
+                res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;
+                res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.indexOf("{") >= 0);
+                delete ws.studioOv["drachentor"];
+            } catch (e) {
+                res.d.err = (e && e.message) || String(e);
+            }
+
+            // ===== (e) INTERIM: kalte Auswahl → pending, KEINE Donor-Part-Meshes =====
+            try {
+                const ws = r._ensureWorkshopState();
+                res.e.gtExists = !!(r.state.blueprints && r.state.blueprints.fahrzeug_gt);
+                // Kuenstlich kalt: alle gt-Cache-/Wachen-Keys raus (der naechste Blick zieht neu).
+                for (const k of Array.from(f.cache.keys())) if (k.indexOf("gt|") === 0) f.cache.delete(k);
+                if (f.requested)
+                    for (const k of Array.from(f.requested)) if (k.indexOf("gt|") === 0) f.requested.delete(k);
+                const probe = r._workshopFoundryPreviewGroup("fahrzeug_gt");
+                res.e.probePending = probe === "pending";
+                // Behavioral mit Minimal-Buehne: rebuild lässt die Buehne LEER (kein 17-Teile-Wagen).
+                const prevSel = ws.selectedBlueprint;
+                const prevRec = ws.selectedRecipe;
+                ws.selectedBlueprint = "fahrzeug_gt";
+                ws.selectedRecipe = null;
+                ws.preview = {
+                    scene: {
+                        add() {},
+                        remove() {},
+                    },
+                    partMeshes: new Map(),
+                    origColors: new Map(),
+                    orbit: { target: { x: 0, y: 0, z: 0 }, dist: 6 },
+                    dirty: false,
+                    currentMesh: null,
+                };
+                r._workshopRebuildPreviewMesh();
+                res.e.stageEmpty = ws.preview.currentMesh === null;
+                res.e.partMeshCount = ws.preview.partMeshes.size;
+                res.e.pendingFlag = r._wsStudioPending === true;
+                const statusEl = document.getElementById("workshop-studio-status");
+                res.e.statusText = statusEl ? statusEl.textContent : null;
+                // Aufraeumen: Buehne + Auswahl zurueck.
+                ws.preview = null;
+                ws.selectedBlueprint = prevSel;
+                ws.selectedRecipe = prevRec;
+                r._wsStudioPending = false;
+                r._workshopStudioStatusSync();
+            } catch (e) {
+                res.e.err = (e && e.message) || String(e);
+            }
+            return res;
+        },
+        portaParamsLen
+    )) || { fatal: "keine Antwort der Seite" };
     const { a = {}, b = {}, c = {}, d = {}, e = {} } = out;
-    check("Rezept-Katalog: porta-core.PARAMS_BY_KIND.gate nicht leer (die Seite wartet auf Buch, paramsByKind und Vorrat)", !out.fatal && portaParamsLen > 0, out.fatal || `porta=${portaParamsLen}`);
+    check(
+        "Rezept-Katalog: porta-core.PARAMS_BY_KIND.gate nicht leer (die Seite wartet auf Buch, paramsByKind und Vorrat)",
+        !out.fatal && portaParamsLen > 0,
+        out.fatal || `porta=${portaParamsLen}`
+    );
     check(
         "Rezept-Katalog (a) paramsByKind: gate (id/min/max/def, grp, Länge = porta-core) · vehicle · flower (5) · grass (≥ 4) reisen als Regler-Daten",
-        a.gateRowsOk === true && a.vehicleRowsOk === true && a.vehicleLen > 0 && a.gateMatchesNode === true && a.gateHasGrp === true && a.flowerLen === 5 && a.flowerRowsOk === true && a.grassLen >= 4,
+        a.gateRowsOk === true &&
+            a.vehicleRowsOk === true &&
+            a.vehicleLen > 0 &&
+            a.gateMatchesNode === true &&
+            a.gateHasGrp === true &&
+            a.flowerLen === 5 &&
+            a.flowerRowsOk === true &&
+            a.grassLen >= 4,
         `gate ${a.gateLen} vs ${portaParamsLen} · vehicle ${a.vehicleLen} · flower ${a.flowerLen} · grass ${a.grassLen}`
     );
     check(
         "Rezept-Katalog (b) ov-Roundtrip: drachentor und blume formen unter ov, der ov-Request legt keinen Cache-Key und rührt die requested-Wache nicht",
-        b.meshes0 > 0 && b.meshesOv > 0 && b.differ === true && b.cacheClean === true && b.requestedClean === true && b.blumeDiffer === true && b.blumeCacheClean === true,
-        b.err || `sum0=${JSON.stringify(b.sum0)} sumOv=${JSON.stringify(b.sumOv)} blume ${JSON.stringify(b.blume0)}/${JSON.stringify(b.blumeOv)}`
+        b.meshes0 > 0 &&
+            b.meshesOv > 0 &&
+            b.differ === true &&
+            b.cacheClean === true &&
+            b.requestedClean === true &&
+            b.blumeDiffer === true &&
+            b.blumeCacheClean === true,
+        b.err ||
+            `sum0=${JSON.stringify(b.sum0)} sumOv=${JSON.stringify(b.sumOv)} blume ${JSON.stringify(b.blume0)}/${JSON.stringify(b.blumeOv)}`
     );
     check(
         "Rezept-Katalog (c) der Katalog zeigt `farn`, die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
-        c.farnRow === true && c.wagenRow === false && c.torBasisRow === false && c.wagenAbsent === true && c.torBasisAbsent === true && c.wagenSubstanzParts === 17 && c.torSubstanzParts === 4,
+        c.farnRow === true &&
+            c.wagenRow === false &&
+            c.torBasisRow === false &&
+            c.wagenAbsent === true &&
+            c.torBasisAbsent === true &&
+            c.wagenSubstanzParts === 17 &&
+            c.torSubstanzParts === 4,
         c.err || `rezeptZeilen=${c.recipeRows} wagen=${c.wagenSubstanzParts} tor=${c.torSubstanzParts}`
     );
     check(
@@ -2632,13 +2636,28 @@ async function checkBandRezeptKatalog(ctx) {
     );
     check(
         "Rezept-Katalog (e) Interim: kalte Auswahl → pending, die Bühne bleibt LEER (kein 17-Teile-Wagen), der Status sagt „Studio-Asset lädt…“",
-        e.gtExists === true && e.probePending === true && e.stageEmpty === true && e.partMeshCount === 0 && e.pendingFlag === true && /Studio-Asset lädt/.test(e.statusText || ""),
+        e.gtExists === true &&
+            e.probePending === true &&
+            e.stageEmpty === true &&
+            e.partMeshCount === 0 &&
+            e.pendingFlag === true &&
+            /Studio-Asset lädt/.test(e.statusText || ""),
         e.err || String(e.statusText)
     );
 }
 
 module.exports = {
-    checkBandOmegaWerkstattSpiegel, checkBandCadWorkshop, checkBandEarlyRingsAndUi, checkBandV18134Social,
-    checkBandV18135Bookmarks, checkBandV18142Follow, checkBandV18143Comments, checkBandV18147ForYou,
-    checkBandM5HudPolitur, checkBandM4SuchKern, checkBandWBHofKarte, checkBandWCIchWahrheit, checkBandRezeptKatalog,
+    checkBandOmegaWerkstattSpiegel,
+    checkBandCadWorkshop,
+    checkBandEarlyRingsAndUi,
+    checkBandV18134Social,
+    checkBandV18135Bookmarks,
+    checkBandV18142Follow,
+    checkBandV18143Comments,
+    checkBandV18147ForYou,
+    checkBandM5HudPolitur,
+    checkBandM4SuchKern,
+    checkBandWBHofKarte,
+    checkBandWCIchWahrheit,
+    checkBandRezeptKatalog,
 };

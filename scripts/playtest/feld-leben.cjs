@@ -3,16 +3,12 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
 // Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
 // Emotion (FIELD_TO_EMOTION: lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
 // Save/Restore von Position + Emotionen → kein State-Leak in Folge-Bänder.
 async function checkBandV1721LivingFieldAura(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
         const wf = r.worldFieldAt(123, -456);
         const au = r.auraAt(123, -456);
@@ -56,7 +52,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
             for (const k of Object.keys(origEmo)) r.state.player.emotions[k] = origEmo[k];
             r.state.player.emotionLastTick = origTick;
         }
-        return out;
     });
     check("lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
     check(
@@ -75,16 +70,17 @@ async function checkBandV1721LivingFieldAura(ctx) {
 // zerfällt (Homöostase), bei max sättigt; der at_field_need-Loop schließt sich (belebt → ein ANDERER
 // Punkt wird ärmster). Leerer Overlay == frozen; der spawn_creature-Pfad deponiert.
 async function checkBandV1727WritableField(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const cfg = r.constructor.LIFE_FIELD;
         // die Geburt trägt Leben ins Feld: ein spawn_creature über die DSL deponiert an der Wiege (am Ruf)
         const capD = r.state.maxCreatures;
         const nD = r.state.creatures.length;
         r.state.maxCreatures = nD + 1;
-        out.spawnDeposits = window.__consumes(r, "dslRun", r, "_depositLife", [["spawn_creature", ["at_player"], 1, "happy"], { source: "test" }]);
+        out.spawnDeposits = window.__consumes(r, "dslRun", r, "_depositLife", [
+            ["spawn_creature", ["at_player"], 1, "happy"],
+            { source: "test" },
+        ]);
         if (r.state.creatures[nD]) r.removeCreature(r.state.creatures[nD]);
         r.state.maxCreatures = capD;
         // sauberer Start
@@ -96,7 +92,7 @@ async function checkBandV1727WritableField(ctx) {
         out.emptyEqualsFrozen = r.auraAt(X, Z).lebendig === frozen;
         // (2) Deposit HEBT lebendig (min(frozen + pulse, 1)) — im selben Takt exakt, auch wenn die Wanduhr 3 ms läuft (GC, Last):
         r._depositLife(X, Z); // die Feld-Uhr ist `state.spielZeit` (CI 39002548016: die Wanduhr trieb 5e-6 ab, ROT ohne Code-Änderung)
-        for (const t0 = performance.now(); performance.now() - t0 < 3; ); // die Wanduhr läuft, der Takt steht
+        for (const t0 = performance.now(); performance.now() - t0 < 3;); // die Wanduhr läuft, der Takt steht
         const afterDeposit = r.auraAt(X, Z).lebendig;
         out.depositRaises = afterDeposit > frozen;
         out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
@@ -126,7 +122,6 @@ async function checkBandV1727WritableField(ctx) {
             out.p1Raised = true;
         }
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
-        return out;
     });
     check("Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
     check("Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
@@ -146,10 +141,8 @@ async function checkBandV1727WritableField(ctx) {
 // Kreatur-Trickle: NUR getragene Kreaturen (tendsLife) träufeln Leben in ihre Zelle → die Region
 // erhält sich nach dem Geburts-Puls; ambiente Fauna träufelt NICHT (kein Runaway); rate-limitiert.
 async function checkBandV1729CreatureTrickle(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const cfg = r.constructor.LIFE_FIELD;
         if (r.state.lifeField) r.state.lifeField.clear();
         // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
@@ -175,7 +168,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         r._tickCreatureLifeTrickle(ambient, 2000);
         out.ambientInert = r._lifeOverlayAt(34567, -9876) === 0;
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
-        return out;
     });
     check("Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
     check("Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
@@ -187,10 +179,8 @@ async function checkBandV1729CreatureTrickle(ctx) {
 // lokalen Abdruck über die globale Stimmung, der Welt-Tint liest das → färbt den Ort. Die
 // emotion-Achse ist damit schreibbar UND räumlich konsumiert.
 async function checkBandV1732SpatialEmotion(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         if (r.state.emotionField) r.state.emotionField.clear();
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
@@ -236,7 +226,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
         }
         r.state.emotionField.clear();
         for (const k of Object.keys(e)) e[k] = saved[k] || 0;
-        return out;
     });
     check(
         "raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
@@ -256,10 +245,8 @@ async function checkBandV1732SpatialEmotion(ctx) {
 // Cold-Start = erste Beobachtung, stabiler Input → hält, Sprung → trackt mit Lag; Spieler-Baseline
 // ebenso.
 async function checkBandV1742Wohl(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const W = window.AnazhRealm ? window.AnazhRealm.WERTUNG : r.constructor.WERTUNG;
 
         // --- (1) das Wohl-Maß: Struktur = lebendig; Erlebt = Valenz (Russell) ---
@@ -319,17 +306,13 @@ async function checkBandV1742Wohl(ctx) {
         // restore
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
-        return out;
     });
 
     check(
         "Wertung: das Wohl-Maß — Struktur = lebendig, Erlebt = Valenz (joy + / sorrow − / awe neutral)",
         res.wohlStruktur && res.wohlErlebtValence
     );
-    check(
-        "Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)",
-        res.coldStart
-    );
+    check("Wertung: die Feld-Baseline Cold-Start = die erste Beobachtung (keine Überraschung anfangs)", res.coldStart);
     check("Wertung: stabiler Input → die Baseline HÄLT (EMA driftet nicht ohne Änderung)", res.stableHolds);
     check(
         "Wertung: ein Sprung → die Baseline TRACKT, aber LAGGT weit darunter (das EMA-Wesen, zeit-korrigiert)",
@@ -342,10 +325,8 @@ async function checkBandV1742Wohl(ctx) {
 // + HP, NIE seine Stimmung (sonst Rückkopplung → Runaway). Geprüft: Verbesserung → joy-Puls,
 // Gewöhnung (δ→0), kein Runaway; anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle.
 async function checkBandV1744Appraisal(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
 
@@ -450,7 +431,6 @@ async function checkBandV1744Appraisal(ctx) {
         r.state.wohlBaseline = savedWohl;
         r.state.emotionField = savedEmoField;
         r.state.weather = savedWeather;
-        return out;
     });
 
     check(
@@ -487,10 +467,8 @@ async function checkBandV1744Appraisal(ctx) {
 // am Spieler bei positivem δ_spieler, gibt es Bonus-Credit ∝ Nähe (ferne ausgeschlossen). Anti-Gaming:
 // δ_spieler ist die SITUATION, nie die stempelbare Emotion → kein Reward-Hacking.
 async function checkBandV1750Klammer(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const savedEmo = { ...p.emotions };
@@ -563,7 +541,6 @@ async function checkBandV1750Klammer(ctx) {
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
         r.state.emotionField = savedEmoField;
-        return out;
     });
     check(
         "Klammer: ANTI-GAMING-Wurzel — appraisalDelta trackt die SITUATION (steigt mit Leben)",
@@ -588,18 +565,16 @@ async function checkBandV1750Klammer(ctx) {
 }
 
 async function checkBandWelle6APolish(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.A — Interaktion-Polish (Erdung auf Bauwerken) ###
     // Der Feld-Controller (`_stepCharacter`) löst die Wand-Kollision nativ; `isPlayerGrounded` liest den
     // `_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`. groundDistance 0.6 (nicht 0.5),
     // damit der y-Offset eines Sub-Compounds auf einer Plattform den Sprung nicht blockiert.
-    const wave6aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6aResults = await ctx.welt((r) => {
         if (!r || !r.state.playerVel) return null;
         const out = {};
-
 
         // 6.A2 Diskrimination an eindeutiger Setup-Position (frühere Tests verschieben mesh.position):
         // in der Luft → not grounded, auf gespawntem Bauwerk → grounded.
@@ -719,8 +694,7 @@ async function checkBandWelle6APolish(ctx) {
     // isPlayerGrounded speichert das flachste Treffer-Normal-Y in `state.groundNormalY`; ist keine Fläche
     // begehbar (Normal-Y < hang.maxSlopeY = 0.5, >60°), gilt `state.onSteepSlope = true` und der
     // Bewegungs-Input wird auf 20 % gedrosselt — kein Kleben an senkrechten Wänden.
-    const wave6a3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6a3Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // 6.A3 — Tests wandern 19.07.: der State-Zwilling fiel, die Leser
@@ -811,8 +785,6 @@ async function checkBandWelle6APolish(ctx) {
         delete r.state.blueprints._t_w6a3_haus;
         r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
-
-
         return out;
     });
 
@@ -834,13 +806,9 @@ async function checkBandWelle6APolish(ctx) {
     // tickBuildMode → _resolvePhantomTarget castet den Strahl des Fadenkreuzes (`_fadenkreuzStrahl`: die Richtung der
     // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
     // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
-    const wave6a45Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6a45Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
-
-
-
 
         // Build-Modus auf "stein_block"-Slot 0, Kamera in den Boden schauen lassen, tickBuildMode →
         // Phantom liegt im Treffer-Bereich + isStable=true.
@@ -931,8 +899,7 @@ async function checkBandWelle6APolish(ctx) {
     }
 
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
-    const wave6e1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6e1Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
@@ -988,8 +955,7 @@ async function checkBandWelle6APolish(ctx) {
     // ### WOW-Start statt Anleitungs-Modal ###
     // Beweist: das alte Intro-Modal ist restlos weg; der Begleiter (Eins) lädt EINMAL diegetisch ein
     // (Einladung, keine Steuerungs-Anleitung), gegated + idempotent.
-    const wowStartResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wowStartResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
@@ -1028,8 +994,7 @@ async function checkBandWelle6APolish(ctx) {
     // _addConnectionLines hängt je Connection eine THREE.Line an die Group; Farbe via _connectionColor
     // (computeConnectionStrength → grün/gelb/rot). Schwächste Verbindung < 0.7 →
     // _applyCompoundWorldEffects schreibt einen idempotenten weakness-Journal-Eintrag.
-    const wave6fResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6fResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
 
@@ -1203,10 +1168,7 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
         check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
-        check(
-            "die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein",
-            wave6fResults.worldClean
-        );
+        check("die Gelenk-Linien sind WERKSTATT-Werkzeug — die Welt bleibt rein", wave6fResults.worldClean);
         check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
         check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
         check(
@@ -1227,14 +1189,13 @@ async function checkBandWelle6APolish(ctx) {
 }
 
 async function checkBandWelle6GHylomorphism(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Hylomorphismus-Unification ###
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
-    const wave6gResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
+    const wave6gResults = await ctx.welt(async (r) => {
         if (!r || !r.state) return null;
         const out = {};
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
@@ -1258,7 +1219,11 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // sperrte G1 und D2M (n=1159); den Hänger richtet gate:ankunft L2a, hier das Gesetz (Bäume in architectures).
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
-            r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
+            r
+                ._weltbildLuecken(true)
+                .filter((l) => /^(pflanzung|bauten)$/.test(l.term))
+                .map((l) => l.satz)
+                .join(" · ");
         out.waldErsterBlick = r.state.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
@@ -1396,10 +1361,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
         const ufoProg = ufoBuilt && ufoBuilt.program;
         out.chatUfoProg =
-            Array.isArray(ufoProg) &&
-            ufoProg[0] === "spawn_ufo" &&
-            Array.isArray(ufoProg[1]) &&
-            ufoProg[1][0] === "at";
+            Array.isArray(ufoProg) && ufoProg[0] === "spawn_ufo" && Array.isArray(ufoProg[1]) && ufoProg[1][0] === "at";
 
         return out;
     });
@@ -1407,9 +1369,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     if (wave6gResults && !wave6gResults.error) {
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
-        const r42a = await page.evaluate(() => {
-            const r = window.anazhRealm;
-            const out = {};
+        const r42a = await ctx.welt((r, out) => {
             {
                 // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
                 // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
@@ -1429,7 +1389,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
                     return false;
                 }
             })();
-            return out;
         });
         check("_islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
         check("_islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
@@ -1439,8 +1398,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // unverschoben, sonst zerstört Laplacian die Skirt-Überlappung der Nachbar-Chunks. Probe: zwei
         // benachbarte Chunks bauen — an der gemeinsamen Naht teilen >50 % der Vertices die Position
         // (ohne die Disziplin ~0).
-        const r42bSkirt = await page.evaluate(() => {
-            const r = window.anazhRealm;
+        const r42bSkirt = await ctx.welt((r) => {
             const chunks = [...r.state.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
             if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
             const seen = new Map();
@@ -1460,8 +1418,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             (r42bSkirt.duplicates || 0) >= 200
         );
         // Insel-Höhen-Amplitude skaliert mit `height`.
-        const r42bIslandAmp = await page.evaluate(() => {
-            const r = window.anazhRealm;
+        const r42bIslandAmp = await ctx.welt((r) => {
             const noise = { noise2D: () => 0.5 };
             // height=5: kleine Insel
             const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
@@ -1475,8 +1432,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r42bIslandAmp.ratio > 1.5
         );
         // DSL spawn_island akzeptiert 5. `size`-Argument.
-        const r42bDsl = await page.evaluate(() => {
-            const r = window.anazhRealm;
+        const r42bDsl = await ctx.welt((r) => {
             const before = r.state.floatingIslands.length;
             r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
             const after = r.state.floatingIslands.length;
@@ -1492,9 +1448,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Insel-Material wie der Voxel-Boden: MeshToon + vertexColors (kein Terrain-ShaderMaterial — das
         // braucht aField/uv, die Surface-Nets-Geometrie nicht hat → Löcher). _attachIslandColors färbt
         // grün-oben/erdig-unten per Vertex-Normale.
-        const r42c = await page.evaluate(() => {
-            const r = window.anazhRealm;
-            const out = {};
+        const r42c = await ctx.welt((r, out) => {
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
@@ -1504,7 +1458,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 out.isToonMarker = !!(isle.material.isMeshToonMaterial || isle.material.isMeshStandardMaterial);
                 out.isNodeMaterial = /Node/.test(isle.material.type || "");
             }
-            return out;
         });
         check(
             `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
@@ -1571,8 +1524,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // Bäume + Strukturen verteilen sich über das Welt-Feld (4 Noise-Schichten: lebendig/dichte/glut/
     // magieleitung) — KEINE Tabelle: Bauplan-Compound-Tags resonieren mit dem Welt-Tag-Feld.
     // Baupläne: stein_block (dichte), kristall_geode (magieleitung), glutbrunnen (glut).
-    const wave6gP2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6gP2Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         // der Voxel-Populator ist die lebende Schicht.
@@ -1592,8 +1544,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Werte (Noise nicht-konstant).
         const a1 = r.worldFieldAt(50, 30);
         const a2 = r.worldFieldAt(50, 30);
-        out.fieldDeterministic =
-            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
+        out.fieldDeterministic = Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
         const b1 = r.worldFieldAt(50, 30);
         const b2 = r.worldFieldAt(1000, -1000);
         out.fieldVariesBySamplePos =
@@ -1696,8 +1647,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             for (const a of AFF_AXES) slim[a] = Math.round((tags[a] || 0) * 1e6) / 1e6;
             out.archAffinityTags[n] = slim;
             out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
-            const aff =
-                r.computeBlueprintAffordances(bp);
+            const aff = r.computeBlueprintAffordances(bp);
             out.archBroadcasting[n] = !!(aff && aff.broadcasting);
         }
         return out;
@@ -1798,8 +1748,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // ### Felsformationen ###
     // felsbogen (Trilithon, begehbarer Überhang) + felsturm (Fels-Nadel) als Welt-Bürger — KEIN
     // Voxel-Terrain: die Per-Part-Kollision lässt zwischen den Pfeilern eine echte begehbare Lücke.
-    const wave6gP3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6gP3Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         const bps = r.state.blueprints || {};
@@ -1991,8 +1940,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // ### Das Terrain wird Materie ###
     // Ein Grabe-Hieb löst Terrain in Material auf, dessen Identität aus worldFieldAt emergiert (die
     // sichtbare Farbe ist das Material, das der Spieler bekommt) — keine Biom-Tabelle.
-    const wave6gP4Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6gP4Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
 
@@ -2068,13 +2016,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r._pickArchitectureAtCrosshair = () => null;
             const realHit = r._raycastWorldHit(40);
             out.realRaycastHit = !!(realHit && realHit.hit);
-            const matSumBefore = inv
-                .filter((s) => s && s.kind === "material")
-                .reduce((a, s) => a + (s.count || 0), 0);
+            const matSumBefore = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
             r.tryMouseBreak();
-            const matSumAfter = inv
-                .filter((s) => s && s.kind === "material")
-                .reduce((a, s) => a + (s.count || 0), 0);
+            const matSumAfter = inv.filter((s) => s && s.kind === "material").reduce((a, s) => a + (s.count || 0), 0);
             out.realDigYielded = matSumAfter > matSumBefore;
             for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
             r._pickArchitectureAtCrosshair = origPick;
@@ -2116,9 +2060,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
 // Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
 // Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/Disziplin).
 async function checkBandV18203Gamma3FeldCharakter(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const A = r.constructor;
         const out = {};
 
@@ -2204,8 +2147,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             out.totalDeltaMagie = Number(totalDeltaMagie.toFixed(3));
             out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
 
-
-
             // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
             // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
             // (manuell, mit den ECHTEN Noise-Instanzen).
@@ -2224,7 +2165,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             const withWarp = n01(fwNoise.lebendigNoise.noise2D(wx * sLeb, wz * sLeb));
             out.warpedMatchesActual = Math.abs(fW.lebendig - withWarp) < 1e-9;
             out.warpChangesValue = Math.abs(noWarp - withWarp) > 1e-6;
-
 
             // (F11) Bei gen<3: warp wird NICHT angewendet (Legacy bleibt clean)
             r.state.worldMeta.genVersion = 1;
@@ -2253,10 +2193,7 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         "(F2) LEGACY gen=1: bit-identisch zu manueller s=0.005-Berechnung (Pre-V18.203)",
         res.legacyBitIdentical === true
     );
-    check(
-        "(F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)",
-        res.gen3DiffersFromLegacy === true
-    );
+    check("(F3) GEN=3: Werte verschieden zu Legacy (Frequenz-Fächer aktiv)", res.gen3DiffersFromLegacy === true);
     check("(F4) GEN=3: Werte endlich (kein NaN durch Warp/Fächer)", res.gen3ValuesFinite === true);
     check("(F5) GEN=2 (Γ1-Feuchte-Tor) bleibt Legacy (kein Γ3-Charakter)", res.gen2StaysLegacy === true);
     check(
@@ -2264,15 +2201,19 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         res.magieMoreVariable === true
     );
     check("(F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
-    check(
-        "(F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)",
-        res.warpedMatchesActual === true
-    );
+    check("(F9b) Implementierung matched manuelle Warp-Berechnung (bit-identisch)", res.warpedMatchesActual === true);
     check("(F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 
 module.exports = {
-    checkBandV1721LivingFieldAura, checkBandV1727WritableField, checkBandV1729CreatureTrickle,
-    checkBandV1732SpatialEmotion, checkBandV1742Wohl, checkBandV1744Appraisal, checkBandV1750Klammer,
-    checkBandWelle6APolish, checkBandWelle6GHylomorphism, checkBandV18203Gamma3FeldCharakter,
+    checkBandV1721LivingFieldAura,
+    checkBandV1727WritableField,
+    checkBandV1729CreatureTrickle,
+    checkBandV1732SpatialEmotion,
+    checkBandV1742Wohl,
+    checkBandV1744Appraisal,
+    checkBandV1750Klammer,
+    checkBandWelle6APolish,
+    checkBandWelle6GHylomorphism,
+    checkBandV18203Gamma3FeldCharakter,
 };

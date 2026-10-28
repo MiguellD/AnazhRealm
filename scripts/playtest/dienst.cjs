@@ -10,10 +10,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // W3 UI-Puls: dirty(raum) → EINE rAF-gebündelte Render-Insel pro Raum. Das Organ `_uiDirty` dedupt
 // (Set + ein rAF) → Doppel-Render/Stale durch hand-verdrahtete Render-Aufrufe strukturell unmöglich.
 async function checkBandW3UiPuls(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (1) das Organ + die Registry existieren.
         const reg = r._uiRoomRegistry();
         out.registryRooms = !!reg && !!reg.ich && !!reg.hof;
@@ -49,11 +47,13 @@ async function checkBandW3UiPuls(ctx) {
             else delete r._hofEnsureStage;
         }
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
-        return out;
     });
     // (4b) die Absenz über den EINEN Helfer: die direkte Aufruf-Krankheit der Mechanik-Pfade ist tot (sie melden
     // `_uiDirty("hof")`, s. hofPfade am Ruf); die Hof-UI selbst rendert ihre Liste weiter direkt.
-    const srcOk = stammLib.fehlt(null, /if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/);
+    const srcOk = stammLib.fehlt(
+        null,
+        /if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/
+    );
     check("W3 UI-Puls: das EINE Organ trägt die Räume ich/hof", res.registryRooms);
     check(
         "W3 UI-Puls: DEDUP — drei dirty-Rufe in einem Frame → EIN Puls, EIN Raum (Set dedupt; die Boost-Doppel-Krankheit strukturell tot)",
@@ -63,10 +63,7 @@ async function checkBandW3UiPuls(ctx) {
         `W3 UI-Puls: die Hof-Mechanik-Pfade (Auftrag · Ausrüstung · Schaden · Abschied) melden den Puls am Ruf (${JSON.stringify(res.hofPfade)}) + kein direkter _renderCreatureListUI-Mechanik-Aufruf mehr (Grep-Wand)`,
         srcOk && Array.isArray(res.hofPfade) && res.hofPfade.every(Boolean)
     );
-    check(
-        "W3 UI-Puls: der Hof rendert On-Open (isOpen-Skip sicher)",
-        res.hofOnOpen && res.hofSkipsWhenClosed
-    );
+    check("W3 UI-Puls: der Hof rendert On-Open (isOpen-Skip sicher)", res.hofOnOpen && res.hofSkipsWhenClosed);
 }
 
 // Die Stellvertreter-Wand — eingefaltet aus gate:feld-stellvertreter: der Feld-Pass zeichnet keinen Vollbild-Draw
@@ -203,9 +200,16 @@ async function checkBandFeldStellvertreter(ctx) {
         };
     };
     const urteilO1 = (a) => a.grenzeNachFrei === a.hoechster + 1;
-    const urteilK2 = (a) => !a.pano.tiefe && a.budgetPano.schleifen === 0 && a.budgetPano.abtastungen <= 4 && a.budgetMarch.schleifen <= 4 && !a.budgetMarch.seitenSchleife && a.budgetMarch.einSatz;
+    const urteilK2 = (a) =>
+        !a.pano.tiefe &&
+        a.budgetPano.schleifen === 0 &&
+        a.budgetPano.abtastungen <= 4 &&
+        a.budgetMarch.schleifen <= 4 &&
+        !a.budgetMarch.seitenSchleife &&
+        a.budgetMarch.einSatz;
     const a = await safeEvaluate(page, probe, "echt");
-    if (!a || a.fehler) return check("Feld-Stellvertreter: die Probe antwortet", false, a ? a.fehler : "keine Antwort der Seite");
+    if (!a || a.fehler)
+        return check("Feld-Stellvertreter: die Probe antwortet", false, a ? a.fehler : "keine Antwort der Seite");
     mitBudget(a);
     check(
         "Feld-Stellvertreter O1/O2: die Obergrenze folgt dem höchsten belegten Slot, ein freier Slot kehrt zurück, kein Slot doppelt",
@@ -218,7 +222,11 @@ async function checkBandFeldStellvertreter(ctx) {
         `${a.instanzen} Instanzen (${a.grenzeNeu} × ${a.plaetze}), |vp − Kamera| ${a.abwVp.toExponential(1)}, |vp·invVP − I| ${a.abwIdent.toExponential(1)}`
     );
     const m = a.march;
-    check("Feld-Stellvertreter K1: der March-Draw instanziert, Rückseiten, Stellvertreter-Vertex, Fragment-Tiefe, vor dem Panorama", m.instanziert && m.rueckseite && m.vertex && m.tiefe && m.reihe && m.inventar, JSON.stringify(m));
+    check(
+        "Feld-Stellvertreter K1: der March-Draw instanziert, Rückseiten, Stellvertreter-Vertex, Fragment-Tiefe, vor dem Panorama",
+        m.instanziert && m.rueckseite && m.vertex && m.tiefe && m.reihe && m.inventar,
+        JSON.stringify(m)
+    );
     check(
         "Feld-Stellvertreter K2: Panorama ohne Schleife und Fragment-Tiefe, March EIN Satz ohne Seiten-Schleife",
         urteilK2(a),
@@ -226,9 +234,14 @@ async function checkBandFeldStellvertreter(ctx) {
     );
     const s1 = await safeEvaluate(page, probe, "panoTiefe");
     const s2 = await safeEvaluate(page, probe, "ohneNachzug");
-    check("Feld-Stellvertreter SELBSTTEST: ein Panorama mit Fragment-Tiefe bricht K2, eine Obergrenze ohne Nachzug bricht O1", !!s1 && !!s2 && !urteilK2(mitBudget(s1)) && !urteilO1(s2), s2 ? `Obergrenze ${s2.grenzeNachFrei}, höchster Slot ${s2.hoechster}` : "");
+    check(
+        "Feld-Stellvertreter SELBSTTEST: ein Panorama mit Fragment-Tiefe bricht K2, eine Obergrenze ohne Nachzug bricht O1",
+        !!s1 && !!s2 && !urteilK2(mitBudget(s1)) && !urteilO1(s2),
+        s2 ? `Obergrenze ${s2.grenzeNachFrei}, höchster Slot ${s2.hoechster}` : ""
+    );
 }
 
 module.exports = {
-    checkBandW3UiPuls, checkBandFeldStellvertreter,
+    checkBandW3UiPuls,
+    checkBandFeldStellvertreter,
 };

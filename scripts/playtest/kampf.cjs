@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Abbauen kostet substanz-gebundene MÜHE; EINE Tauglichkeit (gehaltenes Ding vs Material) dirigiert
 // Tempo/Stamina/Ertrag — viele Hiebe statt Instant, ein gutes Werkzeug bricht schneller + lootet.
 async function checkBandV1755HarvestEffort(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const H = r.constructor.HARVEST;
         const savedTool = p.equipped ? p.equipped.held : null;
@@ -105,7 +103,6 @@ async function checkBandV1755HarvestEffort(ctx) {
         clearInv();
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "minePower — ein hartes Werkzeug schlägt die bloße Faust (das gehaltene Ding bestimmt die Kraft)",
@@ -122,10 +119,7 @@ async function checkBandV1755HarvestEffort(ctx) {
     );
     check("KONSUM — Abbauen kostet MÜHE (die Faust braucht VIELE Hiebe, kein Instant)", res.multiStrikeHand);
     check("ein Bauwerk fällt schließlich (der Fortschritt vollendet sich)", res.brokeEventually);
-    check(
-        "KONSUM — ein gutes Werkzeug bricht SCHNELLER (weniger Hiebe als die Faust)",
-        res.toolFasterThanHand
-    );
+    check("KONSUM — ein gutes Werkzeug bricht SCHNELLER (weniger Hiebe als die Faust)", res.toolFasterThanHand);
     check(
         "KONSUM — der ERTRAG skaliert mit der Tauglichkeit (Werkzeug füllt das Inventar, die Faust ~nicht)",
         res.yieldScalesWithFitness
@@ -138,10 +132,8 @@ async function checkBandV1755HarvestEffort(ctx) {
 // harte Materie wird zur KLINGE (spitz → schneidet Weiches) ODER zur KEULE (stumpf → wuchtet Hartes),
 // das Material wählt den Kanal, das richtige Gerät gewinnt; man erntet auch mit der Waffe. KONSUM.
 async function checkBandV1755W2Profile(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const blu = r.state.blueprints;
         const savedTool = p.equipped ? p.equipped.held : null;
@@ -220,7 +212,6 @@ async function checkBandV1755W2Profile(ctx) {
         p.equipped.held = savedWeapon;
         p.stamina = 1e6;
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "die FORM treibt das Profil — DIESELBE Materie wird zur Klinge (schneidet) ODER zur Keule (wuchtet)",
@@ -252,10 +243,8 @@ async function checkBandV1755W2Profile(ctx) {
 // (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
 // Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz): die Werkstatt-Rollen-Zeile rendert es.
 async function checkBandV1759CapabilityReadout(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         // greifbare Klinge (octahedron) vs greifbarer Brecher (box), DIESELBE Materie stein, eine Position (span 0)
         blu.__cap_blade = {
@@ -311,7 +300,6 @@ async function checkBandV1759CapabilityReadout(ctx) {
         delete blu.__cap_blade;
         delete blu.__cap_maul;
         delete blu.__cap_struct;
-        return out;
     });
     check("ein greifbares spitzes Geraet liest Klinge (schneidet)", res.bladeKlinge);
     check("ein greifbarer stumpfer Klotz liest Brecher (wuchtet)", res.maulBrecher);
@@ -333,10 +321,8 @@ async function checkBandV1759CapabilityReadout(ctx) {
 // Material). Das Fehlende sticht am Dropdown-Eintrag heraus (✗ fehlt …) + ein gescheitertes Verkörpern
 // setzt das Select zurück, statt eine falsche Seele zu zeigen. Snapshot + Restore (Mode/Soul/Inventar).
 async function checkBandV1775MakeActCost(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const setMode = (m) => {
             r.setGameMode(m);
@@ -409,7 +395,6 @@ async function checkBandV1775MakeActCost(ctx) {
         r._refreshSoulSelect();
         r.renderInventoryUI();
         r.recomputePlayerStats();
-        return out;
     });
     check("_makeActCostSuffix — schöpfer (Gott-Modus) zeigt keinen Kosten-Marker (frei)", res.schoepferFree);
     check("pfad ohne Material → das Fehlende STICHT heraus (✗ fehlt …) am Dropdown-Eintrag", res.pfadMissing);
@@ -429,9 +414,8 @@ async function checkBandV1775MakeActCost(ctx) {
 // die FORM Waffe/Werkzeug statt Bauwerk (trennt den Substanz-Zwilling Klinge/Bauwerk); Würfel,
 // große Strukturen, Körper und Tore bleiben unverändert.
 async function checkBandV1783ImplementClassification(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const mk = (parts) => ({ name: "_u4", parts });
         const spike = mk([
             { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } },
@@ -500,11 +484,7 @@ async function checkBandV1783ImplementClassification(ctx) {
         res.handleArch,
         `handle=${res.handleRole}`
     );
-    check(
-        "eine große Struktur (nicht greifbar) → Bauwerk (unverändert)",
-        res.largeArch,
-        `large=${res.largeRole}`
-    );
+    check("eine große Struktur (nicht greifbar) → Bauwerk (unverändert)", res.largeArch, `large=${res.largeRole}`);
     check(
         "ein Würfel (greifbar, aber keine Geräte-Form) → Bauwerk — U4 ändert NUR Geräte-Formen",
         res.cubeArch,
@@ -515,19 +495,14 @@ async function checkBandV1783ImplementClassification(ctx) {
         res.bodySoul,
         `body=${res.bodyRole}`
     );
-    check(
-        "die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)",
-        res.graspDetect
-    );
+    check("die Greifbar-Implement-Erkennung (spitz/elongiert + klein vs großer Block/Würfel)", res.graspDetect);
 }
 
 // Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
 // Rollen) + der Schwert-Samen (eine Klinge, die SCHNEIDET). Rendert den echten Stats-Readout.
 async function checkBandV1786WorkshopCoherence(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const renderFor = (name) => {
             const ws = r._ensureWorkshopState();
             ws.selectedBlueprint = name;
@@ -564,7 +539,6 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         out.esseRoleRowClean = !esse || esseRender.roleRowAffordances === 0; // keine ✦ in der Rolle-Zeile
         out.esseCapRowHasAffordance =
             !esse || esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c));
-        return out;
     });
     check(
         "Samen: die Schwert-Substanz (KIND_SUBSTANCE) existiert + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
@@ -644,9 +618,16 @@ async function checkBandM6ErnteSpawn(ctx) {
             const ziel = { hit: true, x: pm.x + 3, y: r._voxelSurfaceY(pm.x + 3, pm.z) ?? pm.y, z: pm.z };
             const loecher = [];
             const nix = () => null;
-            const buehne = { _heldBogenRecipe: nix, _pickArchitectureAtCrosshair: nix, _pickCreatureAtCrosshair: nix,
-                _pickScatterAtCrosshair: nix, _kampfKegelZiel: nix, _geraetGraebt: () => true, _raycastWorldHit: () => ziel,
-                dslRun: (prog) => (prog[0] === "voxel_carve" && loecher.push(prog), true) };
+            const buehne = {
+                _heldBogenRecipe: nix,
+                _pickArchitectureAtCrosshair: nix,
+                _pickCreatureAtCrosshair: nix,
+                _pickScatterAtCrosshair: nix,
+                _kampfKegelZiel: nix,
+                _geraetGraebt: () => true,
+                _raycastWorldHit: () => ziel,
+                dslRun: (prog) => (prog[0] === "voxel_carve" && loecher.push(prog), true),
+            };
             Object.assign(r, buehne);
             const mausVerb = r.state.player._mausVerb;
             try {
@@ -655,7 +636,7 @@ async function checkBandM6ErnteSpawn(ctx) {
                 const ersterHieb = loecher.length === 0 && Math.abs(r.state.player.stamina - (100 - perStrike)) < 1e-9;
                 let acc = digFit.progress,
                     n = 1;
-                while (acc < 1) (acc += digFit.progress), n++;
+                while (acc < 1) ((acc += digFit.progress), n++);
                 for (let i = 2; i < n; i++) r.tryMouseBreak();
                 const vorLetztem = loecher.length;
                 r.tryMouseBreak();
@@ -712,6 +693,11 @@ async function checkBandM6ErnteSpawn(ctx) {
 }
 
 module.exports = {
-    checkBandV1755HarvestEffort, checkBandV1755W2Profile, checkBandV1759CapabilityReadout, checkBandV1775MakeActCost,
-    checkBandV1783ImplementClassification, checkBandV1786WorkshopCoherence, checkBandM6ErnteSpawn,
+    checkBandV1755HarvestEffort,
+    checkBandV1755W2Profile,
+    checkBandV1759CapabilityReadout,
+    checkBandV1775MakeActCost,
+    checkBandV1783ImplementClassification,
+    checkBandV1786WorkshopCoherence,
+    checkBandM6ErnteSpawn,
 };

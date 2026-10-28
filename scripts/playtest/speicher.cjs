@@ -2203,10 +2203,7 @@ async function checkBandV18207R5StructureTexture(ctx) {
         return out;
     });
 
-    check(
-        `(R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
-        res.microBoostSensible === true
-    );
+    check(`(R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`, res.microBoostSensible === true);
 }
 
 module.exports = {

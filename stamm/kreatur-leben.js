@@ -6,6 +6,10 @@ class AnazhRealm_kreatur_leben {
         if (!creature) return;
         // der Leib geht, sein Tier bleibt im Bestand (oekologie.K2#2) — eine Zahl, bis die Zeichnung es wieder ruft
         if (creature.userData && creature.userData._bestand) creature.userData._bestand.leib = null;
+        // ein entfernter Leib braucht keine Tod-Lage mehr (`_todLageBestellen`): sein Auftrag hielt ihn sonst, bis der Leerlauf
+        // ihn rechnete (Zeitraffer 28.10.: ~400 MB je Spiel-Stunde in vier Regionen, die Seite fiel bei 4 GB)
+        const Q = this._todLagen;
+        if (Q) for (let i = Q.length - 1; i >= 0; i--) if (Q[i].creature === creature) Q.splice(i, 1);
         this._leibZeichenFrei(creature); // die Zeichen über dem Leib (ein Gefallener trägt seit dem Fall keine mehr)
         this.state.scene.remove(creature);
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Group; tiefes Disposal
@@ -1603,20 +1607,6 @@ class AnazhRealm_kreatur_leben {
         const aus = this._bodenKlasseAus || (this._bodenKlasseAus = {});
         this._terrainMacroSurfaceY(x, z, true, aus);
         return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
-    }
-
-    // Findet die älteste Kreatur — das größte Alter in Spiel-Zeit (`alterS`, gezählt im Lebenszyklus), bei Gleichstand die
-    // früher Geborene (die Liste trägt die Geburts-Folge) —, mit gattung nur ihrer Gattung, mit nur (Set) nur unter ihm. Für die
-    // Tod-Wahl am Hunger, am Riss und am Alter: wer am längsten da ist, geht zuerst. Vorher wählte die Wanduhr der Geburt
-    // (bornAt): Geschwister eines Wurfs teilten oder trennten ihre Millisekunde je nach Lauf, dieselbe Saat starb anders.
-    _findOldestCreature(gattung, nur = null) {
-        let oldest = null;
-        for (const c of this.state.creatures) {
-            if ((gattung && AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul] !== gattung) || (nur && !nur.has(c)))
-                continue;
-            if (!oldest || (c.userData.alterS || 0) > (oldest.userData.alterS || 0)) oldest = c;
-        }
-        return oldest;
     }
 
     // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag (mit der Ursache: hunger · alter), Aura-Pulse (ohne

@@ -6,14 +6,13 @@
 const { safeEvaluate } = require("../playtest.cjs");
 
 async function checkBandWelle6HCreatures(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Kreaturen-Aufträge (follow_player / wait / wander) ###
     // Default-Task „wander“ hält das Emotion-Verhalten (Aura stumm); follow_player + wait tragen ein
     // Aura-Sprite (grün/bernstein). Multi-User: Tasks stehen in NON_BROADCASTABLE_OPS.
-    const wave6hResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hResults = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
         // Statische Konstanten
@@ -133,10 +132,7 @@ async function checkBandWelle6HCreatures(ctx) {
     if (wave6hResults && !wave6hResults.error) {
         check("CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
         check("CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
-        check(
-            "Default-Task initial-gespawnter Kreaturen ist wander",
-            wave6hResults.initialTaskWander
-        );
+        check("Default-Task initial-gespawnter Kreaturen ist wander", wave6hResults.initialTaskWander);
         check("Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
         check(
             "assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
@@ -144,16 +140,10 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
         check("Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
-        check(
-            "Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
-            wave6hResults.wanderRemovesAura
-        );
+        check("Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)", wave6hResults.wanderRemovesAura);
         check("assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
         check("wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
-        check(
-            "wander-Direction liefert null (Fallback auf Emotion-Logik)",
-            wave6hResults.wanderReturnsNull
-        );
+        check("wander-Direction liefert null (Fallback auf Emotion-Logik)", wave6hResults.wanderReturnsNull);
         check("distance-Arg landet in task.args", wave6hResults.distanceArgKept);
         check("findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
         check("assignTaskToNearestCreature wirkt auf nahste", wave6hResults.assignNearestWorks);
@@ -166,10 +156,7 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
         check("Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
         check("Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
-        check(
-            "Chat 'alle folgt mir' → creature_task_all follow_player",
-            wave6hResults.chatAlleFolgt
-        );
+        check("Chat 'alle folgt mir' → creature_task_all follow_player", wave6hResults.chatAlleFolgt);
         check("Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
         check("describeProgram für nearest enthält 'folge'/'nächste'", wave6hResults.descNearest);
         check("describeProgram für all enthält 'alle'", wave6hResults.descAll);
@@ -182,8 +169,7 @@ async function checkBandWelle6HCreatures(ctx) {
     // ### Kreaturen-Aufträge: Vision-/UX-/Performance-Schließungen ###
     // Audio-Antwort bei Task-Wechsel, Journal-Eintrag bei Geste, Leerschlag-Feedback, Status-Bar-
     // Zähler, Texture-Cache, describeProgram-Distanz.
-    const wave6hV2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hV2Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
 
@@ -297,14 +283,8 @@ async function checkBandWelle6HCreatures(ctx) {
                 "Wechsel zu follow_player — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
                 wave6hV2Results.followPings
             );
-            check(
-                "Wechsel zu wait — das Tier antwortet mit seiner Stimme (genau ein Ruf)",
-                wave6hV2Results.waitPings
-            );
-            check(
-                "Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
-                wave6hV2Results.wanderIsSilent
-            );
+            check("Wechsel zu wait — das Tier antwortet mit seiner Stimme (genau ein Ruf)", wave6hV2Results.waitPings);
+            check("Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)", wave6hV2Results.wanderIsSilent);
         }
         check("Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)", wave6hV2Results.journalGrows);
         check("Journal-Eintrag trägt type='relationship'", wave6hV2Results.journalTypeIsRelationship);
@@ -321,10 +301,7 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hV2Results.leerschlagWritesJournal && wave6hV2Results.leerschlagJournalTypeReach
         );
         check("assignTaskToNearest returnt null bei Leerschlag", wave6hV2Results.leerschlagReturnsNull);
-        check(
-            "die Aura-Textur ist gecacht (dieselbe Instanz)",
-            wave6hV2Results.textureCacheReusesInstance
-        );
+        check("die Aura-Textur ist gecacht (dieselbe Instanz)", wave6hV2Results.textureCacheReusesInstance);
         check(
             "10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
             wave6hV2Results.textureSharedAcross10Cycles
@@ -333,17 +310,13 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
         check("Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
         check("describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
-        check(
-            "describeProgram zeigt keine Distanz wenn nicht gesetzt",
-            wave6hV2Results.descNoDistanceWhenNotGiven
-        );
+        check("describeProgram zeigt keine Distanz wenn nicht gesetzt", wave6hV2Results.descNoDistanceWhenNotGiven);
     }
 
     // ### Kreaturen als Hylomorphismus-Compounds ###
     // Multi-Mesh-Groups aus bodyParts × Material (dieselbe Sprache wie Spieler-Seele + Architektur);
     // drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
-    const wave6hP2aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2aResults = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
@@ -541,10 +514,7 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
         check("Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
         check("Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
-        check(
-            "Tiere tag-identisch (V17.16-Wand; Diskrimination = Größe)",
-            wave6hP2aResults.spriteMoreMagie
-        );
+        check("Tiere tag-identisch (V17.16-Wand; Diskrimination = Größe)", wave6hP2aResults.spriteMoreMagie);
         check("wesen-Compound trägt dichte > 0", wave6hP2aResults.wesenMoreDichte);
         check("wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
         check("wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
@@ -573,10 +543,7 @@ async function checkBandWelle6HCreatures(ctx) {
         );
         check("Spawn-Buttons +1/+5", wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button);
         check("Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
-        check(
-            "Zeile hat .creature-name + .creature-soul + .creature-task",
-            wave6hP2aResults.rowHasNameSoulTask
-        );
+        check("Zeile hat .creature-name + .creature-soul + .creature-task", wave6hP2aResults.rowHasNameSoulTask);
         check(
             "Hof-D0 §G.1: _creatureProfile bündelt die gemessenen Vektoren (tags/stats/specs/emotion/wariness/mood/id)",
             wave6hP2aResults.profileBundlesVectors
@@ -598,10 +565,7 @@ async function checkBandWelle6HCreatures(ctx) {
             "Hof-Bühne: das Wesen-Spec-Sheet trägt den Header (Name) + Zwei-Spalten-Body (Werkstatt-DNA)",
             wave6hP2aResults.stageHasTitle && wave6hP2aResults.stageHasBody2Col
         );
-        check(
-            "Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt",
-            wave6hP2aResults.stageHasDismiss
-        );
+        check("Hof-Bühne: die Spec-Card unter der Bühne trägt den Verabschieden-Akt", wave6hP2aResults.stageHasDismiss);
         check(
             "Hof-Bühne: Klick markiert GENAU eine Zeile + holt das Wesen auf die Bühne",
             wave6hP2aResults.focusMarksOneRow && wave6hP2aResults.focusUpdatesStage
@@ -642,8 +606,7 @@ async function checkBandWelle6HCreatures(ctx) {
     // ### Kreaturen sammeln + erinnern ###
     // gather-Task mit args.material findet die nächste Architektur mit diesem Material, läuft hin und
     // erntet bei haltDist = 1.5 m (Architektur entfernt, memory geschrieben).
-    const wave6hP2bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2bResults = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
         out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
@@ -832,16 +795,10 @@ async function checkBandWelle6HCreatures(ctx) {
                 wave6hP2bResults.inventoryHasHarvested &&
                 wave6hP2bResults.memoryHasGathered
         );
-        check(
-            "gather mit unbekanntem Material → Task fällt auf wander",
-            wave6hP2bResults.unknownReturnsToWander
-        );
+        check("gather mit unbekanntem Material → Task fällt auf wander", wave6hP2bResults.unknownReturnsToWander);
         check("'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
         check("DSL creature_task(idx, gather, material) wirkt", wave6hP2bResults.dslGatherWorks);
-        check(
-            "Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
-            wave6hP2bResults.chatPatterns
-        );
+        check("Chat 'sammle/bring/alle sammeln' Patterns routen korrekt", wave6hP2bResults.chatPatterns);
         check("gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS", wave6hP2bResults.nonBroadcastable);
         check(
             "Status-Bar zeigt 'N sammeln' bei gather-Tasks",
@@ -865,8 +822,7 @@ async function checkBandWelle6HCreatures(ctx) {
     // ### harvestArchitecture + Material-Inventar + Bring-Phase ###
     // EINE Funktion für Spieler-LMB UND Kreatur-gather: Architekturen lösen sich volumen-basiert in eine
     // Material-Map auf; Inventar dual-typed {kind:'material'} | {kind:'blueprint'}; carrying → Spieler.
-    const wave6hP2b5Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2b5Results = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
         const out = {};
 
@@ -995,46 +951,25 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2b5Results && !wave6hP2b5Results.error) {
-        check(
-            "stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
-            wave6hP2b5Results.steinBlockHasStein
-        );
+        check("stein_block-Harvest liefert ≥10 Stein (volumen-basiert)", wave6hP2b5Results.steinBlockHasStein);
         check("Rückgabe-Objekt trägt blueprint-Namen", wave6hP2b5Results.steinHasBlueprintName);
-        check(
-            "baum_eiche → holz UND laub (Compound-Diskrimination)",
-            wave6hP2b5Results.oakHasHolzAndLaub
-        );
+        check("baum_eiche → holz UND laub (Compound-Diskrimination)", wave6hP2b5Results.oakHasHolzAndLaub);
         check("baum_eiche enthält KEIN stein (Negativ-Kontrolle)", wave6hP2b5Results.oakHasNoStein);
-        check(
-            "Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
-            wave6hP2b5Results.volumeDiscrimination
-        );
+        check("Diskrimination — 2×2×2-Box liefert mehr als 1×1×1", wave6hP2b5Results.volumeDiscrimination);
         check("addMaterialToInventory akzeptiert bekanntes Material", wave6hP2b5Results.matAddOk);
         check("Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
         check("Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
         check("addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
         check("Spieler-LMB entfernt Architektur (eine Funktion)", wave6hP2b5Results.lmbShrunkArch);
-        check(
-            "Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
-            wave6hP2b5Results.lmbFilledInventory
-        );
-        check(
-            "Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
-            wave6hP2b5Results.creatureCarryingSet
-        );
+        check("Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)", wave6hP2b5Results.lmbFilledInventory);
+        check("Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)", wave6hP2b5Results.creatureCarryingSet);
         check(
             "Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
             wave6hP2b5Results.inventoryStillEmptyAfterHarvest
         );
         check("Carrying-Sprite wird beim Harvest erzeugt", wave6hP2b5Results.carryingSpriteCreated);
-        check(
-            "Bei <2m zum Spieler: carrying wird geclearet",
-            wave6hP2b5Results.carryingClearedAfterDelivery
-        );
-        check(
-            "Materialien gehen ins Spieler-Inventar bei Übergabe",
-            wave6hP2b5Results.playerHasMaterialAfterDelivery
-        );
+        check("Bei <2m zum Spieler: carrying wird geclearet", wave6hP2b5Results.carryingClearedAfterDelivery);
+        check("Materialien gehen ins Spieler-Inventar bei Übergabe", wave6hP2b5Results.playerHasMaterialAfterDelivery);
         check("'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
         check("Material-Slot trägt .material-slot CSS-Klasse", wave6hP2b5Results.uiHasMaterialClass);
         check("Material-Slot-Label zeigt Material-Namen", wave6hP2b5Results.uiShowsMaterialName);
@@ -1043,8 +978,7 @@ async function checkBandWelle6HCreatures(ctx) {
     // ### Material-Konsum beim Bauen (modus-symmetrisch) ###
     // pfad konsumiert, frieden + schöpfer kostenlos (Symmetrie zu damagePlayer/applyOpToPart-Stamina).
     // computeBuildCost ≡ harvestArchitecture (Wertneutralität: eine Box kostet, was harvest liefert).
-    const wave6hP2cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6hP2cResults = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -1138,21 +1072,12 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2cResults && !wave6hP2cResults.error) {
-        check(
-            "computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
-            wave6hP2cResults.symmetryHarvest
-        );
+        check("computeBuildCost ≡ harvestArchitecture (Wertneutralität)", wave6hP2cResults.symmetryHarvest);
         check("stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
         check("baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
         check("baum_eiche-Kosten enthalten KEIN stein (Diskrimination)", wave6hP2cResults.oakHasNoStein);
-        check(
-            "pfad + leeres Inventar → checkBuildCost.ok=false",
-            wave6hP2cResults.checkEmptyInventoryRejected
-        );
-        check(
-            "pfad + ausreichend Material → checkBuildCost.ok=true",
-            wave6hP2cResults.checkSufficientOk
-        );
+        check("pfad + leeres Inventar → checkBuildCost.ok=false", wave6hP2cResults.checkEmptyInventoryRejected);
+        check("pfad + ausreichend Material → checkBuildCost.ok=true", wave6hP2cResults.checkSufficientOk);
         check("tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
         check("Atomarität — bei Mangel wird NICHTS abgezogen", wave6hP2cResults.atomicAtomicityOnFail);
         check("missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
@@ -1160,10 +1085,7 @@ async function checkBandWelle6HCreatures(ctx) {
         check("pfad-Ablehnung → keine Architektur entsteht", wave6hP2cResults.pfadNoArchOnReject);
         check("pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
         check("schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
-        check(
-            "S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
-            wave6hP2cResults.hudShowsCostInFrieden
-        );
+        check("S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')", wave6hP2cResults.hudShowsCostInFrieden);
     }
 }
 
@@ -1183,10 +1105,8 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
 // pfad, Furcht schlägt Jagd; das Rudel kommt ambient (G4a, gate:kreatur-takt „geburt"). Der Biss
 // läuft durchs damagePlayer-Tor → FURCHT bei niedriger HP · TRIUMPH beim Fall eines Jägers.
 async function checkBandPhaseEThreat(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const savedMode = r.getGameMode();
@@ -1290,7 +1210,6 @@ async function checkBandPhaseEThreat(ctx) {
             r.setGameMode(savedMode);
             pm.set(savedOrt.x, savedOrt.y, savedOrt.z);
         }
-        return out;
     });
     check("Phase E Bedrohung: Furcht schlägt Jagd + sanfte Seelen jagen nie", res.fearBeatsHunt && res.gentleNoHunt);
     check(
@@ -1345,7 +1264,7 @@ async function checkBandTierSeparation(ctx) {
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
-    
+
         // Test-Spot: 80–150 m vom Spieler, über Wasser (Determinismus-Fenster, s. Kopf).
         const findSpot = (dist, ang) => {
             for (let i = 0; i < 200; i++) {
@@ -1362,7 +1281,7 @@ async function checkBandTierSeparation(ctx) {
         };
         const distXZ = (a, b) => Math.hypot(a.position.x - b.x, a.position.z - b.z);
         const gap = (a, b) => Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z);
-    
+
         const saveMax = s.maxCreatures;
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
         const spawn = (spot, soul, bodySize) =>
@@ -1378,7 +1297,7 @@ async function checkBandTierSeparation(ctx) {
         const tick = (n, dt) => {
             for (let k = 0; k < n; k++) takt(dt);
         };
-    
+
         // ── (A) SEPARATION: identisches Paar auf DEMSELBEN Punkt ──
         const spotA = findSpot(100, 0.3);
         if (!spotA) return { error: "kein Land-Spot (A)" };
@@ -1397,7 +1316,7 @@ async function checkBandTierSeparation(ctx) {
         o.checks.aStacked0 = o.a0 < 1e-6;
         o.checks.aSeparated = o.aGap > o.aBodyRadius;
         o.checks.aBounded = o.aGap < 30; // keine Explosions-Kraft
-    
+
         // ── (C) SELBST-TEST: genullte Separation → das Paar BLEIBT gestapelt ──
         a1.position.set(spotA.x, spotA.y, spotA.z);
         a2.position.copy(a1.position);
@@ -1415,7 +1334,7 @@ async function checkBandTierSeparation(ctx) {
         o.cGap = gap(a1, a2);
         o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
         cleanup([a1, a2]);
-    
+
         // ── (B1) STAT-ACHSE: klein flink vs. Gigant träge (gleiche Soul) ──
         const spotB1a = findSpot(95, 1.8);
         const spotB1b = findSpot(95, -1.8);
@@ -1451,7 +1370,7 @@ async function checkBandTierSeparation(ctx) {
         o.checks.b1MulDiff = o.b1MulSmall > o.b1MulBig * 1.1; // die Stat-Achse trägt ≥ 10 %
         o.checks.b1PathDiff = pathSmall / o.b1EinheitSmall > (pathBig / o.b1EinheitBig) * 1.1; // und sie IST Bewegung
         cleanup([bSmall, bBig]);
-    
+
         // ── (B2) RADIUS-ACHSEN: die Leine liest Mut (fleeMul) × GRÖSSE (bodySize).
         // Die Tiere sind bewusst tag-identisch (Lehre 8) → die behaviorale
         // Radius-Differenz läuft über die sanktionierte GRÖSSEN-Achse (Kitz
@@ -1501,7 +1420,7 @@ async function checkBandTierSeparation(ctx) {
         o.checks.b2ShyReturns = o.b2DistShy < 26;
         o.checks.b2BoldRoams = o.b2DistBold > 30 && o.b2DistBold > o.b2DistShy + 4; // frei — keine Leine unter 67 m
         cleanup([shy, bold]);
-    
+
         // ── (D) LEIB AN LEIB, (E) TIER AM SPIELER, (F) LOCKSTEP, (C2) SELBST-TEST ──
         {
             const steuerRoh = A._steuerGesetz;
@@ -1608,11 +1527,7 @@ async function checkBandTierSeparation(ctx) {
                 const pmAlt = pmM.position.clone();
                 const spotE = findSpot(120, -2.6);
                 if (spotE)
-                    pmM.position.set(
-                        spotE.x,
-                        r.getTerrainHeightAt(spotE.x, spotE.z) + A.PLAYER_FOOT_OFFSET,
-                        spotE.z
-                    );
+                    pmM.position.set(spotE.x, r.getTerrainHeightAt(spotE.x, spotE.z) + A.PLAYER_FOOT_OFFSET, spotE.z);
                 const w0 = { x: pmM.position.x - 2.2, y: pmM.position.y, z: pmM.position.z };
                 const w = r.spawnCreatureAt(w0.x, w0.y, w0.z, "calm", "wolf", { precise: true, bodySize: 1 });
                 if (w) {
@@ -1652,22 +1567,37 @@ async function checkBandTierSeparation(ctx) {
                 delete r._leibKontakte;
             }
         }
-    
+
         s.maxCreatures = saveMax;
         o.creaturesAfter = s.creatures.length;
         return o;
     });
-    if (!out || out.error) return check("Tier-Separation: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    if (!out || out.error)
+        return check("Tier-Separation: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const a = rot("aStacked0", "aSeparated", "aBounded", "cLensFires");
-    check(`Tier-Separation (A)(C): das deckungsgleiche Paar trennt sich nach 200 Ticks (${out.aGap && out.aGap.toFixed(2)} m > ${out.aBodyRadius} m), beschränkt; der Selbsttest feuert`, !a, a && "ROT: " + a);
+    check(
+        `Tier-Separation (A)(C): das deckungsgleiche Paar trennt sich nach 200 Ticks (${out.aGap && out.aGap.toFixed(2)} m > ${out.aBodyRadius} m), beschränkt; der Selbsttest feuert`,
+        !a,
+        a && "ROT: " + a
+    );
     const b = rot("b1MulDiff", "b1PathDiff", "b2LeashDiff", "b2MutConsumed", "b2ShyReturns", "b2BoldRoams");
-    check("Tier-Separation (B): Größe und Mut werden KONSUMIERT — verschiedene speedMul und Weg-Längen, verschiedene Leinen, das scheue kehrt heim, das kühne streift", !b, b && "ROT: " + b);
+    check(
+        "Tier-Separation (B): Größe und Mut werden KONSUMIERT — verschiedene speedMul und Weg-Längen, verschiedene Leinen, das scheue kehrt heim, das kühne streift",
+        !b,
+        b && "ROT: " + b
+    );
     const L = out.leib || {};
     const lv = leibVerdict(L);
-    check("Tier-Separation 0710-4 (D–F) LEIB AN LEIB: keine Durchdringung, Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep", lv.length === 0, lv.join(" · "));
-    const lvOhne = out.leibOhne ? leibVerdict({ fuchsBaer: out.leibOhne, baerFuchs: L.baerFuchs, spieler: L.spieler, lockstep: true }) : [];
+    check(
+        "Tier-Separation 0710-4 (D–F) LEIB AN LEIB: keine Durchdringung, Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep",
+        lv.length === 0,
+        lv.join(" · ")
+    );
+    const lvOhne = out.leibOhne
+        ? leibVerdict({ fuchsBaer: out.leibOhne, baerFuchs: L.baerFuchs, spieler: L.spieler, lockstep: true })
+        : [];
     const lvAlt = leibVerdict({
         fuchsBaer: { minAbstand: -0.9, dvStoesser: 0, dvZiel: 0, massen: 22 },
         baerFuchs: { minAbstand: -0.9, dvStoesser: 0, dvZiel: 0, massen: 0.045 },
@@ -1682,7 +1612,11 @@ async function checkBandTierSeparation(ctx) {
     });
     check(
         "Tier-Separation SELBSTTEST (C2)(D): ohne Leib-Kontakt nennt die Linse Durchdringung und fehlenden Impuls; der alte Befund wird rot, ein Stoß nach Masse bleibt grün",
-        !!out.leibOhne && lvOhne.some((x) => x.startsWith("leib-durchdringung")) && lvOhne.some((x) => x.startsWith("leib-ohne-impuls")) && lvGut.length === 0 && ["leib-durchdringung", "leib-ohne-impuls", "leib-spieler"].every((t) => lvAlt.some((x) => x.startsWith(t))),
+        !!out.leibOhne &&
+            lvOhne.some((x) => x.startsWith("leib-durchdringung")) &&
+            lvOhne.some((x) => x.startsWith("leib-ohne-impuls")) &&
+            lvGut.length === 0 &&
+            ["leib-durchdringung", "leib-ohne-impuls", "leib-spieler"].every((t) => lvAlt.some((x) => x.startsWith(t))),
         out.leibOhne ? lvOhne.slice(0, 2).join(" · ") : "kein Leib-Kontakt zum Abschalten (_leibKontakte fehlt)"
     );
 }
@@ -1704,7 +1638,7 @@ async function checkBandKreaturKosten(ctx) {
         const core = window.__tetrapodaCore;
         if (!core || !Array.isArray(core.STAND_POSE)) return { error: "tetrapoda-Kern kalt (STAND_POSE fehlt)" };
         const SP = core.STAND_POSE;
-    
+
         const saveMax = s.maxCreatures;
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 6);
         const spawnAt = (dx, dz) => {
@@ -1738,7 +1672,7 @@ async function checkBandKreaturKosten(ctx) {
             }
             return dev;
         };
-    
+
         // ── (A) ANIM-RATEN-LOD: vier Proben, exakt in die Bänder gepinnt ──
         const p0 = spawnAt(30, 0); // Platzhalter-Position; das Pinnen setzt die Wahrheit
         if (!p0) return { error: "Spawn fehlgeschlagen" };
@@ -1781,7 +1715,7 @@ async function checkBandKreaturKosten(ctx) {
         o.checks.aFernOrdnung = counts.halb <= counts.voll / 2 + 1 && counts.viertel <= counts.halb / 2 + 1;
         o.hinterEingefroren = probes.hinter.userData._animEingefroren === true;
         o.checks.aEingefroren = o.hinterEingefroren;
-    
+
         // ── (S1) SELBST-TEST Zähl-Linse: Leiter gestubbt (≡ 1) → hinter tickt voll ──
         const savedDiv = r._creatureAnimDiv;
         r._creatureAnimDiv = function () {
@@ -1796,7 +1730,7 @@ async function checkBandKreaturKosten(ctx) {
         r._creatureAnimDiv = savedDiv; // restaurieren (Gate-Hook-Lehre)
         o.s1Hinter = counts.hinter;
         o.checks.s1LensFires = counts.hinter === NS; // ohne Leiter tickt auch hinter voll
-    
+
         // ── (B) NEUTRALE STANCE: mid-step posieren → jenseits der Grenze einfrieren ──
         const probeS = probes.voll;
         const roles = r._motionRolesForSoul(probeS.userData.soul);
@@ -1829,7 +1763,7 @@ async function checkBandKreaturKosten(ctx) {
         o.checks.bNeutralStance = Number.isFinite(o.devFrozen) && o.devFrozen < 0.02; // Stand-Winkel, kein Mid-Step
         o.checks.bTailNeutral = o.tailDev < 0.02;
         o.checks.bFrozen = probeS.userData._animEingefroren === true;
-    
+
         // ── (S2) SELBST-TEST Stance-Linse: Neutral-Stance gestubbt → bleibt mid-step ──
         dists.voll = 0.4 * fern;
         pin();
@@ -1852,7 +1786,7 @@ async function checkBandKreaturKosten(ctx) {
         o.checks.s2LensFires = Number.isFinite(devRePose) && devRePose > 0.05 && o.devStub > 0.05;
         cleanup([probes.voll, probes.halb, probes.viertel, probes.hinter]);
         s.maxCreatures = saveMax;
-    
+
         // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
         const g = r._buildHumanGroup();
         const mf = g && g.userData && g.userData._gelenk;
@@ -1863,7 +1797,9 @@ async function checkBandKreaturKosten(ctx) {
         const istNah = () =>
             mf.istFern === false &&
             mf.nah.visible === true &&
-            mf.meshes.every((m) => !m.layers.isEnabled(0) && m.castShadow === m.layers.isEnabled(A.SHADOW_TWIN_LAYER)) &&
+            mf.meshes.every(
+                (m) => !m.layers.isEnabled(0) && m.castShadow === m.layers.isEnabled(A.SHADOW_TWIN_LAYER)
+            ) &&
             (!mf.zwilling || mf.meshes.some((m) => m.layers.isEnabled(A.SHADOW_TWIN_LAYER)));
         const istFern = () =>
             mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
@@ -1908,7 +1844,7 @@ async function checkBandKreaturKosten(ctx) {
             r._p2pUpdatePeer(entry, performance.now() / 1000, 0.016);
             o.checks.cPeerNah = istNah();
         }
-    
+
         // ── (R) STARR-BINDUNG + KÖRPER-KUGEL ──
         const T3 = window.THREE;
         const recW = A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP.wolf;
@@ -2039,7 +1975,7 @@ async function checkBandKreaturKosten(ctx) {
         A._hautGewicht = saveGewicht;
         A._tierOfenMemo = saveMemo;
         o.checks.s4LensFires = !!o.s4Breit && o.s4Breit.length > 0;
-    
+
         // ── (W) DER WERFER JE GESTALT (S3, Lehre 19): die Kern-Zeile sagt, welche Stufe wirft (`schatten`) und welcher
         // Teil von ihr (`wurf.seh`). Gezählt wird, was die Kaskaden zeichnen: jedes Mesh der Gestalt mit castShadow, dessen
         // Kette sichtbar ist und dessen Ebenen die Kaskaden-Maske treffen (Layer 0 oder SHADOW_TWIN_LAYER) — nah (10 m ×
@@ -2481,16 +2417,17 @@ async function checkBandKreaturKosten(ctx) {
         o.checks.s5LensFires = o.w.some((x) => x.s5Rot === true);
         o.deckungMin = DECKUNG_MIN;
         o.checks.wDeckung =
-            o.w.length === 5 &&
-            o.w.every((x) => x.deckung && x.deckung.n >= 16 && x.deckung.min.iou >= DECKUNG_MIN);
+            o.w.length === 5 && o.w.every((x) => x.deckung && x.deckung.n >= 16 && x.deckung.min.iou >= DECKUNG_MIN);
         const s7W = o.w.find((x) => x.s7);
         o.s7 = s7W ? s7W.s7 : null;
         o.checks.s7LensFires = !!o.s7 && o.s7.min.iou < DECKUNG_MIN;
         // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss; die Wirts-Distanzen sind keine
         // Konstante mehr (ihre Leser hält gate:altlasten über jede Stamm-Datei, die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
-        o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter((k) => !window.__fehlt(r[k], /castShadow\s*=\s*false/)).length;
+        o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter(
+            (k) => !window.__fehlt(r[k], /castShadow\s*=\s*false/)
+        ).length;
         o.checks.wAbsenz = o.wLiterale === 0;
-    
+
         // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze
         // ruht (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose, nie mitten
         // im Schritt (das Standbild der Basis stand in der Ruhe-Pose). Gemessen nach dem ECHTEN Tick: erst nah gehen
@@ -2592,7 +2529,7 @@ async function checkBandKreaturKosten(ctx) {
         if (saveRuhe) r._gelenkRuhe = saveRuhe;
         else delete r._gelenkRuhe; // restaurieren (Gate-Hook-Lehre)
         o.checks.s6LensFires = !!o.s6 && o.s6.fern.rad > 0.05;
-    
+
         // ── (G) DER RUHENDE LEIB (K59, Gebot 7): außer Bild, fern, ohne Zustand → grober Takt, kein Matrix-Gang ──
         // Der Null-Renderer backt kein Feld (`_tickKreaturZiegel` schweigt headless): die Probe trägt den Bake-Versuch
         // (`_kzVersuch`) wie ein ferner Leib, dessen Feld steht. Der Frustum kommt wie im Loop aus `_loopFrustumCulling`;
@@ -2647,8 +2584,7 @@ async function checkBandKreaturKosten(ctx) {
                     .compose(probe.position, probe.quaternion, probe.scale)
                     .multiply(kind.matrix);
                 let d = 0;
-                for (let k = 0; k < 16; k++)
-                    d = Math.max(d, Math.abs(soll.elements[k] - kind.matrixWorld.elements[k]));
+                for (let k = 0; k < 16; k++) d = Math.max(d, Math.abs(soll.elements[k] - kind.matrixWorld.elements[k]));
                 return d;
             };
             // der Leser an der ruhenden Probe: ein senkrechter Stab durch ihre JETZIGE Lage (`dz` m neben der des Ruhe-Beginns)
@@ -2891,37 +2827,99 @@ async function checkBandKreaturKosten(ctx) {
             o.checks.gKi =
                 !!G.g11 && G.g11.band === 3 && G.g11.ruht && G.g11.schritte >= 5 && G.g11.ki === G.g11.schritte;
         }
-    
+
         o.ruheTakt = A.KREATUR_RUHE && A.KREATUR_RUHE.takt;
         o.creaturesAfter = s.creatures.length;
         return o;
     });
-    if (!out || out.error) return check("Kreatur-Kosten: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    if (!out || out.error)
+        return check("Kreatur-Kosten: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
     const c = out.checks || {};
     const gruppe = (titel, keys) => {
         const rot = keys.filter((x) => c[x] !== true);
         check(`Kreatur-Kosten ${titel}`, rot.length === 0, rot.length ? "ROT: " + rot.join(" · ") : "");
     };
     const n = out.counts || {};
-    gruppe(`(A) die Anim-Raten-Leiter: nah ${n.voll}/100 · halb ${n.halb} · viertel ${n.viertel} · jenseits ${n.hinter}, monoton, eingefroren`, ["aVoll", "aHalb", "aViertel", "aHinter", "aFernOrdnung", "aEingefroren"]);
-    gruppe("(B) jenseits der Grenze die neutrale Stance (Prämisse mid-step, Schwanz ruht, Freeze lief)", ["bMidStepPremise", "bNeutralStance", "bTailNeutral", "bFrozen"]);
-    gruppe("(C) die gelenkige Grobstufe des Menschen: Vertex- und Mesh-Differenz, der EINE Schalter, der Peer-Tick nah↔fern", ["cFernGebaut", "cVertexDiff", "cMeshDiff", "cToggle", "cPeerFern", "cPeerNah"]);
-    gruppe("(R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz", ["rWolfStarr", "rMenschStarr", "rKugel", "rPoseInKugel", "rZwillingKnochen", "tSchmal", "wAbsenz"]);
-    gruppe("(F) Mensch und Kopie ruhen (je mit Prämisse)", ["fMenschPraemisse", "fMenschRuhe", "fKopiePraemisse", "fKopieRuhe"]);
+    gruppe(
+        `(A) die Anim-Raten-Leiter: nah ${n.voll}/100 · halb ${n.halb} · viertel ${n.viertel} · jenseits ${n.hinter}, monoton, eingefroren`,
+        ["aVoll", "aHalb", "aViertel", "aHinter", "aFernOrdnung", "aEingefroren"]
+    );
+    gruppe("(B) jenseits der Grenze die neutrale Stance (Prämisse mid-step, Schwanz ruht, Freeze lief)", [
+        "bMidStepPremise",
+        "bNeutralStance",
+        "bTailNeutral",
+        "bFrozen",
+    ]);
+    gruppe(
+        "(C) die gelenkige Grobstufe des Menschen: Vertex- und Mesh-Differenz, der EINE Schalter, der Peer-Tick nah↔fern",
+        ["cFernGebaut", "cVertexDiff", "cMeshDiff", "cToggle", "cPeerFern", "cPeerNah"]
+    );
+    gruppe("(R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz", [
+        "rWolfStarr",
+        "rMenschStarr",
+        "rKugel",
+        "rPoseInKugel",
+        "rZwillingKnochen",
+        "tSchmal",
+        "wAbsenz",
+    ]);
+    gruppe("(F) Mensch und Kopie ruhen (je mit Prämisse)", [
+        "fMenschPraemisse",
+        "fMenschRuhe",
+        "fKopiePraemisse",
+        "fKopieRuhe",
+    ]);
     // (W) je Gestalt: der Wurf-Teil der Grobstufe hält sein Soll, der Zwilling wirft den Umriss der feinen Stufe (DECKUNG IoU)
     const w = out.w || [];
-    const wRot = w.filter((g) => g.fehler || !g.gruen).map((g) => `${g.name}: ${g.fehler || "Wurf über dem Soll der Grobstufe"}`);
-    const dRot = w.filter((g) => g.deckung && !(g.deckung.min && g.deckung.n >= 16 && g.deckung.min.iou >= out.deckungMin)).map((g) => `${g.name} IoU ${g.deckung.min ? g.deckung.min.iou.toFixed(3) : "?"}`);
-    check(`Kreatur-Kosten (W) je Gestalt wirft die Grobstufe ihr Soll, der Zwilling deckt den Umriss der feinen Stufe (IoU ≥ ${out.deckungMin})`, w.length > 0 && !wRot.length && !dRot.length, [...wRot, ...dRot].join(" · "));
+    const wRot = w
+        .filter((g) => g.fehler || !g.gruen)
+        .map((g) => `${g.name}: ${g.fehler || "Wurf über dem Soll der Grobstufe"}`);
+    const dRot = w
+        .filter((g) => g.deckung && !(g.deckung.min && g.deckung.n >= 16 && g.deckung.min.iou >= out.deckungMin))
+        .map((g) => `${g.name} IoU ${g.deckung.min ? g.deckung.min.iou.toFixed(3) : "?"}`);
+    check(
+        `Kreatur-Kosten (W) je Gestalt wirft die Grobstufe ihr Soll, der Zwilling deckt den Umriss der feinen Stufe (IoU ≥ ${out.deckungMin})`,
+        w.length > 0 && !wRot.length && !dRot.length,
+        [...wRot, ...dRot].join(" · ")
+    );
     const G = out.g || {};
     check("Kreatur-Kosten (G) die Probe der ruhenden Leiber lief", !G.fehler, G.fehler || "");
-    gruppe("(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, auf dem Weg, gefallen, im Feld, im Bild, für die KI", ["gRuht", "gLeser", "gErwacht", "gNahGestalt", "gNah", "gZustand", "gWeg", "gGefallen", "gFeldRuht", "gBildWeckt", "gKi"]);
-    gruppe("SELBSTTESTS S1–S11 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires"]);
-    if (w[0] && w[0].s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
+    gruppe(
+        "(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, auf dem Weg, gefallen, im Feld, im Bild, für die KI",
+        [
+            "gRuht",
+            "gLeser",
+            "gErwacht",
+            "gNahGestalt",
+            "gNah",
+            "gZustand",
+            "gWeg",
+            "gGefallen",
+            "gFeldRuht",
+            "gBildWeckt",
+            "gKi",
+        ]
+    );
+    gruppe("SELBSTTESTS S1–S11 feuern", [
+        "s1LensFires",
+        "s2LensFires",
+        "s3LensFires",
+        "s4LensFires",
+        "s6LensFires",
+        "s8LensFires",
+        "s9LensFires",
+        "s10LensFires",
+        "s11LensFires",
+    ]);
+    if (w[0] && w[0].s5)
+        gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
     if (out.s7) gruppe("SELBSTTEST S7: der zur Mitte gezogene Zwilling verfehlt die Deckung", ["s7LensFires"]);
 }
 
 module.exports = {
-    checkBandWelle6HCreatures, checkBandWelleV11D3DrinkTask, checkBandPhaseEThreat,
-    checkBandTierSeparation, checkBandKreaturKosten,
+    checkBandWelle6HCreatures,
+    checkBandWelleV11D3DrinkTask,
+    checkBandPhaseEThreat,
+    checkBandTierSeparation,
+    checkBandKreaturKosten,
 };

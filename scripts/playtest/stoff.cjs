@@ -3,17 +3,13 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
 // Reflexions-Audit — vier Wände: (1) der Schatten-Weite-Slider treibt unter CSM csm.maxFar (kein
 // toter Knopf) · (2) Kachel-Erosion ohne flowTo-Ballast · (3) die Bestbewertet-Rail liest die
 // aggregierte Wertung · (4) die Nah-Streu würfelt je (Zelle, Art) aus Zelle + Welt-Seed (Γ5).
 // Gegenprobe: die CSM-Haupt-Map rendert NICHT (mainMap=false).
 async function checkBandV18136Audit(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). Der
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
         // setShadowRange UND der Perf-Regler rufen) — am Ruf: der Pfad des Reglers treibt maxFar, der Setter ruft die Quelle.
@@ -30,7 +26,6 @@ async function checkBandV18136Audit(ctx) {
         if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
         // (2) die Kachel-Erosion ist gefallen: der Kachel-Eingang baut nur noch die Hydrosphäre.
         out.tileLean = window.__fehlt(r._ensureHydroTilesAround, /eTile|_computeErosion|erosionTiles/);
-        return out;
     });
     if (!res) {
         check("Audit: Sonde lief", false, "evaluate warf");
@@ -49,10 +44,8 @@ async function checkBandV18136Audit(ctx) {
 // M7 Licht-Feinschliff: die Mikro-Struktur als LEBENDIGER Regler (eine Konstante im Tree wäre ein toter Slider-Knopf);
 // der Nacht-Boden fiel mit F6 (das Licht ist die EINE Licht-Kette).
 async function checkBandM7LichtFeinschliff(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const au = r._ensureAtmoUniforms();
         // (1) der Hebel ist eine UNIFORM (lebendig, nicht eingebacken).
         out.uniforms = !!au && !!au.microStrength;
@@ -71,16 +64,9 @@ async function checkBandM7LichtFeinschliff(ctx) {
             mtS.value = String(Math.round(m0 * 100));
             mtS.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        return out;
     });
-    check(
-        "M7 Licht: die Mikro-Struktur ist eine LEBENDIGE Uniform (keine eingebackene Konstante)",
-        res.uniforms
-    );
-    check(
-        "M7 Licht: der Setter treibt die Uniform (setMicroStrength — KONSUM)",
-        res.settersDrive
-    );
+    check("M7 Licht: die Mikro-Struktur ist eine LEBENDIGE Uniform (keine eingebackene Konstante)", res.uniforms);
+    check("M7 Licht: der Setter treibt die Uniform (setMicroStrength — KONSUM)", res.settersDrive);
     check(
         "M7 Licht: der Einstellungs-Regler lebt und treibt den Setter (kein toter Knopf)",
         res.slidersLive && res.sliderDrives
@@ -88,23 +74,18 @@ async function checkBandM7LichtFeinschliff(ctx) {
 }
 
 async function checkBandLambda3Wind(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // K19: den Wind trägt kein Substanz-Tag — die Achse `wiegen` ist fort, Holz und Stein stehen.
         const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
         out.wiegenFort = !("wiegen" in laubProfile);
-        return out;
     });
     check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
 }
 
 async function checkBandWEFrequenzband(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const mats = r.state.materials;
         // (1) die ANTENNE emergiert aus der Substanz (Ordnung der Achsen).
         const pEisen = r._substanceResponseProfile(mats.eisen.tags);
@@ -134,10 +115,10 @@ async function checkBandWEFrequenzband(ctx) {
         // eine Licht-Achse, das Gras trägt keine Antwort (Gewicht 0 = kein Knoten; der Boden: V17.J), das Licht ist die EINE Kette
         const SR = r.constructor.SUBSTANCE_RESPONSE;
         const achsen = [pEisen, pHolz, pGlut, pStein, pQuarz, SR.defaults.werk, SR.defaults.feld].flatMap(Object.keys);
-        out.ohneBand = !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
+        out.ohneBand =
+            !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
         const gm = r._grassInstanceMat();
         out.grasOhneAntwort = !!gm && gm.outputNode == null;
-        return out;
     });
     check(
         "W-E Frequenzband: die Antenne EMERGIERT aus der Substanz (glimmen: Glut/Quarz>Stein · tiefe: Stein/Eisen>Holz)",
@@ -156,10 +137,8 @@ async function checkBandWEFrequenzband(ctx) {
 // PBR-Pfad: roughness + metalness werden aus Material-Tags HERGELEITET (Physik, keine Gefühls-
 // Patches). Proben: Builder existiert, Dispatch wirkt, Roughness/Metalness folgen den Tags.
 async function checkBandV18223PbrKohaerenz(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
 
         // Build a PBR material directly
@@ -225,8 +204,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         const mDef = r._buildToonNodeMaterial({ color: 0x808080 });
         out.defaultIsPbr = !!(mDef && mDef.userData && mDef.userData.isPbrMaterial === true);
         if (mDef && typeof mDef.dispose === "function") mDef.dispose();
-
-        return out;
     });
 
     check(
@@ -266,9 +243,8 @@ async function checkBandV18223PbrKohaerenz(ctx) {
 // (Toon + PBR). Fels/Geröll EMERGIEREN aus der Steile, Moos aus flach + feucht. Der Helfer bricht laut; jede Signatur des
 // Spiels baut ihren Stoff mit colorNode (G1) — ein Bruch im Bau wirft dort beim Namen.
 async function checkBandWahrerAnblickSaeule1(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const THREE = window.THREE;
         const out = {};
 
@@ -347,11 +323,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
 // Gras-Band: die Wiese liest den BODEN darunter (lush-grün ↔ dry-oliv aus lebendig + feuchte).
 // Proben messen KONSUM an den Nähten (Material, Boden-Albedo, Feld-Bake).
 async function checkBandWahrerAnblickGras(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (A) CONSUM Source-Probes
         // Der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad (setupDiffuseColor multipliziert
         // instanceColor selbst) — ein manueller instanceColor-Read ist redundant und wirft „instanceColor not
@@ -376,8 +349,6 @@ async function checkBandWahrerAnblickGras(ctx) {
         out.grassMeshes = total;
         out.grassWithColor = withColor;
         out.allGrassColored = total === 0 || withColor === total;
-
-        return out;
     });
 
     check(
@@ -392,6 +363,11 @@ async function checkBandWahrerAnblickGras(ctx) {
 }
 
 module.exports = {
-    checkBandV18136Audit, checkBandM7LichtFeinschliff, checkBandLambda3Wind,
-    checkBandWEFrequenzband, checkBandV18223PbrKohaerenz, checkBandWahrerAnblickSaeule1, checkBandWahrerAnblickGras,
+    checkBandV18136Audit,
+    checkBandM7LichtFeinschliff,
+    checkBandLambda3Wind,
+    checkBandWEFrequenzband,
+    checkBandV18223PbrKohaerenz,
+    checkBandWahrerAnblickSaeule1,
+    checkBandWahrerAnblickGras,
 };

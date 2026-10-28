@@ -6,12 +6,11 @@
 const { safeEvaluate } = require("../playtest.cjs");
 
 async function checkBandW4LofiPad(ctx) {
-    const { page, check } = ctx;
+    const { check } = ctx;
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
     // Pad-Layer (~60 BPM); die Akkordfolge wächst aus Tonleiter + funktionaler Markov-Kette (seed- +
     // emotion-getrieben), kein fester Akkord-Satz.
-    const w4v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const w4v2Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // W4 V3 — Harmonie-Markov-Kette definiert. ZWILLINGS-ABSCHIED 19.07.:
@@ -311,7 +310,7 @@ async function checkBandSchrittKlang(ctx) {
         const o = { checks: {} };
         if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
         const T = A.SCHRITT_KLANG;
-    
+
         // ── die Absenz-Wachen (der Konsum der EINEN Quelle beweist sich unten am Verhalten: (A) zählt Schritte nur über den
         // Tick aus animatePlayerSoul, S1 steht mit ω ≡ 0; Boden und Wasser am Fuß trägt die Stoff-Linse) ──
         o.checks.keineEigeneUhr = window.__fehlt(r._schrittKlangTick, /performance\.now|Date\.now/);
@@ -319,7 +318,7 @@ async function checkBandSchrittKlang(ctx) {
         o.checks.simUnberuehrt = window.__fehlt([r._stepFixedSim, r._loopFixedStep, r._stepCharacter], /_schrittKlang/);
         // Stimme-aus fail-closed an der Stimme selbst (headless: nie aktiviert)
         o.checks.stimmeFailClosed = r._playSchrittOneShot({ gain: 0.05 }) === false && !s.symphony.enabled;
-    
+
         // ── Bühne: human-Rig + gestubbte Velocity (das koerper-Linsen-Muster) ──
         const p = s.player;
         if (!p || !s.playerMesh) return { error: "kein Spieler" };
@@ -363,7 +362,7 @@ async function checkBandSchrittKlang(ctx) {
             return { ph0, ph1: p.walkPhase };
         };
         const halbe = (lauf) => Math.floor(lauf.ph1 / Math.PI) - Math.floor(lauf.ph0 / Math.PI);
-    
+
         // ── (A) SCHRITT-TAKT: N Halbzyklen ⇒ N Ereignisse (±1), zwei Tempi ──
         frisch();
         const lauf6 = fahre(6, 2.0, 100);
@@ -376,7 +375,7 @@ async function checkBandSchrittKlang(ctx) {
         o.takt = { n6, soll6, n3, soll3 };
         o.checks.aTakt6 = soll6 >= 3 && Math.abs(n6 - soll6) <= 1;
         o.checks.aTakt3 = soll3 >= 1 && Math.abs(n3 - soll3) <= 1;
-    
+
         // ── (B) STAND/SCHLEICHEN/LUFT/SCHWIMMEN: 0 Ereignisse ──
         frisch();
         fahre(0, 1.0, 300);
@@ -396,10 +395,10 @@ async function checkBandSchrittKlang(ctx) {
         fahre(6, 1.0, 600);
         s.playerUnderwater = false;
         o.checks.bSchwimmNull = z().schritte === 0;
-    
+
         // ── (C) der Deckel der Landung (das Timbre je Stoff misst die Stoff-Linse am Klang: gate:gegenstand-stoff --tafel) ──
         o.checks.cDeckel = r._schrittKlangParams("stein", true, 1000).gain <= T.gainDeckel + 1e-12;
-    
+
         // ── (E) STIMME-AUS-WAND: Ereignis zählt, der Klang-Aufruf unterbleibt ──
         let calls = 0;
         const savedPlay = r._playSchrittOneShot;
@@ -427,7 +426,7 @@ async function checkBandSchrittKlang(ctx) {
         sym.enabled = savedSym.enabled;
         sym.ctx = savedSym.ctx;
         sym.masterGain = savedSym.masterGain;
-    
+
         // ── (S1) SELBST-TEST: Gang-Gesetz mit ω ≡ 0 ⇒ trotz Tempo + Boden 0 Schritte ──
         const savedRate = r._gaitGesetz;
         r._gaitGesetz = () => ({ omega: 0, S: 0, schritt: 0, tast: 0.5, hub: 0 });
@@ -436,7 +435,7 @@ async function checkBandSchrittKlang(ctx) {
         r._gaitGesetz = savedRate; // restaurieren (Gate-Hook-Lehre)
         o.s1Phase = laufStub.ph1 - laufStub.ph0;
         o.checks.s1LinseFeuert = o.s1Phase === 0 && z().schritte === 0;
-    
+
         // ── Bühne restaurieren ──
         s.playerVel = saved.vel;
         s.playerUnderwater = saved.uw;
@@ -449,23 +448,41 @@ async function checkBandSchrittKlang(ctx) {
         s._schrittKlang = saved.schritt;
         p._hitStopUntil = saved.hitStop;
         if (savedSoul !== p.soul) r.applyPlayerSoul(savedSoul);
-    
+
         return o;
     });
-    if (!out || out.error) return check("Schritt-Klang: die Bühne steht (human-Rig, gestubbte Velocity)", false, out ? out.error : "keine Antwort der Seite");
+    if (!out || out.error)
+        return check(
+            "Schritt-Klang: die Bühne steht (human-Rig, gestubbte Velocity)",
+            false,
+            out ? out.error : "keine Antwort der Seite"
+        );
     const c = out.checks || {};
     const alle = (...k) => k.filter((x) => c[x] !== true);
     const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");
     const konsum = alle("keineEigeneUhr", "klangEineMaschine", "simUnberuehrt", "stimmeFailClosed");
-    check("Schritt-Klang: der EINE Tick trägt keine eigene Uhr, die EINE Stimme keinen zweiten AudioContext und hält still, solange die Symphonie ruht; die fixe Sim kennt ihn nicht", !konsum.length, zeig(konsum));
+    check(
+        "Schritt-Klang: der EINE Tick trägt keine eigene Uhr, die EINE Stimme keinen zweiten AudioContext und hält still, solange die Symphonie ruht; die fixe Sim kennt ihn nicht",
+        !konsum.length,
+        zeig(konsum)
+    );
     const takt = alle("aTakt6", "aTakt3", "bStandNull", "bSchleichNull", "bLuftNull", "bSchwimmNull");
-    check(`Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`, !takt.length, zeig(takt));
+    check(
+        `Schritt-Klang (A)(B): N Halbzyklen ⇒ N Schritte ±1 (v=6 ${out.takt.n6}/${out.takt.soll6} · v=3 ${out.takt.n3}/${out.takt.soll3}), Stand/Schleichen/Luft/Schwimmen 0`,
+        !takt.length,
+        zeig(takt)
+    );
     const timbre = alle("cDeckel");
     check("Schritt-Klang (C): die Landung bleibt unter dem gainDeckel", !timbre.length, zeig(timbre));
     const stimme = alle("eStummZaehlt", "eAnRuft", "s1LinseFeuert");
-    check(`Schritt-Klang (E) + S1: Stimme aus zählt ohne Aufruf, Stimme an ruft EINMAL je Schritt (${out.anCalls}/${out.anSchritte}), ω ≡ 0 ⇒ 0 Schritte`, !stimme.length, zeig(stimme));
+    check(
+        `Schritt-Klang (E) + S1: Stimme aus zählt ohne Aufruf, Stimme an ruft EINMAL je Schritt (${out.anCalls}/${out.anSchritte}), ω ≡ 0 ⇒ 0 Schritte`,
+        !stimme.length,
+        zeig(stimme)
+    );
 }
 
 module.exports = {
-    checkBandW4LofiPad, checkBandSchrittKlang,
+    checkBandW4LofiPad,
+    checkBandSchrittKlang,
 };

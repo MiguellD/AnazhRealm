@@ -3,16 +3,12 @@
 // 15 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
 // Waffen-Schaden-Pfad) UND treibt das Abbauen (_heldImplementBlueprint) — eine Pipeline.
 async function checkBandV1757HeldSlot(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const savedHeld = p.equipped ? p.equipped.held : null;
 
@@ -83,13 +79,9 @@ async function checkBandV1757HeldSlot(ctx) {
         delete r.state.blueprints[wName];
         if (savedHeld) r.equipHeld(savedHeld);
         r.recomputePlayerStats();
-        return out;
     });
     check("das Test-Gerät trägt härte (die Substanz-Prämisse hält)", res.implHasHardness);
-    check(
-        "equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)",
-        res.equipNoRoleNeeded
-    );
+    check("equipHeld nimmt JEDEN Bauplan — keine Markierung nötig (kein Rollen-Schloss)", res.equipNoRoleNeeded);
     check("equipHeld lehnt einen unbekannten Bauplan ab", res.rejectsUnknown);
     check("equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", res.rejectsBuiltinTool);
     check(
@@ -101,10 +93,7 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldKeinPanzer
     );
     check("Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
-    check(
-        "DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)",
-        res.heldDrivesHarvest
-    );
+    check("DASSELBE Gerät treibt das Abbauen (_heldImplementBlueprint löst den held-Slot auf)", res.heldDrivesHarvest);
     check("Persistenz — der held-Slot reist im Snapshot", res.snapHasHeld);
 }
 
@@ -112,10 +101,8 @@ async function checkBandV1757HeldSlot(ctx) {
 // (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
 // ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz).
 async function checkBandV1761ForgeImplement(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const p = r.state.player;
         const savedMode = r.getGameMode();
@@ -193,7 +180,6 @@ async function checkBandV1761ForgeImplement(ctx) {
         p.equipped.held = savedHeld;
         p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "F2 — die Praezision moduliert die Abbau-Kraft (fein > grob, gleiche Form/Materie; die Rekursion schliesst)",
@@ -215,10 +201,8 @@ async function checkBandV1761ForgeImplement(ctx) {
 // geht durch das Schmieden — ein ungeschmiedetes Geraet in pfad/frieden kostet (schmieden), ein
 // geschmiedetes (forgedPrecision, persistiert) ist frei in die Hand zu nehmen. Heilt den Gratis-Bypass.
 async function checkBandV1762ForgeMeaningful(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const p = r.state.player;
         const savedMode = r.getGameMode();
@@ -286,7 +270,6 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         p.equipped.held = savedHeld;
         p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "forgedPrecision persistiert (serialize → deserialize; geschmiedet bleibt geschmiedet)",
@@ -304,20 +287,15 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         "GEBRAUCH frei — ein GESCHMIEDETES Geraet in die Hand nehmen kostet NICHTS (leeres Inventar, trotzdem ok)",
         res.pfadWieldForgedIsFree
     );
-    check(
-        "schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)",
-        res.schoepferWieldsFree
-    );
+    check("schoepfer nimmt ungeschmiedet frei in die Hand (Gott-Modus, kein Schmieden)", res.schoepferWieldsFree);
 }
 
 // Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
 // das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
 // routet nach Rolle. KONSUM (nicht Existenz).
 async function checkBandV1763ForgeArmor(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const p = r.state.player;
         const savedMode = r.getGameMode();
@@ -402,42 +380,27 @@ async function checkBandV1763ForgeArmor(ctx) {
         p.equipped.armor = savedArmor;
         p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "forgeArmor verlangt einen als Ruestung markierten Bauplan (sonst not_marked_as_armor)",
         res.forgeArmorRequiresRole && res.markedArmor
     );
-    check(
-        "forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen",
-        res.pfadArmorRejectsWithoutMaterial
-    );
-    check(
-        "KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)",
-        res.pfadArmorForges
-    );
-    check(
-        "GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)",
-        res.wearMadeArmorFree
-    );
+    check("forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen", res.pfadArmorRejectsWithoutMaterial);
+    check("KONSUM — forgeArmor in pfad MIT Material → webt (zahlt + traegt + friert ein)", res.pfadArmorForges);
+    check("GEBRAUCH frei — eine gemachte Ruestung tragen kostet nichts (leeres Inventar)", res.wearMadeArmorFree);
     check(
         "fertigeBlueprint routet nach Rolle (Ruestung → armor-Slot, Geraet → held-Slot)",
         res.fertigeArmorToArmorSlot && res.fertigeGeraetToHeldSlot
     );
-    check(
-        "forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)",
-        res.forgeBlueprintStillWorks
-    );
+    check("forgeBlueprint funktioniert nach dem Refactor noch (zahlt + in die Hand)", res.forgeBlueprintStillWorks);
 }
 
 // Trank brauen: der Werk-Akt zieht die Zutaten (die
 // Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
 // activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz).
 async function checkBandV1765BrewConsumable(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const p = r.state.player;
         const savedMode = r.getGameMode();
@@ -503,21 +466,14 @@ async function checkBandV1765BrewConsumable(ctx) {
         delete blu.__nottrank;
         p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "brewConsumable verlangt role=consumable (sonst not_a_consumable)",
         res.brewRequiresConsumable && res.markedConsumable
     );
     check("brauen in pfad OHNE Zutaten → abgelehnt (kein Trank)", res.pfadBrewRejectsWithoutMaterial);
-    check(
-        "KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt",
-        res.pfadBrewConsumesAndWorks
-    );
-    check(
-        "activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)",
-        res.activateStillFree
-    );
+    check("KONSUM — brauen in pfad MIT Zutaten → zieht Material + der Trank wirkt", res.pfadBrewConsumesAndWorks);
+    check("activateConsumable bleibt das freie Low-Level-Primitiv (wirkt ohne Material)", res.activateStillFree);
     check("schoepfer braut frei (ohne Zutaten)", res.schoepferBrewsFree);
     check(
         "fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Geraet)",
@@ -529,10 +485,8 @@ async function checkBandV1765BrewConsumable(ctx) {
 // _workshopStationGate hängt end-to-end am Mach-Akt (nicht nur confirmBuild). Geprüft: das Gate
 // lehnt ab/lässt durch, die FERTIGEN-Zeile rendert, die alten Knöpfe sind weg.
 async function checkBandV1766FertigenFlow(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const p = r.state.player;
         const savedMode = r.getGameMode();
@@ -541,7 +495,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // FERTIGEN rüstet das geschmiedete Werk aus (equipped.held/armor) — sauber zurücksetzen, sonst
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
-
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -614,7 +567,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         p.equipped = savedEquipped;
         r.recomputePlayerStats();
         r.setGameMode(savedMode);
-        return out;
     });
     check("das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
@@ -640,10 +592,8 @@ async function checkBandV1766FertigenFlow(ctx) {
 // Bauwerk) → Hand-Flag als Override (Intent); die bediente Domäne EMERGIERT. Ein eigener Apparat
 // wird markiert und bedient seine emergente Domäne, das Gate findet ihn.
 async function checkBandV1770WorkshopStationMark(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         const savedArch = r.state.architectures.slice();
@@ -711,7 +661,6 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         delete blu.__ws_dsl;
         r.state.architectures = savedArch;
         r.setGameMode(savedMode);
-        return out;
     });
     check(
         "die Markierung setzt role=workshop-station + roleManual (der Intent-Override); vorher emergiert der Apparat NICHT als Werkstatt",
@@ -721,10 +670,7 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         "KONSUM — die bediente Domäne EMERGIERT aus der Substanz (Quarz-Gefäß → alchemy via R1), nicht deklariert",
         res.domainEmerges
     );
-    check(
-        "Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)",
-        res.rejectsBuiltin && res.rejectsUnknown
-    );
+    check("Built-in (esse) + unbekannt werden abgelehnt (Saat unantastbar)", res.rejectsBuiltin && res.rejectsUnknown);
     check(
         "end-to-end — ein vom SPIELER gebauter, markierter Apparat bedient das Werkstatt-Gate (ein alchemy-Werk passt zu ihm)",
         res.forgeStationDomain && res.workIsForging && res.playerStationServes
@@ -733,10 +679,8 @@ async function checkBandV1770WorkshopStationMark(ctx) {
 }
 
 async function checkBandV1772Library(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const blu = r.state.blueprints;
         const p = r.state.player;
 
@@ -801,7 +745,6 @@ async function checkBandV1772Library(ctx) {
         }
         delete blu._t_v1772; // Test-Blueprint aufräumen (kein Katalog-Leck)
         r.recomputePlayerStats();
-        return out;
     });
     check(
         "die drei Bibliotheks-Built-ins (Rüstung/Trank/Avatar) + die Geräte-Substanz (KIND_SUBSTANCE) existieren",
@@ -837,10 +780,8 @@ async function checkBandV1772Library(ctx) {
 // geparentet, wechselt ohne Leak, verschwindet beim Ablegen, formloses builtIn-Tool abgelehnt,
 // re-attached beim Körper-Wechsel (Optik/Pose headless blind). Player-State: Snapshot + Restore.
 async function checkBandV1773HeldMesh(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh;
         out.hasPlayerMesh = !!pm;
@@ -916,7 +857,6 @@ async function checkBandV1773HeldMesh(ctx) {
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
         delete r.state.blueprints._t_v1773; // Test-Blueprint aufräumen
         r.recomputePlayerStats();
-        return out;
     });
     check(
         "Hand-Mesh — Spieler-Mesh da + sauberer Start (kein Held-Mesh nach equipHeld(null))",
@@ -946,9 +886,8 @@ async function checkBandV1773HeldMesh(ctx) {
 // Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
 // Form). NUR Custom-Avatare — die Built-in-Seele (human) bleibt neutral (kein Balance-Bruch).
 async function checkBandV1784AvatarFormFit(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const p = r.state.player;
         const out = {};
@@ -1025,15 +964,14 @@ async function checkBandV1784AvatarFormFit(ctx) {
 }
 
 async function checkBandWelle6DSoul(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
     // Der Spieler ist ein Compound im selben Hylomorphismus-System wie Architekturen: die 10
     // MATERIAL_TAG_KEYS sind die EINE Achsen-Sprache für Soul- und Material-Tags. STAT_FROM_TAGS sind
     // reine Funktionen → Diskriminations-Tests prüfen Verhältnisse (Fuchs schneller, Bär mehr HP).
-    const wave6dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6dResults = await ctx.welt((r) => {
         if (!r) return null;
         // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
         // sieht sie direkt (kein window-Prefix nötig).
@@ -1177,8 +1115,7 @@ async function checkBandWelle6DSoul(ctx) {
     // ### Reflexions-Fixes ###
     // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod und Wunde: gate:kampf-gefuehl Q13
     // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
-    const reflexResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const reflexResults = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
 
@@ -1388,8 +1325,7 @@ async function checkBandWelle6DSoul(ctx) {
     }
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
-    const wave6d3bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6d3bResults = await ctx.welt((r) => {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1538,18 +1474,9 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3bResults.equippedArmorNull
         );
         check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
-        check(
-            "equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)",
-            wave6d3bResults.equipBuiltinToolOk
-        );
-        check(
-            "nach der Ablehnung ist nichts gehalten (equipped.held leer)",
-            wave6d3bResults.equippedToolIs
-        );
-        check(
-            "das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)",
-            wave6d3bResults.builtinToolNoStatChange
-        );
+        check("equipHeld lehnt ein builtIn-Crafting-Tool ab (kein Welt-Gerät)", wave6d3bResults.equipBuiltinToolOk);
+        check("nach der Ablehnung ist nichts gehalten (equipped.held leer)", wave6d3bResults.equippedToolIs);
+        check("das abgelehnte builtIn-Tool ließ die Stats unberührt (ok)", wave6d3bResults.builtinToolNoStatChange);
         check(
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
@@ -1559,8 +1486,7 @@ async function checkBandWelle6DSoul(ctx) {
     }
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
-    const wave6d3aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6d3aResults = await ctx.welt((r) => {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1708,8 +1634,7 @@ async function checkBandWelle6DSoul(ctx) {
     // ### Boosts (temporäre Tag-Deltas) ###
     // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
-    const wave6d2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6d2Results = await ctx.welt((r) => {
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1893,8 +1818,7 @@ async function checkBandWelle6DSoul(ctx) {
     // ### Custom-Seelen via DSL ###
     // define_soul(name, bodyParts) komponiert eigene Charaktere — Form × Material über dieselbe
     // Hylomorphismus-Pipe wie Bauwerke.
-    const wave6d16Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6d16Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
@@ -1998,8 +1922,7 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
-    const wave6d17Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6d17Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
@@ -2245,9 +2168,8 @@ async function checkBandWelle6DSoul(ctx) {
 
 // PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt(async (r) => {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // C1 — Gelenke: ein synthetischer 2-Part-Bauplan mit Verbindung → Joint-Rolle mit Anker.
@@ -2293,7 +2215,8 @@ async function checkBandPhasenBF(ctx) {
         const pp4 = r.state.playerMesh.position;
         const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
         r.state.maxCreatures = cap4;
-        const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
+        const liestTemperament =
+            !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
         if (c4) r.removeCreature(c4);
         out.d4Konsum =
             liestTemperament &&
@@ -2419,8 +2342,15 @@ async function checkBandPhasenBF(ctx) {
                     delete r._hydrosphereLakeAt;
                 }
             };
-            const meer = bau(0, false), fluss = bau(1, false), see = bau(0, true);
-            return meer.some((v) => v > 0.5) && fluss.length > 0 && fluss.every((v) => v === 0) && see.every((v) => v === 0);
+            const meer = bau(0, false),
+                fluss = bau(1, false),
+                see = bau(0, true);
+            return (
+                meer.some((v) => v > 0.5) &&
+                fluss.length > 0 &&
+                fluss.every((v) => v === 0) &&
+                see.every((v) => v === 0)
+            );
         })();
         // WASSER-SHEET-ANTI-STARVATION: reine Distanz-Priorität + Dauer-Nachschub naher Keys ließe FERNE
         // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
@@ -2494,7 +2424,9 @@ async function checkBandPhasenBF(ctx) {
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
             // das Panel liest dieselben Gelenke: „rad" entsteht nur aus den Verbindungen
-            const wagen = JSON.parse(JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] }));
+            const wagen = JSON.parse(
+                JSON.stringify({ name: "fahrzeug_wagen", parts: bp.parts, connections: bp.connections || [] })
+            );
             const panel = document.createElement("div");
             r._specRenderBody(panel, wagen);
             const line = panel.querySelector(".spec-motion-line");
@@ -2870,11 +2802,8 @@ async function checkBandPhasenBF(ctx) {
 // jeder Hieb zehrt, an der Schwelle → kaputt + Repair; Repair zahlt Material (forge × REPAIR_FRACTION
 // × Schaden) → wear=1. Migration-tolerant: ein Bauplan ohne wear-Feld liest 1.
 async function checkBandW5Werkzeugabnutzung(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         // (W2) MIGRATION: ein Bauplan ohne wear-Feld liest 1 (alte Welten
         // verlieren NICHTS — kein Funktions-Verlust beim Reload).
         const fakeBp = { name: "fake", parts: [] };
@@ -3002,7 +2931,9 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         if (heldBp) r._setBlueprintWear(heldBp, 0.42);
         const unbekannt = (prog) =>
             !Object.hasOwn(r.dslEffects, prog[0]) &&
-            r.dslRun(prog, { seed: 1, programId: "probe-r2" }).log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
+            r
+                .dslRun(prog, { seed: 1, programId: "probe-r2" })
+                .log.some((e) => e.event === "unknown_op" && e.op === prog[0]) &&
             (!heldBp || Math.abs(r._blueprintWear(heldBp) - 0.42) < 1e-9);
         out.noRepairOp = unbekannt(["repair_held"]);
         out.noSetWearOp = unbekannt(["set_wear", "_t_wear_spitz", 1]);
@@ -3012,8 +2943,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         r.equipHeld(null);
         delete r.state.blueprints._t_wear_spitz;
         r.setGameMode("frieden");
-
-        return out;
     });
 
     check(
@@ -3054,11 +2983,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme, sein Wind der EINE Wind am Ort (`_windAt`, gate:kopplung F3); ihr Konsum
 // (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
 async function checkBandV18202GeruchFeld(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (N3) Geruch: einzelne Quelle, Distanz-Decay
         const src = [{ x: 0, z: 0, strength: 1.0 }];
         // Verschiedene Distanzen — Geruch fällt monoton
@@ -3085,8 +3011,6 @@ async function checkBandV18202GeruchFeld(ctx) {
         out.upwindStillHasMinScent = upG > 0; // minDirectional > 0
         out.downwindMagnitude = downG;
         out.upwindMagnitude = upG;
-
-        return out;
     });
 
     check("(N3a) Geruch nah > 0.3 (volle Stärke nahe Quelle)", res.scentNearStrong === true);
@@ -3100,8 +3024,18 @@ async function checkBandV18202GeruchFeld(ctx) {
 }
 
 module.exports = {
-    checkBandV1757HeldSlot, checkBandV1761ForgeImplement, checkBandV1762ForgeMeaningful, checkBandV1763ForgeArmor,
-    checkBandV1765BrewConsumable, checkBandV1766FertigenFlow, checkBandV1770WorkshopStationMark,
-    checkBandV1772Library, checkBandV1773HeldMesh, checkBandV1784AvatarFormFit, checkBandWelle6DSoul,
-    checkBandPhasenBF, checkBandW5Werkzeugabnutzung, checkBandV18202GeruchFeld,
+    checkBandV1757HeldSlot,
+    checkBandV1761ForgeImplement,
+    checkBandV1762ForgeMeaningful,
+    checkBandV1763ForgeArmor,
+    checkBandV1765BrewConsumable,
+    checkBandV1766FertigenFlow,
+    checkBandV1770WorkshopStationMark,
+    checkBandV1772Library,
+    checkBandV1773HeldMesh,
+    checkBandV1784AvatarFormFit,
+    checkBandWelle6DSoul,
+    checkBandPhasenBF,
+    checkBandW5Werkzeugabnutzung,
+    checkBandV18202GeruchFeld,
 };

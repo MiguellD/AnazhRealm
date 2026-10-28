@@ -9,10 +9,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
 // Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
 async function checkBandV1774UseByRole(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const blu = r.state.blueprints;
 
@@ -162,7 +160,6 @@ async function checkBandV1774UseByRole(ctx) {
         r._renderHotbarDOM();
         r._refreshSoulSelect();
         r.recomputePlayerStats();
-        return out;
     });
     check(
         "Welle 1b: _blueprintUseKind liest aus Rolle+Form — Gerät→hold · Rüstung→wear · Trank→drink · Avatar→embody",
@@ -207,10 +204,8 @@ async function checkBandV1774UseByRole(ctx) {
 // Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
 // Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
 async function checkBandV1776WorkshopPrecision(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const p = r.state.player;
         const pm = r.state.playerMesh;
         const px = pm ? pm.position.x : 0,
@@ -260,7 +255,6 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         if (ai >= 0) r.state.architectures.splice(ai, 1);
         delete r.state.blueprints["wp_soft"];
         delete r.state.blueprints["wp_work"];
-        return out;
     });
     check(
         "Welle 2: die Werkstatt-Präzision emergiert aus SUBSTANZ — eine dichte+harte Esse (>0.8) hält feiner als eine weiche Werkstatt (kein Crafting-Zirkel)",
@@ -282,10 +276,8 @@ async function checkBandV1776WorkshopPrecision(ctx) {
 // Cap aus dichterer/härterer Substanz), und der Werkstatt-Readout zeigt die Präzision → der Spieler SIEHT
 // „bessere Esse → höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
 async function checkBandV1777SteigerungVisible(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const esse = r.state.blueprints["esse"];
         const meister = r.state.blueprints["esse_meister"];
         out.meisterExists = !!meister && meister.role === "workshop-station";
@@ -310,7 +302,6 @@ async function checkBandV1777SteigerungVisible(ctx) {
         const precText = [...panel.querySelectorAll(".workshop-precision-text")].map((e) => e.textContent).join("|");
         out.readoutShowsPrecision = labels.includes("Werkstatt-Präzision") && precText.includes(meisterP.toFixed(2));
         out.noLitter = !meister.instanced; // built-in ohne instanced → kein Worldgen-Litter (V17.72)
-        return out;
     });
     check("die Meister-Esse existiert als craftbare workshop-station", res.meisterExists);
     check("ihre Domäne emergiert als forging (Eisen+Glut → Schmiede, S7-B)", res.meisterForging);
@@ -333,10 +324,8 @@ async function checkBandV1777SteigerungVisible(ctx) {
 // die WERTE eines Werks folgen Material × Form (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint
 // im Werkzeuge-Feld sobald platziert+nah; das Undo/Redo unter den Parts.
 async function checkBandV1789WorkshopReadout(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const prevMode = r.getGameMode();
         const blu = r.state.blueprints;
         const mkBlade = (name, mat) => {
@@ -424,7 +413,6 @@ async function checkBandV1789WorkshopReadout(ctx) {
         }
         r.selectBlueprintForEdit("stein_block");
         r.setGameMode(prevMode);
-        return out;
     });
     check(
         "KONSUM: die Werte folgen dem MATERIAL — eine eisen-Klinge schlägt härter als eine holz-Klinge (gleiche Form)",
@@ -442,10 +430,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
         "KONSUM (DOM): die Werkstatt-Prozesse sind ziehbare Karten in der WERKZEUGE-Palette (schöpfer → besessene Werkstätten)",
         res.domWorkshopChips
     );
-    check(
-        "(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)",
-        res.domHistoryControls
-    );
+    check("(DOM): Undo/Redo wohnen in der Top-Leiste (workshop-undo-btn / workshop-redo-btn)", res.domHistoryControls);
 }
 
 // Re-Kalibrierung: (1) das Spektrum SPREIZT (nicht 1/1/1) + führt mit der richtigen Rolle,
@@ -453,10 +438,8 @@ async function checkBandV1789WorkshopReadout(ctx) {
 // (`_foldEquippedStatTags`, Spieler+Kreatur), size-neutral, (4) Rolle scharf (Pickel→Werkzeug,
 // Schwert→Waffe); + Drehbank-Proximity + CSS.
 async function checkBandV1790Recalibration(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const prevMode = r.getGameMode();
         const box = (m, s, p) => ({ shape: "box", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
         const cone = (m, s, p) => ({ shape: "cone", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
@@ -555,7 +538,6 @@ async function checkBandV1790Recalibration(ctx) {
         out.cssHistory = cssHistory;
 
         r.setGameMode(prevMode);
-        return out;
     });
     check(
         "Facette 1: das Rollen-Spektrum SPREIZT (Top ≫ 5., nicht 1.0/1.0/1.0) + führt mit der Form-Rolle (Klinge→Waffe)",
@@ -591,21 +573,17 @@ async function checkBandV1790Recalibration(ctx) {
         res.drehbankNearAppears && res.drehbankFarHidden,
         `radius=${res.proximityM}m near=${res.drehbankNearAppears} far=${res.drehbankFarHidden}`
     );
-    check(
-        "Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)",
-        res.cssHistory
-    );
+    check("Befund (b): die Top-Leisten-Akte (disabled-Stil) + Station-Karten haben CSS (sichtbar)", res.cssHistory);
 }
 
 async function checkBandWelle6Keybindings(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Maus-Aktionen (abbauen + platzieren) ###
     // LMB abbauen / RMB platzieren über Keybinding. Architektur-Hit → removeArchitecture; kein Hit →
     // Voxel-carve. Stamina-Gate via getGameMode wie applyOpToPart.
-    const wave6a6Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6a6Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         // Statische Konstante
@@ -700,8 +678,7 @@ async function checkBandWelle6Keybindings(ctx) {
     // ### Resonanz-Abklang beim Abbauen ###
     // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit einem Sinus-Ping; stille
     // Strukturen bleiben stumm.
-    const wave6a6V2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6a6V2Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         // Threshold-Konstante existiert
@@ -786,8 +763,7 @@ async function checkBandWelle6Keybindings(ctx) {
     // ### HUD spiegelt aktuelle Keybindings ###
     // _updateBuildModeHud baut den Text aus state.keybindings über _formatBindingCode; setKeybinding
     // + resetKeybindings triggern ein HUD-Refresh (nie veraltete Beschriftung).
-    const wave6c3V2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6c3V2Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         r.resetKeybindings();
@@ -837,8 +813,7 @@ async function checkBandWelle6Keybindings(ctx) {
     // ### Tastenbelegung (Keybindings) ###
     // Sechs Aktionen rebindable: break, place, confirmBuild, inventory, cancelBuild, jump.
     // Konflikt-Auflösung über Swap; persistiert in localStorage.
-    const wave6c3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const wave6c3Results = await ctx.welt((r) => {
         if (!r || !r.state) return null;
         const out = {};
         // Statische Konstanten
@@ -977,7 +952,10 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)", wave6c3Results.sixRowsRendered);
+        check(
+            "Welle 6.C3/V8.17+E8+L3 + leib.K5: 21 keybind-row Zeilen gerendert (13 Tastatur + 8 nur Gamepad)",
+            wave6c3Results.sixRowsRendered
+        );
         check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
@@ -986,9 +964,8 @@ async function checkBandWelle6Keybindings(ctx) {
 // leaf.localMatrix` MUSS bit-gleich zum klassischen Group-Child-`matrixWorld` sein, sonst rendert
 // das Instancing verschoben. Dazu: water_wave nicht instancbar; Leaf-Farbe gleich (Mirror-Drift).
 async function checkBandWellePerfCArchInstancing(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
@@ -1191,16 +1168,13 @@ async function checkBandWellePerfCArchInstancing(ctx) {
 }
 
 async function checkBandWelle6XAudit(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Audit-Fixes ###
     // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
     // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
-    const wave6x1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const wave6x1Results = await ctx.welt((r, out) => {
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
         r.setGameMode("pfad");
         r.state.player.inventory = new Array(27).fill(null);
@@ -1296,8 +1270,6 @@ async function checkBandWelle6XAudit(ctx) {
             }
         }
         r._clearBuildMode();
-
-        return out;
     });
 
     if (wave6x1Results && !wave6x1Results.error) {
@@ -1322,10 +1294,7 @@ async function checkBandWelle6XAudit(ctx) {
     // ### UI-Politur ###
     // B1 Logbuch-Toggle (default versteckt) · B2 keine Welt-Bauwerke-Buttons im world-drawer ·
     // B4 Scrollrad zyklt durch die Hotbar-Slots.
-    const wave6x2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const wave6x2Results = await ctx.welt((r, out) => {
         // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
         out.logbookSectionExists = !!document.getElementById("logbook-section");
         out.logbookToggleExists = !!document.getElementById("logbook-toggle");
@@ -1372,8 +1341,6 @@ async function checkBandWelle6XAudit(ctx) {
         r.selectHotbarSlot((0 - 1 + 9) % 9);
         out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
         r._clearBuildMode();
-
-        return out;
     });
 
     if (wave6x2Results && !wave6x2Results.error) {
@@ -1402,10 +1369,7 @@ async function checkBandWelle6XAudit(ctx) {
     // ### Vision-Quick-Wins ###
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
-    const wave6x3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const wave6x3Results = await ctx.welt((r, out) => {
         // --- C1: at_player_forward DSL-Resolver
         if (r.dslPositions.at_player_forward) {
             // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
@@ -1524,8 +1488,6 @@ async function checkBandWelle6XAudit(ctx) {
         r.recomputePlayerStats();
         r.state.onSteepSlope = false;
         r.setGameMode("frieden");
-
-        return out;
     });
 
     if (wave6x3Results && !wave6x3Results.error) {
@@ -1565,10 +1527,7 @@ async function checkBandWelle6XAudit(ctx) {
 
     // ### Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
-    const wave6x45Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const wave6x45Results = await ctx.welt((r, out) => {
         // --- F1: state-Felder existieren mit Defaults
         out.companionNameDefault = r.state.grok.companionName === "Grok";
         out.playerNameDefault = r.state.player.name === "Schöpfer";
@@ -1605,8 +1564,6 @@ async function checkBandWelle6XAudit(ctx) {
         // Reset auf Defaults
         r.state.grok.companionName = "Grok";
         r.state.player.name = "Schöpfer";
-
-        return out;
     });
 
     if (wave6x45Results && !wave6x45Results.error) {
@@ -1881,10 +1838,8 @@ async function checkBandNutzerBlickNachbau(ctx) {
 // W-G Werkstatt-Gelenke begreifbar: macht computeMotionRoles · CONNECTION_TYPES sichtbar (Achsen-
 // Geister im Viewer · Progressive Disclosure · Lehr-Satz · Gelenk-Probe). Headless prüft die LOGIK.
 async function checkBandWGGelenke(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (e) LEHR-SATZ: pure Funktion, alle Gelenk-Rollen → Menschen-Sprache.
         out.teachRad = /Rad.*rollt.*Querachse/.test(r._jointTeachLine("rad", "x") || "");
         out.teachTuer = /Tür.*schwenkt/.test(r._jointTeachLine("tuer", "y") || "");
@@ -1957,7 +1912,6 @@ async function checkBandWGGelenke(ctx) {
         out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
-        return out;
     });
     check(
         "W-G(e) Lehr-Satz: jede Gelenk-Rolle spricht Menschen-Sprache (Rad→Querachse · Tür→schwenkt · Scharnier→Längsachse · Unsinn→null)",

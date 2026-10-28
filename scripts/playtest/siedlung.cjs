@@ -3,15 +3,11 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
 // GROSSE Strukturen (Dorf/Tempel/Wasserfall) spawnen nicht AUF dem Spieler (Chunk-Remesh →
 // Durchfall), kleine Platzierungen unberührt; ein Void-Boden holt aus jedem Durchfall zurück.
 async function checkBandV1728SpawnClearance(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const MIN = r.constructor.STRUCTURE_CLEAR_MIN_FOOTPRINT;
         const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
         out.hasConsts =
@@ -54,7 +50,6 @@ async function checkBandV1728SpawnClearance(ctx) {
                 r.state._fieldVy = 0;
             }
         }
-        return out;
     });
     check("V17.28 Spawn-Clearance: Konstanten verdrahtet (MIN/MARGIN/PLAYER_VOID_Y)", res.hasConsts);
     check(
@@ -82,9 +77,8 @@ async function checkBandV1728SpawnClearance(ctx) {
 // `architectureBuildBudgetPerFrame` teure Builds pro Frame, statt beim Eintritt in eine dichte
 // Region alle cold-Einträge auf einmal (FPS-Sturm).
 async function checkBandWellePerfDBudget(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
         const out = {};
         out.hasBudgetField = Number.isFinite(r.state.architectureBuildBudgetPerFrame);
@@ -163,14 +157,13 @@ async function checkBandWellePerfDBudget(ctx) {
 }
 
 async function checkBandRing6Workshop(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
-    const ring6Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
+    const ring6Results = await ctx.welt(async (r) => {
         if (!r || !r.state) return null;
         const out = {};
 
@@ -394,8 +387,7 @@ async function checkBandRing6Workshop(ctx) {
     // ### Ring 6.3 — Feld-native Kollision für Strukturen ###
     // Jede Architektur mit soliden Parts (dichte ≥ 0.3) trägt ab Spawn `entry.blockerAABBs` (Daten,
     // render-/distanz-unabhängig); `_stepCharacterStructures` löst die Spieler-Kapsel dagegen.
-    const ring63Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const ring63Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
         // Cleanup
@@ -502,8 +494,7 @@ async function checkBandRing6Workshop(ctx) {
     // Live-Kollision: der Spieler läuft gegen eine Haus-Wand, `_stepCharacterStructures` (gegen
     // entry.blockerAABBs) muss ihn aufhalten — gedrückte W-Taste (yaw=0 → forward=+Z), synchrone
     // _gameLoopTick-Pumps (Headless-rAF ~1 Hz).
-    const collisionLive = await page.evaluate(() => {
-        const r = window.anazhRealm;
+    const collisionLive = await ctx.welt((r) => {
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
@@ -553,8 +544,7 @@ async function checkBandRing6Workshop(ctx) {
         `playerZ=${collisionLive.playerZ.toFixed(2)} (Erwartung < 2.0)`
     );
     // Cleanup (inkl. Test-Blueprint)
-    await page.evaluate(() => {
-        const r = window.anazhRealm;
+    await ctx.welt((r) => {
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
@@ -564,10 +554,7 @@ async function checkBandRing6Workshop(ctx) {
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
     // _buildFromBlueprint rendert Baupläne, 8 Primitive werden erkannt; User-Baupläne sind hinzufügbar + persistierbar.
-    const ring64Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const ring64Results = await ctx.welt(async (r, out) => {
         // 8 Primitive renderbar — wir bauen einen Test-Bauplan
         // mit allen 8 Shapes und prüfen, dass jede einen Mesh
         // produziert.
@@ -669,7 +656,6 @@ async function checkBandRing6Workshop(ctx) {
         r.state.architectures = [];
         delete r.state.blueprints["test_hut"];
         delete r.state.blueprints["test_hut_2"];
-        return out;
     });
 
     if (!ring64Results || ring64Results.error) {
@@ -695,9 +681,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.5 — Hotbar mit 9 Slots ###
-    const ring65Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const ring65Results = await ctx.welt(async (r, out) => {
         // DOM-Hotbar
         const bar = document.getElementById("hotbar");
         out.hotbarInDom = !!bar;
@@ -793,7 +777,6 @@ async function checkBandRing6Workshop(ctx) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
         r.state.architectures = [];
-        return out;
     });
 
     if (!ring65Results || ring65Results.error) {
@@ -824,10 +807,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
-    const ring66Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const ring66Results = await ctx.welt(async (r, out) => {
         // UI vorhanden
         out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
         out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
@@ -941,7 +921,6 @@ async function checkBandRing6Workshop(ctx) {
         // Cleanup
         r.deleteBlueprint("ed_test");
         r.selectBlueprintForEdit("stein_block");
-        return out;
     });
 
     if (!ring66Results || ring66Results.error) {
@@ -979,8 +958,7 @@ async function checkBandRing6Workshop(ctx) {
     }
 
     // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
-    const ring6v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const ring6v2Results = await ctx.welt((r) => {
         if (!r) return null;
         const out = {};
 
@@ -1172,9 +1150,8 @@ async function checkBandRing6Workshop(ctx) {
 // jeder Signatur-Edit läuft gegen die Bank, nicht nur gegen die Built-ins. Kalibriert via
 // diag-archetypbank (dieselbe Tabelle).
 async function checkBandArchetypBank(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
             shape,
             material,
@@ -1358,10 +1335,8 @@ async function checkBandArchetypBank(ctx) {
 }
 
 async function checkBandLambda2HismSynthese(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const A = r.constructor;
         out.instanceTintFrozen = Object.isFrozen(A.INSTANCE_TINT);
         out.instanceTintShape =
@@ -1432,7 +1407,6 @@ async function checkBandLambda2HismSynthese(ctx) {
             r.state.architectures = savedArch;
             void probe;
         }
-        return out;
     });
     check("Λ.2 HISM: INSTANCE_TINT ist frozen + trägt rangeH/S/V", res.instanceTintFrozen && res.instanceTintShape);
     // Der Instanz-Tint ist bewusst NEUTRAL-NAH: ±8 % Luminanz-Jitter, uniform [0.92, 1.08] → σ =
@@ -1454,10 +1428,8 @@ async function checkBandLambda2HismSynthese(ctx) {
 }
 
 async function checkBandLambda5MischwaldSynthese(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
@@ -1476,7 +1448,6 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
             !!(ref.baum_eiche && ref.baum_birke) &&
             Math.abs((ref.baum_eiche.lebendig || 0) - (ref.baum_birke.lebendig || 0)) < 0.01 &&
             Math.abs((ref.baum_eiche.brennbar || 0) - (ref.baum_birke.brennbar || 0)) < 0.01;
-        return out;
     });
     check(
         "Λ.5 Mischwald (V18.257): 4 neue Baumarten leben in SPECIES_TAG_REFERENCE (birke/erle/buche/tanne — Form via Grammatik, statische Baupläne geschnitten)",
@@ -1497,10 +1468,8 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
 // bit-identisch und tag-neutral (gleiche Materialien + Formen). Headless: Tag-Neutralität,
 // Spawn-Verdrahtung, Pro-Instanz-Rotation + ihre Persistenz.
 async function checkBandWHWald(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (1) die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
         // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
@@ -1519,25 +1488,48 @@ async function checkBandWHWald(ctx) {
         // und sie streuen: der Klon-Killer, ein Wald zeigt nicht nach Norden und steht nicht in einer Größe.
         const calls = [];
         const imm = r._vegSpawnImmediate;
-        Object.assign(r, { _enqueueVegetationSpawn: (n, p, o) => calls.push({ n, o }), _scatterRegisterCell() {}, _scatterIncrementCounter() {}, _vegSpawnImmediate: true });
+        Object.assign(r, {
+            _enqueueVegetationSpawn: (n, p, o) => calls.push({ n, o }),
+            _scatterRegisterCell() {},
+            _scatterIncrementCounter() {},
+            _vegSpawnImmediate: true,
+        });
         try {
             const span = r._voxelChunkConfig().span;
             const pm = r.state.playerMesh.position;
-            for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) r._forestPlantChunk(Math.floor(pm.x / span) + i, Math.floor(pm.z / span) + j);
+            for (let i = -3; i <= 3; i++)
+                for (let j = -3; j <= 3; j++)
+                    r._forestPlantChunk(Math.floor(pm.x / span) + i, Math.floor(pm.z / span) + j);
         } finally {
-            for (const k of ["_enqueueVegetationSpawn", "_scatterRegisterCell", "_scatterIncrementCounter", "_vegSpawnImmediate"]) delete r[k];
+            for (const k of [
+                "_enqueueVegetationSpawn",
+                "_scatterRegisterCell",
+                "_scatterIncrementCounter",
+                "_vegSpawnImmediate",
+            ])
+                delete r[k];
             if (imm !== undefined) r._vegSpawnImmediate = imm;
         }
         const baeume = calls.filter((c) => c.o && c.o._lodSpecies);
-        out.wald = { baeume: baeume.length, groessen: new Set(baeume.map((c) => c.o.scale)).size, gieren: new Set(baeume.map((c) => c.o.rotationY)).size };
-        out.variantPickAfterWin = baeume.length >= 3 && baeume.every((c) => c.n === c.o._lodSpecies && !/_(jung|alt|breit|schlank)$/.test(c.n) && Number.isInteger(c.o._lodVariantIndex));
+        out.wald = {
+            baeume: baeume.length,
+            groessen: new Set(baeume.map((c) => c.o.scale)).size,
+            gieren: new Set(baeume.map((c) => c.o.rotationY)).size,
+        };
+        out.variantPickAfterWin =
+            baeume.length >= 3 &&
+            baeume.every(
+                (c) =>
+                    c.n === c.o._lodSpecies &&
+                    !/_(jung|alt|breit|schlank)$/.test(c.n) &&
+                    Number.isInteger(c.o._lodVariantIndex)
+            );
         out.sizeSpan = out.wald.groessen >= 3 && baeume.every((c) => c.o.scale >= 0.55 && c.o.scale <= 1.95);
         out.rotInSpawn = out.wald.gieren >= 3;
         // (5) Pro-Instanz-Rotation in der Matrix: verschiedene rotationY → verschiedene Welt-Matrizen.
         const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
         const m1 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 1.2 });
         out.rotChangesMatrix = m0.elements[0] !== m1.elements[0] || m0.elements[2] !== m1.elements[2];
-        return out;
     });
     check(
         "W-H Wald (V18.257): die statischen Gestalt-Varianten sind GESCHNITTEN — die Tag-Wahrheit lebt in SPECIES_TAG_REFERENCE (eiche/kiefer), die Form-Vielfalt voll in der Grammatik",
@@ -1561,12 +1553,8 @@ async function checkBandWHWald(ctx) {
 // Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
 // seed-deterministisch, KEIN Affinitäts-Wettstreit — Disziplin).
 async function checkBandV18198Gamma2Totholz(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
-
+    const { check } = ctx;
+    const res = await ctx.welt(async (r, out) => {
         // (T2) Bauplan `stamm_gefallen` ist registriert
         const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
         out.bpExists = !!bp;
@@ -1620,8 +1608,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             out.directSpawnError = err && err.message ? err.message : String(err);
         }
         out.archCountUnchanged = r.state.architectures.length === before;
-
-        return out;
     });
 
     check("V18.198 (T2a) Bauplan stamm_gefallen registriert", res.bpExists === true);
@@ -1644,11 +1630,8 @@ async function checkBandV18198Gamma2Totholz(ctx) {
 // Reine RENDER-Optimierung — bp.parts bleibt unverändert (tag-neutral); gen<6 bleibt Per-Part
 // (alte Welten bit-identisch).
 async function checkBandV18213MeshMerge(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // ─── (M1) Source-Probes: die zwei neuen Helper + Routing ─────
 
         // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ───
@@ -1775,8 +1758,6 @@ async function checkBandV18213MeshMerge(ctx) {
         // Auch den archFlattenCache-Eintrag des Test-Bauplans räumen (selektiv), sonst zögen Folge-Bands
         // stale Einträge mit zerstörten merged-Geom-Referenzen.
         if (testKey && r.state.archFlattenCache) r.state.archFlattenCache.delete(testKey);
-
-        return out;
     });
 
     check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
@@ -1815,9 +1796,8 @@ async function checkBandV18213MeshMerge(ctx) {
 }
 
 async function checkBandV18265ShadowDistance(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const res = await ctx.welt((r) => {
         const st = r.state;
         const out = {};
         // UNIT: L0 UND L1 werfen Schatten (sonst verlöre jeder Baum ab thresh01 seinen Schatten mitten im
@@ -1856,7 +1836,14 @@ async function checkBandV18265ShadowDistance(ctx) {
 }
 
 module.exports = {
-    checkBandV1728SpawnClearance, checkBandWellePerfDBudget, checkBandRing6Workshop, checkBandArchetypBank,
-    checkBandLambda2HismSynthese, checkBandLambda5MischwaldSynthese, checkBandWHWald, checkBandV18198Gamma2Totholz,
-    checkBandV18213MeshMerge, checkBandV18265ShadowDistance,
+    checkBandV1728SpawnClearance,
+    checkBandWellePerfDBudget,
+    checkBandRing6Workshop,
+    checkBandArchetypBank,
+    checkBandLambda2HismSynthese,
+    checkBandLambda5MischwaldSynthese,
+    checkBandWHWald,
+    checkBandV18198Gamma2Totholz,
+    checkBandV18213MeshMerge,
+    checkBandV18265ShadowDistance,
 };

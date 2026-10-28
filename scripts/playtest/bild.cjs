@@ -12,10 +12,8 @@ const SKRIPTE = path.join(__dirname, "..");
 // `aura.emotion` (die auraAt-Achse hat einen echten Leser), der Wasser-`uEmotion`-Haken wird
 // gefüttert — beide waren sonst tote Passagiere.
 async function checkBandV1731EmotionDrivesWorld(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
         const e = r.state.player.emotions;
@@ -34,7 +32,6 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         out.warmR = warm.skyColor.r;
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
-        return out;
     });
     check(
         "Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
@@ -44,15 +41,13 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
 }
 
 async function checkBandWelle6G3Lebendigkeit(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
-    const wave6g3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const wave6g3Results = await ctx.welt((r, out) => {
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
         // --- a) Tag-Nacht-Zyklus
@@ -140,8 +135,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.transitionClearedOnComplete = r.state.weatherTransition === null;
 
         // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt kaskade
-
-        return out;
     });
 
     if (wave6g3Results && !wave6g3Results.error) {
@@ -200,9 +193,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     // ### Welle 6.G3 V2 — Vision-Invarianten ###
     // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität auf die Soul-Wahl? Folgen Frequenzen den
     // Tags? Modulieren Emotionen den Tint? Ist die Wetter-Dauer emotion-abhängig?
-    const wave6g3v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const wave6g3v2Results = await ctx.welt((r, out) => {
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
         // --- Wurzel-Helper existieren
@@ -367,8 +358,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraKg3;
         r.worldFieldAt = origWFA;
         r._applyDayNightToScene();
-
-        return out;
     });
 
     if (wave6g3v2Results && !wave6g3v2Results.error) {
@@ -412,16 +401,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 }
 
 async function checkBandWelle6G4Atmosphere(ctx) {
-    const { page, check, errors, finalState } = ctx;
+    const { check, errors, finalState } = ctx;
     void errors;
     void finalState;
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
-    const v827Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const v827Results = await ctx.welt(async (r, out) => {
         // 1. HemisphereLight im Scene + state-cached
         // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre: nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
@@ -510,8 +496,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // Terrain-Tag/Nacht = die geteilten PBR-Lichter (Sonne/Fog/Hemisphere) — geprüft in den
         // `_applyDayNightToScene`-Bändern, nicht hier.
-
-        return out;
     });
 
     if (v827Results && !v827Results.error) {
@@ -537,10 +521,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
     // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
     // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
-    const v828Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const v828Results = await ctx.welt((r, out) => {
         // --- Phase D: Wind + Wolken + Wasser ---
         // Wind lebt jetzt im Instanced-Gras-Material.
         const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
@@ -703,8 +684,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r.setCavityAO(1.0);
         r.setEdgeSharp(0.5);
         r.setSurfaceTexture(1.0);
-
-        return out;
     });
 
     if (v828Results && !v828Results.error) {
@@ -758,10 +737,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
         check("setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
-        check(
-            "setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
-            v828Results.colorVarSetter
-        );
+        check("setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)", v828Results.colorVarSetter);
         check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
         check(
             "B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante",
@@ -777,10 +753,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
     // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
-    const v829Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const v829Results = await ctx.welt((r, out) => {
         // --- Avatar-Hide im 1st-Person ---
         // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5, Chokepoint `_applyEgoSicht`): im 1st liegt jeder Knoten des Leibs
         // (Kopf-Part + _creatureSkin-Hülle, ohne das Gerät in der Hand), der im 3rd auf Ebene 0 lag, nicht mehr dort; jeder,
@@ -908,8 +881,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Adaptives Wasser ---
         out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
-
-        return out;
     });
 
     if (v829Results && !v829Results.error) {
@@ -930,10 +901,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             `die Boden-Karte ist der gerenderte Boden (${v829Results.bodenKarteZahl})`,
             v829Results.bodenKarteTrifftMesh
         );
-        check(
-            `Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
-            v829Results.nahWieseStabil
-        );
+        check(`Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`, v829Results.nahWieseStabil);
         check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
         check("Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
         check("_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
@@ -943,10 +911,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 
     // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
-    const v833Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const v833Results = await ctx.welt((r, out) => {
         // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
         const dive = r._swimVerticalVelocity(0, 4, true, false);
         const rise = r._swimVerticalVelocity(0, 4, false, true);
@@ -1040,8 +1005,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
 
         if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
-
-        return out;
     });
 
     if (v833Results && !v833Results.error) {
@@ -1051,7 +1014,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
         check("Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
         check("An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
+        check(
+            "im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)",
+            v833Results.physicsUsesSwimFn
+        );
         check("getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
         check("Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
         check("Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
@@ -1102,9 +1068,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     check("Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
 
     // ### Terrain-Schatten + Tag-Nacht-Glättung ###
-    const v848Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const v848Results = await ctx.welt((r, out) => {
         // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
         out.targetInScene =
             !!r.state.directionalLight &&
@@ -1158,7 +1122,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             r.setTimeOfDay(oTod, "human");
             r._applyDayNightToScene();
         }
-        return out;
     });
 
     if (v848Results && !v848Results.error) {
@@ -1173,9 +1136,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
-    const v849Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const v849Results = await ctx.welt((r, out) => {
         // Die Herde (Kern verbandZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
@@ -1211,7 +1172,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             r.removeCreature(r.state.creatures[r.state.creatures.length - 1]);
         }
         r.state.maxCreatures = _saveMax849;
-        return out;
     });
 
     if (v849Results && !v849Results.error) {
@@ -1223,10 +1183,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 
     // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
-    const wave6x4bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const wave6x4bResults = await ctx.welt((r, out) => {
         // --- B3: Stats-HUD DOM-Existenz
         out.statsHudExists = !!document.getElementById("stats-hud");
         out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
@@ -1297,15 +1254,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             rs.value = "2";
             rs.dispatchEvent(new Event("input"));
         }
-
-        return out;
     });
 
     // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
-    const wave6x4cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const wave6x4cResults = await ctx.welt((r, out) => {
         // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
 
         // Test: Bauplan ohne opChain → leere counts
@@ -1366,8 +1318,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Cleanup
         delete r.state.blueprints[tn2];
         r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-
-        return out;
     });
 
     if (wave6x4cResults && !wave6x4cResults.error) {
@@ -1422,10 +1372,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 }
 
 async function checkBandV18164WarumLicht(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         const P = (shape, material, x, y, z, sx, sy, sz) => ({
             shape,
             material,
@@ -1512,7 +1460,6 @@ async function checkBandV18164WarumLicht(ctx) {
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
         out.fogDeckel = !r.state.scene.fog;
-        return out;
     });
     check(
         "§7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)",
@@ -1535,11 +1482,8 @@ async function checkBandV18164WarumLicht(ctx) {
 // Verifikation + Atmosphäre: Büsche/Understory sind echte gewachsene Bauten (kein Kugel-Bug); die
 // Atmosphäre koppelt ans Wetter — hazeNear: ferne Berge verblassen STÄRKER bei Feuchte.
 async function checkBandWahrerAnblickAtmoBusch(ctx) {
-    const { page, check } = ctx;
-    const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-
+    const { check } = ctx;
+    const res = await ctx.welt((r, out) => {
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
         const busch = r._phytoArt("busch_hazel");
         out.buschGrammar = !!(busch && busch.rec.kind === "shrub");
@@ -1563,8 +1507,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         const WF = r.constructor.WEATHER_FIELD;
         out.hazeNearWeather =
             r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
-
-        return out;
     });
 
     check(
@@ -1642,10 +1584,9 @@ async function checkBandWetterVektor(ctx) {
 // grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
 // Eichung (Lehre 21, F1) und lineares Farb-Management.
 async function checkBandLookPhysik(ctx) {
-    const { page, check } = ctx;
+    const { check } = ctx;
     const { kartenEichung } = require(path.join(SKRIPTE, "lib", "licht-linsen.cjs"));
-    const boot = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const boot = await ctx.welt((r) => {
         const K = r.constructor;
         const T = window.THREE || {};
         const rend = r.state && r.state.renderer;
@@ -1825,9 +1766,8 @@ async function checkBandHimmelTag(ctx) {
 // T1 autoUpdate aus · T2/T3 der Takt je Regler-Intervall · T4 Sonnen-Sprung · T5 ohne CSM · T6 `_schattenAlleNeu` · T7 Gang;
 // S1/S2 der alte Schreiber und das Gesetz vor 1410-3 fallen.
 async function checkBandSchattenTakt(ctx) {
-    const { page, check } = ctx;
-    const a = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
+    const { check } = ctx;
+    const a = await ctx.welt((r) => {
         const st = r.state;
         const T = r.constructor.SCHATTEN_TAKT;
         const echt = {

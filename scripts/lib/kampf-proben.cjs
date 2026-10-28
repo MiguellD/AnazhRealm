@@ -2091,11 +2091,10 @@ async function WELLE_L(ort) {
             tod.stromAnteil = kopie.proben ? +(kopie.imStrom / kopie.proben).toFixed(2) : 0;
             tod.kopieOben = Number.isFinite(kopie.obenMax) ? +kopie.obenMax.toFixed(2) : null;
             tod.liegt10s = !!hT.parent && !!hT.userData.dying;
-            // der Leichnam ist kein Wesen: nicht in der Liste, nicht im Fadenkreuz, in keiner Kappe, im Nexus, im
-            // Lebenszyklus oder in findNearestCreature; die Frage nach dem Sterben lebt nur im Tod, im Leichnam-Takt und im
-            // Schadens-Tor
+            // der Leichnam ist kein Wesen: nicht in der Liste, nicht im Fadenkreuz, in keiner Kappe, im Nexus oder in
+            // findNearestCreature (der Lebenszyklus wählt im Verzeichnis des Bestands, das ihn beim Fall verlässt, oekologie.K2#2);
+            // die Frage nach dem Sterben lebt nur im Tod, im Leichnam-Takt und im Schadens-Tor
             tod.unterWesen = s.creatures.indexOf(hT) !== -1;
-            tod.aeltester = r._findOldestCreature() === hT;
             tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
             const FRAGT_ERLAUBT = new Set([
                 "damageCreature",
