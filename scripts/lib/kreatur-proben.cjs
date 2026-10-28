@@ -757,6 +757,13 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "riss") decke("_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
         if (taeter === "jagd-schritt") schrittJagd();
         if (taeter === "riss-verloren") decke("_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
+        // der Jäger, dessen Tier im Gesetz verhungert, fällt sofort — mitten in seinem Riss (28.10.: 9 von 10 Opfern ohne Maul)
+        if (taeter === "jaeger-faellt")
+            decke("_bestandTode", (alt) => (tode) => {
+                alt.call(r, tode);
+                for (const c of s.creatures.slice())
+                    if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
+            });
         const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
@@ -3377,6 +3384,7 @@ const TAETER = {
         ["jagd-schritt", /die Jagd hetzt nie: 0 von/],
         ["riss", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
         ["riss-verloren", /im Übergang verloren: [1-9]/],
+        ["jaeger-faellt", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
     ],
     herde: [
         ["herde", /am Blick/],
