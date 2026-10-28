@@ -38,15 +38,11 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, pngDatei, opt, booteWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d;
-};
 const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
@@ -74,29 +70,6 @@ const WUERFE = [
     ["spawn_blueprint", "baum_eiche", ["near_player", 25]],
     ["spawn_fractal", ["far_player", 220, 400], "temple", 1, 0.5],
 ];
-
-// Boot bis die Welt steht (der Null-Renderer wie im Playtest: Würfe sind Zustand, kein Bild).
-async function boote(page) {
-    return page.evaluate(async () => {
-        const start = performance.now();
-        await window.__weltDa(); // nach dem Erwachen des Boots
-        for (const weiter = window.__deckel("der Boot der Prüfbühne", 7500); weiter(); ) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Boot reift */
-                }
-                const s = r.state;
-                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
-                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
-            }
-            await sleep(16);
-        }
-        return { ok: false };
-    });
-}
 
 // (5) DIE S4-PROBE: die Hindernis-Station steht, wie ihre Spec sagt (spec/pruefbuehne/stationen.json `s4-hindernisse`) —
 // je Körper sein Bau (der Bauplan der Saat) in der Station, je Teil seine Blocker-Box (die Wahrheit, die Leib-Löser, Kapsel,
@@ -1077,7 +1050,7 @@ async function lichtLauf() {
             await page.reload({ waitUntil: "domcontentloaded", timeout: Math.max(1, bis - Date.now()) });
         });
         await phase("Boot", async () => {
-            const b = await boote(page);
+            const b = await booteWelt(page);
             if (!b.ok) throw new Error("Boot nicht bereit nach 120 s");
             zeit("die Bühne gebootet");
             await page.evaluate(AUSGABE_INSTALL);
@@ -1326,22 +1299,26 @@ async function lichtLauf() {
                     const u8 = auf.u8;
                     const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
                     const v = new T.Vector3();
+                    // je Ring rr (m) um die Feuerstelle 24 Winkel: der Boden-Punkt im Bild, je der 3×3 Pixel um ihn fn(i)
+                    const ringe = (radien, fn) => {
+                        for (const rr of radien)
+                            for (let a = 0; a < 24; a++) {
+                                const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
+                                const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
+                                v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
+                                if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
+                                const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
+                                const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
+                                for (let dy = -1; dy <= 1; dy++)
+                                    for (let dx = -1; dx <= 1; dx++) fn(((sy + dy) * w + sx + dx) * 4);
+                            }
+                    };
                     let lk = 0;
                     let nk = 0;
-                    for (const rr of [0.75, 1.25, 1.75])
-                        for (let a = 0; a < 24; a++) {
-                            const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
-                            const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
-                            v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
-                            if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
-                            const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
-                            const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
-                            for (let dy = -1; dy <= 1; dy++)
-                                for (let dx = -1; dx <= 1; dx++) {
-                                    lk += lum(((sy + dy) * w + sx + dx) * 4);
-                                    nk++;
-                                }
-                        }
+                    ringe([0.75, 1.25, 1.75], (i) => {
+                        lk += lum(i);
+                        nk++;
+                    });
                     // DER FARBTON DES FEUERS: der Boden 1–3 m um die Feuerstelle (5 Ringe × 24 Winkel, 3×3 Pixel), die
                     // mittlere Farbe der Ausgabe — Farbton (Grad) und Sättigung (HSV: (max − min) / max)
                     // — derselbe Boden misst ohne das Feuer die Nacht (`S0_NACHT`): Luma (0–255) und der Anteil abgesoffen (< 4,
@@ -1350,24 +1327,13 @@ async function lichtLauf() {
                     let nt = 0;
                     let bl = 0;
                     let bs = 0;
-                    for (const rr of [1, 1.5, 2, 2.5, 3])
-                        for (let a = 0; a < 24; a++) {
-                            const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
-                            const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
-                            v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
-                            if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
-                            const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
-                            const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
-                            for (let dy = -1; dy <= 1; dy++)
-                                for (let dx = -1; dx <= 1; dx++) {
-                                    const i = ((sy + dy) * w + sx + dx) * 4;
-                                    for (let c = 0; c < 3; c++) rgb[c] += u8[i + c] / 255;
-                                    const l = 255 * lum(i);
-                                    bl += l;
-                                    if (l < 4) bs++;
-                                    nt++;
-                                }
-                        }
+                    ringe([1, 1.5, 2, 2.5, 3], (i) => {
+                        for (let c = 0; c < 3; c++) rgb[c] += u8[i + c] / 255;
+                        const l = 255 * lum(i);
+                        bl += l;
+                        if (l < 4) bs++;
+                        nt++;
+                    });
                     let ton = null;
                     if (nt) {
                         const [R, G, B] = rgb.map((c) => c / nt);
@@ -1715,7 +1681,7 @@ hauptLauf(async () => {
             }, importiert);
             await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         }
-        const b = await boote(page);
+        const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);
             rot = true;

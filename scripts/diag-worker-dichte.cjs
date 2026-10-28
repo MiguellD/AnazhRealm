@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, opt, booteWelt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
@@ -34,10 +34,6 @@ const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--") ? argv[i + 1] : d;
-};
 const SELBSTTEST = argv.includes("--selftest");
 const ECHT = argv.includes("--echt");
 const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
@@ -63,30 +59,6 @@ const bedienung = () =>
     JSON.parse(liesText(path.resolve(__dirname, "..", "worlds", "gelaende", "bedienung.json")));
 
 const server = statikServer({ root, keinCache: true, wandle: kernWandle });
-
-// Boot bis die Welt steht und der Worker den Worldgen-Stand trägt (der Null-Renderer wie im Playtest: die Probe
-// braucht keinen Render, nur Main und Worker).
-async function boote(page) {
-    return page.evaluate(async () => {
-        const start = performance.now();
-        await window.__weltDa(); // nach dem Erwachen des Boots
-        for (const weiter = window.__deckel("der Boot des Voxel-Fadens", 7500); weiter(); ) {
-            const r = window.anazhRealm;
-            if (r && typeof r._gameLoopTick === "function") {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {
-                    /* der Boot reift */
-                }
-                const s = r.state;
-                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
-                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
-            }
-            await sleep(16);
-        }
-        return { ok: false };
-    });
-}
 
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck, zwilling = false) {
@@ -546,7 +518,7 @@ async function frisch(page, url) {
 }
 async function frischBoot(page, url) {
     await frisch(page, url);
-    if (!(await boote(page)).ok) throw new Error("der Boot stand nicht (" + JSON.stringify(KERN_MODUS) + ")");
+    if (!(await booteWelt(page)).ok) throw new Error("der Boot stand nicht (" + JSON.stringify(KERN_MODUS) + ")");
 }
 
 function zeige(rep) {
@@ -1160,7 +1132,7 @@ async function studioProbe(page) {
         await page.evaluate(() => localStorage.clear());
         // DIE FREMDE WELT: eine Welt, die kein Plan beschreibt (Basis 7 m, das Meer darunter, eine Rampe hinter der Wildnis),
         // wird die aktive Welt — über ihr öffnet sich das Studio.
-        const b0 = await boote(page);
+        const b0 = await booteWelt(page);
         if (!b0.ok) throw new Error("die Welt vor der fremden Welt erwachte nicht");
         const nav0 = page.waitForNavigation(LADEN);
         await page.evaluate(() => {
@@ -1183,7 +1155,7 @@ async function studioProbe(page) {
         });
         await nav0;
         await server.zeige(page, 60000, "index.html?studio=gelaende");
-        const b = await boote(page);
+        const b = await booteWelt(page);
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
         console.log(`  Boot unter dem Studio: ${b.ms} ms (Seed ${b.seed})`);
         const da = await page.evaluate(async () => {
@@ -1349,7 +1321,7 @@ async function studioProbe(page) {
         befunde.push(...presetBefunde(presets));
         // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
         await server.zeige(page, 60000);
-        const b2 = await boote(page);
+        const b2 = await booteWelt(page);
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
         const nav = page.waitForNavigation(LADEN);
         const tor = await page.evaluate((text) => {
@@ -1365,7 +1337,7 @@ async function studioProbe(page) {
             throw new Error("Tür");
         }
         await nav;
-        const b3 = await boote(page);
+        const b3 = await booteWelt(page);
         if (!b3.ok) throw new Error("die Welt aus dem Plan erwachte nicht");
         console.log(`  Import: Welt-Tor „Ersetzen" → Reload → Boot ${b3.ms} ms (Seed ${b3.seed})`);
         const welt = await weltMessen(page);
@@ -1502,7 +1474,7 @@ async function studioProbe(page) {
 // rechnet der Faden (Karte hydro-faden). Mit `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 ·
 // Breite, ohne `kanalTiefe`, dem Faden als Gesetz gegeben) MUSS die Boot-Saat rot färben.
 async function gebaut(page) {
-    const b = await boote(page);
+    const b = await booteWelt(page);
     if (!b.ok) {
         console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
         return 1;
@@ -2152,7 +2124,7 @@ hauptLauf(async () => {
             await nav;
             weltArg = { stationen };
         }
-        const b = await boote(page);
+        const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);
             rot = true;

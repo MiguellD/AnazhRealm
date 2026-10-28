@@ -11,15 +11,12 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, startProc, eigenePorte, waitFor, hauptLauf } = require("./lib/welt-boot.cjs");
+const { ROOT, waitFor, hauptLauf, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
-// Der Klon, in dem die Linse liegt, und der Port je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server
-// ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT). die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des
-// Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
-let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
-const ROOM = "smoke-webrtc-room";
+// Die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `zweiImMesh`) — nie 4312/4313,
+// die Server des Schöpfers.
 // die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
 const W16_DIR = path.join(ROOT, "worlds", W16_ID);
@@ -102,61 +99,10 @@ const W17JS_WORLD_HTML = `<!doctype html>
 // Argumente werden an page.evaluate durchgereicht.
 
 hauptLauf(async () => {
-    const failures = [];
-    [PORT, SIGNAL_PORT] = await eigenePorte("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT");
-    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-    function check(name, ok, detail = "") {
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok) failures.push(name);
-    }
-
-    console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-
-    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
-
+    const { errs: failures, check } = pruefer();
+    const mesh = await zweiImMesh("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT", "smoke-webrtc-room");
     try {
-        const pageA = await browser.newPage();
-        const pageB = await browser.newPage();
-        await pageA.setViewport({ width: 1024, height: 640 });
-        await pageB.setViewport({ width: 1024, height: 640 });
-
-        console.log("Lade beide Spielseiten ...");
-        await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        // Welt + window.anazhRealm initialisieren lassen — bis init durchlief (`_gameLoopTick`): init wartet auf den
-        // IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft; ein Raum-Beitritt davor fiele in
-        // init hinein (die Auto-Verbindung baute ihn neu).
-        await waitFor(
-            pageA,
-            () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-            "Seite A initialisiert"
-        );
-        await waitFor(
-            pageB,
-            () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
-            "Seite B initialisiert"
-        );
-
-        // Beide Seiten in DENSELBEN Raum bringen (worldId unterscheidet sich
-        // pro Seite — der roomOverride zwingt sie zusammen).
-        const joinRoom = (wsUrl, room) => {
-            const r = window.anazhRealm;
-            r.state.p2p.url = wsUrl;
-            r.state.p2p.roomOverride = room;
-            r.initP2PSync(null);
-            return r.state.p2p.peerId;
-        };
-        const peerIdA = await pageA.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        const peerIdB = await pageB.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        console.log(`Seite A peerId=${peerIdA}, Seite B peerId=${peerIdB}`);
-
-        // Auf den WebRTC-Handshake warten: beide Seiten müssen meshActive
-        // melden (alle Peer-Kanäle offen).
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
+        const [pageA, pageB, peerIdA, peerIdB] = [...mesh.seiten, ...mesh.peerIds];
         check("Seite A: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
         check("Seite B: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
 
@@ -763,9 +709,7 @@ hauptLauf(async () => {
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.stack || err.message);
     } finally {
-        await browser.close();
-        saveServer.kill();
-        signaling.kill();
+        await mesh.ende();
         // die Test-Welt-Verzeichnisse wegräumen.
         fs.rmSync(W16_DIR, { recursive: true, force: true });
         fs.rmSync(W17_DIR, { recursive: true, force: true });

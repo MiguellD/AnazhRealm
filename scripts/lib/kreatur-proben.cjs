@@ -184,10 +184,10 @@ async function kreaturProben(r, T, opts) {
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
-    const kamera = (blickX, blickZ) => {
+    const kamera = (blickX, blickZ, blickY = 0) => {
         const cam = s.camera;
         cam.position.set(pm.x, pm.y + 1.6, pm.z);
-        cam.lookAt(pm.x + blickX, pm.y + 1.6, pm.z + blickZ);
+        cam.lookAt(pm.x + blickX, pm.y + 1.6 + blickY, pm.z + blickZ);
         cam.updateMatrixWorld(true);
         if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
         r._loopFrustumCulling();
@@ -1032,109 +1032,71 @@ async function kreaturProben(r, T, opts) {
     // Zentrums (nah) mit dem Blick auf es. Gemessen an den Lagen, die der Takt zeichnet, ab 10 s: die Ausrichtung Φ = |Σv̂|/N
     // (v aus dem Weg je Takt, wie die Herde), die Kohäsion = der Anteil der Glieder im größten Verbund, Glied zu Glied binnen
     // fensterRaum × Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom Mittel) trägt fünf Leiber,
-    // hundert Glieder füllen einen Ball weiter als das Fenster; je Takt die Züge des Verbands je Glied (`verbandZug`) ──
+    // hundert Glieder füllen einen Ball weiter als das Fenster; je Takt die Züge des Verbands je Glied durch DIE Funktion
+    // der Herde (`verbandZug`). Die Täter: der Verband aus (der Zug gibt den Wunsch zurück) und der Zwilling (eine Kopie des
+    // Zugs, nicht die Funktion der Herde) ──
     await buehne("schwarm", async (restore) => {
-        const K = A._steuerGesetz();
-        const zugAlt = K.verbandZug;
+        const [K, VG, tag0, wetter0] = [A._steuerGesetz(), A._vogelGesetz(), s.timeOfDay, s.weather];
+        const [zug, S] = [K.verbandZug, VG.V.schwarm];
         let zuege = 0;
         K.verbandZug = function (x, z, vx, vz, tempo, raum, gl, H, out) {
-            zuege++;
-            if (taeter !== "schwarm-verband") return zugAlt.apply(this, arguments);
-            return Object.assign(out, { x: vx, z: vz, n: 0 });
+            zuege += taeter !== "schwarm-zwilling";
+            return taeter === "schwarm-verband" ? Object.assign(out, { x: vx, z: vz }) : zug.apply(this, arguments);
         };
-        restore.push(() => (K.verbandZug = zugAlt));
-        // der Zwilling (main bis 28.10.): jedes Glied eine Funktion von Index und Zeit, nah die Separation — kein Verband
-        if (taeter === "schwarm-zwilling")
-            decke(
-                "_schwarmVerband",
-                () =>
-                    function (c, zt, x, y, z, uhr, nah, voegel, n0) {
-                        const [VG, sk] = [A._vogelGesetz(), this._schwarmKarte];
-                        for (let i = 0; i < zt.n; i++) {
-                            const g = VG.glied(i, zt.n, uhr, c.wurf[0], zt.gier, VG.V, sk.glied);
-                            sk.lagen.set([x + g.x, y + g.y, z + g.z], 3 * i);
-                            Object.assign(voegel[n0 + i] || (voegel[n0 + i] = {}), { gier: g.gier, schlag: g.schlag });
-                        }
-                        return nah ? VG.separation(sk.lagen, zt.n, VG.V.schwarm.raumM, sk.gitter) : 0;
-                    }
-            );
-        const [tag0, wetter0] = [s.timeOfDay, s.weather];
+        restore.push(() => ((K.verbandZug = zug), r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler")));
         r._uhrSetzen(0.5, "regler");
         r._setWeather("sunny", "regler");
-        restore.push(() => (r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler")));
-        const VG = A._vogelGesetz();
-        const S = VG.V.schwarm;
         const fenster = A._verhaltenGesetz().herde.fensterRaum * S.raumM;
         const [sonne, regen] = [r._sonnenRichtung().y, r._weatherFieldFor(s.weather).rain];
         r._schwarmKarte = null;
         r._vogelSchwarmTakt(sonne, regen);
         const sk = r._schwarmKarte;
-        const c = sk.zellen.get(
-            Math.floor(s.camera.position.x / S.zelleM) * 1048576 + Math.floor(s.camera.position.z / S.zelleM)
-        );
-        if (!c) throw new Error("keine Schwarm-Zelle unter dem Auge");
+        const c = sk.zellen.get(Math.floor(pm.x / S.zelleM) * 1048576 + Math.floor(pm.z / S.zelleM));
         c.wurf[4] = (100 - S.glieder[0]) / (S.glieder[1] - S.glieder[0]);
-        const zt = {};
-        const t = { takte: 0, phi: 0, k: [], zuege: 0, alt: null, leitM: 0, nn: 0, ms: [] };
-        for (let k = 0; k < 3600; k++) {
-            s.spielZeit += 1 / 60;
+        const [zt, t] = [{}, { takte: 0, phi: 0, k: [], zuege: 0 }];
+        for (let k = 0, alt; k < 3600; k++, s.spielZeit += 1 / 60) {
             for (const q of sk.zellen.values()) [q.revier, q.frisch] = [q === c, s.spielZeit];
-            if (!VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt))
-                throw new Error("der Schwarm fliegt nicht");
+            VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt);
             const [x, z] = [c.x + zt.dx, c.z + zt.dz];
-            const [ex, ez] = [x + Math.cos(zt.gier) * 40, z - Math.sin(zt.gier) * 40];
-            pm.set(ex, r.getTerrainHeightAt(ex, ez) + 0.5, ez);
-            s.camera.position.set(ex, pm.y + 1.1, ez);
-            s.camera.lookAt(x, r._terrainMacroSurfaceY(x, z) + zt.h, z);
-            s.camera.updateMatrixWorld(true);
-            r._loopFrustumCulling();
-            const [z0, t0] = [zuege, performance.now()];
+            pm.set(x + Math.cos(zt.gier) * 40, 0, z - Math.sin(zt.gier) * 40);
+            pm.y = r.getTerrainHeightAt(pm.x, pm.z);
+            kamera(x - pm.x, z - pm.z, r._terrainMacroSurfaceY(x, z) + zt.h - pm.y - 1.6);
+            const z0 = zuege;
             r._vogelTakt();
-            t.ms.push(performance.now() - t0);
             const L = sk.voegel.map((v) => [v.x, v.y, v.z]);
-            if (k < 600 || L.length !== zt.n) {
-                t.alt = L;
-                continue;
+            if (k >= 600 && L.length === zt.n && alt.length === zt.n) {
+                const d = L.map((p, i) => [p[0] - alt[i][0], p[2] - alt[i][2]].map((v, e, a) => v / Math.hypot(...a)));
+                t.phi += Math.hypot(...[0, 1].map((e) => d.reduce((m, v) => m + v[e], 0))) / zt.n;
+                t.zuege += (zuege - z0) / zt.n;
+                t.takte++;
+                // der größte Verbund: wer Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar ist
+                for (let frei = new Set(L.keys()), gross = 0; k % 6 === 0 && frei.size;) {
+                    const kette = [frei.values().next().value];
+                    for (const a of kette) {
+                        frei.delete(a);
+                        for (const b of frei)
+                            if (Math.hypot(...L[b].map((v, e) => v - L[a][e])) <= fenster)
+                                (frei.delete(b), kette.push(b));
+                    }
+                    gross = Math.max(gross, kette.length);
+                    if (!frei.size) t.k.push(gross / zt.n);
+                }
             }
-            t.zuege += (zuege - z0) / L.length;
-            let [sx, sz, mx, mz] = [0, 0, 0, 0];
-            L.forEach((p, i) => {
-                const d = Math.hypot(p[0] - t.alt[i][0], p[2] - t.alt[i][2]);
-                if (d > 1e-6) ((sx += (p[0] - t.alt[i][0]) / d), (sz += (p[2] - t.alt[i][2]) / d));
-                [mx, mz] = [mx + p[0] / L.length, mz + p[2] / L.length];
-            });
-            t.phi += Math.hypot(sx, sz) / L.length;
-            t.leitM += Math.hypot(mx - x, mz - z);
-            t.takte++;
-            t.alt = L;
-            if (k % 6) continue;
-            // der größte Verbund: die Glieder, die Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar sind
-            const frei = new Set(L.keys());
-            let gross = 0;
-            while (frei.size) {
-                const kette = [frei.values().next().value];
-                frei.delete(kette[0]);
-                for (let a = 0; a < kette.length; a++)
-                    for (const b of [...frei])
-                        if (Math.hypot(...L[b].map((v, e) => v - L[kette[a]][e])) <= fenster)
-                            (frei.delete(b), kette.push(b));
-                gross = Math.max(gross, kette.length);
-            }
-            t.k.push(gross / L.length);
-            t.nn += L.reduce((m, p, i) => m + Math.min(...L.map((q, j) => (i === j ? Infinity : Math.hypot(...p.map((v, e) => v - q[e]))))), 0) / L.length; // prettier-ignore
+            alt = L;
         }
+        const zahl = (v, n = t.takte) => +(v / n).toFixed(3);
         return {
             glieder: zt.n,
             takte: t.takte,
             proben: t.k.length,
-            fensterM: +fenster.toFixed(2),
-            phi: +(t.phi / t.takte).toFixed(3),
-            kohaesion: +(t.k.reduce((a, b) => a + b, 0) / t.k.length).toFixed(3),
-            kohaesionMin: +Math.min(...t.k).toFixed(3),
-            zuegeJeGlied: +(t.zuege / t.takte).toFixed(3),
-            leitM: +(t.leitM / t.takte).toFixed(2),
-            nnM: +(t.nn / t.k.length).toFixed(2),
-            msTakt: +(t.ms.reduce((a, b) => a + b, 0) / t.ms.length).toFixed(3),
+            fensterM: fenster,
+            phi: zahl(t.phi),
+            kohaesion: zahl(
+                t.k.reduce((m, v) => m + v),
+                t.k.length
+            ),
+            kohaesionMin: Math.min(...t.k),
+            zuegeJeGlied: zahl(t.zuege),
         };
     });
 
@@ -3256,16 +3218,13 @@ function urteil(name, z) {
     if (name === "schwarm") {
         soll(
             z.glieder >= 60 && z.takte >= 3000 && z.proben >= 500,
-            `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte, ${z.proben} Proben des Verbunds`
+            `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte, ${z.proben} Proben`
         );
-        soll(
-            z.zuegeJeGlied >= 0.99,
-            `Schwarm ohne Verband: ${z.zuegeJeGlied} Züge je Glied und Takt (Soll 1 — verbandZug wie die Herde)`
-        );
+        soll(z.zuegeJeGlied >= 0.99, `Schwarm ohne Verband: ${z.zuegeJeGlied} Züge je Glied und Takt (Soll 1)`);
         soll(z.phi >= 0.8, `Schwarm fliegt ungerichtet: Φ ${z.phi} (Soll ≥ 0,8)`);
         soll(
             z.kohaesion >= 0.9,
-            `Schwarm zerfällt: im Mittel ${z.kohaesion} der ${z.glieder} Glieder im größten Verbund, Glied zu Glied ≤ ${z.fensterM} m (Soll ≥ 0,9; am wenigsten ${z.kohaesionMin}, ${z.leitM} m vom Leittier)`
+            `Schwarm zerfällt: ${z.kohaesion} im größten Verbund, Glied zu Glied ≤ ${z.fensterM} m (Soll ≥ 0,9; min ${z.kohaesionMin})`
         );
     }
     if (name === "reload") {

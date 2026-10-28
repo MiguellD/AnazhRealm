@@ -21,63 +21,18 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, halteBis, startProc, eigenePorte, waitFor } = require("./lib/welt-boot.cjs");
+const { halteBis, waitFor, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
 
-// Der Klon, in dem die Linse liegt, und der Port je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der
-// Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT). die eigenen Ports: COPRESENCE_PORT und
-// COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
-let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
-const ROOM = "smoke-copresence-room";
-
+// Die eigenen Ports: COPRESENCE_PORT und COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `zweiImMesh`) — nie
+// 4312/4313, die Server des Schöpfers. Die Namen setzt jede Seite vor dem Beitritt — die peer-join-Injektion trägt sie in
+// die Fremd-Welt.
 (async () => {
-    const failures = [];
-    [PORT, SIGNAL_PORT] = await eigenePorte("COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT");
-    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-    function check(name, ok, detail = "") {
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok) failures.push(name);
-    }
-
-    console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-
-    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
-
+    const { errs: failures, check } = pruefer();
+    const mesh = await zweiImMesh("COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT", "smoke-copresence-room", (p, i) =>
+        p.evaluate((n) => (window.anazhRealm.state.player.name = n), ["Anna", "Bo"][i])
+    );
     try {
-        const pageA = await browser.newPage();
-        const pageB = await browser.newPage();
-        await pageA.setViewport({ width: 1024, height: 640 });
-        await pageB.setViewport({ width: 1024, height: 640 });
-
-        console.log("Lade beide Spielseiten ...");
-        await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await waitFor(pageA, () => !!window.anazhRealm, "Seite A initialisiert");
-        await waitFor(pageB, () => !!window.anazhRealm, "Seite B initialisiert");
-
-        // Namen setzen — die peer-join-Injektion trägt sie in die Fremd-Welt.
-        await pageA.evaluate(() => {
-            window.anazhRealm.state.player.name = "Anna";
-        });
-        await pageB.evaluate(() => {
-            window.anazhRealm.state.player.name = "Bo";
-        });
-
-        // Mesh aufbauen (das smoke-webrtc-Muster).
-        const joinRoom = (wsUrl, room) => {
-            const r = window.anazhRealm;
-            r.state.p2p.url = wsUrl;
-            r.state.p2p.roomOverride = room;
-            r.initP2PSync(null);
-            return r.state.p2p.peerId;
-        };
-        const peerIdA = await pageA.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        const peerIdB = await pageB.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        console.log(`Seite A peerId=${peerIdA}, Seite B peerId=${peerIdB}`);
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
+        const [pageA, pageB, peerIdA, peerIdB] = [...mesh.seiten, ...mesh.peerIds];
         check("WebRTC-Mesh steht (A + B)", true);
 
         // A holt + betritt das Begegnungs-Portal (der echte Spieler-Pfad:
@@ -215,7 +170,8 @@ const ROOM = "smoke-copresence-room";
             args: [bridgeA.poseZ === null ? 0 : bridgeA.poseZ],
             frist: 30000,
         });
-        if (!halt.erreicht) throw new Error("Timeout: A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)");
+        if (!halt.erreicht)
+            throw new Error("Timeout: A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)");
         check("A: Heimat-Taste → fremde Engine → local-pose (der volle Kreis)", true, `${halt.ms} ms W`);
 
         // W18-D — der PERSISTENZ-SLOT: A's Welt exponiert ihren Zustand
@@ -347,8 +303,6 @@ const ROOM = "smoke-copresence-room";
         console.error("❌ Smoke-Test abgebrochen:", err.message);
         process.exitCode = 1;
     } finally {
-        await browser.close().catch(() => {});
-        saveServer.kill();
-        signaling.kill();
+        await mesh.ende();
     }
 })();
