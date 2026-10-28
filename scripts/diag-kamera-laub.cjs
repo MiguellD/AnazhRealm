@@ -1192,7 +1192,7 @@ hauptLauf(async () => {
         ]);
         // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
         // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
-        // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
+        // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös), die
         // Beweisbilder vom 13.10. (spec/abnahme) fallen ROT, und die Aufnahme misst, urteilt und wirft (der Vor-Stand ohne Wurf feuert).
         const AU = require("./lib/abnahme-urteil.cjs");
         const fdir = path.join(root, "spec", "abnahme");
