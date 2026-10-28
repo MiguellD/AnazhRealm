@@ -45,8 +45,7 @@ const CORES = MANIFEST.map((c) => ({
 }));
 
 const REZEPT_ID = /^[a-z0-9_-]+$/;
-const { pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
-const { errs, check } = pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Ein absorbierender Proxy: frisst jeden Konstruktor/jede Methode der
 // Top-Level-Ausführung (THREE etc.) — nur die DATEN-Blöcke interessieren.
@@ -1545,5 +1544,5 @@ function validateManifest(m, kern) {
         );
     }
 
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`, "\n✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, und der Selbst-Test beweist die Linse feuert.");
+    wandEnde(errs, "der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, und der Selbst-Test beweist die Linse feuert.");
 })();

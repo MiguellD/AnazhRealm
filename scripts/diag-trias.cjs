@@ -25,7 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
@@ -109,7 +109,8 @@ hauptLauf(async () => {
             !stammLib.fehlt("cloneBlueprint", /donorOnly/, (t) => stammLib.ersetze(t, "cloneBlueprint", "const source = ", "const donorOnly = 0, source = ")),
             stammLib.fehlt.wo
         );
-        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuoes.", "\n✅ SELBST-TEST GRÜN.");
+        selbsttestEnde(errs);
+        process.exit(0);
     }
 
     // ===== Teil N: die fachwerk-Stufen-Wahrheit als Zahl =====
@@ -508,5 +509,5 @@ hauptLauf(async () => {
         if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
 
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt.");
+    wandEnde(errs, "DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt.");
 });

@@ -100,7 +100,7 @@ function urteil(b) {
                     ` am Punkt ${JSON.stringify(f.punkt)}`
             );
         }
-        if (x.schatten && x.schatten.lecks && x.schatten.lecks.length > 0) {
+        if (x.schatten?.lecks && x.schatten.lecks.length > 0) {
             const l = x.schatten.lecks[0];
             v.push(
                 `LICHT-LECK: Blick ${x.name}: ${x.schatten.lecks.length} Empfänger, zuerst ${JSON.stringify(l.empfaenger)} — ` +
@@ -194,7 +194,7 @@ function urteil(b) {
     }
     // (j) BLENDUNG: das Licht fällt nah nicht steil — die Wand in Armlänge zeigt ihre Maserung wie die Karte in 2 m (das EINE
     // Punktlicht-Gesetz, fachwerk `lichtAbfall`: 1/d^abfall mit dem Kern der Quelle; r184s 1/d ohne Kern legte die Wand weiß)
-    if (al && al.hoehle && Number.isFinite(al.hoehle.blendung)) {
+    if (al?.hoehle && Number.isFinite(al.hoehle.blendung)) {
         const q = al.hoehle.blendung;
         if (q > 1.5)
             v.push(
@@ -738,7 +738,7 @@ const server = statikServer();
                         felsZaehl.an = false;
                         stoffWorker.syncRufe += felsZaehl.rufe - r0;
                     }
-                    const g = m && m.mesh ? m.mesh.geometry : null;
+                    const g = m?.mesh ? m.mesh.geometry : null;
                     if (!g || w.empty) {
                         aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: "leer auf einer Seite" });
                         continue;
@@ -766,7 +766,7 @@ const server = statikServer();
                     });
                     g.dispose();
                 } catch (e) {
-                    aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: String((e && e.message) || e) });
+                    aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: String(e?.message || e) });
                 }
             }
             globalThis.__gelaendeCore = GK0;
@@ -938,7 +938,7 @@ const server = statikServer();
                 for (let f = 0; f < 400; f++) {
                     r._tickChunkSatz();
                     r._passSicht(cam, false);
-                    const offen = s.hoehle && s.hoehle.offen ? s.hoehle.offen.length : 0;
+                    const offen = s.hoehle?.offen ? s.hoehle.offen.length : 0;
                     if (offen <= r.constructor.HOEHLEN_HORIZONT_PROBEN) break;
                     r._passSicht(cam, true);
                 }
@@ -1141,7 +1141,7 @@ const server = statikServer();
                         for (let i = 0; i < zl.idx.length; i++) {
                             const j = zl.idx[i];
                             pm.set(PA.getX(j), PA.getY(j), PA.getZ(j));
-                            if (hoehleV.has(j) && kn.tore.some((t) => t.box && t.box.containsPoint(pm))) mundV.add(j);
+                            if (hoehleV.has(j) && kn.tore.some((t) => t.box?.containsPoint(pm))) mundV.add(j);
                         }
                     }
                 const L = window.__gelaendeCore.HIMMELS_SICHT.m;
@@ -1317,7 +1317,7 @@ const server = statikServer();
                     const au = r._augenLeuchte;
                     // ein Platz des Licht-Pools: brennt das Auge, nennt `_leuchtQuellen` es am Auge beim Namen
                     const imPool =
-                        !(au && au.L && au.L.staerke > 0) ||
+                        !(au?.L && au.L.staerke > 0) ||
                         r._leuchtQuellen(p[0], p[1], p[2], 1).some((q) => q.id === au);
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
@@ -1375,7 +1375,7 @@ const server = statikServer();
                         let drin = false;
                         for (const bl of sb.bloecke.values()) {
                             if (!bl.hoehle) continue;
-                            for (const kn of bl.hoehle.knoten) if (kn.luft && kn.luft.containsPoint(wp)) drin = true;
+                            for (const kn of bl.hoehle.knoten) if (kn.luft?.containsPoint(wp)) drin = true;
                             if (drin) break;
                         }
                         if (drin) wesen++;
@@ -1476,7 +1476,7 @@ const server = statikServer();
                 m1.dispose();
                 m0.dispose();
             } catch (e) {
-                aus.code.graphFehler = String((e && e.message) || e).split("\n")[0];
+                aus.code.graphFehler = String(e?.message || e).split("\n")[0];
             }
             // (m) Der Shader rechnet DAS Gesetz (Nachbesserung 2): der Detail-Term ruft gelaende-core `felsFein` und `schuttKorn`
             // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
@@ -1639,7 +1639,7 @@ const server = statikServer();
             return aus;
         }, ORTE);
     } catch (e) {
-        befund = { fehler: (e && e.message) || String(e) };
+        befund = { fehler: e?.message || String(e) };
     }
     await browser.close();
     server.close();
@@ -1730,7 +1730,7 @@ const server = statikServer();
         befund.bankung = GKn && typeof GKn.felsBankung === "function" ? GKn.felsBankung() : null;
     } catch (e) {
         befund.bankung = null;
-        console.log("  (m) Bankung: gelaende-core nicht ladbar — " + ((e && e.message) || e));
+        console.log("  (m) Bankung: gelaende-core nicht ladbar — " + (e?.message || e));
     }
     const bkn = befund.bankung;
     if (bkn)

@@ -29,7 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -1365,7 +1365,8 @@ async function main() {
             !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
             `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
         );
-        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN — die Linse feuert auf jede Verfälschungs-Klasse.");
+        selbsttestEnde(errs, "die Linse feuert auf jede Verfälschungs-Klasse.");
+        process.exit(0);
     }
 
     console.log("=== W5.3 — DAS GESETZ DER BLENDE (phyto-core) GEGEN DIE STUDIO-BLENDE (foundry-core injectWind, im Lauf) ===");
@@ -1684,7 +1685,7 @@ async function main() {
         check("GEISTER-BAUM Auge Selbsttest: das Auge = der Spieler — die Linse zählt die Sonde und jede Geburt", !!GB.gegenSpieler && GB.gegenSpieler.falsch >= 1 && GB.gegenSpieler.geburtFalsch > 0, ga(GB.gegenSpieler));
         console.log(`  (die Geister-Linse lief ${GB.ms} ms)`);
     } else check("GEISTER-BAUM lief", false, "fehlt");
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN.");
+    wandEnde(errs, "DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN.");
 }
 
 hauptLauf(main);

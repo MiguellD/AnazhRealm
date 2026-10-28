@@ -21,7 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -72,7 +72,8 @@ hauptLauf(async () => {
         // V2: portalMeta in der Donor-Zeile -> S6 feuert beim Namen
         const rot = staticLaws((t) => stammLib.ersetze(t, null, /(\n {4}haus_basis: \{)/, "$1\n        portalMeta: {},"), manifestSrc).filter((l) => !l[1]);
         check("Selbst-Test 2: portalMeta in haus_basis -> S6 feuert", rot.length === 1 && rot[0][0].startsWith("S6"), rot.map((l) => l[2]).join(" · "));
-        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuoes.", "\n✅ SELBST-TEST GRUEN — die Linse feuert auf die gestrichene Manifest-Zeile.");
+        selbsttestEnde(errs, "die Linse feuert auf die gestrichene Manifest-Zeile.");
+        process.exit(0);
     }
 
     console.log("=== ε-BEWEIS FACHWERK — TEIL S: die statischen Gesetze (Node) ===");
@@ -163,5 +164,5 @@ hauptLauf(async () => {
         String(out.f.k3)
     );
 
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en).`, "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen.");
+    wandEnde(errs, "DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen.");
 });

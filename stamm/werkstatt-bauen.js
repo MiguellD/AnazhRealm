@@ -2592,7 +2592,7 @@ class AnazhRealm_werkstatt_bauen {
         const messen = () => {
             const lauf = (this._wsKostenLauf = (this._wsKostenLauf || 0) + 1);
             const bp = bpName ? this.state.blueprints[bpName] : null;
-            const gestalt = this._foundryVariantFor(this._werkSame(bp, bpName || preset), preset);
+            const gestalt = this._foundryVariantFor(this._vorschauSame(bp, bpName || preset), preset);
             if (gestalt == null) return;
             const ov = this._workshopStudioOvFor(preset);
             for (const s of stufen)

@@ -106,7 +106,7 @@ function check(name, ok) {
             .waitForFunction(
                 () => {
                     const r = window.anazhRealm;
-                    return !!(r && r._foundry && r._foundry.recipes && r._foundry.recipes[r.constructor.KOERPER_HOST_RECIPE]);
+                    return !!r?._foundry?.recipes?.[r.constructor.KOERPER_HOST_RECIPE];
                 },
                 { polling: 100, timeout: 180000 }
             )
@@ -123,29 +123,29 @@ function check(name, ok) {
                 try {
                     return fn();
                 } catch (e) {
-                    return { __err: String((e && e.message) || e) };
+                    return { __err: String(e?.message || e) };
                 }
             };
             out.stateReachable = !!(r && st);
-            out.voxelChunks = st && st.voxelChunks ? st.voxelChunks.size : 0;
+            out.voxelChunks = st?.voxelChunks ? st.voxelChunks.size : 0;
             // Terrain-Substanz: mind. ein Chunk trägt surfMap ODER waterCells
             let hasSurf = 0,
                 hasWater = 0;
-            if (st && st.voxelChunks)
+            if (st?.voxelChunks)
                 for (const e of st.voxelChunks.values()) {
-                    if (e && e.surfMap) hasSurf++;
-                    if (e && e.waterCells) hasWater++;
+                    if (e?.surfMap) hasSurf++;
+                    if (e?.waterCells) hasWater++;
                 }
             out.chunksWithSurf = hasSurf;
             out.chunksWithWater = hasWater;
-            out.blueprintCount = st && st.blueprints ? Object.keys(st.blueprints).length : 0;
+            out.blueprintCount = st?.blueprints ? Object.keys(st.blueprints).length : 0;
             // Höhen-Abfrage endlich
             out.terrainHeightFinite = safe(() => {
                 const h = r.getTerrainHeightAt(0, 0);
                 return typeof h === "number" && isFinite(h);
             });
             // Spieler-Physik-Body
-            out.playerBody = !!(st && st.player && (st.playerBody || (st.player && st.player.body)));
+            out.playerBody = !!(st?.player && (st.playerBody || st.player?.body));
             // AVATAR baut (das Rig: SkinnedMesh + Bones) — die System-B-Pipeline
             out.avatar = safe(() => {
                 const g = r._buildHumanGroup();
@@ -157,7 +157,7 @@ function check(name, ok) {
                     g.traverse((o) => {
                         if (o.isMesh) meshN++;
                     });
-                const gelenke = !!(rig && rig.armL && rig.armL.shoulder && rig.legL && rig.legL.knee && rig.head);
+                const gelenke = !!(rig?.armL?.shoulder && rig.legL?.knee && rig.head);
                 return { ok: !!g, hasRig: !!rig, baum: rig ? rig._baum === true : false, meshN, gelenke };
             });
             // KREATUR baut (der Studio-Baum, KONVERGENZ III)
@@ -178,7 +178,7 @@ function check(name, ok) {
                 const res = {};
                 for (const n of ["wolf", "fuchs", "baer"]) {
                     const g = r._buildCreatureGroup(n);
-                    res[n] = !!(g && g.children.length);
+                    res[n] = !!g?.children.length;
                 }
                 return res;
             });
@@ -187,7 +187,7 @@ function check(name, ok) {
             out.tierKoerper = safe(() => {
                 const bp = r.state.blueprints.koerper_wolf;
                 const okDef = !!(bp && bp.role === "soul" && Array.isArray(bp.parts) && bp.parts.length >= 10);
-                const prev = (r.state.player && r.state.player.soul) || "human";
+                const prev = r.state.player?.soul || "human";
                 let getragen = false;
                 if (okDef) {
                     r.applyPlayerSoulFromBlueprint("koerper_wolf");
@@ -198,7 +198,7 @@ function check(name, ok) {
                         !!(
                             r.state.playerMesh &&
                             (r.state.playerMesh.children.length >= 5 ||
-                                (r.state.playerMesh.userData && r.state.playerMesh.userData._tierBaum))
+                                r.state.playerMesh.userData?._tierBaum)
                         );
                     r.applyPlayerSoul(prev);
                 }
@@ -210,7 +210,7 @@ function check(name, ok) {
             // Tempo. Plus: der werde-Alias trägt (wolf→koerper_wolf) und ein
             // gefallener Alt-Name fällt fail-soft auf den Menschen.
             out.koerperStats = safe(() => {
-                const prev = (r.state.player && r.state.player.soul) || "human";
+                const prev = r.state.player?.soul || "human";
                 const read = (k) => {
                     r.applyPlayerSoulFromBlueprint(k);
                     const st = r.state.player.stats || {};
@@ -224,7 +224,7 @@ function check(name, ok) {
                 // Studio-Baum wie die Welt-Kreatur (der _creatureSkin-Wrap deckt
                 // den Leib für die 1st-Person-Regel).
                 const wolfSkin = (r.state.playerMesh.children || []).some(
-                    (c) => c && c.userData && c.userData._creatureSkin
+                    (c) => c?.userData?._creatureSkin
                 );
                 const softOk = !!r.applyPlayerSoul("phoenix") && r.state.player.soul === "human";
                 // HERZ: der MENSCH hängt an derselben Größen-Achse — die
@@ -232,7 +232,7 @@ function check(name, ok) {
                 // Stats: mehr Masse/Höhe → mehr HP, weniger Tempo.
                 let menschDials = false;
                 const rec = r._foundry && r._foundry.recipes && r._foundry.recipes[r.constructor.KOERPER_HOST_RECIPE];
-                if (rec && rec.s) {
+                if (rec?.s) {
                     const saved = JSON.parse(JSON.stringify(rec.s));
                     r.applyPlayerSoul("human");
                     r.recomputePlayerStats();
@@ -304,7 +304,7 @@ function check(name, ok) {
             out.playerStats = safe(() => {
                 let hpMax = null;
                 const cs = r.computePlayerStats();
-                hpMax = cs && cs.stats ? cs.stats.hpMax : null;
+                hpMax = cs?.stats ? cs.stats.hpMax : null;
                 return {
                     hp: st.player ? st.player.hp : null,
                     hpMax,
@@ -337,37 +337,37 @@ function check(name, ok) {
         check(`KREATUR 'wesen' baut (${cw.children || 0} Teile)`, cw.ok === true && !cw.__err);
         check(
             "ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär",
-            (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err
+            R.creatureGlut?.ok === true && !R.creatureGlut?.__err
         );
         check(
             "DIE NEUEN TIERE bauen (Wolf·Fuchs·Bär aus den tetrapoda-Gattungen)",
-            (R.creatureTiere || {}).wolf === true &&
-                (R.creatureTiere || {}).fuchs === true &&
-                (R.creatureTiere || {}).baer === true &&
-                !(R.creatureTiere || {}).__err
+            R.creatureTiere?.wolf === true &&
+                R.creatureTiere?.fuchs === true &&
+                R.creatureTiere?.baer === true &&
+                !R.creatureTiere?.__err
         );
         check(
             "WERDE DAS TIER: koerper_wolf ist tragbar (generischer embody-Pfad) + koerper_wesen/Hirsch existiert",
-            (R.tierKoerper || {}).okDef === true &&
-                (R.tierKoerper || {}).getragen === true &&
-                (R.tierKoerper || {}).hirsch === true &&
-                !(R.tierKoerper || {}).__err
+            R.tierKoerper?.okDef === true &&
+                R.tierKoerper?.getragen === true &&
+                R.tierKoerper?.hirsch === true &&
+                !R.tierKoerper?.__err
         );
         check(
             "KÖRPER→EIGENSCHAFTEN: Bär>Wolf>Fuchs (HP) · Fuchs>Wolf>Bär (Tempo) + werde-Alias + fail-soft",
-            (R.koerperStats || {}).hpOrder === true &&
-                (R.koerperStats || {}).speedOrder === true &&
-                (R.koerperStats || {}).aliasOk === true &&
-                (R.koerperStats || {}).softOk === true &&
-                !(R.koerperStats || {}).__err
+            R.koerperStats?.hpOrder === true &&
+                R.koerperStats?.speedOrder === true &&
+                R.koerperStats?.aliasOk === true &&
+                R.koerperStats?.softOk === true &&
+                !R.koerperStats?.__err
         );
         check(
             "HERZ: werde wolf trägt den Studio-Baum (derselbe Guss wie die Welt-Kreatur)",
-            (R.koerperStats || {}).wolfSkin === true && !(R.koerperStats || {}).__err
+            R.koerperStats?.wolfSkin === true && !R.koerperStats?.__err
         );
         check(
             "HERZ: Mensch-Dials tragen Stats (mehr Masse/Höhe → mehr HP, weniger Tempo — EINE Größen-Achse)",
-            (R.koerperStats || {}).menschDials === true && !(R.koerperStats || {}).__err
+            R.koerperStats?.menschDials === true && !R.koerperStats?.__err
         );
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);
@@ -392,7 +392,7 @@ function check(name, ok) {
                 const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
                 o.satz = !!parsed && parsed.program[0] === "spawn_studio" && parsed.program[1] === "eichen";
             } catch (e) {
-                o.err = (e && e.message) || String(e);
+                o.err = e?.message || String(e);
             }
             return o;
         });
@@ -443,7 +443,7 @@ function check(name, ok) {
                             r._lastTreeSkeleton = null;
                             // der Stamm am Fuß, den die Kollision liest (Welt-Meter): mit Welt-Maß misst er H/hd
                             const fuss = (sk.branches || []).find((b) => b.isTrunk);
-                            const r0 = fuss && fuss.points && fuss.points[0] ? fuss.points[0].r : NaN;
+                            const r0 = fuss?.points?.[0] ? fuss.points[0].r : NaN;
                             // die Nadel-Art liest der Richter an seinen Laub-Bällen ab (Nadel y-gestreckt), der Fuß-Saum zählt nicht
                             const baelle = (teile || []).filter(
                                 (p) => p.material === "laub" && p.size.x <= p.size.y * 1.5
@@ -481,7 +481,7 @@ function check(name, ok) {
                                         "stammM";
                         } catch (e) {
                             o.rot++;
-                            notiere("bruch:" + ((e && e.message) || String(e)).slice(0, 60), fall);
+                            notiere("bruch:" + (e?.message || String(e)).slice(0, 60), fall);
                         }
                     }
             return o;
@@ -514,7 +514,7 @@ function check(name, ok) {
             console.log(`\n✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll).`);
         }
     } catch (e) {
-        console.log("FATAL: " + ((e && e.stack) || e));
+        console.log("FATAL: " + (e?.stack || e));
         await browser.close();
         server.close();
         process.exit(1);

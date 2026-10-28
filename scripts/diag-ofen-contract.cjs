@@ -28,7 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const vm = require("vm");
@@ -339,7 +339,8 @@ function taeterRinde(sb) {
             s4.gebrochen > 0 && s4.gpu > 0 && !!s4.sha && s4.sha.startsWith(RINDE_SHA),
             `${s4.ms} ms`
         );
-        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN — ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.");
+        selbsttestEnde(errs, "ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.");
+        process.exit(0);
     }
 
     console.log("=== OFEN-VERTRAG — Tier- und Mensch-Bake je Stoff-Klasse × Gelenk (foundry-core BAKERS_BY_KIND) ===");

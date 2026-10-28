@@ -13,8 +13,8 @@ const path = require("path");
 const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT, urteilEnde } = require("./lib/welt-boot.cjs");
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { hauptLauf, nullSeite, ROOT } = require("./lib/welt-boot.cjs");
 
 const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
 const SAAT = Number(argNach("--saat")) >>> 0 || Date.now() >>> 0;
@@ -400,5 +400,5 @@ hauptLauf(async () => {
     await kanalPruefen();
     console.log(`      (K) ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     if (process.argv.includes("--welt")) await weltPruefen();
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich.");
+    wandEnde(errs, "DER EINE ÜBERGABE-KANAL TRÄGT: jede Art reist von der Hülle in den EINEN Prägungs-Speicher, der Leser baut byte-gleich.");
 });

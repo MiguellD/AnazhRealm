@@ -10,7 +10,7 @@
 //   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -76,7 +76,8 @@ if (process.argv.includes("--selftest")) {
         roh({ shell: (t) => t.replace("const seq = SAISON_GESETZ.stuetzen;", "const seq = [{ ti: 0x6a9a3e }];") }, "F2a")
     );
     check("Selbst-Test 5: _tickSeason ohne Leser (der Mul schreibt nicht) → F3 rot", roh({ mul: () => null }, "F3"));
-    urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Linse ist vakuös.", "\n✅ SELBST-TEST GRÜN — die Saison-Farb-Linse feuert auf jede injizierte Bruch-Klasse.");
+    selbsttestEnde(errs, "die Saison-Farb-Linse feuert auf jede injizierte Bruch-Klasse.");
+    process.exit(0);
 }
 console.log("=== DIE SAISON IST EINE FARBE — uSeasonMul nach dem Studio-Gesetz (Node, die geladene Klasse) ===");
 for (const [n, ok, d] of pruefe({ welt: WELT })) check(n, ok, d);

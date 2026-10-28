@@ -24,7 +24,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, urteilEnde, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -980,7 +980,8 @@ hauptLauf(async () => {
                 `lang ${v8.fadenMs && v8.fadenMs.lang} ms)`,
             ohneFaden !== schale && v8.faden === false
         );
-        urteilEnde(errs.length, "\n❌ SELBST-TEST ROT — die Wand ist vakuös.", "\n✅ SELBST-TEST GRÜN — die Wand feuert auf jede injizierte Bruch-Klasse.");
+        selbsttestEnde(errs, "die Wand feuert auf jede injizierte Bruch-Klasse.");
+        process.exit(0);
     }
     console.log("=== FLUSS-WAND — statisch ===");
     for (const [n, ok, d] of statisch()) check(n, ok, d);
