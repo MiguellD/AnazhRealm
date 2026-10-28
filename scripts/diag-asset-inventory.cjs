@@ -44,7 +44,7 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
@@ -620,12 +620,8 @@ hauptLauf(async () => {
                 "Selbst-Test: leere Senken der Nah-Wiese mit Soll (blinder Sicht-Satz) röten das W-Urteil nicht"
             );
     }
-    if (fails.length) {
-        console.log(`\n❌ ASSET-INVENTUR ROT: ${fails.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ ASSET-INVENTUR GRÜN — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend); die Nah-Wiese zeichnet ${out.wieseZensus} belegte Studio-Senken.`
+    wandEnde(
+        fails,
+        `ASSET-INVENTUR — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend); die Nah-Wiese zeichnet ${out.wieseZensus} belegte Studio-Senken.`
     );
-    process.exit(0);
 });

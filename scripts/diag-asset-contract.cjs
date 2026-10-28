@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 const {
     dek,
     bildDeckung,
@@ -1116,11 +1116,5 @@ hauptLauf(async () => {
 
     console.log("=== ASSET-VERTRAG v1 — Konformanz-Gate ===");
     console.log(`Goldens: ${files.length} · byte-gleich: ${ok}`);
-    if (fails.length) {
-        console.error("\n❌ ROT — erste Befunde:");
-        for (const x of fails.slice(0, 8)) console.error("  • " + x);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — der Generator trifft die eingefrorenen Goldens byte-genau (cv:1). Kein stiller Drift.");
-    process.exit(0);
+    wandEnde(fails, "der Generator trifft die eingefrorenen Goldens byte-genau (cv:1). Kein stiller Drift.");
 });

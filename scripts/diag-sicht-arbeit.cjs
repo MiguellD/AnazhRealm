@@ -36,7 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -1499,11 +1499,8 @@ const server = statikServer();
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
     const v = urteil(befund);
-    if (v.length) {
-        console.log("\n❌ SICHT-ARBEIT ROT:\n  " + v.join("\n  "));
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ SICHT-ARBEIT GRÜN — in Ruhe rechnet kein Pass neu, jede neue Lage rechnet, die gehaltene Wahl ist die frische."
+    wandEnde(
+        v,
+        "SICHT-ARBEIT — in Ruhe rechnet kein Pass neu, jede neue Lage rechnet, die gehaltene Wahl ist die frische."
     );
 })();

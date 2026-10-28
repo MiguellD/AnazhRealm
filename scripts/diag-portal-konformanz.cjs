@@ -38,7 +38,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -869,10 +869,5 @@ hauptLauf(async () => {
         `  Ratsche dslEinzelwort: ${mitDsl - stumm.length}/${mitDsl} Welten wirken auf ein Einzelwort · stumm ${stumm.length} (${stumm.join(", ") || "—"}) · Soll ${ratsche.dslEinzelwort.soll}`
     );
     console.log(`  Ratsche readyEcho: ${echo.length} (${echo.join(", ") || "—"}) · Soll ${ratsche.readyEcho.soll}`);
-    if (rot.length) {
-        for (const x of rot) console.log(`❌ ${x}`);
-        process.exit(1);
-    }
-    console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K8 grün · Ratschen gehalten`);
-    process.exit(0);
+    wandEnde(rot, `gate:portal-konformanz: ${ergebnisse.length} Welten K1–K8 grün · Ratschen gehalten`);
 });

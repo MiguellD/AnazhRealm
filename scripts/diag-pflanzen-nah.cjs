@@ -55,7 +55,7 @@
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");
@@ -1391,11 +1391,5 @@ hauptLauf(async () => {
     console.log(
         "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Fracht · Wind · Teppich ==="
     );
-    if (fails.length) {
-        console.error("\n❌ ROT:");
-        for (const x of fails.slice(0, 12)) console.error("  • " + x);
-        process.exit(1);
-    }
-    console.log(`\n✅ GRÜN — ${Object.keys(roh).length} Fälle.`);
-    process.exit(0);
+    wandEnde(fails, `${Object.keys(roh).length} Fälle.`);
 });

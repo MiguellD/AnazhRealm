@@ -622,7 +622,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
@@ -1744,11 +1744,8 @@ const server = statikServer();
             `TSL-Rechenwerk gegen Zahlen-Rechenwerk ${fr ? `max. Abstand ${fr.maxDiff} an ${fr.n} Punkten` : "fehlt"}`
     );
     const v = urteil(befund);
-    if (v.length) {
-        console.log("\n❌ HÖHLEN-SICHT ROT:\n  " + v.join("\n  "));
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ HÖHLEN-SICHT GRÜN — jede sichtbare Höhlen-Fläche steht im Abschnitt, kein Licht-Leck, Main = Worker."
+    wandEnde(
+        v,
+        "HÖHLEN-SICHT — jede sichtbare Höhlen-Fläche steht im Abschnitt, kein Licht-Leck, Main = Worker."
     );
 })();
