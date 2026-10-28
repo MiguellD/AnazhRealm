@@ -3261,7 +3261,7 @@ function K5_ABDRUCK() {
 // Treffer das Urteil des Kerns (KE · p · edgeQ · v · eff · Zone), der Schaden und die Kraft der Führung, dann hält der Hit-Stop
 // das Bild (die Linse schießt es) und die Schneide der gezeichneten Pose (`_kampfSchneide`). `lauf` mutiert den Kern
 // (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
-// den letzten Lauf zurück (Halt, Kern, Schwung), `lauf` null auch die Prägung.
+// den letzten Lauf zurück (Halt, Kern, Schwung).
 async function K1_BILD(lauf) {
     const r = window.anazhRealm,
         s = r.state,
@@ -3269,19 +3269,25 @@ async function K1_BILD(lauf) {
         pm = s.playerMesh,
         sc = globalThis.__schmiedeCore,
         bp = s.blueprints.klinge_langschwert;
-    const bild = () => new Promise((ok) => requestAnimationFrame(() => ok()));
+    // DAS BILD MIT FRIST: ein verborgener Tab zeichnet nie (rAF schläft — K1_BILD stand 300 s still), ein stehender Loop auch
+    // nicht; nach 10 s ohne Bild ROT beim Namen, mit der Sichtbarkeit der Seite
+    const bild = () =>
+        Promise.race([
+            new Promise((ok) => requestAnimationFrame(ok)),
+            sleep(1e4).then(() => {
+                throw new Error(`K1_BILD ${lauf}: kein Bild in 10 s, die Seite ist ${document.visibilityState}`);
+            }),
+        ]);
     p._hitStopUntil = 0;
     for (const [o, k, v] of window.__k1alt || []) o[k] = v;
     const alt = (window.__k1alt = []);
     const mut = (o, k, f) => (alt.push([o, k, o[k]]), (o[k] *= f));
     if (lauf === "masse") for (const m of Object.values(sc.MAT)) mut(m, "rho", 1.25);
     if (lauf === "schneide") mut(sc.MAT.eisen, "sigY", 1.5);
-    if (!("__k1ov" in window)) window.__k1ov = bp.studioOv;
-    if (lauf === null || !bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
-    bp.studioOv = lauf === null ? window.__k1ov : { __tradition: "Nihon" };
+    if (!bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
+    bp.studioOv = { __tradition: "Nihon" };
     r._kampfMaszeMemo = r._gueteAnteilMemo = null;
     for (let i = 0; i < 600 && p._swing; i++) await bild();
-    if (lauf === null) return null;
     if (p.equipped.held !== "klinge_langschwert") r.equipHeld("klinge_langschwert");
     r._setBlueprintWear(bp, 1);
     for (let i = 0; i < 900 && !pm.userData.heldMesh?.userData.foundryHeld; i++) await bild();
