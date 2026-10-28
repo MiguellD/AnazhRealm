@@ -1493,3 +1493,4 @@
 2026-10-28 22:07:42 takt19-radeon START 71 Stationen
 2026-10-28 22:09:00 takt19-farm START 99 Stationen
 2026-10-28 22:10:09 takt19-radeon gelaende.K2#1 GRÜN 2.5 · 1/71
+2026-10-28 22:14:26 takt19-radeon gelaende.K2#2 ROT 4.3 · 2/71
