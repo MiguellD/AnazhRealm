@@ -603,3 +603,4 @@
 2026-10-28 09:16:17 takt15b-gtx speicher.K2#1 GRÜN 3.4 · 15/24
 2026-10-28 09:19:52 takt15b-gtx speicher.K2#2 ROT 3.5 · 16/24
 2026-10-28 09:21:26 takt15b-gtx speicher.K4#2 ROT 1.5 · 17/24
+2026-10-28 09:22:37 takt15b-gtx streaming.K4#2 ROT 1.1 · 18/24
