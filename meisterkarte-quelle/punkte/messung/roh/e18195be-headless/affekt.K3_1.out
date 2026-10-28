@@ -1,0 +1,107 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function affektLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, art, szene] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const erg = { art, laeufe: [] };
+const tor = werkbankTor(W, ["--ort", "wiese"]);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+const b = await werkbankRuf(W, "/eval", { code: "const da = () => !!r.state._weltbildDa && r._buehneSteht(); for (let i = 0; i < 9000 && !da(); i++) await window.__seitenTakt(); return da();" });
+if (!b || b.ergebnis !== true) throw new Error("die Bühne steht nicht: " + JSON.stringify(b).slice(0, 200));
+const plan = art === "gemuet" ? [null, "starr", "gesetz-aus"].map((m) => [m, 0]) : [0, 1, 2].flatMap((n) => [null, "gemischt", "aus"].map((m) => [m, n]));
+for (const [mutante, saat] of plan) {
+const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, mutante, saat }) + ");" });
+if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+console.log("AFFEKT-" + art + " " + JSON.stringify(a.ergebnis));
+erg.laeufe.push(a.ergebnis);
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+console.log("FEHLER " + erg.fehler);
+} finally {
+tor.stop();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/e18195be-headless/affekt.K3_1.json 7704 nexus function nexusZeitraffer(r, T, o) {
+const s = r.state;
+const pm = s.playerMesh.position;
+const y = (x, z) => r._voxelSurfaceY(x, z);
+if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+const A = window.__affektAnfang || (window.__affektAnfang = {
+u: window.__gangUhr || performance.now(), sz: s.spielZeit, same: JSON.stringify(s.worldMeta.bauSame || {}),
+regel: s.dsl.nextRuleId, wesen: new Set(s.creatures), werke: new Set(s.architectures),
+});
+let u = A.u;
+s.spielZeit = A.sz;
+s.worldMeta.bauSame = JSON.parse(A.same);
+s.worldMeta.bauSame.nexus = (s.worldMeta.bauSame.nexus || 0) + 1000 * (o.saat || 0);
+s.dsl.nextRuleId = A.regel;
+for (const c of [...s.creatures]) if (!A.wesen.has(c)) r.removeCreature(c);
+Object.assign(s, { lifeField: new Map(), wohlBaseline: new Map(), emotionField: new Map(), taten: [], tatErwartung: new Map() });
+s.weatherEffectTime = 0;
+s.worldRules = [];
+s.nexusEvolutionQueue.length = 0;
+s.dsl.pending = [];
+s.dsl.pendingOutcomes = [];
+s.perfRegulator = false;
+s.nexusWirk = undefined;
+r._stimme = null;
+for (const k in s.player.emotions) s.player.emotions[k] = 0;
+s.player.wohlBaseline = undefined;
+r.setGameMode("frieden");
+let saat = 12345;
+const zufall = () => (saat = (Math.imul(saat, 1664525) + 1013904223) >>> 0) / 4294967296;
+const B = r.constructor.WERTUNG.ruleValueBeta;
+const echt = r._measureRuleReward;
+if (o.mutante === "aus") r._measureRuleReward = (rule) => (rule._vPending = false);
+if (o.mutante === "gemischt")
+r._measureRuleReward = function (rule, now) {
+if (!rule._vPending) return;
+const v = rule.value || 0;
+rule.value = rule._wahr || 0;
+echt.call(this, rule, now);
+const ertrag = (rule._wahr || 0) + (rule.value - (rule._wahr || 0)) / B;
+rule._wahr = rule.value;
+rule.value = v + B * ((zufall() < 0.5 ? -ertrag : ertrag) - v);
+};
+const wert = (x) => (o.mutante === "gemischt" ? x._wahr || 0 : x.value || 0);
+const proben = [];
+let evo = u / 1000;
+try {
+for (let k = 0; k < 18000; k++) {
+pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+s.nexusLastEvolution = Infinity;
+if (u / 1000 >= evo) (s.nexusEvolutionQueue.push(r.generateEvolution()), (evo = u / 1000 + s.nexusEvolutionInterval));
+r._gameLoopTick((window.__gangUhr = u += 100));
+if (k % 300 === 0) {
+const R = s.worldRules.filter((x) => x && x.source === "nexus");
+proben.push([R.filter((x) => wert(x) > 0).length, R.length]);
+}
+}
+} finally {
+r._measureRuleReward = echt;
+}
+const drittel = (a) => a.reduce(([g, n], [x, y]) => [g + x, n + y], [0, 0]);
+const L = proben.length;
+const taten = s.taten.filter((e) => /^(rule:)*nexus$/.test(String(e.wer)));
+return {
+mutante: o.mutante || null, saat: o.saat || 0, erstes: drittel(proben.slice(0, L / 3)), letztes: drittel(proben.slice((2 * L) / 3)),
+verlauf: proben.map(([g, n]) => g + "/" + n).join(" "), taten: taten.length,
+gesprochen: taten.filter((e) => e.zeile).length,
+zeilen: taten.filter((e) => e.zeile && e.regel != null).map((e) => e.zeile).slice(-2),
+};
+}
+[linse-gpu] google/swiftshader
+AFFEKT-nexus {"mutante":null,"saat":0,"erstes":[0,35],"letztes":[10,20],"verlauf":"0/0 0/1 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 0/1 0/1 0/1 0/1 1/1 1/1 0/1 0/1","taten":32,"gesprochen":10,"zeilen":[]}
+AFFEKT-nexus {"mutante":"gemischt","saat":0,"erstes":[0,21],"letztes":[0,20],"verlauf":"0/0 0/1 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1","taten":32,"gesprochen":15,"zeilen":[]}
+AFFEKT-nexus {"mutante":"aus","saat":0,"erstes":[0,22],"letztes":[0,20],"verlauf":"0/0 0/1 0/2 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1","taten":32,"gesprochen":15,"zeilen":[]}
+AFFEKT-nexus {"mutante":null,"saat":1,"erstes":[30,105],"letztes":[0,20],"verlauf":"0/1 0/2 0/2 1/3 1/3 1/4 2/4 2/4 2/6 2/6 2/7 2/7 2/7 2/7 2/7 2/7 2/7 2/7 1/7 2/7 2/7 1/7 1/7 1/7 1/8 0/6 0/3 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1","taten":32,"gesprochen":1,"zeilen":["Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 17 weitere Taten seit der letzten Zeile)"]}
+AFFEKT-nexus {"mutante":"gemischt","saat":1,"erstes":[30,105],"letztes":[0,40],"verlauf":"0/1 0/2 0/2 1/3 1/3 1/4 2/4 2/4 2/6 2/6 2/7 2/7 2/7 2/7 2/7 2/7 2/7 2/7 1/7 2/7 2/7 1/7 1/7 1/7 1/7 1/7 0/5 0/2 0/3 0/3 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2","taten":32,"gesprochen":1,"zeilen":["Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 16 weitere Taten seit der letzten Zeile)"]}
+AFFEKT-nexus {"mutante":"aus","saat":1,"erstes":[0,105],"letztes":[0,64],"verlauf":"0/1 0/2 0/2 0/3 0/3 0/4 0/4 0/4 0/6 0/6 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/8 0/7 0/5 0/2 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1","taten":32,"gesprochen":2,"zeilen":["Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 17 weitere Taten seit der letzten Zeile)","Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 17 weitere Taten seit der letzten Zeile)"]}
+AFFEKT-nexus {"mutante":null,"saat":2,"erstes":[32,71],"letztes":[46,100],"verlauf":"0/1 0/1 0/1 0/1 0/2 0/2 1/3 1/3 1/4 1/4 1/4 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/4 3/5 3/6 3/6 1/4 1/5 1/5 1/5 1/5 1/5 1/5","taten":32,"gesprochen":0,"zeilen":[]}
+AFFEKT-nexus {"mutante":"gemischt","saat":2,"erstes":[32,76],"letztes":[60,120],"verlauf":"0/1 0/1 0/1 0/1 0/2 0/2 1/3 1/3 1/4 1/4 1/4 3/5 3/5 3/5 3/5 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6 3/6","taten":32,"gesprochen":0,"zeilen":[]}
+AFFEKT-nexus {"mutante":"aus","saat":2,"erstes":[0,62],"letztes":[0,80],"verlauf":"0/1 0/1 0/1 0/1 0/2 0/2 0/3 0/3 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4 0/4","taten":32,"gesprochen":0,"zeilen":[]}

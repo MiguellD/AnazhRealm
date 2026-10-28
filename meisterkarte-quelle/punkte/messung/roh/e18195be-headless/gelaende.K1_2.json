@@ -1,0 +1,95 @@
+{
+ "kern": {
+  "punkte": 100000,
+  "edits": 300,
+  "haelt": 300,
+  "orte": [
+   [
+    -216.0963620286726,
+    -974.3185708360693
+   ],
+   [
+    -258.4,
+    -1132.8
+   ],
+   [
+    1816,
+    -6168
+   ]
+  ],
+  "wirkt": [
+   19319,
+   20000,
+   12723,
+   15840,
+   20000
+  ],
+  "faeden": 3,
+  "rein": {
+   "stamm": 0,
+   "faden": 0,
+   "maxDiff": 0,
+   "abweichend": 0
+  },
+  "mutationen": [
+   {
+    "name": "Edit-Stärke",
+    "anker": true,
+    "stamm": 0,
+    "faden": 0,
+    "maxDiff": 0,
+    "abweichend": 0,
+    "zugStamm": 17444,
+    "zugFaden": 17444,
+    "gut": true
+   },
+   {
+    "name": "Edit-Radius",
+    "anker": true,
+    "stamm": 0,
+    "faden": 0,
+    "maxDiff": 0,
+    "abweichend": 0,
+    "zugStamm": 35472,
+    "zugFaden": 35472,
+    "gut": true
+   },
+   {
+    "name": "Dichte-Versatz",
+    "anker": true,
+    "stamm": 0,
+    "faden": 0,
+    "maxDiff": 0,
+    "abweichend": 0,
+    "zugStamm": 84081,
+    "zugFaden": 84081,
+    "gut": true
+   },
+   {
+    "name": "See-Spiegel",
+    "anker": true,
+    "stamm": 0,
+    "faden": 0,
+    "maxDiff": 0,
+    "abweichend": 0,
+    "zugStamm": 25570,
+    "zugFaden": 25570,
+    "gut": true
+   }
+  ],
+  "selbsttest": {
+   "WORKER-FELD": {
+    "stamm": 0,
+    "faden": 237699,
+    "nennt": true
+   },
+   "STAMM-LESER": {
+    "stamm": 79556,
+    "faden": 0,
+    "nennt": true
+   },
+   "sieht": true
+  },
+  "sekunden": 94
+ }
+}

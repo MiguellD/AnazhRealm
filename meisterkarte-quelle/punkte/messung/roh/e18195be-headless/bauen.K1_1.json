@@ -1,0 +1,4037 @@
+{
+ "gestartet": true,
+ "wege": {
+  "schöpfer": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 877,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 587,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 823,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 741,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 596,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 576,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 562,
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 582,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 575,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 1239,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 406,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 631,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 480,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 595,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 512,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 744,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "phantom": {
+       "studio": true,
+       "meshes": 2,
+       "verworfen": 0,
+       "farbe": "grün"
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 272,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 159,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 155,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "frieden mit Material": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 614,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 620,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 653,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 653,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 661,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 660,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 672,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 554,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 605,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 657,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 702,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 534,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 591,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 664,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 691,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 499,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 330,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 252,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 313,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 377,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 460,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 286,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 276,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 307,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "frieden ohne Material": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 44× holz, 63× laub",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 44× holz, 63× laub",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 98× holz, 24× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 98× holz, 24× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 16× holz, 4× eisen",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 16× holz, 4× eisen",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 52× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 52× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": null,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": null,
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "pfad": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 599,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 661,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 683,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 703,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 622,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 633,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 600,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB · Klick · Klick",
+      "ms": 721,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 1215,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 638,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 705,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 557,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 574,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 516,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 690,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab · Klick",
+      "ms": 650,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 256,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1 · KeyF",
+      "ms": 249,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 274,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4 · KeyF",
+      "ms": 407,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 490,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2 · KeyF",
+      "ms": 285,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 259,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7 · KeyF",
+      "ms": 293,
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  }
+ },
+ "konsum": {
+  "Stoff → alphaTest": true
+ },
+ "phantom": {
+  "studio": true,
+  "meshes": 2,
+  "verworfen": 0,
+  "farbe": "grün"
+ },
+ "geraet": {
+  "name": "klinge_spitzhacke",
+  "zeile": "Spitzhacke: fehlt 1× holz · 1× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)"
+ },
+ "sucheHaus": 32,
+ "lichtung": {
+  "steht": 0,
+  "zeile": "Eiche: die Lichtung des Genesis-Platzes bleibt frei, keine Krone steht über der Scheibe und dem Ring der Tore — setz es ein paar Schritte weiter.",
+  "wand": "lichtung",
+  "toenung": {
+   "stoffe": 2,
+   "lesen": 2,
+   "farbe": "rot"
+  }
+ },
+ "verbenJe": {
+  "werkstatt": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 65°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 622,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 6,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyE · KeyW · KeyE",
+     "ms": 573,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": true,
+     "farbe": "grün",
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 4,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 3,
+     "unecht": 0,
+     "folge": "Digit3 · KeyF · KeyE",
+     "ms": 193,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 474,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 565,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 16,
+     "unecht": 0,
+     "folge": "KeyB · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Klick · Klick · KeyE",
+     "ms": 1358,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 512,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 6,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyE · KeyW · KeyE",
+     "ms": 695,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": true,
+     "farbe": "grün",
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 13,
+       "lesen": 13,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 3,
+     "unecht": 0,
+     "folge": "Digit3 · KeyF · KeyE",
+     "ms": 174,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 509,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 507,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 16,
+     "unecht": 0,
+     "folge": "KeyB · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Klick · Klick · KeyE",
+     "ms": 1309,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  },
+  "ki": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 64°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 172,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Alemannisch · steil, hell\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 33,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE · KeyW · KeyE",
+     "ms": 113,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „GT\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 109,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Drachentor\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 168,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok baut „Brücke\" an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 92,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Podestleiter · Holme, Stufen, Podest, Bügel\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": null,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | KI-Vorschlag: Soll ich das Terrain flacher machen? Beispiel: 'Setze Terrain Steilheit 0.5' | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Sitzbank · Latten, Lehne, Wangen\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 132,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Alemannisch · steil, hell\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 33,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE · KeyW · KeyE",
+     "ms": 113,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „GT\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 94,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Drachentor\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 125,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok baut „Brücke\" an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 84,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Podestleiter · Holme, Stufen, Podest, Bügel\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 381,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Sitzbank · Latten, Lehne, Wangen\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  },
+  "geteilt": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 65°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 415,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyO · KeyY · KeyX · KeyV · KeyZ · KeyX · Digit2 · KeyF · KeyS · KeyZ · KeyW · Digit1 · KeyH · KeyB · KeyM · Digit5 · KeyP · KeyC · Digit2 · KeyN · KeyO · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyE · KeyX · KeyN · KeyZ · KeyM · KeyY · KeyM · KeyZ · KeyI · Digit5 · KeyN · KeyJ · KeyK · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyJ · KeyL · KeyY · KeyM · KeyV · KeyM · KeyN · KeyD · KeyU · Digit2 · KeyM · KeyJ · KeyL · KeyJ · KeyN · Digit2 · KeyE · KeyW · KeyZ · KeyW · KeyY · Digit1 · KeyY · KeyJ · KeyK · Digit4 · KeyM · KeyT · KeyL · KeyJ · KeyM · KeyG · KeyM · Digit4 · KeyN · KeyJ · KeyD · KeyL · KeyN · Digit2 · KeyE · Digit5 · KeyM · KeyT · KeyE · Digit2 · KeyY · KeyW · KeyM · Digit2 · KeyM · Digit2 · KeyQ · Digit3 · KeyZ · KeyW · KeyI · KeyZ · KeyY · KeyZ · KeyG · Digit5 · KeyM · KeyT · KeyF · KeyM · KeyN · KeyG · KeyE · KeyW · KeyM · KeyJ · KeyM · Digit1 · KeyO · KeyD · KeyL · KeyJ · KeyZ · KeyJ · KeyK · Digit3 · KeyO · KeyD · KeyM · Digit5 · KeyY · KeyM · KeyY · KeyZ · KeyM · KeyD · KeyL · KeyM · KeyY · Digit2 · KeyM · KeyY · KeyN · KeyT · KeyM · Digit0 · KeyN · KeyW · KeyF · KeyI · KeyM · KeyD · KeyJ · KeyI · KeyM · KeyZ · KeyV · KeyH · KeyY · KeyT · KeyK · KeyX · KeyZ · KeyM · KeyF · KeyK · KeyN · KeyD · KeyI · KeyW · KeyN · KeyJ · KeyG · KeyZ · KeyO · KeyD · KeyA · KeyX · KeyO · KeyT · KeyH · KeyM · KeyN · KeyG · KeyU · Digit2 · KeyO · KeyT · KeyI · Digit1 · KeyN · KeyM · KeyY · KeyZ · KeyM · KeyM · KeyQ · Digit0 · KeyO · KeyT · KeyC · KeyZ · KeyO · KeyT · KeyF · KeyM · KeyN · KeyZ · KeyK · KeyZ · KeyZ · KeyD · KeyU · KeyW · KeyZ · KeyC · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · Digit2 · KeyM · Digit2 · KeyO · KeyT · KeyA · KeyW · KeyN · KeyJ · KeyB · KeyH · KeyM · KeyJ · KeyV · KeyH · KeyY · KeyJ · KeyI · Digit0 · KeyZ · KeyD · KeyK · KeyW · KeyY · KeyZ · KeyG · KeyZ · KeyY · KeyT · KeyG · Digit4 · KeyM · KeyD · KeyK · KeyY · KeyN · Digit2 · KeyF · KeyK · KeyY · KeyT · KeyA · KeyX · KeyM · KeyZ · KeyM · KeyY · KeyY · KeyJ · KeyN · KeyK · KeyN · KeyT · KeyC · KeyY · KeyO · KeyT · KeyU · KeyY · KeyO · KeyD · KeyM · Digit2 · KeyY · KeyT · KeyA · Digit5 · KeyO · KeyD · KeyJ · KeyH · KeyN · KeyZ · KeyU · Digit3 · KeyY · KeyZ · KeyA · Digit1 · KeyY · KeyJ · KeyK · Digit4 · KeyM · KeyI · KeyJ · Digit9 · Enter · KeyW",
+     "ms": 1973,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJoYXVzX2FsZW1hbm5pc2NoIixudWxsLDExNzMyMzI5NjksbnVsbCxudWxsLDBdLCJzaWciOiJlYmVmNDU2MjljN2EwZWY1Yjk4MTljMGM4NjdlN2E5MTE2YWM2M2Q3ZWIzYzg5MTFmNGEwMjM1ODljZjk3ODM5YmYzMDlmY2MyNTM0NWFiMDJiMzVhYTkxZmFkNDIwNjgzODAxOThmNGU2OTI1NmYzMmQ0OTczOTFmNzkzZDUwZCIsImF1dG9yIjoiY2M2OTAwNjBhMjVhYjI0ZDkwYzgzYTg4MDkyN2FkYTAxMzMyYjNkNTcyOTUyODM2YTA5ODJhNzU3YzA1Yjk4MiJ9 | Geteiltes Werk steht: Alemannisch (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 408,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyM · KeyY · KeyW · KeyH · KeyY · KeyE · KeyM · KeyV · Digit1 · KeyZ · Digit1 · Digit9 · KeyN · KeyD · KeyC · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit1 · KeyN · KeyT · KeyK · KeyX · KeyO · KeyT · KeyA · Digit1 · KeyO · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyI · KeyZ · KeyY · KeyT · KeyY · Digit3 · KeyZ · KeyT · KeyH · KeyH · KeyM · KeyZ · KeyE · Digit0 · KeyZ · KeyD · KeyG · Digit1 · KeyN · Digit2 · KeyI · Digit0 · KeyY · KeyT · KeyG · KeyW · KeyZ · KeyW · KeyI · Digit0 · KeyN · KeyJ · KeyQ · Digit2 · KeyN · KeyT · KeyG · Digit1 · KeyY · KeyM · KeyQ · Digit3 · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyT · KeyQ · Digit1 · KeyM · KeyD · KeyL · KeyH · KeyZ · KeyJ · KeyU · Digit0 · KeyM · KeyJ · KeyQ · KeyY · KeyN · KeyT · KeyU · Digit5 · KeyY · KeyJ · KeyK · Digit4 · KeyO · KeyT · KeyQ · KeyY · KeyZ · KeyJ · KeyL · KeyI · KeyM · KeyM · KeyN · KeyL · KeyY · KeyM · KeyQ · Digit3 · KeyY · Digit2 · KeyI · KeyX · KeyN · KeyZ · KeyJ · KeyH · KeyY · KeyJ · KeyU · Digit3 · KeyN · KeyD · KeyR · KeyL · KeyM · KeyD · KeyI · Digit0 · KeyN · KeyJ · KeyE · Digit5 · KeyN · KeyG · KeyE · Digit5 · KeyY · KeyM · KeyZ · KeyI · KeyN · KeyZ · KeyI · Digit2 · KeyO · KeyW · KeyY · KeyX · KeyO · KeyG · KeyI · Digit1 · KeyZ · KeyM · KeyR · KeyL · KeyN · KeyG · KeyM · KeyX · KeyY · KeyM · KeyI · KeyZ · KeyZ · KeyW · KeyY · Digit2 · KeyM · KeyW · KeyZ · KeyH · KeyN · KeyD · KeyE · KeyX · KeyN · KeyM · KeyV · KeyH · KeyO · KeyW · KeyI · Digit0 · KeyO · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyB · KeyM · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyE · KeyW · KeyE",
+     "ms": 1889,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJmYWhyemV1Z19ndCIsbnVsbCw1NTkxOTA1OCxudWxsLG51bGwsMF0sInNpZyI6IjIzYTY3ZThhMzE0ZDg1N2I0YTgwZWI0NjQ2NTg1YmQ3MzhhYTQ1MDlhZjU0MjQyNTU5Yjk4OTQyZjliMmNlYmQ3Y2IxNzJhYjU3NDRlMDI0NjE5NGE5YmZiNzI2OWYxOGI1ZmRlNGMxYmIzZWY2MWZhNDExNmVhOWI0ODEzMzBmIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: GT (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · Digit0 · KeyB · Digit3 · KeyJ · KeyF · KeyZ · KeyH · KeyJ · KeyH · KeyY · Digit2 · KeyH · KeyL · KeyB · KeyN · KeyR · KeyV · KeyC · KeyI · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit5 · KeyO · KeyT · KeyU · Digit2 · KeyM · KeyZ · KeyE · KeyW · KeyM · KeyT · KeyQ · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyI · KeyY · KeyO · KeyW · KeyE · Digit0 · KeyN · KeyT · KeyC · Digit3 · KeyZ · KeyJ · KeyL · KeyK · KeyM · KeyD · KeyF · KeyI · KeyZ · KeyJ · KeyQ · KeyZ · KeyN · KeyG · KeyZ · KeyH · KeyO · KeyT · KeyV · KeyM · KeyM · KeyM · KeyU · Digit3 · KeyZ · KeyJ · KeyD · KeyI · KeyN · KeyT · KeyC · KeyW · KeyN · KeyW · KeyF · KeyJ · KeyN · KeyD · KeyY · Digit0 · KeyZ · KeyD · KeyQ · KeyX · KeyM · KeyG · KeyU · Digit0 · KeyZ · KeyT · KeyG · Digit5 · KeyZ · KeyM · KeyE · Digit0 · KeyM · KeyZ · KeyE · KeyY · KeyM · KeyJ · KeyE · Digit2 · KeyM · KeyT · KeyE · KeyZ · KeyN · KeyM · KeyQ · Digit0 · KeyY · KeyJ · KeyN · KeyH · KeyM · KeyD · KeyG · Digit0 · KeyY · KeyW · KeyQ · Digit4 · KeyY · KeyT · KeyU · Digit4 · KeyZ · KeyD · KeyB · KeyH · KeyM · KeyD · KeyU · KeyY · KeyM · KeyT · KeyF · KeyJ · KeyN · KeyJ · KeyG · KeyX · KeyY · KeyT · KeyE · KeyX · KeyN · KeyJ · KeyU · Digit3 · KeyM · KeyT · KeyQ · Digit2 · KeyY · KeyM · KeyI · KeyX · KeyN · KeyJ · KeyJ · KeyJ · KeyN · KeyD · KeyD · KeyH · KeyN · KeyW · KeyY · KeyY · KeyM · Digit2 · KeyU · Digit5 · KeyY · KeyW · KeyE · Digit3 · KeyZ · KeyT · KeyK · KeyW · KeyZ · KeyT · KeyV · KeyM · KeyN · Digit2 · KeyY · KeyY · KeyZ · KeyJ · KeyK · Digit0 · KeyN · KeyZ · KeyG · KeyW · KeyY · KeyI · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · Digit2 · KeyM · Digit2 · KeyO · KeyT · KeyA · KeyW · KeyN · KeyJ · KeyB · KeyH · KeyM · KeyJ · KeyV · KeyH · KeyY · KeyJ · KeyI · Digit0 · KeyZ · KeyD · KeyK · KeyW · KeyY · KeyZ · KeyG · KeyZ · KeyY · KeyT · KeyG · Digit4 · KeyM · KeyD · KeyK · KeyY · KeyN · Digit2 · KeyF · KeyK · KeyY · KeyT · KeyA · KeyX · KeyM · KeyZ · KeyM · KeyY · KeyY · KeyJ · KeyN · KeyK · KeyN · KeyT · KeyC · KeyY · KeyO · KeyT · KeyU · KeyY · KeyO · KeyD · KeyM · Digit2 · KeyY · KeyT · KeyA · Digit5 · KeyO · KeyD · KeyJ · KeyH · KeyN · KeyZ · KeyU · Digit3 · KeyY · KeyZ · KeyA · Digit1 · KeyY · KeyJ · KeyK · Digit4 · KeyM · KeyI · KeyJ · Digit9 · Enter · KeyE",
+     "ms": 1638,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJ0b3JfZHJhY2hlbnRvciIsbnVsbCw5OTU2MzEwMTQsbnVsbCxudWxsLDBdLCJzaWciOiIyOWE0NTc3ZjlkMDFiZjQzNGZhOTVmMmU3ZjdiNTcwNWFjNDY0ZDQxMGU0ZTg5ZmE0MzEyMjE2MTEzNmQ0YjNhMDg0YWQ4YTU4ZDBhMDUyMTFjNjgxYTExNjU3MTQ2YmIxNjJjNDdhNWYyM2U5YWE3ZTkwZTVmN2YyZjk0NzgwYiIsImF1dG9yIjoiY2M2OTAwNjBhMjVhYjI0ZDkwYzgzYTg4MDkyN2FkYTAxMzMyYjNkNTcyOTUyODM2YTA5ODJhNzU3YzA1Yjk4MiJ9 | Geteiltes Werk steht: Drachentor (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 1318,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyJ · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · KeyS · KeyW · KeyY · KeyJ · KeyK · KeyZ · KeyW · KeyZ · KeyP · KeyB · KeyM · KeyV · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyW · Digit3 · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyI · Digit0 · KeyZ · KeyL · KeyC · KeyJ · Digit5 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyI · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyS · KeyW · KeyI · KeyC · KeyM · Digit9 · Digit0 · KeyY · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyE · KeyM · KeyU · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyS · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyI · Digit4 · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyV · Digit9 · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyE · KeyN · KeyO · KeyY · KeyW · KeyL · KeyU · KeyI · KeyJ · KeyP · KeyB · KeyE · KeyY · KeyJ · Digit0 · KeyB · Digit2 · Digit9 · KeyS · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyM · KeyO · KeyK · KeyB · KeyM · KeyR · KeyL · KeyI · KeyI · KeyW · KeyI · KeyB · Digit3 · KeyA · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyY · KeyW · Digit5 · KeyK · KeyX · Digit2 · KeyT · KeyU · KeyY · KeyX · KeyA · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyY · KeyX · KeyA · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyY · KeyX · KeyQ · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyX · KeyX · Digit0 · KeyS · KeyE · KeyY · KeyJ · KeyZ · KeyA · KeyG · KeyF · KeyW · KeyZ · KeyS · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyV · KeyE · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyV · KeyB · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · Digit4 · KeyM · KeyD · KeyI · Digit2 · KeyN · KeyZ · KeyQ · Digit2 · KeyL · KeyC · KeyJ · KeyT · KeyY · KeyX · KeyR · KeyL · KeyC · KeyM · KeyL · KeyH · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyN · KeyN · Digit0 · KeyZ · KeyW · KeyL · KeyU · KeyI · KeyI · KeyW · KeyI · KeyC · KeyG · Digit9 · KeyZ · KeyA · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyY · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyS · Digit4 · KeyY · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyE · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyS · Digit4 · Digit1 · KeyF · KeyS · KeyW · KeyI · KeyB · Digit3 · KeyB · KeyD · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · Digit6 · KeyW · Digit3 · KeyS · KeyI · KeyD · KeyG · Digit9 · KeyV · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyD · KeyP · KeyG · Digit5 · KeyK · KeyZ · KeyS · KeyI · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyG · KeyF · KeyU · KeyZ · KeyF · Digit9 · KeyR · KeyB · KeyM · KeyF · KeyW · KeyI · KeyI · KeyW · KeyI · KeyY · Digit2 · KeyF · KeyW · KeyI · KeyJ · KeyO · KeyW · KeyL · KeyJ · KeyQ · KeyS · KeyI · KeyM · KeyF · Digit0 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyV · Digit1 · Digit9 · KeyL · KeyH · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyY · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyG · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyN · Digit0 · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyQ · Digit2 · KeyH · KeyH · KeyA · KeyW · Digit4 · KeyI · KeyO · KeyL · KeyT · Digit7 · KeyI · KeyN · KeyR · KeyV · KeyB · Digit2 · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyW · Digit6 · KeyR · KeyU · KeyZ · KeyG · KeyU · KeyI · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyH · KeyH · KeyB · KeyM · KeyR · KeyF · KeyA · Digit2 · Digit5 · KeyH · KeyC · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyH · KeyC · KeyC · KeyI · Digit6 · KeyM · KeyC · Digit4 · Digit0 · KeyL · KeyC · KeyJ · KeyH · KeyD · KeyC · KeyI · Digit6 · KeyM · KeyH · Digit1 · KeyD · KeyF · KeyV · Digit1 · KeyD · KeyL · KeyF · KeyS · KeyI · KeyC · Digit3 · KeyB · KeyH · KeyD · Digit2 · Digit5 · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyZ · KeyO · KeyT · KeyE · KeyZ · KeyM · KeyJ · KeyQ · Digit2 · KeyO · KeyT · KeyU · Digit4 · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyW · KeyX · KeyV · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyA · Digit5 · KeyM · KeyZ · KeyQ · Digit1 · KeyM · KeyZ · KeyR · KeyJ · KeyY · KeyM · KeyU · Digit1 · KeyM · KeyT · KeyH · KeyJ · KeyY · KeyM · KeyN · KeyJ · KeyM · KeyZ · KeyG · Digit1 · KeyM · Digit2 · KeyQ · Digit3 · KeyY · KeyT · KeyB · KeyL · KeyZ · KeyW · KeyZ · KeyH · KeyN · KeyT · KeyJ · KeyL · KeyN · KeyG · KeyI · KeyX · KeyO · KeyT · KeyN · KeyK · KeyO · KeyT · KeyU · Digit0 · KeyN · KeyT · KeyC · Digit0 · KeyO · KeyD · KeyY · Digit1 · KeyN · KeyG · KeyY · Digit0 · KeyO · KeyD · KeyZ · KeyL · KeyZ · KeyJ · KeyC · Digit2 · KeyY · Digit2 · KeyN · KeyM · KeyN · KeyT · KeyL · KeyI · KeyM · Digit2 · KeyF · KeyI · KeyO · KeyG · KeyU · Digit5 · KeyO · KeyD · KeyA · KeyX · KeyM · KeyD · KeyI · KeyX · KeyZ · KeyW · KeyV · KeyH · KeyN · KeyW · KeyY · Digit1 · KeyY · KeyW · KeyU · Digit1 · KeyM · KeyW · KeyJ · KeyL · KeyN · KeyZ · KeyE · Digit2 · KeyZ · KeyT · KeyD · KeyL · KeyM · KeyZ · KeyK · Digit3 · KeyM · KeyZ · KeyK · KeyW · KeyM · KeyZ · KeyF · KeyH · KeyY · Digit2 · KeyE · Digit0 · KeyN · KeyD · KeyQ · Digit2 · KeyZ · KeyD · KeyK · KeyZ · KeyY · KeyT · KeyV · KeyL · KeyN · KeyG · KeyR · KeyL · KeyM · KeyJ · KeyI · Digit2 · KeyO · KeyT · KeyA · KeyY · KeyN · Digit2 · KeyR · KeyI · KeyY · KeyZ · KeyB · KeyJ · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 3381,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOi0zLCJ5IjoxLjI1LCJ6IjowfSwicm90YXRpb24iOnsieCI6MCwieSI6MCwieiI6MH0sInNpemUiOnsieCI6MSwieSI6Mi41LCJ6IjoxLjV9LCJvcENoYWluIjpbeyJ0b29sIjoiaMOkbmRlIiwib3AiOiJoYW5kX2tuYXAiLCJjYXAiOjAuNCwiYXQiOjB9XX0seyJzaGFwZSI6ImJveCIsImNvbG9yIjo4MDI2NzQ2LCJtYXRlcmlhbCI6InN0ZWluIiwicG9zaXRpb24iOnsieCI6MywieSI6MS4yNSwieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjEsInkiOjIuNSwieiI6MS41fSwib3BDaGFpbiI6W3sidG9vbCI6ImjDpG5kZSIsIm9wIjoiaGFuZF9rbmFwIiwiY2FwIjowLjQsImF0IjowfV19LHsic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOjAsInkiOjIuNywieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjgsInkiOjAuNCwieiI6Mn0sIm9wQ2hhaW4iOlt7InRvb2wiOiJow6RuZGUiLCJvcCI6ImhhbmRfa25hcCIsImNhcCI6MC40LCJhdCI6MH1dfV1dLFsic3Bhd25fYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsbnVsbCwzOTEzMjQ2OTU4LG51bGwsbnVsbCwwXV0sInNpZyI6IjA5MzQ1MzRjYmU1MThjYmNjMzg1M2Q3YTBlZWZhNTJlNGIxOTNkOTU0NTc0ODY1NGY0ODZlZjc2Y2NmNTliM2FiOGU5ODAxMDIxZWVhNWY1YWU1MWJlNzE2ZTdlMzk3MzkwMzFhY2E0NDQ2ZDkzYTVlNGRlMjI2OTAyN2RiYzBjIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | KI-Vorschlag: Soll ich die Spielsteuerung erweitern? Beispiel: 'Implementiere Spielsteuerung' | Geteiltes Werk steht: eigen_bruecke-geteilt (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 418,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyS · KeyZ · KeyW · KeyL · Digit0 · KeyZ · KeyX · KeyJ · KeyF · KeyC · KeyG · Digit9 · KeyK · KeyZ · KeyX · KeyN · Digit0 · KeyB · KeyG · KeyV · KeyP · KeyD · KeyG · KeyV · KeyY · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyI · Digit1 · KeyN · KeyT · KeyE · Digit2 · KeyO · KeyD · KeyU · Digit5 · KeyM · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyZ · KeyK · KeyZ · KeyM · KeyU · KeyX · KeyY · KeyT · KeyG · Digit5 · KeyZ · KeyJ · KeyI · Digit4 · KeyM · KeyT · KeyU · KeyW · KeyO · KeyG · KeyN · KeyL · KeyZ · KeyD · KeyZ · KeyI · KeyZ · KeyM · KeyJ · KeyI · KeyY · KeyJ · KeyH · KeyJ · KeyM · KeyW · KeyE · KeyZ · KeyN · KeyG · KeyY · Digit4 · KeyY · Digit2 · KeyZ · KeyM · KeyM · Digit2 · KeyZ · KeyH · KeyZ · KeyJ · KeyQ · KeyZ · KeyZ · KeyJ · KeyD · KeyJ · KeyM · KeyJ · KeyC · KeyW · KeyM · Digit2 · KeyU · KeyW · KeyY · KeyW · KeyM · Digit3 · KeyY · KeyM · KeyY · Digit5 · KeyN · KeyG · KeyR · KeyL · KeyM · KeyJ · KeyQ · KeyZ · KeyN · KeyZ · KeyJ · KeyK · KeyO · KeyW · KeyV · KeyK · KeyN · KeyD · KeyE · KeyY · KeyN · KeyJ · KeyC · Digit3 · KeyM · KeyG · KeyU · Digit4 · KeyO · KeyW · KeyR · KeyI · KeyZ · KeyD · KeyI · KeyZ · KeyN · KeyD · KeyU · KeyY · KeyZ · KeyG · KeyF · KeyJ · KeyZ · KeyT · KeyE · Digit5 · KeyM · KeyD · KeyG · KeyX · KeyM · KeyJ · KeyY · KeyZ · KeyZ · KeyT · KeyU · Digit3 · KeyM · KeyG · KeyR · KeyI · KeyN · KeyD · KeyN · KeyM · KeyO · KeyW · KeyV · KeyL · KeyO · KeyW · KeyJ · KeyJ · KeyN · KeyM · KeyU · KeyZ · KeyN · KeyD · KeyB · KeyJ · KeyM · KeyJ · KeyA · Digit3 · KeyZ · KeyT · KeyM · KeyW · KeyN · KeyJ · KeyA · KeyY · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 1804,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJsZWl0ZXJfcG9kZXN0bGVpdGVyIixudWxsLDI1NTE2ODU5MixudWxsLG51bGwsMF0sInNpZyI6IjZkZmUxYTg5ZjI4MTUwOGNlZDZiZmJiYjhjMWEzNGY4Y2ZmM2ZhZjQzZjdjMjcwM2UwYWM3YmY5NGRlMjQzNzJkOWVkNDEyNjc3MGU4OWRiZDIzNDUyZGFjZTE5MDgxMjYzZTU3MGRiNDNmOWVlOWJjNmUzNDBjMjA3ZTMwNjAyIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: Podestleiter (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 423,
+     "unecht": 0,
+     "folge": "KeyB · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyX · Digit3 · KeyN · KeyP · KeyD · KeyH · KeyP · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyM · KeyY · KeyM · KeyD · KeyY · Digit3 · KeyM · KeyD · KeyY · Digit0 · KeyN · KeyY · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyR · KeyH · KeyN · KeyW · KeyQ · KeyZ · KeyM · KeyJ · KeyU · KeyY · KeyN · Digit2 · KeyY · KeyY · KeyY · KeyZ · KeyA · Digit3 · KeyZ · KeyG · KeyU · Digit3 · KeyY · Digit2 · KeyU · Digit1 · KeyN · KeyG · KeyZ · KeyH · KeyZ · KeyW · KeyJ · KeyI · KeyO · KeyD · KeyZ · KeyH · KeyN · KeyM · KeyU · KeyX · KeyN · KeyD · KeyF · KeyI · KeyY · KeyM · KeyN · KeyL · KeyY · KeyM · KeyE · Digit4 · KeyN · KeyW · KeyM · KeyY · KeyO · KeyW · KeyR · KeyK · KeyM · KeyJ · KeyI · KeyZ · KeyY · KeyJ · KeyH · KeyL · KeyM · KeyZ · KeyU · KeyX · KeyY · KeyM · KeyN · KeyL · KeyZ · KeyD · KeyE · Digit5 · KeyY · KeyM · KeyR · KeyI · KeyM · KeyG · KeyU · Digit4 · KeyZ · KeyM · KeyR · KeyJ · KeyM · KeyW · KeyV · KeyJ · KeyY · KeyZ · KeyE · Digit1 · KeyN · KeyZ · KeyE · KeyZ · KeyM · KeyG · KeyF · KeyI · KeyZ · KeyT · KeyV · KeyK · KeyY · KeyZ · KeyQ · KeyX · KeyN · KeyZ · KeyE · Digit1 · KeyY · KeyJ · KeyF · KeyJ · KeyN · KeyJ · KeyG · KeyW · KeyM · KeyZ · KeyG · Digit2 · KeyY · KeyT · KeyG · Digit3 · KeyM · KeyD · KeyH · KeyL · KeyN · KeyG · KeyV · KeyK · KeyN · KeyM · KeyF · KeyM · KeyO · KeyW · KeyY · Digit4 · KeyM · KeyW · KeyF · KeyK · KeyN · KeyW · KeyV · KeyM · KeyM · KeyD · KeyY · Digit1 · KeyN · KeyJ · KeyB · KeyJ · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyE",
+     "ms": 2597,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJiYW5rX3NpdHpiYW5rIixudWxsLDMyMDY3MDY0NyxudWxsLG51bGwsMF0sInNpZyI6IjRhNWQzMjUyN2YyYzA3ZGU3Y2U1NGZhZWJiODZhNmUxNDFiYmNlYmE4NWMyOWRkMjIzYjhlMzUxYmNlZDE5YmRiMGU4ZmRjMWVjYzE1NzEzMGFiZTVkYzQxNzE1YjFjNjgwMzg2YTg3MDhlNGVkNmFmOWY4MWFkNWVmMDY1NjBjIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: Sitzbank (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 415,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyO · KeyY · KeyX · KeyV · KeyZ · KeyX · Digit2 · KeyF · KeyS · KeyZ · KeyW · Digit1 · KeyH · KeyB · KeyM · Digit5 · KeyP · KeyC · Digit2 · KeyN · KeyO · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyE · KeyX · KeyN · KeyZ · KeyM · KeyY · KeyM · KeyZ · KeyI · Digit5 · KeyN · KeyJ · KeyK · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyJ · KeyL · KeyY · KeyM · KeyV · KeyM · KeyN · KeyD · KeyU · Digit2 · KeyM · KeyJ · KeyL · KeyJ · KeyN · Digit2 · KeyE · KeyW · KeyZ · KeyW · KeyY · Digit1 · KeyY · KeyJ · KeyK · Digit4 · KeyM · KeyT · KeyL · KeyJ · KeyM · KeyG · KeyM · Digit4 · KeyN · KeyJ · KeyD · KeyL · KeyN · Digit2 · KeyE · Digit5 · KeyM · KeyT · KeyE · Digit2 · KeyY · KeyW · KeyM · Digit2 · KeyM · Digit2 · KeyQ · Digit3 · KeyZ · KeyW · KeyI · KeyZ · KeyY · KeyZ · KeyG · Digit5 · KeyM · KeyT · KeyF · KeyM · KeyN · KeyG · KeyE · KeyW · KeyM · KeyJ · KeyM · Digit1 · KeyO · KeyD · KeyL · KeyJ · KeyZ · KeyJ · KeyK · Digit3 · KeyO · KeyD · KeyM · Digit5 · KeyY · KeyM · KeyY · KeyZ · KeyM · KeyD · KeyL · KeyM · KeyY · Digit2 · KeyM · KeyY · KeyN · KeyT · KeyM · Digit0 · KeyN · KeyW · KeyF · KeyI · KeyM · KeyD · KeyJ · KeyI · KeyM · KeyZ · KeyV · KeyH · KeyY · KeyT · KeyK · KeyX · KeyZ · KeyM · KeyF · KeyK · KeyN · KeyD · KeyI · KeyW · KeyN · KeyJ · KeyG · KeyZ · KeyO · KeyD · KeyA · KeyX · KeyO · KeyT · KeyH · KeyM · KeyN · KeyG · KeyU · Digit2 · KeyO · KeyT · KeyI · Digit1 · KeyN · KeyM · KeyY · KeyZ · KeyM · KeyM · KeyQ · Digit0 · KeyO · KeyT · KeyC · KeyZ · KeyO · KeyT · KeyF · KeyM · KeyN · KeyZ · KeyK · KeyZ · KeyZ · KeyD · KeyU · KeyW · KeyZ · KeyC · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · Digit2 · KeyM · Digit2 · KeyO · KeyT · KeyA · KeyW · KeyN · KeyJ · KeyB · KeyH · KeyM · KeyJ · KeyV · KeyH · KeyY · KeyJ · KeyI · Digit0 · KeyZ · KeyD · KeyK · KeyW · KeyY · KeyZ · KeyG · KeyZ · KeyY · KeyT · KeyG · Digit4 · KeyM · KeyD · KeyK · KeyY · KeyN · Digit2 · KeyF · KeyK · KeyY · KeyT · KeyA · KeyX · KeyM · KeyZ · KeyM · KeyY · KeyY · KeyJ · KeyN · KeyK · KeyN · KeyT · KeyC · KeyY · KeyO · KeyT · KeyU · KeyY · KeyO · KeyD · KeyM · Digit2 · KeyY · KeyT · KeyA · Digit5 · KeyO · KeyD · KeyJ · KeyH · KeyN · KeyZ · KeyU · Digit3 · KeyY · KeyZ · KeyA · Digit1 · KeyY · KeyJ · KeyK · Digit4 · KeyM · KeyI · KeyJ · Digit9 · Enter · KeyW",
+     "ms": 1696,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJoYXVzX2FsZW1hbm5pc2NoIixudWxsLDExNzMyMzI5NjksbnVsbCxudWxsLDBdLCJzaWciOiJlYmVmNDU2MjljN2EwZWY1Yjk4MTljMGM4NjdlN2E5MTE2YWM2M2Q3ZWIzYzg5MTFmNGEwMjM1ODljZjk3ODM5YmYzMDlmY2MyNTM0NWFiMDJiMzVhYTkxZmFkNDIwNjgzODAxOThmNGU2OTI1NmYzMmQ0OTczOTFmNzkzZDUwZCIsImF1dG9yIjoiY2M2OTAwNjBhMjVhYjI0ZDkwYzgzYTg4MDkyN2FkYTAxMzMyYjNkNTcyOTUyODM2YTA5ODJhNzU3YzA1Yjk4MiJ9 | Geteiltes Werk steht: Alemannisch (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 408,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyM · KeyY · KeyW · KeyH · KeyY · KeyE · KeyM · KeyV · Digit1 · KeyZ · Digit1 · Digit9 · KeyN · KeyD · KeyC · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit1 · KeyN · KeyT · KeyK · KeyX · KeyO · KeyT · KeyA · Digit1 · KeyO · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyI · KeyZ · KeyY · KeyT · KeyY · Digit3 · KeyZ · KeyT · KeyH · KeyH · KeyM · KeyZ · KeyE · Digit0 · KeyZ · KeyD · KeyG · Digit1 · KeyN · Digit2 · KeyI · Digit0 · KeyY · KeyT · KeyG · KeyW · KeyZ · KeyW · KeyI · Digit0 · KeyN · KeyJ · KeyQ · Digit2 · KeyN · KeyT · KeyG · Digit1 · KeyY · KeyM · KeyQ · Digit3 · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyT · KeyQ · Digit1 · KeyM · KeyD · KeyL · KeyH · KeyZ · KeyJ · KeyU · Digit0 · KeyM · KeyJ · KeyQ · KeyY · KeyN · KeyT · KeyU · Digit5 · KeyY · KeyJ · KeyK · Digit4 · KeyO · KeyT · KeyQ · KeyY · KeyZ · KeyJ · KeyL · KeyI · KeyM · KeyM · KeyN · KeyL · KeyY · KeyM · KeyQ · Digit3 · KeyY · Digit2 · KeyI · KeyX · KeyN · KeyZ · KeyJ · KeyH · KeyY · KeyJ · KeyU · Digit3 · KeyN · KeyD · KeyR · KeyL · KeyM · KeyD · KeyI · Digit0 · KeyN · KeyJ · KeyE · Digit5 · KeyN · KeyG · KeyE · Digit5 · KeyY · KeyM · KeyZ · KeyI · KeyN · KeyZ · KeyI · Digit2 · KeyO · KeyW · KeyY · KeyX · KeyO · KeyG · KeyI · Digit1 · KeyZ · KeyM · KeyR · KeyL · KeyN · KeyG · KeyM · KeyX · KeyY · KeyM · KeyI · KeyZ · KeyZ · KeyW · KeyY · Digit2 · KeyM · KeyW · KeyZ · KeyH · KeyN · KeyD · KeyE · KeyX · KeyN · KeyM · KeyV · KeyH · KeyO · KeyW · KeyI · Digit0 · KeyO · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyB · KeyM · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyE · KeyW · KeyE",
+     "ms": 1871,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJmYWhyemV1Z19ndCIsbnVsbCw1NTkxOTA1OCxudWxsLG51bGwsMF0sInNpZyI6IjIzYTY3ZThhMzE0ZDg1N2I0YTgwZWI0NjQ2NTg1YmQ3MzhhYTQ1MDlhZjU0MjQyNTU5Yjk4OTQyZjliMmNlYmQ3Y2IxNzJhYjU3NDRlMDI0NjE5NGE5YmZiNzI2OWYxOGI1ZmRlNGMxYmIzZWY2MWZhNDExNmVhOWI0ODEzMzBmIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: GT (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · Digit0 · KeyB · Digit3 · KeyJ · KeyF · KeyZ · KeyH · KeyJ · KeyH · KeyY · Digit2 · KeyH · KeyL · KeyB · KeyN · KeyR · KeyV · KeyC · KeyI · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit5 · KeyO · KeyT · KeyU · Digit2 · KeyM · KeyZ · KeyE · KeyW · KeyM · KeyT · KeyQ · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyI · KeyY · KeyO · KeyW · KeyE · Digit0 · KeyN · KeyT · KeyC · Digit3 · KeyZ · KeyJ · KeyL · KeyK · KeyM · KeyD · KeyF · KeyI · KeyZ · KeyJ · KeyQ · KeyZ · KeyN · KeyG · KeyZ · KeyH · KeyO · KeyT · KeyV · KeyM · KeyM · KeyM · KeyU · Digit3 · KeyZ · KeyJ · KeyD · KeyI · KeyN · KeyT · KeyC · KeyW · KeyN · KeyW · KeyF · KeyJ · KeyN · KeyD · KeyY · Digit0 · KeyZ · KeyD · KeyQ · KeyX · KeyM · KeyG · KeyU · Digit0 · KeyZ · KeyT · KeyG · Digit5 · KeyZ · KeyM · KeyE · Digit0 · KeyM · KeyZ · KeyE · KeyY · KeyM · KeyJ · KeyE · Digit2 · KeyM · KeyT · KeyE · KeyZ · KeyN · KeyM · KeyQ · Digit0 · KeyY · KeyJ · KeyN · KeyH · KeyM · KeyD · KeyG · Digit0 · KeyY · KeyW · KeyQ · Digit4 · KeyY · KeyT · KeyU · Digit4 · KeyZ · KeyD · KeyB · KeyH · KeyM · KeyD · KeyU · KeyY · KeyM · KeyT · KeyF · KeyJ · KeyN · KeyJ · KeyG · KeyX · KeyY · KeyT · KeyE · KeyX · KeyN · KeyJ · KeyU · Digit3 · KeyM · KeyT · KeyQ · Digit2 · KeyY · KeyM · KeyI · KeyX · KeyN · KeyJ · KeyJ · KeyJ · KeyN · KeyD · KeyD · KeyH · KeyN · KeyW · KeyY · KeyY · KeyM · Digit2 · KeyU · Digit5 · KeyY · KeyW · KeyE · Digit3 · KeyZ · KeyT · KeyK · KeyW · KeyZ · KeyT · KeyV · KeyM · KeyN · Digit2 · KeyY · KeyY · KeyZ · KeyJ · KeyK · Digit0 · KeyN · KeyZ · KeyG · KeyW · KeyY · KeyI · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · Digit2 · KeyM · Digit2 · KeyO · KeyT · KeyA · KeyW · KeyN · KeyJ · KeyB · KeyH · KeyM · KeyJ · KeyV · KeyH · KeyY · KeyJ · KeyI · Digit0 · KeyZ · KeyD · KeyK · KeyW · KeyY · KeyZ · KeyG · KeyZ · KeyY · KeyT · KeyG · Digit4 · KeyM · KeyD · KeyK · KeyY · KeyN · Digit2 · KeyF · KeyK · KeyY · KeyT · KeyA · KeyX · KeyM · KeyZ · KeyM · KeyY · KeyY · KeyJ · KeyN · KeyK · KeyN · KeyT · KeyC · KeyY · KeyO · KeyT · KeyU · KeyY · KeyO · KeyD · KeyM · Digit2 · KeyY · KeyT · KeyA · Digit5 · KeyO · KeyD · KeyJ · KeyH · KeyN · KeyZ · KeyU · Digit3 · KeyY · KeyZ · KeyA · Digit1 · KeyY · KeyJ · KeyK · Digit4 · KeyM · KeyI · KeyJ · Digit9 · Enter · KeyE",
+     "ms": 1962,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJ0b3JfZHJhY2hlbnRvciIsbnVsbCw5OTU2MzEwMTQsbnVsbCxudWxsLDBdLCJzaWciOiIyOWE0NTc3ZjlkMDFiZjQzNGZhOTVmMmU3ZjdiNTcwNWFjNDY0ZDQxMGU0ZTg5ZmE0MzEyMjE2MTEzNmQ0YjNhMDg0YWQ4YTU4ZDBhMDUyMTFjNjgxYTExNjU3MTQ2YmIxNjJjNDdhNWYyM2U5YWE3ZTkwZTVmN2YyZjk0NzgwYiIsImF1dG9yIjoiY2M2OTAwNjBhMjVhYjI0ZDkwYzgzYTg4MDkyN2FkYTAxMzMyYjNkNTcyOTUyODM2YTA5ODJhNzU3YzA1Yjk4MiJ9 | Geteiltes Werk steht: Drachentor (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 1318,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyJ · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · KeyS · KeyW · KeyY · KeyJ · KeyK · KeyZ · KeyW · KeyZ · KeyP · KeyB · KeyM · KeyV · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyW · Digit3 · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyI · Digit0 · KeyZ · KeyL · KeyC · KeyJ · Digit5 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyI · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyS · KeyW · KeyI · KeyC · KeyM · Digit9 · Digit0 · KeyY · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyE · KeyM · KeyU · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyS · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyI · Digit4 · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyV · Digit9 · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyE · KeyN · KeyO · KeyY · KeyW · KeyL · KeyU · KeyI · KeyJ · KeyP · KeyB · KeyE · KeyY · KeyJ · Digit0 · KeyB · Digit2 · Digit9 · KeyS · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyM · KeyO · KeyK · KeyB · KeyM · KeyR · KeyL · KeyI · KeyI · KeyW · KeyI · KeyB · Digit3 · KeyA · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyY · KeyW · Digit5 · KeyK · KeyX · Digit2 · KeyT · KeyU · KeyY · KeyX · KeyA · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyY · KeyX · KeyA · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyY · KeyX · KeyQ · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyX · KeyX · Digit0 · KeyS · KeyE · KeyY · KeyJ · KeyZ · KeyA · KeyG · KeyF · KeyW · KeyZ · KeyS · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyV · KeyE · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyV · KeyB · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · Digit4 · KeyM · KeyD · KeyI · Digit2 · KeyN · KeyZ · KeyQ · Digit2 · KeyL · KeyC · KeyJ · KeyT · KeyY · KeyX · KeyR · KeyL · KeyC · KeyM · KeyL · KeyH · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyN · KeyN · Digit0 · KeyZ · KeyW · KeyL · KeyU · KeyI · KeyI · KeyW · KeyI · KeyC · KeyG · Digit9 · KeyZ · KeyA · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyY · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyS · Digit4 · KeyY · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyE · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyS · Digit4 · Digit1 · KeyF · KeyS · KeyW · KeyI · KeyB · Digit3 · KeyB · KeyD · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · Digit6 · KeyW · Digit3 · KeyS · KeyI · KeyD · KeyG · Digit9 · KeyV · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyD · KeyP · KeyG · Digit5 · KeyK · KeyZ · KeyS · KeyI · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyG · KeyF · KeyU · KeyZ · KeyF · Digit9 · KeyR · KeyB · KeyM · KeyF · KeyW · KeyI · KeyI · KeyW · KeyI · KeyY · Digit2 · KeyF · KeyW · KeyI · KeyJ · KeyO · KeyW · KeyL · KeyJ · KeyQ · KeyS · KeyI · KeyM · KeyF · Digit0 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyV · Digit1 · Digit9 · KeyL · KeyH · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyY · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyG · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyN · Digit0 · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyQ · Digit2 · KeyH · KeyH · KeyA · KeyW · Digit4 · KeyI · KeyO · KeyL · KeyT · Digit7 · KeyI · KeyN · KeyR · KeyV · KeyB · Digit2 · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyW · Digit6 · KeyR · KeyU · KeyZ · KeyG · KeyU · KeyI · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyH · KeyH · KeyB · KeyM · KeyR · KeyF · KeyA · Digit2 · Digit5 · KeyH · KeyC · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyH · KeyC · KeyC · KeyI · Digit6 · KeyM · KeyC · Digit4 · Digit0 · KeyL · KeyC · KeyJ · KeyH · KeyD · KeyC · KeyI · Digit6 · KeyM · KeyH · Digit1 · KeyD · KeyF · KeyV · Digit1 · KeyD · KeyL · KeyF · KeyS · KeyI · KeyC · Digit3 · KeyB · KeyH · KeyD · Digit2 · Digit5 · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyZ · KeyO · KeyT · KeyE · KeyZ · KeyM · KeyJ · KeyQ · Digit2 · KeyO · KeyT · KeyU · Digit4 · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyW · KeyX · KeyV · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyA · Digit5 · KeyM · KeyZ · KeyQ · Digit1 · KeyM · KeyZ · KeyR · KeyJ · KeyY · KeyM · KeyU · Digit1 · KeyM · KeyT · KeyH · KeyJ · KeyY · KeyM · KeyN · KeyJ · KeyM · KeyZ · KeyG · Digit1 · KeyM · Digit2 · KeyQ · Digit3 · KeyY · KeyT · KeyB · KeyL · KeyZ · KeyW · KeyZ · KeyH · KeyN · KeyT · KeyJ · KeyL · KeyN · KeyG · KeyI · KeyX · KeyO · KeyT · KeyN · KeyK · KeyO · KeyT · KeyU · Digit0 · KeyN · KeyT · KeyC · Digit0 · KeyO · KeyD · KeyY · Digit1 · KeyN · KeyG · KeyY · Digit0 · KeyO · KeyD · KeyZ · KeyL · KeyZ · KeyJ · KeyC · Digit2 · KeyY · Digit2 · KeyN · KeyM · KeyN · KeyT · KeyL · KeyI · KeyM · Digit2 · KeyF · KeyI · KeyO · KeyG · KeyU · Digit5 · KeyO · KeyD · KeyA · KeyX · KeyM · KeyD · KeyI · KeyX · KeyZ · KeyW · KeyV · KeyH · KeyN · KeyW · KeyY · Digit1 · KeyY · KeyW · KeyU · Digit1 · KeyM · KeyW · KeyJ · KeyL · KeyN · KeyZ · KeyE · Digit2 · KeyZ · KeyT · KeyD · KeyL · KeyM · KeyZ · KeyK · Digit3 · KeyM · KeyZ · KeyK · KeyW · KeyM · KeyZ · KeyF · KeyH · KeyY · Digit2 · KeyE · Digit0 · KeyN · KeyD · KeyQ · Digit2 · KeyZ · KeyD · KeyK · KeyZ · KeyY · KeyT · KeyV · KeyL · KeyN · KeyG · KeyR · KeyL · KeyM · KeyJ · KeyI · Digit2 · KeyO · KeyT · KeyA · KeyY · KeyN · Digit2 · KeyR · KeyI · KeyY · KeyZ · KeyB · KeyJ · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 3184,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOi0zLCJ5IjoxLjI1LCJ6IjowfSwicm90YXRpb24iOnsieCI6MCwieSI6MCwieiI6MH0sInNpemUiOnsieCI6MSwieSI6Mi41LCJ6IjoxLjV9LCJvcENoYWluIjpbeyJ0b29sIjoiaMOkbmRlIiwib3AiOiJoYW5kX2tuYXAiLCJjYXAiOjAuNCwiYXQiOjB9XX0seyJzaGFwZSI6ImJveCIsImNvbG9yIjo4MDI2NzQ2LCJtYXRlcmlhbCI6InN0ZWluIiwicG9zaXRpb24iOnsieCI6MywieSI6MS4yNSwieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjEsInkiOjIuNSwieiI6MS41fSwib3BDaGFpbiI6W3sidG9vbCI6ImjDpG5kZSIsIm9wIjoiaGFuZF9rbmFwIiwiY2FwIjowLjQsImF0IjowfV19LHsic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOjAsInkiOjIuNywieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjgsInkiOjAuNCwieiI6Mn0sIm9wQ2hhaW4iOlt7InRvb2wiOiJow6RuZGUiLCJvcCI6ImhhbmRfa25hcCIsImNhcCI6MC40LCJhdCI6MH1dfV1dLFsic3Bhd25fYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsbnVsbCwzOTEzMjQ2OTU4LG51bGwsbnVsbCwwXV0sInNpZyI6IjA5MzQ1MzRjYmU1MThjYmNjMzg1M2Q3YTBlZWZhNTJlNGIxOTNkOTU0NTc0ODY1NGY0ODZlZjc2Y2NmNTliM2FiOGU5ODAxMDIxZWVhNWY1YWU1MWJlNzE2ZTdlMzk3MzkwMzFhY2E0NDQ2ZDkzYTVlNGRlMjI2OTAyN2RiYzBjIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: eigen_bruecke-geteilt2 (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 418,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyS · KeyZ · KeyW · KeyL · Digit0 · KeyZ · KeyX · KeyJ · KeyF · KeyC · KeyG · Digit9 · KeyK · KeyZ · KeyX · KeyN · Digit0 · KeyB · KeyG · KeyV · KeyP · KeyD · KeyG · KeyV · KeyY · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyI · Digit1 · KeyN · KeyT · KeyE · Digit2 · KeyO · KeyD · KeyU · Digit5 · KeyM · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyZ · KeyK · KeyZ · KeyM · KeyU · KeyX · KeyY · KeyT · KeyG · Digit5 · KeyZ · KeyJ · KeyI · Digit4 · KeyM · KeyT · KeyU · KeyW · KeyO · KeyG · KeyN · KeyL · KeyZ · KeyD · KeyZ · KeyI · KeyZ · KeyM · KeyJ · KeyI · KeyY · KeyJ · KeyH · KeyJ · KeyM · KeyW · KeyE · KeyZ · KeyN · KeyG · KeyY · Digit4 · KeyY · Digit2 · KeyZ · KeyM · KeyM · Digit2 · KeyZ · KeyH · KeyZ · KeyJ · KeyQ · KeyZ · KeyZ · KeyJ · KeyD · KeyJ · KeyM · KeyJ · KeyC · KeyW · KeyM · Digit2 · KeyU · KeyW · KeyY · KeyW · KeyM · Digit3 · KeyY · KeyM · KeyY · Digit5 · KeyN · KeyG · KeyR · KeyL · KeyM · KeyJ · KeyQ · KeyZ · KeyN · KeyZ · KeyJ · KeyK · KeyO · KeyW · KeyV · KeyK · KeyN · KeyD · KeyE · KeyY · KeyN · KeyJ · KeyC · Digit3 · KeyM · KeyG · KeyU · Digit4 · KeyO · KeyW · KeyR · KeyI · KeyZ · KeyD · KeyI · KeyZ · KeyN · KeyD · KeyU · KeyY · KeyZ · KeyG · KeyF · KeyJ · KeyZ · KeyT · KeyE · Digit5 · KeyM · KeyD · KeyG · KeyX · KeyM · KeyJ · KeyY · KeyZ · KeyZ · KeyT · KeyU · Digit3 · KeyM · KeyG · KeyR · KeyI · KeyN · KeyD · KeyN · KeyM · KeyO · KeyW · KeyV · KeyL · KeyO · KeyW · KeyJ · KeyJ · KeyN · KeyM · KeyU · KeyZ · KeyN · KeyD · KeyB · KeyJ · KeyM · KeyJ · KeyA · Digit3 · KeyZ · KeyT · KeyM · KeyW · KeyN · KeyJ · KeyA · KeyY · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 1832,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJsZWl0ZXJfcG9kZXN0bGVpdGVyIixudWxsLDI1NTE2ODU5MixudWxsLG51bGwsMF0sInNpZyI6IjZkZmUxYTg5ZjI4MTUwOGNlZDZiZmJiYjhjMWEzNGY4Y2ZmM2ZhZjQzZjdjMjcwM2UwYWM3YmY5NGRlMjQzNzJkOWVkNDEyNjc3MGU4OWRiZDIzNDUyZGFjZTE5MDgxMjYzZTU3MGRiNDNmOWVlOWJjNmUzNDBjMjA3ZTMwNjAyIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: Podestleiter (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 423,
+     "unecht": 0,
+     "folge": "KeyB · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyX · Digit3 · KeyN · KeyP · KeyD · KeyH · KeyP · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyM · KeyY · KeyM · KeyD · KeyY · Digit3 · KeyM · KeyD · KeyY · Digit0 · KeyN · KeyY · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyR · KeyH · KeyN · KeyW · KeyQ · KeyZ · KeyM · KeyJ · KeyU · KeyY · KeyN · Digit2 · KeyY · KeyY · KeyY · KeyZ · KeyA · Digit3 · KeyZ · KeyG · KeyU · Digit3 · KeyY · Digit2 · KeyU · Digit1 · KeyN · KeyG · KeyZ · KeyH · KeyZ · KeyW · KeyJ · KeyI · KeyO · KeyD · KeyZ · KeyH · KeyN · KeyM · KeyU · KeyX · KeyN · KeyD · KeyF · KeyI · KeyY · KeyM · KeyN · KeyL · KeyY · KeyM · KeyE · Digit4 · KeyN · KeyW · KeyM · KeyY · KeyO · KeyW · KeyR · KeyK · KeyM · KeyJ · KeyI · KeyZ · KeyY · KeyJ · KeyH · KeyL · KeyM · KeyZ · KeyU · KeyX · KeyY · KeyM · KeyN · KeyL · KeyZ · KeyD · KeyE · Digit5 · KeyY · KeyM · KeyR · KeyI · KeyM · KeyG · KeyU · Digit4 · KeyZ · KeyM · KeyR · KeyJ · KeyM · KeyW · KeyV · KeyJ · KeyY · KeyZ · KeyE · Digit1 · KeyN · KeyZ · KeyE · KeyZ · KeyM · KeyG · KeyF · KeyI · KeyZ · KeyT · KeyV · KeyK · KeyY · KeyZ · KeyQ · KeyX · KeyN · KeyZ · KeyE · Digit1 · KeyY · KeyJ · KeyF · KeyJ · KeyN · KeyJ · KeyG · KeyW · KeyM · KeyZ · KeyG · Digit2 · KeyY · KeyT · KeyG · Digit3 · KeyM · KeyD · KeyH · KeyL · KeyN · KeyG · KeyV · KeyK · KeyN · KeyM · KeyF · KeyM · KeyO · KeyW · KeyY · Digit4 · KeyM · KeyW · KeyF · KeyK · KeyN · KeyW · KeyV · KeyM · KeyM · KeyD · KeyY · Digit1 · KeyN · KeyJ · KeyB · KeyJ · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyJ · KeyY · KeyZ · KeyY · Digit5 · KeyM · KeyD · KeyA · Digit2 · KeyM · KeyG · KeyE · KeyY · KeyN · KeyW · KeyF · KeyI · KeyM · KeyJ · KeyR · KeyK · KeyO · KeyT · KeyB · KeyJ · KeyO · KeyD · KeyN · KeyH · KeyO · KeyD · KeyG · KeyW · KeyO · KeyT · KeyI · Digit3 · KeyY · KeyW · KeyR · KeyH · KeyM · KeyD · KeyE · KeyZ · KeyM · KeyZ · KeyJ · KeyI · KeyM · Digit2 · KeyQ · Digit1 · KeyN · KeyZ · KeyI · Digit5 · KeyN · KeyT · KeyI · Digit4 · KeyM · KeyZ · KeyZ · KeyH · KeyM · KeyD · KeyK · Digit4 · KeyM · KeyM · KeyE · Digit3 · KeyN · KeyT · KeyD · KeyJ · KeyM · KeyD · KeyV · KeyI · KeyO · KeyT · KeyG · KeyY · KeyI · KeyN · Digit0 · Enter · KeyE",
+     "ms": 2703,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJiYW5rX3NpdHpiYW5rIixudWxsLDMyMDY3MDY0NyxudWxsLG51bGwsMF0sInNpZyI6IjRhNWQzMjUyN2YyYzA3ZGU3Y2U1NGZhZWJiODZhNmUxNDFiYmNlYmE4NWMyOWRkMjIzYjhlMzUxYmNlZDE5YmRiMGU4ZmRjMWVjYzE1NzEzMGFiZTVkYzQxNzE1YjFjNjgwMzg2YTg3MDhlNGVkNmFmOWY4MWFkNWVmMDY1NjBjIiwiYXV0b3IiOiJjYzY5MDA2MGEyNWFiMjRkOTBjODNhODgwOTI3YWRhMDEzMzJiM2Q1NzI5NTI4MzZhMDk4MmE3NTdjMDViOTgyIn0 | Geteiltes Werk steht: Sitzbank (von cc69 0060 a25a b24d).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  }
+ },
+ "verben": {
+  "Haus": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "die Tür dreht 65°, beim Eintritt offen",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 622,
+   "kalt": false,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "stein": 0
+   },
+   "kosten": {
+    "holz": 98,
+    "stein": 24
+   },
+   "imInventar": false
+  },
+  "Wagen": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "kein Fahren",
+   "steht": 1,
+   "eingaben": 6,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyE · KeyW · KeyE",
+   "ms": 573,
+   "kalt": false,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "eisen": 0
+   },
+   "kosten": {
+    "holz": 16,
+    "eisen": 4
+   },
+   "imInventar": false
+  },
+  "Tor": {
+   "bauModus": true,
+   "farbe": "grün",
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 4,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "kein Portal",
+   "steht": 1,
+   "eingaben": 3,
+   "unecht": 0,
+   "folge": "Digit3 · KeyF · KeyE",
+   "ms": 193,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 22
+   },
+   "imInventar": false
+  },
+  "Brücke": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "vom Deck",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 474,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 56
+   },
+   "imInventar": false
+  },
+  "Leiter": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "nicht auf dem Podest",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 565,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 9
+   },
+   "imInventar": false
+  },
+  "Bank": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "sitzt nicht",
+   "steht": 1,
+   "eingaben": 16,
+   "unecht": 0,
+   "folge": "KeyB · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Rad · Klick · Klick · KeyE",
+   "ms": 1358,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 6
+   },
+   "imInventar": false
+  }
+ }
+}
