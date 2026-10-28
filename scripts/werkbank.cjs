@@ -233,7 +233,7 @@ function lauf(k) {
         if (k.tiere === "halten" && window.__tiereHalten) window.__tiereHalten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
-        if (st.playerMesh) st.playerMesh.visible = true;
+        st.playerMesh.visible = true;
         // DIE PASS-UHR (scripts/lib/zerlege-linse.cjs, dieselbe wie `zerlegen`): je Render-Pass die ms (`__passName`), dazu je
         // Frame Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
@@ -416,7 +416,7 @@ function lauf(k) {
             messen = uhr.messen = false;
             if (H) H.an = false;
             const haenger = H && {
-                takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
+                takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures.length, wetter: st.weather,
                 chunks: st.voxelChunks.size,
                 sprung: sprung && Object.assign(sprung, { bau: [sprung.bau, r._syncBauten()] }),
                 loadScale: +st.perfSense.loadScale.toFixed(2),
@@ -2856,7 +2856,7 @@ async function starte() {
                         ZL.BELEGUNG_SPUR
                     );
                     o.belegung = ZL.belegungAuswerten(ev);
-                    if (o.stempel) o.stempel.warnung = stempelWarnung.n;
+                    o.stempel.warnung = stempelWarnung.n;
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5) }));
                 }
