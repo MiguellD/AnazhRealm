@@ -2,7 +2,7 @@
 //
 // Erfasst ist jedes g6-Kriterium mit Punkten (klang K2 K4 K5, speicher K4 K5), aus der Messschuld (speicher K1 K2 = M30 M35
 // M37 M38, profiband K4 = M34 M39, klang K2 K5 = M33 M15) und aus dem Stau (hydro-faden: streaming K4 K5; speicher-journal:
-// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2). Je Kriterium und Staffel steht hier der Befehl, mit dem
+// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2; ankunft-aussen: ankunft K2#1 K3#1). Je Kriterium und Staffel steht hier der Befehl, mit dem
 // der Beleg gemessen wurde.
 //
 // HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
@@ -125,7 +125,83 @@ const K4_FAHR =
     'setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); ' +
     "setTimeout(() => { z.ein = st.player.mountedArch; }, 500); }, 2000); }, 30000); }, 100); return 1;";
 
+// DIE ANKUNFT VON AUSSEN (Karte ankunft-aussen): die Kalt- und die Zweit-Zeile von diag-boot-stage — t(Kontrolle) ist die Prozess-Uhr
+// ab Navigation, als die von außen gehaltene Taste W den Leib um ≥ 0,1 m trug (nie `_weltbildDa`); was sie liest.
+const ANKUNFT_PFAD = [
+    "index.html",
+    "stamm/dirigent-*.js",
+    "stamm/studio-*.js",
+    "stamm/gelaende-*.js",
+    "stamm/bild-kosten.js",
+    "stamm/koerper-bewegung.js",
+    "foundry-bruecke.js",
+    "voxel-worker.js",
+    "scripts/diag-boot-stage.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+const HW = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
+};
+
 module.exports = [
+    // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
+    {
+        kriterium: "ankunft.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Kalt-Zeile mit Bild (`--bild`): der Schuss aus dem Ausgabe-Pfad bei t(Kontrolle von außen) und derselbe in derselben
+        // Pose nach 60 s Ruhe (der Loop läuft, die Bühne hält Mittag · Sonne · Sommer); Lücke = Anteil der Pixel, die in einem
+        // Kanal um mehr als 32 abweichen, dazu der offene Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Mutanten:
+        // `--mutante bild` (der erste Schuss ohne Boden) ROT, `--mutante eigenmeldung` (`_weltbildDa` ab dem Erwachen) ohne Kontrolle ROT.
+        // Soll: ≤ 2 % und nichts offen an einem Gerät; swiftshader (Cloud) siehe Abgabe-Rumpf.
+        befehl: ["node", "scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", "{AUS}", "--bild", "{AUS}.png"],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = HW(String(lauf.stdout || ""));
+            if (!j || !j.tK || !j.bild) return { gruen: false, zahl: "kein Bild der Kontrolle (t(Kontrolle) " + (j ? j.tK : "?") + " ms, Exit " + lauf.exit + ") · " + ad };
+            const gruen = hw && j.bild.luecke <= 0.02 && j.offen.length === 0;
+            return {
+                gruen,
+                zahl:
+                    (100 * j.bild.luecke).toFixed(2) + " % Lücke nach 60 s · offen im Bild " + (j.offen.join(" · ") || "nichts") +
+                    " · t(Kontrolle) " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " + (j.weltbildDa / 1000).toFixed(2) + " s) · " + ad,
+            };
+        },
+        pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs"],
+        quelle: "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen",
+    },
+    {
+        kriterium: "ankunft.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Zweit-Zeile (`--profil`): ein Kalt-Boot füllt das Profil bis zur Ruhe der Foundry (Platte, HTTP-Cache), dann vier
+        // Wiederkehren, je ein frischer Browser-Prozess (ein node-Lauf, ein starteBrowser) — nur die Platte bleibt; je Boot
+        // t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Vor ankunft-aussen kannte die Zeile keine Außen-t: ROT.
+        befehl: [
+            "bash",
+            "-c",
+            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; ` +
+                `for N in 1 2 3 4; do node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; done; rm -rf "$P"`,
+        ],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const { ad, hw } = HW(t);
+            const w = [...t.matchAll(/t\(Kontrolle\) warm ([\d.]+) s von außen/g)].map((m) => +m[1]).sort((a, b) => a - b);
+            if (w.length < 4) return { gruen: false, zahl: w.length + " von 4 Wiederkehren mit Kontrolle von außen (Exit " + lauf.exit + ") · " + ad };
+            const med = (w[(w.length - 1) >> 1] + w[w.length >> 1]) / 2;
+            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ") · " + ad };
+        },
+        pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js"],
+        quelle: "1 = warm ≤ 5 s an einem Gerät",
+    },
     // ─────────────────────────────── Streaming K4 · K5 (hydro-faden) ───────────────────────────────
     {
         kriterium: "streaming.K4",
