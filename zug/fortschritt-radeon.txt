@@ -1452,3 +1452,4 @@
 2026-10-28 20:35:43 takt18-radeon leib.K2#1 GRÜN 2.8 · 25/47
 2026-10-28 20:35:48 takt18-radeon leib.K2#2 GRÜN 2.8 · 26/47
 2026-10-28 20:36:36 takt18-radeon tiere.K1#2 GRÜN 3.2 · 27/47
+2026-10-28 20:38:56 takt18-radeon schatten.K1#1 GRÜN 2.3 · 28/47
