@@ -2128,9 +2128,12 @@
             P = F.periodeS;
         var S = P * F.dutyMax * (anteil > 0 ? (anteil < 1 ? anteil : 1) : 0);
         var tp = (((t - w[0] * P) % P) + P) % P;
-        if (!(tp < S)) return false;
+        // ein Fenster, das seinen Auf- und Abstieg (2 steigS) nicht trägt, fliegt er nicht — am Boden schweigt er (der Regen hält
+        // ihn unten, statt ihn in Hüpfern singen zu lassen); bis 3 steigS wächst der Flug stetig im Anteil in Höhe und Kreis
+        var k = (S - 2 * F.steigS) / F.steigS;
+        if (!(tp < S) || !(k > 0)) return false;
         var a = Math.min(tp, S - tp) / F.steigS;
-        var s = a >= 1 ? 1 : a * a * (3 - 2 * a);
+        var s = (a >= 1 ? 1 : a * a * (3 - 2 * a)) * (k >= 1 ? 1 : k * k * (3 - 2 * k));
         var R = F.radiusM[0] + (F.radiusM[1] - F.radiusM[0]) * w[2];
         var sinn = w[3] < 0.5 ? -1 : 1;
         var phi = w[3] * 12.566370614359172 + (sinn * F.tempoMs * tp) / R;
@@ -2382,6 +2385,9 @@
     // um zulauf schmaler; sie endet bei ende + endeSpanne × Hash der Länge; die Schalen unter wolle decken, wo die Dichte
     // über wolleAb liegt. Ton Wurzel → Spitze = Ton × (wurzel → spitze) — gemessen V18.497 (Fell-Linse 4 m, 0,55 → 1,1
     // las 28,1 = Parität zur Haut). Bis K45 standen die Zahlen als Literale im Stamm (AnazhRealm.FELL_SCHALE + TSL).
+    // DER STRICH (haar.K1): das Haar liegt — die Locke ist flächentreu längs der Legerichtung gestreckt (√strich längs, 1/√strich
+    // quer); die Legerichtung liest der Stoff aus der Schale selbst (der Teil von Lage − Wurzel quer zur Normale: der Kamm des
+    // Ofens, Lean ∝ t²). Bis haar-fell-soll war die Locke rund: das Fell las als Filz, Strich-Kohärenz 0,28 gegen die REF 0,54.
     var FELL_SCHALE = Object.freeze({
         wurzel: 0.55,
         spitze: 1.1,
@@ -2395,6 +2401,7 @@
         endeSpanne: 0.45,
         wolle: 0.34,
         wolleAb: 0.05,
+        strich: 4,
     });
 
     // ════════════════════════════════════════════════════════════════════

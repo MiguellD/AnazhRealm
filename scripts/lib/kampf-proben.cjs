@@ -3254,12 +3254,12 @@ function K5_ABDRUCK() {
 // ── Q15 halten.K1 Staffel 2 — DER TREFFER AUS DEM GESETZ IM BILD (Seiten-Funktion, allein mit `--k1`, echter Renderer; der ewige
 // Loop läuft: Sweep und Pose im Takt des Spiels). Das Langschwert in der Hand (die Studio-Gestalt, Prägung Nihon: die Stahl-Zeile
 // ist die Eichung der Schneide — edgeBeta normiert an ihr, ihre Mutation ändert keine Fase, die Eisen-Zeile schon), ein Hirsch vor
-// dem Leib, je Bild an seinem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
+// dem Leib, beide je Bild an ihrem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
 // Leibes-Mitte (die Hand der Latenz-Linse, `haenger-linse` tierStellen), EIN Klick über den Dispatcher (`tryMouseBreak`); am
 // Treffer das Urteil des Kerns (KE · p · edgeQ · v · eff · Zone), der Schaden und die Kraft der Führung, dann hält der Hit-Stop
 // das Bild (die Linse schießt es) und die Schneide der gezeichneten Pose (`_kampfSchneide`). `lauf` mutiert den Kern
 // (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
-// den letzten Lauf zurück (Halt, Kern, Schwung), `lauf` null auch die Prägung.
+// den letzten Lauf zurück (Halt, Kern, Schwung).
 async function K1_BILD(lauf) {
     const r = window.anazhRealm,
         s = r.state,
@@ -3267,19 +3267,25 @@ async function K1_BILD(lauf) {
         pm = s.playerMesh,
         sc = globalThis.__schmiedeCore,
         bp = s.blueprints.klinge_langschwert;
-    const bild = () => new Promise((ok) => requestAnimationFrame(() => ok()));
+    // DAS BILD MIT FRIST: ein verborgener Tab zeichnet nie (rAF schläft — K1_BILD stand 300 s still), ein stehender Loop auch
+    // nicht; nach 10 s ohne Bild ROT beim Namen, mit der Sichtbarkeit der Seite
+    const bild = () =>
+        Promise.race([
+            new Promise((ok) => requestAnimationFrame(ok)),
+            sleep(1e4).then(() => {
+                throw new Error(`K1_BILD ${lauf}: kein Bild in 10 s, die Seite ist ${document.visibilityState}`);
+            }),
+        ]);
     p._hitStopUntil = 0;
     for (const [o, k, v] of window.__k1alt || []) o[k] = v;
     const alt = (window.__k1alt = []);
     const mut = (o, k, f) => (alt.push([o, k, o[k]]), (o[k] *= f));
     if (lauf === "masse") for (const m of Object.values(sc.MAT)) mut(m, "rho", 1.25);
     if (lauf === "schneide") mut(sc.MAT.eisen, "sigY", 1.5);
-    if (!("__k1ov" in window)) window.__k1ov = bp.studioOv;
-    if (lauf === null || !bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
-    bp.studioOv = lauf === null ? window.__k1ov : { __tradition: "Nihon" };
+    if (!bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
+    bp.studioOv = { __tradition: "Nihon" };
     r._kampfMaszeMemo = r._gueteAnteilMemo = null;
     for (let i = 0; i < 600 && p._swing; i++) await bild();
-    if (lauf === null) return null;
     if (p.equipped.held !== "klinge_langschwert") r.equipHeld("klinge_langschwert");
     r._setBlueprintWear(bp, 1);
     for (let i = 0; i < 900 && !pm.userData.heldMesh?.userData.foundryHeld; i++) await bild();
@@ -3294,7 +3300,14 @@ async function K1_BILD(lauf) {
     const platz = c.position
         .set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z)
         .clone();
-    const halte = () => (c.position.copy(platz), (c.userData._steuer = null), (c.userData.fearUntil = 0));
+    // beide Leiber halten je Bild ihren Platz: der Spieler rückte zwischen zwei Läufen 0,7 m ab (swiftshader: masse 2,07 m
+    // statt 1,35 m, der Hieb am Rand der Reichweite)
+    const halte = () => (
+        pm.position.copy(start),
+        c.position.copy(platz),
+        (c.userData._steuer = null),
+        (c.userData.fearUntil = 0)
+    );
     c.userData.hp = 1e9;
     p.stamina = p.staminaMax;
     const out = { lauf, traf: false };

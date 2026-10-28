@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, pngDatei } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -136,10 +136,7 @@ async function messeLabor({ echt, nur, tafel }) {
                 const ordner = opt("--bilder");
                 if (ordner && e.png) {
                     fs.mkdirSync(ordner, { recursive: true });
-                    fs.writeFileSync(
-                        path.join(ordner, `labor-${z.id}.png`),
-                        Buffer.from(e.png.split(",")[1], "base64")
-                    );
+                    pngDatei(path.join(ordner, `labor-${z.id}.png`), e.png);
                 }
                 out.labor[z.id] = e.gesamt
                     ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe }
@@ -197,10 +194,7 @@ async function laborLaub() {
     for (const [art, l] of Object.entries(labor))
         if (l.bilder) {
             for (const k of ["gegen", "auf"])
-                fs.writeFileSync(
-                    path.join(opt("--bilder"), `labor-laub-${art}-${k}.png`),
-                    Buffer.from(l.bilder[k].split(",")[1], "base64")
-                );
+                pngDatei(path.join(opt("--bilder"), `labor-laub-${art}-${k}.png`), l.bilder[k]);
             delete l.bilder;
         }
     console.log(JSON.stringify({ labor }, null, 1));
