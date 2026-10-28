@@ -1676,41 +1676,43 @@ const stationen = [
         pfad: [...KREATUR],
         quelle: "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt)",
     },
-    // Staffel 2 (Zweig oeko-k2-bestand): die Probe bestand der Kreatur-Linse (Familie der Station #1, Null-Renderer) — der
-    // Bestand ist das Verzeichnis je Region (Kachel der Revier-Fläche, `state.faunaBestand`), ein Leib nur seine Zeichnung. Je
-    // Saat 4 Spielstunden am echten Lebenszyklus, der Spieler an der Ecke von vier Regionen: Grundlauf mit der Kappe des
-    // Spiels (20), Mutante „Kappe halbiert“ (Soll: je Takt und naher Region dieselben Tiere, Leiber ≤ Kappe, der Bestand über
-    // der Kappe), Mutante „Nahrung halbiert“ (Soll: in jeder Region, nah UND fern, Effekt ≤ −15 % mit 95-%-Intervall < 0); vier
-    // ferne Regionen als Zahl gelesen (ohne Leib), kein Leib aus einer fernen Region; der Takt des Lebenszyklus p95 ≤ 5,8 ms
-    // (der CPU-Takt des Profi-Bands). An main fehlt die Probe (ROT „keine Zeile“).
+    // Staffel 2 (Zweig oeko-k2-bestand): der Teil bestand der Probe kaskade (Familie der Station #1, derselbe Lauf, Null-
+    // Renderer) — der Bestand ist das Verzeichnis je Region (Kachel der Revier-Fläche, `state.faunaBestand`), ein Leib nur
+    // seine Zeichnung. Je Saat 8 Spielstunden am echten Lebenszyklus, der Spieler an der Ecke von vier Regionen: Grundlauf mit
+    // der Kappe des Spiels (20), Mutante „Kappe halbiert“ (der Eingriff ohne Wolf bei Kappe 10 gegen denselben Eingriff bei 20 —
+    // Soll: je Takt und naher Region dieselben Tiere, Leiber ≤ Kappe, der Bestand über der Kappe), Mutante „Nahrung halbiert“
+    // (Soll: in jeder Region, nah UND fern, Effekt ≤ −15 % mit 95-%-Intervall < 0); vier ferne Regionen als Zahl gelesen (ohne
+    // Leib), kein Leib aus einer fernen Region; der Takt des Lebenszyklus p95 ≤ 5,8 ms (der CPU-Takt des Profi-Bands). An main
+    // fehlt der Teil (ROT „ohne Bestand“).
     {
         kriterium: "oekologie.K2",
         staffel: 2,
         geraet: "headless",
-        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "bestand"],
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
         env: { KREATUR_TAKT_PORT: "{PORT}" },
         gpu: false,
         zeit: false,
-        minuten: 4,
+        minuten: 6,
         urteil: (j, lauf) => {
-            const z = probeZeile(lauf.stdout, "bestand");
-            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bestand (Exit " + lauf.exit + ")" };
-            const [K, N] = [z.kappe, z.nahrung];
-            if (z.fehler || !K || !Array.isArray(N) || !z.ms)
-                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne Kappe, Nahrung oder Kosten") };
-            const fern = N.slice(z.nah);
+            const z = probeZeile(lauf.stdout, "kaskade");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe kaskade (Exit " + lauf.exit + ")" };
+            const B = z.bestand;
+            if (z.fehler || !B || !Array.isArray(B.nahrung) || !Array.isArray(z.saaten) || !(B.ms >= 0))
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne Bestand, Nahrung, Saaten oder Kosten") };
+            const N = B.nahrung;
+            const fern = N.slice(B.nah);
             const senkt = N.filter((o) => o.grund >= 1 && o.effekt <= -0.15 && o.ki[1] < 0).length;
             const gruen =
-                z.saaten >= 8 && z.nah >= 2 && K.takte > 0 && K.anders === 0 && K.leiber[0] <= 20 && K.leiber[1] <= 10 &&
-                K.bestand > 20 && K.fremd === 0 && fern.length >= 4 && senkt === N.length && z.ms.p95 <= 5.8;
+                z.saaten.length >= 8 && B.nah >= 2 && B.takte > 0 && B.anders === 0 && B.leiber[0] <= 20 && B.leiber[1] <= 10 &&
+                B.zahl > 20 && B.fremd === 0 && fern.length >= 4 && senkt === N.length && B.ms <= 5.8;
             return {
                 gruen,
                 zahl:
-                    z.saaten + " Saaten · Kappe halbiert: " + K.anders + " von " + K.takte + " Takten andere Tiere in " + z.nah +
-                    " nahen Regionen, Leiber " + K.leiber.join("/") + " bei Bestand " + K.bestand + " · halbe Nahrung senkt " +
+                    z.saaten.length + " Saaten · Kappe halbiert: " + B.anders + " von " + B.takte + " Takten andere Tiere in " +
+                    B.nah + " nahen Regionen, Leiber " + B.leiber.join("/") + " bei Bestand " + B.zahl + " · halbe Nahrung senkt " +
                     senkt + " von " + N.length + " Regionen (" + fern.length + " fern, Effekt " +
-                    Math.max(...N.map((o) => o.effekt)) + " … " + Math.min(...N.map((o) => o.effekt)) + ") · Takt p95 " +
-                    z.ms.p95 + " ms",
+                    Math.max(...N.map((o) => o.effekt)) + " … " + Math.min(...N.map((o) => o.effekt)) + ") · Takt p95 " + B.ms +
+                    " ms",
             };
         },
         pfad: [...KREATUR],
