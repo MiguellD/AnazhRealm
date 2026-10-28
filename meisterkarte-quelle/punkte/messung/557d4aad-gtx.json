@@ -1,7 +1,7 @@
 {
  "sha": "557d4aaddd489ba2dd2cc31322e5a349348c11a8",
  "geraet": "gtx",
- "zeit": "2026-10-28T20:33:19.768Z",
+ "zeit": "2026-10-28T21:51:06.866Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "gelaende.K2#1": {
@@ -181,6 +181,186 @@
    "gpu": "nvidia/pascal",
    "zeit": "2026-10-28T20:33:19.768Z",
    "abdruck": "1bf868639fe6",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "siedlung.K5#2": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 62.2 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 169.4 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.48,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:39:25.341Z",
+   "abdruck": "607c1995be2b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "leib.K1#2": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 45.7 · third/gehen 44 · ego/springen 32.3 · third/springen 33.9 · ego/einsteigen 34.9 · third/einsteigen 22.8 · ego/hieb 26.6 · third/hieb 36.7 · Bild 14.8/14.6/14.3 ms",
+   "exit": 0,
+   "minuten": 14.83,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T20:45:01.203Z",
+   "abdruck": "160f0c239df2",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "leib.K2#2": {
+   "gruen": true,
+   "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
+   "exit": 0,
+   "minuten": 2.74,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:00:01.605Z",
+   "abdruck": "e0a01f661eac",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 35.8 · ego/hieb 29.5 · Bild 15.6/15.2/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (145–172 ms, gleitet bis 0 mm je Takt) / 60-mal (124–174 ms, gleitet bis 0 mm je Takt) / 60-mal (120–166 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 5.79,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:02:52.675Z",
+   "abdruck": "631137359d80",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K5#2": {
+   "gruen": true,
+   "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
+   "exit": 0,
+   "minuten": 0.81,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:08:48.429Z",
+   "abdruck": "170c52cff9e7",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": true,
+   "zahl": "Federung im Bild: Drift-Wank 8.61 gegen Glatt 0.539 mm, Stoß-Antwort Glatt/Hang 8.02/9.76 mm (Mutante 2.672/1.409) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.618/0.511 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+   "exit": 0,
+   "minuten": 3.39,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:09:43.519Z",
+   "abdruck": "90f16590513a",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tore.K3#2": {
+   "gruen": true,
+   "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
+   "exit": 0,
+   "minuten": 1.47,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:13:13.164Z",
+   "abdruck": "4a0e91ccdc14",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "spielgang.K3#1": {
+   "gruen": false,
+   "zahl": "keine Bedienung (Exit 0)",
+   "exit": 0,
+   "minuten": 0.96,
+   "grund": "ROT: keine Bedienung (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:14:48.145Z",
+   "abdruck": "4a6eccba6453",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "15.08 % Lücke nach 60 s · offen im Bild nichts · t(Kontrolle) 20.30 s von außen (Eigenmeldung 19.91 s) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.48,
+   "grund": "ROT: 15.08 % Lücke nach 60 s · offen im Bild nichts · t(Kontrolle) 20.30 s von außen (Eigenmeldung 19.91 s) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:15:52.416Z",
+   "abdruck": "d9cfa32c767f",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "warm Median 12.56 s (10.94 · 12.44 · 12.69 · 13.98) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.68,
+   "grund": "ROT: warm Median 12.56 s (10.94 · 12.44 · 12.69 · 13.98) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:17:27.750Z",
+   "abdruck": "babf768d6303",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "streaming.K3#1": {
+   "gruen": true,
+   "zahl": "Frame p95 Median 41.7 ms (41.6 · 41.7 · 49.9) · CPU-Takt p95 36 · 38.6 · 40.5 ms · die Welt steht nach 12.1 · 12.6 · 12.4 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x8 | TAKT: verteilt x3 | TAKT: _dispatchFrameJobs › run x3 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 4.37,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:19:14.439Z",
+   "abdruck": "7ae00ccef214",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.82 bei Lag 0 (n 119), Spitze 0.83 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 77.4 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.78,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:23:42.962Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "klang.K5#2": {
+   "gruen": true,
+   "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.15 · nacht 0.16 ms · Aussetzer 0 in 600 s Wiedergabe (0 s still) (Exit 0)",
+   "exit": 0,
+   "minuten": 13.36,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:25:36.597Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 3.489 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 11.92,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:39:05.014Z",
+   "abdruck": "80965330139c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 3.489 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 11.92,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:39:05.014Z",
+   "abdruck": "347160cebd7c",
+   "port": 7754,
+   "bahn": "allein",
+   "zwilling": "speicher.K1#1"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.5 ms (Soll p95 ≤ 0,3; 115 Rufe in 5762 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "exit": 0,
+   "minuten": 3.54,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T21:51:06.866Z",
+   "abdruck": "2897b2bde797",
    "port": 7754,
    "bahn": "allein"
   }
