@@ -759,6 +759,196 @@ async function wertLauf() {
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 }
+// ───────── DIE EMOTION FORMT DIE WELT (affekt.K2#1) und DER NEXUS WÄHLT AUS (affekt.K3#1; Zweig affekt-emotion): zwei Szenen
+// der Werkbank, ein Lauf (`affektLauf`) ─────────
+// Gemeinsam: der eigene Takt der Szene (`_gameLoopTick` je 0,1 s Ereignis-Uhr, nie die Wanduhr, die Seite steht still), jeder
+// Lauf beginnt am selben Anfang (Uhr, Welt-Uhr, Ströme der Welt `bauSame`, Leben- und Gefühls-Feld, Taten, die Wesen und Werke
+// des ersten Laufs) — so unterscheidet die Läufe nur ihre Mutante; der Halt der Messung fällt (`weatherEffectTime` 0).
+// DIE HOFFNUNG UND DAS WETTER (affekt.K2#1), in der Seite der Werkbank: der Spieler steht an der Mess-Wiese im Frieden, 12 Uhr
+// und Sonne über sein Wort, dann gibt er das Wetter frei; der Nexus ruht. Die Tat: alle 30 s Spielzeit baut er einen Felsblock
+// aus der Leiste (`confirmBuild`, der Stein dafür im Inventar), 25 min lang; 30 Spielminuten zieht der Wetter-Zug (alle
+// `WETTER_ZUG_SEK`) — das Wort, das die Welt sich wünscht, sonst die Front am Ort. Gezählt: je Zug das Wort, der Wunsch und
+// seine Quelle, die Front; die Hoffnung über der Schwelle des Spielers; das Feuern des Gesetzes `emotion:hope`. o.mutante
+// „starr" friert die Achse hope auf 0, „gesetz-aus" pausiert das Gesetz (`disabled`, der Schalter des Gesetze-Pults).
+function gemuetWetter(r, T, o) {
+    const s = r.state;
+    const p = s.player;
+    const pm = s.playerMesh.position;
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    const A = window.__affektAnfang || (window.__affektAnfang = {
+        u: window.__gangUhr || performance.now(), sz: s.spielZeit, same: JSON.stringify(s.worldMeta.bauSame || {}),
+        regel: s.dsl.nextRuleId, wesen: new Set(s.creatures), werke: new Set(s.architectures),
+    });
+    let u = A.u;
+    s.spielZeit = A.sz;
+    s.worldMeta.bauSame = JSON.parse(A.same);
+    for (const c of [...s.creatures]) if (!A.wesen.has(c)) r.removeCreature(c);
+    for (const a of [...s.architectures]) if (!A.werke.has(a)) r.removeArchitecture(a, { still: true });
+    r._clearBuildMode();
+    p.inventory = new Array(27).fill(null);
+    Object.assign(s, { lifeField: new Map(), wohlBaseline: new Map(), emotionField: new Map(), taten: [], tatErwartung: new Map() });
+    s.weatherEffectTime = 0;
+    s.nexusEvolutionQueue.length = 0;
+    s.dsl.pending = [];
+    s.perfRegulator = false;
+    s.worldRules = s.worldRules.filter((g) => /^emotion:/.test(g.source));
+    for (const g of s.worldRules) Object.assign(g, { lastFired: -Infinity, fires: 0, disabled: o.mutante === "gesetz-aus" && g.source === "emotion:hope" });
+    for (const k in p.emotions) p.emotions[k] = 0;
+    if (p.mood) for (const k in p.mood) p.mood[k] = 0;
+    p.wohlBaseline = undefined;
+    p.appraisalDelta = 0;
+    r.setGameMode("frieden");
+    r.setTimeOfDay(0.5, "regler");
+    r._setWeather("sunny", "regler");
+    r._wetterFreigeben("regler");
+    if (o.mutante === "starr") Object.defineProperty(p.emotions, "hope", { configurable: true, enumerable: true, get: () => 0, set: () => {} });
+    const takt = () => {
+        s.nexusLastEvolution = Infinity;
+        r._gameLoopTick((window.__gangUhr = u += 100));
+    };
+    const bauen = () => {
+        if (!s.buildMode.active || s.buildMode.blueprintName !== "stein_block") (r.setHotbarSlot(0, "stein_block"), r.selectHotbarSlot(0));
+        for (const [m, n] of Object.entries(r.computeBuildCost("stein_block") || {})) r.addMaterialToInventory(m, n);
+        return r.confirmBuild() ? 1 : 0;
+    };
+    const Z = r.constructor.WETTER_ZUG_SEK;
+    const zuege = [];
+    let bauten = 0;
+    let ueber = 0;
+    try {
+        for (let k = 0; k < 18000; k++) {
+            if (k % 300 === 0 && k < 15000) bauten += bauen();
+            pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+            const zug = Math.floor(s.spielZeit / Z);
+            const w = s.wetterWunsch && s.wetterWunsch.quelle;
+            takt();
+            if (Math.floor(s.spielZeit / Z) !== zug) zuege.push({ wort: s.weather, quelle: w || null, front: r._wetterAmOrt(pm.x, pm.z, (zug + 1) * Z) });
+            if (p.emotions.hope > p.emotionThreshold) ueber++;
+        }
+    } finally {
+        if (o.mutante === "starr") (delete p.emotions.hope, (p.emotions.hope = 0));
+        for (const g of s.worldRules) g.disabled = false;
+    }
+    const g = s.worldRules.find((x) => x.source === "emotion:hope");
+    const n = (f) => zuege.filter(f).length;
+    return {
+        mutante: o.mutante || null, bauten, zuege: zuege.length, sonne: n((z) => z.wort === "sunny"), frontSonne: n((z) => z.front === "sunny"),
+        ausGesetz: n((z) => z.quelle === "rule:emotion:hope"), gesetz: g ? { id: g.id, feuer: g.fires } : null, hoffnungS: ueber / 10,
+        folge: zuege.map((z) => z.wort[0] + (z.quelle ? "*" : "")).join(""),
+    };
+}
+
+// DER NEXUS IM ZEITRAFFER (affekt.K3#1), in der Seite der Werkbank: der Spieler steht an der Mess-Wiese im Frieden, der Nexus
+// spielt — die Szene treibt seine Evolution je `nexusEvolutionInterval` (24 s; der Takt der Mess-Welt wirft headless nichts,
+// `evolveNexus`, ein Treiber ruft `generateEvolution`), alles Weitere ist das Spiel (das Wirk-Tor, `_loopNexusUpdate`, die
+// Regeln, ihre Wertung, Erneuerung und Mutation). 30 Spielminuten in 18 000 Takten (Zeitraffer ≈ ×10 an der Wand), o.saat
+// versetzt den Strom des Nexus (`bauSame.nexus`). Je 30 s die Nexus-Regeln mit value > 0 und alle, je Drittel gepoolt. o.mutante „gemischt": der Ertrag jedes Feuerns (aus dem EMA-Schritt der echten Wertung
+// zurückgerechnet) lernt die Regel mit zufälligem Vorzeichen — gezählt wird dann value > 0 nach dem Wert, den die echte Wertung
+// ihr gäbe (`_wahr`); „aus": die Wertung schweigt. Dazu die Taten des Nexus und die Zeilen der Stimme des Felds über sie.
+function nexusZeitraffer(r, T, o) {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    const A = window.__affektAnfang || (window.__affektAnfang = {
+        u: window.__gangUhr || performance.now(), sz: s.spielZeit, same: JSON.stringify(s.worldMeta.bauSame || {}),
+        regel: s.dsl.nextRuleId, wesen: new Set(s.creatures), werke: new Set(s.architectures),
+    });
+    let u = A.u;
+    s.spielZeit = A.sz;
+    s.worldMeta.bauSame = JSON.parse(A.same);
+    s.worldMeta.bauSame.nexus = (s.worldMeta.bauSame.nexus || 0) + 1000 * (o.saat || 0);
+    s.dsl.nextRuleId = A.regel;
+    for (const c of [...s.creatures]) if (!A.wesen.has(c)) r.removeCreature(c);
+    Object.assign(s, { lifeField: new Map(), wohlBaseline: new Map(), emotionField: new Map(), taten: [], tatErwartung: new Map() });
+    s.weatherEffectTime = 0;
+    s.worldRules = [];
+    s.nexusEvolutionQueue.length = 0;
+    s.dsl.pending = [];
+    s.dsl.pendingOutcomes = [];
+    s.perfRegulator = false;
+    s.nexusWirk = undefined;
+    r._stimme = null;
+    for (const k in s.player.emotions) s.player.emotions[k] = 0;
+    s.player.wohlBaseline = undefined;
+    r.setGameMode("frieden");
+    let saat = 12345;
+    const zufall = () => (saat = (Math.imul(saat, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const B = r.constructor.WERTUNG.ruleValueBeta;
+    const echt = r._measureRuleReward;
+    if (o.mutante === "aus") r._measureRuleReward = (rule) => (rule._vPending = false);
+    if (o.mutante === "gemischt")
+        r._measureRuleReward = function (rule, now) {
+            if (!rule._vPending) return;
+            const v = rule.value || 0;
+            rule.value = rule._wahr || 0;
+            echt.call(this, rule, now);
+            const ertrag = (rule._wahr || 0) + (rule.value - (rule._wahr || 0)) / B;
+            rule._wahr = rule.value;
+            rule.value = v + B * ((zufall() < 0.5 ? -ertrag : ertrag) - v);
+        };
+    const wert = (x) => (o.mutante === "gemischt" ? x._wahr || 0 : x.value || 0);
+    const proben = [];
+    let evo = u / 1000;
+    try {
+        for (let k = 0; k < 18000; k++) {
+            pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+            s.nexusLastEvolution = Infinity;
+            if (u / 1000 >= evo) (s.nexusEvolutionQueue.push(r.generateEvolution()), (evo = u / 1000 + s.nexusEvolutionInterval));
+            r._gameLoopTick((window.__gangUhr = u += 100));
+            if (k % 300 === 0) {
+                const R = s.worldRules.filter((x) => x && x.source === "nexus");
+                proben.push([R.filter((x) => wert(x) > 0).length, R.length]);
+            }
+        }
+    } finally {
+        r._measureRuleReward = echt;
+    }
+    const drittel = (a) => a.reduce(([g, n], [x, y]) => [g + x, n + y], [0, 0]);
+    const L = proben.length;
+    const taten = s.taten.filter((e) => /^(rule:)*nexus$/.test(String(e.wer)));
+    return {
+        mutante: o.mutante || null, saat: o.saat || 0, erstes: drittel(proben.slice(0, L / 3)), letztes: drittel(proben.slice((2 * L) / 3)),
+        verlauf: proben.map(([g, n]) => g + "/" + n).join(" "), taten: taten.length,
+        gesprochen: taten.filter((e) => e.zeile).length,
+        zeilen: taten.filter((e) => e.zeile && e.regel != null).map((e) => e.zeile).slice(-2),
+    };
+}
+
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
+// das Weltbild ist da und die Bühne steht (der Wetter-Zug und der Nexus warten auf sie: höchstens 9 000 Takte der Seite), dann je Mutante der Lauf
+// „art" — „gemuet": echt · starr · gesetz-aus, „nexus": je Saat 0, 1, 2 echt · gemischt · aus. Je Lauf eine Zeile „AFFEKT-<art> {…}", alle in {AUS}.
+async function affektLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const [aus, port, art, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const erg = { art, laeufe: [] };
+    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const b = await werkbankRuf(W, "/eval", { code: "const da = () => !!r.state._weltbildDa && r._buehneSteht(); for (let i = 0; i < 9000 && !da(); i++) await window.__seitenTakt(); return da();" });
+        if (!b || b.ergebnis !== true) throw new Error("die Bühne steht nicht: " + JSON.stringify(b).slice(0, 200));
+        const plan = art === "gemuet" ? [null, "starr", "gesetz-aus"].map((m) => [m, 0]) : [0, 1, 2].flatMap((n) => [null, "gemischt", "aus"].map((m) => [m, n]));
+        for (const [mutante, saat] of plan) {
+            const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, mutante, saat }) + ");" });
+            if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+            console.log("AFFEKT-" + art + " " + JSON.stringify(a.ergebnis));
+            erg.laeufe.push(a.ergebnis);
+        }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+        console.log("FEHLER " + erg.fehler);
+    } finally {
+        tor.stop();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+
 // die Zeilen eines Laufs (stdout) als Objekte
 const zeilenVon = (lauf, marke) =>
     String(lauf.stdout || "")
@@ -1637,6 +1827,89 @@ const stationen = [
             "stamm/kreatur-leben.js", "stamm/kampf.js", "stamm/dirigent-takt.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
+    },
+
+    // ───────── affekt.K2 Staffel 1 — die Emotion formt die Welt über ein Gesetz mit Quelle (Zweig affekt-emotion) ─────────
+    // Die Szene `gemuetWetter` (oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000, drei Läufe vom selben
+    // Anfang: echt, die Achse hope eingefroren (starr), das Gesetz emotion:hope pausiert (gesetz-aus). GRÜN, wenn alle drei gleich
+    // oft bauen (dieselbe Tat), echt die Hoffnung über die Schwelle trägt und ihr Gesetz feuert, mindestens ein Zug den Wunsch
+    // mit der Quelle rule:emotion:hope zieht, echt ≥ 3 Züge mehr Sonne zieht als starr, starr der Front folgt (Sonne = Sonne der
+    // Front) und gesetz-aus starr gleicht (ohne das Gesetz keine Kopplung — kein fester Trigger daneben).
+    // Headless (Werkbank, swiftshader, Stationslauf am Zweig affekt-emotion): 49 Bauten je Lauf; echt Sonne 12/15 (10 Züge aus
+    // rule:emotion:hope, Hoffnung 908 s über 0,7, das Gesetz feuert 34×), starr 3/15 = Front, gesetz-aus 3/15. Vorher (main
+    // a03b7b06): die Kopplung war ein fester Trigger in updatePlayerEmotions, kein Gesetz emotion:hope — die Station ROT.
+    {
+        kriterium: "affekt.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(affektLauf) + ")()", "{AUS}", "{PORT}", "gemuet", knapp(gemuetWetter)],
+        gpu: false,
+        zeit: false,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const L = zeilenVon(lauf, "AFFEKT-gemuet");
+            const [e, st, aus] = [null, "starr", "gesetz-aus"].map((m) => L.find((x) => x.mutante === m));
+            if (!e || !st || !aus) return { gruen: false, zahl: "Läufe " + L.length + "/3 (Exit " + lauf.exit + ")" };
+            const gleich = e.bauten > 0 && e.bauten === st.bauten && e.bauten === aus.bauten;
+            const gruen =
+                gleich && e.gesetz && e.gesetz.feuer > 0 && e.hoffnungS > 0 && e.ausGesetz >= 1 && e.sonne - st.sonne >= 3 &&
+                st.sonne === st.frontSonne && aus.sonne === st.sonne && st.ausGesetz === 0 && aus.ausGesetz === 0;
+            return {
+                gruen,
+                zahl:
+                    "Sonne echt " + e.sonne + "/" + e.zuege + " (" + e.ausGesetz + " Züge aus rule:emotion:hope, das Gesetz feuert " +
+                    (e.gesetz ? e.gesetz.feuer : "—") + "×, Hoffnung " + e.hoffnungS + " s über der Schwelle) · starr " + st.sonne +
+                    " (Front " + st.frontSonne + ") · Gesetz pausiert " + aus.sonne + " · Bauten " + [e, st, aus].map((x) => x.bauten).join("/"),
+            };
+        },
+        pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/bild-himmel.js", "stamm/dirigent-takt.js",
+            "stamm/werkstatt-bauen.js", "stamm/speicher-laden.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = eine getragene Stimmung verschiebt am Ort EINE Größe (Wetter-Wahrscheinlichkeit, Kreatur-Laune, Klang oder Materie-Antwort) gegen den Gegenlauf mit eingefrorener Emotion-Achse",
+    },
+
+    // ───────── affekt.K3 Staffel 1 — der Nexus wählt aus: die Wertung δ trägt seine Regeln (Zweig affekt-emotion) ─────────
+    // Die Szene `nexusZeitraffer` (oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000: je Saat des
+    // Nexus-Stroms (0, 1, 2) drei Läufe zu 30 Spielminuten vom selben Anfang — echt, mit gemischtem δ (zufälliges Vorzeichen,
+    // gezählt nach dem Wert der echten Wertung), mit stummer Wertung. Je Variante über die Saaten gepoolt: Regeln mit value > 0
+    // durch alle Regeln im ersten und im letzten Drittel. GRÜN, wenn echt im letzten Drittel einen höheren Anteil trägt als im
+    // ersten UND als das gemischte δ im letzten, die stumme Wertung nicht steigt, und die Stimme des Felds mindestens eine Tat
+    // eines Nexus-Gesetzes im Blick spricht (Ort, Ursache, „Gesetz Nr. … des Nexus").
+    // Headless (Werkbank, swiftshader, zwei Stationsläufe am Zweig affekt-emotion; das Wirk-Tor liest die fps, die Läufe streuen):
+    // echt 0,493 → 0,761 und 0,302 → 0,795, gemischt 0,233 → 0,286 und 0,317 → 0,100, stumm 0 → 0; die Zeile „Ein Gesetz des
+    // Nexus trägt Leben ins Feld an einer Stelle — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 17
+    // des Nexus …)". Vorher (main a03b7b06): unter dem Takt der Szene verfiel jede Nexus-Regel im
+    // ersten Takt (die Geburt auf der Wanduhr), und mit der Uhr des Takts erneuerte die Fitness-Summe jede feuernde Regel bis
+    // value −0,67 (echt 0,80 → 0,75, gemischt 0,59 → 0,52) — ROT.
+    {
+        kriterium: "affekt.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(affektLauf) + ")()", "{AUS}", "{PORT}", "nexus", knapp(nexusZeitraffer)],
+        gpu: false,
+        zeit: false,
+        minuten: 30,
+        urteil: (j, lauf) => {
+            const L = zeilenVon(lauf, "AFFEKT-nexus");
+            if (L.length !== 9) return { gruen: false, zahl: "Läufe " + L.length + "/9 (Exit " + lauf.exit + ")" };
+            const pool = (m) => {
+                const q = L.filter((x) => x.mutante === m);
+                const s = (k, i) => q.reduce((a, x) => a + x[k][i], 0);
+                return { e: s("erstes", 0) / Math.max(1, s("erstes", 1)), l: s("letztes", 0) / Math.max(1, s("letztes", 1)), q };
+            };
+            const [e, g, a] = [pool(null), pool("gemischt"), pool("aus")];
+            const zeile = e.q.flatMap((x) => x.zeilen).find((z) => /Gesetz Nr\. \d+ des Nexus/.test(z));
+            const f = (x) => x.toFixed(3);
+            return {
+                gruen: e.l > e.e && e.l > g.l && !(a.l > a.e) && !!zeile,
+                zahl:
+                    "value > 0 echt " + f(e.e) + " → " + f(e.l) + " · gemischt " + f(g.e) + " → " + f(g.l) + " · stumm " + f(a.e) + " → " +
+                    f(a.l) + " · Stimme: " + (zeile ? zeile.slice(0, 120) : "keine Zeile eines Nexus-Gesetzes"),
+            };
+        },
+        pfad: ["stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/dirigent-takt.js",
+            "stamm/speicher-laden.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ",
     },
 
     // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────
