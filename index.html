@@ -518,6 +518,16 @@
                 pointer-events: none;
                 transition: opacity 0.45s ease;
             }
+            /* IM SPIEL (spielgang.K3): hält der Spieler den Zeiger (Pointer-Lock), gehört das Bild der Welt — die Menü-Leiste,
+               die Status-Zeile und die Konsole weichen (1080p, Mess-Wiese: 12,51 → 3,18 % gedeckt); Esc, Schublade und Chat-Taste
+               geben den Zeiger frei und holen sie zurück. Leben, Hotbar, Fadenkreuz und Untertitel bleiben. */
+            body.im-spiel #topbar,
+            body.im-spiel #statusbar,
+            body.im-spiel #console {
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.25s ease;
+            }
             body.hud-hidden::after {
                 content: "H — HUD zeigen";
                 position: fixed;
@@ -1450,6 +1460,32 @@
                 border-top: none;
                 z-index: 5;
                 box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+            }
+            /* DIE UNTERTITEL (spielgang.K4) — unten rechts neben der Hotbar, je Klang-Ereignis eine Zeile mit Richtung; sie
+               fangen keine Maus und bleiben auch bei ausgeblendetem HUD (H) stehen. */
+            #untertitel {
+                position: absolute;
+                right: 18px;
+                bottom: 18px;
+                max-width: min(360px, 30vw);
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 2px;
+                z-index: 6;
+                pointer-events: none;
+            }
+            #untertitel[hidden] {
+                display: none;
+            }
+            .untertitel-zeile {
+                padding: 2px 8px;
+                font-size: 16px;
+                line-height: 1.3;
+                color: #f3ead8;
+                background: rgba(12, 8, 3, 0.62);
+                border-radius: 3px;
+                text-align: right;
             }
             /* DER TACHO (Leben-Schau 2, fahr-bahn) — rechts über der Hotbar-Höhe (auf 958 px Breite deckt er die
                Hotbar nicht), im Messing-Rahmen des Stats-HUD; er bleibt auch bei ausgeblendetem HUD (H) das Instrument
@@ -8215,6 +8251,7 @@
             <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
         </div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
+        <div id="untertitel" role="log" aria-live="polite" aria-label="Untertitel" hidden></div>
         <!-- DER TACHO (Leben-Schau 2, fahr-bahn): im Sattel eines Gesetz-Wagens die km/h seines Fahr-Zustands
              (|vlong| × vehicle:FAHR.kmh, dieselbe Zahl wie die Probefahrt) und die Fahr-Tasten (AnazhRealm.FAHR_TASTEN).
              Schreiber: `_fahrAnzeige` (Stamm); ohne Ritt verborgen. -->
@@ -9061,6 +9098,10 @@
                             <input type="range" id="slider-voice" min="0" max="100" value="100" />
                             <span class="slider-value" id="slider-voice-val">100%</span>
                         </div>
+                        <label class="radio-label">
+                            <input type="checkbox" id="untertitel-toggle" />
+                            <span>Untertitel (jede Stimme und jeder Ruf der Klang-Welt als Zeile, mit Richtung)</span>
+                        </label>
                         <div class="slider-row">
                             <label for="slider-ring">Sicht-Ring</label>
                             <input type="range" id="slider-ring" min="1" max="12" value="4" />

@@ -797,6 +797,7 @@ class AnazhRealm {
             // „Szene-Auflösung“ im Menü, im Snapshot; null = `SZENE_SKALA` (`_szeneSkalaWirk`). Kein Stellglied des Reglers.
             szeneSkala: null,
             _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter DPR-Cap-Wert (Dead-Band gegen Churn)
+            untertitel: false, // spielgang.K4 — die Untertitel der Klang-Welt (Einstellungen › Ton & Sicht), gewählt vom Spieler
             // Standalone-Perf-Panel (top-right, eine Zeile {fps} · Szene {skala}% · {dc}dc · {tri}k▲),
             // liest perfSense (kein Parallel-Zähler); der PERF-SENSE-Debug-Dump bleibt hinter perfOverlay.
             // Toggle im Einstellungen-Drawer, persistiert via Snapshot.
@@ -1370,6 +1371,7 @@ class AnazhRealm {
         const last = this.state._statsHudLastTick || 0;
         if (currentTime - last < 0.1) return; // 10 Hz Throttle
         this.state._statsHudLastTick = currentTime;
+        this._untertitelTakt();
         const hpFill = document.getElementById("stats-hud-hp-fill");
         const hpText = document.getElementById("stats-hud-hp-text");
         const stamFill = document.getElementById("stats-hud-stam-fill");
