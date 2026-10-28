@@ -286,7 +286,6 @@ class AnazhRealm_studio_bruecke {
             Number.isFinite(s.rarity) &&
             Number.isFinite(s.nHMin) &&
             Number.isFinite(s.nHSpan) &&
-            Number.isFinite(s.slopeMax) &&
             // DAS RANG-GESETZ (siedlung.K2): je Stufe ein Raster und die kleinste Größe, die Reichweite eines Orts
             Array.isArray(s.rang) &&
             s.rang.every((r) => r && r.zellen >= 1 && Number.isInteger(r.zellen) && r.nH >= 1) &&

@@ -1877,6 +1877,17 @@ class AnazhRealm_werkstatt_hud {
                 if (div) div.style.display = this.state.perfPanel ? "block" : "none";
             });
         }
+        // spielgang.K4 — die Untertitel der Klang-Welt (default aus): aus, fällt jede stehende Zeile.
+        const utCb = document.getElementById("untertitel-toggle");
+        if (utCb) {
+            utCb.checked = this.state.untertitel === true;
+            utCb.addEventListener("change", () => {
+                this.state.untertitel = !!utCb.checked;
+                const buch = this.state._untertitel;
+                if (!this.state.untertitel && buch)
+                    for (const schl of [...buch.offen.keys()]) this._untertitelWeg(schl);
+            });
+        }
         // V18.472 — der Perf-Export-Button (unter dem Panel-Toggle): lädt den
         // Flugschreiber-Trace (+ Sekunden-Ring) als .json herunter — die Datei,
         // die der Schöpfer im Chat zustellt. EINE Quelle (_flightRecorderBuildTrace).
@@ -2689,6 +2700,87 @@ class AnazhRealm_werkstatt_hud {
             /* Policy: kein Lock ohne Geste — der nächste Klick fängt den Zeiger */
         }
     }
+
+    // DIE UNTERTITEL (spielgang.K4): EIN Klang-Ereignis, zwei Leser — der Ton und die Zeile. Jeder Chokepoint des
+    // Klang-Gesetzes ruft hier in dem Augenblick, in dem er seine Quelle startet (der Ruf `_tierRuf`, der Substanz-Klang
+    // `_substanzKlang`, der Schritt `_schrittKlangEreignis`, die Stimmen der Umwelt-Mischung, die Fahrt, die Musik), mit dem
+    // Namen aus dem Gesetz; der Satz steht in der EINEN Tafel `UNTERTITEL` (ein Name ohne Satz ist laut, `_bruchMelden`).
+    // Dieselbe Zeile (art · name · wer) frischt auf statt zu stapeln, die Richtung kommt aus dem Panorama (‹ links · › rechts).
+    // Nur, wenn der Spieler sie gewählt hat (Einstellungen › Untertitel, `state.untertitel`); `state._untertitel` zählt die
+    // Zeilen (headless messbar, gate:klang-zensus Ü).
+    _untertitel(art, name, wer, pan) {
+        return this._untertitelZeile(art, [[name, wer, pan]], `${art}:${name}:${wer || ""}`);
+    }
+
+    // Die Stimmen der Klang-Welt: jede, die der Graph des Gesetzes (`umweltGraph`) gerade spielt, steht in der EINEN
+    // Umgebungs-Zeile, aufgefrischt mit jeder Mischung, die er anwendet (an einem Wasserfall spielen mehr Stimmen, als
+    // Zeilen Platz haben).
+    _untertitelStimmen(graph) {
+        if (!this.state.untertitel) return;
+        const an = graph.zensus().filter((v) => v.an);
+        if (an.length)
+            this._untertitelZeile(
+                "stimme",
+                an.map((v) => [v.name, null, v.pan]),
+                "stimme"
+            );
+    }
+
+    // Die EINE Schreib-Stelle der Untertitel: je Teil (Name · wer · Panorama) der Satz der Tafel mit seiner Richtung, die
+    // Teile einer Zeile mit „·" verbunden.
+    _untertitelZeile(art, teile, schl) {
+        const st = this.state;
+        if (!st.untertitel || typeof document === "undefined") return false;
+        const T = AnazhRealm.UNTERTITEL;
+        const saetze = [];
+        for (const [name, wer, pan] of teile) {
+            const satz = T[art] && T[art][name];
+            if (!satz) return void this._bruchMelden(`UNTERTITEL: kein Satz für ${art}:${name}`);
+            const links = pan < -T.panSchwelle ? "‹ " : "";
+            saetze.push(links + satz.replace("{wer}", wer || "") + (pan > T.panSchwelle ? " ›" : ""));
+        }
+        const box = document.getElementById("untertitel");
+        if (!box) return false;
+        const buch = st._untertitel || (st._untertitel = { zeilen: 0, je: {}, offen: new Map() });
+        const text = saetze.join(" · ");
+        let z = buch.offen.get(schl);
+        if (!z) {
+            if (buch.offen.size >= T.maxZeilen) this._untertitelWeg(buch.offen.keys().next().value);
+            z = { el: document.createElement("div") };
+            z.el.className = "untertitel-zeile";
+            box.appendChild(z.el);
+            buch.offen.set(schl, z);
+        }
+        this._hudSchreib(z.el, text);
+        if (z.el.style.opacity) z.el.style.opacity = "";
+        z.bis = performance.now() + T.sek * 1000;
+        box.hidden = false;
+        buch.zeilen++;
+        buch.je[art] = (buch.je[art] || 0) + 1;
+        return true;
+    }
+
+    _untertitelWeg(schl) {
+        const buch = this.state._untertitel;
+        const z = buch.offen.get(schl);
+        if (z) z.el.remove();
+        buch.offen.delete(schl);
+        if (!buch.offen.size) document.getElementById("untertitel").hidden = true;
+    }
+
+    // Der Ablauf im Takt des Lebens-HUD (10 Hz): eine Zeile, die nicht aufgefrischt wurde, blendet in ihrer letzten
+    // halben Sekunde aus und fällt.
+    _untertitelTakt() {
+        const buch = this.state._untertitel;
+        if (!buch || !buch.offen.size) return;
+        const jetzt = performance.now();
+        for (const [schl, z] of buch.offen) {
+            const rest = z.bis - jetzt;
+            const deck = rest < 500 ? (rest / 500).toFixed(2) : "";
+            if (rest <= 0) this._untertitelWeg(schl);
+            else if (z.el.style.opacity !== deck) z.el.style.opacity = deck;
+        }
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_werkstatt_hud]);
 
@@ -2714,4 +2806,41 @@ AnazhRealm.EMOTION_WIRKT = Object.freeze({
     hope: "klärt den Himmel, erhellt die Wesen",
     peace: "besänftigt + verlangsamt die Wesen",
     chaos: "entfesselt die Wesen, treibt alles an",
+});
+
+// DIE UNTERTITEL-TAFEL (spielgang.K4): je Ereignis-Art des Klang-Gesetzes ein Satz je Name — die Stimmen
+// (klang:UMWELT.stimmen), der Ruf je Stimmung (klang:UMWELT.tier.rufProMin), der Substanz-Klang je Art (klang SUBSTANZ), der
+// Schritt je Stoff-Klasse (Schritt · Landung), die Fahrt (Motor · Rollen) und die Musik; {wer} setzt der Chokepoint ein.
+// Die Klang-Linse hält die Tafel vollständig gegen das Gesetz (gate:klang-zensus Ü).
+AnazhRealm.UNTERTITEL = Object.freeze({
+    stimme: {
+        wind: "Wind weht",
+        laub: "Laub rauscht",
+        ufer: "Wellen am Ufer",
+        fluss: "Wasser fließt",
+        fall: "Wasserfall rauscht",
+        regen: "Regen fällt",
+        glut: "Feuer knistert",
+        vogel: "Vögel singen",
+        grille: "Grillen zirpen",
+    },
+    ruf: {
+        freude: "{wer} ruft freudig",
+        ruhe: "{wer} ruft leise",
+        trauer: "{wer} klagt",
+        furcht: "{wer} schreit ängstlich",
+    },
+    substanz: {
+        treffer: "Treffer: {wer}",
+        singen: "Eine Form singt",
+        abschied: "Eine Form verklingt",
+        wasser: "Wasser gluckert",
+        inventar: "Ding klingt",
+    },
+    schritt: { schritt: "Schritte auf {wer}", landung: "Landung auf {wer}" },
+    fahrt: { motor: "Motor brummt", rollen: "Wagen rollt" },
+    musik: { lofi: "♪ Musik" },
+    panSchwelle: 0.35, // |pan| darüber zeigt die Richtung
+    maxZeilen: 4, // so viele Zeilen höchstens; die älteste weicht
+    sek: 2.5, // so lange steht eine Zeile nach ihrer letzten Auffrischung
 });

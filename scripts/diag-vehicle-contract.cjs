@@ -22,13 +22,10 @@
 // kippt kein Byte — die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; sin/cos/atan2/hypot
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
-const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenVergleich: compare, goldenSelbsttest } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
-const goldenDir = path.join(root, "spec/asset-contract/v3/golden");
-const goldenFile = path.join(goldenDir, "vehicles.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 const KERN = path.join(root, "vehicle-core.js");
@@ -62,15 +59,7 @@ function caseKey(c) {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = {};
-    let determin = true;
-    for (const c of CASES) {
-        const f1 = fingerprint(buildCase(c));
-        const f2 = fingerprint(buildCase(c));
-        if (f1.sha256 !== f2.sha256) determin = false;
-        actual[caseKey(c)] = f1;
-    }
-    check(`Determinismus: jeder der ${CASES.length} Fälle baut doppelt byte-gleich`, determin);
+    const actual = vertragIst(CASES, buildCase, check, caseKey);
 
     // 2) Seed-Semantik (cv:3): die GEOMETRIE ist seed-invariant.
     let seedInv = true;
@@ -88,25 +77,7 @@ function caseKey(c) {
     );
 
     // 4) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    if (!fs.existsSync(goldenFile) || process.env.MINT_FORCE === "1") {
-        fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(
-            goldenFile,
-            JSON.stringify(
-                { cv: 3, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall", cases: actual },
-                null,
-                2
-            ) + "\n"
-        );
-        console.log(
-            `  🧊 GOLDEN GEMINTET (${Object.keys(actual).length} Fälle) → ${path.relative(root, goldenFile)} — ab jetzt EINGEFROREN`
-        );
-    }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
-    check("Golden trägt cv:3 + alle Fälle", golden.cv === 3 && Object.keys(golden.cases).length === CASES.length);
-    const diffs = compare(golden, actual);
-    check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
-    for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
+    goldenWand(path.join(root, "spec/asset-contract/v3/golden/vehicles.json"), 3, actual, check, CASES.length);
 
     // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
@@ -114,11 +85,7 @@ function caseKey(c) {
     await probeWand(
         "v3",
         {
-            laden: () => {
-                delete require.cache[require.resolve(KERN)];
-                require(KERN);
-                return globalThis.__vehicleCore;
-            },
+            laden: frischerKern(KERN, "__vehicleCore"),
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)

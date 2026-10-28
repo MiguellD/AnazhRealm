@@ -1180,8 +1180,8 @@ class AnazhRealm_feld_sprache {
     }
 
     // ═══ DIE TAT — die Wertung antwortet am Ort (affekt K1), die Welt sagt, was sie tat (affekt K4) ═══
-    // Jeder Welt-Akt (AnazhRealm.DSL_WELTAKTE) läuft durch die EINE Engstelle `dslEval`, gleich wer ihn schickt: Mensch, Nexus,
-    // KI, Gesetz, Emotion, Wesen. Dort wird er EINE Tat: ihr Ort ist der erste, den sie auflöst (`dslEvalPos` → `_tatOrt`, VOR
+    // Jeder Welt-Akt (AnazhRealm.DSL_WELTAKTE) und das Wetter laufen durch die EINE Engstelle `dslEval`, gleich wer sie schickt:
+    // Mensch, Nexus, KI, Gesetz, Emotion, Wesen. Dort wird jeder EINE Tat, wenn er wirkte (`_tatWerten` liest seinen Bericht): ihr Ort ist der erste, den sie auflöst (`dslEvalPos` → `_tatOrt`, VOR
     // ihrem Effekt), ihr ERTRAG die Änderung der SITUATION dort (`_playerSituationWohl`: lebendig + HP, nie die Emotion), ihr δ
     // der Vorhersagefehler gegen die ERWARTUNG des Orts an genau diese Tat — die Gleichung der WERTUNG (δ = x − baseline): die
     // Erwartung lernt je Tat mit `ruleValueBeta` (wie eine Regel ihren Wert) und vergisst in Spielzeit mit `tatTau`. Die zehnte
@@ -1219,10 +1219,17 @@ class AnazhRealm_feld_sprache {
         tat.sitVor = this._playerSituationWohl(this.auraAt(pos.x, pos.z));
     }
 
-    // Die Tat ist geschehen (aus `dslEval`, nach dem Effekt): werten, ins Buch, an die Stimme. Ein Effekt, der warf, ist keine Tat.
-    _tatWerten(tat, ctx, gelungen) {
+    // Die Tat ist geschehen (aus `dslEval`, nach dem Effekt): werten, ins Buch, an die Stimme. `bericht` = was der Effekt ins
+    // Log legte: setzte er etwas (`ergebnis`), zählt, was steht (nichts → keine Tat, weniger als gewollt → der Satz des
+    // Ergebnisses, `_ergebnisSatz`); ohne Ergebnis ist ein Effekt, der warf, den sein Schreiber hielt (das Wetter gegen das
+    // Wort des Spielers, die Uhr) oder den ein Budget kappte, keine Tat — die Stimme sagte sonst, was nie geschah.
+    _tatWerten(tat, ctx, gelungen, bericht = []) {
         ctx.tat = tat.aussen;
-        if (!gelungen) return null;
+        const setz = bericht.filter((b) => b.event === "ergebnis");
+        const steht = setz.length
+            ? setz.some((b) => b.gesetzt > 0 || b.folgt)
+            : !bericht.some((b) => /gehalten|budget|unknown|invalid|failed|not_found|forbidden|skipped/.test(b.event));
+        if (!gelungen || !steht) return null;
         const W = AnazhRealm.WERTUNG;
         const st = this.state;
         const jetzt = st.spielZeit;
@@ -1232,6 +1239,10 @@ class AnazhRealm_feld_sprache {
             wer: ctx.source,
             programm: ctx.programId,
             regel: ctx.regel ? ctx.regel.id : null,
+            bedingung: ctx.regel ? ctx.regel.cond : null,
+            weil: ctx.weil || null,
+            wunsch: !!tat.wunsch,
+            ergebnis: (this._ergebnisSatz(setz) || {}).satz || null,
             grund: ctx.grund || null,
             knoten: tat.knoten,
             x: null,
@@ -1317,9 +1328,10 @@ class AnazhRealm_feld_sprache {
         this.grokRender(e.zeile);
     }
 
-    // Die Zeile einer Tat (Vorlage ohne Modell): WER · WAS (`describeProgram`) · WO (Abstand und Himmelsrichtung vom Spieler,
-    // Norden = −z) · URSACHE (die Bedingung ihres Gesetzes, das Wort an die KI, der Auflöser ihres Orts) · GESETZ (Nummer der
-    // Regel oder Name des Programms).
+    // Die Zeile einer Tat (Vorlage ohne Modell): WER · WAS (`describeProgram`, der Wunsch der Welt nach Wetter, und was davon
+    // wirklich steht, `_ergebnisSatz`) · WO (Abstand und Himmelsrichtung vom Spieler, Norden = −z) · URSACHE (die Bedingung
+    // ihres Gesetzes und die Bedingung, die ihren Zweig wählte, das Wort an die KI, der Auflöser ihres Orts) · GESETZ (Nummer
+    // der Regel oder Name des Programms) — alles so, wie es zur Zeit der Tat stand.
     _feldStimmeZeile(e) {
         const wer = this._tatSchreiber(e.wer);
         let wo = "überall";
@@ -1342,9 +1354,12 @@ class AnazhRealm_feld_sprache {
             const sektor = Math.round((Math.atan2(dx, -dz) / (2 * Math.PI)) * 8 + 8) % 8;
             wo = d < 2 ? "bei dir" : `${d} m ${richtung[sektor]} von dir`;
         }
-        const regel = e.regel != null ? (this.state.worldRules || []).find((r) => r && r.id === e.regel) : null;
+        const weil = [
+            e.bedingung && this._describeDslCondition(e.bedingung),
+            e.weil && (e.weil.ja ? "" : "nicht gilt, dass ") + this._describeDslCondition(e.weil.cond),
+        ].filter(Boolean);
         let ursache;
-        if (regel) ursache = `weil ${this._describeDslCondition(regel.cond)}`;
+        if (weil.length) ursache = `weil ${weil.join(" und ")}`;
         else if (e.grund) ursache = `auf dein Wort „${String(e.grund).slice(0, 60)}“`;
         else if (e.knoten === "at_field_need") ursache = "weil das Feld dort am ärmsten war";
         else ursache = "aus eigenem Antrieb";
@@ -1352,7 +1367,11 @@ class AnazhRealm_feld_sprache {
         const weitere = e.weitere
             ? `; dazu ${e.weitere} weitere Tat${e.weitere > 1 ? "en" : ""} seit der letzten Zeile`
             : "";
-        return `${wer.nom} ${this.describeProgram([e.op, ...(e.args || [])])} — ${wo}, ${ursache}. (${gesetz}${regel ? " " + wer.gen : ""}${weitere})`;
+        const was = e.wunsch
+            ? `wünscht sich das Wetter „${e.args[0]}“`
+            : this.describeProgram([e.op, ...(e.args || [])]);
+        const steht = e.ergebnis ? ` (${e.ergebnis.replace(/\.$/, "")})` : "";
+        return `${wer.nom} ${was}${steht} — ${wo}, ${ursache}. (${gesetz}${e.regel != null ? " " + wer.gen : ""}${weitere})`;
     }
 
     // Der Name eines Schreibers (die DSL-Quelle): ein Gesetz trägt die Quelle seines Gebers („rule:nexus").

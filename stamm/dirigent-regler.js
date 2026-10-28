@@ -951,6 +951,24 @@ class AnazhRealm_dirigent_regler {
                 this._ltObs = null; // fail-soft — ohne Ohr bleiben ltN/ltMs ehrlich 0
             }
         }
+        // DAS BEDIENUNGS-OHR (spielgang.K3): die Event-Timing-API misst jede Interaktion des Spielers (Eingabe bis zum
+        // nächsten gemalten Bild); je Interaktion (interactionId) zählt ihr längstes Ereignis, die INP liest
+        // `_bedienungInp`. Fehlt der Entry-Typ, bleibt die INP ungemessen (null), nie 0.
+        if (!this._inp && typeof PerfObs === "function") {
+            try {
+                const je = new Map();
+                const obs = new PerfObs((l) => {
+                    for (const e of l.getEntries())
+                        if (e.interactionId)
+                            je.set(e.interactionId, Math.max(je.get(e.interactionId) || 0, e.duration));
+                    while (je.size > AnazhRealm.INP_FENSTER) je.delete(je.keys().next().value);
+                });
+                obs.observe({ type: "event", durationThreshold: 16, buffered: true });
+                this._inp = { je, n0: 0 };
+            } catch {
+                this._inp = null;
+            }
+        }
         // DER AUSZUG NUR AUF ANFORDERUNG (stadt-takt): der Takt füllt Ring und Stocker-Liste, die Auswertung
         // (`_flightRecorderBuildTrace`: Heap-, Bündel- und Stoff-Zensus über die Szene) läuft, wenn der Spieler die Seite
         // verlässt oder versteckt, und im Download (`perf`) — nie im Spiel. Vorher baute der Takt sie alle 4 s: am Messort
@@ -1401,6 +1419,16 @@ class AnazhRealm_dirigent_regler {
         );
     }
 
+    // DIE INP (spielgang.K3) aus dem Bedienungs-Ohr: von n Interaktionen seit `n0` (performance.interactionCount; unter
+    // 16 ms meldet der Browser keine) die längste nach Abzug je einer je 50 — der p98 der Web-Vitals. null ohne Ohr.
+    _bedienungInp() {
+        const I = this._inp;
+        if (!I) return null;
+        const d = [...I.je.values()].sort((a, b) => b - a);
+        const n = Math.max(d.length, (performance.interactionCount || 0) - I.n0);
+        return { n, inpMs: +(d[Math.floor(n / 50)] || 16).toFixed(1), maxMs: +(d[0] || 16).toFixed(1) };
+    }
+
     // Die Spur zusammenbauen: Geräte-Profil + Sitzungs-Statistik + die schlimmsten
     // Frames + der eingeschwungene Sense + das Verdikt. Klein + menschen-lesbar.
     _flightRecorderBuildTrace() {
@@ -1446,6 +1474,8 @@ class AnazhRealm_dirigent_regler {
                 },
                 // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (a) die LongTasks der
                 // Sitzung: Blocker >50 ms (Anzahl · Summe · längste), vom Observer-Ohr.
+                // spielgang.K3 — die Antwort der Bedienung (INP p98, das Bedienungs-Ohr)
+                bedienung: this._bedienungInp(),
                 longTasks: {
                     n: fr.ltN || 0,
                     ms: +(fr.ltMs || 0).toFixed(0),
@@ -1903,6 +1933,7 @@ AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
 AnazhRealm.ARCH_QUALITY_RADIUS_MIN = 100;
 AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
 AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
+AnazhRealm.INP_FENSTER = 2000; // so viele Interaktionen hält das Bedienungs-Ohr (spielgang.K3), die älteste weicht
 // Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb `foliageRadius` — der
 // startet klein (kein Spawn-Freeze) und rampt zum perf-geregelten Ziel (`effArch` aus dem EINEN
 // loadScale-PID); steigt die Render-Last, sinkt das Ziel. RMIN > max. Test-Spawn (~65 m).

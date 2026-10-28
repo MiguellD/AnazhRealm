@@ -68,19 +68,24 @@ class AnazhRealm_wasser_hydro {
         return globalThis.__gelaendeCore.atlasSpiegel(this._gelaende(), x, z, terrainTopY, aus);
     }
 
-    // DER PEGEL DER WELT (stoffe.K3-2, gelaende-core `pegelTafel`): der Hub jedes Sees und Flusses über seinem Ruhe-Spiegel je
-    // Höhe, aus der Schmelze am Tag der Saison auf dem Feld dieser Naht — gerechnet je Tag der Welt (die Schmelze ist ein
-    // Tagesmittel), je Feld und Meer, nie je Bild. `_pegelGilt` ist die Tafel, die die Welt trägt: der Spiegel des Kerns liest sie
-    // über die Lage (`L.pegel`) im Main und im Faden (`pegel` im Stand), bit-gleich; `_pegelTakt` zieht sie nach.
+    // DER PEGEL DER WELT (stoffe.K3-2, wetter.K3, gelaende-core `pegelTafel`): der Hub jedes Sees und Flusses über seinem
+    // Ruhe-Spiegel je Höhe, aus der Schmelze am Tag der Saison auf dem Feld dieser Naht und dem Regen des Wetter-Felds
+    // (`_weatherFieldFor`, über den Übergang des Worts) — gerechnet je Tag der Welt (die Schmelze ist ein Tagesmittel) und je
+    // Stempel des Regens (`pegelRegen`, auf die Stufe des Hubs quantisiert), je Feld und Meer, nie je Bild. `_pegelGilt` ist die
+    // Tafel, die die Welt trägt: der Spiegel des Kerns liest sie über die Lage (`L.pegel`) im Main und im Faden (`pegel` im
+    // Stand), bit-gleich; `_pegelTakt` zieht sie nach — gerufen vom Takt der Saison und vom Takt der Nässe (`_naesseTakt`), der
+    // schläft, solange das Wetter-Feld steht (`_regenRuht`).
     _pegelTafel() {
         const K = globalThis.__gelaendeCore;
         const L = this._gelaende();
         const n = K.TEMPERATUR.jahrTage;
         const tag = Math.floor(this.state.seasonPhase * n) / n;
+        const regen = K.pegelRegen(L, this._weatherFieldFor().rain);
         const c = this._pegelStand;
-        if (c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel) return c.tafel;
-        const tafel = K.pegelTafel(L, tag, (y, tr) => this._temperaturFeld(y, tr));
-        this._pegelStand = { tag, feld: this._temperaturFeld, wl: L.waterLevel, tafel };
+        if (c && c.tag === tag && c.regen === regen && c.feld === this._temperaturFeld && c.wl === L.waterLevel)
+            return c.tafel;
+        const tafel = K.pegelTafel(L, tag, (y, tr) => this._temperaturFeld(y, tr), regen);
+        this._pegelStand = { tag, regen, feld: this._temperaturFeld, wl: L.waterLevel, tafel };
         return tafel;
     }
     _pegelGilt() {
@@ -109,7 +114,8 @@ class AnazhRealm_wasser_hydro {
         return marke;
     }
 
-    // DER TAKT DES PEGELS (stoffe.K3-2, gerufen vom Takt der Saison mit der Schneegrenze): ändert der neue Tag den Hub an einer
+    // DER TAKT DES PEGELS (stoffe.K3-2, gerufen vom Takt der Saison mit der Schneegrenze und vom Takt der Nässe): ändert der
+    // neue Tag oder der neue Stempel des Regens den Hub an einer
     // Höhe, trägt die Welt die neue Tafel — der Faden bekommt sie als Änderung (`_voxelZustandPost`), neu gebaut werden genau die
     // gezeichneten Chunks, deren Wasser-Zellen die Höhen treffen, an denen der Hub wechselt (± eine Stufe der Tafel), und die
     // Netze im Vorrat, deren Wasser sie trifft, fallen. Es kostet, was der Hub überstreicht (Gebot 7): kein Chunk ohne Wasser,

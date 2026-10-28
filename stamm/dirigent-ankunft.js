@@ -662,6 +662,8 @@ class AnazhRealm_dirigent_ankunft {
         );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
+            // IM SPIEL (spielgang.K3): mit dem Zeiger gehört das Bild der Welt — Menü-Leiste, Status-Zeile, Konsole weichen
+            document.body.classList.toggle("im-spiel", this.state.isPointerLocked);
             // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen und jede gehaltene Taste (V-k4).
             if (!this.state.isPointerLocked) this._alleTastenLos();
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");

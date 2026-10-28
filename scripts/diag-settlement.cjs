@@ -72,6 +72,22 @@ function gassenGefaelle(v2, grund) {
     gs.sort((a, b) => a - b);
     return +(100 * gs[Math.round(0.95 * (gs.length - 1))]).toFixed(1);
 }
+// DER ERDBAU JE HAUS (siedlung.K3 Staffel 2, die Kosten neben dem Gefälle): der Median über die Häuser des Plans v2 von
+// ∫ |Boden des Hauses − Grund| über seinen Grundriss (obb, 1-m-Raster), in m³ — so viel Erde bewegt der Ort je Haus.
+function erdbauMedian(v2, grund) {
+    const vs = v2.slots
+        .filter((q) => q.obb)
+        .map(({ y, obb: b }) => {
+            let v = 0;
+            for (let u = 0.5 - b.ex; u < b.ex; u++)
+                for (let w = 0.5 - b.ez; w < b.ez; w++) {
+                    const [p, q] = lokal(0, 0, -b.phi || 0, u, w);
+                    v += Math.abs(y - grund(v2.ort.x + b.cx + p, v2.ort.z + b.cz + q));
+                }
+            return v;
+        });
+    return Math.round(vs.sort((a, q) => a - q)[vs.length >> 1]);
+}
 
 // ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
 // v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
@@ -86,6 +102,13 @@ function gassenGefaelle(v2, grund) {
 function lokal(cx, cz, phi, x, z) {
     const [c, s] = [Math.cos(phi || 0), Math.sin(phi || 0)];
     return [(x - cx) * c - (z - cz) * s, (x - cx) * s + (z - cz) * c];
+}
+// der Abstand eines Punkts zur Wand des Rechtecks um (cx, cz) mit den Halbachsen ex × ez, gedreht um phi (innen negativ; reist
+// mit `lokal` und `ortUrteil` in die Seite)
+function kasten(cx, cz, phi, ex, ez, x, z) {
+    const [u, v] = lokal(cx, cz, phi, x, z);
+    const [uu, vv] = [Math.abs(u) - ex, Math.abs(v) - ez];
+    return uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv);
 }
 function ortUrteil(v2, hoehe, o) {
     o = o || {};
@@ -114,8 +137,8 @@ function ortUrteil(v2, hoehe, o) {
             for (let j = 0; j <= 8; j++) {
                 const lx = ob.ex * (i / 4 - 1);
                 const lz = ob.ez * (j / 4 - 1);
-                if (imKeller(sl, ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) continue;
-                mn = Math.min(mn, hoehe(ox + ob.cx + lx * c + lz * s, oz + ob.cz - lx * s + lz * c));
+                const [px, pz] = [ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c];
+                if (!imKeller(sl, px, pz)) mn = Math.min(mn, hoehe(ox + px, oz + pz));
             }
         sockel.push(Math.max(0, sl.y - mn));
     }
@@ -529,8 +552,10 @@ async function gtDorfweg(v2, anker, sek) {
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
 // C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
 // Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Bereitungen
-// (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "trasse" jeden Export am Raster des
-// Wunschs, wohin die Wahl ihn auch rückt — wie bis zu ihren Schnitten. C-K3 DIE TRASSE AM ORT: je Vorrat der Abstand seines Plans v2 vom Ort
+// (`_ortMitTrasse`) je Zelle. Der Selbsttest `alt` "vorrat" hält EINEN Vorrat zur Zeit, "wand" stellt die Steil-Wand 0,35 zurück
+// in `_autoSettlementSiteOk`, die bis siedlung-k3-hang jeden Ort steiler als 0,35 abwies. C-K3 DIE TRASSE AM ORT: je Vorrat der
+// Abstand seines Plans v2 vom Ort, `hang` die Steilheit dort (die EINE `_slopeAt`, die auch die Wand fragt; der Vorrat liegt
+// vor dem Erwachen, sein Erdbau noch nicht)
 // seines Höhen-Rasters, die Lese-Punkte außerhalb des Rasters und die Gassen (das Gefälle misst `gassenGefaelle`). Browser.
 async function vorratAmDorf(messort, alt) {
     const r = window.anazhRealm;
@@ -542,10 +567,13 @@ async function vorratAmDorf(messort, alt) {
         if (z) zelle.set(z.seed, z.key);
     }
     const e = { exporte: {}, alle: 0, nachZug: -1, trasse: [], welt: r._gelaende().seed };
-    const [req, bereite, ort0] = [r._foundryRequestSettlement, r._ortMitTrasse, {}];
+    // die Grundriss-Leser neben dem EINEN (`_grundrissVon`), die bis siedlung-k3-hang dieselbe Zeile lasen
+    e.leser = ["_slotGrundriss", "_werkGrundriss"].filter((k) => k in r || k in r.constructor);
+    const [req, bereite, ok] = [r._foundryRequestSettlement, r._ortMitTrasse, r._autoSettlementSiteOk];
+    // die alte Wand wörtlich (bis siedlung-k3-hang: `slope > SIEDLUNG.slopeMax`, die EINE Steilheit `_slopeAt`)
+    if (alt === "wand") r._autoSettlementSiteOk = (x, z, ...a) => !(r._slopeAt(x, z) > 0.35) && ok.call(r, x, z, ...a);
     r._foundryRequestSettlement = function (dp, ...a) {
         e.alle++;
-        if (alt === "trasse" && dp && dp.ort) dp.ort = ort0[dp.seed] ||= dp.ort;
         return req.call(this, dp, ...a);
     };
     r._ortMitTrasse = function (dp, ...a) {
@@ -591,18 +619,19 @@ async function vorratAmDorf(messort, alt) {
                     zelle: k,
                     versatzM: +Math.hypot(v2.ort.x - b.anker.x, v2.ort.z - b.anker.z).toFixed(1),
                     aussen: (b.plan.trasse || {}).aussen,
-                    v2: { ort: v2.ort, roads: v2.roads },
+                    hang: +r._slopeAt(v2.ort.x, v2.ort.z).toFixed(2),
+                    v2: { ort: v2.ort, roads: v2.roads, slots: v2.slots },
                 });
         }
     } finally {
         delete r._foundryRequestSettlement;
         delete r._ortMitTrasse;
         delete r._dorfBereiten;
+        r._autoSettlementSiteOk = ok;
         window.__anazhAutoSettlement = hook0;
     }
     return Object.assign(e, { nachZug: e.nachZug + e.alle, gaenge, offen: r._weltOffen().foundry });
 }
-
 // Je Art ein Wurf an einem
 // freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
 // und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: die Feuerstelle des Satzes oder des Bau-Modus ist Bau (sie sperrt den
@@ -667,9 +696,9 @@ function feldWurfImOrt(anker, defekt) {
             return res;
         }
         const ry = haus.rotationY || 0;
-        const f = haus.fundament;
-        const hx = haus.position.x + (f.ox || 0) * Math.cos(ry) + (f.oz || 0) * Math.sin(ry);
-        const hz = haus.position.z - (f.ox || 0) * Math.sin(ry) + (f.oz || 0) * Math.cos(ry);
+        const f = r._grundrissVon(haus);
+        const hx = haus.position.x + f.ox * Math.cos(ry) + f.oz * Math.sin(ry);
+        const hz = haus.position.z - f.ox * Math.sin(ry) + f.oz * Math.cos(ry);
         const box = { ex: 2, ez: 2, ox: 0, oz: 0 };
         // trocken auch nach der Wasser-Wand jedes Werks der Liste (`_werkImWasser`, die Wurzel `spawnArchitecture`)
         const trocken = (x, z) =>
@@ -1096,12 +1125,6 @@ hauptLauf(async () => {
         const MARKE_SOLL = Number.isFinite(FC.LICHT_MARKE_M) ? FC.LICHT_MARKE_M : 10; // ohne das Gesetz misst sie mit 10 m und fällt
         const MARKE_P90 = 10;
         const GASSE_M = MARKE_SOLL - (LWd ? LWd.armM : 0);
-        // der Abstand eines Punkts zur Wand des Rechtecks um (cx, cz) mit den Halbachsen ex × ez, gedreht um phi (innen negativ)
-        const kasten = (cx, cz, phi, ex, ez, x, z) => {
-            const [u, v] = lokal(cx, cz, phi, x, z);
-            const [uu, vv] = [Math.abs(u) - ex, Math.abs(v) - ez];
-            return uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv);
-        };
         // der Abstand eines Punkts zur Wand des Kerns eines Slots (die Tür-Zeile W × D um den Slot)
         const kernAbstand = (sl, x, z) => {
             const tu = sl.tuer;
@@ -1888,8 +1911,7 @@ hauptLauf(async () => {
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
                 for (let m = nah + 80; vr && m > nah + 1; m -= 4)
-                    for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++)
-                        await sleep(5);
+                    for (let i = 0; i < 400 && (r._tickAutoSettlement(stell(m)), !vr.vorgebacken); i++) await sleep(5);
                 const vor0 = new Set(r.state.architectures); // die Häuser der Läufe davor zählen nie
                 const pw = stell(nah - 2);
                 // DAS ERSTE HAUS IM BILD (sk5-haus): `bild` = Takte vom Erwachen, bis ein Haus der Zelle in der Stufe steht, die
@@ -2115,7 +2137,7 @@ hauptLauf(async () => {
         const outO = await page.evaluate(
             async (urteilSrc, dp, modus, messort) => {
                 const r = window.anazhRealm;
-                const ortUrteil = new Function(urteilSrc)();
+                const [ortUrteil, kasten] = new Function(urteilSrc)();
                 const res = {};
                 try {
                     const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
@@ -2203,7 +2225,7 @@ hauptLauf(async () => {
                             zelle: res.zelle || "Akt",
                             versatzM: +Math.hypot(anker.x - zc.wx, anker.z - zc.wz).toFixed(1),
                             aussen: (plan.trasse || {}).aussen,
-                            v2: { ort: v2.ort, roads: v2.roads },
+                            v2: { ort: v2.ort, roads: v2.roads, slots: v2.slots },
                         };
                     const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
                     const haeuser = r.state.architectures.filter(
@@ -2242,20 +2264,11 @@ hauptLauf(async () => {
                         for (const sl of P.slots) {
                             if (haeuser.some((e) => e.seed === sl.seed >>> 0)) continue;
                             const ry = sl.phi || 0;
-                            const ob = sl.obb;
-                            const dx = ob ? ob.cx - sl.x : 0;
-                            const dz = ob ? ob.cz - sl.z : 0;
-                            const fp = ob
-                                ? {
-                                      ex: ob.ex,
-                                      ez: ob.ez,
-                                      ox: dx * Math.cos(ry) - dz * Math.sin(ry),
-                                      oz: dx * Math.sin(ry) + dz * Math.cos(ry),
-                                  }
-                                : { ex: 0.5, ez: 0.5, ox: 0, oz: 0 };
+                            // der Grundriss des Slots aus dem EINEN Leser (`_grundrissVon`: obb samt Saum, sonst der Tür-Kern)
+                            const fp = r._grundrissVon(sl) || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 };
                             const wx = anker.x + sl.x;
                             const wz = anker.z + sl.z;
-                            const saum = ob ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0;
+                            const saum = fp.saum || 0;
                             // die nassen Punkte des EINEN Fundament-Rasters: Spiegel des Gesetzes über dem gebauten Boden
                             const c0 = Math.cos(ry);
                             const s0 = Math.sin(ry);
@@ -2333,18 +2346,14 @@ hauptLauf(async () => {
                     for (let gx = Math.floor((x0 - 20) / F.cell); gx <= Math.floor((x1 + 20) / F.cell); gx++)
                         for (let gz = Math.floor((z0 - 20) / F.cell); gz <= Math.floor((z1 + 20) / F.cell); gz++)
                             for (const d of r._forestCellDarts(gx, gz, seedInt) || []) {
-                                for (const ob of dachW) {
-                                    const c = Math.cos(ob.phi || 0);
-                                    const s = Math.sin(ob.phi || 0);
-                                    const dx = d.x - ob.cx;
-                                    const dz = d.z - ob.cz;
-                                    const u = Math.max(0, Math.abs(dx * c - dz * s) - ob.ex);
-                                    const v = Math.max(0, Math.abs(dx * s + dz * c) - ob.ez);
-                                    if (Math.hypot(u, v) < (d.T || 0)) {
-                                        kronen++;
-                                        break;
-                                    }
-                                }
+                                if (
+                                    dachW.some(
+                                        (ob) =>
+                                            Math.max(0, kasten(ob.cx, ob.cz, ob.phi, ob.ex, ob.ez, d.x, d.z)) <
+                                            (d.T || 0)
+                                    )
+                                )
+                                    kronen++;
                             }
                     res.kronen = kronen;
                     // die Laternen der Zelle gegen die des Plans: je Laterne die Studio-Gestalt (fachwerk AUSSTATTUNG laterne) als
@@ -2364,13 +2373,11 @@ hauptLauf(async () => {
                         for (const sl of P.slots) {
                             const tu = sl.tuer;
                             if (!tu || !Number.isFinite(tu.W) || !Number.isFinite(tu.D)) continue;
-                            const c = Math.cos(sl.phi || 0);
-                            const sn = Math.sin(sl.phi || 0);
-                            const dx = e.position.x - (P.ort.x + sl.x);
-                            const dz = e.position.z - (P.ort.z + sl.z);
-                            const uu = Math.abs(dx * c - dz * sn) - tu.W / 2;
-                            const vv = Math.abs(dx * sn + dz * c) - tu.D / 2;
-                            lwMin = Math.min(lwMin, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : 0);
+                            const [x, z] = [P.ort.x + sl.x, P.ort.z + sl.z];
+                            lwMin = Math.min(
+                                lwMin,
+                                Math.max(0, kasten(x, z, sl.phi, tu.W / 2, tu.D / 2, e.position.x, e.position.z))
+                            );
                         }
                     res.laterneWand = Number.isFinite(lwMin) ? Math.round(lwMin * 100) / 100 : null;
                     // DIE LATERNE NEBEN DER FAHRBAHN:
@@ -2634,7 +2641,7 @@ hauptLauf(async () => {
                 }
                 return res;
             },
-            `${lokal}\nreturn ${ortUrteil}`,
+            `${lokal}\n${kasten}\nreturn [${ortUrteil}, kasten]`,
             dpO,
             modus,
             messort
@@ -2712,8 +2719,15 @@ hauptLauf(async () => {
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
     const K5 = [];
-    for (const alt of [null, "vorrat", "trasse"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
-    const [K5b, K5bS, K3S] = K5;
+    for (const alt of [null, "vorrat"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
+    const [K5b, K5bS] = K5;
+    // DER HANG-ORT (siedlung.K3 Staffel 2): in seinem Vorlauf-Ring liegen vier Zellen, deren Anker zwischen der alten Wand 0,35 und
+    // der Böschung des Erdbaus liegt (−3,−14 0,38 · −1,−14 0,49 · −3,−12 0,51 · −1,−12 0,57; am Mess-Ort dorf −3,−3 0,51)
+    const [H, HS] = [
+        await page.evaluate(vorratAmDorf, [-400, -3175], null),
+        await page.evaluate(vorratAmDorf, [-400, -3175], "wand"),
+    ];
+    const HD = H.trasse.filter((t) => t.hang > 0.35);
     // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
     const wirf = (d) => (OA.outO.anker ? page.evaluate(feldWurfImOrt, OA.outO.anker, d) : { err: "kein Ort" });
     const [FW, FWd, FWa] = [await wirf(false), await wirf("bau"), await wirf("art")];
@@ -2813,52 +2827,29 @@ hauptLauf(async () => {
             );
         const planHashGleich = outO.planHashGleich === true;
         const u = outO.urteil || {};
-        const m = {
-            haeuser: outO.haeuser,
-            slots: outO.slots,
-            wasserSlots: outO.wasserSlots,
-            sockelMedian: u.sockelMedian,
-            sockelMax: u.sockelMax,
-            tuerenOk: u.tuerenOk,
-            tuerenN: u.tuerenN,
-            kronen: outO.kronen,
-            laternenWelt: outO.laternenWelt,
-            laternenPlan: outO.laternenPlan,
-            laterneWand: outO.laterneWand,
-            laterneWandSoll: outO.laterneWandSoll,
-            laterneWeg: outO.laterneWeg,
-            laterneWegSoll: outO.laterneWegSoll,
-            vorplatzOk: outO.vorplatzOk,
-            vorplatzN: outO.vorplatzN,
-            vorplatzFehl: outO.vorplatzFehl,
-            terrasseWand: outO.terrasseWand,
-            terrasseWiese: outO.terrasseWiese,
-            terrasseHalm: outO.terrasseHalm,
-            terrasseFerne: outO.terrasseFerne,
-            terrasseFerneFehl: outO.terrasseFerneFehl,
-            vorplatzFeld: outO.vorplatzFeld,
+        // die Zahlen des Orts je Name aus der Welt (`outO`) und dem Urteil (`u`)
+        const je = (q, namen) => namen.split(" ").map((k) => [k, q[k]]);
+        const m = Object.fromEntries([
+            ...je(outO, "haeuser slots wasserSlots kronen laternenWelt laternenPlan laterneWand laterneWandSoll"),
+            ...je(outO, "laterneWeg laterneWegSoll vorplatzOk vorplatzN vorplatzFehl terrasseWand terrasseWiese"),
+            ...je(outO, "terrasseHalm terrasseFerne terrasseFerneFehl vorplatzFeld fremdBauten"),
+            ...je(u, "sockelMedian sockelMax tuerenOk tuerenN"),
+        ]);
+        Object.assign(m, {
             planHashGleich,
-            fremdBauten: outO.fremdBauten,
             gtWeg: gtO.gtWeg,
             gtEnde: gtO.endeNachS,
             quellenGasse: outO.gasse ? outO.gasse.n : null,
             poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
             poolPlaetze: outO.gasse ? outO.gasse.plaetze : null,
-        };
+        });
         console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
         console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
         console.log(
             "  ORT-ZAHLEN " +
                 JSON.stringify(
                     Object.assign(
-                        {
-                            haeuser: outO.haeuser,
-                            slots: outO.slots,
-                            planV2: outO.planV2,
-                            zellen: u.zellen,
-                            fremdArten: outO.fremdArten || {},
-                            zweit: outO.zweit,
-                        },
+                        { planV2: outO.planV2, zellen: u.zellen, fremdArten: outO.fremdArten || {}, zweit: outO.zweit },
                         m
                     )
                 )
@@ -3104,21 +3095,39 @@ hauptLauf(async () => {
     require(path.join(root, "gelaende-core.js"));
     const GN = globalThis.__gelaendeCore;
     const Lw = GN.lageGrund(K5b.welt, require(path.join(root, "vendor/simplex-noise.js")));
-    for (const t of [...K5b.trasse, ...K3S.trasse, OA.outO.trasse, O.outO.trasse].filter(Boolean)) {
-        t.p95 = gassenGefaelle(t.v2, (x, z) => GN.hoehe(Lw, x, z, true));
-        delete t.v2;
-    }
+    // der Selbsttest der Trasse (`fremd`): dieselben Gassen am Grund 24 m daneben — eine Trasse, die einem anderen Boden folgt
     const trassen = [...K5b.trasse, OA.outO.trasse, O.outO.trasse];
+    for (const t of [...trassen, ...H.trasse, ...HS.trasse].filter((q) => q && q.v2)) {
+        const grund = (dx) => (x, z) => GN.hoehe(Lw, x + dx, z, true);
+        [t.p95, t.fremd, t.erdbauM3, t.v2] = [
+            gassenGefaelle(t.v2, grund(0)),
+            gassenGefaelle(t.v2, grund(24)),
+            erdbauMedian(t.v2, grund(0)),
+        ];
+    }
     const gefSoll = FC.ORT_GESETZ.gefaelle * 100;
+    const traegt = (t) => t && t.versatzM === 0 && t.aussen === 0 && t.p95 <= gefSoll;
     check(
         `C-K3: DIE TRASSE AM ORT — ${trassen.length} Dörfer stehen am Ort ihres Höhen-Rasters, Gassen-Gefälle p95 ≤ ${gefSoll} % am Grund ohne Erdbau`,
-        trassen.length >= 4 && trassen.every((t) => t && t.versatzM === 0 && t.aussen === 0 && t.p95 <= gefSoll),
+        trassen.length >= 4 && trassen.every(traegt),
         trassen
     );
     check(
-        "C-K3 Selbsttest: der Plan am Raster des gerückten Wunschs ist ROT",
-        K3S.trasse.some((t) => t.p95 > gefSoll),
-        K3S.trasse
+        // Staffel 2: der Ort steht am Hang über der alten Wand, die Trasse hält die Gassen, der Erdbau je Haus ist die Kosten
+        `C-K3: DIE HANGDÖRFER — ${HD.length} Dörfer über der alten Wand 0,35, Gassen p95 ≤ ${gefSoll} %, Erdbau-Median, ${1 + H.leser.length} Grundriss-Leser`,
+        HD.length >= 4 && HD.every(traegt) && !H.leser.length,
+        HD
+    );
+    check(
+        "C-K3 Selbsttest: die Gassen am Grund 24 m daneben sind ROT",
+        HD.some((t) => t.fremd > gefSoll),
+        HD
+    );
+    const hangS = HS.trasse.filter((t) => t.hang > 0.35); // dieselbe Lesart wie HD
+    check(
+        "C-K3 Selbsttest: die Wand 0,35 zurück trägt am Hang-Ort keine vier Hangdörfer (ROT)",
+        hangS.length < 4,
+        hangS
     );
     wandEnde(errs, "DER SETTLEMENT-KANAL N5.7 STEHT.");
 });
