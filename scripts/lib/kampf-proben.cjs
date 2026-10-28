@@ -3225,22 +3225,20 @@ async function K5_VOR(abdruck) {
 // DER ABDRUCK DES ZUSTANDS (Q13): der Ort (dm), das Inventar, die Lebenswerte (Leben als Anteil in Hundertsteln, die Wunde in
 // Zehnteln aufgerundet — sie heilt 1/600 je s), die Bindung des Fuchses (bond in Hundertsteln, sein Auftrag) und sein Alter
 // (`alterS`, Spiel-Zeit: ein Takt des Lebenszyklus zu viel hebt es um taktS); (Q14) die Maxima aus Seele, Werk und Nahrung
-// (`computePlayerStats` ohne die Wunde — sie heilt im Boot weiter) und die Quellen der Nahrung
+// (`computePlayerStats` ohne die Wunde — sie heilt im Boot weiter — und nur mit den Boosts der Nahrung) und die Quellen der
+// Nahrung. Die Boosts des Orts und der Gefühle sind kein Stand: `tickPlayerBoosts` legt sie je Sekunde im Bild-Takt neu
+// (world:resonance am Genesis-Anker, resoniert +0,15). Die Probe fährt den Takt von Hand, vor dem Speichern tickt er nie, nach
+// dem Reload schon — an a03b7b06 hob das manaMax 92,87 → 97,37 (Q14 stand-werte ROT, der Abdruck 1566c4d6e4ba → cc66cb3569cd).
 function K5_ABDRUCK() {
     const r = window.anazhRealm,
         s = r.state,
         p = s.player,
-        f = s.creatures.find((c) => c.userData.name === "K5-Fuchs");
-    const werteOhneWunde = () => {
-        const w = p.deathWoundIntensity;
-        p.deathWoundIntensity = 0;
-        try {
-            const st = r.computePlayerStats().stats;
-            return [st.hpMax, st.staminaMax, st.manaMax, st.defense];
-        } finally {
-            p.deathWoundIntensity = w;
-        }
-    };
+        f = s.creatures.find((c) => c.userData.name === "K5-Fuchs"),
+        nahrung = p.boosts.filter((b) => b.source.startsWith("consume:")),
+        roh = [p.deathWoundIntensity, p.boosts];
+    [p.deathWoundIntensity, p.boosts] = [0, nahrung];
+    const st = r.computePlayerStats().stats;
+    [p.deathWoundIntensity, p.boosts] = roh;
     const g = (v, n) => Math.round(v * n) / n;
     return {
         ort: s.playerMesh.position.toArray().map((v) => g(v, 10)),
@@ -3248,8 +3246,8 @@ function K5_ABDRUCK() {
         leben: [g(p.hp / p.hpMax, 100), Math.ceil(10 * p.deathWoundIntensity) / 10],
         bindung: f && [g(f.userData.bond, 100), f.userData.task.name],
         alter: f && f.userData.alterS,
-        werte: werteOhneWunde().map((v) => g(v, 100)),
-        nahrung: (p.boosts || []).filter((b) => b.source.startsWith("consume:")).map((b) => b.source),
+        werte: [st.hpMax, st.staminaMax, st.manaMax, st.defense].map((v) => g(v, 100)),
+        nahrung: nahrung.map((x) => x.source),
     };
 }
 

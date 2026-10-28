@@ -41,6 +41,14 @@ function buildGate(p){
 //  Dieselben Zahlen wie die Welt (porta-core MEMBRAN_GESETZ.film), dieselbe Technik.
 // ============================================================
 var laborPano=null;
+// DER GESETZ-WERT OHNE NEUBAU (studios.K2): eine Zeile mit `uniform: true` (porta-core GESETZ_WERT) setzt nur die Uniforms der
+// Membran aus derselben Quelle (membranUniforms), der Rahmen und das Panorama bleiben.
+function membranSetzen(){
+  if(!memMat||!D)return;
+  var p=readParams();D.p=p;var MU=PC.membranUniforms(p),u=memMat.uniforms,PAL=MU.pal;
+  u.uWave.value=MU.wave;u.uSwirl.value=MU.swirl;
+  u.uPA.value.fromArray(PAL.PA);u.uPB.value.fromArray(PAL.PB);u.uPC.value.fromArray(PAL.PC);u.uPD.value.fromArray(PAL.PD);
+}
 function buildMembrane(){
   if(membrane)scene.remove(membrane);
   var p=D.p;
@@ -151,7 +159,7 @@ function init(){
   sitz.leiste(document.getElementById('sitzung'));
   regler=AnazhHuelle.regler(document.getElementById('sliders'),GATE_PARAMS,{werte:W,ruheMs:90,sitzung:sitz,
     basis:function(){return PRESETS[aktivPreset]||null;},
-    bei:function(){presetMarke(null);},nachRuhe:function(){buildGate();}});
+    bei:function(){presetMarke(null);},nachRuhe:function(ids,bau){if(bau)buildGate();else membranSetzen();}});
   kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:PC.PORTAL_RENDER_CONFIG.lod.budget.gate,
     stufen:PC.PORTAL_RENDER_CONFIG.lod.kindStages.gate,bauen:function(s){return PC.buildInstance(rezeptId(),1,s,W);},
     quelle:'gemessen an der Welt-Gestalt (porta-core buildInstance, die Regler als ov); L3·Wurf = die NUR-WURF-Hülle'});

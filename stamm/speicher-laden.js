@@ -1724,10 +1724,10 @@ class AnazhRealm_speicher_laden {
             return { ok: false, reason: `Parent-Save ungültig: ${err.message}` };
         }
 
-        const identity = this._fusionGenerateIdentity(saveA, saveB, slug);
+        const identity = this._fusionGenerateIdentity(saveA, saveB, rawA, rawB, strategy, slug);
         const inventory = this._fusionMergeInventory(saveA, saveB);
         const mergedEmotions = this._fusionMergeEmotions(saveA, saveB, strategy);
-        const mergedHistory = this._fusionMergeDslHistory(saveA, saveB, strategy);
+        const mergedHistory = this._fusionMergeDslHistory(saveA, saveB, strategy, identity.muenze);
         const mergedPatternMemory = this._fusionMergePatternMemory(saveA, saveB);
         const mergedAbilities = this._fusionMergeAbilities(saveA, saveB);
         const mergedWorldRules = this._fusionMergeWorldRules(saveA, saveB);
@@ -1792,7 +1792,10 @@ class AnazhRealm_speicher_laden {
             hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
         };
 
-        const ab = this._weltAblegen(snap, { aktiv: false });
+        // dieselbe Fusion lebt schon (gleiche Eltern-Bytes, gleiche Strategie → dieselbe Id): sie IST diese Welt, ihr Leben seither
+        // fällt nicht unter eine frische Geburt
+        const da = localStorage.getItem(this.worldStorageKey(identity.newWorldId)) !== null;
+        const ab = da ? { ok: true } : this._weltAblegen(snap, { aktiv: false });
         if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt-Fusion: ${identity.slugA} ⊕ ${identity.slugB} → ${identity.finalSlug} (Strategie ${strategy}, ID ${identity.newWorldId.slice(0, 8)}…)`,
@@ -1809,16 +1812,36 @@ class AnazhRealm_speicher_laden {
         };
     }
 
-    // Neue Identität: UUID + Slugs + Seed + Geburts-Timestamp. crypto.randomUUID
-    // ist die bevorzugte Quelle (echter Zufall); Fallback ist Math.random.
-    _fusionGenerateIdentity(saveA, saveB, slugHint) {
-        const newWorldId = AnazhRealm._neueWeltId();
+    // DIE FUSION IST EINE FUNKTION IHRER EINGABEN (ultiversum K2): Id, Saat und Münzwurf ziehen die Ströme (`_streamRng`)
+    // EINES Schlüssels aus Strategie und den Bytes beider Eltern — gerichtet (A ist die Welt der Seite: ihre History zuerst,
+    // ihr Wetter, ihre Seele), auf jedem Gerät und in jedem Lauf dieselbe Welt; die Geburt ist der jüngste Moment der Eltern
+    // (ihre Geburt, ihr letzter Journal-Eintrag), nie die Wanduhr. Bis 27.10. würfelten randomUUID, Math.random und Date.now.
+    _fusionGenerateIdentity(saveA, saveB, rawA, rawB, strategy, slugHint) {
+        const schluessel = `fusion:${strategy}:${this._fastHash(rawA)}${rawA.length}:${this._fastHash(rawB)}${rawB.length}`;
+        const id = this._streamRng(schluessel + "-identitaet");
+        const hex = () => ((id() * 4294967296) >>> 0).toString(16).padStart(8, "0");
+        const h = hex() + hex() + hex() + hex();
+        const newWorldId = `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
         const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
         const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
         const finalSlug = this._generateFusionSlug(slugA, slugB, slugHint);
-        const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
-        const bornAt = Date.now();
-        return { newWorldId, slugA, slugB, finalSlug, newSeed, bornAt };
+        const newSeed = `w-fusion-${h.slice(0, 12)}-${hex().slice(0, 6)}`;
+        const momente = [saveA, saveB].flatMap((s) => [
+            s.worldMeta && s.worldMeta.bornAt,
+            ...((s.worldJournal && Array.isArray(s.worldJournal.entries) && s.worldJournal.entries) || []).map(
+                (e) => e && e.at
+            ),
+        ]);
+        const bornAt = Math.max(0, ...momente.filter(Number.isFinite));
+        return {
+            newWorldId,
+            slugA,
+            slugB,
+            finalSlug,
+            newSeed,
+            bornAt,
+            muenze: this._streamRng(schluessel + "-muenze"),
+        };
     }
 
     // Inventar-Union, gleich für alle Strategien. Tiefe Kopie via JSON (Mutationen dürfen nicht in die
@@ -1864,9 +1887,9 @@ class AnazhRealm_speicher_laden {
     }
 
     // DSL-History — pro Strategie eine andere Komposition. random-mix
-    // interleaved (Münzwurf pro Iteration) + Cap 500; sonst je 250 jüngste
+    // interleaved (Münzwurf pro Iteration aus dem Strom der Fusion) + Cap 500; sonst je 250 jüngste
     // konkateniert.
-    _fusionMergeDslHistory(saveA, saveB, strategy) {
+    _fusionMergeDslHistory(saveA, saveB, strategy, muenze) {
         const histA = Array.isArray(saveA.dslHistory) ? saveA.dslHistory : [];
         const histB = Array.isArray(saveB.dslHistory) ? saveB.dslHistory : [];
         if (strategy === "random-mix") {
@@ -1875,7 +1898,7 @@ class AnazhRealm_speicher_laden {
             const combined = [];
             const max = Math.max(aSlice.length, bSlice.length);
             for (let i = 0; i < max; i++) {
-                if (Math.random() < 0.5) {
+                if (muenze() < 0.5) {
                     if (i < aSlice.length) combined.push(aSlice[i]);
                     if (i < bSlice.length) combined.push(bSlice[i]);
                 } else {

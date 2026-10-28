@@ -107,91 +107,29 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
+    const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
+    const eps = await page.evaluate(kernStufen.epsilonSeite, W);
     const out = await page.evaluate(async () => {
-        const res = { b: {}, d: {}, p: {}, f: {}, h: {} };
-        await window.__weltDa();
+        const res = { b: {}, d: {}, h: {} };
         const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        // Worker + Buch + Config abwarten (recipes/render-config folgen dem ready-Handshake).
-        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipes.langschwert && rc && rc.lod && rc.lod.kindStages; });
-        const rc = A._studioRenderConfig;
-        const ks = rc && rc.lod ? rc.lod.kindStages : null;
-        // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
-        res.b.kind = f && f.recipes && f.recipes.langschwert ? f.recipes.langschwert.kind : null;
-        res.b.griff =
-            f && f.recipes && f.recipes.langschwert && f.recipes.langschwert.s ? f.recipes.langschwert.s.griff : null;
-        res.b.weaponCount =
-            f && f.recipes
-                ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "weapon").length
-                : 0;
-        res.b.toolCount =
-            f && f.recipes
-                ? Object.keys(f.recipes).filter(
-                      (k) => f.recipes[k] && f.recipes[k].kind === "weapon" && f.recipes[k].fx && f.recipes[k].fx.tool
-                  ).length
-                : 0;
-        res.b.paramsWeapon =
-            f && f.paramsByKind && Array.isArray(f.paramsByKind.weapon) ? f.paramsByKind.weapon.length : -1;
-        res.b.ksWeapon = ks ? JSON.stringify(ks.weapon) : null;
-        // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
+        const weapon = Object.values(f.recipes).filter((x) => x && x.kind === "weapon");
+        res.b.toolCount = weapon.filter((x) => x.fx && x.fx.tool).length;
+        res.b.paramsWeapon = f.paramsByKind && Array.isArray(f.paramsByKind.weapon) ? f.paramsByKind.weapon.length : -1;
+        // ===== D (dazu): die Werkzeug-Klasse dockt ueber donorTool (geraet_spitzhacke-Substanz), die Rollen =====
         try {
-            const bp = r.state.blueprints && r.state.blueprints.klinge_langschwert;
-            res.d.blueprint = !!bp;
-            res.d.autoSpecies = bp ? bp._foundryAutoSpecies : null;
-            res.d.grownSpecies = bp ? bp._grownSpecies || null : "kein-bp";
-            res.d.label = bp ? bp.label : null;
-            res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-            res.d.builtIn = bp ? !!bp.builtIn : null;
-            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND
-            // (state.blueprints), die Substanz lebt eingefroren in KIND_SUBSTANCE, der
-            // Auto-Klon traegt byte-gleiche Parts (JSON.stringify ===).
+            const B = r.state.blueprints || {};
             const KS = A.KIND_SUBSTANCE || {};
-            res.d.donorAbsent =
-                !(r.state.blueprints && r.state.blueprints.geraet_schwert) &&
-                !(r.state.blueprints && r.state.blueprints.geraet_spitzhacke);
-            res.d.substanzSchwert =
-                KS.geraet_schwert && Array.isArray(KS.geraet_schwert.parts) ? KS.geraet_schwert.parts.length : 0;
-            res.d.substanzSpitz =
-                KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts)
-                    ? KS.geraet_spitzhacke.parts.length
-                    : 0;
-            res.d.weaponPartsMatch =
-                !!bp && !!KS.geraet_schwert && JSON.stringify(bp.parts) === JSON.stringify(KS.geraet_schwert.parts);
-            res.d.weaponRole = bp ? r.computeBlueprintRole(bp) : null;
-            res.d.presetResolves = r._foundryPresetFor("klinge_langschwert");
-            res.d.entryResolves = r._foundryPresetForEntry({ type: "klinge_spitzhacke" });
-            // die Werkzeug-Klasse dockt ueber donorTool (geraet_spitzhacke-Substanz):
-            const tbp = r.state.blueprints && r.state.blueprints.klinge_spitzhacke;
+            res.d.spitzAbsent = !B.geraet_spitzhacke;
+            res.d.substanzSpitz = KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts) ? KS.geraet_spitzhacke.parts.length : 0;
+            res.d.weaponRole = B.klinge_langschwert ? r.computeBlueprintRole(B.klinge_langschwert) : null;
+            const tbp = B.klinge_spitzhacke;
             res.d.toolBlueprint = !!tbp;
-            res.d.toolPartsMatch =
-                !!tbp &&
-                !!KS.geraet_spitzhacke &&
-                JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
+            res.d.toolPartsMatch = !!tbp && !!KS.geraet_spitzhacke && JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
             res.d.toolRole = tbp ? r.computeBlueprintRole(tbp) : null;
         } catch (e) {
             res.d.err = (e && e.message) || String(e);
-        }
-        // ===== P: die PLACE-AUFLOESUNG (N5.5 — hand als Daten, streut nicht) =====
-        try {
-            const pol = r._placePolicyFor(f.recipes.langschwert);
-            res.p.mode = pol.mode;
-            res.p.dispatch = r._placeDispatch(pol, { id: "langschwert" });
-            r._forestExtraCache = null;
-            res.p.inExtras = r._forestExtraSpecies().some((e) => String(e.species).indexOf("klinge_") === 0);
-            r._forestExtraCache = null;
-        } catch (e) {
-            res.p.err = (e && e.message) || String(e);
-        }
-        // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 klemmt auf Stufe 0 =====
-        try {
-            if (!f.requested) f.requested = new Set();
-            const before = new Set(f.requested);
-            r._foundryFlattenFor({ seed: 7 }, "langschwert", 2);
-            const fresh = Array.from(f.requested).filter((k) => !before.has(k));
-            res.f.key = fresh.find((k) => k.startsWith("langschwert|")) || null;
-        } catch (e) {
-            res.f.err = (e && e.message) || String(e);
         }
         // ===== H: DIE HAND (W-A4b) — die Studio-Gestalt am EINEN Equip-Chokepoint =====
         try {
@@ -371,90 +309,37 @@ hauptLauf(async () => {
         return res;
     });
     // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    await kernStufen.kernProbe(page, check, "langschwert", [0], "Klingen");
+    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
     server.close();
 
-    check(
-        "B: das LIVE-Buch traegt langschwert als kind:weapon (Worker-Draht lebt)",
-        out.b.kind === "weapon",
-        String(out.b.kind)
-    );
-    check("B: die Regler-Daten fliessen (langschwert.s.griff == 0.24)", out.b.griff === 0.24, String(out.b.griff));
-    check("B: alle 22 Klingen-Gattungen im Buch", out.b.weaponCount === 22, String(out.b.weaponCount));
+    kernStufen.epsilonUrteil(check, eps, W, kern);
+    check("B: die Regler-Daten fliessen (langschwert.s.griff == 0.24)", eps.b.s.griff === 0.24, String(eps.b.s.griff));
     check(
         "B: die Werkzeug-Marke reist (9 tool:true — Messer/Faellaxt/Spaltmaul/Vorschlaghammer/Beil/Spitzhacke/Spaten/Schaufel/Sichel)",
         out.b.toolCount === 9,
         String(out.b.toolCount)
     );
+    check("B: die B4-Regler-Tabelle reist (paramsByKind.weapon == 18 Dials, W-A1-Generik)", out.b.paramsWeapon === 18, String(out.b.paramsWeapon));
+    check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", JSON.stringify(eps.b.ks.weapon) === "[0]", JSON.stringify(eps.b.ks.weapon));
+    check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor)", eps.d.builtIn === false);
     check(
-        "B: die B4-Regler-Tabelle reist (paramsByKind.weapon == 18 Dials, W-A1-Generik)",
-        out.b.paramsWeapon === 18,
-        String(out.b.paramsWeapon)
+        "D: auch der Werkzeug-Donor ist ABWESEND, seine Substanz trägt 2 Parts (KIND_SUBSTANCE.geraet_spitzhacke)",
+        out.d.spitzAbsent === true && out.d.substanzSpitz === 2,
+        out.d.err || `spitz=${out.d.substanzSpitz}`
     );
-    check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", out.b.ksWeapon === "[0]", String(out.b.ksWeapon));
-    check(
-        "D: Auto-Blueprint klinge_langschwert registriert (Donor-Klon)",
-        out.d.blueprint === true && out.d.parts >= 2,
-        out.d.err || `parts=${out.d.parts}`
-    );
-    check("D: die Herkunfts-Marke sitzt (_foundryAutoSpecies == langschwert)", out.d.autoSpecies === "langschwert");
-    check(
-        "D: KEIN _grownSpecies (eine Klinge ist keine gewachsene Art)",
-        out.d.grownSpecies === null,
-        String(out.d.grownSpecies)
-    );
-    check("D: das Label reist aus dem Rezept (lab == Langschwert)", out.d.label === "Langschwert", String(out.d.label));
-    check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor)", out.d.builtIn === false);
-    check(
-        "D: die Alt-Donoren sind ABWESEND (kein geraet_schwert/geraet_spitzhacke in state.blueprints — AUSLÖSCHUNGS-WELLE)",
-        out.d.donorAbsent === true
-    );
-    check(
-        "D: die Substanz-Tabelle traegt beide Zeilen (KIND_SUBSTANCE.geraet_schwert 4 Parts · geraet_spitzhacke 2 Parts)",
-        out.d.substanzSchwert === 4 && out.d.substanzSpitz === 2,
-        `schwert=${out.d.substanzSchwert} spitz=${out.d.substanzSpitz}`
-    );
-    check(
-        'D: die reine Waffe traegt die SCHWERT-Substanz byte-gleich + role "weapon" (klinge_langschwert)',
-        out.d.weaponPartsMatch === true && out.d.weaponRole === "weapon",
-        `role=${out.d.weaponRole}`
-    );
-    check(
-        "D: die Werkzeug-Klasse dockt mit (klinge_spitzhacke registriert — donorTool-Zeile gedeckt)",
-        out.d.toolBlueprint === true
-    );
+    check('D: die reine Waffe traegt role "weapon" (klinge_langschwert)', out.d.weaponRole === "weapon", `role=${out.d.weaponRole}`);
+    check("D: die Werkzeug-Klasse dockt mit (klinge_spitzhacke registriert — donorTool-Zeile gedeckt)", out.d.toolBlueprint === true);
     check(
         'D: das Werkzeug traegt die WERKZEUG-Substanz byte-gleich + role "tool" (klinge_spitzhacke == KIND_SUBSTANCE.geraet_spitzhacke)',
         out.d.toolPartsMatch === true && out.d.toolRole === "tool",
         `role=${out.d.toolRole}`
     );
     check(
-        "D: die generische klinge_-Regel loest auf (klinge_langschwert -> langschwert)",
-        out.d.presetResolves === "langschwert",
-        String(out.d.presetResolves)
-    );
-    check(
-        "D: der Entry-Pfad loest auf (_foundryPresetForEntry, klinge_spitzhacke -> spitzhacke)",
-        out.d.entryResolves === "spitzhacke",
-        String(out.d.entryResolves)
-    );
-    check(
-        'P: die Place-Aufloesung liest die Rezept-DATEN (mode "hand")',
-        out.p.mode === "hand",
-        out.p.err || String(out.p.mode)
-    );
-    check(
-        "P: hand streut NICHT (Dispatch null, N5.5 — Spawn/Befehl/Hand statt Worldgen)",
-        out.p.dispatch === null,
-        String(out.p.dispatch)
-    );
-    check("P: keine klinge_-Nische in der Wald-Liste", out.p.inExtras === false);
-    check(
         "F: die Distanz-Wahl 2 klemmt fuer kind:weapon auf Stufe 0 (fail-closed [0])",
-        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
-        out.f.err || String(out.f.key)
+        /^[^|]*\|[^|]*\|0(\||$)/.test(eps.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
+        eps.f.err || String(eps.f.key)
     );
     // ===== H: DIE HAND (W-A4b) — eigene Zaehlung =====
     check("H: Spieler-Mesh bereit (der Hand-Beweis hat einen Traeger)", out.h.playerReady === true, out.h.err);

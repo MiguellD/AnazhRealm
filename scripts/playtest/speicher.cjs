@@ -593,13 +593,10 @@ async function checkBandRing9to10(ctx) {
         if (!r) return null;
         const out = {};
 
-        // Dialog-Markup im DOM
-        out.dialogInDom = !!document.getElementById("world-tor-dialog");
-        out.replaceBtnInDom = !!document.getElementById("world-tor-replace");
-        out.besideBtnInDom = !!document.getElementById("world-tor-beside");
-        out.fuseBtnInDom = !!document.getElementById("world-tor-fuse");
-        out.cancelBtnInDom = !!document.getElementById("world-tor-cancel");
-        out.summaryInDom = !!document.getElementById("world-tor-summary");
+        // Dialog-Markup im DOM (der Fusion-Knopf: klickbar)
+        out.domFehlt = ["dialog", "replace", "beside", "cancel", "summary"].filter(
+            (n) => !document.getElementById("world-tor-" + n)
+        );
         out.fuseBtnEnabled = document.getElementById("world-tor-fuse").disabled === false;
 
         // Daten-Pfad: importWorldBeside ohne Reload
@@ -662,10 +659,9 @@ async function checkBandRing9to10(ctx) {
         r._closeWeltTorDialog();
         out.pendingClearedAfterCancel = r.state.pendingImport === null;
 
-        // _weltTorImportBeside ohne pendingImport ist no-op
+        // _weltTorImportBeside ohne pendingImport ist no-op (ein Wurf bräche die ganze Probe)
         r.state.pendingImport = null;
         r._weltTorImportBeside();
-        out.besideNoopWithoutPending = true; // sollte nicht crashen
 
         // Eine importierte Welt OHNE worldJournal bekommt trotzdem einen Witness-Eintrag (nie still
         // überspringen, wenn cloned.worldJournal fehlt).
@@ -697,13 +693,12 @@ async function checkBandRing9to10(ctx) {
             (ring9Results && ring9Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 9: #world-tor-dialog im DOM", ring9Results.dialogInDom);
-        check("Ring 9: Ersetzen-Button im DOM", ring9Results.replaceBtnInDom);
-        check("Ring 9: Daneben-legen-Button im DOM", ring9Results.besideBtnInDom);
-        check("Ring 9: Fusion-Button im DOM", ring9Results.fuseBtnInDom);
+        check(
+            "Ring 9: #world-tor-* Dialog, Knöpfe und Summary im DOM",
+            !ring9Results.domFehlt.length,
+            ring9Results.domFehlt
+        );
         check("Ring 9: Fusion-Button ist klickbar (mit Ring 10)", ring9Results.fuseBtnEnabled);
-        check("Ring 9: Abbrechen-Button im DOM", ring9Results.cancelBtnInDom);
-        check("Ring 9: #world-tor-summary im DOM", ring9Results.summaryInDom);
         check("Ring 9: importWorldBeside liefert ok=true", ring9Results.besideReturnedOk);
         check("Ring 9: importWorldBeside vergibt neue worldId", ring9Results.besideReturnedNewWorldId);
         check("Ring 9: importWorldBeside behält slug (ohne Kollision)", ring9Results.besideReturnedSlug);
@@ -719,7 +714,6 @@ async function checkBandRing9to10(ctx) {
         check("Ring 9: Slug-Kollision wird via -N aufgelöst", ring9Results.collisionResolved);
         check("Ring 9: _openWeltTorDialog setzt pendingImport", ring9Results.pendingImportSet);
         check("Ring 9: Cancel räumt pendingImport auf", ring9Results.pendingClearedAfterCancel);
-        check("Ring 9: importBeside ohne pending crasht nicht", ring9Results.besideNoopWithoutPending);
         check(
             "Ring 9: Import ohne worldJournal bekommt trotzdem Witness-Eintrag (Bugfix)",
             ring9Results.journallessGetsWitness
@@ -734,18 +728,12 @@ async function checkBandRing9to10(ctx) {
         if (!r) return null;
         const out = {};
 
-        // Dialog + Stammbaum-DOM
-        out.fusionDialogInDom = !!document.getElementById("world-fusion-dialog");
-        out.fusionConfirmBtnInDom = !!document.getElementById("world-fusion-confirm");
+        // Dialog + Stammbaum-DOM (Dialog und Eltern-B-Dropdown liest die Dialog-Probe unten)
         out.fusionStrategyRadios = document.querySelectorAll('input[name="fusion-strategy"]').length === 3;
-        out.fusionParentBSelectInDom = !!document.getElementById("world-fusion-parent-b");
-        out.fusionOpenBtnInDom = !!document.getElementById("world-fuse-open");
+        out.domFehlt = ["world-fusion-confirm", "world-fuse-open"].filter((n) => !document.getElementById(n));
         // Bib: der Stammbaum-Samen blüht jetzt im "Diese Welt"-Eiland (.feed-self), nicht mehr
         // in einer eigenen #world-lineage-section (die wanderte ins Eiland; V9.56-i — Test wandert mit).
         out.lineageSectionInDom = !!document.querySelector(".feed-self #world-lineage");
-        out.lineageDivInDom = !!document.getElementById("world-lineage");
-        out.fusionStrategiesArray =
-            Array.isArray(AnazhRealm.FUSION_STRATEGIES) && AnazhRealm.FUSION_STRATEGIES.length === 3;
 
         // Setup: zwei Eltern-Welten mit eindeutigen Inventaren bauen.
         const parentAId = r.createNewWorld({
@@ -818,7 +806,6 @@ async function checkBandRing9to10(ctx) {
             slug: "test-tag",
             reload: false,
         });
-        out.tagOk = tagResult.ok;
         const tagSave = tagResult.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(tagResult.worldId))) : null;
         out.tagEmotionUnion =
             !!tagSave &&
@@ -834,18 +821,11 @@ async function checkBandRing9to10(ctx) {
             slug: "test-mix",
             reload: false,
         });
-        out.mixOk = mixResult.ok;
         const mixSave = mixResult.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(mixResult.worldId))) : null;
         out.mixEmotionAverage =
             !!mixSave &&
             Math.abs(mixSave.playerEmotions.joy - 0.45) < 0.01 &&
             Math.abs(mixSave.playerEmotions.awe - 0.45) < 0.01;
-
-        // Strategien sind tatsächlich UNTERSCHEIDBAR (sonst wäre der
-        // Aufwand für drei Pfade umsonst)
-        out.strategiesDistinguishable =
-            Math.abs(seqSave.playerEmotions.joy - tagSave.playerEmotions.awe) < 0.01 &&
-            Math.abs(tagSave.playerEmotions.awe - mixSave.playerEmotions.awe) > 0.1;
 
         // Fehlerpfade
         const sameId = r.fuseWorlds(parentAId, parentAId, "sequence", { reload: false });
@@ -959,16 +939,16 @@ async function checkBandRing9to10(ctx) {
             (ring10Results && ring10Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 10: #world-fusion-dialog im DOM", ring10Results.fusionDialogInDom);
-        check("Ring 10: Verschmelzen-Button im DOM", ring10Results.fusionConfirmBtnInDom);
+        check(
+            "Ring 10: Verschmelzen-Knöpfe (Dialog, Bibliothek) im DOM",
+            !ring10Results.domFehlt.length,
+            ring10Results.domFehlt
+        );
         check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
-        check("Ring 10: Eltern-B-Dropdown im DOM", ring10Results.fusionParentBSelectInDom);
-        check("Ring 10: 'Verschmelzen…'-Button im DOM (Bibliothek)", ring10Results.fusionOpenBtnInDom);
         check(
             "Ring 10: Stammbaum-Samen blüht im 'Diese Welt'-Eiland (.feed-self, V18.71)",
             ring10Results.lineageSectionInDom
         );
-        check("Ring 10: AnazhRealm.FUSION_STRATEGIES (3)", ring10Results.fusionStrategiesArray);
         check("Ring 10: Sequenz-Fusion liefert ok=true", ring10Results.seqOk);
         check("Ring 10: Sequenz-Fusion vereint beide Inventare", ring10Results.seqHasBothInventories);
         check("Ring 10: Sequenz übernimmt Emotion aus A", ring10Results.seqEmotionFromA);
@@ -977,12 +957,9 @@ async function checkBandRing9to10(ctx) {
         check("Ring 10: Schema 10.0-fusion-v1", ring10Results.seqSchemaFusion);
         check("Ring 10: Genesis-Journal-Eintrag nennt beide Eltern", ring10Results.seqGenesisJournal);
         check("Ring 10: fusionStrategy in worldMeta gespeichert", ring10Results.seqFusionStrategyInMeta);
-        check("Ring 10: Tag-Merge liefert ok=true", ring10Results.tagOk);
         check("Ring 10: Tag-Merge bildet Emotion-MAX (Vereinigung)", ring10Results.tagEmotionUnion);
         check("Ring 10: Tag-Merge vereint beide Inventare", ring10Results.tagHasBothInventories);
-        check("Ring 10: Random-Mix liefert ok=true", ring10Results.mixOk);
         check("Ring 10: Random-Mix bildet Emotion-Mittel (0.45)", ring10Results.mixEmotionAverage);
-        check("Ring 10: Strategien sind unterscheidbar (Diskrimination)", ring10Results.strategiesDistinguishable);
         check("Ring 10: gleiche Eltern-ID wird abgewiesen", ring10Results.rejectsSameId);
         check("Ring 10: unbekannte Strategie wird abgewiesen", ring10Results.rejectsBadStrategy);
         check("Ring 10: fehlende Eltern-Welt wird abgewiesen", ring10Results.rejectsMissingParent);
