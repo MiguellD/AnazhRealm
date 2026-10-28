@@ -2625,9 +2625,9 @@ class AnazhRealm_kreatur_leben {
     // DER SCHWARM (luftwasser.K5, tetrapoda VOGEL_GESETZ.schwarm): fern EIN Agent. Je Takt die Schwarm-Zellen um das Auge
     // (sichtM): je Zelle einmal ihr Wurf (Mitte, Würfe), je frischeS ihr Revier aus der Kronen-Deckung der Mitte, je fliegendem Schwarm sein
     // ZENTRUM auf der Uhr der Welt (`schwarmZentrum`: jeder Peer und jeder Reload sieht denselben Schwarm). Jenseits von sichtM
-    // oder mit der Hülle außer dem Blick (`_frustumCache`) rechnet er nur das; im Bild ist jedes Glied eine Funktion von Index
-    // und Zeit (`schwarmGlied`), nah (nahM) hält die Separation über das Gitter die Paare auseinander (`schwarmSeparation`).
-    // Kein Glied hat einen Takt je Kopf: die Kosten hängen an den Gliedern im Bild, nie an der Welt. Gezeichnet über
+    // oder mit der Hülle außer dem Blick (`_frustumCache`) rechnet er nur das; im Bild trägt er seine Glieder, nah (nahM) fliegen
+    // sie im Verband (`_schwarmVerband`: verbandZug wie die Herde, die Separation über das Gitter). Die Kosten hängen an den
+    // Gliedern im Bild, nie an der Welt. Gezeichnet über
     // `_vogelZeichnen` in EINEN Pool (Stoff und Leib der Sänger: EIN Programm, EIN Befehl). `state.schwarm` trägt die Lage des
     // Takts: fliegende Schwärme, Schwärme und Glieder im Bild, nahe Schwärme, Paare der Separation.
     _vogelSchwarmTakt(sonne, regen) {
@@ -2664,7 +2664,6 @@ class AnazhRealm_kreatur_leben {
         const f = S.form;
         const uhr = st.spielZeit;
         const zt = sk.zentrum;
-        const g = sk.glied;
         const p = sk.lagen;
         const voegel = sk.voegel;
         let n = 0;
@@ -2703,19 +2702,9 @@ class AnazhRealm_kreatur_leben {
                 if (F && !F.intersectsSphere(sk.kugel.set(sk.kugel.center.set(x, y, z), huelle))) continue;
                 lage.imBild++;
                 lage.glieder += zt.n;
-                for (let i = 0; i < zt.n; i++) {
-                    VG.glied(i, zt.n, uhr, c.wurf[0], zt.gier, V, g);
-                    p[3 * i] = x + g.x;
-                    p[3 * i + 1] = y + g.y;
-                    p[3 * i + 2] = z + g.z;
-                    const v = voegel[n + i] || (voegel[n + i] = {});
-                    v.gier = g.gier;
-                    v.schlag = g.schlag;
-                }
-                if (Math.hypot(x - ax, y - ay, z - az) < S.nahM + huelle) {
-                    lage.nah++;
-                    lage.paare += VG.separation(p, zt.n, S.raumM, sk.gitter);
-                }
+                const nah = Math.hypot(x - ax, y - ay, z - az) < S.nahM + huelle;
+                lage.nah += nah;
+                lage.paare += this._schwarmVerband(c, zt, x, y, z, uhr, nah, voegel, n);
                 for (let i = 0; i < zt.n; i++, n++) {
                     const v = voegel[n];
                     v.x = p[3 * i];
@@ -2725,6 +2714,96 @@ class AnazhRealm_kreatur_leben {
             }
         voegel.length = n;
         this._vogelZeichnen(voegel, V.leib, (V.leib.teile.length + 2) * S.glieder[1] * 2, "vogelSchwarmPool");
+    }
+    // DER VERBAND DES SCHWARMS (luftwasser.K2, tetrapoda verbandZug — derselbe Zug wie die Herde): c die Zelle, zt ihr Zentrum
+    // in diesem Takt an (x, y, z). Der Zustand je Glied (`c.verband`: Lage und Lauf im Kurs-Rahmen des Zentrums, quer und
+    // längs) entsteht aus dem Wurf der Formation (`schwarmGlied`). Nah, je Takt der Welt-Uhr bis verband.dtMax: jedes Glied
+    // wünscht seinen Kurs (`schwarmWunsch`), verbandZug zieht ihn zum Leittier (das Zentrum, leit) und zu den Gliedern
+    // i + 1 + m·⌊n/k⌋ (k = maxNachbarn − 1 neben dem Leittier; VERHALTEN.herde, der Paar-Raum raumM), es fliegt ihn, die
+    // Separation hält die Paare auseinander. Fern trägt das Zentrum die Formation in seinem Rahmen (gedreht mit seinem Kurs).
+    // Die Höhe ist die Scheibe der Funktion, der Blick der Lauf. Schreibt die Lagen in die Karte (`lagen`), Blick und Schlag
+    // in voegel ab n0; liefert die Paare der Separation.
+    _schwarmVerband(c, zt, x, y, z, uhr, nah, voegel, n0) {
+        const VG = AnazhRealm._vogelGesetz();
+        const V = VG.V;
+        const S = V.schwarm;
+        const sk = this._schwarmKarte;
+        const [g, p, n] = [sk.glied, sk.lagen, zt.n];
+        const [co, si] = [Math.cos(zt.gier), Math.sin(zt.gier)];
+        let vb = c.verband;
+        if (!vb || vb.n !== n) {
+            vb = c.verband = { n, lage: new Float32Array(2 * n), lauf: new Float32Array(2 * n), zeit: uhr };
+            for (let i = 0; i < n; i++) {
+                VG.glied(i, n, uhr, c.wurf[0], zt.gier, V, g);
+                vb.lage[2 * i] = co * g.x - si * g.z;
+                vb.lage[2 * i + 1] = si * g.x + co * g.z;
+                vb.lauf[2 * i + 1] = S.tempoMs;
+            }
+        }
+        const dt = uhr - vb.zeit;
+        const fliegt = nah && dt > 0 && dt <= S.verband.dtMax;
+        // der Rahmen der Lagen: das Zentrum des Vor-Takts (es fliegt) oder dieses (es trägt); Rahmen → Welt: x = c·q + s·l,
+        // z = −s·q + c·l
+        const [bx, bz, bg] = fliegt ? [vb.x, vb.z, vb.gier] : [x, z, zt.gier];
+        const [bc, bs] = [Math.cos(bg), Math.sin(bg)];
+        const L = vb.lage;
+        const U = vb.lauf;
+        const W = vb.welt || (vb.welt = new Float32Array(2 * n));
+        for (let i = 0; i < n; i++) {
+            p[3 * i] = bx + bc * L[2 * i] + bs * L[2 * i + 1];
+            p[3 * i + 2] = bz - bs * L[2 * i] + bc * L[2 * i + 1];
+            W[2 * i] = bc * U[2 * i] + bs * U[2 * i + 1];
+            W[2 * i + 1] = -bs * U[2 * i] + bc * U[2 * i + 1];
+            VG.glied(i, n, uhr, c.wurf[0], zt.gier, V, g);
+            p[3 * i + 1] = y + g.y;
+            (voegel[n0 + i] || (voegel[n0 + i] = {})).schlag = g.schlag;
+        }
+        let paare = 0;
+        if (fliegt) {
+            const K = AnazhRealm._steuerGesetz();
+            const H = AnazhRealm._verhaltenGesetz().herde;
+            const raum = S.raumM / 2;
+            const k = Math.min(H.maxNachbarn - 1, n - 1);
+            const schritt = Math.floor(n / k);
+            const E = sk.eintraege || (sk.eintraege = []);
+            for (let m = 0; m <= k; m++) E[m] = E[m] || { x: 0, z: 0, vx: 0, vz: 0, raum, leit: false };
+            E.length = k + 1;
+            Object.assign(E[0], { x, z, vx: S.tempoMs * si, vz: S.tempoMs * co, raum, leit: true });
+            const N = vb.neu || (vb.neu = new Float32Array(2 * n));
+            const w = sk.wunsch || (sk.wunsch = { x: 0, z: 0 });
+            const zug = sk.zug || (sk.zug = { x: 0, z: 0, n: 0 });
+            for (let i = 0; i < n; i++) {
+                for (let m = 1; m <= k; m++) {
+                    const [j, e] = [(i + 1 + (m - 1) * schritt) % n, E[m]];
+                    e.x = p[3 * j];
+                    e.z = p[3 * j + 2];
+                    e.vx = W[2 * j];
+                    e.vz = W[2 * j + 1];
+                }
+                VG.wunsch(i, uhr, zt.gier, V, w);
+                K.verbandZug(p[3 * i], p[3 * i + 2], w.x, w.z, S.tempoMs, raum, E, H, zug);
+                N[2 * i] = zug.x;
+                N[2 * i + 1] = zug.z;
+            }
+            for (let i = 0; i < n; i++) {
+                W[2 * i] = N[2 * i];
+                W[2 * i + 1] = N[2 * i + 1];
+                p[3 * i] += W[2 * i] * dt;
+                p[3 * i + 2] += W[2 * i + 1] * dt;
+            }
+            paare = VG.separation(p, n, S.raumM, sk.gitter);
+        }
+        // zurück in den Rahmen dieses Takts (Welt → Rahmen: q = c·x − s·z, l = s·x + c·z); der Blick längs des Laufs
+        for (let i = 0; i < n; i++) {
+            const [rx, rz] = [p[3 * i] - x, p[3 * i + 2] - z];
+            L[2 * i] = co * rx - si * rz;
+            L[2 * i + 1] = si * rx + co * rz;
+            U[2 * i] = co * W[2 * i] - si * W[2 * i + 1];
+            U[2 * i + 1] = si * W[2 * i] + co * W[2 * i + 1];
+            voegel[n0 + i].gier = zt.gier + Math.atan2(U[2 * i], U[2 * i + 1]);
+        }
+        Object.assign(vb, { zeit: uhr, x, z, gier: zt.gier });
+        return paare;
     }
     // DIE ZELLE der Vogel-Karte: ihre Würfe (einmal: das Revier, die Mitte, die Bahn) und ihr Revier aus Leben und Deckung an
     // der Mitte (je Aufruf neu; die Deckung hebt auch den Singflug über das Dach); die Mitte steht auf der EINEN 2D-Höhe, im
@@ -3128,7 +3207,7 @@ AnazhRealm._bestandGesetz = function () {
 };
 // DER VOGEL (tetrapoda VOGEL_GESETZ + vogelWurf · vogelRevier · vogelLied · vogelBahn, Klang K1): Revier, Lied, Singflug und
 // Leib — gelesen vom Vogel-Takt und vom Klang-Zensus (die Teile je Vogel); dazu der Schwarm (schwarmRevier · schwarmZentrum ·
-// schwarmGlied · schwarmSeparation, luftwasser.K5), gelesen vom Schwarm-Takt. Fail-closed.
+// schwarmGlied · schwarmWunsch · schwarmSeparation, luftwasser.K5 und K2), gelesen vom Schwarm-Takt. Fail-closed.
 AnazhRealm._vogelGesetz = function () {
     if (AnazhRealm._vogelGesetzMemo) return AnazhRealm._vogelGesetzMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3148,8 +3227,10 @@ AnazhRealm._vogelGesetz = function () {
             "schwarmRevier",
             "schwarmZentrum",
             "schwarmGlied",
+            "schwarmWunsch",
             "schwarmSeparation",
-        ].every((f) => typeof k[f] === "function")
+        ].every((f) => typeof k[f] === "function") &&
+        V.schwarm.verband
     ) {
         AnazhRealm._vogelGesetzMemo = Object.freeze({
             V,
@@ -3160,6 +3241,7 @@ AnazhRealm._vogelGesetz = function () {
             schwarmRevier: k.schwarmRevier,
             schwarmZentrum: k.schwarmZentrum,
             glied: k.schwarmGlied,
+            wunsch: k.schwarmWunsch,
             separation: k.schwarmSeparation,
         });
         return AnazhRealm._vogelGesetzMemo;
