@@ -1195,3 +1195,5 @@
 2026-10-28 14:36:17 takt17-farm stoffe.K1#1 GRÜN 0.3 · 20/92
 2026-10-28 14:36:24 takt17-farm stoffe.K3#1 GRÜN 0.3 · 21/92
 2026-10-28 14:36:33 takt17-farm stoffe.K3#2 GRÜN 0.3 · 22/92
+2026-10-28 14:36:43 takt17-farm mensch.K3#1 GRÜN 2.1 · 23/92
+2026-10-28 14:36:51 takt17-farm mensch.K3#2 GRÜN 2.1 · 24/92
