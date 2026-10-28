@@ -1288,3 +1288,4 @@
 2026-10-28 15:10:29 takt17-radeon speicher.K4#2 GRÜN 1.9 · 31/57
 2026-10-28 15:11:46 takt17-radeon material.K1#1 ROT 5.1 · 32/57
 2026-10-28 15:11:53 takt17-radeon material.K1#2 ROT 5.1 · 33/57
+2026-10-28 15:12:58 takt17-radeon tiere.K1#2 GRÜN 2.5 · 34/57
