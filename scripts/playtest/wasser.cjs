@@ -168,7 +168,9 @@ async function checkBandHydrosphere(ctx) {
             const cj = (cellIdx / hydro.dim) | 0;
             const wx = hydro.originX + (ci + 0.5) * hydro.cell;
             const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+            // der Füllstand trägt den Pegel des Sees (Schmelze und Regen, gelaende-core `pegelHub`, wetter.K3)
+            const hub = window.__gelaendeCore.pegelHub(r._gelaende(), renderedLk.level);
+            out.lakeLevelOk = Math.abs(r._waterLevelAt(wx, wz) - renderedLk.level - hub) < 0.01;
             // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert den See-Wasserspiegel, nicht den Meeresspiegel.
             const cellsSet = new Set(renderedLk.cells);
             let ringChecked = false;
@@ -1548,7 +1550,8 @@ async function checkBandWasserWahrheit(ctx) {
             gesehen.add(h);
             if (h && h.ready && h.water && h.water.waterKind) {
                 const wK = h.water.waterKind;
-                const wY = h.water.waterY;
+                // der Spiegel der Zelle wie im Kern (`koerperY`): der See trägt den Pegel (Schmelze und Regen, wetter.K3)
+                const wY = Array.from(h.water.waterY, (y, i) => (wK[i] === 2 ? y + window.__gelaendeCore.pegelHub(r._gelaende(), y) : y));
                 const hd = h.dim;
                 outer: for (let cj = 1; cj < hd - 1; cj++) {
                     for (let ci = 1; ci < hd - 1; ci++) {
@@ -1578,12 +1581,10 @@ async function checkBandWasserWahrheit(ctx) {
             const lUnder = r._atlasWaterLevelAt(shore.px, shore.pz, shore.rim - 5);
             const lOver = r._atlasWaterLevelAt(shore.px, shore.pz, shore.rim + 5);
             o.shoreLevels = { lInf, lUnder, lOver, rim: shore.rim };
-            if (lInf !== -Infinity) fail(`F2: terrainTopY=−Inf liefert Wasser an Land-Spalte (L=${lInf})`);
-            if (lUnder !== shore.rim)
-                fail(
-                    `F2: endliches topY UNTER rim verlor die Rim-Füllung (L=${lUnder}, rim=${shore.rim}) — echte Ufer müssen bleiben!`
-                );
-            if (lOver !== -Infinity) fail(`F2: topY ÜBER rim wurde nass (L=${lOver})`);
+            // terrainTopY −Inf liefert an der Land-Spalte kein Wasser, ein endliches topY UNTER rim behält die Rim-Füllung (echte
+            // Ufer bleiben), eins ÜBER rim bleibt trocken
+            if (lInf !== -Infinity || lUnder !== shore.rim || lOver !== -Infinity)
+                fail(`F2 RIM-WAND: ${JSON.stringify(o.shoreLevels)}`);
         }
         // Fluss-Wand: Bank-Punkt (centerness=0, kein Körper im 3×3) vs Kern-Punkt.
         let bank = null;

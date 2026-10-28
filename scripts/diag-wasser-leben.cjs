@@ -733,7 +733,8 @@ function selbsttest() {
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
     if (quelleSin) fehler.push("B6 HASH an der Quelle: " + quelleSin);
-    // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
+    // die Teile zusammen urteilen wie das Ganze: der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher (die Zeile
+    // trägt [Quellen aus 2 Teilen, Breite p50, max, die abweichenden Felder, die erste Röte])
     {
         const q = gut.quelle;
         const halb = (k) => (k === "huelle0" || k === "regionen" || k === "kacheln" ? q[k] : null);
@@ -761,7 +762,7 @@ function selbsttest() {
         const v = urteil(Object.assign(kopie(), { quelle: m }));
         const ok = !fehlt.length && !v.length && m.breiteP50 === 2 && m.breiteMax === 2.75 && m.tiefeMax === 0.33;
         console.log(
-            `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze (${m.quellen} Quellen aus 2 Teilen, Breite p50 ${m.breiteP50} m, max ${m.breiteMax} m)${fehlt.length ? " — weichen ab: " + fehlt.join(", ") : ""}${v.length ? " — rot: " + v[0] : ""}`
+            `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze ${JSON.stringify([m.quellen, m.breiteP50, m.breiteMax, fehlt, v[0]])}`
         );
         if (!ok) fehler.push("die Teile urteilen anders als das Ganze");
     }
@@ -804,6 +805,9 @@ async function wasserDa(pg, bild) {
         bild
     );
     await pg.evaluate(WASSER_INSTALL);
+    // DAS WETTER DER WAND (Wand 3, R9): das Wort des Spielers „sonnig", trocken — der Regen hebt See und Fluss (wetter.K3, P4
+    // misst ihn eigens); nie das Wetter des Starts
+    await pg.evaluate(() => (window.anazhRealm._setWeather("sunny", "human"), window.anazhRealm._naesseTakt(1e6)));
 }
 // die Quellen eines Teils `teil` ({ k, n }, null: alle) in den Kacheln der Probe
 const quellProbe = (pg, orte, teil) =>
