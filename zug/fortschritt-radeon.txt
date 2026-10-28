@@ -1478,3 +1478,4 @@
 2026-10-28 21:07:57 takt18e-radeon siedlung.K5#1 GRÜN 8.2 · 2/15
 2026-10-28 21:18:56 takt18e-radeon halten.K2#1 GRÜN 11.0 · 3/15
 2026-10-28 21:39:13 takt18e-radeon profiband.K4#2 ROT 20.3 · 4/15
+2026-10-28 21:41:24 takt18e-radeon klang.K2#1 GRÜN 2.2 · 5/15
