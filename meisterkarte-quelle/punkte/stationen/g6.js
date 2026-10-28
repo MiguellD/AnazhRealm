@@ -157,6 +157,53 @@ module.exports = [
             "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden`",
     },
     {
+        kriterium: "streaming.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // der Zähler des Spiels selbst (Karte streaming-k4-zaehler): jeder Bau im Haupt-Faden meldet sich am EINEN Melder
+        // (`_fadenUmgangen`) — an den Sync-Stellen (fussabdruck · naht · drain) in `_syncBau`, sonst laut im Buch
+        // „FADEN-UMGANGEN"; die Faden-Linse liest ihn (`_syncBauten`) im Fenster an der echten GPU nach der Ankunft (kalt),
+        // 2 min Gang, einer Minute Fahrt mit sechs Bau-Klicks und dem Damm. Vor der Karte kennt die Linse --echt und den
+        // Gang nicht (die Gang-Zeile fehlt): ROT. Die Stau-Zeile (Takt) gehört gelaende.K2 und urteilt hier nicht.
+        // Soll: 0 sonst an Radeon und GTX; Cloud-Fenster swiftshader (Xvfb) am Kopf 82bb2353 in 3 von 3 Läufen 0 sonst ·
+        // 25 naht (der Damm-Ring der Wasser-Linse), vor dem Nexus-Schnitt 8 Güsse „kreatur" in 1 von 2.
+        befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden", "--echt"],
+        env: { WORKER_DICHTE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const g = /^ {2}gang +([\d.]+) s/m.exec(t);
+            const h = /Hydrosphären: (\d+) aus dem Faden · (\d+) im Haupt-Faden/.exec(t);
+            const b = /Bauten im Haupt-Faden \(Chunk-Stoff, Guss\): (\d+) an Sync-Stellen und Test-Nähten · (\d+) sonst ?(\{[^}]*\})?/.exec(t);
+            const k = /Bau-Klicks in der Fahrt: (\d+)/.exec(t);
+            const blind = /⛔ BLIND: (.*)/.exec(t);
+            if (!g || !h || !b) return { gruen: false, zahl: "keine Gang- oder Faden-Zeile (die Linse kennt --echt nicht?) · Exit " + lauf.exit };
+            const gruen = hw && !blind && +h[1] > 0 && +h[2] === 0 && +b[2] === 0 && !!k && +k[1] >= 6;
+            return {
+                gruen,
+                zahl:
+                    "Bauten " + b[2] + " außerhalb der Sync-Stellen · " + b[1] + " an ihnen " + (b[3] || "") + " · Hydrosphären " + h[1] +
+                    " aus dem Faden · " + h[2] + " im Haupt-Faden · Gang " + g[1] + " s · " + (k ? k[1] : 0) + " Bau-Klicks · " +
+                    (ad || "Adapter ungenannt") + (blind ? " · BLIND " + blind[1] : ""),
+            };
+        },
+        pfad: [
+            ...HYDRO_PFAD,
+            "stamm/dienst.js",
+            "stamm/feld-dsl.js",
+            "stamm/koerper-leib.js",
+            "stamm/kreatur-verhalten.js",
+            "stamm/siedlung-satz.js",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = 0 überall, beide Geräte",
+    },
+    {
         kriterium: "streaming.K5",
         staffel: 1,
         geraet: "headless",
@@ -582,6 +629,61 @@ module.exports = [
             "scripts/lib/welt-orte.cjs",
         ],
         quelle: "2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte",
+    },
+    {
+        kriterium: "klang.K3",
+        staffel: 1,
+        geraet: "headless",
+        // der Zensus (Ra), Zweig klang-raum: derselbe Tier-Ruf (ein Leib der Welt, `_tierRuf` → Gesetzbuch `tierRuf`) in 3 · 8 ·
+        // 20 m und dieselbe Glut (der Bau des Dorfs, die Lage am Ohr durch den Studio-Graphen) in 1,5 · 3 · 6 m; das Ohr dreht sich
+        // (die Kamera), die Quelle klingt −90° · +90° · −30° · +30° neben dem Blick, der Master an einem Stereo-OfflineAudioContext.
+        // Je Probe ILD = R − L und der Pegel in dB (j.raum.proben). GRÜN: 24 Proben (je Quelle 12), 100 % mit dem Vorzeichen der
+        // Seite ≥ 3 dB, der Pegel fällt je Abstands-Stufe ≥ 1 dB, kein Befund „Ra" (dort auch: die Welt hört die Quelle in einem
+        // anderen Abstand). Die Mutation „Panner aus" (S15, `--selftest`) ist ROT an Ruf und Glut. Am Kopf von klang-raum 24/24:
+        // ±90° ILD ±80 … ±102 dB (die andere Seite schweigt), ±30° ±7,7 dB, tier −23,0 › −31,5 › −39,4 dB, glut −17,7 › −23,7 ›
+        // −29,7 dB. Derselbe Lauf wie klang.K1#1 und klang.K5#1 (Zwilling).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const ra = j && j.raum;
+            if (!ra || !Array.isArray(ra.proben)) return { gruen: false, zahl: "kein Raum-Teil (Ra) im Zensus (Exit " + lauf.exit + ")" };
+            const p = ra.proben
+                .map((t) => /^(tier|glut) (-?\d+)° ([\d.]+) m (-?[\d.]+)\/(-?[\d.]+)$/.exec(t))
+                .filter(Boolean)
+                .map((m) => ({ q: m[1], w: +m[2], d: +m[3], ild: +m[4], db: +m[5] }));
+            const richtig = p.filter((x) => x.ild * Math.sign(x.w) >= 3).length;
+            // der Pegel fällt mit dem Abstand: je Quelle und Winkel die Abstände aufsteigend
+            const faellt = p.every((x) => p.every((y) => y.q !== x.q || y.w !== x.w || !(y.d > x.d) || y.db <= x.db - 1));
+            const je = (q) => p.filter((x) => x.q === q).length;
+            const rot = (j.rot || []).filter((t) => /^Ra /.test(t));
+            const gruen = p.length === 24 && je("tier") === 12 && je("glut") === 12 && richtig === 24 && faellt && rot.length === 0;
+            const pegel = (q, w) => p.filter((x) => x.q === q && x.w === w).map((x) => x.d + " m " + x.db.toFixed(1)).join(" › ");
+            const ild = (w) => p.filter((x) => x.w === w).map((x) => Math.abs(x.ild)).reduce((a, b) => Math.min(a, b), Infinity);
+            return {
+                gruen,
+                zahl:
+                    richtig + "/" + p.length + " Vorzeichen richtig (tier " + je("tier") + ", glut " + je("glut") + ") · |ILD| ≥ " +
+                    ild(90).toFixed(1) + " dB bei 90°, ≥ " + ild(30).toFixed(1) + " dB bei 30° · Pegel " + (faellt ? "fällt" : "FÄLLT NICHT") +
+                    ": tier " + pegel("tier", 90) + " · glut " + pegel("glut", 90) + " dB" +
+                    (rot.length ? " · " + rot.length + " Befund(e): " + rot.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = Richtung und Entfernung: links/rechts zu 100 % mit richtigem Vorzeichen (ILD/ITD am Stereo-Abgriff)",
     },
     {
         kriterium: "klang.K4",
@@ -1124,11 +1226,4 @@ module.exports = [
 ];
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
-module.exports.fehlt = [
-    {
-        kriterium: "streaming.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "die Faden-Linse (`diag-worker-dichte --faden`, Zweig hydro-faden) läuft nur am Null-Renderer; keine Zählung synchroner Bauten im echten Spiel an Radeon und GTX",
-    },
-];
+module.exports.fehlt = [];
