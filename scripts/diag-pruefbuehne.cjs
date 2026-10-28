@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -1472,8 +1472,8 @@ async function lichtLauf() {
             }
             return { figur, sechs: bild(auf) };
         }, ECHT ? 0 : S0_NAH_M);
-        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-figur.png", Buffer.from(pngs.figur.split(",")[1], "base64"));
-        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-6m.png", Buffer.from(pngs.sechs.split(",")[1], "base64"));
+        pngDatei(BILD.replace(/\.png$/, "") + "-figur.png", pngs.figur);
+        pngDatei(BILD.replace(/\.png$/, "") + "-6m.png", pngs.sechs);
     }
     await browser.close();
     server.close();
@@ -1484,7 +1484,7 @@ async function lichtLauf() {
             befunde.push(`S0 Bild (${k}): ${e.fehler}`);
             continue;
         }
-        if (BILD) fs.writeFileSync(BILD.replace(/\.png$/, "") + (k === "sauber" ? "" : "-" + k) + ".png", Buffer.from(e.png.split(",")[1], "base64"));
+        if (BILD) pngDatei(BILD.replace(/\.png$/, "") + (k === "sauber" ? "" : "-" + k) + ".png", e.png);
         delete e.png;
         const wer = {
             sauber: "      ",

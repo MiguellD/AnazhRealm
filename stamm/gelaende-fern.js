@@ -1362,9 +1362,13 @@ class AnazhRealm_gelaende_fern {
             });
     }
 
-    // DER NEUE RING AM ANKER: der Fern-Faden rechnet ihn ganz in Scheiben (Re-Anker, eine neue Edit-Liste) — laufende Bestellungen
-    // sind überholt, das volle Gesetz der Bau-Zone und die Feld-Fläche der Naht gehören zum Stand.
-    _fernRingNeuBestellen(fr) {
+    // DER NEUE RING: der Fern-Faden rechnet ihn ganz in Scheiben — laufende Bestellungen (Scheiben UND Edit-Aufträge) sind
+    // überholt. Der EINE Weg jedes Rufers: Re-Anker und neue Edit-Liste (das volle Gesetz der Bau-Zone und die Feld-Fläche der
+    // Naht gehören zum Stand und fallen mit) und die Schneegrenze (`_schneeTakt`, `standBleibt`: Anker und Edits stehen, nur
+    // die Farben des Gesetzes wandern). Bis heil-horizont setzte der Schnee-Takt die Bestellung selbst zurück und vergaß den
+    // Edit-Auftrag im Flug: seine Antwort fiel als überholt, `editFlug` blieb 1, der Horizont blieb für immer offen und die
+    // Welt stand nie mehr („Horizont offen 1“, CI 40594858957 · 40608571003; gate:fern-ring 15).
+    _fernRingNeuBestellen(fr, standBleibt) {
         fr.cursor = 0;
         fr.auftrag = 0;
         fr.flug = 0;
@@ -1372,6 +1376,7 @@ class AnazhRealm_gelaende_fern {
         fr.nachEdit.length = 0;
         fr.editFlug = 0;
         fr.gen = (fr.gen || 0) + 1;
+        if (standBleibt) return;
         fr.vollY.fill(NaN);
         fr.feldY.fill(NaN);
     }

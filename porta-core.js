@@ -118,6 +118,9 @@
     //    das Lab baut seine Regler-Reihen aus SLIDERS, der Vertrag liest PARAMS) ──
     var PARAMS = (function () {
         var GRP = { VOK: "VOKABULAR", DEP: "TIEFE / PASSAGE", FORM: "FORM", MAT: "MATERIAL / SCHWELLE" };
+        // DIE GESETZ-WERTE (Vertrag §3 B4 `uniform`, studios.K2): die Membran-Zeilen bewegen kein Bau-Byte (gate:regler-wirkt,
+        // spec/vertraege/ratsche.json reglerTot) — die Welt liest sie im Membran-Gesetz, das Labor als Uniform (membranUniforms).
+        var GESETZ_WERT = { wave: 1, tunnel: 1, fractal: 1, twist: 1, swirl: 1, reflect: 1, temp: 1, energy: 1 };
         var out = [];
         var grp = "";
         for (var i = 0; i < SLIDERS.length; i++) {
@@ -136,6 +139,7 @@
                 law: s[6] || undefined,
                 grp: grp,
             });
+            if (GESETZ_WERT[s[0]]) out[out.length - 1].uniform = true;
         }
         return out;
     })();

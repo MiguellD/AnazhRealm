@@ -17,7 +17,7 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const fs = require("fs");
@@ -195,7 +195,8 @@ const SCHUSS_FN = async (kam) => {
     try {
         zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch {}
-    return { ok: true, farben: set.size, nonzero, png: window.__png(u8, 640, 360), zahlen }; // der Readback ist TOP-DOWN (diag-blick-Messwert)
+    // WebGPU-Readback ist TOP-DOWN (diag-blick-Messwert)
+    return { ok: true, farben: set.size, nonzero, png: window.__png(u8, 640, 360), zahlen };
 };
 
 hauptLauf(async () => {
@@ -671,7 +672,7 @@ hauptLauf(async () => {
             return;
         }
         const file = path.join(OUT, `e-${TAG}-${klasse}-${art}.png`);
-        fs.writeFileSync(file, Buffer.from(s.png.split(",")[1], "base64"));
+        pngDatei(file, s.png);
         const substanz = s.farben >= 8 && s.nonzero > 50;
         if (!substanz) rot++;
         bericht.schuesse[`${klasse}-${art}`] = {

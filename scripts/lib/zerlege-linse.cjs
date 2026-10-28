@@ -939,10 +939,7 @@ function zerlegeMessen(k) {
             p1 = mi * T.fernFaktor;
         const kgv = (p0 * p1) / ggt(p0, p1);
         const n = Math.ceil(Math.max(1, k.n || 12) / kgv) * kgv;
-        const bundlesNeu = () =>
-            st.scene.traverse((o) => {
-                if (o.isBundleGroup) o.needsUpdate = true;
-            });
+        const bundlesNeu = window.__bundlesNeu;
         const zeichnet = (o) => o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
         // DIE KETTE UMBAUEN: der Ausgabe-Knoten (bzw. eine Kante seines Graphen) ändert sich, die Pipeline baut ihr
         // Fragment neu (`_update`); die TRAA-Haken des alten Kontexts reisen mit (ein Bau aus dem Cache ruft `setup` nie).

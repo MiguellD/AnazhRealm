@@ -40,10 +40,6 @@ const server = statikServer({
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // DAS URTEIL E (rein): je Soll sein Täter; leer = grün.
-const zahl = (z) =>
-    +String(z && z.text)
-        .split(" / ")[0]
-        .replace(/\D/g, "");
 const NEUN_SOLL = [
     ["3/3 Baupläne (_kindPolicyVereinen → _foundryAutoRegisterSpecies)", (m) => m.bauplaene === 3 && m.regler === 7],
     ["das Wort (_studioBlueprintForWord)", (m) => m.wort === "stele_meilenstein"],
@@ -55,7 +51,7 @@ const NEUN_SOLL = [
     ["die Werkstatt setzt ihn vor den Spieler", (m) => m.steht === true],
     [
         "L0 · L1 · L2 mit den gezählten Dreiecken",
-        (m) => m.lod.length === 3 && m.lod.every((x, s) => x.ist === s && x.tris === zahl(m.kosten[s])),
+        (m) => m.lod.length === 3 && m.lod.every((x, s) => x.ist === s && x.tris === +(m.kosten[s] || {}).leiste),
     ],
     ["er steht nach Speichern + Neuladen", (m) => m.geladen === true],
     ["der Wirt nennt die Art nie", (m) => m.nennt === 0],
@@ -94,7 +90,7 @@ function seitenHelfer() {
 hauptLauf(async () => {
     if (process.argv.includes("--selftest")) {
         const lod = [160, 32, 14].map((tris, ist) => ({ ist, tris, bau: "b" + ist }));
-        const kosten = lod.map((x) => ({ klasse: "pass", text: x.tris + " / 200" }));
+        const kosten = lod.map((x) => ({ klasse: "pass", leiste: x.tris }));
         const gut = {
             bauplaene: 3,
             regler: 7,
@@ -187,8 +183,8 @@ hauptLauf(async () => {
         await klick('#workshop-list .workshop-list-row[data-blueprint="stele_meilenstein"]');
         const leiste = () => {
             const z = [...document.querySelectorAll("#workshop-recipe-panel .h-kosten-zeile")];
-            const t = z.map((x) => ({ klasse: x.className.split(" ").pop(), text: x.textContent.slice(2) }));
-            return t.length && !t.some((x) => x.text.includes("…")) && t;
+            const t = z.map((x) => ({ klasse: x.className.split(" ").pop(), ...x.dataset }));
+            return t.length && t.every((x) => x.leiste) && t;
         };
         e.kosten = await (await page.waitForFunction(leiste, { timeout: 60000 })).jsonValue();
         await klick("#workshop-action-zone .workshop-fertigen");
