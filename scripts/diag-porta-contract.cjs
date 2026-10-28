@@ -22,16 +22,11 @@
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
+const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const root = path.resolve(__dirname, "..");
-
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "porta-core.js");
-require(KERN);
-const PC = globalThis.__portaCore;
-
-const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { errs, check, wandEnde } = pruefer();
+const PC = studioKern("porta-core.js", "__portaCore");
 
 // ── Die eingefrorenen Fälle: Ordnungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const ORDNUNGEN = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor"];
@@ -54,7 +49,6 @@ for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 2 });
 function buildCase(c) {
     return PC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
 }
-
 
 (async function main() {
     console.log("=== ASSET-VERTRAG v4 — Tore (porta-core.js buildInstance) ===");
@@ -91,21 +85,7 @@ function buildCase(c) {
     // 5b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit einer Transzendenten — das Byte-Raster am Ausgang
     //     (porta-core ausRaster) hält die Ratsche auf 0 (je Lauf ein frisch geladener Kern). Die Fälle ohne
     //     Seed-Dopplung (seed-invariant, s. Kopf).
-    await probeWand(
-        "v4",
-        {
-            laden: frischerKern(KERN, "__portaCore"),
-            bauen: (K) => {
-                const r = {};
-                for (const c of CASES)
-                    if (c.seed === 7)
-                        r[caseKey(c)] = fingerprint(K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov)).sha256;
-                return r;
-            },
-        },
-        check
-    );
-    globalThis.__portaCore = PC;
+    await kernProbe("v4", "porta-core.js", "__portaCore", CASES.filter((c) => c.seed === 7), check);
 
     // 5c) DIE TOR-HÜLLE: die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
     //     stoßen lässt, IST die gebaute Gestalt — je Rezept und Zahl deckt die Tafel das Gemessene und liegt höchstens 1 cm

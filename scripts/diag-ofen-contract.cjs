@@ -28,7 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const vm = require("vm");
@@ -47,21 +47,11 @@ const QUELLEN = [
 ];
 const SAME = 1;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check } = pruefer();
 
 // Die Welt des Ofens: three r128 und die Kerne im node-vm wie im Foundry-Worker; das Math des Gates (die
 // Plattform-Probe erreicht so den Guss).
-const QUELLTEXT = {};
-for (const f of QUELLEN) QUELLTEXT[f] = fs.readFileSync(path.join(ROOT, f), "utf8");
-function ladeOfen() {
-    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
-    sb.self = sb;
-    sb.globalThis = sb;
-    sb.window = sb;
-    vm.createContext(sb);
-    for (const f of QUELLEN) vm.runInContext(QUELLTEXT[f], sb, { filename: f });
-    return sb;
-}
+const ladeOfen = () => fadenScope(QUELLEN);
 
 // Die Fälle aus den Gesetzbüchern selbst: jede Art × jede deklarierte Stufe.
 function faelle(sb) {

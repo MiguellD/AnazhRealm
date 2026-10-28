@@ -21,7 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -80,9 +80,7 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws(undefined, manifestSrc)) check(name, ok, detail);
 
     // Die Kern-Wahrheit fuer die Dial-Drift-Wand (Buch == Kern): PRESETS in Node ableiten.
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-    require(path.join(root, "fachwerk-core.js"));
-    const FCn = globalThis.__fachwerkCore;
+    const FCn = studioKern("fachwerk-core.js", "__fachwerkCore");
     const kernAlemannischW = FCn.PRESETS.alemannisch.s.W;
     const kernParamsRows = FCn.PARAMS_BY_KIND.haus.length;
 

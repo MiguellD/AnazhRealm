@@ -61,11 +61,7 @@ const tanne = () =>
         coniferDroop: 0.22,
     });
 
-let fails = 0;
-const ok = (name, cond, detail) => {
-    console.log((cond ? "  ✅ " : "  ⛔ ") + name + (detail ? " — " + detail : ""));
-    if (!cond) fails++;
-};
+const { errs, check: ok, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 // Feine Signatur: Segment-/Blatt-Zahl + trunkR + Prüfsummen über alle Segment-Endpunkte und Blätter (zwei Bäume mit
 // gleicher Zahl aber verschiedener Form ⇒ verschiedene Summe).
 const sig = (res) => {
@@ -370,9 +366,4 @@ ok(
     hFaelle.length + " Fälle, " + hRot.length + " gebrochen" + (hRot.length ? " — " + hRot[0].fall + ": " + (hRot[0].fehler || "0 Segmente") : "")
 );
 
-console.log(
-    fails === 0
-        ? "\n✅ PHYTO-KERN GRÜN — der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0)."
-        : "\n⛔ PHYTO-KERN ROT — " + fails + " Verletzung(en)."
-);
-process.exit(fails === 0 ? 0 : 1);
+wandEnde(errs, "PHYTO-KERN: der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0).");
