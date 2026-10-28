@@ -12,7 +12,10 @@ name: Code-Check
 # Deckel, kein Schritt ohne Zeit, ein voller Lauf nie mehr Jobs zugleich als das Konto Läufer-Plätze hat.
 on:
     push:
-        branches: ["**"]
+        # ohne claude/**: jede Cloud-Sitzung pusht ihren Arbeitszweig claude/<name> mit DEMSELBEN SHA wie den benannten Karten-
+        # Zweig — die Gruppe unten ist je Ref, also lief jede volle Batterie doppelt (28.10.: 3 von 20 Läufen in der Schlange,
+        # der Zug-Kandidat wartete > 1 h). Der Einlass (fahre.sh) liest den Lauf am SHA, der benannte Zweig trägt ihn.
+        branches: ["**", "!claude/**"]
     pull_request:
         branches: [main]
     schedule:
