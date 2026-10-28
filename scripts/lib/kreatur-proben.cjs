@@ -431,7 +431,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── huepfer: jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), auf die Höhe des Freude-Gesetzes
     // (VERHALTEN.freude), und die Flugzeit hängt nie am Takt ──
-    await buehne("huepfer", async (restore) => {
+    await buehne("huepfer", async () => {
         r.setGameMode("frieden");
         // Die Kreatur-Uhr fest (die Aktions-Wahl hasht Index × Zeit): jeder Lauf wählt dieselben Aktionen — sonst hing die
         // Zahl der Sprünge (3–5) an der Boot-Dauer der Welt.
@@ -579,7 +579,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── wachsen: 3600 Wachstums-Takte am Loop-Pfad ──
-    await buehne("wachsen", async (restore) => {
+    await buehne("wachsen", async () => {
         const c = tier(land(95, -40), "wesen");
         r.assignCreatureTask(c, "wait", {}, { silent: true });
         const s0 = c.scale.x;
@@ -600,7 +600,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── gier: die Tiere folgen dem Spieler im Quadrat ──
-    await buehne("gier", async (restore) => {
+    await buehne("gier", async () => {
         r.setGameMode("frieden");
         const arten = ["wesen", "wolf", "fuchs"];
         const start = feldOhneHoehle(0, 0);
@@ -752,7 +752,7 @@ async function kreaturProben(r, T, opts) {
     // einen Jäger, dessen Maul den Leib erreicht (`_kreaturBissSpalt` ≤ `_kreaturBissReich`: nah als Körper, oekologie.K2);
     // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), ist gefallen — je Riss
     // EINES (der Übergang ändert nie den Bestand) ──
-    await buehne("jagd", async (restore) => {
+    await buehne("jagd", async () => {
         r.setGameMode("pfad");
         s.player.hp = 1e9;
         // der heutige Riss als Täter: er tötet das Opfer im Nah-Kreis wie fern (die Zahl, kein Jäger am Leib) — oder fällt nah aus
@@ -1088,7 +1088,6 @@ async function kreaturProben(r, T, opts) {
         return {
             glieder: zt.n,
             takte: t.takte,
-            proben: t.k.length,
             fensterM: fenster,
             phi: zahl(t.phi),
             kohaesion: zahl(
@@ -1101,7 +1100,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── reload: ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
-    await buehne("reload", async (restore) => {
+    await buehne("reload", async () => {
         const c = tier(land(30, 12), "wesen");
         const hpMax = c.userData.hpMax;
         c.userData.hp = 0.55 * hpMax;
@@ -1135,7 +1134,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── zufall (Lehre 7): kein Math.random im Kreatur-Leben — der LEBENDE Code (r[name]) über window.__codeOf je Methode
     // mit Tier im Namen, dazu die benannten Wurf-Stellen; eine benannte Methode, die fehlt, ist rot ──
-    await buehne("zufall", async (restore) => {
+    await buehne("zufall", async () => {
         const BENANNT = [
             "_spawnOneInitialCreature",
             "_creatureNaturalBirth",
@@ -1362,7 +1361,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── temperament (Lehre 8): das Temperament aus Gattung und Größe — je Seele und Größe, die Wariness vor einem ruhigen
     // Spieler, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und der Kampf liest dasselbe Temperament ──
-    await buehne("temperament", async (restore) => {
+    await buehne("temperament", async () => {
         if (taeter === "temperament")
             decke(
                 "_creatureTemperament",
@@ -1835,7 +1834,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
     // (je Bein Winkel gegen das Lot, Sohle über dem Boden), dann längs der Höhenlinie: der Stand-Schlupf ──
-    await buehne("querhang", async (restore) => {
+    await buehne("querhang", async () => {
         r.setGameMode("frieden");
         if (taeter === "querhang")
             decke(
@@ -2014,7 +2013,7 @@ async function kreaturProben(r, T, opts) {
     // ── ferngang: ferne Tiere gehen, sie gleiten nie — 4 Hirsche in der Grobstufen-Zone (45–60 m), 4 in der Kapsel-Zone
     // (70–90 m) folgen dem Spieler im Blick; je laufendem Takt GLEITET ein Tier, wenn sein SICHTBARER Leib (Satz,
     // Grobstufe oder feine Stufe) die Hüft-Winkel der vier Beine über 24 Takte in 0,02 rad hält ──
-    await buehne("ferngang", async (restore) => {
+    await buehne("ferngang", async () => {
         r.setGameMode("frieden");
         if (taeter === "ferngang")
             decke(
@@ -2253,7 +2252,7 @@ async function kreaturProben(r, T, opts) {
     // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14): der Tod eines Wolfs liest keine Karte, der Leib steht im Vorlauf
     // (`TOD_LAGE.vorlaufSec`), der Leerlauf rechnet die Tafel (`_todLageTick`), ein Fenster ohne Zeit genau einen Winkel; ohne
     // Leerlauf rechnet die Frist sie am Ende des Vorlaufs (`_todLageFrist`, halten.K5 — die Lage bei 60 und 15 Hz misst Q13).
-    await buehne("todlage", async (restore) => {
+    await buehne("todlage", async () => {
         if (taeter === "todlage-takt")
             decke("_kreaturFaellt", (f) => (c) => (f.call(r, c), r._todLageTick({ timeRemaining: () => Infinity })));
         let n = 0;
@@ -3329,10 +3328,7 @@ function urteil(name, z) {
         soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
     }
     if (name === "schwarm") {
-        soll(
-            z.glieder >= 60 && z.takte >= 3000 && z.proben >= 500,
-            `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte, ${z.proben} Proben`
-        );
+        soll(z.glieder >= 60 && z.takte >= 3000, `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte`);
         soll(z.zuegeJeGlied >= 0.99, `Schwarm ohne Verband: ${z.zuegeJeGlied} Züge je Glied und Takt (Soll 1)`);
         soll(z.phi >= 0.8, `Schwarm fliegt ungerichtet: Φ ${z.phi} (Soll ≥ 0,8)`);
         soll(

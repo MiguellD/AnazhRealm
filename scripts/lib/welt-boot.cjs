@@ -1134,44 +1134,34 @@ function booteWelt(page, name = "der Boot der Welt") {
 // Variablen portEnv, signalEnv), im Browser des Aufrufers (sein Rezept) die Seiten A und B (1024×640); beide laden das Spiel, bis init
 // durchlief (`_gameLoopTick`: init wartet auf den IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft —
 // ein Raum-Beitritt davor fiele in init hinein), `vor(seite, i)` läuft vor dem Beitritt (die Namen der Ko-Präsenz), dann
-// treten beide demselben Raum bei (der roomOverride zwingt Seiten verschiedener worldId zusammen), bis beide `meshActive`
+// tritt jede demselben Raum bei (der roomOverride zwingt Seiten verschiedener worldId zusammen), bis beide `meshActive`
 // melden (alle Peer-Kanäle offen). Liefert {seiten, peerIds, ende}; `ende` schließt Browser und Server.
 async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {}) {
     const [port, signal] = await eigenePorte(portEnv, signalEnv);
     const env = { PORT: String(port), ANAZH_SIGNALING_PORT: String(signal) };
-    console.log("Starte save-server + signaling-server ...");
     const server = [
         await startProc("save-server.js", /läuft/, env),
         await startProc("signaling-server.js", /lauscht/, env),
     ];
     const ende = async () => (await browser.close().catch(() => {}), server.forEach((p) => p.kill()));
     try {
-        const seiten = [await browser.newPage(), await browser.newPage()];
-        console.log("Lade beide Spielseiten ...");
+        const [seiten, peerIds] = [[await browser.newPage(), await browser.newPage()], []];
         for (const p of seiten) {
             await p.setViewport({ width: 1024, height: 640 });
             await p.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
         }
-        const peerIds = [];
         for (const [i, p] of seiten.entries()) {
             const r = () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function";
             await waitFor(p, r, `Seite ${"AB"[i]} initialisiert`);
             await vor(p, i);
+            const beitritt = (url, roomOverride) => {
+                const r = window.anazhRealm;
+                Object.assign(r.state.p2p, { url, roomOverride });
+                r.initP2PSync(null);
+                return r.state.p2p.peerId;
+            };
+            peerIds.push(await p.evaluate(beitritt, `ws://127.0.0.1:${signal}`, raum));
         }
-        for (const p of seiten)
-            peerIds.push(
-                await p.evaluate(
-                    (url, roomOverride) => {
-                        const r = window.anazhRealm;
-                        Object.assign(r.state.p2p, { url, roomOverride });
-                        r.initP2PSync(null);
-                        return r.state.p2p.peerId;
-                    },
-                    `ws://127.0.0.1:${signal}`,
-                    raum
-                )
-            );
-        console.log(`Seite A peerId=${peerIds[0]}, Seite B peerId=${peerIds[1]}`);
         for (const [i, p] of seiten.entries())
             await waitFor(p, () => window.anazhRealm.state.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
         return { seiten, peerIds, ende };
