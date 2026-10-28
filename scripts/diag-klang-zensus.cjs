@@ -72,28 +72,25 @@ function quellenAbgriff() {
     if (window.__klangQuellen) return;
     const Q = (window.__klangQuellen = []);
     const D = (window.__klangAusgang = []);
-    const proto = window.BaseAudioContext && BaseAudioContext.prototype;
+    const proto = window.BaseAudioContext?.prototype;
     if (!proto) return;
     const conn = AudioNode.prototype.connect;
+    const stapel = (n) => (new Error().stack || "").split("\n").slice(3, n); // ohne Error, sich und den Abgriff
     AudioNode.prototype.connect = function (ziel) {
-        (this.__an || (this.__an = [])).push(ziel); // die Kette der Stimme (gesehenSeite folgt ihr bis zum Gain)
-        if (ziel && this.context && ziel === this.context.destination)
-            D.push({ ctx: this.context, stapel: (new Error().stack || "").split("\n").slice(2, 6) });
+        (this.__an ||= []).push(ziel); // die Kette der Stimme (gesehenSeite folgt ihr bis zum Gain)
+        if (ziel && ziel === this.context?.destination)
+            D.push({ ctx: this.context, stapel: stapel(7) });
         return conn.apply(this, arguments);
     };
     for (const art of ["createOscillator", "createBufferSource", "createConstantSource"]) {
         const org = proto[art];
         proto[art] = function () {
             const n = org.apply(this, arguments);
-            const stapel = (new Error().stack || "").split("\n").slice(2, 7);
             const e = {
                 art,
-                stapel,
+                stapel: stapel(8),
                 start: null,
                 stop: null,
-                ende: false,
-                loop: false,
-                freq: null,
                 ctx: this,
                 knoten: n,
             };
@@ -158,9 +155,9 @@ function werkzeug() {
     W.bestand = (x, z, m) => {
         let n = 0;
         for (const e of st.architectures || [])
-            if (e && e._lodSpecies && e.position && Math.hypot(e.position.x - x, e.position.z - z) < m) n++;
+            if (e?._lodSpecies && e.position && Math.hypot(e.position.x - x, e.position.z - z) < m) n++;
         for (const reg of st.scatterRegions ? st.scatterRegions.values() : [])
-            for (const c of reg.cells || []) if (c && c.promotable && Math.hypot(c.x - x, c.z - z) < m) n++;
+            for (const c of reg.cells || []) if (c?.promotable && Math.hypot(c.x - x, c.z - z) < m) n++;
         return n;
     };
     // DIE ORTE aus dem Gesetz.
@@ -169,14 +166,19 @@ function werkzeug() {
         const O = window.__klangCore.UMWELT.ohr;
         // Seeufer: der trockene Punkt vor dem nächsten SEE des Gesetzes (die Senken des Flussnetzes, ≥ 16 Zellen, über dem
         // Meer) in den Kacheln bis zum zweiten Ring, die Zelle nächst der Wiese.
-        let best = null;
+        let best;
         const kachel = r.constructor.HYDROSPHERE.regionSize;
-        let seeZelle = null;
+        let seeZelle, wfN;
         for (let rx = -2; rx <= 2; rx++)
             for (let rz = -2; rz <= 2; rz++) {
                 await window.__weltDa(() => !r._ensureHydroTilesAround(wx + rx * kachel, wz + rz * kachel, 0));
                 const h = r._hydroFor(wx + rx * kachel, wz + rz * kachel);
-                for (const lake of (h && h.lakes) || []) {
+                // der nächste Fall der Kacheln (die Armlänge am Wasserfall, unten)
+                for (const f of h?.waterfalls || []) {
+                    const d = Math.hypot(f.x - wx, f.z - wz);
+                    if (!wfN || d < wfN.d) wfN = { f, d };
+                }
+                for (const lake of h?.lakes || []) {
                     if (!lake.cells || lake.cells.length < 16 || !(lake.level > st.waterLevel + 2)) continue;
                     for (const q of lake.cells) {
                         const x = h.originX + ((q % h.dim) + 0.5) * h.cell;
@@ -211,7 +213,7 @@ function werkzeug() {
                 const qx = seeZelle.x + ux * s;
                 const qz = seeZelle.z + uz * s;
                 if (!W.nass(qx, qz)) {
-                    let wahl = null;
+                    let wahl;
                     for (let t = 0; t <= O.radien[0]; t += 0.5) {
                         const fx = qx + ux * t;
                         const fz = qz + uz * t;
@@ -225,10 +227,10 @@ function werkzeug() {
             }
         }
         if (best) orte.seeufer = best;
-        W.wasserPunkt = best ? best.wasser : null; // die Ereignis-Tour lässt das Wasser hier zurückströmen
+        W.wasserPunkt = best?.wasser; // die Ereignis-Tour lässt das Wasser hier zurückströmen
         // Waldinneres: höchste Kronen-Deckung der Kronen-Karte auf trockenem Land (die Karte trägt die stehenden Kronen;
         // bei Gleichstand gewinnt der dichtere Bestand).
-        let wald = null;
+        let wald;
         for (let gx = -240; gx <= 240; gx += 12) {
             for (let gz = -240; gz <= 240; gz += 12) {
                 const x = wx + gx;
@@ -246,7 +248,7 @@ function werkzeug() {
         // Dorf: der nächste Glut-Bau (aus der gestreamten Welt um die Wiese), 4 m davor. Die Bauten streamen nach den
         // Chunks (Pflanz-/Bau-Takt): der Loop läuft weiter, bis einer im Umkreis von 160 m steht (der Deckel zählt Takte).
         const sucheGlut = () => {
-            let g = null;
+            let g;
             for (const e of st.architectures || []) {
                 if (!e || !e.position || !(r._glutFlaeche(e) > 0)) continue;
                 const d = Math.hypot(e.position.x - wx, e.position.z - wz);
@@ -255,7 +257,7 @@ function werkzeug() {
             return g;
         };
         let glut = sucheGlut();
-        for (const weiter = window.__deckel("eine Glut in Hörweite", 3000); !(glut && glut.d < 160) && weiter();) {
+        for (const weiter = window.__deckel("eine Glut in Hörweite", 3000); !(glut?.d < 160) && weiter();) {
             W.takt();
             st.playerMesh.position.x = wx;
             st.playerMesh.position.z = wz;
@@ -278,13 +280,13 @@ function werkzeug() {
         // Ring zwischen seinen Radien 22 und 40 m überhörte).
         for (
             const weiter = window.__deckel("der Dorf-Plan", 1000);
-            r._autoSettlementQueue && r._autoSettlementQueue.plan && weiter();
+            r._autoSettlementQueue?.plan && weiter();
         ) {
             W.takt();
             await sleep(30);
         }
         const hoerweite = window.__klangCore.UMWELT.stimmen.glut.hoerweiteM;
-        const gluten = (st.architectures || []).filter((e) => e && e.position && r._glutFlaeche(e) > 0);
+        const gluten = (st.architectures || []).filter((e) => e?.position && r._glutFlaeche(e) > 0);
         // offen wie der Messort: keine dichtere Krone, kein größerer Bestand im 15-m-Kreis (der Waldrand dämpft den Wind)
         const deckMess = r._kronenStreuAt(wx, wz);
         const bestandMess = W.bestand(wx, wz, 15);
@@ -311,7 +313,7 @@ function werkzeug() {
             return hi - lo <= 1.5;
         };
         if (!wieseHaelt(wx, wz)) {
-            let neu = null;
+            let neu;
             for (let rr = 6; rr <= 240 && !neu; rr += 6) {
                 const n = Math.round((2 * Math.PI * rr) / 6);
                 for (let q = 0; q < n && !neu; q++) {
@@ -326,15 +328,6 @@ function werkzeug() {
         // ARMLÄNGE am Wasserfall: der nächste Fall der Kacheln bis zum zweiten Ring (wie der Playtest,
         // `__wasserOrt("fall")`), der nächste trockene Punkt 3–24 m neben seinem Fuß — das Becken eines Falls reicht bis
         // zur Krone seines Kanals, das SOLL misst die Ferne mit (SOLL.fallArm).
-        let wfN = null;
-        for (let rx = -2; rx <= 2; rx++)
-            for (let rz = -2; rz <= 2; rz++) {
-                const h = r._hydroFor(wx + rx * kachel, wz + rz * kachel);
-                for (const f of (h && h.waterfalls) || []) {
-                    const d = Math.hypot(f.x - wx, f.z - wz);
-                    if (!wfN || d < wfN.d) wfN = { f, d };
-                }
-            }
         for (const rad of wfN ? [3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24] : []) {
             for (let a = 0; a < 16 && !orte.fallArm; a++) {
                 const ang = (a / 16) * Math.PI * 2;
@@ -380,7 +373,7 @@ function werkzeug() {
             try {
                 fn();
             } catch (e) {
-                out.push({ art, fehler: String((e && e.message) || e) });
+                out.push({ art, fehler: String(e?.message || e) });
                 return;
             }
             const neu = () => window.__klangQuellen.slice(a).filter((e) => e.ctx === s.ctx);
@@ -430,7 +423,7 @@ function werkzeug() {
         });
         // Ein echtes Tier, 3 m neben dem Ohr: es antwortet auf den Auftrag „folge mir" und steigt eine Stufe auf (danach
         // stehen Ort und Auftrag wie vorher). Antwortet der Weg mit einer Tier-Stimme, kommt sie aus der Werkstatt.
-        const tier = (st.creatures || []).find((c) => c && c.position && c.userData && !c.userData.dying);
+        const tier = (st.creatures || []).find((c) => c?.position && c.userData && !c.userData.dying);
         if (!tier) {
             out.push({ art: "auftrag", fehler: "kein Tier in der Welt" });
             out.push({ art: "stufe", fehler: "kein Tier in der Welt" });
@@ -459,9 +452,9 @@ function werkzeug() {
     // Die laufenden Quellen jetzt (gestartet, nicht beendet, Stop noch nicht erreicht).
     W.laufend = () => {
         const s = st.symphony;
-        const jetzt = s.ctx ? s.ctx.currentTime : 0;
+        const jetzt = s.ctx?.currentTime || 0;
         const um = s.umwelt;
-        const knoten = um && um.graph && um.graph.knoten;
+        const knoten = um?.graph && um.graph.knoten;
         return window.__klangQuellen
             .filter((e) => e.ctx === s.ctx && e.start !== null && !e.ende && (e.stop === null || e.stop > jetzt))
             .map((e) => {
@@ -473,7 +466,7 @@ function werkzeug() {
                     dauernd: e.stop === null && (e.loop || e.art !== "createBufferSource"),
                     freq: e.freq,
                     frames,
-                    gesetzKnoten: !!(knoten && knoten.has(e.knoten)),
+                    gesetzKnoten: !!knoten?.has(e.knoten),
                 };
             });
     };
@@ -532,7 +525,7 @@ const SOLL = {
     ],
     wald: (m, alle) => [
         ["laub ≥ −44", m.laub.db >= -44],
-        ["laub ≥ Wiese.laub + 8", alle.wiese ? m.laub.db >= alle.wiese.laub.db + 8 : false],
+        ["laub ≥ Wiese.laub + 8", alle.wiese && m.laub.db >= alle.wiese.laub.db + 8],
     ],
     dorf: (m) => [["glut ≥ −34", m.glut.db >= -34]],
     // ARMLÄNGE: die nahe Quelle trägt den Ort (und die Spitzen-Probe P hält sie unter 0 dBFS).
@@ -544,7 +537,7 @@ const SOLL = {
     // −14 − 20·lg(12/5) = −21,6 dB. Liegt der Punkt weiter (das Becken reicht bis zur Krone, `ort.fall.d`), fällt das
     // Soll mit der Ferne wie das Gesetz: −14 − 20·lg(d/5) − 0,4 (das Labor misst in 12 m).
     fallArm: (m, _alle, ort) => {
-        const d = ort && ort.fall && ort.fall.d > 12 ? ort.fall.d : 12;
+        const d = ort?.fall && ort.fall.d > 12 ? ort.fall.d : 12;
         const grenze = Math.round((-14 - 20 * Math.log10(d / 5) - 0.4) * 10) / 10;
         return [
             [`fall ≥ ${grenze} (in ${d} m)`, m.fall.db >= grenze],
@@ -578,11 +571,14 @@ async function messeOrt(page, name, ort, stubs) {
                 alt._koerperWasser = P._koerperWasser;
                 P._koerperWasser = () => -Infinity;
             }
-            if (stubs?.ohneLeib) {
-                // der Leib weg: das Revier-Gesetz trägt kein Revier, die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test)
-                // singt in der Lage am Ohr ohne einen Leib
+            if (stubs?.ohneLeib || stubs?.stehend) {
+                // der Leib weg: das Revier-Gesetz trägt kein Revier — oder er steht (Selbst-Test S12): die Bahn des Gesetzes
+                // auf der Uhr dieses Takts; die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test) singt in der Lage am Ohr
+                // ohne einen Leib
                 [alt.vogel, alt.lage] = [r.constructor._vogelGesetzMemo, P._umweltLage];
-                [r.constructor._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, revier: () => false }, null];
+                const T = st.spielZeit;
+                const mut = stubs.stehend ? { bahn: (w, a, _t, ...x) => alt.vogel.bahn(w, a, T, ...x) } : { revier: () => false };
+                [r.constructor._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, ...mut }, null];
                 if (stubs.phantom)
                     P._umweltLage = function () {
                         return Object.assign(alt.lage.call(this), { voegel: [{ d: 20 }] });
@@ -601,12 +597,23 @@ async function messeOrt(page, name, ort, stubs) {
                 // bestellt, geliefert und rampen ein.
                 const um = await W.umstellen(ort.x, ort.z);
                 const dl = performance.now() + 4500;
+                // (R) DER FLUG je Takt an den gezeichneten Leibern (die Lagen der Teile im Pool, wie das Bild sie setzt): ihr Weg
+                // je Sekunde (der Median der Takte gleicher Zahl) und ihre Höhe über dem Boden (der Median aller Lagen)
+                let [vor, t0, weg, hoch] = [[], 0, [], []];
                 while (performance.now() < dl) {
                     W.takt();
+                    const Q = st.vogelPool?.mesh || { count: 0 };
+                    const nun = Array.from({ length: Q.count }, (_, i) => Q.instanceMatrix.array.slice(16 * i + 12, 16 * i + 15));
+                    if (nun.length && nun.length === vor.length)
+                        weg.push(nun.reduce((s, p, i) => s + Math.hypot(...p.map((v, k) => v - vor[i][k])), 0) / nun.length / (performance.now() - t0) * 1e3);
+                    for (const p of nun) hoch.push(p[1] - r._voxelSurfaceY(p[0], p[2]));
+                    [vor, t0] = [nun, performance.now()];
                     await sleep(30);
                 }
+                const med = (a) => +(a.sort((x, y) => x - y)[a.length >> 1] || 0).toFixed(2);
                 const laufend = W.laufend();
                 const zensus = W.zensus();
+                if (zensus) zensus.leiber.flug = { mps: med(weg), hoeheM: med(hoch) };
                 const syn1 = W.synthese();
                 const bp = st.playerMesh.position;
                 const baeume = W.bestand(bp.x, bp.z, 15);
@@ -741,8 +748,7 @@ async function kosten(page, stubs) {
             for (const k of Object.keys(zaehl)) o[k] = +(zaehl[k] / n).toFixed(2);
             return o;
         };
-        let vor;
-        let nach;
+        let vor, nach;
         const hydro = st.hydrosphere;
         const altRivers = hydro && Array.isArray(hydro.rivers) ? hydro.rivers : null;
         try {
@@ -800,10 +806,10 @@ async function labPruefen(browser) {
                 const knopf = document.querySelector('[data-welt-ort="seeufer"]');
                 if (knopf) knopf.click();
                 await sleep(1500);
-                const z = window.__klangWelt && window.__klangWelt.zensus ? window.__klangWelt.zensus() : [];
+                const z = window.__klangWelt?.zensus?.() || [];
                 o.seeuferUfer = z.some((v) => v.name === "ufer" && v.an);
                 for (const [ort, lage] of Object.entries(K.UMWELT.orte)) {
-                    const m = K.umweltMischung(Object.assign({}, lage, { boe: 0.7 }));
+                    const m = K.umweltMischung({ ...lage, boe: 0.7 });
                     // −∞ als −999 über die Brücke (null > −64 wäre wahr — Lehre 17).
                     o.orte[ort] = Object.fromEntries(
                         Object.entries(m).map(([k, v]) => [k, { db: Number.isFinite(v.db) ? v.db : -999 }])
@@ -820,11 +826,15 @@ async function labPruefen(browser) {
 }
 
 // (R) RUF ← LEIB (klang.K1): jeder gehörte Vogel ist ein gezeichneter Leib, der Chor singt nur aus gezeichneten Leibern, und
-// ohne Leib (`…OhneLeib`) schweigt er. Ein Spiel, das keine Leiber meldet, hat keine.
+// ohne Leib (`…OhneLeib`) schweigt er. Ein Spiel, das keine Leiber meldet, hat keine. Jeder gezeichnete Leib fliegt
+// (luftwasser.K1): ≥ 1 m/s und ≥ 2 m über dem Boden.
 const leibUrteil = (name, z) => {
     const [L, singt] = [z.leiber || { gehoert: 0, gezeichnet: 0 }, z.stimmen.some((v) => v.name === "vogel" && v.an)];
-    return L.gehoert !== L.gezeichnet || (singt && (!L.gezeichnet || /OhneLeib$/.test(name)))
-        ? [`R ${name}: ${L.gehoert} gehört, ${L.gezeichnet} gezeichnet${singt ? ", singt" : ""} — ein Ruf ohne Körper`]
+    const F = L.flug || {};
+    return L.gehoert !== L.gezeichnet ||
+        (singt && (!L.gezeichnet || /OhneLeib$/.test(name))) ||
+        (L.gezeichnet && !(F.mps >= 1 && F.hoeheM >= 2))
+        ? [`R ${name}: ${L.gehoert} gehört, ${L.gezeichnet} gezeichnet${singt ? ", singt" : ""}, Flug ${F.mps} m/s ${F.hoeheM} m — ein Ruf ohne fliegenden Körper`]
         : [];
 };
 function urteile(daten, offline, lab, ereig, phasen, spitzen) {
@@ -866,13 +876,13 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
                 );
         }
         // (O) der Ort steht: die Stimmen des Walds hört nur, wer ihn gepflanzt findet (`W.waldSteht`)
-        if (d.um && d.um.wald === false)
+        if (d.um?.wald === false)
             rot.push(
                 `O ${name}: der Wald steht nach ${d.um.waldTakte} Takten nicht (Schlange, Pflanz-Gang oder Streu wartet)`
             );
         // (W) die Welt rechnet in der Werkstatt
         werkstatt(name, d.hauptSynthese);
-        if (d.zensus && !(d.zensus.werkstatt && d.zensus.werkstatt.laeuft))
+        if (d.zensus && !d.zensus.werkstatt?.laeuft)
             rot.push(`W ${name}: keine Klang-Werkstatt`);
         // (H) Hörbar-Kosten
         const z = d.zensus;
@@ -941,7 +951,7 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
     }
     // (P) keine Spitze erreicht 0 dBFS am Ausgang (die Spitzen-Wand hält sie unter UMWELT.spitze.deckeDb).
     for (const [wo, sp] of Object.entries(spitzen || {}))
-        if (sp && sp.spitzeDbfs >= 0)
+        if (sp?.spitzeDbfs >= 0)
             rot.push(
                 `P ${wo}: Spitze ${sp.spitzeDbfs} dBFS am Ausgang (${sp.wand ? "trotz" : "ohne"} Spitzen-Wand) — Clipping`
             );
@@ -954,7 +964,7 @@ function drucke(zeilen, kostenErg) {
             `── ${name} (${Math.round(d.ort.x)}/${Math.round(d.ort.z)}, ${d.baeume} Bäume ≤ 15 m): ${stimmen
                 .filter((v) => v.an)
                 .map((v) => `${v.name} ${v.db.toFixed(1)} dB`)
-                .join(" · ")} · ${d.laufend.length} Quellen (${dauernd} dauernd) · Synthese ${d.hauptSynthese}`
+                .join(" · ")} · ${d.laufend.length} Quellen (${dauernd} dauernd) · Synthese ${d.hauptSynthese} · Leiber ${JSON.stringify(d.zensus?.leiber)}`
         );
     console.log(
         `── KOSTEN je Klang-Takt vor ${JSON.stringify(kostenErg.vor)} → nach 4000 Bauten + 200 Fluss-Läufen ${JSON.stringify(kostenErg.nach)}`
@@ -1004,11 +1014,11 @@ function taktSeite(m, echt, namen) {
     // der äußere Aufruf zählt (ein innerer liegt in ihm)
     for (const fn of ["symphonyTick", "_schrittKlangTick", "_tierRuf"]) huelle(P, fn, (d) => tiefe || (b.ms += d), 1);
     for (const fn of namen) if (P[fn]) huelle(P, fn, (d) => (b.teile[fn] = (b.teile[fn] || 0) + d));
-    let vor = null;
+    let vor;
     const bild = () => {
-        const e = st.player && st.player.mountedArch != null ? window.__klangGT : null;
+        const e = st.player?.mountedArch != null ? window.__klangGT : null;
         const q = e ? e.position : st.playerMesh.position;
-        if (vor && vor.q === q) T.weg += Math.hypot(q.x - vor.x, q.z - vor.z);
+        if (vor?.q === q) T.weg += Math.hypot(q.x - vor.x, q.z - vor.z);
         vor = { q, x: q.x, z: q.z };
         if (T.phase) T.bilder.push(b);
         b = { ms: 0, teile: {} };
@@ -1042,11 +1052,11 @@ function taktSeite(m, echt, namen) {
     // der Aussetzer-Zähler am Ausgang (AudioContext.playbackStats), dazu ob es noch der Kontext des ersten Abrufs ist
     T.audio = () => {
         const c = st.symphony.ctx,
-            p = c && c.playbackStats;
-        T.ctx = T.ctx || c;
+            p = c?.playbackStats;
+        T.ctx ||= c;
         return p && { n: p.underrunEvents, still: p.underrunDuration, s: p.totalDuration, gleich: T.ctx === c };
     };
-    T.uhr = () => (st.symphony.ctx || { currentTime: NaN }).currentTime;
+    T.uhr = () => st.symphony.ctx?.currentTime ?? NaN;
     // sein Täter: eine Worklet-Stimme rechnet je Render-Quantum (2,7 ms) 8 ms
     T.stotterer = async () => {
         await st.symphony.ctx.audioWorklet.addModule("/__stotter.js");
@@ -1118,7 +1128,7 @@ async function takt(page, erg) {
     ph.nacht = await taktPhase(page, "nacht", 20, false, MINUTEN * 18);
     const b = await audio();
     const aus =
-        a && b && b.gleich
+        a && b?.gleich
             ? { n: b.n - a.n, still: +(b.still - a.still).toFixed(3), s: +(b.s - a.s).toFixed(1) }
             : null;
     erg.aussetzer = aus;
@@ -1254,7 +1264,7 @@ async function koerperSeite(m, mut) {
             };
             for (const h of [0.2, 1, 2, 4, 8, 12]) {
                 r.recomputePlayerStats({ voll: true });
-                const n0 = s._schrittKlang ? s._schrittKlang.landungen : 0;
+                const n0 = s._schrittKlang?.landungen || 0;
                 const d = await abgriff(
                     () => {
                         stell(m.x, m.z, r.getTerrainHeightAt(m.x, m.z) + A.PLAYER_FOOT_OFFSET + h);
@@ -1359,13 +1369,13 @@ async function gesehenSeite(m) {
     const rms = (name) => {
         const ctx = st.symphony.ctx;
         const S = window.__klangCore.UMWELT.stimmen[name];
-        const o = ohr[name] || (ohr[name] = { an: ctx.createAnalyser(), td: new Float32Array(2048) });
+        const o = (ohr[name] ||= { an: ctx.createAnalyser(), td: new Float32Array(2048) });
         const q = window.__klangQuellen.findLast(
-            ({ ctx: c, start, stop, knoten: { buffer: b } }) => c === ctx && start != null && stop == null && b && b.sampleRate === S.sr && Math.abs(b.duration - S.sek) < 0.05
+            ({ ctx: c, start, stop, knoten: { buffer: b } }) => c === ctx && start != null && stop == null && b?.sampleRate === S.sr && Math.abs(b.duration - S.sek) < 0.05
         );
-        let g = q && q.knoten;
+        let g = q?.knoten;
         for (let k = 0; k < 3 && g; k++) g = g.__an && g.__an[0];
-        if (g !== o.gain) g && g.connect(o.an), (o.gain = g);
+        if (g !== o.gain) g?.connect(o.an), (o.gain = g);
         if (!g) return 0;
         o.an.getFloatTimeDomainData(o.td);
         return Math.sqrt(o.td.reduce((x, v) => x + v * v, 0) / o.td.length);
@@ -1390,16 +1400,16 @@ async function gesehenSeite(m) {
     setInterval(() => {
         const R = r._rainSystem;
         if (st.symphony.ctx)
-            G.proben.push([Math.hypot(rms("fluss"), rms("ufer")), stroemung(st.camera), rms("regen"), R && R.mesh.visible ? R.mesh.material.opacity : 0]);
+            G.proben.push([Math.hypot(rms("fluss"), rms("ufer")), stroemung(st.camera), rms("regen"), R?.mesh.visible ? R.mesh.material.opacity : 0]);
     }, 100);
     // der Täter des Selbsttests: das Ohr hört Fluss, Ufer und Regen, wie sie beim Pflanzen klangen — das Bild geht weiter
     G.taeter = () => {
         const Pr = Object.getPrototypeOf(r);
         const alt = Pr._umweltLage;
-        let fest = null;
+        let fest;
         Pr._umweltLage = function () {
             const l = alt.apply(this, arguments);
-            return l && Object.assign(l, (fest = fest || { fluss: l.fluss, ufer: l.ufer, regen: l.regen }));
+            return l && Object.assign(l, (fest ||= { fluss: l.fluss, ufer: l.ufer, regen: l.regen }));
         };
         G.proben = [];
     };
@@ -1465,6 +1475,8 @@ async function gesehen(page, erg) {
     return rot.length === 0 && feuert ? 0 : 1;
 }
 
+// zurück an die Mess-Wiese
+const heim = (page) => page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
 // DER ZENSUS (O · Z · G · H · S · K · E · L · W · A · P) an den Orten aus dem Gesetz.
 async function zensus(page, browser, ergebnis) {
     await page.evaluate(AUSGABE_INSTALL);
@@ -1480,7 +1492,7 @@ async function zensus(page, browser, ergebnis) {
     const phasen = {};
     // Die Orte.
     let s0 = await syn();
-    await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
+    await heim(page);
     const orte = await page.evaluate((m) => window.__klangW.orte(m.x, m.z), MESS);
     phasen.anreise = (await syn()) - s0;
     const daten = {};
@@ -1494,14 +1506,14 @@ async function zensus(page, browser, ergebnis) {
         if (name === "wiese")
             daten.wieseOhneLeib = await messeOrt(page, "wieseOhneLeib", orte.wiese, { ohneLeib: true });
         const z = daten[name].zensus;
-        if (z && z.lage) {
-            const lageMitte = Object.assign({}, z.lage, { boe: 0.7 });
+        if (z?.lage) {
+            const lageMitte = { ...z.lage, boe: 0.7 };
             daten[name].mixMitte = await page.evaluate((l) => window.__klangW.mischung(l), lageMitte);
             offline[name] = await imOffline(page, lageMitte, null);
         }
     }
     s0 = await syn();
-    await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
+    await heim(page);
     const kostenErg = await kosten(page);
     phasen.kosten = (await syn()) - s0;
     const ereig = await page.evaluate(() => window.__klangW.ereignisse());
@@ -1509,8 +1521,8 @@ async function zensus(page, browser, ergebnis) {
     // (P) die Spitzen-Probe: jeder Welt-Ort (mittlere Böe) und jeder Lab-Ort des Gesetzes, mit der Spitzen-Wand.
     const spitzen = {};
     for (const [name, d] of Object.entries(daten))
-        if (d.zensus && d.zensus.lage)
-            spitzen[name] = await imOffline(page, Object.assign({}, d.zensus.lage, { boe: 0.7 }), true);
+        if (d.zensus?.lage)
+            spitzen[name] = await imOffline(page, { ...d.zensus.lage, boe: 0.7 }, true);
     const labOrte = await page.evaluate(() => Object.keys(window.__klangCore.UMWELT.orte));
     for (const o of labOrte) spitzen["lab:" + o] = await imOffline(page, o, true);
     const { rot, zeilen } = urteile(daten, offline, lab, ereig, phasen, spitzen);
@@ -1524,7 +1536,7 @@ async function zensus(page, browser, ergebnis) {
         `── EREIGNISSE ${ereig.map((e) => `${e.art} ${e.fehler ? "WIRFT" : e.quellen.length}`).join(" · ")} · SPITZEN ${Object.entries(
             spitzen
         )
-            .map(([wo, sp]) => `${wo} ${sp && sp.spitzeDbfs}`)
+            .map(([wo, sp]) => `${wo} ${sp?.spitzeDbfs}`)
             .join(" · ")} dBFS`
     );
     ergebnis.spitzen = spitzen;
@@ -1538,6 +1550,8 @@ async function zensus(page, browser, ergebnis) {
     if (SELBST) {
         console.log("\n── SELBST-TEST (die Linse feuert)");
         const fehl = [];
+        // die Prüfung je Täter: eine Zeile der Liste trägt sein Muster, sonst ist die Wand blind (der Satz beim Namen)
+        const muss = (liste, re, satz) => liste.some((t) => re.test(t)) || fehl.push(satz);
         // S1 + S2: der Drohn-Zwilling und die stumme Schleife.
         await page.evaluate(() => {
             const s = window.anazhRealm.state.symphony;
@@ -1563,28 +1577,27 @@ async function zensus(page, browser, ergebnis) {
             };
             window.__selbst = [window.zwillingDrohne(), window.stummeSchleife()];
         });
-        const dS = { wiese: await messeOrt(page, "wiese", orte.wiese) };
+        const dS = { wiese: await messeOrt(page, "wiese", orte.wiese, { stehend: true }) };
         await page.evaluate(() => window.__selbst.forEach((q) => q.stop()));
         const uS = urteile(dS, null, null).rot;
-        if (!uS.some((t) => /^G wiese: .*zwillingDrohne/.test(t))) fehl.push("S1: der Drohn-Zwilling bleibt unbenannt");
-        if (!uS.some((t) => /^H wiese: .*stummeSchleife/.test(t)))
-            fehl.push("S2: die stumme Schleife bleibt unbenannt");
+        muss(uS, /^G wiese: .*zwillingDrohne/, "S1: der Drohn-Zwilling bleibt unbenannt");
+        muss(uS, /^H wiese: .*stummeSchleife/, "S2: die stumme Schleife bleibt unbenannt");
+        muss(uS, /^R wiese: .*gezeichnet, singt, Flug 0 m/, "S12: der stehende Vogel bleibt unbemerkt");
         // S3: das Wasser am Seeufer weg.
         if (orte.seeufer) {
             const d3 = await messeOrt(page, "seeufer", orte.seeufer, { ohneWasser: true });
             const z3 = d3.zensus;
             const m3 =
-                z3 && z3.lage
-                    ? await page.evaluate((l) => window.__klangW.mischung(l), Object.assign({}, z3.lage, { boe: 0.7 }))
+                z3?.lage
+                    ? await page.evaluate((l) => window.__klangW.mischung(l), { ...z3.lage, boe: 0.7 })
                     : null;
             const ok3 = m3 ? SOLL.seeufer(m3, {}).every(([, ok]) => ok) : false;
             if (ok3) fehl.push("S3: das Seeufer ohne Wasser hält das SOLL (die Linse ist blind)");
         } else fehl.push("S3: kein Seeufer gefunden");
         // S4: ein Glut-Umlauf über alle Bauten.
-        await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
+        await heim(page);
         const k4 = await kosten(page, { alleBauten: true });
-        if (!k4.wachsen.some((t) => /^bauten/.test(t)))
-            fehl.push("S4: der Voll-Umlauf über alle Bauten bleibt unbemerkt");
+        muss(k4.wachsen, /^bauten/, "S4: der Voll-Umlauf über alle Bauten bleibt unbemerkt");
         // S5: ein Ereignis-Zwilling (Glocke aus dem Stamm, direkt an den Ausgang).
         // die Ereignis-Tour mit einem Zwilling statt des Glieds `glied` (sein Funktions-Name ist der Täter-Name)
         const mitZwilling = (glied, zwilling) =>
@@ -1625,27 +1638,22 @@ async function zensus(page, browser, ergebnis) {
             );
         const e5 = await mitZwilling("_playWaterReactionPing", "zwillingGlocke");
         const u5 = urteile({}, null, null, e5).rot;
-        if (!u5.some((t) => /^E wasser: .*zwillingGlocke.*kein Gesetz/.test(t)))
-            fehl.push("S5: der Ereignis-Zwilling bleibt unbenannt");
-        if (!u5.some((t) => /^E wasser: .*am Master vorbei/.test(t)))
-            fehl.push("S5: die Verbindung am Master vorbei bleibt unbemerkt");
+        muss(u5, /^E wasser: .*zwillingGlocke.*kein Gesetz/, "S5: der Ereignis-Zwilling bleibt unbenannt");
+        muss(u5, /^E wasser: .*am Master vorbei/, "S5: die Verbindung am Master vorbei bleibt unbemerkt");
         // S6: ein Ort, dessen Graph im Haupt-Thread rechnet (ohne Lieferung der Werkstatt).
         if (orte.seeufer) {
             const d6 = await messeOrt(page, "seeufer", orte.seeufer, { ohneWerkstatt: true });
             const u6 = urteile({ seeufer: d6 }, null, null).rot;
-            if (!u6.some((t) => /^W seeufer: \d+ Samples im Haupt-Thread/.test(t)))
-                fehl.push("S6: der Graph ohne Werkstatt bleibt unbemerkt");
+            muss(u6, /^W seeufer: \d+ Samples im Haupt-Thread/, "S6: der Graph ohne Werkstatt bleibt unbemerkt");
         }
         // S7: ein Ruf, der im Haupt-Thread rechnet (der Zwilling ruft das Gesetzbuch direkt im Spiel-Takt).
         const e7 = await mitZwilling("_tierRuf", "zwillingRuf");
         const u7 = urteile({}, null, null, e7).rot;
-        if (!u7.some((t) => /^W tier: \d+ Samples im Haupt-Thread/.test(t)))
-            fehl.push("S7: der Ruf im Haupt-Thread bleibt unbemerkt");
+        muss(u7, /^W tier: \d+ Samples im Haupt-Thread/, "S7: der Ruf im Haupt-Thread bleibt unbemerkt");
         // S8: die Glut auf Armlänge (Lab-Ort des Gesetzes) OHNE Spitzen-Wand clippt — und die Probe nennt es.
         const s8 = await imOffline(page, "glutArm", false);
         const u8 = urteile({}, null, null, [], {}, { "lab:glutArm": s8 }).rot;
-        if (!u8.some((t) => /^P lab:glutArm: Spitze .*ohne Spitzen-Wand/.test(t)))
-            fehl.push(`S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8 && s8.spitzeDbfs} dBFS)`);
+        muss(u8, /^P lab:glutArm: Spitze .*ohne Spitzen-Wand/, `S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8?.spitzeDbfs} dBFS)`);
         // S9: ein Ping-Zwilling im Stamm-Text — eine Methode, die einen Oszillator baut, ohne Wirt-Leser zu sein (keine
         // Tour löst sie aus; die statische Linse nennt sie trotzdem beim Namen).
         const s9 = stammQuellen((t) => {
@@ -1654,36 +1662,25 @@ async function zensus(page, browser, ergebnis) {
                 "\n    zwillingPing(\n        tags\n    ) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }";
             return t.slice(0, nach) + ping + t.slice(nach);
         });
-        if (
-            !s9.rot.some((t) => /^G Stamm: Zeile \d+ `\.createOscillator\(` baut eine Klang-Quelle ohne Gesetz/.test(t))
-        )
-            fehl.push("S9: der Ping-Zwilling im Stamm bleibt unbenannt");
+        muss(s9.rot, /^G Stamm: Zeile \d+ `\.createOscillator\(` baut eine Klang-Quelle ohne Gesetz/, "S9: der Ping-Zwilling im Stamm bleibt unbenannt");
         // S10: ein Wald-Ort, an dem die Karte Wald sagt, aber kein Baum steht — der Bestand nennt es.
         if (daten.wald && daten.wiese) {
-            const d10 = { wiese: daten.wiese, wald: Object.assign({}, daten.wald, { baeume: 0 }) };
-            if (!urteile(d10, null, null).rot.some((t) => /^S wald: der Bestand trägt keinen Wald/.test(t)))
-                fehl.push("S10: ein Wald ohne Bäume bleibt unbemerkt");
+            const d10 = { wiese: daten.wiese, wald: { ...daten.wald, baeume: 0 } };
+            muss(urteile(d10, null, null).rot, /^S wald: der Bestand trägt keinen Wald/, "S10: ein Wald ohne Bäume bleibt unbemerkt");
         } else fehl.push("S10: kein Wald-/Wiesen-Ort gemessen");
         // S11: ein Wasser-Hauch, der den Fußabdruck nicht liest (er klänge auch auf trockenem Land) — die Tour nennt es.
         const e11 = await mitZwilling("_playWaterReactionPing", "zwillingHauch");
-        if (
-            !urteile({}, null, null, e11).rot.some((t) =>
-                /^E wasserTrocken: \d+ Quelle\(n\), wo die Welt still ist/.test(t)
-            )
-        )
-            fehl.push("S11: der Wasser-Hauch auf trockenem Land bleibt unbemerkt");
+        muss(urteile({}, null, null, e11).rot, /^E wasserTrocken: \d+ Quelle\(n\), wo die Welt still ist/, "S11: der Wasser-Hauch auf trockenem Land bleibt unbemerkt");
         // S12: der Phantom-Vogel — gehört ohne Leib: beide Arme der Linse nennen ihn
         const d12 = await messeOrt(page, "wieseOhneLeib", orte.wiese, { ohneLeib: true, phantom: true });
-        if (!/1 gehört, 0 gezeichnet, singt/.test(leibUrteil(d12.name, d12.zensus)))
-            fehl.push("S12: der Phantom-Vogel bleibt unbemerkt");
+        muss(leibUrteil(d12.name, d12.zensus), /1 gehört, 0 gezeichnet, singt/, "S12: der Phantom-Vogel bleibt unbemerkt");
         // S13: die Täter des Körpers — ein stummer Motor, eine tonlose Landung, ein Doppler mit falschem Vorzeichen
         for (const [mut, re] of [
             ["motor", /^F motor stumm/],
             ["landung", /^F landung \S+ m tonlos/],
             ["doppler", /falsches Vorzeichen/],
         ])
-            if (!koerperUrteil(await page.evaluate(koerperSeite, MESS, mut)).rot.some((x) => re.test(x)))
-                fehl.push(`S13: ${mut} bleibt unbemerkt`);
+            muss(koerperUrteil(await page.evaluate(koerperSeite, MESS, mut)).rot, re, `S13: ${mut} bleibt unbemerkt`);
         for (const t of fehl) console.log("   ❌ " + t);
         if (!fehl.length) console.log("   ✅ S1–S13 nennen jeden Täter beim Namen");
         selbstOk = fehl.length === 0;
@@ -1725,7 +1722,7 @@ async function zensus(page, browser, ergebnis) {
         await warteAufWelt(page, 180000);
         exit = await (TAKT ? takt(page, ergebnis) : GESEHEN ? gesehen(page, ergebnis) : zensus(page, browser, ergebnis));
     } catch (e) {
-        console.log("FEHLER:", e && e.stack ? e.stack : e);
+        console.log("FEHLER:", e?.stack || e);
     } finally {
         if (JSON_AUS)
             fs.writeFileSync(
