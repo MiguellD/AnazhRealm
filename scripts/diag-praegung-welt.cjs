@@ -3,8 +3,9 @@
 // ungeprägten Pfads · (K) KI-Regler: jede Zeile von PARAMS_BY_KIND aus spawn_studio, am Vertrag geklemmt, fail-closed — das
 // Welt-Werk (ein Bau samt seinen Gesetzen, ein Wesen, eine Prägung an ihrem Leser) ≠ ohne ov und = das Studio-Werk; der
 // Korpus-Teil Regler-Wörter sagbar · (T) Teilen in EINER Geste an ein ANDERES Gerät (eigener Browser-Prozess, eigenes Profil,
-// über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen; jede Wand mit ihrer
-// Täter-Probe.
+// über signaling-server + WebRTC mit A verbunden) · (F) Korpus fremder Codes, jeder fällt beim Namen · (L) die Bibliothek: je Art
+// (Welt, Regel, Bauplan) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork mit Kette
+// (`--bibliothek` endet nach (L), ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis } = require("./lib/welt-boot.cjs");
 
