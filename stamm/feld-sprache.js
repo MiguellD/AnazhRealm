@@ -1153,8 +1153,8 @@ class AnazhRealm_feld_sprache {
     }
 
     // ═══ DIE TAT — die Wertung antwortet am Ort (affekt K1), die Welt sagt, was sie tat (affekt K4) ═══
-    // Jeder Welt-Akt (AnazhRealm.DSL_WELTAKTE) läuft durch die EINE Engstelle `dslEval`, gleich wer ihn schickt: Mensch, Nexus,
-    // KI, Gesetz, Emotion, Wesen. Dort wird er EINE Tat: ihr Ort ist der erste, den sie auflöst (`dslEvalPos` → `_tatOrt`, VOR
+    // Jeder Welt-Akt (AnazhRealm.DSL_WELTAKTE) und das Wetter laufen durch die EINE Engstelle `dslEval`, gleich wer sie schickt:
+    // Mensch, Nexus, KI, Gesetz, Emotion, Wesen. Dort wird jeder EINE Tat, wenn er wirkte (`_tatWerten` liest seinen Bericht): ihr Ort ist der erste, den sie auflöst (`dslEvalPos` → `_tatOrt`, VOR
     // ihrem Effekt), ihr ERTRAG die Änderung der SITUATION dort (`_playerSituationWohl`: lebendig + HP, nie die Emotion), ihr δ
     // der Vorhersagefehler gegen die ERWARTUNG des Orts an genau diese Tat — die Gleichung der WERTUNG (δ = x − baseline): die
     // Erwartung lernt je Tat mit `ruleValueBeta` (wie eine Regel ihren Wert) und vergisst in Spielzeit mit `tatTau`. Die zehnte
