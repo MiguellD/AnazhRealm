@@ -927,7 +927,8 @@ class AnazhRealm_feld_sprache {
 
     // DIE GESETZE DES GEMÜTS (affekt.K2): die Emotion formt die Welt über Welt-Regeln mit Quelle — je Achse EIN Gesetz
     // `emotion:<Achse>` (Bedingung `emotion_above <Achse>` an der Schwelle des Spielers, Takt = sein Cooldown) durch die EINE Tür
-    // `_registerWorldRule`: gewertet, gespeichert, geteilt und im Gesetze-Pult pausierbar wie jedes Gesetz; der Wunsch, den es
+    // `_registerWorldRule`, angepinnt (die Verdrängung schont sie): gewertet, gespeichert, geteilt und im Gesetze-Pult pausierbar
+    // wie jedes Gesetz; der Wunsch, den es
     // wirkt, trägt seine Quelle („rule:emotion:sorrow", `_setWeather`). Bis affekt.K2 feuerte `updatePlayerEmotions` sechs feste
     // Trigger an der Regel-Welt vorbei (`dslRun`): nicht teilbar, nicht gewertet, nicht abschaltbar. Idempotent (die Signatur
     // dedupt, ein zweiter Ruf setzt den Takt) — beim Erwachen der Welt, nach dem Laden und vom Cooldown-Schieber.
@@ -941,12 +942,14 @@ class AnazhRealm_feld_sprache {
             peace: ["creatures_speed_mul", 0.7],
             chaos: ["creatures_speed_mul", 1.5],
         };
-        for (const axis of AnazhRealm.EMOTION_AXES)
-            this._registerWorldRule(["emotion_above", axis], wirkung[axis], takt, {
+        for (const axis of AnazhRealm.EMOTION_AXES) {
+            const g = this._registerWorldRule(["emotion_above", axis], wirkung[axis], takt, {
                 source: `emotion:${axis}`,
                 log: [],
                 programId: "gemuet",
             });
+            if (g) g.pinned = true;
+        }
     }
 
     // === Der fusionierte READOUT ===

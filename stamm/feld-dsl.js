@@ -611,9 +611,9 @@ class AnazhRealm_feld_dsl {
         // wertlosen/schädlichen. value default 0 (neutral); Tie-Break = älter zuerst.
         let worst = Infinity;
         for (let i = 0; i < rules.length; i++) {
-            // Mensch-Gesetze, vom Schöpfer ANGEPINNTE (adoptierte) Regeln und Gesetze ohne Frist (die des Gemüts,
-            // `_gemuetGesetze`) sind geschützt — nur ephemere Experimente werden verdrängt.
-            if (rules[i].source === "human" || rules[i].pinned || rules[i].ttlSec == null) continue;
+            // Mensch-Gesetze + vom Schöpfer ANGEPINNTE (adoptierte) Regeln sind
+            // geschützt — nur ephemere Nexus-Experimente werden verdrängt.
+            if (rules[i].source === "human" || rules[i].pinned) continue;
             const v = rules[i].value || 0;
             if (v < worst || (v === worst && victim >= 0 && rules[i].born < rules[victim].born)) {
                 worst = v;
