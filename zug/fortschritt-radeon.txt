@@ -1315,3 +1315,4 @@
 2026-10-28 15:36:15 takt17-radeon ENDE 40 grün / 17 rot · 120.5 min
 2026-10-28 15:42:07 takt17n-radeon START 8 Stationen
 2026-10-28 15:48:17 takt17n-radeon siedlung.K5#1 GRÜN 6.2 · 1/8
+2026-10-28 15:55:45 takt17n-radeon leib.K1#1 GRÜN 7.5 · 2/8
