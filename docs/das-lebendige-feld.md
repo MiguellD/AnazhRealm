@@ -161,10 +161,10 @@ Die Konstante ist **`AnazhRealm.WERTUNG`**. Die Gleichung: `baseline += α·(x �
   = der **lokale strukturelle δ am Ort, den die Regel berührt**. Das ist die kausale
   Attribution, die der Passagier-Trugschluss nicht konnte — jetzt möglich, weil das Feld
   RÄUMLICH ist.
-- **`_worldRuleFitness` = 0.6·valueScore(δ) + 0.25·success + 0.15·cost** (NICHT mehr die
-  flache 0.4·Kosten + 0.6·Erfolg). `value` ist die EMA des lokal-attribuierten δ
-  (`ruleValueBeta` 0.3) — Heiler-Regeln descenden öfter (`_composeNexusRule`), Schädlinge
-  verfallen. **Die Welt LERNT, was den Spieler freut.**
+- **`_worldRuleFitness` = valueScore(δ) · success · cost** (seit affekt.K3; davor die Summe 0.6·valueScore + 0.25·success
+  + 0.15·cost, die jede feuernde Regel bis value −0,67 erneuerte). `value` ist die EMA des lokal-attribuierten δ
+  (`ruleValueBeta` 0.3); erneuert wird am Frist-Ende, wessen δ seine Kosten trägt — Heiler-Regeln überleben und descenden
+  öfter (`_composeNexusRule`), neutrale und Schädlinge verfallen. **Die Welt LERNT, was den Spieler freut.**
 - **Die Phase-4-Klammer + anti-gaming:** feuert eine Regel NAH am Spieler UND ist der
   Spieler-δ positiv → Bonus. Weil δ die SITUATION ist (lebendig + HP), nicht die
   gestempelte Emotion, kann eine Regel nicht „den Spieler glücklich-stempeln" — sie muss
