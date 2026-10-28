@@ -3256,7 +3256,7 @@ function K5_ABDRUCK() {
 // ── Q15 halten.K1 Staffel 2 — DER TREFFER AUS DEM GESETZ IM BILD (Seiten-Funktion, allein mit `--k1`, echter Renderer; der ewige
 // Loop läuft: Sweep und Pose im Takt des Spiels). Das Langschwert in der Hand (die Studio-Gestalt, Prägung Nihon: die Stahl-Zeile
 // ist die Eichung der Schneide — edgeBeta normiert an ihr, ihre Mutation ändert keine Fase, die Eisen-Zeile schon), ein Hirsch vor
-// dem Leib, je Bild an seinem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
+// dem Leib, beide je Bild an ihrem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
 // Leibes-Mitte (die Hand der Latenz-Linse, `haenger-linse` tierStellen), EIN Klick über den Dispatcher (`tryMouseBreak`); am
 // Treffer das Urteil des Kerns (KE · p · edgeQ · v · eff · Zone), der Schaden und die Kraft der Führung, dann hält der Hit-Stop
 // das Bild (die Linse schießt es) und die Schneide der gezeichneten Pose (`_kampfSchneide`). `lauf` mutiert den Kern
@@ -3302,7 +3302,14 @@ async function K1_BILD(lauf) {
     const platz = c.position
         .set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z)
         .clone();
-    const halte = () => (c.position.copy(platz), (c.userData._steuer = null), (c.userData.fearUntil = 0));
+    // beide Leiber halten je Bild ihren Platz: der Spieler rückte zwischen zwei Läufen 0,7 m ab (swiftshader: masse 2,07 m
+    // statt 1,35 m, der Hieb am Rand der Reichweite)
+    const halte = () => (
+        pm.position.copy(start),
+        c.position.copy(platz),
+        (c.userData._steuer = null),
+        (c.userData.fearUntil = 0)
+    );
     c.userData.hp = 1e9;
     p.stamina = p.staminaMax;
     const out = { lauf, traf: false };
