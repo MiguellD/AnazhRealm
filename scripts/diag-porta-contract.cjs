@@ -22,7 +22,7 @@
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsEnde } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenFile = path.join(root, "spec/asset-contract/v4/golden", "gates.json");
@@ -32,7 +32,7 @@ const KERN = path.join(root, "porta-core.js");
 require(KERN);
 const PC = globalThis.__portaCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Ordnungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const ORDNUNGEN = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor"];
@@ -154,5 +154,5 @@ function buildCase(c) {
     //    Selbst-Test auch auf einem roten Stand misst, was er misst).
     goldenSelbsttest(actual, check);
 
-    vertragsEnde(errs, "der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
+    wandEnde(errs, "der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

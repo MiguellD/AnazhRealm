@@ -3,7 +3,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -1014,11 +1014,7 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN.");
+        selbsttestEnde(errs);
         process.exit(0);
     }
 
@@ -1037,7 +1033,7 @@ hauptLauf(async () => {
             `J2 EPOCHE: ${J.fehl.length} Brüche, die Mutante ${Jm.fehl.length}`,
             !J.fehl.length && /turm \S+ 1455/.test(Jm.fehl) && /Kleidung null/.test(Jm.fehl)
         );
-        if (process.argv.includes("--nur-j")) process.exit(errs.length ? 1 : 0);
+        if (process.argv.includes("--nur-j")) wandEnde(errs, "DIE JAHRESRINGE STEHEN (Teil J).");
     }
 
     console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
@@ -3186,13 +3182,5 @@ hauptLauf(async () => {
         K3S.trasse.some((t) => t.p95 > gefSoll),
         K3S.trasse
     );
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    // exportSettlement deterministisch + eingefroren (Kern), der Export durch den EINEN Worker (Brücke generisch, M8), der Host hebt
-    // die Slots positions-deterministisch, wasser-bewacht und fail-closed (deliberater Akt) — und der Worldgen-Konsument lebt
-    // (Auto-Dörfer: Γ5-Zellen, Site-Wände, budgetierte Materialisierung durch die EINE Slot-Quelle, Reload-idempotent, headless-ruhig)
-    console.log("\n✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT.");
-    process.exit(0);
+    wandEnde(errs, "DER SETTLEMENT-KANAL N5.7 STEHT.");
 });

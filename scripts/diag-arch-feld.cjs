@@ -94,7 +94,7 @@ hauptLauf(async () => {
                 } catch (e) {
                     taktFehlerN++;
                     if (!taktFehler1)
-                        taktFehler1 = String((e && e.stack) || e)
+                        taktFehler1 = String(e?.stack || e)
                             .split("\n")
                             .slice(0, 4)
                             .join(" | ");
@@ -157,7 +157,7 @@ hauptLauf(async () => {
                 if (!at || gesehen.has(k)) continue;
                 gesehen.add(k);
                 const zF = at.zellen.get(zelleF);
-                if (!(zF && zF.gebacken)) backBuch.push({ key: k, d: rang(at.zellen.get(k)), dF: rang(zF), t });
+                if (!zF?.gebacken) backBuch.push({ key: k, d: rang(at.zellen.get(k)), dF: rang(zF), t });
             }
         };
         let satzBF = false;
@@ -171,8 +171,8 @@ hauptLauf(async () => {
             if (slotB == null && sichtbar(eb)) slotB = t;
             if (slotH == null && sichtbar(eh)) slotH = t;
             if (karteBF == null && karte(ebF)) karteBF = t;
-            if (ebF && ebF._ziegelSlot) satzBF = true;
-            if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
+            if (ebF?._ziegelSlot) satzBF = true;
+            if (slotHF == null && ehF?._ziegelSlot) slotHF = t;
             if (slotB != null && slotH != null && karteBF != null && slotHF != null && t >= 40) break;
         }
         // NAH IST DAS MESH: die Feld-Brücke trägt nur, bis das Studio-Mesh steht — weiter takten, bis beide nahen
@@ -189,8 +189,8 @@ hauptLauf(async () => {
             if (meshB == null && gestalt(eb)) meshB = t - 200;
             if (meshH == null && gestalt(eh)) meshH = t - 200;
             if (karteBF == null && karte(ebF)) karteBF = t;
-            if (ebF && ebF._ziegelSlot) satzBF = true;
-            if (slotHF == null && ehF && ehF._ziegelSlot) slotHF = t;
+            if (ebF?._ziegelSlot) satzBF = true;
+            if (slotHF == null && ehF?._ziegelSlot) slotHF = t;
         }
         // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr
         // nächster Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein
@@ -200,7 +200,7 @@ hauptLauf(async () => {
             await tick(1);
             buche(t);
             if (karte(ebF)) karteBF = t;
-            if (ebF && ebF._ziegelSlot) satzBF = true;
+            if (ebF?._ziegelSlot) satzBF = true;
         }
         r._weltBakeErlaubt = taktRoh;
         // B — ausgebrannte Foundry-Bauten (aufgegeben ohne Slot):
@@ -267,7 +267,7 @@ hauptLauf(async () => {
             mitSlot,
             ausgebrannt,
             // C: keine der beiden Eichen trug je einen Feld-Satz, und kein Satz-Schlüssel eines Karten-Dings lebt
-            satzBF: satzBF || !!(eb && eb._ziegelSlot),
+            satzBF: satzBF || !!eb?._ziegelSlot,
             kartenSaetze: wm
                 ? [...wm.kapselCache.keys()].filter((k) => /^aarch:/.test(k) && /baum|busch|strauch/.test(k)).length
                 : 0,
@@ -277,8 +277,8 @@ hauptLauf(async () => {
             // Die Fäden: was im Werk offen ist (ein Karten-Bake im Werk hielt bis 05.10. jede nahe Geometrie hinter sich —
             // seit S2 backt die Karte im Welt-Renderer).
             werk: {
-                offen: r._foundry && r._foundry.pending ? r._foundry.pending.size : null,
-                angefragt: r._foundry && r._foundry.requested ? r._foundry.requested.size : null,
+                offen: r._foundry?.pending ? r._foundry.pending.size : null,
+                angefragt: r._foundry?.requested ? r._foundry.requested.size : null,
                 stau: r._foundryIngestQueue ? r._foundryIngestQueue.length : 0,
             },
             felderFrei: wm ? wm.freiFelder.length : null,

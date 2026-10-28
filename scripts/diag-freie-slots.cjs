@@ -30,7 +30,7 @@
 // Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
 "use strict";
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
@@ -467,12 +467,8 @@ hauptLauf(async () => {
         if (!s.wieseNullGenannt) fails.push("SELBSTTEST: die gelegte Null-3×3 der Nah-Wiese blieb ungesehen");
         if (!s.wieseRingGenannt) fails.push("SELBSTTEST: die Instanz fort aus dem Ring blieb ungesehen");
     }
-    if (fails.length) {
-        console.log(`\n❌ gate:freie-slots ROT: ${fails.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ gate:freie-slots GRÜN — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; ${letzt.abschiede} Senken fielen mit Abschied, keine ohne; der Sicht-Satz der Nah-Wiese trug in ${wieseOrte} Ringen jedes Soll seines Blicks (${Math.min(...out.umzuege.filter((u) => u.wiese.bueschel > 0).map((u) => u.wiese.summe))}–${Math.max(...out.umzuege.map((u) => u.wiese.summe))} Instanzen), ein Ring ohne Wiese stand leer.`
+    wandEnde(
+        fails,
+        `gate:freie-slots — nach ${out.umzuege.length} Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hülle, in keinem Pass; ${letzt.abschiede} Senken fielen mit Abschied, keine ohne; der Sicht-Satz der Nah-Wiese trug in ${wieseOrte} Ringen jedes Soll seines Blicks (${Math.min(...out.umzuege.filter((u) => u.wiese.bueschel > 0).map((u) => u.wiese.summe))}–${Math.max(...out.umzuege.map((u) => u.wiese.summe))} Instanzen), ein Ring ohne Wiese stand leer.`
     );
-    process.exit(0);
 });

@@ -7,17 +7,13 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs"); // prettier-ignore
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
-const opt = (k, d) => {
-    const i = argv.indexOf(k);
-    return i >= 0 ? argv[i + 1] : d;
-};
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
@@ -49,6 +45,7 @@ const DAUER_S = {
     gestalt: 1,
     todlage: 1,
     bewohner: 660,
+    begegnung: 10,
     tiersatz: 7,
     furcht: 31,
     lebensraum: 21,
@@ -221,18 +218,13 @@ hauptLauf(async () => {
     console.log(
         `\n  (${((Date.now() - t0) / 1000).toFixed(0)} s)${je.length ? ` — Sekunden je Probe: ${je.join(", ")}` : ""}`
     );
-    if (rot) {
-        console.log(
-            SELBST
-                ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
-                : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`
-        );
-        process.exit(1);
-    }
-    console.log(
+    urteilEnde(
+        rot,
+        SELBST
+            ? `\n❌ SELBST-TEST ROT — ${rot} Täter unsichtbar oder nicht beim Namen genannt.`
+            : `\n❌ ROT — ${rot} Probe(n) verletzt: die Kreaturen tragen ihren Defekt.`,
         SELBST
             ? `\n✅ SELBST-TEST GRÜN — jeder Täter macht seine Probe rot und wird beim Namen genannt (${faelle.length} Täter).`
             : `\n✅ GRÜN — ${gewaehlt.join(" · ")}`
     );
-    process.exit(0);
 });

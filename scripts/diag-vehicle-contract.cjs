@@ -23,7 +23,7 @@
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, doppeltGebaut, goldenWand, vertragsEnde } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, doppeltGebaut, goldenWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenFile = path.join(root, "spec/asset-contract/v3/golden", "vehicles.json");
@@ -33,7 +33,7 @@ const KERN = path.join(root, "vehicle-core.js");
 require(KERN);
 const VC = globalThis.__vehicleCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Kultur-Kanal) ──
 const GATTUNGEN = ["gt", "supersport", "limousine", "kompakt_fwd", "suv"];
@@ -108,5 +108,5 @@ function caseKey(c) {
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    vertragsEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
+    wandEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

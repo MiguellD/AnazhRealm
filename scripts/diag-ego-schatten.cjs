@@ -194,13 +194,13 @@ function buehne(arg) {
         ziel.texture.name = "ego-schatten:bild";
         const knoten = [];
         const sammle = (o) => {
-            if (o.userData && o.userData._gehalten) return;
+            if (o.userData?._gehalten) return;
             knoten.push(o);
             for (const k of o.children) sammle(k);
         };
         const kopf = pm.userData && pm.userData.parts && pm.userData.parts.head;
         if (kopf) sammle(kopf);
-        for (const ch of pm.children) if (ch.userData && ch.userData._creatureSkin) sammle(ch);
+        for (const ch of pm.children) if (ch.userData?._creatureSkin) sammle(ch);
         const meshes = [...new Set(knoten)].filter((o) => o.isMesh);
         const wirft = meshes.filter((o) => o.castShadow);
         try {
@@ -351,9 +351,9 @@ function buehne(arg) {
             };
             // die Struktur je Regel: Gerät, Zwilling, Rückgabe, visible (ohne Bild — die Prüf-Knoten zeichnen nie mit)
             const struktur = () => {
-                const skin = pm.children.find((c) => c.userData && c.userData._creatureSkin);
+                const skin = pm.children.find((c) => c.userData?._creatureSkin);
                 const rig = pm.userData.rig;
-                const hand = (rig && rig.armR && rig.armR.wrist) || skin;
+                const hand = rig?.armR?.wrist || skin;
                 const geraet = new T.Mesh(new T.BoxGeometry(0.05, 0.05, 0.05), new T.MeshBasicNodeMaterial());
                 geraet.userData._gehalten = true;
                 geraet.visible = false;
@@ -407,12 +407,12 @@ function buehne(arg) {
             const leibJe = (p, f) => {
                 const h = p.userData && p.userData.parts && p.userData.parts.head;
                 const geh = (o) => {
-                    if (o.userData && o.userData._gehalten && f.gehalten !== true) return;
+                    if (o.userData?._gehalten && f.gehalten !== true) return;
                     f(o);
                     for (const k of o.children) geh(k);
                 };
                 if (h) geh(h);
-                for (const ch of p.children) if (ch.userData && ch.userData._creatureSkin) geh(ch);
+                for (const ch of p.children) if (ch.userData?._creatureSkin) geh(ch);
             };
             const regeln = {
                 // die echte Regel an einer Bühne ohne Frame-Schritt (die alte Bühne): die Karte des vorigen Schusses bleibt
@@ -422,7 +422,7 @@ function buehne(arg) {
                     const third = this.state.cameraMode === "third";
                     const h = p.userData && p.userData.parts && p.userData.parts.head;
                     if (h) h.visible = third;
-                    for (const ch of p.children) if (ch.userData && ch.userData._creatureSkin) ch.visible = third;
+                    for (const ch of p.children) if (ch.userData?._creatureSkin) ch.visible = third;
                 },
                 "Ebene 0 bleibt": function () {
                     const third = this.state.cameraMode === "third";
@@ -527,10 +527,10 @@ function buehne(arg) {
             page.evaluate(async (stufe) => {
                 const t0 = performance.now();
                 const steht = (r, st, pm = st.playerMesh) =>
-                    !!(r._foundry && r._foundry.recipes && !st._deferredAvatarSoul && pm && pm.userData._gelenk) &&
+                    !!(r._foundry?.recipes && !st._deferredAvatarSoul && pm?.userData._gelenk) &&
                     pm.userData._gelenk.nahStufe === stufe &&
                     (stufe === 1 || !!st._weltbildDa) &&
-                    pm.children.some((c) => c.userData && c.userData._creatureSkin);
+                    pm.children.some((c) => c.userData?._creatureSkin);
                 let r = await window.__weltDa((w) => w.state.rendererReady && w.state.renderer.backend);
                 const st = r.state;
                 const ok = await new Promise((res) => {
@@ -577,7 +577,7 @@ function buehne(arg) {
             }
         }
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: e?.message || String(e) };
     }
     await browser.close();
     server.close();

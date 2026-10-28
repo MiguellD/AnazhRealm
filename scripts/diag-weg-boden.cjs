@@ -391,11 +391,5 @@ hauptLauf(async () => {
         if (!selbst.trittRot) rot.push("SELBSTTEST: der alte Abbau der Trittfläche blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
-    if (rot.length) {
-        console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log("\nGRÜN — der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
-    process.exit(0);
+    require("./lib/welt-boot.cjs").wandEnde(rot, "der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
 });

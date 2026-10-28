@@ -30,7 +30,7 @@
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsEnde } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenFile = path.join(root, "spec/asset-contract/v5/golden", "klingen.json");
@@ -40,7 +40,7 @@ const KERN = path.join(root, "schmiede-core.js");
 require(KERN);
 const SC = globalThis.__schmiedeCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const GATTUNGEN = Object.keys(SC.REZEPT_ZU_GATTUNG); // alle 22 (Waffen UND Werkzeuge)
@@ -165,5 +165,5 @@ function buildCase(c) {
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    vertragsEnde(errs, "der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
+    wandEnde(errs, "der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

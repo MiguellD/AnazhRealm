@@ -416,18 +416,7 @@ function goldenWand(datei, cv, ist, n, check) {
     for (const d of diffs.slice(1)) console.log(`      ↳ ${d}`);
 }
 
-// das Ende einer Vertrags-Linse: ROT mit der Zahl der Verletzungen, sonst GRÜN mit ihrem Satz
-function vertragsEnde(errs, satz) {
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(`\n✅ GRÜN — ${satz}`);
-    process.exit(0);
-}
-
 module.exports = {
-    vertragsEnde,
     doppeltGebaut,
     goldenWand,
     plattformProbe,

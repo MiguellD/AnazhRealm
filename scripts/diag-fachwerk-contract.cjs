@@ -39,7 +39,7 @@
 //   node scripts/diag-fachwerk-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, vertragsEnde } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey, goldenWand } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
@@ -53,7 +53,7 @@ const KERN = path.join(root, "fachwerk-core.js");
 require(KERN);
 const FC = globalThis.__fachwerkCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -949,5 +949,5 @@ function bogenLinse() {
     // 12) DER BOGEN IM VERBAND
     bogenLinse();
 
-    vertragsEnde(errs, "der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
+    wandEnde(errs, "der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();
