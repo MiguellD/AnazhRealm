@@ -300,6 +300,7 @@ async function proben(phasen) {
     let dorfOrt = null;
     const hh = (x, z) => r.getTerrainHeightAt(x, z);
     const rund = (v, k = 100) => Math.round(v * k) / k;
+    const gierVon = (e) => Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360);
     const gruende = () => (r._erdbauLage() || {}).gruende || [];
     {
         const nass = (x, z) => {
@@ -361,16 +362,13 @@ async function proben(phasen) {
         return Hh;
     };
     // ein trockener Ort 150 m um M, 60 m von jedem Haus (`wild`: die Wildnis trägt ihn), null ohne
-    const ort150 = (M, wild) => {
-        for (let a = 0; a < 16; a++) {
-            const gx = M.x + Math.cos((a / 16) * Math.PI * 2) * 150;
-            const gz = M.z + Math.sin((a / 16) * Math.PI * 2) * 150;
-            if (!r._landAt(gx, gz, 0.5) || (wild && !r._wildnisTraegt(gx, gz))) continue;
-            if (!s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60))
-                return [gx, gz];
-        }
-        return null;
-    };
+    const ort150 = (M, wild) =>
+        ring(M, [150], 16).find(
+            ([gx, gz]) =>
+                r._landAt(gx, gz, 0.5) &&
+                (!wild || r._wildnisTraegt(gx, gz)) &&
+                !s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60)
+        ) || null;
     // das 5 × 5-Raster über den Grundriss eines Hauses (`_grundrissVon`), 0,1 m innen
     const raster5 = (e, f) =>
         [0, 1, 2, 3, 4].flatMap((i) =>
@@ -470,7 +468,7 @@ async function proben(phasen) {
     for (const e of P.has("haus") ? [...SD, ...H.slice(0, 8)] : []) {
         const h = {
             typ: e.type,
-            gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360),
+            gierGrad: gierVon(e),
             start: SD.includes(e),
         };
         o.haeuser.push(h);
@@ -570,7 +568,7 @@ async function proben(phasen) {
             const d = fussL - so.max[1];
             if (Math.abs(d) < Math.abs(best)) best = d;
         }
-        h.dieleCm = Number.isFinite(best) ? Math.round(best * 1000) / 10 : null;
+        h.dieleCm = Number.isFinite(best) ? rund(best * 100, 10) : null;
         // W1 DIE TÜR LIEGT NIE IM BODEN: das Gelände am Tür-Vorplatz liegt nie über der Diele hinter der Schwelle (die
         // Oberkante des Gesetzbuchs 0,5 m hinter der Tür) — Toleranz 0,2 m, die Feinform des sichtbaren Meshes (Lehre 22)
         {
@@ -633,7 +631,7 @@ async function proben(phasen) {
                     n++;
                     if (weltWand === gesetzWand) gleich++;
                 }
-            h.optikProzent = n ? Math.round((gleich / n) * 1000) / 10 : null;
+            h.optikProzent = n ? rund((gleich / n) * 100, 10) : null;
         }
         if (kf || auf.length) {
             // jenseits des Schachts: um ihn herum — hinter dem Fuß des Laufs auf der Seite des Körpers, davor auf der des
@@ -836,8 +834,9 @@ async function proben(phasen) {
         // Slots aus dem Gedächtnis des Orts an seinem Ort und Boden; die Platte des Vorplatzes ist Boden (Dichte ±0,3 m)
         const vs = H.find((e) => e.tuer);
         const sw = (o.w9.slot = {});
-        const gefaelle = (x, z) => (sw.hang = r._slopeAt(x, z, hh, 4)) >= 0.15; // die EINE Steilheit über ±4 m
-        const se = vs && (await setze(vs, "w9-slot", ring(dorfMitte, [60, 90, 120, 160]), gefaelle, vs.rotationY));
+        // die EINE Steilheit über ±4 m
+        const hang = (x, z) => (sw.hang = r._slopeAt(x, z, hh, 4)) >= 0.15;
+        const se = vs && (await setze(vs, "w9-slot", ring(dorfMitte, [60, 90, 120, 160]), hang, vs.rotationY));
         for (const v of se ? r._ortPlaene.values() : [])
             for (const d of v.slots)
                 if (Math.hypot(v.ort.x + d.x - vs.position.x, v.ort.z + d.z - vs.position.z) < 0.05) {
@@ -852,7 +851,7 @@ async function proben(phasen) {
                     const erde = (dy) => +(r._terrainDensityAt(vp.cx, vp.y + dy, vp.cz) > 0);
                     Object.assign(sw, {
                         typ: se.type,
-                        arten: welt.map((q) => q.art + (q === vp ? "/vorplatz" : "")).join(" "),
+                        splats: welt.length,
                         byte: JSON.stringify(welt) === JSON.stringify(soll.erdbau),
                         boden: erde(-0.3) - erde(0.3),
                     });
@@ -1116,10 +1115,7 @@ async function proben(phasen) {
         };
         for (const e of H)
             for (const [b, n] of imBau(e, vorBau, true))
-                if (w7.imBau++ < 4)
-                    w7.taeter.push(
-                        `${e.type}@${Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360)}°in ${b.type} (${n} Punkte)`
-                    );
+                if (w7.imBau++ < 4) w7.taeter.push(`${e.type}@${gierVon(e)}°in ${b.type} (${n} Punkte)`);
         // das zweite Dorf: derselbe Akt am Anker des ersten (worldMeta.settlementCells „d:7@x,z")
         const zelle = Object.entries((s.worldMeta && s.worldMeta.settlementCells) || {}).find(([k]) =>
             k.startsWith("d:7@")
@@ -1494,7 +1490,7 @@ async function proben(phasen) {
             };
             for (const e of s.architectures)
                 if (e.position && r._istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
-            for (const c of streuZellen()) if (lebt(c)) pruef(c.species || c.layer, c.x, c.z, "Streu");
+            for (const c of streuZellen().filter(lebt)) pruef(c.species || c.layer, c.x, c.z, "Streu");
             for (const kk of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
                 for (const it of kk.items || []) pruef("Kachel-Pflanze", it.x, it.z, "Nah-Streu");
             o.w4weg = w;
@@ -1536,7 +1532,7 @@ async function proben(phasen) {
         const p0 = { x: start.x, z: start.z };
         await warteBis(() => !(r._streuWartet(p0) > 0), 4, 1500);
         const voll = [];
-        for (const c of streuZellen()) if (lebt(c)) voll.push(c);
+        for (const c of streuZellen().filter(lebt)) voll.push(c);
         let best = null;
         for (const c of voll) {
             const d = Math.hypot(c.x - start.x, c.z - start.z);
