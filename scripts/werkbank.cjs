@@ -230,7 +230,7 @@ function lauf(k) {
         const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere === "halten" && window.__tiereHalten) window.__tiereHalten();
+        if (k.tiere === "halten") window.__tiereHalten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         st.playerMesh.visible = true;
