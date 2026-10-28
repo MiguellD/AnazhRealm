@@ -1420,3 +1420,4 @@
 2026-10-28 19:30:34 takt18-farm halten.K4#2 GRÜN 1.1 · 77/94
 2026-10-28 19:30:42 takt18-farm fahrzeug.K1#1 GRÜN 0.0 · 78/94
 2026-10-28 19:30:49 takt18-farm fahrzeug.K1#2 GRÜN 0.5 · 79/94
+2026-10-28 19:30:58 takt18-farm tore.K5#1 GRÜN 1.8 · 80/94
