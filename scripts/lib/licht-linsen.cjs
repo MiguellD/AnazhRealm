@@ -6,6 +6,8 @@
 // - bei ruhendem Loop schaltet niemand den NODE-FRAME weiter (vor jedem Render `nodeFrame.update()`), und Meshes einer
 //   `BundleGroup` folgen `visible` erst nach `needsUpdate`;
 // - ein 8-Bit-Ziel quantisiert die lineare Albedo in 0,0039 — die Albedo-Schüsse lesen rgba16float.
+// Die Luma (Rec. 709) liest jede Linse aus abnahme-urteil (`luma709`; in der Seite global über ABNAHME_INSTALL).
+const { luma709, cielab } = require("./abnahme-urteil.cjs");
 
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
@@ -680,20 +682,20 @@ function albedoSicht(opts) {
 // Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
 // und Renders am Stück lassen kein Versprechen reifen. Die Linse schaltet ihren Frame, bis nichts mehr baut —
 // dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
+// DER EINE FRAME DER LINSE (in der Seite `__linseZeichne`): die Szene in ihr Ziel, der Knoten-Frame schaltet weiter
+function linseZeichne(rend, rt, sc, cam) {
+    if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+    rend.setRenderTarget(rt);
+    rend.setClearColor(0x000000, 0);
+    rend.clear();
+    rend.render(sc, cam);
+    rend.setRenderTarget(null);
+}
 function linseRuhe(rend, rt, sc, cam, wer) {
     if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
     // die Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst
     // über der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf)
-    const zeichne = () => {
-        window.anazhRealm._schattenAlleNeu();
-        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-        rend.setRenderTarget(rt);
-        rend.setClearColor(0x000000, 0);
-        rend.clear();
-        rend.render(sc, cam);
-        rend.setRenderTarget(null);
-    };
-    return window.__erstRuhe(zeichne, {}, wer);
+    return window.__erstRuhe(() => (window.anazhRealm._schattenAlleNeu(), window.__linseZeichne(rend, rt, sc, cam)), {}, wer);
 }
 
 function lichtBilanz() {
@@ -754,14 +756,7 @@ function lichtBilanz() {
             cam.position.copy(basis.clone().add(n.clone().multiplyScalar(1.5)));
             cam.lookAt(basis);
             cam.updateMatrixWorld(true);
-            const zeichne = () => {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
-            };
+            const zeichne = () => window.__linseZeichne(rend, rt, sc, cam);
             // die Karte ist je Aufruf ein neuer Stoff, jede Licht-Variante ein neues Programm (`linseRuhe`)
             await window.__linseRuhe(rend, rt, sc, cam, "die Licht-Bilanz");
             const lauf = async () => {
@@ -782,7 +777,7 @@ function lichtBilanz() {
             await lauf();
             return lauf();
         };
-        const Y = (s) => 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+        const Y = luma709;
         const out = { sonnenRichtung: [sd.x, sd.y, sd.z].map((v) => +v.toFixed(3)), lichter: {} };
         for (const [l, i] of lichtAlt)
             out.lichter[l.type] = {
@@ -854,7 +849,7 @@ function tagKurve(o) {
                 k = v;
             },
         });
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const W = o.w || 480,
             H = o.h || 270;
         const zeilen = [];
@@ -874,12 +869,12 @@ function tagKurve(o) {
                 const s = [0, 0, 0, 0];
                 let n = 0;
                 for (let i = Math.floor(H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
-                    s[0] += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                    s[0] += luma709(u8, i);
                     for (let c = 0; c < 3; c++) s[c + 1] += lin[u8[i + c]];
                 }
                 const sd = r._sonnenRichtung();
                 const h = r._himmelsIrradianz();
-                const lum = (c, k) => k * (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                const lum = (c, k) => k * luma709(c);
                 const licht = [st.directionalLight, st.hemiLight, st.ambientLight].reduce((E, l) => E + (l ? lum(l.color.toArray(), l.intensity) : 0), h ? lum(h.oben, Math.PI) : NaN);
                 const z = {
                     uhr: u,
@@ -892,12 +887,7 @@ function tagKurve(o) {
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
                 if (o.png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    const ctx = cv.getContext("2d");
-                    const img = ctx.createImageData(W, H);
-                    img.data.set(u8.subarray(0, W * H * 4));
-                    ctx.putImageData(img, 0, 0);
-                    z.png = cv.toDataURL("image/png");
+                    z.png = pngAus(u8, W, H);
                 }
                 zeilen.push(z);
             }
@@ -1149,7 +1139,7 @@ function nahFernSicht(opts) {
             const rgb = c.map((v) => v / 1024);
             return {
                 rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                Y: +luma709(rgb).toFixed(4),
                 deckung: +(d / 1024).toFixed(2),
             };
         };
@@ -1191,12 +1181,7 @@ function nahFernSicht(opts) {
             const spur = [];
             await window.__linseRuhe(rend, rt, sc, cam, "die Nah-Fern-Sicht");
             for (let lauf = 0, weiter = window.__deckel("die Ruhe der Nah-Fern-Sicht", 400); weiter(); lauf++) {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                window.__linseZeichne(rend, rt, sc, cam);
                 px = await lies();
                 laeufe = lauf + 1;
                 let m = 0,
@@ -1204,7 +1189,7 @@ function nahFernSicht(opts) {
                 for (let i = 3; i < px.length; i += 4)
                     if (px[i] > 0.5) {
                         m++;
-                        s += 0.2126 * px[i - 3] + 0.7152 * px[i - 2] + 0.0722 * px[i - 1];
+                        s += luma709(px, i - 3);
                     }
                 const y = m ? s / m : 0;
                 if (spur.length < 12) spur.push([m, +y.toFixed(4)]);
@@ -1241,7 +1226,7 @@ function nahFernSicht(opts) {
             return {
                 n,
                 rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                Y: +luma709(rgb).toFixed(4),
                 still,
                 spur,
             };
@@ -1650,12 +1635,7 @@ function laubGegenlicht(opts) {
             let px = null;
             await window.__linseRuhe(rend, rt, sc, cam, wer);
             for (let k = 0; k < 3; k++) {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                window.__linseZeichne(rend, rt, sc, cam);
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             }
             const zeile = W * 4;
@@ -1665,8 +1645,7 @@ function laubGegenlicht(opts) {
             cv.height = H;
             const cx = cv.getContext("2d");
             const img = cx.createImageData(W, H);
-            const enc = (v) =>
-                Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+            const enc = (v) => Math.round(255 * Math.min(1, linSrgb(v)));
             const Yp = new Float32Array(W * H).fill(-1),
                 Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
@@ -1676,7 +1655,7 @@ function laubGegenlicht(opts) {
                     const a = half(px[i + 3]);
                     if (a > 0) {
                         const c = [half(px[i]), half(px[i + 1]), half(px[i + 2])];
-                        Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                        Yp[y * W + x] = luma709(c);
                         Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
                         img.data[o + 1] = enc(c[1]);
@@ -1916,9 +1895,8 @@ function laubGegenlicht(opts) {
 
 // Linear-RGB → Luma Y, L*, C*ab (D65): die Farb-Zahl jeder Karten- und Weg-Zeile
 function lab(rgb) {
-    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
-    return { Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+    const [L, a, b] = cielab(rgb);
+    return { Y: +luma709(rgb).toFixed(5), L: +L.toFixed(2), C: +Math.hypot(a, b).toFixed(2) };
 }
 
 // DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %) im Licht der Welt-Stoffe (eine MeshStandard-Karte gleicher Normale aus
@@ -2176,14 +2154,14 @@ function luftTiefe(o) {
         const gz = st.playerMesh.position.z;
         const gy = gesetz(gx, gz) + o.augeM;
         const Hs = R.skalenHoeheM;
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const roh = (u8, i) => {
             const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
             const m = Math.min(...c);
             const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
-        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const Y = luma709;
         const ton = (u8, i) => {
             const c = [u8[i], u8[i + 1], u8[i + 2]];
             const hi = Math.max(...c);
@@ -2389,7 +2367,7 @@ function luftTiefeUrteil(m, R) {
     });
     // der Himmel am Horizont (die In-Streuung, linear) zu Mittag gegen den Ton der Referenz; die Sonnenseite: Y der In-Streuung
     // zur Sonne / gegen sie je Uhr; das ferne Weiß bei Sonne 5°
-    const Y = (c) => c && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const Y = (c) => c && luma709(c);
     for (const z of m.zeilen.filter((x) => x.uhr === 0.5)) {
         const [r, g, b] = z.himmel || [0, 0, 0];
         const d = Math.max(r, g, b) - Math.min(r, g, b);
@@ -2551,7 +2529,7 @@ function naesseSicht(o) {
         // 20 statt 10 min (0,992 gegen 0,909), und die helle nasse Schwelle des Dorf-Hauses zählte 15 Punkte als Regen innen
         const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
-        const Y = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+        const Y = luma709;
         const strahl = new T.Vector3();
         const klasse = (x, y) => {
             if (!e) return y > H * 0.55 ? "aussen" : null;
@@ -2609,11 +2587,7 @@ function naesseSicht(o) {
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
-            png: o.png ? [klar, frisch, nass].map((u8) => {
-                const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
-                return cv.toDataURL("image/png");
-            }) : undefined,
+            png: o.png ? [klar, frisch, nass].map((u8) => pngAus(u8, W, H, true)) : undefined,
         };
     })();
 }
@@ -2686,7 +2660,7 @@ function kontaktSicht(o) {
         PU.bloomStrength.value = 0;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const [W, H] = [db.x, db.y];
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
             const hi = Math.min(Math.max(...c), 0.9995);
@@ -2700,7 +2674,7 @@ function kontaktSicht(o) {
             const L = new Float32Array(W * H);
             for (let i = 0; i < W * H; i++) {
                 const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);
-                L[i] = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / rend.toneMappingExposure;
+                L[i] = luma709(c) / rend.toneMappingExposure;
             }
             return L;
         };
@@ -2762,9 +2736,7 @@ function kontaktSicht(o) {
                     p[ebene] = { halbschattenCm: breiten.length ? +breiten[breiten.length >> 1].toFixed(1) : null, kanten: 2 * breiten.length, von };
                 }
                 if (png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(png, (q, i) => (i % 4 === 3 ? 255 : q)), W, H), 0, 0);
-                    p.png = cv.toDataURL("image/png");
+                    p.png = pngAus(png, W, H, true);
                 }
             }
         } finally {
@@ -2825,6 +2797,7 @@ module.exports = {
     kronenObenUrteil,
     kronenReflexionSoll,
     LINSEN_INSTALL:
+        `window.__linseZeichne = ${linseZeichne.toString()};` +
         `window.__linseRuhe = ${linseRuhe.toString()};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
