@@ -691,6 +691,7 @@ class AnazhRealm_feld_nexus {
             if (ability) ability.fitness = fitness;
             this.rememberOutcomeAsPattern(entry.outcome, entry.program, fitness, currentTime);
             pending.splice(i, 1);
+            this.state.dsl.finalisiert = (this.state.dsl.finalisiert || 0) + 1;
         }
     }
 

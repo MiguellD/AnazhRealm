@@ -507,6 +507,9 @@ class AnazhRealm {
                 // Delta + Player-Activity und finalisiert die Fitness.
                 pendingOutcomes: [],
                 outcomeFinalizationDelay: 5.0,
+                // die Zahl der finalisierten Outcomes: der Finalizer schreibt Fitness in History und Fähigkeit an ihrem Platz —
+                // die Marke des Stands (`_standZeilen` dslHistory · dslAbilities) liest sie
+                finalisiert: 0,
             },
             // Stehendes Regel-Registry: je Regel eine nicht verfallende Bindung Bedingung → Effekt,
             // {id, cond, effect, everySec, lastFired, fires, source, ttlSec?, born} (cond/effect = DSL-AST).
