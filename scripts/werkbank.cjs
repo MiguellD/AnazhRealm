@@ -274,8 +274,9 @@ function lauf(k) {
         let weg = 0;
         let snap = H && Object.assign({}, H.acc), probeTakt = 0;
         // DIE SICHTUNG: ein Tier (`_tierBaum`, die Klasse `tier:` der Teilung) deckt ≥ 200 px der Klassen-Maske am Maß 1280×720 —
-        // zwei Schüsse des Ausgabe-Pfads unter der EINEN Uhr, mit und ohne Tiere (`toggleCreatures`, das Wort des Spiels: Leib,
-        // Feld und Satz), geteilt von `__klassenTeilung`; ein Pixel gehört unter ALLEN Tieren im Blick dem, dessen Körper-Kugel
+        // drei Schüsse des Ausgabe-Pfads unter der EINEN Uhr: G mit, O ohne Tiere (`toggleCreatures`, das Wort des Spiels: Leib,
+        // Feld und Satz), G2 wieder mit — ein Pixel ist Tier, wenn G und O sich teilen (`__klassenTeilung`) und G und G2 nicht
+        // (zwei gleiche Schüsse unterschieden sich headless um 0,5 % des Bilds, die Welt streamt im Gang); ein Pixel gehört unter ALLEN Tieren im Blick dem, dessen Körper-Kugel
         // (`_kreaturAusserBlick`) ihn deckt und dessen Mitte im Bild ihm relativ zum Radius am nächsten liegt (ein Glied des
         // Verbands schluckt nie die Pixel seiner Nachbarn); der Schatten am Boden zählt mit (mittags unter dem Leib, im flachen
         // Blick verkürzt). Geschossen wird höchstens alle 2 Spiel-s und nur, wenn ein ungesehenes Tier im Blick
@@ -283,7 +284,7 @@ function lauf(k) {
         // Mitte Höhe/2 über dem Fuß). `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
         const kreisGang = async () => {
             const T = window.THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
-            const [W, H] = [db.x, db.y].map(Math.round), soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
+            const W = db.x, H = db.y, soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
             const taste = (art) => window.dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyW", key: "w" }));
             const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             kreis.z0 = st.spielZeit;
@@ -311,11 +312,12 @@ function lauf(k) {
                     const G = await schuss();
                     r.toggleCreatures(false);
                     const O = await schuss().finally(() => r.toggleCreatures(true));
+                    const unruhig = window.__klassenTeilung(G, [await schuss()], W, H, 18).teil;
                     kreis.halt = 0;
                     const { teil } = window.__klassenTeilung(G, [O], W, H, 18);
                     for (let p = 0; p < W * H; p++) {
                         let q = null, e = 1;
-                        if (teil[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
+                        if (teil[p] && !unruhig[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
                         if (q) q.px++;
                     }
                     for (const q of kand)
