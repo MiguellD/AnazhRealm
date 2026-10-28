@@ -1,7 +1,7 @@
 {
  "sha": "e18195be8b143f9d333de6ea8a8b43dea93dd198",
  "geraet": "radeon",
- "zeit": "2026-10-28T14:32:28.637Z",
+ "zeit": "2026-10-28T15:33:52.944Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -722,6 +722,104 @@
    "abdruck": "e03a045fab93",
    "port": 7754,
    "bahn": "1/3"
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 43.4 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 126.1 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 6.17,
+   "gpu": "amd/rdna-3",
+   "warten": 0.31,
+   "zeit": "2026-10-28T14:42:07.361Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "leib.K1#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 49.1 · third/gehen 44 · ego/wechsel 30.7 · third/wechsel 27.3 · Bild 16.7/16.6/16.5 ms",
+   "exit": 0,
+   "minuten": 7.46,
+   "gpu": "amd/rdna-3",
+   "warten": 0.36,
+   "zeit": "2026-10-28T14:48:17.628Z",
+   "abdruck": "9687c62fd915",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 45.1 · ego/springen 36.5 · third/springen 35.2 · ego/einsteigen 53.7 · third/einsteigen 35.5 · ego/hieb 38.5 · third/hieb 737.3 (fehlt 20) · Bild 14.5/16.3/16.3 ms",
+   "exit": 0,
+   "minuten": 16.51,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 45.1 · ego/springen 36.5 · third/springen 35.2 · ego/einsteigen 53.7 · third/einsteigen 35.5 · ego/hieb 38.5 · third/hieb 737.3 (fehlt 20) · Bild 14.5/16.3/16.3 ms",
+   "gpu": "amd/rdna-3",
+   "warten": 0.3,
+   "zeit": "2026-10-28T14:55:45.064Z",
+   "abdruck": "160f0c239df2",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 66.7 · ego/hieb 31 · Bild 16.3/16.5/16 ms · Hit-Stop im schlechtesten Lauf 10 Bilder · im Spiel Halt gesetzt 60-mal (153–169 ms, gleitet bis 0 mm je Takt) / 60-mal (145–173 ms, gleitet bis 0 mm je Takt) / 58-mal (150–176 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 6.79,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms third/hieb 66.7 · ego/hieb 31 · Bild 16.3/16.5/16 ms · Hit-Stop im schlechtesten Lauf 10 Bilder · im Spiel Halt gesetzt 60-mal (153–169 ms, gleitet bis 0 mm je Takt) / 60-mal (145–173 ms, gleitet bis 0 mm je Takt) / 58-mal (150–176 ms, gleitet bis 0 mm je Takt)",
+   "gpu": "amd/rdna-3",
+   "warten": 0.26,
+   "zeit": "2026-10-28T15:12:15.464Z",
+   "abdruck": "631137359d80",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.87 bei Lag 0 (n 119), Spitze 0.88 bei -0.5 s, CV Bild 0.24 / Ohr 0.54, 120.2 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.84,
+   "gpu": "amd/rdna-3",
+   "warten": 0.17,
+   "zeit": "2026-10-28T15:19:02.784Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 1.944 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 9.63,
+   "gpu": "amd/rdna-3",
+   "warten": 0.27,
+   "zeit": "2026-10-28T15:20:53.002Z",
+   "abdruck": "80965330139c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 108 Rufe in 9680 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "exit": 0,
+   "minuten": 3.37,
+   "gpu": "amd/rdna-3",
+   "warten": 0.31,
+   "zeit": "2026-10-28T15:30:30.708Z",
+   "abdruck": "2897b2bde797",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K5#1": {
+   "gruen": true,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba",
+   "exit": 0,
+   "minuten": 1,
+   "gpu": "amd/rdna-3",
+   "warten": 0.25,
+   "zeit": "2026-10-28T15:33:52.944Z",
+   "abdruck": "b8c2b35ae818",
+   "port": 7754,
+   "bahn": "1/1"
   }
  }
 }
