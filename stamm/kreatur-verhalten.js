@@ -772,8 +772,8 @@ class AnazhRealm_kreatur_verhalten {
         this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse`, "INFO");
     }
 
-    // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Leibs (halb + Radius — die waagrechte
-    // Spanne der Gestalt um ihre Mitte, _kreaturLeib; die Art und die Größe tragen sie über die Hüft-Höhe L) ×
+    // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Leibs um seine Lage (|mitte| + halb +
+    // Radius — die waagrechte Spanne der Gestalt, _kreaturLeib; die Art und die Größe tragen sie über die Hüft-Höhe L) ×
     // VERHALTEN.separation.raumKugel. Der Paar-Raum zweier Tiere ist die Summe; der Spieler hält den Raum seiner Wand-Kapsel
     // (_spielerRaum). Darin stößt die Separation, die Herde zieht nicht, die Neugier hält an. Vorher galt für jede Art
     // 1,6 m × bodySize (die neugierige Schar kroch auf 0,7 m zusammen, Leben-Schau 07.10.). Gecacht je L.
@@ -783,7 +783,7 @@ class AnazhRealm_kreatur_verhalten {
         if (ud._raumL === l && Number.isFinite(ud._raum)) return ud._raum;
         const lb = this._kreaturLeib(creature, l, this._kreaturRaumLeib || (this._kreaturRaumLeib = {}));
         ud._raumL = l;
-        ud._raum = (lb.halb + lb.radius) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
+        ud._raum = (Math.abs(lb.mitte) + lb.halb + lb.radius) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
         return ud._raum;
     }
 
@@ -1216,19 +1216,22 @@ class AnazhRealm_kreatur_verhalten {
 
     // DER WEG DES LEIBS (kontakt-tempo, Lehre 13): EIN Weg für jeden Schritt, der ein Tier trägt — den Gang im Frame-Takt
     // (updateCreatures: Gier × Tempo + Strömung) und den Stoß im Sim-Schritt (`_kreaturStossSchritt`). v·dt geht in
-    // Teil-Schritten von höchstens LEIB_TEIL.radius Leib-Radien (mindestens LEIB_TEIL.minM), je Teil-Schritt die EINE Hülle
+    // Teil-Schritten von höchstens LEIB_TEIL.huefte Hüft-Höhen (mindestens LEIB_TEIL.minM), je Teil-Schritt die EINE Hülle
     // (`_kreaturHuellenKontakt`) und im Gang (`leiber`: der Frame-Takt, dem bis zum nächsten Sim-Schritt kein Löser folgt) das
     // EINE Paar Leib an Leib (`_leibGegenLeiber`; den Stoß trennt `_leibKontakte` im selben Sim-Schritt): die Achse erreicht in
     // einem Teil-Schritt nie die Mitte einer Wand oder eines Leibs, gleich wie dünn, gleich bei welcher Bildrate. Was die
     // Berührung schiebt, nimmt v die Komponente in sie (v wird fortgeschrieben). Vorher ging der Gang EINEN Schritt je Frame
     // mit EINER Hülle: bei 10 fps (der Takt-Deckel 100 ms) liefen Fuchs, Wolf und Bär im Galopp 6 von 6 Mal durch eine
     // 0,35-m-Mauer, 4 von 4 durch die 0,3-m-Wand des Hauses, der Wolf 2 von 4 durch einen stehenden Bären. Die Kosten folgen
-    // dem Weg (Gebot 7): ein stehender Leib geht einen Teil-Schritt, ohne Leib-Paar.
+    // dem Weg (Gebot 7): ein stehender Leib geht einen Teil-Schritt, ohne Leib-Paar. Die Weite misst die Hüft-Höhe, nie den
+    // Leib-Radius (physik.K2 Staffel 2): seit der Leib die gezeichnete Gestalt ist, ist der Hirsch schlank (0,17 statt 0,28 m),
+    // seine Teil-Schritte wurden feiner, und weil Leib an Leib je Teil-Schritt Impuls tauscht, fiel sein Tages-Budget
+    // „ziehen" 0,081 → 0,077 (gate:kreatur-takt tagesbudget).
     _kreaturWeg(c, L, v, dt, i, leiber) {
         const leib = this._kreaturLeib(c, L, this._kreaturWegLeib || (this._kreaturWegLeib = {}));
         const T = AnazhRealm.LEIB_TEIL;
         const weg = Math.hypot(v.x, v.z) * dt;
-        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius)));
+        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.huefte * leib.L)));
         const h = dt / teile;
         for (let k = 0; k < teile; k++) {
             const x0 = c.position.x;
@@ -3833,8 +3836,8 @@ AnazhRealm._jagdGesetz = function () {
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;
-// der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `radius` Leib-Radien, mindestens `minM` m
-AnazhRealm.LEIB_TEIL = Object.freeze({ radius: 0.5, minM: 0.02 });
+// der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `huefte` Hüft-Höhen, mindestens `minM` m
+AnazhRealm.LEIB_TEIL = Object.freeze({ huefte: 0.15, minM: 0.02 });
 // DER BISS ALS STOSS (0710-4): der Anteil der Jäger-Masse hinter dem Biss (tetrapoda BISS.masseAnteil) und das Tempo
 // des Ansprungs (VERHALTEN.aktionen.pounce.tempo, in der Tempo-Einheit des Steuer-Gesetzes). DER BISS IST DER ANSPRUNG
 // (Welle LF kampf, Posten 5): seine Geste ist die Aktion pounce — ihre Dauer und ihr Tempo sind die Reichweite des Mauls

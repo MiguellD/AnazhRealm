@@ -180,9 +180,9 @@ class AnazhRealm_koerper_bewegung {
     // Hülle (vehicle-core exportDrive.huelle × Größe), sonst aus der Gestalt des Bauplans. Leser: die Hülle des Ritts und des
     // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imWagen`: kein Wurf der Natur in einem Wagen).
     // DER UMRISS IST DIE GEZEICHNETE GESTALT (physik.K2 Staffel 2, Bild = Kollision): steht das Bild des Studio-Wagens
-    // (`_fahrBildUmriss`), ist der Umriss seine Spanne — die Hardpoints der Hülle (NOSE, TAIL, bw) liegen innen: der GT trägt
-    // Stoßfänger und Spiegel 0,14 m vor dem Bug, 0,15 m hinter dem Heck und 0,10 m neben der Flanke, und im Bild stak er
-    // 0,039 m in der Mauer. Vor dem Bild (der Platz, den die Welt beim Setzen sucht) trägt das Gesetz der Hülle.
+    // (`_fahrBildUmriss`), ist der Umriss seine Spanne — die Hardpoints der Hülle (NOSE, TAIL, bw) liegen innen: der Supersport
+    // trägt Stoßfänger und Spiegel 0,14 m vor dem Bug, 0,15 m hinter dem Heck und 0,10 m neben der Flanke, und im Bild stak
+    // er 0,039 m in der Mauer. Vor dem Bild (der Platz, den die Welt beim Setzen sucht) trägt das Gesetz der Hülle.
     _fahrUmriss(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
@@ -207,18 +207,20 @@ class AnazhRealm_koerper_bewegung {
         };
     }
 
-    // DAS BILD DES WAGENS im Vorlagen-Raum (Bug +x, m bei Größe 1): die Spanne der Teile, die seine gezeichnete Stufe trägt
-    // (der Foundry-Flat, aus dem `_archInstanceUpdate` die Instanzen setzt — jede Box der Teil-Geometrie in ihrer Matrix,
-    // die Räder an ihren Ecken), am Flat gemerkt (jeder Wagen derselben Gestalt teilt ihn). null, solange er nicht gezeichnet
-    // ist.
+    // DAS BILD DES WAGENS im Vorlagen-Raum (Bug +x, m bei Größe 1): die Spanne der Teile seiner NAH-Gestalt (der Foundry-Flat der
+    // Stufe 0, aus dem `_archInstanceUpdate` die Instanzen setzt — jede Box der Teil-Geometrie in ihrer Matrix, die Räder an
+    // ihren Ecken), gemerkt je Körper der Stufe 0 (`_foundryKoerperKey`): ein Wagen, den die Welt fern zeichnet (Karte,
+    // Grobstufe), trägt den Umriss seiner Gestalt, sobald einer sie nah zeigte. null, solange keiner sie nah zeigte.
     _fahrBildUmriss(entry) {
         if (!entry.instanced || !entry.instFoundry) return null;
         const pr = this._foundryPresetForEntry(entry);
-        const flat = pr
-            ? this._foundryFlattenFor(entry, pr, Number.isFinite(entry._servedLod) ? entry._servedLod : 0)
-            : null;
+        const g = pr ? this._foundryGestaltFor(entry, pr) : null;
+        if (g == null) return null;
+        const memo = this._fahrUmrissMemo || (this._fahrUmrissMemo = new Map());
+        const key = this._foundryKoerperKey(pr, g, 0, this._artifactStudioOv(entry));
+        if (memo.has(key)) return memo.get(key);
+        const flat = entry._servedLod === 0 ? this._foundryFlattenFor(entry, pr, 0) : null;
         if (!flat || !flat.leaves || !flat.leaves.length) return null;
-        if (flat._fahrUmriss) return flat._fahrUmriss;
         const B = new THREE.Box3();
         const b = new THREE.Box3();
         for (const lf of flat.leaves) {
@@ -230,8 +232,8 @@ class AnazhRealm_koerper_bewegung {
         const u = { bug: B.max.x, heck: B.min.x, hw: Math.max(B.max.z, -B.min.z), dach: B.max.y, rund: 0 };
         // DIE ECKEN (`rund`, der Eck-Radius): das Bild ist im Grundriss rund — je Richtung (c, s) seine Stütze (der äußerste
         // Vertex) gegen die des Rechtecks; der größte Radius, mit dem das gerundete Rechteck jedes Bild umschließt
-        // (h_Rechteck − rund · (|c| + |s| − 1) ≥ h_Bild, 64 Richtungen). Mit scharfen Ecken hielt der GT an der 11,5° schrägen
-        // Mauer im Bild 0,084 m Spalt.
+        // (h_Rechteck − rund · (|c| + |s| − 1) ≥ h_Bild, 64 Richtungen). Mit scharfen Ecken hielt der Supersport an der 11,5°
+        // schrägen Mauer im Bild 0,084 m Spalt.
         const N = 64;
         const S = new Float64Array(N).fill(-Infinity);
         const C = Float64Array.from({ length: N }, (_, i) => Math.cos((2 * Math.PI * i) / N));
@@ -254,7 +256,7 @@ class AnazhRealm_koerper_bewegung {
             if (ecke > 1e-3) rund = Math.min(rund, ((c > 0 ? u.bug : u.heck) * c + u.hw * Math.abs(s) - S[i]) / ecke);
         }
         u.rund = Math.max(0, rund);
-        flat._fahrUmriss = u;
+        memo.set(key, u);
         return u;
     }
 

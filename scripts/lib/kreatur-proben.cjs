@@ -1406,7 +1406,7 @@ async function kreaturProben(r, T, opts) {
             decke("_leibPaar", () => () => false);
         }
         if (taeter === "abstand-spieler") {
-            // die Separation und der Weg des Gangs ohne den Spieler: ein Nachbar drückt das vordere Tier in ihn
+            // die Separation, der Weg des Gangs und Leib an Leib ohne den Spieler
             const ohne = (alt) =>
                 function (...a) {
                     const p = this.state.playerMesh;
@@ -1419,6 +1419,7 @@ async function kreaturProben(r, T, opts) {
                 };
             decke("_applyCreatureSeparation", ohne);
             decke("_leibGegenLeiber", ohne);
+            decke("_leibKontakte", ohne);
         }
         // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
         const start = frei(40, -40, 20) || land(40, -40);
@@ -1443,14 +1444,16 @@ async function kreaturProben(r, T, opts) {
             [6, 7],
         ])
             r._kreaturVerbinden(v.map((i) => tiere[i]));
+        // (der Täter: der Spieler steht im ersten Bären — kein Löser kennt ihn, der Leib bleibt in ihm)
+        if (taeter === "abstand-spieler") pm.set(tiere[0].position.x, pm.y, tiere[0].position.z);
         const leibVon = A.prototype._kreaturLeib;
         const seg = (c) => {
             const lb = leibVon.call(r, c, undefined, {});
             return {
-                ax: c.position.x - lb.fx * lb.halb,
-                az: c.position.z - lb.fz * lb.halb,
-                bx: c.position.x + lb.fx * lb.halb,
-                bz: c.position.z + lb.fz * lb.halb,
+                ax: c.position.x + lb.fx * (lb.mitte - lb.halb),
+                az: c.position.z + lb.fz * (lb.mitte - lb.halb),
+                bx: c.position.x + lb.fx * lb.vorn,
+                bz: c.position.z + lb.fz * lb.vorn,
                 r: lb.radius,
                 halb: lb.halb,
                 kugel: lb.halb + lb.radius,

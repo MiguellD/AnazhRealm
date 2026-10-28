@@ -648,7 +648,7 @@ async function tempo(K) {
             for (const n of HINDERNISSE) for (const kad of TAKTE) await galopp(name, name === "riese" ? "baer" : name, name === "riese" ? riese : 1, n, kad);
         // (T) der Fuchs im Takt-Deckel mit EINEM Schritt je Takt
         const teil = A.LEIB_TEIL;
-        A.LEIB_TEIL = { radius: Infinity, minM: Infinity };
+        A.LEIB_TEIL = { huefte: Infinity, minM: Infinity };
         await galopp("schmuggel", "fuchs", 1, "mauer", "deckel");
         A.LEIB_TEIL = teil;
         aus.schmuggel = aus.zeilen.pop();
