@@ -933,24 +933,33 @@ class AnazhRealm_feld_sprache {
                 p.mood[k] = (p.mood[k] || 0) + aMood * ((p.emotions[k] || 0) - (p.mood[k] || 0));
             }
         }
+    }
 
-        const trigger = (axis, program) => {
-            if (p.emotions[axis] < p.emotionThreshold) return;
-            const last = p.emotionLastApply[axis] ?? -Infinity;
-            if (currentTime - last < p.emotionApplyCooldown) return;
-            this.dslRun(program, { source: `emotion:${axis}` });
-            p.emotionLastApply[axis] = currentTime;
-            this.log(`Emotion '${axis}' triggert Welt-Effekt (Wert ${p.emotions[axis].toFixed(2)})`, "INFO");
+    // DIE GESETZE DES GEMÜTS (affekt.K2): die Emotion formt die Welt über Welt-Regeln mit Quelle — je Achse EIN Gesetz
+    // `emotion:<Achse>` (Bedingung `emotion_above <Achse>` an der Schwelle des Spielers, Takt = sein Cooldown) durch die EINE Tür
+    // `_registerWorldRule`, angepinnt (die Verdrängung schont sie): gewertet, gespeichert, geteilt und im Gesetze-Pult pausierbar
+    // wie jedes Gesetz; der Wunsch, den es
+    // wirkt, trägt seine Quelle („rule:emotion:sorrow", `_setWeather`). Bis affekt.K2 feuerte `updatePlayerEmotions` sechs feste
+    // Trigger an der Regel-Welt vorbei (`dslRun`): nicht teilbar, nicht gewertet, nicht abschaltbar. Idempotent (die Signatur
+    // dedupt, ein zweiter Ruf setzt den Takt) — beim Erwachen der Welt, nach dem Laden und vom Cooldown-Schieber.
+    _gemuetGesetze() {
+        const takt = { everySec: this.state.player.emotionApplyCooldown };
+        const wirkung = {
+            joy: ["skybox_color", "#f7d358"], // warmes Gelb
+            awe: ["skybox_color", AnazhRealm.ACHSEN_FARBE.magieleitung], // magisches Lila (die EINE Tabelle)
+            sorrow: ["weather", "rainy"],
+            hope: ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]],
+            peace: ["creatures_speed_mul", 0.7],
+            chaos: ["creatures_speed_mul", 1.5],
         };
-        // Ring 3 V2: alle sechs Achsen koppeln. Jede löst eine andere Art
-        // von Welt-Wirkung aus, damit sich die emotionalen Zustände nicht
-        // überlagern und sichtbar bleiben.
-        trigger("joy", ["skybox_color", "#f7d358"]); // warmes Gelb
-        trigger("awe", ["skybox_color", AnazhRealm.ACHSEN_FARBE.magieleitung]); // magisches Lila (die EINE Tabelle)
-        trigger("sorrow", ["weather", "rainy"]);
-        trigger("hope", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]);
-        trigger("peace", ["creatures_speed_mul", 0.7]);
-        trigger("chaos", ["creatures_speed_mul", 1.5]);
+        for (const axis of AnazhRealm.EMOTION_AXES) {
+            const g = this._registerWorldRule(["emotion_above", axis], wirkung[axis], takt, {
+                source: `emotion:${axis}`,
+                log: [],
+                programId: "gemuet",
+            });
+            if (g) g.pinned = true;
+        }
     }
 
     // === Der fusionierte READOUT ===

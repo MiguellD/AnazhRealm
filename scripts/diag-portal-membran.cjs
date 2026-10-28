@@ -330,9 +330,7 @@ async function hellProbe() {
         rend.setRenderObjectFunction(rofWelt);
         window.__erstRuhe = ruheWelt;
         // ein Bündel, das unter dem Filter neu aufnahm, trug nur die gemessenen Bürger: jedes nimmt beim nächsten Zeichnen neu auf
-        st.scene.traverse((o) => {
-            if (o.isBundleGroup) o.needsUpdate = true;
-        });
+        window.__bundlesNeu();
     }
 }
 // Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,

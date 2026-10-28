@@ -474,10 +474,18 @@
             vogel:  { textur: ["vogelA", "vogelB"], sr: 24000, sek: [23.3, 17.9], saat: [83, 89], quellen: 2, spreizung: 0.55,
                       filter: "lowpass", refDb: -39, dRef: 10, dMin: 1, hoerweiteM: 100, hz: 9000, kalibHz: 9000,
                       antwort: { dbJeDelta: 40, dbMin: -24, dbMax: 9, dVoll: 8, dAus: 24 } },
-            // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40) — T ist die Luft am Ohr
-            // (`lage.temperatur`, °C: in der Welt das EINE Temperatur-Feld des Gelaende-Kerns, stoffe.K3).
+            // Grillen: nachts × Waerme × offenes Gras; Zirp-Takt nach DOLBEAR (N/min = 7·(T − 10) + 40) — T ist die Waerme, in der
+            // die Grille sitzt (`lage.temperatur`, °C: in der Welt das EINE Temperatur-Feld des Gelaende-Kerns, stoffe.K3, mit der
+            // Traegheit traegTage ihres Lebensraums): die Feldgrille singt am Eingang ihrer Roehre, 5 cm im Boden, und der Boden
+            // daempft die Tages-Welle (Waermeleitung, κ ≈ 6·10⁻⁷ m²/s feuchter Lehm: Daempfungstiefe √(2κ/ω) = 12,8 cm, in 5 cm
+            // A = e^(−5/12,8) = 0,68 der Luft — der traege Koerper erster Ordnung mit 1/√(1 + (2π·τ)²) = 0,68: τ = 0,17 Tage). Bis
+            // 27.10. las sie die Luft am Ohr ohne Traegheit, und die Sommernacht der Mess-Wiese (Luft 10,3 °C) schwieg.
+            // DER KOERPER: der Ton ist die Resonanz ihrer Harfe (traegerHz, Gryllus campestris 4–5 kHz), die Waerme beschleunigt
+            // nur den Takt — die Textur ist die Huelle des Chors, die Harfe ein Ton je Quelle. Bis 27.10. trug die rate den Ton
+            // mit: bei 14 °C (68 Zirpe/min) fiel er um den Faktor 0,62 auf 2,9 kHz (diag-klang-zensus, Szene nacht).
             grille: { textur: ["grille"], sr: 22050, sek: 4.3, saat: 97, quellen: 2, spreizung: 0.5, filter: "highpass",
-                      refDb: -34, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500 }
+                      refDb: -34, tStumm: 12, tVoll: 16, nRef: 110, nachtAb: 0.05, nachtVoll: -0.15, hz: 2500, kalibHz: 2500,
+                      traegTage: 0.17, traegerHz: [4400, 4800] }
         },
         // Der Tier-Ruf: f0 = fRef·(L/lRef)^−exponent, Formanten ∝ 1/L; Kontur je Stimmung.
         tier: {
@@ -625,9 +633,12 @@
             var u = k / n, f = f0 * Math.exp(lr * u) * (1 + vib * Math.sin(2 * Math.PI * vibHz * (k / sr)));
             if (f > sr * 0.45) f = sr * 0.45;
             ph += (2 * Math.PI * f) / sr; ph2 += (4 * Math.PI * f) / sr;
-            var env = Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.25)), 2) * (u > 0.8 ? 1 - (u - 0.8) / 0.2 : 1);
-            x[i0 + k] += amp * env * (Math.sin(ph) + (f * 2 < sr * 0.45 ? 0.125 * Math.sin(ph2) : 0));
+            x[i0 + k] += amp * tonHuelle(u) * (Math.sin(ph) + (f * 2 < sr * 0.45 ? 0.125 * Math.sin(ph2) : 0));
         }
+    }
+    // Die Huelle eines Tons an der Stelle u (0..1): weich auf, gehalten, linear aus.
+    function tonHuelle(u) {
+        return Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.25)), 2) * (u > 0.8 ? 1 - (u - 0.8) / 0.2 : 1);
     }
     // Nahtlose Schleife: die ersten L Samples kreuzen gleich-leistig mit dem Ueberhang n…n+L.
     function nahtlos(x, n) {
@@ -728,14 +739,17 @@
         },
         vogelA: function (n, sr, rnd) { return vogelSchleife(n, sr, rnd); },
         vogelB: function (n, sr, rnd) { return vogelSchleife(n, sr, rnd); },
+        // die Grillen: die HUELLE ihres Chors (zehn Saenger, je Periode drei oder vier Pulse von 14 ms) — den Ton traegt die
+        // Harfe (UMWELT.stimmen.grille.traegerHz, im Graph), der DOLBEAR-Takt (rate) beschleunigt nur die Huelle
         grille: function (n, sr, rnd) {
-            var x = new Float32Array(n), dauer = n / sr, G = UMWELT.stimmen.grille;
+            var x = new Float32Array(n), dauer = n / sr, G = UMWELT.stimmen.grille, m = Math.floor(0.014 * sr);
             var periode = 60 / G.nRef;
             for (var c = 0; c < 10; c++) {
-                var fc = 4200 + rnd() * 800, p = periode * (0.95 + 0.1 * rnd()), amp = 0.25 + 0.75 * rnd();
+                var p = periode * (0.95 + 0.1 * rnd()), amp = 0.25 + 0.75 * rnd();
                 var pulse = 3 + (rnd() < 0.5 ? 1 : 0), t = rnd() * p;
                 while (t < dauer) {
-                    for (var k = 0; k < pulse; k++) ton(x, sr, t + k * 0.036, 0.014, fc, fc * 0.985, amp, 0, 0);
+                    for (var k = 0; k < pulse; k++)
+                        for (var i = 0, i0 = Math.floor((t + k * 0.036) * sr); i < m && i0 + i < n; i++) x[i0 + i] += amp * tonHuelle(i / m);
                     t += p;
                 }
             }
@@ -818,14 +832,17 @@
     // Mittel ueber die Texturen). Der Graph gleicht sie aus — der Pegel der Mischung IST der Pegel am Ausgang
     // (die Linse misst ihn offline nach). Rein.
     function kalibAus(S, texturen) {
-        var vor = 0, nach = 0;
-        for (var i = 0; i < texturen.length; i++) {
-            var tex = texturen[i];
-            var x = bq(Float32Array.from(tex.daten), tex.sr, S.filter, S.kalibHz, S.q || 0.707);
-            var a = rms(tex.daten), b = rms(x);
-            vor += a * a;
-            nach += b * b;
-        }
+        var vor = 0, nach = 0, T = S.traegerHz || [0];
+        for (var i = 0; i < texturen.length; i++)
+            for (var j = 0; j < T.length; j++) {
+                var tex = texturen[i], d = Float32Array.from(tex.daten);
+                // traegt eine Harfe die Huelle, misst die Eichung den Ton, den der Graph spielt (Huelle × Harfe)
+                if (T[j]) for (var k = 0; k < d.length; k++) d[k] *= Math.sin((2 * Math.PI * T[j] * k) / tex.sr);
+                var x = bq(d, tex.sr, S.filter, S.kalibHz, S.q || 0.707);
+                var a = rms(tex.daten), b = rms(x);
+                vor += a * a;
+                nach += b * b;
+            }
         return vor > 0 && nach > 0 ? 10 * Math.log10(nach / vor) : 0;
     }
 
@@ -965,7 +982,7 @@
             return true;
         }
         function starte(name, m, t) {
-            var S = W[name], st = { name: name, an: true, quellen: [], panner: [] };
+            var S = W[name], st = { name: name, an: true, quellen: [], panner: [], huellen: [] };
             // Ausgleich: die Filter-Eichung zurueck und die Leistung auf die Quellen verteilt (n unkorrelierte
             // Schleifen tragen zusammen den Pegel der Mischung).
             st.ausgleich = Math.pow(10, -kalib[name] / 20) / Math.sqrt(S.quellen);
@@ -985,7 +1002,19 @@
                 src.playbackRate.value = m.rate || 1;
                 var pan = ctx.createStereoPanner();
                 pan.pan.value = S.gerichtet ? m.pan : (k % 2 ? 1 : -1) * (S.spreizung || 0);
-                src.connect(pan);
+                if (S.traegerHz) {
+                    // DIE HARFE (der Koerper der Grille) klingt, die Huelle oeffnet sie: ihr Takt laesst den Ton stehen
+                    var harfe = ctx.createOscillator(), auf = ctx.createGain();
+                    harfe.frequency.value = S.traegerHz[k % S.traegerHz.length];
+                    auf.gain.value = 0;
+                    src.connect(auf.gain);
+                    harfe.connect(auf);
+                    auf.connect(pan);
+                    harfe.start(t);
+                    knoten.add(harfe);
+                    st.quellen.push(harfe);
+                    st.huellen.push(auf);
+                } else src.connect(pan);
                 pan.connect(st.filter);
                 src.start(t, versatz() * b.duration);
                 knoten.add(src);
@@ -999,7 +1028,7 @@
             st.an = false;
             st.gain.gain.cancelScheduledValues(t);
             st.gain.gain.setTargetAtTime(0, t, U.abklangSek);
-            var alle = [st.filter, st.gain].concat(st.panner);
+            var alle = [st.filter, st.gain].concat(st.panner, st.huellen);
             st.quellen.forEach(function (src, i) {
                 src.stop(t + 8 * U.abklangSek);
                 if (i === 0) src.onended = function () { alle.forEach(function (nd) { try { nd.disconnect(); } catch (_e) {} }); };
@@ -1038,7 +1067,8 @@
                     ziel(st.gain.gain, mm.gain * st.ausgleich, zeit, U.rampeSek);
                     ziel(st.filter.frequency, mm.hz, zeit, U.rampeSek);
                     if (W[name].gerichtet) ziel(st.panner[0].pan, mm.pan, zeit, U.rampeSek);
-                    for (var q = 0; q < st.quellen.length; q++) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.rampeSek);
+                    for (var q = 0; q < st.quellen.length; q++)
+                        if (st.quellen[q].playbackRate) ziel(st.quellen[q].playbackRate, mm.rate || 1, zeit, U.rampeSek);
                 }
             },
             zensus: function () {
