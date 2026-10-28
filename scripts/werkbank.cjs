@@ -1631,6 +1631,8 @@ async function starte() {
             // größte und das kleinste Böen-Maß des EINEN Winds am Ort `_windAt` in der Minute ab der Bühnen-Uhr — die Laufzeit der
             // wandernden Böe bis dorthin); je Paar der Rausch-Boden derselben Uhren bei Wind 0 (die Böen-Drift `_windWob` 0: Gras
             // und Krone ruhen). Das Nah-Feld (0–15 m) aus der Tiefe des Schusses (`mitte`); die Varianz misst `boeVarianz`.
+            // Headless (swiftshader, Mess-Wiese, Δt 0,25 s): Kamm 2999 über Boden 0,001, Tal 878 — Kamm/Tal 3,42, Nah-Feld 53,6 %;
+            // Wind 0 (`_windWob` 0) ROT, Kamm = Boden.
             let zeit = null;
             if (k.zeit != null) {
                 const U = window.__buehneUhr,
