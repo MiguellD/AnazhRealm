@@ -1026,6 +1026,118 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── schwarm (luftwasser.K2): der Vogel-Schwarm fliegt aus dem Verband der Herde (`_schwarmVerband`, tetrapoda verbandZug).
+    // Mittag und Sonne als Wort des Reglers; die Schwarm-Karte frisch, die Zelle unter dem Auge trägt den festen Schwarm von
+    // 100 Gliedern, jede andere keinen; je Takt des Spiels (`_vogelTakt`, 60 Hz, 60 s) steht das Auge 40 m quer zum Kurs des
+    // Zentrums (nah) mit dem Blick auf es. Gemessen an den Lagen, die der Takt zeichnet, ab 10 s: die Ausrichtung Φ = |Σv̂|/N
+    // (v aus dem Weg je Takt, wie die Herde), die Kohäsion = der Anteil der Glieder im größten Verbund, Glied zu Glied binnen
+    // fensterRaum × Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom Mittel) trägt fünf Leiber,
+    // hundert Glieder füllen einen Ball weiter als das Fenster; je Takt die Züge des Verbands je Glied (`verbandZug`) ──
+    await buehne("schwarm", async (restore) => {
+        const K = A._steuerGesetz();
+        const zugAlt = K.verbandZug;
+        let zuege = 0;
+        K.verbandZug = function (x, z, vx, vz, tempo, raum, gl, H, out) {
+            zuege++;
+            if (taeter !== "schwarm-verband") return zugAlt.apply(this, arguments);
+            return Object.assign(out, { x: vx, z: vz, n: 0 });
+        };
+        restore.push(() => (K.verbandZug = zugAlt));
+        // der Zwilling (main bis 28.10.): jedes Glied eine Funktion von Index und Zeit, nah die Separation — kein Verband
+        if (taeter === "schwarm-zwilling")
+            decke(
+                "_schwarmVerband",
+                () =>
+                    function (c, zt, x, y, z, uhr, nah, voegel, n0) {
+                        const [VG, sk] = [A._vogelGesetz(), this._schwarmKarte];
+                        for (let i = 0; i < zt.n; i++) {
+                            const g = VG.glied(i, zt.n, uhr, c.wurf[0], zt.gier, VG.V, sk.glied);
+                            sk.lagen.set([x + g.x, y + g.y, z + g.z], 3 * i);
+                            Object.assign(voegel[n0 + i] || (voegel[n0 + i] = {}), { gier: g.gier, schlag: g.schlag });
+                        }
+                        return nah ? VG.separation(sk.lagen, zt.n, VG.V.schwarm.raumM, sk.gitter) : 0;
+                    }
+            );
+        const [tag0, wetter0] = [s.timeOfDay, s.weather];
+        r._uhrSetzen(0.5, "regler");
+        r._setWeather("sunny", "regler");
+        restore.push(() => (r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler")));
+        const VG = A._vogelGesetz();
+        const S = VG.V.schwarm;
+        const fenster = A._verhaltenGesetz().herde.fensterRaum * S.raumM;
+        const [sonne, regen] = [r._sonnenRichtung().y, r._weatherFieldFor(s.weather).rain];
+        r._schwarmKarte = null;
+        r._vogelSchwarmTakt(sonne, regen);
+        const sk = r._schwarmKarte;
+        const c = sk.zellen.get(
+            Math.floor(s.camera.position.x / S.zelleM) * 1048576 + Math.floor(s.camera.position.z / S.zelleM)
+        );
+        if (!c) throw new Error("keine Schwarm-Zelle unter dem Auge");
+        c.wurf[4] = (100 - S.glieder[0]) / (S.glieder[1] - S.glieder[0]);
+        const zt = {};
+        const t = { takte: 0, phi: 0, k: [], zuege: 0, alt: null, leitM: 0, nn: 0, ms: [] };
+        for (let k = 0; k < 3600; k++) {
+            s.spielZeit += 1 / 60;
+            for (const q of sk.zellen.values()) [q.revier, q.frisch] = [q === c, s.spielZeit];
+            if (!VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt))
+                throw new Error("der Schwarm fliegt nicht");
+            const [x, z] = [c.x + zt.dx, c.z + zt.dz];
+            const [ex, ez] = [x + Math.cos(zt.gier) * 40, z - Math.sin(zt.gier) * 40];
+            pm.set(ex, r.getTerrainHeightAt(ex, ez) + 0.5, ez);
+            s.camera.position.set(ex, pm.y + 1.1, ez);
+            s.camera.lookAt(x, r._terrainMacroSurfaceY(x, z) + zt.h, z);
+            s.camera.updateMatrixWorld(true);
+            r._loopFrustumCulling();
+            const [z0, t0] = [zuege, performance.now()];
+            r._vogelTakt();
+            t.ms.push(performance.now() - t0);
+            const L = sk.voegel.map((v) => [v.x, v.y, v.z]);
+            if (k < 600 || L.length !== zt.n) {
+                t.alt = L;
+                continue;
+            }
+            t.zuege += (zuege - z0) / L.length;
+            let [sx, sz, mx, mz] = [0, 0, 0, 0];
+            L.forEach((p, i) => {
+                const d = Math.hypot(p[0] - t.alt[i][0], p[2] - t.alt[i][2]);
+                if (d > 1e-6) ((sx += (p[0] - t.alt[i][0]) / d), (sz += (p[2] - t.alt[i][2]) / d));
+                [mx, mz] = [mx + p[0] / L.length, mz + p[2] / L.length];
+            });
+            t.phi += Math.hypot(sx, sz) / L.length;
+            t.leitM += Math.hypot(mx - x, mz - z);
+            t.takte++;
+            t.alt = L;
+            if (k % 6) continue;
+            // der größte Verbund: die Glieder, die Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar sind
+            const frei = new Set(L.keys());
+            let gross = 0;
+            while (frei.size) {
+                const kette = [frei.values().next().value];
+                frei.delete(kette[0]);
+                for (let a = 0; a < kette.length; a++)
+                    for (const b of [...frei])
+                        if (Math.hypot(...L[b].map((v, e) => v - L[kette[a]][e])) <= fenster)
+                            (frei.delete(b), kette.push(b));
+                gross = Math.max(gross, kette.length);
+            }
+            t.k.push(gross / L.length);
+            t.nn += L.reduce((m, p, i) => m + Math.min(...L.map((q, j) => (i === j ? Infinity : Math.hypot(...p.map((v, e) => v - q[e]))))), 0) / L.length; // prettier-ignore
+        }
+        return {
+            glieder: zt.n,
+            takte: t.takte,
+            proben: t.k.length,
+            fensterM: +fenster.toFixed(2),
+            phi: +(t.phi / t.takte).toFixed(3),
+            kohaesion: +(t.k.reduce((a, b) => a + b, 0) / t.k.length).toFixed(3),
+            kohaesionMin: +Math.min(...t.k).toFixed(3),
+            zuegeJeGlied: +(t.zuege / t.takte).toFixed(3),
+            leitM: +(t.leitM / t.takte).toFixed(2),
+            nnM: +(t.nn / t.k.length).toFixed(2),
+            msTakt: +(t.ms.reduce((a, b) => a + b, 0) / t.ms.length).toFixed(3),
+        };
+    });
+
     // ── reload: ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
     await buehne("reload", async (restore) => {
         const c = tier(land(30, 12), "wesen");
@@ -2924,6 +3036,7 @@ const PROBEN = [
     "gier",
     "jagd",
     "herde",
+    "schwarm",
     "peer",
     "zufall",
     "nexus",
@@ -3139,6 +3252,21 @@ function urteil(name, z) {
         soll(z.fluchtWegM >= 30, `Fluchtweg ${z.fluchtWegM} m`);
         const I = z.id.bruch || [];
         soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
+    }
+    if (name === "schwarm") {
+        soll(
+            z.glieder >= 60 && z.takte >= 3000 && z.proben >= 500,
+            `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte, ${z.proben} Proben des Verbunds`
+        );
+        soll(
+            z.zuegeJeGlied >= 0.99,
+            `Schwarm ohne Verband: ${z.zuegeJeGlied} Züge je Glied und Takt (Soll 1 — verbandZug wie die Herde)`
+        );
+        soll(z.phi >= 0.8, `Schwarm fliegt ungerichtet: Φ ${z.phi} (Soll ≥ 0,8)`);
+        soll(
+            z.kohaesion >= 0.9,
+            `Schwarm zerfällt: im Mittel ${z.kohaesion} der ${z.glieder} Glieder im größten Verbund, Glied zu Glied ≤ ${z.fensterM} m (Soll ≥ 0,9; am wenigsten ${z.kohaesionMin}, ${z.leitM} m vom Leittier)`
+        );
     }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
@@ -3387,6 +3515,10 @@ const TAETER = {
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
+    ],
+    schwarm: [
+        ["schwarm-verband", /Schwarm zerfällt/],
+        ["schwarm-zwilling", /Schwarm ohne Verband: 0 Züge/],
     ],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],

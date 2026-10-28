@@ -37,6 +37,7 @@ const DAUER_S = {
     gier: 5,
     jagd: 77,
     herde: 44,
+    schwarm: 10,
     peer: 1,
     zufall: 1,
     nexus: 1,

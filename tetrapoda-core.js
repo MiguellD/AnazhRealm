@@ -2063,9 +2063,14 @@
         // verteilter Ball (R2-Folge, Radius ∛) mit raumJeGlied Abstand³ je Glied, gestaucht zur flachen Scheibe form = [längs,
         // hoch, quer] (gemessene Starenschwärme sind dünn längs der Schwerkraft, Ballerini et al. 2008; Nächster-Nachbar
         // 0,7–1,5 m), atmend (atmen), eine Dichte-Welle läuft längs durch den Verband (welle; Procaccini et al. 2011), jedes Glied
-        // zittert um seinen Platz (zitterM) und wechselt Schlag und Gleiten (gleitHz, der Starenflug). NAH (nahM vom Auge) hält
-        // die Separation die Glieder auf ihrem Paar-Raum raumM auseinander (schwarmSeparation, über ein Hash-Gitter der Zelle
-        // raumM: Kosten an den Gliedern, nie n²); jenseits von sichtM rechnet nur das Zentrum; das Revier einer Zelle folgt der
+        // zittert um seinen Platz (zitterM) und wechselt Schlag und Gleiten (gleitHz, der Starenflug). DER VERBAND (luftwasser.K2,
+        // 28.10., additiv): NAH (nahM vom Auge) fliegt jedes Glied aus dem Verbands-Gesetz der Herde — das Zentrum ist sein
+        // LEITTIER (verbandZug, leitGewicht), jedes Glied liest dazu je fünf Glieder im Schritt n/5 (das Budget maxNachbarn der
+        // Herde; Stare richten sich nach 6–7 Nachbarn, Ballerini et al. 2008), sein eigener Wunsch ist der Kurs des Zentrums,
+        // gedreht um seine Vorliebe und sein Rauschen (schwarmWunsch: verband.rauschRad, eigen, hz; Couzin et al. 2005); der
+        // Ball der Funktion ist sein Wurf, die Höhe bleibt die Scheibe der Funktion. Die Separation hält die Glieder auf ihrem
+        // Paar-Raum raumM auseinander (schwarmSeparation, über ein Hash-Gitter der Zelle raumM: Kosten an den Gliedern, nie n²);
+        // fern trägt das Zentrum die Formation in seinem Kurs-Rahmen; jenseits von sichtM rechnet nur das Zentrum; das Revier einer Zelle folgt der
         // Deckung je frischeS Sekunden der Welt-Uhr (gepflanzter Wald vertreibt den Schwarm). Bei Tag (sonneMin) und unter
         // regenMax fliegt er, sonst ruht er (kein Glied im Bild). Der Leib ist der des Singvogels (leib).
         schwarm: Object.freeze({
@@ -2084,7 +2089,8 @@
             zitterM: 0.22,
             zitterHz: 0.6,
             gleitHz: 0.45,
-            raumM: 0.7,
+            raumM: 1.0,
+            verband: Object.freeze({ rauschRad: 1.2, eigen: 0.5, hz: [0.13, 0.31], dtMax: 0.25 }),
             nahM: 60,
             sichtM: 320,
             sonneMin: 0.05,
@@ -2168,7 +2174,8 @@
         return true;
     }
     // Das Glied i von n um das Zentrum zur Zeit t (phase = w[0] des Schwarms, gier = die des Zentrums): die Formation als
-    // Funktion — kein Zustand je Kopf. Schreibt out {x, y, z (Welt-Versatz vom Zentrum, m), gier, schlag (rad)}.
+    // Funktion — kein Zustand je Kopf; der Verband (schwarmWunsch, verbandZug) wirft seine Glieder in x, z aus ihr und fliegt
+    // in y ihre Scheibe. Schreibt out {x, y, z (Welt-Versatz vom Zentrum, m), gier, schlag (rad)}.
     function schwarmGlied(i, n, t, phase, gier, V, out) {
         var S = V.schwarm,
             f = S.form,
@@ -2223,6 +2230,22 @@
         var a = g > 0.6 ? 0 : g < 0.2 ? 1 : (0.6 - g) / 0.4;
         var L0 = V.leib;
         out.schlag = 0.15 + a * (L0.schlagRad * Math.sin(TAU * L0.schlagHz * t + 97 * psi) - 0.15);
+        return out;
+    }
+    // DER WUNSCH DES GLIEDS i im Verband (VOGEL_GESETZ.schwarm.verband) zur Zeit t: der Kurs gier des Zentrums im Tempo tempoMs,
+    // gedreht um rauschRad × (eigen × seine Vorliebe + (1 − eigen) × sein Rauschen) — die Vorliebe ein fester Wurf des Index in
+    // [−1, 1], das Rauschen zwei Sinus der Frequenzen hz mit der Phase des Index. Ohne den Verband zerstreut die Vorliebe den
+    // Schwarm; Ausrichtung und Zusammenhalt hält allein verbandZug. Schreibt out {x, z} (Welt-XZ, m/s).
+    function schwarmWunsch(i, t, gier, V, out) {
+        var S = V.schwarm,
+            W = S.verband,
+            TAU = 6.283185307179586;
+        var psi = TAU * ((i * 0.6180339887498949) % 1),
+            b = 2 * ((0.5 + i * 0.5698402909980532) % 1) - 1;
+        var r = 0.6 * Math.sin(TAU * W.hz[0] * t + psi) + 0.4 * Math.sin(TAU * W.hz[1] * t + 3 * psi);
+        var th = gier + W.rauschRad * (W.eigen * b + (1 - W.eigen) * r);
+        out.x = S.tempoMs * Math.sin(th);
+        out.z = S.tempoMs * Math.cos(th);
         return out;
     }
     // DIE SEPARATION DES NAHEN SCHWARMS: p = die Lagen der n Glieder (x, y, z je Glied, Welt), raum = der Paar-Raum (m),
@@ -3763,6 +3786,7 @@
         schwarmRevier: schwarmRevier,
         schwarmZentrum: schwarmZentrum,
         schwarmGlied: schwarmGlied,
+        schwarmWunsch: schwarmWunsch,
         schwarmSeparation: schwarmSeparation,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
