@@ -1,6 +1,6 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K3 K5, physik K1 K2, feld K2 K3, stoffe K3;
+// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K3 K5, physik K1 K2, feld K2 K3, stoffe K2 K3;
 // physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
@@ -1377,6 +1377,61 @@ module.exports = [
         quelle: "1 = ≥ 3 von 7 Wirkungen je Stoff bestehen ihre Mutation",
     },
 
+    // ── stoffe.K2 ── gate:stand-takt, der Brand-Block der Sim-Wecken (Null-Renderer, Mess-Wiese, Spielzeit-Takte): das Wort bewölkt
+    // (Wind 0,3; die Bühne hält die Nässe trocken wie die W-Kette ihren Vorgänger), gezündet über den Weg des Brennglases
+    // (`_brandEntfachen`), je Bild genau EIN Schritt des Brands. Die Front ist die kürzeste Lauf-Zeit vom Eintrittspunkt jeder
+    // 16-m-Zelle, ihr Tempo Rothermel 1972 aus der Spalte `brenn` der Stoff-Tafel, dem EINEN Wind (`_windAt` in seiner
+    // Beaufort-Stärke, ohne die wandernde Böe) und dem Hang (stamm/feld-leben.js `_brandTempo`). Gemessen am Zustand der Zellen
+    // (je Sprung der Front die Zelle, von der sie kam → der Punkt, an dem sie ankam): mit dem Wind der Median der Köpfe (je
+    // Gras-Quelle ihr schnellster Sprung, ±20° um den Kopf), gegen den Wind (±30°) der schnellste Sprung; die Mutante im selben
+    // Lauf (derselbe Herd, `_windAt` ohne m/s) läuft nirgends ≥ 0,5 m/s. An main 557d4aad ROT (die Brand-Zeile trägt kein Tempo: Übergriff nach Würfeln ohne Wind),
+    // am Zweig w3s-feuer GRÜN in vier Läufen: mit dem Wind 0,882–0,919 m/s (21–24 Köpfe), gegen 0,028, ohne Wind höchstens 0,041,
+    // bis 18,3 Einheiten je Zelle.
+    {
+        kriterium: "stoffe.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const m = /^\s*Sim-Wecken brand: (\{.*\}) — /m.exec(String(lauf.stdout || ""));
+            let b = null;
+            try {
+                b = m && JSON.parse(m[1]);
+            } catch (_e) {}
+            if (!b || !Number.isFinite(b.mit)) return { gruen: false, zahl: "keine Front im Brand-Block (Exit " + lauf.exit + ")" };
+            const gruen = b.start === true && b.koepfe >= 3 && b.mit >= 0.5 && b.mit <= 2 && b.gegen <= 0.2 && b.ohneWind < 0.5;
+            return {
+                gruen,
+                zahl:
+                    "mit dem Wind " + b.mit + " m/s (" + b.koepfe + " Köpfe) · gegen " + b.gegen + " m/s · Mutante ohne Wind bis " +
+                    b.ohneWind + " m/s · bis " + b.einheiten + " Einheiten je Zelle",
+            };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/stoff-material.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose",
+    },
+
     // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
     // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
     // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
@@ -1595,5 +1650,6 @@ module.exports.fehlt = [
     { kriterium: "stoffe.K5", staffel: 2, befehl: null, grund: "nicht gebaut: der Nachwuchs ist EIN Gesetz (Feuchte × Licht, w3s-sukzession), aber die Reihe fehlt — kein Sämling aus dem Stubben (der Wald setzt nach der Narbe den gewachsenen Baum, keine Jugend-Gestalt `treeParams(alter)`), keine Sukzession Brand → Gras → Busch → Wald (der Brand gehört der Karte w3s-feuer), kein Nährstoff-Feld (Ernte entnimmt nichts, Asche und Leichnam geben nichts zurück)" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
+    { kriterium: "stoffe.K2", staffel: 2, befehl: null, grund: "nicht gebaut (w3s-feuer baute Staffel 1): Fels und Wasser halten die Front (kein Bett, `_brandStoff`), aber keine Probe misst es; nasses Gras hält nur über die EINE globale Nässe (kein Feld je Ort); der Regen löscht das Laub erst nach 196 s (Erlöschungs-Feuchte 0,25 auf der Nässe-Kurve benetzenS 150, gate:stand-takt an w3s-feuer); die Asche ist eine Narbe im lebendig (keine Albedo im Boden-Stoff); Rauch und Knistern lesen den Brand nicht; 2 000 brennende Zellen ≤ 0,5 ms an der GTX-CPU ungemessen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
 ];
