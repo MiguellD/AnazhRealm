@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\557d4aad-radeon\klang.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; node "$D/m15-wind.cjs" 60
+[linse-gpu] amd/rdna-3
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":85,"steht":true},"wahl":{"hz":292.01898193359375,"kand":1,"zensus":[["wind",-31.6],["glut",-37.4],["vogel",-38.9]]},"fpsVor":60,"bilder":1013,"fenster":119,"r0":{"lagS":0,"r":0.8625805894346996,"n":119,"cvX":0.24439936462131046,"cvY":0.5454208948150476},"best":{"lagS":-0.5,"r":0.8641762548927808,"n":118,"cvX":0.2442558508758851,"cvY":0.5483930304589029}}
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 12 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
