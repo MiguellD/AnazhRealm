@@ -39,7 +39,7 @@
 //   node scripts/diag-fachwerk-contract.cjs
 const fs = require("fs");
 const path = require("path");
-const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey, goldenWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck, goldenVergleich: compare, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
@@ -48,10 +48,8 @@ const goldenFile = path.join(goldenDir, "haeuser.json");
 // DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
 const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "fachwerk-core.js");
-require(KERN);
-const FC = globalThis.__fachwerkCore;
+const frisch = vertragsKern("fachwerk-core.js", "__fachwerkCore");
+const FC = frisch();
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -927,11 +925,6 @@ function bogenLinse() {
     //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
     //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
     //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
-    const frisch = () => {
-        delete require.cache[require.resolve(KERN)];
-        require(KERN);
-        return globalThis.__fachwerkCore;
-    };
     const fingerAlle = (K, faelle) => {
         const r = {};
         for (const c of faelle) {

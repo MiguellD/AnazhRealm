@@ -22,15 +22,13 @@
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenFile = path.join(root, "spec/asset-contract/v4/golden", "gates.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "porta-core.js");
-require(KERN);
-const PC = globalThis.__portaCore;
+const frisch = vertragsKern("porta-core.js", "__portaCore");
+const PC = frisch();
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -95,11 +93,7 @@ function buildCase(c) {
     await probeWand(
         "v4",
         {
-            laden: () => {
-                delete require.cache[require.resolve(KERN)];
-                require(KERN);
-                return globalThis.__portaCore;
-            },
+            laden: frisch,
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)

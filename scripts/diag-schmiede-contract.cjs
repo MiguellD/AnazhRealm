@@ -30,15 +30,13 @@
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, doppeltGebaut, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenFile = path.join(root, "spec/asset-contract/v5/golden", "klingen.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "schmiede-core.js");
-require(KERN);
-const SC = globalThis.__schmiedeCore;
+const frisch = vertragsKern("schmiede-core.js", "__schmiedeCore");
+const SC = frisch();
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -145,11 +143,7 @@ function buildCase(c) {
     await probeWand(
         "v5",
         {
-            laden: () => {
-                delete require.cache[require.resolve(KERN)];
-                require(KERN);
-                return globalThis.__schmiedeCore;
-            },
+            laden: frisch,
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)

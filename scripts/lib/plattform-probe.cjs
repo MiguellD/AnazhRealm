@@ -416,7 +416,17 @@ function goldenWand(datei, cv, ist, n, check) {
     for (const d of diffs.slice(1)) console.log(`      ↳ ${d}`);
 }
 
+// DER KERN einer Vertrags-Linse: THREE r128 global, dann `frisch()` lädt die Kern-Datei des Spiel-Baums neu und gibt ihren
+// globalen Namen (die Linse lädt ihn so, die Plattform-Probe je Lauf so — je Linse eine eigene Kopie war ein Zwilling)
+function vertragsKern(datei, name) {
+    const p = require("path");
+    global.THREE = require(p.join(__dirname, "..", "..", "worlds/terrain/lib/three-r128.min.js"));
+    const kern = p.join(__dirname, "..", "..", datei);
+    return () => (delete require.cache[require.resolve(kern)], require(kern), globalThis[name]);
+}
+
 module.exports = {
+    vertragsKern,
     doppeltGebaut,
     goldenWand,
     plattformProbe,

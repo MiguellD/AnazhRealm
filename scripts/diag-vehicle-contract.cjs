@@ -23,15 +23,13 @@
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, doppeltGebaut, goldenWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, doppeltGebaut, goldenWand, vertragsKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenFile = path.join(root, "spec/asset-contract/v3/golden", "vehicles.json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "vehicle-core.js");
-require(KERN);
-const VC = globalThis.__vehicleCore;
+const frisch = vertragsKern("vehicle-core.js", "__vehicleCore");
+const VC = frisch();
 
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
@@ -86,11 +84,7 @@ function caseKey(c) {
     await probeWand(
         "v3",
         {
-            laden: () => {
-                delete require.cache[require.resolve(KERN)];
-                require(KERN);
-                return globalThis.__vehicleCore;
-            },
+            laden: frisch,
             bauen: (K) => {
                 const r = {};
                 for (const c of CASES)
