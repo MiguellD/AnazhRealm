@@ -1475,3 +1475,5 @@
 2026-10-28 20:55:52 takt18-radeon ENDE 38 grün / 9 rot · 183.8 min
 2026-10-28 20:57:41 takt18e-radeon START 15 Stationen
 2026-10-28 20:59:45 takt18e-radeon gelaende.K2#1 GRÜN 2.1 · 1/15
+2026-10-28 21:07:57 takt18e-radeon siedlung.K5#1 GRÜN 8.2 · 2/15
+2026-10-28 21:18:56 takt18e-radeon halten.K2#1 GRÜN 11.0 · 3/15
