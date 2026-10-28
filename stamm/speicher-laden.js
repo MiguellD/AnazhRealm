@@ -751,7 +751,7 @@ class AnazhRealm_speicher_laden {
     _loadStateRestoreWorldRules(state) {
         if (!Array.isArray(state.worldRules)) return;
         const cfg = AnazhRealm.WORLD_RULES;
-        const now = performance.now() / 1000;
+        const now = this._taktUhr();
         const restored = [];
         for (const s of state.worldRules) {
             if (
@@ -790,6 +790,7 @@ class AnazhRealm_speicher_laden {
             });
         }
         this.state.worldRules = restored;
+        this._gemuetGesetze(); // die Gesetze des Gemüts stehen in jeder Welt, auch in einem Stand von vor affekt.K2
     }
 
     // Pfad-Buckets (defensiver Merge, fremde Keys ignoriert), Welt-Journal (entries + seen mit entryCap),

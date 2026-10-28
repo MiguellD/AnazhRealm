@@ -702,7 +702,7 @@ async function probe(argW) {
             zaehle(() => r.tryMousePlace());
             m.zuege = n;
             // Das nächste Phantom: sein Same (der Bau-Modus hält ihn, `_werkSame` mit `bm`).
-            m.naechsterSame = bm.setzSame ? bm.setzSame.same : null;
+            m.naechsterSame = bm.setzSame ? bm.setzSame[NAME] : null;
             st.p2p = p2pAlt;
             delete r.p2pBroadcastDsl;
             const neu = st.architectures.filter(

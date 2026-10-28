@@ -40,8 +40,10 @@ async function checkBandV1738RulePersistence(ctx) {
         r.state.worldRules.length = 0;
         r._loadStateRestoreWorldRules(snap);
         const rr = r.state.worldRules;
+        // die Gesetze des Gemüts stehen in jeder geladenen Welt (`_gemuetGesetze`, affekt.K2) — hinter den geladenen
         out.restoreWorks =
-            rr.length === 2 &&
+            rr.length === 2 + r.constructor.EMOTION_AXES.length &&
+            rr.slice(2).every((g) => /^emotion:/.test(g.source) && g.pinned) &&
             JSON.stringify(rr[0].cond) === JSON.stringify(["weather_is", "rainy"]) &&
             rr[0].source === "human" &&
             rr[0].fires === 0 &&
@@ -79,7 +81,7 @@ async function checkBandV1738RulePersistence(ctx) {
             ],
         };
         r._loadStateRestoreWorldRules(dupSnap);
-        out.restoreDedup = r.state.worldRules.length === 1;
+        out.restoreDedup = r.state.worldRules.filter((g) => g.source === "human").length === 1;
 
         // --- (5) alter Save ohne worldRules → no-op (state bleibt) ---
         r.state.worldRules = [{ id: 999, cond: ["x"], effect: ["y"], source: "human" }];

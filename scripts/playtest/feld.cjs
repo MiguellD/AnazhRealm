@@ -707,6 +707,7 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
             ruleE.lastFired = -Infinity;
             r._tickWorldRules(now());
         }
+        ruleE.value = 0.4; // bewährt: ihr δ trägt ihre Kosten (die Wertung selbst prüft V1743)
         out.fitnessFires = (ruleE.fires || 0) >= 1;
         out.fitnessHigh = r._worldRuleFitness(ruleE) >= cfg.renewFitness;
         out.fitnessVal = r._worldRuleFitness(ruleE);
@@ -1453,9 +1454,8 @@ async function checkBandV1741RuleThread(ctx) {
 }
 
 // Lokal-attribuierte Regel-Fitness: reward = struktureller δ am Effekt-Ort über die Baseline, EMA in
-// rule.value; _worldRuleFitness = viability-Floor + value-Bonus (valueScore zentriert 0.5 → neutral
-// überlebt, keine Monokultur). Geprüft: Heiler/neutral/Schädling diskriminieren; die Eviction wirft
-// den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
+// rule.value; _worldRuleFitness = valueScore × Erfolg × Kosten (neutral knapp unter der Schwelle). Geprüft: Heiler/neutral/
+// Schädling diskriminieren; die Eviction wirft den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
 async function checkBandV1743RuleFitness(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -1467,11 +1467,10 @@ async function checkBandV1743RuleFitness(ctx) {
         const fHeal = r._worldRuleFitness(mkF(1));
         const fNeutral = r._worldRuleFitness(mkF(0));
         const fHarm = r._worldRuleFitness(mkF(-1));
-        out.fitnessDiscriminates =
-            fHeal > 0.9 && fNeutral > 0.6 && fNeutral < 0.8 && fHarm < 0.5 && fHeal > fNeutral && fNeutral > fHarm;
-        // renewFitness 0.5: Heiler+neutral überleben, Schädling verfällt
-        out.harmerDecays =
-            fHarm < r.constructor.WORLD_RULES.renewFitness && fNeutral >= r.constructor.WORLD_RULES.renewFitness;
+        out.fitnessDiscriminates = fHeal > 0.9 && fNeutral > 0.4 && fHarm < 0.1 && fHeal > fNeutral && fNeutral > fHarm;
+        // renewFitness 0.5: der Heiler überlebt, neutral (sein δ trägt die Kosten nicht) und Schädling verfallen
+        const renew = r.constructor.WORLD_RULES.renewFitness;
+        out.harmerDecays = fHarm < renew && fNeutral < renew && fHeal >= renew;
 
         // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
         const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
@@ -1562,9 +1561,9 @@ async function checkBandV1743RuleFitness(ctx) {
         "Wertung: _worldRuleFitness DISKRIMINIERT",
         res.fitnessDiscriminates
     );
-    // Wertung: ein Schädling fällt unter renewFitness (verfällt), neutral überlebt (keine Monokultur)
+    // Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness (Schädling und neutral verfallen, affekt.K3)
     check(
-        "Wertung: ein Schädling fällt unter renewFitness, neutral überlebt",
+        "Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness",
         res.harmerDecays
     );
     // Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)
@@ -1611,7 +1610,6 @@ async function checkBandV1745EmotionCore(ctx) {
         const savedEmo = { ...p.emotions };
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedApply = { ...(p.emotionLastApply || {}) };
         const savedLife = r.state.lifeField;
         const savedWohl = r.state.wohlBaseline;
         const savedEmoField = r.state.emotionField;
@@ -1668,16 +1666,13 @@ async function checkBandV1745EmotionCore(ctx) {
         p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
         const pm = r.state.playerMesh.position;
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
-        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 }; // Trigger unterdrücken
         setEmo({ joy: 0.8, sorrow: 0.8 }); // joy + Gegenpol
         p.wohlBaseline = sit; // δ=0 → kein Appraisal
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 9000;
         r.updatePlayerEmotions(9001);
         const joyWithOpp = p.emotions.joy;
         setEmo({ joy: 0.8 }); // joy allein
         p.wohlBaseline = sit;
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 9000;
         r.updatePlayerEmotions(9001);
         const joyAlone = p.emotions.joy;
@@ -1688,7 +1683,6 @@ async function checkBandV1745EmotionCore(ctx) {
         setEmo(savedEmo);
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
-        p.emotionLastApply = savedApply;
         p.hp = savedHp;
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
@@ -1874,7 +1868,6 @@ async function checkBandV1747FastSlow(ctx) {
         const savedMood = p.mood ? { ...p.mood } : null;
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedApply = { ...(p.emotionLastApply || {}) };
         const savedLife = r.state.lifeField;
         const savedWohl = r.state.wohlBaseline;
         const savedEmoField = r.state.emotionField;
@@ -1886,7 +1879,6 @@ async function checkBandV1747FastSlow(ctx) {
             if (!p.mood) p.mood = {};
             for (const k of AX) p.mood[k] = o[k] || 0;
         };
-        const supApply = { joy: 9000, awe: 9000, sorrow: 9000, hope: 9000, peace: 9000, chaos: 9000 };
         r.state.lifeField = new Map();
         p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
         const pm = r.state.playerMesh.position;
@@ -1900,7 +1892,6 @@ async function checkBandV1747FastSlow(ctx) {
         setEmo({ chaos: 0.8, sorrow: 0.8 });
         setMood({});
         p.wohlBaseline = sit; // δ=0 → kein Appraisal
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 7000;
         r.updatePlayerEmotions(7010); // 10s
         out.fearFadesFasterThanGrief = p.emotions.chaos < p.emotions.sorrow - 0.03;
@@ -1910,7 +1901,6 @@ async function checkBandV1747FastSlow(ctx) {
         setEmo({ joy: 1 });
         setMood({});
         p.wohlBaseline = sit;
-        p.emotionLastApply = { ...supApply };
         p.emotionLastTick = 7100;
         r.updatePlayerEmotions(7110); // ein einzelner 10s-Tick: die mood lagt
         const moodAfter1 = p.mood.joy;
@@ -1926,14 +1916,12 @@ async function checkBandV1747FastSlow(ctx) {
         // (4) STIMMUNGS-KONGRUENZ: eine trübe Stimmung dämpft die Freude eines guten Ereignisses
         setEmo({});
         setMood({});
-        p.emotionLastApply = { ...supApply };
         p.wohlBaseline = sit - 0.1; // ein REALES gutes Ereignis (δ_base = +0.1)
         p.emotionLastTick = 7800;
         r.updatePlayerEmotions(7801);
         const joyNeutralMood = p.emotions.joy;
         setEmo({});
         setMood({ sorrow: 0.9 }); // trübe Grundstimmung
-        p.emotionLastApply = { ...supApply };
         p.wohlBaseline = sit - 0.1; // dasselbe gute Ereignis
         p.emotionLastTick = 7800;
         r.updatePlayerEmotions(7801);
@@ -1944,7 +1932,6 @@ async function checkBandV1747FastSlow(ctx) {
         // erzeugt KEINE Emotion (die Kongruenz ist gegated → die V17.44-Feedback-Lehre)
         setEmo({});
         setMood({ sorrow: 0.9 });
-        p.emotionLastApply = { ...supApply };
         p.wohlBaseline = sit; // δ_base = 0 (kein Ereignis)
         p.emotionLastTick = 8000;
         for (let i = 1; i <= 60; i++) r.updatePlayerEmotions(8000 + i);
@@ -1959,7 +1946,6 @@ async function checkBandV1747FastSlow(ctx) {
 
         // (7) V17.30 heil: anhaltendes Tun erreicht weiter 0.7
         setEmo({});
-        p.emotionLastApply = {};
         for (let i = 0; i < 10; i++) r._feelAction("build");
         out.triggerReachable = p.emotions.joy >= 0.7;
 
@@ -1968,7 +1954,6 @@ async function checkBandV1747FastSlow(ctx) {
         if (savedMood) setMood(savedMood);
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
-        p.emotionLastApply = savedApply;
         p.hp = savedHp;
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;

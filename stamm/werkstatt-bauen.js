@@ -440,8 +440,8 @@ class AnazhRealm_werkstatt_bauen {
         }
         // Das Werk steht: das nächste Setzen zieht seinen eigenen Samen, das Phantom zeigt ihn (ein Wurf der Werkstatt
         // bleibt stehen, wie gewürfelt).
-        if (bm.setzSame && bm.setzSame.art === name) {
-            bm.setzSame = null;
+        if (bm.setzSame && bm.setzSame[name]) {
+            delete bm.setzSame[name];
             this._bauPhantomNeu();
         }
         // Inventar-UI + HUD nach Konsum aktualisieren (pfad).

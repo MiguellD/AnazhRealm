@@ -132,7 +132,7 @@ const SOLL = {
         "nexus → player_speed",
         "nexus → skybox_color",
     ],
-    emotion: ["emotion:chaos → creatures_speed_mul"],
+    emotion: ["rule:emotion:chaos → creatures_speed_mul"],
     gesetz: ["rule:human → spawn_creature"],
     mensch: ["human → spawn_tree", "human → spawn_creature"],
     mitspieler: [
@@ -236,12 +236,9 @@ async function probe(GESCHICKT) {
             r._loopNexusUpdate();
         },
         emotion: () => {
-            const p = st.player;
-            p.emotionLastTick = t();
-            p.emotions.chaos = 1;
-            p.emotionLastApply.chaos = -Infinity;
-            r.updatePlayerEmotions(t());
-            p.emotions.chaos = 0;
+            st.player.emotions.chaos = 1;
+            r._tickWorldRules(t() + 3600); // das Gesetz des Gemüts `emotion:chaos` (affekt.K2)
+            st.player.emotions.chaos = 0;
         },
         gesetz: () => {
             r.dslRun(["rule", ["weather_is", "sunny"], GESETZ], { source: "human" });
