@@ -1694,6 +1694,10 @@ async function checkBandKreaturKosten(ctx) {
             }
         };
         for (const tag of Object.keys(probes)) probes[tag].userData._probeTag = tag;
+        // nur die Proben im Nah-Kreis: die Tiere der Welt (der Bestand zeichnet bis zur Kappe) nähmen ihnen die Plätze der
+        // nahLeiber, und eine Probe im Tier-Satz zeichnet keinen Baum
+        const welt = s.creatures.filter((c) => !Object.values(probes).includes(c));
+        for (const c of welt) s.creatures.splice(s.creatures.indexOf(c), 1);
         pin();
         const savedACM = r._animateCompoundMotion;
         let counts = { voll: 0, halb: 0, viertel: 0, hinter: 0 };
@@ -1785,6 +1789,7 @@ async function checkBandKreaturKosten(ctx) {
         o.devStub = maxDev(probeS);
         o.checks.s2LensFires = Number.isFinite(devRePose) && devRePose > 0.05 && o.devStub > 0.05;
         cleanup([probes.voll, probes.halb, probes.viertel, probes.hinter]);
+        s.creatures.push(...welt);
         s.maxCreatures = saveMax;
 
         // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
