@@ -1316,6 +1316,81 @@ const stationen = [
         ],
         quelle: "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät",
     },
+    {
+        kriterium: "vegetation.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // Dieselbe Linse wie #1 (Zwilling: ein Lauf je Gerät), seit vegetation-k4-wasser mit der Wasser-Hälfte: das Haus des
+        // Spielers setzt die Werkstatt (`confirmBuild`, die Prägung des Rezepts, schöpfer), jedes Haus wird zusätzlich in Third
+        // gesehen (5 m vor der Front, 2,6 m hoch: die Büschel jeder Box gegen das Bild ohne sie), und am See und am Fluss der
+        // Mess-Wiese (`__wasserOrte`) je Ego und Third: wo das Wasser vorn liegt (Maske des Wasser-Stoffs) ändert die Natur
+        // (Nah-Wiese und Nah-Streu, ohne Schattenwurf) das Bild ohne Wasser-Klasse nicht, der Grund trägt dort keine Halm-Schicht,
+        // und am Gesetz steht keine Pflanze im gezeichneten Wasser (`__wasserFlora`). Je Wasser-Blick 20 px Saum (die Kante des
+        // Spiegels, wie die Bild-Schwelle der Linse), sonst 0. Blind (ROT): ein Wasser ohne Spiegel im Bild (< 500 px) oder ohne
+        // Gegenprobe vor dem Spiegel, ein Haus ohne Third, das Haus des Spielers fehlt.
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund", "--bild"],
+        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1", HAUS_WELT_JSON: "{AUS}" },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j) => {
+            const w = j && j.w9;
+            if (!w || !Array.isArray(w.haeuser)) return { gruen: false, zahl: "kein W9 im JSON der Linse (HAUS_WELT_JSON)" };
+            if (!w.bild || !Array.isArray(w.wasser)) return { gruen: false, zahl: "W9 ohne Bild oder ohne Wasser (Linse vor vegetation-k4-wasser)" };
+            const boxen = w.haeuser.flatMap((h, i) => (h.koerper || []).map((b, jb) => ({ ...b, n: h.typ + " " + i + "-" + jb + " " + b.art })));
+            const gesehen = boxen.filter((b) => b.blicke > 0);
+            const haus = gesehen.filter((b) => b.halm > 0 || b.boden > 0 || b.bueschel > 0).map((b) => b.n + " " + b.halm + "/" + b.boden + "/" + b.bueschel);
+            const third = w.haeuser.map((h, i) => [h.typ + " " + i, h.third ? h.third.halm + h.third.boden : null]);
+            const thirdRot = third.filter(([, v]) => v !== 0);
+            const gegen = Math.max(0, ...w.haeuser.map((h) => h.gegenprobe || 0));
+            const spieler = w.haeuser.filter((h) => h.spieler).length;
+            const blicke = w.wasser.flatMap((x) => x.blicke.map((z) => ({ ...z, ort: x.ort })));
+            const wasserRot = w.wasser.filter(
+                (x) => x.wiese + x.streu > 0 || x.blicke.length < 2 || x.blicke.some((z) => z.spiegel < 500 || z.halm + z.boden > 20) || !x.blicke.some((z) => z.gegen > 0)
+            );
+            const gruen =
+                w.haeuser.length >= 11 &&
+                spieler === 1 &&
+                j.werkstatt === true &&
+                gesehen.length >= Math.ceil(0.9 * boxen.length) &&
+                !haus.length &&
+                !thirdRot.length &&
+                gegen > 0 &&
+                w.wasser.length === 2 &&
+                !wasserRot.length;
+            return {
+                gruen,
+                zahl:
+                    w.haeuser.length + " Häuser (" + spieler + " gesetzt über die Werkstatt " + j.werkstatt + "), " + gesehen.length + "/" +
+                    boxen.length + " Boxen im Bild" + (haus.length ? ": Halm/Boden/Büschel in " + haus.join(" · ") : " ohne Halm") +
+                    "; Third " + (thirdRot.length ? "ROT " + thirdRot.map(([n, v]) => n + " " + v).join(" · ") : "0 px vor " + third.length + " Häusern") +
+                    "; Gegenprobe " + gegen + " px; Wasser " + w.wasser.map((x) => x.ort + " Pflanzen im Wasser " + (x.wiese + x.streu)).join(", ") +
+                    "; je Blick Spiegel/Halm/Grund/Gegenprobe " + blicke.map((z) => z.ort + "-" + z.sicht + " " + [z.spiegel, z.halm, z.boden, z.gegen].join("/")).join(" · "),
+            };
+        },
+        pfad: [
+            "stamm/vegetation-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/stoff-*.js",
+            "stamm/bild-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/daten.js",
+            "fachwerk-core.js",
+            "foundry-bruecke.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
+    },
 
     // ───────── oekologie.K3 — EIN Furcht-Gesetz (Zweig tier-gesetz-k5, tetrapoda FURCHT_GESETZ) ─────────
     // Probe furcht der Kreatur-Linse (Null-Renderer, R3: sie misst ein Gesetz): je Rolle 4 Orte, das Tier reist über
@@ -2121,19 +2196,6 @@ const fehlt = [
             "Werkzeug und Welt fehlen: keine Stadt ≥ 200 Bewohner mit ≥ 40 nah animiert in einer Linse (die Probe bewohner " +
             "kennt nur das Start-Dorf), das ABAB an der GTX ist ein Lauf des Richter-Zugs, keine Station",
         quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
-    },
-    {
-        kriterium: "vegetation.K4",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: kein Bild zählt Halme unter dem Wasser-Spiegel (diag-haus-welt --bild kennt nur Haus-Boxen), " +
-            "Third vor dem Haus ungemessen; die Häuser-Hälfte ist die Station vegetation.K4#1 auf beiden Geräten. Gelesen 25.10. an " +
-            "d43cb61c: W9 zählt Halm-Pixel je Box, indem es die Büschel IN der Box ausblendet (Bild gegen Bild ohne sie), die Kamera " +
-            "steht 1,3 m über der Diele im Haus; für das Wasser fehlt das Gegenstück (die Büschel unter dem Spiegel, ein Schuss ohne " +
-            "Wasser-Klasse), für Third ein Blick von außen auf die Box",
-        quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
     },
 ];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)
