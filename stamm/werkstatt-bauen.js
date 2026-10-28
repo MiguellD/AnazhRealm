@@ -727,14 +727,19 @@ class AnazhRealm_werkstatt_bauen {
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
         // DIE TAT BLEIBT (feld.K4): ein gefällter Baum ist eine Tat der Welt am Ort — Narbe im Feld, Stumpf in der Nah-Streu, und
-        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`)
-        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry))
-            this._tatSchreiben("faellen", entry.position.x, entry.position.z, {
-                s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
-            });
+        // der Wald pflanzt ihn nicht neu, bis sie heilt (`_tatSchreiben`); von Spieler-Hand gewertet wie jede Tat (`_handTat`)
+        const p = entry.position;
+        if (/baum/.test(entry._lodSpecies || blueprintName) && this._istNatur(entry)) {
+            const faellen = () =>
+                this._tatSchreiben("faellen", p.x, p.z, {
+                    s: Number.isFinite(entry.scale) ? +entry.scale.toFixed(2) : 1,
+                });
+            if (harvester === "player") this._handTat("faellen", p, faellen);
+            else faellen();
+        }
         // ein anderer Wurf des Gesetzes (Fels, Busch, Glut, Bau eines Orts) bleibt abgebaut: der Boot wirft ihn neu, die Tat
         // sperrt ihn (`_tatSperrt`, speicher.K3)
-        else if (entry._ausGesetz) this._tatSchreiben("abbauen", entry.position.x, entry.position.z);
+        else if (entry._ausGesetz) this._tatSchreiben("abbauen", p.x, p.z);
         // Nur der Spieler fühlt die Ernte (joy + hope, skaliert mit dem Ertrag); Kreaturen nicht.
         if (harvester === "player") {
             const mag =
@@ -1863,21 +1868,22 @@ class AnazhRealm_werkstatt_bauen {
         });
     }
 
-    // TEILEN in EINER Geste: der Knopf ruft `teileWerk` (Signatur → Code); der Code steht in der Zeile und geht in die
-    // Zwischenablage — der Empfänger gibt ihn in den Chat (`empfangeWerk`).
-    _workshopAppendTeilenRow(zone, bp) {
+    // TEILEN in EINER Geste: der Knopf ruft die Geste des Senders (`teile`: `teileWerk` oder `teileWelt` — Signatur → Code);
+    // der Code steht in der Zeile und geht in die Zwischenablage — der Empfänger gibt ihn in den Chat (`empfangeWerk`).
+    // `art` ("werk" | "welt") benennt Knopf und Zeile (data-teilen).
+    _teilenZeile(zone, art, teile) {
         const row = document.createElement("div");
-        row.className = "stat-row workshop-teilen-row";
+        row.className = "stat-row teilen-row";
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "workshop-teilen-btn";
+        btn.dataset.teilen = art;
         btn.textContent = "Teilen";
         const out = document.createElement("code");
-        out.className = "workshop-teilen-code";
+        out.dataset.teilen = art;
         out.style.wordBreak = "break-all";
         btn.addEventListener("click", async () => {
             btn.disabled = true;
-            const res = await this.teileWerk(bp.name);
+            const res = await teile();
             btn.disabled = false;
             out.textContent = res.ok ? res.code : `Teilen fehlgeschlagen: ${res.grund}`;
             if (res.ok && navigator.clipboard) navigator.clipboard.writeText(res.code).catch(() => {});

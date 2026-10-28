@@ -285,6 +285,9 @@ class AnazhRealm_speicher_laden {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
         this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
+        // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
+        if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1)
+            this.state.seasonPhase = state.seasonPhase;
         // DER LEBENSZYKLUS ZÄHLT AB DER UHR DES STANDS (halten.K5): seine Marke (`faunaLifecycle.lastTick`) ist eine Lesung der
         // Welt-Uhr und reist nicht; an der gereisten Uhr fand die Null der Sitzung den letzten Takt so alt wie den Stand, und das
         // erste Bild der Wiederkehr zählte das Intervall, das die Welt des Stands schon gezählt hatte, ein zweites Mal (607d0c73:
@@ -385,13 +388,17 @@ class AnazhRealm_speicher_laden {
     }
 
     // DIE LEBENSWERTE (halten.K5, `buildStateSnapshot` playerLeben): nach Seele und Gerät, die das Maximum setzen, die Wunde
-    // des Tods, dann Leben, Ausdauer und Mana als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
+    // des Tods und die Nahrung mit ihrer Restzeit (über `addPlayerBoost`, die EINE Boost-Tür), dann Leben, Ausdauer und Mana
+    // als Anteil des neu gerechneten Maximums. Ein Stand ohne sie lädt voll.
     _loadStateRestoreLeben(state) {
         const L = state.playerLeben;
         const pl = this.state.player;
         if (!L || typeof L !== "object" || !pl) return;
         const anteil = (v, leer) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : leer);
         pl.deathWoundIntensity = anteil(L.wunde, 0);
+        for (const n of Array.isArray(L.nahrung) ? L.nahrung : [])
+            if (n && String(n.quelle).startsWith("consume:") && n.rest > 0)
+                this.addPlayerBoost({ source: n.quelle, tagDelta: n.tags, durationSeconds: n.rest, label: n.label });
         this.recomputePlayerStats();
         pl.hp = anteil(L.hp, 1) * pl.hpMax;
         pl.stamina = anteil(L.ausdauer, 1) * pl.staminaMax;
