@@ -1545,3 +1545,4 @@
 2026-10-28 23:22:57 takt19-farm oekologie.K5#1 GRÜN 0.2 · 44/99
 2026-10-28 23:23:05 takt19-farm oekologie.K5#2 GRÜN 0.4 · 45/99
 2026-10-28 23:23:13 takt19-farm oekologie.K4#1 GRÜN 0.2 · 46/99
+2026-10-28 23:23:21 takt19-farm luftwasser.K1#1 GRÜN 2.0 · 47/99
