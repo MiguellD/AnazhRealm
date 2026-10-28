@@ -41,7 +41,7 @@
 //                                                           | lauf --selbsttest — DER ECHTE LAUF: Frame- und GPU-Zeit, Befehle, Dreiecke und VRAM je Frame und Pass
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
-//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
+//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: das präsentierte Canvas nach 1 s echtem Loop
@@ -227,15 +227,15 @@ function lauf(k) {
         const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere === "halten" && window.__tiereHalten) window.__tiereHalten();
+        if (k.tiere === "halten") window.__tiereHalten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
-        if (st.playerMesh) st.playerMesh.visible = true;
+        st.playerMesh.visible = true;
         // DIE PASS-UHR (scripts/lib/zerlege-linse.cjs, dieselbe wie `zerlegen`): je Render-Pass die ms (`__passName`), dazu je
         // Frame Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
         const proben = [];
-        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
+        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine.erledigt;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
         // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
         // DIE BAHN (`wandern: "bahn"`): 4 m/s die Kette des Orts (haushalt.json `bahn`) oder −z 0 → −60 m, hin und zurück;
@@ -251,6 +251,10 @@ function lauf(k) {
         // DIE FAHRT (`wandern: "fahrt"`, OMEN „GT-Fahrt Third ↔ Ego"): aufgestiegen im GT, V alle 4 s; die Bahn legt Wagen
         // (`_fahr`) und Reiter vor dem Takt auf +x, 20 m/s 0 → 800 m und zurück (gegen die Natur-Wand stünde er nach 39 m).
         const fahrt = k.wandern === "fahrt" ? { t0: null } : null;
+        // DER SPRUNG (`wandern: "sprung"`, streaming.K3): mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
+        // Gesetzes (der Loop übernimmt den Teleport, `_loopFixedStep`); gemessen wird die Kadenz, während die Welt dort neu
+        // entsteht, dazu nach wie vielen s sie steht (A9 `_weltSteht`) und jeder Bau im Haupt-Faden (`_syncBauten`).
+        const sprung = k.wandern === "sprung" && { m: 1000, stehtS: null };
         const kette = window.__ortBahn || [[ort.x, ort.z], [ort.x, ort.z - 60]];
         const laenge = kette.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - kette[i][0], q[1] - kette[i][1]), 0);
         // DER WEG des Spielers im Mess-Fenster (die Bahn oder ein Geher von außen) — „Weg 0 m" nennt eine stehende Zerlegung
@@ -264,7 +268,7 @@ function lauf(k) {
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
             window.__wetterHalten();
             const c0 = performance.now();
-            const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
+            const g0 = r._gpuLeine.gerendert;
             const z = (uhr.frameZ = {}), aussen = H && diff(H.acc, snap);
             if (H) snap = Object.assign({}, H.acc);
             if (bahn) {
@@ -297,7 +301,7 @@ function lauf(k) {
             const c1 = performance.now(), innen = H && diff(H.acc, snap);
             if (H) snap = Object.assign({}, H.acc);
             // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
-            const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
+            const gerendert = r._gpuLeine.gerendert > g0;
             const pm = st.playerMesh.position;
             if (messen) weg += Math.hypot(pm.x - lage.x, pm.z - lage.z);
             lage.copy(pm);
@@ -322,7 +326,7 @@ function lauf(k) {
             // Abstand der Zeitpunkte, an denen die GPU ein Bild abgearbeitet hat, ist der echte Durchsatz — die Leine
             // des Spiels zählt sie (`erledigt`).
             const L = r._gpuLeine;
-            if (L && L.erledigt !== erledigtVor) {
+            if (L.erledigt !== erledigtVor) {
                 p.erledigt = L.erledigt - erledigtVor;
                 p.gpuErledigt = L.erledigtMs;
                 erledigtVor = L.erledigt;
@@ -347,7 +351,7 @@ function lauf(k) {
             const ruheZustand = () => {
                 const z = r._impostorCensus() || {};
                 return {
-                    chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                    chunks: st.voxelChunks.size,
                     foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
                     karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: window.__ungebaut(),
                 };
@@ -371,13 +375,13 @@ function lauf(k) {
                 }
                 ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
             }
-            const v0 = Object.assign({}, window.__vram || {});
-            const wache = () => (window.__stempelWache ? window.__stempelWache() : null);
+            const v0 = Object.assign({}, window.__vram);
+            const wache = window.__stempelWache;
             const s0 = wache();
             if (k.spur) await window.__spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
-            const erst0 = E && ERST.map((x) => E[x] || 0), probe = [];
+            const erst0 = ERST.map((x) => E[x] || 0), probe = [];
             const tMess0 = performance.now();
             if (H) {
                 H.namen.length = 0;
@@ -393,22 +397,34 @@ function lauf(k) {
                     window.__haengerProbe(250);
                 }, (k.sek * 2000) / 3);
             }
+            if (sprung) {
+                const p = st.playerMesh.position, x = p.x + sprung.m;
+                p.set(x, r._voxelSurfaceY(x, p.z) + 1.8, p.z);
+                Object.assign(sprung, { t0: performance.now(), bau: r._syncBauten() });
+            }
             messen = uhr.messen = true;
-            await sleep(k.sek * 1000);
+            // der Sprung misst in Bau-Ereignissen (`__deckel`), bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dann 1 s
+            if (sprung) {
+                for (const weiter = window.__deckel("der Sprung um 1 km"); weiter() && !(sprung.offen && r._weltSteht()); await sleep(250))
+                    sprung.offen ||= !r._weltSteht();
+                sprung.stehtS = performance.now();
+            }
+            await sleep(sprung ? 1000 : k.sek * 1000);
             messen = uhr.messen = false;
             if (H) H.an = false;
             const haenger = H && {
-                takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
-                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
-                loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
-                erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
+                takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures.length, wetter: st.weather,
+                chunks: st.voxelChunks.size,
+                sprung: sprung && Object.assign(sprung, { bau: [sprung.bau, r._syncBauten()] }),
+                loadScale: +st.perfSense.loadScale.toFixed(2),
+                erst: Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),
             };
             for (const m of ["anazh-takt", "anazh-bild", "anazh-leer"]) performance.clearMarks(m);
             const s1 = wache();
             rend.setAnimationLoop(null);
             // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
-            if (rend.backend && rend.backend.device) await rend.backend.device.queue.onSubmittedWorkDone();
+            await rend.backend.device.queue.onSubmittedWorkDone();
             await sleep(50);
             const jePassFrame = (await uhr.lesen()) || {};
             const quant = (arr, q) => {
@@ -434,7 +450,7 @@ function lauf(k) {
                 const mittel = n ? Math.round(summe.reduce((a, b) => a + b, 0) / n) : null;
                 return { frames: n, mittel, p95: quant(summe, 0.95), max: quant(summe, 1), jePass };
             };
-            const s = st.perfSense || {}, v = window.__vram || {};
+            const s = st.perfSense, v = window.__vram;
             const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
             const cam = st.camera, dir = new window.THREE.Vector3();
             cam.getWorldDirection(dir);
@@ -445,10 +461,7 @@ function lauf(k) {
                 fps: dt.length ? +((1000 * dt.length) / dt.reduce((a, b) => a + b, 0)).toFixed(1) : null,
                 frameMs: zahl(dt),
                 cpuTaktMs: zahl(cpu),
-                leine: r._gpuLeine
-                    ? { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length))
-                        .toFixed(1), imFlug: r._gpuLeine.imFlug }
-                    : null,
+                leine: { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length)).toFixed(1), imFlug: r._gpuLeine.imFlug },
                 gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
                 gpuDurchsatzMs: (() => {
                     const g = proben.filter((p) => p.erledigt);
@@ -462,37 +475,32 @@ function lauf(k) {
                 ),
                 // Die Pass-Stempel gelten nur, wenn im Fenster kein Pass ohne Abfrage blieb (ein voller Pool schreibt
                 // seine Stempel in fremde Plätze — `__stempelWache`).
-                stempel: s0 && s1
-                    ? { imLauf: s1.ueberlauf - s0.ueberlauf, seitBoot: s1.ueberlauf, spitze: s1.spitze, pool: s1.pool,
-                        gueltig: s1.ueberlauf === s0.ueberlauf }
-                    : null,
+                stempel: { imLauf: s1.ueberlauf - s0.ueberlauf, seitBoot: s1.ueberlauf, spitze: s1.spitze, pool: s1.pool, gueltig: s1.ueberlauf === s0.ueberlauf },
                 befehle: passZahl("dc"),
                 dreiecke: passZahl("tri"),
                 vramMB: {
                     jetzt: mb(v.puffer + v.texturen), puffer: mb(v.puffer), texturen: mb(v.texturen), spitze: mb(v.spitze),
                     nPuffer: v.nPuffer, nTexturen: v.nTexturen,
                     wuchsImFenster: mb(v.puffer + v.texturen - (v0.puffer + v0.texturen)),
-                    gross: window.__vramBericht ? window.__vramBericht(14) : null,
+                    gross: window.__vramBericht(14),
                 },
                 stellgroessen: {
-                    loadScale: Number.isFinite(s.loadScale) ? +s.loadScale.toFixed(2) : null,
+                    loadScale: +s.loadScale.toFixed(2),
                     szeneSkala: r._szeneSkalaWirk(),
-                    pixelRatio: rend.getPixelRatio ? rend.getPixelRatio() : null,
+                    pixelRatio: rend.getPixelRatio(),
                     foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
-                    archRadius: st.architectureCullingRadius != null ? Math.round(st.architectureCullingRadius) : null,
+                    archRadius: Math.round(st.architectureCullingRadius),
                     ring: st._activeRingRadius,
-                    schattenIntervall: st._shadowMinInterval != null ? +(+st._shadowMinInterval).toFixed(1) : null,
+                    schattenIntervall: +st._shadowMinInterval.toFixed(1),
                     holz: st._holzProfil,
                 },
-                phasenEwmaMs: s.phase
-                    ? Object.fromEntries(Object.entries(s.phase).map(([a, b]) => [a, +(+b).toFixed(2)]))
-                    : null,
+                phasenEwmaMs: Object.fromEntries(Object.entries(s.phase).map(([a, b]) => [a, +(+b).toFixed(2)])),
                 kamera: {
                     pos: [cam.position.x, cam.position.y, cam.position.z].map((x) => +x.toFixed(1)),
                     blick: [dir.x, dir.y, dir.z].map((x) => +x.toFixed(2)),
                 },
-                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                chunks: st.voxelChunks.size,
                 ruhe,
                 wetter: st.weather,
                 // das Rohe der Wetter-Wache — das Urteil spricht die Werkbank (`wetterUrteil`)
@@ -526,8 +534,6 @@ function gpuBank(k) {
     return (async () => {
         const r = window.anazhRealm;
         const rend = r.state.renderer;
-        const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
-        if (!q) return { fehler: "kein GPU-Device" };
         rend.setAnimationLoop(null);
         window.__buehne();
         // DIE EINE BANK-RUNDE (scripts/lib/zerlege-linse.cjs) — dieselbe Messung, die `zerlegen` je Schalter fährt.
@@ -2808,7 +2814,7 @@ async function starte() {
                         ZL.BELEGUNG_SPUR
                     );
                     o.belegung = ZL.belegungAuswerten(ev);
-                    if (o.stempel) o.stempel.warnung = stempelWarnung.n;
+                    o.stempel.warnung = stempelWarnung.n;
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5) }));
                 }

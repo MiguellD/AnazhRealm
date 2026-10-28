@@ -2341,7 +2341,7 @@ class AnazhRealm_koerper_bewegung {
 
     // DAS RUMBLE aus dem Zustand, je Takt nach der Sim: stark = der Stoß des Leibs (`player._stoss`, geschrieben vom eigenen Treffer
     // `_kampfHitJuice` und der Wunde `damagePlayer`, verbraucht hier, klingt in Takten ab) und der Reifen-Schlupf der Fahrt samt
-    // Landung; schwach = das Tempo der Fahrt. Ein neuer Effekt geht nur bei einer Änderung oder vor dem Ablauf des laufenden.
+    // Landung; schwach = das Tempo der Fahrt und der Boden-Stoß unter den Rädern. Ein neuer Effekt geht nur bei einer Änderung oder vor dem Ablauf des laufenden.
     _rumbleTakt(dt, t) {
         const st = this.state;
         const [p, R, pl] = [st._pad, AnazhRealm.PAD_GESETZ.rumble, st.player];
@@ -2354,7 +2354,11 @@ class AnazhRealm_koerper_bewegung {
         let [schlupf, schwach] = [0, 0];
         if (z && !z.luft) {
             schlupf = Math.min(1, (Math.abs(z.slipF || 0) + Math.abs(z.slipR || 0)) / R.schlupfVoll);
-            schwach = Math.min(1, Math.abs(z.vlong) / R.tempoVoll) * R.fahrtSchwach;
+            // der Boden-Stoß des Fahr-Schritts (vehicle-core `bodenStoss`, dieselbe Größe, die die Hub-Feder erregt): Unebenheit summt
+            schwach = Math.max(
+                Math.min(1, Math.abs(z.vlong) / R.tempoVoll) * R.fahrtSchwach,
+                Math.min(1, Math.abs(z.bodenStoss || 0) / R.bodenVoll)
+            );
             if (p.luftVor) stoss = Math.max(stoss, R.landung);
         }
         [p.stoss, p.luftVor] = [stoss, !!(z && z.luft)];
@@ -2538,7 +2542,8 @@ Object.defineProperties(AnazhRealm, {
 AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
 // DAS GAMEPAD (leib.K5): die Totzone der Sticks (radial; dahinter 0..1 gedehnt, das Tempo folgt der Auslenkung stufenlos), der Blick
 // bei vollem Stick (rad/s, Gier und Neigung) und das Rumble: Abklingen des Stoßes (s), Tempo des vollen Fahrt-Brummens (m/s) und sein
-// Anteil, Reifen-Schlupf vorn + hinten des vollen Rumpelns (rad), der Landungs-Stoß der Fahrt, die Wunde (Stoß je Anteil der
+// Anteil, Reifen-Schlupf vorn + hinten des vollen Rumpelns (rad), der Boden-Stoß des vollen Summens (m/s², vehicle-core
+// `bodenStoss`), der Landungs-Stoß der Fahrt, die Wunde (Stoß je Anteil der
 // Lebenskraft: ein Achtel nimmt das volle Rumble — ein Hieb von 1 % der 134 HP lag sonst unter der Schwelle), Effekt-Dauer (ms), die
 // kleinste Stärke und die Stufe, ab der ein neuer Effekt geht.
 AnazhRealm.PAD_GESETZ = Object.freeze({
@@ -2550,6 +2555,7 @@ AnazhRealm.PAD_GESETZ = Object.freeze({
         tempoVoll: 30,
         fahrtSchwach: 0.3,
         schlupfVoll: 0.35,
+        bodenVoll: 20,
         landung: 0.6,
         wunde: 8,
         dauerMs: 120,
