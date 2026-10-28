@@ -234,9 +234,8 @@ class AnazhRealm_feld_nexus {
                     ];
                 },
             },
-            // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
-            // §18 Q1 ("Ja, sparsam") gewählt.
-            { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
+            // KEIN WÜRFEL SPRICHT (affekt.K4): der Nexus würfelte ~10 % `say` aus einem Pool („Ich versuche etwas Neues.") —
+            // eine Zeile ohne Tat in der Dialog-Box. Was er tut, sagt die Stimme des Felds mit Ort, Ursache und Gesetz.
         ];
         return this.dslWeightedPick(choices, rng);
     }
@@ -441,19 +440,6 @@ class AnazhRealm_feld_nexus {
             if (aura.lebendig > 0.6 && rng() < aura.lebendig) return AF.lebendig;
         }
         return this.dslComposeColor(rng);
-    }
-
-    dslComposeSayMessage(rng) {
-        const lines = [
-            "Ich versuche etwas Neues.",
-            "Lass uns das probieren.",
-            "Eine Idee — sag mir, ob sie passt.",
-            "Manche Welten brauchen das.",
-            "Spür mal in die Welt hinein.",
-            "Eine kleine Drehung, mehr nicht.",
-            "Ich glaube, das könnte schön werden.",
-        ];
-        return lines[Math.floor(rng() * lines.length)];
     }
 
     dslWeightedPick(choices, rng) {

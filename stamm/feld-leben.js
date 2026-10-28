@@ -253,7 +253,7 @@ class AnazhRealm_feld_leben {
     _dslDescriptionTable() {
         const pos = (a) => this._describeDslPosition(a);
         return {
-            weather: (a) => `lässt das Wetter zu „${a[0]}" wechseln`,
+            weather: (a) => (a[0] === "frei" ? "gibt das Wetter frei" : `lässt das Wetter zu „${a[0]}" wechseln`),
             gravity: (a) => `setzt die Schwerkraft auf ${a[0]}`,
             terrain_steepness: (a) => `regelt die Hang-Steilheit auf ${a[0]}`,
             terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
