@@ -1606,3 +1606,4 @@
 2026-10-28 23:46:04 takt19-radeon streaming.K3#1 GRÜN 5.3 · 12/71
 2026-10-28 23:47:00 takt19-farm-nach feld.K3#2 GRÜN 1.0 · 1/1
 2026-10-28 23:47:04 takt19-farm-nach ENDE 1 grün / 0 rot · 10.5 min
+2026-10-28 23:59:59 takt19-radeon profiband.K4#1 GRÜN 13.9 · 13/71
