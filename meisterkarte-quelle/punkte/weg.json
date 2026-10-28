@@ -52,6 +52,21 @@
     "affekt.K2#1": "affekt-emotion",
     "affekt.K3#1": "affekt-emotion"
    }
+  },
+  {
+   "name": "w3c",
+   "art": "Cloud-Welle 28.10. 00:50",
+   "staffeln": {
+    "tore.K5#2": "tore-k5-tuer",
+    "feld.K2#2": "feld-peers",
+    "physik.K2#2": "physik-bild",
+    "ferne.K5#1": "wetter-sicht",
+    "licht.K5#1": "wetter-sicht",
+    "spielgang.K3#1": "hud-zugang",
+    "spielgang.K4#1": "hud-zugang",
+    "haar.K1#1": "haar-fell-soll",
+    "haar.K2#1": "haar-fell-soll"
+   }
   }
  ],
  "staffeln": [
