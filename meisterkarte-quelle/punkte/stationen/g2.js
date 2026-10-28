@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -2808,6 +2808,43 @@ const stationen = [
         quelle: "2 = jeder Vogel-Pegel im Klang-Zensus hat einen Körper (Konsum-Kette Ruf ← Leib), ohne Körper ROT",
     },
 
+    // ───────── luftwasser.K2 Staffel 1 — der Schwarm aus dem Verbands-Gesetz (Zweig w3s-schwarm: `_schwarmVerband`, tetrapoda verbandZug) ─────────
+    // Die Probe schwarm der Kreatur-Linse (Null-Renderer, R3: der Verband ist Mechanik, wie tiere.K1#1): der feste Schwarm von
+    // 100 Gliedern im Takt des Spiels (`_vogelTakt`, 60 Hz, 60 s; Mittag und Sonne als Wort des Reglers), das Auge 40 m quer
+    // zum Kurs des Zentrums (nah: der Verband fliegt). Gemessen ab 10 s an den Lagen, die der Takt zeichnet: Φ = |Σv̂|/N aus dem
+    // Weg je Takt (wie die Herde), die Kohäsion = der Anteil der Glieder im größten Verbund, Glied zu Glied binnen fensterRaum ×
+    // Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom Mittel) trägt fünf Leiber, hundert Glieder
+    // füllen einen Ball weiter als das Fenster —, und je Takt die Züge je Glied durch DIE Funktion der Herde (`verbandZug`).
+    // Soll aus der Staffel: Φ ≥ 0,8 und Kohäsion ≥ 0,9; das Schlupfloch Zwilling (eigener Boid-Code) fällt an 1 Zug je Glied
+    // und Takt, vakuös unter 60 Gliedern und 3000 Takten. Gefahren 28.10. in der Cloud am Zweig w3s-schwarm 1e214869: Φ 0,966,
+    // Kohäsion 1,0 (min 1,0), 1,0 Züge; die Mutante „Verband aus" (der Zug gibt den Wunsch zurück) Kohäsion 0,143 ROT, der
+    // Zwilling (eine Kopie des Zugs) 0 Züge ROT.
+    {
+        kriterium: "luftwasser.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "schwarm"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "schwarm");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe schwarm (Exit " + lauf.exit + ")" };
+            if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+            const echt = z.glieder >= 60 && z.takte >= 3000 && z.zuegeJeGlied >= 0.99;
+            return {
+                gruen: echt && z.phi >= 0.8 && z.kohaesion >= 0.9,
+                zahl:
+                    "Φ " + z.phi + ", Kohäsion " + z.kohaesion + " (min " + z.kohaesionMin + ", Glied zu Glied ≤ " + z.fensterM +
+                    " m) bei " + z.glieder + " Gliedern, " + z.zuegeJeGlied + " Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, " +
+                    "Kohäsion ≥ 0,9, 1 Zug)",
+            };
+        },
+        pfad: KREATUR,
+        quelle: "1 = Vogel- oder Fischschwarm mit Φ ≥ 0,8 und Kohäsion ≥ 0,9 aus `verbandZug`",
+    },
+
     // ───────── luftwasser.K5 — der Schwarm fern EIN Agent (Zweig schwarm: tetrapoda VOGEL_GESETZ.schwarm, `_vogelSchwarmTakt`) ─────────
     // EINE Werkbank an der Weiche (`schwarmLauf` oben, Port {PORT}+20000), die Prüfbühne mit dem festen Schwarm von 100 Gliedern,
     // das Auge 40 m quer zur Flugrichtung (nah: die Separation rechnet mit): 60 Reihen × 20 Takte des Schwarm-Takts auf der Uhr
@@ -3011,6 +3048,17 @@ const stationen = [
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
 const fehlt = [
+    {
+        kriterium: "luftwasser.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: null,
+        grund:
+            "Welt fehlt: das Leittier des Schwarms (das Zentrum) ist eine Funktion der Welt-Uhr ohne Ereignis — es flieht nie " +
+            "vor dem Spieler und landet nie; die Kronen-Karte (wegeKarte.kronen) trägt je Krone nur [x, z, Radius], keine Höhe " +
+            "zum Landen; der Verband trüge die Flucht als EIN Pulk (ein Leittier, verbandZug)",
+        quelle: "2 = Flucht vor dem Spieler als EIN Pulk, Landung auf Bäumen der Welt",
+    },
     {
         kriterium: "mensch.K1",
         staffel: 2,
