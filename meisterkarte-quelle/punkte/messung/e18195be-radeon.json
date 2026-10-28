@@ -1,7 +1,7 @@
 {
  "sha": "e18195be8b143f9d333de6ea8a8b43dea93dd198",
  "geraet": "radeon",
- "zeit": "2026-10-28T15:33:52.944Z",
+ "zeit": "2026-10-28T16:08:49.628Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -748,27 +748,25 @@
    "bahn": "allein"
   },
   "leib.K1#2": {
-   "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 45.1 · ego/springen 36.5 · third/springen 35.2 · ego/einsteigen 53.7 · third/einsteigen 35.5 · ego/hieb 38.5 · third/hieb 737.3 (fehlt 20) · Bild 14.5/16.3/16.3 ms",
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 49.3 · third/gehen 44.5 · ego/springen 34.3 · third/springen 35.3 · ego/einsteigen 29.5 · third/einsteigen 24.5 · ego/hieb 28.7 · third/hieb 35.1 · Bild 16.2/16.3/16.2 ms",
    "exit": 0,
-   "minuten": 16.51,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 50.2 · third/gehen 45.1 · ego/springen 36.5 · third/springen 35.2 · ego/einsteigen 53.7 · third/einsteigen 35.5 · ego/hieb 38.5 · third/hieb 737.3 (fehlt 20) · Bild 14.5/16.3/16.3 ms",
+   "minuten": 15.58,
    "gpu": "amd/rdna-3",
-   "warten": 0.3,
-   "zeit": "2026-10-28T14:55:45.064Z",
+   "warten": 0.15,
+   "zeit": "2026-10-28T15:53:14.569Z",
    "abdruck": "160f0c239df2",
    "port": 7754,
    "bahn": "allein"
   },
   "halten.K2#1": {
-   "gruen": false,
-   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 66.7 · ego/hieb 31 · Bild 16.3/16.5/16 ms · Hit-Stop im schlechtesten Lauf 10 Bilder · im Spiel Halt gesetzt 60-mal (153–169 ms, gleitet bis 0 mm je Takt) / 60-mal (145–173 ms, gleitet bis 0 mm je Takt) / 58-mal (150–176 ms, gleitet bis 0 mm je Takt)",
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 38.9 · ego/hieb 29 · Bild 16.7/16.5/16.3 ms · Hit-Stop im schlechtesten Lauf 10 Bilder · im Spiel Halt gesetzt 60-mal (153–173 ms, gleitet bis 0 mm je Takt) / 58-mal (134–183 ms, gleitet bis 0 mm je Takt) / 60-mal (153–178 ms, gleitet bis 0 mm je Takt)",
    "exit": 0,
-   "minuten": 6.79,
-   "grund": "ROT: schlechtester von 3 Läufen p95 ms third/hieb 66.7 · ego/hieb 31 · Bild 16.3/16.5/16 ms · Hit-Stop im schlechtesten Lauf 10 Bilder · im Spiel Halt gesetzt 60-mal (153–169 ms, gleitet bis 0 mm je Takt) / 60-mal (145–173 ms, gleitet bis 0 mm je Takt) / 58-mal (150–176 ms, gleitet bis 0 mm je Takt)",
+   "minuten": 6.31,
    "gpu": "amd/rdna-3",
-   "warten": 0.26,
-   "zeit": "2026-10-28T15:12:15.464Z",
+   "warten": 0.18,
+   "zeit": "2026-10-28T16:08:49.628Z",
    "abdruck": "631137359d80",
    "port": 7754,
    "bahn": "allein"

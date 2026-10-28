@@ -24,14 +24,14 @@ teil SPIEL3 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Mat
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\halten.K2_1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\halten.K2_1.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\halten.K2_1.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\halten.K2_1.json.lauf3.json"
 @@PUNKTE@@ HAKEN1
 {
- "ms": 3,
+ "ms": 2,
  "ergebnis": 1
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
-third/hieb {"n":30,"fehlt":0,"p50":22.1,"p95":32.1,"max":45.7,"eingabe":0.7,"hoerer":3.3,"kette":15.5,"kurve":0,"takte":3,"halt":10}
-ego/hieb {"n":30,"fehlt":0,"p50":20.7,"p95":26.9,"max":27.1,"eingabe":0.6,"hoerer":2.9,"kette":18.6,"kurve":0,"takte":3,"halt":10}
-LATENZ GRÜN (Bild 16.3 ms) 
+third/hieb {"n":30,"fehlt":0,"p50":23,"p95":35.4,"max":43.1,"eingabe":0.7,"hoerer":3.6,"kette":16.8,"kurve":0,"takte":3,"halt":9}
+ego/hieb {"n":30,"fehlt":0,"p50":18.7,"p95":29,"max":29.1,"eingabe":0.6,"hoerer":2.5,"kette":12.8,"kurve":0,"takte":2,"halt":10}
+LATENZ GRÜN (Bild 16.7 ms) 
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ SPIEL1
 {
@@ -40,9 +40,9 @@ LATENZ GRÜN (Bild 16.3 ms)
   "gesetzt": 60,
   "dauerMs": [
    153,
-   169
+   173
   ],
-  "haltTakte": 1065,
+  "haltTakte": 1089,
   "gleitMm": 0
  }
 }
@@ -54,20 +54,20 @@ LATENZ GRÜN (Bild 16.3 ms)
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ2
-third/hieb {"n":30,"fehlt":0,"p50":22,"p95":37.5,"max":55,"eingabe":0.6,"hoerer":3.3,"kette":15,"kurve":0,"takte":3,"halt":10}
-ego/hieb {"n":30,"fehlt":0,"p50":19.3,"p95":31,"max":35.2,"eingabe":0.7,"hoerer":2.6,"kette":13.7,"kurve":0,"takte":2,"halt":10}
+third/hieb {"n":30,"fehlt":0,"p50":22.7,"p95":35.3,"max":48.6,"eingabe":0.8,"hoerer":3.9,"kette":17.3,"kurve":0,"takte":3,"halt":9}
+ego/hieb {"n":30,"fehlt":0,"p50":18.9,"p95":27.9,"max":35.2,"eingabe":0.8,"hoerer":3.1,"kette":13.7,"kurve":0,"takte":2,"halt":10}
 LATENZ GRÜN (Bild 16.5 ms) 
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ SPIEL2
 {
- "ms": 2,
+ "ms": 3,
  "ergebnis": {
-  "gesetzt": 60,
+  "gesetzt": 58,
   "dauerMs": [
-   145,
-   173
+   134,
+   183
   ],
-  "haltTakte": 1076,
+  "haltTakte": 1041,
   "gleitMm": 0
  }
 }
@@ -79,27 +79,27 @@ LATENZ GRÜN (Bild 16.5 ms)
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ3
-third/hieb {"n":30,"fehlt":0,"p50":40.2,"p95":66.7,"max":68.6,"eingabe":14.1,"hoerer":5.1,"kette":26.9,"kurve":0,"takte":3,"halt":10}
-ego/hieb {"n":30,"fehlt":0,"p50":22.8,"p95":30.4,"max":34.2,"eingabe":3,"hoerer":2.5,"kette":17.6,"kurve":0,"takte":3,"halt":10}
-LATENZ ROT (Bild 16 ms) third/hieb p95 66.7 ms > 50 (fehlt 0) — Täter kette 26.9 ms, 3 Takte
-@@PUNKTE@@ EXIT 1
+third/hieb {"n":30,"fehlt":0,"p50":22.5,"p95":38.9,"max":59.9,"eingabe":1.9,"hoerer":3.4,"kette":17.3,"kurve":0,"takte":3,"halt":10}
+ego/hieb {"n":30,"fehlt":0,"p50":19,"p95":27.9,"max":28,"eingabe":0.7,"hoerer":2.9,"kette":8.6,"kurve":8.1,"takte":2,"halt":11}
+LATENZ GRÜN (Bild 16.3 ms) 
+@@PUNKTE@@ EXIT 0
 @@PUNKTE@@ SPIEL3
 {
- "ms": 2,
+ "ms": 3,
  "ergebnis": {
-  "gesetzt": 58,
+  "gesetzt": 60,
   "dauerMs": [
-   150,
-   176
+   153,
+   178
   ],
-  "haltTakte": 927,
+  "haltTakte": 1081,
   "gleitMm": 0
  }
 }
 @@PUNKTE@@ EXIT 0
 
 --- stderr ---
-gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 11 s
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 7 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
