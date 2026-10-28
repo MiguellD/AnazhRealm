@@ -2984,6 +2984,19 @@ function scanBootWand(dateien, rest = BOOT_REST) {
             errs.push(`Boot-Wand: ${n} steht auf der Rest-Liste, startet aber nicht mehr selbst — Zeile streichen (sie schrumpft nur)`);
     return errs;
 }
+// DIE REKURSIONS-WAND (boe-zeit f5851596: `const ergebnis = (a) => ergebnis(a);` brach `werkbank licht` still): ein Helfer, dessen ERSTE
+// Tat der Ruf seiner selbst ist (Pfeil-Ausdruck, erste Anweisung, Methode über this), endet nie; ein Basisfall steht davor. Am AST, rot mit Datei:Zeile.
+function scanRekursionsWand(dateien, errs = []) {
+    const kern = (e) => (e && /^(Await|Chain)Expression$/.test(e.type) ? kern(e.argument || e.expression) : e);
+    const erste = (f) => (f.body.type !== "BlockStatement" ? f.body : f.body.body[0] && (f.body.body[0].argument || f.body.body[0].expression));
+    for (const [name, src] of dateien)
+        stammLib.wandere(stammLib.ast(src), (n) => {
+            const [fn, wer] = n.type === "VariableDeclarator" ? [n.init, n.id.name] : n.type === "FunctionDeclaration" ? [n, n.id.name] : n.type === "MethodDefinition" ? [n.value, "this." + n.key.name] : [];
+            const c = fn && /Function/.test(fn.type) && kern(erste(fn));
+            if (c && c.type === "CallExpression" && src.slice(c.callee.start, c.callee.end) === wer) errs.push(`Rekursions-Wand: ${name}:${src.slice(0, n.start).split("\n").length} \`${wer}\` ruft als erste Tat sich selbst — endet nie`);
+        });
+    return errs;
+}
 // DIE HÜLLEN-FORM-WAND (S3 haus, K08): der Wirt liest die Hülle eines Baus in der EINEN Form (N5: `{ stufe, teile }`,
 // der Leser `_huelleVon`, fail-closed) — die Zahlen-Zeile `{ stufe, boxen }` fiel mit ee37daf7 als Wirts-Form (sie lebt nur
 // im Gesetzbuch, fachwerk-core `huelleAusBoxen`). Die Probe `sockel` kam mit V18.538 und gab dem Wirt noch die alte Zeile —
@@ -3483,6 +3496,11 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Boot-Wand feuert (Eigen-Start und Eigen-Server rot, Kommentar/Text still, tote Rest-Zeile rot; Rest ${BOOT_REST.length})`
         );
+        // Die Rekursions-Wand muss feuern: Pfeil (der Täter von f5851596), await, Funktion, Methode über this — Basisfall, Kommentar und fremder Ruf still
+        const rek = (src) => scanRekursionsWand([["scripts/diag-r.cjs", src]]).length;
+        if (scanRekursionsWand(gateDateien(root)).length || rek("const e = (a) => e(a);\nconst f = async (o) => await f(o);\nfunction g(x) {\n    return g(x);\n}\nclass K {\n    m(a) {\n        return this.m(a);\n    }\n}\n") !== 4 || rek("// const e = (a) => e(a);\nconst h = (n) => (n ? h(n - 1) : 0);\nconst k = (a) => a.e || k2(a);\n"))
+            process.exit(console.log("❌ SELBST-TEST: die Rekursions-Wand feuert nicht (oder steht heute rot)") || 1);
+        console.log("✅ SELBST-TEST: die Rekursions-Wand feuert (Pfeil, await, Funktion, Methode rot; Basisfall, Kommentar, fremder Ruf still)");
         // Die Hüllen-Form-Wand muss feuern: die alte Zeile als Schlüssel und als Kurzform, über eine Variable gereicht —
         // ein Kommentar und ein Text (die Kern-Ersetzung) dürfen sie tragen, die Form mit teile ist still.
         const wirt = wirtsDateien(root, files);
@@ -3964,6 +3982,7 @@ function main() {
         .concat(scanPortWand(gateDateien(root)))
         .concat(scanWarteWand(gateDateien(root).concat(playtestDateien(root))))
         .concat(scanBootWand(gateDateien(root)))
+        .concat(scanRekursionsWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
         .concat(scanStammLeser(root))

@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -601,7 +601,7 @@ async function tatSeite(MESS, vorher) {
         const p = { x: a.position.x, y: y(a.position.x, a.position.z) + 1, z: a.position.z };
         for (let i = 0; i < 64 && st.architectures.includes(a); i++) {
             const von = { x: p.x + 2.2 * Math.cos(i * 0.785), z: p.z + 2.2 * Math.sin(i * 0.785) };
-            if (klick(p, von, 1.6, () => (r._pickArchitectureAtCrosshair() || {}).entry === a)) T.klicks++;
+            if (klick(p, von, 1.6, () => r._pickArchitectureAtCrosshair()?.entry === a)) T.klicks++;
         }
         if (!st.architectures.includes(a)) T.staemme.push({ x: p.x, z: p.z });
     }
@@ -752,7 +752,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                         r._gameLoopTick(t);
                     } catch (e) {
                         const tf = window.__standTaktFehler || (window.__standTaktFehler = []);
-                        if (tf.length < 5) tf.push("Takt: " + String((e && e.stack) || e).split("\n")[0]);
+                        if (tf.length < 5) tf.push("Takt: " + String(e?.stack || e).split("\n")[0]);
                     }
                 };
                 // Der Regler hält (die Mess-Bühne, wie `werkbank stand --regler voll`): headless folgt der Cull-Radius dem
@@ -913,7 +913,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                         const n = archs.length;
                         const c0 = Number.isFinite(r._archLODCursor) ? r._archLODCursor : 0;
                         const occlOn =
-                            st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
+                            st.useOcclusionDemotion !== false && !st.renderer?._isHeadlessNull;
                         for (let o = n - 1; o >= 0; o--) {
                             const e = archs[(c0 + o) % n];
                             if (!e || !e.instanced || e._occluded || e._bruecke) continue;
@@ -933,7 +933,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     const map = st.scatterRegions;
                     const cur = r._scatterLodCursor;
                     let zelle = null;
-                    if (map && map.size && cur && r._scatterLayerByName) {
+                    if (map?.size && cur && r._scatterLayerByName) {
                         const keys = (r._scatterLodKeys = Array.from(map.keys()));
                         r._scatterLodKeysN = map.size;
                         const k0 = cur.k >= keys.length ? 0 : cur.k;
@@ -980,7 +980,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     }
                     // der Saum (`_fernRingDeckWache`: Punkte ab `deckCursor`): der letzte Punkt der Runde steht still 1,5 m zu hoch
                     const fr = st.fernRing;
-                    if (fr && fr.zoneVerts && fr.geos && fr.geos[0]) {
+                    if (fr?.zoneVerts && fr.geos?.[0]) {
                         const o = fr.zoneVerts - 1;
                         const p = r._fernRingPunkt(fr, ((fr.deckCursor || 0) + o) % fr.zoneVerts);
                         const pos = fr.geos[0].attributes.position;
@@ -1103,7 +1103,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     const pm = st.playerMesh.position;
                     let ziel = null;
                     const formWartet = (k) =>
-                        (st.grassDirtyChunks && st.grassDirtyChunks.has(k)) ||
+                        st.grassDirtyChunks?.has(k) ||
                         (st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(k));
                     for (const [k, e] of st.voxelChunks) {
                         if (!e || e.empty || !e.mesh || e.lod !== 2 || formWartet(k)) continue;
@@ -1119,9 +1119,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                             cx: ziel.cx,
                             cz: ziel.cz,
                             d: Math.round(ziel.d),
-                            populiert: !!(
-                                st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(ziel.cx + "," + ziel.cz)
-                            ),
+                            populiert: !!st.voxelPopulatedChunks?.has(ziel.cx + "," + ziel.cz),
                         },
                         wuchs,
                         studio, // Takte bis die Bestellungen des Studios ruhten
@@ -1234,7 +1232,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                                         mesh: "voxelMeshCache",
                                     }[n]
                                 ];
-                            O.chunks[n] = { fern: ks.length, gehalten: ks.filter((k) => c && c.has(k)).length };
+                            O.chunks[n] = { fern: ks.length, gehalten: ks.filter((k) => c?.has(k)).length };
                         }
                         if (standKey) {
                             O.stand.nach = standOf(standKey);
@@ -1252,7 +1250,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                         // DIE RÄUMUNG DES ORTS: ein Dorf räumt beim Nähern die Natur auf seinem Grund (`_naturRaeumen` →
                         // `removeArchitecture`) — gezählt die synchronen Saves der ganzen Welt, die fünf Abbauten tragen
                         const natur = (st.architectures || [])
-                            .filter((e) => e && e.position && r._istNatur(e))
+                            .filter((e) => e?.position && r._istNatur(e))
                             .sort(
                                 (a, b) =>
                                     Math.hypot(a.position.x - ox, a.position.z - oz) -
@@ -1287,7 +1285,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     // um die Kamin-Spitze zu finden (`chimneyTipFromParams` → `massBau`); sie reist mit der Hülle (`__huelle.kamin`)
                     {
                         const fc = globalThis.__fachwerkCore;
-                        const recs = (r._foundry && r._foundry.recipes) || {};
+                        const recs = r._foundry?.recipes || {};
                         const kultur = Object.keys(recs).find((k) => {
                             const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
                             return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
@@ -1351,7 +1349,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                                 const wx = ox + dx;
                                 const wz = oz + dz;
                                 const memo = r._forestDartMemo;
-                                if (memo && memo.has(Math.floor(wx / C) + "," + Math.floor(wz / C))) continue;
+                                if (memo?.has(Math.floor(wx / C) + "," + Math.floor(wz / C))) continue;
                                 if (!r._landAt(wx, wz, 0.2)) continue;
                                 const wy = r.getTerrainHeightAt(wx, wz);
                                 if (!Number.isFinite(wy)) continue;
@@ -1396,7 +1394,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     // _satzBlock`), verlässt ihn und tritt ein zweites Mal ein (ein stehender Bereich legt nur geänderte Slots) —
                     // gezählt die Bytes, die der Block dabei FRISCH anlegt
                     {
-                        const recs = (r._foundry && r._foundry.recipes) || {};
+                        const recs = r._foundry?.recipes || {};
                         const kultur = Object.keys(recs).find((k) => {
                             const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
                             return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
@@ -1418,7 +1416,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                             const gruppen = () =>
                                 (e.instSlots || [])
                                     .map((s) => st.archInstanceGroups && st.archInstanceGroups.get(s.key))
-                                    .filter((g) => g && g.satz && (g.liveCount | 0) > 0);
+                                    .filter((g) => g?.satz && (g.liveCount | 0) > 0);
                             const drin = () => {
                                 const gs = gruppen();
                                 return (
@@ -1426,9 +1424,8 @@ const UFER = { x: 209.4, z: -1457.5 };
                                     gs.every((g) => {
                                         const s = st.chunkSaetze && st.chunkSaetze.get(g.satz);
                                         return (
-                                            s &&
-                                            s.bloecke.has(g.key) &&
-                                            !(st.bauSatzSchmutzig && st.bauSatzSchmutzig.has(g.key))
+                                            s?.bloecke.has(g.key) &&
+                                            !st.bauSatzSchmutzig?.has(g.key)
                                         );
                                     })
                                 );
@@ -1599,7 +1596,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                             takt();
                             W.maxTakt = Math.max(W.maxTakt, jetztTakt);
                         };
-                        n = await bisDa("der Spieler-Chunk am fremden Ort", () => !!(st.voxelChunks && st.voxelChunks.has(key)), 600, gang); // prettier-ignore
+                        n = await bisDa("der Spieler-Chunk am fremden Ort", () => !!st.voxelChunks?.has(key), 600, gang); // prettier-ignore
                         // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach (240 ohne Offenes)
                         nach = await bisDa("der Wald am fremden Ort", () => false, 240, gang);
                     } finally {
@@ -1614,7 +1611,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                         x,
                         z,
                         takte: n,
-                        spielerChunk: !!(st.voxelChunks && st.voxelChunks.has(key)),
+                        spielerChunk: !!st.voxelChunks?.has(key),
                         wald: W,
                     };
                 }
@@ -1741,7 +1738,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                         const glut0 = am().glut;
                         Z.start = typeof r._brandEntfachen === "function" && !!r._brandEntfachen(MESS.x, MESS.z); // ohne Brand im Stamm: LEER
                         S.frame();
-                        for (let i = 0; i < 600 && st.brandFeld && st.brandFeld.size; i++) {
+                        for (let i = 0; i < 600 && st.brandFeld?.size; i++) {
                             Z.zellen.push(st.brandFeld.size);
                             st.spielZeit = r._brandUhr + B.schrittS;
                             takt();
@@ -1762,7 +1759,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     // verdrängt (`_invalidateWaterCapsAround`) — je Wecken seine Takte, die Chunks danach wach, die Bewegung
                     let p = null;
                     const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
-                    for (const rv of (st.hydrosphere && st.hydrosphere.rivers) || [])
+                    for (const rv of st.hydrosphere?.rivers || [])
                         for (const q of rv.points) if (!q.inLake && (!p || d(q) < d(p))) p = q;
                     const A = (W.wasser = { ort: p && [Math.round(p.x), Math.round(p.z)], takte: [], gehalten: [], bewegt: [] });
                     const aktiv = () => (st.waterCAActive ? st.waterCAActive.size : 0);
@@ -1823,7 +1820,7 @@ const UFER = { x: 209.4, z: -1457.5 };
             STAND.TAKTE
         );
     } catch (e) {
-        befund = { fehler: (e && e.message) || String(e) };
+        befund = { fehler: e?.message || String(e) };
     }
     await browser.close();
     server.close();
@@ -1864,7 +1861,7 @@ const UFER = { x: 209.4, z: -1457.5 };
         );
     rundeZeile("Bruch", befund.bruch);
     const X = befund.taeter;
-    if (X && X.je) {
+    if (X?.je) {
         for (const [n, x] of Object.entries(X.je))
             console.log(
                 `  Täter ${n}: Stelle ${x.stelle} von ${x.runde} (zweite Hälfte ab ${Math.ceil(x.runde / 2)}) — gefunden ` +
@@ -1898,7 +1895,7 @@ const UFER = { x: 209.4, z: -1457.5 };
                     .map(([n, c]) => `${n} ${c.gehalten}/${c.fern}`)
                     .join(
                         " · "
-                    )}, ferner Chunk ${O.stand ? O.stand.key : "?"} ${O.stand && O.stand.gleich ? "hält seinen Stand" : "SPRINGT"} — ` +
+                    )}, ferner Chunk ${O.stand ? O.stand.key : "?"} ${O.stand?.gleich ? "hält seinen Stand" : "SPRINGT"} — ` +
                 `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen, der längste ${O.maxTaktMs} ms — die Räumung: ` +
                 (O.raeumung
                     ? `${O.raeumung.abbau} Abbauten, ${O.raeumung.saves} synchrone Saves (Σ ${O.raeumung.saveMs} ms)`
@@ -1907,16 +1904,16 @@ const UFER = { x: 209.4, z: -1457.5 };
                     ? ` — das Solo-Haus (${O.kamin.kultur}) ${O.kamin.gesetzt ? "gesetzt" : "NICHT gesetzt"}, ` +
                       `${O.kamin.bau} Kern-Nachbauten (${O.kamin.ms} ms)`
                     : "") +
-                (O.wald && O.wald.gesetzt
+                (O.wald?.gesetzt
                     ? ` — der Baum in frischem Wald bei (${O.wald.ort}): ${O.wald.synchron} Zellen synchron ` +
                       `(${O.wald.ms} ms), Gestalt ${O.wald.gestalt} nach ${O.wald.takte} Takten, ${O.wald.imTakt} Zellen im ` +
                       `Takt (der längste ${O.wald.maxTaktMs} ms, ${O.wald.maxTaktZellen} Zellen)`
                     : "") +
-                (O.satzHaus && O.satzHaus.gesetzt
+                (O.satzHaus?.gesetzt
                     ? ` — das Haus im Satz (${O.satzHaus.kultur}): ${O.satzHaus.gruppen} Gruppen, ${O.satzHaus.ecken} Ecken ` +
                       `nach ${O.satzHaus.takte} Takten, Wieder-Eintritt ${O.satzHaus.bloecke} Blöcke, ${O.satzHaus.frischKB} KB frisch`
                     : "") +
-                (O.amSpieler && O.amSpieler.gelegt
+                (O.amSpieler?.gelegt
                     ? ` — der Erdbau unter dem Spieler bei (${O.amSpieler.ort}): ${O.amSpieler.dirty} Chunks zum Neubau, ` +
                       `${O.amSpieler.heil ? "heil" : "NICHT heil"} nach ${O.amSpieler.takte} Takten, synchron im Takt ` +
                       `${O.amSpieler.sync.length} Chunks (${O.amSpieler.sync.map((s) => s.ms + " ms").join(", ") || "keiner"})`
@@ -1958,11 +1955,8 @@ const UFER = { x: 209.4, z: -1457.5 };
                 `Takten, danach in ${F.nach.frames} Takten ${F.nach.summe} Einheiten`}`
         );
     const v = urteil(befund);
-    if (v.length) {
-        console.log("\n❌ STAND-TAKT ROT:\n  " + v.join("\n  "));
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ STAND-TAKT GRÜN — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten."
+    wandEnde(
+        v,
+        "STAND-TAKT — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten."
     );
 })();

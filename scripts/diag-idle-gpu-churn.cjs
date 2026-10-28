@@ -62,8 +62,8 @@ hauptLauf(async () => {
         const t0 = Date.now();
         const v = await page.evaluate(fn, ...args);
         const ms = Date.now() - t0;
-        if (ms > maxRuf.ms) maxRuf = { ms, name: name + (v && v.label ? " · " + v.label : "") };
-        if (ms > LANG_MS) log(`langer Aufruf: ${name} — ${Math.round(ms / 1000)} s${v && v.cc != null ? ` · ${v.cc} Compiles` : ""}${v && v.label ? ` · ${v.label}` : ""}`);
+        if (ms > maxRuf.ms) maxRuf = { ms, name: name + (v?.label ? " · " + v.label : "") };
+        if (ms > LANG_MS) log(`langer Aufruf: ${name} — ${Math.round(ms / 1000)} s${v && v.cc != null ? ` · ${v.cc} Compiles` : ""}${v?.label ? ` · ${v.label}` : ""}`);
         laufenderRuf = "-";
         return v;
     };
@@ -79,7 +79,7 @@ hauptLauf(async () => {
             const t0 = performance.now();
             while (!S.done && performance.now() - t0 < 4000) {
                 const r = window.anazhRealm;
-                if (r && !S.stubbed && r.state && r.state.renderer) {
+                if (r && !S.stubbed && r.state?.renderer) {
                     window.__origRender = r.state.renderer.render.bind(r.state.renderer);
                     r.state.renderer.render = function () {};
                     if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
@@ -91,7 +91,7 @@ hauptLauf(async () => {
                     r.state._buehneStand = true;
                     S.stubbed = true;
                 }
-                if (r && r.state && r.state.rendererReady && typeof r._gameLoopTick === "function") {
+                if (r?.state?.rendererReady && typeof r._gameLoopTick === "function") {
                     r.state.autoSeason = false; // die Saison hält (Bühne)
                     window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                     try { r._gameLoopTick(performance.now()); } catch {}
@@ -155,7 +155,7 @@ hauptLauf(async () => {
         if (typeof GPUDevice !== "undefined" && GPUDevice.prototype) {
             const code = new WeakMap();
             const oM = GPUDevice.prototype.createShaderModule;
-            if (typeof oM === "function") GPUDevice.prototype.createShaderModule = function (d) { const m = oM.call(this, d); try { code.set(m, (d && d.code) || ""); } catch {} return m; };
+            if (typeof oM === "function") GPUDevice.prototype.createShaderModule = function (d) { const m = oM.call(this, d); try { code.set(m, d?.code || ""); } catch {} return m; };
             for (const m of ["createRenderPipeline", "createRenderPipelineAsync"]) {
                 const o = GPUDevice.prototype[m];
                 if (typeof o === "function") GPUDevice.prototype[m] = function (d, ...rest) {
@@ -167,7 +167,7 @@ hauptLauf(async () => {
                 };
             }
         }
-        if (typeof WebGL2RenderingContext !== "undefined" && WebGL2RenderingContext.prototype && WebGL2RenderingContext.prototype.linkProgram) {
+        if (typeof WebGL2RenderingContext !== "undefined" && WebGL2RenderingContext.prototype?.linkProgram) {
             const o = WebGL2RenderingContext.prototype.linkProgram;
             WebGL2RenderingContext.prototype.linkProgram = function (prog) {
                 window.__cc.glLink++;
@@ -178,7 +178,7 @@ hauptLauf(async () => {
             };
         }
         let backend = "?";
-        try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : (b.constructor && b.constructor.name) || "?"; } catch {}
+        try { const b = s.renderer.backend; if (b) backend = b.isWebGPUBackend ? "WebGPU" : b.isWebGLBackend ? "WebGL2" : b.constructor?.name || "?"; } catch {}
         s.renderer.render = window.__origRender;
         s.postProcessingFailed = true;
         // Der App-Loop RUHT: die Linse treibt ihre Frames selbst (sonst rendert er parallel mit und
@@ -216,7 +216,7 @@ hauptLauf(async () => {
                 const n1 = (s.architectures || []).length;
                 if (n1 !== n0 && window.__bauBuch.length < 20) {
                     const e = art === "an" ? v : a[0];
-                    window.__bauBuch.push(`${art} ${(e && e.type) || "?"} durch ${werBau()}`);
+                    window.__bauBuch.push(`${art} ${e?.type || "?"} durch ${werBau()}`);
                 }
                 return v;
             };
@@ -239,8 +239,8 @@ hauptLauf(async () => {
         const schluessel = (o) => {
             const ms = Array.isArray(o.material) ? o.material : [o.material];
             const g = o.geometry;
-            const at = g && g.attributes ? Object.keys(g.attributes).sort().join(",") : "";
-            return [o.type, ms.map((m) => (m ? m.id : "-")).join(","), at, g && g.index ? 1 : 0].join("|");
+            const at = g?.attributes ? Object.keys(g.attributes).sort().join(",") : "";
+            return [o.type, ms.map((m) => (m ? m.id : "-")).join(","), at, g?.index ? 1 : 0].join("|");
         };
         const name = (o) => {
             const m = Array.isArray(o.material) ? o.material[0] : o.material;
@@ -343,7 +343,7 @@ hauptLauf(async () => {
             const E = r._erstZeichnung;
             // der wartende Draw beim Namen: das Label seiner Pipeline (WebGPU, `_erstWartet`) oder der Stoff ihres Programms
             const p = E ? E.wartetAuf : null;
-            const wartet = p ? (E.namen && E.namen.get(p)) || `${(p.fragmentProgram && p.fragmentProgram.name) || "(Stoff ohne Namen)"}#${p.fragmentProgram ? p.fragmentProgram.id : "?"}` : null;
+            const wartet = p ? E.namen?.get(p) || `${p.fragmentProgram?.name || "(Stoff ohne Namen)"}#${p.fragmentProgram ? p.fragmentProgram.id : "?"}` : null;
             // SELBSTTEST (--selbsttest-ruhe): eine Erst-Zeichnung, die je Bild einen Bau verschiebt — die Ruhe kommt nie
             const stoer = window.__selbsttestRuhe ? `|verschoben+${(window.__ruheStoer = (window.__ruheStoer || 0) + 1)}` : "";
             return { tot: cnt(), cc: cnt() - c0, erst: E ? `${E.bauN}|${E.verschoben}|${E.wartetN}${stoer}` : stoer, offen: E ? E.offen.size : 0, wartet };
@@ -459,7 +459,7 @@ hauptLauf(async () => {
     // Env-Identität. Die Linse MUSS dann rot werden (sonst wäre sie blind).
     if (process.argv.includes("--selbsttest-churn")) await ruf("Selbsttest-Schalter", () => (window.__selbsttestChurn = true));
     const regen = { gesamt: 0, wdh: 0, spur: [] };
-    const hatUni = await ruf("Env-Probe", () => { const u = window.anazhRealm.state.skyboxUniforms; window.__ccSpur = []; return !!(u && u.himmelTint); });
+    const hatUni = await ruf("Env-Probe", () => { const u = window.anazhRealm.state.skyboxUniforms; window.__ccSpur = []; return !!u?.himmelTint; });
     if (!hatUni) regen.err = "keine skyboxUniforms.himmelTint";
     else {
         const b0 = await stand();
@@ -469,7 +469,7 @@ hauptLauf(async () => {
                 s.skyboxUniforms.himmelTint.value.setRGB(c[0], c[1], c[2]);
                 s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
                 try { r._ensureSkyEnvironment(true); } catch {}
-                if (window.__selbsttestChurn && s.scene && s.scene.environment) s.scene.environment = s.scene.environment.clone();
+                if (window.__selbsttestChurn && s.scene?.environment) s.scene.environment = s.scene.environment.clone();
                 try { r._loopRender(); } catch {}
             }, c);
         }
@@ -483,11 +483,11 @@ hauptLauf(async () => {
     const kipp = [];
     // das Buch der Wache seit der Bühne: wer das Wetter drehte (Schreiber oder roh, mit Quelle und Spiel-Rahmen) und wen sie
     // verweigerte (die Wache hielt — keine Drift, aber beim Namen)
-    const wb = (buehne.wetter && buehne.wetter.buch) || [];
+    const wb = buehne.wetter?.buch || [];
     const dreher = wb.filter((e) => e.art !== "verweigert").map((e) => `${e.von} → ${e.zu} durch ${e.quelle || e.art} (${e.stapel})`);
     const verweigert = wb.filter((e) => e.art === "verweigert").map((e) => `${e.quelle} → ${e.zu}`);
     // das Buch des Welt-Halts seit der Bühne: gehaltene Welt-Akte (keine Drift, beim Namen) und durchgelaufene (die Täter)
-    const wa = (buehne.welt && buehne.welt.buch) || [];
+    const wa = buehne.welt?.buch || [];
     const weltGehalten = wa.filter((e) => e.art === "verweigert").map((e) => `${e.quelle}: ${e.op}`);
     const weltDurch = wa.filter((e) => e.art === "durch").map((e) => `${e.op} durch ${e.quelle} (${e.stapel})`);
     if (!buehne.welt || buehne.welt.blind) kipp.push("der Welt-Akt-Spion ist blind (das Spiel nennt keine Welt-Akte)");

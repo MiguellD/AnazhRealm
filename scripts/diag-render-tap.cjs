@@ -14,7 +14,7 @@
 // und diese Invarianten werden rot (D3c: der Tap drawCalls-first beweist der Fake-Vertrag
 // am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, urteilEnde } = require("./lib/welt-boot.cjs");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
 const server = statikServer();
@@ -186,10 +186,5 @@ const server = statikServer();
         if (!c.pass) fails++;
     }
     console.log(`\n${checks.length - fails}/${checks.length} Render-Tap-Invarianten OK.`);
-    if (fails) {
-        console.log("⛔ Die vergiftete Zahl kann zurückkehren — ein Konsument liest den Lebenszeit-Zähler.");
-        process.exit(1);
-    }
-    console.log("✅ Der Render-Tap ist strukturell wahr: pro-Frame-Zähler, beschränkte sense-Zahl, session-invariant.");
-    process.exit(0);
+    urteilEnde(fails, "⛔ Die vergiftete Zahl kann zurückkehren — ein Konsument liest den Lebenszeit-Zähler.", "✅ Der Render-Tap ist strukturell wahr: pro-Frame-Zähler, beschränkte sense-Zahl, session-invariant.");
 })();

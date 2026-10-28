@@ -189,13 +189,5 @@ hauptLauf(async () => {
     else console.log(`  W6-Selbsttest ROT am Täter: ${selbst[0]}`);
     if (!(out.ohneLink > 0)) errs.push("W6: der Zensus linkt (compileAsync fragt seine Pipeline anders als mit eigener Versprechen-Liste — r184-Drift)"); // prettier-ignore
 
-    if (errs.length) {
-        console.error("\n❌ ROT:");
-        for (const e of errs) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU."
-    );
-    process.exit(0);
+    require("./lib/welt-boot.cjs").wandEnde(errs, "die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU.");
 });

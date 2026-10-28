@@ -25,6 +25,7 @@
 //     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen.
 // ============================================================================
 "use strict";
+const { urteilEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -517,14 +518,7 @@ function selftest() {
         '{\n    const quelle = fs.readFileSync(p, "utf8");\n    quelle.replace("x", "y");\n}\n// quelle.replace("x", "y");\n';
     for (const [datei, q] of [["probe.cjs", ersterStill], ["scripts/lib/stamm.cjs", ersterRot[0][1]]])
         if (ersterTreffer(datei, q).length) fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
-    if (fails.length) {
-        console.log("❌ SELBST-TEST: " + fails.join(" · "));
-        process.exit(1);
-    }
-    console.log(
-        "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm), Kommentare zählen nicht"
-    );
-    process.exit(0);
+    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm), Kommentare zählen nicht");
 }
 
 function main() {

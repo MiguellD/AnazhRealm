@@ -20,7 +20,7 @@
 //
 //   node scripts/diag-p2p-gestalt.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const server = statikServer();
@@ -244,11 +244,5 @@ hauptLauf(async () => {
         out.k.einValidator === true
     );
 
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — die Studio-Übergabe reist zu den Peers: der soul-Kanal trägt die Avatar-Gestalt, der Empfänger validiert am SELBEN Validator, der Peer-Guss führt sie transient (kein Leck), zwei Peers bleiben eigenständig (distinkte Ofen-Keys), und der eigene Avatar ist unberührt."
-    );
+    wandEnde(errs, "die Studio-Übergabe reist zu den Peers: der soul-Kanal trägt die Avatar-Gestalt, der Empfänger validiert am SELBEN Validator, der Peer-Guss führt sie transient (kein Leck), zwei Peers bleiben eigenständig (distinkte Ofen-Keys), und der eigene Avatar ist unberührt.");
 });

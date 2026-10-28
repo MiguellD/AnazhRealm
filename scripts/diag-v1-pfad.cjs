@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -3141,11 +3141,7 @@ hauptLauf(async () => {
             wandT.length === 2,
             String(wandT)
         );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
-        console.log("\n✅ SELBST-TEST GRÜN — die V1-Pfad-Linse nennt ihre Täter beim Namen.");
+        selbsttestEnde(errs, "die V1-Pfad-Linse nennt ihre Täter beim Namen.");
         process.exit(0);
     }
 
@@ -3283,10 +3279,5 @@ hauptLauf(async () => {
         );
     }
     if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log("\n✅ GRÜN — der v1-Pfad trägt seine benannten Schnitte.");
-    process.exit(0);
+    wandEnde(errs, "der v1-Pfad trägt seine benannten Schnitte.");
 });

@@ -57,7 +57,7 @@ function urteil(out) {
         for (const [msg, n] of Object.entries(p.seite || {})) v.push(`${ph.toUpperCase()} SEITENFEHLER ${n}×: ${msg}`);
     }
     const A = P.ablauf;
-    if (A && A.z) {
+    if (A?.z) {
         if (!A.aufgesessen) v.push("ABLAUF VAKUÖS: nicht aufgesessen");
         if (!A.ausgestiegen) v.push("ABLAUF VAKUÖS: nicht ausgestiegen");
         if (!(A.sicht && A.sicht.vorher !== A.sicht.nachher))
@@ -66,17 +66,17 @@ function urteil(out) {
         if (!(A.z.wasser > 0)) v.push("ABLAUF VAKUÖS: kein Wasser gezeichnet");
     }
     const B = P.bruch;
-    if (B && B.z) {
+    if (B?.z) {
         if (!(B.z.bruchOffen > 0)) v.push("BRUCH VAKUÖS: kein Pass-Bruch bei offener Abfrage");
         if (!(B.z.begonnen > 0)) v.push("BRUCH VAKUÖS: keine Abfrage begann");
     }
     const G = P.gift;
-    if (G && G.z) {
+    if (G?.z) {
         if (!(G.z.gift > 0)) v.push("GIFT VAKUÖS: der Stellvertreter zeichnete nie mit gescheiterter Pipeline");
         if (!(G.z.gezaehlt > G.z.begonnen)) v.push(`GIFT VAKUÖS: gezählt ${G.z.gezaehlt}, begonnen ${G.z.begonnen}`);
     }
     const L = P.letzter;
-    if (L && L.z) {
+    if (L?.z) {
         if (!(L.z.letzter > 0)) v.push("LETZTER VAKUÖS: kein Frame endete mit dem Stellvertreter");
         if (!(L.z.nullFrames > 0)) v.push("LETZTER VAKUÖS: kein Frame mit Zähler 0 folgte");
     }
@@ -223,14 +223,14 @@ function sammlerInstall() {
             const dev = await rd.call(this, d);
             try {
                 dev.addEventListener("uncapturederror", (ev) =>
-                    buche("gpu", (ev.error && ev.error.message) || ev.error)
+                    buche("gpu", ev.error?.message || ev.error)
                 );
             } catch {}
             return dev;
         };
     }
-    window.addEventListener("error", (e) => buche("seite", (e.error && e.error.message) || e.message));
-    window.addEventListener("unhandledrejection", (e) => buche("seite", (e.reason && e.reason.message) || e.reason));
+    window.addEventListener("error", (e) => buche("seite", e.error?.message || e.message));
+    window.addEventListener("unhandledrejection", (e) => buche("seite", e.reason?.message || e.reason));
 }
 
 // Seite: die Stoffe der drei Stationen — je einer mit eigenem Programm (eine Konstante im Shader: das Gift markiert SEINE
@@ -398,7 +398,7 @@ async function verdeckungPhase(opts) {
                     for (let k = 0.5; k < 15 && nass(q.x + qx * sg * k, q.z + qz * sg * k); k += 0.5) w += 0.5;
                 return w >= 2;
             };
-            for (const f of (h && h.rivers) || [])
+            for (const f of h?.rivers || [])
                 f.points.forEach((q, i) => {
                     const d = Math.hypot(q.x - mx, q.z - mz);
                     if ((!P || d < P.d) && traegt(f, i)) {
@@ -429,7 +429,7 @@ async function verdeckungPhase(opts) {
             const fx = P.x - nx * 700,
                 fz = P.z - nz * 700;
             const key = Math.floor(fx / R) + "," + Math.floor(fz / R);
-            const neu = !(st._regionBundles && st._regionBundles.has(key));
+            const neu = !st._regionBundles?.has(key);
             const bg = r._archRegionBundleFor(key);
             if (!bg) throw new Error("kein Region-Bündel (`_archRegionBundleFor` lieferte null)");
             aufraeumen.push(() => {
@@ -504,7 +504,7 @@ async function verdeckungPhase(opts) {
             aus.ms.wagen = Math.round(performance.now() - tWagen);
             const tTakte = performance.now();
             const auf = r.mountArchitecture(e);
-            aus.aufgesessen = !!(auf && auf.ok);
+            aus.aufgesessen = !!auf?.ok;
             await tick(2);
             const sichtVorher = st.cameraMode;
             tasten(true);
@@ -515,7 +515,7 @@ async function verdeckungPhase(opts) {
             aus.halt = Math.round(Math.hypot(e.position.x - P.x, e.position.z - P.z) * 10) / 10;
             // DAS AUSSTEIGEN: die Seele zurück in den Körper, die Sicht zurück
             const ab = r.dismountArchitecture();
-            aus.ausgestiegen = !!(ab && ab.ok);
+            aus.ausgestiegen = !!ab?.ok;
             st.yaw = fahrt;
             await tick(2 * aus.takt); // zwei Probe-Fenster nach dem Aussteigen
             aus.sicht = { vorher: sichtVorher, nachher: st.cameraMode };
@@ -568,7 +568,7 @@ async function verdeckungPhase(opts) {
             });
         }
     } catch (e) {
-        aus.fehler = (e && e.message) || String(e);
+        aus.fehler = e?.message || String(e);
     } finally {
         for (const f of aufraeumen.reverse())
             try {
@@ -611,14 +611,11 @@ async function verdeckungPhase(opts) {
             const t0 = performance.now();
             const r = await window.__weltDa((r) => {
                 const st = r.state;
-                return !!(st &&
-                    st.rendererReady &&
-                    st.renderer &&
-                    st.renderer.backend &&
+                return !!(st?.rendererReady &&
+                    st.renderer?.backend &&
                     st.camera &&
                     st.playerMesh &&
-                    st.hydrosphere &&
-                    st.hydrosphere.ready &&
+                    st.hydrosphere?.ready &&
                     (st._weltbildDa || !karte));
             });
             return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
@@ -665,7 +662,7 @@ async function verdeckungPhase(opts) {
             );
         }
     } catch (e) {
-        out.abbruch = (e && e.message) || String(e);
+        out.abbruch = e?.message || String(e);
     }
     await browser.close();
     server.close();
