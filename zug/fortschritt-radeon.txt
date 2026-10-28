@@ -1166,3 +1166,4 @@
 2026-10-28 14:32:05 takt17-farm spielgang.K4#1 ROT 2.3 · 79/92
 2026-10-28 14:32:23 takt17-farm streaming.K4#1 GRÜN 1.9 · 80/92
 2026-10-28 14:32:28 takt17-farm streaming.K5#1 GRÜN 1.9 · 81/92
+2026-10-28 14:32:34 takt17-farm streaming.K5#2 ROT 1.9 · 82/92
