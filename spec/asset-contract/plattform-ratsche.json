@@ -64,18 +64,18 @@
         "v6": {
             "kern": "fachwerk-core.js",
             "faelle": 32,
-            "probe": "Samen 7 x Stufen 0/1/2/3 x jede vierte Kultur (8 von 32). Gehoben am Stufen-Ton (S8, material.K3): die L2 und die Huelle tragen den GEMESSENEN Ton der Stufe 1 (fachwerk-core sichtTon, Faktor je Blick-Klasse auf 2^-10) - wo eine Drift die L1 kippt (Ziegel-Schritt, Neigung, First), kippt jetzt auch ihre L2 und je Faktor-Sprung die Huelle: cos 16 -> 24, sin 16 -> 18, atan 11 -> 16, tan 8 -> 11; pow bleibt 0 (die GEMESSENE Klasse), cos/sin/atan/tan rundeten in beiden V8 gleich (Kopf dieser Datei)",
+            "probe": "Samen 7 x Stufen 0/1/2/3 x jede vierte Kultur (8 von 32). Gehoben am Stufen-Ton (S8, material.K3): die L2 und die Huelle tragen den GEMESSENEN Ton der Stufe 1 (fachwerk-core sichtTon, Faktor je Blick-Klasse auf 2^-10) - wo eine Drift die L1 kippt (Ziegel-Schritt, Neigung, First), kippt jetzt auch ihre L2 und je Faktor-Sprung die Huelle: cos 16 -> 24, sin 16 -> 18, atan 11 -> 16, tan 8 -> 11; pow bleibt 0 (die GEMESSENE Klasse), cos/sin/atan/tan rundeten in beiden V8 gleich (Kopf dieser Datei). Gehoben am Soll des Turms (material.K3, sollTon): die Koerper-Stufen des Turms (L1, L2, Huelle) tragen den GEMESSENEN Ton seiner Stufe 0, jeder Faktor das Verhaeltnis des Ganzen (tonFaktoren) - wo eine Drift die Ziegel-Neigung kippt, kippt auch der Faktor des Ganzen: cos 24 -> 25, atan 16 -> 17, tan 11 -> 14, sin 18 -> 17 (faellt)",
             "kippt": {
-                "cos": 24,
-                "sin": 18,
-                "atan": 16,
-                "tan": 11
+                "cos": 25,
+                "sin": 17,
+                "atan": 17,
+                "tan": 14
             },
             "taeter": {
-                "cos": "fachwerk-core.js:197 cos (eindeckenFlaeche, der Ziegel-Schritt auf der Schraege)",
+                "cos": "fachwerk-core.js:212 cos (eindeckenFlaeche, der Ziegel-Schritt auf der Schraege)",
                 "sin": "fachwerk-core.js:249 sin (rotation.set -> Quaternion -> Float64-Matrix)",
-                "atan": "fachwerk-core.js:193 atan (th, die Dach-Neigung der Eindeckung)",
-                "tan": "fachwerk-core.js:176 tan (ridgeY, die First-Hoehe)"
+                "atan": "fachwerk-core.js:208 atan (th, die Dach-Neigung der Eindeckung)",
+                "tan": "fachwerk-core.js:191 tan (ridgeY, die First-Hoehe)"
             },
             "soll": "0 - das Raster (heute nur die Ausstattung, ausRaster) kommt mit dem v6-Akt der W5 (Haus-Raster vor dem Farb-Akt, Kritik B5)"
         },

@@ -2068,7 +2068,7 @@
     //  8 Seiten im Wechsel 14° und 31° über dem Horizont, dazu von oben, je 64²), je Blick-Klasse (wand |n.y| < 0,25,
     //  flach sonst) die mittlere Vertex-Farbe der tragenden Stoffe (Stoff und Metall; Glas und Glut tragen keinen Ton),
     //  übertragen wird die Leuchtdichte je Klasse.
-    //  Die Stufe 1 misst sich im Warm-Pfad (`B.sichtTon`, stufe1Ton); die Stufe 2 und die Hülle (Stufe 3, Fernform
+    //  Das Soll misst sich im Warm-Pfad (`B.sichtTon`, sollTon); die Stufe 2 und die Hülle (Stufe 3, Fernform
     //  `__fern`) messen sich selbst und tragen je Klasse den Faktor Soll/Ist (`tonUebertrag`). Bis S8 kam der Ton der L2
     //  aus Rollen-Farben × EINEM Wand-Ton (`wandTonAus`, Fenster 2,6..Traufe): der Giebel trug die Dach-Farbe, das
     //  Erdgeschoss den Ton des Obergeschosses — L2/L0 0,704 (gotisch) bis 1,108 (pueblo), 31 von 64 Häusern im Band.
@@ -2225,13 +2225,24 @@
         }
         return aus;
     }
-    // DER WARM-PFAD (der EINE, S8): das Soll jeder fernen Stufe ist die gemessene Stufe 1 — gemessen erst, wenn eine ferne
-    // Stufe sie braucht (eine gezeigte Stufe 1 misst nichts): am Fragment im Fach, sonst baut der Bau sie einmal (das
-    // Fragment fällt, Wand-Ton und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
-    function stufe1Ton(B) {
+    // DER WARM-PFAD (der EINE, S8): das Soll jeder Körper-Stufe ist die gemessene Stufe, die die Fassade ganz baut — die
+    // flächige Stufe 1, am Turm die Stufe 0 (seine Stufe 1 ist selbst ein Körper: TURMNUR + lod2Koerper + fensterFern; ihr
+    // Soll war sie selbst, hochhaus L1/L0 0,777 im Sicht-Ton, material.K3). Gemessen erst, wenn eine Körper-Stufe sie braucht
+    // (eine gezeigte Stufe misst nichts): am Fragment im Fach, sonst baut der Bau sie einmal (das Fragment fällt, Wand-Ton
+    // und Sicht-Ton bleiben am Bau). Jeder Turm, jedes Haus, Labor und Welt gleich.
+    function sollTon(B) {
         if (!B.sichtTon) {
-            var g = B.frag && B.fragStufe === 1 ? B.frag : null;
-            if (!g) {
+            var g = B.frag && B.fragStufe === 1 && !turmBau(B) ? B.frag : null;
+            if (turmBau(B)) {
+                var st = stufe0Bau(stufe0Param(Object.assign({}, B.p, { __sehne: undefined }))),
+                    wrap = bauOrtWrap(B);
+                wrap.add(st.g);
+                wrap.updateMatrixWorld(true);
+                bakeLOD(st.g, B.p.col, (g = {}), 0, true);
+                st.g.traverse(function (o) {
+                    if (o.geometry) o.geometry.dispose();
+                });
+            } else if (!g) {
                 g = fragFuer(B, 1);
                 B.frag = null;
                 B.fragStufe = undefined;
@@ -2240,21 +2251,33 @@
         }
         return B.sichtTon;
     }
+    function turmBau(B) {
+        return (B.p.storeys || 1) >= 6;
+    }
     // Der Faktor je Klasse: die Leuchtdichte Soll/Ist (Rec. 709 — der Farbton jeder Stufe bleibt ihr eigener: die Scheibe der L2
     // zeigt den Raum dahinter in seiner Farbe, gate:haus-fern G), eine Klasse unter 1 % der gesehenen Pixel trägt den Faktor
     // des Ganzen; auf dem Raster 2^-10 — eine Drift der Eingänge um 1 ULP kippt fast nie einen Faktor (Plattform-Probe).
+    // DAS GANZE HÄLT (material.K3): sieht die Stufe ihre Klassen in anderen Anteilen als ihr Soll (die Glas-Fassade der L2
+    // verdeckt die Wand, die das Metall-Raster der L0 trägt: volle_moderne Wand 48 % gegen 66 %), träfe jede Klasse ihren Ton
+    // und das Ganze nicht (L2/L0 0,824) — beide Faktoren tragen darum das Verhältnis Soll/Ist des Ganzen nach der Klassen-Wahl:
+    // die Wand bleibt im Verhältnis zum Dach, die Albedo der Stufe ist die ihres Solls.
     function tonFaktoren(soll, ist) {
         var Y = function (s) {
             return (0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2]) / s[3];
         };
-        var ganz = function (s, i) {
-            var q = s[3] && i[3] && Y(i) > 0 ? Y(s) / Y(i) : 1;
-            q = Math.round(Math.min(4, Math.max(0.25, q)) * 1024) / 1024;
-            return [q, q, q];
+        var roh = function (s, i) {
+            return s[3] && i[3] && Y(i) > 0 ? Y(s) / Y(i) : 1;
         };
-        var alle = ganz(soll.alle, ist.alle);
-        return [0, 1].map(function (k) {
-            return soll.k[k][3] >= 0.01 * soll.alle[3] && ist.k[k][3] >= 0.01 * ist.alle[3] ? ganz(soll.k[k], ist.k[k]) : alle;
+        var q = [0, 1].map(function (k) {
+            return soll.k[k][3] >= 0.01 * soll.alle[3] && ist.k[k][3] >= 0.01 * ist.alle[3] ? roh(soll.k[k], ist.k[k]) : roh(soll.alle, ist.alle);
+        });
+        var nach = 0;
+        for (var k = 0; k < 2; k++) if (ist.k[k][3]) nach += Y(ist.k[k]) * ist.k[k][3] * q[k];
+        nach = ist.alle[3] ? nach / ist.alle[3] : 0;
+        var ganz = soll.alle[3] && nach > 0 ? Y(soll.alle) / nach : 1;
+        return q.map(function (x) {
+            x = Math.round(Math.min(4, Math.max(0.25, x * ganz)) * 1024) / 1024;
+            return [x, x, x];
         });
     }
     // Die Stufe trägt den Ton ihres Solls: jede Ecke der tragenden Stoffe × den Faktor ihrer Klasse (nach ihrer Normale).
@@ -2916,12 +2939,12 @@
             teile: koerperTeile(B),
         };
     }
-    // DIE TEILE DER HÜLLE IM TON DER STUFE 1 (S8): je Teil seine Farbe × den Faktor seiner Blick-Klassen (`tonFaktoren`
+    // DIE TEILE DER HÜLLE IM TON IHRES SOLLS (S8, `sollTon`): je Teil seine Farbe × den Faktor seiner Blick-Klassen (`tonFaktoren`
     // der Hülle gegen `B.sichtTon`), gewichtet nach den Flächen, die ein Auge an ihm sieht — der Kasten vier Wände und
     // den Deckel, Keil und Kapsel ihre Schräge. Gitter (Stufe 3) und Fernform (`__fern`, der Welt-March) lesen DIESE Liste.
     function koerperTeile(B) {
         if (B.koerperTeile) return B.koerperTeile;
-        var soll = stufe1Ton(B);
+        var soll = sollTon(B);
         var teile = koerperListe(B).map(function (x) {
             return x.teil;
         });
@@ -3059,7 +3082,7 @@
     // prettier-ignore
     function fragFuer(B, stufe){                                                                 // GEBÄUDE-FRAGMENT-GESETZ: jedes Gebäude bakt seine Stufe EINMAL — der Chunk mischt nur noch.
   if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
-  if(stufe>=2) stufe1Ton(B);                                                                  // DER WARM-PFAD (S8): jede ferne Stufe baut auf der gemessenen Stufe 1 (Wand-Ton, Sicht-Ton)
+  if(stufe>=2||(stufe===1&&turmBau(B))) sollTon(B);                                           // DER WARM-PFAD (S8): jede Körper-Stufe baut auf ihrem gemessenen Soll (Wand-Ton, Sicht-Ton)
   const geoms={};
   if(stufe===3){ huelleGeoms(koerperTeile(B), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
   else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
@@ -3081,7 +3104,7 @@
       wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
     if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
     st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
-  if(stufe===2) tonUebertrag(geoms, B.sichtTon);                                              // die Stufe 2 trägt je Blick-Klasse den Ton der Stufe 1
+  if(stufe===2||(stufe===1&&turmBau(B))) tonUebertrag(geoms, B.sichtTon);                     // jede Körper-Stufe (die 2, die Turm-1) trägt den Ton ihres Solls
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
     // ═══════════════════════════════════════════════════════════════════════

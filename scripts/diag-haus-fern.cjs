@@ -587,8 +587,13 @@ function glasUrteil(G, f) {
     }
 }
 
+// ── S8 DER STUFEN-TON (material.K3): je gezeigter Stufe die Leuchtdichte, die ein Auge von außen an den tragenden Stoffen
+//    sieht — die EINE Rechnung des Kerns (`sichtTon`: Z-Puffer, 9 Blicke, Stoff und Metall) über den Rollen der Stufe
+//    (`buildStufe`, der Bau hinter buildInstance). Soll: Stufe/L0 im Band `stufenToleranz` der Albedo-Tafel (dieselbe Zahl wie
+//    die Welt-Seite). Vor dem Akt: hochhaus L1/L0 0,777, volle_moderne L2/L0 0,824.
+
 // ── Ein Haus-Fall → seine Zahlen ──
-function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt) {
+function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
     const B = LOD.budget.haus;
     const g = {};
     const tuer = {};
@@ -612,6 +617,10 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt) {
     const z = { id, seed, wurf: {}, kosten: {}, befund: [] };
     if (glasDefekt) glasDefekt(g, M.H);
     z.glas = [0, 1, 2].map((s) => glasJeStufe(g[s], M.H.windows || []));
+    z.ton = [0, 1, 2].map((s) => {
+        const a = FC.sichtTon(tonDefekt ? tonDefekt(FC.buildStufe(p, s), s) : FC.buildStufe(p, s)).alle;
+        return luma(a) / a[3];
+    });
     const wurfJe = {}; // je Werfer-Stufe einmal gerechnet (alle Stufen zeigen auf dieselbe)
     for (const s of [0, 1, 2]) {
         const w = B[s] ? B[s].schatten : undefined;
@@ -650,6 +659,9 @@ function hausUrteil(z) {
     if (!(z.innen.wand <= SOLL.wand + RASTER)) f.push(`Wand ${f3(z.innen.wand)} m (Soll ≤ ${SOLL.wand})`);
     if (!(z.innen.dach <= SOLL.dach + RASTER)) f.push(`Dach ${f3(z.innen.dach)} m über der Haut − 3 cm`);
     glasUrteil(z.glas, f);
+    for (const s of [1, 2])
+        if (!(Math.abs(z.ton[s] / z.ton[0] - 1) <= require("../spec/farbe/albedo-tafel.json").stufenToleranz))
+            f.push(`Stufen-Ton L${s}/L0 ${f3(z.ton[s] / z.ton[0])}`);
     for (const s of [0, 1, 2]) {
         const weg = z.tuer[s].filter((d) => !(d <= SOLL.tuer));
         if (weg.length)
@@ -718,8 +730,11 @@ function selbsttest() {
         grp.updateMatrixWorld(true);
         return grp;
     };
-    const z = hausFall("alemannisch", 1, aufgeblaeht);
+    // S8 im selben Fall: die L2 ein Fünftel dunkler (der Ton der Stufe-1-Fassade vor S8: L2/L0 0,788)
+    const dunkler = (G, s) => (s === 2 && Object.values(G).forEach((r) => r.col && r.col.forEach((c, i, a) => (a[i] = c * 0.8))), G);
+    const z = hausFall("alemannisch", 1, aufgeblaeht, null, null, dunkler);
     const u = hausUrteil(z);
+    if (!u.some((x) => /^Stufen-Ton L2/.test(x))) fehler.push("S8: L2 × 0,8 nicht rot");
     if (!u.some((x) => /Aufblähung/.test(x))) fehler.push("A: ein aufgeblähter Körper (Massen-Hülle) ist nicht rot");
     if (!u.some((x) => /First der Stufe 3 quer/.test(x))) fehler.push("F: ein quer gedeckter Körper ist nicht rot");
     if (!u.some((x) => /^Wand /.test(x))) fehler.push("I: eine Wand vor der Grundriss-Ebene ist nicht rot");
@@ -845,7 +860,7 @@ function selbsttest() {
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     if (rot.length) {
         console.log(`\n❌ ROT — ${rot.length} Befunde:`);

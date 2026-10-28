@@ -14,8 +14,8 @@
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm live tauschen
 //                                                           (`--quelle` ein anderer Stand; --terrain das Chunk-Material neu)
 //   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
-//   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse (Karte = 0,180)
-//   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL
+//   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (je Klasse ihr Exemplar,
+//                                                           jede Stufe zu jeder Uhr der Tafel; die Zählung je Mesh-Klasse fiel mit material-k3-stufen)
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht; `--ist` in die Soll-Tafel)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Farbton,
@@ -2121,21 +2121,19 @@ async function starte() {
                         Object.assign(aus, { datei: b.datei ? path.resolve(b.datei) : null })
                     );
                 }
-                if (req.url === "/albedo" && b.tafel) {
+                if (req.url === "/albedo") {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
                     // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
                     // den übrigen, die Karte der Eichung liest der erste Gang
-                    const nahZ = t.zeilen.filter((z) => Number.isInteger(((z.welt || {}).exemplar || {}).stufe));
-                    const liste = await page.evaluate((o) => window.__albedoSicht(o), {
-                        zeilen: t.zeilen.filter((z) => !nahZ.includes(z)),
-                        w: 640,
-                        h: 400,
-                    });
-                    for (const z of nahZ) {
-                        const l2 = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: [z], w: 640, h: 400 });
-                        for (const e of l2) if (e.name !== "graukarte") liste.push(e);
-                    }
+                    // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
+                    // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`
+                    const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
+                        liste = [];
+                    for (const uhr of t.uhren)
+                        for (const zeilen of [...(uhr === 0.5 ? [t.zeilen.filter((z) => !nahZ.includes(z))] : []), ...nahZ.map((z) => [z])])
+                            for (const e of await page.evaluate((o) => window.__albedoSicht(o), { zeilen, w: 640, h: 400, uhr }))
+                                if (e.name !== "graukarte" || zeilen.length > 1) liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
@@ -2190,16 +2188,6 @@ async function starte() {
                     }
                     const u = AT.tafelUrteil(t, g);
                     return send({ urteil: u.urteil, tabelle: AT.tafelTabelle(u), datei, ordner });
-                }
-                if (req.url === "/albedo") {
-                    const liste = await page.evaluate((o) => window.__albedoSicht(o), { nur: b.nur || null });
-                    const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo"));
-                    fs.mkdirSync(ordner, { recursive: true });
-                    for (const e of liste) {
-                        pngDatei(path.join(ordner, e.name.replace(/[^a-z0-9_-]+/gi, "_") + ".png"), e.png);
-                        delete e.png;
-                    }
-                    return send({ klassen: liste, ordner });
                 }
                 // DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter Frame (Bühne), je gezeichnetem Programm
                 // die statischen Kosten seines erzeugten Fragments; `--ordner` legt je Programm das WGSL ab. `--stoff` hält die
@@ -3137,15 +3125,10 @@ hauptLauf(async () => {
             process.exit(o.befunde.length ? 1 : 0);
         }
     } else if (cmd === "albedo") {
-        o = await rufe("/albedo", {
-            nur: opt("--nur"),
-            ordner: opt("--ordner"),
-            tafel: argv.includes("--tafel"),
-            datei: opt("--datei"),
-        });
+        // die Tafel (`--tafel` bleibt das Wort der Rufer); ein Fehler der Tafel ist nie grün
+        o = await rufe("/albedo", { ordner: opt("--ordner"), datei: opt("--datei") });
         if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
-        // Ein Fehler der Tafel ist nie grün.
-        if (argv.includes("--tafel")) endeMit(o);
+        endeMit(o);
     } else if (cmd === "licht" && argv.includes("--tag")) {
         // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
         // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
