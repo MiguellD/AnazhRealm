@@ -975,13 +975,13 @@ const alle = [
             const h = (w9.haeuser || []).find((x) => x.id === "w9-slot");
             const k = (h && h.koerper) || [];
             const [dichte, proben] = ["dichte", "proben"].map((f) => k.reduce((a, b) => a + (b[f] || 0), 0));
-            const arten = String(sl.arten || "");
+            // der Plan v2 eines Ein-Slot-Orts mit Tür: Platte, Grund, Vorplatz — byte-gleich dem Dorf-Slot trägt er alle drei
             return {
                 gruen:
-                    sl.hang >= 0.15 && sl.byte === true && sl.boden === 1 && /\bgrund\b/.test(arten) &&
-                    /\/vorplatz/.test(arten) && proben > 0 && dichte === 0,
+                    sl.hang >= 0.15 && sl.byte === true && sl.boden === 1 && sl.splats === 3 && proben > 0 && dichte === 0,
                 zahl:
-                    `${sl.typ} am Hang ${Number(sl.hang).toFixed(3)} (Soll ≥ 0,15) · Erdbau ${arten} · byte-gleich dem Dorf-Slot ` +
+                    `${sl.typ} am Hang ${Number(sl.hang).toFixed(3)} (Soll ≥ 0,15) · Erdbau ${sl.splats} Splats (Platte, Grund, ` +
+                    `Vorplatz) · byte-gleich dem Dorf-Slot ` +
                     `${sl.byte} · Vorplatz-Boden ${sl.boden} (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele ${dichte}/${proben}`,
             };
         },
