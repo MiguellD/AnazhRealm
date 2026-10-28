@@ -1455,6 +1455,11 @@ class AnazhRealm_bau_vorlagen {
     //            (`eisDicke`, die Linien `_eisLinien`, die Fläche `_eisAt`); null zersetzt sich vor dem Schmelzen
     //   L, k     J/kg und W/(m·K), nur die Zeile eis — Schmelzwärme und Wärmeleitung: mit ρ wächst das Eis nach STEFAN
     //            (h²/2k + h/H = ∫Frost dt / ρL, gelaende-core `eisDicke`)
+    //   brenn    das Brennstoff-Bett des Brands (stoffe.K2, `_brandTempo`), nur wo die Welt als Fläche brennt (gras, laub):
+    //            sigma 1/m (Oberfläche je Volumen der Partikel), last kg/m² (die Trocken-Masse des vollen Betts, × lebendig des
+    //            Orts), tiefe m, heiz J/kg (Heizwert), mx (die Erlöschungs-Feuchte) — die Brennstoff-Modelle von Anderson 1982:
+    //            kurzes Gras (1) σ 3 500/ft, 0,034 lb/ft², Mx 12 % — die Tiefe ist die Halm-Höhe der Wiese (GRASS_BLADE_H, die
+    //            der Wind beugt); Laub-Streu (9) σ 2 500/ft, 0,134 lb/ft², 0,2 ft, Mx 25 %; Heizwert 8 000 Btu/lb. Die Zünd-Wärme liest c und tZuend derselben Zeile, die Verdampfung L_v die Zeile wasser
     //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
     //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar; die Metalle lesen MAT.E der Schmiede)
     // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
@@ -1532,7 +1537,13 @@ class AnazhRealm_bau_vorlagen {
             wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9],
             eis:      [0.05, 2050, null,   null,      null,  null, 9e9],
         };
-        const PHASE = { eis: { L: 334000, k: 2.2 } }; // die Spalten L und k (oben): nur das Eis wächst im Kern
+        // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
+        const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };
+        // prettier-ignore
+        const BRENN = {
+            gras: { sigma: 11483, last: 0.166, tiefe: AnazhRealm.GRASS_BLADE_H, heiz: 18608000, mx: 0.12 },
+            laub: { sigma: 8202, last: 0.654, tiefe: 0.061, heiz: 18608000, mx: 0.25 },
+        };
         const TB = AnazhRealm._schrittTimbre().material;
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
         // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
@@ -1555,6 +1566,7 @@ class AnazhRealm_bau_vorlagen {
                 muRad: si[4],
                 muRadNass: si[5],
                 ...PHASE[name],
+                brenn: BRENN[name] ? Object.freeze(BRENN[name]) : null,
             };
             Object.defineProperty(z, "E", { enumerable: true, get: () => (si[6] === null ? sc.MAT[name].E : si[6]) });
             Object.defineProperty(z, "klang", {
