@@ -188,3 +188,7 @@ z64-abab 1 abab A=675a38892ba6eea63eb65ceefb16c14a2537ba40 B=b3f9ae95d3bf1188285
 z64-abab 0 storno
 z64-abab2 2 abab A=675a38892ba6eea63eb65ceefb16c14a2537ba40 B=b3f9ae95d3bf1188285b135c757b074a12ee3f22 zellen=w-ego,d-ego,stadt
 takt19-abab 2 abab A=9e92be45bfe89c1137b0dffc6e0e479e70a4a6ec B=b3f9ae95d3bf1188285b135c757b074a12ee3f22 zellen=w-ego,d-ego,stadt
+z58c-z61-abab 0 storno
+z62b-abab2 0 storno
+z63-abab2 0 storno
+z64-abab2 0 storno
