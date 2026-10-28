@@ -2660,9 +2660,10 @@ function kontaktSicht(o) {
         if (o.uhr !== 0.5) (r.setTimeOfDay(o.uhr, "human"), (r._himmelSprung = true), r._applyDayNightToScene());
         const PU = st.postProcessingUniforms;
         const [bloom0, I0, fov0, kam0] = [PU.bloomStrength.value, dl.intensity, cam.fov, cam.matrix.clone()];
-        const platte = (st.architectures || []).find((a) => a && a.id === o.ort.platte.saat);
-        if (!platte) return { fehler: `keine Platte „${o.ort.platte.saat}" auf der Bühne` };
-        const Y0 = platte.position.y + o.ort.platte.oben;
+        // die Krone der Platte: ihre Blocker-Box (das Netz, auf dem der Spieler steht), nie die Spec
+        const platte = (st.architectures || []).find((a) => a && a.id === o.ort.platte);
+        if (!platte || !platte.blockerAABBs) return { fehler: `keine Platte „${o.ort.platte}" auf der Bühne` };
+        const Y0 = platte.blockerAABBs[0].topY;
         const S = dl.position.clone().sub(dl.target.position).normalize();
         const d = new T.Vector3(-S.x, 0, -S.z).normalize();
         const b = new T.Vector3(-d.z, 0, d.x);

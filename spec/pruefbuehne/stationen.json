@@ -163,7 +163,7 @@
             "id": "s7-kontakt",
             "x": -150,
             "z": 100,
-            "platte": { "saat": "saat-s7-platte", "oben": 1 },
+            "platte": "saat-s7-platte",
             "satz": "die Platte der Kontakt-Linse (werkbank licht --kontakt): Boden ohne Mikro-Relief, über jedem Halm"
         },
         {
