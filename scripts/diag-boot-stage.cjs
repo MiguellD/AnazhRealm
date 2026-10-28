@@ -52,24 +52,26 @@ async function LEIB_WEG(m) {
 }
 // (Seite) DER SCHUSS DER KONTROLLE: der Loop ruht, dieselbe Pose (der erste Schuss merkt die Kamera, der zweite stellt sie
 // zurück), die Bühne hält Mittag · Sonne · Sommer, der Mess-Frame wartet auf keine stehende Welt. Der zweite Schuss zählt die
-// Pixel, die gegen den ersten in einem Kanal um mehr als 32 abweichen — die Lücke. `mut`: der Schuss ohne Boden.
+// Pixel, die gegen den ersten in einem Kanal um mehr als 32 abweichen — die Lücke. `mut`: der Schuss endet nach 20 m.
 async function SCHUSS(W, H, mut) {
     const r = window.anazhRealm;
     const cam = r.state.camera;
     const P = window.__pose || (window.__pose = [cam.position.clone(), cam.quaternion.clone()]);
     r.state.renderer.setAnimationLoop(null);
+    const far = cam.far;
     cam.position.copy(P[0]);
     cam.quaternion.copy(P[1]);
+    cam.far = mut ? 20 : far;
+    cam.updateProjectionMatrix();
     cam.updateMatrixWorld(true);
     window.__buehne();
-    const weg = [...r.state.voxelChunks.values()].filter((e) => mut && e.mesh && e.mesh.visible);
     let auf = null;
     try {
-        for (const e of weg) e.mesh.visible = false;
         for (let i = 0; i < 2; i++)
             (r._schattenAlleNeu(), (auf = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })));
     } finally {
-        for (const e of weg) e.mesh.visible = true;
+        cam.far = far;
+        cam.updateProjectionMatrix();
         r.state.renderer.setAnimationLoop(r._gameLoopTick);
     }
     const u = auf.u8.slice(0, W * H * 4);
@@ -213,7 +215,7 @@ async function kaltLauf() {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(KALT_PROBE);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
-    // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss zeigt die Welt ohne Boden (die Lücke ist ROT)
+    // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
     const MUT = OPT("--mutante", null);
     if (MUT === "eigenmeldung")
         await page.evaluateOnNewDocument(() =>
