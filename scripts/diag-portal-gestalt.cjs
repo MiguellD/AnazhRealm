@@ -25,7 +25,7 @@
 //     Spawn baut den klassischen Part-Group-Mesh: entry.mesh non-null, instFoundry false;
 //     blockerAABBs relativ IDENTISCH zum Studio-Spawn = die Substanz ist regime-frei).
 //   node scripts/diag-portal-gestalt.cjs
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PORTAL_GESTALT_PORT || 4437);
 const server = statikServer();
@@ -333,12 +333,6 @@ hauptLauf(async () => {
     server.close();
 
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ GRÜN — W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus dem lebenden Zustand) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`
-    );
+    wandEnde(errs, `W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus dem lebenden Zustand) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`);
     process.exit(0);
 });

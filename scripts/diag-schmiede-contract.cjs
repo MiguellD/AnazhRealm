@@ -42,7 +42,7 @@ const KERN = path.join(root, "schmiede-core.js");
 require(KERN);
 const SC = globalThis.__schmiedeCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const GATTUNGEN = Object.keys(SC.REZEPT_ZU_GATTUNG); // alle 22 (Waffen UND Werkzeuge)
@@ -193,12 +193,6 @@ function buildCase(c) {
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
-    );
+    wandEnde(errs, "der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
     process.exit(0);
 })();

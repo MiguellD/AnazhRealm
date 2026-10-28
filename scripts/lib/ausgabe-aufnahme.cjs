@@ -149,8 +149,9 @@ function wetterBuch(seit) {
 // Die Bühne setzt das Wetter IHRER Messung: der Halter selbst ist der eine Schreiber, den der Halt durchlässt — die Uhr
 // taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
 // fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
-// lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
-function wetterSetzen(wort) {
+// lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs. `zug`: der Übergang des Spiels
+// bleibt (der Wetter-Zug der Licht-Linse).
+function wetterSetzen(wort, zug) {
     const r = window.anazhRealm;
     const st = r.state;
     const S = window.__wetterSpion();
@@ -164,7 +165,7 @@ function wetterSetzen(wort) {
     }
     st.weatherEffectTime = uhr;
     window.__wetterHalten();
-    st.weatherTransition = null;
+    if (!zug) st.weatherTransition = null;
     return st.weather;
 }
 
