@@ -1443,3 +1443,4 @@
 2026-10-28 20:23:42 takt18-radeon haar.K2#1 ROT 47.0 · 16/47
 2026-10-28 20:24:13 takt18-radeon siedlung.K2#2 GRÜN 23.8 · 17/47
 2026-10-28 20:24:57 takt18-radeon siedlung.K2#1 GRÜN 47.7 · 18/47
+2026-10-28 20:27:36 takt18-radeon tiere.K3#2 GRÜN 3.9 · 19/47
