@@ -1456,3 +1456,4 @@
 2026-10-28 20:40:02 takt18-radeon ferne.K1#1 GRÜN 4.3 · 29/47
 2026-10-28 20:40:11 takt18-radeon ferne.K2#1 GRÜN 4.3 · 30/47
 2026-10-28 20:41:26 takt18-radeon mensch.K1#1 GRÜN 6.4 · 31/47
+2026-10-28 20:41:44 takt18-radeon fahrzeug.K3#1 GRÜN 2.8 · 32/47
