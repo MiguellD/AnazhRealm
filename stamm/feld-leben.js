@@ -1938,15 +1938,15 @@ class AnazhRealm_feld_leben {
     // DAS TEMPO DER FRONT (stoffe.K2) → { R, ecc, px, pz, tr } oder null (das Bett erstickt): Rothermel 1972 (USDA INT-115) mit
     // Albini 1976 — das Bett aus der Zeile seines Stoffs (σ, Last × lebendig, Tiefe, Heizwert, Erlöschungs-Feuchte `mx`, ρ der
     // Partikel), die Zünd-Wärme Q_ig = c·(T_zünd − T_Luft) + M·(c_w·(100 °C − T_Luft) + L_v) aus derselben Zeile, der des Wassers
-    // und der Luft des Temperatur-Felds (`_temperaturAt`); der Wind des EINEN Felds (`_windAt` am Ort zur Uhr des Brands, in 10 m
-    // Höhe wie Beaufort: ÷ 1,15 auf 20 ft) auf Flammenhöhe (Albini–Baughman 1979 aus der Tiefe des Betts, gedeckelt bei 0,9·I_R),
-    // sein φ gemittelt über die Zeit, in der die Front die Zelle quert: über die Phasen der Böe (WIND_BOE, acht Proben) und ohne
-    // ihre Drift (`_windWob`, Mittel 1) — die Front legt ∫R dt zurück; die Böe des Zünd-Augenblicks über die ganze Querung
-    // gehalten streute die Kopf-Sprünge an EINER Pose 0,10–1,14 m/s (Median 0,31–0,56 je nach Boot) —, und der Hang (das
+    // und der Luft des Temperatur-Felds (`_temperaturAt`); der Wind des EINEN Felds (`_windAt` am Ort zur Uhr des Brands) in der
+    // Stärke, die das Gesetz ihm gibt — `sturmMS` bei Böe 1 ist Beaufort (WIND_FELD), also ohne die wandernde Böe und ihre Drift
+    // (`_windWob`), die die Front über die Querung einer Zelle (zwei Böen-Perioden) mittelt; die Böe des Zünd-Augenblicks gehalten
+    // streute die Köpfe an EINER Pose 0,10–1,14 m/s, ihr Mittel 0,7 statt der Beaufort-Stärke hielt sie bei 0,51 —, in 10 m Höhe
+    // (÷ 1,15 auf 20 ft) auf Flammenhöhe (Albini–Baughman 1979 aus der Tiefe des Betts, gedeckelt bei 0,9·I_R), und der Hang (das
     // Gefälle der Oberfläche über die Zelle) addieren als Vektoren zum effektiven φ (BehavePlus). R ist das Tempo der Spitze in
-    // m/s längs (px, pz); die
-    // Ellipse (Anderson 1983, L/B aus dem effektiven Wind) gibt R(θ) = R·(1 − ecc)/(1 − ecc·cos θ), gegen den Wind das Rückfeuer
-    // R·(1 − ecc)/(1 + ecc). tr: die Verweilzeit der Flamme (384/σ min). Die Gleichungen in ihren Einheiten (ft, lb, Btu, min).
+    // m/s längs (px, pz); die Ellipse (Anderson 1983, L/B aus dem effektiven Wind) gibt R(θ) = R·(1 − ecc)/(1 − ecc·cos θ), gegen
+    // den Wind das Rückfeuer R·(1 − ecc)/(1 + ecc). tr: die Verweilzeit der Flamme (384/σ min). Die Gleichungen in ihren
+    // Einheiten (ft, lb, Btu, min).
     _brandTempo(f, t) {
         const B = AnazhRealm.BRAND;
         const [Z, b] = [f.zeile, f.zeile.brenn];
@@ -1972,13 +1972,10 @@ class AnazhRealm_feld_leben {
             0.02526 * sig ** 0.54,
             0.715 * Math.exp(-3.59e-4 * sig),
         ];
-        const G = AnazhRealm.WIND_BOE;
         const u =
             ((w.ms / 1.15 / (w.boe * this._windWob(t))) * 196.85 * 1.83) /
             Math.log((20 + 0.36 * tiefe) / (0.13 * tiefe));
-        let phiW = 0;
-        for (let i = 0; i < 8; i++)
-            phiW += (C * Math.min(0.9 * IR, u * (G.mitte + G.amp * Math.sin((i * Math.PI) / 4))) ** Bw * q ** -E) / 8;
+        const phiW = C * Math.min(0.9 * IR, u) ** Bw * q ** -E;
         const h = AnazhRealm.LIFE_FIELD.cell / 2;
         const [gx, gz] = [(this._voxelSurfaceY(f.x + h, f.z) - f.y) / h, (this._voxelSurfaceY(f.x, f.z + h) - f.y) / h];
         const phiS = (5.275 * beta ** -0.3 * (gx * gx + gz * gz)) / (Math.hypot(gx, gz) || 1);
@@ -2008,8 +2005,9 @@ class AnazhRealm_feld_leben {
     // erhält die Ankunft am ersten Punkt ihrer Fläche, den die Welle berührt (das Minimum über Ecken, Kanten-Mitten, den nächsten
     // Punkt und den Eintritt der Achse) — die frühere gewinnt. So läuft die Spitze längs ihrer Achse durch die Zellen, die sie
     // kreuzt, in ihrem Tempo, wie schmal die Ellipse auch ist (an den Mitten gemessen verlor das Gitter der acht Nachbarn 75 %
-    // der Spitze). Die Zelle brennt, bis die Welle ihre letzte Ecke erreicht, und die Flamme ihre Verweilzeit; ohne Bett oder
-    // Tempo fällt sie aus dem Feld (null).
+    // der Spitze). Die Zelle brennt, bis die Spitze sie längs ihres Kopfs durchquert hat (bis an ihre fernste Ecke), und die
+    // Flamme ihre Verweilzeit; was langsamer in sie zurückläuft (Flanke, Rückfeuer), trägt die Ankunft ihrer Nachbarinnen, nicht
+    // ihr Brennen. Ohne Bett oder Tempo fällt sie aus dem Feld (null).
     _brandZuenden(cx, cz, t, ex, ez) {
         const bf = this.state.brandFeld;
         const key = cx + "," + cz;
@@ -2036,10 +2034,11 @@ class AnazhRealm_feld_leben {
                 [x1, z0 + cs / 2],
             ];
             P.push([Math.min(x1, Math.max(x0, ex)), Math.min(z1, Math.max(z0, ez))]);
-            const sx = T.px ? [(x0 - ex) / T.px, (x1 - ex) / T.px] : [-Infinity, Infinity];
-            const sz = T.pz ? [(z0 - ez) / T.pz, (z1 - ez) / T.pz] : [-Infinity, Infinity];
+            const sx = T.px ? [(x0 - ex) / T.px, (x1 - ex) / T.px] : [0, 0];
+            const sz = T.pz ? [(z0 - ez) / T.pz, (z1 - ez) / T.pz] : [0, 0];
             const s = Math.max(0, Math.min(...sx), Math.min(...sz));
-            if (s <= Math.min(Math.max(...sx), Math.max(...sz))) P.push([ex + s * T.px, ez + s * T.pz]);
+            const [ax, az] = [ex + s * T.px, ez + s * T.pz];
+            if (ax >= x0 - 1e-6 && ax <= x1 + 1e-6 && az >= z0 - 1e-6 && az <= z1 + 1e-6) P.push([ax, az]);
             let best = null;
             for (const [x, z] of P) {
                 const z0t = zeit(x, z);
@@ -2048,11 +2047,13 @@ class AnazhRealm_feld_leben {
             return best;
         };
         const [x0, z0] = [cx * cs, cz * cs];
-        const letzte = Math.max(zeit(x0, z0), zeit(x0 + cs, z0), zeit(x0, z0 + cs), zeit(x0 + cs, z0 + cs));
+        const quer = Math.max(
+            ...[x0, x0 + cs].flatMap((x) => [z0, z0 + cs].map((z) => (x - ex) * T.px + (z - ez) * T.pz))
+        );
         const zelle = Object.assign(bf.get(key) || { cx, cz, y: null }, {
             t0: t,
             an: t,
-            ende: t + letzte + T.tr,
+            ende: t + quer / T.R + T.tr,
             glut: 0,
             mx: f.zeile.brenn.mx,
             stoff: f.zeile.name,
