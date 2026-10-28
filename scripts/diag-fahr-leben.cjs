@@ -2,7 +2,7 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --frei | --rueckmeldung]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, nullRenderer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -609,11 +609,32 @@ function koerperBericht(k) {
     return v;
 }
 
+// K3 (physik.K3, `probeFrei`): 5 Kisten ruhen ≤ 2 s, zittern danach und wach ≤ 1 cm, die untere am Boden, jede auf der darunter
+// (±2 cm); der Wagen kippt das Fass > 45°. Die Mutanten fallen: Schwere 0 (keine Ruhe am Boden), ohne Stoß (das Fass steht).
+function freiVerdict(o) {
+    if (!o || o.err || !o.kisten || !o.fass) return [`keine Probe (${o && o.err && o.err.split("\n")[0]})`];
+    const ruht = (k) => k && k.ruheS <= 2 && [k.boden, ...k.fugen].every((f) => Math.abs(f) <= 0.02);
+    return [
+        [ruht(o.kisten), `kisten ruhen nicht am Boden (${o.kisten.ruheS} s, Boden ${o.kisten.boden}, Fugen ${o.kisten.fugen})`],
+        [o.kisten.zittern <= 0.01 && o.wachZittern <= 0.01, `zittern ${o.kisten.zittern} / wach ${o.wachZittern} m`],
+        [o.fass.kipp > 45, `fass steht (${o.fass.kipp}°)`],
+        [!ruht(o.schwerelos), "mutante Schwere 0 ruht am Boden (vakuös)"],
+        [o.fassOhneStoss && o.fassOhneStoss.kipp < 45, `mutante ohne Stoß kippt (${(o.fassOhneStoss || {}).kipp}°)`],
+    ].filter(([gut]) => !gut).map(([, t]) => t);
+}
+function freiBericht(o) {
+    const v = freiVerdict(o);
+    const z = (x) => (Number.isFinite(x) ? +x.toFixed(3) : x);
+    const zahl = JSON.stringify(o, (k, x) => (k === "start" || k === "err" ? undefined : Array.isArray(x) ? x.map(z) : z(x)));
+    check("K3#1 (physik.K3) DER FREIE KÖRPER: 5 Kisten fallen und ruhen (≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um (> 45°)", !v.length, zahl + (v.length ? " — " + v.join(" · ") : ""));
+}
+
 const server = statikServer();
 
 const {
     probeLeben,
     probeKoerper,
+    probeFrei,
     tempoVerdict,
     tempoSpion,
     kernTempo,
@@ -2001,6 +2022,14 @@ hauptLauf(async () => {
                 ist.join(" · ")
             );
         }
+        {
+            // K3 (physik.K3): der gesunde Lauf (an main 675a3889) ohne Täter, je Bruch genau sein Täter
+            const k = { ruheS: 0.65, zittern: 0, boden: -0.004, fugen: [0, -0.001] };
+            const g = { kisten: k, wachZittern: 0, schwerelos: { ...k, boden: 0.1 }, fass: { kipp: 161.8 }, fassOhneStoss: { kipp: 2.3 } };
+            const f = [[{}, ""], [{ kisten: { ...k, ruheS: 2.4 } }, "kisten"], [{ wachZittern: 0.05 }, "zittern"], [{ fass: { kipp: 3 } }, "fass"], [{ schwerelos: k }, "mutante"], [{ fassOhneStoss: { kipp: 90 } }, "mutante"]];
+            const ist = f.map(([an]) => freiVerdict({ ...g, ...an }).map((t) => t.split(" ")[0]).join());
+            check("Selbst-Test K3: der gesunde freie Körper ohne Täter, je Bruch genau sein Täter", f.every((x, i) => ist[i] === x[1]), ist.join(" · "));
+        }
         selbsttestEnde(errs, "die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Tempo, Sprung und Querhang beim Namen.");
         process.exit(0);
     }
@@ -2031,6 +2060,11 @@ hauptLauf(async () => {
             console.log("=== K1 — DAS EINE KÖRPER-GESETZ (physik.K1) ===");
             koerperBericht(o);
             console.log(`KOERPER ${JSON.stringify(o)}`);
+        }],
+        [schalter("--frei"), probeFrei, {}, (o) => {
+            console.log("=== K3 — DER FREIE KÖRPER (physik.K3) ===");
+            freiBericht(o);
+            console.log(`FREI ${JSON.stringify(o)}`);
         }],
         [schalter("--kette"), probeLeben, { nurKette: true, kette: KETTE }, (o) => {
             const v = ketteBericht(o.kette, o.err);
