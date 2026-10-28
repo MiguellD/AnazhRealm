@@ -13,7 +13,7 @@
 //       schwere L2-Geometrie.
 //   node scripts/diag-s4-impostor-workshop.cjs
 
-const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.S4_PORT || 4596);
 const server = statikServer();
 
@@ -137,5 +137,5 @@ hauptLauf(async () => {
             );
     }
 
-    wandEnde(errs, "der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe die 8-Winkel-Karte (InstancedMesh, Schicht des EINEN Atlas, aus demselben Studio-Baum gebacken).");
+    require("./lib/welt-boot.cjs").wandEnde(errs, "der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe die 8-Winkel-Karte (InstancedMesh, Schicht des EINEN Atlas, aus demselben Studio-Baum gebacken).");
 });
