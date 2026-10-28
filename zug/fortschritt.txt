@@ -740,3 +740,4 @@
 2026-10-28 21:39:18 takt18d-gtx START 16 Stationen in 15 Läufen
 2026-10-28 21:44:54 takt18d-gtx siedlung.K5#2 GRÜN 5.5 · 1/16
 2026-10-28 21:59:51 takt18d-gtx leib.K1#2 GRÜN 14.8 · 2/16
+2026-10-28 22:02:46 takt18d-gtx leib.K2#2 GRÜN 2.8 · 3/16
