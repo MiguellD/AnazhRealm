@@ -2031,7 +2031,9 @@ const stationen = [
     // Soll: je Takt und naher Region dieselben Tiere, Leiber ≤ Kappe, der Bestand über der Kappe), Mutante „Nahrung halbiert“
     // (Soll: in jeder Region, nah UND fern, Effekt ≤ −15 % mit 95-%-Intervall < 0); vier ferne Regionen als Zahl gelesen (ohne
     // Leib), kein Leib aus einer fernen Region; der Takt des Lebenszyklus p95 ≤ 5,8 ms (der CPU-Takt des Profi-Bands). An main
-    // fehlt der Teil (ROT „ohne Bestand“).
+    // fehlt der Teil (ROT „ohne Bestand“). Am Zweig oeko-k2-bestand d9928c7e (headless, trocken am Lauf der Linse): 0 von
+    // 17280 Takten andere Tiere, Leiber 20/10 bei Bestand 34,5, halbe Nahrung senkt 8 von 8 Regionen (−0,345 … −0,416),
+    // Takt p95 5,1 ms.
     {
         kriterium: "oekologie.K2",
         staffel: 2,
