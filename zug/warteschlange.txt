@@ -144,3 +144,4 @@ takt14b-gtx 1 punkte sha=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 geraet=gtx nur
 z55n-abab 2 abab A=19606f2ee8492be703fb6aff52d4e48c9279919f B=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 zellen=w-ego,d-ego,stadt
 z55-abab 0 storno
 takt14c-gtx 1 punkte sha=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 geraet=gtx nur=ferne.K2#2,klang.K5#2,material.K1#2,mensch.K2#2,speicher.K1#2,tiere.K1#2,tiere.K2#2,tiere.K3#2,tore.K3#2,gelaende.K5#2
+z56-abab 2 abab A=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 B=9e92be45bfe89c1137b0dffc6e0e479e70a4a6ec zellen=w-ego,d-ego,stadt
