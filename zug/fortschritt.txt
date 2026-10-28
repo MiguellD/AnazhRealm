@@ -760,3 +760,4 @@
 2026-10-28 23:18:18 takt19a-gtx fahrzeug.K3#2 GRÜN 3.9 · 4/35
 2026-10-28 23:21:53 takt19a-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 3.4 · 6/35
 2026-10-28 23:25:21 takt19a-gtx ferne.K1#1,ferne.K1#2,ferne.K2#1 GRÜN/ROT/GRÜN 3.3 · 9/35
+2026-10-28 23:33:37 takt19a-gtx ferne.K2#2 GRÜN 8.1 · 10/35
