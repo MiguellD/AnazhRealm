@@ -2,12 +2,13 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, ROOT: root, hauptLauf, pruefer, wandEnde, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
+const schalter = (f) => process.argv.includes(f);
 
 const { errs, check } = pruefer();
 
@@ -610,7 +611,14 @@ function koerperBericht(k) {
 
 const server = statikServer();
 
-const { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo, ruckJeBild } = require("./lib/fahr-proben.cjs");
+const {
+    probeLeben,
+    probeKoerper,
+    tempoVerdict,
+    tempoSpion,
+    kernTempo,
+    ruckJeBild,
+} = require("./lib/fahr-proben.cjs");
 
 // W (feld.K1) DIE WETTER-KETTE: ein Glied zählt, wenn es mit dem Sturm ZIEHT und STEHT, solange sein Vorgänger gehalten wird
 // (`kette` in lib/fahr-proben.cjs), und nur hinter einem zählenden Vorgänger; die Tiefe ist der längste Ast (Staffel 1 =
@@ -660,7 +668,7 @@ function ketteBericht(k, err) {
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
 // und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
-// Platz an jedem Tor, F2 die Vorschau, F3 die Natur-Wand, F4 Stoß und Befreiung, F5 Tacho, F6 Stimme, F7 Tasten; SCHMUGGEL
+// Platz an jedem Tor, F2 die Vorschau, F3 die Natur-Wand, F4 Stoß und Befreiung, F5 Tacho, F7 Tasten (beide misst die Fahrt der Rückmeldung RM); SCHMUGGEL
 // (Vorschau ohne Platz-Gesetz, Natur-Wand ohne Wagen) → ROT beim Namen. ════
 const BAHN = {
     rueckM: 3, // FK, F1: rückwärts aus dem Stand in 2,5 s
@@ -673,8 +681,6 @@ const BAHN = {
     settleFrames: 60, // F1: 1 s Welt nach dem Platz
     freiM: 1, // F4: so weit vom Stoß ist er frei
     freiFrames: 120, // F4: in 2 s
-    tachoKmh: 1, // F5: Anzeige gegen |vlong| × FAHR.kmh (Rundung)
-    hzSpanne: 100, // F6
 };
 
 // ── DIE URTEILE DER BAHN (rein; Seiten-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
@@ -721,17 +727,54 @@ function bahnTachoVerdict(m) {
     if (m.nachAbsteigenSichtbar) out.push("nach dem Absteigen noch sichtbar");
     return out;
 }
-function bahnStimmeVerdict(m) {
-    if (!m) return ["keine Probe"];
-    if (!m.symphonie) return ["keine Symphonie (AudioContext)"];
-    if (!(m.quellen > 0)) return ["Fahren stumm (keine Quelle aus klang-core fahrtStimme)"];
-    const out = [];
-    if (m.fremd > 0) out.push(`${m.fremd} Quellen der Fahrt außerhalb des Gesetzbuchs`);
-    if (!(m.hzSpanne >= BAHN.hzSpanne))
-        out.push(`Motor-Ton folgt dem Tempo nicht (Spanne ${m.hzSpanne} Hz über ${m.proben} Proben)`);
-    if (m.abweichend > 0) out.push(`${m.abweichend}/${m.proben} Proben ≠ klang:FAHRT (${m.beispiel})`);
-    if (m.laufendNachAb > 0) out.push(`${m.laufendNachAb} Quellen klingen nach dem Absteigen`);
-    return out;
+// ════ RM — DIE RÜCKMELDUNG (fahrzeug.K5): drei Kanäle, je als Paar an ihrem Ausgang gemessen (`rueck` in probeLeben), Glatt ↔
+// Drift ↔ Hang; die Mutante (jede Kopplung gekappt) muss jeden Kanal ROT machen. Federweg je Ecke der Hülle in mm, Stoß ab
+// stossMin m/s² Boden-Stoß, die Antwort binnen antwortBilder; das Summen im Bild eines Stoßes ab summStoss (die Hälfte von
+// PAD_GESETZ.rumble.bodenVoll). ════
+const RUECK = { bilder: 240, driftAb: 120, tachoKmh: 1, stoss: 10, antwortBilder: 10, antwortMm: 5, wankMm: 3, paar: 1.5, starkDrift: 0.5, starkGlatt: 0.1, summen: 0.4 };
+// je Fahrt (Zeile je Bild: Federweg je Ecke, Boden-Stoß, Rumble stark und schwach): Wank = mittlerer Quer-Ausschlag der Ecken im
+// Drift-Teil, Antwort = mittlerer größter Ausschlag binnen antwortBilder nach jedem Stoß, stark = Rumble im Drift-Teil, summen =
+// das schwache Rumble im Bild jedes Stoßes
+function rueckMass(m) {
+    if (!m) return null;
+    const [B, R] = [m.bild, RUECK];
+    const mittel = (a) => +(a.reduce((s, x) => s + x, 0) / a.length).toFixed(3);
+    const st = B.map((z, i) => i).filter((i) => B[i][1] >= R.stoss && i + R.antwortBilder < B.length);
+    const ausschlag = (i) => Math.max(...B.slice(i + 1, i + 1 + R.antwortBilder).flatMap((z) => z[0].map((w, c) => Math.abs(w - B[i][0][c]))));
+    const teil = B.slice(R.driftAb + 20);
+    return {
+        klingt: m.klingt,
+        still: m.still,
+        wankMm: mittel(teil.map(([h]) => 250 * Math.abs(h[0] - h[1] + h[2] - h[3]))),
+        stoesse: st.length,
+        antwortMm: mittel(st.map((i) => 1000 * ausschlag(i))),
+        stark: mittel(teil.map((z) => z[2])),
+        summen: mittel(st.map((i) => B[i][3])),
+    };
+}
+// die Täter je Kanal ({ motor, feder, rumble }) an den Maßen der drei Fahrten (`m`, rueckMass)
+function rueckVerdict(m) {
+    const [t, R, alle] = [{ motor: [], feder: [], rumble: [] }, RUECK, Object.values(m)];
+    const kein = ["kein Ritt"];
+    if (!alle.every(Boolean)) return { motor: kein, feder: kein, rumble: kein };
+    const nein = (k, ok, text) => ok || t[k].push(text);
+    // auf Glatt und am Hang die Antwort auf den Boden-Stoß (im Drift trägt der Schlupf den Federweg)
+    const [n, an, su] = [m.glatt.stoesse + m.hang.stoesse, ...["antwortMm", "summen"].map((k) => Math.min(m.glatt[k], m.hang[k]))];
+    nein("motor", alle.every((x) => x.klingt && x.still), `Stimmen im Sattel ${alle.map((x) => x.klingt)}, danach still ${alle.map((x) => x.still)}`);
+    nein("feder", n >= 3 && an >= R.antwortMm, `Boden-Stoß ohne Federweg (${n} Stöße, Antwort ${an} mm)`);
+    nein("feder", m.drift.wankMm >= Math.max(R.wankMm, R.paar * m.glatt.wankMm), `der Drift wankt ${m.drift.wankMm} mm (Glatt ${m.glatt.wankMm})`);
+    nein("rumble", m.drift.stark >= R.starkDrift && m.glatt.stark <= R.starkGlatt, `Schlupf ohne Rumble (Drift ${m.drift.stark}, Glatt ${m.glatt.stark})`);
+    nein("rumble", su >= R.summen, `Boden-Stoß ohne Summen (${su} auf ${n} Stößen)`);
+    return t;
+}
+function rueckBericht(o) {
+    console.log("=== RM — DIE RÜCKMELDUNG (fahrzeug.K5) ===");
+    const [e, mm] = [o.echt, o.mutiert].map((r) => Object.fromEntries(["glatt", "drift", "hang"].map((n) => [n, rueckMass(r && r[n])])));
+    const [v, mu] = [rueckVerdict(e), rueckVerdict(mm)];
+    // RM1 ohne Mutante: den stummen Motor schneidet gate:klang-zensus S13
+    for (const [k, name] of [["motor", "RM1 die Stimme der Fahrt klingt im Sattel, danach still (die Tonhöhe: gate:klang-zensus F)"], ["feder", "RM2 die Federung im Bild: Drift-Wank, Boden-Stoß"], ["rumble", "RM3 das Rumble: Schlupf, Boden-Stoß"]])
+        check(name, !v[k].length && (k === "motor" || mu[k].length > 0), `${o.err || v[k].join(" · ") || "gekoppelt"} · Mutante: ${mu[k].join(" · ") || "—"}`);
+    console.log(`RUECKMELDUNG ${JSON.stringify({ echt: e, mutiert: mm })}`);
 }
 function bahnTastenVerdict(m) {
     if (!m || !Array.isArray(m.zeilen)) return ["keine Hilfe"];
@@ -848,7 +891,6 @@ async function probeBahn(B) {
         s: { key: "s", code: "KeyS" },
         a: { key: "a", code: "KeyA" },
         d: { key: "d", code: "KeyD" },
-        shift: { key: "Shift", code: "ShiftLeft" },
         e: { key: "e", code: "KeyE" },
     };
     const gehalten = new Set();
@@ -1176,13 +1218,6 @@ async function probeBahn(B) {
 
     phase("F3 + Schmuggel");
     // ════ F4 — DER STOSS UND DIE BEFREIUNG (die Stelle der Schau, Kurs auf −765/−752) ════
-    let symphonie = false;
-    try {
-        symphonie = !!r.initSymphony();
-    } catch (e) {
-        out.log.push("initSymphony: " + (e && e.message));
-    }
-    const Q = window.__fahrQuellen || [];
     // DIE STELLE AUS DER WELT: die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
     // sie am Hang, und der Wagen glitt quer am Ziel vorbei (kein Stoß). Die Station sucht in Ringen um die Stelle der Schau
     // den nächsten trockenen Anlauf (2 m zurück, 10 m voraus) mit Stufe ≤ 0,08 m je m und Quergefälle ≤ 0,05 m je m.
@@ -1349,208 +1384,14 @@ async function probeBahn(B) {
     out.stossStamm = await stossStation("baum_kiefer", 5);
 
     phase("F4");
-    // ════ F5 + F6 + F7 — DIE FAHRT AUF DER MESS-WIESE (die Vollgas-Gerade der Schau, Kurs 127,7°): Tacho, Stimme und
-    // Handbremse, nie der Wald — die Bahn-Wache räumt die Gerade (70 × 12 m) vor und während der Fahrt. ════
-    const tacho = { element: !!document.getElementById("fahr-tacho"), proben: 0, unsichtbar: 0, falsch: 0, maxKmh: 0 };
-    const stimme = { symphonie, quellen: 0, fremd: 0, proben: 0, hzSpanne: 0, abweichend: 0, laufendNachAb: 0 };
-    const hilfe = { zeilen: [], handbremseWirkt: false };
-    {
-        const sx = -909.82;
-        const sz = -851.89;
-        const fahrt = (127.7 * Math.PI) / 180;
-        const ux = Math.sin(fahrt);
-        const uz = Math.cos(fahrt);
-        let geraeumt = 0;
-        const raeume = () => {
-            for (const a of st.architectures.slice()) {
-                if (!a || !a.blockerAABBs || !a.position || /^fahrzeug_/.test(a.type || "")) continue;
-                const dx = a.position.x - sx;
-                const dz = a.position.z - sz;
-                const l = dx * ux + dz * uz;
-                if (l > -8 && l < 70 && Math.abs(dx * uz - dz * ux) < 6) {
-                    r.removeArchitecture(a);
-                    geraeumt++;
-                }
-            }
-        };
-        stelle(sx - Math.cos(fahrt) * 1.5, sz + Math.sin(fahrt) * 1.5);
-        raeume();
-        const e = r.spawnArchitecture(
-            "fahrzeug_gt",
-            { x: sx, y: boden(sx, sz) + 0.5, z: sz },
-            { silent: true, precise: true, rotationY: fahrt - Math.PI / 2, id: "fahr-bahn-fahrt" }
-        );
-        if (e) {
-            await gebaut(e);
-            tippe("e");
-            frame();
-        }
-        if (e && st.player.mountedArch === e.id) {
-            const fahre = (n, jede) => {
-                for (let i = 0; i < n; i++) {
-                    const vVor = e._fahr ? e._fahr.vlong : 0;
-                    frame();
-                    if (i % 15 === 0) raeume();
-                    if (jede) jede(i, vVor);
-                }
-            };
-            fahre(12);
-            const tachoProbe = () => {
-                const el = document.getElementById("fahr-tacho");
-                if (!el || !e._fahr) return;
-                tacho.proben++;
-                if (el.hidden || getComputedStyle(el).display === "none") tacho.unsichtbar++;
-                const zahl = Number(((el.querySelector("[data-kmh]") || el).textContent.match(/-?\d+/) || [NaN])[0]);
-                const soll = Math.round(Math.abs(e._fahr.vlong) * VC.FAHR.kmh);
-                tacho.maxKmh = Math.max(tacho.maxKmh, soll);
-                if (!(Math.abs(zahl - soll) <= B.tachoKmh)) {
-                    tacho.falsch++;
-                    if (!tacho.beispiel) tacho.beispiel = `zeigt ${zahl}, Fahrt ${soll} km/h`;
-                }
-            };
-            // die Motor-Quelle der Fahrt (Abgriff: Quellen, deren Stapel klang-core fahrtStimme trägt): ihr Frequenz-Ziel
-            const motorHz = () => {
-                const osc = Q.find((q) => q.fahrt && !q.gestoppt && q.art === "createOscillator");
-                return osc && osc.knoten.frequency && Number.isFinite(osc.knoten.frequency.__ziel)
-                    ? +osc.knoten.frequency.__ziel.toFixed(1)
-                    : null;
-            };
-            const KC = window.__klangCore;
-            let hzMin = Infinity;
-            let hzMax = -Infinity;
-            // Der Klang-Takt des Frames liest den Fahr-Zustand vor oder nach dem Sim-Schritt desselben Frames: das Gesetz
-            // zu einem der beiden Tempi zählt.
-            const stimmProbe = (vVor) => {
-                const hz = motorHz();
-                if (hz === null || !e._fahr || !e._fahrSatz) return;
-                stimme.proben++;
-                hzMin = Math.min(hzMin, hz);
-                hzMax = Math.max(hzMax, hz);
-                const vmax = e._fahrSatz.vmax;
-                const gesetz = (v) =>
-                    KC && typeof KC.fahrtMischung === "function"
-                        ? KC.fahrtMischung({ v, vmax, rueckVmax: vmax * VC.FAHR.schritt.rueckVmax }).motorHz
-                        : NaN;
-                const passt = (soll) => Math.abs(hz - soll) <= 0.01 * soll + 0.1;
-                const soll = gesetz(e._fahr.vlong);
-                if (!passt(soll) && !passt(gesetz(vVor))) {
-                    stimme.abweichend++;
-                    if (!stimme.beispiel)
-                        stimme.beispiel = `${(e._fahr.vlong * 3.6).toFixed(0)} km/h: ${hz} Hz, Gesetz ${Number(soll).toFixed(1)} Hz`;
-                }
-            };
-            halte(["w"]);
-            fahre(150, (i, vVor) => {
-                if (i % 10 === 0) {
-                    tachoProbe();
-                    stimmProbe(vVor);
-                }
-            });
-            stimme.hzSpanne = stimme.proben ? +(hzMax - hzMin).toFixed(1) : 0;
-            // DIE HANDBREMSE: was Shift im Fahr-Schritt des Kerns ankommen lässt (der Aufruf vc.fahrKraefte mit dem Zustand
-            // DIESES Wagens, die Eingabe e.hand) — je 0,5 s ohne Gas, ohne und mit Shift — und der Tempo-Verlust.
-            const kraefte = VC.fahrKraefte;
-            let zaehle = null;
-            VC.fahrKraefte = function (zf, ein) {
-                if (zaehle && zf === e._fahr) {
-                    zaehle.schritte++;
-                    if (ein && ein.hand) zaehle.hand++;
-                }
-                return kraefte.apply(this, arguments);
-            };
-            const auslauf = (mitShift) => {
-                halte(["w"]);
-                fahre(60);
-                const v0 = e._fahr ? Math.abs(e._fahr.vlong) : 0;
-                zaehle = { schritte: 0, hand: 0 };
-                halte(mitShift ? ["shift"] : []);
-                fahre(30);
-                const z = zaehle;
-                zaehle = null;
-                const v1 = e._fahr ? Math.abs(e._fahr.vlong) : 0;
-                return { v0, v1, verlust: v0 - v1, schritte: z.schritte, hand: z.hand };
-            };
-            const ohne = auslauf(false);
-            const mit = auslauf(true);
-            VC.fahrKraefte = kraefte;
-            hilfe.handbremseWirkt = mit.schritte > 0 && mit.hand >= 0.9 * mit.schritte && ohne.hand === 0;
-            hilfe.handbremseDetail = `Shift im Fahr-Schritt ${mit.hand}/${mit.schritte} (ohne ${ohne.hand}/${ohne.schritte}) · 0,5 s ohne Gas: Verlust ohne ${ohne.verlust.toFixed(2)} · mit Shift ${mit.verlust.toFixed(2)} m/s`;
-            halte([]);
-            stimme.quellen = Q.filter((q) => q.fahrt).length;
-            stimme.fremd = Q.filter((q) => q.fahrtFremd).length;
-            // absteigen: Tacho fort, Stimme still
-            fahre(60);
-            tippe("e");
-            fahre(10);
-            const el = document.getElementById("fahr-tacho");
-            tacho.nachAbsteigenSichtbar = !!el && !el.hidden && getComputedStyle(el).display !== "none";
-            stimme.laufendNachAb = Q.filter((q) => q.fahrt && !q.gestoppt).length;
-        } else out.log.push("Fahrt-Station: E steigt nicht ein");
-        out.log.push(`Fahrt-Station: Bahn geräumt ${geraeumt}`);
-        wagenWeg(e);
-    }
-    phase("F5–F7");
     out.log.push("Dauer: " + uhr.zeilen.join(" · "));
-    hilfe.zeilen = r._hilfeZeilen();
-    out.tacho = tacho;
-    out.stimme = stimme;
-    out.hilfe = hilfe;
     out.log.push(...logs.slice(0, 20));
     return out;
 }
 
-// DER QUELLEN-ABGRIFF (vor jedem Seiten-Skript der Bahn): jede Quelle mit ihrem Stapel; die Quellen der Fahrt (Stapel mit
-// `fahrtStimme`) und ihre Frequenz-Ziele (die letzte Automation des AudioParam), ihr Stop.
-function quellenAbgriff() {
-    if (window.__fahrQuellen) return;
-    const Q = (window.__fahrQuellen = []);
-    const proto = window.BaseAudioContext && BaseAudioContext.prototype;
-    if (!proto) return;
-    const AP = AudioParam.prototype;
-    for (const m of ["setValueAtTime", "setTargetAtTime", "linearRampToValueAtTime", "exponentialRampToValueAtTime"]) {
-        const org = AP[m];
-        AP[m] = function (v) {
-            this.__ziel = v;
-            return org.apply(this, arguments);
-        };
-    }
-    const setV = Object.getOwnPropertyDescriptor(AP, "value");
-    Object.defineProperty(AP, "value", {
-        get() {
-            return setV.get.call(this);
-        },
-        set(v) {
-            this.__ziel = v;
-            setV.set.call(this, v);
-        },
-    });
-    for (const art of ["createOscillator", "createBufferSource", "createConstantSource"]) {
-        const org = proto[art];
-        proto[art] = function () {
-            const knoten = org.apply(this, arguments);
-            const stapel = (new Error().stack || "").split("\n").slice(2, 8).join(" | ");
-            const fahrt = /fahrtStimme/.test(stapel);
-            const q = {
-                art,
-                knoten,
-                fahrt: fahrt && /klang-core\.js/.test(stapel),
-                fahrtFremd: fahrt && !/klang-core\.js/.test(stapel),
-                gestoppt: false,
-            };
-            if (knoten.frequency) knoten.frequency.__ziel = knoten.frequency.value;
-            const stop = knoten.stop;
-            knoten.stop = function () {
-                q.gestoppt = true;
-                return stop.apply(this, arguments);
-            };
-            Q.push(q);
-            return knoten;
-        };
-    }
-}
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (schalter("--selftest")) {
         console.log("=== SELBST-TEST: die Fahr-Linse nennt jeden Täter des Befunds ===");
         const gesund = {
             gestartet: true,
@@ -1997,15 +1838,6 @@ hauptLauf(async () => {
                 maxKmh: 40,
                 nachAbsteigenSichtbar: false,
             };
-            const gutK = {
-                symphonie: true,
-                quellen: 3,
-                fremd: 0,
-                proben: 15,
-                hzSpanne: 300,
-                abweichend: 0,
-                laufendNachAb: 0,
-            };
             const gutH = {
                 zeilen: ["Fahren: E einsteigen/aussteigen · W Gas · Shift Handbremse"],
                 handbremseWirkt: true,
@@ -2015,7 +1847,6 @@ hauptLauf(async () => {
                 !bahnPlatzVerdict(gutP).length &&
                     !bahnStossVerdict(gutS).length &&
                     !bahnTachoVerdict(gutT).length &&
-                    !bahnStimmeVerdict(gutK).length &&
                     !bahnTastenVerdict(gutH).length &&
                     !bahnWandVerdict({ da: true, urteil: "wagen" }).length
             );
@@ -2089,27 +1920,6 @@ hauptLauf(async () => {
                     bahnTachoVerdict(Object.assign({}, gutT, { nachAbsteigenSichtbar: true })),
                     /nach dem Absteigen/,
                 ],
-                ["F6 stumm", bahnStimmeVerdict(Object.assign({}, gutK, { quellen: 0 })), /Fahren stumm/],
-                [
-                    "F6 Ton folgt dem Tempo nicht",
-                    bahnStimmeVerdict(Object.assign({}, gutK, { hzSpanne: 0 })),
-                    /folgt dem Tempo nicht/,
-                ],
-                [
-                    "F6 Ton ≠ Gesetz",
-                    bahnStimmeVerdict(Object.assign({}, gutK, { abweichend: 4, beispiel: "40 km/h: 53 Hz" })),
-                    /4\/15 Proben ≠ klang:FAHRT/,
-                ],
-                [
-                    "F6 klingt nach",
-                    bahnStimmeVerdict(Object.assign({}, gutK, { laufendNachAb: 2 })),
-                    /nach dem Absteigen/,
-                ],
-                [
-                    "F6 Zwilling im Stamm",
-                    bahnStimmeVerdict(Object.assign({}, gutK, { fremd: 1 })),
-                    /außerhalb des Gesetzbuchs/,
-                ],
                 [
                     "F7 ohne Fahr-Tasten",
                     bahnTastenVerdict({ zeilen: ["Tasten: WASD laufen · 1–9 Hotbar"], handbremseWirkt: true }),
@@ -2176,6 +1986,21 @@ hauptLauf(async () => {
                 );
             }
         }
+        {
+            // RM — DIE RÜCKMELDUNG: gute Maße == 0 Täter; je gekappte Kopplung genau ihr Kanal (Stimme · Feder · Rumble)
+            const g = { klingt: 1, still: true, wankMm: 0.2, stoesse: 40, antwortMm: 9.6, stark: 0, summen: 0.54 };
+            const v = (an) => {
+                const t = rueckVerdict({ glatt: { ...g, ...an }, drift: { ...g, wankMm: 9, stark: 1, ...an }, hang: { ...g, ...an } });
+                return [t.motor, t.feder, t.rumble].map((l) => +!!l.length).join("");
+            };
+            const faelle = [[{}, "000"], [{ still: false }, "100"], [{ antwortMm: 0.2 }, "010"], [{ wankMm: 2 }, "010"], [{ stark: 0 }, "001"], [{ summen: 0.01 }, "001"]];
+            const ist = faelle.map(([an]) => v(an));
+            check(
+                "Selbst-Test RM: je gekappte Kopplung genau ihr Kanal",
+                faelle.every((f, i) => ist[i] === f[1]),
+                ist.join(" · ")
+            );
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -2191,42 +2016,45 @@ hauptLauf(async () => {
     const kern = kernProbe(globalThis.__vehicleCore);
     for (const [name, ok, detail] of kern) check(name, ok, detail);
     console.log("REIFEN " + JSON.stringify(kern.reifen));
-    if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
+    if (schalter("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await server.lausche(PORT);
-    const { browser, page } = await nullSeite({
-        frist: 300000,
-        zusatz: ["--autoplay-policy=no-user-gesture-required"],
-    });
+    // `--rueckmeldung` allein zeichnet auf der Karte (GPU-Station fahrzeug.K5; welt-boot nennt den Adapter, `[linse-gpu]`)
+    const rm = schalter("--rueckmeldung");
+    const browser = await starteBrowser({ art: rm ? "linse" : "null", frist: 1800000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
+    const page = await browser.newPage();
+    if (!rm) await nullRenderer(page);
     await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
     // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
     await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     await page.evaluate(`window.__tempoSpion = ${tempoSpion}; window.__taktHz = ${taktHz}; window.__ruckJeBild = ${ruckJeBild};`);
-    if (process.argv.includes("--koerper")) {
-        const o = await page.evaluate(probeKoerper, { messort });
+    // ein Teil allein: die Rückmeldung (RM), das Körper-Gesetz (K1) oder die Wetter-Kette (W)
+    const nur = [
+        [rm, probeLeben, { nurRueck: true, rueck: RUECK }, (o) => rueckBericht(o.rueck || o)],
+        [schalter("--koerper"), probeKoerper, {}, (o) => {
+            console.log("=== K1 — DAS EINE KÖRPER-GESETZ (physik.K1) ===");
+            koerperBericht(o);
+            console.log(`KOERPER ${JSON.stringify(o)}`);
+        }],
+        [schalter("--kette"), probeLeben, { nurKette: true, kette: KETTE }, (o) => {
+            const v = ketteBericht(o.kette, o.err);
+            console.log(`KETTE ${JSON.stringify({ tiefe: v.tiefe, roh: o.kette })}`);
+        }],
+    ].find(([an]) => an);
+    if (nur) {
+        const o = await page.evaluate(nur[1], { messort, ...nur[2] });
         await browser.close();
         server.close();
-        console.log("=== K1 — DAS EINE KÖRPER-GESETZ (physik.K1) ===");
-        koerperBericht(o);
-        console.log(`KOERPER ${JSON.stringify(o)}`);
-        process.exit(errs.length ? 1 : 0);
-    }
-    if (process.argv.includes("--kette")) {
-        const o = await page.evaluate(probeLeben, { messort, nurKette: true, kette: KETTE });
-        await browser.close();
-        server.close();
-        const v = ketteBericht(o.kette, o.err);
-        console.log(`KETTE ${JSON.stringify({ tiefe: v.tiefe, roh: o.kette })}`);
+        nur[3](o);
         process.exit(errs.length ? 1 : 0);
     }
 
-    // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
+    // F — die Fahr-Bahn im eigenen Boot nach dem Leben
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
         await nullRenderer(page2);
-        await page2.evaluateOnNewDocument(quellenAbgriff);
         await server.zeige(page2, 30000);
         return page2.evaluate(probeBahn, BAHN);
     };
@@ -2236,6 +2064,7 @@ hauptLauf(async () => {
         randM: STATION.randM,
         flugM: STATION.flugM,
         kette: KETTE,
+        rueck: RUECK,
     });
     await page.close();
     const bahn = await bahnLauf();
@@ -2457,7 +2286,7 @@ hauptLauf(async () => {
     );
     {
         // ════ F — DIE FAHR-BAHN ════
-        console.log("=== F — DIE FAHR-BAHN (K12): Platz an jedem Tor, rückwärts, Befreiung, Tacho, Stimme, Tasten ===");
+        console.log("=== F — DIE FAHR-BAHN (K12): Platz an jedem Tor, rückwärts, Befreiung, Tacho, Tasten ===");
         const fkRows = bahnKernRueck(globalThis.__vehicleCore);
         const fk = bahnKernVerdict(fkRows);
         const fkGt = fkRows.filter((z) => z.rezept === "gt");
@@ -2524,28 +2353,24 @@ hauptLauf(async () => {
                 sz(m) + (v.length ? " — Täter: " + v.join(" · ") : "")
             );
         }
-        const tv = bahnTachoVerdict(bahn.tacho);
+        const [tacho, hilfe] = [(out.rueck || {}).tacho, (out.rueck || {}).hilfe || {}];
+        const tv = bahnTachoVerdict(tacho);
         check(
             "F5 im Sattel zeigt #fahr-tacho |vlong| × vehicle:FAHR.kmh (die Zahl der Probefahrt), nach dem Absteigen ist er fort",
             tv.length === 0,
-            `${bahn.tacho.proben} Proben · max ${bahn.tacho.maxKmh} km/h${tv.length ? " — Täter: " + tv.join(" · ") : ""}`
+            `${tacho && tacho.proben} Proben · max ${tacho && tacho.maxKmh} km/h${tv.length ? " — Täter: " + tv.join(" · ") : ""}`
         );
-        const svv = bahnStimmeVerdict(bahn.stimme);
-        check(
-            "F6 im Sattel klingt die Fahrt aus klang-core fahrtStimme, ihr Motor-Ton folgt klang:FAHRT, absteigen macht still",
-            svv.length === 0,
-            `${bahn.stimme.quellen} Quellen · ${bahn.stimme.proben} Proben · Motor-Spanne ${bahn.stimme.hzSpanne} Hz · ${bahn.stimme.abweichend} abweichend · nach dem Absteigen ${bahn.stimme.laufendNachAb} laufend${svv.length ? " — Täter: " + svv.join(" · ") : ""}`
-        );
-        const hv = bahnTastenVerdict(bahn.hilfe);
-        const fz = (bahn.hilfe.zeilen || []).find((z) => /^Fahren/.test(z)) || "—";
+        const hv = bahnTastenVerdict(hilfe);
+        const fz = (hilfe.zeilen || []).find((z) => /^Fahren/.test(z)) || "—";
         check(
             "F7 „hilfe“ nennt E (einsteigen) und Shift (Handbremse), Shift kommt in Fahrt als Handbremse im Fahr-Schritt an",
             hv.length === 0,
-            `„${fz}“ · ${bahn.hilfe.handbremseDetail || ""}${hv.length ? " — Täter: " + hv.join(" · ") : ""}`
+            `„${fz}“ · ${hilfe.handbremseDetail || ""}${hv.length ? " — Täter: " + hv.join(" · ") : ""}`
         );
         for (const l of bahn.log || []) console.log("  · " + l);
     }
     if (bahn.err) check("F Probe ohne Ausnahme", false, String(bahn.err).split("\n")[0]);
+    rueckBericht(out.rueck || out);
     wandEnde(errs, "der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken.");
     process.exit(0);
 });
