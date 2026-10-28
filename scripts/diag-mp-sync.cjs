@@ -52,6 +52,7 @@
 // alte Wand „≤ 150 ms, lokal" lag unter drei parallelen Läufen in 3 von 6 Läufen ohne Stillstand darüber, 212–488 ms), ihr
 // Gesetz urteilen (d) je Takt und der Ort.
 // Konsum-Leser: `_p2pUpdatePeer` (zeichnet den Peer je Takt) und der close-Zweig von `initP2PSync` (plant den Rejoin).
+// (h) liest `_tickWorldRules` (das Gesetz feuert je Scheibe der Welt-Uhr, auf jeder Seite) und `_journalRuleAwoke` (B's Tagebuch).
 // DER TAKT JEDER SEITE: beide Seiten fahren den Null-Renderer (kein GPU-Prozess, die Probe misst kein Pixel), ihren Loop
 // treibt ab der Geburt die Pumpe (`seitenPumpe`, ein Zeitgeber, nie rAF) — verborgen wie sichtbar. Vorher liefen zwei
 // GL-Seiten auf swiftshader: die verborgene stand unter Last bis 51,7 s im synchronen Rücklesen, der Leerlauf-Abschied
