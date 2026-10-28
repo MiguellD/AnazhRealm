@@ -1657,14 +1657,15 @@ class AnazhRealm_dirigent_takt {
         this._spiegelFeldTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
-        // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
-        // realloc-tod 20.07.) — nur ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü), und der legt die
-        // Ziele beim nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur).
+        // DIE SZENEN-SKALA am Szenen-Pass: das Ziel wechselt nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die
+        // Destroyed-Klasse, realloc-tod 20.07.) — nur ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü) legt
+        // es beim nächsten Frame neu an wie ein Fenster-Wechsel. Die Last-Skala ist ein Viewport im Ziel, das Rechteck jedes
+        // Lesers schreibt derselbe Ruf (`_szeneZielStellen`).
         const sp = this.state.scenePass;
-        if (sp && sp.getResolutionScale() !== this._szeneSkalaWirk()) sp.setResolutionScale(this._szeneSkalaWirk());
+        if (sp) this._szeneZielStellen(sp);
         const ppu = this.state.postProcessingUniforms;
         if (ppu && ppu.nachSchaerfe)
-            ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
+            ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaLast()) : 0;
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         if (!direkt) {

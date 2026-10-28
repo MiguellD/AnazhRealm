@@ -794,8 +794,14 @@ class AnazhRealm {
             perfRegulator: true,
             perfSense: null,
             // DIE EINE SZENEN-SKALA (K50): die interne Auflösung der Szene relativ zur Ausgabe (0,5..1), der Regler
-            // „Szene-Auflösung“ im Menü, im Snapshot; null = `SZENE_SKALA` (`_szeneSkalaWirk`). Kein Stellglied des Reglers.
+            // „Szene-Auflösung“ im Menü, im Snapshot; null = `SZENE_SKALA` (`_szeneSkalaWirk`). Sie legt das Ziel an.
             szeneSkala: null,
+            // DIE LAST-SKALA (Spike pixel-statt-welt, `_szeneSkalaLast`): der gezeichnete Anteil ≤ Menü-Skala als Viewport im
+            // Ziel, ohne realloc; null = Menü-Skala. Das Rechteck jedes Lesers (`_szeneRechteck`) und seine Wache schreibt
+            // `_szeneZielStellen`.
+            szeneSkalaLast: null,
+            szeneRechteck: null,
+            szeneRechteckWache: null,
             _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter DPR-Cap-Wert (Dead-Band gegen Churn)
             untertitel: false, // spielgang.K4 — die Untertitel der Klang-Welt (Einstellungen › Ton & Sicht), gewählt vom Spieler
             // Standalone-Perf-Panel (top-right, eine Zeile {fps} · Szene {skala}% · {dc}dc · {tri}k▲),

@@ -647,6 +647,10 @@ class AnazhRealm_bild_sicht {
         const abbild = T.texture(abbildTex);
         // das Bild des Szenen-Passes (linear, vor Zeit-Auflösung und Tönung): der Spiegel liest die Strahlung, die es zeichnet
         const farbe = st.scenePass.getTextureNode().value;
+        // DAS RECHTECK (`_szeneRechteck`): Tiefe und Farbe tragen das Bild nur in ihm (die Last-Skala zeichnet einen Viewport im
+        // Ziel der Menü-Skala) — ein Texel ist uv × xy, eine Abtastung uv × zw, geklemmt auf die Mitte des letzten Texels
+        const R = this._szeneRechteck();
+        const imZiel = (u) => u.mul(R.zw).min(R.xy.sub(0.5).mul(R.zw).div(R.xy));
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         const U = {
             invVP: uniform(new THREE.Matrix4()),
@@ -680,7 +684,7 @@ class AnazhRealm_bild_sicht {
         mat.depthWrite = false;
         mat.fragmentNode = Fn(() => {
             const aus = vec4(0).toVar();
-            const d = tiefe.load(ivec2(screenUV.mul(vec2(tiefe.size())))).r;
+            const d = tiefe.load(ivec2(screenUV.mul(R.xy))).r;
             If(d.lessThan(0.99999), () => {
                 const ndc = vec4(
                     screenUV.x.mul(2).sub(1),
@@ -740,7 +744,7 @@ class AnazhRealm_bild_sicht {
                         );
                     const sMax = min(min(austritt(uvP.x, du.x), austritt(uvP.y, du.y)), float(1.0));
                     const raus = sMax.lessThan(0.999);
-                    const tiefeGr = vec2(tiefe.size());
+                    const tiefeGr = R.xy;
                     const linear = (dd) => U.p14.div((webgpuRaum ? dd : dd.mul(2).sub(1)).add(U.p10));
                     const bild = vec3(0).toVar();
                     const bildW = float(0).toVar();
@@ -818,7 +822,8 @@ class AnazhRealm_bild_sicht {
                             // bilineare Abgriffe um den Treffer — ein einzelner Abgriff tastete das Bild unter (A1-n1: Salz-Rauschen und
                             // Mosaik im Spiegel von Laub und Schilf)
                             const fu = U.texel.mul(0.25);
-                            const tap = (dx, dy) => texture(farbe, uvT.add(fu.mul(vec2(dx, dy)))).level(float(0)).rgb;
+                            const tap = (dx, dy) =>
+                                texture(farbe, imZiel(uvT.add(fu.mul(vec2(dx, dy))))).level(float(0)).rgb;
                             bild.assign(tap(-1, -1).add(tap(1, -1)).add(tap(-1, 1)).add(tap(1, 1)).mul(0.25));
                             // am Schirm-Rand blendet der Treffer in den Rest des Strahls (das Feld, der Himmel): keine Naht
                             bildW.assign(
@@ -964,7 +969,7 @@ class AnazhRealm_bild_sicht {
                             .and(min(uvI.x, uvI.y).greaterThan(0.0))
                             .and(max(uvI.x, uvI.y).lessThan(1.0));
                         If(imBild.and(tiefe.load(ivec2(uvI.mul(tiefeGr))).r.greaterThan(0.99999)), () => {
-                            aus.assign(vec4(mix(texture(farbe, uvI).level(float(0)).rgb, aus.rgb, aus.a), 1.0));
+                            aus.assign(vec4(mix(texture(farbe, imZiel(uvI)).level(float(0)).rgb, aus.rgb, aus.a), 1.0));
                         });
                     });
                     // DER HIMMEL DES RESTS (A1-n1): wo weder Bild noch Feld den Strahl ganz deckt, die Himmels-Sicht der Kuppel in
@@ -1902,10 +1907,12 @@ class AnazhRealm_bild_sicht {
                 "}"
         );
         // Der Schirm-Strahl beider Fragmente: NDC aus dem Pixel, derselbe Strahl (invVP · NDC) wie im WGSL — die Luft
-        // dunstet Feld und Panorama mit denselben Knoten wie jedes Mesh (`_luftEnsure`), kein Pass-eigener Nebel.
+        // dunstet Feld und Panorama mit denselben Knoten wie jedes Mesh (`_luftEnsure`), kein Pass-eigener Nebel. Das Pixel
+        // im VIEWPORT des Passes (`viewportUV`): unter der Last-Skala zeichnet die Szene ein Rechteck im Ziel (`_szeneRechteck`),
+        // `screenUV` (Pixel / Größe des Ziels) liefe dort nur bis s/Menü.
         const ndcNode = TSL.vec2(
-            TSL.screenUV.x.mul(2.0).sub(1.0),
-            TSL.float(1.0).sub(TSL.screenUV.y).mul(2.0).sub(1.0)
+            TSL.viewportUV.x.mul(2.0).sub(1.0),
+            TSL.float(1.0).sub(TSL.viewportUV.y).mul(2.0).sub(1.0)
         );
         const fern4 = U.invVP.mul(TSL.vec4(ndcNode, 1.0, 1.0));
         const dirN = fern4.xyz.div(fern4.w).sub(U.camPos).normalize();

@@ -31,13 +31,16 @@
 //       und bei beiden Belichtungen gleich: der Kontrast dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 //       DIE NACHT (D3-2): 0,02 bei Belichtung 1 und nightFactor 1 (der Boden im Mondlicht, unter dem Schnitt der Tag-Kurve) ist
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
+//   (r) RECHTECK (ohne Browser, am AST des Stamms) — jeder Leser des Szenen-Ziels liest das Rechteck aus `_szeneRechteck`
+//       (die Last-Skala zeichnet einen Viewport im Ziel der Menü-Skala), Datei:Zeile je Täter; Regeln bei `rechteckBefunde`.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
-// Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
-//   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
+// Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt; danach (r) am Stamm.
+//   node scripts/diag-post-kette.cjs [--selftest | --rechteck]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, ROOT: ROOT_POST } = require("./lib/welt-boot.cjs");
+const stammLib = require("./lib/stamm.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -236,8 +239,68 @@ function urteil(z) {
     return v;
 }
 
+// (r) DAS RECHTECK DES SZENEN-ZIELS (Spike pixel-statt-welt), am AST des Stamms: unter der Last-Skala zeichnet der Szenen-Pass
+// einen Viewport im Ziel der Menü-Skala (`_szeneZielStellen`), wer die Größe der Textur liest, liest daneben. LESER ist jedes
+// Glied, das ein Ziel des Szenen-Passes greift (`….scenePass.getTextureNode(…)`), und jedes, dem ein Griff als Argument gereicht
+// wird (`this._x(…, griff)`) — die Zugehörigkeit folgt dem Datenweg. ROT mit Datei:Zeile: ein Leser nennt `_szeneRechteck` nicht
+// oder liest `.size()` · ein Glied außer dem Schreiber liest `getResolutionScale` · ein Glied außer den Stoffen mit eigenem Ziel
+// liest `screenUV`/`screenSize` (ein Szenen-Stoff liest `viewportUV`/`viewportSize`) · der Frame ruft den Schreiber nicht ·
+// weniger als `min` Leser (blind). Konsum-Leser: `_zeitAufloesung`, `_traaKameraBewegung`, `_spiegelPass`, `_ensurePostProcessing`.
+// `eigen`: die Ausgabe-Kette zeichnet die Leinwand, der Spiegel sein eigenes Ziel (1/teil).
+const RECHTECK = ["_szeneZielStellen", "_szeneRechteck", "_loopRender", ["_ensurePostProcessing", "_spiegelPass"], 4];
+function rechteckBefunde(t, wo, [schreiber, uniform, frame, eigen, min] = RECHTECK) {
+    const v = [];
+    const gl = stammLib.glieder(t);
+    const rufe = stammLib.rufe(t);
+    const at = (i) => wo(stammLib.zeileVon(t, i));
+    const griffe = rufe.filter((r) => /scenePass\.getTextureNode$/.test(r.ziel)).map((r) => r.knoten);
+    const leser = new Map(griffe.map((k) => [stammLib.gliedAn(gl, k.start).name, k.start]));
+    for (const r of rufe)
+        for (const a of r.args)
+            stammLib.wandere(a, (n) => !(griffe.includes(n) && /^this\./.test(r.ziel) && leser.set(r.name, r.start)));
+    for (const [name, i] of leser) {
+        const eigene = rufe.filter((r) => r.glied === name);
+        if (!eigene.some((r) => r.name === uniform)) v.push(`RECHTECK: ${name} ohne ${uniform} — ${at(i)}`);
+        for (const r of eigene)
+            if (r.name === "size" && !r.args.length) v.push(`GRÖSSE: ${name} ${r.ziel}() — ${at(r.start)}`);
+    }
+    for (const r of rufe)
+        if (r.name === "getResolutionScale" && r.glied !== schreiber) v.push(`SKALA: ${r.glied} — ${at(r.start)}`);
+    stammLib.wandere(stammLib.ast(t), (n) => {
+        const g = /^screen(UV|Size)$/.test(n.name) && stammLib.gliedAn(gl, n.start);
+        if (g && !eigen.includes(g.name)) v.push(`SCHIRM: ${g.name} ${n.name} — ${at(n.start)}`);
+    });
+    if (!rufe.some((r) => r.glied === frame && r.name === schreiber))
+        v.push(`SCHREIBER: ${frame}`);
+    if (leser.size < min) v.push(`BLIND: ${leser.size}`);
+    return v;
+}
+// Der Probe-Stamm des Selbsttests trägt eigene Namen (kein Kopf eines Glieds des Stamms, gate:apparat Klinge 4).
+const PROBE = `class P {
+    _takt() { this._stelle(); }
+    _kette() { this._rechteck(); this._resolve(this.scenePass.getTextureNode()); return T.screenUV; }
+    _resolve(ein) { this._rechteck(); return ein.load(R.xy); }
+    _feld() { return T.viewportUV; }
+}`;
+// Je Fall der Probe-Stamm mit EINER Tat (`mut`) und der Täter, den die Wand nennen muss.
+const mut = (alt, neu) => PROBE.replace(alt, neu);
+const RECHTECK_FAELLE = [
+    ["Rechteck", PROBE, null],
+    ["Textur-Größe", mut("ein.load(R.xy)", "ein.load(ein.size())"), /GRÖSSE: _resolve .* probe:4/],
+    ["gereicht", mut("{ this._rechteck(); return", "{ return"), /RECHTECK: _resolve .* probe:3/],
+    ["Pass-Skala", mut("R.xy)", "R.xy.mul(sp.getResolutionScale()))"), /SKALA: _resolve .* probe:4/],
+    ["screenUV", mut("T.viewportUV", "T.screenUV"), /SCHIRM: _feld .* probe:5/],
+    ["Schreiber", mut("this._stelle()", "f()"), /SCHREIBER: _takt/],
+];
+// Die Wand am lebenden Stamm (in `--selftest` nach dem Selbsttest, allein mit `--rechteck`).
+function rechteckWand() {
+    wandEnde(rechteckBefunde(stammLib.text(ROOT_POST), (z) => stammLib.ort(ROOT_POST, z)), `(r) ${RECHTECK[1]}`);
+}
+
 function selbsttest() {
     const fehler = SK.selbsttest().map((s) => "Shader-Kosten-Linse: " + s);
+    const probeR = ["_stelle", "_rechteck", "_takt", ["_kette"], 2];
+    taeterFaelle(RECHTECK_FAELLE, (t) => rechteckBefunde(t, (z) => "probe:" + z, probeR), { fehler });
     const ausgabe = {
         einstieg: "main",
         abtastungen: { gesamt: 33, unbedingt: 9, zweig: 24, schleife: 0 },
@@ -340,8 +403,9 @@ function selbsttest() {
 if (process.argv.includes("--selftest")) {
     console.log("=== POST-KETTE — Selbsttest (ohne Browser) ===");
     selbsttest();
-    process.exit(0);
+    rechteckWand(); // endet mit dem Urteil der Wand (Exit 0 | 1)
 }
+if (process.argv.includes("--rechteck")) rechteckWand();
 
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");

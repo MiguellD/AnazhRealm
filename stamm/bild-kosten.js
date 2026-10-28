@@ -1069,6 +1069,8 @@ class AnazhRealm_bild_kosten {
             throw new Error("ZEIT-AUFLÖSUNG: Quad der Post-Kette oder TRAANode fehlt (Vendor-Drift)");
         const { Fn, If, float, vec2, vec3, vec4, uv, texture, uniform, max, exp, floor, mix, luminance } = T;
         const realm = this;
+        // das gezeichnete Rechteck des Eingangs (Farbe und Tiefe des Szenen-Passes): Größe, Klemme und Versatz lesen es
+        const rechteck = this._szeneRechteck();
         const klemme = (h, lo, hi) => {
             const p = hi.add(lo).mul(0.5);
             const e = hi.sub(lo).mul(0.5).add(1e-7);
@@ -1132,13 +1134,11 @@ class AnazhRealm_bild_kosten {
                 super.dispose();
                 this._resolveStoffe[1].dispose();
             }
-            // die Eingangs-Größe, wie r184s Szenen-Pass sie anlegt (PassNode.setSize: CSS-Größe × Pixel-Verhältnis × Skala)
+            // die Eingangs-Größe: das gezeichnete Rechteck des Szenen-Ziels (`_szeneRechteck`, unter der Last-Skala ein
+            // Viewport im Ziel der Menü-Skala) — der Halton-Versatz springt in seinen Pixeln
             eingang(aus) {
-                const r = this._rend;
-                const sp = this.beautyNode.passNode;
-                r.getSize(aus);
-                const k = r.getPixelRatio() * sp.getResolutionScale();
-                return aus.set(Math.floor(aus.x * k), Math.floor(aus.y * k));
+                const R = rechteck.value;
+                return aus.set(R.x, R.y);
             }
             setViewOffset(_w, _h) {
                 const e = this.eingang(this._gr);
@@ -1243,7 +1243,7 @@ class AnazhRealm_bild_kosten {
                     const flackerNeu = T.property("float", "flackerNeu");
                     const resolve = Fn(() => {
                         const uvA = uv();
-                        const einGr = vec2(ein.size());
+                        const einGr = rechteck.xy;
                         const ausGr = vec2(1).div(this._invSize);
                         const pEin = uvA.mul(einGr);
                         const zelle = floor(pEin);
@@ -1485,6 +1485,75 @@ class AnazhRealm_bild_kosten {
         return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, w));
     }
 
+    // DIE LAST-SKALA (Spike pixel-statt-welt): der Anteil der Ausgabe, den der Szenen-Pass in diesem Bild ZEICHNET —
+    // `state.szeneSkalaLast` in [SZENE_SKALA_MIN, Menü-Skala], null = die Menü-Skala. Das Ziel bleibt in der Menü-Skala
+    // angelegt (kein realloc unter lebenden Bündeln, die Destroyed-Klasse 20.07.); die Last-Skala ist ein Viewport darin
+    // (`_szeneZielStellen`). Gestellt per `werkbank eval` (der PID aus der GPU-Zeit ist die nächste Karte). Ohne die zeitliche
+    // Auflösung gibt es keinen Hochskalierer: dann zeichnet die Szene das ganze Ziel.
+    _szeneSkalaLast() {
+        const m = this._szeneSkalaWirk();
+        const s = this.state.szeneSkalaLast;
+        if (!this.state._traa || s == null || !Number.isFinite(+s)) return m;
+        return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(m, +s));
+    }
+
+    // DAS RECHTECK DES SZENEN-ZIELS — das EINE Uniform jedes Lesers (gate:post-kette --rechteck): xy die gezeichneten Texel
+    // (Breite, Höhe), zw ihr Anteil am Ziel (uv des Ziels = uv des Bilds × zw). Ein Leser liest nie die Größe der Textur
+    // (`.size()`) und nie die Skala des Passes: unter der Last-Skala trägt das Ziel nur links oben das Bild. Geteilte Heimat
+    // (`_uniformHeimatTeilen`): die Observer-Diät lädt es EINMAL je Render. Der EINE Schreiber ist `_szeneZielStellen`.
+    _szeneRechteck() {
+        const st = this.state;
+        if (!st.szeneRechteck)
+            st.szeneRechteck = this._uniformHeimatTeilen({
+                u: THREE.TSL.uniform(new THREE.Vector4(1, 1, 1, 1)),
+            }).u;
+        return st.szeneRechteck;
+    }
+
+    // DER SCHREIBER VON ZIEL UND RECHTECK (`_loopRender`, vor dem Render der Kette): die Menü-Skala legt das Ziel an (ein
+    // neuer Wert legt es beim nächsten Frame neu an wie ein Fenster-Wechsel, nie je Last); die Last-Skala zeichnet per
+    // `PassNode.setViewport` in s/Menü des Ziels. Das Rechteck rechnet r184s Formeln nach (PassNode.setSize: Ziel =
+    // ⌊B·dpr·Menü⌋, Viewport = ⌊(B·f)·(dpr·Menü)⌋) — der Pass schreibt seinen Viewport erst in seinem eigenen updateBefore,
+    // die Leser des Bilds brauchen das Rechteck vorher. Weicht der Viewport des letzten Bilds vom Rechteck ab, meldet der
+    // Wächter es laut (Vendor-Drift). Bei Last = Menü bleibt der Pass ohne Viewport wie bis heute (die Kette byte-gleich).
+    _szeneZielStellen(sp) {
+        const st = this.state;
+        const R = this._szeneRechteck().value;
+        const rt = sp.renderTarget;
+        const w = st.szeneRechteckWache;
+        if (
+            w &&
+            rt.width === w.zw &&
+            rt.height === w.zh &&
+            (rt.viewport.z !== R.x || rt.viewport.w !== R.y) &&
+            !w.laut
+        ) {
+            w.laut = true;
+            this.log(
+                `SZENEN-RECHTECK: der Viewport des Passes ${rt.viewport.z}×${rt.viewport.w} ist nicht das Rechteck ${R.x}×${R.y} ` +
+                    "der Leser (r184 PassNode.setSize gedriftet) — Resolve, Spiegel und Tiefe lesen daneben",
+                "ERROR"
+            );
+        }
+        const m = this._szeneSkalaWirk();
+        if (sp.getResolutionScale() !== m) sp.setResolutionScale(m);
+        const rend = st.renderer;
+        const gr = rend.getSize(w ? w.gr : new THREE.Vector2());
+        const dpr = rend.getPixelRatio();
+        const zw = Math.floor(gr.x * dpr * m),
+            zh = Math.floor(gr.y * dpr * m);
+        const f = this._szeneSkalaLast() / m;
+        let rw = zw,
+            rh = zh;
+        if (f < 1) {
+            sp.setViewport(0, 0, gr.x * f, gr.y * f);
+            rw = Math.floor(gr.x * f * (dpr * m));
+            rh = Math.floor(gr.y * f * (dpr * m));
+        } else sp.setViewport(null); // das ganze Ziel: RenderTarget.setSize stellt seinen Viewport je Bild auf (0, 0, B, H)
+        R.set(rw, rh, rw / zw, rh / zh);
+        st.szeneRechteckWache = Object.assign(w || { gr, laut: false }, { zw, zh });
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -1617,7 +1686,10 @@ class AnazhRealm_bild_kosten {
             // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
             // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
             // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
-            const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
+            // Ohne zeitliche Auflösung liest die Kette das Szenen-Ziel selbst: im gezeichneten Rechteck (`_szeneRechteck`; ohne
+            // Hochskalierer ist es das ganze Ziel, `_szeneSkalaLast`).
+            const zielUV = traa ? (uv) => uv : (uv) => uv.mul(this._szeneRechteck().zw);
+            const bild = (uv) => sceneColor.sample(zielUV(uv)).rgb.mul(u.ausgabeAusgleich);
             // DIE NACH-SCHÄRFE (K50): die zeitliche Hochskalierung rekonstruiert die Ausgabe aus einer kleineren Szene, ihr Bild ist
             // um eine Spur weicher (gemessen am Ausgabe-Pfad, Gradient der Kanten). Wie jeder Hochskalierer (FSR2 RCAS, TSR) schärft
             // die Kette NACH dem Resolve — nie in die Geschichte: die Mitte gegen ihre vier Nachbarn in Ausgabe-Pixeln, geklemmt auf
@@ -1754,9 +1826,12 @@ class AnazhRealm_bild_kosten {
         // (forceWebGL, gate:webgl-probe) liegt sie in [−1, 1]: z = 2·Tiefe − 1, sonst reprojiziert jeder Pixel beim
         // Laufen an die falsche Stelle (Schlieren). Die Textur-Zeilen dreht TSL je Rückend selbst (load, isFlipY).
         const webgpuRaum = this.state.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
+        // das Texel im gezeichneten Rechteck (`_szeneRechteck`), nie in der Größe des Ziels: unter der Last-Skala trägt das
+        // Ziel das Bild nur links oben
+        const rechteck = this._szeneRechteck();
         return {
             load: (texel) => {
-                const uvT = texel.div(vec2(tiefe.size()));
+                const uvT = texel.div(rechteck.xy);
                 const ndc = vec2(uvT.x.mul(2).sub(1), uvT.y.oneMinus().mul(2).sub(1));
                 const d = tiefe.load(texel).r;
                 const vor = R.mul(vec4(ndc, webgpuRaum ? d : d.mul(2).sub(1), 1));

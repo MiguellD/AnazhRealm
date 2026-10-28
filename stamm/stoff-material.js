@@ -2193,12 +2193,13 @@ class AnazhRealm_stoff_material {
             // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, die Welle
             // aus EINER Probe im Rausch-Atlas — der Vertex liest denselben Wert, gelaende-core `rauschRaum`). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
             // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
-            // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
+            // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und der Höhe des Viewports:
+            // unter der Last-Skala zeichnet die Szene ein Rechteck im Ziel, `screenSize` wäre das ganze Ziel).
             const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
             const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
-            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.viewportSize.y));
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
             // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen

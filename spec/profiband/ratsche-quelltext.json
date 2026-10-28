@@ -54,6 +54,10 @@
             "zweck": "Messung: führt foundry-core und three im vm aus (Parität Studio = Welt)",
             "datei": 4
         },
+        "scripts/diag-post-kette.cjs": {
+            "zweck": "Struktur: die Rechteck-Wand (r) liest den Stamm am AST — jeder Leser des Szenen-Ziels nennt `_szeneRechteck`",
+            "stamm": 1
+        },
         "scripts/diag-profiband.cjs": {
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",
             "stamm": 1
