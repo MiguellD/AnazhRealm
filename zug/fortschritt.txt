@@ -745,3 +745,4 @@
 2026-10-28 22:09:37 takt18d-gtx halten.K5#2 GRÜN 0.8 · 5/16
 2026-10-28 22:13:07 takt18d-gtx fahrzeug.K5#1 GRÜN 3.4 · 6/16
 2026-10-28 22:14:41 takt18d-gtx tore.K3#2 GRÜN 1.5 · 7/16
+2026-10-28 22:15:46 takt18d-gtx spielgang.K3#1 ROT 1.0 · 8/16
