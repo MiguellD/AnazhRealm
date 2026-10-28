@@ -954,6 +954,62 @@ const alle = [
         ],
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
+    // ── bauen.K2 ── W9 SLOT (gate:haus-welt, Phase grund; w3t-grund): ein Haus in der Gestalt eines Dorf-Hauses (Rezept, Stempel,
+    // Same und Gier des Dorf-Slots), gesetzt über die Werkstatt (Phantom, confirmBuild) auf dem ersten Ort mit Gefälle ≥ 15 % über
+    // ±4 m — sein Erdbau (`haus:`) byte-gleich dem Plan v2 (fachwerk `ortPlan`) des Dorf-Slots aus dem Gedächtnis des Orts an
+    // seinem Ort und Boden, Platte · Grund · Vorplatz, der Vorplatz ist Boden (Dichte ±0,3 m), über der Diele keine Erde. Der
+    // Null-Renderer misst Plan und Dichte, nie das Bild (Lehre 16); Bild und Gang des Leibs zählen Staffel 2 und siedlung.K1.
+    {
+        kriterium: "bauen.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund"],
+        env: { ...SOFT, HAUS_WELT_JSON: "{AUS}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8, // lokal 61–83 s (eine Welt, Phase grund), die Farm ~3,5× langsamer
+        urteil: (j) => {
+            const w9 = (j && j.w9) || {};
+            const sl = w9.slot;
+            if (!sl || !sl.typ) return { gruen: false, zahl: "kein gesetztes Haus am Hang (W9 Slot " + JSON.stringify(sl || null) + ")" };
+            const h = (w9.haeuser || []).find((x) => x.id === "w9-slot");
+            const k = (h && h.koerper) || [];
+            const [dichte, proben] = ["dichte", "proben"].map((f) => k.reduce((a, b) => a + (b[f] || 0), 0));
+            // der Plan v2 eines Ein-Slot-Orts mit Tür: Platte, Grund, Vorplatz — byte-gleich dem Dorf-Slot trägt er alle drei
+            return {
+                gruen:
+                    sl.hang >= 0.15 && sl.byte === true && sl.boden === 1 && sl.splats === 3 && proben > 0 && dichte === 0,
+                zahl:
+                    `${sl.typ} am Hang ${Number(sl.hang).toFixed(3)} (Soll ≥ 0,15) · Erdbau ${sl.splats} Splats (Platte, Grund, ` +
+                    `Vorplatz) · byte-gleich dem Dorf-Slot ` +
+                    `${sl.byte} · Vorplatz-Boden ${sl.boden} (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele ${dichte}/${proben}`,
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/gelaende-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/siedlung-*.js",
+            "stamm/werkstatt-bauen.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "1 = Erdbau und Vorplatz wie ein Dorf-Slot derselben Gestalt (Byte-Vergleich der ortPlan-Ausgabe), am Hang mit Gefälle ≥ 15 %",
+    },
+    {
+        kriterium: "bauen.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: null,
+        grund:
+            "Kein Werkzeug im Spiel-Baum: ortPlan kennt keinen festen Fremd-Slot (die Gasse wird im Ortsradius nicht um das " +
+            "gesetzte Haus umgelegt), und der Keller ist ohne Anti-Clip-Hub nicht erreichbar — die Linse dafür fehlt mit dem Gesetz.",
+        quelle: "2 = im Ortsradius Slot des Plans mit umgelegter Gasse, Keller über die Treppe ohne Anti-Clip-Hub",
+    },
     {
         kriterium: "bauen.K3",
         staffel: 1,
