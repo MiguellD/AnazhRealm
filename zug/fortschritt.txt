@@ -627,3 +627,4 @@
 2026-10-28 11:21:27 takt16a-gtx halten.K1#2 ROT 5.8 · 17/36
 2026-10-28 11:27:19 takt16a-gtx halten.K2#1 GRÜN 5.8 · 18/36
 2026-10-28 11:28:11 takt16a-gtx halten.K5#1,halten.K5#2 GRÜN/GRÜN 0.8 · 20/36
+2026-10-28 11:30:01 takt16a-gtx klang.K2#1 GRÜN 1.8 · 21/36
