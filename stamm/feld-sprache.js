@@ -862,8 +862,8 @@ class AnazhRealm_feld_sprache {
             const vor = p.wohlZelle;
             const wb = this.state.wohlBaseline;
             if (!vor || vor.key !== wz || !(wb && wb.has(wz))) {
-                if (vor && vor.key !== wz) this._observeFieldWohl(vor.x, vor.z, currentTime);
-                this._observeFieldWohl(pm.x, pm.z, currentTime);
+                if (vor && vor.key !== wz) this._observeFieldWohl(vor.x, vor.z);
+                this._observeFieldWohl(pm.x, pm.z);
                 p.wohlZelle = { key: wz, x: pm.x, z: pm.z };
             }
         }
@@ -1185,15 +1185,11 @@ class AnazhRealm_feld_sprache {
             e.x = tat.ort.x;
             e.z = tat.ort.z;
             e.ertrag = this._playerSituationWohl(this.auraAt(e.x, e.z)) - tat.sitVor;
-            const erw = st.tatErwartung || (st.tatErwartung = new Map());
-            const key = this._wohlCellKey(e.x, e.z) + ":" + tat.op;
-            const alt = erw.get(key);
-            const erwartet = alt ? alt.e * Math.exp(-Math.max(0, jetzt - alt.t) / W.tatTau) : 0;
-            e.delta = e.ertrag - erwartet;
-            const neu = Object.assign(alt || {}, { e: erwartet + W.ruleValueBeta * e.delta, t: jetzt });
-            if (!alt) erw.set(key, neu);
-            // vergessen, wo |e| · e^(−Δt/τ) unter 1e-3 fällt — die Tat räumt (`_feldTod`)
-            this._feldTod(erw, key, neu, jetzt + W.tatTau * Math.max(0, Math.log(Math.abs(neu.e) / 1e-3)), jetzt);
+            // die Erwartung lernt als Feld-Akt `t` (`_feldAkt`, der Schritt `_feldSchritt`): sie reist und steht im Stand
+            const alt = st.tatErwartung && st.tatErwartung.get(this._wohlCellKey(e.x, e.z) + ":" + tat.op);
+            const lebt = alt && !this._feldTot("t", alt, jetzt);
+            e.delta = e.ertrag - (lebt ? alt.e * Math.exp(-Math.max(0, jetzt - alt.t) / W.tatTau) : 0);
+            this._feldAkt("t", e.x, e.z, [e.ertrag, tat.op]);
         }
         const buch = st.taten || (st.taten = []);
         buch.push(e);

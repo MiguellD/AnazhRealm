@@ -780,19 +780,14 @@ class AnazhRealm_bild_himmel {
     // das Jahr trägt die EINE Uniform `uSeasonMul` — Laub, Gras und Karte multiplizieren ihre Albedo damit (die Karte
     // zu SAISON_GESETZ.kartenGewicht). Kein Neubau, kein Schlüssel-Wechsel: die 36 Sommer↔Winter-Golden-Paare
     // unterscheiden sich nur in der Laubfarbe (foliage.color), das Studio färbt sein Jahr genauso.
-    _tickSeason(currentTime) {
+    // DIE PHASE IST EINE FUNKTION DER WELT-UHR (feld.K2#2, `_saisonAm`): jeder Peer und jeder Reload trägt dieselbe Saison und mit
+    // ihr denselben Pegel. Bis feld-peers trieb sie auf der Wanduhr jeder Seite (≤ 0,2 s je Bild) und begann mit jedem Boot im
+    // Sommer — gate:mp-sync (f): Pegel VERSCHIEDEN über Peers und Reload.
+    _tickSeason() {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        // Nur der DRIFT wartet auf die Bühne (die Tönung läuft immer). `_lastSeasonTime` bleibt bis zur Bühne null →
-        // der erste Tick startet mit dt=0 (kein Zeit-Sprung).
-        if (st.autoSeason !== false && this._buehneSteht()) {
-            const now = currentTime || 0;
-            if (this._lastSeasonTime == null) this._lastSeasonTime = now;
-            const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
-            this._lastSeasonTime = now;
-            const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
-            st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
-        }
+        // Nur der Lauf des Jahrs wartet auf die Bühne (die Tönung läuft immer); ohne `autoSeason` hält die Phase (das Wort einer Probe).
+        if (st.autoSeason !== false && this._buehneSteht()) st.seasonPhase = this._saisonAm(st.spielZeit);
         // DIE RUHE IST DER FIXPUNKT (feld.K3): Tönung und Name sind eine Funktion der Phase — steht sie (das Wort, die Bühne,
         // ein Lauf ohne Drift), schläft der Takt; jeder Schreiber der Phase weckt ihn, weil er sie ändert. Bis feld.K3 malte er
         // die Uniform in jedem Bild neu (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 10 800 Rufe).
@@ -805,8 +800,16 @@ class AnazhRealm_bild_himmel {
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
         this._pegelTakt(); // die Schmelze speist See und Fluss (stoffe.K3-2)
     }
-    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
-    // Tönung folgt im nächsten Tick (kein Neubau).
+    // Die Phase zur Welt-Uhr t: (Versatz + t / Jahr) mod 1 — der Versatz der Welt (`worldMeta.saisonVersatz`, das Wort
+    // `setSeason`; ohne Wort steht die Uhr 0 im Sommer der Vorlage).
+    _saisonAm(t) {
+        const st = this.state;
+        const v = st.worldMeta && Number.isFinite(st.worldMeta.saisonVersatz) ? st.worldMeta.saisonVersatz : 0.375;
+        const p = (v + t / (st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400)) % 1;
+        return p < 0 ? p + 1 : p;
+    }
+    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte (der Versatz der Welt
+    // rückt, das Jahr läuft von dort weiter), die Tönung folgt im nächsten Tick (kein Neubau).
     setSeason(name) {
         const map = {
             fruehling: "spring",
@@ -822,6 +825,9 @@ class AnazhRealm_bild_himmel {
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
         this.state.seasonPhase = phaseFor[key];
+        if (this.state.worldMeta)
+            this.state.worldMeta.saisonVersatz =
+                phaseFor[key] - this._saisonAm(this.state.spielZeit) + this._saisonAm(0);
         this.state.season = key;
         return true;
     }

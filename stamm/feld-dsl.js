@@ -692,7 +692,7 @@ class AnazhRealm_feld_dsl {
                 r.errors = (r.errors || 0) + 1; // der verlangte Ort fehlt (benannt im Log) — kein Effekt, keine Messung
                 continue;
             }
-            r._vBase = this._observeFieldWohl(rp.x, rp.z, currentTime);
+            r._vBase = this._observeFieldWohl(rp.x, rp.z);
             r._vPos = rp;
             r._vPending = true;
             // V17.35 — die Effekt-Wallzeit ist das attributierbare Kosten-Signal der
@@ -1863,6 +1863,10 @@ class AnazhRealm_feld_dsl {
                     amount != null ? c(amount, 0, AnazhRealm.LIFE_FIELD.max) : AnazhRealm.LIFE_FIELD.pulseCenter;
                 this._depositLife(pos.x, pos.z, amt);
             },
+            // feld_akte([akte]): die Feld-Akte eines Mitspielers (`_feldAkt`) — was die Seite nicht kennt, faltet sie ein
+            feld_akte: ([akte]) => {
+                if (Array.isArray(akte)) this._feldAkteNehmen(akte);
+            },
             deposit_emotion: ([axis, amount, positionNode], ctx) => {
                 if (typeof axis !== "string" || !AnazhRealm.EMOTION_AXES.includes(axis)) return;
                 const amt = c(amount, 0, 1); // Tat-Intensität; _depositEmotion skaliert mit imprintScale
@@ -2392,6 +2396,7 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "set_mode",
     "deposit_life",
     "deposit_emotion",
+    "feld_akte",
 ]);
 
 // V17.23 Sky-Harmonie — die maximale Blend-Stärke der DSL/Mood-Himmels-Tönung

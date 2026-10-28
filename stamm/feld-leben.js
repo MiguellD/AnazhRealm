@@ -1744,21 +1744,14 @@ class AnazhRealm_feld_leben {
         return Math.floor(x / cs) + "," + Math.floor(z / cs);
     }
 
-    // Struktur-Wohl an (x,z) beobachten → Zell-Baseline aktualisieren (lazy EMA, `α = 1 − exp(−Δt/τ)`,
-    // tick-rate-unabhängig). Cold-Start: die erste Beobachtung IST die Baseline. Gibt die Baseline VOR der
-    // Beobachtung zurück (= die Erwartung für den Reward). Sparse Map, kein Sweep; now in Sekunden.
-    _observeFieldWohl(x, z, now) {
-        if (!this.state.wohlBaseline) this.state.wohlBaseline = new Map();
-        const key = this._wohlCellKey(x, z);
-        const obs = this._fieldWohlStruktur(this.auraAt(x, z, now));
-        const wb = this.state.wohlBaseline;
-        const W = AnazhRealm.WERTUNG;
-        let cur = wb.get(key);
-        const before = cur ? cur.b : obs;
-        if (cur) cur.b = before + (1 - Math.exp(-Math.max(0, now - cur.t) / W.fieldTau)) * (obs - before);
-        else wb.set(key, (cur = { b: obs }));
-        cur.t = now;
-        this._feldTod(wb, key, cur, now + W.pruneAgeSec, now);
+    // Struktur-Wohl an (x,z) beobachten → Zell-Baseline (lazy EMA in Spielzeit, `α = 1 − exp(−Δt/τ)`, tick-rate-unabhängig): ein
+    // Feld-Akt `w` mit dem beobachteten Wohl (`_feldAkt`). Cold-Start: die erste Beobachtung IST die Baseline. Gibt die Baseline
+    // VOR der Beobachtung zurück (= die Erwartung für den Reward). Bis feld-peers lief sie auf der Wanduhr jeder Seite.
+    _observeFieldWohl(x, z) {
+        const obs = this._fieldWohlStruktur(this.auraAt(x, z));
+        const cur = this.state.wohlBaseline && this.state.wohlBaseline.get(this._wohlCellKey(x, z));
+        const before = cur && !this._feldTot("w", cur, this.state.spielZeit) ? cur.b : obs;
+        this._feldAkt("w", x, z, obs);
         return before;
     }
 
@@ -1805,7 +1798,7 @@ class AnazhRealm_feld_leben {
     // was er schrieb, die Pause zerfällt nicht; Lese- und Gefühls-Seite teilen die Uhr). Decay LAZY beim Lesen
     // (a · e^(−λ·Δt)), kein Sweep (O(1) je Lese/Deposit, die Tat räumt das Tote). Nur intentionale Spawns
     // (Nexus/Chat/DSL via spawn_creature) deponieren — ambiente Fauna und Restore nicht (kein Runaway).
-    // Nicht persistiert (reaktiv wie Wetter).
+    // Die Karte ist die Faltung ihrer Feld-Akte (`_feldAkt`): sie reist mit ihnen und steht im Stand.
     _lifeCellKey(x, z) {
         const cs = AnazhRealm.LIFE_FIELD.cell;
         return Math.floor(x / cs) + "," + Math.floor(z / cs);
@@ -1823,41 +1816,206 @@ class AnazhRealm_feld_leben {
         return Math.abs(a) < AnazhRealm.LIFE_FIELD.epsilon ? 0 : a;
     }
 
-    // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
-    // geklemmt auf [LIFE_FIELD.kahl, LIFE_FIELD.max] (Sättigung → der Nexus zieht weiter). Die EINE
-    // Schreib-API — wer Leben in die Welt trägt (Geburt, Pflege, Kreatur-Trickle) und wer es frisst (der Fraß
-    // des Bestands, negativ; Ökologie K1) ruft sie. Der Decay führt beides zum Substrat zurück → nie Überschreiben.
+    // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add, geklemmt auf [LIFE_FIELD.kahl, LIFE_FIELD.max]
+    // (Sättigung → der Nexus zieht weiter) — ein Feld-Akt `l` (`_feldAkt`, der Schritt `_feldSchritt`). Die EINE Schreib-API —
+    // wer Leben in die Welt trägt (Geburt, Pflege, Kreatur-Trickle) und wer es frisst (der Fraß des Bestands, negativ; Ökologie
+    // K1) ruft sie. Der Decay führt beides zum Substrat zurück → nie Überschreiben.
     _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
-        if (!amount || !Number.isFinite(amount)) return;
-        if (!this.state.lifeField) this.state.lifeField = new Map();
-        const lf = this.state.lifeField;
-        const cfg = AnazhRealm.LIFE_FIELD;
-        const now = this.state.spielZeit;
-        const cx = Math.floor(x / cfg.cell);
-        const cz = Math.floor(z / cfg.cell);
-        const neighborAmount = amount * (cfg.pulseNeighbor / cfg.pulseCenter);
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dz = -1; dz <= 1; dz++) {
-                const add = dx === 0 && dz === 0 ? amount : neighborAmount;
-                const key = cx + dx + "," + (cz + dz);
-                const e = lf.get(key);
-                let cur = 0;
-                if (e) {
-                    const dt = Math.max(0, now - e.t);
-                    cur = e.a * Math.exp(-cfg.decayPerSec * dt);
-                }
-                const a = Math.max(cfg.kahl, Math.min(cfg.max, cur + add));
-                const zelle = e ? Object.assign(e, { a, t: now }) : { a, t: now };
-                if (!e) lf.set(key, zelle);
-                // die Tat räumt (`_feldTod`): die Zelle stirbt, wo |a| · e^(−λ·Δt) unter epsilon fällt
-                this._feldTod(
-                    lf,
-                    key,
-                    zelle,
-                    now + Math.max(0, Math.log(Math.abs(a) / cfg.epsilon)) / cfg.decayPerSec,
-                    now
-                );
-            }
+        if (amount && Number.isFinite(amount)) this._feldAkt("l", x, z, amount);
+    }
+
+    // === DIE FELD-AKTE (feld.K2#2): jede Karte des Felds ist eine FUNKTION ihrer Schreib-Akte ===
+    // Leben (`l`), Gefühl (`e`), Wohl-Baseline (`w`) und Tat-Erwartung (`t`) schreibt EIN Schreiber: jede Ablage ist ein Akt
+    // { f, x, z, t, a, o, n } — Karte, Ort, Welt-Uhr, Betrag, Ursprung (die Seite) und seine Nummer. Er reist auf dem Kanal der
+    // Schreib-Akte (dsl `feld_akte`, beim Ankommen eines Mitspielers die ganze Liste) und liegt im Stand; jede Karte ist die
+    // Faltung ihrer Akte in der Ordnung (t, o, n) — kommt ein Akt spät, falten die Zellen, die er berührt, neu. So trägt jeder Peer
+    // und jeder Reload dasselbe Feld, gleich wann ein Akt ankam. Ein Fern-Programm schreibt kein Feld (`_feldFremd`): der Akt
+    // seines Ursprungs trägt die Ablage. Über FELD_AKTE_MAX fällt der älteste in die Basis (dieselbe Faltung, `bis` sein
+    // Schlüssel); ein Akt unter ihr kommt zu spät und fällt. Bis feld-peers schrieb jede Seite ihr Feld selbst (Fraß der eigenen
+    // Herde, Pflege und Gefühl zur eigenen Uhr, das Wohl auf der Wanduhr): gate:mp-sync (f) Leben 9/126 über Peers, 0/126 über
+    // den Reload.
+    _feldAkte() {
+        return (
+            this._feld ||
+            (this._feld = { akte: [], basis: {}, ids: new Set(), bis: null, n: 0, gen: 0, ich: this.p2pGenerateId() })
+        );
+    }
+
+    _feldAkt(f, x, z, a) {
+        if (this._feldFremd) return null;
+        const F = this._feldAkte();
+        const akt = { f, x, z, t: this.state.spielZeit, a, o: F.ich, n: ++F.n };
+        this._feldAkteNehmen([akt]);
+        if (this.state.p2p && this.state.p2p.connected) this.p2pSend({ type: "dsl", program: ["feld_akte", [akt]] });
+        return akt;
+    }
+
+    // Die ganze Liste an die Mitspieler (ein Mitspieler kam an, oder ich kam in einen Raum): was er nicht kennt, faltet er ein.
+    _feldAkteReichen() {
+        const F = this._feld;
+        if (F && F.akte.length) this.p2pSend({ type: "dsl", program: ["feld_akte", F.akte] });
+    }
+
+    // Die Ordnung der Akte: Welt-Uhr, dann Ursprung, dann Nummer.
+    _feldVor(a, b) {
+        return a.t - b.t || (a.o < b.o ? -1 : a.o > b.o ? 1 : a.n - b.n);
+    }
+
+    _feldAktGut(a) {
+        if (!a || !AnazhRealm.FELD_KARTEN[a.f] || typeof a.o !== "string" || !Number.isFinite(a.x + a.z + a.t + a.n))
+            return false;
+        if (a.f === "e") return !!a.a && typeof a.a === "object" && Object.values(a.a).every(Number.isFinite);
+        return a.f === "t"
+            ? Array.isArray(a.a) && Number.isFinite(a.a[0]) && typeof a.a[1] === "string"
+            : Number.isFinite(a.a);
+    }
+
+    // Die Zellen eines Akts: das Leben trägt den 3×3-Kernel seiner 16-m-Zelle, das Gefühl die Zelle, Wohl und Tat-Erwartung die
+    // Zelle der Wertung (die Erwartung je Tat).
+    _feldZellen(akt) {
+        if (akt.f === "w") return [this._wohlCellKey(akt.x, akt.z)];
+        if (akt.f === "t") return [this._wohlCellKey(akt.x, akt.z) + ":" + akt.a[1]];
+        if (akt.f === "e") return [this._lifeCellKey(akt.x, akt.z)];
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(akt.x / cs), Math.floor(akt.z / cs)];
+        const k = [];
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) k.push(cx + dx + "," + (cz + dz));
+        return k;
+    }
+
+    _feldKarte(f) {
+        const n = AnazhRealm.FELD_KARTEN[f];
+        return this.state[n] || (this.state[n] = new Map());
+    }
+
+    // Ist die Zelle zur Zeit t tot (unter ihrem epsilon zerfallen, die Wohl-Baseline veraltet)? Die Faltung liest eine tote Zelle
+    // als leer — gleich, ob die Räumung (`_feldTod`) sie schon nahm.
+    _feldTot(f, z, t) {
+        if (f === "w") return t - z.t > AnazhRealm.WERTUNG.pruneAgeSec;
+        if (f === "t") return Math.abs(z.e) * Math.exp(-(t - z.t) / AnazhRealm.WERTUNG.tatTau) < 1e-3;
+        if (f === "l")
+            return (
+                Math.abs(z.a) * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * (t - z.t)) < AnazhRealm.LIFE_FIELD.epsilon
+            );
+        const k = Math.exp(-AnazhRealm.EMOTION_FIELD.decayPerSec * (t - z.t));
+        return !Object.values(z.axes).some((v) => v * k >= AnazhRealm.EMOTION_FIELD.epsilon);
+    }
+
+    // DER SCHRITT eines Akts auf eine Zelle der Karte — zur Zeit des Akts; die Tat räumt (`_feldTod`), wo die Zelle stirbt.
+    _feldSchritt(karte, key, akt) {
+        const { f, t, a } = akt;
+        const alt = karte.get(key);
+        const lebt = !!alt && !this._feldTot(f, alt, t);
+        const W = AnazhRealm.WERTUNG;
+        let neu;
+        let tod;
+        if (f === "l") {
+            const L = AnazhRealm.LIFE_FIELD;
+            const add = key === this._lifeCellKey(akt.x, akt.z) ? a : a * (L.pulseNeighbor / L.pulseCenter);
+            const cur = lebt ? (t === alt.t ? alt.a : alt.a * Math.exp(-L.decayPerSec * (t - alt.t))) : 0;
+            neu = { a: Math.max(L.kahl, Math.min(L.max, cur + add)) };
+            tod = t + Math.max(0, Math.log(Math.abs(neu.a) / L.epsilon)) / L.decayPerSec;
+        } else if (f === "e") {
+            const E = AnazhRealm.EMOTION_FIELD;
+            const k = lebt ? Math.exp(-E.decayPerSec * (t - alt.t)) : 0;
+            const axes = {};
+            if (lebt) for (const ax of Object.keys(alt.axes)) axes[ax] = alt.axes[ax] * k;
+            for (const ax of Object.keys(a)) axes[ax] = Math.min(E.max, (axes[ax] || 0) + a[ax] * E.imprintScale);
+            neu = { axes };
+            tod = t + Math.max(0, Math.log(Math.max(0, ...Object.values(axes)) / E.epsilon)) / E.decayPerSec;
+        } else if (f === "w") {
+            neu = { b: lebt ? alt.b + (1 - Math.exp(-(t - alt.t) / W.fieldTau)) * (a - alt.b) : a };
+            tod = t + W.pruneAgeSec;
+        } else {
+            const erw = lebt ? alt.e * Math.exp(-(t - alt.t) / W.tatTau) : 0;
+            neu = { e: erw + W.ruleValueBeta * (a[0] - erw) };
+            tod = t + W.tatTau * Math.max(0, Math.log(Math.abs(neu.e) / 1e-3));
+        }
+        neu.t = t;
+        const zelle = alt ? Object.assign(alt, neu) : neu;
+        if (!alt) karte.set(key, zelle);
+        this._feldTod(karte, key, zelle, tod, t);
+    }
+
+    // Akte nehmen (eigene und fremde): unbekannte ordnen sich ein; der jüngste schreitet seine Zellen, ein früherer lässt sie neu
+    // falten; über FELD_AKTE_MAX fällt der älteste in die Basis. → die Zahl der neuen Akte
+    _feldAkteNehmen(akte) {
+        const F = this._feldAkte();
+        const L = F.akte;
+        const falten = {};
+        let n = 0;
+        for (const akt of akte) {
+            const id = this._feldAktGut(akt) && akt.o + ":" + akt.n;
+            if (!id || F.ids.has(id) || (F.bis && this._feldVor(akt, F.bis) <= 0)) continue;
+            F.ids.add(id);
+            n++;
+            let i = L.length;
+            while (i > 0 && this._feldVor(L[i - 1], akt) > 0) i--;
+            L.splice(i, 0, akt);
+            const neu = falten[akt.f] || (falten[akt.f] = new Set());
+            for (const k of this._feldZellen(akt))
+                if (i === L.length - 1 && !neu.has(k)) this._feldSchritt(this._feldKarte(akt.f), k, akt);
+                else neu.add(k);
+        }
+        for (const f in falten) if (falten[f].size) this._feldFalten(f, falten[f]);
+        while (L.length > AnazhRealm.FELD_AKTE_MAX) {
+            const alt = (F.bis = L.shift());
+            F.ids.delete(alt.o + ":" + alt.n);
+            const b = F.basis[alt.f] || (F.basis[alt.f] = new Map());
+            for (const k of this._feldZellen(alt)) this._feldSchritt(b, k, alt);
+        }
+        if (n) F.gen++;
+        return n;
+    }
+
+    // Die Zellen einer Karte neu falten (null: die ganze Karte, das Laden): die Basis, dann jeder Akt der Liste in Ordnung.
+    _feldFalten(f, zellen) {
+        const F = this._feldAkte();
+        const b = F.basis[f];
+        const karte = zellen ? this._feldKarte(f) : (this.state[AnazhRealm.FELD_KARTEN[f]] = new Map());
+        if (zellen) for (const k of zellen) karte.delete(k);
+        if (b) for (const [k, z] of b) if (!zellen || zellen.has(k)) karte.set(k, this._feldKopie(z));
+        for (const akt of F.akte)
+            if (akt.f === f)
+                for (const k of this._feldZellen(akt)) if (!zellen || zellen.has(k)) this._feldSchritt(karte, k, akt);
+    }
+
+    _feldKopie(z) {
+        const c = Object.assign({}, z);
+        delete c.tod;
+        if (c.axes) c.axes = Object.assign({}, c.axes);
+        return c;
+    }
+
+    // Der Stand des Felds (`_standTafel` feldAkte): die Akte, die Basis, ihr Schlüssel — das Laden faltet daraus jede Karte neu.
+    _feldStand() {
+        const F = this._feldAkte();
+        const basis = {};
+        for (const f in F.basis) basis[f] = [...F.basis[f]].map(([k, z]) => [k, this._feldKopie(z)]);
+        return { akte: F.akte, basis, bis: F.bis };
+    }
+
+    _feldLaden(stand) {
+        const alt = this._feldAkte();
+        const s = stand && typeof stand === "object" ? stand : {};
+        const F = (this._feld = {
+            akte: [],
+            basis: {},
+            ids: new Set(),
+            bis: null,
+            n: alt.n,
+            gen: alt.gen + 1,
+            ich: alt.ich,
+        });
+        if (this._feldAktGut(s.bis)) F.bis = s.bis;
+        F.akte = (Array.isArray(s.akte) ? s.akte : [])
+            .filter((a) => this._feldAktGut(a))
+            .sort((a, b) => this._feldVor(a, b));
+        for (const a of F.akte) F.ids.add(a.o + ":" + a.n);
+        for (const f in AnazhRealm.FELD_KARTEN) {
+            const B = s.basis && Array.isArray(s.basis[f]) ? s.basis[f] : [];
+            F.basis[f] = new Map(B.filter((e) => Array.isArray(e) && e[1]).map(([k, z]) => [k, this._feldKopie(z)]));
+            this._feldFalten(f, null);
         }
     }
 
@@ -2172,28 +2330,7 @@ class AnazhRealm_feld_leben {
     // Eine emotionale Tat (`_feelAction`) prägt ihre Emotion an der Spieler-Zelle ein; `auraAt` blendet
     // den Abdruck über die globale Stimmung, der Welt-Tint liest das. Lazy-Decay, kein Frame-Sweep.
     _depositEmotion(x, z, emotionMap) {
-        if (!emotionMap) return;
-        if (!this.state.emotionField) this.state.emotionField = new Map();
-        const ef = this.state.emotionField;
-        const cfg = AnazhRealm.EMOTION_FIELD;
-        const now = this.state.spielZeit;
-        const key = this._lifeCellKey(x, z); // dieselbe 16-m-Zelle wie das Leben
-        let cell = ef.get(key);
-        if (cell) {
-            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t)); // erst zerfallen
-            for (const k of Object.keys(cell.axes)) cell.axes[k] *= f;
-            cell.t = now;
-        } else {
-            cell = { axes: {}, t: now };
-            ef.set(key, cell);
-        }
-        let m = 0;
-        for (const axis of Object.keys(emotionMap)) {
-            cell.axes[axis] = Math.min(cfg.max, (cell.axes[axis] || 0) + emotionMap[axis] * cfg.imprintScale);
-        }
-        for (const axis of Object.keys(cell.axes)) m = Math.max(m, cell.axes[axis]);
-        // die Tat räumt (`_feldTod`): die Zelle stirbt, wo ihre stärkste Achse unter epsilon zerfällt
-        this._feldTod(ef, key, cell, now + Math.max(0, Math.log(m / cfg.epsilon)) / cfg.decayPerSec, now);
+        if (emotionMap) this._feldAkt("e", x, z, Object.assign({}, emotionMap));
     }
 
     // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
@@ -2620,6 +2757,11 @@ AnazhRealm.TAT_LEER = Object.freeze(new Set()); // die Kachel ohne Ernte (`_geer
 // über ihrem Tod in der Karte (gelesen ist sie schon tot); FELD_LEER die fehlende Zelle.
 AnazhRealm.FELD_TOD_EIMER_S = 8;
 AnazhRealm.FELD_LEER = Object.freeze({});
+// Die Karten des Felds, die Feld-Akte schreiben (`_feldAkt`), und die Länge ihrer Liste: darüber fällt der älteste in die Basis.
+// 256 Akte tragen ~2 min zweier Herden (je Bestand-Takt ~10 Ablagen des Fraßes) — Laufzeit, Reload und Uhr-Sprung eines
+// Mitspielers liegen darin.
+AnazhRealm.FELD_KARTEN = Object.freeze({ l: "lifeField", e: "emotionField", w: "wohlBaseline", t: "tatErwartung" });
+AnazhRealm.FELD_AKTE_MAX = 256;
 
 // BRAND — das Feuer auf dem Feld (feld.K3#2, `_tickBrand`): eine brennende 16-m-Zelle des Felds zehrt ihren Brennstoff — das
 // lebendig ihres Orts (`auraAt`, die Vegetation samt Narbe; unter `minStoff` und auf Asche brennt nichts) — in `brennS`

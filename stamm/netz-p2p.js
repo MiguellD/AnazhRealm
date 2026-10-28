@@ -1678,6 +1678,7 @@ class AnazhRealm_netz_p2p {
         this._p2pBroadcastSoul();
         // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
         this._p2pBroadcastVibe();
+        if (Array.isArray(msg.peers) && msg.peers.length) this._feldAkteReichen(); // und meine Feld-Akte
         // M8 (V18.161) — das MAKRO-FENSTER: die Knoten-Gesamtzahl anfragen
         // (über den BESTEHENDEN WS-Kanal — kein neuer HTTP-Pfad, keine CSP-Tür).
         if (typeof this.p2pSend === "function") this.p2pSend({ type: "stats" });
@@ -1706,6 +1707,7 @@ class AnazhRealm_netz_p2p {
             this._p2pBroadcastSoul();
             // W13 Phase 3 — und meine Vibe-Pass-Identität.
             this._p2pBroadcastVibe();
+            this._feldAkteReichen(); // und die Feld-Akte, die er nicht kennt (ein Reload, ein Neuer)
         }
     }
 
@@ -1873,10 +1875,14 @@ class AnazhRealm_netz_p2p {
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
         if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+        // Ein Fern-Programm schreibt kein Feld (`_feldFremd`): seine Ablagen reisen als Feld-Akte seines Ursprungs (`feld_akte`)
+        this._feldFremd = true;
         try {
             this.dslRun(msg.program, { source: `remote:${pid}` });
         } catch (err) {
             this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
+        } finally {
+            this._feldFremd = false;
         }
     }
 

@@ -200,6 +200,7 @@ class AnazhRealm_speicher_laden {
             AnazhRealm._weltMetaHeil(this.state.worldMeta);
             this._bewohnerFortAlle(); // die Leiber der Bewohner gehen vor ihrem Gedächtnis (`_bewohnerSiedlungen`)
             for (const k of AnazhRealm.WELT_GRENZE.gedaechtnis) this[k] = null;
+            this._feldLaden(state.feldAkte); // das Feld der Welt: die Faltung ihrer Akte
         } else {
             // Ein Zustand ohne worldMeta ist keine Welt (ein Bruchstück: Baupläne, Hotbar, Seele) — er quert keine Grenze,
             // die Welt der Seite bleibt sie selbst.

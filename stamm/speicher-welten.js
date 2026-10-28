@@ -884,6 +884,8 @@ class AnazhRealm_speicher_welten {
             ["terrainSteepness", () => st().terrainSteepness],
             ["terrainBaseHeight", () => st().terrainBaseHeight],
             ["weather", () => st().weather],
+            // die Feld-Akte (feld.K2#2): Leben, Gefühl, Wohl und Tat-Erwartung sind ihre Faltung (`_feldStand`, `_feldLaden`)
+            ["feldAkte", () => this._feldStand(), { marke: () => [this._feld && this._feld.gen] }],
             // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
             // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). Der Erdbau
             // eines Orts mit Gedächtnis (`settlementCells`) reist nie: der Ort kehrt aus ihm wieder (`_tickAutoSettlement`).
