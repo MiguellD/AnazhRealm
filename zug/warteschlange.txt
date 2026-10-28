@@ -152,3 +152,4 @@ takt16b-gtx 1 punkte sha=4abae42d1ffce063bc3026fe5d463ea1a3180b42 geraet=gtx nur
 z59-abab 1 abab A=4abae42d1ffce063bc3026fe5d463ea1a3180b42 B=be1febba0567940c4b18a991b60af96d80a15ca5 zellen=w-ego,d-ego,stadt
 z60-abab 1 abab A=be1febba0567940c4b18a991b60af96d80a15ca5 B=e18195be8b143f9d333de6ea8a8b43dea93dd198 zellen=w-ego,d-ego,stadt
 takt16b-gtx 0 storno
+z59-abab 0 storno
