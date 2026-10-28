@@ -176,3 +176,4 @@ takt18c-gtx 1 punkte sha=557d4aaddd489ba2dd2cc31322e5a349348c11a8 geraet=gtx nur
 takt18d-gtx 1 punkte sha=557d4aaddd489ba2dd2cc31322e5a349348c11a8 geraet=gtx nur=siedlung.K5#2,leib.K1#2,leib.K2#2,halten.K2#1,halten.K5#2,fahrzeug.K5#1,tore.K3#2,spielgang.K3#1,ankunft.K2#1,ankunft.K3#1,streaming.K3#1,klang.K2#1,klang.K5#2,speicher.K1#1,speicher.K1#2,speicher.K2#1
 z62b-abab 1 abab A=d882a080f29148c7ff5a887df9674bbb9811c5ac B=557d4aaddd489ba2dd2cc31322e5a349348c11a8 zellen=w-ego,d-ego,stadt
 z62b-abab 0 storno
+z62b-abab2 2 abab A=d882a080f29148c7ff5a887df9674bbb9811c5ac B=557d4aaddd489ba2dd2cc31322e5a349348c11a8 zellen=w-ego,d-ego,stadt
