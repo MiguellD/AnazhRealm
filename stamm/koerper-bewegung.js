@@ -3344,6 +3344,7 @@ AnazhRealm.STOSS = Object.freeze({
 // nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach stempelM Weg. Gemessen am Stapel
 // aus 5 Kisten (Node, flacher Boden, 30 Saaten Gier und Versatz): 10 cm Spalt stehen 30 von 30 und ruhen nach ≤ 1,07 s, 30 cm Spalt
 // stehen 29 von 30, Median 1,35 s (ein 2,4 m hoher Turm schaukelt danach bis 4 s aus); wach (ohne Schlaf) zittert er 0,001 cm.
+// Die Kosten: ein wacher Körper 90 µs je Sim-Schritt (100 wach 9 ms, Node, flacher Boden), ein schlafender nur seine Paar-Suche.
 AnazhRealm.FREI = Object.freeze({
     teile: 4,
     gaenge: 8,
