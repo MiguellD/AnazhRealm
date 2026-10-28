@@ -56,6 +56,46 @@ hauptLauf(async () => {
     const page = await browser.newPage();
     await welt(page);
 
+    // ===== (L) DIE BIBLIOTHEK (ultiversum.K3): je Art ein Eintrag — signiert, ≤ 8 KB, über den Code wieder; Fork mit Herkunft =====
+    const L = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const o = { skipConfirm: true };
+        for (const weiter = window.__deckel("der Vibe-Pass", 300); !r.state.vibePass?.ready && weiter(); ) await sleep(50);
+        r._addVoxelEdit(8, r.state.terrainBaseHeight || 0, 8, 3, "carve"); // eine Akte der Welt
+        r.dslRun(["rule", ["field_below", "lebendig", 0.3], ["deposit_life", ["at_field_need"]], { everySec: 30 }], { source: "human" });
+        r.dslRun(["define_blueprint", "bib_bogen", [{ shape: "box", material: "stein", size: { x: 3, y: 1, z: 1 }, position: { x: 0, y: 3, z: 0 } }]], { source: "human" });
+        const L = { je: {} };
+        for (const [art, q] of [["welt"], ["regel", r.state.worldRules.at(-1).id], ["bauplan", "bib_bogen"]]) {
+            const e = (L.je[art] = await r.bibliothekLege(art, q, o));
+            const fund = await r.bibliothekFinde(e.code);
+            [e.wieder, e.gesetz] = [fund.art === art, fund.eintrag?.gesetz];
+        }
+        const verz = r._bibliothek();
+        const regel = verz[L.je.regel.code];
+        const aus = async (code, text) => ((verz[code] = text), (await r.bibliothekFinde(code)).grund);
+        L.offen = JSON.stringify(L.je.welt.gesetz) === JSON.stringify(r._bibliothekFracht("welt").gesetz);
+        L.byte = await aus(L.je.regel.code, regel.replace('"everySec":30', '"everySec":31'));
+        L.fremd = await aus("0".repeat(64), (verz[L.je.regel.code] = regel));
+        delete verz["0".repeat(64)];
+        const fett = r._bibliothekFracht("welt");
+        fett.gesetz.mesh = Array(2400).fill(0.1234); // die Ecken eines Meshs
+        L.mesh = await r._bibliothekSiegeln(fett, "Mesh-Probe", o);
+        const f1 = await r.bibliothekForke(L.je.welt.code, (f) => (f.gesetz.wetter = "storm"), o);
+        const e2 = (await r.bibliothekFinde((await r.bibliothekForke(f1.code, null, o)).code)).eintrag;
+        const ich = r.state.vibePass.publicKeyHex;
+        L.fork = e2 && e2.gesetz.wetter === "storm" && JSON.stringify(e2.provenance.map((g) => [g.by, g.code])) === JSON.stringify([[ich, L.je.welt.code], [ich, f1.code]]);
+        return L;
+    });
+    console.log("\n=== (L) BIBLIOTHEK — signierte Gesetze ≤ 8 KB, über den Code wieder ===");
+    for (const [art, e] of Object.entries(L.je))
+        check(`BIBLIOTHEK ${art}: signiert, ≤ 8 KB, über den Code wieder`, e.ok && e.bytes <= 8192 && e.wieder, `${e.grund || e.bytes + " B"} · ${e.code?.slice(0, 16)}${e.gesetz ? ` · Akten ${e.gesetz.akten.length}, Regeln ${e.gesetz.regeln.length}` : ""}`);
+    check("BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt", L.offen);
+    check("MUTANTE Byte: ein manipuliertes Byte fällt an der Signatur", L.byte === "signatur", L.byte);
+    check("MUTANTE Code: ein Eintrag unter fremdem Code fällt", L.fremd === "code", L.fremd);
+    check("MUTANTE Mesh: ein Mesh im Eintrag fällt an der Größe", L.mesh.grund === "gross", `${L.mesh.grund} ${L.mesh.bytes} B`);
+    check("FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verändert", L.fork);
+    if (process.argv.includes("--bibliothek")) return browser.close().then(() => (signal.kill(), server.close(), process.exit(errs.length ? 1 : 0)));
+
     const out = await page.evaluate(async (REGLER) => {
         const res = { s: {}, n: {}, g: {}, r: {}, b: {} };
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
@@ -372,7 +412,7 @@ hauptLauf(async () => {
             const W = r.constructor.WERK_CODE;
             const huelle = (c) => JSON.parse(new TextDecoder().decode(r._vibeB64uToBytes(c.slice(W.praefix.length))));
             const kodiere = (h) => W.praefix + r._vibeBytesToB64u(new TextEncoder().encode(JSON.stringify(h)));
-            const sign = async (p) => (await r._werkCode(p)).code;
+            const sign = async (programm) => (await r._werkCode({ programm })).code;
             const gut = huelle(code);
             const mit = (i, v) => gut.programm.with(i, v);
             const ov = gut.programm[5];
