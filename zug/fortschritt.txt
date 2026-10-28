@@ -723,3 +723,4 @@
 2026-10-28 20:33:58 takt18c-gtx START 17 Stationen in 16 Läufen
 2026-10-28 20:36:24 takt18c-gtx gelaende.K2#1 GRÜN 2.3 · 1/17
 2026-10-28 20:41:01 takt18c-gtx gelaende.K2#2 ROT 4.5 · 2/17
+2026-10-28 20:46:49 takt18c-gtx gelaende.K5#2 GRÜN 5.5 · 3/17
