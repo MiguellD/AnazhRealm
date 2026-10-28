@@ -1,0 +1,19 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] amd/rdna-3
+[welt-boot] FEHLER console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,93],"gegenprobe":[59274],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41177,1321,18664,38950],[23184,298,5490,39203]]],["fluss",0,0,[[28177,1285,28072,56667],[5854,600,5744,64175]]]],"innen":[1.646,0.116,0.075,0.19,0.176,0.095,null,0.174,0.215,0.341,null,0.096,0.081,null,0.104,null,null,null],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":96,"gesperrt":true,"ohne":33,"slots":36,"haeuser":3,"reload":3,"zugOffen":true,"ausstattung":{"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]},"verblasst":true,"ms":51287}}
+  ❌ W10 Innen-Bild: 12 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.0208849810698762/0.17945347279357912 · haus_schwarzwald 0.017314714522116487/0.23109730883048857 · haus_alpenchalet 0.01675129502237117/0.1760230505940277 · haus_schwarzwald 0.026424220034474873/undefined · haus_gotisch 0.016839104668214023/undefined · haus_schwarzwald 0.017085176734494254/0.1780050539587116 · haus_alpenchalet 0.017441105439878816/0.2161984328504252 · haus_alpenchalet 0.03059051774743899/undefined · haus_alpenchalet 0.018370162084579884/0.1758711347932156 · haus_alpenchalet 0.028691697580376006/undefined · haus_schwarzwald 0.02941336794439479/undefined · haus_skandinavisch undefined/0.19611741455989493)
+  ❌ W9 Wasser: [["see",0,0,[[41177,1321,18664,38950],[23184,298,5490,39203]]],["fluss",0,0,[[28177,1285,28072,56667],[5854,600,5744,64175]]]]
+  ❌ W9 Waise: 33 von 96 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-362/-1358,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  ❌ W9 Ausstattung: {"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]}
+  1 Welten, 1 zugleich, 328 s
+❌ gate:haus-welt ROT (5)
+[welt-boot] ROT — 1 Fehler der Welt:
+  · console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 2 von 3) nach 33 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

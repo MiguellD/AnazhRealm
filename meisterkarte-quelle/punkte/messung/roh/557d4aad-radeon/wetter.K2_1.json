@@ -1,0 +1,49 @@
+{
+ "wiese": {
+  "ort": "wiese",
+  "haus": null,
+  "naesse": 0.909,
+  "innen": {
+   "n": 0,
+   "verhaeltnis": null
+  },
+  "aussen": {
+   "n": 25920,
+   "verhaeltnis": 0.771
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 155
+  },
+  "regenbild": 0.531
+ },
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.909,
+  "innen": {
+   "n": 13809,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 5949,
+   "verhaeltnis": 0.552
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 5
+  },
+  "regenbild": 0.696,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
