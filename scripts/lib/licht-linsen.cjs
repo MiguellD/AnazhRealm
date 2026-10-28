@@ -2425,7 +2425,8 @@ function luftTiefeUrteil(m, R) {
 }
 
 // DER WETTER-ZUG IM BILD (Licht K5): klar → `o.wort` → klar als Wort des Spielers, je Wort `o.sek` Sekunden der Welt-Uhr im
-// echten Takt (`_gameLoopTick`, Schritt TAKT_DECKEL_S) über die Transition des Spiels, die Uhr steht. Je Sekunde die Summe der
+// echten Takt (`_gameLoopTick`, Schritt TAKT_DECKEL_S) über die Transition des Spiels, bis das Wort steht (ihre Dauer moduliert
+// das Gemüt, `_emotionModulate`: Regen → klar 62 s; Deckel 150 s), die Uhr steht. Je Sekunde die Summe der
 // Leuchtdichte des Ausgabe-Bilds (linear, Rec. 709), das Wort und der Stand des Übergangs.
 function wetterZug(o) {
     return (async () => {
@@ -2440,7 +2441,7 @@ function wetterZug(o) {
         try {
             for (const [wort, sek] of [["sunny", 5], [o.wort, o.sek], ["sunny", o.sek]]) {
                 if (window.__wetterSetzen(wort, true) !== wort) throw new Error(`__wetterZug: das Wort gilt nicht (${wort})`);
-                for (let s = 0; s < sek; s++) {
+                for (let s = 0; s < 150 && (s < sek || st.weatherTransition); s++) {
                     for (let i = 0; i < 1 / dt; i++) r._gameLoopTick(T0 + ++k * dt * 1000);
                     const u8 = (await window.__ausgabeAufnahme(160, 90, 1, { satz: "messung" })).u8;
                     const wt = st.weatherTransition;
