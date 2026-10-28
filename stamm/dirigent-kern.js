@@ -1849,6 +1849,20 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
 // Zähler; das Buch hält die jüngsten BRUCH_BUCH_MAX Meldungen
 AnazhRealm.BRUCH_WIEDER_MS = 2000;
 AnazhRealm.BRUCH_BUCH_MAX = 64;
+// DIE SYNC-STELLEN (streaming.K4): nur hier baut der Haupt-Faden, was ein Faden baut — der Wasser-Fußabdruck eines Baus, die
+// Test-Naht (forceSync: true, der Null-Renderer des Gates), `_drainDirtyVoxelChunks`; jeder andere Bau bricht laut
+// (`_fadenUmgangen`), sein Rufer ist der erste Rahmen außerhalb der Bau-Kette
+AnazhRealm.SYNC_STELLEN = ["fussabdruck", "naht", "drain"];
+AnazhRealm.SYNC_KETTE = [
+    "_fadenUmgangen",
+    "_syncBauen",
+    "_buildVoxelChunkData",
+    "_acquireVoxelChunkBuild",
+    "_rebuildVoxelChunk",
+    "_ofenVorlage",
+    "_ofenKreaturTemplate",
+    "_ofenMenschTemplate",
+];
 // Das Ego-Auge über dem Leib-Zentrum (m): das Rig setzt die Ego-Kamera hier, das Auge der Stufen steht hier, bevor eine
 // Kamera gesetzt ist (`_lodAuge`).
 AnazhRealm.EGO_AUGE_M = 1.6;

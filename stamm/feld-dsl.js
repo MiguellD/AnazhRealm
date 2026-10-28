@@ -2065,6 +2065,8 @@ class AnazhRealm_feld_dsl {
         let spawned = 0;
         let lastBorn = null;
         const gruende = {};
+        // Der Zähler synchroner Bauten (`_fadenUmgangen`) zählt den Guss einer Gattung vor dem Ofen-Vorrat, er hält die Geburt nie
+        // auf: bis heil-zaehler sagte die Nexus-Geburt vor dem Vorrat „vorrat" ab, und kein Tier entstand (gate:weltakt-wache F).
         const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
         const opts = dialsOv ? { absage, dialsOv } : { absage };
         for (let i = 0; i < n; i++) {
