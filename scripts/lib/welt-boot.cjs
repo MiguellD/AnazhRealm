@@ -944,7 +944,13 @@ function pruefer() {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
         if (!ok) errs.push(name);
     };
-    return { errs, check };
+    return { errs, check, wandEnde };
+}
+
+// DAS ENDE EINER WAND: das EINE Urteil (`urteilEnde`) über die gesammelten Verletzungen — ROT mit Exit 1 und jeder
+// Verletzung beim Namen, sonst der Grün-Satz mit Exit 0 (kein `process.exit(0)` danach).
+function wandEnde(errs, satz) {
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — " + satz);
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
@@ -1023,6 +1029,25 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
+// Schalter), die Vorgabe
+const argOpt = (k, d) => {
+    const a = process.argv;
+    const i = a.indexOf(k);
+    return i >= 0 && a[i + 1] && !a[i + 1].startsWith("--") ? a[i + 1] : d;
+};
+// DAS EINE URTEIL AM ENDE einer Linse: `urteilEnde(rot, roteZeile, grueneZeile)` — rot (Zahl, Liste der Länge oder wahr) nennt die
+// rote Zeile auf stderr und endet mit Exit 1, sonst die grüne auf stdout mit Exit 0 (Lehre 9: der Exit spricht); eine Zeile, die
+// nur auf ihrer Seite gilt (sie liest den Befund), steht als Funktion und wird erst dort gelesen
+const urteilEnde = (rot, roteZeile, grueneZeile) => {
+    const z = (x) => (typeof x === "function" ? x() : x);
+    if (rot) {
+        console.error(z(roteZeile));
+        process.exit(1);
+    }
+    console.log(z(grueneZeile));
+    process.exit(0);
+};
 // DER EINE RUF an die Werkbank (POST JSON, ohne Frist; kein JSON: `{ roh }`)
 function werkbankRuf(port, weg, nutzlast) {
     return new Promise((res, rej) => {
@@ -1193,11 +1218,14 @@ module.exports = {
     pruefer,
     taeterFaelle,
     selbsttestEnde,
+    wandEnde,
     startProc,
     eigenePorte,
     sleep,
     laufUhr,
     hauptLauf,
+    urteilEnde,
+    argOpt,
     waitFor,
     werkbankTor,
     werkbankRuf,

@@ -13,7 +13,7 @@
 //
 //   node scripts/diag-reload-treue.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.RELOAD_TREUE_PORT || 4459);
 const server = statikServer();
@@ -152,11 +152,5 @@ hauptLauf(async () => {
     );
     check("(W) der Restore klemmt durch DENSELBEN Kreatur-Validator", out.w.einValidator === true);
 
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — die Reload-Treue steht: der Guss friert die wirksame Übergabe je Wesen ein, der Snapshot trägt sie, der Restore pinnt sie durch DENSELBEN Validator — die Kreatur kehrt wie gegossen wieder (auch wenn die Übergabe sich änderte), Default-Kreaturen bleiben byte-alt, und ein Riesen-Dial wird geclampt."
-    );
+    wandEnde(errs, "die Reload-Treue steht: der Guss friert die wirksame Übergabe je Wesen ein, der Snapshot trägt sie, der Restore pinnt sie durch DENSELBEN Validator — die Kreatur kehrt wie gegossen wieder (auch wenn die Übergabe sich änderte), Default-Kreaturen bleiben byte-alt, und ein Riesen-Dial wird geclampt.");
 });

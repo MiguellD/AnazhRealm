@@ -13,7 +13,7 @@
 //     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn die Welt
 //     steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
 const server = statikServer();
@@ -102,7 +102,7 @@ async function driveImpostor(page) {
         try {
             const f = r._ensureAssetFoundry();
             await window.__weltDa(() => !(f && !f.ready));
-            out.ready = !!(f && f.ready);
+            out.ready = !!f?.ready;
             if (!out.ready) {
                 out.err = "Worker nicht ready";
                 return out;
@@ -139,7 +139,7 @@ async function driveImpostor(page) {
                 out.atlas = {
                     quadGeteilt: l1.geom === l2.geom,
                     materialGeteilt: l1.mat === l2.mat,
-                    billboard: !!(l1.mat && l1.mat.userData && l1.mat.userData.impostorBillboard),
+                    billboard: !!l1.mat?.userData?.impostorBillboard,
                     schichtenVerschieden: l1.zelle !== l2.zelle,
                     texturen: !!(at.map && at.nmap && at.lmap && at.cap >= at.n && at.map.image.depth === at.cap),
                     fmt: at.fmt,
@@ -175,7 +175,7 @@ async function driveImpostor(page) {
                     // VOLL je Slot (das Vorzeichen): die Streu-Slots frei, die frisch gesetzte Primär-Stufe hält, bis ihre
                     // Band-Pflege urteilt (K36, `_lodSlotVoll`)
                     voll: [false, false, r._lodSlotVoll(entry)],
-                    instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
+                    instanziert: !!(ak?.isInstancedBufferAttribute && ak.itemSize === 4),
                     vertexPuffer: puffer,
                     attribute: geo ? Object.keys(geo.attributes) : [],
                 };
@@ -193,7 +193,7 @@ async function driveImpostor(page) {
                 const g = (b) => [...p].filter((n) => n.gradNode && n.getBase() === b).length;
                 // springend: die Ableitung kommt aus der eigenen (springenden) Stichproben-Koordinate statt aus der stetigen
                 const quelle = (d) => (d.isVarNode ? d.node : d).aNode; // dFdx reist in r184 als VarNode um den MathNode
-                const springend = [...p].filter((n) => n.gradNode && n.gradNode.some((d) => quelle(d) && quelle(d).id === n.uvNode.id)).length;
+                const springend = [...p].filter((n) => n.gradNode?.some((d) => quelle(d) && quelle(d).id === n.uvNode.id)).length;
                 return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
             };
             out.strich = strich(r._impostorAtlasMaterial());
@@ -202,7 +202,7 @@ async function driveImpostor(page) {
             // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
             out.hasIframe = !!document.querySelector('iframe[src*="asset-foundry"]');
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = e?.message || String(e);
         }
         return out;
     });
@@ -263,10 +263,10 @@ async function kleberProbe(page, fmtWunsch) {
             r.state.foundryCrossfade = false; // die Nah-Ausblendung des Crossfades maskiert die Probe sonst
             if (r.state._foliageMatCache)
                 for (const [k, m] of r.state._foliageMatCache)
-                    if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
+                    if (m.userData?.impostorBillboard) r.state._foliageMatCache.delete(k);
             const mat = r._impostorAtlasMaterial();
             r.state.foundryCrossfade = prevCf;
-            out.billboard = !!(mat && mat.userData && mat.userData.impostorBillboard);
+            out.billboard = !!mat?.userData?.impostorBillboard;
             if (!out.billboard) {
                 out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
                 return out;
@@ -406,7 +406,7 @@ async function kleberProbe(page, fmtWunsch) {
                 if (at.fmt === "rgba8") for (const zz of [z, zV]) await window.__fimpBacke(ren, at, zz);
                 const q = await zaehle();
                 await sleep(0); // die alte Form fällt nach dem Submit
-                const sonne = (r._karteBuehneSatz && r._karteBuehneSatz.schatten.textures) || [];
+                const sonne = r._karteBuehneSatz?.schatten.textures || [];
                 const leben = [...ren.info.memoryMap.keys()].filter(
                     (t) => t.isTexture && /^karte-.*:atlas$/.test(t.name || "") && !sonne.includes(t)
                 );
@@ -436,7 +436,7 @@ async function kleberProbe(page, fmtWunsch) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = e?.message || String(e);
         }
         return out;
     }, fmtWunsch);
@@ -468,10 +468,10 @@ async function vergroessertProbe(page, fmtWunsch) {
             r.state.foundryCrossfade = false;
             if (r.state._foliageMatCache)
                 for (const [k, m] of r.state._foliageMatCache)
-                    if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
+                    if (m.userData?.impostorBillboard) r.state._foliageMatCache.delete(k);
             const mat = r._impostorAtlasMaterial();
             r.state.foundryCrossfade = prevCf;
-            if (!(mat && mat.userData && mat.userData.impostorBillboard)) return { err: "kein Billboard-Stoff" };
+            if (!mat?.userData?.impostorBillboard) return { err: "kein Billboard-Stoff" };
             // die Kante: deckend, wo u + v > 1 (Ansichts-Koordinaten) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4; `stufe`
             // malt sie in Stufen von stufe × 2·stufe Texeln (der Selbsttest)
             const kante = (stufe) => {
@@ -541,7 +541,7 @@ async function vergroessertProbe(page, fmtWunsch) {
             out.selbst = await treppe(8, "stufen");
             ren.dispose();
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = e?.message || String(e);
         }
         return out;
     }, fmtWunsch);
@@ -584,10 +584,10 @@ async function blickProbe(page) {
             r.state.foundryCrossfade = false;
             if (r.state._foliageMatCache)
                 for (const [k, m] of r.state._foliageMatCache)
-                    if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
+                    if (m.userData?.impostorBillboard) r.state._foliageMatCache.delete(k);
             const mat = r._impostorAtlasMaterial();
             r.state.foundryCrossfade = prevCf;
-            if (!(mat && mat.userData && mat.userData.impostorBillboard)) return { err: "kein Billboard-Stoff" };
+            if (!mat?.userData?.impostorBillboard) return { err: "kein Billboard-Stoff" };
             const z = await window.__fimpBacke(ren, at, "fimp:gateBlick|1", 95, window.__fimpSaeule());
             const leaf = r._impostorLeaf(z, new T.Matrix4(), 8);
             const anker = new T.Vector3(30, 0, -10),
@@ -642,7 +642,7 @@ async function blickProbe(page) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = e?.message || String(e);
         }
         return out;
     }, BLICK_DREHUNGEN);
@@ -780,7 +780,7 @@ async function windProbe(page) {
             }
             ren.dispose();
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = e?.message || String(e);
         }
         return out;
     }, WIND_FAELLE);
@@ -991,13 +991,5 @@ hauptLauf(async () => {
     }
 
     server.close();
-    if (errs.length) {
-        console.error("\n❌ ROT:");
-        for (const e of errs) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten."
-    );
-    process.exit(0);
+    wandEnde(errs, "die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten.");
 });

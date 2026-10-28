@@ -24,7 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const stammLib = require("./lib/stamm.cjs");
@@ -69,7 +69,7 @@ function urteil(z) {
         if (!rd.rundung) v.push("RUNDUNG: die Sonde lief nicht — das Gerät schreibt 11/11/10, und keiner weiß, wie es rundet");
         else {
             const soll = rd.rundung === "gegen null" ? AUSGLEICH_NULL : [1, 1, 1];
-            if (!(rd.faktor && rd.faktor.every((x, i) => Math.abs(x - soll[i]) < 1e-4)))
+            if (!rd.faktor?.every((x, i) => Math.abs(x - soll[i]) < 1e-4))
                 v.push(
                     `RUNDUNG: der Ausgleich ${JSON.stringify(rd.faktor)} passt nicht zur Rundung „${rd.rundung}“ ` +
                         `(Soll ${soll.map((x) => x.toFixed(5)).join("/")})`
@@ -228,7 +228,7 @@ function karteOhneFarbe() {
             const t = ds && window.__viewTex ? window.__viewTex.get(ds.view) : null;
             if (t && /^kaskade\d+:tiefe/.test(String(t.__vramK || "").replace(/^tex:/, ""))) {
                 schattenPaesse++;
-                farbAnhaenge += ((d && d.colorAttachments) || []).filter(Boolean).length;
+                farbAnhaenge += (d?.colorAttachments || []).filter(Boolean).length;
             }
             return brp.call(this, d);
         };
@@ -253,7 +253,7 @@ function karteOhneFarbe() {
             aus.dunkler = +(frei - schatten).toFixed(1);
             aus.luma = [+schatten.toFixed(1), +frei.toFixed(1)];
             const map = licht.shadow.map;
-            aus.farbeGpu = !!(map && map.texture && be.has(map.texture) && be.get(map.texture).texture);
+            aus.farbeGpu = !!(map?.texture && be.has(map.texture) && be.get(map.texture).texture);
             aus.schattenPaesse = schattenPaesse;
             aus.farbAnhaenge = farbAnhaenge;
             aus.gelaufen = true;
@@ -327,7 +327,7 @@ function rundungProbe() {
             const t0 = performance.now();
             const r = await window.__weltDa((r) => {
                 const st = r.state;
-                return !!(st && st.rendererReady && st.renderer && st.renderer.backend && st.postProcessing && st.camera);
+                return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });
             const st = r.state;
             return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
@@ -347,7 +347,7 @@ function rundungProbe() {
             r.state.renderer.setAnimationLoop(null);
             window.__gpuFehlerZ = [];
             r.state.renderer.backend.device.addEventListener("uncapturederror", (e) =>
-                window.__gpuFehlerZ.push(String((e.error && e.error.message) || e.message || e).slice(0, 240))
+                window.__gpuFehlerZ.push(String(e.error?.message || e.message || e).slice(0, 240))
             );
         });
         const zensus = async () => {
@@ -361,7 +361,7 @@ function rundungProbe() {
         };
         // (c) der Schmuggel zuerst: jeder Täter beim Namen, danach restlos fort
         const s = await page.evaluate(() => window.__zielSchmuggel(true));
-        if (!s || s.fehler) throw new Error("Schmuggel: " + ((s && s.fehler) || "keine Antwort"));
+        if (!s || s.fehler) throw new Error("Schmuggel: " + (s?.fehler || "keine Antwort"));
         let mit;
         try {
             mit = await zensus();
@@ -378,7 +378,7 @@ function rundungProbe() {
         out.selbst = soll.map((m) => ({ muss: m.source, ok: mit.u.rot.some((x) => m.test(x)) }));
         // das ausgewiesene 64-bit-Szenen-Ziel: ROT auf einem Gerät mit rg11b10ufloat-renderable, sonst nennt der Zensus die
         // Adapter-Bedingung beim Namen
-        if (mit.z && mit.z.geraet && mit.z.geraet.rg11b10)
+        if (mit.z?.geraet?.rg11b10)
             out.selbst.push({
                 muss: "AUSGABE-FORMAT: zensus-selbsttest:ausgabe",
                 ok: mit.u.rot.some((x) => /AUSGABE-FORMAT: zensus-selbsttest:ausgabe /.test(x)),
@@ -409,18 +409,14 @@ function rundungProbe() {
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));
     } catch (e) {
-        out.abbruch = (e && e.message) || String(e);
+        out.abbruch = e?.message || String(e);
     }
     await browser.close();
     server.close();
     const v = urteil(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ GRÜN — kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
+    wandEnde(
+        v,
+        `kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
             `0 Farb-Anhänge, Schatten ${out.karte.dunkler} dunkler); ` +
             `${out.selbst.length} eingeschmuggelte Täter beim Namen und restlos fort; die Ausgabe ` +
             `${out.rundung.format} rundet ${out.rundung.rundung || "-"}, der Ausgleich ${JSON.stringify(out.rundung.faktor)} wirkt ` +

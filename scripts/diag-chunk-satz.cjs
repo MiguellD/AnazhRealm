@@ -48,7 +48,7 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
 // (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
 const STUFEN_SPRUNG_M = 0.1;
@@ -498,7 +498,7 @@ const { errs, check } = pruefer();
                     const klassen = new Map();
                     if (s.chunkSaetze)
                         for (const [art, satz] of s.chunkSaetze) {
-                            if (!(satz.spec.userData && satz.spec.userData.bauSatz) || satz.spec.nurWurf) continue;
+                            if (!satz.spec.userData?.bauSatz || satz.spec.nurWurf) continue;
                             const u = satz.spec.mat.userData || {};
                             const mp = Object.assign({}, u.foundryMp || {});
                             const durch = typeof mp.opacity === "number" && mp.opacity < 1;
@@ -522,7 +522,7 @@ const { errs, check } = pruefer();
                 // (h) DER BAU-SATZ: jede lebende Gruppe einer Satz-Art (Rezept-kind in BAU_SATZ, gesetzt, kein
                 // Tür-Flügel) zeichnet nie selbst und trägt ihren Bereich treu im Satz ihres Stoffs.
                 z.bauSatz = { gruppen: 0, imSatz: 0, selbst: [], ohneBereich: [] };
-                const buch = r._foundry && r._foundry.recipes ? r._foundry.recipes : {};
+                const buch = r._foundry?.recipes ? r._foundry.recipes : {};
                 const SATZ = r.constructor.BAU_SATZ || {};
                 if (s.archInstanceGroups)
                     for (const [k, g] of s.archInstanceGroups) {
@@ -659,7 +659,7 @@ const { errs, check } = pruefer();
                         if (!st) continue;
                         z.stufen.naht += st.index.count / 3;
                         const bs = s.chunkSaetze && s.chunkSaetze.get("boden");
-                        if (!(bs && bs.bloecke.has("stitch:" + key))) z.stufen.ohneSatz.push(key);
+                        if (!bs?.bloecke.has("stitch:" + key)) z.stufen.ohneSatz.push(key);
                         // die rohe Lage jedes Chunk-Vertex → sein Morph-Gewicht
                         const P = g.attributes.position.array,
                             W = g.attributes.aMorphWeight.array;
@@ -939,7 +939,7 @@ const { errs, check } = pruefer();
             let ws = null;
             let wsName = null;
             for (const [name, sa] of s.chunkSaetze ? s.chunkSaetze : [])
-                if (sa && sa.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
+                if (sa?.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
                     ((ws = sa), (wsName = String(name).split("|")[0]));
             if (ws) {
                 const altMesh = ws.mesh,
@@ -1426,7 +1426,7 @@ const { errs, check } = pruefer();
             return { mit, ohne };
         });
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: e?.message || String(e) };
     }
     await browser.close();
     server.close();
@@ -1490,7 +1490,7 @@ const { errs, check } = pruefer();
     // (p) DIE FOLGE DES WECHSELS: ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
     // Neubau morphte alle acht, OMEN 1410-boden gehend: Frame p95 28,7 → 41,6 ms) fällt rot beim Namen
     const fo = (g) =>
-        g && g.folge
+        g?.folge
             ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Folge-Bitten · ${g.folge.leer} leer`
             : "keine Messung";
     check(
@@ -1633,11 +1633,5 @@ const { errs, check } = pruefer();
         !!wa2 && wa2.haupt > 0,
         wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
-    if (errs.length) {
-        console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt."
-    );
+    wandEnde(errs, "der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.");
 })();

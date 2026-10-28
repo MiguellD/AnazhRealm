@@ -19,6 +19,7 @@
 // (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
+const { urteilEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
@@ -522,12 +523,7 @@ if (process.argv.includes("--selftest")) {
         const r = lauf(ladeWelt(), { verzerre });
         pruefe(name, r.fehler, muster);
     }
-    if (rot) {
-        console.error(`\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`);
-        process.exit(1);
-    }
-    console.log("\n✅ SELBST-TEST GRÜN.");
-    process.exit(0);
+    urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
 
 console.log("=== DIE ANATOMIE-LINSE: die gebackene Gestalt gegen das Soll der Art (tetrapoda ANATOMIE_SOLL) ===");
@@ -535,9 +531,4 @@ const sb = ladeWelt();
 const { ergebnis, fehler } = lauf(sb);
 zeige(ergebnis);
 if (process.argv.includes("--json")) console.log(JSON.stringify(ergebnis, null, 1));
-if (fehler.length) {
-    console.error(`\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "));
-    process.exit(1);
-}
-console.log("\n✅ GRÜN — jede Art steht in ihren Natur-Bändern (Gestalt + Fell-Muster) und hält ihr Budget.");
-process.exit(0);
+urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — jede Art steht in ihren Natur-Bändern (Gestalt + Fell-Muster) und hält ihr Budget.");

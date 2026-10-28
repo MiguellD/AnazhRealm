@@ -38,7 +38,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -169,7 +169,7 @@ function abdruck(heim) {
     const w = st?.architectures.find((e) => e.id === p.mountedArch);
     const g = st
         ? {
-              leib: { seele: p.soul || "human", teile: (st.customSouls[p.soul || "human"] || {}).bodyParts || null, praegung: st.workshop.studioOv[anazhRealm.constructor.KOERPER_HOST_RECIPE] || null },
+              leib: { seele: p.soul || "human", teile: st.customSouls[p.soul || "human"]?.bodyParts || null, praegung: st.workshop.studioOv[anazhRealm.constructor.KOERPER_HOST_RECIPE] || null },
               inventar: { slots: p.inventory, hotbar: st.hotbar },
               wield: p.equipped,
               reittier: w && {
@@ -444,7 +444,7 @@ function seitenHelfer() {
     window.__konformanz = {
         // Die Wirkung in der Heimat: die Journal-Ereignisse der Welt.
         journal() {
-            const e = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+            const e = r.state.worldJournal?.entries || [];
             return e.filter((x) => x.type === "portal").length;
         },
         zaehler() {
@@ -505,7 +505,7 @@ async function rueckHoerer(page, ui) {
 // der Heimat, während die Marke reiste), zaehler, offen (das Overlay danach), knopf (der Rück-Hörer fand ihn).
 async function schleuse(page, weg, welt, tat) {
     const t0 = Date.now();
-    if (!hinFrame) hinFrame = await rueckHoerer(page, (welt && welt.ui) || null);
+    if (!hinFrame) hinFrame = await rueckHoerer(page, welt?.ui || null);
     const marke = `schleuse-${++schleuseNr}`;
     const s = await page.evaluate(
         async (m, weg, tat) => {
@@ -531,10 +531,10 @@ async function schleuse(page, weg, welt, tat) {
             const k = window.__kSpy ? window.__k : null;
             const enter0 = k ? k.enters : 0;
             const fremd = document.getElementById("__fremd");
-            if (tat && tat.chat) await r.processChatCommand(tat.chat);
-            if (tat && tat.route) await r._portalRouteDsl(["chain", tat.route[0]], tat.route[1], () => {});
-            if (tat && tat.peer) w.postMessage(tat.peer, "*");
-            if (tat && tat.fremd) fremd.contentWindow.postMessage({ __fremd: true, nachricht: tat.fremd }, "*");
+            if (tat?.chat) await r.processChatCommand(tat.chat);
+            if (tat?.route) await r._portalRouteDsl(["chain", tat.route[0]], tat.route[1], () => {});
+            if (tat?.peer) w.postMessage(tat.peer, "*");
+            if (tat?.fremd) fremd.contentWindow.postMessage({ __fremd: true, nachricht: tat.fremd }, "*");
             const marke = { __schleuse: m, esc: weg === "esc", werk: weg === "werk" };
             if (weg === "fremd") fremd.contentWindow.postMessage({ __fremd: true, nachricht: marke }, "*");
             else w.postMessage(marke, "*");
@@ -545,7 +545,7 @@ async function schleuse(page, weg, welt, tat) {
                 enterImFenster: k ? k.enters - enter0 : 0,
                 zaehler: k ? K.zaehler() : null,
                 offen: !!r._portalOverlay,
-                knopf: !!(antwort && antwort.knopf),
+                knopf: !!antwort?.knopf,
             };
         },
         marke,
@@ -744,7 +744,7 @@ async function lauf(welten, taeter) {
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
-        await page.evaluate(() => window.__weltDa((r) => !!(r.state.vibePass && r.state.vibePass.ready)));
+        await page.evaluate(() => window.__weltDa((r) => !!r.state.vibePass?.ready));
         await page.evaluate((M) => {
             const st = window.anazhRealm.state;
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
@@ -812,11 +812,11 @@ async function selbsttest() {
         ["Täter-Fundstellen gefunden", !fehlend.length, fehlend.join(" · ")],
         ["K3 rot: begegnung ohne Quellen-Prüfung nimmt den fremden peer-join an", by.begegnung && by.begegnung.k.K3 === false, ""],
         ["K3 rot am UI-Pfad: die Hülle ohne Quellen-Prüfung — die garage nimmt die fremde chain-Form an (der Vorher-Zustand vor der Tat gelesen)", by.garage && by.garage.k.K3 === false, ""],
-        ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage && by.garage.handshake ? `${by.garage.handshake.enters} enter` : ""],
+        ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage?.handshake ? `${by.garage.handshake.enters} enter` : ""],
         [
             "Uhr-frei: klang baut nach ihrer ready 3 s, bevor sie die enter liest — die Ratsche readyEcho hält, der Handshake endet",
             by.klang && by.klang.echo === true && by.klang.k.K2 === true,
-            by.klang && by.klang.handshake ? `ready ${by.klang.handshake.readys} · enter ${by.klang.handshake.enters}` : "",
+            by.klang?.handshake ? `ready ${by.klang.handshake.readys} · enter ${by.klang.handshake.enters}` : "",
         ],
         ["Ratsche rot: die Hülle mit Element-Adapter — skeleton ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
         ["Kontrolle: die chain-Form wirkt trotz Element-Adapter (der Täter trifft nur das Einzelwort)", by.skeleton && by.skeleton.k.K4 === true, ""],
@@ -869,10 +869,5 @@ hauptLauf(async () => {
         `  Ratsche dslEinzelwort: ${mitDsl - stumm.length}/${mitDsl} Welten wirken auf ein Einzelwort · stumm ${stumm.length} (${stumm.join(", ") || "—"}) · Soll ${ratsche.dslEinzelwort.soll}`
     );
     console.log(`  Ratsche readyEcho: ${echo.length} (${echo.join(", ") || "—"}) · Soll ${ratsche.readyEcho.soll}`);
-    if (rot.length) {
-        for (const x of rot) console.log(`❌ ${x}`);
-        process.exit(1);
-    }
-    console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K8 grün · Ratschen gehalten`);
-    process.exit(0);
+    wandEnde(rot, `gate:portal-konformanz: ${ergebnisse.length} Welten K1–K8 grün · Ratschen gehalten`);
 });

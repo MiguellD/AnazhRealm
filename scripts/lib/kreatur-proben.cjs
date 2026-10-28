@@ -2202,21 +2202,64 @@ async function kreaturProben(r, T, opts) {
         return z;
     });
 
-    // ── bewohner (mensch.K1–K3): das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt (je Haus `leuteVon`), am
-    // Dorfplatz die Menschen im Blick; DER TAG mit der Uhr des Spiels: Soll-Orte, Schmiede, Sprung-Wand, Wege, Wiederkehr.
-    await buehne("bewohner", async (restore) => {
-        const W = window;
+    // ═══ DAS START-DORF der Bewohner-Proben (bewohner · begegnung): der Takt des Spiels, das Warten unter Deckel, die Uhr auf
+    // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
+    // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
+    const tick = () => {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch {
+            /* der Takt meldet selbst */
+        }
+    };
+    const bisDa = async (name, offen) => {
+        for (const weiter = window.__deckel(name, 120); weiter() && offen(); await sleep(16)) tick();
+    };
+    // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
+    // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
+    // dieselben Wenden
+    const uhrAuf = async (h, wo, da) => {
+        r._uhrSetzen(h / 24, "regler");
+        r._tickBewohner(0);
+        await bisDa(wo, () => !da());
+        r._uhrSetzen(h / 24, "regler");
+    };
+    // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
+    // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
+    // landet Takte später), mäße jeder Lauf einen anderen Tag. Der Deckel zählt Takte ohne Offenes und wirft beim Ort.
+    const stehtUm = (wo) =>
+        window.__weltStehtNach(tick, 600).catch((f) => {
+            throw new Error(`${wo}: ${f.message}`);
+        });
+    // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) oder null
+    const startDorf = async (restore) => {
+        const [W, wm] = [window, s.worldMeta];
         const altHook = W.__anazhAutoSettlement;
         restore.push(() => {
             if (altHook === undefined) delete W.__anazhAutoSettlement;
             else W.__anazhAutoSettlement = altHook;
         });
         W.__anazhAutoSettlement = true;
+        if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
+        for (
+            const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
+            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
+        )
+            await sleep(50);
+        for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
+            r._tickAutoSettlement(pm);
+            await sleep(0);
+        }
+        return (r._bewohnerSiedlungen || new Map()).get("start") || null;
+    };
+    // ── bewohner (mensch.K1–K3): das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt (je Haus `leuteVon`), am
+    // Dorfplatz die Menschen im Blick; DER TAG mit der Uhr des Spiels: Soll-Orte, Schmiede, Sprung-Wand, Wege, Wiederkehr.
+    await buehne("bewohner", async (restore) => {
+        const W = window;
         // Täter (Selbsttest): alle in EINEM Lauf (`EIN_LAUF`), je einer an seinem Ort im Lauf — vor dem Tag gezählt und
         // zurück, im Tag an seiner Messung, nach ihm je ein Fenster mit eigenem Messer (`sicht`: das Urteil je Täter)
         const [hat, sicht] = [(t) => [].concat(taeter).includes(t), {}];
         const FC = globalThis.__fachwerkCore;
-        const wm = s.worldMeta;
         const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
         const q3 = (v) => Math.round(v * 1000) / 1000;
         const [DT, tagS] = [0.1, (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 60];
@@ -2401,33 +2444,6 @@ async function kreaturProben(r, T, opts) {
             }
             return taeter ? null : sicht[undefined].stadt;
         };
-        // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
-        const tick = () => {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {
-                /* der Takt meldet selbst */
-            }
-        };
-        const bisDa = async (name, offen) => {
-            for (const weiter = W.__deckel(name, 120); weiter() && offen(); await sleep(16)) tick();
-        };
-        // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
-        // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
-        // dieselben Wenden
-        const uhrAuf = async (h, wo, da) => {
-            r._uhrSetzen(h / 24, "regler");
-            r._tickBewohner(0);
-            await bisDa(wo, () => !da());
-            r._uhrSetzen(h / 24, "regler");
-        };
-        // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
-        // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
-        // landet Takte später), mäße jeder Lauf einen anderen Tag. Der Deckel zählt Takte ohne Offenes und wirft beim Ort.
-        const stehtUm = (wo) =>
-            W.__weltStehtNach(tick, 600).catch((f) => {
-                throw new Error(`${wo}: ${f.message}`);
-            });
         const haeuserIn = (slots, ox, oz) =>
             slots.filter((sl) =>
                 s.architectures.some(
@@ -2437,18 +2453,7 @@ async function kreaturProben(r, T, opts) {
                         Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
                 )
             );
-        if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
-        for (
-            const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
-            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
-        )
-            await sleep(50);
-        for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
-            r._tickAutoSettlement(pm);
-            await sleep(0);
-        }
-        // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung)
-        const S = (r._bewohnerSiedlungen || new Map()).get("start");
+        const S = await startDorf(restore);
         if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
         const plan = S.plan;
         const hausE = s.architectures.filter(
@@ -2731,6 +2736,98 @@ async function kreaturProben(r, T, opts) {
         });
     });
 
+    // ── begegnung (mensch.K5 Staffel 1, ohne Modell): im Start-Dorf um 10 Uhr (Uhr und Wetter als Wort des Reglers) ein Bewohner,
+    // der an seinem Ort steht; der Spieler geht in Ego mit 1,4 m/s aus 9 m schräg vor ihm (der Weg frei von Grundriss und
+    // fremdem Stand) durch seinen Stand und 12 m weiter (der Vorbeigang 2 m daneben), dann steht er, bis der Bewohner wieder an
+    // seinem Ort steht. Je Gang ab dem Ereignis (der Spieler auf `begegnungM`) die Zeit, bis der Kopf-Knoten (seine
+    // Welt-Matrix, wie das Bild ihn zeichnet; im Fenster nach dem echten Frame `_loopRender`) auf 10° zum Spieler zeigt; der
+    // kleinste Abstand des Spielers zu ihm und jede Berührung (näher als zwei Kapseln) mit jedem Bewohner draußen. Der
+    // Vorbeigang und zwei Gänge ohne Erinnerung (der dritte die Gegenprobe), dann schlägt der Spieler ein Wesen 5 m neben ihm
+    // (`damageCreature`, Quelle Spieler), dann der vierte Gang.
+    // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst.
+    await buehne("begegnung", async (restore) => {
+        const [dt, ab, tag0] = [1 / 60, (a, b) => Math.hypot(a.x - b.x, a.z - b.z), s.timeOfDay];
+        const S = await startDorf(restore);
+        if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
+        const stell = (x, z) => pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+        stell(S.ox + S.plan.platz.cx, S.oz + S.plan.platz.cz);
+        restore.push(() => r._uhrSetzen(tag0, "regler"));
+        r._setWeather("sunny", "regler");
+        const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
+        await bisDa("begegnung: die Leiber", () => !da() || r._weltOffen().leiber > 0);
+        await uhrAuf(10, "begegnung: 10 Uhr", da);
+        await stehtUm("begegnung: das Start-Dorf");
+        const schritt = () => [takt(dt), r._tickBewohner(dt)];
+        // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je halben Meter frei
+        // von Grundriss — und derselbe 2 m daneben (der Vorbeigang); wer sonst dort steht, macht dem Spieler Platz
+        const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
+        const frei = (a, u) => [...Array(43).keys()].every((t) => offen(a.x + (u.x * t) / 2, a.z + (u.z * t) / 2));
+        // der Vorbeigang 2 m daneben auf der Seite, die die Peilung auf 3 m weitet: ±0,6 rad + atan(2/√5) ≈ 76° neben seinem Blick
+        // (der Kopf muss sich wenden, der Leib nicht)
+        let [b, w] = [];
+        for (const k of S.liste)
+            for (const dw of [0.6, -0.6]) {
+                const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
+                const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
+                if (!b && !k.drinnen && !k.weg && k.da && frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u))
+                    [b, w] = [k, { a, u, v }];
+            }
+        if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
+        const [g, stand] = [b.leib, b.ziel];
+        // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
+        const kopf = () => g.userData.rig.head.matrixWorld.elements;
+        const gier = (e = kopf()) => Math.abs(grad(wrap(Math.atan2(pm.x - e[12], pm.z - e[14]) - Math.atan2(e[8], e[10]))));
+        // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
+        const gang = (v) => {
+            const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
+            stell(a.x, a.z);
+            r._spielerLageAlt = null;
+            for (let i = 0; i < 60; i++) schritt();
+            const z = { zuS: null, dMin: 99, beruehrt: 0, imBild: null };
+            for (let l = 0, t = 0, e = null; l <= 21; l += 1.4 * dt, t += dt) {
+                stell(a.x + w.u.x * l, a.z + w.u.z * l); // der Lauf: der Kreatur-Takt liest ihn aus der Lage
+                schritt();
+                if (echt) [kamera(w.u.x, w.u.z), r._loopRender()];
+                const d = ab(pm, g.position);
+                z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
+                z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
+                if (e === null && d <= A.BEWOHNER.begegnungM) [e, z.amEreignis] = [t, Math.round(gier())];
+                if (e !== null && z.zuS === null && gier() <= 10)
+                    [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
+            }
+            // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
+            for (let i = 0; i < 1800 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
+            return z;
+        };
+        // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag 5 m neben ihm, der vierte Gang
+        const lauf = () => {
+            g.userData.memory = [];
+            const G = [gang(1), gang(0), gang(0)];
+            const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
+            r.damageCreature(tier(ort, "wesen"), 1e9, { source: "player" }); // ohne Ort wirft der Wurf beim Namen
+            const furcht = r._kreaturFurchtErinnert(g);
+            G.push(gang(0));
+            const je = (k) => G.map((x) => x[k]);
+            return {
+                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis },
+                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt") },
+            };
+        };
+        if (!taeter) return lauf();
+        const sicht = {};
+        for (const [t, name] of Object.entries({
+            "begegnung-starr": "_bewohnerKopf",
+            "begegnung-steht": "_bewohnerPlatz",
+            "begegnung-vergessen": "_bewohnerZeuge",
+        })) {
+            const zurueck = [];
+            decke(name, () => () => false, zurueck);
+            if ([].concat(taeter).includes(t)) sicht[t] = lauf();
+            for (const f of zurueck) f();
+        }
+        return { sicht };
+    });
+
     // ── tiersatz (profiband.K1 „Sturm mit 50 Tieren“): 10 und 50 Tiere im Nah-Kreis — die Befehle der Tiere hängen nie an
     // der Kopfzahl; wer nicht als Leib lebt, geht im Satz seiner Gattung (dass er dort nicht gleitet und die Gangart des Leibs
     // geht, misst gate:tier-gang je Gattung und Tempo am Knoten des Satzes).
@@ -2936,6 +3033,7 @@ const PROBEN = [
     "gestalt",
     "todlage",
     "bewohner",
+    "begegnung",
     "tiersatz",
 ];
 function urteil(name, z) {
@@ -3035,6 +3133,21 @@ function urteil(name, z) {
         soll(!z.ohnePlatz, `ohne Platz: ${z.ohnePlatz} (${z.ohnePlatzWer.join(" · ")})`);
         // jedes Haus trägt die Hülle seines Studios (die Wand der Wege)
         soll(z.huellen === z.haeuser, `${z.haeuser - z.huellen} Häuser ohne Hülle`);
+    }
+    // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
+    // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
+    // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten
+    if (name === "begegnung") {
+        const [zu, d] = [z.zuS, z.dMin];
+        soll(
+            zu.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every(Boolean),
+            `Kopf-Zuwendung ab 3 m: ${zu.join(" / ")} s (Soll ≤ 0,5, der Vorbeigang ab ${z.amEreignis}° ≥ 30; als Leib im Bild ${z.imBild})`
+        );
+        soll(Math.max(...z.beruehrt) === 0 && Math.min(...d) > 0.7, `Berührung: ${z.beruehrt}, Abstand min ${d.join(" / ")} m`);
+        soll(
+            z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15,
+            `die Erinnerung lenkt den Abstand nicht: ohne ${d[1]} · Gegenprobe ${d[2]} · nach der Gewalt ${d[3]} m (Furcht ${z.furcht})`
+        );
     }
     if (name === "geister") soll(z.geister === 0, `${z.geister} Geister nach clearCreatures (aus ${z.vorher})`);
     if (name === "sattel") {
@@ -3452,6 +3565,11 @@ const TAETER = {
         ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
         ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
     ],
+    begegnung: [
+        ["begegnung-starr", /Kopf-Zuwendung/],
+        ["begegnung-steht", /Berührung/],
+        ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
+    ],
 };
 
 module.exports = {
@@ -3459,6 +3577,6 @@ module.exports = {
     PROBEN: [...PROBEN, ...LEBEN.PROBEN],
     TAETER: Object.assign(TAETER, LEBEN.TAETER),
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
-    EIN_LAUF: ["bewohner"],
+    EIN_LAUF: ["bewohner", "begegnung"],
     urteil,
 };

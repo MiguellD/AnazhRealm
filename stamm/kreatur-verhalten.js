@@ -3801,6 +3801,7 @@ AnazhRealm._furchtGesetz = function () {
         F.erinnerung &&
         Number.isFinite(F.erinnerung.geschlagen) &&
         Number.isFinite(F.erinnerung.gefuettert) &&
+        Number.isFinite(F.erinnerung.gewalt) &&
         Number.isFinite(F.deckel) &&
         Number.isFinite(F.fluchtJeFurcht) &&
         F.riss &&
