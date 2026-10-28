@@ -3502,7 +3502,7 @@
     // der Feldweg läuft nie durch ein Haus).
     // Rückgabe: die Punkte (geglättet, `glaetten`) oder null (kein Lauf). Leser: der Ort-Faden (voxel-worker `ort-weg`, Lehre 14)
     // für den Wirt (`_wegenetzLegen`).
-    const WEG_ZWISCHEN = { steilMax: 0.3, hang: 4 };
+    const WEG_ZWISCHEN = { steilMax: 0.3, hang: 4, glaett: 16 };
     function wegZwischen(r, A, B, sperren){
       const n=r.n, d=r.d, h=r.h, lim=ORT_GESETZ.trasse, W=WEG_ZWISCHEN;
       const zu=new Uint8Array(n*n); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
@@ -3533,13 +3533,15 @@
       for(;k>=0&&von[k]>=0;k=von[k]) pts.push({x:r.x0+(k%n)*d, z:r.z0+((k/n)|0)*d});
       pts.push(k>=0?quelle.get(k):quelle.get(fund));
       return glaetten(pts.reverse(), hoeheAusRaster(r), W.steilMax, sperren||[]); }
-    // der Lauf über das Raster knickt in seiner Teilung: das Fenster der Gassen (`ORT_GESETZ.glaettM`) glättet ihn,
+    // der Lauf über das Raster knickt in seiner Teilung (26,6°): `WEG_ZWISCHEN.glaett` Durchgänge ¼ · ½ · ¼ über die Nachbarn
+    // glätten ihn (≈ ±13 m), die Enden bleiben — ein Feldweg schlägt keine Haken (der Fahrer fuhr seine Knicke mit 8–11 m/s);
+    // geglättet wird nur, was nicht steiler wird (die Kehre bleibt) und in keinen Grundriss rückt
     function glaetten(pts, H, max, sperren){
       const g=(p,q)=>Math.abs(H(q.x,q.z)-H(p.x,p.z))/(Math.hypot(q.x-p.x,q.z-p.z)||1);
-      for(let n=0;n<Math.round(ORT_GESETZ.glaettM/2);n++)
+      for(let n=0;n<WEG_ZWISCHEN.glaett;n++)
         pts=pts.map((p,i)=>{ if(i===0||i===pts.length-1) return p;
           const q={x:(pts[i-1].x+2*p.x+pts[i+1].x)/4, z:(pts[i-1].z+2*p.z+pts[i+1].z)/4};
-          return g(pts[i-1],q)<=Math.max(max,g(pts[i-1],p))&&g(q,pts[i+1])<=Math.max(max,g(p,pts[i+1]))&&!gesperrt(sperren,q.x,q.z)? q : p; });   /*die Kehre bleibt: geglättet wird nur, was nicht steiler wird und in keinen Grundriss rückt*/
+          return g(pts[i-1],q)<=Math.max(max,g(pts[i-1],p))&&g(q,pts[i+1])<=Math.max(max,g(p,pts[i+1]))&&!gesperrt(sperren,q.x,q.z)? q : p; });
       return pts; }
     // WAS EINEM WEG IM PLAN IM WEG STEHT (fahrzeug.K2): der Grundriss jedes Slots (seine obb) und der Tritt jeder Ausstattung
     // (Stand, Brunnen, Laterne, Hof-Baum: AUSSTATTUNG `tritt`, der Baum 0,8 m) — je eine gedrehte Box {cx, cz, phi, ex, ez}, um

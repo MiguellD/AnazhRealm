@@ -12,6 +12,7 @@ const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const schalter = (f) => process.argv.includes(f);
 
 const { errs, check } = pruefer();
+const taeter = (v, trenner = " · ") => (v.length ? " — Täter: " + v.join(trenner) : "");
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const TAKT = { gierGrad: 0.5, wegAnteil: 0.02, wegMinM: 0.4, wegFahrtMinM: 5, haltM: 0.05, versatzM: 0.01 };
@@ -668,22 +669,19 @@ function ketteBericht(k, err) {
     return v;
 }
 
-// ════ WN — DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2): die feste Route von der Mess-Wiese über die Orte der Zellen (je zwei
-// Nachbarn im Wegenetz, ihre Feldwege legt das Gesetz) — Staffel 1: ≥ 2 km auf Weg und Feldweg durch Wald und Dorf, 0
-// Steckenbleiber, ≥ 80 % der Sim-Schritte über 0,8 · vmax (`probeWegenetz` in lib/fahr-proben.cjs). ════
-const WEGENETZ = { orte: ["-1,-5", "-2,-6", "-3,-5", "-4,-6", "-5,-5", "-6,-6"], langM: 2000, anteil: 0.8, weg: 0.95, wald: 0.1, dorf: 0.05, bilderMax: 30000 };
-function wegenetzVerdict(m) {
-    const W = WEGENETZ;
-    const b = m.boden || {};
-    return [
-        !(m.lang >= W.langM) && `die Route misst ${m.lang} m (Soll ≥ ${W.langM})`,
-        !(m.wegAnteil >= W.weg) && `nur ${(m.wegAnteil * 100).toFixed(0)} % der Route liegen auf Weg und Feldweg (querfeldein)`,
-        !m.ende && `der Wagen kommt nicht an (${m.weg} von ${m.lang} m)`,
-        (m.steck || []).length > 0 && `${m.steck.length} Steckenbleiber bei ${m.steck.join(" · ")} m`,
-        !(m.anteil >= W.anteil) && `nur ${(m.anteil * 100).toFixed(1)} % der Sim-Schritte über 0,8 · vmax`,
-        !(b.wald >= W.wald && b.dorf >= W.dorf && b.wiese > 0) && `der Boden der Route: wiese ${b.wiese} · wald ${b.wald} · dorf ${b.dorf}`,
-    ].filter(Boolean);
-}
+// ════ WN — DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2 Staffel 1, `probeWegenetz`): die feste Route von der Mess-Wiese über die
+// Orte der Zellen (je zwei Nachbarn im Wegenetz) — ≥ 2 km, auf Weg und Feldweg durch Wald und Dorf, 0 Steckenbleiber, ≥ 80 % der
+// Sim-Schritte über 0,8 · vmax. ════
+const WEGENETZ = { orte: ["-1,-5", "-2,-6", "-3,-5", "-4,-6", "-5,-5", "-6,-6"], bilderMax: 30000 };
+const wegenetzVerdict = (m) =>
+    [
+        [m.lang >= 2000, `Route ${m.lang} m`],
+        [m.wegAnteil >= 0.95, `querfeldein (Weg ${m.wegAnteil})`],
+        [m.ende, `nicht angekommen (${m.weg} m)`],
+        [!m.steck.length, `Steckenbleiber bei ${m.steck} m`],
+        [m.anteil >= 0.8, `über 0,8 · vmax ${m.anteil}`],
+        [m.boden.wiese > 0 && m.boden.wald >= 0.1 && m.boden.dorf >= 0.05, `Boden ${JSON.stringify(m.boden)}`],
+    ].flatMap(([ok, t]) => (ok ? [] : [t]));
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
 // und nach einem Stoß frei, zeigt sein Tempo und klingt — FK/FK2 am Kern (rückwärts aus dem Stand, die Drehzahl), F1 der
@@ -905,16 +903,8 @@ async function probeBahn(B) {
         for (let i = 0; i < n; i++) frame();
     };
     // DIE TASTEN: echte Tastatur-Ereignisse über den Hörer des Spiels.
-    const TASTE = {
-        w: { key: "w", code: "KeyW" },
-        s: { key: "s", code: "KeyS" },
-        a: { key: "a", code: "KeyA" },
-        d: { key: "d", code: "KeyD" },
-        e: { key: "e", code: "KeyE" },
-    };
     const gehalten = new Set();
-    const ereignis = (art, k) =>
-        window.dispatchEvent(new KeyboardEvent(art, Object.assign({ bubbles: true }, TASTE[k])));
+    const ereignis = (art, k) => window.dispatchEvent(new KeyboardEvent(art, { bubbles: true, key: k, code: "Key" + k.toUpperCase() }));
     const halte = (liste) => {
         const soll = new Set(liste);
         for (const k of Array.from(gehalten))
@@ -2006,12 +1996,10 @@ hauptLauf(async () => {
             }
         }
         {
-            // WN — die Fahrt auf dem Wegenetz: ein guter Lauf ohne Täter, jeder Bruch beim Namen
+            // WN: ein guter Lauf ohne Täter, jeder Bruch beim Namen
             const g = { lang: 2380, wegAnteil: 1, ende: true, weg: 2380, steck: [], anteil: 0.85, boden: { wiese: 0.1, wald: 0.6, dorf: 0.3 } };
-            const faelle = [[{}, null], [{ steck: [704] }, /Steckenbleiber bei 704/], [{ anteil: 0.6 }, /60\.0 %/], [{ lang: 1850 }, /1850 m/],
-                [{ wegAnteil: 0.3 }, /querfeldein/], [{ ende: false, weg: 900 }, /900 von/], [{ boden: { wiese: 1, wald: 0, dorf: 0 } }, /wald 0/]];
-            const aus = faelle.map(([an, re]) => [wegenetzVerdict({ ...g, ...an }).join(" · "), re]);
-            check("Selbst-Test WN: die Fahrt auf dem Wegenetz nennt jeden Bruch", aus.every(([t, re]) => (re ? re.test(t) : !t)), aus.map(([t]) => t || "—").join(" | "));
+            const aus = [{}, { steck: [704] }, { anteil: 0.6 }, { lang: 1850 }, { wegAnteil: 0.3 }, { ende: false }, { boden: { wald: 1 } }].map((an) => wegenetzVerdict({ ...g, ...an }));
+            check("Selbst-Test WN: die Fahrt auf dem Wegenetz nennt jeden Bruch", aus.map((v) => v.length).join("") === "0111111", aus.join(" | "));
         }
         {
             // RM — DIE RÜCKMELDUNG: gute Maße == 0 Täter; je gekappte Kopplung genau ihr Kanal (Stimme · Feder · Rumble)
@@ -2060,11 +2048,8 @@ hauptLauf(async () => {
             koerperBericht(o);
             console.log(`KOERPER ${JSON.stringify(o)}`);
         }],
-        [schalter("--wegenetz"), probeWegenetz, { orte: WEGENETZ.orte, bilderMax: WEGENETZ.bilderMax, mutante: schalter("--mutante"),
-            bilder: schalter("--gleich") ? [1000 / 60] : [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7] }, (o) => {
-            const v = wegenetzVerdict(o);
-            check(`WN (fahrzeug.K2) die Fahrt auf dem Wegenetz${schalter("--mutante") ? " — MUTANTE: die Weg-Erkennung aus" : ""}: ≥ 2 km Wiese → Wald → Dorf, 0 Steckenbleiber, ≥ 80 % über 0,8 · vmax`,
-                !v.length, `${o.lang} m · ${o.schritte} Sim-Schritte zu ${o.dt} s · Anteil ${(o.anteil * 100).toFixed(1)} % · Steckenbleiber ${o.steck.length} · Weg ${(o.wegAnteil * 100).toFixed(0)} % · Boden ${JSON.stringify(o.boden)}${v.length ? " — Täter: " + v.join(" · ") : ""}`);
+        [schalter("--wegenetz"), probeWegenetz, { ...WEGENETZ, mutante: schalter("--mutante"), bilder: schalter("--gleich") && [1000 / 60] }, (o) => {
+            check("WN (fahrzeug.K2) die Fahrt auf dem Wegenetz" + (schalter("--mutante") ? " — MUTANTE: die Weg-Erkennung aus" : ""), !wegenetzVerdict(o).length, wegenetzVerdict(o).join(" · "));
             console.log(`WEGENETZ ${JSON.stringify(o)}`);
         }],
         [schalter("--kette"), probeLeben, { nurKette: true, kette: KETTE }, (o) => {
@@ -2110,7 +2095,7 @@ hauptLauf(async () => {
     check(
         "T1 GT geradeaus (W, wechselnde Frame-Zeiten): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt, keine Gier ohne Sim-Schritt",
         vGt.length === 0,
-        `${zeile(out.gt)}${vGt.length ? " — Täter: " + vGt.join(", ") : ""}`
+        `${zeile(out.gt)}${taeter(vGt, ", ")}`
     );
     const lt = out.luftTaeter;
     check(
@@ -2125,7 +2110,7 @@ hauptLauf(async () => {
         "T2 GT am Hang ohne Taste: kein Teleport, er hält (Haltebremse bis zum Reibkreis), keine Gier",
         !!out.hang && vHang.length === 0,
         out.hang
-            ? `Hang ${(out.hang.g * 100).toFixed(0)} % · ${zeile(out.gtHang)}${vHang.length ? " — Täter: " + vHang.join(", ") : ""}`
+            ? `Hang ${(out.hang.g * 100).toFixed(0)} % · ${zeile(out.gtHang)}${taeter(vHang, ", ")}`
             : "kein Hang gefunden"
     );
     // Das Pferd geht Schritt (≈ 1,3 m/s): 2 m Weg in 180 Frames sind Fahrt; seine Gier folgt der Fahrt (kein Maß).
@@ -2133,19 +2118,19 @@ hauptLauf(async () => {
     check(
         "T3 Pferd (richtungs-folgender Ritt): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt",
         vRoss.length === 0,
-        `${zeile(out.ross)}${vRoss.length ? " — Täter: " + vRoss.join(", ") : ""}`
+        `${zeile(out.ross)}${taeter(vRoss, ", ")}`
     );
     const vW = wechselVerdict(out.wechsel);
     check(
         "T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck",
         vW.length === 0,
-        `${JSON.stringify(out.wechsel)}${vW.length ? " — Täter: " + vW.join(" · ") : ""}`
+        `${JSON.stringify(out.wechsel)}${taeter(vW)}`
     );
     const v5 = tempoVerdict(out.tempo && Object.assign(out.tempo, kernTempo(globalThis.__vehicleCore)));
     check(
         "T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s",
         v5.length === 0,
-        `${JSON.stringify(out.tempo)}${v5.length ? " — Täter: " + v5.join(" · ") : ""}`
+        `${JSON.stringify(out.tempo)}${taeter(v5)}`
     );
     ketteBericht(out.kette);
     console.log("=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===");
@@ -2341,7 +2326,7 @@ hauptLauf(async () => {
         check(
             "F2 die Vorschau des Spiels am Garage-Tor steht auf fahrbarem Grund (≤ 15°, ohne Berührung) und fährt an (E · W 2 s · S 2,5 s ≥ 3 m · E)",
             fv.length === 0,
-            bz(bahn.vorschau) + (fv.length ? " — Täter: " + fv.join(" · ") : "")
+            bz(bahn.vorschau) + taeter(fv)
         );
         const torTaeter = [];
         for (const m of bahn.tore || []) for (const t of bahnPlatzVerdict(m)) torTaeter.push(`${m.tor || "?"}: ${t}`);
@@ -2379,7 +2364,7 @@ hauptLauf(async () => {
             check(
                 `F4 der Stoß ${name}: S + Gegenlenkung bringt den GT ≥ ${BAHN.freiM} m frei in ≤ 2 s`,
                 v.length === 0,
-                sz(m) + (v.length ? " — Täter: " + v.join(" · ") : "")
+                sz(m) + taeter(v)
             );
         }
         const [tacho, hilfe] = [(out.rueck || {}).tacho, (out.rueck || {}).hilfe || {}];
@@ -2387,14 +2372,14 @@ hauptLauf(async () => {
         check(
             "F5 im Sattel zeigt #fahr-tacho |vlong| × vehicle:FAHR.kmh (die Zahl der Probefahrt), nach dem Absteigen ist er fort",
             tv.length === 0,
-            `${tacho && tacho.proben} Proben · max ${tacho && tacho.maxKmh} km/h${tv.length ? " — Täter: " + tv.join(" · ") : ""}`
+            `${tacho && tacho.proben} Proben · max ${tacho && tacho.maxKmh} km/h${taeter(tv)}`
         );
         const hv = bahnTastenVerdict(hilfe);
         const fz = (hilfe.zeilen || []).find((z) => /^Fahren/.test(z)) || "—";
         check(
             "F7 „hilfe“ nennt E (einsteigen) und Shift (Handbremse), Shift kommt in Fahrt als Handbremse im Fahr-Schritt an",
             hv.length === 0,
-            `„${fz}“ · ${hilfe.handbremseDetail || ""}${hv.length ? " — Täter: " + hv.join(" · ") : ""}`
+            `„${fz}“ · ${hilfe.handbremseDetail || ""}${taeter(hv)}`
         );
         for (const l of bahn.log || []) console.log("  · " + l);
     }

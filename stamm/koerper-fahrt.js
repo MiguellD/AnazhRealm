@@ -2386,7 +2386,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
 // bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltM = so nah am Ende hält er · festM / festS =
 // so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber.
-AnazhRealm.FAHRER = Object.freeze({ ld0: 3, ldV: 0.35, ldMax: 12, quer: 0.75, lenk: 0.9, kriechMs: 2.5, brems: 0.6, kurveM: 6, sichtM: 120, bandMs: 1.5, bremsV: 0.5, haltM: 2, festM: 1, festS: 2 });
+AnazhRealm.FAHRER = Object.freeze({ ld0: 3, ldV: 0.35, ldMax: 12, quer: 0.75, lenk: 0.9, kriechMs: 2.5, brems: 0.6, kurveM: 12, sichtM: 120, bandMs: 1.5, bremsV: 0.5, haltM: 2, festM: 1, festS: 2 });
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER
 // Gültigkeits-Wand — ganz oder gar nicht, nie ein Misch-Gesetz. Memo nur im Erfolgs-Fall.
