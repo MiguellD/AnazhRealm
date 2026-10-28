@@ -40,7 +40,7 @@
 //                                                           | lauf --selbsttest — DER ECHTE LAUF: Frame- und GPU-Zeit, Befehle, Dreiecke und VRAM je Frame und Pass
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
-//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
+//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
 //   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: das präsentierte Canvas nach 1 s echtem Loop
@@ -254,6 +254,10 @@ function lauf(k) {
         // DIE FAHRT (`wandern: "fahrt"`, OMEN „GT-Fahrt Third ↔ Ego"): aufgestiegen im GT, V alle 4 s; die Bahn legt Wagen
         // (`_fahr`) und Reiter vor dem Takt auf +x, 20 m/s 0 → 800 m und zurück (gegen die Natur-Wand stünde er nach 39 m).
         const fahrt = k.wandern === "fahrt" ? { t0: null } : null;
+        // DER SPRUNG (`wandern: "sprung"`, streaming.K3): mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
+        // Gesetzes (der Loop übernimmt den Teleport, `_loopFixedStep`); gemessen wird die Kadenz, während die Welt dort neu
+        // entsteht, dazu nach wie vielen s sie steht (A9 `_weltSteht`) und jeder Bau im Haupt-Faden (`_syncBauten`).
+        const sprung = k.wandern === "sprung" ? { m: 1000 } : null;
         const kette = window.__ortBahn || [[ort.x, ort.z], [ort.x, ort.z - 60]];
         const laenge = kette.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - kette[i][0], q[1] - kette[i][1]), 0);
         // DER WEG des Spielers im Mess-Fenster (die Bahn oder ein Geher von außen) — „Weg 0 m" nennt eine stehende Zerlegung
@@ -396,13 +400,28 @@ function lauf(k) {
                     window.__haengerProbe(250);
                 }, (k.sek * 2000) / 3);
             }
+            if (sprung) {
+                const p = st.playerMesh.position, x = p.x + sprung.m;
+                p.set(x, r._voxelSurfaceY(x, p.z) + 1.8, p.z);
+                Object.assign(sprung, { t0: performance.now(), bau: r._syncBauten() });
+            }
             messen = uhr.messen = true;
-            await sleep(k.sek * 1000);
+            // der Sprung misst, bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dazu 1 s — höchstens `sek`
+            for (let ende = performance.now() + k.sek * 1000; performance.now() < ende; ) {
+                await sleep(sprung ? 250 : ende - performance.now());
+                if (!sprung || sprung.stehtS != null) continue;
+                if (!r._weltSteht()) sprung.offen = true;
+                else if (sprung.offen) {
+                    sprung.stehtS = +((performance.now() - sprung.t0) / 1000).toFixed(1);
+                    ende = Math.min(ende, performance.now() + 1000);
+                }
+            }
             messen = uhr.messen = false;
             if (H) H.an = false;
             const haenger = H && {
                 takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                sprung: sprung && { m: sprung.m, stehtS: sprung.stehtS ?? null, bau: [sprung.bau, r._syncBauten()] },
                 loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
                 erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),

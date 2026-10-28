@@ -471,6 +471,19 @@ function haengerAuswerten(roh, spur, opts) {
             pipelines: (klasse === "GPU" ? vor.pipes : im.pipes).slice(0, 12).map((x) => x.art + ":" + x.n),
         });
     }
+    // DIE TAKTE ÜBER DER SCHWELLE (Haupt-Faden, ohne die GPU): kein Bild ist schneller als sein Takt — je Takt die Engstelle seiner
+    // Proben, je Name Zahl · Σ · max (an der Software-GPU liegt die Kadenz an der GPU, der Täter im Takt bleibt derselbe)
+    const taktUeber = new Map();
+    for (let q = 0; q < nT; q++) {
+        const ms = T.c1[q] - T.c0[q];
+        if (ms <= schwelle) continue;
+        const e0 = P && engstelle(P, proben(T.c0[q], T.c1[q]).filter((id) => P.fnName(id) !== "(garbage collector)"), 0.5);
+        // die Engstelle und ihr schwerster Zweig darunter (der Dirigent verteilt — der Bau steht eine Stufe tiefer)
+        const n = P ? engstellenName(e0) + (e0.pfad.length && e0.zweige[0] ? ` › ${e0.zweige[0].name}` : "") : "ohne Profil";
+        const e = taktUeber.get(n) || { name: n, n: 0, summeMs: 0, maxMs: 0, t: [] };
+        Object.assign(e, { n: e.n + 1, summeMs: e.summeMs + ms, maxMs: Math.max(e.maxMs, ms) }).t.push(+((T.c0[q] - roh.tMess[0]) / 1000).toFixed(1));
+        taktUeber.set(n, e);
+    }
     // je Ursache: Zahl, Summe, Maximum
     const jeUrsache = new Map();
     for (const h of haenger) {
@@ -533,7 +546,11 @@ function haengerAuswerten(roh, spur, opts) {
         bildTaktMs: +periode.toFixed(1),
         frames: gerendert.length,
         frameMs: quantil(dts).zahl,
+        taktMs: quantil(T.c1.map((x, q) => x - T.c0[q])).zahl,
         haengerN: haenger.length,
+        taktUeber: [...taktUeber.values()]
+            .map((e) => Object.assign(e, { summeMs: Math.round(e.summeMs), maxMs: Math.round(e.maxMs) }))
+            .sort((x, y) => y.summeMs - x.summeMs),
         jeKlasse: Object.fromEntries(KLASSEN.map((kl) => [kl, haenger.filter((h) => h.klasse === kl).length])),
         jeUrsache: [...jeUrsache.values()]
             .map((e) => Object.assign(e, { summeMs: Math.round(e.summeMs), maxMs: Math.round(e.maxMs) }))
@@ -552,6 +569,16 @@ function haengerAuswerten(roh, spur, opts) {
             wetter: roh.wetter,
         },
         erst: roh.erst || null,
+        // DER SPRUNG (`--wandern sprung`, streaming.K3): wie weit, wann die Welt dort stand, und die Bauten im Haupt-Faden im Fenster
+        sprung: roh.sprung && {
+            m: roh.sprung.m,
+            stehtS: roh.sprung.stehtS,
+            bauSonst: roh.sprung.bau[1].sonst - roh.sprung.bau[0].sonst,
+            bauStellen: Object.fromEntries(
+                Object.entries(roh.sprung.bau[1].stellen).map(([k, n]) => [k, n - (roh.sprung.bau[0].stellen[k] || 0)]).filter(([, n]) => n)
+            ),
+            rot: roh.sprung.bau[1].rot,
+        },
     };
 }
 
@@ -561,6 +588,10 @@ function haengerLinsenBefunde(a) {
     if (!a.profil) b.push("keine Stichproben in der Spur — TAKT und NEBEN ohne Engstelle");
     if (a.profil && a.marken !== a.takte) b.push(`${a.marken} Takt-Marken für ${a.takte} Takte — die Proben liegen nicht auf den Takten`);
     for (const p of a.probe || []) if (!p.gefunden) b.push(`Probe ${p.art} (${p.soll}) nicht beim Namen genannt`);
+    // der Sprung urteilt sein Soll an der Schwelle: Frame p95 darüber, oder die Welt stand im Fenster nie (Ankunft nach dem Sprung)
+    const S = a.sprung;
+    if (S && !(a.frameMs.p95 <= a.schwelle)) b.push(`SPRUNG ${S.m} m: Frame p95 ${a.frameMs.p95} ms > ${a.schwelle} ms`);
+    if (S && S.stehtS == null) b.push(`SPRUNG ${S.m} m: die Welt steht nach ${a.sekunden} s nicht (_weltSteht)`);
     return b;
 }
 
@@ -575,6 +606,14 @@ function haengerTabelle(a) {
         `Lauf: Regler ${a.lauf.regler} · Tiere ${a.lauf.tiere} (${a.lauf.kreaturen}) · Wandern ${a.lauf.wandern} · ` +
             `loadScale ${a.lauf.loadScale} · Chunks ${a.lauf.chunks} · Wetter ${a.lauf.wetter} · Proben ${a.profil ? "ja" : "NEIN"} (${a.marken} Takt-Marken)`
     );
+    const S = a.sprung;
+    if (S)
+        z.push(
+            `SPRUNG ${S.m} m: Frame p95 ${a.frameMs.p95} ms (Soll ≤ ${a.schwelle}) · CPU-Takt p95 ${a.taktMs.p95} ms · ` +
+                `die Welt steht nach ${S.stehtS ?? "—"} s · ` +
+                `Bauten im Haupt-Faden: ${S.bauSonst} sonst · Sync-Stellen ${JSON.stringify(S.bauStellen)}` +
+                (S.bauSonst ? " — " + S.rot.slice(0, 4).join(" | ") : "")
+        );
     const pp = a.pipelines || {};
     z.push(
         `Pipelines im Lauf: ${pp.sync} synchron in ${pp.framesMitSync} Takten · ${pp.async} async · ${pp.shader} Shader-Module` +
@@ -601,6 +640,9 @@ function haengerTabelle(a) {
                       .join(" · ")}`
                 : "")
     );
+    const tu = a.taktUeber || [];
+    z.push(`Takte > ${a.schwelle} ms im Haupt-Faden: ${tu.reduce((n, e) => n + e.n, 0)}`);
+    for (const e of tu) z.push(`${String(e.n).padStart(4)} ${String(e.summeMs).padStart(7)} ${String(e.maxMs).padStart(8)}  ${e.name} — bei s ${e.t.slice(0, 8).join(", ")}`);
     if (a.jeUrsache.length) {
         z.push("");
         z.push("   n    Σ ms   max ms  Ursache");
@@ -856,6 +898,15 @@ function selbsttest() {
     if (!haengerLinsenBefunde(haengerAuswerten(roh, spurProfil(ev.slice(0, -1)), { schwelle: 100 })).length)
         f.push("eine fehlende Takt-Marke bleibt ohne Befund (die Proben lägen auf fremden Takten)");
     if (haengerLinsenBefunde(a).length) f.push("Befunde im erfundenen Lauf: " + haengerLinsenBefunde(a).join(" · "));
+    if (!a.taktUeber.some((e) => e.name === "_loopRender › _lastImTakt")) f.push("der Takt über der Schwelle ohne Namen: " + JSON.stringify(a.taktUeber));
+    // DER SPRUNG: Frame p95 über der Schwelle und eine Welt, die am Ziel nie steht, sind ROT beim Namen; steht sie, unter der Schwelle grün
+    const sprung = (stehtS, schwelle) => {
+        const bau = [{ sonst: 0, stellen: {} }, { sonst: 1, stellen: { naht: 2 }, rot: ["1× FADEN-UMGANGEN: Chunk-Stoff"] }];
+        const w = haengerAuswerten(Object.assign({}, roh, { sprung: { m: 1000, stehtS, bau } }), spurProfil(ev), { schwelle });
+        return haengerLinsenBefunde(w).filter((x) => /^SPRUNG/.test(x)).map((x) => (/p95/.test(x) ? "p95" : "steht")).join() + (w.sprung.bauSonst === 1 ? "" : " Bau?");
+    };
+    for (const [stehtS, schwelle, soll] of [[3, 1e6, ""], [null, 1e6, "steht"], [3, 1, "p95"]])
+        if (sprung(stehtS, schwelle) !== soll) f.push(`Sprung (steht ${stehtS}, Schwelle ${schwelle}): „${sprung(stehtS, schwelle)}" statt „${soll}"`);
     // ohne Profil: die Zeiten-Zerlegung allein (Takt gegen Rest) bleibt und nennt TAKT ohne Engstelle
     const ohne = haengerAuswerten(roh, null, { schwelle: 100 });
     if (ohne.haengerN !== erwartet.length || ohne.haenger[0].klasse !== "TAKT")
