@@ -52,3 +52,4 @@ takt14a-gtx gemessen punkte a03b7b06 gtx: 7 grün / 5 rot
 takt14b-gtx gemessen punkte a03b7b06 gtx: 24 grün / 8 rot
 z55n-abab LANGSAMER abab a03b7b06 gegen 19606f2e: w-ego 2+2 nicht-langsamer · d-ego 4+4 LANGSAMER · stadt 2+2 nicht-langsamer
 takt14c-gtx gemessen punkte a03b7b06 gtx: 34 grün / 8 rot
+z56-abab nicht-langsamer abab 9e92be45 gegen a03b7b06: w-ego 4+4 nicht-langsamer · d-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
