@@ -497,14 +497,14 @@ function wasserSchmelze(r, x, z, P) {
         Object.assign(pg, { hub: w[top].h, wochen: w.filter((o) => o.h > 0).length, gegen: w.filter((o) => o.h > 0 !== o.a).length });
         Object.assign(pg, { fluss: spanne(w.map((o) => o.f)), flut: koerper(w[top].s), ruhe: koerper(0.375) });
         // R (wetter.K3) DER REGEN SPEIST DEN BACH: das Wort des Spielers „Sturm", 20 min Welt-Uhr im Takt des Regens (`_tickRain`
-        // je 5 s): der Spiegel am Bach P.fluss (`_waterLevelAt`) über dem trockenen (`hub`) und die Tafeln an den Faden (`post`);
-        // das Regen-Feld gehalten (der Sturm regnet nicht), hebt er nichts (`fest`).
+        // je 5 s): der Spiegel am Bach P.fluss (`_waterLevelAt`) über dem trockenen (`hub`), die Tafeln an den Faden (`post`), das
+        // gezeichnete Wasser am See (`koerper`, wie P2); das Regen-Feld gehalten (der Sturm regnet nicht), hebt er nichts (`fest`).
         const sturm = () => {
             const wort = (w, s) => (r._setWeather(w, "human"), (st.weatherTransition = null), r._naesseTakt(s));
             const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
             wort("stormy", 0);
             for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
-            const aus = { hub: R(r._waterLevelAt(...P.fluss) - vor), post: pg.post - p0 };
+            const aus = { hub: R(r._waterLevelAt(...P.fluss) - vor), post: pg.post - p0, koerper: koerper(0.375)[0] };
             return wort("sunny", 1e6), aus;
         };
         pg.regen = sturm();
