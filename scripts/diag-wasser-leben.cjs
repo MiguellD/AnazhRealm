@@ -32,7 +32,6 @@
 //   node scripts/diag-wasser-leben.cjs              F + K (Null-Renderer, Mess-Wiese)      npm run gate:wasser-leben
 //   node scripts/diag-wasser-leben.cjs --bild       B (WebGPU: swiftshader; --echt die Hardware-GPU)
 //   node scripts/diag-wasser-leben.cjs --selftest   das Urteil gegen jeden Täter, ohne Browser (in `npm run check`)
-// Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
@@ -819,9 +818,8 @@ async function lauf() {
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const annotation = (x) => process.env.GITHUB_ACTIONS && console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
-    const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({
         art: BILD ? (ECHT ? "echt" : "linse") : "null",
         headless: !ECHT,

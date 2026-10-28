@@ -11,7 +11,6 @@ const crypto = require("crypto");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 const { hauptLauf } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
 
 // Die kuratierte Fall-Liste (Playbook P1): die Baum-Presets über die Matrix + je 1 Nicht-Baum. Buche · Karst ·
@@ -56,7 +55,7 @@ const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;
 // nicht die Bytes der Bäume). Das Manifest trägt die neuen Hashes der drei.
 async function nurDaten() {
     const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8"));
-    await runWithWorker(PORT, async ({ getData }) => {
+    await runWithWorker(async ({ getData }) => {
         const bookReply = await getData("get-book");
         for (const [field, key] of DATEN_KANAELE) {
             const json = JSON.stringify(bookReply[field]);
@@ -82,7 +81,7 @@ hauptLauf(async () => {
     const CASES = cases();
     console.log(`Münze ${CASES.length} Goldens (Browser-Worker, swiftshader) …`);
     const manifest = { cv: 1, mintedCases: CASES.length, files: {} };
-    await runWithWorker(PORT, async ({ build, getData }) => {
+    await runWithWorker(async ({ build, getData }) => {
         // Die drei Daten-Kanäle einfrieren (reine Daten, JSON — der Vertrag normiert sie).
         // SYNERGIE-WELLE — der EINE Umschlag (get-book) traegt die drei Payloads.
         const bookReply = await getData("get-book");

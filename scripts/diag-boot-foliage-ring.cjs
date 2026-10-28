@@ -4,10 +4,9 @@
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
 const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.FOLIRING_PORT || 4615);
 const server = statikServer();
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     // Erwartet: der Null-Renderer gibt sich unten als echter aus (_isHeadlessNull = false) — ein Stoff-Bau fragt ihn dann
     // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
     const { browser, page } = await nullSeite({ frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });

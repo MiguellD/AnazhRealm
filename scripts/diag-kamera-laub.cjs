@@ -12,7 +12,7 @@
 // Linse — die Linse muss beide beim Namen nennen, sonst ist sie vakuös. `--selftest` (ohne Welt): das Urteil über
 // synthetische Messungen nennt jeden Täter, die statische Wand fällt am Vor-Stand.
 //
-//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,ninja]   Port: KAMERA_LAUB_PORT (Standard 4611)
+//   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,gang,gang2,ninja]
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -23,7 +23,6 @@ const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
-const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
 // die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · gang (der Gang, K4) · gang2
 // (der Gang der Staffel 2: im Haus, am Steilhang, im Sprint — mit gang) · ninja (NP-03, K3) — die CI fährt sie in zwei Schritten
@@ -1224,7 +1223,7 @@ hauptLauf(async () => {
 
 
     const t0 = Date.now();
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });

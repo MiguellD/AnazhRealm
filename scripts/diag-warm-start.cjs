@@ -22,7 +22,6 @@
 //   node scripts/diag-warm-start.cjs
 
 const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.WARMSTART_PORT || 4571);
 const server = statikServer();
 
 // Startet `fn(arg)` DETACHED im Page-Kontext und pollt das Ergebnis — kein
@@ -272,7 +271,7 @@ async function jobSelbsttest(kaltIn) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {

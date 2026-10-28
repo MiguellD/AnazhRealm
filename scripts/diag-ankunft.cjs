@@ -27,13 +27,11 @@
 //       fällt an seinem Ort laut; „baue dorf hier" baut bei einem Mitspieler dasselbe Dorf an derselben Stelle.
 // Die Befunde jeder Probe trägt git (Lehre 15).
 //
-//   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
+//   node scripts/diag-ankunft.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, eigenePorte } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
-
-const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
 const { errs, check } = pruefer();
 
@@ -1893,7 +1891,7 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 600000 });
     await page.setViewport({ width: 1280, height: 720 });
     // Der statische Ladeschirm (vor dem Spiel): sichtbar, über allem — gelesen im Ereignis DOMContentLoaded, nie danach (ein
@@ -1905,8 +1903,9 @@ hauptLauf(async () => {
         })
     );
     await server.zeige(page, 30000);
-    // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
-    const out = await page.evaluate(probe, { kiPort: PORT + 3 });
+    // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht (frei vom System, gleich wieder frei gegeben).
+    const [kiPort] = await eigenePorte(1);
+    const out = await page.evaluate(probe, { kiPort });
     await browser.close();
     server.close();
 

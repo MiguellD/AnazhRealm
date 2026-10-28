@@ -17,7 +17,7 @@
 //       Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
-//   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
+//   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
@@ -29,7 +29,6 @@ const {
     himmelSelbsttest,
 } = require("./lib/ausgabe-aufnahme.cjs");
 
-const PORT = Number(process.env.WETTER_WACHE_PORT || 4602);
 // Spiel-Minuten je Fenster (G und B): drei Takte des Wetter-Zugs (120 s), 77 Feuer eines 4,7-s-Gesetzes, 15 Nexus-Evolutionen.
 const HIMMEL_MIN = Number(process.env.HIMMEL_MIN || 6);
 const SCHRITT_SEK = 0.25;
@@ -519,7 +518,7 @@ async function boot(browser) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 900000, erwartet: /Error creating WebGL context/ });
     const page = await boot(browser);
     const S = await page.evaluate(probe, {

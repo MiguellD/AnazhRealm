@@ -44,7 +44,7 @@
 // Haupt-Thread, Quelle, Durchtritt, Eindringen, vakuöse und fehlende Tempo-Zeile, stumpfer Tempo-Schmuggel, kein Bild an der
 // Mauer, ein Ausgabe-Bild ohne Wagen, ein Bild-Lauf ohne Karte — MUSS rot fallen und ihn beim Namen nennen; der Leib im Bild
 // in der Mauer steht OFFEN beim Namen.
-//   node scripts/diag-kollision-bild.cjs [--selftest | --bild]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
+//   node scripts/diag-kollision-bild.cjs [--selftest | --bild]   (npm run gate:kollision-bild)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -219,7 +219,6 @@ if (process.argv.includes("--selftest")) {
 const { statikServer, warteAufWelt, nullSeite } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
-const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
 // `--bild`: die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot (`linsenWebGpuArgs`, die Adapter-Zeile
 // `[linse-gpu] <Hersteller>/…`), ohne Null-Renderer, das Beweisbild aus dem Ausgabe-Pfad — physik.K2 Staffel 2 auf beiden Geräten
 const BILD = process.argv.includes("--bild");
@@ -759,7 +758,7 @@ async function tempo(K) {
 
 (async () => {
     console.log(`=== KOLLISION = BILD — ${BILD ? "die Karte zeichnet" : "Null-Renderer"}, Mess-Wiese 150 m ===`);
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await (BILD ? bildSeite : nullSeite)({ frist: BILD ? 36e5 : 9e5 });
     page.setDefaultTimeout(BILD ? 36e5 : 88e4);
     let befund = null;

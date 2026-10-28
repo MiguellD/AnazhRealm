@@ -41,7 +41,6 @@ const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);
 // vorher↔nachher unter derselben Linse, denselben Bedingungen.
 const UEBER = process.env.KLANG_WURZEL ? path.resolve(process.env.KLANG_WURZEL) : null;
-const PORT = Number(process.env.KLANG_ZENSUS_PORT) || 7452;
 const argv = process.argv.slice(2);
 const SELBST = argv.includes("--selftest");
 const TAKT = argv.includes("--takt");
@@ -1703,7 +1702,7 @@ async function zensus(page, browser, ergebnis) {
             res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
             res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
         });
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "null",
         headless: !ECHT,

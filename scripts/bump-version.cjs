@@ -50,7 +50,7 @@ for (const h of htmls) traeger(h, (s) => s.replace(/\?v=[0-9]+\.[0-9]+(?:\.[0-9]
 traeger("CLAUDE.md", (s) => s.replace(/^(## Stand \(V)[0-9.]+/m, `$1${ziel}`));
 console.log(`Version ${ziel} gesetzt in: ${befunde.join(", ") || "(nichts zu tun)"}`);
 // der Korpus-Stand (speicher.K5): die neue Version lädt den jüngsten und legt ihren in den Index, ROT bei Verlust
-const o = { cwd: root, stdio: "inherit", env: { ...process.env, PERSISTENCE_PORT: "0" } };
+const o = { cwd: root, stdio: "inherit" };
 const lauf = (...a) => spawnSync(a.shift(), a, o).status !== 0;
 if (
     lauf("node", "scripts/diag-persistence.cjs", "--stufe") ||

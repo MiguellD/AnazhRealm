@@ -129,8 +129,8 @@ hauptLauf(async () => {
     );
 
     console.log("\n=== TEIL C, E: der lebende Draht (Browser, foundry-ON) ===");
-    const [PORT, SIGNAL] = await eigenePorte("NERV_PORT", "NERV_SIGNAL_PORT");
-    await server.lausche(PORT);
+    const [SIGNAL] = await eigenePorte(1);
+    await server.lausche();
     const signal = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: String(SIGNAL) });
     process.on("exit", () => signal.kill()); // auch beim Absturz
     const browser = await starteBrowser({ art: "null", frist: 240000 });

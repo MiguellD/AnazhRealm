@@ -22,7 +22,6 @@
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
 // die Ratsche: 0,2 → 0,05 — der Fuß im Stand steht (Gleiten < 5 %), Tier und Mensch an EINER Schwelle
 const SCHWELLE = 0.05;
@@ -555,7 +554,7 @@ const GANG = (k) => {
 };
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     // je Seite ihr Fehler beim Namen und (wo sie gemessen wird) der EINE Schlupf — ohne Frist (ein hängender Boot steht in der Stall-Akte)
     const seite = async (b, wer, schlupf) => {

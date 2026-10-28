@@ -5,11 +5,8 @@
 // seines Bands liegt, zu wenige Orte, ein Schuss leer
 // bleibt oder die Karte der Fern-Krone nicht steht.
 //
-//   node scripts/diag-nah-fern.cjs [--port 4596]
+//   node scripts/diag-nah-fern.cjs          (die Werkbank auf einem Port des Systems, welt-boot `werkbankTor`)
 "use strict";
-const argv = process.argv.slice(2);
-const i = argv.indexOf("--port");
-const PORT = Number(i >= 0 ? argv[i + 1] : process.env.NAH_FERN_PORT || 4596);
 
 const self = require("child_process").spawnSync(
     process.execPath,
@@ -25,7 +22,7 @@ if (self.status !== 0) {
 
 (async () => {
     const t0 = Date.now();
-    const tor = require("./lib/welt-boot.cjs").werkbankTor(PORT);
+    const tor = require("./lib/welt-boot.cjs").werkbankTor();
     const rufe = tor.rufe;
     let code = 1;
     try {

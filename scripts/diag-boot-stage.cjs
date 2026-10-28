@@ -27,7 +27,6 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
-const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
 const OPT = (k, d) => {
     const i = ARGV.indexOf(k);
@@ -153,14 +152,15 @@ async function kaltLauf() {
     const ECHT = ARGV.includes("--echt");
     // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
     // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
-    await server.lausche(PORT);
     // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
     // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
     // Mit ihr wartet die Zeile auf die Ruhe der Foundry: der Erst-Boot füllt die Platte ganz, der Zweit-Boot zählt jede Lieferung.
+    // Der Server lauscht am Ursprung des Profils (welt-boot `lausche`): IndexedDB und Cache gehören zu http://127.0.0.1:<port>.
     const profilBenannt = OPT("--profil", null);
     const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
     const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
     fs.mkdirSync(profil, { recursive: true });
+    await server.lausche(profilBenannt ? { profil } : {});
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
         headless: !ECHT,
@@ -301,7 +301,7 @@ async function kaltLauf() {
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const SELFTEST = process.argv.includes("--selftest");
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 300000 });
     if (SELFTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");

@@ -43,7 +43,6 @@ const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf
 const fs = require("fs");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
-const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const SELBST = process.argv.includes("--selftest");
 const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (gelaende.K5)
@@ -1180,7 +1179,7 @@ const zeile = (o) =>
     JSON.stringify(o, (_k, v) => (typeof v === "number" ? Math.round(v * 1000) / 1000 : v)).replace(/"/g, "");
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
     let rot = 0;
     try {

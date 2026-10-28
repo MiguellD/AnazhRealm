@@ -27,7 +27,6 @@ const {
 require("../phyto-core.js"); // das Budget-Gesetz (budgetSippen · kerneVereinen) — dieselbe Datei wie Worker und Wirt
 const PC = globalThis.__phytoCore;
 
-const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
 // DIE BILD-TAFEL (S3 pflanzen, Wand D): je Baum-Art × Same (Sommer) das Bild seiner L0 und seiner L1 JE BLICK-HEBUNG
 // (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°, 30°, 60° von unten;
@@ -435,7 +434,7 @@ hauptLauf(async () => {
     const bildMess = {};
     const wurfMess = [];
     let kronenProbe = null;
-    await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
+    await runWithWorker(async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
         const aa0 = await atlasAlpha();
         const alpha0 = { w: aa0.w, h: aa0.h, alpha: new Uint8Array(Buffer.from(aa0.b64, "base64")), schwelle: 0.5 };

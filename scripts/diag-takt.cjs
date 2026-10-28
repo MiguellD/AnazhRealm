@@ -29,13 +29,10 @@
 const PK = require("./lib/pack-kanon.cjs");
 const { hauptLauf } = require("./lib/welt-boot.cjs");
 
-// Port über TAKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
-
-const PORT = Number(process.env.TAKT_PORT || 4563);
 const SELBST = process.argv.includes("--selftest");
 
 hauptLauf(async () => {
-    const realm = await PK.bootRealm(PORT);
+    const realm = await PK.bootRealm();
     let aus;
     try {
         aus = await realm.page.evaluate(async (selbst) => {

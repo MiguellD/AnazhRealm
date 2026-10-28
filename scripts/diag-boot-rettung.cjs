@@ -24,7 +24,7 @@
 //   node scripts/diag-boot-rettung.cjs [--json datei] [--wurzel dir] [--formen a,b]
 //   node scripts/diag-boot-rettung.cjs --selftest   zusätzlich: die Kette liest zum Schein nur den Platz — korrupt-bak,
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
-// Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
+// Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -37,7 +37,6 @@ const opt = (k, d) => {
 };
 const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
-const PORT = Number(process.env.BOOT_RETTUNG_PORT) || 4402;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const ALLE = [
     "platz-ohne-id",
@@ -275,7 +274,7 @@ async function fahreForm(browser, form, schein) {
 
 hauptLauf(async () => {
     const tStart = Date.now();
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE BOOT-RETTUNG — der Boot verliert die Welt des Aktiv-Zeigers nie =========");
     console.log(`  Baum: ${root}`);

@@ -18,7 +18,7 @@
 //   transport    das Gesetz der Regler (phyto-core) macht aus Klarlack/Durchsicht nicht die Zahlen des Wirts
 //   node scripts/diag-gegenstand-stoff.cjs [--selftest]
 //
-// DIE TAFEL-PROBE (stoffe.K1, `--tafel`, Port GEGENSTAND_STOFF_PORT): die EINE Stoff-Tafel in SI (`state.materials`) und je
+// DIE TAFEL-PROBE (stoffe.K1, `--tafel`): die EINE Stoff-Tafel in SI (`state.materials`) und je
 // Stoff (holz, stein, eisen, gras, erde, laub, wasser) EINE Mutation je Wirkung mit beobachtbarer Folge in der echten Welt
 // (Null-Renderer, am Ufer des Sees der Welt: Wasser, Eis, Wiese und Bauplatz an einem Ort):
 //   rho      ρ × ½: die Masse eines Quaders aus dem Stoff (`_teilMasse`) halbiert, seine Eintauchtiefe im See folgt (am Grund,
@@ -350,8 +350,8 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
 }
 async function tafel() {
     const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
-    const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
-    const server = await statikServer().lausche(port);
+    const server = statikServer();
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     try {
         const page = await browser.newPage();

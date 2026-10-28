@@ -29,7 +29,6 @@ const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
 const { hauptLauf } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");
 
 function parseArgs(argv) {
@@ -81,7 +80,7 @@ hauptLauf(async () => {
         }
     }
 
-    const realm = await PK.bootRealm(PORT);
+    const realm = await PK.bootRealm();
     try {
         const rd = await PK.waitFoundryReady(realm.page);
         if (!rd.ready || !(rd.recipeCount > 0)) {

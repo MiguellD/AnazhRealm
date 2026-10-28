@@ -186,9 +186,37 @@ const MIME = {
 // Der Statik-Server: die Datei unter der Wurzel (`/` heißt `start`, außerhalb 403, fehlt 404); `seiten` liefert eigene Seiten
 // nach Pfad (Text, Puffer, Funktion, auch als Promise), `keinCache` setzt no-store; `wandle(pfad, daten)` ist der EINE Haken der
 // Selbsttests (null heißt 404). Ein Wurf im Haken oder in einer Seite ist 500 und ein Fehler beim Namen.
-// Der EINE Server-Start und die EINE Welt-Adresse: `await server.lausche(port)` (127.0.0.1, 0 = frei) und
-// `server.zeige(seite, frist, rest = "index.html", warte = "domcontentloaded")` fährt die Seite an die Adresse, an der der Server
-// WIRKLICH lauscht — eine Linse mit eigenem listen-Versprechen oder eigener 127.0.0.1-Adresse daneben ist ein Zwilling (gate:welt-boot).
+// Der EINE Server-Start und die EINE Welt-Adresse: `const port = await server.lausche()` (127.0.0.1, der Port des Systems, siehe
+// `lausche`), `server.adresse(rest = "index.html")` die URL und `server.zeige(seite, frist, rest = "index.html", warte =
+// "domcontentloaded")` fährt die Seite an die Adresse, an der der Server WIRKLICH lauscht — eine Linse mit eigenem
+// listen-Versprechen oder eigener 127.0.0.1-Adresse daneben ist ein Zwilling (gate:welt-boot).
+// DER EINE LAUSCHER (port-frei, 28.10.): jeder Server eines Skripts lauscht HIER, auf dem Port, den das System frei gibt
+// (`listen(0)`) — CI-Runner und Punkte-Bahnen auf einem Rechner kollidieren nie. Bis dahin trug jede Linse ihren festen Port
+// (`<GATE>_PORT || 46xx`): diag-wasser-leben und diag-werkstatt-weg teilten 4623, z58b und z58c verloren je einen echt-Versuch
+// an EADDRINUSE. Die Wand: gate:altlasten DIE PORT-WAND (nur hier ein `.listen(`, nie ein Port aus der Umgebung oder als Zahl).
+// Rückgabe: der echte Port. Zwei Fälle trägt der Helfer selbst, nie das Skript:
+//   profil  der Ursprung einer Serie (http://127.0.0.1:<port> trägt IndexedDB und HTTP-Cache): ihr erster Lauf nimmt einen
+//           freien Port und legt ihn ins Profil (`welt-port`), jeder weitere lauscht wieder dort — belegt ist ROT, nie ein
+//           anderer Ursprung (ein Zweit-Boot, der still kalt misst)
+//   treff   der Treffpunkt eines Dienstes, den ein ANDERER Prozess nennt (`werkbank start --port N`) — nie eine Zahl im Skript,
+//           nie die Server des Schöpfers (4312, 4313)
+function lausche(server, { profil = null, treff = null } = {}) {
+    const datei = profil ? path.join(profil, "welt-port") : null;
+    const port = treff != null ? Number(treff) : datei && fs.existsSync(datei) ? Number(fs.readFileSync(datei, "utf8")) : 0;
+    const wer = treff != null ? `Treffpunkt ${treff}` : port ? `Ursprung des Profils ${profil}` : "frei vom System";
+    if (!(Number.isInteger(port) && port >= 0 && port < 65536) || port === 4312 || port === 4313)
+        throw new Error(`lausche: ${wer} ist kein Port der Linsen (${port}) — 4312/4313 gehören dem Schöpfer`);
+    return new Promise((ok, nein) => {
+        const fehler = (e) => nein(new Error(`lausche: ${wer}${port ? ` (:${port})` : ""} — ${e.code || e.message}`));
+        server.once("error", fehler);
+        server.listen(port, "127.0.0.1", () => {
+            server.off("error", fehler);
+            const echt = server.address().port;
+            if (datei && !port) fs.mkdirSync(profil, { recursive: true }), fs.writeFileSync(datei, String(echt));
+            ok(echt);
+        });
+    });
+}
 function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false, wandle = null } = {}) {
     const bruch = (res, p, e) => {
         melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
@@ -231,9 +259,14 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
                 );
         });
     });
-    server.lausche = (port) => new Promise((ok) => server.listen(port, "127.0.0.1", () => ok(server)));
+    // ein Port als Argument ist der gefallene Zwilling (`lausche(PORT)`) — ROT beim Wert, nie still auf ihm
+    server.lausche = (o = {}) => {
+        if (typeof o !== "object" || o === null) throw new Error(`lausche nimmt keinen Port (${o}) — der Port kommt vom System`);
+        return lausche(server, o);
+    };
+    server.adresse = (rest = "index.html") => `http://127.0.0.1:${server.address().port}/${rest}`;
     server.zeige = (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
-        seite.goto(`http://127.0.0.1:${server.address().port}/${rest}`, { waitUntil: warte, timeout: frist });
+        seite.goto(server.adresse(rest), { waitUntil: warte, timeout: frist });
     return server;
 }
 
@@ -986,19 +1019,19 @@ function startProc(script, bereit, env = {}, { vor = [], cwd = ROOT } = {}) {
         proc.on("error", reject);
     });
 }
-// DIE EIGENEN PORTS einer Linse mit eigenem Server: je ihre Variable, sonst ein freier des Systems (alle zugleich gehalten) — nie
-// 4312/4313, die Server des Schöpfers (lief `npm start`, fiel gate:taille nach 5 s mit „server timeout").
-async function eigenePorte(...variablen) {
+// DIE EIGENEN PORTS der Kinder einer Linse (save-server, signaling-server lesen ihren Port aus der Umgebung): `n` freie des
+// Systems, alle zugleich gehalten, dann frei gegeben (port-frei: keine Variable je Linse mehr) — nie 4312/4313, die Server des
+// Schöpfers (lief `npm start`, fiel gate:taille nach 5 s mit „server timeout"); auch ein Endpunkt OHNE Dienst kommt von hier.
+async function eigenePorte(n = 1) {
+    if (!(Number.isInteger(n) && n >= 1)) throw new Error(`eigenePorte(${n}): erwartet die Anzahl — der Port kommt vom System`);
     const halt = [];
-    const frei = () =>
-        new Promise((ok, nein) => {
-            const s = require("net").createServer();
-            halt.push(s);
-            s.on("error", nein);
-            s.listen(0, "127.0.0.1", () => ok(s.address().port));
-        });
+    const frei = () => {
+        const s = require("net").createServer();
+        halt.push(s);
+        return lausche(s);
+    };
     try {
-        return await Promise.all(variablen.map((v) => (Number(process.env[v]) > 0 ? Number(process.env[v]) : frei())));
+        return await Promise.all(Array.from({ length: n }, frei));
     } finally {
         await Promise.all(halt.map((s) => new Promise((ok) => s.close(() => ok()))));
     }
@@ -1041,21 +1074,31 @@ function teilAus(argv) {
     if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${a}: erwartet --teil=k/n mit 1 <= k <= n`);
     return { k: +m[1], n: +m[2] };
 }
-// DIE WERKBANK ALS TOR: `werkbank start`, bereit am Ereignis; jeder Befehl ohne Frist (ein Hänger endet am protocolTimeout der Seite)
-function werkbankTor(port, zusatz = []) {
+// DIE WERKBANK ALS TOR: `werkbank start --port 0` (die Steuer auf dem Port des Systems, port-frei), bereit am Ereignis — die
+// Bereit-Zeile nennt den Port (`tor.port`), jeder Ruf trägt ihn; jeder Befehl ohne Frist (ein Hänger endet am protocolTimeout
+// der Seite)
+function werkbankTor(zusatz = []) {
     const cp = require("child_process");
     const wb = path.join(ROOT, "scripts", "werkbank.cjs");
-    const env = Object.assign({}, process.env, { WERKBANK_PORT: String(port) });
-    const kind = cp.spawn(process.execPath, [wb, "start", "--port", String(port), ...zusatz], { env });
+    const kind = cp.spawn(process.execPath, [wb, "start", "--port", "0", ...zusatz]);
     const tor = {
         log: "",
-        rufe: (args, ms) => cp.spawnSync(process.execPath, [wb, ...args], { env, encoding: "utf8", timeout: ms }),
+        port: null,
+        rufe: (args, ms) => {
+            if (!tor.port) throw new Error("werkbankTor: die Werkbank ist noch nicht bereit — ihr Port fehlt");
+            const env = Object.assign({}, process.env, { WERKBANK_PORT: String(tor.port) });
+            return cp.spawnSync(process.execPath, [wb, ...args], { env, encoding: "utf8", timeout: ms, maxBuffer: 1 << 26 });
+        },
     };
     tor.bereit = new Promise((ok, nein) => {
-        for (const s of [kind.stdout, kind.stderr]) s.on("data", (d) => /WERKBANK bereit/.test((tor.log += d)) && ok());
+        const bereit = (d) => {
+            const m = /WERKBANK bereit: Steuer 127\.0\.0\.1:(\d+)/.exec((tor.log += d));
+            if (m) (tor.port = Number(m[1])), ok(tor.port);
+        };
+        for (const s of [kind.stdout, kind.stderr]) s.on("data", bereit);
         kind.on("exit", (c) => nein(new Error(`die Werkbank endete vor dem Start (Exit ${c})`)));
     });
-    tor.stop = () => (tor.rufe(["stop"], 30000), kind.kill());
+    tor.stop = () => (tor.port && tor.rufe(["stop"], 30000), kind.kill());
     return tor;
 }
 // wartet, bis `fn(...args)` in der Seite wahr ist (das Ereignis, je 150 ms gefragt), und gibt die Wartezeit zurück — ohne Frist:
@@ -1170,6 +1213,7 @@ module.exports = {
     CODE_OF_SEITE,
     WARTEN_SEITE,
     statikServer,
+    lausche,
     starteBrowser,
     warteAufWelt,
     nullRenderer,
@@ -1204,7 +1248,7 @@ async function selbsttest() {
         "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
     };
     const server = statikServer({ seiten });
-    await server.lausche(0);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 7000, stallMs: 3000 });
     const fall = async (pfad, tu) => {
         const page = await browser.newPage();
@@ -1285,19 +1329,20 @@ async function selbsttest() {
         .sort()
         .map((f) => [f, ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))]);
     const zwillinge = code.filter(([f, c]) => f !== "werkbank.cjs" && /\.on\("pageerror"/.test(c)).map(([f]) => f);
-    // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder baut ihre 127.0.0.1-Adresse selbst, ist das ein Zwilling von
-    // lausche/zeige; FREMD tragen ihn bis zum Schnitt ihres Besitzers (ein geheilter Eintrag macht die Liste ROT, bis er fällt)
+    // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder fährt ihre Seite an eine selbst gebaute
+    // 127.0.0.1-Adresse (Vorlage oder Verkettung), ist das ein Zwilling von lausche/adresse/zeige; FREMD tragen ihn bis zum Schnitt
+    // ihres Besitzers (ein geheilter Eintrag macht die Liste ROT, bis er fällt) — seit port-frei (28.10.) ist die Liste leer
     const adressZwilling = (c) =>
-        /statikServer\(/.test(c) &&
-        /new Promise\(\(?\w+\)? => \w+\.listen\(|\.goto\(`http:\/\/127\.0\.0\.1:\$\{/.test(c);
+        /statikServer\(/.test(c) && /\.listen\(|\.goto\(\s*(?:`http:\/\/127\.0\.0\.1:\$\{|"http:\/\/127\.0\.0\.1:" \+)/.test(c);
     const adressen = code
         .filter(([, c]) => adressZwilling(c))
         .map(([f]) => f)
         .join(", ");
-    const FREMD = "werkbank.cjs";
+    const FREMD = "";
     const gepflanzt = [
         "statikServer(); await new Promise((r) => s.listen(1, r));",
         "statikServer(); p.goto(`http://127.0.0.1:${P}/index.html`);",
+        'statikServer(); await page.goto("http://127.0.0.1:" + port + "/__aw.html");',
     ].filter(adressZwilling).length;
     // DIE FÄNGER-WAND: fängt ein Skript seinen Absturz selbst (`})().catch(…)`/`main().catch(…)` bis process.exit), ist das ein
     // Zwilling von hauptLauf; ci-kopf.cjs fährt allein im sparse-checkout, FREMD tragen ihn bis zum Schnitt ihres Besitzers
@@ -1337,8 +1382,30 @@ async function selbsttest() {
     // BESETZT: ein Server auf einem belegten Port endet — der Start urteilt am Ereignis (EADDRINUSE), nie an einer Frist;
     // die eigenen Ports der Linsen sind nie 4312/4313
     const besetzt = require("net").createServer();
-    const [belegt, frei] = await eigenePorte("WELT_BOOT_NIE_GESETZT_A", "WELT_BOOT_NIE_GESETZT_B");
-    await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
+    const [belegt, frei] = await eigenePorte(2);
+    await lausche(besetzt, { treff: belegt });
+    // PORT-FREI: zwei Linsen zugleich lauschen je auf ihrem Port des Systems und liefern beide; ein Port als Argument ist ROT
+    // beim Wert; ein Profil hält seinen Ursprung (der zweite Lauf lauscht am Port des ersten, belegt ist er ROT, nie ein anderer)
+    const zwei = [statikServer({ seiten: { "/a": "A" } }), statikServer({ seiten: { "/a": "B" } })];
+    const zweiPorte = await Promise.all(zwei.map((s) => s.lausche()));
+    const hole = (url) =>
+        new Promise((ok) => http.get(url, (r) => ((r.d = ""), r.on("data", (c) => (r.d += c)), r.on("end", () => ok(r.d)))));
+    const zweiAntwort = (await Promise.all(zwei.map((s) => hole(s.adresse("a"))))).join("");
+    let alterPort = "still";
+    try {
+        zwei[0].lausche(4623);
+    } catch (e) {
+        alterPort = e.message;
+    }
+    const profil = fs.mkdtempSync(path.join(require("os").tmpdir(), "welt-boot-profil-"));
+    const p1 = statikServer();
+    const ursprung = [await p1.lausche({ profil })];
+    ursprung.push(await statikServer().lausche({ profil }).catch((e) => e.message));
+    await new Promise((ok) => p1.close(ok));
+    const p2 = statikServer();
+    ursprung.push(await p2.lausche({ profil }).catch((e) => e.message));
+    for (const s of [...zwei, p2]) s.close();
+    fs.rmSync(profil, { recursive: true, force: true });
     const t1 = Date.now();
     const start = await startProc("save-server.js", /läuft/, { PORT: String(belegt) }).then(
         (p) => (p.kill(), "bereit"),
@@ -1354,9 +1421,20 @@ async function selbsttest() {
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
             adressen === FREMD &&
-                gepflanzt === 2 &&
-                !adressZwilling("statikServer(); await s.lausche(1); s.zeige(p, 1);"),
-            `eigene Server-Starts/Welt-Adressen neben lausche/zeige: ${adressen} (FREMD ${FREMD}) · gepflanzt ${gepflanzt}/2 gefasst`,
+                gepflanzt === 3 &&
+                !adressZwilling("statikServer(); await s.lausche(); s.zeige(p, 1); const u = s.adresse();"),
+            `eigene Server-Starts/Welt-Adressen neben lausche/adresse/zeige: ${adressen || "keine"} (FREMD ${FREMD || "leer"}) · gepflanzt ${gepflanzt}/3 gefasst`,
+        ],
+        [
+            zweiPorte[0] !== zweiPorte[1] &&
+                zweiPorte.every((p) => p > 0 && p !== 4312 && p !== 4313) &&
+                zweiAntwort === "AB" &&
+                /^lausche nimmt keinen Port \(4623\)/.test(alterPort),
+            `port-frei: zwei Linsen zugleich auf ${zweiPorte.join(" und ")} liefern „${zweiAntwort}" · lausche(4623): ${alterPort}`,
+        ],
+        [
+            ursprung[0] > 0 && /EADDRINUSE/.test(ursprung[1]) && ursprung[2] === ursprung[0],
+            `Ursprung des Profils: ${ursprung[0]} · zweiter zugleich: ${ursprung[1]} · nach dem Ende: ${ursprung[2]}`,
         ],
         [
             faenger === FAENGER_FREMD &&

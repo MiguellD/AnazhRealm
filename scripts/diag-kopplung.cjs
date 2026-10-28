@@ -13,11 +13,10 @@
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, warteAufWelt, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 300000 });
     let out = null;
     try {

@@ -37,7 +37,7 @@
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter MUSS rot fallen und ihn beim Namen
 // nennen; die Quellen-Wand nennt eine eingeschleuste Zeile in einer Kopie des Stamms (und ist am Stamm grün).
-//   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
+//   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite } = require("./lib/welt-boot.cjs");
@@ -474,7 +474,6 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const PORT = Number(process.env.FALL_WAECHTER_PORT) || 4633;
 const server = statikServer();
 
 // Die Proben im Seiten-Kontext.
@@ -1015,7 +1014,7 @@ async function probe(K) {
 
 hauptLauf(async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 900000 });
     page.setDefaultTimeout(880000);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)

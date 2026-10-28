@@ -15,7 +15,7 @@
 //     (Werkstatt · KI-Satz · geteilter Code) und Sicht (Ego · Third).
 //   PRÜF-SATZ (Bauen K3) — zehn Konstruktionen über den Bau-Weg (spec/pruefsatz/bauen-k3.json): das Stabile steht, das Instabile
 //     stürzt sichtbar (die EINE Statik beim Setzen); Brennglas, Rad, Schale und Gründer wirken aus der Form.
-//   node scripts/diag-werkstatt-weg.cjs [--selftest | --verben]          Port: WERKSTATT_WEG_PORT (Standard 4623)
+//   node scripts/diag-werkstatt-weg.cjs [--selftest | --verben]
 //   --verben fährt NUR L-VERBEN, mit echtem Renderer (die Karte; Meisterkarte Bauen K5 Staffel 2 auf beiden Geräten).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -24,7 +24,6 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const NUR_VERBEN = process.argv.includes("--verben");
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // Meisterkarte Bauen K3: 5 stabil, 5 instabil, die Wirkungen
 
@@ -1558,7 +1557,7 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand()) check(name, ok, detail);
 
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: NUR_VERBEN ? "linse" : "null", frist: 600000 });
     const page = await browser.newPage();
     if (!NUR_VERBEN) await nullRenderer(page);

@@ -1368,9 +1368,8 @@ hauptLauf(async () => {
 
     // ===== TEIL B: der lebende Kanal (Browser, foundry-ON) =====
     console.log("\n=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===");
-    const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 240000 });
     await server.zeige(page, 30000);
     // DIE PROBEN JE LAUFZEIT-MARKE: `fn` läuft in der Seite, jede Probe setzt ihre Marke (`__marke(name)`); gewartet wird Marke um

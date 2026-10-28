@@ -31,7 +31,6 @@ const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
-const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
 const server = statikServer();
 
 // ── H-F (W5 Gegenstände) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
@@ -103,7 +102,7 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 

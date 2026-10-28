@@ -29,9 +29,6 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-// Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
-const PORT = Number(process.env.FLUSS_PORT || 4561);
-
 // STATISCH — die Wache des Gefallenen über den EINEN Absenz-Helfer (`stammLib.fehlt`, kommentar-frei; `wandel` färbt den
 // Stamm im Selbsttest): der Asset-Store nur in der Schale, der Streu-Same nur in `_scatterRohSame` (die Engstellen leben —
 // die Schale läuft unten im Worker, der Same in der Klon-Linse).
@@ -205,7 +202,7 @@ async function verhalten(schaleSrc) {
             "/kern.js": "// kern",
         },
     });
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "standard" });
     try {
         const page = await browser.newPage();
@@ -729,7 +726,7 @@ function urteilWelt(d) {
 
 async function welt() {
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     try {
         const page = await browser.newPage();

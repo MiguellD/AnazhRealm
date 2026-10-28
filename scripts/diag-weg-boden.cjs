@@ -17,7 +17,6 @@
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
 const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.WEG_PORT || 4596);
 const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
 
@@ -312,7 +311,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 120000 });
     await server.zeige(page, 30000);
     await page.evaluate(async () => {

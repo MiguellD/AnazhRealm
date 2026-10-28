@@ -34,7 +34,7 @@
 //   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt der Hülle ihr Ziel-Bild backen (worlds/<welt>/panorama.f16,
 //                                                    der Stempel in worlds/tor-ziele.json); auf der echten GPU (Lehre 17)
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
-//                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
+//                                                    die L0 eines Ofen-Labors (H4)
 "use strict";
 const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
@@ -57,7 +57,6 @@ const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
 const ELEMENT_ADAPTER = /\(\s*op\s*&&\s*op\s*\[\s*0\s*\]\s*\)/g;
-const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742); // der Gang und das Backen
 // H6 — EINE ENGINE: die Pfade der Anfragen einer Seite; die Ratsche nennt, wer noch fremd lädt (sie zieht nur an).
 const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
@@ -404,7 +403,7 @@ function selbsttest() {
 // gate:gelaende-studio Regler für Regler.
 async function gang() {
     const s = statikServer();
-    await s.lausche(PORT);
+    await s.lausche();
     const browser = await starteBrowser({ art: "linse", frist: 120000 });
     const netz = {},
         seiten = {};
@@ -509,10 +508,10 @@ async function sitzungsGang(page, saat, neuladen, n) {
 // Seite derselben Herkunft), ihre Brücke meldet `ready`, die Welt wächst, dann `panorama-bitte` → `panorama` (Halbfloat-Texel aus
 // IHREM Renderer, `AnazhHuelle.panorama`). Die Datei `worlds/<welt>/panorama.f16` (rgba16float 512 × 256, Zeile 0 unten) und ihr
 // Stempel in `worlds/tor-ziele.json`. Das Ziel-Bild ist ein Bild-Urteil (Lehre 17): es backt die echte GPU unter dem GPU-Schloss,
-// ein Software-Adapter (swiftshader, LINSE_GPU=software) bricht laut. Port STUDIO_HUELLE_PORT (8742).
+// ein Software-Adapter (swiftshader, LINSE_GPU=software) bricht laut.
 async function panoramaBacken(nur) {
     const s = statikServer({ seiten: { "/__panorama.html": '<!DOCTYPE html><meta charset="utf-8"><title>Panorama</title><body style="margin:0"></body>' } });
-    await s.lausche(PORT);
+    await s.lausche();
     const kp = path.join(ROOT, TOR_ZIELE);
     const K = fs.existsSync(kp) ? JSON.parse(fs.readFileSync(kp, "utf8")) : {};
     const neu = { format: PANO.format, w: PANO.w, h: PANO.h, welten: K.welten || {}, ohne: {} };

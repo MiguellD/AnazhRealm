@@ -21,7 +21,6 @@ const PK = require("./lib/pack-kanon.cjs");
 const { hauptLauf } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
-const PORT = Number(process.env.PACK_GATE_PORT || 4562);
 const CONTRACT = path.join(PK.ROOT, "spec", "pack", "v0", "CONTRACT.md");
 
 let fails = 0;
@@ -186,7 +185,7 @@ async function main() {
 
     // (d) DER ROUNDTRIP-BEWEIS + der Hook VERHALTENS-bewiesen (ein Preset, lod 2 — klein).
     const manifest = PK.readManifest(PK.ROOT);
-    const realm = await PK.bootRealm(PORT);
+    const realm = await PK.bootRealm();
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pack-gate-"));
     try {
         const rd = await PK.waitFoundryReady(realm.page);

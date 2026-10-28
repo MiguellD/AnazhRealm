@@ -2,12 +2,10 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper]
 "use strict";
 const { statikServer, nullRenderer, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 const path = require("path");
-
-const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 
 const { errs, check } = pruefer();
 
@@ -2193,7 +2191,7 @@ hauptLauf(async () => {
     console.log("REIFEN " + JSON.stringify(kern.reifen));
     if (process.argv.includes("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({
         frist: 300000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],

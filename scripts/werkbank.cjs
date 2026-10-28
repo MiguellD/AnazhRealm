@@ -1,7 +1,7 @@
 // werkbank.cjs — DIE WERKBANK der Look-Arbeit: EINE Welt bleibt offen, Fragen gehen per Befehl hinein, eine Methode aus
 // dem Arbeitsbaum wird in die laufende Seite getauscht, das Bild ist in Sekunden da.
 //
-//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]  Welt + Steuer-Server (bleibt offen)
+//   node scripts/werkbank.cjs start [--port N] [--holz voll|nah|kienspan] [--ort <id>]  Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
 //                                                           `messorte`): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht; buehne betritt ihre Welt;
@@ -65,7 +65,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, lausche, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -165,8 +165,19 @@ const opt = (k, d) => {
     const i = argv.indexOf(k);
     return i >= 0 ? argv[i + 1] : d;
 };
-const PORT = Number(opt("--port", process.env.WERKBANK_PORT || 4490));
-const SEITEN_PORT = PORT - 1;
+// DER TREFFPUNKT DER STEUER (port-frei, 28.10.): `--port N` (oder WERKBANK_PORT) nennt ein ANDERER Prozess — die Bahn der
+// Punkte-Maschine, ein Client; `--port 0` heißt frei vom System (welt-boot `werkbankTor`); ohne beides lauscht `start` auf dem
+// Port des Systems und legt ihn in die Treff-Datei, aus der jeder Befehl ohne `--port` ihn liest. Bis dahin standen Steuer und
+// Seite fest auf 4490/4489 — zwei Werkbänke eines Rechners (CI-Runner, Bahnen) kollidierten.
+const TREFF = opt("--port", process.env.WERKBANK_PORT);
+const TREFF_DATEI = path.join(root, "artifacts", "werkbank", "steuer-port");
+let eigenPort = null; // `--eigen`: der Port des eigenen Tors
+const steuerPort = () => {
+    if (eigenPort) return eigenPort;
+    if (TREFF != null) return Number(TREFF);
+    if (fs.existsSync(TREFF_DATEI)) return Number(fs.readFileSync(TREFF_DATEI, "utf8"));
+    throw new Error(`keine Werkbank offen: ${path.relative(root, TREFF_DATEI)} fehlt (werkbank start) und kein --port`);
+};
 // Das Holz-Profil der Welt: ohne Wahl erkennt sie swiftshader und fährt „kienspan" (ohne Schatten,
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
@@ -190,11 +201,11 @@ const ECHT_SEITE = (() => {
 const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
-const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
+const rufe = (weg, nutzlast) => werkbankRuf(steuerPort(), weg, nutzlast);
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
 const endeMit = (t, gruen) => (console.log(typeof t === "string" ? t : JSON.stringify(t, null, 1)), process.exit(gruen ? 0 : 1));
 // `--eigen`: die Welt als Kind von `start` am EINEN Tor (welt-boot `werkbankTor`, bereit am Ereignis), gestoppt am Ende
-const eigeneWelt = async (tor = werkbankTor(PORT)) => (await tor.bereit, tor.stop);
+const eigeneWelt = async (tor = werkbankTor()) => ((eigenPort = await tor.bereit), tor.stop);
 
 // Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
 function methodeAusQuelle(quelle, name) {
@@ -695,23 +706,36 @@ function bandProben(k) {
 
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
+    // EINE Werkbank je Treff-Datei: antwortet die genannte Steuer noch, bricht der Start laut ab (früher: EADDRINUSE auf 4490)
+    if (TREFF == null && fs.existsSync(TREFF_DATEI)) {
+        const alt = Number(fs.readFileSync(TREFF_DATEI, "utf8"));
+        const lebt = await new Promise((ok) =>
+            require("net")
+                .connect(alt, "127.0.0.1", function () {
+                    this.end(), ok(true);
+                })
+                .on("error", () => ok(false))
+        );
+        if (lebt) throw new Error(`eine Werkbank ist offen (Steuer :${alt}, ${path.relative(root, TREFF_DATEI)}) — werkbank stop`);
+    }
     const puppeteer = require("puppeteer");
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    // DAS PROFIL DER MESS-SERIE: ohne eigenes Profil legte puppeteer je Start ein namenloses an — jede Zahl war eine
+    // Erst-Boot-Zahl („17 von 319 von der Platte"). Scratch je Start (beim `stop` gelöscht) oder benannt (`--serie`).
+    const profil = SERIE
+        ? path.join(root, "artifacts", "werkbank", "profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"))
+        : path.join(require("os").tmpdir(), `werkbank-profil-${process.pid}-${Date.now()}`);
+    const serieNeu = !fs.existsSync(profil);
+    fs.mkdirSync(profil, { recursive: true });
     const seiten = statikServer();
+    let seitenPort = null;
     if (ECHT) {
         // Der Flugschreiber schreibt nur vom save-server-Ursprung (isSaveServerHost) — ohne ihn kein Echt-Lauf.
         const da = await new Promise((r) =>
             http.get(ECHT_SEITE + "/", (res) => (res.resume(), r(res.statusCode === 200))).on("error", () => r(false))
         );
         if (!da) throw new Error(`--echt braucht den save-server auf ${ECHT_SEITE} (npm start)`);
-    } else await seiten.lausche(SEITEN_PORT);
-    // DAS PROFIL DER MESS-SERIE: ohne eigenes Profil legte puppeteer je Start ein namenloses an — jede Zahl war eine
-    // Erst-Boot-Zahl („17 von 319 von der Platte"). Scratch je Start (beim `stop` gelöscht) oder benannt (`--serie`).
-    const profil = SERIE
-        ? path.join(root, "artifacts", "werkbank", "profil-" + SERIE.replace(/[^a-z0-9_-]+/gi, "_"))
-        : path.join(require("os").tmpdir(), `werkbank-profil-${PORT}-${Date.now()}`);
-    const serieNeu = !fs.existsSync(profil);
-    fs.mkdirSync(profil, { recursive: true });
+    } else seitenPort = await seiten.lausche(SERIE ? { profil } : {}); // die Serie hält ihren Ursprung (IndexedDB, Cache)
     const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     const browser = await puppeteer.launch({
@@ -760,7 +784,7 @@ async function starte() {
     });
     const lade = async (nav) => {
         boot.ladungen++;
-        const basis = ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`;
+        const basis = ECHT ? ECHT_SEITE : seiten.adresse("").replace(/\/$/, "");
         await (nav ||
             page.goto(`${basis}/index.html${HOLZ ? `?holz=${HOLZ}` : ""}`, {
                 waitUntil: "domcontentloaded",
@@ -2900,9 +2924,11 @@ async function starte() {
                 }
                 if (req.url === "/stop") {
                     send({ stop: true });
-                    // Ports SOFORT frei geben (sonst fände ein Neustart :4489 noch belegt).
+                    // Ports SOFORT frei geben, die Treff-Datei mit ihnen (nur die eigene: ein Nachfolger trägt seinen Port)
                     seiten.close();
                     steuer.close();
+                    if (TREFF == null && fs.existsSync(TREFF_DATEI) && Number(fs.readFileSync(TREFF_DATEI, "utf8")) === port)
+                        fs.rmSync(TREFF_DATEI, { force: true });
                     // Eine tote Seite lässt close() werfen — der catch unten sendete dann ein zweites Mal
                     // (ERR_HTTP_HEADERS_SENT) und riss den Prozess ohne Chrome-Abbau herunter.
                     await browser.close().catch((e) => tod("close: " + ((e && e.message) || e)));
@@ -2928,8 +2954,9 @@ async function starte() {
             }
         });
     });
-    await new Promise((r) => steuer.listen(PORT, "127.0.0.1", r));
-    console.log(`WERKBANK bereit: Steuer 127.0.0.1:${PORT} · Seite :${SEITEN_PORT}`);
+    const port = await lausche(steuer, TREFF != null && Number(TREFF) > 0 ? { treff: TREFF } : {});
+    if (TREFF == null) fs.mkdirSync(path.dirname(TREFF_DATEI), { recursive: true }), fs.writeFileSync(TREFF_DATEI, String(port));
+    console.log(`WERKBANK bereit: Steuer 127.0.0.1:${port} · Seite ${ECHT ? ECHT_SEITE : ":" + seitenPort}`);
 }
 
 hauptLauf(async () => {

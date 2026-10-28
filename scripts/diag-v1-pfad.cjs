@@ -14,16 +14,14 @@
 //     fährt den Korpus-Teil Regler-Wörter (KI K2, das Soll am Stempel der Werke, eigene Ratsche ratsche-ki-korpus-regler.json).
 //   FEIND — der feindliche Korpus (spec/abnahme/ki-feind-korpus.json) kommt durch die Eingänge der Fremde zu einem
 //     gehorsamen Modell: 0 erreicht · 0 ausgeführt · die Signatur schlägt an · der Spieler liest den Namen.
-//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]   Port: V1_PFAD_PORT (4421)
+//   node scripts/diag-v1-pfad.cjs [--selftest | --korpus [--regler] [--echt [--bild] [--aufnahme]] | --feind]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, eigenePorte } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const stammLib = require("./lib/stamm.cjs");
-
-const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 
 const { errs, check } = pruefer();
 
@@ -2036,7 +2034,7 @@ const mitschnitt = (ratsche) => (req) =>
 // eine Welt auf dem Null-Renderer, gewartet bis sie steht
 async function kiWelt(seiten) {
     const srv = statikServer({ seiten });
-    await srv.lausche(PORT);
+    await srv.lausche();
     const { browser, page } = await nullSeite({ frist: 900000 });
     await srv.zeige(page);
     await warteAufWelt(page);
@@ -2059,7 +2057,7 @@ async function korpusHaupt() {
         const { srv, browser, page } = await kiWelt(echt ? null : { "/api/chat": mitschnitt(ratsche) });
         await page.evaluate(AUSGABE_INSTALL);
         const worte = [...new Set(korpus.saetze.flatMap(([, s]) => (Array.isArray(s.werk) ? s.werk : [])))];
-        const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : `http://127.0.0.1:${PORT}/`;
+        const endpunkt = echt ? process.env.KI_ENDPUNKT || "http://127.0.0.1:11434/" : srv.adresse("");
         const arg = { modell, endpunkt, worte, gegenprobe: KORPUS_SOLL.gegenprobe };
         const auf = await page.evaluate(korpusAufbau, arg);
         m.tueren = auf.tueren;
@@ -2248,7 +2246,7 @@ async function feindHaupt(quelle) {
     if (korpus) {
         const { srv, browser, page } = await kiWelt({ "/api/chat": gehorsam(korpus, log) });
         const golden = JSON.parse(fs.readFileSync(path.join(root, "spec/golden/v1/blueprint-signed.json"), "utf8"));
-        const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: `http://127.0.0.1:${PORT}/` };
+        const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: srv.adresse("") };
         m = { ...(await page.evaluate(feindLauf, arg)), korpus, erreicht: log };
         await browser.close();
         srv.close();
@@ -3165,13 +3163,14 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 600000 });
     await page.setViewport({ width: 1280, height: 720 });
     await server.zeige(page, 30000);
-    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.
+    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (frei vom System, gleich wieder frei gegeben).
+    const [kiPort] = await eigenePorte(1);
     const out = await page.evaluate(probe, {
-        kiPort: PORT + 3,
+        kiPort,
         knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]),
     });
     await browser.close();

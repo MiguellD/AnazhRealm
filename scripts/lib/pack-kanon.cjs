@@ -166,9 +166,9 @@ function readPack(file) {
 // mit ERZWUNGENER Foundry (der Worker bäckt echte Assets im Gate-Kontext; die IDB ist
 // headless bewusst AUS → jeder `_foundryRequest` ist ein ECHTER Worker-Reply, genau die
 // Wahrheit, die das Pack einfrieren soll).
-async function bootRealm(port) {
+async function bootRealm() {
     const server = statikServer();
-    await server.lausche(port);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 240000 });
     await server.zeige(page, 30000);
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).

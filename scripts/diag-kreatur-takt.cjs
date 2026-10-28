@@ -12,7 +12,6 @@ const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
-const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
     const i = argv.indexOf(k);
@@ -71,7 +70,7 @@ const gewaehlt = (() => {
 
 async function headless(laeufe) {
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 900000 });
     page.setDefaultTimeout(880000);
     const [aus, dauer] = [[], {}];

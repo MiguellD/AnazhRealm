@@ -126,8 +126,8 @@ jobs:
               # `werkbank band` an der echten GPU), das Wasser-Urteil (jeder Täter der Wasser-Wand fällt beim Namen rot)
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
-              # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
+              # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (auf einem
+              # freien Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
               # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
               env:
                   WACHSTUM_VORHER: ${{ github.event.before }}

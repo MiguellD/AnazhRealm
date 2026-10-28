@@ -15,13 +15,12 @@
 //   node scripts/diag-sippen-wirt.cjs
 
 const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.SIPPEN_PORT || 4413);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 900000 });
     const t0 = Date.now();
     await server.zeige(page, 30000);

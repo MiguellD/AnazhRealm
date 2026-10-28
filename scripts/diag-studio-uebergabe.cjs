@@ -285,9 +285,8 @@ async function kanalPruefen() {
 // --welt: der Konsum im echten Spiel (Null-Renderer, Foundry warm) — das Werk über den Empfänger, die Leser der Welt bauen.
 async function weltPruefen() {
     const { statikServer } = require("./lib/welt-boot.cjs");
-    const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
     const out = await page.evaluate(async () => {

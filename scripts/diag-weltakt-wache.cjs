@@ -24,14 +24,13 @@
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
 // und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb, `formUrteil`
 // den brechenden Op, den stehenden Bau, den ungeprüften Op und den toten Listen-Namen; `tatUrteil` jeden Bruch der Tat.
-//   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
+//   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
-const PORT = Number(process.env.WELTAKT_WACHE_PORT || 4603);
 const FORM_BRUCH = /error|exception|budget|unknown|invalid|failed|oob|not_found|ignored|skipped|gehalten/;
 
 // (T) DAS URTEIL DER TAT (rein, über `tatProbe`) → Befunde
@@ -490,7 +489,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {

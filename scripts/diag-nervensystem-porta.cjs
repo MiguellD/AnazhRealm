@@ -21,7 +21,6 @@ const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
-const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -59,7 +58,7 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 

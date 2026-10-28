@@ -14,8 +14,6 @@
 // echten Renderer). Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5 | --k1]
 const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
-// Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
-const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
 // (T13) Urteil des Rückstoßes (pure, Probe und Selbst-Test): kein Satz im Treffer-Takt, der Fuchs fliegt, die Masse teilt
 // (Fuchs ≥ 3 × Bär), die Waffe wirkt (Keule ≥ 1,15 × Dolch).
@@ -729,7 +727,7 @@ async function k1Ende(browser, K) {
 }
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: NUR_K5 || NUR_K1 ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);

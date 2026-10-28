@@ -32,7 +32,7 @@
 //   misst Falsches — die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch. Am Ende stirbt die Werkbank samt
 //   Chrome (`beendeBaum`: `/stop`, und hängt er, der ganze Prozess-Baum) — erst dann endet die Folge.
 //
-//   node scripts/omen-messfolge.cjs [--ort <FOLGEN>] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
+//   node scripts/omen-messfolge.cjs [--ort <FOLGEN>] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
 //                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
 //                                   [--sicht ego|third] [--basis <A.json>]   (K26: die Sicht des Orts; die Basis-Seite A des ABAB)
 //   node scripts/omen-messfolge.cjs --urteil <boot.json> [--basis <A.json>]   (K26, ohne GPU: ein gespeicherter Boot neu gelesen)
@@ -580,8 +580,8 @@ const dorfBefund = (um) =>
         ? `DORF: vor dem Ort ging ein Dorf los (${um.dorfSchwebt}) — sein Plan schwebt, der Wald weicht ihm, die Szene ist nicht die des Orts`
         : null;
 // der Start der Werkbank: der Ort schon hier (`start --ort`) — ein Ort ohne Dorf-Zug sperrt ihn ab dem ersten Skript
-const startArgs = (port, seite, ort, serie) => {
-    const a = [path.join(__dirname, "werkbank.cjs"), "start", "--echt", "--port", String(port), "--seite", seite, "--ort", ort];
+const startArgs = (seite, ort, serie) => {
+    const a = [path.join(__dirname, "werkbank.cjs"), "start", "--echt", "--port", "0", "--seite", seite, "--ort", ort];
     if (serie) a.push("--serie", serie);
     return a;
 };
@@ -604,7 +604,7 @@ async function folgeMitNeulauf() {
 }
 
 async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
-    const PORT = Number(opt("--port", process.env.WERKBANK_PORT || 4490));
+    let PORT = null; // die Steuer der eigenen Werkbank: der Port des Systems (port-frei), die Bereit-Zeile nennt ihn
     const SEITE = String(opt("--seite", process.env.WERKBANK_SEITE || "http://localhost:4312"));
     const SERIE = opt("--serie", "");
     const P = {
@@ -675,7 +675,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
     const log = [];
     const profilSerie = serieProfil(SERIE);
     const serieNeu = !!profilSerie && !fs.existsSync(profilSerie);
-    const args = startArgs(PORT, SEITE, ORT, SERIE);
+    const args = startArgs(SEITE, ORT, SERIE);
     const kind = spawn(process.execPath, args, { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
     let bereit = null;
     const fertigP = new Promise((res) => (bereit = res));
@@ -683,7 +683,8 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         for (const l of String(d).split("\n").filter(Boolean)) {
             log.push(l);
             if (log.length > 200) log.shift();
-            if (/WERKBANK bereit/.test(l)) bereit(true);
+            const m = /WERKBANK bereit: Steuer 127\.0\.0\.1:(\d+)/.exec(l);
+            if (m) (PORT = aus.parameter.port = Number(m[1])), bereit(true);
         }
     };
     kind.stdout.on("data", zeile);
@@ -1470,7 +1471,7 @@ async function selbsttest() {
     pruefe("Zwischen-Versuch ohne Befund", [einschwingBefund(offen, 1, false)].filter(Boolean), null);
     pruefe("Dorf-Plan schwebt", [dorfBefund({ dorfSchwebt: "Plan 0/18 (Zelle start)" })].filter(Boolean), /DORF: vor dem Ort.*0\/18/);
     pruefe("Dorf ruht", [dorfBefund({ dorfSchwebt: null })].filter(Boolean), null);
-    const sa = startArgs(4490, "http://localhost:4312", "genesis", "s1");
+    const sa = startArgs("http://localhost:4312", "genesis", "s1");
     pruefe(
         "Start mit dem Ort",
         [sa[sa.indexOf("--ort") + 1] !== "genesis" && `start ohne --ort genesis: ${sa.slice(1).join(" ")}`].filter(Boolean),

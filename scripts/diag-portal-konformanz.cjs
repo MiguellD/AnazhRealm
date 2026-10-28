@@ -36,7 +36,6 @@
 //
 //   node scripts/diag-portal-konformanz.cjs --selftest     die alten Defekte eingespielt (`selbsttest`) → jede Wand rot beim Täter
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
-// Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
 const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -44,7 +43,6 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
-const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 
 // Je Welt: das Wort, das der Spieler in die Konsole tippt, und woran man sieht, dass es wirkt. `ui` = Zustand der
@@ -583,7 +581,8 @@ async function bisWirkung(page, welt, n, gut) {
     return n;
 }
 
-async function fremdBereit(page, port) {
+// die fremde Seite vom Server der Welt (der Ursprung der Seite: der Port des Systems)
+async function fremdBereit(page) {
     await page.evaluate(async (url) => {
         if (document.getElementById("__fremd")) return;
         const f = document.createElement("iframe");
@@ -592,7 +591,7 @@ async function fremdBereit(page, port) {
         f.src = url;
         document.body.appendChild(f);
         await new Promise((r) => f.addEventListener("load", r, { once: true }));
-    }, "http://127.0.0.1:" + port + "/__fremd.html");
+    }, new URL("/__fremd.html", page.url()).href);
 }
 
 async function pruefeWelt(page, welt, lies) {
@@ -657,7 +656,7 @@ async function pruefeWelt(page, welt, lies) {
     aus.echo = z.readys > 1;
     await zaehlerAus(page);
     // K3: die fremde Seite schickt, was wirken würde (chain-Form bzw. peer-join) — nichts darf wirken.
-    await fremdBereit(page, PORT);
+    await fremdBereit(page);
     const programm = welt.wort
         ? await page.evaluate((w) => window.anazhRealm._portalParseWorldCommand(w), welt.wort)
         : null;
@@ -726,7 +725,7 @@ async function pruefeWelt(page, welt, lies) {
 async function lauf(welten, taeter) {
     const { s, fehlend, weg } = server(taeter);
     const lies = (rel) => ausliefern(rel, taeter, []);
-    await s.lausche(PORT);
+    await s.lausche();
     const browser = await starteBrowser({ art: "linse", frist: 180000 });
     const ergebnisse = [];
     try {

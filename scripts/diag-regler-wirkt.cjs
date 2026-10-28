@@ -38,14 +38,11 @@
 //                                                   nach ihrem Zeugen „an <rezept> <id>=…“), die Staffel zählt die Zeilen
 //                                                   der anderen Teile aus der Ratsche hinzu
 //   node scripts/diag-regler-wirkt.cjs --messen     nur messen und ausgeben (kein Urteil)
-// Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
-// Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
 const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
-const PORT = Number(process.env.REGLER_WIRKT_PORT || 4561);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 const SEED = 1;
 const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
@@ -94,10 +91,9 @@ function kernVonArt() {
 // (`__kaltPlatzhalter`) statt der Gestalt liefert, leer bleibt oder NaN trägt; ein Grund-Guss, der zweimal verschieden
 // ausfällt, rauscht (beides rot). Eine Ofen-Art ohne Gestalt-Bäcker (`BAKERS_BY_KIND[art]` fehlt, Vertrag §8.4) gießt
 // nichts: ihre Regler sind tot mit diesem Grund (Ratsche).
-const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
-    await server.lausche(OFEN_PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 300000 });
     try {
         const page = await browser.newPage();
@@ -581,7 +577,7 @@ function ofenZeilen(ofen) {
 async function messenAlle() {
     const ofen = TEIL === 1 ? await imStamm((page) => ofenMessen(page, {})) : { zeilen: [], arten: {} };
     let stufen = null;
-    await runWithWorker(PORT, async (h) => {
+    await runWithWorker(async (h) => {
         const imTeil = { regler: (art, id, ids) => teilDer(art, id, ids) === TEIL, grund: (art, ids) => teilDer(art, null, ids) === TEIL };
         stufen = await stufenMessen(h, TEIL === 1 ? { ohneArten: [...Object.keys(ofen.arten), HAUS] } : { nurArt: HAUS, ...imTeil });
     });
@@ -660,7 +656,7 @@ async function selbsttest() {
     let taeter = null,
         heil = null,
         brecher = null;
-    await runWithWorker(PORT, async (h) => {
+    await runWithWorker(async (h) => {
         taeter = { zeilen: wirkenAus(await stufenMessen(h, { nurArt: "vehicle", nurErste: true, ohneOv: true })) };
         heil = { zeilen: wirkenAus(await stufenMessen(h, { nurArt: "vehicle", nurErste: true })) };
         // (c) der Täter „ein Regler bricht den Bau" am echten Kanal: radstand min → der Worker wirft (0 Teile),
@@ -718,7 +714,7 @@ async function selbsttest() {
         sHeil = null,
         sTaeter = null,
         sLeer = null;
-    await runWithWorker(PORT, async (h) => {
+    await runWithWorker(async (h) => {
         wHeil = wurfAus(await stufenMessen(h, { nurArt: "gate", nurRezept: "kathedrale" }), stammRegel());
         // (f) DIE STUFEN-PROBE: der Täter „die Stufe reduziert nicht" (die Ausstattung baut jede Stufe als L0) ist rot beim
         // Namen — die Stufe 1 über ihrer Zeile und ihre Quote über dem Soll; ohne Täter hält jede Stufe ihr Rezept-Maß.

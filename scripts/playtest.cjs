@@ -10,8 +10,8 @@ const { starteBrowser, startProc, eigenePorte, hauptLauf } = require("./lib/welt
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
 // Default 30 s = CI-Wert (.github/workflows/check.yml).
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
-// der Port des save-servers: PLAYTEST_PORT (ein Prüfer fährt den vollen Playtest in seinem Port-Band), sonst ein freier des
-// Systems (welt-boot `eigenePorte`) — nie 4312, dort läuft der Spiel-Server des Schöpfers
+// der Port des save-servers: ein freier des Systems (welt-boot `eigenePorte`) — nie 4312, dort läuft der Spiel-Server des
+// Schöpfers
 let SERVER_URL = null;
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 // Default GPU-frei (Null-Renderer): kein Band liest Pixel, der echte GPU-Kontext wäre nur Crash-Quelle
@@ -103,7 +103,7 @@ const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest"
 if (require.main === module) hauptLauf(async () => {
     const T0 = Date.now();
     console.log(`Starte Save-Server ...`);
-    const [port] = await eigenePorte("PLAYTEST_PORT");
+    const [port] = await eigenePorte(1);
     SERVER_URL = `http://127.0.0.1:${port}/index.html`;
     const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
     console.log(`Lade ${SERVER_URL} für ${DURATION_MS / 1000}s ...`);

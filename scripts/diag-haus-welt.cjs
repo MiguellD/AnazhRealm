@@ -194,10 +194,9 @@ const BASIS = {
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
-// DIE WELTEN NEBENEINANDER (HAUS_WELT_PARALLEL, höchstens 4): je Platz ein EIGENER Server (HAUS_WELT_PORT + Platz) mit dem
+// DIE WELTEN NEBENEINANDER (HAUS_WELT_PARALLEL, höchstens 4): je Platz ein EIGENER Server (ein Port des Systems) mit dem
 // Patch SEINER Welt, je Welt ein eigener Browser-Kontext
 const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
-const PORT_BASIS = Number(process.env.HAUS_WELT_PORT) || 0;
 // --teil=k/n: die CI fährt die Welten in n Gruppen — Teil k trägt die Welten i (0 = der Hauptlauf, dann die Selbsttests)
 // mit i mod n = k - 1; jede Welt urteilt in GENAU einem Teil.
 const TEIL = teilAus(process.argv);
@@ -2241,7 +2240,8 @@ hauptLauf(async () => {
                 // der Platz k: EIN Server, der den Patch der Welt liefert, die gerade auf ihm fährt
                 const platz = { z: null };
                 const server = machServer(platz);
-                platz.server = await server.lausche(PORT_BASIS ? PORT_BASIS + k : 0);
+                await server.lausche();
+                platz.server = server;
                 try {
                     while (naechster < auftraege.length) {
                         const i = naechster++;

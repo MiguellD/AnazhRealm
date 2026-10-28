@@ -23,7 +23,7 @@
 //                                                      Welt-Saaten und das Prüfbühnen-Erbgut) — gegen
 //                                                      einen anderen Stand (`--wurzel` = sein Baum) verglichen beweist er
 //                                                      „byte-gleich"
-// Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
+// Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
 const { statikServer, nullSeite, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -42,7 +42,6 @@ const SELBSTTEST = argv.includes("--selftest");
 const LADEN = { waitUntil: "domcontentloaded", timeout: 60000 };
 const ABDRUCK = opt("--abdruck", null);
 const JSON_AUS = opt("--json", null);
-const PORT = Number(process.env.WORKER_DICHTE_PORT) || 4392;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const WELTEN = String(opt("--welten", "standard,buehne")).split(",").filter(Boolean);
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
@@ -2100,7 +2099,7 @@ async function faden(page, url) {
 
 hauptLauf(async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ art: "standard", frist: 900000 });
     // der EINE Abdruck der Seite (SHA-256 eines Felds, hex) für Probe und Studio
     await page.evaluateOnNewDocument(() => {
@@ -2110,7 +2109,7 @@ hauptLauf(async () => {
                 .join("");
     });
     if (argv.includes("--studio")) process.exit(await studioProbe(page));
-    const url = `http://127.0.0.1:${PORT}/index.html`;
+    const url = server.adresse();
     if (argv.includes("--faden")) process.exit(await faden(page, url));
     if (argv.includes("--kern")) process.exit(await kernProbe(page, url));
     // Frische Standard-Welt (der Boot-Seed): kein Rest einer früheren Welt im Profil.

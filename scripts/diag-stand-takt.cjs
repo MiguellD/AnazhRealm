@@ -24,7 +24,7 @@
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
-//   node scripts/diag-stand-takt.cjs [--selftest | --tat]   (npm run gate:stand-takt; Port STAND_TAKT_PORT; --tat: (K4) unten)
+//   node scripts/diag-stand-takt.cjs [--selftest | --tat]   (npm run gate:stand-takt; --tat: (K4) unten)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -643,7 +643,6 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
 const { messort } = require("./lib/welt-orte.cjs");
 const MESS = messort("wiese");
 const server = statikServer();
@@ -651,7 +650,7 @@ const TAT = process.argv.includes("--tat");
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);

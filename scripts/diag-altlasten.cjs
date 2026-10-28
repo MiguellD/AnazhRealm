@@ -2920,24 +2920,37 @@ function scanStufenWand(srcRoh) {
     return errs;
 }
 
-// DIE PORT-WAND (Integration W6): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
-// Standard sein fester Port) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
-// übrigen) waren ein Zwilling: eine Serie, die DIAG_PORT setzt, gab allen 21 denselben Port. Rot mit Datei.
+// DIE PORT-WAND (port-frei, 28.10.; ersetzt die Variablen-Wand der Integration W6): kein Skript lauscht auf einem festen Port —
+// der EINE Lauscher ist welt-boot `lausche` (listen(0), der Port des Systems; Profil-Ursprung und Treffpunkt trägt er selbst,
+// `eigenePorte` gibt den Kindern ihre). Bis dahin trug jede Linse `<GATE>_PORT || 46xx`: diag-wasser-leben und
+// diag-werkstatt-weg teilten 4623, z58b/z58c verloren je einen echt-Versuch (~40 min) an EADDRINUSE, als CI-Runner und
+// Punkte-Bahnen auf einem Rechner liefen. ROT mit Datei:Zeile (Kommentare zählen nicht): ein `.listen(` außerhalb des
+// Lauschers, ein Port aus der Umgebung (WERKBANK_PORT ist der Treffpunkt, den ein anderer Prozess nennt), eine Port-Zahl als
+// Rückfall, Startwert, Schlüssel oder Argument, `.lausche(<Port>)`, `--port <Zahl>` / `<X>_PORT=<Zahl>` (auch in package.json).
 // K-WANDUHR: kein Gate steht auf den Ports der Server des Schöpfers (4312, 4313) außer im ANSCHLUSS (die Werkzeuge an seiner
-// offenen Welt; die Liste schrumpft nur) — der eigene Port ist welt-boot `eigenePorte`.
+// offenen Welt; die Liste schrumpft nur).
 const ANSCHLUSS = ["scripts/werkbank.cjs", "scripts/omen-messfolge.cjs", "scripts/leuchtturm.cjs"];
 const SCHOEPFER = [/\|\|\s*431[23]\b/, /(?:127\.0\.0\.1|localhost):431[23](?:\/index\.html|\/?["'`])/, /wss?:\/\/(?:127\.0\.0\.1|localhost):431[23]\b/];
+const P = String.raw`(?:(?:\b|_)PORT(?:_\w+)?\b|\b[a-z]\w*Port\b|\bport\b)`;
+const FESTER_PORT = new RegExp(
+    [
+        String.raw`\.listen\(|process\.env\.(?!WERKBANK_PORT\b)\w*PORT\b|\.lausche\((?!\s*\)|\s*\{|\w+ \? \{)`,
+        String.raw`${P}\)?\s*(?:\|\||\?\?)\s*\d{4}|${P}\s*[=:]\s*(?:String\(|Number\()?["'\x60]?\d{4}`,
+        String.raw`(?:lausche|werkbankTor|werkbankRuf|startArgs)\(\s*\d{4}|--port[ =]\d|\b[A-Z]\w*_PORT=\d`,
+    ].join("|")
+);
 function scanPortWand(dateien, anschluss = ANSCHLUSS) {
     const errs = [];
     for (const [name, src] of dateien) {
-        const code = stripComments(src);
-        if (/process\.env\.DIAG_PORT\b/.test(code))
-            errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
+        const code = name.endsWith(".json") ? src : stripComments(src);
         const m = SCHOEPFER.map((re) => code.match(re)).find(Boolean);
         if (!m !== !anschluss.includes(name)) errs.push(`Port-Wand: ${name} ${m ? "steht auf " + m[0] : "steht im ANSCHLUSS ohne Port"}`);
+        if (name !== "scripts/lib/welt-boot.cjs")
+            code.split("\n").forEach((z, i) => FESTER_PORT.test(z) && errs.push(`Port-Wand: ${name}:${i + 1} fester Port \`${z.trim().slice(0, 80)}\``));
     }
     return errs;
 }
+const portDateien = (root) => [...gateDateien(root), ["package.json", fs.readFileSync(path.join(root, "package.json"), "utf8")]];
 // DIE BOOT-WAND (Z2b-1): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer · starteBrowser)
 // — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error ROT mit
 // Namen macht. Ein eigener Start (`puppeteer.launch(` · `http.createServer(` · ein `spawn` des save- oder
@@ -3428,15 +3441,22 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Stufen-Wand feuert (${zweite.find((e) => /zweite Bedeutung/.test(e))} · ${ohne.length} fehlende Anker)`
         );
-        // Die Port-Wand muss feuern: ein Gate, das wieder die geteilte Variable liest (ein Kommentar darf sie nennen).
+        // Die Port-Wand muss feuern: der eingespielte Täter `listen(4623)` (z58b) ROT beim Namen, die alte Form zweimal, `--port`
+        // in package.json; still: Kommentar, `lausche()`, Optionen, Treffpunkt, PORTAL-Name, der Lauscher (@ trennt die Muster hier)
         const gates = gateDateien(root);
-        const geteilt = "process.env." + "DIAG_PORT"; // zusammengesetzt: diese Datei ist selbst ein Gate der Wand
-        const portFeuert =
-            scanPortWand(gates).length === 0 &&
-            scanPortWand([["scripts/diag-x.cjs", `const PORT = Number(${geteilt} || 4400);\n`]]).length === 1 &&
-            scanPortWand([["scripts/diag-y.cjs", `// früher: ${geteilt}\nconst PORT = 1;\n`]]).length === 0 &&
-            scanPortWand([["scripts/diag-z.cjs", "const PORT = Number(process.env.Z_PORT || 4" + "312);\n"]]).length === 1 &&
-            scanPortWand([["scripts/werkbank.cjs", "const s = 1;\n"]]).length === 1;
+        const port = (src, name = "scripts/diag-x.cjs") => scanPortWand([[name, src.replace(/@/g, "")]]);
+        const portTaeter = port("const s = http.createServer();\ns.lis@ten(4623);");
+        const portFall = [
+            scanPortWand(portDateien(root)).length === 0,
+            portTaeter.length === 1 && /^Port-Wand: scripts\/diag-x\.cjs:2 fester Port `s\.listen\(4623\);`$/.test(portTaeter[0]),
+            port("const PORT = Number(process.env.WASSER_LEBEN_PO@RT || 4623);\nawait server.lausc@he(PORT);").length === 2,
+            port('{"x": "node w.cjs --po@rt 4492"}', "package.json").length === 1,
+            port('// s.lis@ten(4623)\nawait s.lausche();\ns.lausche(p ? { profil } : {});\nopt("--port", process.env.WERKBANK_PO@RT);\nconst PORTAL_X = 4604;').length === 0,
+            port("s.lis@ten(0);", "scripts/lib/welt-boot.cjs").length === 0,
+            port("const PORT = Number(process.env.Z_PO@RT || 4" + "312);", "scripts/diag-z.cjs").length === 2,
+            scanPortWand([["scripts/werkbank.cjs", "const s = 1;\n"]]).length === 1,
+        ];
+        const portFeuert = portFall.every(Boolean);
         // Die Warte-Wand muss feuern: die Bau-Schleife von gate:fahr-leben bis K-WANDUHR, ein eigener Server-Start; still bleibt das EINE Warten
         // und die Frist: eine neue Frist-Schleife ist rot, der REST steht genau auf seiner Zahl (darunter: senken), ein Zähler auf Takte still
         const warte = (src, rest = {}) => scanWarteWand([["scripts/diag-w.cjs", src]], rest).length;
@@ -3459,10 +3479,10 @@ function main() {
             process.exit(1);
         }
         if (!portFeuert) {
-            console.log("❌ SELBST-TEST: die Port-Wand feuert nicht (oder steht heute rot)", scanPortWand(gates));
+            console.log("❌ SELBST-TEST: die Port-Wand feuert nicht (oder steht heute rot)", portFall, scanPortWand(portDateien(root)));
             process.exit(1);
         }
-        console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
+        console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, 0 feste Ports) — ${portTaeter[0]}`);
         // Die Boot-Wand muss feuern: ein neuer Eigen-Start (Browser oder Server) ist rot, ein Kommentar und ein Text still,
         // eine Rest-Zeile ohne eigenen Start ist rot (die Liste schrumpft nur), der Baum heute grün.
         const start = "puppeteer" + ".launch({ args: [] })"; // zusammengesetzt: diese Datei trägt selbst keinen Start
@@ -3958,7 +3978,7 @@ function main() {
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
-        .concat(scanPortWand(gateDateien(root)))
+        .concat(scanPortWand(portDateien(root)))
         .concat(scanWarteWand(gateDateien(root).concat(playtestDateien(root))))
         .concat(scanBootWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
@@ -3971,7 +3991,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), kein Skript lauscht auf einem festen Port (der EINE Lauscher: welt-boot lausche), keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 

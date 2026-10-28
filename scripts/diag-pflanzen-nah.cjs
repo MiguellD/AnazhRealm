@@ -50,7 +50,7 @@
 // Atlas-Leser ohne ÷ alpha) — die Linse
 // ist nie vakuös.
 //
-//   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
+//   npm run gate:pflanzen-nah
 "use strict";
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -61,7 +61,6 @@ const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");
 // die Oktave der Blatt-Farbe, wie die Welt sie trägt (die Klasse geladen, nie ihr Text; D3c)
 const OKTAVE = stammLib.ladeKlasse(ROOT).AnazhRealm.BLATT_FARBE_OKTAVE;
-const PORT = Number(process.env.PFLANZEN_PORT || 4548);
 
 // Die Soll-Bänder (lineare Luminanz Y, Tageslicht-Albedo): Betulin-Weiß der Birke 0,40–0,55 (mit Strichen im Mittel
 // darunter), jede andere Rinde 0,06–0,25 (diag-albedo-zensus) — mit Rand.
@@ -1051,7 +1050,7 @@ hauptLauf(async () => {
     let buch = null,
         rc = null,
         bild = null;
-    await runWithWorker(PORT, async ({ build, getData, atlasBild }) => {
+    await runWithWorker(async ({ build, getData, atlasBild }) => {
         const ab = await atlasBild();
         bild = {
             wert: ab.wert,

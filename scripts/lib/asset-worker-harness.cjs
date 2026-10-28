@@ -269,15 +269,15 @@ function pageHtml() {
 </script></body>`;
 }
 
-// runWithWorker(port, async (h) => {...}) — bootet Server+Chromium+Worker, ruft cb mit
+// runWithWorker(async (h) => {...}) — bootet Server (Port des Systems)+Chromium+Worker, ruft cb mit
 // { build, getData }, räumt danach ab. Wirft bei Boot-/Worker-Fehler mit klarer Meldung.
-async function runWithWorker(port, cb) {
+async function runWithWorker(cb) {
     const server = statikServer({ seiten: { "/": pageHtml, "/__aw.html": pageHtml } });
-    await server.lausche(port);
+    await server.lausche();
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     try {
         const page = await browser.newPage();
-        await page.goto("http://127.0.0.1:" + port + "/__aw.html", { waitUntil: "domcontentloaded" });
+        await server.zeige(page, undefined, "__aw.html");
         await page.waitForFunction("window.__AW && (window.__AW.ready || window.__AW.error)", {
             timeout: 120000,
             polling: 200,

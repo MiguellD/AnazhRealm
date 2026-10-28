@@ -9,7 +9,7 @@
 //        steht benannt ohne Bruch, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
 //        Soll-Stand (n von N im Rand) steht in der Ausgabe
 //   node scripts/diag-albedo-tafel.cjs --neu           die veralteten Zeilen auf dem Adapter der Weiche neu messen (lokal die
-//        Karte, unter dem GPU-Schloss): EINE Welt (ALBEDO_WERKBANK_PORT, Standard 4589) + das Labor, Urteil der frischen
+//        Karte, unter dem GPU-Schloss): EINE Welt (welt-boot `werkbankTor`) + das Labor, Urteil der frischen
 //        Zahlen, die Dateien zum Nachziehen unter artifacts/albedo-neu/
 //   node scripts/diag-albedo-tafel.cjs --selftest      die Rechnung feuert: ein Verhältnis über der Ratsche, eine falsche
 //        Eichung, eine stumme Seite, eine Tafel ohne Klasse werden ROT; der Nachzug senkt und hebt nie — und im echten
@@ -20,12 +20,12 @@
 //   node scripts/diag-albedo-tafel.cjs --nachziehen welt.json labor.json
 //        aus einer Messung BEIDER Seiten das Ist setzen und die Ratsche senken (nie heben)
 //
-// Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
+// `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
 // die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, werkbankTor } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -40,7 +40,6 @@ const opt = (k, d) => {
     const i = argv.indexOf(k);
     return i >= 0 ? argv[i + 1] : d;
 };
-const PORT = Number(process.env.ALBEDO_PORT || 4587);
 
 const statisch = (seiten) => statikServer({ seiten });
 
@@ -94,7 +93,7 @@ async function aktion(page, a) {
 
 async function messeLabor({ echt, nur, tafel }) {
     const server = statisch();
-    await server.lausche(PORT);
+    await server.lausche();
     const b = await browser(echt);
     const out = { labor: {}, karten: {}, eichung: { labor: {} }, geraet: null };
     try {
@@ -163,7 +162,7 @@ async function laborLaub() {
     const LL = require("./lib/licht-linsen.cjs");
     const S = AT.STUDIOS.terrain;
     const server = statisch();
-    await server.lausche(PORT);
+    await server.lausche();
     const b = await browser(argv.includes("--echt"));
     const labor = {};
     const welt = opt("--welt") ? JSON.parse(fs.readFileSync(path.resolve(opt("--welt")), "utf8")).welt : null;
@@ -417,7 +416,7 @@ roh.position.x = -0.8; gesetz.position.x = 0.8; subject.add(roh); subject.add(ge
 window.__bereit = true;
 </script>`,
     });
-    await server.lausche(PORT);
+    await server.lausche();
     const b = await browser(false);
     try {
         const page = await b.newPage();
@@ -518,35 +517,24 @@ function gespeichert(t) {
 }
 
 // DIE NEUMESSUNG DER VERALTETEN ZEILEN: auf der Karte — der Job `echt` des Messplatzes (CI, die Weiche fährt die
-// Karte, K65) oder lokal `--neu` unter dem GPU-Schloss — misst die Wand selbst: EINE Welt (werkbank `start` auf
-// ALBEDO_WERKBANK_PORT, Standard 4589, die Seite einen Port darunter) am Ort der gespeicherten Messung, `albedo --tafel`; dann
+// Karte, K65) oder lokal `--neu` unter dem GPU-Schloss — misst die Wand selbst: EINE Welt (welt-boot `werkbankTor`, Steuer
+// und Seite auf Ports des Systems) am Ort der gespeicherten Messung, `albedo --tafel`; dann
 // die Labor-Seite jedes Studios. Das Urteil der frischen Zahlen (Ratsche + Rand, Eichung, Stufe): ROT heißt, der Code hat die
 // Albedo bewegt (Exit 1); im Rand stehen die Zeilen weiter ROT veraltet, bis die Tafel nachgezogen ist — der Befehl steht in
 // der Ausgabe, die Messungen unter artifacts/albedo-neu/.
 async function neuMessen(t, ids) {
-    const { spawn, spawnSync } = require("child_process");
-    const WP = String(Number(process.env.ALBEDO_WERKBANK_PORT || 4589));
-    const WB = path.join(__dirname, "werkbank.cjs");
     const ordner = path.join(__dirname, "..", "artifacts", "albedo-neu", new Date().toISOString().replace(/[:.]/g, "-"));
     fs.mkdirSync(ordner, { recursive: true });
+    // die Welt am EINEN Tor (welt-boot `werkbankTor`, die Steuer auf einem Port des Systems), bereit am Ereignis
+    const tor = werkbankTor();
     const wb = (args) => {
-        const r = spawnSync(process.execPath, [WB, ...args, "--port", WP], {
-            encoding: "utf8",
-            timeout: 1800000,
-            maxBuffer: 1 << 26,
-        });
+        const r = tor.rufe(args, 1800000);
         return { exit: r.status, aus: (r.stdout || "") + (r.stderr || "") };
     };
-    const wlog = path.join(ordner, "werkbank.log");
-    const fd = fs.openSync(wlog, "w");
-    const w = spawn(process.execPath, [WB, "start", "--port", WP], { stdio: ["ignore", fd, fd] });
     const wd = path.join(ordner, "welt.json");
-    console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
     try {
-        while (!/WERKBANK bereit/.test(fs.readFileSync(wlog, "utf8"))) {
-            if (w.exitCode != null) throw new Error(`die Werkbank startet nicht (${wlog})`);
-            await sleep(2000);
-        }
+        await tor.bereit;
+        console.log(`   Neumessung: Welt (werkbank :${tor.port}) und Labor — ${ordner}`);
         const gw = t.gemessen.welt || {};
         const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
         if (um.exit !== 0) throw new Error("umstellen: " + um.aus.slice(-400));
@@ -555,8 +543,8 @@ async function neuMessen(t, ids) {
         const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(ordner, "albw")]);
         if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: " + al.aus.slice(-400));
     } finally {
-        wb(["stop"]);
-        if (w.exitCode == null) w.kill();
+        tor.stop();
+        fs.writeFileSync(path.join(ordner, "werkbank.log"), tor.log);
     }
     const welt = JSON.parse(fs.readFileSync(wd, "utf8"));
     const labor = await messeLabor({ echt: false, nur: null, tafel: t });

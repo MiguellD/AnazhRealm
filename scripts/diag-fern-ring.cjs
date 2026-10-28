@@ -40,15 +40,13 @@
 "use strict";
 const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.FERN_RING_PORT || 4464);
-
 const { errs, check } = pruefer();
 
 const server = statikServer();
 
 hauptLauf(async () => {
     console.log("=== FERN-RING (STUFE 2) — Browser, Null-Renderer + Hook ===");
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite({ art: "linse", frist: 240000 });
     await server.zeige(page, 30000);
 

@@ -134,8 +134,8 @@ function auditSoftDefaults() {
 // ============================================================
 async function auditStateAndMethods() {
     console.log("\n=== State-Field-Audit (Headless) ===");
-    // der eigene save-server auf dem eigenen Port (AUDIT_PORT, sonst ein freier des Systems — nie 4312), bereit am Ereignis
-    const [port] = await eigenePorte("AUDIT_PORT");
+    // der eigene save-server auf einem Port des Systems (nie 4312), bereit am Ereignis
+    const [port] = await eigenePorte(1);
     const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
 
     const browser = await starteBrowser({ art: "standard", zusatz: ["--autoplay-policy=no-user-gesture-required"] });

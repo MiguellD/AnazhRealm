@@ -55,7 +55,7 @@
 // Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Die
 // Selbsttests von (c), (d), (e) und (g) laufen im Hauptlauf. (b) wartet auf sein Ereignis (A verbunden, oder die Absicht
 // fehlt), nie in einer Wanduhr-Schleife.
-// Ports: MP_SYNC_PORT (save-server), MP_SYNC_SIGNAL_PORT (signaling), sonst freie des Systems.
+// Ports: save-server und signaling je auf einem Port des Systems (welt-boot `eigenePorte`).
 //
 //   node scripts/diag-mp-sync.cjs [--selftest]
 "use strict";
@@ -70,7 +70,7 @@ const {
     hauptLauf,
 } = require("./lib/welt-boot.cjs");
 
-// die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
+// die eigenen Ports: zwei freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "mp-sync-raum";
 const SELBSTTEST = process.argv.includes("--selftest");
@@ -352,7 +352,7 @@ function bericht(p) {
 let saveServer, signaling;
 hauptLauf(async () => {
     const fehler = [];
-    [PORT, SIGNAL_PORT] = await eigenePorte("MP_SYNC_PORT", "MP_SYNC_SIGNAL_PORT");
+    [PORT, SIGNAL_PORT] = await eigenePorte(2);
     PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
     SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
     // `offen`: ein Teil der Staffel, der noch nicht gleich ist — gemessen und mit Zahl berichtet, ohne die Wand zu brechen

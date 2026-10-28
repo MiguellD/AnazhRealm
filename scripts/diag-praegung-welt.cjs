@@ -8,7 +8,6 @@
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
 // jede Zeile, die kein Programm erreicht, beim Namen ihres Befunds (keine Ausnahme: seit KI K2 trägt jede Zeile ein Welt-Werk)
 const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap((b) => m[b].map((n) => `${n}: ${b}`));
@@ -48,8 +47,8 @@ const geraet = (s) => s.browser().process().spawnargs.find((x) => x.startsWith("
 let signal;
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
-    const [SIGNAL] = await eigenePorte("PRAEGUNG_WELT_SIGNAL_PORT");
+    await server.lausche();
+    const [SIGNAL] = await eigenePorte(1);
     signal = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: SIGNAL, ANAZH_SIGNALING_HOST: "127.0.0.1" });
     const neuesGeraet = (art = "null") => starteBrowser({ art, frist: 600000 });
     const browser = await neuesGeraet();

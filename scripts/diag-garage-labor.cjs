@@ -2,12 +2,11 @@
 // Schöpfer sie bedient — Maus ziehen, Probefahrt starten, Gas geben, Gattung und Kultur wechseln.
 //   G1 Maus (ein Seitenfehler beim Ziehen: der EINE Sammler, welt-boot) · G2 HUD · G3 Tacho · G4 Preset · G5 Kultur · G6 Lehren · G7 Tempo — je Zeile das Soll im Namen ihres Checks.
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
-//   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
+//   node scripts/diag-garage-labor.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, pruefer, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
-const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 const { errs, check } = pruefer();
 
 // ── DAS LABOR-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test): die Täter beim Namen. ──
@@ -74,7 +73,7 @@ hauptLauf(async () => {
         process.exit(0);
     }
 
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "linse", frist: 120000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });

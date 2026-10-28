@@ -7,7 +7,7 @@
 // Median der Rampe. ROT beim Namen, wenn der Schatten sie um mehr als TERMINATOR_FLECKEN_MAX hebt, wenn eine Sonne fehlt oder
 // die Rampe zu wenige Proben trägt (blind).
 // SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot.
-//   node scripts/diag-schatten-terminator.cjs [--selftest] [--port 4609]
+//   node scripts/diag-schatten-terminator.cjs [--selftest]
 "use strict";
 
 // Die Sonne am Terminator der Rampe: 22° aus Azimut 45° (N·L −0,002; main dort 11,7 % fleckig gegen 0,2 % ohne Schatten, bei
@@ -112,11 +112,9 @@ function selbsttest() {
 if (require.main === module) {
     require("./lib/welt-boot.cjs").selbsttestEnde(selbsttest(), "das Terminator-Urteil nennt die Hang-Akne beim Namen");
     if (process.argv.includes("--selftest")) process.exit(0);
-    const i = process.argv.indexOf("--port");
-    const PORT = Number(i >= 0 ? process.argv[i + 1] : process.env.SCHATTEN_TERMINATOR_PORT || 4609);
     (async () => {
         const t0 = Date.now();
-        const tor = require("./lib/welt-boot.cjs").werkbankTor(PORT, ["--holz", "voll"]);
+        const tor = require("./lib/welt-boot.cjs").werkbankTor(["--holz", "voll"]);
         const rufe = tor.rufe;
         let code = 1;
         try {

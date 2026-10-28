@@ -24,7 +24,7 @@ const { starteBrowser, startProc, eigenePorte } = require("./lib/welt-boot.cjs")
 const path = require("path");
 const fs = require("fs");
 
-// Der Port des eigenen save-servers: TAILLE_PORT, sonst ein freier des Systems (welt-boot `eigenePorte`) — auf 4312 fände die
+// Der Port des eigenen save-servers: ein freier des Systems (welt-boot `eigenePorte`) — auf 4312 fände die
 // Seite den Spiel-Server des Schöpfers und prüfte dessen Dateien.
 const GOLDEN_DIR = path.resolve("spec/golden/v1");
 
@@ -44,7 +44,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
 
 (async () => {
     const minting = !fs.existsSync(GOLDEN_DIR);
-    const [port] = await eigenePorte("TAILLE_PORT");
+    const [port] = await eigenePorte(1);
     const SERVER_URL = `http://127.0.0.1:${port}/index.html`;
     const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });

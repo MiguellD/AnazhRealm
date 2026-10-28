@@ -17,9 +17,9 @@
 // der alte ODER der neue Stand ganz da (JSON parst, Marker alt|neu), und nach dem vollen Save hält
 // `anazhRealmState.json.bak` den Stand davor. Täter, wenn ROT: das direkte `fs.writeFile` aufs Ziel (save-server.js).
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
-// Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
+// Ports: die Seite und jeder Sandbox-Server je auf einem Port des Systems (welt-boot lausche · eigenePorte).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, eigenePorte, sleep, ROOT: root, nullSeite } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -27,9 +27,6 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-// Port über PERSISTENCE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4326.
-const PORT = Number(process.env.PERSISTENCE_PORT || 4326);
-const SERVER_PORT = Number(process.env.PERSISTENCE_SERVER_PORT || 4327);
 const SELBSTTEST = process.argv.includes("--selftest");
 const NUR_STUFE = process.argv.includes("--stufe");
 const NUR_WEG = process.argv.includes("--weg");
@@ -86,10 +83,11 @@ async function sandbox(quelle, dateien, env = {}) {
     for (const [n, t] of Object.entries({ "save-server.js": quelle, ...dateien }))
         fs.writeFileSync(path.join(dir, n), t, "utf8");
     const vor = dateien["k23-haken.js"] ? ["-r", path.join(dir, "k23-haken.js")] : [];
+    const [serverPort] = await eigenePorte(1);
     const proc = await startProc(
         path.join(dir, "save-server.js"),
         /Save-Server/i,
-        { PORT: String(SERVER_PORT), ...env },
+        { PORT: String(serverPort), ...env },
         { vor, cwd: dir }
     );
     const frage = (weg, headers = {}, body) =>
@@ -97,7 +95,7 @@ async function sandbox(quelle, dateien, env = {}) {
             const req = http.request(
                 {
                     host: "127.0.0.1",
-                    port: SERVER_PORT,
+                    port: serverPort,
                     path: weg,
                     method: body ? "POST" : "GET",
                     headers,
@@ -663,7 +661,7 @@ function korpusUrteil(z, selbst) {
 }
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     if (NUR_STUFE) process.exit((await korpusLauf(false))[0].ganz ? 0 : 1);
     // PERSISTENCE_WEG=0-0: kein Gang — ein Lauf, der (D) nie urteilt (speicher.K4/K5; den Gang misst speicher.K3 mit 5 km)
     const w = WEG_KM && (await wegLauf(WEG_KM, WEG_MIN, EDITS));

@@ -15,7 +15,6 @@
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.FIMP_PORT || 4595);
 const server = statikServer();
 
 async function bootPage(browser, nullRenderer) {
@@ -787,7 +786,7 @@ async function windProbe(page) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const errs = [];
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====

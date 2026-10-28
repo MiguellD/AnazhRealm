@@ -39,7 +39,7 @@
 //   node scripts/diag-weltgrenze.cjs --selftest   zusätzlich zwei Scheine: der alte Spread am Lade-Engpass (der Weg
 //                                      „laden" MUSS rot werden) und saveState ohne die Sperre des Welt-Wechsels (der Weg
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
-// Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
+// Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -53,7 +53,6 @@ const opt = (k, d) => {
 };
 const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
-const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const ALLE_WEGE = [
     "laden",
@@ -624,7 +623,7 @@ async function fahreWeg(browser, weg, schein) {
 
 hauptLauf(async () => {
     const tStart = Date.now();
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B, keine Welt geht verloren =========");
     console.log(`  Baum: ${root}`);

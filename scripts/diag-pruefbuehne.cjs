@@ -35,7 +35,7 @@
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
 //   node scripts/diag-pruefbuehne.cjs --selftest   zusätzlich: auf der Bühne trägt die Wildnis zum Schein überall
 //                                                  (`_wildnisTraegt` → true) — die Würfe MÜSSEN rot werden, beim Namen
-// Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
+// Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
 const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
@@ -50,7 +50,6 @@ const opt = (k, d) => {
 const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
-const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
 const STATIONEN = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
@@ -1006,7 +1005,7 @@ async function lichtLauf() {
             clearTimeout(uhrwerk);
         }
     };
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({
         art: ECHT ? "echt" : "linse",
         headless: !ECHT,
@@ -1051,7 +1050,7 @@ async function lichtLauf() {
             };
         }, 1);
     });
-    const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
+    const url = server.adresse(`index.html?holz=${HOLZ}`);
     const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
     const ergebnis = {};
     const himmel = {}; // der Himmel folgt dem Sprung (oben `himmelProbe`): sauber und — im Selbsttest — der taube Maler
@@ -1659,7 +1658,7 @@ function zeige(rep) {
 
 hauptLauf(async () => {
     if (argv.includes("--licht")) return lichtLauf();
-    await server.lausche(PORT);
+    await server.lausche();
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
@@ -1689,7 +1688,7 @@ hauptLauf(async () => {
             return { beleuchtet: lit, ohnePool: [...ohne.entries()].map(([n, k]) => n + (k > 1 ? " ×" + k : "")) };
         };
     });
-    const url = `http://127.0.0.1:${PORT}/index.html`;
+    const url = server.adresse();
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(() => {
         try {

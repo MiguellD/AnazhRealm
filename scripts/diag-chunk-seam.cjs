@@ -20,10 +20,9 @@
 //
 // Exit 1: keine Chunks gestreamt, eine Cross-LOD-Spalte ohne Stitch-Band (A1) oder das Naht-Gate (`--gate`) rot.
 const { statikServer, nullSeite } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche();
     const { browser, page } = await nullSeite();
     // der Stoff-Zeuge: ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
     const stoffBrueche = [];

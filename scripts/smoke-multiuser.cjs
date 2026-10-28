@@ -1,6 +1,6 @@
 // End-to-End-Test: zwei WS-Clients gegen signaling-server.js
 // Bestätigt dass welcome/peer-join/pos wirklich durchläuft.
-// Der Broker ist ein eigener (welt-boot `startProc`) auf dem eigenen Port (MULTIUSER_PORT, sonst ein freier des Systems — nie
+// Der Broker ist ein eigener (welt-boot `startProc`) auf dem eigenen Port (ein freier des Systems — nie
 // 4313, der Signal-Server des Schöpfers); bis K-WANDUHR startete die Probe einen festen Pfad (/home/user/AnazhRealm) und wartete
 // nach jeder Sendung 100–500 ms Wanduhr. Jetzt wartet sie an der SCHRANKE: jeder offene Socket fragt den Broker nach `stats` —
 // die Antwort kommt nach allem, was der Broker ihm vorher schickte (ein Faden, eine Reihenfolge je Verbindung).
@@ -9,7 +9,7 @@ const { startProc, eigenePorte, hauptLauf } = require("./lib/welt-boot.cjs");
 let server = null;
 
 async function run() {
-    const [port] = await eigenePorte("MULTIUSER_PORT");
+    const [port] = await eigenePorte(1);
     server = await startProc("signaling-server.js", /lauscht/, { ANAZH_SIGNALING_PORT: String(port) });
     const BROKER = `ws://127.0.0.1:${port}`;
     const events = { a: [], b: [] };
