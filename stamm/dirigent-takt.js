@@ -328,7 +328,8 @@ class AnazhRealm_dirigent_takt {
         };
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
-        this._gameLoopTick = this._takt = loop; // `_takt` bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
+        this._gameLoopTick = loop;
+        this._takt = loop; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
         this.state.renderer.setAnimationLoop(loop);
     }
 

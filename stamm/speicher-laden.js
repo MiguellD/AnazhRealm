@@ -998,6 +998,7 @@ class AnazhRealm_speicher_laden {
         this._updateBuildModeHud();
         this._weltWechselSperre = false;
         await this._weltAnkunft();
+        this._startDorfAmBuch(); // das Start-Dorf der neuen Welt (init: der erste Wartende am Buch, B5)
         this._weltAnschluss(verbunden);
         this._weltTausch = false;
     }
@@ -1054,7 +1055,7 @@ class AnazhRealm_speicher_laden {
         // DIE KARTEN DER WELT (Texturen und Ziele in ihren Gliedern: Spiegel, March, Wege, Kronen) verlassen die GPU, wenn kein
         // bleibendes Glied sie trägt (der Kehraus nimmt nur Puffer)
         const karten = (v, aus, tiefe = 0) => {
-            if (!v || typeof v !== "object" || tiefe > 2 || v.isObject3D || v.isMaterial || ArrayBuffer.isView(v))
+            if (!v || typeof v !== "object" || tiefe > 4 || v.isObject3D || v.isMaterial || ArrayBuffer.isView(v))
                 return;
             if (v.isTexture || v.isRenderTarget) return void aus.add(v);
             for (const x of v instanceof Map || v instanceof Set ? v.values() : Object.values(v))
