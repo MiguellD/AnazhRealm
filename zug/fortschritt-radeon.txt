@@ -1341,3 +1341,4 @@
 2026-10-28 18:50:15 takt18-radeon ankunft.K3#1 ROT 1.5 · 8/47
 2026-10-28 18:55:12 takt18-radeon streaming.K3#1 GRÜN 5.0 · 9/47
 2026-10-28 19:09:12 takt18-radeon profiband.K4#1 GRÜN 14.0 · 10/47
+2026-10-28 19:21:23 takt18-farm gelaende.K1#1 GRÜN 0.7 · 1/94
