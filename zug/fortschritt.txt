@@ -617,3 +617,4 @@
 2026-10-28 10:33:24 takt16a-gtx fahrzeug.K3#1 OFFEN 10.1 · 4/36
 2026-10-28 10:43:36 takt16a-gtx fahrzeug.K3#2 OFFEN 10.1 · 5/36
 2026-10-28 10:48:33 takt16a-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 4.9 · 7/36
+2026-10-28 10:51:48 takt16a-gtx ferne.K1#1,ferne.K1#2,ferne.K2#1 GRÜN/ROT/GRÜN 3.1 · 10/36
