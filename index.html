@@ -9779,7 +9779,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.546.114"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.546.118"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9793,94 +9793,94 @@
         <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor dem Stamm
              laden (defer bewahrt die Reihenfolge) — der Baum-Bau liest das globale
              __phytoCore.growSkeleton. Derselbe Code läuft im voxel-worker + im Terrain-Portal. -->
-        <script src="phyto-core.js?v=18.546.114" defer></script>
+        <script src="phyto-core.js?v=18.546.118" defer></script>
         <!-- K09a — DAS GELÄNDE-GESETZBUCH: die EINE 2D-Höhe (Erbgut-Terme, Wildnis-Term, Makro-Anker, Rauheit) als
              reine Funktion der Lage; Stamm, voxel-worker (importScripts) und Foundry-Worker (Manifest) lesen DIESE
              Datei. MUSS vor dem Stamm (stamm/) laden (defer bewahrt die Reihenfolge). -->
-        <script src="gelaende-core.js?v=18.546.114" defer></script>
+        <script src="gelaende-core.js?v=18.546.118" defer></script>
         <!-- DIE EINE PIPE (V18.458): das Bake-Gesetzbuch der Pipe (Gattungs-Bäcker-
              Tisch BAKERS_BY_KIND) lädt auch auf dem Stamm — der Kalt-/Headless-Pfad
              bäckt Kreaturen main-thread durch DENSELBEN Bäcker wie der Worker
              (ein Gesetz, zwei Scheduler). THREE steht (Module vor defer). -->
-        <script src="foundry-core.js?v=18.546.114" defer></script>
+        <script src="foundry-core.js?v=18.546.118" defer></script>
         <!-- ALTLASTEN-NULL HERZ: die Anatomie-Gesetzbücher (MESHFREI, reine
              Daten+Mathe) laden VOR dem Stamm — er delegiert Skelett/Landmarken
              an die EINE Quelle (dieselben Kerne trägt der Foundry-Worker). -->
-        <script src="koerper-core.js?v=18.546.114" defer></script>
+        <script src="koerper-core.js?v=18.546.118" defer></script>
         <!-- KERN-PFLICHT 17.07. — fachwerk+klang fehlten als Main-Thread-Tags:
              ihre Gesetze (SIEDLUNG · fx.klang) existierten im echten Spiel NUR
              als Fallback-Fiktion. Jetzt laden ALLE Gesetzbuecher, die Boot-Wand
              (_kernPflichtWand) schreit sichtbar, wenn eines fehlt. -->
-        <script src="fachwerk-core.js?v=18.546.114" defer></script>
-        <script src="klang-core.js?v=18.546.114" defer></script>
-        <script src="tetrapoda-core.js?v=18.546.114" defer></script>
+        <script src="fachwerk-core.js?v=18.546.118" defer></script>
+        <script src="klang-core.js?v=18.546.118" defer></script>
+        <script src="tetrapoda-core.js?v=18.546.118" defer></script>
         <!-- V18.464 — porta-core main-seitig: der Stamm liest das Tor-GESETZ synchron
              (Kollisions-Hülle deterministisch am Spawn [Lockstep] + Membran-Zahlen);
              namespaced IIFE (__portaCore), THREE-frei auf Top-Level. -->
-        <script src="porta-core.js?v=18.546.114" defer></script>
+        <script src="porta-core.js?v=18.546.118" defer></script>
         <!-- V18.466 — vehicle-core main-seitig: das präge-Verb liest die KULTUREN-
              Tabelle (Charakter-Achse der Garage) synchron; namespaced IIFE
              (__vehicleCore), dasselbe porta-Muster. -->
-        <script src="vehicle-core.js?v=18.546.114" defer></script>
+        <script src="vehicle-core.js?v=18.546.118" defer></script>
         <!-- ULTRAGUSS U6d: das Klingen-Gesetzbuch (Top-Level THREE-frei, reine
              Daten+Mathe) lädt VOR dem Stamm — der bladeProfile-Bau (Werkstatt/DSL)
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
-        <script src="schmiede-core.js?v=18.546.114" defer></script>
+        <script src="schmiede-core.js?v=18.546.118" defer></script>
         <!-- DIE STUDIO-HÜLLE (K41): der EINE Regler-Generator der Studios — das Werkstatt-Modul des Stamms ruft ihn -->
-        <script src="worlds/huelle/huelle.js?v=18.546.114" defer></script>
-        <script src="stamm/dirigent-kern.js?v=18.546.114" defer></script>
-        <script src="stamm/dienst.js?v=18.546.114" defer></script>
-        <script src="stamm/daten.js?v=18.546.114" defer></script>
-        <script src="stamm/gelaende-boden.js?v=18.546.114" defer></script>
-        <script src="stamm/gelaende-chunks.js?v=18.546.114" defer></script>
-        <script src="stamm/gelaende-fern.js?v=18.546.114" defer></script>
-        <script src="stamm/gelaende-kollision.js?v=18.546.114" defer></script>
-        <script src="stamm/wasser-hydro.js?v=18.546.114" defer></script>
-        <script src="stamm/wasser-zellen.js?v=18.546.114" defer></script>
-        <script src="stamm/stoff-material.js?v=18.546.114" defer></script>
-        <script src="stamm/stoff-instanz.js?v=18.546.114" defer></script>
-        <script src="stamm/studio-bruecke.js?v=18.546.114" defer></script>
-        <script src="stamm/studio-gestalt.js?v=18.546.114" defer></script>
-        <script src="stamm/bau-vorlagen.js?v=18.546.114" defer></script>
-        <script src="stamm/bau-buch.js?v=18.546.114" defer></script>
-        <script src="stamm/bau-teile.js?v=18.546.114" defer></script>
-        <script src="stamm/siedlung-ort.js?v=18.546.114" defer></script>
-        <script src="stamm/siedlung-bauten.js?v=18.546.114" defer></script>
-        <script src="stamm/siedlung-satz.js?v=18.546.114" defer></script>
-        <script src="stamm/siedlung-bewohner.js?v=18.546.114" defer></script>
-        <script src="stamm/vegetation-wiese.js?v=18.546.114" defer></script>
-        <script src="stamm/vegetation-baum.js?v=18.546.114" defer></script>
-        <script src="stamm/vegetation-streu.js?v=18.546.114" defer></script>
-        <script src="stamm/bild-kosten.js?v=18.546.114" defer></script>
-        <script src="stamm/bild-diaet.js?v=18.546.114" defer></script>
-        <script src="stamm/bild-sicht.js?v=18.546.114" defer></script>
-        <script src="stamm/bild-himmel.js?v=18.546.114" defer></script>
-        <script src="stamm/klang.js?v=18.546.114" defer></script>
-        <script src="stamm/koerper-leib.js?v=18.546.114" defer></script>
-        <script src="stamm/koerper-seele.js?v=18.546.114" defer></script>
-        <script src="stamm/koerper-bewegung.js?v=18.546.114" defer></script>
-        <script src="stamm/koerper-fahrt.js?v=18.546.114" defer></script>
-        <script src="stamm/kreatur-leben.js?v=18.546.114" defer></script>
-        <script src="stamm/kreatur-verhalten.js?v=18.546.114" defer></script>
-        <script src="stamm/kampf.js?v=18.546.114" defer></script>
-        <script src="stamm/netz-p2p.js?v=18.546.114" defer></script>
-        <script src="stamm/netz-identitaet.js?v=18.546.114" defer></script>
-        <script src="stamm/netz-portal.js?v=18.546.114" defer></script>
-        <script src="stamm/feld-leben.js?v=18.546.114" defer></script>
-        <script src="stamm/feld-dsl.js?v=18.546.114" defer></script>
-        <script src="stamm/feld-nexus.js?v=18.546.114" defer></script>
-        <script src="stamm/feld-sprache.js?v=18.546.114" defer></script>
-        <script src="stamm/speicher-welten.js?v=18.546.114" defer></script>
-        <script src="stamm/speicher-laden.js?v=18.546.114" defer></script>
-        <script src="stamm/werkstatt-hud.js?v=18.546.114" defer></script>
-        <script src="stamm/werkstatt-vorschau.js?v=18.546.114" defer></script>
-        <script src="stamm/werkstatt-bauen.js?v=18.546.114" defer></script>
-        <script src="stamm/werkstatt-hof.js?v=18.546.114" defer></script>
-        <script src="stamm/werkstatt-sozial.js?v=18.546.114" defer></script>
-        <script src="stamm/dirigent-regler.js?v=18.546.114" defer></script>
-        <script src="stamm/dirigent-takt.js?v=18.546.114" defer></script>
-        <script src="stamm/dirigent-ankunft.js?v=18.546.114" defer></script>
+        <script src="worlds/huelle/huelle.js?v=18.546.118" defer></script>
+        <script src="stamm/dirigent-kern.js?v=18.546.118" defer></script>
+        <script src="stamm/dienst.js?v=18.546.118" defer></script>
+        <script src="stamm/daten.js?v=18.546.118" defer></script>
+        <script src="stamm/gelaende-boden.js?v=18.546.118" defer></script>
+        <script src="stamm/gelaende-chunks.js?v=18.546.118" defer></script>
+        <script src="stamm/gelaende-fern.js?v=18.546.118" defer></script>
+        <script src="stamm/gelaende-kollision.js?v=18.546.118" defer></script>
+        <script src="stamm/wasser-hydro.js?v=18.546.118" defer></script>
+        <script src="stamm/wasser-zellen.js?v=18.546.118" defer></script>
+        <script src="stamm/stoff-material.js?v=18.546.118" defer></script>
+        <script src="stamm/stoff-instanz.js?v=18.546.118" defer></script>
+        <script src="stamm/studio-bruecke.js?v=18.546.118" defer></script>
+        <script src="stamm/studio-gestalt.js?v=18.546.118" defer></script>
+        <script src="stamm/bau-vorlagen.js?v=18.546.118" defer></script>
+        <script src="stamm/bau-buch.js?v=18.546.118" defer></script>
+        <script src="stamm/bau-teile.js?v=18.546.118" defer></script>
+        <script src="stamm/siedlung-ort.js?v=18.546.118" defer></script>
+        <script src="stamm/siedlung-bauten.js?v=18.546.118" defer></script>
+        <script src="stamm/siedlung-satz.js?v=18.546.118" defer></script>
+        <script src="stamm/siedlung-bewohner.js?v=18.546.118" defer></script>
+        <script src="stamm/vegetation-wiese.js?v=18.546.118" defer></script>
+        <script src="stamm/vegetation-baum.js?v=18.546.118" defer></script>
+        <script src="stamm/vegetation-streu.js?v=18.546.118" defer></script>
+        <script src="stamm/bild-kosten.js?v=18.546.118" defer></script>
+        <script src="stamm/bild-diaet.js?v=18.546.118" defer></script>
+        <script src="stamm/bild-sicht.js?v=18.546.118" defer></script>
+        <script src="stamm/bild-himmel.js?v=18.546.118" defer></script>
+        <script src="stamm/klang.js?v=18.546.118" defer></script>
+        <script src="stamm/koerper-leib.js?v=18.546.118" defer></script>
+        <script src="stamm/koerper-seele.js?v=18.546.118" defer></script>
+        <script src="stamm/koerper-bewegung.js?v=18.546.118" defer></script>
+        <script src="stamm/koerper-fahrt.js?v=18.546.118" defer></script>
+        <script src="stamm/kreatur-leben.js?v=18.546.118" defer></script>
+        <script src="stamm/kreatur-verhalten.js?v=18.546.118" defer></script>
+        <script src="stamm/kampf.js?v=18.546.118" defer></script>
+        <script src="stamm/netz-p2p.js?v=18.546.118" defer></script>
+        <script src="stamm/netz-identitaet.js?v=18.546.118" defer></script>
+        <script src="stamm/netz-portal.js?v=18.546.118" defer></script>
+        <script src="stamm/feld-leben.js?v=18.546.118" defer></script>
+        <script src="stamm/feld-dsl.js?v=18.546.118" defer></script>
+        <script src="stamm/feld-nexus.js?v=18.546.118" defer></script>
+        <script src="stamm/feld-sprache.js?v=18.546.118" defer></script>
+        <script src="stamm/speicher-welten.js?v=18.546.118" defer></script>
+        <script src="stamm/speicher-laden.js?v=18.546.118" defer></script>
+        <script src="stamm/werkstatt-hud.js?v=18.546.118" defer></script>
+        <script src="stamm/werkstatt-vorschau.js?v=18.546.118" defer></script>
+        <script src="stamm/werkstatt-bauen.js?v=18.546.118" defer></script>
+        <script src="stamm/werkstatt-hof.js?v=18.546.118" defer></script>
+        <script src="stamm/werkstatt-sozial.js?v=18.546.118" defer></script>
+        <script src="stamm/dirigent-regler.js?v=18.546.118" defer></script>
+        <script src="stamm/dirigent-takt.js?v=18.546.118" defer></script>
+        <script src="stamm/dirigent-ankunft.js?v=18.546.118" defer></script>
         <!-- DAS GELÄNDE-STUDIO (K16b): nur mit ?studio=gelaende — ein Panel über der laufenden Welt, kein eigener Look-Pfad. -->
-        <script src="worlds/gelaende/studio.js?v=18.546.114" defer></script>
+        <script src="worlds/gelaende/studio.js?v=18.546.118" defer></script>
     </body>
 </html>

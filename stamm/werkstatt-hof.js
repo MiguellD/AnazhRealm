@@ -1059,31 +1059,9 @@ class AnazhRealm_werkstatt_hof {
         if (!mem.length) return "";
         const e = mem[mem.length - 1];
         if (!e || !e.type) return "";
-        const c = e.content || {};
-        let what;
-        switch (e.type) {
-            case "gathered":
-                what = `sammelte ${c.material || c.blueprintName || "etwas"}`;
-                break;
-            case "_no_material":
-                what = `fand kein ${c.material || "Material"}`;
-                break;
-            case "spoke_proactive":
-            case "spoken":
-                what = "sprach zu dir";
-                break;
-            case "proposed_action":
-                what = "schlug eine Tat vor";
-                break;
-            case "proposal_blocked":
-                what = "ein Vorschlag wurde geblockt";
-                break;
-            case "rejected_action":
-                what = "ein Vorschlag wurde verworfen";
-                break;
-            default:
-                what = String(e.type).replace(/_/g, " ");
-        }
+        // die Tat in den Worten der EINEN Tafel (ERINNERUNG_SATZ, wie der Persona-Prompt)
+        const satz = AnazhRealm.ERINNERUNG_SATZ[e.type];
+        const what = satz ? satz(e.content || {}).replace(/[⁦-⁩]/g, "") : String(e.type).replace(/_/g, " ");
         // relative Zeit (at = Date.now())
         let ago = "";
         if (Number.isFinite(e.at)) {
