@@ -2222,7 +2222,9 @@ class AnazhRealm_kreatur_leben {
             if (!c || !this.state.creatures.includes(c)) continue;
             [c.userData._bestand, t.leib, c.userData.alterS] = [null, null, t.alterS];
             if (ursache !== "jagd") {
-                this._creatureNaturalDeath(c, ursache, false);
+                // ein Jäger am offenen Riss fällt erst, wenn sein Maul riss (sein Tier starb jetzt im Gesetz, die Zahl steht)
+                if (this.state.creatures.some((o) => o.userData._rissVon === c)) c.userData._faelltNach = ursache;
+                else this._creatureNaturalDeath(c, ursache, false);
                 continue;
             }
             let j = null;
@@ -2257,7 +2259,7 @@ class AnazhRealm_kreatur_leben {
         for (const c of this.state.creatures) {
             const ud = c.userData;
             const g = AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
-            if (ud._bestand || ud._rissVon || !(g in L)) continue;
+            if (ud._bestand || ud._rissVon || ud._faelltNach || !(g in L)) continue;
             const a = ud.wanderAnchor || c.position;
             const key = this._bestandKey(a.x, a.z);
             const R = this._bestandRegion(key, false); // nachgeholt wird im Takt (der frische Schritt bleibt dem Spieler)
@@ -2310,11 +2312,15 @@ class AnazhRealm_kreatur_leben {
         for (const G of gruppen.values()) if (G.tiere.some((t) => t.leib)) G.d -= S / 2;
         const reihe = [...gruppen.values()].sort((a, b) => a.d - b.d);
         const bleibt = new Set();
+        // ein offener Riss hält Opfer UND Jäger am Leib (das Maul reißt den Körper; ein Jäger, der Zahl wird, ließe sein Opfer
+        // ohne Maul fallen)
+        const jagen = new Set(st.creatures.map((c) => c.userData._rissVon).filter(Boolean));
         for (const c of st.creatures) {
             const ud = c.userData;
             if (
                 !ud._bestand ||
                 ud._rissVon ||
+                jagen.has(c) ||
                 ud.bond > 0 ||
                 (ud.task && ud.task.name !== "wander") ||
                 this._kreaturNah(c)
@@ -2409,6 +2415,9 @@ class AnazhRealm_kreatur_leben {
             if (st.creatures.includes(j) && this._kreaturIstBeute(j, c)) this._kreaturRiss(c, j);
             else this._creatureCombatDeath(c, "jagd");
         }
+        for (const c of st.creatures.slice())
+            if (c.userData._faelltNach && !st.creatures.some((o) => o.userData._rissVon === c))
+                this._creatureNaturalDeath(c, c.userData._faelltNach, false);
         // je nahe Region ihre versäumten Takte (aus EINEM Budget je Takt), dann der Takt des Spielers
         const tode = [];
         let budget = AnazhRealm.BESTAND_REGION.aufholJeTakt;
