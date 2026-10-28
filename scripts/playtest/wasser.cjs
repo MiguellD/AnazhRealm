@@ -1160,6 +1160,10 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         // Die Suche läuft um das Ufer des Sees des Gesetzes (`__wasserOrt`): die
         // erste See-Zelle mit einem Land-Nachbarn. Ein tiefer Punkt zählt, wenn auf einer Achse binnen 9 m Land über dem
         // Spiegel steht — die Probe will den Uferweg der Kreatur (der See ist 600 m breit, seine Mitte hat kein Ufer).
+        // Tiefe und Land sind die EINE Wahrheit, die der Helfer liest (`_creatureWaterContextAt`): das Wasser am Körper
+        // (`_koerperWasser` über dem Grund, mit dem Pegel des Sees) und das Ufer, wo der Grund nicht nass ist (`_nassAt`,
+        // Marge 0,1 m). Bis wetter.K3 las die Suche das 3×3-gedehnte `_waterLevelAt` + 0,5 m: hob der Regen den See um seinen
+        // Hub (0,2 m), fand sie an der Ufer-Bank kein Land mehr, das der Helfer als Land las.
         const seeOrt = await window.__wasserOrt("see");
         let mx = 0;
         let mz = 0;
@@ -1174,7 +1178,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         }
         const land = (x, z) => {
             const ly = r._voxelSurfaceY(x, z);
-            return ly !== null && Number.isFinite(ly) && ly > r._waterLevelAt(x, z) + 0.5;
+            return ly !== null && Number.isFinite(ly) && !r._nassAt(x, z, 0.1, ly);
         };
         for (let dx = -SCAN_RANGE; dx <= SCAN_RANGE && !waterSpot; dx += SCAN_STEP) {
             for (let dz = -SCAN_RANGE; dz <= SCAN_RANGE && !waterSpot; dz += SCAN_STEP) {
@@ -1182,7 +1186,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
                 const z = mz + dz;
                 const sy = r._voxelSurfaceY(x, z);
                 if (sy === null || !Number.isFinite(sy)) continue;
-                const wy = r._waterLevelAt(x, z);
+                const wy = r._koerperWasser(x, z, sy);
                 // die Kreatur steht 0,5 m über dem Grund, der Helfer misst ab ihr: der Punkt braucht > 2 m Tiefe
                 if (!(wy - sy > 2.5)) continue;
                 if (land(x + 9, z) || land(x - 9, z) || land(x, z + 9) || land(x, z - 9)) waterSpot = { x, z, sy, wy };
