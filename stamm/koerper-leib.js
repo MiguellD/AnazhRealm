@@ -1371,6 +1371,7 @@ class AnazhRealm_koerper_leib {
             try {
                 const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
                 if (!BAKER || typeof BAKER.kreatur !== "function") return null;
+                this._fadenUmgangen("Guss „kreatur“ ohne Vorlage"); // die Vorlage gießt das Werk der Foundry (Lehre 14)
                 const g = BAKER.kreatur(core, recId, 0, lod | 0, d.dials);
                 const eintraege = [];
                 g.traverse((o) => {
@@ -1599,6 +1600,7 @@ class AnazhRealm_koerper_leib {
             try {
                 const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
                 if (!BAKER || typeof BAKER.koerper !== "function") return null;
+                this._fadenUmgangen("Guss „mensch“ ohne Vorlage");
                 const g = BAKER.koerper(core, "mensch", 0, lod | 0, { dials, skinColor, hairColor });
                 const eintraege = [];
                 g.traverse((o) => {

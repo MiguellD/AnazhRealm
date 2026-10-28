@@ -533,7 +533,7 @@ class AnazhRealm_dirigent_ankunft {
         // deferiert — bis dahin ist der Spieler die leere Anker-Group (Physik/Kamera/Bewegung laufen).
         // applyPlayerSoul trägt den Physik-Body aufs fertige Mesh über.
         if (this.state.renderer && this.state.renderer._isHeadlessNull) {
-            this.applyPlayerSoul(initialSoul);
+            this._syncBauen("naht", () => this.applyPlayerSoul(initialSoul)); // der Null-Renderer des Gates (`SYNC_STELLEN`)
         } else {
             this.state._deferredAvatarSoul = initialSoul;
         }

@@ -2511,7 +2511,8 @@ class AnazhRealm_kreatur_verhalten {
         const hasPending =
             Array.isArray(this.state._pendingCreatureSnapshots) && this.state._pendingCreatureSnapshots.length > 0;
         if (headless || hasPending) {
-            this.spawnCreatures(count);
+            // der Null-Renderer des Gates ist die Test-Naht (`SYNC_STELLEN`); der Restore gießt laut, wo das Memo fehlt
+            this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures(count));
             return;
         }
         this.clearCreatures();
