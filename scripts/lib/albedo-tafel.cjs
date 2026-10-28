@@ -31,7 +31,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
 
 // Die acht Klassen des Studio-Befunds (Synthese §4 W1e) — jede trägt mindestens eine Zeile.
-const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
+const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Baum", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
 
 // DIE STUDIOS des Labors (r128): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
@@ -81,8 +81,29 @@ const STUDIOS = {
     },
 };
 
+// DIE FOLGEN einer Zeile (`welt.folgen` {name: [stufe, klasse]}, S8): je Stufe eine Stufen-Zeile `<id>-<name>` — dasselbe
+// Exemplar im Auge der Stufe, nur die Welt (das Labor zeigt die L0, `welt.stufeVon`), die Quellen der Zeile, ihr Ist in `ist.folgen`
 function ladeTafel(p) {
-    return JSON.parse(fs.readFileSync(p || TAFEL_PFAD, "utf8"));
+    const t = JSON.parse(fs.readFileSync(p || TAFEL_PFAD, "utf8"));
+    t.zeilen = t.zeilen.flatMap((z) => [
+        z,
+        ...Object.entries(z.welt.folgen || {}).map(([n, [stufe, klasse]]) => ({
+            ...z,
+            id: `${z.id}-${n}`,
+            labor: undefined,
+            welt: { ...z.welt, exemplar: { ...z.welt.exemplar, stufe }, klasse, stufen: [stufe], stufeVon: z.id },
+            ist: ((z.ist || {}).folgen || {})[n] || null,
+        })),
+    ]);
+    return t;
+}
+function tafelSchreiben(t) {
+    for (const z of t.zeilen)
+        if (z.welt.stufeVon && z.ist) {
+            const b = t.zeilen.find((x) => x.id === z.welt.stufeVon);
+            if (b.ist) (b.ist.folgen ||= {})[z.id.slice(b.id.length + 1)] = z.ist;
+        }
+    fs.writeFileSync(TAFEL_PFAD, JSON.stringify({ ...t, zeilen: t.zeilen.filter((z) => !z.welt.stufeVon) }, null, 4) + "\n");
 }
 
 const zahl = (x) => typeof x === "number" && Number.isFinite(x);
@@ -96,63 +117,66 @@ function tafelPruefen(t) {
     if (!(zahl(t.messRand) && t.messRand >= 0 && t.messRand < 0.2)) f.push("messRand (Rand der Ratsche, 0..0,2) fehlt");
     if (!t.karte || t.karte.albedo !== 0.18 || !(zahl(t.karte.eichRand) && t.karte.eichRand > 0))
         f.push("karte {albedo 0.18, eichRand} fehlt (die Selbst-Eichung)");
+    // DIE UHR-SPALTEN des Stufen-Tons (material.K3): die erste ist die Bühne (Mittag), jede weitere bricht einen Hand-Faktor
+    if (!(t.uhren && t.uhren[0] === 0.5)) f.push("uhren fehlen");
     if (!t.belichtung || !(kartenEichung(t.belichtung.kurve) > 0))
         f.push("belichtung.kurve (die Tonkurve der Labore) trägt keine Eichung (kartenEichung)");
     const ids = new Set();
     for (const z of t.zeilen || []) {
+        const fz = (x) => f.push(`${z.id}: ${x}`);
         if (!z.id || !/^[a-z][a-z0-9-]*$/.test(z.id) || ids.has(z.id)) f.push(`Zeile ohne/mit doppelter id: ${z.id}`);
         ids.add(z.id);
-        if (!PFLICHT_GRUPPEN.includes(z.gruppe)) f.push(`${z.id}: gruppe ${z.gruppe} ist keine der acht Klassen`);
+        if (!PFLICHT_GRUPPEN.includes(z.gruppe)) fz(`gruppe ${z.gruppe} ist keine der acht Klassen`);
         const L = z.labor || {};
-        if (!STUDIOS[L.studio]) f.push(`${z.id}: labor.studio ${L.studio} unbekannt`);
+        if (!STUDIOS[L.studio] !== !!z.welt.stufeVon) fz(`labor.studio ${L.studio}`);
         const W = z.welt || {};
         try {
             new RegExp(W.klasse);
             if (!W.klasse || !W.klasse.startsWith("^") || !W.klasse.endsWith("$"))
-                f.push(`${z.id}: welt.klasse ohne Anker ^…$`);
+                fz(`welt.klasse ohne Anker ^…$`);
         } catch {
-            f.push(`${z.id}: welt.klasse ist kein Regex`);
+            fz(`welt.klasse ist kein Regex`);
         }
         const ex = W.exemplar || {};
         if (!["architektur", "tier", "mensch", "boden"].includes(ex.typ))
-            f.push(`${z.id}: welt.exemplar.typ unbekannt`);
-        if ((ex.typ === "architektur" || ex.typ === "tier") && !ex.name) f.push(`${z.id}: welt.exemplar.name fehlt`);
+            fz(`welt.exemplar.typ unbekannt`);
+        if ((ex.typ === "architektur" || ex.typ === "tier") && !ex.name) fz(`welt.exemplar.name fehlt`);
         if (ex.typ === "boden" && !(Array.isArray(ex.stelle) && ex.stelle.length === 2 && ex.stelle.every(zahl)))
-            f.push(`${z.id}: welt.exemplar.stelle ist kein [x, z] — der Boden misst an EINER festen Stelle`);
+            fz(`welt.exemplar.stelle ist kein [x, z] — der Boden misst an EINER festen Stelle`);
         if (ex.radius !== undefined && !(zahl(ex.radius) && ex.radius > 0))
-            f.push(`${z.id}: welt.exemplar.radius ist keine Zahl > 0`);
+            fz(`welt.exemplar.radius ist keine Zahl > 0`);
         for (const sel of [L.stoff, W.stoff])
             if (sel)
                 for (const k of ["r", "mt", "cc"])
                     if (sel[k] && !(Array.isArray(sel[k]) && sel[k].length === 2 && sel[k].every(zahl)))
-                        f.push(`${z.id}: Stoff-Wähler ${k} ist kein [min, max]`);
+                        fz(`Stoff-Wähler ${k} ist kein [min, max]`);
         const ist = z.ist;
         if (ist !== null && ist !== undefined) {
-            for (const s of ["labor", "welt"])
+            for (const s of z.labor ? ["labor", "welt"] : ["welt"])
                 if (!ist[s] || !zahl(ist[s].Y) || typeof ist[s].rgb !== "string")
-                    f.push(`${z.id}: ist.${s} {Y, rgb} fehlt`);
-            if (!zahl(ist.verhaeltnis)) f.push(`${z.id}: ist.verhaeltnis fehlt`);
+                    fz(`ist.${s} {Y, rgb} fehlt`);
+            if (z.labor && !zahl(ist.verhaeltnis)) fz(`ist.verhaeltnis fehlt`);
             else if (
                 ist.labor &&
                 ist.welt &&
                 Math.abs(ist.verhaeltnis - ist.labor.Y / ist.welt.Y) > 1e-3 * ist.verhaeltnis
             )
-                f.push(`${z.id}: ist.verhaeltnis ${ist.verhaeltnis} ist nicht Labor/Welt`);
+                fz(`ist.verhaeltnis ${ist.verhaeltnis} ist nicht Labor/Welt`);
         }
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
-            f.push(`${z.id}: ratsche ist weder null noch Zahl`);
+            fz(`ratsche ist weder null noch Zahl`);
         // DIE STUFEN-PFLICHT: eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
         // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
         const wk = String((z.welt && z.welt.klasse) || "");
         const st = z.welt && z.welt.stufen;
         if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
-            f.push(`${z.id}: welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
+            fz(`welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
         // DIE QUELLEN der Zeile: die Kerne und Stamm-Zonen, deren Bytes ihre Albedo tragen — der Stand des Ists
         if (!(Array.isArray(z.quellen) && z.quellen.length && z.quellen.every((d) => typeof d === "string" && d)))
-            f.push(`${z.id}: quellen fehlen (die Dateien, deren Bytes die Albedo der Zeile tragen)`);
+            fz(`quellen fehlen (die Dateien, deren Bytes die Albedo der Zeile tragen)`);
         else
             for (const d of z.quellen)
-                if (!fs.existsSync(path.join(ROOT, d))) f.push(`${z.id}: Quelle ${d} fehlt im Baum`);
+                if (!fs.existsSync(path.join(ROOT, d))) fz(`Quelle ${d} fehlt im Baum`);
     }
     for (const g of PFLICHT_GRUPPEN)
         if (!(t.zeilen || []).some((z) => z.gruppe === g)) f.push(`die Klasse ${g} trägt keine Zeile`);
@@ -178,7 +202,7 @@ function tafelStand(t, pruefsumme) {
     const rot = [];
     const g = t.gemessen || {};
     for (const z of t.zeilen || [])
-        for (const seite of ["welt", "labor"]) {
+        for (const seite of z.labor ? ["welt", "labor"] : ["welt"]) {
             const q = (g[seite] || {}).quellen || {};
             const s = messStand([g[seite] || {}], z.quellen || [], { pruefsumme });
             const art = /^veraltet/.test(s) ? "veraltet" : "ungeprüft";
@@ -211,13 +235,14 @@ function tafelUrteil(t, messung) {
     for (const [s, y] of Object.entries(eich.labor || {}))
         if (!eichOk(y)) rot.push({ art: "eichung", text: `Labor-Karte ${s} liest ${y} statt ${t.karte.albedo}` });
     for (const z of t.zeilen) {
+        const rz = (art, x) => rot.push({ art, text: `${z.id}: ${x}` });
         const L = messung.labor && messung.labor[z.id];
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
-        if (!L || !zahl(L.Y) || !(L.Y > 0))
-            rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
+        if (z.labor && !(L && zahl(L.Y) && L.Y > 0))
+            rz("stumm", `das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})`);
         if (!W || !zahl(W.Y) || !(W.Y > 0))
-            rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
+            rz("stumm", `die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})`);
         // DIE STUFE DES EXEMPLARS: eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
         // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
@@ -226,27 +251,25 @@ function tafelUrteil(t, messung) {
             const fremd =
                 Array.isArray(W.stufen) && W.stufen.length ? W.stufen.filter((s) => !ds.includes(s)) : null;
             if (!fremd)
-                rot.push({ art: "stufe", text: `${z.id}: die Welt-Messung nennt ihre Stufen nicht (erklärt L${ds.join("/L")})` });
+                rz("stufe", `die Welt-Messung nennt ihre Stufen nicht (erklärt L${ds.join("/L")})`);
             else if (fremd.length)
-                rot.push({
-                    art: "stufe",
-                    text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
-                });
+                rz("stufe", `die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`);
         }
-        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`
-        const W0 = z.welt.stufeVon && messung.welt[z.welt.stufeVon];
-        if (W0 && !(Math.abs((e.stufeTon = W && +(W.Y / W0.Y).toFixed(3)) - 1) <= t.stufenToleranz))
-            rot.push({ art: "stufen-ton", text: `${z.id}: Welt/${z.welt.stufeVon} ${e.stufeTon}` });
-        if (L && W && L.Y > 0 && W.Y > 0) {
+        // DER TON DER STUFE (S8): Welt / Welt der Zeile `stufeVon` im Band `stufenToleranz`, zu jeder Uhr der Tafel (die weiteren
+        // als `<id>@<uhr>`; eine fehlende Spalte ist stumm, nie grün)
+        if (z.welt.stufeVon)
+            for (const u of t.uhren) {
+                const [Wu, W0] = [z.id, z.welt.stufeVon].map((id) => messung.welt[id + (u === 0.5 ? "" : "@" + u)] || {});
+                const v = (e.stufeTon = e.stufeTon || {})[u] = W0.Y > 0 && zahl(Wu.Y) ? +(Wu.Y / W0.Y).toFixed(3) : null;
+                if (!(Math.abs(v - 1) <= t.stufenToleranz)) rz("stufen-ton", `Welt/${z.welt.stufeVon} ${v} (Uhr ${u})`);
+            }
+        if (z.labor && L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
             e.imSoll = e.abweichung <= sollA;
             if (zahl(z.ratsche) && e.abweichung > z.ratsche + randA)
-                rot.push({
-                    art: "ratsche",
-                    text: `${z.id}: Labor/Welt ${e.verhaeltnis} (|ln| ${e.abweichung}) über der Ratsche ${z.ratsche} + Rand`,
-                });
-            if (z.pflicht && !e.imSoll) rot.push({ art: "soll", text: `${z.id}: Labor/Welt ${e.verhaeltnis} außerhalb des Solls` });
+                rz("ratsche", `Labor/Welt ${e.verhaeltnis} (|ln| ${e.abweichung}) über der Ratsche ${z.ratsche} + Rand`);
+            if (z.pflicht && !e.imSoll) rz("soll", `Labor/Welt ${e.verhaeltnis} außerhalb des Solls`);
         }
         zeilen.push(e);
     }
@@ -290,11 +313,11 @@ function tafelUrteil(t, messung) {
 function tafelNachziehen(t, messung, gemessen) {
     const u = tafelUrteil(t, messung);
     if (u.rot.some((r) => r.art === "eichung")) return { tafel: null, aenderungen: [], u, grund: "Eichung — kein Nachzug" };
-    const neu = JSON.parse(JSON.stringify(t));
+    const neu = structuredClone(t);
     const aenderungen = [];
     for (const z of neu.zeilen) {
         const e = u.zeilen.find((x) => x.id === z.id);
-        if (!(e && zahl(e.verhaeltnis))) {
+        if (!(e && (zahl(e.verhaeltnis) || (!z.labor && e.welt && zahl(e.welt.Y))))) {
             const r = u.rot.find((x) => x.art === "stumm" && x.text.startsWith(`${z.id}:`));
             z.ist = null;
             aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
@@ -302,8 +325,10 @@ function tafelNachziehen(t, messung, gemessen) {
         }
         // die Stufen der Welt reisen mit dem Ist: die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
         const knapp = (m) => Object.assign({ Y: m.Y, rgb: m.rgb, pixel: m.pixel }, Array.isArray(m.stufen) ? { stufen: m.stufen } : {});
-        z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
-        if (z.ratsche == null || e.abweichung < z.ratsche) {
+        z.ist = z.labor ? { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis } : { welt: knapp(e.welt) };
+        // die Uhr-Spalten der Welt (material.K3): je weitere Uhr ihr Ist `@<uhr>`
+        for (const u of neu.uhren.slice(1)) if ((messung.welt[z.id + "@" + u] || {}).Y) z.ist["@" + u] = knapp(messung.welt[z.id + "@" + u]);
+        if (z.labor && (z.ratsche == null || e.abweichung < z.ratsche)) {
             aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);
             z.ratsche = e.abweichung;
         }
@@ -499,10 +524,11 @@ function laborAlbedo(o) {
                 return [[new T.Vector3(lc.x, y + 14, lc.z + 0.01), new T.Vector3(lc.x, y, lc.z)]];
             }
             const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
-            return window.__tafelBlicke.map((d) => [
-                c.clone().addScaledVector(new T.Vector3(d[0], d[1], d[2]).normalize(), rad * 2.6),
-                c,
-            ]);
+            // `waagrecht` (der Baum, wie seine Karte in der Welt): die vier Seiten im Horizont, kein Blick von oben
+            const w = blick === "waagrecht";
+            return window.__tafelBlicke
+                .filter((d) => !(w && d[1] > 0.9))
+                .map((d) => [c.clone().addScaledVector(new T.Vector3(d[0], w ? 0 : d[1], d[2]).normalize(), rad * 2.6), c]);
         };
         sc.add(amb);
         const ergebnisse = [];
@@ -864,6 +890,7 @@ module.exports = {
     PFLICHT_GRUPPEN,
     STUDIOS,
     ladeTafel,
+    tafelSchreiben,
     tafelPruefen,
     tafelStand,
     standWand,
