@@ -1,0 +1,103 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.119",
+  "sha": "557d4aaddd489ba2dd2cc31322e5a349348c11a8"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 71
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1600,
+   900
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0174,
+   "taeter": {
+    "Laub baum_tanne": 0.0174
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 103.23,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -492.653,
+   33.084,
+   -1280.235
+  ],
+  "blick": [
+   0.65139,
+   0.00035,
+   -0.75874
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1600,
+  "h": 900,
+  "mittel": 62,
+  "sigma": 26,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62 σ 26 schwarz 0.0 % weiß 0.0 % · Stand 18.546.119 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 2 Posen",
+ "wahl": {
+  "versucht": 2,
+  "gewaehlt": 1,
+  "kamera": [
+   -492.653,
+   33.084,
+   -1280.235
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -470.09,
+     33.3,
+     -1265.5
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von bauSatz in 41.26 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -492.653,
+     33.084,
+     -1280.235
+    ],
+    "rot": []
+   }
+  ]
+ }
+}
