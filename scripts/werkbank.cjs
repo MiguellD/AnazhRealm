@@ -378,7 +378,7 @@ function lauf(k) {
                 }
                 ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
             }
-            const v0 = Object.assign({}, window.__vram || {});
+            const v0 = Object.assign({}, window.__vram);
             const wache = window.__stempelWache;
             const s0 = wache();
             if (k.spur) await window.__spurAn();
@@ -453,7 +453,7 @@ function lauf(k) {
                 const mittel = n ? Math.round(summe.reduce((a, b) => a + b, 0) / n) : null;
                 return { frames: n, mittel, p95: quant(summe, 0.95), max: quant(summe, 1), jePass };
             };
-            const s = st.perfSense || {}, v = window.__vram || {};
+            const s = st.perfSense, v = window.__vram;
             const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
             const cam = st.camera, dir = new window.THREE.Vector3();
             cam.getWorldDirection(dir);
@@ -485,7 +485,7 @@ function lauf(k) {
                     jetzt: mb(v.puffer + v.texturen), puffer: mb(v.puffer), texturen: mb(v.texturen), spitze: mb(v.spitze),
                     nPuffer: v.nPuffer, nTexturen: v.nTexturen,
                     wuchsImFenster: mb(v.puffer + v.texturen - (v0.puffer + v0.texturen)),
-                    gross: window.__vramBericht ? window.__vramBericht(14) : null,
+                    gross: window.__vramBericht(14),
                 },
                 stellgroessen: {
                     loadScale: Number.isFinite(s.loadScale) ? +s.loadScale.toFixed(2) : null,
@@ -498,9 +498,7 @@ function lauf(k) {
                     schattenIntervall: st._shadowMinInterval != null ? +(+st._shadowMinInterval).toFixed(1) : null,
                     holz: st._holzProfil,
                 },
-                phasenEwmaMs: s.phase
-                    ? Object.fromEntries(Object.entries(s.phase).map(([a, b]) => [a, +(+b).toFixed(2)]))
-                    : null,
+                phasenEwmaMs: Object.fromEntries(Object.entries(s.phase).map(([a, b]) => [a, +(+b).toFixed(2)])),
                 kamera: {
                     pos: [cam.position.x, cam.position.y, cam.position.z].map((x) => +x.toFixed(1)),
                     blick: [dir.x, dir.y, dir.z].map((x) => +x.toFixed(2)),
