@@ -19,13 +19,10 @@
 // "sicht" in K; eine Liste ohne ihre wurf-Teile in W (drachentor, maurentor); aufgeblähte Kapseln (+0,15 m) in I (geisttor).
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "porta-core.js"));
-const PC = globalThis.__portaCore;
+const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
 const NUR = ARG.indexOf("--nur") >= 0 ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
@@ -359,7 +356,7 @@ function fernStufe(K, verfaelsche) {
         );
     return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
-const { errs: fails, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs: fails, check, wandEnde } = pruefer();
 console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle) ===`);
 const k = kosten(huelleVon);
 check(
@@ -449,9 +446,4 @@ if (SELBST) {
         `max p95 ${(Math.max(...z4.map((r) => r.innenP95)) * 100).toFixed(1)} cm`
     );
 }
-console.log(
-    fails.length
-        ? `\n❌ ROT — ${fails.length} Befund(e): ${fails.join(" · ")}`
-        : "\n✅ GRÜN — die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll."
-);
-process.exit(fails.length ? 1 : 0);
+wandEnde(fails, "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll.");

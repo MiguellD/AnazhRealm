@@ -2,8 +2,7 @@
 // Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
 // Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -73,9 +72,7 @@ function standVerdict(s) {
 }
 
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "vehicle-core.js"));
-const VC = globalThis.__vehicleCore;
+const VC = studioKern("vehicle-core.js", "__vehicleCore");
 function expectedFor(presetId) {
     const p = VC.PRESETS[presetId];
     return VC.exportDrive(Object.assign({}, p.s, p.fx));

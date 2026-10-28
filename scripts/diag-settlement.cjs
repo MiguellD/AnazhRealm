@@ -2,7 +2,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -789,9 +789,7 @@ const FIXTURES = [
 ];
 
 hauptLauf(async () => {
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-    require(path.join(root, "fachwerk-core.js"));
-    const FC = globalThis.__fachwerkCore;
+    const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {

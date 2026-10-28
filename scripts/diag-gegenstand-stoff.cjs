@@ -36,17 +36,11 @@
 // Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
 // Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { urteilEnde, studioKern } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "vehicle-core.js"));
-require(path.join(root, "schmiede-core.js"));
-require(path.join(root, "phyto-core.js"));
-const PC = globalThis.__phytoCore;
-const VC = globalThis.__vehicleCore;
-const SC = globalThis.__schmiedeCore;
+const VC = studioKern("vehicle-core.js", "__vehicleCore");
+const SC = studioKern("schmiede-core.js", "__schmiedeCore");
+const PC = studioKern("phyto-core.js", "__phytoCore");
 
 // DAS BAND DER NATUR je Stoff (lineare Albedo-Luminanz; bei Metallen F0) — die AAA-Referenz (PBR-Tafeln: Ruß/Gummi
 // 0,02–0,04 · schwarzer Kunststoff 0,02–0,05 · Leder 0,03–0,2 · Holz 0,05–0,45 · Eisen F0 0,56 · Aluminium 0,91 · Messing
@@ -143,7 +137,6 @@ function lackGestalten() {
     if (treffer !== soll.length) out.push(`lack-gestalt: ${treffer}/${soll.length} Lacke des LACK_GESETZ in den Gestalten`);
     return out;
 }
-
 
 // Der Transport am Gesetz der Regler: Klarlack und Durchsicht eines
 // Stoffs werden die Material-Zahlen, aus denen der Wirt baut (phyto-core `budgetRegler`)
