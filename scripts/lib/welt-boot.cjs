@@ -932,7 +932,14 @@ function pruefer() {
         console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
         if (!ok) errs.push(name);
     };
-    return { errs, check };
+    // der rote Schluss einer Linse: trägt sie Befunde, steht `rot` auf stderr und der Lauf endet mit Exit 1
+    const rotAus = (rot) => {
+        if (errs.length) {
+            console.error(rot);
+            process.exit(1);
+        }
+    };
+    return { errs, check, rotAus };
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder

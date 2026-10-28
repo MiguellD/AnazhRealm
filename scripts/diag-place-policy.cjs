@@ -20,7 +20,7 @@ const SELFTEST = process.argv.includes("--selftest");
 const PORT = Number(process.env.PLACE_PORT || 4421);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, rotAus } = pruefer()
 
 hauptLauf(async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
@@ -202,10 +202,7 @@ hauptLauf(async () => {
         check("SELBST-TEST: der Dispatch ist restauriert (Prototyp trägt wieder)", out.st.restored === true);
     }
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en): die Place-Policy-Weiche (N5/H8) hält nicht.`);
-        process.exit(1);
-    }
+    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en): die Place-Policy-Weiche (N5/H8) hält nicht.`);
     console.log(
         "\n✅ GRÜN — N5 PLACE-POLICY: _placePolicyFor (fx.place führt) + _placeDispatch weichen die Buch-Arten korrekt — forest in die Nische, none ohne Worldgen, Fremdes must-ignore. H8: none vs forest DISJUNKT."
     );

@@ -8,7 +8,7 @@ const { statikServer, starteBrowser, pruefer, hauptLauf, sleep } = require("./li
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
-const { errs, check } = pruefer();
+const { errs, check, rotAus } = pruefer()
 
 // ── DAS LABOR-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test): die Täter beim Namen. ──
 function laborVerdict(m) {
@@ -64,10 +64,7 @@ hauptLauf(async () => {
                 v.join(" · ")
             );
         }
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
-            process.exit(1);
-        }
+        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
         console.log(
             "\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur und Lehren beim Namen."
         );
@@ -222,10 +219,7 @@ hauptLauf(async () => {
         m.schilderFahrt === 0 && m.schilderWerkstatt > 0,
         `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`
     );
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`);
-        process.exit(1);
-    }
+    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`);
     console.log(
         "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren."
     );

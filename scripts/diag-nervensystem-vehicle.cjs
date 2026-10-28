@@ -28,7 +28,7 @@ const kernStufen = require("./lib/kern-stufen.cjs");
 const PORT = Number(process.env.NERV_PORT || 4407);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, rotAus } = pruefer()
 // ===== TEIL A: die statischen Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes Glied wirft beim
 // Namen; die Präsenzen beweist der lebende Draht B-F). (A10, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint —
 // hält gate:pipeline-constitution N1 wörtlich.) `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
@@ -67,10 +67,7 @@ hauptLauf(async () => {
         ).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 3: zweiter kerneVereinen-Ruf injiziert -> A3 feuert", a3b && a3b[1] === false, a3b && a3b[2]);
 
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
+        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
         console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf den zweiten Ingest-Pfad.");
         process.exit(0);
     }
@@ -83,6 +80,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
+    await page.evaluate(`window.__assetSeite = ${kernStufen.assetSeite}`);
     const out = await page.evaluate(async () => {
         const res = { b: {}, c: {}, d: {}, e: {}, f: {} };
         await window.__weltDa();
@@ -164,31 +162,8 @@ hauptLauf(async () => {
         } catch (e) {
             res.d.err = (e && e.message) || String(e);
         }
-        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup) =====
-        try {
-            const meshes = await Promise.race([
-                r._foundryRequest("gt", 7, 0),
-                new Promise((res3) => setTimeout(() => res3(null), 30000)),
-            ]);
-            res.e.meshCount = Array.isArray(meshes) ? meshes.length : -1;
-            res.e.hasMatColor =
-                Array.isArray(meshes) &&
-                meshes.some((m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
-            if (Array.isArray(meshes) && meshes.length) {
-                const g = r._foundryBuildGroup(meshes);
-                res.e.groupChildren = g && g.children ? g.children.length : 0;
-                res.e.allHaveColor =
-                    !!g &&
-                    g.children.every((ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color));
-                // Aufraeumen (kein Leak in der Probe):
-                if (g)
-                    g.traverse((o) => {
-                        if (o.isMesh && o.geometry) o.geometry.dispose();
-                    });
-            }
-        } catch (e) {
-            res.e.err = (e && e.message) || String(e);
-        }
+        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup, `kernStufen.assetSeite`) =====
+        res.e = await window.__assetSeite("gt");
         // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 fordert NIE Stufe-2-
         // Geometrie (FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
         // vehicle impostor:true; jede Stufe jedes Rezepts baut Teile: gate:regler-wirkt STUFEN]; ein Wirts-L1-
@@ -239,12 +214,7 @@ hauptLauf(async () => {
     check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", out.b.gtRadstand === 2.9, String(out.b.gtRadstand));
     check("B: alle 5 Fahrzeug-Gattungen im Buch", out.b.vehicleCount === 5, String(out.b.vehicleCount));
     check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
-    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
-    check(
-        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
-        abweichung.length === 0,
-        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
-    );
+    kernStufen.stufenUrteil(check, out.b.ks, kern);
     check(
         "C: first-wins — ein Zweit-Kern ueberschreibt NIE (tree bleibt [7,8])",
         out.c.treeKept === "[7,8]",
@@ -284,14 +254,7 @@ hauptLauf(async () => {
     );
     check("D: Probe-Preset registriert + idempotent", out.d.probeRegistered === true && out.d.idempotent === true);
     check("D: das Label reist aus dem Rezept (lab)", out.d.probeLabel === "Probemobil", String(out.d.probeLabel));
-    check(
-        "E: der Worker liefert das Fahrzeug-Asset (Meshes > 0)",
-        out.e.meshCount > 0,
-        out.e.err || `meshes=${out.e.meshCount}`
-    );
-    check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
-    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
-    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
+    kernStufen.assetUrteil(check, out.e, "das Fahrzeug-Asset");
     check(
         "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
         // Körper-Schlüssel preset|gestalt|stufe[|ov]; die Anfrage MUSS entstehen (sonst prüfte F nichts)
@@ -304,10 +267,7 @@ hauptLauf(async () => {
         `Stufe ${out.f.torStufe} · ${out.f.torBruch || "kein Bruch"} · Anfragen ${out.f.torKeys}`
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
     console.log(
         "\n✅ GRÜN — DER ZWEIT-KERN DOCKT AN: vehicle-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), der N7.5-Merge lebt am EINEN Ingest-Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id> entsteht ohne eine Zeile AnazhRealm-Edit — EINE Pipeline fuer alle Domaenen (Vertrag Phase 1)."
     );

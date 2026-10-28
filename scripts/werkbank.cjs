@@ -40,6 +40,7 @@
 //                                                           | lauf --selbsttest — DER ECHTE LAUF: Frame- und GPU-Zeit, Befehle, Dreiecke und VRAM je Frame und Pass
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
+//   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
@@ -774,6 +775,8 @@ async function starte() {
         // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht); dazu die
         // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
         await page.evaluate(() => {
+            // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
+            window.__loop = (an, r = window.anazhRealm) => r.state.renderer.setAnimationLoop(an ? (t) => r._gameLoopTick(t) : null);
             window.__werkTakt = () => {
                 try {
                     window.__buehne();
@@ -799,9 +802,9 @@ async function starte() {
         await page.evaluate(HL.HAENGER_INSTALL);
         await page.evaluate(() => window.__weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
+        await page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     };
     await lade();
-    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
 
     // DER ORT (spec/profiband/haushalt.json `messorte`): mit `--ort` steht der Spieler am Ort und blickt in seine Richtung,
     // der Dorf-Zug folgt dem Ort, und der Ort-Takt läuft in JEDEM Takt der Werkbank (`__ortSchritt`). Ohne `--ort` bleiben
@@ -832,7 +835,6 @@ async function starte() {
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
         await lade(nav);
-        await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };
@@ -1665,17 +1667,14 @@ async function starte() {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
                     await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
-                    await page.evaluate(() => {
-                        const r = window.anazhRealm;
-                        r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
-                    });
+                    await page.evaluate("__loop(1)");
                     await sleep(300);
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `schirm-${Date.now()}.png`)
                     );
                     ordnerFuer(datei);
                     await page.screenshot({ path: datei });
-                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+                    await page.evaluate("__loop()");
                     return send({ datei });
                 }
                 // DAS FENSTER: Viewport wechseln wie ein Spieler (Fenster ziehen, Vollbild) — feuert das resize-Ereignis.
@@ -1716,6 +1715,38 @@ async function starte() {
                         await cdp.detach();
                     }
                     return send(Object.assign(HL.latenzUrteil(proben, bildMs), { ort: aktOrt }));
+                }
+                // DIE BEDIENUNG (spielgang.K3): die HUD-Maske aus dem Bild des Spielers (Canvas + DOM, der Loop steht) — der
+                // Anteil der Pixel, die sich mit verborgenem HUD ändern —, dann HUD (Klick je Hotbar-Platz) und Menü (Tab und I,
+                // auf und zu) als echte Eingabe im laufenden Loop; die INP je Gruppe misst das Bedienungs-Ohr (`_bedienungInp`).
+                if (req.url === "/bedienung") {
+                    const r = "window.anazhRealm";
+                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
+                    if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
+                    // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
+                    await page.bringToFront();
+                    await page.mouse.click(page.viewport().width / 2, page.viewport().height / 2);
+                    const imSpiel = await page.evaluate(`${r}.state.isPointerLocked && Promise.all(document.getAnimations().map((a) => a.finished)).then(() => true)`);
+                    await page.addStyleTag({ content: "body.__ohne-hud *:not(#world-canvas) { visibility: hidden !important; }" });
+                    const bild = async (an) => (await page.evaluate(`document.body.classList.toggle("__ohne-hud", ${!an})`), AU.pngLesen(await page.screenshot()));
+                    const [mit, ohne] = [await bild(true), await bild(false), await bild(true)];
+                    await page.evaluate("document.exitPointerLock()");
+                    let deckt = 0;
+                    for (let i = 0; i < mit.u8.length; i += 4) deckt += [0, 1, 2].some((k) => Math.abs(mit.u8[i + k] - ohne.u8[i + k]) > 12);
+                    const bilder = () => page.evaluate("new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))");
+                    await page.evaluate("__loop(1)");
+                    const inp = {};
+                    for (const art of ["hud", "menue"]) {
+                        await page.evaluate(`${r}._inp.je.clear(); ${r}._inp.n0 = performance.interactionCount`);
+                        for (let i = 0; i < +b.runden; i++)
+                            for (const ziel of art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "KeyI"]) {
+                                await (art === "hud" ? ziel.click() : page.keyboard.press(ziel));
+                                await bilder();
+                            }
+                        inp[art] = await page.evaluate(`${r}._bedienungInp()`);
+                    }
+                    await page.evaluate("__loop()");
+                    return send({ deckungPct: +((100 * deckt) / (mit.W * mit.H)).toFixed(2), bild: [mit.W, mit.H], imSpiel, inp, ort: aktOrt });
                 }
                 if (req.url === "/gpu-bank")
                     return send(
@@ -2911,7 +2942,6 @@ async function starte() {
                     );
                 if (req.url === "/reload") {
                     await lade();
-                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
                     return send({ neu: true });
                 }
                 if (req.url === "/stop") {
@@ -2983,6 +3013,7 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3) });
     else if (cmd === "albedo" && argv.includes("--nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung

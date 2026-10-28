@@ -16,8 +16,10 @@
 //  (P) SPITZEN: jede Mischung offline durch Master und Spitzen-Wand — keine Spitze erreicht 0 dBFS.
 //  (R) RUF ← LEIB: jeder gehörte Vogel ist ein gezeichneter Leib; ohne Leib verstummt der Chor (Mutation an der Wiese), ein
 //      Tier-Ruf ohne Leib der Welt bleibt stumm.
+//  (Ü) UNTERTITEL (spielgang.K4): jedes Ereignis mit Quelle trägt seine Zeile, ein stilles keine, jede gespielte Stimme je Ort
+//      ihre Zeile; die Tafel `UNTERTITEL` deckt jeden Namen des Gesetzes (Stimmen · Ruf-Stimmungen · SUBSTANZ).
 //  (F) DER KÖRPER KLINGT AUS BEWEGUNG (klang.K4 Staffel 2): Motor, Landung, Doppler an sechs Radial-Geschwindigkeiten am Bus.
-//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S13 unten), Stubs restauriert.
+//  SELBST-TEST (--selftest): je Wand ein gepflanzter Täter (die Zeile S1–S14 unten), Stubs restauriert.
 //  (T) KLANG-TAKT IN BEWEGUNG: der eigene Lauf `--takt` (an `taktSeite`).
 //  (U) GESEHEN = GEHÖRT am Bach und im Regen: der eigene Lauf `--gesehen` (an `gesehenSeite`, klang.K2 Staffel 2).
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--takt [--echt] [--minuten <n>] | --gesehen] [--json <datei>]
@@ -365,6 +367,12 @@ function werkzeug() {
     // DER SYNTHESE-ZÄHLER des Haupt-Threads (klang:umweltSynthese — Samples aus Textur- und Ruf-Gesetzen): die Welt
     // rechnet in der Klang-Werkstatt, nie im Spiel-Takt.
     W.synthese = () => window.__klangCore.umweltSynthese().samples;
+    // (Ü) die Zeilen der Untertitel bisher · die Namen des Gesetzes ohne Satz in der Tafel
+    W.zeilen = () => (st._untertitel ? st._untertitel.zeilen : 0);
+    W.luecken = (K = window.__klangCore) =>
+        [["stimme", K.UMWELT.stimmen], ["ruf", K.UMWELT.tier.rufProMin], ["substanz", K.SUBSTANZ]].flatMap(([a, t]) =>
+            Object.keys(t).filter((n) => !r.constructor.UNTERTITEL[a][n]).map((n) => a + ":" + n)
+        );
     // Die EREIGNIS-KLÄNGE der Welt, je einmal ausgelöst über ihre echten Wege: welche Quellen entstehen, wer baut sie,
     // wer verbindet direkt an den Ausgang (am Master vorbei), und wie viele Samples rechnet der Haupt-Thread dafür?
     // Ein Ereignis darf seine Quelle verzögert bauen (der Tier-Ruf kommt aus der Werkstatt): gewartet wird bis zur
@@ -376,7 +384,7 @@ function werkzeug() {
         const fang = async (art, fn, warteMs, still) => {
             const a = window.__klangQuellen.length;
             const b = window.__klangAusgang.length;
-            const syn0 = W.synthese();
+            const [syn0, u0] = [W.synthese(), W.zeilen()];
             try {
                 fn();
             } catch (e) {
@@ -396,6 +404,7 @@ function werkzeug() {
                     .filter((e) => e.ctx === s.ctx)
                     .map((e) => W.frames(e.stapel)),
                 hauptSynthese: syn1 - syn0,
+                ut: W.zeilen() - u0,
             });
         };
         await fang("treffer", () => r._trefferPaar("stahl", "stein"));
@@ -572,7 +581,8 @@ async function messeOrt(page, name, ort, stubs) {
             const W = window.__klangW;
             const st = r.state;
             const P = Object.getPrototypeOf(r);
-            const alt = {};
+            const alt = { _untertitelZeile: stubs?.ohneZeile && P._untertitelZeile };
+            if (alt._untertitelZeile) P._untertitelZeile = () => false; // der Selbst-Test: die Zeile schweigt, der Ton spielt
             if (stubs?.ohneWasser) {
                 // das Wasser an seiner Quelle weg: die EINE Wahrheit am Körper (die Nässe des Klangs liest sie)
                 alt._koerperWasser = P._koerperWasser;
@@ -610,11 +620,14 @@ async function messeOrt(page, name, ort, stubs) {
                 const syn1 = W.synthese();
                 const bp = st.playerMesh.position;
                 const baeume = W.bestand(bp.x, bp.z, 15);
-                return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0 };
+                // (Ü) die gespielten Stimmen, deren Satz in keiner stehenden Zeile steht
+                const ut = document.getElementById("untertitel").textContent;
+                const ohneZeile = zensus.stimmen.filter((v) => v.an && !ut.includes(r.constructor.UNTERTITEL.stimme[v.name])).map((v) => v.name);
+                return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0, ohneZeile };
             } finally {
                 if (alt.lage)
                     [r.constructor._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
-                if (alt._koerperWasser) P._koerperWasser = alt._koerperWasser;
+                for (const k of ["_koerperWasser", "_untertitelZeile"]) if (alt[k]) P[k] = alt[k];
                 if (alt.graph) {
                     um0.graph.stopAlle();
                     um0.graph = alt.graph;
@@ -826,6 +839,17 @@ const leibUrteil = (name, z) => {
     return L.gehoert !== L.gezeichnet || (singt && (!L.gezeichnet || /OhneLeib$/.test(name)))
         ? [`R ${name}: ${L.gehoert} gehört, ${L.gezeichnet} gezeichnet${singt ? ", singt" : ""} — ein Ruf ohne Körper`]
         : [];
+};
+// (Ü) UNTERTITEL (spielgang.K4): EIN Ereignis, zwei Leser — wer klingt, steht am Schirm; wer still ist, nicht.
+// Je Fall [wo, klingt, Zeile]: die Ereignisse der Tour, dann jede gespielte Stimme je Ort.
+const untertitelUrteil = (ereig, daten, luecken) => {
+    const f = ereig.filter((e) => !e.fehler).map((e) => [e.art, !e.still && e.quellen.length > 0, e.ut > 0]);
+    for (const [wo, d] of Object.entries(daten))
+        for (const v of d.zensus ? d.zensus.stimmen.filter((x) => x.an) : []) f.push([wo + "/" + v.name, true, !d.ohneZeile.includes(v.name)]);
+    const rot = luecken.map((n) => "Ü Tafel: kein Satz für " + n);
+    for (const [wo, k, z] of f) if (k !== z) rot.push(`Ü ${wo}: ${k ? "klingt ohne Zeile" : "Zeile, wo die Welt still ist"}`);
+    const k = f.filter((x) => x[1]);
+    return { rot, zahl: `${k.filter((x) => x[2]).length} von ${k.length} Klang-Ereignissen und Stimmen tragen ihre Zeile` };
 };
 function urteile(daten, offline, lab, ereig, phasen, spitzen) {
     const rot = [];
@@ -1474,6 +1498,7 @@ async function zensus(page, browser, ergebnis) {
         window.__tiereHalten();
         Object.getPrototypeOf(window.anazhRealm)._lofiTick = function () {};
         window.anazhRealm.initSymphony();
+        document.getElementById("untertitel-toggle").click(); // die Untertitel über das Spieler-Wort (Ü)
     });
     // Der Synthese-Zähler je Welt-Phase (die Offline-Renders rechnen für die LINSE, nie gezählt).
     const syn = () => page.evaluate(() => window.__klangW.synthese());
@@ -1532,6 +1557,9 @@ async function zensus(page, browser, ergebnis) {
     const fu = koerperUrteil((ergebnis.koerper = await page.evaluate(koerperSeite, MESS, null)));
     rot.push(...fu.rot);
     console.log(`── (F) DER KÖRPER KLINGT: ${fu.zahl}`);
+    const ut = untertitelUrteil(ereig, daten, await page.evaluate(() => window.__klangW.luecken()));
+    rot.push(...ut.rot);
+    console.log(`── (Ü) UNTERTITEL: ${ut.zahl}`);
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
@@ -1613,6 +1641,7 @@ async function zensus(page, browser, ergebnis) {
                         zwillingHauch() {
                             this._substanzKlang("wasser", null);
                         },
+                        zeileAus: () => false,
                     }[zwilling];
                     try {
                         return await window.__klangW.ereignisse();
@@ -1684,8 +1713,13 @@ async function zensus(page, browser, ergebnis) {
         ])
             if (!koerperUrteil(await page.evaluate(koerperSeite, MESS, mut)).rot.some((x) => re.test(x)))
                 fehl.push(`S13: ${mut} bleibt unbemerkt`);
+        // S14: die Untertitel aus — der Ton spielt, die Zeile schweigt: jedes klingende Ereignis und jede Stimme fallen beim Namen
+        const e14 = await mitZwilling("_untertitelZeile", "zeileAus");
+        const u14 = untertitelUrteil(e14, { wiese: await messeOrt(page, "wiese", orte.wiese, { ohneZeile: true }) }, []);
+        for (const re of [/^Ü treffer: klingt ohne/, /^Ü auftrag: klingt ohne/, /^Ü wiese\/\S+: klingt ohne/])
+            if (!u14.rot.some((t) => re.test(t))) fehl.push(`S14: die Untertitel aus bleiben unbemerkt (${re})`);
         for (const t of fehl) console.log("   ❌ " + t);
-        if (!fehl.length) console.log("   ✅ S1–S13 nennen jeden Täter beim Namen");
+        if (!fehl.length) console.log("   ✅ S1–S14 nennen jeden Täter beim Namen");
         selbstOk = fehl.length === 0;
         ergebnis.selbsttest = fehl;
     }

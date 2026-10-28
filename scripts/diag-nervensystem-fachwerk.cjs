@@ -30,7 +30,7 @@ const kernStufen = require("./lib/kern-stufen.cjs");
 const PORT = Number(process.env.NERV_FACHWERK_PORT || 4434);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, rotAus } = pruefer()
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum. =====
 function staticLaws(q, manifestSrc) {
@@ -72,10 +72,7 @@ hauptLauf(async () => {
         // V2: portalMeta in der Donor-Zeile -> S6 feuert beim Namen
         const rot = staticLaws((t) => stammLib.ersetze(t, null, /(\n {4}haus_basis: \{)/, "$1\n        portalMeta: {},"), manifestSrc).filter((l) => !l[1]);
         check("Selbst-Test 2: portalMeta in haus_basis -> S6 feuert", rot.length === 1 && rot[0][0].startsWith("S6"), rot.map((l) => l[2]).join(" · "));
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
+        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
         console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf die gestrichene Manifest-Zeile.");
         process.exit(0);
     }
@@ -240,12 +237,7 @@ hauptLauf(async () => {
         out.b.ksHaus === "[0,1,2,3]",
         String(out.b.ksHaus)
     );
-    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
-    check(
-        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
-        abweichung.length === 0,
-        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
-    );
+    kernStufen.stufenUrteil(check, out.b.ks, kern);
     check(
         "D: Auto-Blueprint haus_alemannisch registriert (Donor-Klon, 6 begehbare Judge-Parts)",
         out.d.blueprint === true && out.d.parts === 6,
@@ -307,9 +299,7 @@ hauptLauf(async () => {
     console.log(
         `      ↳ end-to-end Mesh-Zahl alemannisch je Stufe: L0=${out.e.meshCount && out.e.meshCount[0]} · L1=${out.e.meshCount && out.e.meshCount[1]} · L2=${out.e.meshCount && out.e.meshCount[2]} · L3=${out.e.meshCount && out.e.meshCount[3]} (__fern ${out.e.fern3})`
     );
-    check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
-    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
-    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
+    kernStufen.assetUrteil(check, out.e);
     check(
         "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient (kein [0]-Kollaps — der Merge lebt)",
         /^[^|]*\|[^|]*\|2(\||$)/.test(out.f.k2 || ""),
@@ -332,10 +322,7 @@ hauptLauf(async () => {
         String(out.f.k3)
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
     console.log(
         "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
     );

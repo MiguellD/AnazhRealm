@@ -60,4 +60,35 @@ function selbsttest() {
     );
 }
 
-module.exports = { kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, selbsttest };
+// Das Urteil über den Ingest-Merge (Teil B der ε-Beweise): das LIVE-Buch trägt die Stufen-Liste JEDES Kerns.
+function stufenUrteil(check, live, kern) {
+    const ab = stufenAbweichung(live, kern);
+    check("B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)", !ab.length, ab.join(" · ") || `${Object.keys(kern).length} Arten`);
+}
+// TEIL E der ε-Beweise (porta · schmiede · vehicle; Seiten-Kontext): das Asset `preset` aus dem EINEN Foundry-Worker auf Stufe 0
+// — Mesh-Zahl, ob die Material-Farbe reist, die Gruppe aus `_foundryBuildGroup` und ob jedes Kind das color-Attribut trägt
+// (die Gruppe fällt danach, kein Leck in der Probe).
+async function assetSeite(preset) {
+    const r = window.anazhRealm;
+    try {
+        const meshes = await Promise.race([r._foundryRequest(preset, 7, 0), new Promise((ok) => setTimeout(() => ok(null), 30000))]);
+        const e = { meshCount: Array.isArray(meshes) ? meshes.length : -1 };
+        e.hasMatColor = e.meshCount > 0 && meshes.some((m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
+        const g = e.meshCount > 0 ? r._foundryBuildGroup(meshes) : null;
+        e.groupChildren = g ? g.children.length : 0;
+        e.allHaveColor = !!g && g.children.every((ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color));
+        if (g) g.traverse((o) => o.isMesh && o.geometry && o.geometry.dispose());
+        return e;
+    } catch (x) {
+        return { err: (x && x.message) || String(x) };
+    }
+}
+// Das Urteil über Teil E; `was` (das Tor-Asset …) nennt die Mesh-Zeile, ohne `was` prüft der Aufrufer die Mesh-Zahl selbst.
+function assetUrteil(check, e, was) {
+    if (was) check(`E: der Worker liefert ${was} (Meshes > 0)`, e.meshCount > 0, e.err || `meshes=${e.meshCount}`);
+    check("E: die Material-Farbe reist mit (mat.color)", e.hasMatColor === true);
+    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", e.groupChildren > 0, String(e.groupChildren));
+    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", e.allHaveColor === true);
+}
+
+module.exports = { kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, selbsttest, stufenUrteil, assetSeite, assetUrteil };

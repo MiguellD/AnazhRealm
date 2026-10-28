@@ -48,7 +48,7 @@ function faustVerdict(h) {
     if (!(h.winkel >= FAUST.winkel[0] && h.winkel <= FAUST.winkel[1])) out.push(`winkel ${(h.winkel || 0).toFixed(1)}°`);
     return out;
 }
-const { errs, check } = pruefer();
+const { errs, check, rotAus } = pruefer()
 /// ===== TEIL S: die statischen Gesetze — die Absenzen über den EINEN Helfer `stammLib.fehlt` (kommentarfrei; ein totes
 // Glied wirft beim Namen). (S3, M8 — kein kind-String-Vergleich im Auto-Register-Chokepoint — hält gate:pipeline-
 // constitution N1 wörtlich; Policy, Substanz und donorTool beweist Teil D.) `q` die Wandlung des Vor-Stands, leer = der
@@ -91,10 +91,7 @@ hauptLauf(async () => {
                 `Selbst-Test 5 (H-F): ‚${name}' → die Faust-Linse feuert`,
                 faustVerdict(Object.assign({}, gesund, bruch)).length === 1
             );
-        if (errs.length) {
-            console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
-            process.exit(1);
-        }
+        rotAus("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
         console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf alle Verletzungs-Klassen (Faust).");
         process.exit(0);
     }
@@ -107,6 +104,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 
+    await page.evaluate(`window.__assetSeite = ${kernStufen.assetSeite}`);
     const out = await page.evaluate(async () => {
         const res = { b: {}, d: {}, p: {}, e: {}, f: {}, h: {} };
         await window.__weltDa();
@@ -184,31 +182,8 @@ hauptLauf(async () => {
         } catch (e) {
             res.p.err = (e && e.message) || String(e);
         }
-        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup) =====
-        try {
-            const meshes = await Promise.race([
-                r._foundryRequest("langschwert", 7, 0),
-                new Promise((res3) => setTimeout(() => res3(null), 30000)),
-            ]);
-            res.e.meshCount = Array.isArray(meshes) ? meshes.length : -1;
-            res.e.hasMatColor =
-                Array.isArray(meshes) &&
-                meshes.some((m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
-            if (Array.isArray(meshes) && meshes.length) {
-                const g = r._foundryBuildGroup(meshes);
-                res.e.groupChildren = g && g.children ? g.children.length : 0;
-                res.e.allHaveColor =
-                    !!g &&
-                    g.children.every((ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color));
-                // Aufraeumen (kein Leak in der Probe):
-                if (g)
-                    g.traverse((o) => {
-                        if (o.isMesh && o.geometry) o.geometry.dispose();
-                    });
-            }
-        } catch (e) {
-            res.e.err = (e && e.message) || String(e);
-        }
+        // ===== E: das ASSET selbst (Worker-Dispatch + mat.color + BuildGroup, `kernStufen.assetSeite`) =====
+        res.e = await window.__assetSeite("langschwert");
         // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 klemmt auf Stufe 0 =====
         try {
             if (!f.requested) f.requested = new Set();
@@ -420,12 +395,7 @@ hauptLauf(async () => {
         String(out.b.paramsWeapon)
     );
     check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", out.b.ksWeapon === "[0]", String(out.b.ksWeapon));
-    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
-    check(
-        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
-        abweichung.length === 0,
-        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
-    );
+    kernStufen.stufenUrteil(check, out.b.ks, kern);
     check(
         "D: Auto-Blueprint klinge_langschwert registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 2,
@@ -483,15 +453,8 @@ hauptLauf(async () => {
         String(out.p.dispatch)
     );
     check("P: keine klinge_-Nische in der Wald-Liste", out.p.inExtras === false);
-    check(
-        "E: der Worker liefert das Klingen-Asset (Meshes > 0)",
-        out.e.meshCount > 0,
-        out.e.err || `meshes=${out.e.meshCount}`
-    );
+    kernStufen.assetUrteil(check, out.e, "das Klingen-Asset");
     console.log(`      ↳ end-to-end Mesh-Zahl langschwert: ${out.e.meshCount}`);
-    check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
-    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
-    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
         "F: die Distanz-Wahl 2 klemmt fuer kind:weapon auf Stufe 0 (fail-closed [0])",
         /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
@@ -566,10 +529,7 @@ hauptLauf(async () => {
         out.h.offIsPart === true
     );
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
     console.log(
         "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Waffen-/Werkzeug-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — schmiede-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + B4-Regler + Asset), klinge_<id> entsteht am EINEN Chokepoint, hand reist als Daten ohne Streu (N5.5) — UND (W-A4b) die gehaltene Klinge traegt die STUDIO-GESTALT: Part-Interim -> Ankunfts-Tausch, sharedGeom-Wrapper, daten-getriebener Griff-Anker, Unequip laesst das geteilte Asset stehen, foundry-off bleibt Part byte-alt."
     );

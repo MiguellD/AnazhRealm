@@ -30,7 +30,7 @@ const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot
 const PORT = Number(process.env.PORTAL_GESTALT_PORT || 4437);
 const server = statikServer();
 
-const { errs, check } = pruefer();
+const { errs, check, rotAus } = pruefer()
 
 hauptLauf(async () => {
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
@@ -333,10 +333,7 @@ hauptLauf(async () => {
     server.close();
 
 
-    if (errs.length) {
-        console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
-        process.exit(1);
-    }
+    rotAus(`\n❌ ROT — ${errs.length} Verletzung(en).`);
     console.log(
         `\n✅ GRÜN — W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus dem lebenden Zustand) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`
     );
