@@ -17,11 +17,15 @@
 //   H5 Ziel-Bild      jede Welt der Hülle trägt ihr Panorama (die Tor-Membran der Heimat liest es, D8) im Export
 //                     worlds/tor-ziele.json, gebacken an den Quellen von HEUTE (Stempel SHA-256, `?v=` fällt); ohne
 //                     Bild benannt: die übersetzte Welt (ihre Szene reist im enter) und die sandgesicherten
+//   H7 SITZUNG        (--engine, studios.K2) die Gang-Probe: 20 zufällige Griffe je Studio (nie zweimal derselbe Wert), die Zeit
+//                     vom Eingabe-Ereignis bis zum ersten Bild mit neuem Bau-Hash (AnazhHuelle.gang) — p95 ≤ 200 ms an den Zeilen mit
+//                     `uniform: true` im Vertrag, ≤ 1 s am Neubau (geurteilt auf der Karte, swiftshader nennt die Zahl); dann das
+//                     Neuladen (jeder Regler der Sitzung steht wieder) und A/B (A zeigt den Stand der Öffnung, B den Griff)
 //   H6 EINE ENGINE    (Netz, --engine) die Studio-SEITE worlds/<welt>/index.html im Browser, gezählt ihre Anfragen: eine
 //                     Engine-Kopie im Studio-Baum (worlds/*/lib/) oder das r160-UMD (vendor/three.min.js) ist ROT beim
 //                     Namen, wer three lädt, lädt die der Welt (vendor/three.webgpu, r184); lädt die Seite die Welt
 //                     (index.html, stamm/), ist die isolierte Bühne aufgelöst — ROT. Wer noch fremd lädt, steht in der Ratsche.
-//   H7 Kosten-Wahrheit (studios.K3, --engine) je Mesh-Studio und Stufe die gezählte Zahl der Kosten-Leiste gegen die
+//   H8 Kosten-Wahrheit (studios.K3, --engine) je Mesh-Studio und Stufe die gezählte Zahl der Kosten-Leiste gegen die
 //                     GEZEICHNETE (das Werk allein im Zähl-Abschnitt der Hülle, renderer.info): über ±5 % oder ohne
 //                     gezeichnete Zahl ist ROT — eine Leisten-Zahl ohne Gegenzahl zählt nicht.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
@@ -64,11 +68,20 @@ const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
 const ENGINE_RATSCHE = { schmiede: "r128", portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
-const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y"];
+const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
 const folgeText = (f) => `Schieber ${f[0]} → ${f[1]}` + VERLAUF.map((n, i) => `, ${n} → ${f[i + 2]}`).join("");
 // Der Spruch des Gangs (pure Funktion, Gang UND Selbsttest): `netz` je Seite die Pfade ihrer Anfragen (H6), `seiten` je Seite
 // die Folge ihrer Sitzung (H3) und die gezeigte L0 eines Ofen-Studios gegen seine Welt-Zeile (H4, die Kosten-Leiste „N / Deckel △").
-function pruefeGang(netz, seiten = {}) {
+const GRIFFE = 20; // auf der Karte; der Software-Adapter (CI) prüft die Mechanik an 4 Griffen, seine Zeit urteilt nie
+const SCHRANKE = { true: 200, false: 1000 }; // ms je Klasse: der Gesetz-Wert (`uniform: true`) · der Neubau
+const p95 = (a) => a.sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1];
+// H7 je Studio aus `griffe` [{ms, u}] (ms null = kein Bild mit neuem Bau-Hash) und `bleibt` [gleich, n]
+function sitzungZahl({ griffe = [], bleibt = [0, 0] }) {
+    const p = (u) => p95(griffe.filter((g) => g.u === u && g.ms != null).map((g) => Math.round(g.ms)));
+    return { mit: griffe.filter((g) => g.ms != null).length, true: p(true), false: p(false), bleibt };
+}
+const sitzungText = (z) => `Griff → Bild p95 Gesetz-Wert ${z.true ?? "–"} ms · Neubau ${z.false ?? "–"} ms · ${z.mit} Griffe mit Bild · Neuladen ${z.bleibt.join("/")}`;
+function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
     const rot = [];
     for (const [id, pfade] of Object.entries(netz)) {
         const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
@@ -85,15 +98,21 @@ function pruefeGang(netz, seiten = {}) {
     }
     for (const [id, { folge: f, kosten }] of Object.entries(seiten)) {
         // eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
-        // H7 je gelesene Leiste (der Gang liest sie je Mesh-Studio; klang ist meshfrei, Studio-Vertrag §8)
+        // H8 je gelesene Leiste (der Gang liest sie je Mesh-Studio; klang ist meshfrei, Studio-Vertrag §8)
         const w = kosten && (kosten.find((k) => !(Math.abs(k.leiste / k.gezeichnet - 1) <= 0.05)) || (!kosten.length && {}));
-        if (w) rot.push(`H7 ${id}: L${w.stufe} gezählt ${w.leiste} △ ↔ gezeichnet ${w.gezeichnet} △`);
-        const fehl = f && (f[0] === f[1] ? 1 : f.findIndex((v, i) => v !== f[i % 2])); // der erste Schritt, der nicht wechselt
+        if (w) rot.push(`H8 ${id}: L${w.stufe} gezählt ${w.leiste} △ ↔ gezeichnet ${w.gezeichnet} △`);
+        const fehl = f && (f[0] === f[1] ? 1 : VERLAUF.concat(0, 0).findIndex((_, i) => f[i] !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
         const [k0 = {}] = kosten || [];
         if (OFEN_STUDIOS[id] && !(+k0.leiste <= +k0.deckel))
             rot.push(`H4 ${id}: Labor L0 ${k0.leiste} △ über der Welt-Zeile ${k0.deckel} — das Labor zeigt nicht den Ofen-Körper`);
+        if (!STUDIOS.includes(id)) continue;
+        const z = sitzungZahl(seiten[id]);
+        const soll = zeit ? GRIFFE : 4;
+        if (z.mit < soll) rot.push(`H7 ${id}: ${z.mit} von ${soll} Griffen mit Bild — ein Griff ohne neuen Bau-Hash im Bild`);
+        for (const u of [true, false]) if (zeit && z[u] > SCHRANKE[u]) rot.push(`H7 ${id}: p95 ${u ? "Gesetz-Wert" : "Neubau"} ${z[u]} ms > ${SCHRANKE[u]} ms`);
+        if (!(z.bleibt[1] > 0 && z.bleibt[0] === z.bleibt[1])) rot.push(`H7 ${id}: das Neuladen verliert die Sitzung (${z.bleibt.join("/")})`);
     }
     return rot;
 }
@@ -350,9 +369,11 @@ function selbsttest() {
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
-    // jedes Studio mit Sitzung, jede Leiste unter ihrer Welt-Zeile und mit ihrer gezeichneten Zahl (H4, H7)
-    const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000) => ({ folge: [..."121212"], kosten: [{ stufe, leiste, gezeichnet, deckel }] });
-    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, wahr(9000, 9120)]));
+    // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihrer Welt-Zeile und mit ihrer gezeichneten Zahl (H4, H8)
+    const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000) => ({ kosten: [{ stufe, leiste, gezeichnet, deckel }] });
+    const sitz = { folge: [..."12121212"], griffe: Array.from({ length: GRIFFE }, (_, i) => ({ ms: 40 + i, u: i < 4 })), bleibt: [12, 12] };
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...wahr(9000, 9120) }]));
+    const mit = (id, o) => ({ [id]: { ...seiten[id], ...o } });
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
         ["H6 die garage auf r184 ohne WebGPU", { garage: ["/vendor/three.module.min.js"] }, /^H6 garage: three aus vendor\/ ohne/],
@@ -363,16 +384,22 @@ function selbsttest() {
         ["H3 das Strg+Umschalt+Z der portale wiederholt nicht", {}, /^H3 portale: Strg\+Umschalt\+Z wirkt/, { portale: { folge: [..."121111"] } }],
         ["H3 das Strg+Y der klang wiederholt nicht", {}, /^H3 klang: Strg\+Y wirkt nicht/, { klang: { folge: [..."121211"] } }],
         ["H3 die schmiede verliert ihre Sitzung ganz (nie still)", {}, /^H3 schmiede: das Studio trägt keine Sitzung/, { schmiede: {} }],
-        ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, { tetrapoda: wahr(1299852, 1299852) }],
+        ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, mit("tetrapoda", wahr(1299852, 1299852))],
         ["H4 die Kosten-Leiste des koerperstudio nennt keine L0 (nie grün auf der leeren Zeile)", {}, /^H4 koerperstudio: Labor L0 undefined/, { koerperstudio: {} }],
-        ["H7 die Leiste zählt die Bühne mit", {}, /^H7 fachwerk: L0 gezählt 12800/, { fachwerk: wahr(12800, 8000) }],
-        ["H7 die Wurf-Stufe ohne Werfer", {}, /^H7 koerperstudio: L3 gezählt 0/, { koerperstudio: wahr(0, 0, 3) }],
-        ["H7 die Leiste ohne Renderer", {}, /^H7 garage: L0 gezählt 9000 △ ↔ gezeichnet undefined/, { garage: wahr(9000) }],
+        ["H8 die Leiste zählt die Bühne mit", {}, /^H8 fachwerk: L0 gezählt 12800/, mit("fachwerk", wahr(12800, 8000))],
+        ["H8 die Wurf-Stufe ohne Werfer", {}, /^H8 koerperstudio: L3 gezählt 0/, mit("koerperstudio", wahr(0, 0, 3))],
+        ["H8 die Leiste ohne Renderer", {}, /^H8 garage: L0 gezählt 9000 △ ↔ gezeichnet undefined/, mit("garage", wahr(9000))],
+        ["H7 ein Griff der garage zeigt nie einen neuen Bau-Hash", {}, /^H7 garage: 19 von 20 Griffen/, mit("garage", { griffe: [...sitz.griffe.slice(1), {}] }), { zeit: true }],
+        ["H7 der Gesetz-Wert der portale wartet die Ruhe ab (290 ms, auf der Karte)", {}, /^H7 portale: p95 Gesetz-Wert 290 ms > 200/, mit("portale", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 290 : 9 })) }), { zeit: true }],
+        ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
+        ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
+        ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
-    for (const [name, patch, soll, seitenPatch] of gangFaelle) {
-        const treffer = pruefeGang({ ...netz, ...patch }, { ...seiten, ...seitenPatch }).find((x) => soll.test(x));
+    if (pruefeGang(netz, seiten, { zeit: true }).length) console.log("❌ SELBST-TEST Gang Ausgangslage auf der Karte rot"), (ok = false);
+    for (const [name, patch, soll, seitenPatch, o] of gangFaelle) {
+        const treffer = pruefeGang({ ...netz, ...patch }, { ...seiten, ...seitenPatch }, o).find((x) => soll.test(x));
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${name}${treffer ? " — " + treffer : " — nicht rot"}`);
         if (!treffer) ok = false;
     }
@@ -389,12 +416,16 @@ async function gang() {
     const browser = await starteBrowser({ art: "linse", frist: 120000 });
     const netz = {},
         seiten = {};
+    const saat = Number(process.env.STUDIO_HUELLE_SAAT) || Date.now() % 1e6;
+    const zeit = istHardwareAdapter(browser.adapter);
+    console.log(`=== H7 DIE SITZUNG — Saat ${saat}, die Zeit ${zeit ? "geurteilt (Karte)" : "ungeurteilt (Software-Adapter, Lehre 17)"}`);
     let sauber = 0;
     try {
         for (const id of [...STUDIOS, ...NEBENWELTEN]) {
-            const page = await browser.newPage();
+            let page = await browser.newPage();
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
-            page.on("request", (q) => pfade.push(new URL(q.url()).pathname));
+            let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
+            page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
             await s.zeige(page, 90000, seite(id), "load");
             await sleep(1500);
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
@@ -408,18 +439,27 @@ async function gang() {
                 erst.value = String(+vor === +erst.max ? erst.min : erst.max);
                 erst.dispatchEvent(new Event("input", { bubbles: true }));
                 const nachTaste = (n) => (
-                    inp().dispatchEvent(new KeyboardEvent("keydown", { key: n.slice(-1).toLowerCase(), ctrlKey: true, shiftKey: n.includes("Umschalt"), bubbles: true })),
+                    n.length < 2
+                        ? document.querySelector(`[data-ab="${n}"]`).click()
+                        : inp().dispatchEvent(new KeyboardEvent("keydown", { key: n.slice(-1).toLowerCase(), ctrlKey: true, shiftKey: n.includes("Umschalt"), bubbles: true })),
                     inp().value
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
-            // H4 + H7: die Kosten-Leiste je Stufe (Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet) — gelesen, sobald jede Zeile
+            // H4 + H8: die Kosten-Leiste je Stufe (Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet) — gelesen, sobald jede Zeile
             // ihre gezeichnete Zahl trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot `waitFor`): ein Hänger
             // endet an der Frist des Browsers, die Stall-Akte nennt die Seite
             const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
             if (STUDIOS.includes(id) && id !== "klang") {
                 await waitFor(page, `(${zeilen})().every((k) => k.gezeichnet)`, `${id}: jede Zeile der Kosten-Leiste mit ihrer gezeichneten Zahl`);
                 z.kosten = await page.evaluate(zeilen);
+            }
+            if (STUDIOS.includes(id)) {
+                netzZaehlt = false;
+                // das Neuladen: die Seite geht, dieselbe Seite öffnet neu (derselbe Speicher der Herkunft)
+                const neu = async () => (await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);
+                Object.assign(z, await sitzungsGang(page, saat + STUDIOS.indexOf(id), neu, zeit ? GRIFFE : 4));
+                console.log(`  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))}`);
             }
             await page.close();
             const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
@@ -432,10 +472,46 @@ async function gang() {
         await browser.close();
         s.close();
     }
-    const rot = pruefeGang(netz, seiten);
+    const rot = pruefeGang(netz, seiten, { zeit });
     for (const x of rot) console.log("❌ " + x);
     console.log(`${rot.length ? "❌" : "✅"} DER GANG: ${sauber} von ${Object.keys(netz).length} Seiten ohne fremde Engine · ${Object.values(seiten).filter((z) => z.folge).length} Sitzungen`);
     if (rot.length) process.exitCode = 1;
+}
+
+// H7 — DER GANG DER SITZUNG an einer offenen Seite: GRIFFE Griffe an zufälligen Schiebern der Sitzung (Saat), je Griff ein Wert
+// des Rasters, den diese Zeile in der Probe noch nie trug, die Zeit aus dem Gang der Hülle (Ereignis → erstes Bild mit neuem
+// Bau-Hash); dann das Neuladen (die Werte jedes Reglers der Sitzung vorher = nachher) und A/B am ersten Schieber.
+async function sitzungsGang(page, saat, neuladen, n) {
+    const griffe = [];
+    for (let k = 0; k < n; k++) {
+        const g = await page.evaluate((saat) => {
+                const r = AnazhHuelle.zufall(saat),
+                    alt = (window.__alt = window.__alt || new Set());
+                const alle = [...document.querySelectorAll("[data-sitzung] .h-regler input[type=range]:not(:disabled)")];
+                for (let i = 0; i < 99; i++) {
+                    const e = alle[Math.floor(r() * alle.length)],
+                        v = +(+e.min + Math.round((r() * (e.max - e.min)) / e.step) * e.step).toFixed(6),
+                        n = e.closest("[data-regler]").dataset.regler + "=" + v;
+                    if (alt.has(n) || v === +e.value) continue;
+                    alt.add(n);
+                    e.value = v;
+                    e.dispatchEvent(new Event("input", { bubbles: true }));
+                    return !!(window.__griff = AnazhHuelle.gang().griffe.at(-1));
+                }
+            }, saat * 977 + k);
+        // das EINE Warten (ohne Frist): ein Griff, dessen Bild nie kommt, endet an der Frist des Browsers beim Namen
+        if (g) await waitFor(page, () => window.__griff.t1 != null, "Griff → Bild mit neuem Bau-Hash");
+        griffe.push(g ? await page.evaluate(() => ({ ms: window.__griff.t1 - window.__griff.t0, u: window.__griff.uniform })) : {});
+    }
+    // DAS NEULADEN: der letzte Schritt steht im Speicher, die Seite öffnet neu, jeder Regler der Sitzung steht wieder
+    const stand = () => page.evaluate(() => [...document.querySelectorAll("[data-sitzung] [data-regler] input")].map((e) => e.value + e.checked));
+    await waitFor(page, () => AnazhHuelle.gang().gespeichert > window.__griff.t0, "der letzte Griff im Speicher");
+    const vorher = await stand();
+    page = await neuladen();
+    await waitFor(page, () => window.AnazhHuelle && AnazhHuelle.gang().geladen, "die Sitzung von zuletzt geladen");
+    const nachher = await stand();
+    await page.evaluate(() => localStorage.clear());
+    return { griffe, bleibt: [vorher.filter((x, i) => x === nachher[i]).length, vorher.length] };
 }
 
 // ── DAS ZIEL-BILD BACKEN (H5, `--panorama [welt,…]`): je Welt der Hülle ihre Seite in einem Rahmen (die Heimat ist eine leere
