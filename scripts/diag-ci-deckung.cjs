@@ -110,7 +110,10 @@ const VORBEREITUNG = [
 // den Chrome je Job neu), ihre Schlüssel aus scripts/ci-schluessel.cjs; sie stehen im Vorbereitungs-Block, ohne Gruppe
 const CACHE = (s) => typeof s.uses === "string" && /^actions\/cache(\/restore)?@/.test(s.uses);
 const SCHLUESSEL = (s) => /^node scripts\/ci-schluessel\.cjs$/.test(String(s.run || "").trim());
-const IST_VORBEREITUNG = (s) => CACHE(s) || SCHLUESSEL(s) || VORBEREITUNG.some(([, f]) => f(s));
+// der Konsum-Zeuge: sein Schalter nach checkout, sein Sammeln und das Artefakt am Ende — Vorbereitung, nie eine Wand
+const ZEUGE = (s) =>
+    /scripts\/lib\/konsum-zeuge\.cjs/.test(String(s.run || "")) || String(s.uses || "").startsWith("actions/upload-artifact@");
+const IST_VORBEREITUNG = (s) => CACHE(s) || SCHLUESSEL(s) || ZEUGE(s) || VORBEREITUNG.some(([, f]) => f(s));
 const GRUPPE_RE = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/;
 
 const lauf = (s) => String(s.run || "").trim();
@@ -506,7 +509,7 @@ function gruppenUrteil(job, J) {
     // ihn liest, jeder Cache vor npm ci (danach hätte die Installation ihn nicht gelesen)
     let blockEnde = 0;
     while (blockEnde < steps.length && IST_VORBEREITUNG(steps[blockEnde])) blockEnde++;
-    const block = steps.slice(0, blockEnde).filter((s) => !CACHE(s) && !SCHLUESSEL(s));
+    const block = steps.slice(0, blockEnde).filter((s) => !CACHE(s) && !SCHLUESSEL(s) && !ZEUGE(s));
     VORBEREITUNG.forEach(([n, f], i) => {
         const s = block[i];
         if (!s || !f(s))

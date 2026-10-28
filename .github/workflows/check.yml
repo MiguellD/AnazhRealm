@@ -329,6 +329,13 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            # DER KONSUM-ZEUGE (Spike „Die CI wählt nach Konsum"): ab hier trägt jeder Node-Prozess der Gruppe den Zeugen
+            # (scripts/lib/konsum-zeuge.cjs) — was er vom Baum liest, steht am Ende je Wurzel in konsum.json, dem Artefakt der Gruppe
+            - name: Konsum-Zeuge an
+              run: |
+                  echo "NODE_OPTIONS=--require=$GITHUB_WORKSPACE/scripts/lib/konsum-zeuge.cjs" >> "$GITHUB_ENV"
+                  echo "KONSUM_ZEUGE=$RUNNER_TEMP/konsum" >> "$GITHUB_ENV"
+
             - uses: actions/setup-node@v4
               with:
                   node-version: "22"
@@ -1481,6 +1488,19 @@ jobs:
               # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
               # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
               run: npm run look-golden
+
+            - name: Konsum-Zeuge sammelt (je Wurzel lies · liste · frage · teil · ruft)
+              if: ${{ !cancelled() }}
+              env:
+                  KONSUM_GRUPPE: voll ${{ matrix.gruppe }}
+              run: node scripts/lib/konsum-zeuge.cjs --sammle "$KONSUM_ZEUGE" --aus "$RUNNER_TEMP/konsum.json"
+
+            - uses: actions/upload-artifact@v4
+              if: ${{ !cancelled() }}
+              with:
+                  name: konsum-voll-${{ matrix.gruppe }}
+                  path: ${{ runner.temp }}/konsum.json
+                  retention-days: 14
 
     echt:
         # DIE ECHT-GRUPPE (K65, Entscheid 16.10.): BESTEHENDE Wände der GPU-Klasse ZUSÄTZLICH auf dem eigenen Läufer mit der echten

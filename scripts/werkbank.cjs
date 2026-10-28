@@ -70,7 +70,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -781,8 +781,6 @@ function bandProben(k) {
 
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
-    const puppeteer = require("puppeteer");
-    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const seiten = statikServer();
     if (ECHT) {
         // Der Flugschreiber schreibt nur vom save-server-Ursprung (isSaveServerHost) — ohne ihn kein Echt-Lauf.
@@ -802,16 +800,16 @@ async function starte() {
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
     // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
     const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
-    const browser = await puppeteer.launch({
+    // Echt: der Hardware-Adapter im Fenster; sonst die Linse (lokal der Hardware-Adapter headless, in der CI swiftshader) — der
+    // Browser über die EINE Weiche (welt-boot `starteBrowser`: Rezept, Adapter-Zeile, Fehler-Sammler, Stall-Akte)
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        userDataDir: profil,
-        protocolTimeout: 10800000,
-        defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
-        // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
-        // — die Schalter je Plattform trägt das EINE Rezept.
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
+        profil,
+        frist: 10800000,
+        viewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
+        zusatz: ECHT ? ["--window-size=1940,1200"] : [],
     });
-    await adapterZeile(browser);
     const page = await browser.newPage();
     const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     // ein Seiten-Werkzeug beim Namen (`window[name](k)`)
