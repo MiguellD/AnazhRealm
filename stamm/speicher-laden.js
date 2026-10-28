@@ -285,6 +285,9 @@ class AnazhRealm_speicher_laden {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
         this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
+        // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
+        if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1)
+            this.state.seasonPhase = state.seasonPhase;
         // DER LEBENSZYKLUS ZÄHLT AB DER UHR DES STANDS (halten.K5): seine Marke (`faunaLifecycle.lastTick`) ist eine Lesung der
         // Welt-Uhr und reist nicht; an der gereisten Uhr fand die Null der Sitzung den letzten Takt so alt wie den Stand, und das
         // erste Bild der Wiederkehr zählte das Intervall, das die Welt des Stands schon gezählt hatte, ein zweites Mal (607d0c73:
