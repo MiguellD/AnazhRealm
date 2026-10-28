@@ -1,0 +1,261 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe -e (function k8Sichten() {
+    const fs = require("fs");
+    const cp = require("child_process");
+    const aus = process.argv[1];
+    const quelle = fs.readFileSync("scripts/diag-koerper-stand.cjs", "utf8");
+    const anker = "const W = window.__messWiese;";
+    if (quelle.split(anker).length !== 2) {
+        console.log("K8-SICHT: Anker fehlt in scripts/diag-koerper-stand.cjs");
+        process.exit(3);
+    }
+    const erg = {};
+    for (const sicht of ["first", "third"]) {
+        const kopie = "scripts/.k8-" + sicht + ".cjs";
+        fs.writeFileSync(kopie, quelle.replace(anker, 'r.setCameraMode("' + sicht + '"); o.__sicht = s.cameraMode; ' + anker));
+        const jd = aus + "." + sicht + ".json";
+        const p = cp.spawnSync(process.execPath, [kopie, "--k8", ...process.argv.slice(2)], {
+            env: Object.assign({}, process.env, { KOERPER_STAND_JSON: jd }),
+            encoding: "utf8",
+            maxBuffer: 1 << 26,
+        });
+        fs.rmSync(kopie, { force: true });
+        process.stdout.write("== SICHT " + sicht + " EXIT " + p.status + "\n" + (p.stdout || ""));
+        process.stderr.write(p.stderr || "");
+        let k8 = null;
+        try {
+            k8 = JSON.parse(fs.readFileSync(jd, "utf8")).k8;
+        } catch (_e) {}
+        erg[sicht] = { exit: p.status, k8 };
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\4abae42d-gtx\gelaende.K5_2.json --bild
+== SICHT first EXIT 0
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ .k8-first.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.6 s
+[stall-akte] offen evaluate(rollen) seit 45.8 s
+[stall-akte] Puls 26×, zuletzt vor 20.6 s — complete · renderer bereit · weltbild da · frames 354 · welt 1922 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 74 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #74 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:11:30.696 Pipeline spiegel:strahl · spiegel:strahl · vs 3165 fs 62687 Zeichen · 0 Lichter
+[stall-akte] Stempel 10:11:30.696 gpu.createRenderPipeline #72 renderPipeline_spiegel:strahl_516
+[stall-akte] Stempel 10:11:32.399 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 5662 fs 58761 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:11:32.399 gpu.createRenderPipelineAsync #73 renderPipeline_MeshStandardNodeMaterial_34
+[stall-akte] Stempel 10:11:33.048 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:11:33.048 gpu.createRenderPipelineAsync #74 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:11:47.960 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 9496 fs 64933 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:11:47.960 gpu.createRenderPipelineAsync #75 renderPipeline_MeshStandardNodeMaterial_112
+[stall-akte] Stempel 10:11:48.124 Pipeline ShadowMaterial · geometrie-arena · vs 4329 fs 7458 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:11:48.124 gpu.createRenderPipelineAsync #76 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:11:48.127 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6292 fs 60382 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:11:48.127 gpu.createRenderPipelineAsync #77 renderPipeline_MeshStandardNodeMaterial_592
+[stall-akte] CPU (2 s) renderer 22376 134 % · browser 4220 21 % · GPU 1328 3 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 11:11 gpu 266/r 624 · 11:13 gpu 435/r 571 · 11:15 gpu 307/r 496 · 11:17 gpu 449/r 269 · 11:19 gpu 261/r 592 · 11:21 gpu 56/r 434 · 11:23 gpu 13/r 295 · 11:25 gpu 106/r 380 · 11:27 gpu 429/r 523 · 11:29 gpu 211/r 365 · 11:31 gpu 101/r 192 · 11:33 gpu 36/r 175 · 11:35 gpu 3/r 108 · 11:37 gpu 2/r 161 · 11:39 gpu 2/r 180 · 11:41 gpu 2/r 108 · 11:43 gpu 2/r 104 · 11:45 gpu 2/r 105 · 11:47 gpu 3/r 125 · 11:49 gpu 97/r 175 · 11:51 gpu 2/r 106 · 11:53 gpu 2/r 122 · 11:55 gpu 2/r 110 · 11:57 gpu 2/r 105 · 12:00 gpu 2/r 104 · 12:02 gpu 2/r 125 · 12:04 gpu 2/r 140 · 12:06 gpu 2/r 103 · 12:08 gpu 2/r 111 · 12:10 gpu 3/r 154
+[stall-akte] Stapel _foundryLodBandPartner :351 < _updateFoundryLodBand :402 < _tickArchitectureLOD :243 < _runFrameScheduler :1443 < _loopVoxelStreaming :1469 < loop :197 < takt :11 < sprung :268
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_wolf steht nach 600 Takten nicht ganz (4 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Bauplan 'messtreppe' angelegt
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: third
+[stall-akte] Stderr [4220:6932:1028/111208.543:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111208.551:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111208.552:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _foundryLodBandPartner :351
+[stall-akte] Seite #3: der Puls kehrt zurück nach 24.7 s — complete · renderer bereit · weltbild da · frames 358 · welt 3461 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 77 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #77 renderPipeline_MeshStandardNodeMaterial_592
+[stall-akte] ═══ .k8-first.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.8 s
+[stall-akte] offen evaluate(rollen) seit 76.9 s
+[stall-akte] Puls 34×, zuletzt vor 20.8 s — complete · renderer bereit · weltbild da · frames 510 · welt 3977 Takte · Ruhe 0 · zuletzt Fege-Takt deckWache 4096/6528 · programme 87 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] Stempel 10:12:13.568 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:13.568 gpu.createRenderPipelineAsync #82 renderPipeline_MeshStandardNodeMaterial_52
+[stall-akte] Stempel 10:12:13.868 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:13.974 gpu.createRenderPipelineAsync #83 renderPipeline_MeshStandardNodeMaterial_53
+[stall-akte] Stempel 10:12:14.173 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66882 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:14.174 gpu.createRenderPipelineAsync #84 renderPipeline_MeshStandardNodeMaterial_54
+[stall-akte] Stempel 10:12:14.478 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 11755 fs 66787 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:14.479 gpu.createRenderPipelineAsync #85 renderPipeline_MeshPhysicalNodeMaterial_210
+[stall-akte] Stempel 10:12:14.805 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:14.805 gpu.createRenderPipelineAsync #86 renderPipeline_MeshPhysicalNodeMaterial_51
+[stall-akte] Stempel 10:12:17.667 Pipeline MeshStandardNodeMaterial · streuSatz · vs 7175 fs 61663 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:17.668 gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] CPU (2 s) renderer 22376 102 % · GPU 1328 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 11:41 gpu 2/r 108 · 11:43 gpu 2/r 104 · 11:45 gpu 2/r 105 · 11:47 gpu 3/r 125 · 11:49 gpu 97/r 175 · 11:51 gpu 2/r 106 · 11:53 gpu 2/r 122 · 11:55 gpu 2/r 110 · 11:57 gpu 2/r 105 · 12:00 gpu 2/r 104 · 12:02 gpu 2/r 125 · 12:04 gpu 2/r 140 · 12:06 gpu 2/r 103 · 12:08 gpu 2/r 111 · 12:10 gpu 3/r 154 · 12:12 gpu 6/r 231 · 12:14 gpu 230/r 439 · 12:16 gpu 329/r 393 · 12:18 gpu 38/r 220 · 12:20 gpu 46/r 165 · 12:22 gpu 2/r 141 · 12:24 gpu 2/r 103 · 12:26 gpu 2/r 105 · 12:28 gpu 2/r 102 · 12:30 gpu 2/r 102 · 12:32 gpu 2/r 102 · 12:34 gpu 2/r 102 · 12:36 gpu 2/r 102 · 12:38 gpu 2/r 104 · 12:40 gpu 2/r 159
+[stall-akte] Stapel _chooseLODForDistance :1714 < _tickArchitectureLOD :203 < _runFrameScheduler :1443 < _loopVoxelStreaming :1469 < loop :197 < takt :11 < gehen :60 < rollen :166
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Bauplan 'messtreppe' angelegt
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Grok: Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_fuchs steht nach 600 Takten nicht ganz (9 Teile)
+[stall-akte] Stderr [4220:6932:1028/111208.543:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111208.551:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111208.552:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111237.432:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _chooseLODForDistance :1714
+[stall-akte] Seite #3: der Puls kehrt zurück nach 30.4 s — complete · renderer bereit · weltbild da · frames 544 · welt 4861 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 87 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] ═══ .k8-first.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.7 s
+[stall-akte] offen evaluate(rollen) seit 107.3 s
+[stall-akte] Puls 35×, zuletzt vor 20.7 s — complete · renderer bereit · weltbild da · frames 544 · welt 4861 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 87 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] Stempel 10:12:13.568 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:13.568 gpu.createRenderPipelineAsync #82 renderPipeline_MeshStandardNodeMaterial_52
+[stall-akte] Stempel 10:12:13.868 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:13.974 gpu.createRenderPipelineAsync #83 renderPipeline_MeshStandardNodeMaterial_53
+[stall-akte] Stempel 10:12:14.173 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66882 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:14.174 gpu.createRenderPipelineAsync #84 renderPipeline_MeshStandardNodeMaterial_54
+[stall-akte] Stempel 10:12:14.478 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 11755 fs 66787 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:14.479 gpu.createRenderPipelineAsync #85 renderPipeline_MeshPhysicalNodeMaterial_210
+[stall-akte] Stempel 10:12:14.805 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:14.805 gpu.createRenderPipelineAsync #86 renderPipeline_MeshPhysicalNodeMaterial_51
+[stall-akte] Stempel 10:12:17.667 Pipeline MeshStandardNodeMaterial · streuSatz · vs 7175 fs 61663 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:12:17.668 gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] CPU (2 s) renderer 22376 102 % · GPU 1328 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 12:12 gpu 6/r 231 · 12:14 gpu 230/r 439 · 12:16 gpu 329/r 393 · 12:18 gpu 38/r 220 · 12:20 gpu 46/r 165 · 12:22 gpu 2/r 141 · 12:24 gpu 2/r 103 · 12:26 gpu 2/r 105 · 12:28 gpu 2/r 102 · 12:30 gpu 2/r 102 · 12:32 gpu 2/r 102 · 12:34 gpu 2/r 102 · 12:36 gpu 2/r 102 · 12:38 gpu 2/r 104 · 12:40 gpu 2/r 159 · 12:42 gpu 3/r 103 · 12:44 gpu 2/r 104 · 12:46 gpu 2/r 103 · 12:48 gpu 2/r 102 · 12:50 gpu 5/r 172 · 12:52 gpu 2/r 126 · 12:54 gpu 2/r 102 · 12:56 gpu 2/r 103 · 12:58 gpu 2/r 108 · 13:00 gpu 2/r 102 · 13:02 gpu 2/r 102 · 13:04 gpu 2/r 103 · 13:06 gpu 2/r 101 · 13:08 gpu 2/r 101 · 13:10 gpu 2/r 101
+[stall-akte] Stapel getVertexPosition :6 < Na :6 < _computeIntersections :6 < raycast :6 < fd :6 < fd :6 < intersectObject :6 < treppe :240
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Grok: Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_fuchs steht nach 600 Takten nicht ganz (9 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Ausgestiegen
+[stall-akte] Stderr [4220:6932:1028/111208.543:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111208.551:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111208.552:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [4220:6932:1028/111237.432:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in getVertexPosition :6
+[stall-akte] Seite #3: der Puls kehrt zurück nach 27.9 s — complete · renderer bereit · weltbild da · frames 548 · welt 5479 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 87 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+  {k8:{__sicht:first,wiese:{x:-280.4,z:-1045.6,neig:0,ring:[4,4],fein:{n:200,p95:1.1,median:0.1},fuss:{n:200,p95:0.7,median:0,stecken:0},huf:{n:200,p95:0.2,median:gigant 0},rad:{n:200,p95:0.2,median:0},falllinie:{n:200,p95:0.3,median:-0.2,stecken:0},stufe:{n:201,p95:0.4,median:-0.3,stecken:0},streu:{n:337,p95:0.5,median:0}},sprung:{first:[{hub:[0.323,0.345,0.316],weite:2.846},{hub:[0.179,0.221,0.172],weite:2.156},{hub:[0.503,0.511,0.497],weite:3.45}],third:[{hub:[0.323,0.332,0.323],weite:2.846},{hub:[0.179,0.179,0.179],weite:2.156},{hub:[0.503,0.528,0.503],weite:3.45}]},hang:{x:-526,z:-853,neig:24.4,ring:[4,4],fein:{n:200,p95:4.3,median:0.3},fuss:{n:201,p95:1.4,median:-0.8,stecken:0},huf:{n:201,p95:0.4,median:gigant 0.1},rad:{n:200,p95:2.4,median:2.1},falllinie:{n:200,p95:1.2,median:-0.9,stecken:0},stufe:{n:201,p95:1.1,median:-0.3,stecken:0},streu:{n:714,p95:1,median:0}},nexus:0}}
+✅ gate:koerper-stand grün
+== SICHT third EXIT 0
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ .k8-third.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.2 s
+[stall-akte] offen evaluate(rollen) seit 47.1 s
+[stall-akte] Puls 26×, zuletzt vor 20.2 s — complete · renderer bereit · weltbild da · frames 368 · welt 1959 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 81 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #81 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:13:43.120 Pipeline MeshStandardNodeMaterial · streuSatz · vs 4538 fs 73513 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:13:43.120 gpu.createRenderPipelineAsync #78 renderPipeline_MeshStandardNodeMaterial_125
+[stall-akte] Stempel 10:13:43.384 Pipeline spiegel:strahl · spiegel:strahl · vs 3165 fs 62687 Zeichen · 0 Lichter
+[stall-akte] Stempel 10:13:43.384 gpu.createRenderPipeline #79 renderPipeline_spiegel:strahl_315
+[stall-akte] Stempel 10:13:45.244 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 5662 fs 58761 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:13:45.244 gpu.createRenderPipelineAsync #80 renderPipeline_MeshStandardNodeMaterial_34
+[stall-akte] Stempel 10:13:45.792 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:13:45.792 gpu.createRenderPipelineAsync #81 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:14:01.203 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6072 fs 73517 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:01.204 gpu.createRenderPipelineAsync #82 renderPipeline_MeshStandardNodeMaterial_125
+[stall-akte] Stempel 10:14:01.381 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 9573 fs 63820 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:01.381 gpu.createRenderPipelineAsync #83 renderPipeline_MeshStandardNodeMaterial_121
+[stall-akte] CPU (2 s) renderer 17100 165 % · browser 14000 18 % · GPU 4280 3 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 13:24 gpu 270/r 579 · 13:26 gpu 433/r 637 · 13:28 gpu 346/r 417 · 13:30 gpu 454/r 264 · 13:32 gpu 158/r 619 · 13:34 gpu 17/r 406 · 13:36 gpu 34/r 309 · 13:39 gpu 645/r 574 · 13:40 gpu 386/r 394 · 13:42 gpu 176/r 268 · 13:44 gpu 107/r 184 · 13:46 gpu 30/r 164 · 13:48 gpu 2/r 171 · 13:50 gpu 2/r 108 · 13:52 gpu 2/r 103 · 13:54 gpu 2/r 105 · 13:56 gpu 2/r 103 · 13:58 gpu 2/r 103 · 14:00 gpu 2/r 104 · 14:02 gpu 109/r 185 · 14:04 gpu 2/r 110 · 14:06 gpu 2/r 106 · 14:09 gpu 2/r 125 · 14:11 gpu 2/r 106 · 14:13 gpu 2/r 217 · 14:15 gpu 2/r 106 · 14:17 gpu 2/r 101 · 14:19 gpu 2/r 104 · 14:21 gpu 2/r 112 · 14:23 gpu 2/r 162
+[stall-akte] Stapel _foundryPresetFor :1180 < _foundryPresetForEntry :1506 < _updateFoundryLodBand :400 < _tickArchitectureLOD :243 < _runFrameScheduler :1443 < _loopVoxelStreaming :1469 < loop :197 < takt :11
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole warn: THREE.TSL: Return statement used in an inline 'Fn()'. Define a layout struct to allow return values. Stack trace not available. Enable "THREE.Node.captureStackTrace" to capture stack traces.
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_wolf steht nach 600 Takten nicht ganz (4 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Bauplan 'messtreppe' angelegt
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Stderr [14000:20280:1028/111421.347:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [14000:20280:1028/111421.355:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _foundryPresetFor :1180
+[stall-akte] Seite #3: der Puls kehrt zurück nach 25.4 s — complete · renderer bereit · weltbild da · frames 371 · welt 3498 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 83 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #83 renderPipeline_MeshStandardNodeMaterial_121
+[stall-akte] ═══ .k8-third.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.5 s
+[stall-akte] offen evaluate(rollen) seit 78.3 s
+[stall-akte] Puls 33×, zuletzt vor 20.5 s — complete · renderer bereit · weltbild da · frames 528 · welt 4023 Takte · Ruhe 0 · zuletzt Fege-Takt deckWache 2688/6528 · programme 87 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] Stempel 10:14:26.676 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 6411 fs 68349 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:26.676 gpu.createRenderPipelineAsync #85 renderPipeline_MeshPhysicalNodeMaterial_382
+[stall-akte] Stempel 10:14:26.848 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 6292 fs 60478 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:26.848 gpu.createRenderPipelineAsync #86 renderPipeline_MeshStandardNodeMaterial_388
+[stall-akte] Stempel 10:14:30.798 Pipeline MeshStandardNodeMaterial · streuSatz · vs 7175 fs 61663 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:30.798 gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] Stempel 10:14:32.402 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:32.402 gpu.createRenderPipelineAsync #88 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:14:32.478 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11713 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:32.478 gpu.createRenderPipelineAsync #89 renderPipeline_MeshStandardNodeMaterial_191
+[stall-akte] Stempel 10:14:32.544 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5392 fs 60083 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:32.544 gpu.createRenderPipelineAsync #90 renderPipeline_MeshStandardNodeMaterial_236
+[stall-akte] CPU (2 s) renderer 17100 153 % · GPU 4280 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 13:54 gpu 2/r 105 · 13:56 gpu 2/r 103 · 13:58 gpu 2/r 103 · 14:00 gpu 2/r 104 · 14:02 gpu 109/r 185 · 14:04 gpu 2/r 110 · 14:06 gpu 2/r 106 · 14:09 gpu 2/r 125 · 14:11 gpu 2/r 106 · 14:13 gpu 2/r 217 · 14:15 gpu 2/r 106 · 14:17 gpu 2/r 101 · 14:19 gpu 2/r 104 · 14:21 gpu 2/r 112 · 14:23 gpu 2/r 162 · 14:25 gpu 5/r 117 · 14:27 gpu 54/r 240 · 14:29 gpu 111/r 518 · 14:31 gpu 29/r 226 · 14:33 gpu 85/r 188 · 14:35 gpu 2/r 141 · 14:37 gpu 2/r 104 · 14:39 gpu 2/r 103 · 14:41 gpu 2/r 103 · 14:43 gpu 2/r 102 · 14:45 gpu 2/r 102 · 14:47 gpu 2/r 102 · 14:49 gpu 2/r 102 · 14:51 gpu 2/r 104 · 14:53 gpu 2/r 132
+[stall-akte] Stapel _lodBandPartnerFor :359 < _foundryLodBandPartner :352 < _updateFoundryLodBand :402 < _tickArchitectureLOD :243 < _runFrameScheduler :1443 < _loopVoxelStreaming :1469 < loop :197 < takt :11
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Ausgestiegen
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Bauplan 'messtreppe' angelegt
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Grok: Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_fuchs steht nach 600 Takten nicht ganz (6 Teile)
+[stall-akte] Stderr [14000:20280:1028/111421.347:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [14000:20280:1028/111421.355:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [14000:20280:1028/111450.727:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _lodBandPartnerFor :359
+[stall-akte] Seite #3: der Puls kehrt zurück nach 30.5 s — complete · renderer bereit · weltbild da · frames 563 · welt 4923 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 90 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #90 renderPipeline_MeshStandardNodeMaterial_236
+[stall-akte] ═══ .k8-third.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.3 s
+[stall-akte] offen evaluate(rollen) seit 108.7 s
+[stall-akte] Puls 34×, zuletzt vor 20.3 s — complete · renderer bereit · weltbild da · frames 563 · welt 4923 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 90 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #90 renderPipeline_MeshStandardNodeMaterial_236
+[stall-akte] Stempel 10:14:30.798 Pipeline MeshStandardNodeMaterial · streuSatz · vs 7175 fs 61663 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:30.798 gpu.createRenderPipelineAsync #87 renderPipeline_MeshStandardNodeMaterial_134
+[stall-akte] Stempel 10:14:32.402 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:32.402 gpu.createRenderPipelineAsync #88 renderPipeline_ShadowMaterial_44
+[stall-akte] Stempel 10:14:32.478 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11713 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:32.478 gpu.createRenderPipelineAsync #89 renderPipeline_MeshStandardNodeMaterial_191
+[stall-akte] Stempel 10:14:32.544 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5392 fs 60083 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:14:32.544 gpu.createRenderPipelineAsync #90 renderPipeline_MeshStandardNodeMaterial_236
+[stall-akte] Stempel 10:15:02.754 Pipeline ShadowMaterial · geometrie-arena · vs 4329 fs 7458 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:15:02.754 gpu.createRenderPipelineAsync #91 renderPipeline_ShadowMaterial_45
+[stall-akte] Stempel 10:15:02.824 Pipeline ShadowMaterial · geometrie-arena · vs 4329 fs 7458 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:15:02.824 gpu.createRenderPipelineAsync #92 renderPipeline_ShadowMaterial_44
+[stall-akte] CPU (2 s) renderer 17100 228 % · GPU 4280 2 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 14:25 gpu 5/r 117 · 14:27 gpu 54/r 240 · 14:29 gpu 111/r 518 · 14:31 gpu 29/r 226 · 14:33 gpu 85/r 188 · 14:35 gpu 2/r 141 · 14:37 gpu 2/r 104 · 14:39 gpu 2/r 103 · 14:41 gpu 2/r 103 · 14:43 gpu 2/r 102 · 14:45 gpu 2/r 102 · 14:47 gpu 2/r 102 · 14:49 gpu 2/r 102 · 14:51 gpu 2/r 104 · 14:53 gpu 2/r 132 · 14:55 gpu 3/r 123 · 14:57 gpu 2/r 102 · 14:59 gpu 2/r 101 · 15:01 gpu 2/r 106 · 15:03 gpu 18/r 212 · 15:05 gpu 2/r 126 · 15:07 gpu 2/r 102 · 15:09 gpu 2/r 102 · 15:11 gpu 2/r 103 · 15:13 gpu 2/r 112 · 15:15 gpu 2/r 102 · 15:17 gpu 2/r 101 · 15:19 gpu 2/r 103 · 15:21 gpu 2/r 102 · 15:23 gpu 2/r 101
+[stall-akte] Stapel getVertexPosition :6 < Na :6 < _computeIntersections :6 < raycast :6 < fd :6 < fd :6 < intersectObject :6 < treppe :240
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: first
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Kamera-Modus: third
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Grok: Du springst gern. Spielst du mit der Schwerkraft, oder will sie weg von dir?
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Spieler springt!
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [ERROR] LEIB-VORWÄRMEN: vorwaermen:bp_koerper_fuchs steht nach 600 Takten nicht ganz (6 Teile)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Eingestiegen in „fahrzeug_gt" (4× Rad — rollt · Tempo ×1.60 · träge)
+[stall-akte] Konsole log: [AnazhRealm V18.546.115] [INFO] Ausgestiegen
+[stall-akte] Stderr [14000:20280:1028/111421.347:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [14000:20280:1028/111421.355:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [14000:20280:1028/111450.727:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in getVertexPosition :6
+[stall-akte] Seite #3: der Puls kehrt zurück nach 29.5 s — complete · renderer bereit · weltbild da · frames 575 · welt 5550 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 92 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #92 renderPipeline_ShadowMaterial_44
+  {k8:{__sicht:third,wiese:{x:-280.4,z:-1045.6,neig:0,ring:[4,4],fein:{n:200,p95:1.1,median:0.1},fuss:{n:200,p95:0.7,median:0,stecken:0},huf:{n:200,p95:0.2,median:gigant 0},rad:{n:200,p95:0.2,median:0},falllinie:{n:200,p95:0.3,median:-0.2,stecken:0},stufe:{n:201,p95:0.4,median:-0.3,stecken:0},streu:{n:337,p95:0.5,median:0}},sprung:{first:[{hub:[0.323,0.348,0.315],weite:2.846},{hub:[0.179,0.21,0.172],weite:2.156},{hub:[0.504,0.514,0.496],weite:3.45}],third:[{hub:[0.323,0.318,0.323],weite:2.846},{hub:[0.179,0.187,0.179],weite:2.156},{hub:[0.504,0.52,0.504],weite:3.45}]},hang:{x:-526,z:-853,neig:24.4,ring:[4,4],fein:{n:200,p95:4.3,median:0.3},fuss:{n:201,p95:1.4,median:-0.8,stecken:0},huf:{n:201,p95:0.4,median:gigant 0.1},rad:{n:200,p95:2.4,median:2.1},falllinie:{n:200,p95:1.2,median:-0.9,stecken:0},stufe:{n:201,p95:1.1,median:-0.3,stecken:0},streu:{n:714,p95:1,median:0}},nexus:0}}
+✅ gate:koerper-stand grün
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 36290 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
