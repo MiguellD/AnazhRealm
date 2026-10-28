@@ -1,4 +1,5 @@
-// diag-settlement.cjs (gate:settlement) — Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · N: der Export
+// diag-settlement.cjs (gate:settlement) — Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
+// Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
@@ -70,20 +71,35 @@ const JAHRESRINGE = ["mittelalter", "hanse", "gruenderzeit", "moderne"];
 function jahresringe(FC, o = {}) {
     const J = { paare: [], fehl: [] };
     for (const seed of o.saaten || [1, 2, 3, 5, 7, 11, 13, 17]) {
-        const P = JAHRESRINGE.map((epoche) => (o.ex || FC.exportSettlement)({ seed, epoche, nH: o.ohneErbe && FC.DORF({ seed, epoche }).houses.length }));
+        const P = JAHRESRINGE.map((epoche) =>
+            (o.ex || FC.exportSettlement)({ seed, epoche, nH: o.ohneErbe && FC.DORF({ seed, epoche }).houses.length })
+        );
         J.paare.push(
             P.slice(1).map((jung, k) => {
-                const d = P[k].slots.flatMap(({ obb: b }) => [-1, 0, 1, -1, 0, 1, -1, 0, 1].map((u, i) => lokal(0, 0, -b.phi, u * b.ex, ((i / 3) | 0) * b.ez - b.ez)).map(([x, z]) => jung.slots.some((t) => FC.distPunktOBB(b.cx + x, b.cz + z, t.obb) < 1e-6)));
+                const d = P[k].slots.flatMap(({ obb: b }) =>
+                    [-1, 0, 1, -1, 0, 1, -1, 0, 1]
+                        .map((u, i) => lokal(0, 0, -b.phi, u * b.ex, ((i / 3) | 0) * b.ez - b.ez))
+                        .map(([x, z]) => jung.slots.some((t) => FC.distPunktOBB(b.cx + x, b.cz + z, t.obb) < 1e-6))
+                );
                 return +(d.filter(Boolean).length / d.length).toFixed(3);
             })
         );
         const kirchen = new Set(P.map((x) => x.slots.find((s) => s.rolle === "kirche")?.kultur)).size;
         P.forEach((x, k) => {
             const fehl = (w) => J.fehl.push(`${seed}/${JAHRESRINGE[k]}: ${w}`);
-            if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[JAHRESRINGE[k]].tracht)) fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
-            if (k === 3 && (x.groesse !== "stadt" || kirchen < 4 || !x.slots.some((s) => s.rolle === "turm"))) fehl(`${x.groesse}, ${kirchen} Kirchen`);
+            if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[JAHRESRINGE[k]].tracht))
+                fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
+            if (k === 3 && (x.groesse !== "stadt" || kirchen < 4 || !x.slots.some((s) => s.rolle === "turm")))
+                fehl(`${x.groesse}, ${kirchen} Kirchen`);
             for (const s of x.slots)
-                if (s.baujahr > x.jahr + x.spanne || s.baujahr < { turm: 1905, halle: 1850 }[s.rolle] || !(/kirche|scheune/.test(s.rolle) || FC.REGION_HIST[x.region].reduce((q, [ab, n]) => (s.baujahr < ab ? q : n), []).includes(s.kultur)))
+                if (
+                    s.baujahr > x.jahr + x.spanne ||
+                    s.baujahr < { turm: 1905, halle: 1850 }[s.rolle] ||
+                    !(
+                        /kirche|scheune/.test(s.rolle) ||
+                        FC.REGION_HIST[x.region].reduce((q, [ab, n]) => (s.baujahr < ab ? q : n), []).includes(s.kultur)
+                    )
+                )
                     fehl(`${s.rolle} ${s.kultur} ${s.baujahr}`);
         });
     }
@@ -1008,13 +1024,21 @@ hauptLauf(async () => {
 
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
-    console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
-    const mut = (dp) => ((x) => ({ ...x, kleidung: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(FC.exportSettlement(dp));
-    const [J, J0, Jm] = [{}, { ohneErbe: 1 }, { ex: mut, saaten: [5] }].map((o) => jahresringe(FC, o));
-    console.log("JAHRESRINGE " + JSON.stringify({ min: J.min, paare: J.paare, ohneErbe: J0.min, fehl: J.fehl }));
-    check(`J1 JAHRESRINGE ${J.min} (Soll ≥ 0,8; ohne Erbe ${J0.min})`, J.min >= 0.8 && J0.min < 0.8);
-    check(`J2 EPOCHE: ${J.fehl.length} Brüche, die Mutante ${Jm.fehl.length}`, !J.fehl.length && /turm \S+ 1455/.test(Jm.fehl) && /Kleidung null/.test(Jm.fehl));
-    if (process.argv.includes("--nur-j")) process.exit(errs.length ? 1 : 0);
+    if (!process.argv.includes("--nur-z")) {
+        console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
+        const mut = (dp) =>
+            ((x) => ({ ...x, kleidung: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(
+                FC.exportSettlement(dp)
+            );
+        const [J, J0, Jm] = [{}, { ohneErbe: 1 }, { ex: mut, saaten: [5] }].map((o) => jahresringe(FC, o));
+        console.log("JAHRESRINGE " + JSON.stringify({ min: J.min, paare: J.paare, ohneErbe: J0.min, fehl: J.fehl }));
+        check(`J1 JAHRESRINGE ${J.min} (Soll ≥ 0,8; ohne Erbe ${J0.min})`, J.min >= 0.8 && J0.min < 0.8);
+        check(
+            `J2 EPOCHE: ${J.fehl.length} Brüche, die Mutante ${Jm.fehl.length}`,
+            !J.fehl.length && /turm \S+ 1455/.test(Jm.fehl) && /Kleidung null/.test(Jm.fehl)
+        );
+        if (process.argv.includes("--nur-j")) process.exit(errs.length ? 1 : 0);
+    }
 
     console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
     const Z = rangZensus(FC);
