@@ -86,7 +86,8 @@ class AnazhRealm_vegetation_wiese {
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
                 // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
-                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen;
+                // die Asche eines Brands (`_ascheAt`, die Boden-Decke): auf ihr steht kein Halm, bis sie nachgrünt (stoffe.K2#2)
+                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen * (1 - this._ascheAt(x, z));
                 if (wurf >= p) continue;
                 const sb = sk * (m > 0.8 ? 1.45 : 1);
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes)
@@ -583,6 +584,8 @@ class AnazhRealm_vegetation_wiese {
                         const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
                         if (!A.zeile.ufer && this._nassAt(px, pz, 0.1, py)) continue;
+                        // was brennt (die Kräuter, `ernte` kraut), wächst auf der Asche erst mit dem Busch der Sukzession
+                        if (A.ernte === "kraut" && !this._streuNachBrand(px, pz, ordnung)) continue;
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
                         this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
                     }
@@ -1215,10 +1218,89 @@ class AnazhRealm_vegetation_wiese {
     // wachsen). Die Tageszeit ist für jeden Ort dieselbe Sonnenbahn (die Tag-Achse kennt keine Saison) und trägt darum keinen
     // Unterschied der Orte; was Orte trennt, ist das Kronendach. Bis stoffe.K5 heilte jede Narbe nach dem gefrorenen Rauschen
     // `lebendig` (`worldFieldAt`) — ein Zeitgeber mit Ort-Gewicht ohne Wasser und Licht (Mess-Wiese: an den Bäumen F 0, L 0,43).
+    // DER NÄHRSTOFF (stoffe.K5#2) ist der dritte Faktor: Monod — f(N) = N·(1 + K) / (N + K), 1 auf dem eigenen Grund.
     _wuchsAt(x, z) {
         const W = AnazhRealm.WUCHS;
         const wasser = W.wasserBasis + (1 - W.wasserBasis) * this._feuchteAt(x, z);
-        return wasser * this._bodenLichtFeld(x, z, x, z)(x, z);
+        const N = this._naehrstoffAt(x, z);
+        return ((wasser * N * (1 + W.naehrK)) / (N + W.naehrK)) * this._bodenLichtFeld(x, z, x, z)(x, z);
+    }
+
+    // DER NÄHRSTOFF am Ort (stoffe.K5#2) — EINE Funktion der Taten seiner 16-m-Zelle, kein Speicher daneben: 1 ist der eigene
+    // Grund; jede Tat verschiebt ihn um ihr `naehr` (TAT_NARBE: die Ernte und das Fällen tragen ihn mit der Pflanze davon, die
+    // Asche des Brands und der Leichnam eines Risses geben ihn dem Boden zurück) und klingt mit ihrer Narbe ab (der Rest fällt
+    // linear über ihre Dauer: der Boden mineralisiert nach). Jeder Peer und jeder Reload rechnet dasselbe (die Taten reisen).
+    // Während der Index baut (`_tatIndex` misst den Wuchs jeder neuen Tat), zählen die Taten, die er schon trägt — die frühere
+    // Tat nährt die spätere, nie umgekehrt.
+    _naehrstoffAt(x, z) {
+        const J = this._tatIdx && this._tatIdx.baut ? this._tatIdx : this._tatIndex();
+        const je = J.n ? J.je.get(this._lifeCellKey(x, z)) : null;
+        if (!je) return 1;
+        const N = AnazhRealm.TAT_NARBE;
+        const h = this._weltStunde();
+        let n = 1;
+        for (const a of je) {
+            const d = J.dauer.get(a);
+            if (N[a.tat].naehr && d) n += N[a.tat].naehr * Math.min(1, Math.max(0, 1 - (h - a.h) / d));
+        }
+        return Math.max(0, Math.min(AnazhRealm.WUCHS.naehrMax, n));
+    }
+
+    // DIE SUKZESSION nach dem Brand (stoffe.K5#2): die Asche einer Tat `brand` trägt ihre Zelle durch die Folge Asche → Gras →
+    // Busch → Wald, als FUNKTION ihres Rests (s = Alter / Dauer, die Dauer ist die der Narbe im Wuchs des Orts, `_tatDauer`):
+    // `asche` (der Kanal G der Boden-Decke, `_ascheMalen`: der Boden-Stoff und die Nah-Wiese lesen ihn) liegt bis
+    // SUKZESSION.asche[0] und fällt bis [1] — das Gras kehrt zurück; `busch` (die Kräuter und Sträucher der Nah-Streu,
+    // `_nahStreuKachel`) wächst von busch[0] bis [1]. Die Stufen sind in Achteln gezählt (`stufe`): nur dort ändert sich ein Leser,
+    // und nur dort weckt der Nachwuchs (`_sukzessionNaechste`).
+    _sukzession(a, h = this._weltStunde()) {
+        const S = AnazhRealm.SUKZESSION;
+        const d = this._tatIndex().dauer.get(a);
+        const s = d ? Math.max(0, (h - a.h) / d) : 1;
+        const q = (lo, hi) => Math.ceil(Math.min(1, Math.max(0, (s - lo) / (hi - lo))) * S.stufen) / S.stufen;
+        const asche = 1 - q(S.asche[0], S.asche[1]);
+        const busch = q(S.busch[0], S.busch[1]);
+        return { s, asche, busch, stufe: (1 - asche) * S.stufen + busch * S.stufen * 2 };
+    }
+
+    // Die nächste Welt-Stunde, zu der sich die Sukzession einer Asche ändert (die nächste Achtel-Grenze einer ihrer Rampen),
+    // sonst das Ende ihrer Narbe.
+    _sukzessionNaechste(a) {
+        const S = AnazhRealm.SUKZESSION;
+        const d = this._tatIndex().dauer.get(a);
+        if (!d || !Number.isFinite(d)) return Infinity;
+        const s = (this._weltStunde() - a.h) / d;
+        let n = 1;
+        for (const [lo, hi] of [S.asche, S.busch])
+            for (let k = 0; k <= S.stufen; k++) {
+                const g = lo + ((hi - lo) * k) / S.stufen;
+                if (g > s + 1e-9 && g < n) n = g;
+            }
+        return a.h + n * d + 1e-6;
+    }
+
+    // Die Leser einer Asche folgen ihrer Sukzession: die Boden-Decke malt die Zelle (`_ascheMalen`), Wiese und Streu darüber
+    // bauen neu, wo sich ihre Stufe änderte (`_sukzStand`: die zuletzt gemalte Stufe je Tat, kein Feld im worldMeta).
+    _sukzessionMalen(a) {
+        const st = this._sukzStand || (this._sukzStand = new WeakMap());
+        const stufe = this._sukzession(a).stufe;
+        if (st.get(a) === stufe) return false;
+        st.set(a, stufe);
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+        if (!this._ascheMalen(cx, cz)) this._nahRingNeuIn(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs);
+        return true;
+    }
+
+    // Der Busch einer Nah-Streu-Pflanze (`_nahStreuKachel`): steht sie auf einer Asche, wächst sie erst, wenn die Sukzession der
+    // Zelle sie trägt — ihr fester Wurf `ordnung` gegen den Anteil `busch` (eine dünnere Asche ist ein Präfix der vollen).
+    // Was nicht brennt (Stein und Holz: ihre Ernte ist kein Kraut), steht durch — der Leser fragt nur die Kräuter.
+    _streuNachBrand(x, z, ordnung) {
+        const I = this._tatIndex();
+        const je = I.brand.length ? I.je.get(this._lifeCellKey(x, z)) : null;
+        if (!je) return true;
+        let b = 1;
+        for (const a of je) if (a.tat === "brand") b = Math.min(b, this._sukzession(a).busch);
+        return ordnung < b;
     }
 
     // Die Dauer einer Tat in Spielstunden: die Stunden ihrer Klasse (`TAT_NARBE`) durch den Wuchs ihres Orts. Den Wuchs misst
@@ -1242,6 +1324,9 @@ class AnazhRealm_vegetation_wiese {
         if (L !== this._tatListe) {
             this._tatListe = L;
             this._nachwuchsFaellig = -Infinity;
+            this._sukzStand = null; // eine andere Welt: jede Asche malt ihre Stufe neu
+            const wk = this.state.wegeKarte;
+            if (wk) for (const stufe of wk.stufen) if (stufe.zentriert) this._ascheStufeMalen(stufe);
         }
         if (!(stunde >= this._nachwuchsFaellig)) return;
         const I = this._tatIndex();
@@ -1249,15 +1334,26 @@ class AnazhRealm_vegetation_wiese {
         const geheilt = [];
         for (const a of L || []) {
             const ende = a && I.dauer.has(a) ? a.h + I.dauer.get(a) : -Infinity;
-            if (stunde < ende) naechste = Math.min(naechste, ende);
-            else geheilt.push(a);
+            if (stunde >= ende) {
+                geheilt.push(a);
+                continue;
+            }
+            naechste = Math.min(naechste, ende);
+            // die Asche geht ihre Sukzession (stoffe.K5#2): ihre Leser folgen der Stufe, der Nachwuchs wacht zur nächsten
+            if (a.tat === "brand") {
+                if (this._sukzessionMalen(a)) this._weltRegt();
+                naechste = Math.min(naechste, this._sukzessionNaechste(a));
+            }
         }
         this._nachwuchsFaellig = naechste;
         if (!geheilt.length) return;
         this._weltRegt(); // die Flora wächst nach (der Weckruf vor jedem Schreiben)
         for (const a of geheilt) L.splice(L.indexOf(a), 1);
         this._tatGen = (this._tatGen | 0) + 1;
-        for (const a of geheilt) if (a) this._nahStreuTat(a);
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        for (const a of geheilt)
+            if (a && a.tat === "brand") this._ascheMalen(Math.floor(a.x / cs), Math.floor(a.z / cs));
+            else if (a) this._nahStreuTat(a);
     }
 
     // Die Kachel einer Tat baut neu: der Stumpf eines Fällens tritt ein oder vergeht (die Kachel fällt, ihr Neubau liest die
@@ -2042,7 +2138,13 @@ AnazhRealm.FORAGE = Object.freeze({
 // DAS WUCHS-GESETZ (`_wuchsAt`, stoffe.K5): das Wasser des Bodens ohne Fluss und See (der Regen allein) im Maß des nassen
 // Ufers. Gesetzt gegen feld.K4: an der Mess-Wiese (Feuchte 0) heilt die Narbe eines gefällten Baums in der Lichtung binnen
 // der 36 Stunden ihrer Linse zur Hälfte (Wuchs ≥ 0,65; bis stoffe.K5 trug das Rauschen `lebendig` dort 0,72–0,92).
-AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75 });
+// DER NÄHRSTOFF (stoffe.K5#2, `_naehrstoffAt`) wirkt nach Monod mit der Halbsättigung `naehrK` (ein halbierter Boden wächst mit
+// 0,86, ein leerer nicht) bis `naehrMax` (die Asche düngt).
+AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6 });
+// DIE SUKZESSION NACH DEM BRAND (stoffe.K5#2, `_sukzession`): die Rampen im Rest der Narbe — die Asche liegt bis 0,08 und ist
+// bei 0,3 nachgegrünt (das Gras der Nah-Wiese), der Busch der Nah-Streu wächst von 0,3 bis 0,6; gezählt in `stufen` Schritten
+// je Rampe.
+AnazhRealm.SUKZESSION = Object.freeze({ asche: Object.freeze([0.08, 0.3]), busch: Object.freeze([0.3, 0.6]), stufen: 8 });
 
 // Material-Strata: ab dieser Tiefe (m) unter der Oberfläche dominiert stein, auch wenn eine andere
 // Achse gewänne. Wirkt NUR bei Aufrufern mit y-Argument (Aufrufe ohne y unverändert).
