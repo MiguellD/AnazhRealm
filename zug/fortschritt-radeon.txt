@@ -1465,3 +1465,4 @@
 2026-10-28 20:50:24 takt18-radeon material.K3#1 GRÜN 4.6 · 38/47
 2026-10-28 20:51:30 takt18-radeon leib.K4#1 GRÜN 2.6 · 39/47
 2026-10-28 20:51:57 takt18-radeon vegetation.K4#1 GRÜN 6.7 · 40/47
+2026-10-28 20:52:30 takt18-radeon licht.K2#1 GRÜN 2.1 · 41/47
