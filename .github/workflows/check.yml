@@ -557,8 +557,8 @@ jobs:
               if: matrix.gruppe == 14
               # „Volle Bühne" als Prädikat aus kanonischen Quellen (Ring am Ziel · Gras/Wasser leer ·
               # die Streu steht: `_streuWartet` 0, keine Region in Reichweite fehlt, wartet oder trägt
-              # eine offene Scheibe · Bibliothek warm · Impostoren idle · Nebel offen) + Zeitleiste
-              # t(Kontrolle)/t(Bibliothek)/t(Ring)/t(Impostoren)/t(Bühne); Selbst-Test: die wartende
+              # eine offene Scheibe · Bibliothek warm · Impostoren idle · Nebel offen), der Takt, in dem es
+              # schließt (die Zeit misst die Kalt-Zeile von außen, --kalt); Selbst-Test: die wartende
               # Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot, die Bühnen-
               # Wahrheit der Welt (`_buehneSteht`) liest dieselbe Streu, ihr Deckel öffnet laut (WARN).
               # Headless = Mechanik-Ordnung; die Wall-Clock-Wahrheit liefert die Schöpfer-GPU (W8).
