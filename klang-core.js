@@ -183,8 +183,10 @@
     //  sechs DNA-Achsen (die Lab-UI-Slider; law = die DNA-Labels). def = das
     //  Blues-Boot-Genre des Labs (der Startzustand).
     // ═══════════════════════════════════════════════════════════════════════
+    // `uniform: true` (Vertrag §3 B4, studios.K2): jede Klang-Zeile ist ein Gesetz-Wert — kein Guss, der Sequenzer liest sie
+    // im nächsten Schritt (die Bau-Bytes bewegt keine, gate:regler-wirkt reglerTot).
     var PARAMS = [
-        { id: "bpm", lab: "Tempo", min: 40, max: 200, step: 1, def: 96, law: "Schläge pro Minute", grp: "PULS" },
+        { id: "bpm", lab: "Tempo", min: 40, max: 200, step: 1, def: 96, law: "Schläge pro Minute", grp: "PULS", uniform: true },
         {
             id: "swing",
             lab: "Swing",
@@ -194,6 +196,7 @@
             def: 0.72,
             law: "Shuffle-Anteil der Achtel",
             grp: "DNA",
+            uniform: true,
         },
         {
             id: "darkness",
@@ -204,6 +207,7 @@
             def: 0.5,
             law: "wählt die Skala (scaleFor: ionisch → chromatisch)",
             grp: "DNA",
+            uniform: true,
         },
         {
             id: "color",
@@ -214,6 +218,7 @@
             def: 0.3,
             law: "harmonische Farbtöne/Extensions",
             grp: "DNA",
+            uniform: true,
         },
         {
             id: "flow",
@@ -224,6 +229,7 @@
             def: 0.5,
             law: "melodische Dichte/Bewegung",
             grp: "DNA",
+            uniform: true,
         },
         {
             id: "tension",
@@ -234,6 +240,7 @@
             def: 0.4,
             law: "dissonante Reibung/Steigerung",
             grp: "DNA",
+            uniform: true,
         },
         {
             id: "space",
@@ -244,6 +251,7 @@
             def: 0.22,
             law: "Hall/Delay-Anteil (Raumtiefe)",
             grp: "DNA",
+            uniform: true,
         },
     ];
 
