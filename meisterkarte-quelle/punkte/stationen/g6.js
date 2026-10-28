@@ -157,6 +157,53 @@ module.exports = [
             "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden`",
     },
     {
+        kriterium: "streaming.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // der Zähler des Spiels selbst (Karte streaming-k4-zaehler): jeder Bau im Haupt-Faden meldet sich am EINEN Melder
+        // (`_fadenUmgangen`) — an den Sync-Stellen (fussabdruck · naht · drain) in `_syncBau`, sonst laut im Buch
+        // „FADEN-UMGANGEN"; die Faden-Linse liest ihn (`_syncBauten`) im Fenster an der echten GPU nach der Ankunft (kalt),
+        // 2 min Gang, einer Minute Fahrt mit sechs Bau-Klicks und dem Damm. Vor der Karte kennt die Linse --echt und den
+        // Gang nicht (die Gang-Zeile fehlt): ROT. Die Stau-Zeile (Takt) gehört gelaende.K2 und urteilt hier nicht.
+        // Soll: 0 sonst an Radeon und GTX; Cloud-Fenster swiftshader (Xvfb) am Kopf 82bb2353 in 3 von 3 Läufen 0 sonst ·
+        // 25 naht (der Damm-Ring der Wasser-Linse), vor dem Nexus-Schnitt 8 Güsse „kreatur" in 1 von 2.
+        befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden", "--echt"],
+        env: { WORKER_DICHTE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const g = /^ {2}gang +([\d.]+) s/m.exec(t);
+            const h = /Hydrosphären: (\d+) aus dem Faden · (\d+) im Haupt-Faden/.exec(t);
+            const b = /Bauten im Haupt-Faden \(Chunk-Stoff, Guss\): (\d+) an Sync-Stellen und Test-Nähten · (\d+) sonst ?(\{[^}]*\})?/.exec(t);
+            const k = /Bau-Klicks in der Fahrt: (\d+)/.exec(t);
+            const blind = /⛔ BLIND: (.*)/.exec(t);
+            if (!g || !h || !b) return { gruen: false, zahl: "keine Gang- oder Faden-Zeile (die Linse kennt --echt nicht?) · Exit " + lauf.exit };
+            const gruen = hw && !blind && +h[1] > 0 && +h[2] === 0 && +b[2] === 0 && !!k && +k[1] >= 6;
+            return {
+                gruen,
+                zahl:
+                    "Bauten " + b[2] + " außerhalb der Sync-Stellen · " + b[1] + " an ihnen " + (b[3] || "") + " · Hydrosphären " + h[1] +
+                    " aus dem Faden · " + h[2] + " im Haupt-Faden · Gang " + g[1] + " s · " + (k ? k[1] : 0) + " Bau-Klicks · " +
+                    (ad || "Adapter ungenannt") + (blind ? " · BLIND " + blind[1] : ""),
+            };
+        },
+        pfad: [
+            ...HYDRO_PFAD,
+            "stamm/dienst.js",
+            "stamm/feld-dsl.js",
+            "stamm/koerper-leib.js",
+            "stamm/kreatur-verhalten.js",
+            "stamm/siedlung-satz.js",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = 0 überall, beide Geräte",
+    },
+    {
         kriterium: "streaming.K5",
         staffel: 1,
         geraet: "headless",
@@ -1124,11 +1171,4 @@ module.exports = [
 ];
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
-module.exports.fehlt = [
-    {
-        kriterium: "streaming.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "die Faden-Linse (`diag-worker-dichte --faden`, Zweig hydro-faden) läuft nur am Null-Renderer; keine Zählung synchroner Bauten im echten Spiel an Radeon und GTX",
-    },
-];
+module.exports.fehlt = [];
