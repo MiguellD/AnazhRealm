@@ -3225,22 +3225,20 @@ async function K5_VOR(abdruck) {
 // DER ABDRUCK DES ZUSTANDS (Q13): der Ort (dm), das Inventar, die Lebenswerte (Leben als Anteil in Hundertsteln, die Wunde in
 // Zehnteln aufgerundet — sie heilt 1/600 je s), die Bindung des Fuchses (bond in Hundertsteln, sein Auftrag) und sein Alter
 // (`alterS`, Spiel-Zeit: ein Takt des Lebenszyklus zu viel hebt es um taktS); (Q14) die Maxima aus Seele, Werk und Nahrung
-// (`computePlayerStats` ohne die Wunde — sie heilt im Boot weiter) und die Quellen der Nahrung
+// (`computePlayerStats` ohne die Wunde — sie heilt im Boot weiter — und nur mit den Boosts der Nahrung) und die Quellen der
+// Nahrung. Die Boosts des Orts und der Gefühle sind kein Stand: `tickPlayerBoosts` legt sie je Sekunde im Bild-Takt neu
+// (world:resonance am Genesis-Anker, resoniert +0,15). Die Probe fährt den Takt von Hand, vor dem Speichern tickt er nie, nach
+// dem Reload schon — an a03b7b06 hob das manaMax 92,87 → 97,37 (Q14 stand-werte ROT, der Abdruck 1566c4d6e4ba → cc66cb3569cd).
 function K5_ABDRUCK() {
     const r = window.anazhRealm,
         s = r.state,
         p = s.player,
-        f = s.creatures.find((c) => c.userData.name === "K5-Fuchs");
-    const werteOhneWunde = () => {
-        const w = p.deathWoundIntensity;
-        p.deathWoundIntensity = 0;
-        try {
-            const st = r.computePlayerStats().stats;
-            return [st.hpMax, st.staminaMax, st.manaMax, st.defense];
-        } finally {
-            p.deathWoundIntensity = w;
-        }
-    };
+        f = s.creatures.find((c) => c.userData.name === "K5-Fuchs"),
+        nahrung = p.boosts.filter((b) => b.source.startsWith("consume:")),
+        roh = [p.deathWoundIntensity, p.boosts];
+    [p.deathWoundIntensity, p.boosts] = [0, nahrung];
+    const st = r.computePlayerStats().stats;
+    [p.deathWoundIntensity, p.boosts] = roh;
     const g = (v, n) => Math.round(v * n) / n;
     return {
         ort: s.playerMesh.position.toArray().map((v) => g(v, 10)),
@@ -3248,20 +3246,20 @@ function K5_ABDRUCK() {
         leben: [g(p.hp / p.hpMax, 100), Math.ceil(10 * p.deathWoundIntensity) / 10],
         bindung: f && [g(f.userData.bond, 100), f.userData.task.name],
         alter: f && f.userData.alterS,
-        werte: werteOhneWunde().map((v) => g(v, 100)),
-        nahrung: (p.boosts || []).filter((b) => b.source.startsWith("consume:")).map((b) => b.source),
+        werte: [st.hpMax, st.staminaMax, st.manaMax, st.defense].map((v) => g(v, 100)),
+        nahrung: nahrung.map((x) => x.source),
     };
 }
 
 // ── Q15 halten.K1 Staffel 2 — DER TREFFER AUS DEM GESETZ IM BILD (Seiten-Funktion, allein mit `--k1`, echter Renderer; der ewige
 // Loop läuft: Sweep und Pose im Takt des Spiels). Das Langschwert in der Hand (die Studio-Gestalt, Prägung Nihon: die Stahl-Zeile
 // ist die Eichung der Schneide — edgeBeta normiert an ihr, ihre Mutation ändert keine Fase, die Eisen-Zeile schon), ein Hirsch vor
-// dem Leib, je Bild an seinem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
+// dem Leib, beide je Bild an ihrem Platz gehalten (gemessen wird das Gesetz des Treffers, nicht die Flucht), das Fadenkreuz auf seiner
 // Leibes-Mitte (die Hand der Latenz-Linse, `haenger-linse` tierStellen), EIN Klick über den Dispatcher (`tryMouseBreak`); am
 // Treffer das Urteil des Kerns (KE · p · edgeQ · v · eff · Zone), der Schaden und die Kraft der Führung, dann hält der Hit-Stop
 // das Bild (die Linse schießt es) und die Schneide der gezeichneten Pose (`_kampfSchneide`). `lauf` mutiert den Kern
 // (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
-// den letzten Lauf zurück (Halt, Kern, Schwung), `lauf` null auch die Prägung.
+// den letzten Lauf zurück (Halt, Kern, Schwung).
 async function K1_BILD(lauf) {
     const r = window.anazhRealm,
         s = r.state,
@@ -3269,19 +3267,25 @@ async function K1_BILD(lauf) {
         pm = s.playerMesh,
         sc = globalThis.__schmiedeCore,
         bp = s.blueprints.klinge_langschwert;
-    const bild = () => new Promise((ok) => requestAnimationFrame(() => ok()));
+    // DAS BILD MIT FRIST: ein verborgener Tab zeichnet nie (rAF schläft — K1_BILD stand 300 s still), ein stehender Loop auch
+    // nicht; nach 10 s ohne Bild ROT beim Namen, mit der Sichtbarkeit der Seite
+    const bild = () =>
+        Promise.race([
+            new Promise((ok) => requestAnimationFrame(ok)),
+            sleep(1e4).then(() => {
+                throw new Error(`K1_BILD ${lauf}: kein Bild in 10 s, die Seite ist ${document.visibilityState}`);
+            }),
+        ]);
     p._hitStopUntil = 0;
     for (const [o, k, v] of window.__k1alt || []) o[k] = v;
     const alt = (window.__k1alt = []);
     const mut = (o, k, f) => (alt.push([o, k, o[k]]), (o[k] *= f));
     if (lauf === "masse") for (const m of Object.values(sc.MAT)) mut(m, "rho", 1.25);
     if (lauf === "schneide") mut(sc.MAT.eisen, "sigY", 1.5);
-    if (!("__k1ov" in window)) window.__k1ov = bp.studioOv;
-    if (lauf === null || !bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
-    bp.studioOv = lauf === null ? window.__k1ov : { __tradition: "Nihon" };
+    if (!bp.studioOv || bp.studioOv.__tradition !== "Nihon") r.equipHeld(null);
+    bp.studioOv = { __tradition: "Nihon" };
     r._kampfMaszeMemo = r._gueteAnteilMemo = null;
     for (let i = 0; i < 600 && p._swing; i++) await bild();
-    if (lauf === null) return null;
     if (p.equipped.held !== "klinge_langschwert") r.equipHeld("klinge_langschwert");
     r._setBlueprintWear(bp, 1);
     for (let i = 0; i < 900 && !pm.userData.heldMesh?.userData.foundryHeld; i++) await bild();
@@ -3296,7 +3300,14 @@ async function K1_BILD(lauf) {
     const platz = c.position
         .set(x, r._voxelSurfaceY(x, z) + c.position.y - r._voxelSurfaceY(c.position.x, c.position.z), z)
         .clone();
-    const halte = () => (c.position.copy(platz), (c.userData._steuer = null), (c.userData.fearUntil = 0));
+    // beide Leiber halten je Bild ihren Platz: der Spieler rückte zwischen zwei Läufen 0,7 m ab (swiftshader: masse 2,07 m
+    // statt 1,35 m, der Hieb am Rand der Reichweite)
+    const halte = () => (
+        pm.position.copy(start),
+        c.position.copy(platz),
+        (c.userData._steuer = null),
+        (c.userData.fearUntil = 0)
+    );
     c.userData.hp = 1e9;
     p.stamina = p.staminaMax;
     const out = { lauf, traf: false };

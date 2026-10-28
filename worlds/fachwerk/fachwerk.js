@@ -756,7 +756,7 @@ function formSetzen(o){ formRegler.setzen(o,true); }
 // Die Kosten-Leiste: die WELT-Gestalt der gewählten Kultur (fachwerk-core buildInstance, die B4-Regler als ov — derselbe
 // Bau wie der Foundry-Worker) gegen die Budget-Zeile je Stufe, die NUR-WURF-Stufe 3 eingeschlossen. Ohne Kultur
 // („manuell“/„Samen“) misst sie die Kultur des Samens.
-const kostenLeiste=AnazhHuelle.kosten($('kosten'),{budget:FC.PORTAL_RENDER_CONFIG.lod.budget.haus,stufen:FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus,
+const kostenLeiste=AnazhHuelle.kosten($('kosten'),{budget:FC.PORTAL_RENDER_CONFIG.lod.budget.haus,stufen:FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus,renderer:renderer,
   bauen:s=>{ const k=$('pK').value; const id=FC.PRESETS[k]?k:kulturFromSeed(SEED); const ov={}; HAUS_PARAMS.forEach(z=>{ ov[z.id]=RW[z.id]; }); return FC.buildInstance(id,1,s,ov); },
   quelle:'gemessen an der Welt-Gestalt (fachwerk-core buildInstance, Same 1, die Regler als ov); L3·Wurf = der Fernkörper im Schatten'});
 const metaRegler=AnazhHuelle.regler($('reglerMeta'),BED_META,{werte:RW,sitzung:sitz,format:reglerFmt,gruppen:false,zuruecksetzen:false,

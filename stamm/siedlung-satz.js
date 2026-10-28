@@ -3471,7 +3471,7 @@ class AnazhRealm_siedlung_satz {
                 const comma = key.indexOf(",");
                 const fcx = parseInt(key.slice(0, comma), 10);
                 const fcz = parseInt(key.slice(comma + 1), 10);
-                this._rebuildVoxelChunk(fcx, fcz, null, { forceSync: true });
+                this._rebuildVoxelChunk(fcx, fcz, null, { forceSync: "fussabdruck" });
                 if (this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks.delete(key);
             }
             // Mutiert eine solide Architektur die Cell-Klassifikation (Wasser strömt um den Damm), antwortet die

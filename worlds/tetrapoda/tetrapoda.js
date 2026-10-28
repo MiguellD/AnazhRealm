@@ -139,14 +139,14 @@ function laborStoff(m0,geo,skin,cache){
     if(schale)m.alphaTest=0.5;
     m.onBeforeCompile=function(sh){
       sh.uniforms.uZeit=uZeit;
-      var vk='uniform float uZeit;\nvarying vec3 vGeo;\n'+(schale?'attribute vec3 aSchale;\nattribute vec3 aWurzel;\nvarying vec3 vSchale;\nvarying vec3 vWurzel;\n':'')+(koerper?GLSL_RAUSCHEN:'');
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\n'+vk).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+(schale?'\nvSchale=aSchale;\nvWurzel=aWurzel;':''));
+      var vk='uniform float uZeit;\nvarying vec3 vGeo;\n'+(schale?'attribute vec3 aSchale;\nattribute vec3 aWurzel;\nvarying vec3 vSchale;\nvarying vec3 vWurzel;\nvarying vec3 vKamm;\n':'')+(koerper?GLSL_RAUSCHEN:'');
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\n'+vk).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+(schale?'\nvSchale=aSchale;\nvWurzel=aWurzel;\nvKamm=position-aWurzel;vKamm-=normal*dot(vKamm,normal);':''));
       if(koerper)sh.vertexShader=sh.vertexShader.replace('#include <skinning_vertex>','#include <skinning_vertex>\ntransformed+=objectNormal*snoise(transformed*'+gf(L.atem.freq)+'+uZeit*'+gf(L.atem.t)+')*'+gf(L.atem.amp)+';');
-      var fk='varying vec3 vGeo;\n'+(schale?'varying vec3 vSchale;\nvarying vec3 vWurzel;\n':'');
+      var fk='varying vec3 vGeo;\n'+(schale?'varying vec3 vSchale;\nvarying vec3 vWurzel;\nvarying vec3 vKamm;\n':'');
       var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*vSchale.z;vec3 zS=floor(pS);'+
         'float h1=fract(sin(dot(zS,vec3('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+','+gf(FS.hashA[2])+')))*'+gf(FS.hashA[3])+');'+
         'float h2=fract(sin(dot(zS,vec3('+gf(FS.hashB[0])+','+gf(FS.hashB[1])+','+gf(FS.hashB[2])+')))*'+gf(FS.hashB[3])+');'+
-        'vec3 mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';float dS=length(fract(pS)-0.5-mS);'+
+        'vec3 mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';vec3 qS=fract(pS)-0.5-mS;float lS=dot(qS,vKamm/max(length(vKamm),1e-6));float dS=sqrt((dot(qS,qS)-lS*lS)*'+gf(FS.strich)+'+lS*lS/'+gf(FS.strich)+');'+
         'float rS=sqrt(vSchale.y)*'+gf(FS.radius)+'*(1.0-tS*'+gf(FS.zulauf)+');'+
         'float haarS=step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+');float wolleS=step(tS,'+gf(FS.wolle)+')*step('+gf(FS.wolleAb)+',vSchale.y);'+
         'diffuseColor.rgb*=mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS);diffuseColor.a=max(haarS,wolleS);':'';
@@ -230,7 +230,7 @@ function init(){
     basis:function(){return presets[gattungAktiv]||null;},
     format:function(z,v){return z.id==="diet"?(v>0.7?"Carn":v>0.3?"Omni":"Herb"):z.id==="size"?(+v).toFixed(1):(+v).toFixed(2);},
     bei:function(){gattungMarke(null);},nachRuhe:function(){buildAnimal();}});
-  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:BZ,stufen:STUFEN,
+  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:BZ,stufen:STUFEN,renderer:function(){return renderer;},
     quelle:"gemessen an der gezeigten Gestalt = dem Welt-Guss (foundry-core BAKERS_BY_KIND.kreatur, dieselben Dials, Saat 0): L0 nah, L1 jenseits "+BZ[STUFEN[1]].ab+" (± "+Math.round(BZ.hyst*100)+" %) und als Wurf"});
   scene=new THREE.Scene();scene.background=new THREE.Color(0x080604);camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.1,200);camera.position.set(6,2,7);
   renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(devicePixelRatio);if(THREE.sRGBEncoding!==undefined)renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);

@@ -70,5 +70,38 @@
       "eine düstere musik bitte": ["*", { "darkness": [0.7, 1] }],
       "schneller techno": ["techno", { "bpm": [125, 200] }]
     }
+  },
+  "seele": {
+    "zweck": "KI K3 (diag-v1-pfad --korpus --seele): je Frage [Name, Seele, Taten …]; der Bezug je Tat",
+    "bezug": {
+      "geschlagen": "\\bschl[au]g|geschlagen|\\bhieb|weh ?getan|tat weh|verletz|angegriffen|schmerz",
+      "gefuettert": "lebenssaft|\\btrank|geschenk|\\bgabe|gabst|gegeben|fütter|gestärkt",
+      "gefolgt": "\\bfolg|gefolgt|begleit|an deiner seite|hinter dir her|mit dir (ge)?(gangen|laufen|gelaufen)"
+    },
+    "saetze": {
+      "erinnerst du dich an mich?": ["Arvo", "wolf", "geschlagen"],
+      "hast du angst vor mir?": ["Brisa", "wesen", "geschlagen"],
+      "bist du mir böse?": ["Corvin", "fuchs", "geschlagen"],
+      "warum schaust du mich so an?": ["Dagny", "baer", "geschlagen"],
+      "magst du mich?": ["Eskil", "wesen", "gefuettert"],
+      "was weißt du noch von vorhin?": ["Fenna", "fuchs", "gefuettert"],
+      "wie geht es dir?": ["Gorm", "baer", "gefuettert"],
+      "was denkst du über mich?": ["Hedda", "wolf", "gefuettert"],
+      "was haben wir zusammen erlebt?": ["Ilvi", "wesen", "gefolgt"],
+      "vertraust du mir?": ["Jarle", "wolf", "gefolgt"],
+      "erzähl mir, was heute war.": ["Kelda", "baer", "gefolgt"],
+      "was ist dir zuletzt passiert?": ["Lumi", "fuchs", "gefuettert", "gefolgt"]
+    }
+  },
+  "regeln": {
+    "zweck": "KI K4 (diag-v1-pfad --korpus --regeln): Sätze, die Regeln verlangen",
+    "saetze": {
+      "immer wenn es regnet, sollen die tiere fröhlich werden": 1,
+      "stell ein gesetz auf: ab und zu soll neues leben um mich sprießen": 1,
+      "eine regel bitte: scheint die sonne, sollen die tiere glücklich sein": 1,
+      "mach ein gesetz, dass hin und wieder freude in der luft liegt": 1,
+      "wenn es zu viele tiere werden, sollen sie traurig werden": 1,
+      "ein gesetz: wo das leben fehlt, soll es nachwachsen": 1
+    }
   }
 }
