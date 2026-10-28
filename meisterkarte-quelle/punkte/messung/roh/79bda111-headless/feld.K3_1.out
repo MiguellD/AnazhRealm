@@ -1,0 +1,37 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-stand-takt.cjs
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+  Ring 81 Chunks · 2288 Bauten · die Wache schlief nach 41 Takten · Nachschub: die Schlange des Walds leer nach 0 Takten, 0 Streu-Regionen warten · Führung 1044 m neben dem Spieler: die Welt steht nach 79 Takten
+  ruhe     30 Frames · Σ 0 Einheiten · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0
+  bruch    51 Frames · Σ 144678 Einheiten · strom 82 · archLod 1713.82 · archCull 284 · streuLod 480 · nahStreu 141 · nahWiese 8 · deckWache 128
+  gehen    120 Frames · Σ 216893 Einheiten · strom 0 · archLod 1363.72 · archCull 20.65 · streuLod 348 · nahStreu 74.41 · nahWiese 0.67 · deckWache 0 · wirkt strom 0 archLod 6 archCull 1 streuLod 0 nahStreu 55 nahWiese 2 deckWache 0
+  Runde Bruch: 51 Frames · strom 51/1 · archLod 13056/2288 · archCull 51/1 · streuLod 8160/1615 · nahStreu 51/1 · nahWiese 51/1 · deckWache 6528/6528
+  Täter archLod: Stelle 2287 von 2288 (zweite Hälfte ab 1144) — gefunden nach 2304 gegangenen Einheiten
+  Täter streuLod: Stelle 1540 von 1615 (zweite Hälfte ab 808) — gefunden nach 1600 gegangenen Einheiten
+  Täter deckWache: Stelle 6527 von 6528 (zweite Hälfte ab 3264) — gefunden nach 6528 gegangenen Einheiten
+  Runde Täter: 51 Frames · strom 51/1 · archLod 13056/2288 · archCull 51/1 · streuLod 8160/1615 · nahStreu 51/1 · nahWiese 51/1 · deckWache 6528/6528
+  Gehen: 2.26 m
+  Wecken: Baum steht (Stufe 2, in Ruhe 0), schläft wieder nach 58 Takten
+  treue    51 Frames · Σ 144760 Einheiten · strom 82 · archLod 1715.43 · archCull 284 · streuLod 480 · nahStreu 141 · nahWiese 8 · deckWache 128
+  Runde Treue nach dem Bau: 51 Frames · strom 51/1 · archLod 13056/2289 · archCull 51/1 · streuLod 8160/1615 · nahStreu 51/1 · nahWiese 51/1 · deckWache 6528/6528
+  wecken   30 Frames · Σ 61365 Einheiten · strom 0 · archLod 1708.8 · archCull 19.07 · streuLod 176 · nahStreu 138.43 · nahWiese 3.2 · deckWache 0 · wirkt strom 0 archLod 1 archCull 0 streuLod 0 nahStreu 12 nahWiese 11 deckWache 0
+  nachher  20 Frames · Σ 0 Einheiten · strom 0 · archLod 0 · archCull 0 · streuLod 0 · nahStreu 0 · nahWiese 0 · deckWache 0
+  regler   10 Frames · Σ 22470 Einheiten · strom 0 · archLod 1699.1 · archCull 53 · streuLod 480 · nahStreu 14.1 · nahWiese 0.8 · deckWache 0 · wirkt strom 0 archLod 0 archCull 1 streuLod 0 nahStreu 0 nahWiese 0 deckWache 0
+  wahrn.   4 Frames · Σ 9398 Einheiten · strom 0 · archLod 1761.25 · archCull 71 · streuLod 480 · nahStreu 35.25 · nahWiese 2 · deckWache 0
+  Stufe: 2 Wechsel ohne Form-Änderung an {"cx":-7,"cz":-22,"d":130,"populiert":true} (offener Wuchs vor der Ruhe: 0 Chunks, Studio ruhte nach 0 Takten, Ankünfte in der Phase 0) — Regung [] — Einheiten {"strom":0,"archLod":0,"archCull":0,"streuLod":0,"nahStreu":282,"nahWiese":16,"deckWache":0} · Rufe {"_lodTreeVisHeight":0,"_forestStehtFrei":0,"_forestCellDarts":0}
+  Ort: Erdbau bei (-197,-1071) gelegt in 3.6 ms — Stand des Walds 1 → 1, ferne Wald-Zellen (über 240 m) 2240/2240 gehalten, Chunk-Gedächtnisse basis 0/0 · dichte 0/0 · mesh 0/0, ferner Chunk -10,-22 hält seinen Stand — die 60 Takte danach planten 0 Wald-Zellen, der längste 2.8 ms — die Räumung: 5 Abbauten, 0 synchrone Saves (Σ 0 ms) — das Solo-Haus (alemannisch) gesetzt, 0 Kern-Nachbauten (0 ms) — der Baum in frischem Wald bei (-197,-651): 0 Zellen synchron (0 ms), Gestalt 2 nach 8 Takten, 0 Zellen im Takt (der längste 0 ms, 0 Zellen) — das Haus im Satz (alemannisch): 5 Gruppen, 6116 Ecken nach 34 Takten, Wieder-Eintritt 5 Blöcke, 0 KB frisch — der Erdbau unter dem Spieler bei (-293,-1071): 4 Chunks zum Neubau, heil nach 22 Takten, synchron im Takt 0 Chunks (keiner)
+  Strom: Sprung an (319.6, -1045.6) — Spieler-Chunk steht nach 64 Takten — frische Wald-Zellen: 2880 in der Schlange des Walds, 0 am Stück (0 ms, bis 0 je Takt)
+  Wache (Takt, geschlafen, Einheiten): [["strom",3195,569],["archLod",1903,452562],["archCull",2154,1609],["nahWiese",2121,1355],["nahStreu",2018,1458],["streuLod",2025,268681],["deckWache",1794,207232]]
+  Sim-Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 1515
+  Sim-Wecken saison: wach wasser 0 · regen 0 · saison 1246 (_gelaende 619, _temperaturFeld 616, _voxelZustandPost 2, _ensureSeasonUniforms 1) · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 265
+  Sim-Wecken regen: wach wasser 0 · regen 70 (_weatherFieldFor 15, _naesseTakt 5, _ensureAtmoUniforms 5, _dachTakt 5) · saison 1096 (_gelaende 544, _temperaturFeld 541, _voxelZustandPost 2, _ensureSeasonUniforms 1) · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken wuchs: wach wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 8 (_voxelChunkConfig 3, ·pendingFoliageChunks 2, _foliageChunkInRadius 2, _bepflanzungWartet 1) · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 0
+  Sim-Wecken nachwuchs: wach wasser 0 · regen 0 · saison 0 · nachwuchs 4 (_tatIndex 1, ·worldMeta.taten 1, _weltRegt 1, _nahStreuTat 1) · wuchs 0 · feld 0 · brand 0 · Taten 0 — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 8 (_voxelChunkConfig 3, ·pendingFoliageChunks 2, _foliageChunkInRadius 2, _bepflanzungWartet 1) · feld 0 · brand 0 · Taten 0
+  Sim-Wecken feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 — wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 2226
+  Sim-Wecken brand: gezündet true, 38 Schritte, brennend bis 3 Zellen, Einheiten je Zelle und Schritt bis 22, noch brennend 0, Asche 3, lebendig am Herd 0.839 → 0.526, glut +0.68, Licht true — nachher wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 8 (_voxelChunkConfig 3, ·pendingFoliageChunks 2, _foliageChunkInRadius 2, _bepflanzungWartet 1) · feld 0 · brand 0 · Taten 0
+  Sim-Wecken wasser: {"ort":[-396,-878],"takte":[1,1],"gehalten":[0,0],"bewegt":[0,0],"chunks":9}
+  Wach (ein kalter Bau): DIE WELT STEHT NICHT nach 60 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt archCull wartet (DER BAU STEHT NICHT: die Welt nach 60 Takten — die Welt hat nichts mehr offen) · Dorf {"placed":16,"steht":1488}
+  Fixpunkt Gleite · Sprung 40 m · Weckruf 1 mm: steht nicht
+  Fixpunkt L1→L2 × 0,8: 6 Wirkungen, die Welt steht nach 46 Takten, danach in 150 Takten 0 Einheiten
+  Fixpunkt L1→L2 zurück: 6 Wirkungen, die Welt steht nach 49 Takten, danach in 150 Takten 0 Einheiten
+
+✅ STAND-TAKT GRÜN — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten.
