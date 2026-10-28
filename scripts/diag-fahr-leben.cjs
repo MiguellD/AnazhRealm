@@ -2,7 +2,8 @@
 // Spiel-Takt (`_gameLoopTick` — Akkumulator, Sim-Schritte, Interpolation, Frame-Tick), nie an ihm vorbei, und sie ruft
 // den Fahr-Schritt des Kerns selbst (vehicle-core), nie einen Nachbau. Die Befunde je Zeile tragen die Commit-Messages.
 //
-//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung]   Port: FAHR_LEBEN_PORT (Standard 4413)
+//   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung | --wegenetz [--mutante | --gleich]]
+//   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const { statikServer, nullRenderer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -614,6 +615,7 @@ const server = statikServer();
 const {
     probeLeben,
     probeKoerper,
+    probeWegenetz,
     tempoVerdict,
     tempoSpion,
     kernTempo,
@@ -664,6 +666,23 @@ function ketteBericht(k, err) {
     const r8 = k ? reifenWeltVerdict(k) : ["keine Kette"];
     check("K8 Reifen in der Welt (fahrzeug.K1): Bremsweg Gras/Weg, nass, μ(gras) halb, Takt, Labor = Welt", !err && !r8.length, String(r8));
     return v;
+}
+
+// ════ WN — DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2): die feste Route von der Mess-Wiese über die Orte der Zellen (je zwei
+// Nachbarn im Wegenetz, ihre Feldwege legt das Gesetz) — Staffel 1: ≥ 2 km auf Weg und Feldweg durch Wald und Dorf, 0
+// Steckenbleiber, ≥ 80 % der Sim-Schritte über 0,8 · vmax (`probeWegenetz` in lib/fahr-proben.cjs). ════
+const WEGENETZ = { orte: ["-1,-5", "-2,-6", "-3,-5", "-4,-6", "-5,-5", "-6,-6"], langM: 2000, anteil: 0.8, weg: 0.95, wald: 0.1, dorf: 0.05, bilderMax: 30000 };
+function wegenetzVerdict(m) {
+    const W = WEGENETZ;
+    const b = m.boden || {};
+    return [
+        !(m.lang >= W.langM) && `die Route misst ${m.lang} m (Soll ≥ ${W.langM})`,
+        !(m.wegAnteil >= W.weg) && `nur ${(m.wegAnteil * 100).toFixed(0)} % der Route liegen auf Weg und Feldweg (querfeldein)`,
+        !m.ende && `der Wagen kommt nicht an (${m.weg} von ${m.lang} m)`,
+        (m.steck || []).length > 0 && `${m.steck.length} Steckenbleiber bei ${m.steck.join(" · ")} m`,
+        !(m.anteil >= W.anteil) && `nur ${(m.anteil * 100).toFixed(1)} % der Sim-Schritte über 0,8 · vmax`,
+        !(b.wald >= W.wald && b.dorf >= W.dorf && b.wiese > 0) && `der Boden der Route: wiese ${b.wiese} · wald ${b.wald} · dorf ${b.dorf}`,
+    ].filter(Boolean);
 }
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
@@ -1987,6 +2006,14 @@ hauptLauf(async () => {
             }
         }
         {
+            // WN — die Fahrt auf dem Wegenetz: ein guter Lauf ohne Täter, jeder Bruch beim Namen
+            const g = { lang: 2380, wegAnteil: 1, ende: true, weg: 2380, steck: [], anteil: 0.85, boden: { wiese: 0.1, wald: 0.6, dorf: 0.3 } };
+            const faelle = [[{}, null], [{ steck: [704] }, /Steckenbleiber bei 704/], [{ anteil: 0.6 }, /60\.0 %/], [{ lang: 1850 }, /1850 m/],
+                [{ wegAnteil: 0.3 }, /querfeldein/], [{ ende: false, weg: 900 }, /900 von/], [{ boden: { wiese: 1, wald: 0, dorf: 0 } }, /wald 0/]];
+            const aus = faelle.map(([an, re]) => [wegenetzVerdict({ ...g, ...an }).join(" · "), re]);
+            check("Selbst-Test WN: die Fahrt auf dem Wegenetz nennt jeden Bruch", aus.every(([t, re]) => (re ? re.test(t) : !t)), aus.map(([t]) => t || "—").join(" | "));
+        }
+        {
             // RM — DIE RÜCKMELDUNG: gute Maße == 0 Täter; je gekappte Kopplung genau ihr Kanal (Stimme · Feder · Rumble)
             const g = { klingt: 1, still: true, wankMm: 0.2, stoesse: 40, antwortMm: 9.6, stark: 0, summen: 0.54 };
             const v = (an) => {
@@ -2018,6 +2045,7 @@ hauptLauf(async () => {
     const browser = await starteBrowser({ art: rm ? "linse" : "null", frist: 1800000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     const page = await browser.newPage();
     if (!rm) await nullRenderer(page);
+    if (schalter("--wegenetz")) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true)); // die Orte erwachen
     await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
@@ -2031,6 +2059,13 @@ hauptLauf(async () => {
             console.log("=== K1 — DAS EINE KÖRPER-GESETZ (physik.K1) ===");
             koerperBericht(o);
             console.log(`KOERPER ${JSON.stringify(o)}`);
+        }],
+        [schalter("--wegenetz"), probeWegenetz, { orte: WEGENETZ.orte, bilderMax: WEGENETZ.bilderMax, mutante: schalter("--mutante"),
+            bilder: schalter("--gleich") ? [1000 / 60] : [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7] }, (o) => {
+            const v = wegenetzVerdict(o);
+            check(`WN (fahrzeug.K2) die Fahrt auf dem Wegenetz${schalter("--mutante") ? " — MUTANTE: die Weg-Erkennung aus" : ""}: ≥ 2 km Wiese → Wald → Dorf, 0 Steckenbleiber, ≥ 80 % über 0,8 · vmax`,
+                !v.length, `${o.lang} m · ${o.schritte} Sim-Schritte zu ${o.dt} s · Anteil ${(o.anteil * 100).toFixed(1)} % · Steckenbleiber ${o.steck.length} · Weg ${(o.wegAnteil * 100).toFixed(0)} % · Boden ${JSON.stringify(o.boden)}${v.length ? " — Täter: " + v.join(" · ") : ""}`);
+            console.log(`WEGENETZ ${JSON.stringify(o)}`);
         }],
         [schalter("--kette"), probeLeben, { nurKette: true, kette: KETTE }, (o) => {
             const v = ketteBericht(o.kette, o.err);

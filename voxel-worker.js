@@ -255,6 +255,14 @@ self.onmessage = function (e) {
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+        } else if (msg.type === "ort-weg") {
+            // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
+            // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im
+            // Faden, der Wirt legt die Punkte (`_wegenetzLegen`)
+            if (!self.__fachwerkCore)
+                importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+            const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
+            self.postMessage({ type: "ort-weg-result", requestId: msg.requestId, pts: self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren) });
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
             // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,

@@ -2220,6 +2220,7 @@ class AnazhRealm_koerper_bewegung {
         T.bremse = Math.max(k[FT.bremse.tasten[0]] ? 1 : 0, p ? p.lt : 0);
         T.lenken = achse(k[FT.lenken.tasten[0]], k[FT.lenken.tasten[1]], p ? -p.lx : 0);
         T.handbremse = !!(k[FT.handbremse.tasten[0]] || g.handbremse);
+        if (this._fahrer) this._fahrerSchritt(T); // der Fahrer am Steuer schreibt dieselben Felder (fahrzeug.K2)
     }
 
     // Das Gamepad je Bild, vor dem Akkumulator und auch bei offenem Portal: das erste verbundene Pad → `state._pad` (die Sticks radial

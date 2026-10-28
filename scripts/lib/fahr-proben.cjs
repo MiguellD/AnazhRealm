@@ -2415,4 +2415,63 @@ async function probeKoerper(opt) {
     return res;
 }
 
-module.exports = { probeLeben, probeKoerper, tempoVerdict, tempoSpion, kernTempo, ruckJeBild };
+// ── DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2, Seiten-Probe): die Orte `o.orte` (Zellen, je zwei Nachbarn im Wegenetz) erwachen
+// am Spieler wie im Spiel (der Dorf-Zug, `__anazhAutoSettlement`), ihre Feldwege legt das Gesetz; die Route ist die kürzeste über
+// das Netz (`_wegenetzRoute`) von der Mess-Wiese zum letzten Ort, der GT fährt sie mit dem Fahrer am Steuer (`fahrerSetzen` →
+// Verb-Tafel → der EINE Fahr-Schritt) in Bildern zu `o.bilder` ms; die Zählung des Sim-Takts trägt der Fahrer (`F.takte`,
+// `F.tempo`, `F.fest`). Je 10 m der Route der Boden am Wagen: dorf (ein Haus in 25 m), wald (≥ 3 Bäume der Natur in 15 m),
+// sonst wiese. `o.mutante` (die Weg-Erkennung aus): der Fahrer fährt die Luftlinie von der Wiese zum letzten Ort.
+async function probeWegenetz(o) {
+    const r = await window.__weltDa();
+    const st = r.state;
+    const f = r._ensureAssetFoundry();
+    await window.__weltDa(() => f.ready && f.recipes && st.blueprints && st.blueprints.fahrzeug_gt && r.constructor._siedlungGesetz());
+    let [tMs, b] = [performance.now(), 0];
+    const bild = () => r._gameLoopTick((tMs += o.bilder[b++ % o.bilder.length]));
+    const stelle = (x, z) => (st.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 2, z), st.playerVel.setValue(0, 0, 0));
+    r._setWeather("sunny", "human"); // das Wort des Spielers: Sonne, trocken
+    st.weatherTransition = null;
+    r._naesseTakt(1e6);
+    const orte = o.orte.map((k, i) => {
+        if (i && !r._wegenetzNachbarn(o.orte[i - 1]).includes(k)) throw new Error(`${o.orte[i - 1]} und ${k} sind keine Nachbarn im Wegenetz`);
+        return r._wegenetzNachbarn(k) && r._wegenetzMemo.orte.get(k);
+    });
+    for (const [i, ort] of orte.entries()) {
+        stelle(ort.x + 30, ort.z + 30);
+        await window.__gebautNach("der Ort " + o.orte[i], { takt: bild, fertig: () => (r._bewohnerSiedlungen || new Map()).has(ort.key) });
+    }
+    await Promise.all([...r._wegenetzKanten.values()].map((k) => k.fertig));
+    const W = { x: o.messort[0], z: o.messort[1] };
+    const route = o.mutante ? [W, orte[orte.length - 1]] : r._wegenetzRoute([W, orte[orte.length - 1]]);
+    if (!route) throw new Error("das Wegenetz trägt keine Route von der Wiese zum Ort " + o.orte[o.orte.length - 1]);
+    const [a, c] = route;
+    stelle(a.x, a.z);
+    const e = r.spawnArchitecture("fahrzeug_gt", { x: a.x, y: r.getTerrainHeightAt(a.x, a.z) + 0.5, z: a.z },
+        { silent: true, precise: true, rotationY: Math.atan2(c.x - a.x, c.z - a.z) - Math.PI / 2 });
+    await window.__gebautNach(e, { takt: bild });
+    if (!(r.mountArchitecture(e) || {}).ok) throw new Error("der Spieler steigt nicht in den GT");
+    const F = r.fahrerSetzen(route);
+    const boden = { wiese: 0, wald: 0, dorf: 0 };
+    const weg = [];
+    const nah = (x, m) => x && x.position && Math.hypot(x.position.x - st.playerMesh.position.x, x.position.z - st.playerMesh.position.z) < m;
+    for (let i = 0, bis = 0; i < o.bilderMax && !F.ende; i++) {
+        bild();
+        if (i % 4 === 3) await window.sleep();
+        if (F.s < bis) continue;
+        bis = F.s + 10; // je 10 m der Route: steht der Wagen auf Weg und Feldweg, welcher Boden trägt ihn
+        weg.push(r._aufWeg(st.playerMesh.position.x, st.playerMesh.position.z, 0));
+        const baeume = st.architectures.filter((x) => nah(x, 15) && r._istNatur(x) && /^baum_/.test(x.type)).length;
+        boden[st.architectures.some((x) => x && x.tuer && nah(x, 25)) ? "dorf" : baeume >= 3 ? "wald" : "wiese"]++;
+    }
+    r.fahrerSetzen(null);
+    const vmax = r._fahrSatz(e, r._vehicleProfile(e)).vmax;
+    return {
+        lang: Math.round(F.lang), weg: Math.round(F.s), ende: F.ende, schritte: F.takte, dt: r.constructor.FIXED_DT, vmax,
+        anteil: F.tempo.slice(8).reduce((x, y) => x + y, 0) / Math.max(1, F.takte), tempo: F.tempo, steck: F.fest,
+        wegAnteil: weg.filter(Boolean).length / Math.max(1, weg.length),
+        boden: Object.fromEntries(Object.entries(boden).map(([k, v]) => [k, v / Math.max(1, weg.length)])),
+        lage: [st.playerMesh.position.x, st.playerMesh.position.z],
+    };
+}
+
+module.exports = { probeLeben, probeKoerper, probeWegenetz, tempoVerdict, tempoSpion, kernTempo, ruckJeBild };

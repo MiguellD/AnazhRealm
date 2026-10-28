@@ -1328,6 +1328,94 @@ class AnazhRealm_koerper_fahrt {
         return { x: w.x * w.ms, z: w.z * w.ms };
     }
 
+    // DER FAHRER (fahrzeug.K2): wer am Steuer des gerittenen Gesetz-Wagens eine Route trägt (`fahrerSetzen`, die Punkte einer
+    // Route über das Wegenetz, `_wegenetzRoute`), schreibt am Kopf jedes Sim-Schritts Gas, Bremse und Lenkung in die Verb-Tafel
+    // (`_verbTafelSammeln`) — dieselben Felder wie Tastatur und Pad, gefahren vom EINEN Fahr-Schritt des Kerns, nie ein Teleport.
+    // Die Lenkung zielt auf den Punkt der Route `ld0 + ldV·v` voraus (die Bahn eines Bogens durch ihn, `atan(2·L·sin α / d)`,
+    // geteilt durch den Einschlag, den die Lenksäule bei diesem Tempo trägt); das Tempo ist vmax, gedeckelt von jeder Kurve
+    // in Sicht (`sichtM`): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (μ des Bodens unter dem Rad, `_fahrHaft`)
+    // und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` reicht; am Ende hält er. `F.s` (Weg auf der Route),
+    // `F.quer` (Abstand zu ihr) und die Zählung des Takts (`F.takte`, `F.tempo`, `F.fest`) lesen die Linse und wer der Fahrt folgt.
+    fahrerSetzen(pts) {
+        const D = AnazhRealm.FAHRER;
+        const P = [];
+        for (const q of pts || [])
+            if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5) P.push({ x: q.x, z: q.z });
+        if (P.length < 2) return (this._fahrer = null);
+        const s = [0];
+        const th = [];
+        for (let i = 1; i < P.length; i++) {
+            s.push(s[i - 1] + Math.hypot(P[i].x - P[i - 1].x, P[i].z - P[i - 1].z));
+            let t = Math.atan2(P[i].z - P[i - 1].z, P[i].x - P[i - 1].x);
+            if (th.length) t += Math.round((th[th.length - 1] - t) / (2 * Math.PI)) * 2 * Math.PI;
+            th.push(t);
+        }
+        // die Krümmung je Punkt: die Drehung der Route über ±kurveM, je Meter (ein Zickzack hebt sich auf, eine Kehre nicht)
+        const richtung = (u) => {
+            let i = 0;
+            while (i + 2 < s.length && s[i + 1] < u) i++;
+            return th[Math.min(i, th.length - 1)];
+        };
+        const k = s.map((u) => Math.abs(richtung(u + D.kurveM) - richtung(u - D.kurveM)) / (2 * D.kurveM));
+        return (this._fahrer = { pts: P, bogen: s, k, i: 0, s: 0, quer: 0, ende: false, lang: s[s.length - 1], takte: 0, tempo: Array(11).fill(0), fest: [], anker: 0, steht: 0 });
+    }
+    _fahrerSchritt(T) {
+        const F = this._fahrer;
+        const ent = this._mountedEntry;
+        const z = ent && ent._fahr;
+        const G = z && this._fahrSatz(ent, this._vehicleProfile(ent));
+        if (!G || !Number.isFinite(z.x)) return;
+        const D = AnazhRealm.FAHRER;
+        const [P, S] = [F.pts, F.bogen];
+        const p = this.state.playerMesh.position;
+        let best = Infinity;
+        for (let i = F.i; i < Math.min(P.length - 1, F.i + 40); i++) {
+            const [a, b] = [P[i], P[i + 1]];
+            const [dx, dz] = [b.x - a.x, b.z - a.z];
+            const l2 = dx * dx + dz * dz;
+            const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / l2));
+            const d = (p.x - a.x - dx * t) ** 2 + (p.z - a.z - dz * t) ** 2;
+            if (d < best) [best, F.i, F.s] = [d, i, S[i] + t * Math.sqrt(l2)];
+        }
+        F.quer = Math.sqrt(best);
+        const v = z.vlong;
+        const ld = Math.min(D.ldMax, D.ld0 + D.ldV * Math.abs(v));
+        let j = F.i;
+        while (j + 1 < P.length - 1 && S[j + 1] < F.s + ld) j++;
+        const u = Math.max(0, Math.min(1, (F.s + ld - S[j]) / Math.max(1e-6, S[j + 1] - S[j])));
+        const dx = P[j].x + (P[j + 1].x - P[j].x) * u - p.x;
+        const dz = P[j].z + (P[j + 1].z - P[j].z) * u - p.z;
+        const alpha = Math.atan2(-dx * Math.sin(z.yaw) - dz * Math.cos(z.yaw), dx * Math.cos(z.yaw) - dz * Math.sin(z.yaw));
+        const delta = Math.atan((2 * G.L * Math.sin(alpha)) / Math.max(1, Math.hypot(dx, dz)));
+        T.lenken = Math.max(-1, Math.min(1, (delta * (1 + Math.abs(z.speed || 0) * G.sfK)) / G.maxSteer));
+        const mu = this._fahrHaft(z) * G.g;
+        // die Kurve deckelt das Tempo zweimal: der Reibkreis (v² · κ ≤ quer · μ·g) und die Lenksäule, deren Einschlag mit dem
+        // Tempo sinkt (lenk · maxSteer / (1 + v · sfK) muss den Bogen atan(κ · L) tragen) — nie unter das Kriechen (`kriechMs`:
+        // im Stand dreht kein Rad den Wagen)
+        const vKurve = (k) => {
+            const kk = Math.max(k, 1e-4);
+            const lenk = ((D.lenk * G.maxSteer) / Math.atan(kk * G.L) - 1) / G.sfK;
+            return Math.max(D.kriechMs, Math.min(Math.sqrt((D.quer * mu) / kk), lenk));
+        };
+        F.ende = F.s >= F.lang - D.haltM;
+        // auch der Bogen, den die Lenkung JETZT fährt (zurück auf die Route)
+        let soll = F.ende ? 0 : Math.min(G.vmax, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(1, Math.hypot(dx, dz))));
+        for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
+            const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
+            soll = Math.min(soll, Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s)));
+        }
+        const e = soll - v;
+        T.gas = Math.max(0, Math.min(1, e / D.bandMs));
+        T.bremse = v > D.bremsV ? Math.max(0, Math.min(1, -e / D.bandMs)) : 0;
+        T.handbremse = F.ende;
+        // DIE FAHRT ZÄHLT SICH im Sim-Takt: je Schritt das Tempo in Zehnteln von vmax (`F.tempo`), und wer vor dem Ende `festS`
+        // lang keine `festM` auf der Route vorankommt, steckt fest (`F.fest`: wo, m auf der Route)
+        F.takte++;
+        F.tempo[Math.max(0, Math.min(10, Math.floor((10 * v) / G.vmax)))]++;
+        if (F.s - F.anker >= D.festM || F.ende) [F.anker, F.steht] = [F.s, 0];
+        else if (++F.steht === Math.round(D.festS / AnazhRealm.FIXED_DT)) F.fest.push(Math.round(F.s));
+    }
+
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
     // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
     // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
@@ -2292,6 +2380,13 @@ class AnazhRealm_koerper_fahrt {
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 
 // ===== ATLAS · Koerper/fahrt — Außen-Konstanten =====
+// DER FAHRER (fahrzeug.K2, `_fahrerSchritt`): ld0 + ldV·v (bis ldMax) m voraus zielt die Lenkung · quer / lenk / brems = die
+// Anteile des Reibkreises (μ·g) und des Einschlags in der Kurve und des Reibkreises beim Bremsen davor · kriechMs = so langsam
+// fährt er höchstens um eine Kehre · kurveM = über ±so viele Meter misst er die Drehung der Route ·
+// sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
+// bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltM = so nah am Ende hält er · festM / festS =
+// so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber.
+AnazhRealm.FAHRER = Object.freeze({ ld0: 3, ldV: 0.35, ldMax: 12, quer: 0.75, lenk: 0.9, kriechMs: 2.5, brems: 0.6, kurveM: 6, sichtM: 120, bandMs: 1.5, bremsV: 0.5, haltM: 2, festM: 1, festS: 2 });
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER
 // Gültigkeits-Wand — ganz oder gar nicht, nie ein Misch-Gesetz. Memo nur im Erfolgs-Fall.

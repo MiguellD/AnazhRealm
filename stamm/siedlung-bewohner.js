@@ -1805,9 +1805,10 @@ class AnazhRealm_siedlung_bewohner {
     // eines Wegs seine Kanten, die Kreuzungen (Knoten zweier Wege näher als `kreuzM`) verbunden; es hängt über FREIE Kanten
     // zusammen (`_bewohnerKante`): was getrennt liegt (ein Weg, der seitlich in eine Straße mündet, eine Gasse, über der ein
     // Baum steht), schließt der kürzeste freie Schritt zum Rest (bis `naehtM`) — EIN Netz je Dorf. Wechselt eine Hülle im
-    // Rechteck der Wache, urteilt es neu. DER GRUND DES NETZES (Knoten, Folgen, Kreuzungen: die Lage allein, `S.netzGrund`)
-    // entsteht je Siedlung einmal — ein neuer Stand urteilt nur die Kanten (Lehre 25: der Takt kostet die Änderung), und jeder
-    // Knoten behält seinen Boden (`_bewohnerWand`); jede Naht urteilt über `_bewohnerKante` (gemerkt wie jede Kante).
+    // Rechteck der Wache, urteilt es neu. DER GRUND DES NETZES (Knoten, Folgen, Kreuzungen: die Lage allein, `S.netzGrund`:
+    // das Gesetz des Plans, `_wegeNetzGrund`) entsteht je Siedlung einmal — ein neuer Stand urteilt nur die Kanten (Lehre 25:
+    // der Takt kostet die Änderung), und jeder Knoten behält seinen Boden (`_bewohnerWand`); jede Naht urteilt über
+    // `_bewohnerKante` (gemerkt wie jede Kante).
     // EIN STAND, DER KEIN URTEIL ÄNDERT, ÄNDERT DAS NETZ NICHT: jede gemerkte Kante, die eine gewechselte Hülle berührt
     // (`_bewohnerWechsel`), urteilt neu — bleibt jedes Urteil, gilt das Netz weiter; sonst entsteht es mit dem Geurteilten neu.
     _bewohnerNetz(S) {
@@ -1831,35 +1832,13 @@ class AnazhRealm_siedlung_bewohner {
                 return alt;
             }
         }
-        const G = S.netzGrund || (S.netzGrund = { knoten: [], kanten: [] });
+        const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
         const knoten = G.knoten;
         const kante = (kanten, i, j) => {
             const w = Math.hypot(knoten[i].x - knoten[j].x, knoten[i].z - knoten[j].z);
             kanten[i].push(j, w);
             kanten[j].push(i, w);
         };
-        if (!knoten.length) {
-            const zug = [];
-            let wi = 0;
-            for (const rd of (S.plan.roads || []).concat(S.plan.feldwege || [])) {
-                let vor = -1;
-                for (const q of rd.pts || []) {
-                    if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
-                    knoten.push({ x: S.ox + q.x, z: S.oz + q.z });
-                    G.kanten.push([]);
-                    zug.push(wi);
-                    const i = knoten.length - 1;
-                    if (vor >= 0) kante(G.kanten, vor, i);
-                    vor = i;
-                }
-                wi++;
-            }
-            const K2 = AnazhRealm.BEWOHNER.kreuzM ** 2;
-            for (let i = 0; i < knoten.length; i++)
-                for (let j = i + 1; j < knoten.length; j++)
-                    if (zug[i] !== zug[j] && (knoten[i].x - knoten[j].x) ** 2 + (knoten[i].z - knoten[j].z) ** 2 < K2)
-                        kante(G.kanten, i, j);
-        }
         const kanten = G.kanten.map((k) => k.slice());
         const N = { knoten, kanten, baeume: new Map(), frei: erbe || new Map(), stand: S.wache.stand };
         const teil = new Int32Array(knoten.length);
