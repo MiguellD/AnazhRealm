@@ -37,7 +37,7 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -53,11 +53,7 @@ const BILDER = (() => {
 const FOLGT_MIN = 0.05;
 const server = statikServer();
 
-const fehler = [];
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) fehler.push(name);
-}
+const { errs: fehler, check } = pruefer();
 
 // Der eigene Hörer: jedes GPUDevice der Seite (Welt und Bühnen) meldet jede Validierung hierher — unabhängig davon, ob
 // das Spiel eine Wache trägt (an altem Code ist diese Zahl der Befund).

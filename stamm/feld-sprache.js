@@ -1187,7 +1187,7 @@ class AnazhRealm_feld_sprache {
             e.ertrag = this._playerSituationWohl(this.auraAt(e.x, e.z)) - tat.sitVor;
             // die Erwartung lernt als Feld-Akt `t` (`_feldAkt`, der Schritt `_feldSchritt`): sie reist und steht im Stand
             const alt = st.tatErwartung && st.tatErwartung.get(this._wohlCellKey(e.x, e.z) + ":" + tat.op);
-            const lebt = alt && !this._feldTot("t", alt, jetzt);
+            const lebt = alt && !(jetzt > AnazhRealm._feldEnde("t", alt));
             e.delta = e.ertrag - (lebt ? alt.e * Math.exp(-Math.max(0, jetzt - alt.t) / W.tatTau) : 0);
             this._feldAkt("t", e.x, e.z, [e.ertrag, tat.op]);
         }

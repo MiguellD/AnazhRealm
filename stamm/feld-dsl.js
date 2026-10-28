@@ -1865,7 +1865,7 @@ class AnazhRealm_feld_dsl {
             },
             // feld_akte([akte]): die Feld-Akte eines Mitspielers (`_feldAkt`) — was die Seite nicht kennt, faltet sie ein
             feld_akte: ([akte]) => {
-                if (Array.isArray(akte)) this._feldAkteNehmen(akte);
+                if (Array.isArray(akte)) this._feldAkteNehmen(akte.filter((a) => this._feldAktGut(a)));
             },
             deposit_emotion: ([axis, amount, positionNode], ctx) => {
                 if (typeof axis !== "string" || !AnazhRealm.EMOTION_AXES.includes(axis)) return;

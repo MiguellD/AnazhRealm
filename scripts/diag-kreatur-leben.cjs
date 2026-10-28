@@ -868,11 +868,7 @@ if (require.main !== module) return;
 const path = require("path");
 const root = path.resolve(__dirname, "..");
 
-let fails = 0;
-function check(name, ok, detail) {
-    console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
-    if (!ok) fails++;
-}
+const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 // ── Kern laden (Namensraum-Muster: self/globalThis) ──
 global.self = global;
@@ -904,8 +900,8 @@ if (V) {
     check("groessen-Bänder strikt aufsteigend (bis-Schwellen)", grOk);
 }
 
-if (fails > 0) {
-    console.log(`\n❌ ROT — ${fails} Verletzung(en).`);
+if (errs.length) {
+    console.log(`\n❌ ROT — ${errs.length} Verletzung(en).`);
     process.exit(1);
 }
 console.log("\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jedes Aktions-Profil zeigt auf ein Feld der Haltung.");

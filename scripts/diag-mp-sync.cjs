@@ -89,13 +89,11 @@ const ZUFLUSS_FAKTOR = 2;
 const STILLE_S = 15;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
-// (e) die erlaubten Arten am Draht — Schreib-Akt, der Leib des Spielers, die Sicht der eigenen Wesen, die Leitung
-const NETZ_ERLAUBT = {
-    dsl: "Schreib-Akt",
-    ...Object.fromEntries(["pos", "input", "soul", "vibe"].map((t) => [t, "Leib"])),
-    ...Object.fromEntries(["creature-pos", "companion-say"].map((t) => [t, "Sicht"])),
-    ...Object.fromEntries(["join", "rtc-offer", "rtc-answer", "rtc-ice", "stats"].map((t) => [t, "Leitung"])),
-};
+// (e) die erlaubten Arten am Draht — der Schreib-Akt (dsl), der Leib des Spielers (pos, input, soul, vibe), die Sicht der
+// eigenen Wesen (creature-pos, companion-say), die Leitung (join, rtc-*, stats)
+const NETZ_ERLAUBT = "dsl pos input soul vibe creature-pos companion-say join rtc-offer rtc-answer rtc-ice stats".split(
+    " "
+);
 // Das Netz-Log der Seite (vor ihrem ersten Skript, über jeden Reload): jede Sendung am Draht nach ihrer Art
 function netzLog() {
     const log = (window.__netz = {});
@@ -173,7 +171,7 @@ function abdruck(bauten) {
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
     return { edits, bauten: B.sort(), boden, zug: r._wetterZug };
 }
-// (f) Das Feld einer Seite zur Uhr T: je Karte (`FELD_KARTEN`) die Zellen, die zu T leben (`_feldTot` — eine tote liest die
+// (f) Das Feld einer Seite zur Uhr T: je Karte (`FELD_KARTEN`) die Zellen, die zu T leben (`_feldEnde` — eine tote liest die
 // Faltung als leer, ob die Räumung sie schon nahm oder nicht), als JSON-Text [Zelle, Wert, Stempel]; dazu Wetter, Brand und der
 // Pegel — die spätere Uhr gilt (`_weltUhrNimm`), die Saison folgt ihr (`_tickSeason`), der Pegel steht am selben Tag der Welt
 function feldAbdruck(T) {
@@ -181,16 +179,17 @@ function feldAbdruck(T) {
     const st = r.state;
     r._weltUhrNimm(T);
     r._tickSeason();
-    const aus = {};
+    const wt = st.weatherTransition || {};
+    const aus = {
+        wetter: [st.weather, wt.from, wt.to, wt.startedAt, wt.duration],
+        brand: [...(st.brandFeld || [])].map(([k, z]) => [k, z.stoff, z.glut]),
+        pegel: [r._pegelGilt()],
+    };
     for (const [f, n] of Object.entries(r.constructor.FELD_KARTEN))
         aus[n] = [...(st[n] || [])]
-            .filter(([, z]) => !r._feldTot(f, z, T))
-            .map(([k, z]) => JSON.stringify([k, z.a ?? z.axes ?? z.b ?? z.e, z.t]))
-            .sort();
-    const wt = st.weatherTransition;
-    aus.wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
-    aus.brand = JSON.stringify([...(st.brandFeld || [])].map(([k, z]) => [k, z.stoff, z.glut]));
-    aus.pegel = JSON.stringify(r._pegelGilt());
+            .filter(([, z]) => !(T > r.constructor._feldEnde(f, z)))
+            .map(([k, z]) => [k, z.a ?? z.axes ?? z.b ?? z.e, z.t]);
+    for (const k in aus) aus[k] = aus[k].map((z) => JSON.stringify(z));
     return aus;
 }
 // Byte-gleich je Teil des Abdrucks (JSON-Text)
@@ -350,15 +349,10 @@ async function seite(browser, name, alteTuer) {
 
 function bericht(p) {
     return p.evaluate(() => {
-        const { peerTakte, ursprung, ursprungOhneOrt, ursprungBeispiel, inits } = __mp;
         const p2p = anazhRealm.state.p2p;
         const t = document.getElementById("p2p-toggle");
         return {
-            peerTakte,
-            ursprung,
-            ursprungOhneOrt,
-            ursprungBeispiel,
-            inits,
+            ...__mp,
             enabled: p2p.enabled === true,
             connected: p2p.connected === true,
             timer: !!p2p.reconnectTimer,
@@ -374,10 +368,9 @@ hauptLauf(async () => {
     [PORT, SIGNAL_PORT] = await eigenePorte("MP_SYNC_PORT", "MP_SYNC_SIGNAL_PORT");
     PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
     SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-    // `offen`: ein Teil der Staffel, der noch nicht gleich ist — gemessen und mit Zahl berichtet, ohne die Wand zu brechen
-    const check = (name, ok, detail = "", offen = false) => {
-        console.log(`  ${ok ? "OK  " : offen ? "OFFEN" : "ROT "} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok && !offen) fehler.push(name);
+    const check = (name, ok, detail = "") => {
+        console.log(`  ${ok ? "OK  " : "ROT "} ${name}${detail ? " — " + detail : ""}`);
+        if (!ok) fehler.push(name);
     };
     const t0 = Date.now();
     if (!SELBSTTEST) {
@@ -825,37 +818,22 @@ hauptLauf(async () => {
         await folgt(sturm);
         // (f) DER MOMENT BEIDER SEITEN: beide Loops stehen (`__ruht`), die Akte im Flug landen (der Empfang ist ein Ereignis des
         // Kanals, kein Takt), dann das Feld beider zur späteren Uhr — kein Bestand-Takt fällt zwischen die zwei Abdrücke
-        const KARTEN = await pageA.evaluate(() => Object.values(anazhRealm.constructor.FELD_KARTEN));
-        const feldVergleich = async () => {
-            const seiten = [pageA, pageB];
-            for (const p of seiten) await p.evaluate(() => (window.__ruht = true));
-            await sleep(GRABEN_NACHLAUF_MS);
-            const T = Math.max(...(await Promise.all(seiten.map((p) => p.evaluate(() => anazhRealm.state.spielZeit)))));
-            const [A, B] = await Promise.all(seiten.map((p) => p.evaluate(feldAbdruck, T)));
-            for (const p of seiten) await p.evaluate(() => (window.__ruht = false));
-            const gl = (k) => A[k].length === B[k].length && A[k].every((z) => B[k].includes(z));
-            const satz =
-                KARTEN.map((k) => `${k} ${B[k].filter((z) => A[k].includes(z)).length}/${A[k].length}`).join(" · ") +
-                ["wetter", "brand", "pegel"]
-                    .map((k) => ` · ${k} ${A[k] === B[k] ? "gleich" : "VERSCHIEDEN"}`)
-                    .join("") +
-                ` (B ${KARTEN.map((k) => B[k].length).join("/")} Zellen, Brand ${JSON.parse(A.brand).length} Zellen)`;
-            return {
-                gleich:
-                    A.lifeField.length > 0 &&
-                    KARTEN.every(gl) &&
-                    ["wetter", "brand", "pegel"].every((k) => A[k] === B[k]),
-                satz,
-            };
-        };
-        const feldGleich = async (wann) => {
-            const v = await feldVergleich();
-            check(
-                `(f) ${wann}: Teil-Simulationen gleich (je Karte des Felds die lebenden Zellen zur selben Uhr, Wetter, Brand, Pegel)`,
-                v.gleich,
-                v.satz +
-                    (v.gleich ? "" : " — Täter: eine Karte schreibt je Seite statt aus den Feld-Akten (`_feldAkt`)")
+        // je Teil „gleich/A/B" Einträge; gleich, wo alle drei stehen (die Karte, das Wetter, der Brand, der Pegel)
+        const ruhe = (v) =>
+            Promise.all(
+                [pageA, pageB].map((p) => p.evaluate((v) => ((window.__ruht = v), anazhRealm.state.spielZeit), v))
             );
+        const feldVergleich = async (wann) => {
+            const T = Math.max(...(await ruhe(true)));
+            await sleep(GRABEN_NACHLAUF_MS);
+            const [A, B] = await Promise.all([pageA, pageB].map((p) => p.evaluate(feldAbdruck, T)));
+            await ruhe(false);
+            const satz = Object.keys(A).map(
+                (k) => `${k} ${B[k].filter((z) => A[k].includes(z)).length}/${A[k].length}/${B[k].length}`
+            );
+            const gleich = A.lifeField.length > 0 && satz.every((z) => /(\d+)\/\1\/\1$/.test(z));
+            if (wann) check(`(f) ${wann}: Teil-Simulationen gleich`, gleich, satz.join(" · "));
+            return [gleich, satz.join(" · ")];
         };
 
         // ── (c)+(e) GLEICH FÜR ALLE (feld.K2): A gräbt, schüttet und baut im Gespräch (die Chat-Taste, der Spielpfad) ──
@@ -938,7 +916,7 @@ hauptLauf(async () => {
                     : ` — Bau bei A ${JSON.stringify(g.A.bauten)}, bei B ${JSON.stringify(g.B.bauten)}: die Kennung ist keine Funktion des Akts`) +
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
-        await feldGleich("Peers");
+        await feldVergleich("Peers");
 
         // ── (a) URSPRUNG ── (vor dem Reload von B: seine Zähler leben in der Seite)
         const endA = await bericht(pageA);
@@ -987,7 +965,7 @@ hauptLauf(async () => {
             !!R && teile.every(rg),
             R ? satz(rg) : "B stand nach dem Reload nicht mit dem Bau"
         );
-        if (R) await feldGleich("Reload mitten im Sturm");
+        if (R) await feldVergleich("Reload mitten im Sturm");
         // der Selbsttest: B wendet jede Akt-Nachricht doppelt an und nimmt den Samen des Baus um eins verschoben — die Edits UND die
         // Bauten des Abdrucks fallen ROT (die Probe sieht beide); (f) B nimmt keine Uhr mehr, A springt in den Zug vor einem Sturm
         // drei Züge voraus — nie in den von B, der Zug ROT. Bis ci-wackler-zensus einen voraus: lag der Sturm im nächsten Zug, landete
@@ -1018,8 +996,8 @@ hauptLauf(async () => {
             s.a.length > 0 && !["edits", "bauten", "zug"].some(s.gleich),
             satz(s.gleich)
         );
-        const fm = await feldVergleich();
-        check("(f) Selbsttest: B nimmt keine Feld-Akte → die Teil-Simulationen ROT", !fm.gleich, fm.satz);
+        const [fGleich, fSatz] = await feldVergleich();
+        check("(f) Selbsttest: B nimmt keine Feld-Akte → (f) ROT", !fGleich, fSatz);
         // DAS NETZ-LOG beider Seiten (B vor und nach dem Reload): jede Art ist erlaubt, sonst eine Zustands-Nachricht
         const netz = async () => {
             const n = { A: await pageA.evaluate(() => window.__netz), B: Object.assign({}, netzB) };
@@ -1029,7 +1007,7 @@ hauptLauf(async () => {
         const fremd = (n) =>
             Object.entries(n).flatMap(([seite, log]) =>
                 Object.keys(log)
-                    .filter((t) => !NETZ_ERLAUBT[t])
+                    .filter((t) => !NETZ_ERLAUBT.includes(t))
                     .map((t) => `${seite} ${t}×${log[t]}`)
             );
         const n0 = await netz();

@@ -4,7 +4,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { starteBrowser, startProc, eigenePorte, hauptLauf } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf, pruefer } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -408,7 +408,7 @@ if (require.main === module) hauptLauf(async () => {
         errors.push({ kind: "requestfailed", url: req.url(), error: req.failure()?.errorText })
     );
 
-    const failures = [];
+    const { errs: failures, check } = pruefer();
     // Abbruch-Zustand: ist die SEITE tot (Renderer-Tod, protocolTimeout), steht hier das erste tote Band
     // → Folgebänder überspringen + ein unübersehbares Schluss-Verdikt statt einer ✅-Liste.
     let gateAborted = null;
@@ -440,12 +440,6 @@ if (require.main === module) hauptLauf(async () => {
             bandTimes.push([fn.name, Date.now() - t0]);
         }
     };
-    function check(name, ok, detail = "") {
-        const status = ok ? "✅" : "❌";
-        console.log(`  ${status} ${name}${detail ? " — " + detail : ""}`);
-        if (!ok) failures.push(name);
-    }
-
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         // Headless-Chromium drosselt rAF auf ~1 Hz → den Game-Loop synchron über `_gameLoopTick` pumpen,
