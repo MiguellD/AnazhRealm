@@ -17,21 +17,21 @@ timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/nul
 teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"
 @@PUNKTE@@ NH12
 {
- "ms": 81235,
+ "ms": 80377,
  "ergebnis": {
   "gesetzt": {
-   "ms": 4.6,
+   "ms": 4.4,
    "bilder": 0
   },
   "imRadius": {
-   "ms": 33551.8,
-   "bilder": 3212,
-   "radius": 103.73945647746726
+   "ms": 32737.5,
+   "bilder": 3213,
+   "radius": 106.96070141119935
   },
-  "latenzMs": 163.3,
+  "latenzMs": 127.5,
   "erstesMesh": {
-   "ms": 33715.1,
-   "bilder": 3224,
+   "ms": 32865,
+   "bilder": 3225,
    "stufe": "mesh",
    "typ": "haus_fraenkisch",
    "same": 905543,
@@ -39,14 +39,14 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
     -828.51,
     -1350.39
    ],
-   "abstand": 103.1,
+   "abstand": 106.5,
    "auge": [
     -839.9,
-    43.3,
-    -1247.9
+    43.5,
+    -1244.5
    ]
   },
-  "radius": 103.73945647746726,
+  "radius": 106.96070141119935,
   "zelle": [
    -4,
    -6
@@ -58,11 +58,11 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
    -1373.1
   ],
   "erwacht": {
-   "bild": 4222,
+   "bild": 4334,
    "d": 260
   },
   "erstes": {
-   "ms": 56.6,
+   "ms": 60.7,
    "bilder": 2,
    "stufe": "huelle",
    "typ": "haus_alemannisch",
@@ -79,7 +79,7 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
    ]
   },
   "hash": "175269cc",
-  "bilder": 7446,
+  "bilder": 7559,
   "reserviert": {
    "seed": 29749318,
    "nH": 12,
@@ -94,20 +94,20 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ NH300
 {
- "ms": 47741,
+ "ms": 47713,
  "ergebnis": {
   "gesetzt": {
-   "ms": 7,
+   "ms": 3.7,
    "bilder": 0
   },
   "imRadius": {
-   "ms": 223.9,
+   "ms": 193.3,
    "bilder": 2,
-   "radius": 110.51612774803701
+   "radius": 119.49352495896349
   },
-  "latenzMs": 0.1,
+  "latenzMs": 0,
   "erstesMesh": {
-   "ms": 224,
+   "ms": 193.3,
    "bilder": 2,
    "stufe": "mesh",
    "typ": "haus_fraenkisch",
@@ -116,14 +116,14 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
     -824.49,
     -1130.87
    ],
-   "abstand": 23.4,
+   "abstand": 23.5,
    "auge": [
     -840.3,
-    44.1,
-    -1113.6
+    44,
+    -1113.5
    ]
   },
-  "radius": 110.51612774803701,
+  "radius": 119.49352495896349,
   "zelle": [
    -4,
    -6
@@ -135,11 +135,11 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
    -1373.1
   ],
   "erwacht": {
-   "bild": 4099,
+   "bild": 4264,
    "d": 260
   },
   "erstes": {
-   "ms": 224,
+   "ms": 193.3,
    "bilder": 2,
    "stufe": "mesh",
    "typ": "haus_fraenkisch",
@@ -148,15 +148,15 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
     -824.49,
     -1130.87
    ],
-   "abstand": 23.4,
+   "abstand": 23.5,
    "auge": [
     -840.3,
-    44.1,
-    -1113.6
+    44,
+    -1113.5
    ]
   },
   "hash": "88b58bbf",
-  "bilder": 4101,
+  "bilder": 4266,
   "reserviert": {
    "seed": 29749318,
    "nH": 300,
@@ -171,7 +171,8 @@ teil NH300 $W eval "window.__m36 = { zelle: [-4, -6], nH: 300, start: 450, maxBi
 @@PUNKTE@@ EXIT 0
 
 --- stderr ---
-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 65188 Terminated              ( while sleep 300; do
+environment: line 3: 18919 Terminated              PORT=$SP node save-server.js > "$L/save.log" 2>&1
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 18898 Terminated              ( while sleep 300; do
     [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
 done )
 

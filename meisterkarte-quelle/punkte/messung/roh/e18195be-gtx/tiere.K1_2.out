@@ -227,13 +227,13 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
   ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":3,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.98,"engst":[0.85,"Fae","Vex",0]},"flucht":{"n":3,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.337,"fluchtMittel":1,"fluchtMin":1,"enge":1,"engst":[0.46,"Fae","Vex",45]}},"ausrichtung":{"mittel":0.997,"takte":1150},"alarm":{"laufen":3,"zweiteHand":1,"letzterS":0.4},"fluchtWegM":32.9,"id":{"bruch":null,"fluchtS":[5,5]}}
 
-  (12 s)
+  (15 s)
 
 ✅ GRÜN — herde
-HERDE AM HANG {"szene":{"kamera":[-93.58,89.28,-66.23,-60.84,88.63,-38.36],"abstand":43,"punkte":[[-61.07,89.37,-37.89],[-61.29,88.38,-40.37],[-59.85,89.61,-35.55],[-64.07,89.39,-38.72],[-57.9,88.21,-39.3]],"glieder":5,"fliehen":5,"takte":2006,"hang":{"x":-62.4,"z":-36,"neigung":17.7},"wurf":5,"fluchtBei":14.2},"fehler":null,"serie":[[43,"5/5",{"glieder":5,"sichtbar":5,"je":[436,253,344,264,297],"flecken":1,"kruemel":0,"pixel":855,"leibPx":38.9},null],[43.6,"5/5",{"glieder":5,"sichtbar":5,"je":[440,329,166,374,343],"flecken":1,"kruemel":0,"pixel":857,"leibPx":38.4},null],[45.8,"5/5",{"glieder":5,"sichtbar":5,"je":[342,148,134,341,269],"flecken":1,"kruemel":0,"pixel":738,"leibPx":36.2},null]]}
+HERDE AM HANG {"szene":{"kamera":[120.43,88.93,68.76,83.24,85.32,47.18],"abstand":43.2,"punkte":[[82.4,85.45,47.57],[83.15,86.06,45.23],[84.3,84.77,49.51],[79.74,85.09,47.19],[86.61,86.89,46.37]],"glieder":5,"fliehen":5,"takte":1857,"hang":{"x":83.1,"z":48,"neigung":19},"wurf":5,"fluchtBei":17.4},"fehler":null,"serie":[[43.1,"5/5",{"glieder":5,"sichtbar":5,"je":[336,320,484,399,303],"flecken":1,"kruemel":0,"pixel":868,"leibPx":41.3},null],[44.2,"5/5",{"glieder":5,"sichtbar":5,"je":[326,135,287,213,319],"flecken":1,"kruemel":0,"pixel":581,"leibPx":39.6},null],[46.2,"5/5",{"glieder":5,"sichtbar":5,"je":[267,135,286,139,326],"flecken":1,"kruemel":0,"pixel":626,"leibPx":37.8},null]]}
 
 --- stderr ---
-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 56102 Terminated              ( while sleep 300; do
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 20837 Terminated              ( while sleep 300; do
     [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
 done )
 

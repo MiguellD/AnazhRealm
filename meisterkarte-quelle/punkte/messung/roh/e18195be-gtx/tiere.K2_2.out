@@ -19,12 +19,12 @@ R=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.positio
 node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(" "))' "$R") --w 1920 --h 1080 --klasse '^tier:' --ziel Riss --datei "$B-wolfsrevier.png" > "$B-bild.txt" 2>&1
 echo "BILD $(grep -o '"abnahme": "[^"]*"' "$B-bild.txt")"
 cp "$B-wolfsrevier.abnahme.json" "$A"
-[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17754/index.html · der Puls steht seit 20.7 s
-[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.7 s
-[stall-akte] Puls 12×, zuletzt vor 20.7 s — complete · renderer bereit · weltbild da · frames 375 · welt 375 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
-[stall-akte] CPU (2 s) renderer 12156 104 % · GPU 12536 1 %
-[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 01:47 gpu 4/r 216 · 01:49 gpu 1/r 184 · 01:51 gpu 1/r 596 · 01:53 gpu 2/r 588 · 01:55 gpu 1/r 270 · 01:57 gpu 1/r 110 · 01:59 gpu 1/r 127 · 02:01 gpu 1/r 131 · 02:03 gpu 1/r 120 · 02:05 gpu 1/r 133 · 02:07 gpu 1/r 134 · 02:09 gpu 1/r 113 · 02:11 gpu 1/r 104 · 02:13 gpu 1/r 110 · 02:15 gpu 1/r 107 · 02:17 gpu 1/r 110 · 02:19 gpu 1/r 117
-[stall-akte] Stapel multiplyMatrices :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < updateMatrixWorld :6 < _leibMatrix :7
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17754/index.html · der Puls steht seit 20.8 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.5 s
+[stall-akte] Puls 12×, zuletzt vor 20.8 s — complete · renderer bereit · weltbild da · frames 345 · welt 345 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 13580 106 % · GPU 21720 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 26:42 gpu 5/r 201 · 26:44 gpu 2/r 166 · 26:46 gpu 1/r 419 · 26:48 gpu 2/r 600 · 26:50 gpu 1/r 483 · 26:52 gpu 1/r 165 · 26:54 gpu 1/r 110 · 26:56 gpu 1/r 133 · 26:58 gpu 1/r 128 · 27:00 gpu 1/r 122 · 27:02 gpu 1/r 128 · 27:04 gpu 1/r 128 · 27:06 gpu 1/r 125 · 27:08 gpu 1/r 110 · 27:10 gpu 1/r 103 · 27:12 gpu 1/r 106 · 27:14 gpu 1/r 108 · 27:16 gpu 1/r 104
+[stall-akte] Stapel _eisLinien :2911 < _eisAt :507 < _standSicht :569 < updateCreatures :3536 < takt :246 < (anonym) :1644 < buehne :61 < kreaturProben :1544
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] State-Import (Lade Datei) initialisiert
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
@@ -33,28 +33,27 @@ cp "$B-wolfsrevier.abnahme.json" "$A"
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
-[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 12 (zuvor ~30)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 16 (zuvor ~29)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] Der Rundblick steht nach 120 Takten ohne: 4 Bäume und Bauten wachsen · 341 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
-[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] Der Rundblick steht nach 120 Takten ohne: 3 Bäume und Bauten wachsen · 353 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
 [stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Welt-Beziehung: Pfad
-[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in multiplyMatrices :6
-[stall-akte] Seite #2: der Puls kehrt zurück nach 278.5 s — complete · renderer bereit · weltbild da · frames 416 · welt 416 Takte · Ruhe 30 · zuletzt Fege-Takt archLod 1280/1307 · programme 0 · gl-sync 0
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _eisLinien :2911
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
 
   ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"hp0":168},"rudel":{"jagden":60,"risse":18,"erschoepft":42,"hp0":168},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"hp0":60}},"rissS":49,"fleisch0":56.5,"fleischEnde":0,"fressS":110.7,"gaeste":[{"seele":"fuchs","kommtS":20.2,"frissS":31.14},{"seele":"baer","kommtS":16.8,"frissS":32.16}]}}
 
-  (294 s) — Sekunden je Probe: jagdkreis: 278
+  (122 s) — Sekunden je Probe: jagdkreis: 105
 
 ✅ GRÜN — jagdkreis
 WERKBANK bereit: Steuer 127.0.0.1:27754 · Seite :27753
 ORT [50,0]
-REVIER {"ort":"wald","kamera":[65.4,91.6,0.17,57.4,89.09,0.26],"klasse":"wald","rissS":12,"fressen":3,"nah":4,"woelfe":4}
-BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.32 m · Luma 77.4 σ 35.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.117 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen"
+REVIER {"ort":"wald","kamera":[58.41,91.62,-7.64,50.87,89.91,-10.31],"klasse":"wald","rissS":16,"fressen":3,"nah":4,"woelfe":4}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 86.8 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.117 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen"
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 56726 Terminated              ( while sleep 300; do
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 21109 Terminated              ( while sleep 300; do
     [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
 done )
 

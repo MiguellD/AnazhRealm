@@ -31,7 +31,7 @@ ZIPF {"zeta":1.022,"ki":[0.956,1.158],"je":[0.981,1.017,1.158,1.054,0.956,0.997,
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ WAHL
 {
- "ms": 27,
+ "ms": 15,
  "ergebnis": {
   "seed": "anazh-realm-seed",
   "staedte": 3,
@@ -64,7 +64,7 @@ ZIPF {"zeta":1.022,"ki":[0.956,1.158],"je":[0.981,1.017,1.158,1.054,0.956,0.997,
 
 @@PUNKTE@@ KAMERA
 {
- "ms": 3,
+ "ms": 2,
  "ergebnis": {
   "pose": [
    -470.09,
@@ -84,44 +84,44 @@ ZIPF {"zeta":1.022,"ki":[0.956,1.158],"je":[0.981,1.017,1.158,1.054,0.956,0.997,
 
 @@PUNKTE@@ MITTAG
 {
- "ms": 239,
+ "ms": 219,
  "kamera": [
   -492.65,
   33.08,
   -1280.23
  ],
- "hell": 61.4,
- "kontrast": 4.06,
+ "hell": 61.3,
+ "kontrast": 4.04,
  "dc": 32,
- "dreiecke": 515386,
+ "dreiecke": 518386,
  "klasse": null,
- "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 25.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.117 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62 σ 25.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.117 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-7754\\stadt-mittag.png",
- "gesamtMs": 32681
+ "gesamtMs": 32292
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ DAEMMERUNG
 {
- "ms": 212,
+ "ms": 208,
  "kamera": [
   -492.65,
   33.08,
   -1280.23
  ],
- "hell": 34.9,
- "kontrast": 2.82,
+ "hell": 35,
+ "kontrast": 2.8,
  "dc": 34,
- "dreiecke": 521820,
+ "dreiecke": 524780,
  "klasse": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 32.8 σ 12.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.117 · Bühne summer sunny 0.25 · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-7754\\stadt-daemmerung.png",
- "gesamtMs": 5587
+ "gesamtMs": 5400
 }
 @@PUNKTE@@ EXIT 0
 
 --- stderr ---
-environment: line 3: 64074 Terminated              PORT=$SP node save-server.js > "$L/save.log" 2>&1
-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 64025 Terminated              ( while sleep 300; do
+environment: line 3: 18616 Terminated              PORT=$SP node save-server.js > "$L/save.log" 2>&1
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 18571 Terminated              ( while sleep 300; do
     [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
 done )
 

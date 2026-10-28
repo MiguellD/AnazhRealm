@@ -15,15 +15,15 @@ WERKBANK bereit: Steuer 127.0.0.1:27754 · Seite :27753
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27754) =====
 
-  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":27,"third":34},"nahLeiber":4,"planGleich":true,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.023,"wegLeib":727.3},"blick":{"n":163,"quote":0.988,"sektorMax":0.196},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":269,"tuer":269,"falsch":[],"aufWeg":0.941,"sprungN":0,"wegeMin":6,"wegeMax":8,"streckeMin":132,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.559,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.963,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":27,"third":34},"nahLeiber":4,"planGleich":true,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.023,"wegLeib":727.7},"blick":{"n":163,"quote":0.988,"sektorMax":0.196},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":269,"tuer":269,"falsch":[],"aufWeg":0.941,"sprungN":0,"wegeMin":6,"wegeMax":8,"streckeMin":132,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.204,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.964,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
 
-  (232 s)
+  (228 s)
 
 ✅ GRÜN — bewohner
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 57709 Terminated              ( while sleep 300; do
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 18031 Terminated              ( while sleep 300; do
     [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
 done )
 
