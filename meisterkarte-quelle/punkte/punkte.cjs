@@ -1055,7 +1055,14 @@ function planCli(opt) {
         const e = juengste[id + "|" + g];
         return e && (!e.abdruck || e.abdruck === ab[id]) ? e : null;
     };
+    // ein Heil-Versuch ist jedes Kriterium, das ein Commit beim Namen nennt, UND jedes, dessen Zweig laut weg.json (wellen: Staffel →
+    // Zweig) im Zug landete — 28.10.: „Merge siedlung-k1-innen in integ-probe" nennt kein Kriterium, der Plan übersprang siedlung.K1#2,
+    // leib.K2#2 und vegetation.K4#2 als „rot ohne Heil-Versuch", obwohl ihre Zweige gelandet waren
     const genannt = new Set((git(["log", "--format=%B", alt + ".." + neu], repo).match(/\b[a-z]+\.K\d\b/g) || []));
+    const gelandet = new Set(git(["log", "--merges", "--format=%s", alt + ".." + neu], repo).split("\n").map((z) => (/^Merge (\S+) in /.exec(z) || [])[1]).filter(Boolean));
+    const weg = path.join(DIR, "weg.json");
+    for (const w of fs.existsSync(weg) ? JSON.parse(fs.readFileSync(weg, "utf8")).wellen || [] : [])
+        for (const [staffel, zweig] of Object.entries(w.staffeln || {})) if (gelandet.has(zweig)) genannt.add(staffel.replace(/#\d+$/, ""));
     const minVon = (id) => Math.max(0, ...["radeon", "gtx"].map((g) => (da(id, g) && da(id, g).minuten - (da(id, g).warten || 0)) || 0));
     const zeit = new Set(stationen.filter((st) => st.zeit).map(schluessel));
     const p = messPlan(stationen, da, genannt, (id) => zeit.has(id));
