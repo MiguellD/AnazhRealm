@@ -764,7 +764,7 @@ async function starte() {
     const browser = await puppeteer.launch({
         headless: !ECHT,
         userDataDir: profil,
-        protocolTimeout: 3600000,
+        protocolTimeout: 10800000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
         // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
         // — die Schalter je Plattform trägt das EINE Rezept.
