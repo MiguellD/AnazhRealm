@@ -9,6 +9,8 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
 //                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
+//                                      [--zeit Δt] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
+//                                                           und im Tal der Böe über dem Rausch-Boden bei Wind 0
 //                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
 //                                                           `--ist` schreibt in die Tafel, `--arm <m>` die Kamera <m> vor die Fläche des Ego-Blicks
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm live tauschen
@@ -110,6 +112,7 @@ const sollAblage = (ziel, endung) => {
 };
 // der Stand des Arbeitsbaums für jedes Begleit-JSON: `gitStand` und der Code-Abdruck jeder Quelle (abnahme-urteil)
 const AU = require("./lib/abnahme-urteil.cjs");
+const { luma709 } = AU;
 const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = AU.standLeser(root);
 // DER EINE SCHUSS (W1-n1, abnahme-urteil `schussVon`): das erste Ziel von „a,b:L1,…" trägt den Schuss mit dem Abdruck der
 // Quellen ALLER Ziele, jedes weitere NENNT es; geschrieben wird einmal, nach der Prüfung jeder Zeile
@@ -213,6 +216,36 @@ function methodeAusQuelle(quelle, name) {
     const text = quelle.slice(start, ende + 6);
     const art = m[1] === "*" ? "function*" : `${m[1] || ""}function`;
     return `(${art} ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
+}
+
+// DIE SICHTBARE BÖE (vegetation.K2 Staffel 1, `bild --zeit Δt`): die zeitliche Luma-Varianz zweier Ausgabe-Bilder (Rec. 709 auf
+// sRGB 0–255, `luma709`, Δt auseinander unter der Bild-Uhr der Bühne) auf den Pixeln der Maske `nah` (0–15 m), in der Seite `__boeVarianz`.
+// Das Urteil: das Nah-Feld trägt ≥ 5 % des Bilds (NAH), am Kamm der Böe liegt die Varianz ≥ 2× über dem Rausch-Boden (die Paare
+// bei Wind 0, nie unter 1 Stufe²; RAUSCH-BODEN), und der Kamm bewegt ≥ 2× so viel wie das Tal (LAUFZEIT) — die EINE wandernde Böe
+// (WIND_BOE) erreicht den Ort zu ihrer Laufzeit; Flimmern oder ein eigener Sinus je Schicht hebt beide gleich. Je Zeitpunkt zwei
+// Paare in Quadratur der Halm-Phase (uWindTime · 1,7 in `_windSwayOffset`, `viertel` = π/2 / 1,7 s): cos² + sin² hebt die Phase
+// des Halms heraus, Kamm und Tal unterscheidet nur die Böe.
+const BOE = { nahM: 15, viertel: Math.PI / 2 / 1.7 };
+function boeVarianz(a, b, nah) {
+    let s = 0,
+        n = 0;
+    for (let p = 0; p < nah.length; p++) if (nah[p]) (n += 1), (s += (luma709(b, p * 4) - luma709(a, p * 4)) ** 2);
+    return n && s / n;
+}
+// `nah` zählt das Nah-Feld in 2,5 % des Bilds; `rot` nennt nah, ueber (Rausch-Boden) und lauf (Laufzeit) unter 2 beim Namen
+const boeUrteil = ({ nahAnteil: n, kamm: K, tal: T }) => {
+    const z = { nah: n * 40, ueber: K.v / Math.max(K.boden, 1), lauf: (K.v - K.boden) / Math.max(T.v - T.boden, 1e-3) };
+    return Object.assign(z, { rot: Object.keys(z).filter((x) => z[x] < 2) });
+};
+// Der Selbsttest ohne Welt: die Varianz misst ΔY² nur im Nah-Feld; der Lauf an der Mess-Wiese und eine Böe über Flimmern sind GRÜN,
+// Wind 0 (die Mutante), Flimmern allein, ein Sinus je Schicht ohne Böe (Kamm ≈ Tal) und ein Bild ohne Nah-Feld ROT beim Namen.
+function boeSelbsttest() {
+    const f = Math.abs(boeVarianz([10, 10, 10, 0, 9], [13, 13, 13, 0, 0], [1, 0]) - 9) > 1e-9 ? ["ΔY² im Nah-Feld"] : [];
+    for (const [n, kv, tv, b, soll] of [[0.5, 3006, 843, 0, ""], [0.5, 1e-3, 0, 1e-3, "ueber,lauf"], [0.5, 30, 28, 20, "ueber,lauf"], [0.5, 90, 50, 40, ""], [0.5, 1470, 1427, 0, "lauf"], [0.01, 3006, 843, 0, "nah"]]) {
+        const rot = boeUrteil({ nahAnteil: n, kamm: { v: kv, boden: b }, tal: { v: tv, boden: b } }).rot.join();
+        if (rot !== soll) f.push(`${soll} ≠ ${rot}`);
+    }
+    return f;
 }
 
 // DER ECHTE LAUF (Seiten-Kontext): der Spiel-Loop läuft über rAF wie im Spiel; nach dem Einschwingen
@@ -1331,7 +1364,7 @@ async function starte() {
                                     zy = Math.min(Z.h - 1, Math.max(0, Math.floor(vv * Z.h)));
                                 const zi = (zy * Z.w + zx) * 4;
                                 ziel.push(0.2126 * Z.daten[zi] + 0.7152 * Z.daten[zi + 1] + 0.0722 * Z.daten[zi + 2]);
-                                bild.push(0.2126 * u8[p * 4] + 0.7152 * u8[p * 4 + 1] + 0.0722 * u8[p * 4 + 2]);
+                                bild.push(luma709(u8, p * 4));
                             }
                         const P = bild.length;
                         if (P < 50) return { r: null, pixel: P, grund: "kein Pixel der Klasse trifft eine Apertur" };
@@ -1378,15 +1411,8 @@ async function starte() {
                         const K = window.__koerperCore;
                         if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
                             throw new Error("--gesicht: koerper-core ohne kopfToene/KOPF_SOLL in der Seite");
-                        const lin = (hx) =>
-                            [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map((c) =>
-                                c / 255 <= 0.04045 ? c / 255 / 12.92 : Math.pow((c / 255 + 0.055) / 1.055, 2.4)
-                            );
-                        const hexAus = (c) =>
-                            c.reduce((h, x0) => {
-                                const x = x0 <= 0.0031308 ? 12.92 * x0 : 1.055 * Math.pow(x0, 1 / 2.4) - 0.055;
-                                return h * 256 + Math.max(0, Math.min(255, Math.round(x * 255)));
-                            }, 0);
+                        const lin = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
+                        const hexAus = (c) => c.reduce((h, x) => h * 256 + Math.max(0, Math.min(255, Math.round(linSrgb(x) * 255))), 0);
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
@@ -1613,7 +1639,7 @@ async function starte() {
                             const f = ton[(c - 1) % ton.length];
                             for (let ch = 0; ch < 3; ch++) mu8[i + ch] = Math.round(0.6 * u8[i + ch] + 0.4 * f[ch]);
                         } else {
-                            const g = 0.25 * (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]);
+                            const g = 0.25 * luma709(u8, i);
                             mu8[i] = g;
                             mu8[i + 1] = g;
                             mu8[i + 2] = g + 40;
@@ -1642,7 +1668,54 @@ async function starte() {
                         else delete r[m];
                 }
             }
-            const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+            // DIE ZEIT (`--zeit Δt`, vegetation.K2): an der Pose des Bilds je Paar zwei Ausgabe-Bilder Δt auseinander unter der
+            // Bild-Uhr der Bühne (`__buehneUhr.T`), am Kamm und im Tal der Böe in der Mitte des Nah-Felds (7,5 m vor dem Auge; das
+            // größte und das kleinste Böen-Maß des EINEN Winds am Ort `_windAt` in der Minute ab der Bühnen-Uhr — die Laufzeit der
+            // wandernden Böe bis dorthin); je Paar der Rausch-Boden derselben Uhren bei Wind 0 (die Böen-Drift `_windWob` 0: Gras
+            // und Krone ruhen). Das Nah-Feld (0–15 m) aus der Tiefe des Schusses (`mitte`); die Varianz misst `boeVarianz`.
+            // Headless (swiftshader, Mess-Wiese, Δt 0,25 s): Kamm 2999 über Boden 0,001, Tal 878 — Kamm/Tal 3,42, Nah-Feld 53,6 %;
+            // Wind 0 (`_windWob` 0) ROT, Kamm = Boden.
+            let zeit = null;
+            if (k.zeit != null) {
+                const U = window.__buehneUhr,
+                    T0 = U.T,
+                    S = await window.__spiegelDaten(),
+                    nah = new Uint8Array(W * H),
+                    B = r.constructor.WIND_BOE;
+                for (let p = 0; p < W * H; p++) {
+                    const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
+                    nah[p] = P && P.distanceTo(cam.position) <= k.nahM ? 1 : 0;
+                }
+                const q = cam.getWorldDirection(new window.THREE.Vector3()).setY(0).setLength(k.nahM / 2).add(cam.position),
+                    boe = Array.from({ length: 1200 }, (_, i) => [T0 + i / 20, r._windAt(q.x, q.z, T0 + i / 20).boe]).sort((a, b) => a[1] - b[1]),
+                    wob = Object.getOwnPropertyDescriptor(r, "_windWob");
+                const schuss = async (t, still) => {
+                    U.T = t;
+                    if (still) r._windWob = () => 0;
+                    try {
+                        return new Uint8Array((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+                    } finally {
+                        if (wob) Object.defineProperty(r, "_windWob", wob);
+                        else delete r._windWob;
+                    }
+                };
+                const paar = async ([t, boe]) => {
+                    const o = { t, boe, v: 0, boden: 0 };
+                    for (const tq of [t, t + k.viertel]) {
+                        const [a, b, a0, b0] = [await schuss(tq), await schuss(tq + k.zeit), await schuss(tq, 1), await schuss(tq + k.zeit, 1)];
+                        o.v += window.__boeVarianz(a, b, nah);
+                        o.boden += window.__boeVarianz(a0, b0, nah);
+                        o.bilder = o.bilder || [window.__png(a, W, H), window.__png(b, W, H)];
+                    }
+                    return o;
+                };
+                try {
+                    zeit = { dt: k.zeit, nahAnteil: nah.reduce((s, x) => s + x, 0) / (W * H), tempo: B.omega / B.k, kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
+                } finally {
+                    U.T = T0;
+                }
+            }
+            const lum = (i) => luma709(u8, i);
             let n = 0,
                 l = 0,
                 k2 = 0;
@@ -1664,6 +1737,7 @@ async function starte() {
                 dreiecke: auf.info.triangles,
                 ms: Math.round(auf.ms),
                 klasse,
+                zeit,
                 png: window.__png(u8, W, H),
             };
         }, k);
@@ -1897,7 +1971,8 @@ async function starte() {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
                         await page.waitForFunction(() => window.anazhRealm.state.renderer.domElement.clientWidth === 1920);
                     }
-                    const o = await bild(Object.assign({ w: 640, h: 360 }, b));
+                    if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
+                    const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
                     const datei = path.resolve(
                         b.datei || path.join(root, "artifacts", "werkbank", `bild-${Date.now()}.png`)
@@ -1905,6 +1980,12 @@ async function starte() {
                     ordnerFuer(datei);
                     pngDatei(datei, o.png);
                     delete o.png;
+                    // DIE ZEIT: die zwei Bilder am Kamm neben dem Bild (`-zeit-0.png`, `-zeit-1.png`), das Urteil der Böe dazu
+                    if (o.zeit) {
+                        o.zeit.kamm.bilder.forEach((u, i) => pngDatei(datei.replace(/\.png$/i, `-zeit-${i}.png`), u));
+                        delete o.zeit.kamm.bilder, delete o.zeit.tal.bilder;
+                        Object.assign(o.zeit, boeUrteil(o.zeit));
+                    }
                     // DIE KLASSE: die Maske neben dem Bild, die Maße im Begleit-JSON
                     if (o.klasse) {
                         const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
@@ -2868,10 +2949,9 @@ async function starte() {
                     const datei = path.resolve(
                         b.json || ablage(`${b.spitze ? "takt" : "haenger"}-${Date.now()}.json`)
                     );
-                    ordnerFuer(datei);
+                    jsonAb(datei, Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen } }, a));
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
-                    jsonAb(datei, Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen } }, a));
                     const { tabelle, befunde, cpuMs, taeter } = a;
                     return send({ tabelle, befunde, cpuMs, taeter, wetterHalt: roh.wetterHalt, datei });
                 }
@@ -2949,7 +3029,10 @@ hauptLauf(async () => {
     if (cmd === "status") o = await rufe("/status");
     else if (cmd === "umstellen")
         o = await umstellen({ x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
-    else if (cmd === "bild")
+    else if (cmd === "bild" && SELBST) {
+        selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
+        process.exit(0);
+    } else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
             py: a[1],
@@ -2972,6 +3055,7 @@ hauptLauf(async () => {
             arm: opt("--arm"),
             ist: opt("--ist"),
             fov: opt("--fov"),
+            zeit: opt("--zeit") && Number(opt("--zeit")),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
@@ -3697,5 +3781,6 @@ hauptLauf(async () => {
     }
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.
-    endeMit(o, !(o && typeof o.fehler === "string"));
+    // `bild --zeit`: die Böe ROT (`zeit.rot`) endet mit Exit 1
+    endeMit(o, !(o && (typeof o.fehler === "string" || (o.zeit && o.zeit.rot.length))));
 });

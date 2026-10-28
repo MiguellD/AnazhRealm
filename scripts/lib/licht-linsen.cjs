@@ -6,6 +6,8 @@
 // - bei ruhendem Loop schaltet niemand den NODE-FRAME weiter (vor jedem Render `nodeFrame.update()`), und Meshes einer
 //   `BundleGroup` folgen `visible` erst nach `needsUpdate`;
 // - ein 8-Bit-Ziel quantisiert die lineare Albedo in 0,0039 — die Albedo-Schüsse lesen rgba16float.
+// Die Luma (Rec. 709) liest jede Linse aus abnahme-urteil (`luma709`; in der Seite global über ABNAHME_INSTALL).
+const { luma709, cielab } = require("./abnahme-urteil.cjs");
 
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
@@ -766,7 +768,7 @@ function lichtBilanz() {
             await lauf();
             return lauf();
         };
-        const Y = (s) => 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+        const Y = luma709;
         const out = { sonnenRichtung: [sd.x, sd.y, sd.z].map((v) => +v.toFixed(3)), lichter: {} };
         for (const [l, i] of lichtAlt)
             out.lichter[l.type] = {
@@ -837,7 +839,7 @@ function tagKurve(o) {
                 k = v;
             },
         });
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const W = o.w || 480,
             H = o.h || 270;
         const zeilen = [];
@@ -857,12 +859,12 @@ function tagKurve(o) {
                 const s = [0, 0, 0, 0];
                 let n = 0;
                 for (let i = Math.floor(H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
-                    s[0] += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                    s[0] += luma709(u8, i);
                     for (let c = 0; c < 3; c++) s[c + 1] += lin[u8[i + c]];
                 }
                 const sd = r._sonnenRichtung();
                 const h = r._himmelsIrradianz();
-                const lum = (c, k) => k * (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                const lum = (c, k) => k * luma709(c);
                 const licht = [st.directionalLight, st.hemiLight, st.ambientLight].reduce((E, l) => E + (l ? lum(l.color.toArray(), l.intensity) : 0), h ? lum(h.oben, Math.PI) : NaN);
                 const z = {
                     uhr: u,
@@ -1113,7 +1115,7 @@ function nahFernSicht(opts) {
             const rgb = c.map((v) => v / 1024);
             return {
                 rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                Y: +luma709(rgb).toFixed(4),
                 deckung: +(d / 1024).toFixed(2),
             };
         };
@@ -1161,7 +1163,7 @@ function nahFernSicht(opts) {
                 for (let i = 3; i < px.length; i += 4)
                     if (px[i] > 0.5) {
                         m++;
-                        s += 0.2126 * px[i - 3] + 0.7152 * px[i - 2] + 0.0722 * px[i - 1];
+                        s += luma709(px, i - 3);
                     }
                 const y = m ? s / m : 0;
                 if (spur.length < 12) spur.push([m, +y.toFixed(4)]);
@@ -1198,7 +1200,7 @@ function nahFernSicht(opts) {
             return {
                 n,
                 rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                Y: +luma709(rgb).toFixed(4),
                 still,
                 spur,
             };
@@ -1601,8 +1603,7 @@ function laubGegenlicht(opts) {
             for (let k = 0; k < 3; k++) zl.zeichne(cam);
             const px = await zl.lies();
             const img = { data: new Uint8ClampedArray(W * H * 4) };
-            const enc = (v) =>
-                Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+            const enc = (v) => Math.round(255 * Math.min(1, linSrgb(v)));
             const Yp = new Float32Array(W * H).fill(-1),
                 Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
@@ -1611,7 +1612,7 @@ function laubGegenlicht(opts) {
                     const o = ((H - 1 - y) * W + x) * 4;
                     if (px[i + 3] > 0) {
                         const c = [px[i], px[i + 1], px[i + 2]];
-                        Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                        Yp[y * W + x] = luma709(c);
                         Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
                         img.data[o + 1] = enc(c[1]);
@@ -1849,9 +1850,8 @@ function laubGegenlicht(opts) {
 
 // Linear-RGB → Luma Y, L*, C*ab (D65): die Farb-Zahl jeder Karten- und Weg-Zeile
 function lab(rgb) {
-    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
-    return { Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+    const [L, a, b] = cielab(rgb);
+    return { Y: +luma709(rgb).toFixed(5), L: +L.toFixed(2), C: +Math.hypot(a, b).toFixed(2) };
 }
 
 // DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %) im Licht der Welt-Stoffe (eine MeshStandard-Karte gleicher Normale aus
@@ -2113,14 +2113,14 @@ function luftTiefe(o) {
         const gz = st.playerMesh.position.z;
         const gy = gesetz(gx, gz) + o.augeM;
         const Hs = R.skalenHoeheM;
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const roh = (u8, i) => {
             const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
             const m = Math.min(...c);
             const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
-        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const Y = luma709;
         const ton = (u8, i) => {
             const c = [u8[i], u8[i + 1], u8[i + 2]];
             const hi = Math.max(...c);
@@ -2330,7 +2330,7 @@ function luftTiefeUrteil(m, R) {
     });
     // der Himmel am Horizont (die In-Streuung, linear) zu Mittag gegen den Ton der Referenz; die Sonnenseite: Y der In-Streuung
     // zur Sonne / gegen sie je Uhr; das ferne Weiß bei Sonne 5°
-    const Y = (c) => c && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const Y = (c) => c && luma709(c);
     for (const z of m.zeilen.filter((x) => x.uhr === 0.5)) {
         const [r, g, b] = z.himmel || [0, 0, 0];
         const d = Math.max(r, g, b) - Math.min(r, g, b);
@@ -2545,7 +2545,7 @@ function naesseSicht(o) {
         // 20 statt 10 min (0,992 gegen 0,909), und die helle nasse Schwelle des Dorf-Hauses zählte 15 Punkte als Regen innen
         const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
-        const Y = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+        const Y = luma709;
         const strahl = new T.Vector3();
         const klasse = (x, y) => {
             if (!e) return y > H * 0.55 ? "aussen" : null;
@@ -2676,7 +2676,7 @@ function kontaktSicht(o) {
         PU.bloomStrength.value = 0;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const [W, H] = [db.x, db.y];
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
             const hi = Math.min(Math.max(...c), 0.9995);
@@ -2690,7 +2690,7 @@ function kontaktSicht(o) {
             const L = new Float32Array(W * H);
             for (let i = 0; i < W * H; i++) {
                 const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);
-                L[i] = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / rend.toneMappingExposure;
+                L[i] = luma709(c) / rend.toneMappingExposure;
             }
             return L;
         };
