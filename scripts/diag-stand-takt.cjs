@@ -29,7 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -1694,10 +1694,13 @@ const NACHWUCHS = process.argv.includes("--nachwuchs");
                             st.weatherEffectTime = -1e9;
                             st.weatherTransition = null;
                         };
-                        // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2)
+                        // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2); das Wort
+                        // senkt See und Fluss (wetter.K3: der Regen des Felds ist ein Term des Pegels) — die Neubauten der Chunks am
+                        // Wasser kommen, bis die Welt steht (an der Mess-Wiese 12 Chunks, nach 60 Takten warteten noch 3)
                         wort("sunny");
                         r._naesseTakt(1e6);
                         await simPhase(60); // jede Sim geht ihren Gang bis an ihren Fixpunkt
+                        await window.__weltStehtNach(takt);
                         aus.simRuhe = Object.assign(await simPhase(3600), { vorher });
                         const weck = async (n, ereignis) => {
                             ereignis();
@@ -1710,6 +1713,7 @@ const NACHWUCHS = process.argv.includes("--nachwuchs");
                         wort("sunny");
                         r._naesseTakt(1e6);
                         await simPhase(5);
+                        await window.__weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
                         W.regen.nachher = await simPhase(60);
                         const fr = st.foliageRadius;
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
@@ -1840,8 +1844,7 @@ const NACHWUCHS = process.argv.includes("--nachwuchs");
         const { staemme, ernte, ...zeile } = TAT ? befund : { ufer: befund.ufer, echt: nachwuchsMass(befund.echt), mutante: nachwuchsMass(befund.mutante) };
         const [name, v] = TAT ? ["TAT", tatUrteil(zeile)] : ["NACHWUCHS", nachwuchsUrteil(zeile)];
         console.log(name + " " + JSON.stringify(zeile));
-        console.log(v.length ? `❌ ${name} ROT — ${v.join(" | ")}` : `✅ ${name} GRÜN — ` + (TAT ? "die Spur hält bis zum Reload" : "der Nachwuchs folgt Feuchte × Licht"));
-        process.exit(v.length ? 1 : 0);
+        urteilEnde(v.length, `❌ ${name} ROT — ${v.join(" | ")}`, `✅ ${name} GRÜN — ` + (TAT ? "die Spur hält bis zum Reload" : "der Nachwuchs folgt Feuchte × Licht"));
     }
     befund.pageErrors = befund.taktFehler || [];
     const namen = Object.keys(STAND.TAKTE);

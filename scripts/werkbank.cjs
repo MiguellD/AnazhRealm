@@ -44,6 +44,7 @@
 //                                                           `kreis` geht eine Runde in [sek] Spiel-s und zählt die Tiere im Bild (`KREIS`, tiere.K5)
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
+//   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn|sprung]
 //                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
 //                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
@@ -101,8 +102,9 @@ const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
 // der Ordner einer Datei, die das Werkzeug schreibt
 const ordnerFuer = (datei) => fs.mkdirSync(path.dirname(datei), { recursive: true });
 const jsonAb = (datei, o) => (ordnerFuer(datei), fs.writeFileSync(datei, JSON.stringify(o, null, 1)));
-// die Ablage der Werkbank (artifacts/werkbank)
+// die Ablage der Werkbank (artifacts/werkbank); `zeitAblage`: die gewählte Datei, sonst <name>-<Zeit>.<endung> in der Ablage
 const ablage = (...teile) => path.join(root, "artifacts", "werkbank", ...teile);
+const zeitAblage = (wahl, name, endung) => path.resolve(wahl || ablage(`${name}-${Date.now()}.${endung}`));
 // DER ORT DER BILDER DER TAFEL (abnahme-urteil `bildPfadFehler`): je Ziel `--ist <id>[:teil]` EIN Name unter
 // artifacts/soll-tafel/ (gitignored, lokal) — Bild, Maske und Begleit-JSON nebeneinander
 const sollAblage = (ziel, endung) => {
@@ -256,35 +258,35 @@ function boeSelbsttest() {
 
 function lauf(k) {
     return (async () => {
-        const r = window.anazhRealm;
+        const r = anazhRealm;
         const st = r.state;
         const rend = st.renderer;
         // DIE BÜHNE: Mittag · Sonne · Sommer, oder das Wort des Spielers (`--wetter stormy`) und n Tiere frei im Ring
         // (`--tiere 50`) — Profiband K1 „Sturm"
         const tiereN = /^\d+$/.test(k.tiere) ? Number(k.tiere) : 0;
         if (!tiereN && k.tiere !== "frei" && k.tiere !== "halten") throw new Error(`--tiere ${k.tiere}: halten · frei · <n>`);
-        window.__buehne({ wetter: k.wetter, tiere: tiereN });
+        __buehne({ wetter: k.wetter, tiere: tiereN });
         // DIE WETTER-WACHE: der Zustand nach der Bühne (Wort und Uhr des Auto-Zugs — eine Uhr unter 0 ist eingefroren, der Halt)
         // und die Marke im Buch des Wetter-Spions. Dreht im Lauf ein Schreiber das Wetter, schreibt einer am
         // `_setWeather` vorbei, taut die Uhr oder ist ein eingefrorenes Wort danach ein anderes, ist der Lauf ROT und nennt den
         // Täter (`wetterUrteil`, scripts/lib/ausgabe-aufnahme.cjs).
-        const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
+        const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: __wetterBuch().seq };
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere === "halten") window.__tiereHalten();
+        if (k.tiere === "halten") __tiereHalten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         st.playerMesh.visible = true;
         // DIE PASS-UHR (scripts/lib/zerlege-linse.cjs, dieselbe wie `zerlegen`): je Render-Pass die ms (`__passName`), dazu je
         // Frame Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
-        const uhr = window.__passUhr();
+        const uhr = __passUhr();
         const proben = [];
         let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine.erledigt;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
         // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
         // DIE BAHN (`wandern: "bahn"`): 4 m/s die Kette des Orts (haushalt.json `bahn`) oder −z 0 → −60 m, hin und zurück;
         // der Geher lebt IM Lauf.
-        const H = k.haenger ? window.__haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
+        const H = k.haenger ? __haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
         const diff = (a, b) => {
             const o = {};
             for (const x in a) if (a[x] !== (b[x] || 0)) o[x] = +(a[x] - (b[x] || 0)).toFixed(2);
@@ -319,10 +321,10 @@ function lauf(k) {
         // 200 px decken KANN: seine Gestalt passt in 2 · Reichweite × Höhe (`_kreaturLeib`; die Kugel R = Reichweite + Höhe/2, ihre
         // Mitte Höhe/2 über dem Fuß). `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
         const kreisGang = async () => {
-            const T = window.THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
+            const T = THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
             const W = db.x, H = db.y, soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
-            const taste = (art) => window.dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyW", key: "w" }));
-            const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyW", key: "w" }));
+            const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             kreis.z0 = st.spielZeit;
             taste("keydown");
             try {
@@ -349,7 +351,7 @@ function lauf(k) {
                     r.toggleCreatures(false);
                     const O = await schuss().finally(() => r.toggleCreatures(true));
                     kreis.halt = 0;
-                    const [teil, auch] = G.map((g) => window.__klassenTeilung(g, [O], W, H, 18).teil);
+                    const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
                     for (let p = 0; p < W * H; p++) {
                         let q = null, e = 1;
                         if (teil[p] && auch[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
@@ -369,7 +371,7 @@ function lauf(k) {
             const spur = messen && k.spur;
             if (spur) performance.mark("anazh-takt");
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
-            window.__wetterHalten();
+            __wetterHalten();
             const c0 = performance.now();
             const g0 = r._gpuLeine.gerendert;
             const z = (uhr.frameZ = {}), aussen = H && diff(H.acc, snap);
@@ -392,9 +394,9 @@ function lauf(k) {
                 fahrt.e.position.x = st.playerMesh.position.x = x;
             }
             try {
-                if (window.__ortSchritt) window.__ortSchritt();
+                if (window.__ortSchritt) __ortSchritt();
                 if (probeTakt > 0) {
-                    window.__haengerProbe(probeTakt);
+                    __haengerProbe(probeTakt);
                     probeTakt = 0;
                 }
                 r._gameLoopTick(t);
@@ -441,10 +443,10 @@ function lauf(k) {
             if (fahrt) {
                 const { x, z } = st.playerMesh.position;
                 const e = r.spawnArchitecture("fahrzeug_gt", { x: x + 4, y: r.getTerrainHeightAt(x + 4, z) + 0.5, z }, { silent: true, id: "werkbank-fahrt" });
-                await window.__gebautNach(e, { takt: () => sleep(16) });
+                await __gebautNach(e, { takt: () => sleep(16) });
                 r.mountArchitecture(e);
                 if (st.player.mountedArch !== e.id) throw new Error("--wandern fahrt: der Spieler steigt nicht in den GT");
-                const v = (art) => window.dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyV", key: "v" }));
+                const v = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyV", key: "v" }));
                 Object.assign(fahrt, { e, x0: e.position.x, uhr: setInterval(() => (v("keydown"), v("keyup")), 4000) });
             }
             await sleep(k.ein * 1000);
@@ -456,7 +458,7 @@ function lauf(k) {
                 return {
                     chunks: st.voxelChunks.size,
                     foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
-                    karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: window.__ungebaut(),
+                    karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: __ungebaut(),
                 };
             };
             let ruhe = null;
@@ -481,7 +483,7 @@ function lauf(k) {
             const v0 = Object.assign({}, window.__vram);
             const wache = window.__stempelWache;
             const s0 = wache();
-            if (k.spur) await window.__spurAn();
+            if (k.spur) await __spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
             const erst0 = ERST.map((x) => E[x] || 0), probe = [];
@@ -497,7 +499,7 @@ function lauf(k) {
                 }, (k.sek * 1000) / 3);
                 setTimeout(() => {
                     probe.push({ art: "neben", t: performance.now() });
-                    window.__haengerProbe(250);
+                    __haengerProbe(250);
                 }, (k.sek * 2000) / 3);
             }
             if (sprung) {
@@ -508,7 +510,7 @@ function lauf(k) {
             messen = uhr.messen = true;
             // der Sprung misst in Bau-Ereignissen (`__deckel`), bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dann 1 s
             if (sprung) {
-                for (const weiter = window.__deckel("der Sprung um 1 km"); weiter() && !(sprung.offen && r._weltSteht()); await sleep(250))
+                for (const weiter = __deckel("der Sprung um 1 km"); weiter() && !(sprung.offen && r._weltSteht()); await sleep(250))
                     sprung.offen ||= !r._weltSteht();
                 sprung.stehtS = performance.now();
             }
@@ -555,7 +557,7 @@ function lauf(k) {
             };
             const s = st.perfSense, v = window.__vram;
             const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
-            const cam = st.camera, dir = new window.THREE.Vector3();
+            const cam = st.camera, dir = new THREE.Vector3();
             cam.getWorldDirection(dir);
             return {
                 regler: k.regler,
@@ -574,7 +576,7 @@ function lauf(k) {
                 // Anteil 0,5. ABAB-Urteile über
                 // Pass-Kosten lesen `rein` (unterer Gipfel; `__zweiGipfel`, scripts/lib/zerlege-linse.cjs) oder gpu-bank.
                 gpuJePassMs: Object.fromEntries(
-                    Object.entries(jePassFrame).map(([p, e]) => [p, window.__zweiGipfel(Object.values(e))])
+                    Object.entries(jePassFrame).map(([p, e]) => [p, __zweiGipfel(Object.values(e))])
                 ),
                 // Die Pass-Stempel gelten nur, wenn im Fenster kein Pass ohne Abfrage blieb (ein voller Pool schreibt
                 // seine Stempel in fremde Plätze — `__stempelWache`).
@@ -585,7 +587,7 @@ function lauf(k) {
                     jetzt: mb(v.puffer + v.texturen), puffer: mb(v.puffer), texturen: mb(v.texturen), spitze: mb(v.spitze),
                     nPuffer: v.nPuffer, nTexturen: v.nTexturen,
                     wuchsImFenster: mb(v.puffer + v.texturen - (v0.puffer + v0.texturen)),
-                    gross: window.__vramBericht(14),
+                    gross: __vramBericht(14),
                 },
                 stellgroessen: {
                     loadScale: +s.loadScale.toFixed(2),
@@ -611,7 +613,7 @@ function lauf(k) {
                     vorher: wetterVor.wetter, nachher: st.weather,
                     uhrVorher: Number.isFinite(wetterVor.uhr) ? +wetterVor.uhr.toFixed(1) : null,
                     uhrNachher: Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null,
-                    buch: window.__wetterBuch(wetterVor.seq).buch,
+                    buch: __wetterBuch(wetterVor.seq).buch,
                 },
                 saison: st.season,
                 bahnM: Math.round(weg),
@@ -637,12 +639,12 @@ function lauf(k) {
 // am VSync ein und misst nur bei tiefer Schlange die GPU.
 function gpuBank(k) {
     return (async () => {
-        const r = window.anazhRealm;
+        const r = anazhRealm;
         const rend = r.state.renderer;
         rend.setAnimationLoop(null);
-        window.__buehne();
+        __buehne();
         // DIE EINE BANK-RUNDE (scripts/lib/zerlege-linse.cjs) — dieselbe Messung, die `zerlegen` je Schalter fährt.
-        const runde = (n) => window.__bankRunde(n);
+        const runde = (n) => __bankRunde(n);
         await runde(3); // warm
         const n = k.n || 12;
         const rr = [];
@@ -670,8 +672,8 @@ function gpuBank(k) {
 // Satz und `lauf --wandern kreis`; davon nah ≤ `ANALOG_NAH_M`), mit Schatten-Wurf je Kaskade (ein sichtbarer werfender Leib,
 // dessen Körper-Kugel das Frustum der Kaskaden-Kamera trifft), die Arten (die Gattung) gesamt und im Sichtkegel.
 function tierZahl() {
-    const r = window.anazhRealm;
-    const T = window.THREE;
+    const r = anazhRealm;
+    const T = THREE;
     const st = r.state;
     const frustum = (kam) =>
         kam && new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse), kam.coordinateSystem);
@@ -710,7 +712,7 @@ function tierZahl() {
 // dann `eingeschwungen: false`, und die Ratsche verweigert den Nachzug.
 function bandEinschwingen(k) {
     return (async () => {
-        const r = window.anazhRealm;
+        const r = anazhRealm;
         const st = r.state;
         const RUHIG = k.ruhig || 30;
         // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
@@ -730,13 +732,13 @@ function bandEinschwingen(k) {
             if (st.archInstanceGroups)
                 for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
             const ls = st.perfSense ? +st.perfSense.loadScale.toFixed(3) : 1;
-            return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: window.__ungebaut(), loadScale: ls };
+            return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: __ungebaut(), loadScale: ls };
         };
         while (performance.now() < dl) {
-            window.__werkTakt();
+            __werkTakt();
             takte++;
             // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
-            o = window.__einschwingOffen(r);
+            o = __einschwingOffen(r);
             const s = stand();
             if (s.loadScale < 1) o.loadScale = s.loadScale;
             if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
@@ -759,19 +761,19 @@ function bandEinschwingen(k) {
 // (die Tiere wandern, der Takt rechnet weiter) — die Werkbank nimmt je Klasse × Pass das Maximum (`zensusMax`).
 function bandProben(k) {
     return (async () => {
-        const r = window.anazhRealm;
+        const r = anazhRealm;
         const proben = [];
         for (let i = 0; i < (k.n || 6); i++) {
             if (i)
                 for (let t = 0; t < (k.zwischen || 20); t++) {
-                    window.__werkTakt();
+                    __werkTakt();
                     await sleep(50);
                 }
-            window.__buehne();
+            __buehne();
             try {
                 if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
             } catch {}
-            proben.push(await window.__drawZensus({ alle: true }));
+            proben.push(await __drawZensus({ alle: true }));
         }
         return proben;
     })();
@@ -798,6 +800,8 @@ async function starte() {
     fs.mkdirSync(profil, { recursive: true });
     const boot = { serie: SERIE || null, profil, serieNeu, ladungen: 0 };
     const bootArt = () => (boot.serieNeu && boot.ladungen <= 1 ? "erst" : "zweit");
+    // die Boot-Zeile jeder Messung: Erst- oder Zweit-Boot, die Serie und die Ladungen der Seite
+    const bootZeile = () => ({ art: bootArt(), serie: boot.serie, ladungen: boot.ladungen });
     const browser = await puppeteer.launch({
         headless: !ECHT,
         userDataDir: profil,
@@ -809,7 +813,7 @@ async function starte() {
     });
     await adapterZeile(browser);
     const page = await browser.newPage();
-    const loopAus = () => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+    const loopAus = () => page.evaluate("__loop()"); // die Welt steht zwischen den Befehlen
     // ein Seiten-Werkzeug beim Namen (`window[name](k)`)
     const seite = (name, k) => page.evaluate((n, k) => window[n](k), name, k);
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
@@ -858,14 +862,16 @@ async function starte() {
         // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht); dazu die
         // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
         await page.evaluate(() => {
+            // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
+            window.__loop = (an, r = anazhRealm) => r.state.renderer.setAnimationLoop(an ? (t) => r._gameLoopTick(t) : null);
             window.__werkTakt = () => {
                 try {
-                    window.__buehne();
-                    if (window.__ortSchritt) window.__ortSchritt();
-                    window.anazhRealm._gameLoopTick(performance.now());
+                    __buehne();
+                    if (window.__ortSchritt) __ortSchritt();
+                    anazhRealm._gameLoopTick(performance.now());
                 } catch {}
             };
-            window.__ungebaut = (r = window.anazhRealm, st = r.state, pm = st.playerMesh.position) =>
+            window.__ungebaut = (r = anazhRealm, st = r.state, pm = st.playerMesh.position) =>
                 (st.architectures || []).filter(
                     (e) =>
                         (e.position.x - pm.x) ** 2 + (e.position.z - pm.z) ** 2 <= (st.architectureCullingRadius || 0) ** 2 &&
@@ -875,7 +881,7 @@ async function starte() {
         // dazu die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
         for (const i of [`window.__tierZahl = ${tierZahl.toString()};`, STAND.STAND_INSTALL, FERNWALD_INSTALL, require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL, ZL.ZERLEGE_INSTALL, SK.SHADER_INSTALL, ZZ.ZIEL_INSTALL, HL.HAENGER_INSTALL])
             await page.evaluate(i);
-        await page.evaluate(() => window.__weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
+        await page.evaluate(() => __weltDa((r) => !!(r.state.renderer && r.state.renderer.backend)));
         if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
@@ -898,13 +904,13 @@ async function starte() {
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
         const steht = () =>
             page.evaluate((s) => {
-                const m = window.anazhRealm.state.worldMeta;
+                const m = anazhRealm.state.worldMeta;
                 return !!(m && m.slug === s);
             }, slug);
         if (await steht()) return { slug, neu: false };
         const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 0 });
         const res = await page.evaluate((j) => {
-            const x = window.anazhRealm.importWorldBeside(j, { reload: true });
+            const x = anazhRealm.importWorldBeside(j, { reload: true });
             return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
@@ -924,7 +930,7 @@ async function starte() {
     const umstellen = (x, z, o) =>
         page.evaluate(
             async (x, z, o) => {
-                const r = window.anazhRealm;
+                const r = anazhRealm;
                 // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
                 // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (sonst urteilte
                 // die Messung über einen leeren Rand).
@@ -959,11 +965,11 @@ async function starte() {
                       }
                     : null;
                 window.__ortSchritt = () => {
-                    if (window.__ortStell) window.__ortStell();
+                    if (window.__ortStell) __ortStell();
                     const pm = r.state.playerMesh.position;
                     for (const m of window.__ortTakt) r[m](pm);
                 };
-                if (window.__ortStell) window.__ortStell();
+                if (window.__ortStell) __ortStell();
                 if (o && Number.isFinite(o.gier)) {
                     r.state.yaw = o.gier;
                     r.state.pitch = 0;
@@ -984,7 +990,7 @@ async function starte() {
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1);
                     if (!steht()) {
                         r._chatDispatchLegacyCommand(g.wort, [], () => {});
-                        for (const weiter = window.__deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
+                        for (const weiter = __deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
@@ -1002,21 +1008,21 @@ async function starte() {
                 const takt = async () => {
                     if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
                     try {
-                        window.__buehne();
-                        window.__ortSchritt();
+                        __buehne();
+                        __ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch {}
                     await sleep(50);
                 };
                 let takte;
                 try {
-                    takte = await window.__gebautNach(`Messort ${o ? o.ort : `${x} ${z}`}: der Ring ${ziel}`, {
+                    takte = await __gebautNach(`Messort ${o ? o.ort : `${x} ${z}`}: der Ring ${ziel}`, {
                         fertig: () => r._builtRingRadius() >= ziel,
                         takt,
                         max: 1800,
                         warum: () => `der Ring steht bei ${r._builtRingRadius()}`,
                     });
-                    takte += await window.__weltStehtNach(takt);
+                    takte += await __weltStehtNach(takt);
                     // die Bahn der Gründung erst, wenn die Welt am Anlauf steht: der Zug legt die Wege der Stadt nach ihrem Gedächtnis
                     const k = g ? o.bahn : [];
                     for (let i = 1; i < k.length; i++)
@@ -1026,7 +1032,7 @@ async function starte() {
                         }
                     if (o && o.anlauf) {
                         r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
-                        takte += await window.__weltStehtNach(takt);
+                        takte += await __weltStehtNach(takt);
                         // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
                         if (o.dach && !(r.state._kapselStruktur && Math.abs(r.state._kapselTraegerY - o.dach) < 0.5))
                             throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
@@ -1060,7 +1066,7 @@ async function starte() {
 
     const bild = (k) =>
         page.evaluate(async (k) => {
-            const r = window.anazhRealm;
+            const r = anazhRealm;
             const rend = r.state.renderer;
             const boden = (x, z, v) =>
                 typeof v === "string" && v[0] === "+" ? r._voxelSurfaceY(x, z) + Number(v.slice(1)) : Number(v);
@@ -1068,7 +1074,7 @@ async function starte() {
             // die Augenhöhe, seine Blick-Richtung) und blickt ihn an — die Pose kommt aus dem Leib, nie von Hand
             let gpos = null;
             if (k.gesicht != null) {
-                const T = window.THREE;
+                const T = THREE;
                 const pm = r.state.playerMesh;
                 let kopf = null;
                 pm.updateMatrixWorld(true);
@@ -1088,7 +1094,7 @@ async function starte() {
             // Namen. Bis mk2-mikro traf der Arm die Bildmitte (durch die Pflanzen, `_fieldRaycast`): die Kuppe des Fels im Gras lag
             // daneben, die Station maß 0 Fels-Pixel. `mitte(S, i)`: der Welt-Punkt des Tiefe-Pixels i (ohne i die Bildmitte).
             const mitte = ({ tiefe, tw, th, ivp }, i = (th >> 1) * tw + (tw >> 1)) => {
-                const T = window.THREE;
+                const T = THREE;
                 const P = new T.Vector3((2 * (i % tw) + 1) / tw - 1, 1 - (2 * Math.floor(i / tw) + 1) / th, tiefe[i]);
                 return tiefe[i] < 0.99999 ? P.applyMatrix4(new T.Matrix4().fromArray(ivp)) : null;
             };
@@ -1096,7 +1102,7 @@ async function starte() {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
                 const a = r.state.camera.position.clone();
-                const tiefe = async () => (await window.__ausgabeAufnahme(64, 36, 1, { satz: "messung" }), await window.__spiegelDaten());
+                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung" }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
                     S = await tiefe();
@@ -1123,7 +1129,7 @@ async function starte() {
             rend.setAnimationLoop(null);
             // DIE KLASSE (die Soll-Tafel): das Bild in voller Puffer-Größe — Dither und Kanten leben im Pixel des Schirms
             if (k.klasse) {
-                const db = rend.getDrawingBufferSize(new window.THREE.Vector2());
+                const db = rend.getDrawingBufferSize(new THREE.Vector2());
                 k.w = Math.round(db.x);
                 k.h = Math.round(db.y);
             }
@@ -1136,7 +1142,7 @@ async function starte() {
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
-            window.__buehne(k);
+            __buehne(k);
             // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
             // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
             if (Number.isFinite(k.uhr)) {
@@ -1162,18 +1168,18 @@ async function starte() {
                 } catch {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
+                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
                 if (i === 0) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
                 auf.abnahme.wahl = gewaehlt;
-                auf.abnahme.zeile = window.__abnahmeUrteil(auf.abnahme).zeile;
+                auf.abnahme.zeile = __abnahmeUrteil(auf.abnahme).zeile;
             }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
             window.__letzteAufnahme = auf.u8;
             // die Tiefe und Kamera des Schusses (A13, die Achse der Spiegel-Treue), ehe ein weiterer Schuss sie überschreibt
-            const spiegel = (window.__letzteSpiegel = k.klasse ? await window.__spiegelDaten() : null);
+            const spiegel = (window.__letzteSpiegel = k.klasse ? await __spiegelDaten() : null);
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
@@ -1261,7 +1267,7 @@ async function starte() {
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
-                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                        return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
                         r._tickBauSatz(Infinity);
@@ -1278,16 +1284,16 @@ async function starte() {
                     // mit ihrem Ziel allein (`__membranOhneFilm`) — Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel
                     let ohneFilm = null;
                     if (teile.has("portal-membran")) {
-                        window.__membranOhneFilm(true);
+                        __membranOhneFilm(true);
                         try {
                             ohneFilm = await schuss([]);
                         } finally {
-                            window.__membranOhneFilm(false);
+                            __membranOhneFilm(false);
                         }
                     }
                     const schwelle = 18;
-                    const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
-                    const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
+                    const rauschen = __bildRauschen(G, G2, W, H, schwelle);
+                    const { teil, misch } = __klassenTeilung(G, Os, W, H, schwelle);
                     // die Teilung des Schusses für ein folgendes `eval` (der Pulk der Herde, tiere.K1): je Pixel 1 + Index in `namen`
                     window.__letzteTeilung = { teil, namen, W, H };
                     const klassen = {};
@@ -1299,7 +1305,7 @@ async function starte() {
                     // (`r._torZielDaten(rec)`). r = Spearman zwischen der Luma des Bilds und der des Ziels
                     // — rang-treu über Belichtung, Tonkurve und sRGB. Die Welle (≤ Amplitude) und die Brechung des Films sind nicht gerechnet.
                     const zielTreue = (m) => {
-                        const T = window.THREE;
+                        const T = THREE;
                         if (typeof r._torZielDaten !== "function")
                             return { r: null, pixel: 0, grund: "die Welt hält kein Ziel-Panorama (kein Studio-Export)" };
                         const cam = r.state.camera;
@@ -1397,7 +1403,7 @@ async function starte() {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
@@ -1407,7 +1413,7 @@ async function starte() {
                     // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand.
                     let gesicht = null;
                     if (k.gesicht != null) {
-                        const T = window.THREE;
+                        const T = THREE;
                         const K = window.__koerperCore;
                         if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
                             throw new Error("--gesicht: koerper-core ohne kopfToene/KOPF_SOLL in der Seite");
@@ -1535,14 +1541,14 @@ async function starte() {
                                 kalotte: p.z !== "iris" && p.w.y > yHaar,
                             }));
                         const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
-                        gesicht = window.__gesichtMasse(u8, teil, W, H, proben, haarK);
+                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
                         gesicht.toene = Object.fromEntries(
                             Object.entries(toene).map(([t, c]) => [t, hexAus(c).toString(16).padStart(6, "0")])
                         );
                     }
                     let abstand = null;
                     if (k.abstand) {
-                        const T = window.THREE;
+                        const T = THREE;
                         // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
                         const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
                         const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
@@ -1598,7 +1604,7 @@ async function starte() {
                                 const bi = band(d);
                                 if (bi < 0) continue;
                                 const kk = d >= 2 && d < 5 && x0 + 1 < W && y0 + 1 < H && `${Math.floor((pos.x + v.x * hit) / 2)},${Math.floor((pos.z + v.z * hit) / 2)}`;
-                                if (kk) window.__farbtonProbe(ftK.get(kk) || ftK.set(kk, [0, 0, 0, 0]).get(kk), u8, (y0 * W + x0) * 4, W);
+                                if (kk) __farbtonProbe(ftK.get(kk) || ftK.set(kk, [0, 0, 0, 0]).get(kk), u8, (y0 * W + x0) * 4, W);
                                 for (let q = 0; q < 4; q++) {
                                     const x = x0 + (q & 1),
                                         y = y0 + (q >> 1);
@@ -1657,7 +1663,7 @@ async function starte() {
                         gesicht,
                         // die Armlänge, wie die Tiefe der Bildmitte sie misst
                         arm: k.arm == null ? undefined : { soll: +k.arm, ist: +(mitte(spiegel) || cam.position).distanceTo(cam.position).toFixed(3) },
-                        maske: window.__png(mu8, W, H),
+                        maske: __png(mu8, W, H),
                     };
                 } finally {
                     for (const [o, c] of wurf) o.castShadow = c;
@@ -1679,21 +1685,21 @@ async function starte() {
             if (k.zeit != null) {
                 const U = window.__buehneUhr,
                     T0 = U.T,
-                    S = await window.__spiegelDaten(),
+                    S = await __spiegelDaten(),
                     nah = new Uint8Array(W * H),
                     B = r.constructor.WIND_BOE;
                 for (let p = 0; p < W * H; p++) {
                     const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
                     nah[p] = P && P.distanceTo(cam.position) <= k.nahM ? 1 : 0;
                 }
-                const q = cam.getWorldDirection(new window.THREE.Vector3()).setY(0).setLength(k.nahM / 2).add(cam.position),
+                const q = cam.getWorldDirection(new THREE.Vector3()).setY(0).setLength(k.nahM / 2).add(cam.position),
                     boe = Array.from({ length: 1200 }, (_, i) => [T0 + i / 20, r._windAt(q.x, q.z, T0 + i / 20).boe]).sort((a, b) => a[1] - b[1]),
                     wob = Object.getOwnPropertyDescriptor(r, "_windWob");
                 const schuss = async (t, still) => {
                     U.T = t;
                     if (still) r._windWob = () => 0;
                     try {
-                        return new Uint8Array((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
+                        return new Uint8Array((await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
                     } finally {
                         if (wob) Object.defineProperty(r, "_windWob", wob);
                         else delete r._windWob;
@@ -1703,9 +1709,9 @@ async function starte() {
                     const o = { t, boe, v: 0, boden: 0 };
                     for (const tq of [t, t + k.viertel]) {
                         const [a, b, a0, b0] = [await schuss(tq), await schuss(tq + k.zeit), await schuss(tq, 1), await schuss(tq + k.zeit, 1)];
-                        o.v += window.__boeVarianz(a, b, nah);
-                        o.boden += window.__boeVarianz(a0, b0, nah);
-                        o.bilder = o.bilder || [window.__png(a, W, H), window.__png(b, W, H)];
+                        o.v += __boeVarianz(a, b, nah);
+                        o.boden += __boeVarianz(a0, b0, nah);
+                        o.bilder = o.bilder || [__png(a, W, H), __png(b, W, H)];
                     }
                     return o;
                 };
@@ -1738,7 +1744,7 @@ async function starte() {
                 ms: Math.round(auf.ms),
                 klasse,
                 zeit,
-                png: window.__png(u8, W, H),
+                png: __png(u8, W, H),
             };
         }, k);
 
@@ -1759,7 +1765,7 @@ async function starte() {
             // DIE STEMPEL-WACHE (scripts/lib/zerlege-linse.cjs): sobald der Pool steht, zählt sie jede verweigerte Abfrage.
             const stempel = () =>
                 page
-                    .evaluate(() => (window.__stempelWache ? window.__stempelWache() : null))
+                    .evaluate(() => (window.__stempelWache ? __stempelWache() : null))
                     .then((w) => Object.assign({ warnung: stempelWarnung.n }, w || {}))
                     .catch(() => null);
             await stempel();
@@ -1767,14 +1773,9 @@ async function starte() {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
                     await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
-                    await page.evaluate(() => {
-                        const r = window.anazhRealm;
-                        r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t));
-                    });
+                    await page.evaluate("__loop(1)");
                     await sleep(300);
-                    const datei = path.resolve(
-                        b.datei || ablage(`schirm-${Date.now()}.png`)
-                    );
+                    const datei = zeitAblage(b.datei, "schirm", "png");
                     ordnerFuer(datei);
                     await page.screenshot({ path: datei });
                     await loopAus();
@@ -1802,22 +1803,55 @@ async function starte() {
                                 for (let i = 0; i < +b.proben; i++) {
                                     const s = sicht === "ego" ? "first" : "third";
                                     if (!taste[verb] && verb !== "hieb") throw new Error(`latenz: kein Verb ${verb}`);
-                                    if (!(await page.evaluate((s, z, v) => window.__latenz.bereit(s, z, v), s, verb !== "wechsel", verb))) {
+                                    if (!(await page.evaluate((s, z, v) => __latenz.bereit(s, z, v), s, verb !== "wechsel", verb))) {
                                         reihe.push({ unruhe: true });
                                         if (reihe.filter((p) => p.unruhe).length < 3) continue;
                                         throw new Error(`latenz ${sicht}/${verb}: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht`);
                                     }
                                     await tu(verb, "keyDown");
                                     if (verb === "hieb") await tu(verb, "keyUp"); // gehalten mahlte der Hieb nach
-                                    reihe.push(await page.evaluate(() => window.__latenz.treffer()));
+                                    reihe.push(await page.evaluate(() => __latenz.treffer()));
                                     await tu(verb, "keyUp");
                                 }
                             }
                     } finally {
-                        bildMs = await page.evaluate(() => window.__latenz.ende());
+                        bildMs = await page.evaluate(() => __latenz.ende());
                         await cdp.detach();
                     }
                     return send(Object.assign(HL.latenzUrteil(proben, bildMs), { ort: aktOrt }));
+                }
+                // DIE BEDIENUNG (spielgang.K3): die HUD-Maske aus dem Bild des Spielers (Canvas + DOM, der Loop steht) — der
+                // Anteil der Pixel, die sich mit verborgenem HUD ändern —, dann HUD (Klick je Hotbar-Platz) und Menü (Tab und I,
+                // Esc schließt) als echte Eingabe im laufenden Loop; die INP je Gruppe misst das Bedienungs-Ohr (`_bedienungInp`).
+                if (req.url === "/bedienung") {
+                    const r = "anazhRealm";
+                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
+                    if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
+                    // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
+                    await page.bringToFront();
+                    await page.keyboard.press("Escape"); // jede offene Schublade fällt, wie beim Spieler
+                    await page.mouse.click(page.viewport().width / 2, page.viewport().height / 2);
+                    const imSpiel = await page.evaluate(`${r}.state.isPointerLocked && Promise.all(document.getAnimations().map((a) => a.finished)).then(() => true)`);
+                    await page.addStyleTag({ content: "body.__ohne-hud *:not(#world-canvas) { visibility: hidden !important; }" });
+                    const bild = async (an) => (await page.evaluate(`document.body.classList.toggle("__ohne-hud", ${!an})`), AU.pngLesen(await page.screenshot()));
+                    const [mit, ohne] = [await bild(true), await bild(false), await bild(true)];
+                    await page.evaluate("document.exitPointerLock()");
+                    let deckt = 0;
+                    for (let i = 0; i < mit.u8.length; i += 4) deckt += [0, 1, 2].some((k) => Math.abs(mit.u8[i + k] - ohne.u8[i + k]) > 12);
+                    const bilder = () => page.evaluate("new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)))");
+                    await page.evaluate("__loop(1)");
+                    const inp = {};
+                    for (const art of ["hud", "menue"]) {
+                        await page.evaluate(`${r}._inp.je.clear(); ${r}._inp.n0 = performance.interactionCount`);
+                        for (let i = 0; i < +b.runden; i++)
+                            for (const ziel of art === "hud" ? await page.$$("#hotbar .hotbar-slot") : ["Tab", "Tab", "KeyI", "Escape"]) {
+                                await (art === "hud" ? ziel.click() : page.keyboard.press(ziel));
+                                await bilder();
+                            }
+                        inp[art] = await page.evaluate(`${r}._bedienungInp()`);
+                    }
+                    await loopAus();
+                    return send({ deckungPct: +((100 * deckt) / (mit.W * mit.H)).toFixed(2), bild: [mit.W, mit.H], imSpiel, inp, ort: aktOrt });
                 }
                 if (req.url === "/gpu-bank")
                     return send(
@@ -1832,13 +1866,13 @@ async function starte() {
                 if (req.url === "/wache") {
                     const w = await page.evaluate(
                         (a) => {
-                            const r = window.anazhRealm;
+                            const r = anazhRealm;
                             const st = r.state;
                             const pm = st.playerMesh.position;
-                            const db = st.renderer.getDrawingBufferSize(new window.THREE.Vector2());
+                            const db = st.renderer.getDrawingBufferSize(new THREE.Vector2());
                             return {
-                                wetter: window.__wetterBuch(a.seit),
-                                weltakt: window.__weltaktBuch(a.seitWelt),
+                                wetter: __wetterBuch(a.seit),
+                                weltakt: __weltaktBuch(a.seitWelt),
                                 ort: {
                                     dorfZug: window.__anazhAutoSettlement !== false,
                                     ortTakt: window.__ortTakt || [],
@@ -1847,7 +1881,7 @@ async function starte() {
                                     kamera: st.cameraMode,
                                 },
                                 fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
-                                tiere: window.__tierZahl(),
+                                tiere: __tierZahl(),
                                 version: r.constructor.VERSION,
                             };
                         },
@@ -1858,7 +1892,7 @@ async function starte() {
                     return send(
                         Object.assign(w, {
                             stempel: await stempel(),
-                            boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                            boot: bootZeile(),
                             echt: ECHT,
                             fehler: fehler.slice(),
                             zerstoert: zerstoert.n,
@@ -1867,7 +1901,7 @@ async function starte() {
                 }
                 if (req.url === "/status") {
                     const s = await page.evaluate(() => {
-                        const st = window.anazhRealm.state;
+                        const st = anazhRealm.state;
                         const p = st.playerMesh.position;
                         return {
                             spieler: [p.x, p.y, p.z].map((v) => +v.toFixed(1)),
@@ -1931,8 +1965,8 @@ async function starte() {
                             wiese = await page.evaluate(
                                 (install, x, z, blick, S) => {
                                     (0, eval)(install);
-                                    const m = window.__wieseMessen(window.anazhRealm, x, z, blick, S);
-                                    return { messung: m, befunde: window.__wieseUrteil(m, S, true) };
+                                    const m = __wieseMessen(anazhRealm, x, z, blick, S);
+                                    return { messung: m, befunde: __wieseUrteil(m, S, true) };
                                 },
                                 WIESE_INSTALL,
                                 ort.spieler[0],
@@ -1960,8 +1994,8 @@ async function starte() {
                     // DER SPIELER AN DER POSE: Ring, Wald und Stufen-Auge stehen am Spieler — eine Kamera mehr als einen Chunk
                     // neben ihm sah fernen Boden ohne die Bäume der Pose (laub-kante: fimp:atlas:L2 0,6737 bei misch 0). Die Pose
                     // aus dem Leib (`--gesicht`, `--arm`) und der Spieler im Bild (`--spieler`) bleiben, wo er steht.
-                    const fern = (x, z, p = window.anazhRealm.state.playerMesh.position) =>
-                        Math.hypot(p.x - x, p.z - z) > window.anazhRealm._voxelChunkConfig(0).span;
+                    const fern = (x, z, p = anazhRealm.state.playerMesh.position) =>
+                        Math.hypot(p.x - x, p.z - z) > anazhRealm._voxelChunkConfig(0).span;
                     if (b.gesicht == null && b.arm == null && !b.spieler && (await page.evaluate(fern, +b.px, +b.pz)))
                         await umstellen(+b.px, +b.pz, null);
                     // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
@@ -1969,14 +2003,12 @@ async function starte() {
                     const vp = page.viewport();
                     if (b.klasse) {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
-                        await page.waitForFunction(() => window.anazhRealm.state.renderer.domElement.clientWidth === 1920);
+                        await page.waitForFunction(() => anazhRealm.state.renderer.domElement.clientWidth === 1920);
                     }
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
                     const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
-                    const datei = path.resolve(
-                        b.datei || path.join(root, "artifacts", "werkbank", `bild-${Date.now()}.png`)
-                    );
+                    const datei = zeitAblage(b.datei, "bild", "png");
                     ordnerFuer(datei);
                     pngDatei(datei, o.png);
                     delete o.png;
@@ -2043,8 +2075,8 @@ async function starte() {
                     const o = await page.evaluate(
                         (code) =>
                             new Function("r", "T", `return (async () => { ${code} })();`)(
-                                window.anazhRealm,
-                                window.THREE
+                                anazhRealm,
+                                THREE
                             ),
                         b.code
                     );
@@ -2058,7 +2090,7 @@ async function starte() {
                     if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
                     const o = await page.evaluate(
                         (name, src, terrain) => {
-                            const r = window.anazhRealm;
+                            const r = anazhRealm;
                             const fn = (0, eval)(src);
                             Object.getPrototypeOf(r)[name] = fn;
                             const aus = { getauscht: name };
@@ -2091,7 +2123,7 @@ async function starte() {
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
                     // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
                     const welt = await page.evaluate(async () => {
-                        const r = window.anazhRealm;
+                        const r = anazhRealm;
                         const st = r.state;
                         const t0 = performance.now();
                         const quadrat = () => {
@@ -2151,11 +2183,11 @@ async function starte() {
                             return q.fehlt.length === 0 && !baut && (!k || karteHier(k));
                         };
                         const takt = async () => {
-                            window.__werkTakt();
+                            __werkTakt();
                             takte++;
                             await sleep(50);
                         };
-                        return window.__gebautNach("das Quadrat der Linse", { fertig: steht, takt, max: 1800 }).then(
+                        return __gebautNach("das Quadrat der Linse", { fertig: steht, takt, max: 1800 }).then(
                             () => zustand(true),
                             () => (steht(), zustand(false))
                         );
@@ -2167,7 +2199,7 @@ async function starte() {
                     // (r184 `_textures`), sonst zeichnet der Boden im Spiel ein altes Bild. Vor dem Textur-Wächter der Diät
                     // hielt die GPU 20 Takte lang die alte.
                     const upload = await page.evaluate(async () => {
-                        const r = window.anazhRealm;
+                        const r = anazhRealm;
                         const st = r.state;
                         const rend = st.renderer;
                         const texe = [];
@@ -2189,9 +2221,9 @@ async function starte() {
                         // je Gang die Abgabe der GPU: danach ist die Leine frei, der nächste Takt zeichnet
                         const bilder = async (n) => {
                             const ziel = gezeichnet + n;
-                            for (const weiter = window.__deckel("die Bilder der Linse", 120, false); gezeichnet < ziel && weiter(); ) {
+                            for (const weiter = __deckel("die Bilder der Linse", 120, false); gezeichnet < ziel && weiter(); ) {
                                 try {
-                                    if (window.__buehne) window.__buehne();
+                                    if (window.__buehne) __buehne();
                                     r._gameLoopTick(performance.now());
                                 } catch {}
                                 await rend.backend.device.queue.onSubmittedWorkDone();
@@ -2288,7 +2320,7 @@ async function starte() {
                     }
                     const geraet = await geraetInfo();
                     const spieler = await page.evaluate(() => {
-                        const p = window.anazhRealm.state.playerMesh.position;
+                        const p = anazhRealm.state.playerMesh.position;
                         return [p.x, p.z].map((v) => +v.toFixed(1));
                     });
                     const messung = {
@@ -2332,8 +2364,8 @@ async function starte() {
                     const zustand = {};
                     for (const [n, s] of Object.entries(SK.STOFFE)) zustand[n] = s.zustand;
                     const liste = await page.evaluate(async (stoffe) => {
-                        window.__buehne();
-                        return window.__shaderKosten({ frames: 1, stoffe });
+                        __buehne();
+                        return __shaderKosten({ frames: 1, stoffe });
                     }, zustand);
                     if (!liste.length) rot.push("kein Programm im Frame (die Linse ist blind)");
                     const alle = liste
@@ -2471,8 +2503,8 @@ async function starte() {
                 }
                 if (req.url === "/fluss") {
                     const o = await page.evaluate(() => {
-                        const i = window.__flussLinse();
-                        return i && i.installiert ? i : window.__flussBericht();
+                        const i = __flussLinse();
+                        return i && i.installiert ? i : __flussBericht();
                     });
                     return send(o);
                 }
@@ -2485,9 +2517,9 @@ async function starte() {
                     await cdp.detach();
                     const o = await page.evaluate(
                         async (halter, top) => {
-                            await window.__drawZensus({ top: 1 });
-                            window.__kehrausJetzt();
-                            const texturen = window.__texturZensus(),
+                            await __drawZensus({ top: 1 });
+                            __kehrausJetzt();
+                            const texturen = __texturZensus(),
                                 v = window.__vram || {},
                                 mb = (x) => +((x || 0) / 1048576).toFixed(1);
                             return {
@@ -2498,10 +2530,10 @@ async function starte() {
                                     texturen: mb(v.texturen),
                                     spitze: mb(v.spitze),
                                     gc: mb(v.gc),
-                                    liste: window.__vramBericht(top),
+                                    liste: __vramBericht(top),
                                 },
-                                puffer: window.__pufferZensus(),
-                                halter: halter ? window.__heapHalter(window.anazhRealm, 8) : null,
+                                puffer: __pufferZensus(),
+                                halter: halter ? __heapHalter(anazhRealm, 8) : null,
                             };
                         },
                         halter,
@@ -2515,8 +2547,8 @@ async function starte() {
                     return send(await gangLauf(page, pufferStand, b));
                 if (req.url === "/zaehlen") {
                     const o = await page.evaluate(async (k) => {
-                        const r = window.anazhRealm;
-                        window.__buehne();
+                        const r = anazhRealm;
+                        __buehne();
                         if (k.px != null) {
                             const boden = (x, z, v) =>
                                 typeof v === "string" && v[0] === "+"
@@ -2530,7 +2562,7 @@ async function starte() {
                         try {
                             if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                         } catch {}
-                        return window.__drawZensus({ top: 16, alle: !!k.alle });
+                        return __drawZensus({ top: 16, alle: !!k.alle });
                     }, b);
                     return send(o);
                 }
@@ -2546,7 +2578,7 @@ async function starte() {
                     // Kamera-Modus des Stamms; ohne Schlüssel richtet keine Ratsche (das Urteil nennt es `ungemessen`).
                     const hh = BAND.ladeSpec(b.ort).haushalt;
                     const geraetText = await geraetInfo();
-                    const kamera = await page.evaluate(() => window.anazhRealm.state.cameraMode);
+                    const kamera = await page.evaluate(() => anazhRealm.state.cameraMode);
                     const geraet = { schluessel: BAND.geraetSchluessel(hh, geraetText), text: geraetText };
                     const sicht = BAND.sichtSchluessel(hh, kamera);
                     const bandSpec =
@@ -2565,10 +2597,10 @@ async function starte() {
                     // DER SPEICHER NACH DEM COLLECTOR (`pufferStand`): gemessen wird das Lebende, nicht die Laune des GC.
                     const roh = Object.assign(await pufferStand(false, 1e5), await page.evaluate(() => {
                         // Die Regler-Decke zurück (bandEinschwingen hob sie für die volle Welt).
-                        if (window.__bandDecke != null) window.anazhRealm.state.perfTargetMs = window.__bandDecke;
+                        if (window.__bandDecke != null) anazhRealm.state.perfTargetMs = window.__bandDecke;
                         window.__bandDecke = null;
-                        const pm = window.anazhRealm.state.playerMesh.position;
-                        return { spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)), fluss: window.__flussBericht ? window.__flussBericht() : null };
+                        const pm = anazhRealm.state.playerMesh.position;
+                        return { spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)), fluss: window.__flussBericht ? __flussBericht() : null };
                     }));
                     const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
                     const w3 = await stempel();
@@ -2619,7 +2651,7 @@ async function starte() {
                         await page.evaluate(() => ({
                             dorfZug: window.__anazhAutoSettlement !== false,
                             ortTakt: window.__ortTakt || [],
-                            gier: window.anazhRealm.state.yaw,
+                            gier: anazhRealm.state.yaw,
                         })),
                         { sicht }
                     );
@@ -2631,9 +2663,9 @@ async function starte() {
                         ortGestellt: BAND.ortGestellt(ort, zustand, aktSicht),
                         geraet,
                         sicht,
-                        version: await page.evaluate(() => window.anazhRealm.constructor.VERSION),
+                        version: await page.evaluate(() => anazhRealm.constructor.VERSION),
                         ratscheDatei: bandSpec.ratscheDatei,
-                        boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                        boot: bootZeile(),
                         messung: Object.assign({ proben: proben.length }, messung),
                         fluss: fl,
                         gpu,
@@ -2645,9 +2677,7 @@ async function starte() {
                         // je Probe die Summe je Pass: die Streuung, aus der die Toleranz der Ratsche kommt
                         proben: proben.map((z) => z.passe),
                     });
-                    const datei = path.resolve(
-                        b.datei || ablage(`band-${Date.now()}.json`)
-                    );
+                    const datei = zeitAblage(b.datei, "band", "json");
                     ordnerFuer(datei);
                     // Das ROHE der Messung reist mit: `werkbank ratsche` urteilt eine Serie neu (gegen den Haushalt von
                     // heute) und nimmt ihre Hülle — nie einen einzelnen Lauf.
@@ -2726,9 +2756,7 @@ async function starte() {
                         ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name)
                         : [];
                     const selbstOk = selbst ? selbst.every((x) => x.ok) && !rest.length : null;
-                    const datei = path.resolve(
-                        b.json || ablage(`ziele-${Date.now()}.json`)
-                    );
+                    const datei = zeitAblage(b.json, "ziele", "json");
                     jsonAb(datei, { zensus: z, lesen, urteil: u, selbst, rest });
                     return send({
                         ok: selbst ? selbstOk : u.rot.length === 0,
@@ -2761,7 +2789,7 @@ async function starte() {
                     const zw0 = await stempel();
                     if (b.selbsttest) {
                         await page.evaluate(() => {
-                            window.__zerlegeVorSelbst = window.__zerlegeZustand();
+                            window.__zerlegeVorSelbst = __zerlegeZustand();
                         });
                         last = await seite("__zerlegeLast", {
                             an: true,
@@ -2814,7 +2842,7 @@ async function starte() {
                             last.weg = true;
                             const inv2 = await seite("__zerlegeInventur", { n: 3, kette });
                             const zurueck = await page.evaluate(() =>
-                                window.__zerlegeVergleich(window.__zerlegeVorSelbst, window.__zerlegeZustand())
+                                __zerlegeVergleich(window.__zerlegeVorSelbst, __zerlegeZustand())
                             );
                             const z = a.zeilen.find((x) => x.id === "pass:zerlege-selbsttest");
                             const toleranzMs = +Math.max(1, 0.35 * last.alleinMs).toFixed(2);
@@ -2853,12 +2881,10 @@ async function starte() {
                                       pool: zw1.pool,
                                   }
                                 : null;
-                        const datei = path.resolve(
-                            b.json || ablage(`zerlegen-${Date.now()}.json`)
-                        );
+                        const datei = zeitAblage(b.json, "zerlegen", "json");
                         jsonAb(datei, {
                             echt: ECHT,
-                            boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                            boot: bootZeile(),
                             inventur: inv,
                             schalter: sch,
                             auswertung: a,
@@ -2946,10 +2972,8 @@ async function starte() {
                     const roh = Object.assign(l.haenger, { bahnM: l.bahnM, wandern: b.wandern, wetterHalt: wetterUrteil(l.wetterHalt) });
                     const sp = HL.spurProfil(ev);
                     const a = HL.linseWerten(roh, sp, b);
-                    const datei = path.resolve(
-                        b.json || ablage(`${b.spitze ? "takt" : "haenger"}-${Date.now()}.json`)
-                    );
-                    jsonAb(datei, Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen } }, a));
+                    const datei = zeitAblage(b.json, b.spitze ? "takt" : "haenger", "json");
+                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile() }, a));
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
                     const { tabelle, befunde, cpuMs, taeter } = a;
@@ -2964,7 +2988,7 @@ async function starte() {
                             werkzeug: "licht",
                             datum: new Date().toISOString(),
                             stand: { sha: gitStand() },
-                            geraet: { adapter: await page.evaluate(() => window.__abnahmeMessen({}).geraet.adapter) },
+                            geraet: { adapter: await page.evaluate(() => __abnahmeMessen({}).geraet.adapter) },
                             E_alle: o.alle && o.alle.oben ? o.alle.oben.E : null,
                             E_umgebung: o.umgebung && o.umgebung.oben ? o.umgebung.oben.E : null,
                             // die senkrechten Karten im Himmel allein (D3): zur Sonne und von ihr weg (`umgebungAzimut`)
@@ -3060,6 +3084,7 @@ hauptLauf(async () => {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await evalRuf(a[0]);
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3) });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
@@ -3234,7 +3259,7 @@ hauptLauf(async () => {
         const halt = await eigeneWelt();
         const welt = {};
         if (opt("--ordner")) fs.mkdirSync(path.resolve(opt("--ordner")), { recursive: true });
-        const kurve = (uhren, png) => evalRuf(`return await window.__tagKurve(${JSON.stringify({ uhren, png })});`);
+        const kurve = (uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
         try {
             for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
                 await umstellen({ ort, sicht: "ego" });
@@ -3430,14 +3455,14 @@ hauptLauf(async () => {
                 // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
                 if (/^(panorama|feld|spiegel|wasser)\d*$/.test(art)) {
                     if (!Object.keys(welt).length) await umstellen({ ort: "dorf" }); // der Feld-Pass steht erst im Takt
-                    welt[zeile] = (await evalRuf(`return await window.__lichtWeg({ weg: "${art}", uhr: ${uhr} });`)).ergebnis;
+                    welt[zeile] = (await evalRuf(`return await __lichtWeg({ weg: "${art}", uhr: ${uhr} });`)).ergebnis;
                     continue;
                 }
                 const [haus, boden] = [art === "haus", art === "ring"];
                 const anker = haus || boden ? dorf.spieler : wiese.spieler;
                 if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await umstellen({ ort: "dorf" });
                 const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
-                const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
+                const c = `return await __laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
                 // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
                 await umstellen({ x: anker[0], z: anker[1] });
                 const ein = () => hat("karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });

@@ -316,6 +316,7 @@ class AnazhRealm_speicher_laden {
             // V18.389 (P5) — die Perf-Panel-Sichtbarkeit überlebt den Reload (nur ein expliziter
             // Boolean übersteuert; fehlt das Feld [Alt-Snapshot], bleibt der Default an).
             if (typeof state.perfPanel === "boolean") this.state.perfPanel = state.perfPanel;
+            if (typeof state.untertitel === "boolean") this.state.untertitel = state.untertitel;
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };

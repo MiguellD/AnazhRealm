@@ -22,7 +22,7 @@
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
 const path = require("path");
-const { kernProbe, fingerabdruck: fingerprint, goldenIst, goldenWand, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -61,7 +61,7 @@ function buildCase(c) {
     check("porta-core geladen (__portaCore + buildInstance)", !!PC && typeof PC.buildInstance === "function");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = goldenIst(CASES, buildCase, check, fingerprint, caseKey);
+    const actual = vertragIst(CASES, buildCase, check);
 
     // 2) Seed-Invarianz (cv:4-Semantik — s. Kopf).
     let seedInv = true;
@@ -86,13 +86,26 @@ function buildCase(c) {
     );
 
     // 5) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    goldenWand("spec/asset-contract/v4/golden/gates.json", actual, { cv: 4, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall" }, check);
+    goldenWand(path.join(root, "spec/asset-contract/v4/golden/gates.json"), 4, actual, check, CASES.length);
 
     // 5b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit einer Transzendenten — das Byte-Raster am Ausgang
     //     (porta-core ausRaster) hält die Ratsche auf 0 (je Lauf ein frisch geladener Kern). Die Fälle ohne
     //     Seed-Dopplung (seed-invariant, s. Kopf).
-    const bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov);
-    await kernProbe("v4", KERN, "__portaCore", CASES.filter((c) => c.seed === 7), bau, check);
+    await probeWand(
+        "v4",
+        {
+            laden: frischerKern(KERN, "__portaCore"),
+            bauen: (K) => {
+                const r = {};
+                for (const c of CASES)
+                    if (c.seed === 7)
+                        r[caseKey(c)] = fingerprint(K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov)).sha256;
+                return r;
+            },
+        },
+        check
+    );
+    globalThis.__portaCore = PC;
 
     // 5c) DIE TOR-HÜLLE: die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
     //     stoßen lässt, IST die gebaute Gestalt — je Rezept und Zahl deckt die Tafel das Gemessene und liegt höchstens 1 cm
@@ -131,6 +144,10 @@ function buildCase(c) {
             t.join(" · ")
         );
     }
+
+    // 6) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot (gegen das Ist selbst, damit der
+    //    Selbst-Test auch auf einem roten Stand misst, was er misst).
+    goldenSelbsttest(actual, check);
 
     wandEnde(errs, "der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

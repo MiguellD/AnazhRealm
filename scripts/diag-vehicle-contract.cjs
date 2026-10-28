@@ -23,7 +23,7 @@
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const path = require("path");
-const { kernProbe, fingerabdruck: fingerprint, goldenIst, goldenWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -59,7 +59,7 @@ function caseKey(c) {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
 
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
-    const actual = goldenIst(CASES, buildCase, check, fingerprint, caseKey);
+    const actual = vertragIst(CASES, buildCase, check, caseKey);
 
     // 2) Seed-Semantik (cv:3): die GEOMETRIE ist seed-invariant.
     let seedInv = true;
@@ -77,13 +77,31 @@ function caseKey(c) {
     );
 
     // 4) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    goldenWand("spec/asset-contract/v3/golden/vehicles.json", actual, { cv: 3, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall" }, check);
+    goldenWand(path.join(root, "spec/asset-contract/v3/golden/vehicles.json"), 3, actual, check, CASES.length);
 
     // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
     //     der Same wählt den Lack.
-    const bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined);
-    await kernProbe("v3", KERN, "__vehicleCore", CASES, bau, check, fingerprint, caseKey);
+    await probeWand(
+        "v3",
+        {
+            laden: frischerKern(KERN, "__vehicleCore"),
+            bauen: (K) => {
+                const r = {};
+                for (const c of CASES)
+                    r[caseKey(c)] = fingerprint(
+                        K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined)
+                    ).sha256;
+                return r;
+            },
+        },
+        check
+    );
+    globalThis.__vehicleCore = VC;
+
+    // 5) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
+    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
+    goldenSelbsttest(actual, check);
 
     wandEnde(errs, "der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, der ov-Kanal wirkt, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

@@ -38,10 +38,12 @@
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
 const path = require("path");
-const { kernProbe, fingerabdruck, goldenWand, fallSchluessel: caseKey } = require("./lib/plattform-probe.cjs");
+const { probeWand, fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 const root = path.resolve(__dirname, "..");
+// die Goldens der Häuser und der AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens)
+const golden = (n) => path.join(root, "spec/asset-contract/v6/golden", n + ".json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 const KERN = path.join(root, "fachwerk-core.js");
@@ -643,7 +645,11 @@ function bogenLinse() {
     );
 
     // 8) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
-    goldenWand("spec/asset-contract/v6/golden/haeuser.json", actual, { cv: 6, minted: "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall" }, check);
+    goldenWand(golden("haeuser"), 6, actual, check, CASES.length);
+
+    // 9) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
+    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
+    goldenSelbsttest(actual, check);
 
     // 9b) DAS FARB-GESETZ DER HÄUSER — die Linse der Täter-Klasse „Hex roh als linear" (der Bake `_colFor` legt das
     //     Paletten-Hex nie roh in den Vertex). Gemessen wird, was die Welt liest: je Kultur
@@ -890,19 +896,27 @@ function bogenLinse() {
         "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle (weniger Scheite, kleinere Flamme)",
         ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
     );
-    // DIE AUSSTATTUNG: Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens
-    const kopfAus = { cv: 6, minted: "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)" };
-    goldenWand("spec/asset-contract/v6/golden/ausstattung.json", ausIst, kopfAus, check, "Ausstattungs-Goldens");
+    goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)");
 
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
     //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
     //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
     //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
-    const bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
+    const frisch = frischerKern(KERN, "__fachwerkCore");
+    const fingerAlle = (K, faelle) => {
+        const r = {};
+        for (const c of faelle) {
+            const g = K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
+            r[caseKey(c)] = fingerprint(g).sha256;
+            disposeGroup(g);
+        }
+        return r;
+    };
     const PROBE_HAUS = CASES.filter((c) => !c.ov && c.seed === 7 && KULTUREN.indexOf(c.rezeptId) % 4 === 0);
-    await kernProbe("v6", KERN, "__fachwerkCore", PROBE_HAUS, bau, check, fingerprint, caseKey, disposeGroup);
-    await kernProbe("v6a", KERN, "__fachwerkCore", AUS_CASES, bau, check, fingerprint, caseKey, disposeGroup);
+    await probeWand("v6", { laden: frisch, bauen: (K) => fingerAlle(K, PROBE_HAUS) }, check);
+    await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
+    globalThis.__fachwerkCore = FC;
 
     // 12) DER BOGEN IM VERBAND
     bogenLinse();

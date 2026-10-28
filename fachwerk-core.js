@@ -3167,13 +3167,14 @@
     // (Praezedenzfall: die Wald-Dichte lebt in phyto-core forestStandDensity).
     // cellM = Welt-Zellen-Raster (m) · rarity = 1 von N Zellen traegt ein Dorf
     // (~7 Doerfer/km² effektiv) · nHMin/nHSpan = Dorf-Groesse nHMin..nHMin+
-    // nHSpan-1 Haeuser (deterministisch aus dem Zell-Hash) · slopeMax =
-    // Site-Wand (|grad h| m/m — flach genug zum Siedeln); die Klippen-Wand je
-    // Haus-Slot fiel mit dem Erdbau des Orts (K10, ortPlan). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
+    // nHSpan-1 Haeuser (deterministisch aus dem Zell-Hash). Die Klippen-Wand je
+    // Haus-Slot fiel mit dem Erdbau des Orts (K10, ortPlan), die Site-Wand slopeMax
+    // 0,35 mit dem Hang: die Steil-Wand ist die Boeschung des Erdbaus (gelaende-core
+    // ERDBAU.boeschung, siedlung.K3). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
     // liest memoisiert + fail-soft byte-gleich (_siedlungGesetz). Seine
     // Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM)
     // bleiben ehrlich Wirts-Infrastruktur (AUTO_SETTLEMENT). ──
-    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35 };
+    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10 };
     // ── DAS RANG-GESETZ (siedlung.K2, additiv): die Größen der Welt folgen dem Rang (Zipf, Exponent 1). Je Stufe L ein Raster
     // aus `zellen` × `zellen` Welt-Zellen; sein Sieger (die Dorf-Zelle mit dem höchsten Rang-Schlüssel) trägt die Stadt der
     // Stufe — der Sieger des groben Rasters siegt auch in seinem feinen, er steigt auf. Die Größe der Stufe ist Pareto(α = 1)
@@ -6338,7 +6339,7 @@
         return x0 < x1 ? [x0, x1] : null;
     }
     // DIE BRANDWAND TRÄGT KEINE TRAUFE IN DEN NACHBARN: reihenSnap dockt dichte Reihen (gap ≤ 0,6) längs x an die Wand-Linie
-    // `dims.W` — an einer gedockten Seite (`brandwand` x0/x1) endet die obb, das Fundament der Welt (`_slotGrundriss`:
+    // `dims.W` — an einer gedockten Seite (`brandwand` x0/x1) endet die obb, das Fundament der Welt (`_grundrissVon`:
     // Bau-Wand, Grund, Natur-Wand), an der Außenkante der Wand (`wandX`), sonst an der Hülle `ext` samt Traufe. Bis
     // siedlung-k3-heil trug sie die Traufe 0,24–0,49 m in die Wand des Nachbarn, und die Bau-Wand der Welt warf ein Haus des
     // Paars (das Start-Dorf auf der Trasse: 16 von 17 Häusern nach dem Reload).

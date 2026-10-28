@@ -253,7 +253,7 @@ class AnazhRealm_feld_leben {
     _dslDescriptionTable() {
         const pos = (a) => this._describeDslPosition(a);
         return {
-            weather: (a) => `lässt das Wetter zu „${a[0]}" wechseln`,
+            weather: (a) => (a[0] === "frei" ? "gibt das Wetter frei" : `lässt das Wetter zu „${a[0]}" wechseln`),
             gravity: (a) => `setzt die Schwerkraft auf ${a[0]}`,
             terrain_steepness: (a) => `regelt die Hang-Steilheit auf ${a[0]}`,
             terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
@@ -2304,16 +2304,16 @@ class AnazhRealm_feld_leben {
     }
 
     // STEHT DAS WERK IM WASSER? (Schau-2 wasser-wahrheit, Gegenprüfung) — das Urteil für ein Werk mit Grundriss-Gesetz
-    // (`_werkGrundriss`: Haus, Tempel, Ausstattung) am Ort `position` mit der Drehung `opts.rotationY`: sein ganzes Fundament
+    // (`_grundrissVon` mit der Art: Haus, Tempel, Ausstattung) am Ort `position` mit der Drehung `opts.rotationY`: sein ganzes Fundament
     // samt dem Vorplatz der Haustür auf dem Land (`_fundamentLand`)? false für jedes Werk ohne Grundriss-Gesetz (Natur
     // urteilt die Natur-Wand am Stamm; Fahrzeug und Tor fragt der Satz an ihrem Ort). `seed`: der Same des Werks (die Wurzel
     // reicht ihren, sonst `opts.seed`). Leser: die Wurzel (`spawnArchitecture`) und die Ort-Suche (`_werkOrtSuchen`).
     _werkImWasser(type, position, opts, seed) {
         if (!position) return false;
-        const g = this._werkGrundriss(type, opts, seed);
+        const g = this._grundrissVon(opts || {}, type, seed);
         if (!g) return false;
         const ry = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
-        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.saum);
+        return !this._fundamentLand(position.x, position.z, ry, g, g.tuer, g.saum);
     }
 
     // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
@@ -2333,10 +2333,9 @@ class AnazhRealm_feld_leben {
         const klemme = (p) => this._structureSpawnPos(type, p, { state: this.state }, sc);
         const fuss = (q) => ({ x: q.x, y: this._werkFuss(q.x, q.z, q.y), z: q.z });
         const p0 = klemme(pos);
-        const g = this._werkGrundriss(type, opts);
+        const g = this._grundrissVon(opts || {}, type);
         if (!g || !this._werkImWasser(type, p0, opts)) return fuss(p0);
-        const reich =
-            Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3 + Math.hypot(p0.x - pos.x, p0.z - pos.z);
+        const reich = Math.hypot(g.ex, g.ez) + Math.hypot(g.ox, g.oz) + 3 + Math.hypot(p0.x - pos.x, p0.z - pos.z);
         const a0 = wurf() * Math.PI * 2;
         const kand = [];
         for (let r = 1.5; r <= reich; r += 1.5) {
@@ -2441,82 +2440,6 @@ class AnazhRealm_feld_leben {
         const PRE = AnazhRealm.Gesetz("fachwerk:PRESETS", null) || AnazhRealm._kernPflichtBruch("fachwerk:PRESETS");
         const pre = PRE[preset];
         return pre ? { preset, pre, rec } : null; // ohne Zeile: die Art spricht ein anderes Gesetzbuch
-    }
-
-    // DER GRUNDRISS EINES WERKS VOR SEINEM BAU (Schau-2 wasser-wahrheit, Gegenprüfung): die Fläche, auf der es steht, aus
-    // seinem Gesetz — bau-lokal { fp: {ex, ez, ox, oz}, tuer } oder null (ein Werk ohne Grundriss-Gesetz). Die Siedlung reicht
-    // ihn mit (`opts.fundament` aus dem obb des Exports, sonst der Kern der Tür-Zeile `opts.tuer`, wie `_grundrissVon`); sonst
-    // spricht das Gesetzbuch der Architektur: ein HAUS misst seinen Mass-Bau (fachwerk `massBau(hausParams(Rezept, Stempel))`
-    // mit der Gestalt seines Samens — dieselbe Zeile, aus der der Export der Siedlung sein obb und seine Tür nimmt, und der
-    // Bau, den der Worker für diesen Samen baut: `_foundryVariantFor`), die AUSSTATTUNG ihre Trittfläche (`fx.tritt` × Größe);
-    // beides × die Welt-Skala der Gestalt (`_foundryWorldScaleMatrix`, die Skala der Hülle) × die Größe des Eintrags. Gemerkt je
-    // Gestalt, Same, Größe und Stempel (der Mass-Bau baut das Haus einmal). Leser: `_werkImWasser`, `_werkOrtSuchen`.
-    _werkGrundriss(type, opts, seed) {
-        const o = opts || {};
-        const f = o.fundament;
-        if (f && Number.isFinite(f.ex) && Number.isFinite(f.ez))
-            return {
-                fp: { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 },
-                tuer: o.tuer || null,
-                saum: globalThis.__fachwerkCore.ORT_GESETZ.saumM, // der Grund des Orts: Grundriss samt Saum (der Erdbau)
-            };
-        const t = o.tuer;
-        if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
-            return { fp: { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 }, tuer: t };
-        const art = this._grundrissGesetz(type);
-        if (!art) return null;
-        const { preset, pre, rec } = art;
-        const same = Number.isFinite(seed) ? seed : o.seed;
-        const gestalt = this._foundryVariantFor(Number.isFinite(same) ? same : 0, preset);
-        if (gestalt == null) return null; // Buch kalt: kein Grundriss, kein Urteil (die Wurzel blockiert den Bau ohnehin)
-        const ov = o.studioOv && typeof o.studioOv === "object" && !Array.isArray(o.studioOv) ? o.studioOv : null;
-        const k =
-            (this._foundryWorldScaleMatrix(preset).elements[0] || 1) *
-            (Number.isFinite(o.scale) && o.scale > 0 ? o.scale : 1);
-        const key = `${preset}|${gestalt}|${k}|${ov ? JSON.stringify(ov) : ""}`;
-        const M = this._werkGrundrissMerker || (this._werkGrundrissMerker = new Map());
-        if (M.has(key)) return M.get(key);
-        let g = null;
-        if (rec.kind === "haus") {
-            const hausParams =
-                AnazhRealm.Gesetz("fachwerk:hausParams", null) || AnazhRealm._kernPflichtBruch("fachwerk:hausParams");
-            const massBau =
-                AnazhRealm.Gesetz("fachwerk:massBau", null) || AnazhRealm._kernPflichtBruch("fachwerk:massBau");
-            const p = hausParams(pre, ov);
-            if (!(ov && ov.seed != null)) p.seed = gestalt;
-            const B = massBau(p);
-            const e = B && B.ext;
-            if (e && [e.x0, e.x1, e.z0, e.z1].every(Number.isFinite)) {
-                const dm = B.dims && B.dims.tuer;
-                g = {
-                    fp: {
-                        ex: ((e.x1 - e.x0) / 2) * k,
-                        ez: ((e.z1 - e.z0) / 2) * k,
-                        ox: ((e.x0 + e.x1) / 2) * k,
-                        oz: ((e.z0 + e.z1) / 2) * k,
-                    },
-                    tuer:
-                        dm && [dm.x, dm.z, dm.w].every(Number.isFinite)
-                            ? { x: dm.x * k, z: dm.z * k, w: dm.w * k }
-                            : null,
-                };
-            }
-        } else {
-            const tr = pre.fx && pre.fx.tritt;
-            const gr =
-                (ov && Number.isFinite(ov.groesse)
-                    ? ov.groesse
-                    : pre.s && Number.isFinite(pre.s.groesse)
-                      ? pre.s.groesse
-                      : 1) * k;
-            if (tr && tr.typ === "kreis" && tr.r > 0)
-                g = { fp: { ex: tr.r * gr, ez: tr.r * gr, ox: 0, oz: 0 }, tuer: null };
-            else if (tr && tr.ex > 0 && tr.ez > 0)
-                g = { fp: { ex: tr.ex * gr, ez: tr.ez * gr, ox: 0, oz: 0 }, tuer: null };
-        }
-        if (M.size >= 256) M.clear();
-        M.set(key, g);
-        return g;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_feld_leben]);
