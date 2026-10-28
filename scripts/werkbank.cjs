@@ -14,8 +14,8 @@
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm live tauschen
 //                                                           (`--quelle` ein anderer Stand; --terrain das Chunk-Material neu)
 //   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
-//   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse (Karte = 0,180)
-//   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL
+//   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (je Klasse ihr Exemplar,
+//                                                           jede Stufe zu jeder Uhr der Tafel; die Zählung je Mesh-Klasse fiel mit material-k3-stufen)
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
 //   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht; `--ist` in die Soll-Tafel)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Farbton,
@@ -65,7 +65,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, pngDatei } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -1003,10 +1003,7 @@ async function starte() {
                 const c = h.clone().addScaledVector(fw, Number(k.gesicht));
                 gpos = [c.x, c.y, c.z, h.x, h.y, h.z];
             }
-            const bundlesNeu = () =>
-                r.state.scene.traverse((o) => {
-                    if (o.isBundleGroup) o.needsUpdate = true;
-                });
+            const bundlesNeu = window.__bundlesNeu;
             // DIE ARMLÄNGE (material.K2, `--arm <m> --klasse <regex>`): der Ego-Blick des Spielers (das Rig `_loopCamera`) zielt auf
             // die Klasse IM AUSGABE-BILD — die Tiefe mit und ohne ihre Objekte trennt ihre Pixel, der Strahl des Auges geht durch das
             // nächste zur Bildmitte, die Kamera steht <m> vor dem Treffer auf ihm; zeigt der Blick keines, ist die Pose ROT beim
@@ -1578,13 +1575,6 @@ async function starte() {
                         }
                         mu8[i + 3] = 255;
                     }
-                    const cv2 = document.createElement("canvas");
-                    cv2.width = W;
-                    cv2.height = H;
-                    const ctx2 = cv2.getContext("2d");
-                    const img2 = ctx2.createImageData(W, H);
-                    img2.data.set(mu8);
-                    ctx2.putImageData(img2, 0, 0);
                     klasse = {
                         ausdruck: k.klasse,
                         schwelle,
@@ -1596,7 +1586,7 @@ async function starte() {
                         gesicht,
                         // die Armlänge, wie die Tiefe der Bildmitte sie misst
                         arm: k.arm == null ? undefined : { soll: +k.arm, ist: +(mitte(spiegel) || cam.position).distanceTo(cam.position).toFixed(3) },
-                        maske: cv2.toDataURL("image/png"),
+                        maske: window.__png(mu8, W, H),
                     };
                 } finally {
                     for (const [o, c] of wurf) o.castShadow = c;
@@ -1620,13 +1610,6 @@ async function starte() {
                     n++;
                 }
             (cam.fov = fov0), cam.updateProjectionMatrix();
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const ctx = cv.getContext("2d");
-            const img = ctx.createImageData(W, H);
-            img.data.set(u8.subarray(0, W * H * 4));
-            ctx.putImageData(img, 0, 0);
             return {
                 kamera: auf.abnahme.pose.kamera.map((v) => +v.toFixed(2)),
                 abnahme: auf.abnahme,
@@ -1636,7 +1619,7 @@ async function starte() {
                 dreiecke: auf.info.triangles,
                 ms: Math.round(auf.ms),
                 klasse,
-                png: cv.toDataURL("image/png"),
+                png: window.__png(u8, W, H),
             };
         }, k);
 
@@ -1875,12 +1858,12 @@ async function starte() {
                         b.datei || path.join(root, "artifacts", "werkbank", `bild-${Date.now()}.png`)
                     );
                     ordnerFuer(datei);
-                    fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
+                    pngDatei(datei, o.png);
                     delete o.png;
                     // DIE KLASSE: die Maske neben dem Bild, die Maße im Begleit-JSON
                     if (o.klasse) {
                         const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
-                        fs.writeFileSync(mdatei, Buffer.from(o.klasse.maske.split(",")[1], "base64"));
+                        pngDatei(mdatei, o.klasse.maske);
                         o.klasse.maske = mdatei;
                         if (b.arm != null) o.klasse.urteil = AU.armUrteil(o.klasse);
                         o.abnahme.klasse = o.klasse;
@@ -2138,34 +2121,29 @@ async function starte() {
                         Object.assign(aus, { datei: b.datei ? path.resolve(b.datei) : null })
                     );
                 }
-                if (req.url === "/albedo" && b.tafel) {
+                if (req.url === "/albedo") {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
                     // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
                     // den übrigen, die Karte der Eichung liest der erste Gang
-                    const nahZ = t.zeilen.filter((z) => Number.isInteger(((z.welt || {}).exemplar || {}).stufe));
-                    const liste = await page.evaluate((o) => window.__albedoSicht(o), {
-                        zeilen: t.zeilen.filter((z) => !nahZ.includes(z)),
-                        w: 640,
-                        h: 400,
-                    });
-                    for (const z of nahZ) {
-                        const l2 = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: [z], w: 640, h: 400 });
-                        for (const e of l2) if (e.name !== "graukarte") liste.push(e);
-                    }
+                    // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
+                    // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`
+                    const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
+                        liste = [];
+                    for (const uhr of t.uhren)
+                        for (const zeilen of [...(uhr === 0.5 ? [t.zeilen.filter((z) => !nahZ.includes(z))] : []), ...nahZ.map((z) => [z])])
+                            for (const e of await page.evaluate((o) => window.__albedoSicht(o), { zeilen, w: 640, h: 400, uhr }))
+                                if (e.name !== "graukarte" || zeilen.length > 1) liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
                     let eichung = null;
                     for (const e of liste) {
                         if (e.png) {
-                            fs.writeFileSync(
-                                path.join(
+                            pngDatei(path.join(
                                     ordner,
                                     "welt-" + String(e.id || e.name).replace(/[^a-z0-9_-]+/gi, "_") + ".png"
-                                ),
-                                Buffer.from(e.png.split(",")[1], "base64")
-                            );
+                                ), e.png);
                             delete e.png;
                         }
                         if (e.name === "graukarte") eichung = e.gesamt ? e.gesamt.Y : null;
@@ -2210,19 +2188,6 @@ async function starte() {
                     }
                     const u = AT.tafelUrteil(t, g);
                     return send({ urteil: u.urteil, tabelle: AT.tafelTabelle(u), datei, ordner });
-                }
-                if (req.url === "/albedo") {
-                    const liste = await page.evaluate((o) => window.__albedoSicht(o), { nur: b.nur || null });
-                    const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo"));
-                    fs.mkdirSync(ordner, { recursive: true });
-                    for (const e of liste) {
-                        fs.writeFileSync(
-                            path.join(ordner, e.name.replace(/[^a-z0-9_-]+/gi, "_") + ".png"),
-                            Buffer.from(e.png.split(",")[1], "base64")
-                        );
-                        delete e.png;
-                    }
-                    return send({ klassen: liste, ordner });
                 }
                 // DIE SHADER-KOSTEN-LINSE (scripts/lib/shader-kosten.cjs): ein echter Frame (Bühne), je gezeichnetem Programm
                 // die statischen Kosten seines erzeugten Fragments; `--ordner` legt je Programm das WGSL ab. `--stoff` hält die
@@ -2705,7 +2670,7 @@ async function starte() {
                             );
                             fs.mkdirSync(ordner, { recursive: true });
                             const schreibe = (name, png) =>
-                                fs.writeFileSync(path.join(ordner, name), Buffer.from(png.split(",")[1], "base64"));
+                                pngDatei(path.join(ordner, name), png);
                             if (roh.bildAn) schreibe("00-an.png", roh.bildAn);
                             delete roh.bildAn;
                             roh.schalter.forEach((e, i) => {
@@ -3160,15 +3125,10 @@ hauptLauf(async () => {
             process.exit(o.befunde.length ? 1 : 0);
         }
     } else if (cmd === "albedo") {
-        o = await rufe("/albedo", {
-            nur: opt("--nur"),
-            ordner: opt("--ordner"),
-            tafel: argv.includes("--tafel"),
-            datei: opt("--datei"),
-        });
+        // die Tafel (`--tafel` bleibt das Wort der Rufer); ein Fehler der Tafel ist nie grün
+        o = await rufe("/albedo", { ordner: opt("--ordner"), datei: opt("--datei") });
         if (o && o.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
-        // Ein Fehler der Tafel ist nie grün.
-        if (argv.includes("--tafel")) endeMit(o);
+        endeMit(o);
     } else if (cmd === "licht" && argv.includes("--tag")) {
         // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
         // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
@@ -3183,7 +3143,7 @@ hauptLauf(async () => {
                 const a = await kurve(argv.includes("--kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
                 const m = (welt[ort] = a.ergebnis || { fehler: a.fehler || "kein Ergebnis" });
                 for (const z of m.zeilen || []) {
-                    if (z.png) fs.writeFileSync(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), Buffer.from(z.png.split(",")[1], "base64"));
+                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), z.png);
                     delete z.png;
                 }
                 const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
@@ -3207,7 +3167,7 @@ hauptLauf(async () => {
             const o = { uhr, png: !!opt("--bilder") };
             const m = (welt[uhr] = (await rufe("/eval", { code: `return await (${LL.kontaktSicht})(${JSON.stringify(o)});` })).ergebnis);
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
-                if (p.png) fs.writeFileSync(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), Buffer.from(p.png.split(",")[1], "base64")), delete p.png;
+                if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }
         const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m).befunde.map((b) => `Uhr ${uhr} ${b}`));
         console.log(JSON.stringify(welt, null, 1));
@@ -3243,7 +3203,7 @@ hauptLauf(async () => {
                 const a = await lauf({ ort, png: !!opt("--bilder") });
                 welt[ort] = Object.assign(a.ergebnis || { fehler: a.fehler || "kein Ergebnis" }, dach && { dachBauten: dach });
                 for (const [i, png] of (welt[ort].png || []).entries())
-                    fs.writeFileSync(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass"][i]}.png`), Buffer.from(png.split(",")[1], "base64"));
+                    pngDatei(path.resolve(opt("--bilder"), `naesse-${ort}-${["klar", "frisch", "nass"][i]}.png`), png);
                 delete welt[ort].png;
             }
         } finally {
@@ -3411,24 +3371,18 @@ hauptLauf(async () => {
                     : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
                 if (argv.includes("--karte") && !boden) await stufen(null);
                 if (w && w.karte && opt("--ordner"))
-                    w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
+                    w.karte.png.forEach((p, i) => pngDatei(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
                 if (w && w.karte) delete w.karte.png;
                 const ordner = opt("--ordner");
                 if (w && w.oben && w.oben.png) {
                     if (ordner)
-                        fs.writeFileSync(
-                            path.join(ordner, `krone-${art}-oben.png`),
-                            Buffer.from(w.oben.png.split(",")[1], "base64")
-                        );
+                        pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
                     delete w.oben.png;
                 }
                 if (w && w.gegen)
                     for (const k of ["gegen", "auf"]) {
                         if (ordner)
-                            fs.writeFileSync(
-                                path.join(ordner, `laub-${art}-${k}.png`),
-                                Buffer.from(w[k].png.split(",")[1], "base64")
-                            );
+                            pngDatei(path.join(ordner, `laub-${art}-${k}.png`), w[k].png);
                         delete w[k].png;
                     }
                 welt[zeile] = w;

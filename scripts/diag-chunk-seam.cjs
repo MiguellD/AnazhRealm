@@ -22,6 +22,74 @@
 const { statikServer, nullSeite } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
+// Punkt→Dreieck-Distanz² (das EHRLICHE Naht-Maß auf der mehrwertigen Fläche) — EINMAL: die Seite trägt es als
+// `window.ptTri2` (Messung A/B und der Geomorph lesen dasselbe Maß)
+function ptTri2(px, py, pz, T) {
+    const ax = T[0],
+        ay = T[1],
+        az = T[2],
+        bx = T[3],
+        by = T[4],
+        bz = T[5],
+        cx = T[6],
+        cy = T[7],
+        cz = T[8];
+    const abx = bx - ax,
+        aby = by - ay,
+        abz = bz - az,
+        acx = cx - ax,
+        acy = cy - ay,
+        acz = cz - az;
+    const apx = px - ax,
+        apy = py - ay,
+        apz = pz - az;
+    const d1 = abx * apx + aby * apy + abz * apz,
+        d2 = acx * apx + acy * apy + acz * apz;
+    if (d1 <= 0 && d2 <= 0) return apx * apx + apy * apy + apz * apz;
+    const bpx = px - bx,
+        bpy = py - by,
+        bpz = pz - bz;
+    const d3 = abx * bpx + aby * bpy + abz * bpz,
+        d4 = acx * bpx + acy * bpy + acz * bpz;
+    if (d3 >= 0 && d4 <= d3) return bpx * bpx + bpy * bpy + bpz * bpz;
+    const vc = d1 * d4 - d3 * d2;
+    if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+        const v = d1 / (d1 - d3);
+        const ex = apx - abx * v,
+            ey = apy - aby * v,
+            ez = apz - abz * v;
+        return ex * ex + ey * ey + ez * ez;
+    }
+    const cpx = px - cx,
+        cpy = py - cy,
+        cpz = pz - cz;
+    const d5 = abx * cpx + aby * cpy + abz * cpz,
+        d6 = acx * cpx + acy * cpy + acz * cpz;
+    if (d6 >= 0 && d5 <= d6) return cpx * cpx + cpy * cpy + cpz * cpz;
+    const vb = d5 * d2 - d1 * d6;
+    if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+        const w = d2 / (d2 - d6);
+        const ex = apx - acx * w,
+            ey = apy - acy * w,
+            ez = apz - acz * w;
+        return ex * ex + ey * ey + ez * ez;
+    }
+    const va = d3 * d6 - d5 * d4;
+    if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+        const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+        const ex = bpx + (cx - bx) * w,
+            ey = bpy + (cy - by) * w,
+            ez = bpz + (cz - bz) * w;
+        return ex * ex + ey * ey + ez * ez;
+    }
+    const den = 1 / (va + vb + vc),
+        v = vb * den,
+        w = vc * den;
+    const ex = apx - (abx * v + acx * w),
+        ey = apy - (aby * v + acy * w),
+        ez = apz - (abz * v + acz * w);
+    return ex * ex + ey * ey + ez * ez;
+}
 (async () => {
     await server.lausche(PORT);
     const { browser, page } = await nullSeite();
@@ -31,6 +99,7 @@ const server = statikServer();
         if (/\[ERROR\] STOFF:/.test(m.text())) stoffBrueche.push(m.text());
     });
     await server.zeige(page, 30000);
+    await page.evaluate(`window.ptTri2 = ${ptTri2};`);
 
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
     await page.evaluate(async () => {
@@ -159,72 +228,6 @@ const server = statikServer();
                         ]);
                     }
                 }
-                const ptTri2 = (px, py, pz, T) => {
-                    const ax2 = T[0],
-                        ay2 = T[1],
-                        az2 = T[2],
-                        bx2 = T[3],
-                        by2 = T[4],
-                        bz2 = T[5],
-                        cx2 = T[6],
-                        cy2 = T[7],
-                        cz2 = T[8];
-                    const abx = bx2 - ax2,
-                        aby = by2 - ay2,
-                        abz = bz2 - az2;
-                    const acx = cx2 - ax2,
-                        acy = cy2 - ay2,
-                        acz = cz2 - az2;
-                    const apx = px - ax2,
-                        apy = py - ay2,
-                        apz = pz - az2;
-                    const d1 = abx * apx + aby * apy + abz * apz,
-                        d2 = acx * apx + acy * apy + acz * apz;
-                    if (d1 <= 0 && d2 <= 0) return apx * apx + apy * apy + apz * apz;
-                    const bpx = px - bx2,
-                        bpy = py - by2,
-                        bpz = pz - bz2;
-                    const d3 = abx * bpx + aby * bpy + abz * bpz,
-                        d4 = acx * bpx + acy * bpy + acz * bpz;
-                    if (d3 >= 0 && d4 <= d3) return bpx * bpx + bpy * bpy + bpz * bpz;
-                    const vc = d1 * d4 - d3 * d2;
-                    if (vc <= 0 && d1 >= 0 && d3 <= 0) {
-                        const vv = d1 / (d1 - d3);
-                        const ex = apx - abx * vv,
-                            ey = apy - aby * vv,
-                            ez = apz - abz * vv;
-                        return ex * ex + ey * ey + ez * ez;
-                    }
-                    const cpx = px - cx2,
-                        cpy = py - cy2,
-                        cpz = pz - cz2;
-                    const d5 = abx * cpx + aby * cpy + abz * cpz,
-                        d6 = acx * cpx + acy * cpy + acz * cpz;
-                    if (d6 >= 0 && d5 <= d6) return cpx * cpx + cpy * cpy + cpz * cpz;
-                    const vb = d5 * d2 - d1 * d6;
-                    if (vb <= 0 && d2 >= 0 && d6 <= 0) {
-                        const ww = d2 / (d2 - d6);
-                        const ex = apx - acx * ww,
-                            ey = apy - acy * ww,
-                            ez = apz - acz * ww;
-                        return ex * ex + ey * ey + ez * ez;
-                    }
-                    const va = d3 * d6 - d5 * d4;
-                    if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
-                        const ww = (d4 - d3) / (d4 - d3 + (d5 - d6));
-                        const ex = bpx + (cx2 - bx2) * ww,
-                            ey = bpy + (cy2 - by2) * ww,
-                            ez = bpz + (cz2 - bz2) * ww;
-                        return ex * ex + ey * ey + ez * ez;
-                    }
-                    const den = 1 / (va + vb + vc),
-                        vv = vb * den,
-                        ww = vc * den;
-                    const ex = apx - (abx * vv + acx * ww),
-                        ey = apy - (aby * vv + acy * ww),
-                        ez = apz - (abz * vv + acz * ww);
-                    return ex * ex + ey * ey + ez * ez;
-                };
 
                 for (let v = 0; v < A.pos.count; v++) {
                     const ax = A.pos.getX(v),
@@ -320,73 +323,6 @@ const server = statikServer();
                 w: g.attributes.aMorphWeight,
             });
         }
-        // Punkt→Dreieck-Distanz² (das EHRLICHE Naht-Maß auf der mehrwertigen Fläche, wie Messung B)
-        const ptTri2 = (px, py, pz, T) => {
-            const ax = T[0],
-                ay = T[1],
-                az = T[2],
-                bx = T[3],
-                by = T[4],
-                bz = T[5],
-                cx = T[6],
-                cy = T[7],
-                cz = T[8];
-            const abx = bx - ax,
-                aby = by - ay,
-                abz = bz - az,
-                acx = cx - ax,
-                acy = cy - ay,
-                acz = cz - az;
-            const apx = px - ax,
-                apy = py - ay,
-                apz = pz - az;
-            const d1 = abx * apx + aby * apy + abz * apz,
-                d2 = acx * apx + acy * apy + acz * apz;
-            if (d1 <= 0 && d2 <= 0) return apx * apx + apy * apy + apz * apz;
-            const bpx = px - bx,
-                bpy = py - by,
-                bpz = pz - bz;
-            const d3 = abx * bpx + aby * bpy + abz * bpz,
-                d4 = acx * bpx + acy * bpy + acz * bpz;
-            if (d3 >= 0 && d4 <= d3) return bpx * bpx + bpy * bpy + bpz * bpz;
-            const vc = d1 * d4 - d3 * d2;
-            if (vc <= 0 && d1 >= 0 && d3 <= 0) {
-                const v = d1 / (d1 - d3);
-                const ex = apx - abx * v,
-                    ey = apy - aby * v,
-                    ez = apz - abz * v;
-                return ex * ex + ey * ey + ez * ez;
-            }
-            const cpx = px - cx,
-                cpy = py - cy,
-                cpz = pz - cz;
-            const d5 = abx * cpx + aby * cpy + abz * cpz,
-                d6 = acx * cpx + acy * cpy + acz * cpz;
-            if (d6 >= 0 && d5 <= d6) return cpx * cpx + cpy * cpy + cpz * cpz;
-            const vb = d5 * d2 - d1 * d6;
-            if (vb <= 0 && d2 >= 0 && d6 <= 0) {
-                const w = d2 / (d2 - d6);
-                const ex = apx - acx * w,
-                    ey = apy - acy * w,
-                    ez = apz - acz * w;
-                return ex * ex + ey * ey + ez * ez;
-            }
-            const va = d3 * d6 - d5 * d4;
-            if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
-                const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
-                const ex = bpx + (cx - bx) * w,
-                    ey = bpy + (cy - by) * w,
-                    ez = bpz + (cz - bz) * w;
-                return ex * ex + ey * ey + ez * ez;
-            }
-            const den = 1 / (va + vb + vc),
-                v = vb * den,
-                w = vc * den;
-            const ex = apx - (abx * v + acx * w),
-                ey = apy - (aby * v + acy * w),
-                ez = apz - (abz * v + acz * w);
-            return ex * ex + ey * ey + ez * ez;
-        };
         const surfGap = (px, py, pz, tris) => {
             let bd = Infinity;
             for (let t = 0; t < tris.length; t += 9) {

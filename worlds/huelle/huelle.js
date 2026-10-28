@@ -15,7 +15,9 @@
  *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Stoffe · Schatten gegen die Budget-Zeile des
  *                              Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` = buildInstance
  *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
- *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`).
+ *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`). Reicht das
+ *                              Studio seinen Renderer (`opt.renderer`, wie panorama()), steht neben jeder gezählten Zahl die
+ *                              GEZEICHNETE: das Werk allein in einem eigenen Render-Abschnitt, renderer.info (studios.K3).
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
@@ -120,6 +122,50 @@
         return z.min === 0 && z.max === 1 && z.step === 1;
     }
 
+    // ── DER GANG (studios.K2): Griff → erstes Bild mit neuem Bau-Hash. Der Bau-Hash ist der Plan der Bühne (die Werte der
+    // Regler-Zeilen samt Zustand: Rezept, Saat — der Kern baut deterministisch, gleicher Plan = gleiche Bytes). Ein Griff stempelt
+    // seine Zeit am Eingabe-Ereignis; hat der Zeichner der Seite den Plan angewandt (bei bzw. nachRuhe kehrte zurück), trägt der
+    // nächste rAF-Rückruf (er läuft nach dem Render-Rückruf der Seite im selben Bild) das Bild. Leser: diag-studio-huelle --engine.
+    function bauHash(s) {
+        var t = JSON.stringify(s);
+        var h = 0x811c9dc5;
+        for (var i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 0x01000193);
+        return (h >>> 0).toString(16);
+    }
+    var gang = { griffe: [], bild: null };
+    var gangBild = 0;
+    function jetzt() {
+        return wurzel.performance ? wurzel.performance.now() : Date.now();
+    }
+    function imBild(fn) {
+        return wurzel.requestAnimationFrame ? wurzel.requestAnimationFrame(fn) : setTimeout(fn, 16);
+    }
+    function gangGriff(z, t0) {
+        gang.griffe.push({ id: z.id, uniform: !!z.uniform, t0: t0, hash: null, t1: null });
+        if (gang.griffe.length > 256) gang.griffe.shift();
+    }
+    function gangBau(s) {
+        var h = bauHash(s);
+        var neu = gang.griffe.filter(function (g) {
+            return g.hash == null;
+        });
+        if (!neu.length || h === gang.bild) return;
+        neu.forEach(function (g) {
+            g.hash = h;
+        });
+        if (gangBild) return;
+        gangBild = imBild(function () {
+            gangBild = 0;
+            var t = jetzt();
+            gang.griffe.forEach(function (g) {
+                if (g.hash != null && g.t1 == null) {
+                    g.t1 = t;
+                    gang.bild = g.hash;
+                }
+            });
+        });
+    }
+
     // ── DER REGLER-GENERATOR ──
     // zeilen: die PARAMS-Zeilen des Kerns (oder Bedienungs-Zeilen der Shell in DERSELBEN Form).
     // opt: werte (P, in place) · start(z) Startwert ohne Wert · format(z, v) · bei(id, v, z) sofort · nachRuhe(ids, bau)
@@ -139,6 +185,8 @@
         var vorher = null;
         var uhr = null;
         var bild = 0;
+        var gesetzBild = 0;
+        var gesetzOffen = {};
         var ruheMs = opt.ruheMs == null ? 180 : opt.ruheMs;
         var sitz = opt.sitzung || null;
         function startwert(z) {
@@ -170,36 +218,59 @@
         function flush() {
             uhr = null;
             bild = 0;
+            gesetzOffen = {};
             var ids = Object.keys(offen);
             offen = {};
             if (!ids.length) return;
             var a = vorher;
             vorher = null;
             var bau = ids.some(function (id) {
-                return !(nachId[id] && nachId[id].dyn);
+                return !(nachId[id] && (nachId[id].dyn || nachId[id].uniform));
             });
             // erst die Folge (ein Meta-Gesetz leitet weitere Achsen ab), dann der Schritt: EIN Rückgängig für Zug + Folge
-            if (opt.nachRuhe) opt.nachRuhe(ids, bau);
+            if (opt.nachRuhe) {
+                opt.nachRuhe(ids, bau);
+                gangBau(stand());
+            }
             if (sitz && a) {
                 var d = diffVon(a, sitz.schnapp());
                 if (d) sitz.merke(d);
             }
         }
-        function planen() {
+        function stand() {
+            return sitz ? sitz.schnapp() : schnapp(werte);
+        }
+        // EIN GESETZ-WERT WARTET NIE (studios.K2): eine Zeile mit `uniform: true` im Vertrag wirkt im nächsten Bild (nachRuhe
+        // ohne Neubau), die Ruhe schreibt nur noch den Rückgängig-Schritt.
+        function gesetzJetzt() {
+            gesetzBild = 0;
+            var ids = Object.keys(gesetzOffen);
+            gesetzOffen = {};
+            if (!ids.length) return;
+            opt.nachRuhe(ids, false);
+            gangBau(stand());
+        }
+        function planen(z) {
             if (ruheMs > 0) {
                 clearTimeout(uhr);
                 uhr = setTimeout(flush, ruheMs);
+                if (z.uniform && opt.nachRuhe) {
+                    gesetzOffen[z.id] = 1;
+                    if (!gesetzBild) gesetzBild = imBild(gesetzJetzt);
+                }
             } else if (!bild) {
-                bild = wurzel.requestAnimationFrame ? wurzel.requestAnimationFrame(flush) : setTimeout(flush, 16);
+                bild = imBild(flush);
             }
         }
-        function eingabe(z, v) {
-            if (!vorher) vorher = sitz ? sitz.schnapp() : schnapp(werte);
+        function eingabe(z, v, t0) {
+            if (!vorher) vorher = stand();
             werte[z.id] = v;
             anzeigen(z);
+            gangGriff(z, t0 == null ? jetzt() : t0);
             if (opt.bei) opt.bei(z.id, v, z);
+            if (!opt.nachRuhe) gangBau(stand()); // ohne nachRuhe wendet bei den Plan an
             offen[z.id] = 1;
-            planen();
+            planen(z);
         }
         var R = {
             werte: werte,
@@ -254,6 +325,7 @@
             var schalter = istSchalter(z);
             var zeile = el("div", "h-regler" + (schalter ? " h-schalter" : "") + (kl.zeile ? " " + kl.zeile : ""));
             zeile.setAttribute("data-regler", z.id);
+            if (z.uniform) zeile.setAttribute("data-uniform", "1"); // die Klasse der Zeile steht im Vertrag (≤ 200 ms)
             var kopf = el("div", "h-kopf" + (kl.kopf ? " " + kl.kopf : ""));
             var lab = el("label", "h-lab", z.lab || z.id);
             if (typeof z.law === "string" && z.law) lab.title = z.law;
@@ -274,8 +346,8 @@
                 zeile.classList.add("h-fest");
             }
             els[z.id] = { inp: inp, wert: wert, schalter: schalter };
-            inp.addEventListener(schalter ? "change" : "input", function () {
-                eingabe(z, schalter ? (inp.checked ? 1 : 0) : +inp.value);
+            inp.addEventListener(schalter ? "change" : "input", function (ev) {
+                eingabe(z, schalter ? (inp.checked ? 1 : 0) : +inp.value, ev.timeStamp);
             });
             kopf.appendChild(lab);
             if (sitz && sitz.sperren && !z.fest) {
@@ -320,12 +392,26 @@
         return R;
     }
 
-    // ── DIE SITZUNG — Seed · Sperre · Undo/Redo ──
-    // opt: werte (P) · anwenden(ids, quelle) nach Undo/Redo/Würfel · zustand() / zustandSetzen(z) für Nicht-Zahlen
+    // ── DIE SITZUNG — Seed · Sperre · Undo/Redo · A/B · der Stand über das Neuladen ──
+    // opt: werte (P) · anwenden(ids, quelle) nach Undo/Redo/Würfel/A-B/Laden · zustand() / zustandSetzen(z) für Nicht-Zahlen
     //      (Preset, Kultur …) · seed · beiSeed(seed) · sperren (Schloss je Achse) · tasten (false = keine Tasten)
+    // DIE SITZUNG, DIE BLEIBT (studios.K2): jeder Schritt schreibt den Stand der Seite (Werte + Zustand + Same) in den EINEN
+    // Speicher-Weg der Welt (localStorage, Schlüssel `anazh.sitzung.<seite>`, wie `anazh.vibePass`); beim Öffnen legt ihn die
+    // Sitzung über den Weg des Verlaufs zurück (anwenden(ids, "laden")). A = der Stand, mit dem die Seite öffnete (gebaut),
+    // B = der Entwurf; ein Zug unter A wird der neue Entwurf.
+    function speicherOrt() {
+        var l = wurzel.location;
+        if (!l) return null;
+        var studio = /[?&]studio=([\w-]+)/.exec(l.search || "");
+        return "anazh.sitzung." + l.pathname + (studio ? "?studio=" + studio[1] : "") + (sitzungZahl++ ? "#" + sitzungZahl : "");
+    }
+    var sitzungZahl = 0;
     function sitzung(opt) {
         opt = opt || {};
         var werte = opt.werte || {};
+        var ort = speicherOrt();
+        var abA = null;
+        var abB = null;
         var stapel = [];
         var zeiger = 0;
         var gesperrt = {};
@@ -358,7 +444,9 @@
                 stapel.push(d);
                 if (stapel.length > 200) stapel.shift();
                 zeiger = stapel.length;
+                abB = null; // ein Zug unter A ist der neue Entwurf
                 malen();
+                speichern();
             },
             // EINE Tat = EIN Schritt: Werte (und Zustand) vorher ↔ nachher.
             schritt: function (tat) {
@@ -370,12 +458,14 @@
                 return r;
             },
             zurueck: function () {
+                if (abB) S.ab("B"); // der Verlauf ist der des Entwurfs
                 abschliessen();
                 if (!zeiger) return toast("Nichts mehr rückgängig zu machen."), false;
                 anwendenDiff(stapel[--zeiger], 0, "zurueck");
                 return true;
             },
             vor: function () {
+                if (abB) S.ab("B");
                 abschliessen();
                 if (zeiger >= stapel.length) return toast("Nichts zum Wiederholen."), false;
                 anwendenDiff(stapel[zeiger++], 1, "vor");
@@ -388,6 +478,23 @@
                 S.seed = (n >>> 0) || 1;
                 if (anzeige && anzeige.seed) anzeige.seed.value = String(S.seed);
                 if (!still && opt.beiSeed) opt.beiSeed(S.seed);
+                speichern();
+            },
+            // A/B gegen den gebauten Stand: "A" zeigt den Stand der Öffnung, "B" den Entwurf — kein Rückgängig-Schritt
+            ab: function (seite) {
+                abschliessen();
+                if (!abA || (seite === "A") === !!abB) return false;
+                var jetzt_ = S.schnapp();
+                var ziel = seite === "A" ? abA : abB;
+                if (seite === "A") abB = jetzt_;
+                else abB = null;
+                var d = diffVon(jetzt_, ziel);
+                if (d) anwendenDiff(d, 1, seite === "A" ? "a" : "b");
+                malen();
+                return true;
+            },
+            zeigt: function () {
+                return abB ? "A" : "B";
             },
             // Der Würfel: ein neuer Same zieht jede FREIE Achse der Zeilen aus dem Gesetz (min..max, auf step), EIN Schritt.
             wuerfeln: function (zeilen, neuerSame) {
@@ -426,7 +533,19 @@
                 l.appendChild(z);
                 l.appendChild(v);
                 l.appendChild(n);
-                anzeige = { z: z, v: v, n: n, seed: null };
+                anzeige = { z: z, v: v, n: n, seed: null, ab: [] };
+                if (lo.ab !== false)
+                    ["A", "B"].forEach(function (seite) {
+                        var k = el("button", "h-knopf h-ab", seite);
+                        k.type = "button";
+                        k.setAttribute("data-ab", seite);
+                        k.title = seite === "A" ? "A · gebaut: der Stand, mit dem die Seite öffnete" : "B · Entwurf: dein Stand";
+                        k.addEventListener("click", function () {
+                            S.ab(seite);
+                        });
+                        l.appendChild(k);
+                        anzeige.ab.push(k);
+                    });
                 if (lo.seed !== false) {
                     var lab = el("label", "h-same", "Same");
                     var inp = el("input", "h-same-feld");
@@ -467,7 +586,45 @@
             anzeige.z.disabled = !zeiger;
             anzeige.v.disabled = zeiger >= stapel.length;
             anzeige.n.textContent = zeiger + "/" + stapel.length;
+            anzeige.ab.forEach(function (k) {
+                k.classList.toggle("an", k.getAttribute("data-ab") === S.zeigt());
+            });
         }
+        function speichern() {
+            if (!ort || !wurzel.localStorage || !abA) return; // vor dem Laden schreibt nichts über den Stand von gestern
+            try {
+                wurzel.localStorage.setItem(ort, JSON.stringify({ v: 1, werte: abB || S.schnapp(), seed: S.seed }));
+                gang.gespeichert = jetzt();
+            } catch (e) {
+                console.error("[huelle] die Sitzung ist nicht gespeichert (" + ort + "): " + e.message);
+            }
+        }
+        // DAS LADEN nach dem Aufbau der Seite (ihr Skript lief, die Regler stehen): der Stand von gestern als EIN Diff über den
+        // Weg des Verlaufs; eine Regler-Zeile, die der Stand nicht kennt (der Vertrag wuchs), behält ihren Startwert.
+        function laden() {
+            var alt = null;
+            try {
+                alt = ort && wurzel.localStorage ? JSON.parse(wurzel.localStorage.getItem(ort) || "null") : null;
+            } catch (e) {
+                console.error("[huelle] die Sitzung " + ort + " ist nicht lesbar: " + e.message);
+            }
+            if (alt && alt.v === 1 && alt.werte) {
+                var d = diffVon(S.schnapp(), alt.werte);
+                for (var k in d || {})
+                    if (d[k][1] === undefined && regler_.some(function (r) {
+                            return r.zeilen.some(function (z) {
+                                return z.id === k;
+                            });
+                        }))
+                        delete d[k];
+                if (alt.seed) S.seed = alt.seed >>> 0 || S.seed;
+                if (d && Object.keys(d).length) anwendenDiff(d, 1, "laden");
+            }
+            abA = S.schnapp();
+            gang.geladen = ort || true;
+            malen();
+        }
+        setTimeout(laden, 0);
         // Der Zustand zuerst (ein Preset setzt seine Werte), die Werte darüber (der Regler-Zug nach dem Preset).
         function anwendenDiff(d, i, quelle) {
             var ids = [];
@@ -483,7 +640,9 @@
             });
             if (opt.anwenden) opt.anwenden(ids, quelle);
             malen();
-            toast((quelle === "zurueck" ? "↶ rückgängig · " : "↷ wiederholt · ") + zeiger + "/" + stapel.length, 1200);
+            speichern();
+            var wort = { zurueck: "↶ rückgängig · ", vor: "↷ wiederholt · ", a: "A · gebaut", b: "B · Entwurf", laden: "die Sitzung von zuletzt" };
+            toast(wort[quelle] + (quelle === "zurueck" || quelle === "vor" ? zeiger + "/" + stapel.length : ""), 1200);
         }
         if (opt.tasten !== false && wurzel.addEventListener)
             wurzel.addEventListener("keydown", function (ev) {
@@ -505,8 +664,18 @@
 
     // ── DIE KOSTEN-LEISTE je LOD-Stufe ──
     // opt: budget (lod.budget[kind] des Kerns) · stufen (kindStages[kind]) · bauen(stufe) → Object3D der Welt-Gestalt
-    //      (buildInstance des Kerns) · titel · quelle (Text: woran gemessen) · meshfrei (Text: keine Gestalt, Vertrag §8)
-    function zaehle(obj) {
+    //      (buildInstance des Kerns) · titel · quelle (Text: woran gemessen) · meshfrei (Text: keine Gestalt, Vertrag §8) ·
+    //      renderer (der Renderer des Studios oder eine Funktion, die ihn reicht — die Gegenzahl `zeichne`)
+    // Was eine Stufe zählt, ist das EINE Budget-Gesetz des Kerns (phyto-core budgetSippen/budgetWurf): ein Wurf-Teil (sein Stoff
+    // zeichnet nicht, `visible: false` — er zeichnet nur in den Kaskaden) zählt nie zur Bild-Stufe; eine NUR-WURF-Stufe (`wurf`)
+    // zählt ihre Werfer.
+    function zurStufe(o, wurf) {
+        if (wurf) return !!o.castShadow;
+        return (Array.isArray(o.material) ? o.material : [o.material]).some(function (m) {
+            return m && m.visible !== false;
+        });
+    }
+    function zaehle(obj, wurf) {
         var tris = 0;
         var stoffe = {};
         var nStoffe = 0;
@@ -514,7 +683,7 @@
         var werfer = 0;
         if (!obj || !obj.traverse) return { tris: 0, stoffe: 0, meshes: 0, werfer: 0 };
         obj.traverse(function (o) {
-            if (!o.isMesh || !o.geometry) return;
+            if (!o.isMesh || !o.geometry || !zurStufe(o, wurf)) return;
             var vis = true;
             for (var p = o; p; p = p.parent) if (p.visible === false) vis = false;
             if (!vis) return;
@@ -532,6 +701,104 @@
             });
         });
         return { tris: Math.round(tris), stoffe: nStoffe, meshes: meshes, werfer: werfer };
+    }
+    // DIE GEGENZAHL (studios.K3): das Werk ALLEIN in EINEM eigenen Render des Studio-Renderers — nur seine Meshes in einer
+    // eigenen Szene (die Kamera sieht Ebene 30, Lichter bleiben draußen, also kein Schatten-Pass), ungekappt (frustumCulled
+    // aus), in ein 1×1-Ziel unter EINEM Stoff (kein Programm je Werk-Stoff). Gezählt wird renderer.info je Abschnitt: die
+    // Differenz der Zähler um den Render, gestempelt (Lehre 23: r184 `info.calls` genau +1 je Wurzel, r128 `info.render.frame`
+    // unverändert — ein fremder Render dazwischen macht die Zahl ungültig). Eine Wegwerf-Gestalt (bauen) gibt danach ihre
+    // Geometrie frei, sonst hielte der Renderer jede Mess-Gestalt (Lehre 27). Eine NUR-WURF-Stufe (`wurf`) zeichnet wie ihre
+    // Kaskade: nur die Werfer, ihr Stoff im Abschnitt sichtbar (der Kaskaden-Stoff des Wirts zeichnet ihn). null = kein
+    // Renderer, (r184) noch nicht bereit oder gestört.
+    var ZAEHL_EBENE = 30,
+        zaehlMittel = null;
+    function zeichne(R, obj, wegwerf, wurf) {
+        var T = wurzel.THREE;
+        if (!R || !R.info || !T || !obj || !obj.traverse || R.initialized === false) return null;
+        var gpu = !!R.isWebGPURenderer;
+        if (!zaehlMittel || zaehlMittel.R !== R) {
+            var kam = new T.PerspectiveCamera();
+            kam.layers.set(ZAEHL_EBENE);
+            zaehlMittel = { R: R, ziel: new (gpu ? T.RenderTarget : T.WebGLRenderTarget)(1, 1), kamera: kam, stoff: new T.MeshBasicMaterial() };
+        }
+        // das Werk ist die Gestalt ABSEITS der Szene (frisch gebaut oder gezählt, bevor sie die Bühne betritt): was unter einer
+        // Scene hängt, ist Bühne und zeichnet hier nicht — eine Leiste, die die Bühne mitzählt, steht ohne Gegenzahl
+        var alle = [],
+            wurzeln = [];
+        obj.traverse(function (o) {
+            if (o.isMesh) alle.push(o);
+        });
+        var werk = alle.filter(function (o) {
+            var w = o;
+            while (w.parent) w = w.parent;
+            if (w.isScene || (wurf && !o.castShadow)) return false;
+            if (wurzeln.indexOf(w) < 0) wurzeln.push(w);
+            return true;
+        });
+        var stoffe = [];
+        if (wurf)
+            werk.forEach(function (o) {
+                (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
+                    if (m && stoffe.indexOf(m) < 0) stoffe.push(m);
+                });
+            });
+        var stoffSicht = stoffe.map(function (m) {
+            var v = m.visible;
+            m.visible = true;
+            return v;
+        });
+        var alt = werk.map(function (o) {
+            var a = [o.layers.mask, o.frustumCulled];
+            o.layers.enable(ZAEHL_EBENE);
+            o.frustumCulled = false;
+            return a;
+        });
+        var info = R.info,
+            r = info.render,
+            auto = info.autoReset,
+            vorZiel = R.getRenderTarget(),
+            draws = gpu ? "drawCalls" : "calls",
+            stempel = function () {
+                return gpu ? info.calls : r.frame;
+            };
+        var c = { tris: 0, befehle: 0 },
+            gueltig = true;
+        info.autoReset = false;
+        R.setRenderTarget(zaehlMittel.ziel);
+        try {
+            wurzeln.forEach(function (w) {
+                var szene = new T.Scene();
+                szene.overrideMaterial = zaehlMittel.stoff;
+                szene.add(w);
+                var s0 = stempel(),
+                    t0 = r.triangles,
+                    d0 = r[draws];
+                try {
+                    R.render(szene, zaehlMittel.kamera);
+                } finally {
+                    szene.remove(w);
+                }
+                c.tris += r.triangles - t0;
+                c.befehle += r[draws] - d0;
+                if (stempel() !== s0 + (gpu ? 1 : 0)) gueltig = false;
+            });
+        } finally {
+            R.setRenderTarget(vorZiel);
+            info.autoReset = auto;
+            werk.forEach(function (o, i) {
+                o.layers.mask = alt[i][0];
+                o.frustumCulled = alt[i][1];
+            });
+            stoffe.forEach(function (m, i) {
+                m.visible = stoffSicht[i];
+            });
+        }
+        if (wegwerf)
+            alle.forEach(function (o) {
+                if (o.geometry) o.geometry.dispose();
+            });
+        c.tris = Math.round(c.tris);
+        return gueltig ? c : null;
     }
     function kosten(ziel, opt) {
         opt = opt || {};
@@ -573,11 +840,21 @@
         box.appendChild(quelle);
         if (ziel) ziel.appendChild(box);
         var stand = {};
-        function zeigen(s, c) {
+        var R = function () {
+            return typeof opt.renderer === "function" ? opt.renderer() : opt.renderer;
+        };
+        var wurfStufe = function (s) {
+            return !!(budget[s] && budget[s].nurWurf);
+        };
+        // g: die Gegenzahl aus dem Zähl-Abschnitt ({ tris, befehle }) — ohne sie bleibt die Befehls-Spalte die Budget-Zeile
+        function zeigen(s, c, g) {
             var zz = zeilen[s];
             var b = budget[s];
             if (!zz || !b) return;
+            if (g) c.gezeichnet = g;
             stand[s] = c;
+            // die Zahlen der Zeile für ihre Leser (gate:studio-huelle H4, H7): Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet
+            Object.assign(zz.z.dataset, { stufe: s, leiste: c.tris, deckel: b.tris || 0 }, g ? { gezeichnet: g.tris } : {});
             var deckel = b.tris || 1;
             var anteil = Math.min(1, c.tris / deckel);
             zz.balken.style.width = (anteil * 100).toFixed(1) + "%";
@@ -589,7 +866,8 @@
             zz.z.className = "h-kosten-zeile " + klasse;
             var t = c.tris.toLocaleString("de-DE") + " / " + deckel.toLocaleString("de-DE") + " △";
             if (b.band) t += " · Band ×" + (c.tris / b.band).toFixed(2);
-            t += " · " + c.stoffe + " Stoffe / " + (b.draws || "–") + " Befehle";
+            if (g) t += " · gezeichnet " + g.tris.toLocaleString("de-DE") + " △ in " + g.befehle + " Befehlen (Zeile " + (b.draws || "–") + ") · " + c.stoffe + " Stoffe";
+            else t += " · " + c.stoffe + " Stoffe / " + (b.draws || "–") + " Befehle";
             if (typeof b.schatten === "number") t += " · Wurf L" + b.schatten;
             zz.txt.textContent = t;
             zz.z.title =
@@ -602,9 +880,10 @@
             stand: function () {
                 return stand;
             },
-            // die Labor-Gestalt der Stufe s direkt zählen (was der Schirm zeigt)
-            messen: function (obj, s) {
-                zeigen(s == null ? stufen[0] : s, zaehle(obj));
+            // die Labor-Gestalt der Stufe s direkt zählen (was der Schirm zeigt; wegwerf: eine Mess-Gestalt, die niemand zeigt)
+            messen: function (obj, s, wegwerf) {
+                if (s == null) s = stufen[0];
+                zeigen(s, zaehle(obj, wurfStufe(s)), zeichne(R(), obj, !!wegwerf, wurfStufe(s)));
             },
             // gezählte Kosten der Stufe s setzen ({ tris, stoffe, meshes, werfer }) — die Welt-Werkstatt zählt das Werk der Foundry
             setzen: function (s, c) {
@@ -617,11 +896,14 @@
                 var meinLauf = ++lauf;
                 uhr = setTimeout(function () {
                     var i = 0;
+                    // ein Renderer, der noch nicht bereit ist (r184 vor init), schiebt den Lauf — die Leiste misst nie ohne Gegenzahl
+                    if (R() && R().initialized === false) return K.neu();
                     var naechste = function () {
                         if (meinLauf !== lauf || i >= stufen.length) return;
                         var s = stufen[i++];
                         try {
-                            zeigen(s, zaehle(opt.bauen(s)));
+                            var obj = opt.bauen(s);
+                            zeigen(s, zaehle(obj, wurfStufe(s)), zeichne(R(), obj, true, wurfStufe(s)));
                         } catch (e) {
                             zeilen[s].txt.textContent = "Bau-Fehler: " + ((e && e.message) || e);
                             zeilen[s].z.className = "h-kosten-zeile fail";
@@ -1022,6 +1304,9 @@
         kosten: kosten,
         zaehle: zaehle,
         bruecke: bruecke,
+        gang: function () {
+            return gang;
+        },
         reisender: function () {
             return reisender;
         },
