@@ -6,6 +6,8 @@
 // - bei ruhendem Loop schaltet niemand den NODE-FRAME weiter (vor jedem Render `nodeFrame.update()`), und Meshes einer
 //   `BundleGroup` folgen `visible` erst nach `needsUpdate`;
 // - ein 8-Bit-Ziel quantisiert die lineare Albedo in 0,0039 — die Albedo-Schüsse lesen rgba16float.
+// Die Luma (Rec. 709) liest jede Linse aus abnahme-urteil (`luma709`; in der Seite global über ABNAHME_INSTALL).
+const { luma709, cielab } = require("./abnahme-urteil.cjs");
 
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
@@ -766,7 +768,7 @@ function lichtBilanz() {
             await lauf();
             return lauf();
         };
-        const Y = (s) => 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+        const Y = luma709;
         const out = { sonnenRichtung: [sd.x, sd.y, sd.z].map((v) => +v.toFixed(3)), lichter: {} };
         for (const [l, i] of lichtAlt)
             out.lichter[l.type] = {
@@ -837,7 +839,7 @@ function tagKurve(o) {
                 k = v;
             },
         });
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const W = o.w || 480,
             H = o.h || 270;
         const zeilen = [];
@@ -857,12 +859,12 @@ function tagKurve(o) {
                 const s = [0, 0, 0, 0];
                 let n = 0;
                 for (let i = Math.floor(H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
-                    s[0] += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                    s[0] += luma709(u8, i);
                     for (let c = 0; c < 3; c++) s[c + 1] += lin[u8[i + c]];
                 }
                 const sd = r._sonnenRichtung();
                 const h = r._himmelsIrradianz();
-                const lum = (c, k) => k * (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                const lum = (c, k) => k * luma709(c);
                 const licht = [st.directionalLight, st.hemiLight, st.ambientLight].reduce((E, l) => E + (l ? lum(l.color.toArray(), l.intensity) : 0), h ? lum(h.oben, Math.PI) : NaN);
                 const z = {
                     uhr: u,
@@ -1113,7 +1115,7 @@ function nahFernSicht(opts) {
             const rgb = c.map((v) => v / 1024);
             return {
                 rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                Y: +luma709(rgb).toFixed(4),
                 deckung: +(d / 1024).toFixed(2),
             };
         };
@@ -1161,7 +1163,7 @@ function nahFernSicht(opts) {
                 for (let i = 3; i < px.length; i += 4)
                     if (px[i] > 0.5) {
                         m++;
-                        s += 0.2126 * px[i - 3] + 0.7152 * px[i - 2] + 0.0722 * px[i - 1];
+                        s += luma709(px, i - 3);
                     }
                 const y = m ? s / m : 0;
                 if (spur.length < 12) spur.push([m, +y.toFixed(4)]);
@@ -1198,7 +1200,7 @@ function nahFernSicht(opts) {
             return {
                 n,
                 rgb: rgb.map((v) => +v.toFixed(4)),
-                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                Y: +luma709(rgb).toFixed(4),
                 still,
                 spur,
             };
@@ -1601,8 +1603,7 @@ function laubGegenlicht(opts) {
             for (let k = 0; k < 3; k++) zl.zeichne(cam);
             const px = await zl.lies();
             const img = { data: new Uint8ClampedArray(W * H * 4) };
-            const enc = (v) =>
-                Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+            const enc = (v) => Math.round(255 * Math.min(1, linSrgb(v)));
             const Yp = new Float32Array(W * H).fill(-1),
                 Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
@@ -1611,7 +1612,7 @@ function laubGegenlicht(opts) {
                     const o = ((H - 1 - y) * W + x) * 4;
                     if (px[i + 3] > 0) {
                         const c = [px[i], px[i + 1], px[i + 2]];
-                        Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                        Yp[y * W + x] = luma709(c);
                         Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
                         img.data[o + 1] = enc(c[1]);
@@ -1849,9 +1850,8 @@ function laubGegenlicht(opts) {
 
 // Linear-RGB → Luma Y, L*, C*ab (D65): die Farb-Zahl jeder Karten- und Weg-Zeile
 function lab(rgb) {
-    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * rgb[0] + w[1] * rgb[1] + w[2] * rgb[2]) / w[3]));
-    return { Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(5), L: +(116 * y - 16).toFixed(2), C: +Math.hypot(500 * (x - y), 200 * (y - z)).toFixed(2) };
+    const [L, a, b] = cielab(rgb);
+    return { Y: +luma709(rgb).toFixed(5), L: +L.toFixed(2), C: +Math.hypot(a, b).toFixed(2) };
 }
 
 // DER LICHTWEG (Licht K3): dieselbe graue Fläche (18 %) im Licht der Welt-Stoffe (eine MeshStandard-Karte gleicher Normale aus
@@ -2087,6 +2087,10 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
 // Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
 // Pixel, die Kante `kantenLinie`. Misst eine Sicht kein Band (zur tiefen Sonne liegt die In-Streuung in der Kompression), schießt
 // sie mit Blende 1/4 nach; der Bloom ruht, seine Schwelle bricht die Linearität (zur Sonne 7° hob er T bei 8 km um 70 %).
+// DIE SICHT IM WETTER (Ferne K5): `o.wetter` ist das Wort des Spielers für die Bühne; je Sicht die Sichtweite am Bezugsniveau
+// −ln(kontrast)/β je Pixel der Szene mit T_grün in 0,05…0,95 (β = −ln T / (g·d·Spektrum grün)), der Median. Der Sturm ist dunkel
+// (Mittag: In-Streuung sRGB ≈ 20): seine Sicht schießt mit Blende 16 (linear, T ist ein Verhältnis), blickt 8° hinab (die Bänder
+// 0,4–1,5 km) und verlangt ≥ 12 Stufen zwischen L0 und S im grünen Kanal.
 function luftTiefe(o) {
     return (async () => {
         const r = window.anazhRealm;
@@ -2100,7 +2104,7 @@ function luftTiefe(o) {
         const fov0 = cam.fov;
         if (st.renderer.toneMapping !== T.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
         st.renderer.setAnimationLoop(null);
-        window.__buehne();
+        window.__buehne(o.wetter && { wetter: o.wetter });
         const PU = st.postProcessingUniforms;
         const bloom0 = PU.bloomStrength.value;
         PU.bloomStrength.value = 0;
@@ -2109,14 +2113,14 @@ function luftTiefe(o) {
         const gz = st.playerMesh.position.z;
         const gy = gesetz(gx, gz) + o.augeM;
         const Hs = R.skalenHoeheM;
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         const roh = (u8, i) => {
             const c = [lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]];
             const m = Math.min(...c);
             const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
-        const Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const Y = luma709;
         const ton = (u8, i) => {
             const c = [u8[i], u8[i + 1], u8[i + 2]];
             const hi = Math.max(...c);
@@ -2158,7 +2162,7 @@ function luftTiefe(o) {
             cam.fov = 16;
             cam.updateProjectionMatrix();
             cam.position.set(gx, gy, gz);
-            cam.lookAt(gx + Math.sin(az) * 1e3, gy - 44, gz - Math.cos(az) * 1e3);
+            cam.lookAt(gx + Math.sin(az) * 1e3, gy - (o.wetter ? 140 : 44), gz - Math.cos(az) * 1e3);
             cam.updateMatrixWorld(true);
         };
         const s = new T.Vector3();
@@ -2204,6 +2208,7 @@ function luftTiefe(o) {
             const fern = {};
             const gesetzOben = {};
             const inS = [[], [], []];
+            const sb = [];
             for (let yy = 0; yy < H; yy += 2)
                 for (let xx = 4; xx < W; xx += 8) {
                     const t = treffer(xx, yy, D);
@@ -2216,9 +2221,11 @@ function luftTiefe(o) {
                     gez.push({ x: xx, d: t.d, C: Math.abs(Y(l) - Y(sa)) / Y(sa) });
                     sa.forEach((x, c) => inS[c].push(x));
                     fern[xx] = Math.max(fern[xx] || 0, t.d);
+                    const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
+                    const tg = Math.abs(L0[i + 1] - S[i + 1]) >= 12 && (l[1] - sa[1]) / (l0[1] - sa[1]);
+                    if (t.szene && tg > 0.05 && tg < 0.95) sb.push((-Math.log(R.kontrast) * t.g * t.d * U.spektrum.value.y) / -Math.log(tg));
                     const b = t.szene && bd.find((x) => Math.abs(t.d - x.d) < 0.12 * x.d);
                     if (!b) continue;
-                    const tc = [0, 1, 2].map((c) => (Math.abs(l0[c] - sa[c]) < 0.02 * k ? null : (l[c] - sa[c]) / (l0[c] - sa[c])));
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
                     if (tc[0] > 0.01 && tc[2] > 0.01 && Math.min(Math.abs(l0[0] - sa[0]), Math.abs(l0[2] - sa[2])) >= 0.05 * k)
                         b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
@@ -2240,6 +2247,7 @@ function luftTiefe(o) {
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
+                sicht: { m: med(sb), n: sb.length },
             };
         };
         const zeilen = [];
@@ -2249,7 +2257,7 @@ function luftTiefe(o) {
                 const so = uhr(u);
                 for (let k = 0; k < 4; k++) {
                     const az = so.az + (k * Math.PI) / 2;
-                    let z = await sicht(az, 1);
+                    let z = await sicht(az, o.wetter ? 16 : 1);
                     if (z.baender.every((b) => b.n < R.mindest.n)) z = await sicht(az, 0.25);
                     zeilen.push(Object.assign({ uhr: u, sonne: so.sonne, az: k * 90 }, z));
                 }
@@ -2322,7 +2330,7 @@ function luftTiefeUrteil(m, R) {
     });
     // der Himmel am Horizont (die In-Streuung, linear) zu Mittag gegen den Ton der Referenz; die Sonnenseite: Y der In-Streuung
     // zur Sonne / gegen sie je Uhr; das ferne Weiß bei Sonne 5°
-    const Y = (c) => c && 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const Y = (c) => c && luma709(c);
     for (const z of m.zeilen.filter((x) => x.uhr === 0.5)) {
         const [r, g, b] = z.himmel || [0, 0, 0];
         const d = Math.max(r, g, b) - Math.min(r, g, b);
@@ -2347,6 +2355,55 @@ function luftTiefeUrteil(m, R) {
     for (const k of ["K1-1", "K1-2", "K2-1", "K2-2"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
     const befunde = liste.filter((b) => !offen(b));
     return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
+}
+
+// DER WETTER-ZUG IM BILD (Licht K5): klar → `o.wort` → klar als Wort des Spielers, je Wort `o.sek` Sekunden der Welt-Uhr im
+// echten Takt (`_gameLoopTick`, Schritt TAKT_DECKEL_S) über die Transition des Spiels, bis das Wort steht (ihre Dauer moduliert
+// das Gemüt, `_emotionModulate`: Regen → klar 62 s; Deckel 150 s), die Uhr steht. Je Sekunde die Summe der
+// Leuchtdichte des Ausgabe-Bilds (linear, Rec. 709), das Wort und der Stand des Übergangs.
+function wetterZug(o) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const dt = r.constructor.TAKT_DECKEL_S;
+        const [T0, tag, reihe] = [performance.now(), st.dayLengthMinutes, []];
+        let k = 0;
+        st.renderer.setAnimationLoop(null);
+        window.__buehne();
+        st.dayLengthMinutes = 1e9;
+        try {
+            for (const [wort, sek] of [["sunny", 5], [o.wort, o.sek], ["sunny", o.sek]]) {
+                if (window.__wetterSetzen(wort, true) !== wort) throw new Error(`__wetterZug: das Wort gilt nicht (${wort})`);
+                for (let s = 0; s < 150 && (s < sek || st.weatherTransition); s++) {
+                    for (let i = 0; i < 1 / dt; i++) r._gameLoopTick(T0 + ++k * dt * 1000);
+                    const u8 = (await window.__ausgabeAufnahme(160, 90, 1, { satz: "messung" })).u8;
+                    const wt = st.weatherTransition;
+                    const Y = u8.reduce((a, v, i) => a + (i % 4 < 3 && [0.2126, 0.7152, 0.0722][i % 4] * ((v / 255 + 0.055) / 1.055) ** 2.4), 0);
+                    reihe.push({ t: st.spielZeit, wetter: st.weather, zug: wt ? wt.progress : 1, Y });
+                }
+            }
+        } finally {
+            st.dayLengthMinutes = tag;
+            window.__buehne();
+        }
+        return { reihe };
+    })();
+}
+
+// DIE URTEILE DES WETTERS (spec/farbe/luft-referenz.json `wetter`): die Sicht — der Median der Sichten mit `mindest.n` Pixeln
+// über ≥ `mindest.azimute` Azimute gegen `sichtSturmM` ± `band`; der Zug — der größte Sprung |log2 Y_k/Y_k−1| je Sekunde der
+// Welt-Uhr ≤ `zugEvS`, und jedes Wort stand am Ende seiner Phase (sonst misst die Reihe keinen Übergang).
+function wetterLuftUrteil(m, R) {
+    const s = (m.zeilen || []).filter((z) => z.sicht.n >= R.mindest.n).map((z) => z.sicht.m).sort((a, b) => a - b);
+    const ist = s.length >= R.mindest.azimute ? s[s.length >> 1] : null;
+    const x = m.reihe || [];
+    const d = x.slice(1).map((y, i) => ({ ...y, d: Math.abs(Math.log2(y.Y / x[i].Y)) / (y.t - x[i].t) }));
+    const sprung = d.reduce((a, b) => (b.d <= a.d ? a : b), d[0]);
+    const gezogen = x.some((y) => y.wetter === m.wort && y.zug === 1) && x.length > 2 && x.at(-1).wetter === "sunny" && x.at(-1).zug === 1;
+    return {
+        sicht: { gruen: Math.abs(ist / R.wetter.sichtSturmM - 1) <= R.wetter.band, ist, n: s.length },
+        zug: { gruen: gezogen && sprung.d <= R.wetter.zugEvS, sprung, gezogen },
+    };
 }
 
 function luftTiefeSelbsttest(R) {
@@ -2384,6 +2441,10 @@ function luftTiefeSelbsttest(R) {
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
+        ...[[1500, 4, true], [1800, 4, false], [1500, 2, false]].map(([m, n, g]) =>
+            wetterLuftUrteil({ zeilen: Array(n).fill({ sicht: { m, n: 50 } }) }, R).sicht.gruen === g || `Sicht ${m} m × ${n} nicht ${g}`),
+        ...[[0.05, "rainy", true], [0.5, "rainy", false], [0.05, "sunny", false]].map(([e, w, g]) =>
+            wetterLuftUrteil({ wort: "rainy", reihe: [0, 1, 2, 3].map((t) => ({ t, Y: 2 ** (-e * t), wetter: t === 2 ? w : "sunny", zug: 1 })) }, R).zug.gruen === g || `Zug ${e} EV/s ${w} nicht ${g}`),
     ].filter((x) => x !== true);
 }
 
@@ -2484,7 +2545,7 @@ function naesseSicht(o) {
         // 20 statt 10 min (0,992 gegen 0,909), und die helle nasse Schwelle des Dorf-Hauses zählte 15 Punkte als Regen innen
         const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
-        const Y = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+        const Y = luma709;
         const strahl = new T.Vector3();
         const klasse = (x, y) => {
             if (!e) return y > H * 0.55 ? "aussen" : null;
@@ -2615,7 +2676,7 @@ function kontaktSicht(o) {
         PU.bloomStrength.value = 0;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const [W, H] = [db.x, db.y];
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 255 / 12.92 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+        const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
             const hi = Math.min(Math.max(...c), 0.9995);
@@ -2629,7 +2690,7 @@ function kontaktSicht(o) {
             const L = new Float32Array(W * H);
             for (let i = 0; i < W * H; i++) {
                 const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);
-                L[i] = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / rend.toneMappingExposure;
+                L[i] = luma709(c) / rend.toneMappingExposure;
             }
             return L;
         };
@@ -2740,6 +2801,8 @@ module.exports = {
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,
+    wetterZug,
+    wetterLuftUrteil,
     kartenEichung,
     laubLichtUrteil,
     tagKurveUrteil,

@@ -12,7 +12,7 @@ const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cj
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
-const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -1540,12 +1540,9 @@ function hauptlauf() {
         console.log(
             `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg, benannt, sperrt nie): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
         );
-    if (v.length) {
-        console.error("\n❌ ROT:\n  " + v.join("\n  "));
-        process.exit(1);
-    }
-    console.log(
-        `✅ GRÜN — (G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
+    wandEnde(
+        v,
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
     );
 }
 if (process.argv.includes("--selftest")) selbsttestLauf();

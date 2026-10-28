@@ -8,6 +8,7 @@
     "uhren": [0.5, 0.27],
     "mindest": { "n": 10, "nk": 30, "azimute": 3, "spalten": 20 },
     "band": { "T": 0.15, "kanal": [0.5, 1.5], "dh": 10, "rand": 0.02, "linie": 1, "seite": 1.2, "weissRB": 1.3, "himmelTon": 15 },
+    "wetter": { "sichtSturmM": 1500, "band": 0.15, "zugEvS": 0.1 },
     "weiss": { "m": 5000, "seite": 300 },
     "himmel": { "ton": 222, "quelle": "der Horizont nach Hillaire 2020 (CGF 39(4), Gl. 5-9) mit den Konstanten von Bruneton 2017 und dem Boden grau 0,1, Auge 120 m ueber Genesis, Sonne 74 Grad: Ton 222-223 Grad (CPU-Integrator himmel-ton 8fde2616)" },
     "offen": {

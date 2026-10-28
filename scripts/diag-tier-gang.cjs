@@ -20,7 +20,7 @@
 //   wählt den Galopp → die Kreuz-Probe feuert. Jede Zeile des Selbsttests trägt „[Selbsttest]“ (ihr ❌ ist das Soll).
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, urteilEnde } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
@@ -727,12 +727,7 @@ hauptLauf(async () => {
             [tastRot, "der halbe Stand (Tastgrad 0,5) blieb grün: die Tastgrad-Wand"],
             [gefeuert.has("satz"), "der Satz ohne das Gedächtnis des Leibs blieb grün: die Satz-Wand"],
         ].find(([ok]) => !ok);
-        if (vakuoes) {
-            console.error(`\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`);
-            process.exit(1);
-        }
-        console.log(`\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
-        process.exit(0);
+        urteilEnde(vakuoes, () => `\n❌ SELBST-TEST ROT — ${vakuoes[1]} ist vakuös.`, `\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
     }
     if (rot) {
         console.error(

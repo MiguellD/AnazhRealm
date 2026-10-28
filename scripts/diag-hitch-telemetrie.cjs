@@ -67,7 +67,7 @@ function bauUhrInstall() {
             const p = roh.call(this, d);
             const t0 = performance.now();
             U.angelegt++;
-            U.imFlug.set(p, { name: (d && d.label) || name, t0 });
+            U.imFlug.set(p, { name: d?.label || name, t0 });
             const ende = (ok) => {
                 const ms = performance.now() - t0;
                 U.imFlug.delete(p);
@@ -159,7 +159,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // Animations-Schleife zeichnete ein Hand-Aufruf nur das Post-Quad neu (wie gate:post-kette)
     const bild = () => {
         try {
-            if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+            if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
             r._loopRender();
         } catch {
             /* die Linse misst, nie stören */
@@ -249,7 +249,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const gezeichnet = new Set();
         const drawRoh = rend.backend.draw;
         rend.backend.draw = function (ro) {
-            if (ro && ro.object && ro.object.userData.__erstProbe) gezeichnet.add(ro.object);
+            if (ro?.object?.userData.__erstProbe) gezeichnet.add(ro.object);
             return drawRoh.apply(this, arguments);
         };
         for (let i = 0; i < 3; i++) {
@@ -388,7 +388,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const irRoh = P3.isReady;
         P3.isReady = function (ro) {
             const ok = irRoh.call(this, ro);
-            if (!ok && ro && ro.object && ro.object.userData.__bundleProbe) wartete.set(ro.object, this.get(ro).pipeline);
+            if (!ok && ro?.object?.userData.__bundleProbe) wartete.set(ro.object, this.get(ro).pipeline);
             return ok;
         };
         try {
@@ -582,7 +582,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         try {
             await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
         } catch (e) {
-            wurf = String((e && e.message) || e);
+            wurf = String(e?.message || e);
         } finally {
             ESt.offen.delete(attrappe);
         }
@@ -591,7 +591,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             bild = { pixel: auf.u8.length, erst: auf.info.erst };
         } catch (e) {
-            bild = { wurf: String((e && e.message) || e) };
+            bild = { wurf: String(e?.message || e) };
         }
         return { ruheMs, ruheOffen, wurf, bild };
     };
@@ -636,7 +636,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             try {
                 await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             } catch (e) {
-                wurf = String((e && e.message) || e);
+                wurf = String(e?.message || e);
             }
         } finally {
             GP.createRenderPipelineAsync = crpaRoh;
@@ -768,7 +768,7 @@ hauptLauf(async () => {
             nonZero: gcNonZero,
             heapLast: Number.isFinite(fr._heapLast) ? fr._heapLast : null,
             gcN: fr.gcN,
-            memoryApi: !!(performance && performance.memory),
+            memoryApi: !!performance?.memory,
         };
         // (3) Pipelines: der Boot-Warm-Compile ERZEUGT welche — Konsum-Beweis.
         const sns = r.state.perfSense || {};
@@ -777,7 +777,7 @@ hauptLauf(async () => {
             total: sns.pipesTotal,
             neuProS: sns.pipesNeuProS,
             cachesSize:
-                rend._pipelines && rend._pipelines.caches && typeof rend._pipelines.caches.size === "number"
+                rend._pipelines?.caches && typeof rend._pipelines.caches.size === "number"
                     ? rend._pipelines.caches.size
                     : null,
         };
@@ -852,7 +852,7 @@ hauptLauf(async () => {
                         };
                     })
                     .catch((e) => {
-                        throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${(e && e.message) || e}`);
+                        throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${e?.message || e}`);
                     });
                 if (s.fehler) throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${s.fehler}`);
                 if (s.fertig) break;
@@ -885,7 +885,7 @@ hauptLauf(async () => {
             });
             console.log(`  [Erst-Zeichnung] ${name}: ${sek()} s (GPU-Gegendruck je Bild bis ${stauMs} ms)`);
             const ru = await page.evaluate(() => window.__erstWandRuhe);
-            if (ru && ru.offen)
+            if (ru?.offen)
                 console.log(
                     `  [Erst-Zeichnung] ${name}: die Ruhe endete nach ${ru.ms} ms mit ${ru.offen} offenen Pipelines der Welt — ${ru.namen.join(" · ")}`
                 );

@@ -307,11 +307,7 @@ function lebendeZweige(root, ziel, tage) {
 }
 
 function selbsttest() {
-    let rot = 0;
-    const pruef = (name, ok, info) => {
-        console.log(`${ok ? "  ok " : "  ROT"} ${name}${info ? " — " + info : ""}`);
-        if (!ok) rot++;
-    };
+    const pruef = stamm.pruefZaehler();
     const ziel = "origin/integ-probe";
     const K = stamm.karteVon(ROOT);
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamm-rehome-klon-"));
@@ -420,8 +416,7 @@ function selbsttest() {
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
-    console.log(rot ? `stamm-rehome: ${rot} ROT` : "stamm-rehome: Selbsttest grün");
-    return rot;
+    return pruef.ende("stamm-rehome");
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────────────────────────

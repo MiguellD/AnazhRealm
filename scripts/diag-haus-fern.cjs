@@ -30,6 +30,7 @@
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
+const { wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -862,13 +863,8 @@ function selbsttest() {
     console.log(
         `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
-    if (rot.length) {
-        console.log(`\n❌ ROT — ${rot.length} Befunde:`);
-        for (const r of rot.slice(0, 80)) console.log("   " + r);
-        if (rot.length > 80) console.log(`   … und ${rot.length - 80} weitere`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
+    wandEnde(
+        rot,
+        "jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
     );
 })();

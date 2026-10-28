@@ -180,7 +180,7 @@ function proben(inj) {
         b1.promoviert++;
         b1.huelleNachPromotion += huelleVon(B, bi);
         const dm = B.H && B.H.dims;
-        if (dm && dm.tuer) {
+        if (dm?.tuer) {
             b2.tueren++;
             const st = welt(B, dm.tuer.x, dm.tuer.z - 2.0);
             const zi = welt(B, dm.tuer.x, dm.tuer.z + 1.0);
@@ -193,10 +193,10 @@ function proben(inj) {
             if (l.z > dm.tuer.z + 0.6) b2.hinein++;
             else b2.faelle.push(bi + ":" + (l.z - dm.tuer.z).toFixed(2));
         }
-        if (B.H && B.H.cellar) keller.push(bi);
+        if (B.H?.cellar) keller.push(bi);
         // B3 läuft im promovierten Zustand (die Solids des Hauses stehen); die Kellertreppe steigt aus dem Keller (eigene
         // Schwerkraft-Ebene) und ist nicht Teil dieser Probe.
-        for (const f of (dm && dm.flights) || []) {
+        for (const f of dm?.flights || []) {
             if (f.atLevel === "keller") continue;
             const N = f.N || 0;
             if (!(N > 0)) continue;
@@ -245,14 +245,14 @@ function proben(inj) {
             }
         }
         // die Demotion setzt die Hülle zurück (EIN Lebenszyklus je Haus); Keller-Häuser bleiben für B4 promoviert
-        if (!(B.H && B.H.cellar)) {
+        if (!B.H?.cellar) {
             demoteB(bi);
             b1.demotiert++;
             b1.huelleNachDemotion += huelleVon(B, bi);
         }
     }
     // ── B4 Keller (promovierte Häuser mit Keller): der erste Treffer nach oben ──
-    const boden = dorfGroup.children.find((o) => o.isMesh && o.userData && o.userData.dorfBoden);
+    const boden = dorfGroup.children.find((o) => o.isMesh && o.userData?.dorfBoden);
     const istBodenPlatte = (o) =>
         !!o &&
         (o === boden ||
@@ -294,7 +294,7 @@ function proben(inj) {
         planHash: null,
     };
     const O = dorf.ort;
-    if (O && O.v2) {
+    if (O?.v2) {
         b5.v2 = O.v2.version;
         b5.slots = O.v2.slots.length;
         // der Plan-Hash: der Kern rechnet in DERSELBEN Seite den Plan des Exports 7/18 am Ort über die Lage der Saat
