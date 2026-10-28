@@ -631,3 +631,4 @@
 2026-10-28 11:31:17 takt16a-gtx klang.K4#1 GRÜN 1.2 · 22/36
 2026-10-28 11:34:42 takt16a-gtx klang.K4#2 GRÜN 3.3 · 23/36
 2026-10-28 11:51:58 takt16a-gtx VORFAHRT klang.K5#2 verloren 7.1
+2026-10-28 11:52:03 takt16a-gtx klang.K5#2 OFFEN 17.2 · 24/36
