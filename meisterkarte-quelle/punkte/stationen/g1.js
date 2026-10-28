@@ -1523,10 +1523,76 @@ module.exports = [
         quelle:
             "2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
     },
+
+    // ── stoffe.K5 ── gate:stand-takt --nachwuchs (Null-Renderer, die Seite der Tat): das Wuchs-Gesetz `_wuchsAt` = Wasser
+    // (`_feuchteAt`, aus der Hydrosphäre; ohne Fluss und See der Regen `WUCHS.wasserBasis`) × Licht am Boden unter den stehenden
+    // Kronen (`_bodenLichtFeld`); jede Tat misst es beim Schreiben (`w`) und heilt in TAT_NARBE.stunden / w Spielstunden
+    // (`_tatDauer`, gelesen von `_tatIndex`). Die Linse sucht das offene Ufer nächst der Mess-Wiese in der Welt (heute
+    // −348/−662), pflückt mit dem Verb der Ernte jede Pflanze der Nah-Streu im Ring, springt die Uhr als Spieler-Wort ein
+    // Spieljahr und zählt je Pflanze die Stunde der Rückkehr (`_geerntetIn`), am Ende die gezeichneten; danach die Mutante
+    // (Feuchte gleich ½ an `_feuchteAt`). Je 4-m-Kachel Tempo = 1/Stunde. An main 675a3889 ROT (das Rauschen `lebendig`:
+    // r 0,028, im Offenen 0,152, nass 0,836 × trocken), am Zweig w3s-sukzession GRÜN: r 0,834 über alle Kacheln, im Offenen
+    // 0,999, nass 1,298 × trocken; die Mutante offen r 0, 1,000 ×.
+    {
+        kriterium: "stoffe.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--nachwuchs"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const N = jsonZeile(lauf.stdout, /^NACHWUCHS \{/);
+            const [e, m] = N ? [N.echt, N.mutante] : [];
+            if (!e || !m || !N.ufer) return { gruen: false, zahl: "keine NACHWUCHS-Zeile (Exit " + lauf.exit + ")" };
+            const gruen =
+                lauf.exit === 0 &&
+                /✅ NACHWUCHS GRÜN/.test(lauf.stdout) &&
+                e.jahr >= 8760 &&
+                e.n >= 30 &&
+                e.da === e.n &&
+                e.r >= 0.5 &&
+                e.offen >= 6 &&
+                e.rOffen >= 0.5 &&
+                e.quote >= 1.15 &&
+                m.rOffen < 0.2 &&
+                m.quote < 1.05;
+            return {
+                gruen,
+                zahl:
+                    "Ufer " + Math.round(N.ufer.x) + "/" + Math.round(N.ufer.z) + ": nach " + e.jahr + " h " + e.da + " von " + e.n +
+                    " Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) " + e.r + ", im Offenen (" + e.offen + " Kacheln) " +
+                    e.rOffen + ", nass " + e.quote + " × trocken · Mutante Feuchte gleich: offen r " + m.rOffen + ", nass " +
+                    m.quote + " × trocken",
+            };
+        },
+        pfad: [
+            "stamm/vegetation-*.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-boden.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-ort.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/wasser-hydro.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "voxel-worker.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/kamera-nah.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5)",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
+    { kriterium: "stoffe.K5", staffel: 2, befehl: null, grund: "nicht gebaut: der Nachwuchs ist EIN Gesetz (Feuchte × Licht, w3s-sukzession), aber die Reihe fehlt — kein Sämling aus dem Stubben (der Wald setzt nach der Narbe den gewachsenen Baum, keine Jugend-Gestalt `treeParams(alter)`), keine Sukzession Brand → Gras → Busch → Wald (der Brand gehört der Karte w3s-feuer), kein Nährstoff-Feld (Ernte entnimmt nichts, Asche und Leichnam geben nichts zurück)" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
