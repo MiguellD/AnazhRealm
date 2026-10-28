@@ -708,7 +708,7 @@ async function k1Lauf(browser, page) {
     await server.zeige(lab, 120000, "worlds/schmiede/index.html", "load");
     await page.bringToFront();
     for (const l of ["vor", "masse", "schneide"]) {
-        K.welt[l] = await page.evaluate(K1_BILD, l).catch((e) => ({ abbruch: e.message }));
+        K.welt[l] = await page.evaluate(K1_BILD, l).catch((e) => ({ abbruch: e.message.split("\n")[0] }));
         if (K.welt[l].traf) await page.screenshot({ path: `${aus}-${l}.png` });
         K.labor[l] = await lab.evaluate(K1_LABOR, l);
     }
