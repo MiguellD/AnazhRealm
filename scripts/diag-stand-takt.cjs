@@ -28,7 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -1882,11 +1882,8 @@ const TAT = process.argv.includes("--tat");
                 `Takten, danach in ${F.nach.frames} Takten ${F.nach.summe} Einheiten`}`
         );
     const v = urteil(befund);
-    if (v.length) {
-        console.log("\n❌ STAND-TAKT ROT:\n  " + v.join("\n  "));
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ STAND-TAKT GRÜN — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten."
+    wandEnde(
+        v,
+        "STAND-TAKT — im Stand geht kein Fege-Takt und keine langsame Simulation, die gebrochene Wache findet nichts Verschlafenes, ein Bau und jedes Sim-Ereignis wecken, Gehen und Strom arbeiten."
     );
 })();

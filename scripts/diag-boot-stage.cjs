@@ -26,7 +26,7 @@
 // (der Erst-Boot füllt die Platte ganz); am Zweit-Boot urteilt sie: ≥ 95 % von der Platte, kein Auftrag verschluckt.
 // --selftest verschluckt eine Lieferung (Null-Renderer) — die Zeile ist ROT beim Namen.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -425,10 +425,5 @@ hauptLauf(async () => {
         );
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
-    if (fails) {
-        console.log("⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.");
-        process.exit(1);
-    }
-    console.log(`✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);
-    process.exit(0);
+    urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);
 });

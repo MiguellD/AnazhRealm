@@ -1677,5 +1677,4 @@ hauptLauf(async () => {
             "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +
             "Scheiben aus dem Gelände-Gesetzbuch, der Haupt-Faden hängt nur ein, " +
             "quantisiertes Re-Zentrieren, headless-default ruhig.");
-    process.exit(0);
 });

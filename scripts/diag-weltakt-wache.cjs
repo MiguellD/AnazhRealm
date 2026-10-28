@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -537,13 +537,5 @@ hauptLauf(async () => {
         console.log(`  ${w.gruen ? "✅" : "❌"} tat-${k.toLowerCase()} ${JSON.stringify(w)}`);
     }
     rot.push(...tu.map((x) => "(T) " + x));
-    if (rot.length) {
-        console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\nGRÜN — unter der Bühne läuft kein Welt-Akt durch, jeder steht beim Namen seiner Quelle; ohne Halt wirkt das Spiel wie immer."
-    );
-    process.exit(0);
+    wandEnde(rot, "unter der Bühne läuft kein Welt-Akt durch, jeder steht beim Namen seiner Quelle; ohne Halt wirkt das Spiel wie immer.");
 });

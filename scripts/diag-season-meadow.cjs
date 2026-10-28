@@ -10,7 +10,7 @@
 //   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
-const { selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -81,8 +81,4 @@ if (process.argv.includes("--selftest")) {
 }
 console.log("=== DIE SAISON IST EINE FARBE — uSeasonMul nach dem Studio-Gesetz (Node, die geladene Klasse) ===");
 for (const [n, ok, d] of pruefe({ welt: WELT })) check(n, ok, d);
-if (errs.length) {
-    console.error(`\n❌ ROT — ${errs.length} Gesetz(e) verletzt.`);
-    process.exit(1);
-}
-console.log("\n✅ GRÜN — die Welt färbt ihr Jahr wie das Studio: EINE Uniform, keine Saison im Körper.");
+wandEnde(errs, "die Welt färbt ihr Jahr wie das Studio: EINE Uniform, keine Saison im Körper.");
