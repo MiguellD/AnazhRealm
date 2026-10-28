@@ -15,7 +15,9 @@
  *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Stoffe · Schatten gegen die Budget-Zeile des
  *                              Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` = buildInstance
  *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
- *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`).
+ *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`). Reicht das
+ *                              Studio seinen Renderer (`opt.renderer`, wie panorama()), steht neben jeder gezählten Zahl die
+ *                              GEZEICHNETE: das Werk allein in einem eigenen Render-Abschnitt, renderer.info (studios.K3).
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
@@ -662,8 +664,18 @@
 
     // ── DIE KOSTEN-LEISTE je LOD-Stufe ──
     // opt: budget (lod.budget[kind] des Kerns) · stufen (kindStages[kind]) · bauen(stufe) → Object3D der Welt-Gestalt
-    //      (buildInstance des Kerns) · titel · quelle (Text: woran gemessen) · meshfrei (Text: keine Gestalt, Vertrag §8)
-    function zaehle(obj) {
+    //      (buildInstance des Kerns) · titel · quelle (Text: woran gemessen) · meshfrei (Text: keine Gestalt, Vertrag §8) ·
+    //      renderer (der Renderer des Studios oder eine Funktion, die ihn reicht — die Gegenzahl `zeichne`)
+    // Was eine Stufe zählt, ist das EINE Budget-Gesetz des Kerns (phyto-core budgetSippen/budgetWurf): ein Wurf-Teil (sein Stoff
+    // zeichnet nicht, `visible: false` — er zeichnet nur in den Kaskaden) zählt nie zur Bild-Stufe; eine NUR-WURF-Stufe (`wurf`)
+    // zählt ihre Werfer.
+    function zurStufe(o, wurf) {
+        if (wurf) return !!o.castShadow;
+        return (Array.isArray(o.material) ? o.material : [o.material]).some(function (m) {
+            return m && m.visible !== false;
+        });
+    }
+    function zaehle(obj, wurf) {
         var tris = 0;
         var stoffe = {};
         var nStoffe = 0;
@@ -671,7 +683,7 @@
         var werfer = 0;
         if (!obj || !obj.traverse) return { tris: 0, stoffe: 0, meshes: 0, werfer: 0 };
         obj.traverse(function (o) {
-            if (!o.isMesh || !o.geometry) return;
+            if (!o.isMesh || !o.geometry || !zurStufe(o, wurf)) return;
             var vis = true;
             for (var p = o; p; p = p.parent) if (p.visible === false) vis = false;
             if (!vis) return;
@@ -689,6 +701,104 @@
             });
         });
         return { tris: Math.round(tris), stoffe: nStoffe, meshes: meshes, werfer: werfer };
+    }
+    // DIE GEGENZAHL (studios.K3): das Werk ALLEIN in EINEM eigenen Render des Studio-Renderers — nur seine Meshes in einer
+    // eigenen Szene (die Kamera sieht Ebene 30, Lichter bleiben draußen, also kein Schatten-Pass), ungekappt (frustumCulled
+    // aus), in ein 1×1-Ziel unter EINEM Stoff (kein Programm je Werk-Stoff). Gezählt wird renderer.info je Abschnitt: die
+    // Differenz der Zähler um den Render, gestempelt (Lehre 23: r184 `info.calls` genau +1 je Wurzel, r128 `info.render.frame`
+    // unverändert — ein fremder Render dazwischen macht die Zahl ungültig). Eine Wegwerf-Gestalt (bauen) gibt danach ihre
+    // Geometrie frei, sonst hielte der Renderer jede Mess-Gestalt (Lehre 27). Eine NUR-WURF-Stufe (`wurf`) zeichnet wie ihre
+    // Kaskade: nur die Werfer, ihr Stoff im Abschnitt sichtbar (der Kaskaden-Stoff des Wirts zeichnet ihn). null = kein
+    // Renderer, (r184) noch nicht bereit oder gestört.
+    var ZAEHL_EBENE = 30,
+        zaehlMittel = null;
+    function zeichne(R, obj, wegwerf, wurf) {
+        var T = wurzel.THREE;
+        if (!R || !R.info || !T || !obj || !obj.traverse || R.initialized === false) return null;
+        var gpu = !!R.isWebGPURenderer;
+        if (!zaehlMittel || zaehlMittel.R !== R) {
+            var kam = new T.PerspectiveCamera();
+            kam.layers.set(ZAEHL_EBENE);
+            zaehlMittel = { R: R, ziel: new (gpu ? T.RenderTarget : T.WebGLRenderTarget)(1, 1), kamera: kam, stoff: new T.MeshBasicMaterial() };
+        }
+        // das Werk ist die Gestalt ABSEITS der Szene (frisch gebaut oder gezählt, bevor sie die Bühne betritt): was unter einer
+        // Scene hängt, ist Bühne und zeichnet hier nicht — eine Leiste, die die Bühne mitzählt, steht ohne Gegenzahl
+        var alle = [],
+            wurzeln = [];
+        obj.traverse(function (o) {
+            if (o.isMesh) alle.push(o);
+        });
+        var werk = alle.filter(function (o) {
+            var w = o;
+            while (w.parent) w = w.parent;
+            if (w.isScene || (wurf && !o.castShadow)) return false;
+            if (wurzeln.indexOf(w) < 0) wurzeln.push(w);
+            return true;
+        });
+        var stoffe = [];
+        if (wurf)
+            werk.forEach(function (o) {
+                (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
+                    if (m && stoffe.indexOf(m) < 0) stoffe.push(m);
+                });
+            });
+        var stoffSicht = stoffe.map(function (m) {
+            var v = m.visible;
+            m.visible = true;
+            return v;
+        });
+        var alt = werk.map(function (o) {
+            var a = [o.layers.mask, o.frustumCulled];
+            o.layers.enable(ZAEHL_EBENE);
+            o.frustumCulled = false;
+            return a;
+        });
+        var info = R.info,
+            r = info.render,
+            auto = info.autoReset,
+            vorZiel = R.getRenderTarget(),
+            draws = gpu ? "drawCalls" : "calls",
+            stempel = function () {
+                return gpu ? info.calls : r.frame;
+            };
+        var c = { tris: 0, befehle: 0 },
+            gueltig = true;
+        info.autoReset = false;
+        R.setRenderTarget(zaehlMittel.ziel);
+        try {
+            wurzeln.forEach(function (w) {
+                var szene = new T.Scene();
+                szene.overrideMaterial = zaehlMittel.stoff;
+                szene.add(w);
+                var s0 = stempel(),
+                    t0 = r.triangles,
+                    d0 = r[draws];
+                try {
+                    R.render(szene, zaehlMittel.kamera);
+                } finally {
+                    szene.remove(w);
+                }
+                c.tris += r.triangles - t0;
+                c.befehle += r[draws] - d0;
+                if (stempel() !== s0 + (gpu ? 1 : 0)) gueltig = false;
+            });
+        } finally {
+            R.setRenderTarget(vorZiel);
+            info.autoReset = auto;
+            werk.forEach(function (o, i) {
+                o.layers.mask = alt[i][0];
+                o.frustumCulled = alt[i][1];
+            });
+            stoffe.forEach(function (m, i) {
+                m.visible = stoffSicht[i];
+            });
+        }
+        if (wegwerf)
+            alle.forEach(function (o) {
+                if (o.geometry) o.geometry.dispose();
+            });
+        c.tris = Math.round(c.tris);
+        return gueltig ? c : null;
     }
     function kosten(ziel, opt) {
         opt = opt || {};
@@ -730,11 +840,21 @@
         box.appendChild(quelle);
         if (ziel) ziel.appendChild(box);
         var stand = {};
-        function zeigen(s, c) {
+        var R = function () {
+            return typeof opt.renderer === "function" ? opt.renderer() : opt.renderer;
+        };
+        var wurfStufe = function (s) {
+            return !!(budget[s] && budget[s].nurWurf);
+        };
+        // g: die Gegenzahl aus dem Zähl-Abschnitt ({ tris, befehle }) — ohne sie bleibt die Befehls-Spalte die Budget-Zeile
+        function zeigen(s, c, g) {
             var zz = zeilen[s];
             var b = budget[s];
             if (!zz || !b) return;
+            if (g) c.gezeichnet = g;
             stand[s] = c;
+            // die Zahlen der Zeile für ihre Leser (gate:studio-huelle H4, H7): Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet
+            Object.assign(zz.z.dataset, { stufe: s, leiste: c.tris, deckel: b.tris || 0 }, g ? { gezeichnet: g.tris } : {});
             var deckel = b.tris || 1;
             var anteil = Math.min(1, c.tris / deckel);
             zz.balken.style.width = (anteil * 100).toFixed(1) + "%";
@@ -746,7 +866,8 @@
             zz.z.className = "h-kosten-zeile " + klasse;
             var t = c.tris.toLocaleString("de-DE") + " / " + deckel.toLocaleString("de-DE") + " △";
             if (b.band) t += " · Band ×" + (c.tris / b.band).toFixed(2);
-            t += " · " + c.stoffe + " Stoffe / " + (b.draws || "–") + " Befehle";
+            if (g) t += " · gezeichnet " + g.tris.toLocaleString("de-DE") + " △ in " + g.befehle + " Befehlen (Zeile " + (b.draws || "–") + ") · " + c.stoffe + " Stoffe";
+            else t += " · " + c.stoffe + " Stoffe / " + (b.draws || "–") + " Befehle";
             if (typeof b.schatten === "number") t += " · Wurf L" + b.schatten;
             zz.txt.textContent = t;
             zz.z.title =
@@ -759,9 +880,10 @@
             stand: function () {
                 return stand;
             },
-            // die Labor-Gestalt der Stufe s direkt zählen (was der Schirm zeigt)
-            messen: function (obj, s) {
-                zeigen(s == null ? stufen[0] : s, zaehle(obj));
+            // die Labor-Gestalt der Stufe s direkt zählen (was der Schirm zeigt; wegwerf: eine Mess-Gestalt, die niemand zeigt)
+            messen: function (obj, s, wegwerf) {
+                if (s == null) s = stufen[0];
+                zeigen(s, zaehle(obj, wurfStufe(s)), zeichne(R(), obj, !!wegwerf, wurfStufe(s)));
             },
             // gezählte Kosten der Stufe s setzen ({ tris, stoffe, meshes, werfer }) — die Welt-Werkstatt zählt das Werk der Foundry
             setzen: function (s, c) {
@@ -774,11 +896,14 @@
                 var meinLauf = ++lauf;
                 uhr = setTimeout(function () {
                     var i = 0;
+                    // ein Renderer, der noch nicht bereit ist (r184 vor init), schiebt den Lauf — die Leiste misst nie ohne Gegenzahl
+                    if (R() && R().initialized === false) return K.neu();
                     var naechste = function () {
                         if (meinLauf !== lauf || i >= stufen.length) return;
                         var s = stufen[i++];
                         try {
-                            zeigen(s, zaehle(opt.bauen(s)));
+                            var obj = opt.bauen(s);
+                            zeigen(s, zaehle(obj, wurfStufe(s)), zeichne(R(), obj, true, wurfStufe(s)));
                         } catch (e) {
                             zeilen[s].txt.textContent = "Bau-Fehler: " + ((e && e.message) || e);
                             zeilen[s].z.className = "h-kosten-zeile fail";

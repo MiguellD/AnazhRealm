@@ -161,7 +161,7 @@ function init(){
     basis:function(){return PRESETS[aktivPreset]||null;},
     bei:function(){presetMarke(null);},nachRuhe:function(ids,bau){if(bau)buildGate();else membranSetzen();}});
   kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:PC.PORTAL_RENDER_CONFIG.lod.budget.gate,
-    stufen:PC.PORTAL_RENDER_CONFIG.lod.kindStages.gate,bauen:function(s){return PC.buildInstance(rezeptId(),1,s,W);},
+    stufen:PC.PORTAL_RENDER_CONFIG.lod.kindStages.gate,bauen:function(s){return PC.buildInstance(rezeptId(),1,s,W);},renderer:function(){return renderer;},
     quelle:'gemessen an der Welt-Gestalt (porta-core buildInstance, die Regler als ov); L3·Wurf = die NUR-WURF-Hülle'});
   var pc=document.getElementById('presets');Object.keys(PRESETS).forEach(function(name){var b=document.createElement('button');b.textContent=name;b.onclick=function(){sitz.schritt(function(){presetMarke(name);setParams(PRESETS[name]);buildGate();});};pc.appendChild(b);});
   // Der Zufallspunkt ist der Würfel der Sitzung: ein neuer Same zieht jede freie Achse (das Schloss hält eine fest).

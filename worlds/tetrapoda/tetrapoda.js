@@ -230,7 +230,7 @@ function init(){
     basis:function(){return presets[gattungAktiv]||null;},
     format:function(z,v){return z.id==="diet"?(v>0.7?"Carn":v>0.3?"Omni":"Herb"):z.id==="size"?(+v).toFixed(1):(+v).toFixed(2);},
     bei:function(){gattungMarke(null);},nachRuhe:function(){buildAnimal();}});
-  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:BZ,stufen:STUFEN,
+  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:BZ,stufen:STUFEN,renderer:function(){return renderer;},
     quelle:"gemessen an der gezeigten Gestalt = dem Welt-Guss (foundry-core BAKERS_BY_KIND.kreatur, dieselben Dials, Saat 0): L0 nah, L1 jenseits "+BZ[STUFEN[1]].ab+" (± "+Math.round(BZ.hyst*100)+" %) und als Wurf"});
   scene=new THREE.Scene();scene.background=new THREE.Color(0x080604);camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.1,200);camera.position.set(6,2,7);
   renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(devicePixelRatio);if(THREE.sRGBEncoding!==undefined)renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
