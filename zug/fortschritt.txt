@@ -654,3 +654,4 @@
 2026-10-28 13:09:15 takt16b-gtx physik.K2#2 ROT 2.4 · 9/36
 2026-10-28 13:23:39 takt16b-gtx profiband.K4#1 ROT 14.3 · 10/36
 2026-10-28 13:43:46 takt16b-gtx profiband.K4#2 ROT 20.0 · 11/36
+2026-10-28 13:44:01 takt17c-gtx START 23 Stationen in 22 Läufen
