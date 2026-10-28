@@ -669,3 +669,4 @@
 2026-10-28 14:15:26 takt17c-gtx haar.K1#1 GRÜN 1.4 · 13/23
 2026-10-28 14:16:43 takt17c-gtx haar.K2#1 ROT 1.2 · 14/23
 2026-10-28 14:24:51 takt17c-gtx ferne.K2#2 GRÜN 8.0 · 15/23
+2026-10-28 14:28:46 takt17c-gtx material.K3#2 GRÜN 3.8 · 16/23
