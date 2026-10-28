@@ -1,0 +1,186 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function stimmeLauf() {
+const fs = require("fs");
+const path = require("path");
+const { statikServer, nullSeite } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, mutanten, seite, urteil] = process.argv.slice(1);
+const erg = { laeufe: [] };
+const server = statikServer();
+let browser;
+try {
+await server.lausche(0);
+for (const m of mutanten.split(",")) {
+const s = await nullSeite({ frist: 900000 });
+browser = s.browser;
+await server.zeige(s.page, 60000);
+await s.page.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
+await s.page.evaluate(AUSGABE_INSTALL);
+const g = await s.page.evaluate("(" + seite + ")(" + JSON.stringify({ x: M.x, z: M.z, mutante: m === "-" ? null : m }) + ")");
+g.rot = eval("(" + urteil + ")")(g);
+console.log("STIMME " + JSON.stringify(g));
+erg.laeufe.push(g);
+await browser.close();
+browser = null;
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+console.log("FEHLER " + erg.fehler);
+} finally {
+if (browser) await browser.close();
+server.close();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+process.exit(0);
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/b3f9ae95-headless/affekt.K4_1.json - async function stimmeGang(o) {
+const r = window.anazhRealm;
+const [st, P] = [r.state, Object.getPrototypeOf(r)];
+const pm = st.playerMesh.position;
+pm.set(o.x, r._voxelSurfaceY(o.x, o.z) + 1.8, o.z);
+let t = performance.now();
+const takt = () => (pm.setX(o.x).setZ(o.z), r._gameLoopTick((t += 100)), pm.setX(o.x).setZ(o.z));
+await window.__weltStehtNach(takt);
+window.__buehne();
+st.weatherEffectTime = 0;
+r._setWeather("sunny", "regler");
+[st.taten, st.llm.enabled] = [[], true];
+const t0 = st.spielZeit;
+const [W, Z, tafel, pos, gr, gs, wetter] = [[], [], r.dslEffects, r.dslEvalPos, r.grokRender, r.grokSpeak, () => [st.weather, st.wetterWort, st.wetterWunsch]];
+let [jetzt, art, seq] = [null, null, 0];
+const blick = (x, z) =>
+new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(st.camera.projectionMatrix, st.camera.matrixWorldInverse))
+.containsPoint(new THREE.Vector3(x, r.getTerrainHeightAt(x, z) + 1, z));
+for (const op of [...P.constructor.DSL_WELTAKTE, "weather"]) {
+const f = tafel[op];
+tafel[op] = (a, ctx) => {
+const w = { op, wer: ctx.source, regel: ctx.regel, weil: ctx.weil, grund: ctx.grund, prog: ctx.programId, t: st.spielZeit - t0, n: st.creatures.length, vor: wetter(), aussen: jetzt };
+jetzt = w;
+try {
+const x = f(a, ctx);
+w.ok = op !== "spawn_creature" || st.creatures.length > w.n;
+return x;
+} finally {
+[jetzt, w.seq, w.wunsch] = [w.aussen, ++seq, st.wetterWunsch !== w.vor[2]];
+w.ok = !!w.ok && (op !== "weather" || wetter().some((x, k) => x !== w.vor[k]));
+W.push(w);
+}
+};
+}
+r.dslEvalPos = function (node, ...x) {
+const p = pos.call(this, node, ...x);
+if (jetzt && !jetzt.ort && p) jetzt.ort = { x: p.x, z: p.z, k: node && node[0], blick: blick(p.x, p.z) };
+return p;
+};
+r.grokSpeak = function (k, ...x) {
+const a = art;
+art = "begleiter:" + k;
+try {
+return gs.call(this, k, ...x);
+} finally {
+art = a;
+}
+};
+r.grokRender = function (text) {
+Z.push({ t: st.spielZeit - t0, seq: ++seq, text, art: st.taten.some((e) => e.zeile === text && e.gesprochen === st.spielZeit) ? "stimme" : art });
+return gr.call(this, text);
+};
+if (o.mutante === "schreiber") r._tatSchreiber = () => ({ nom: "Der Nexus", gen: "des Nexus" });
+if (o.mutante === "takt")
+r._feldStimmeTakt = function () {
+if (this._stimme) this._stimme.t = -Infinity;
+return P._feldStimmeTakt.call(this);
+};
+const KI = {
+"pflege den Ort vor mir": ["deposit_life", ["at_player_forward", 15]],
+"ein paar frohe Tiere": ["spawn_creature", ["at_player_forward", 12], 3, "happy"],
+"wann immer hier Leben fehlt, pflege es": ["rule", ["field_below", "lebendig", 1.01], ["deposit_life", ["at_player_forward", 12]], { everySec: 60, ttlSec: 900 }],
+"es soll regnen": ["weather", "rainy"],
+};
+r.llmCall = async (text, _, h) => (h && h.hintergrund ? {} : { say: "Ich tue es.", program: KI[text] });
+const plan = { 2400: "pflege den Ort vor mir", 4800: "pflege das land", 6000: "setze wetter frei", 7200: "ein paar frohe Tiere", 12000: "wann immer hier Leben fehlt, pflege es", 15000: "es soll regnen" };
+for (let i = 0, evo = 0; i <= 18000; i++) {
+if (st.spielZeit - t0 >= evo * st.nexusEvolutionInterval) evo++, st.nexusEvolutionQueue.push(r.generateEvolution());
+if (KI[plan[i]]) (art = "antwort"), await r.maybeAnswerWithLlm(plan[i], () => {}), (art = null);
+else if (plan[i]) r.processChatCommand(plan[i]);
+takt();
+}
+const welt = W.filter((w) => w.ok && /^(rule:)*(nexus|llm:|emotion:|creature:)/.test(w.wer) && (!w.ort || w.ort.blick));
+const RI = ["nördlich", "nordöstlich", "östlich", "südöstlich", "südlich", "südwestlich", "westlich", "nordwestlich"];
+let k = 0;
+const zeilen = Z.filter((z) => z.art === "stimme").map((z) => {
+const seit = welt.slice(k, (k = welt.filter((w) => w.seq < z.seq).length));
+const w = seit[seit.length - 1] || { wer: "keine Tat" };
+const b = w.wer.replace(/^(rule:)+/, "");
+const NAME = { nexus: ["Der Nexus", "des Nexus"], llm: ["Die KI", "der KI"], emotion: [`Die Stimmung „${b.slice(8)}“`, `der Stimmung „${b.slice(8)}“`], creature: [`Das Wesen „${b.slice(9)}“`, `des Wesens „${b.slice(9)}“`] };
+const [nom0, gen] = NAME[b.split(":")[0]] || ["?", "?"];
+const nom = b === w.wer ? nom0 : "Ein Gesetz " + gen;
+const [dx, dz] = w.ort ? [w.ort.x - o.x, w.ort.z - o.z] : [0, 0];
+const d = Math.round(Math.hypot(dx, dz));
+const wo = !w.ort ? " — überall, " : d < 2 ? " — bei dir, " : ` — ${d} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
+const weil = [w.regel, w.weil].filter(Boolean).map((x) => r._describeDslCondition(x.cond)).concat(w.weil && !w.weil.ja ? ["nicht gilt, dass"] : []);
+const ursache = w.regel || w.weil ? "weil " : w.grund ? `auf dein Wort „${w.grund}“` : w.ort && w.ort.k === "at_field_need" ? "weil das Feld dort am ärmsten war" : "aus eigenem Antrieb";
+const was = w.op === "weather" && w.wunsch ? `wünscht sich das Wetter „` : "";
+const soll = [nom + " ", was, wo, ...weil, ursache, w.regel ? `(Gesetz Nr. ${w.regel.id} ${gen}` : `(Programm ${w.prog}`, seit.length > 1 ? `dazu ${seit.length - 1} weitere Tat` : ""];
+const falsch = soll.filter((x) => !z.text.includes(x)).concat(seit.length > 1 || !/weitere/.test(z.text) ? [] : ["weitere"]);
+return { t: +z.t.toFixed(1), text: z.text, falsch: z.text.startsWith(nom) ? falsch : [nom, ...falsch] };
+});
+const rest = welt.slice(k);
+const ende = st.spielZeit - t0;
+const n = (re, f) => W.filter((w) => w.ok && re.test(w.wer) && f(w)).length;
+const imBlick = (w) => welt.includes(w);
+return {
+mutante: o.mutante || null,
+minuten: +(ende / 60).toFixed(2),
+zeilen: zeilen.length,
+falschN: zeilen.filter((z) => z.falsch.length).length,
+falsch: zeilen.filter((z) => z.falsch.length).slice(0, 6),
+abstand: zeilen.length > 1 ? Math.min(...zeilen.slice(1).map((z, i) => +(z.t - zeilen[i].t).toFixed(2))) : null,
+offen: rest.length ? +(ende - Math.max(rest[0].t, zeilen.length ? zeilen[zeilen.length - 1].t + 30 : 0)).toFixed(1) : 0,
+ohneTat: Z.filter((z) => !z.art || z.art === "begleiter:dslSay").map((z) => z.text),
+begleiter: Z.filter((z) => /^begleiter:/.test(z.art || "")).length,
+klassen: {
+nexus: n(/^nexus$/, imBlick),
+"rule:nexus": n(/^rule:nexus$/, imBlick),
+llm: n(/^llm:/, imBlick),
+"rule:llm": n(/^rule:llm:/, imBlick),
+wunsch: n(/^(rule:)*nexus$/, (w) => w.op === "weather" && w.wunsch),
+human: n(/^human$/, () => true),
+fern: n(/^(rule:)*(nexus|llm:)/, (w) => w.ort && !w.ort.blick),
+},
+beispiele: zeilen.filter((z, i) => i % 12 === 0).map((z) => "[" + z.t + " s] " + z.text),
+};
+} function stimmeUrteil(g) {
+if (!g || !g.klassen) return ["kein Gang"];
+const leer = Object.keys(g.klassen).filter((k) => !(g.klassen[k] > 0));
+return [
+...(g.minuten >= 30 ? [] : [g.minuten + " Spielminuten, nicht 30"]),
+...(g.zeilen > 0 ? [] : ["keine Zeile"]),
+...(leer.length ? ["keine wirkende Tat von " + leer.join(", ")] : []),
+...(g.falschN ? [g.falschN + " Zeilen falsch"] : []),
+...g.falsch.map((z) => "falsch [" + z.t + " s] " + z.falsch.join(" | ") + ": " + z.text),
+...(g.abstand === null || g.abstand >= 30 - 1e-6 ? [] : ["zwei Zeilen binnen " + g.abstand + " s"]),
+...(g.offen > 0.5 ? ["eine Tat im Blick wartet " + g.offen + " s über ihre Pause ohne Zeile"] : []),
+...g.ohneTat.map((x) => "Zeile ohne Tat: „" + x + "“"),
+];
+}
+[stall-akte] ═══ affekt.K4_1.json · Seite #2 http://127.0.0.1:41717/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((async function stimmeGang(o) { const r = window.anazhRealm; const [st, P] = [r.state, Obj) seit 30.2 s
+[stall-akte] Puls 11×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 535 · welt 535 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2703 107 % · browser 2562 1 % · GPU 2595 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 18:57 gpu 2 [VizCompositorTh 2 %]/r 284 · 18:59 gpu 1/r 356 · 19:01 gpu 1 [chrome 1 %]/r 314 · 19:03 gpu 2 [VizCompositorTh 1 %]/r 115 · 19:05 gpu 0/r 106 · 19:07 gpu 0 [VizCompositorTh 1 %]/r 112 · 19:09 gpu 1 [Chrome_ChildIOT 1 %]/r 105 · 19:11 gpu 0 [VizCompositorTh 1 %]/r 106 · 19:13 gpu 1 [VizCompositorTh 1 %]/r 104 · 19:15 gpu 1/r 107 · 19:17 gpu 1 [VizCompositorTh 1 %]/r 121 · 19:19 gpu 1 [VizCompositorTh 1 %]/r 104 · 19:21 gpu 0 [Chrome_ChildIOT 1 %]/r 104 · 19:23 gpu 1 [VizCompositorTh 1 %]/r 105 · 19:25 gpu 1/r 106
+[stall-akte] Stapel _chunkSatzLege :1847 < _bauSatzSlots :248 < _bauSatzLege :136 < _tickBauSatz :113 < _tickChunkSatz :2186 < _loopRender :1521 < loop :276 < takt :7
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_26
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_27
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_28, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Wissen hinzugefügt: chat - setze wetter frei
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus ruht — Wirk-Kraft erschöpft (33/36.46991294962001 nötig)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_31, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_32, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Das Wetter zieht zu stormy
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_33, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_34, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_35, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_38
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _chunkSatzLege :1847
+STIMME {"mutante":null,"minuten":30,"zeilen":55,"falschN":0,"falsch":[],"abstand":30,"offen":-18.3,"ohneTat":[],"begleiter":2,"klassen":{"nexus":57,"rule:nexus":348,"llm":3,"rule:llm":11,"wunsch":16,"human":2,"fern":303},"beispiele":["[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)","[468.1 s] Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)","[828.1 s] Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 29 weitere Taten seit der letzten Zeile)","[1221.9 s] Ein Gesetz der KI trägt Leben ins Feld an einer Stelle — 12 m südlich von dir, weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. 25 der KI)","[1596.4 s] Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"],"rot":[]}

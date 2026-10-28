@@ -1,0 +1,46 @@
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~14 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~14 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN siedlung.K5#2 · nH 12 erstes Haus nach 62.2 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 169.4 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf) · allein · Exit 0 · 5.48 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~24 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~24 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN leib.K1#2 · schlechtester von 3 Läufen p95 ms ego/gehen 45.7 · third/gehen 44 · ego/springen 32.3 · third/springen 33.9 · ego/einsteigen 34.9 · third/einsteigen 22.8 · ego/hieb 26.6 · third/hieb 36.7 · Bild 14.8/14.6/14.3 ms · allein · Exit 0 · 14.83 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~10 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN leib.K2#2 · Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 · Bahn 1/1 · Exit 0 · 2.74 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~14 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~14 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN halten.K2#1 · schlechtester von 3 Läufen p95 ms third/hieb 35.8 · ego/hieb 29.5 · Bild 15.6/15.2/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (145–172 ms, gleitet bis 0 mm je Takt) / 60-mal (124–174 ms, gleitet bis 0 mm je Takt) / 60-mal (120–166 ms, gleitet bis 0 mm je Takt) · allein · Exit 0 · 5.79 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~4 min auf 1 Bahn(en) · erwartet ~4 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN halten.K5#2 · hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [["consume:_k5"],["consume:_k5"]] · Bahn 1/1 · Exit 0 · 0.81 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~30 min auf 1 Bahn(en) · erwartet ~30 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN fahrzeug.K5#1 · Federung im Bild: Drift-Wank 8.61 gegen Glatt 0.539 mm, Stoß-Antwort Glatt/Hang 8.02/9.76 mm (Mutante 2.672/1.409) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.618/0.511 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅ · Bahn 1/1 · Exit 0 · 3.39 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~5 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN tore.K3#2 · leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim · Bahn 1/1 · Exit 0 · 1.47 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~10 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  spielgang.K3#1 · keine Bedienung (Exit 0) · allein · Exit 0 · 0.96 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~8 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  ankunft.K2#1 · 15.08 % Lücke nach 60 s · offen im Bild nichts · t(Kontrolle) 20.30 s von außen (Eigenmeldung 19.91 s) · [linse-gpu] nvidia/pascal · allein · Exit 1 · 1.48 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~12 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~12 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  ankunft.K3#1 · warm Median 12.56 s (10.94 · 12.44 · 12.69 · 13.98) · [linse-gpu] nvidia/pascal · allein · Exit 0 · 1.68 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~20 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~20 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN streaming.K3#1 · Frame p95 Median 41.7 ms (41.6 · 41.7 · 49.9) · CPU-Takt p95 36 · 38.6 · 40.5 ms · die Welt steht nach 12.1 · 12.6 · 12.4 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x8 | TAKT: verteilt x3 | TAKT: _dispatchFrameJobs › run x3 · [linse-gpu] nvidia/pascal · allein · Exit 0 · 4.37 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~5 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN klang.K2#1 · r 0.82 bei Lag 0 (n 119), Spitze 0.83 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 77.4 fps, Klang an · allein · Exit 0 · 1.78 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~15 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~15 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN klang.K5#2 · Klang-Takt p95 gehen 0.13 · fahrt 0.15 · nacht 0.16 ms · Aussetzer 0 in 600 s Wiedergabe (0 s still) (Exit 0) · allein · Exit 0 · 13.36 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~10 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN speicher.K1#1 · 20 Tode: Alter max 3.489 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · allein · Exit 0 · 11.92 min
+  GRÜN speicher.K1#2 · 20 Tode: Alter max 3.489 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 · allein · Exit 0 · 11.92 min (Zwilling von speicher.K1#1)
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 557d4aad · Zeit 1 Läufe ~4 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~4 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN speicher.K2#1 · je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.5 ms (Soll p95 ≤ 0,3; 115 Rufe in 5762 Bildern; aufgefüllt je Bild p95 0, blind) · allein · Exit 0 · 3.54 min
+→ meisterkarte-quelle\punkte\messung\557d4aad-gtx.json
