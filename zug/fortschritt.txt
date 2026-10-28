@@ -748,3 +748,4 @@
 2026-10-28 22:15:46 takt18d-gtx spielgang.K3#1 ROT 1.0 · 8/16
 2026-10-28 22:17:22 takt18d-gtx ankunft.K2#1 ROT 1.5 · 9/16
 2026-10-28 22:19:08 takt18d-gtx ankunft.K3#1 ROT 1.7 · 10/16
+2026-10-28 22:23:36 takt18d-gtx streaming.K3#1 GRÜN 4.4 · 11/16
