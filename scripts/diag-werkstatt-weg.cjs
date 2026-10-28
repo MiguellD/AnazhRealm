@@ -982,7 +982,20 @@ function wegHelfer(arg) {
     // über ein Objekt, das schon für die Kamera der Szene zog (am Backend gezählt: die Erst-Zeichnung zieht erst, wenn seine
     // Pipeline steht, eine Kaskade zählt nicht), in der Arena dazu im Zug dieses Bilds —, und die Uhr steht, wenn die GPU dieses
     // Bild abgearbeitet hat. Der Bau-Hash ist der der gezeichneten Geometrie, nie des Datums.
-    const bauVon = (teile) => teile.map((g) => window.__abdruck({ attributes: Object.fromEntries([["position", g.position], ["normal", g.normal]].filter(([, a]) => a)), index: g.index && { array: g.index.array || g.index } }, true)).sort().join(" ");
+    const klassisch = (o, a = []) => (o.traverse((m) => m.isMesh && a.push([{ mesh: m, geom: m.geometry }, 0])), a);
+    // je Gestalt einmal (Slots einer Gruppe teilen ihre Geometrie: die vier Räder des Wagens)
+    const bauVon = (teile) => [...new Set(teile.map((g) => window.__abdruck({ attributes: Object.fromEntries([["position", g.position], ["normal", g.normal]].filter(([, a]) => a)), index: g.index && { array: g.index.array || g.index } }, true)))].sort().join(" ");
+    // DAS SOLL eines Studio-Werks: dieselbe Anfrage frisch im Werk (mit der Prägung der Gestalt, `_foundryGestaltOv`, ohne
+    // Platte), durch den Weg der Welt (`_foundryBuildGroup`, dann
+    // `_foundryFlattenFor`: die Sichthöhe der Stufen, das Verschmelzen) — der Cache-Platz trägt dafür kurz den frischen Bau
+    const frisch = async (e, p, [f, v, ov] = [r._foundry, r._foundryGestaltFor(e, p), r._artifactStudioOv(e)], key = r._foundryKoerperKey(p, v, 0, ov), alt = f.cache.get(key)) => {
+        f.cache.set(key, r._foundryBuildGroup((await r._foundryWorkerRequest(p, v, 0, r._foundryGestaltOv(p, v, ov), null, false, 0)) || [], { lod: 0, preset: p }));
+        try {
+            return r._foundryFlattenFor(e, p, 0).leaves.filter((l) => !l.shadowTwin).map((l) => ({ ...l.geom.attributes, index: l.geom.index }));
+        } finally {
+            f.cache.set(key, alt);
+        }
+    };
     let abbau;
     if (arg.bild) {
         const [b, roh, draw, zog, jetzt] = [st.renderer.backend, r._loopRender, st.renderer.backend.draw, new WeakSet(), (L, k) => (L[k] ??= performance.now())];
@@ -990,11 +1003,13 @@ function wegHelfer(arg) {
             if (ro.camera === st.camera) zog.add(ro.object);
             return draw.call(this, ro, ...x);
         };
-        const l0 = (e) => e?.instSlots?.length && (!e.instFoundry || e._servedLod === 0) && e.instSlots.map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin);
+        // die L0-Senken eines Werks — ein eigener Bauplan ist klassisch (`entry.mesh`: jedes Mesh seiner Gruppe zieht selbst)
+        const l0 = (e) =>
+            e?.instSlots?.length ? (!e.instFoundry || e._servedLod === 0) && e.instSlots.map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin) : e?.mesh?.parent && klassisch(e.mesh);
         // eine Satz-Art (Haus, Ausstattung, Tor: `BAU_SATZ`) zieht nie selbst: ihr Bereich liegt ganz im Satz ihres Stoffs (keine
         // offene Rate) und seine Zelle des Platzes im Abschnitt des Hauptbilds — die Lesung des Zug-Zählers (`satzInhalt`)
         const satz = (g, slot, S = st.chunkSaetze.get(g.satz)) => !st.bauSatzRaten?.has(g.key) && zog.has(S?.mesh) && S.abschnitte.get("haupt")?.liste.includes(S.bloecke.get(g.key)?.zellen[slot]);
-        const zieht = ([g, slot], s = g.mesh) => (g.satz ? satz(g, slot) : s.count > slot && (s.__arena ? zog.has(s.__arena) && [st.camera, null].some((k) => s.__arena._zuege.get(k)?.zuege.includes(s)) : zog.has(s.__zeichner || s)));
+        const zieht = ([g, slot]) => (g.satz ? satz(g, slot) : (g.mesh.count ?? 1) > slot && (g.mesh.__arena ? zog.has(g.mesh.__arena) && [st.camera, null].some((k) => g.mesh.__arena._zuege.get(k)?.zuege.includes(g.mesh)) : zog.has(g.mesh.__zeichner || g.mesh)));
         r._loopRender = function (...a) {
             const [L, e] = [lauf, lauf && lauf.bild == null && neue()[0]];
             if (e) jetzt(L, "standT");
@@ -1061,6 +1076,7 @@ function wegHelfer(arg) {
         // der Weg ist zu Ende: das Werk steht, oder der Spieler-Kanal hat gesprochen
         // (der Bild-Weg: das Bild des Werks ist abgearbeitet, oder der Kanal sprach ohne Werk)
         fertig: () => (arg.bild ? lauf.gpuT != null || (!neue().length && zeilen().length > lauf.n0) : neue().length > 0 || zeilen().length > lauf.n0),
+        offen: () => !!arg.bild && neue().length > 0, // das Werk steht, sein Bild fehlt: die Linse wartet (Pipeline, Satz-Rate)
         rezept: (name) => [...document.querySelectorAll("#inventory-recipes .recipe-row")].find((z) => z.querySelector(".recipe-name").textContent === String(st.blueprints[name].label || name)).querySelector("button"),
         async lesen() {
             const echt = window.__eingabeStrom.filter((e) => e.echt);
@@ -1074,7 +1090,7 @@ function wegHelfer(arg) {
             const bild = L.gpuT && echt.length && {
                 zeiten: [echt.at(-1).t, L.standT, L.l0T, L.bildT, L.gpuT].map(ms), // PHASEN, ab der ersten Eingabe
                 bau: bauVon(L.bild),
-                soll: bauVon(p ? ((await r._foundryWorkerRequest(p, r._foundryGestaltFor(e, p), 0, r._artifactStudioOv(e), null, false, 0)) || []).filter((m) => m.position) : r._archFlattenBlueprint(e.type).leaves.filter((l) => !l.shadowTwin).map((l) => ({ ...l.geom.attributes, index: l.geom.index }))),
+                soll: bauVon(p ? await frisch(e, p) : klassisch(r._buildFromBlueprint(st.blueprints[e.type])).map(([g]) => ({ ...g.geom.attributes, index: g.geom.index }))),
             };
             return {
                 ...bild,
@@ -1220,7 +1236,7 @@ async function wegLauf(page, o) {
         Object.assign(e, { bauModus: z.bauModus, farbe: z.bauModus ? z.toenung.farbe : null, lichtung: { wand: z.wand, toenung: z.toenung } });
         if (o.phantom && z.bauModus) e.phantom = await bauWeg(page, "phantom");
         if (z.bauModus) await taste(page, "KeyF");
-        if (!e.gesperrt) await page.evaluate(() => window.__gebautNach("der Weg", { fertig: () => window.__bauWeg.fertig() }));
+        if (!e.gesperrt) await page.evaluate(() => window.__gebautNach("der Weg", { fertig: () => window.__bauWeg.fertig(), offen: () => window.__bauWeg.offen() }));
         const an = o.verb && (await bauWeg(page, "an", o.verb));
         if (an) Object.assign(e, an === true ? (await (VERB_TASTE[o.verb] || geh)(page), await bauWeg(page, "verb", o.verb)) : { warum: an });
     } catch (err) {
