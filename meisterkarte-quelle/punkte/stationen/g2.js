@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K5 (Zweig schwarm), mensch.K5#1 und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K5 (Zweig schwarm), mensch.K5#1 und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -759,6 +759,196 @@ async function wertLauf() {
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 }
+// ───────── DIE EMOTION FORMT DIE WELT (affekt.K2#1) und DER NEXUS WÄHLT AUS (affekt.K3#1; Zweig affekt-emotion): zwei Szenen
+// der Werkbank, ein Lauf (`affektLauf`) ─────────
+// Gemeinsam: der eigene Takt der Szene (`_gameLoopTick` je 0,1 s Ereignis-Uhr, nie die Wanduhr, die Seite steht still), jeder
+// Lauf beginnt am selben Anfang (Uhr, Welt-Uhr, Ströme der Welt `bauSame`, Leben- und Gefühls-Feld, Taten, die Wesen und Werke
+// des ersten Laufs) — so unterscheidet die Läufe nur ihre Mutante; der Halt der Messung fällt (`weatherEffectTime` 0).
+// DIE HOFFNUNG UND DAS WETTER (affekt.K2#1), in der Seite der Werkbank: der Spieler steht an der Mess-Wiese im Frieden, 12 Uhr
+// und Sonne über sein Wort, dann gibt er das Wetter frei; der Nexus ruht. Die Tat: alle 30 s Spielzeit baut er einen Felsblock
+// aus der Leiste (`confirmBuild`, der Stein dafür im Inventar), 25 min lang; 30 Spielminuten zieht der Wetter-Zug (alle
+// `WETTER_ZUG_SEK`) — das Wort, das die Welt sich wünscht, sonst die Front am Ort. Gezählt: je Zug das Wort, der Wunsch und
+// seine Quelle, die Front; die Hoffnung über der Schwelle des Spielers; das Feuern des Gesetzes `emotion:hope`. o.mutante
+// „starr" friert die Achse hope auf 0, „gesetz-aus" pausiert das Gesetz (`disabled`, der Schalter des Gesetze-Pults).
+function gemuetWetter(r, T, o) {
+    const s = r.state;
+    const p = s.player;
+    const pm = s.playerMesh.position;
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    const A = window.__affektAnfang || (window.__affektAnfang = {
+        u: window.__gangUhr || performance.now(), sz: s.spielZeit, same: JSON.stringify(s.worldMeta.bauSame || {}),
+        regel: s.dsl.nextRuleId, wesen: new Set(s.creatures), werke: new Set(s.architectures),
+    });
+    let u = A.u;
+    s.spielZeit = A.sz;
+    s.worldMeta.bauSame = JSON.parse(A.same);
+    for (const c of [...s.creatures]) if (!A.wesen.has(c)) r.removeCreature(c);
+    for (const a of [...s.architectures]) if (!A.werke.has(a)) r.removeArchitecture(a, { still: true });
+    r._clearBuildMode();
+    p.inventory = new Array(27).fill(null);
+    Object.assign(s, { lifeField: new Map(), wohlBaseline: new Map(), emotionField: new Map(), taten: [], tatErwartung: new Map() });
+    s.weatherEffectTime = 0;
+    s.nexusEvolutionQueue.length = 0;
+    s.dsl.pending = [];
+    s.perfRegulator = false;
+    s.worldRules = s.worldRules.filter((g) => /^emotion:/.test(g.source));
+    for (const g of s.worldRules) Object.assign(g, { lastFired: -Infinity, fires: 0, disabled: o.mutante === "gesetz-aus" && g.source === "emotion:hope" });
+    for (const k in p.emotions) p.emotions[k] = 0;
+    if (p.mood) for (const k in p.mood) p.mood[k] = 0;
+    p.wohlBaseline = undefined;
+    p.appraisalDelta = 0;
+    r.setGameMode("frieden");
+    r.setTimeOfDay(0.5, "regler");
+    r._setWeather("sunny", "regler");
+    r._wetterFreigeben("regler");
+    if (o.mutante === "starr") Object.defineProperty(p.emotions, "hope", { configurable: true, enumerable: true, get: () => 0, set: () => {} });
+    const takt = () => {
+        s.nexusLastEvolution = Infinity;
+        r._gameLoopTick((window.__gangUhr = u += 100));
+    };
+    const bauen = () => {
+        if (!s.buildMode.active || s.buildMode.blueprintName !== "stein_block") (r.setHotbarSlot(0, "stein_block"), r.selectHotbarSlot(0));
+        for (const [m, n] of Object.entries(r.computeBuildCost("stein_block") || {})) r.addMaterialToInventory(m, n);
+        return r.confirmBuild() ? 1 : 0;
+    };
+    const Z = r.constructor.WETTER_ZUG_SEK;
+    const zuege = [];
+    let bauten = 0;
+    let ueber = 0;
+    try {
+        for (let k = 0; k < 18000; k++) {
+            if (k % 300 === 0 && k < 15000) bauten += bauen();
+            pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+            const zug = Math.floor(s.spielZeit / Z);
+            const w = s.wetterWunsch && s.wetterWunsch.quelle;
+            takt();
+            if (Math.floor(s.spielZeit / Z) !== zug) zuege.push({ wort: s.weather, quelle: w || null, front: r._wetterAmOrt(pm.x, pm.z, (zug + 1) * Z) });
+            if (p.emotions.hope > p.emotionThreshold) ueber++;
+        }
+    } finally {
+        if (o.mutante === "starr") (delete p.emotions.hope, (p.emotions.hope = 0));
+        for (const g of s.worldRules) g.disabled = false;
+    }
+    const g = s.worldRules.find((x) => x.source === "emotion:hope");
+    const n = (f) => zuege.filter(f).length;
+    return {
+        mutante: o.mutante || null, bauten, zuege: zuege.length, sonne: n((z) => z.wort === "sunny"), frontSonne: n((z) => z.front === "sunny"),
+        ausGesetz: n((z) => z.quelle === "rule:emotion:hope"), gesetz: g ? { id: g.id, feuer: g.fires } : null, hoffnungS: ueber / 10,
+        folge: zuege.map((z) => z.wort[0] + (z.quelle ? "*" : "")).join(""),
+    };
+}
+
+// DER NEXUS IM ZEITRAFFER (affekt.K3#1), in der Seite der Werkbank: der Spieler steht an der Mess-Wiese im Frieden, der Nexus
+// spielt — die Szene treibt seine Evolution je `nexusEvolutionInterval` (24 s; der Takt der Mess-Welt wirft headless nichts,
+// `evolveNexus`, ein Treiber ruft `generateEvolution`), alles Weitere ist das Spiel (das Wirk-Tor, `_loopNexusUpdate`, die
+// Regeln, ihre Wertung, Erneuerung und Mutation). 30 Spielminuten in 18 000 Takten (Zeitraffer ≈ ×10 an der Wand), o.saat
+// versetzt den Strom des Nexus (`bauSame.nexus`). Je 30 s die Nexus-Regeln mit value > 0 und alle, je Drittel gepoolt. o.mutante „gemischt": der Ertrag jedes Feuerns (aus dem EMA-Schritt der echten Wertung
+// zurückgerechnet) lernt die Regel mit zufälligem Vorzeichen — gezählt wird dann value > 0 nach dem Wert, den die echte Wertung
+// ihr gäbe (`_wahr`); „aus": die Wertung schweigt. Dazu die Taten des Nexus und die Zeilen der Stimme des Felds über sie.
+function nexusZeitraffer(r, T, o) {
+    const s = r.state;
+    const pm = s.playerMesh.position;
+    const y = (x, z) => r._voxelSurfaceY(x, z);
+    if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+    const A = window.__affektAnfang || (window.__affektAnfang = {
+        u: window.__gangUhr || performance.now(), sz: s.spielZeit, same: JSON.stringify(s.worldMeta.bauSame || {}),
+        regel: s.dsl.nextRuleId, wesen: new Set(s.creatures), werke: new Set(s.architectures),
+    });
+    let u = A.u;
+    s.spielZeit = A.sz;
+    s.worldMeta.bauSame = JSON.parse(A.same);
+    s.worldMeta.bauSame.nexus = (s.worldMeta.bauSame.nexus || 0) + 1000 * (o.saat || 0);
+    s.dsl.nextRuleId = A.regel;
+    for (const c of [...s.creatures]) if (!A.wesen.has(c)) r.removeCreature(c);
+    Object.assign(s, { lifeField: new Map(), wohlBaseline: new Map(), emotionField: new Map(), taten: [], tatErwartung: new Map() });
+    s.weatherEffectTime = 0;
+    s.worldRules = [];
+    s.nexusEvolutionQueue.length = 0;
+    s.dsl.pending = [];
+    s.dsl.pendingOutcomes = [];
+    s.perfRegulator = false;
+    s.nexusWirk = undefined;
+    r._stimme = null;
+    for (const k in s.player.emotions) s.player.emotions[k] = 0;
+    s.player.wohlBaseline = undefined;
+    r.setGameMode("frieden");
+    let saat = 12345;
+    const zufall = () => (saat = (Math.imul(saat, 1664525) + 1013904223) >>> 0) / 4294967296;
+    const B = r.constructor.WERTUNG.ruleValueBeta;
+    const echt = r._measureRuleReward;
+    if (o.mutante === "aus") r._measureRuleReward = (rule) => (rule._vPending = false);
+    if (o.mutante === "gemischt")
+        r._measureRuleReward = function (rule, now) {
+            if (!rule._vPending) return;
+            const v = rule.value || 0;
+            rule.value = rule._wahr || 0;
+            echt.call(this, rule, now);
+            const ertrag = (rule._wahr || 0) + (rule.value - (rule._wahr || 0)) / B;
+            rule._wahr = rule.value;
+            rule.value = v + B * ((zufall() < 0.5 ? -ertrag : ertrag) - v);
+        };
+    const wert = (x) => (o.mutante === "gemischt" ? x._wahr || 0 : x.value || 0);
+    const proben = [];
+    let evo = u / 1000;
+    try {
+        for (let k = 0; k < 18000; k++) {
+            pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+            s.nexusLastEvolution = Infinity;
+            if (u / 1000 >= evo) (s.nexusEvolutionQueue.push(r.generateEvolution()), (evo = u / 1000 + s.nexusEvolutionInterval));
+            r._gameLoopTick((window.__gangUhr = u += 100));
+            if (k % 300 === 0) {
+                const R = s.worldRules.filter((x) => x && x.source === "nexus");
+                proben.push([R.filter((x) => wert(x) > 0).length, R.length]);
+            }
+        }
+    } finally {
+        r._measureRuleReward = echt;
+    }
+    const drittel = (a) => a.reduce(([g, n], [x, y]) => [g + x, n + y], [0, 0]);
+    const L = proben.length;
+    const taten = s.taten.filter((e) => /^(rule:)*nexus$/.test(String(e.wer)));
+    return {
+        mutante: o.mutante || null, saat: o.saat || 0, erstes: drittel(proben.slice(0, L / 3)), letztes: drittel(proben.slice((2 * L) / 3)),
+        verlauf: proben.map(([g, n]) => g + "/" + n).join(" "), taten: taten.length,
+        gesprochen: taten.filter((e) => e.zeile).length,
+        zeilen: taten.filter((e) => e.zeile && e.regel != null).map((e) => e.zeile).slice(-2),
+    };
+}
+
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
+// das Weltbild ist da und die Bühne steht (der Wetter-Zug und der Nexus warten auf sie: höchstens 9 000 Takte der Seite), dann je Mutante der Lauf
+// „art" — „gemuet": echt · starr · gesetz-aus, „nexus": je Saat 0, 1, 2 echt · gemischt · aus. Je Lauf eine Zeile „AFFEKT-<art> {…}", alle in {AUS}.
+async function affektLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const [aus, port, art, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const erg = { art, laeufe: [] };
+    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const b = await werkbankRuf(W, "/eval", { code: "const da = () => !!r.state._weltbildDa && r._buehneSteht(); for (let i = 0; i < 9000 && !da(); i++) await window.__seitenTakt(); return da();" });
+        if (!b || b.ergebnis !== true) throw new Error("die Bühne steht nicht: " + JSON.stringify(b).slice(0, 200));
+        const plan = art === "gemuet" ? [null, "starr", "gesetz-aus"].map((m) => [m, 0]) : [0, 1, 2].flatMap((n) => [null, "gemischt", "aus"].map((m) => [m, n]));
+        for (const [mutante, saat] of plan) {
+            const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, mutante, saat }) + ");" });
+            if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+            console.log("AFFEKT-" + art + " " + JSON.stringify(a.ergebnis));
+            erg.laeufe.push(a.ergebnis);
+        }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+        console.log("FEHLER " + erg.fehler);
+    } finally {
+        tor.stop();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+
 // die Zeilen eines Laufs (stdout) als Objekte
 const zeilenVon = (lauf, marke) =>
     String(lauf.stdout || "")
@@ -1384,6 +1574,81 @@ const stationen = [
         ],
         quelle: "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät",
     },
+    {
+        kriterium: "vegetation.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // Dieselbe Linse wie #1 (Zwilling: ein Lauf je Gerät), seit vegetation-k4-wasser mit der Wasser-Hälfte: das Haus des
+        // Spielers setzt die Werkstatt (`confirmBuild`, die Prägung des Rezepts, schöpfer), jedes Haus wird zusätzlich in Third
+        // gesehen (5 m vor der Front, 2,6 m hoch: die Büschel jeder Box gegen das Bild ohne sie), und am See und am Fluss der
+        // Mess-Wiese (`__wasserOrte`) je Ego und Third: wo das Wasser vorn liegt (Maske des Wasser-Stoffs) ändert die Natur
+        // (Nah-Wiese und Nah-Streu, ohne Schattenwurf) das Bild ohne Wasser-Klasse nicht, der Grund trägt dort keine Halm-Schicht,
+        // und am Gesetz steht keine Pflanze im gezeichneten Wasser (`__wasserFlora`). Je Wasser-Blick 20 px Saum (die Kante des
+        // Spiegels, wie die Bild-Schwelle der Linse), sonst 0. Blind (ROT): ein Wasser ohne Spiegel im Bild (< 500 px) oder ohne
+        // Gegenprobe vor dem Spiegel, ein Haus ohne Third, das Haus des Spielers fehlt.
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund", "--bild"],
+        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1", HAUS_WELT_JSON: "{AUS}" },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j) => {
+            const w = j && j.w9;
+            if (!w || !Array.isArray(w.haeuser)) return { gruen: false, zahl: "kein W9 im JSON der Linse (HAUS_WELT_JSON)" };
+            if (!w.bild || !Array.isArray(w.wasser)) return { gruen: false, zahl: "W9 ohne Bild oder ohne Wasser (Linse vor vegetation-k4-wasser)" };
+            const boxen = w.haeuser.flatMap((h, i) => (h.koerper || []).map((b, jb) => ({ ...b, n: h.typ + " " + i + "-" + jb + " " + b.art })));
+            const gesehen = boxen.filter((b) => b.blicke > 0);
+            const haus = gesehen.filter((b) => b.halm > 0 || b.boden > 0 || b.bueschel > 0).map((b) => b.n + " " + b.halm + "/" + b.boden + "/" + b.bueschel);
+            const third = w.haeuser.map((h, i) => [h.typ + " " + i, h.third ? h.third.halm + h.third.boden : null]);
+            const thirdRot = third.filter(([, v]) => v !== 0);
+            const gegen = Math.max(0, ...w.haeuser.map((h) => h.gegenprobe || 0));
+            const spieler = w.haeuser.filter((h) => h.spieler).length;
+            const blicke = w.wasser.flatMap((x) => x.blicke.map((z) => ({ ...z, ort: x.ort })));
+            const wasserRot = w.wasser.filter(
+                (x) => x.wiese + x.streu > 0 || x.blicke.length < 2 || x.blicke.some((z) => z.spiegel < 500 || z.halm + z.boden > 20) || !x.blicke.some((z) => z.gegen > 0)
+            );
+            const gruen =
+                w.haeuser.length >= 11 &&
+                spieler === 1 &&
+                j.werkstatt === true &&
+                gesehen.length >= Math.ceil(0.9 * boxen.length) &&
+                !haus.length &&
+                !thirdRot.length &&
+                gegen > 0 &&
+                w.wasser.length === 2 &&
+                !wasserRot.length;
+            return {
+                gruen,
+                zahl:
+                    w.haeuser.length + " Häuser (" + spieler + " gesetzt über die Werkstatt " + j.werkstatt + "), " + gesehen.length + "/" +
+                    boxen.length + " Boxen im Bild" + (haus.length ? ": Halm/Boden/Büschel in " + haus.join(" · ") : " ohne Halm") +
+                    "; Third " + (thirdRot.length ? "ROT " + thirdRot.map(([n, v]) => n + " " + v).join(" · ") : "0 px vor " + third.length + " Häusern") +
+                    "; Gegenprobe " + gegen + " px; Wasser " + w.wasser.map((x) => x.ort + " Pflanzen im Wasser " + (x.wiese + x.streu)).join(", ") +
+                    "; je Blick Spiegel/Halm/Grund/Gegenprobe " + blicke.map((z) => z.ort + "-" + z.sicht + " " + [z.spiegel, z.halm, z.boden, z.gegen].join("/")).join(" · "),
+            };
+        },
+        pfad: [
+            "stamm/vegetation-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/stoff-*.js",
+            "stamm/bild-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/daten.js",
+            "fachwerk-core.js",
+            "foundry-bruecke.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
+    },
 
     // ───────── oekologie.K3 — EIN Furcht-Gesetz (Zweig tier-gesetz-k5, tetrapoda FURCHT_GESETZ) ─────────
     // Probe furcht der Kreatur-Linse (Null-Renderer, R3: sie misst ein Gesetz): je Rolle 4 Orte, das Tier reist über
@@ -1705,6 +1970,89 @@ const stationen = [
             "stamm/kreatur-leben.js", "stamm/kampf.js", "stamm/dirigent-takt.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
+    },
+
+    // ───────── affekt.K2 Staffel 1 — die Emotion formt die Welt über ein Gesetz mit Quelle (Zweig affekt-emotion) ─────────
+    // Die Szene `gemuetWetter` (oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000, drei Läufe vom selben
+    // Anfang: echt, die Achse hope eingefroren (starr), das Gesetz emotion:hope pausiert (gesetz-aus). GRÜN, wenn alle drei gleich
+    // oft bauen (dieselbe Tat), echt die Hoffnung über die Schwelle trägt und ihr Gesetz feuert, mindestens ein Zug den Wunsch
+    // mit der Quelle rule:emotion:hope zieht, echt ≥ 3 Züge mehr Sonne zieht als starr, starr der Front folgt (Sonne = Sonne der
+    // Front) und gesetz-aus starr gleicht (ohne das Gesetz keine Kopplung — kein fester Trigger daneben).
+    // Headless (Werkbank, swiftshader, Stationslauf am Zweig affekt-emotion): 49 Bauten je Lauf; echt Sonne 12/15 (10 Züge aus
+    // rule:emotion:hope, Hoffnung 908 s über 0,7, das Gesetz feuert 34×), starr 3/15 = Front, gesetz-aus 3/15. Vorher (main
+    // a03b7b06): die Kopplung war ein fester Trigger in updatePlayerEmotions, kein Gesetz emotion:hope — die Station ROT.
+    {
+        kriterium: "affekt.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(affektLauf) + ")()", "{AUS}", "{PORT}", "gemuet", knapp(gemuetWetter)],
+        gpu: false,
+        zeit: false,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const L = zeilenVon(lauf, "AFFEKT-gemuet");
+            const [e, st, aus] = [null, "starr", "gesetz-aus"].map((m) => L.find((x) => x.mutante === m));
+            if (!e || !st || !aus) return { gruen: false, zahl: "Läufe " + L.length + "/3 (Exit " + lauf.exit + ")" };
+            const gleich = e.bauten > 0 && e.bauten === st.bauten && e.bauten === aus.bauten;
+            const gruen =
+                gleich && e.gesetz && e.gesetz.feuer > 0 && e.hoffnungS > 0 && e.ausGesetz >= 1 && e.sonne - st.sonne >= 3 &&
+                st.sonne === st.frontSonne && aus.sonne === st.sonne && st.ausGesetz === 0 && aus.ausGesetz === 0;
+            return {
+                gruen,
+                zahl:
+                    "Sonne echt " + e.sonne + "/" + e.zuege + " (" + e.ausGesetz + " Züge aus rule:emotion:hope, das Gesetz feuert " +
+                    (e.gesetz ? e.gesetz.feuer : "—") + "×, Hoffnung " + e.hoffnungS + " s über der Schwelle) · starr " + st.sonne +
+                    " (Front " + st.frontSonne + ") · Gesetz pausiert " + aus.sonne + " · Bauten " + [e, st, aus].map((x) => x.bauten).join("/"),
+            };
+        },
+        pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/bild-himmel.js", "stamm/dirigent-takt.js",
+            "stamm/werkstatt-bauen.js", "stamm/speicher-laden.js", "phyto-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = eine getragene Stimmung verschiebt am Ort EINE Größe (Wetter-Wahrscheinlichkeit, Kreatur-Laune, Klang oder Materie-Antwort) gegen den Gegenlauf mit eingefrorener Emotion-Achse",
+    },
+
+    // ───────── affekt.K3 Staffel 1 — der Nexus wählt aus: die Wertung δ trägt seine Regeln (Zweig affekt-emotion) ─────────
+    // Die Szene `nexusZeitraffer` (oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000: je Saat des
+    // Nexus-Stroms (0, 1, 2) drei Läufe zu 30 Spielminuten vom selben Anfang — echt, mit gemischtem δ (zufälliges Vorzeichen,
+    // gezählt nach dem Wert der echten Wertung), mit stummer Wertung. Je Variante über die Saaten gepoolt: Regeln mit value > 0
+    // durch alle Regeln im ersten und im letzten Drittel. GRÜN, wenn echt im letzten Drittel einen höheren Anteil trägt als im
+    // ersten UND als das gemischte δ im letzten, die stumme Wertung nicht steigt, und die Stimme des Felds mindestens eine Tat
+    // eines Nexus-Gesetzes im Blick spricht (Ort, Ursache, „Gesetz Nr. … des Nexus").
+    // Headless (Werkbank, swiftshader, zwei Stationsläufe am Zweig affekt-emotion; das Wirk-Tor liest die fps, die Läufe streuen):
+    // echt 0,493 → 0,761 und 0,302 → 0,795, gemischt 0,233 → 0,286 und 0,317 → 0,100, stumm 0 → 0; die Zeile „Ein Gesetz des
+    // Nexus trägt Leben ins Feld an einer Stelle — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 17
+    // des Nexus …)". Vorher (main a03b7b06): unter dem Takt der Szene verfiel jede Nexus-Regel im
+    // ersten Takt (die Geburt auf der Wanduhr), und mit der Uhr des Takts erneuerte die Fitness-Summe jede feuernde Regel bis
+    // value −0,67 (echt 0,80 → 0,75, gemischt 0,59 → 0,52) — ROT.
+    {
+        kriterium: "affekt.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(affektLauf) + ")()", "{AUS}", "{PORT}", "nexus", knapp(nexusZeitraffer)],
+        gpu: false,
+        zeit: false,
+        minuten: 30,
+        urteil: (j, lauf) => {
+            const L = zeilenVon(lauf, "AFFEKT-nexus");
+            if (L.length !== 9) return { gruen: false, zahl: "Läufe " + L.length + "/9 (Exit " + lauf.exit + ")" };
+            const pool = (m) => {
+                const q = L.filter((x) => x.mutante === m);
+                const s = (k, i) => q.reduce((a, x) => a + x[k][i], 0);
+                return { e: s("erstes", 0) / Math.max(1, s("erstes", 1)), l: s("letztes", 0) / Math.max(1, s("letztes", 1)), q };
+            };
+            const [e, g, a] = [pool(null), pool("gemischt"), pool("aus")];
+            const zeile = e.q.flatMap((x) => x.zeilen).find((z) => /Gesetz Nr\. \d+ des Nexus/.test(z));
+            const f = (x) => x.toFixed(3);
+            return {
+                gruen: e.l > e.e && e.l > g.l && !(a.l > a.e) && !!zeile,
+                zahl:
+                    "value > 0 echt " + f(e.e) + " → " + f(e.l) + " · gemischt " + f(g.e) + " → " + f(g.l) + " · stumm " + f(a.e) + " → " +
+                    f(a.l) + " · Stimme: " + (zeile ? zeile.slice(0, 120) : "keine Zeile eines Nexus-Gesetzes"),
+            };
+        },
+        pfad: ["stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/dirigent-takt.js",
+            "stamm/speicher-laden.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ",
     },
 
     // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────
@@ -2042,6 +2390,107 @@ const stationen = [
     quelle: "2 = alle Bewohner einer Siedlung, 4–10 Wege am Tag, Wiederkehr nach 1 h Abwesenheit auf ±2 m",
     },
 
+    // ───────── luftwasser.K1 — DER VOGEL FLIEGT UND RUFT AUS SEINEM KÖRPER (Zweig vogel-zensus) ─────────
+    // Der Lauf von klang.K1 (`diag-klang-zensus --json`, derselbe Befehl und dieselbe Umgebung: ein Zwilling, EIN Lauf). Der Vogel
+    // ist das Gesetzbuch tetrapoda VOGEL_GESETZ (`_vogelGesetz`, fail-closed), im Spielpfad je Takt `_vogelTakt` (dirigent-takt), sein
+    // Leib im Pool `vogelPool` (`_vogelZeichnen`, EIN Befehl). Je Ort misst der Zensus 4,5 s lang Takt für Takt die Lagen der
+    // gezeichneten Teile aus dem Pool: ihr Weg je Sekunde (Median der Takte gleicher Zahl) und ihre Höhe über dem Boden (Median) —
+    // `zensus.leiber {gehoert, gezeichnet, flug {mps, hoeheM}}`; die Ruf←Leib-Wand der Linse (R) ist ROT an jedem Ruf ohne
+    // fliegenden Körper, ihr Selbsttest S12 friert die Bahn auf einer Uhr ein (der stehende Vogel) und lässt das Phantom ohne Leib
+    // singen. Staffel 1 an der Wiese: gezeichnete Leiber > 0 rufen (die Stimme vogel spielt), fliegen ≥ 1 m/s ≥ 2 m über Grund, kein
+    // Befund R und keiner G an der Wiese. Staffel 2 an jedem Ort: gehört == gezeichnet, wo der Chor singt ≥ 1 Leib, jeder Leib
+    // fliegt, kein Befund R; die Mutation `wieseOhneLeib` (das Revier-Gesetz ohne Revier) zeichnet 0 Leiber und der Chor schweigt.
+    // Gefahren 27.10. in der Cloud am Zweig vogel-zensus 03f3c822 (headless, Null-Renderer): Wiese 14 Leiber, 5,64 m/s, 11,0 m über Grund,
+    // vogel −37,9 dB; an sechs Orten gehört = gezeichnet (6–20), Flug 4,7–5,6 m/s; ohne Leib 0 und still. An main a03b7b06 ROT
+    // (die Linse misst keinen Flug).
+    {
+        kriterium: "luftwasser.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const w = j && j.daten && j.daten.wiese;
+            const L = w && w.zensus && w.zensus.leiber;
+            if (!L || !L.flug) return { gruen: false, zahl: "kein Flug der Leiber an der Wiese im Zensus (Exit " + lauf.exit + ")" };
+            const ruft = w.zensus.stimmen.some((v) => v.name === "vogel" && v.an);
+            const rot = (j.rot || []).filter((t) => /^(R|G) wiese:/.test(t));
+            const db = w.mixMitte && w.mixMitte.vogel ? w.mixMitte.vogel.db : -999;
+            return {
+                gruen: L.gezeichnet > 0 && ruft && L.flug.mps >= 1 && L.flug.hoeheM >= 2 && rot.length === 0,
+                zahl:
+                    "Wiese " + L.gezeichnet + " Vogel-Leiber gezeichnet (" + L.gehoert + " gehört), Flug " + L.flug.mps + " m/s " +
+                    L.flug.hoeheM + " m über Grund, Ruf " + (ruft ? db.toFixed(1) + " dB" : "STUMM") +
+                    (rot.length ? " · " + rot.join(" · ") : "") + " (Soll: > 0 Leiber rufen, ≥ 1 m/s, ≥ 2 m)",
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/dirigent-takt.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = ein Vogel-Körper aus einem Gesetzbuch fliegt und ruft",
+    },
+    {
+        kriterium: "luftwasser.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const d = (j && j.daten) || {};
+            const orte = Object.keys(d).filter((o) => o !== "wieseOhneLeib");
+            const ohne = d.wieseOhneLeib && d.wieseOhneLeib.zensus;
+            if (!["wiese", "seeufer", "wald", "dorf"].every((o) => d[o] && d[o].zensus && d[o].zensus.leiber) || !ohne)
+                return { gruen: false, zahl: "kein Zensus der Leiber an den vier Orten und der Mutation (Exit " + lauf.exit + ")" };
+            const singt = (z) => z.stimmen.some((v) => v.name === "vogel" && v.an);
+            const leer = { gehoert: 0, gezeichnet: 0 };
+            const falsch = orte.filter((o) => {
+                const L = d[o].zensus.leiber || leer;
+                return L.gehoert !== L.gezeichnet || (singt(d[o].zensus) && !(L.gezeichnet > 0)) ||
+                    (L.gezeichnet > 0 && !(L.flug && L.flug.mps >= 1 && L.flug.hoeheM >= 2));
+            });
+            const rot = (j.rot || []).filter((t) => /^R /.test(t));
+            const stumm = (ohne.leiber || leer).gezeichnet === 0 && !singt(ohne);
+            return {
+                gruen: falsch.length === 0 && rot.length === 0 && stumm,
+                zahl:
+                    orte.map((o) => { const L = d[o].zensus.leiber || leer; return o + " " + L.gehoert + "/" + L.gezeichnet +
+                        (L.flug ? " " + L.flug.mps + " m/s" : ""); }).join(" · ") + " (gehört/gezeichnet) · ohne Leib " +
+                    (ohne.leiber || leer).gezeichnet + " Leiber, Chor " + (singt(ohne) ? "SINGT" : "still") +
+                    (falsch.length ? " · ROT an " + falsch.join(", ") : "") + (rot.length ? " · " + rot.join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/stoff-instanz.js",
+            "stamm/dirigent-takt.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "2 = jeder Vogel-Pegel im Klang-Zensus hat einen Körper (Konsum-Kette Ruf ← Leib), ohne Körper ROT",
+    },
+
     // ───────── luftwasser.K5 — der Schwarm fern EIN Agent (Zweig schwarm: tetrapoda VOGEL_GESETZ.schwarm, `_vogelSchwarmTakt`) ─────────
     // EINE Werkbank an der Weiche (`schwarmLauf` oben, Port {PORT}+20000), die Prüfbühne mit dem festen Schwarm von 100 Gliedern,
     // das Auge 40 m quer zur Flugrichtung (nah: die Separation rechnet mit): 60 Reihen × 20 Takte des Schwarm-Takts auf der Uhr
@@ -2221,19 +2670,6 @@ const fehlt = [
             "Werkzeug und Welt fehlen: keine Stadt ≥ 200 Bewohner mit ≥ 40 nah animiert in einer Linse (die Probe bewohner " +
             "kennt nur das Start-Dorf), das ABAB an der GTX ist ein Lauf des Richter-Zugs, keine Station",
         quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
-    },
-    {
-        kriterium: "vegetation.K4",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: kein Bild zählt Halme unter dem Wasser-Spiegel (diag-haus-welt --bild kennt nur Haus-Boxen), " +
-            "Third vor dem Haus ungemessen; die Häuser-Hälfte ist die Station vegetation.K4#1 auf beiden Geräten. Gelesen 25.10. an " +
-            "d43cb61c: W9 zählt Halm-Pixel je Box, indem es die Büschel IN der Box ausblendet (Bild gegen Bild ohne sie), die Kamera " +
-            "steht 1,3 m über der Diele im Haus; für das Wasser fehlt das Gegenstück (die Büschel unter dem Spiegel, ein Schuss ohne " +
-            "Wasser-Klasse), für Third ein Blick von außen auf die Box",
-        quelle: "2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
     },
 ];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)
