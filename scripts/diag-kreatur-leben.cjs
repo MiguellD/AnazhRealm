@@ -197,8 +197,6 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             return { kappe, mittel, tod, ms, nah };
         };
     };
-    // je nahe Region verlassen n Tiere der Art den Bestand (der Eingriff der Kaskade: gejagt, entfernt) — ein gezeichnetes fällt
-
     // je nahe Region verlassen n Tiere der Art den Bestand (der Eingriff der Kaskade: gejagt, entfernt), ihr Leib mit ihnen
     const nimm = (art, n) => (k, nah) => {
         for (const R of nah.map((key) => s.faunaBestand.regionen[key]).filter(Boolean))
@@ -244,6 +242,13 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
         const [ix, iz] = [pm.x, pm.z].map((v) => Math.round(v / r._bestandSeite()));
         const fern = [[-2, -2], [1, -2], [-2, 1], [1, 1]].map(([a, b]) => ix + a + "," + (iz + b)); // prettier-ignore
         if (taeter === "bestand-fern") decke("_bestandRegion", (alt) => (key, auf, ...a) => alt.call(r, key, !fern.includes(key) && auf, ...a)); // prettier-ignore
+        // ein Täter fährt den Grundlauf und nur die Szenarien, die seinen Befund tragen, in 2 Saaten (der Selbsttest fuhr je
+        // Täter alle in 4 Saaten — 230 000 Takte, mehr als die Probe selbst, und riss die 20-min-Frist seiner Gruppe)
+        const TRAEGT = {
+            "kaskade-riss": ["ohneWolf"],
+            "bestand-nahrung": ["halb"],
+            "bestand-kappe": ["ohneWolf", "kappeHalb"],
+        };
         const L = {};
         for (const [name, eingriff] of Object.entries({
             grund: null,
@@ -253,9 +258,10 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             halb: null,
             mutante: nimm("wolf"),
         })) {
-            if ((frassAus = name === "mutante") && taeter) break;
+            frassAus = name === "mutante";
+            if (taeter && name !== "grund" && !(TRAEGT[taeter] || []).includes(name)) continue;
             L[name] = [];
-            for (let i = 1; i <= (taeter ? 4 : 8); i++) {
+            for (let i = 1; i <= (taeter ? 2 : 8); i++) {
                 s.maxCreatures = name === "kappeHalb" ? 10 : 20;
                 const z = { jung: 0, spur: [], orte: [], leiber: 0, fremd: 0 };
                 const l = lauf(i, name === "grund" ? 2880 : 2160, name === "halb" ? 360 : Infinity, (k, nah, tal) => {
@@ -277,13 +283,15 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             const e = effekt(L.grund, L[b], (l) => (g === "jung" ? l.jung : l.mittel(1080, 2160, g)));
             return Object.assign(e, { soll, haelt: soll > 0 ? e.ki[0] > 0 && e.effekt >= soll : e.ki[1] < 0 && e.effekt <= soll }); // prettier-ignore
         };
-        const richtungen = {
-            hirsche: richtung("ohneWolf", "deer", 0.3),
-            jungwuchs: richtung("ohneWolf", "jung", -0.2),
-            woelfe: richtung("bejagt", "wolf", 0),
-            nahrung: richtung("halb", null, -0.3),
-        };
-        if (L.mutante) richtungen.mutante = richtung("mutante", "jung", -0.2);
+        const richtungen = {};
+        for (const [k, b, g, soll] of [
+            ["hirsche", "ohneWolf", "deer", 0.3],
+            ["jungwuchs", "ohneWolf", "jung", -0.2],
+            ["woelfe", "bejagt", "wolf", 0],
+            ["nahrung", "halb", null, -0.3],
+            ["mutante", "mutante", "jung", -0.2],
+        ])
+            if (L[b]) richtungen[k] = richtung(b, g, soll);
         const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort((a, b) => a - b)];
         return {
             saaten: G.map((l) => Object.fromEntries(Object.keys(A._lebensraumGesetz().L.gattung).map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))), // prettier-ignore
@@ -294,12 +302,15 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             hungertod: G[0].tod, // je Hungertod aller Läufe
             bestand: {
                 nah: G[0].nah.length,
-                anders: H.reduce((p, h, i) => p + h.spur.filter((x, k) => x !== L.ohneWolf[i].spur[k]).length, 0),
-                takte: H.reduce((p, h) => p + h.spur.length, 0),
-                leiber: [G, H].map((X) => Math.max(...X.map((l) => l.leiber))),
+                anders: (H || []).reduce(
+                    (p, h, i) => p + h.spur.filter((x, k) => x !== L.ohneWolf[i].spur[k]).length,
+                    0
+                ),
+                takte: (H || []).reduce((p, h) => p + h.spur.length, 0),
+                leiber: [G, H || []].map((X) => Math.max(...X.map((l) => l.leiber))),
                 zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce((a, b) => a + b, 0), 0) / G.length).toFixed(1),
-                fremd: [...G, ...H].reduce((p, l) => p + l.fremd, 0),
-                nahrung: G[0].orte.map((x, j) => effekt(G, L.halb, (l) => l.orte[j], 2.365)),
+                fremd: [...G, ...(H || [])].reduce((p, l) => p + l.fremd, 0),
+                nahrung: G[0].orte.map((x, j) => effekt(G, L.halb || G, (l) => l.orte[j], 2.365)),
                 ms: +ms[Math.floor(ms.length * 0.95)].toFixed(2),
             },
         };
@@ -765,6 +776,8 @@ function lebenUrteil(name, z, soll) {
         soll(!bruchB.length, `die halbe Nahrung senkt den Bestand nicht an jedem Ort: ${JSON.stringify(bruchB)}`);
         soll(B.nahrung.length >= 8 && B.nahrung.every((o) => o.grund >= 1), "fern lebt keine Zahl");
         soll(B.ms <= 5.8, `der Lebenszyklus kostet p95 ${B.ms} ms je Takt (Soll ≤ 5,8 ms, der CPU-Takt des Bands)`);
+        const fehlt = ["hirsche", "jungwuchs", "woelfe", "nahrung", "mutante"].filter((k) => !z.richtungen[k]);
+        soll(!fehlt.length, `der Kaskade fehlt ein Szenario: ${fehlt.join(", ")}`);
         for (const [k, q] of Object.entries(z.richtungen))
             soll(
                 q.haelt === (k !== "mutante"),
