@@ -556,3 +556,4 @@
 2026-10-28 03:12:50 takt14c-gtx tiere.K1#2 GRÜN 2.0 · 6/10
 2026-10-28 03:19:06 takt14c-gtx tiere.K2#2 GRÜN 6.2 · 7/10
 2026-10-28 03:21:24 takt14c-gtx tiere.K3#2 GRÜN 2.2 · 8/10
+2026-10-28 03:23:01 takt14c-gtx tore.K3#2 GRÜN 1.5 · 9/10
