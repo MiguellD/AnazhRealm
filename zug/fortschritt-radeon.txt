@@ -1601,3 +1601,10 @@
 2026-10-28 23:30:25 takt19-radeon leib.K1#2 ROT 18.1 · 8/71
 2026-10-28 23:36:42 takt19-farm-nach START 1 Stationen
 2026-10-28 23:37:23 takt19-radeon halten.K2#1 GRÜN 7.0 · 9/71
+2026-10-28 23:39:04 takt19-radeon tore.K5#2 ROT 1.7 · 10/71
+2026-10-28 23:40:49 takt19-radeon spielgang.K3#1 ROT 1.7 · 11/71
+2026-10-28 23:46:04 takt19-radeon streaming.K3#1 GRÜN 5.3 · 12/71
+2026-10-28 23:47:00 takt19-farm-nach feld.K3#2 GRÜN 1.0 · 1/1
+2026-10-28 23:47:04 takt19-farm-nach ENDE 1 grün / 0 rot · 10.5 min
+2026-10-28 23:59:59 takt19-radeon profiband.K4#1 GRÜN 13.9 · 13/71
+2026-10-29 00:21:08 takt19-radeon profiband.K4#2 ROT 21.1 · 14/71

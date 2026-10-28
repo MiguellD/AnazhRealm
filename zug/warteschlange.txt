@@ -192,3 +192,4 @@ z58c-z61-abab 0 storno
 z62b-abab2 0 storno
 z63-abab2 0 storno
 z64-abab2 0 storno
+spike-pixel-gtx 3 station sha=f653389dcd656d62fab9e1b673fa964608b85a65 lauf=spike-pixel-gtx.sh

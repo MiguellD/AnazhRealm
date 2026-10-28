@@ -763,3 +763,14 @@
 2026-10-28 23:33:37 takt19a-gtx ferne.K2#2 GRÜN 8.1 · 10/35
 2026-10-28 23:35:05 takt19a-gtx ferne.K5#1 GRÜN 1.4 · 11/35
 2026-10-28 23:37:24 takt19a-gtx gelaende.K2#1 GRÜN 2.2 · 12/35
+2026-10-28 23:41:52 takt19a-gtx gelaende.K2#2 ROT 4.3 · 13/35
+2026-10-28 23:43:18 takt19a-gtx gelaende.K3#1 GRÜN 1.4 · 14/35
+2026-10-28 23:49:11 takt19a-gtx gelaende.K5#2 GRÜN 5.8 · 15/35
+2026-10-28 23:50:48 takt19a-gtx haar.K1#1 GRÜN 1.5 · 16/35
+2026-10-28 23:51:31 takt19a-gtx halten.K1#2 GRÜN 0.6 · 17/35
+2026-10-28 23:57:39 takt19a-gtx halten.K2#1 GRÜN 6.0 · 18/35
+2026-10-28 23:58:22 takt19a-gtx halten.K5#1,halten.K5#2 GRÜN/GRÜN 0.6 · 20/35
+2026-10-29 00:00:15 takt19a-gtx klang.K2#1 GRÜN 1.8 · 21/35
+2026-10-29 00:01:33 takt19a-gtx klang.K4#1 GRÜN 1.2 · 22/35
+2026-10-29 00:05:33 takt19a-gtx klang.K4#2 GRÜN 3.9 · 23/35
+2026-10-29 00:18:57 takt19a-gtx klang.K5#2 GRÜN 13.3 · 24/35
