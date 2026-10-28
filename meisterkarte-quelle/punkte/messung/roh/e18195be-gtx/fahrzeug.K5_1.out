@@ -1,0 +1,33 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c echo "@@PUNKTE@@ RM"; timeout 900 node scripts/diag-fahr-leben.cjs --rueckmeldung; echo "@@PUNKTE@@ EXIT $?"
+echo "@@PUNKTE@@ KLANG"; KLANG_ZENSUS_PORT=$((7754 + 1)) timeout 1500 node scripts/diag-klang-zensus.cjs; echo "@@PUNKTE@@ EXIT $?"
+@@PUNKTE@@ RM
+=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===
+  ✅ K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ — gt 40.6°/45.0° · supersport 35.7°/40.4° · limousine 38.8°/45.0° · kompakt_fwd 40.6°/45.0° · suv 34.0°/45.0°
+  ✅ K3 Halt: 21°-Hang ohne Eingabe hält (≤ 0,01 m, Gier 0), 50° rutscht — 21°: 0.000 m · 50°: -8.22 m
+  ✅ K4 Querhang: Fahrt längs 35° ohne Lenkung driftet talwärts, am Stand hält 30°, 50° rutscht — 35° Fahrt 3.25 m · 30° Stand 0.000 m · 50° Stand 37.24 m
+  ✅ K5 Vertikale: Kuppe R 12 m hebt ab, R 40 m nicht; die 7-m-Klippe ohne Höhen-Sprung > 0,5 m je Schritt, gelandet — Kuppe R12 Luft 36 · R40 Luft 0 · Klippe Luft 70, größter Sprung 0.19 m, Ende y -7.00
+  ✅ K7 die Wand ist ein Sprung des Bodens: sie hält EINEN Schritt, dann steigt der Wagen auf sein Gesetz (je Schritt ≤ eine Stufe) — nie für immer darunter — Boden +0,35 m: Höhe je Schritt 0.000 · 0.170 · 0.340 · 0.350 · 0.350 · 0.350 (Stufe 0.170 m)
+  ✅ K6 Verwindung: kein Rad tiefer im Boden als sein Federweg (GT: radHub × radR, starr: 0); im Federweg hebt sie nicht — GT tau 0,45: 0.204 m im Boden (Federweg 0.204) · starr tau 0,45: 0.000 m · GT tau 0,10: Hub 0.000 m
+  ✅ K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, ≤ 50 µs je Schritt — Takt 240 Hz · 5.03 µs 
+REIFEN {"achsen":[{"wo":"gt vorn","spitze":8.5,"abfall":0.19976725760161385},{"wo":"gt hinten","spitze":7.6,"abfall":0.2190159221567215},{"wo":"supersport vorn","spitze":7.2,"abfall":0.22696887466474147},{"wo":"supersport hinten","spitze":6.5,"abfall":0.24434125691530406},{"wo":"limousine vorn","spitze":8.5,"abfall":0.19976725760161385},{"wo":"limousine hinten","spitze":7.6,"abfall":0.2190159221567215},{"wo":"kompakt_fwd vorn","spitze":8.5,"abfall":0.19976725760161385},{"wo":"kompakt_fwd hinten","spitze":7.6,"abfall":0.21901592215672172},{"wo":"suv vorn","spitze":8.5,"abfall":0.19976725760161396},{"wo":"suv hinten","spitze":7.6,"abfall":0.2190159221567215}],"hz":240,"kostenUs":5.03}
+[welt-boot] FEHLER absturz: Browser getrennt ohne Abbau
+[welt-boot] ROT — 1 Fehler der Welt:
+  · absturz: Browser getrennt ohne Abbau
+
+--- stderr ---
+gpu-lauf: VERDRAENGT 1/3 nach 10 s - ein CI-Job wartet; der Lauf faellt samt Waisen, Neustart nach dem Job
+diag-fahr-leben.cjs ABSTURZ: TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed
+    at CallbackRegistry.clear (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:82:36)
+    at CdpCDPSession.onClosed (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\CdpSession.js:115:25)
+    at #onClose (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:190:21)
+    at WebSocket.<anonymous> (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\node\NodeWebSocketTransport.js:48:30)
+    at callListener (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\ws\lib\event-target.js:290:14)
+    at WebSocket.onClose (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\ws\lib\event-target.js:220:9)
+    at WebSocket.emit (node:events:508:28)
+    at WebSocket.emitClose (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\ws\lib\websocket.js:279:10)
+    at Receiver.receiverOnFinish (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\ws\lib\websocket.js:1228:20)
+    at Receiver.emit (node:events:508:28)
+gpu-verdraengt: 3340 2088 1212 14408 1700 2172 22156 4868 21980 4300
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  1457 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )

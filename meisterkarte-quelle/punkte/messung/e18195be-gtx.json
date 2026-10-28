@@ -1,7 +1,7 @@
 {
  "sha": "e18195be8b143f9d333de6ea8a8b43dea93dd198",
  "geraet": "gtx",
- "zeit": "2026-10-28T14:07:37.396Z",
+ "zeit": "2026-10-28T15:54:33.924Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "gelaende.K2#1": {
@@ -243,6 +243,248 @@
    "abdruck": "1bf868639fe6",
    "port": 7754,
    "bahn": "allein"
+  },
+  "siedlung.K5#2": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 56.6 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 224 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 5.46,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:13:35.014Z",
+   "abdruck": "607c1995be2b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 42.3 · ego/hieb 24.9 · Bild 15.2/15.4/15.3 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (134–167 ms, gleitet bis 0 mm je Takt) / 60-mal (153–169 ms, gleitet bis 0 mm je Takt) / 60-mal (124–168 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 5.81,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:19:09.517Z",
+   "abdruck": "631137359d80",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K5#1": {
+   "gruen": true,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba",
+   "exit": 0,
+   "minuten": 0.77,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:25:04.697Z",
+   "abdruck": "b8c2b35ae818",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "halten.K5#2": {
+   "gruen": true,
+   "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
+   "exit": 0,
+   "minuten": 0.77,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:25:04.697Z",
+   "abdruck": "170c52cff9e7",
+   "port": 7754,
+   "bahn": "1/1",
+   "zwilling": "halten.K5#1"
+  },
+  "halten.K1#2": {
+   "gruen": true,
+   "zahl": "vor: Treffer KE 76.8 J · p 6.05 · v 23.6 · Schaden 16.2 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 108.3 J · p 7.92 · v 24.9 · Schaden 23.3 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 112.4 J · p 7.02 · v 27.4 · Schaden 24.2 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+   "exit": 0,
+   "minuten": 0.78,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:25:57.029Z",
+   "abdruck": "d243e4de4994",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "spielgang.K3#1": {
+   "gruen": false,
+   "zahl": "keine Bedienung (Exit 0)",
+   "exit": 0,
+   "minuten": 2.92,
+   "grund": "ROT: keine Bedienung (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:48:00.674Z",
+   "abdruck": "4a6eccba6453",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "kein Bild der Kontrolle (t(Kontrolle) undefined ms, Exit 1) · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 0.62,
+   "grund": "ROT: kein Bild der Kontrolle (t(Kontrolle) undefined ms, Exit 1) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:51:02.098Z",
+   "abdruck": "d9cfa32c767f",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "0 von 4 Wiederkehren mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.65,
+   "grund": "ROT: 0 von 4 Wiederkehren mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:51:46.021Z",
+   "abdruck": "babf768d6303",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "zahl": "Frame p95 Median Infinity ms (? · ? · ?) · CPU-Takt p95 ? · ? · ? ms · die Welt steht nach nie · nie · nie s · Bauten sonst // · 0 von 3 gültig ·  · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 11.15,
+   "grund": "ROT: Frame p95 Median Infinity ms (? · ? · ?) · CPU-Takt p95 ? · ? · ? ms · die Welt steht nach nie · nie · nie s · Bauten sonst // · 0 von 3 gültig ·  · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T14:53:32.714Z",
+   "abdruck": "7ae00ccef214",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "streaming.K4#2": {
+   "gruen": true,
+   "zahl": "Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 2.3,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:04:49.144Z",
+   "abdruck": "31aecffb110e",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.83 bei Lag 0 (n 119), Spitze 0.85 bei -0.5 s, CV Bild 0.23 / Ohr 0.52, 74.7 fps, Klang an",
+   "exit": 0,
+   "minuten": 1.71,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:07:14.226Z",
+   "abdruck": "2d4a675eda1b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "klang.K4#2": {
+   "gruen": false,
+   "zahl": "❌ Schritte gras 5691 Hz (n 25) · laub 5398 Hz (n 20) · quarz 3348 Hz (n 13), kleinster Abstand 293 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
+   "exit": 0,
+   "minuten": 3.86,
+   "grund": "ROT: ❌ Schritte gras 5691 Hz (n 25) · laub 5398 Hz (n 20) · quarz 3348 Hz (n 13), kleinster Abstand 293 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:09:03.296Z",
+   "abdruck": "edd75d33d51f",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "klang.K5#2": {
+   "gruen": true,
+   "zahl": "Klang-Takt p95 gehen 0.13 · fahrt 0.14 · nacht 0.13 ms · Aussetzer 0 in 601 s Wiedergabe (0 s still) (Exit 0)",
+   "exit": 0,
+   "minuten": 13.37,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:13:03.209Z",
+   "abdruck": "fd9f3386b62b",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#1": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 2.085 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+   "exit": 0,
+   "minuten": 10.94,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:26:35.301Z",
+   "abdruck": "80965330139c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K1#2": {
+   "gruen": true,
+   "zahl": "20 Tode: Alter max 2.085 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "exit": 0,
+   "minuten": 10.94,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:26:35.301Z",
+   "abdruck": "347160cebd7c",
+   "port": 7754,
+   "bahn": "allein",
+   "zwilling": "speicher.K1#1"
+  },
+  "speicher.K2#1": {
+   "gruen": true,
+   "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.3 / max 0.5 ms (Soll p95 ≤ 0,3; 96 Rufe in 5994 Bildern; aufgefüllt je Bild p95 0, blind)",
+   "exit": 0,
+   "minuten": 3.21,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:37:39.417Z",
+   "abdruck": "2897b2bde797",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K2#2": {
+   "gruen": false,
+   "zahl": "Speicher-Bild frisch p50 0.015 / p95 0.085 / max 16.115 ms (1812 Bilder), 0 von 307 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.035 / p95 0.155 / max 0.4 ms (101 Bilder), 0 von 133 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "exit": 1,
+   "minuten": 3.44,
+   "grund": "ROT: Speicher-Bild frisch p50 0.015 / p95 0.085 / max 16.115 ms (1812 Bilder), 0 von 307 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0.035 / p95 0.155 / max 0.4 ms (101 Bilder), 0 von 133 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:40:58.370Z",
+   "abdruck": "71e8f4d1f4ec",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "speicher.K4#2": {
+   "gruen": false,
+   "zahl": "bild-diff 1.55 % (Soll ≤ 1; Rauschen ohne Neuladen 0.28 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · nvidia",
+   "exit": 1,
+   "minuten": 1.37,
+   "grund": "ROT: bild-diff 1.55 % (Soll ≤ 1; Rauschen ohne Neuladen 0.28 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · nvidia",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:44:31.273Z",
+   "abdruck": "157cf2886dbd",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "zahl": "43 Häuser (1 gesetzt über die Werkstatt true), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 59180 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 41180/1335/18663/39130 · see-third 23183/309/5501/39267 · fluss-ego 28211/1299/28106/56697 · fluss-third 5859/600/5748/64365",
+   "exit": 1,
+   "minuten": 6,
+   "grund": "ROT: 43 Häuser (1 gesetzt über die Werkstatt true), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 59180 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 41180/1335/18663/39130 · see-third 23183/309/5501/39267 · fluss-ego 28211/1299/28106/56697 · fluss-third 5859/600/5748/64365",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:46:00.730Z",
+   "abdruck": "5b59082b748f",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "leib.K2#2": {
+   "gruen": true,
+   "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
+   "exit": 0,
+   "minuten": 2.33,
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:52:07.561Z",
+   "abdruck": "e0a01f661eac",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.071 · Median 0.147 (Soll ≥ 0,15) · dunkel: haus_schwarzwald 0.02096608187400727/0.1818106393937012 · haus_schwarzwald 0.017314714522116487/0.23247694748970796 · haus_schwarzwald 0.026424220034474873/0.1880597316159132 · haus_alpenchalet 0.016729380374158945/0.17345998986202613 · haus_schwarzwald 0.026424220034474873/undefined · haus_schwarzwald 0.026698077647319417/0.18118450617500517 · haus_gotisch 0.01672986421105018/undefined · haus_alpenchalet 0.01741919079166659/0.24481915933545334 · haus_alpenchalet 0.03059051774743899/undefined · haus_alpenchalet 0.028725144791351048/undefined · haus_schwarzwald 0.029716029266443213/0.20847835535232792 · haus_skandinavisch undefined/0.23773651970739332",
+   "exit": 0,
+   "minuten": 7.21,
+   "grund": "ROT: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 6 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.071 · Median 0.147 (Soll ≥ 0,15) · dunkel: haus_schwarzwald 0.02096608187400727/0.1818106393937012 · haus_schwarzwald 0.017314714522116487/0.23247694748970796 · haus_schwarzwald 0.026424220034474873/0.1880597316159132 · haus_alpenchalet 0.016729380374158945/0.17345998986202613 · haus_schwarzwald 0.026424220034474873/undefined · haus_schwarzwald 0.026698077647319417/0.18118450617500517 · haus_gotisch 0.01672986421105018/undefined · haus_alpenchalet 0.01741919079166659/0.24481915933545334 · haus_alpenchalet 0.03059051774743899/undefined · haus_alpenchalet 0.028725144791351048/undefined · haus_schwarzwald 0.029716029266443213/0.20847835535232792 · haus_skandinavisch undefined/0.23773651970739332",
+   "gpu": "nvidia/pascal",
+   "zeit": "2026-10-28T15:54:33.924Z",
+   "abdruck": "daba4c5e7ab5",
+   "port": 7754,
+   "bahn": "1/1"
   }
  },
  "ungemessen": {
@@ -267,6 +509,30 @@
    "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
    "zeit": "2026-10-28T13:53:35.321Z",
    "abdruck": "b8dfe1a249ab",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "exit": 1,
+   "minuten": 10.25,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "zeit": "2026-10-28T14:26:50.583Z",
+   "abdruck": "90f16590513a",
+   "port": 7754,
+   "bahn": "1/1"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "exit": 1,
+   "minuten": 10.04,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen",
+   "zeit": "2026-10-28T14:37:51.224Z",
+   "abdruck": "4a0e91ccdc14",
    "port": 7754,
    "bahn": "1/1"
   }
