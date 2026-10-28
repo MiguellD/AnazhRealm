@@ -165,7 +165,15 @@ async function stand() {
     await r._speicherStill();
     return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
 }
-const WARTEN_SEITE = `window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+// DAS EINE PNG der Seite (`window.__png(u8, W, H, deckend)`): die ersten W×H RGBA-Pixel als data-URL, `deckend` setzt Alpha 255 —
+// jede Linse kodierte ihr Rücklese-Bild selbst (Canvas · ImageData · toDataURL, zehn Zwillinge)
+function png(u8, W, H, deckend) {
+    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
+    const d = Uint8ClampedArray.from(u8.slice(0, W * H * 4), (v, i) => (deckend && i % 4 === 3 ? 255 : v));
+    cv.getContext("2d").putImageData(new ImageData(d, W, H), 0, 0);
+    return cv.toDataURL("image/png");
+}
+const WARTEN_SEITE = `window.__png = ${png}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

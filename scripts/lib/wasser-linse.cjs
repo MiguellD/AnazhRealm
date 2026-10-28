@@ -1338,17 +1338,7 @@ async function wasserBild(o = {}) {
         return { ruhig: zone(1), schnelle: zone(2), png: o.png ? bildDaten(px) : null };
     };
     // Das Bild selbst (für den Bericht): das Render-Ziel als PNG (linear, ungetont — ein Vergleichs-Bild, kein Look).
-    const bildDaten = (px) => {
-        const c = document.createElement("canvas");
-        c.width = W;
-        c.height = H;
-        const ctx = c.getContext("2d");
-        const im = ctx.createImageData(W, H);
-        im.data.set(px.subarray(0, W * H * 4));
-        for (let p = 3; p < W * H * 4; p += 4) im.data[p] = 255;
-        ctx.putImageData(im, 0, 0);
-        return c.toDataURL("image/png");
-    };
+    const bildDaten = (px) => window.__png(px, W, H, true);
     let a, b, sturm;
     // Der Wind des Wetters (W-R3): ruhig (Sonne, 0,06) für beide Uhren, dann derselbe Bogen im Sturm (1,0). Vor der
     // Welle L trug das Material keinen Wind — dann ist beides dasselbe Bild.

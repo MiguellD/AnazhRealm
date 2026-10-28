@@ -891,14 +891,7 @@ function tagKurve(o) {
                     Y: +lum(s.slice(1), 1 / n).toPrecision(4),
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
-                if (o.png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    const ctx = cv.getContext("2d");
-                    const img = ctx.createImageData(W, H);
-                    img.data.set(u8.subarray(0, W * H * 4));
-                    ctx.putImageData(img, 0, 0);
-                    z.png = cv.toDataURL("image/png");
-                }
+                if (o.png) z.png = window.__png(u8, W, H);
                 zeilen.push(z);
             }
         } finally {
@@ -2609,11 +2602,7 @@ function naesseSicht(o) {
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
-            png: o.png ? [klar, frisch, nass].map((u8) => {
-                const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v)), W, H), 0, 0);
-                return cv.toDataURL("image/png");
-            }) : undefined,
+            png: o.png ? [klar, frisch, nass].map((u8) => window.__png(u8, W, H, true)) : undefined,
         };
     })();
 }
@@ -2761,11 +2750,7 @@ function kontaktSicht(o) {
                     breiten.sort((x, y) => x - y);
                     p[ebene] = { halbschattenCm: breiten.length ? +breiten[breiten.length >> 1].toFixed(1) : null, kanten: 2 * breiten.length, von };
                 }
-                if (png) {
-                    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-                    cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(png, (q, i) => (i % 4 === 3 ? 255 : q)), W, H), 0, 0);
-                    p.png = cv.toDataURL("image/png");
-                }
+                if (png) p.png = window.__png(png, W, H, true);
             }
         } finally {
             [dl.intensity, PU.bloomStrength.value, cam.fov, st.playerMesh.visible] = [I0, bloom0, fov0, true];

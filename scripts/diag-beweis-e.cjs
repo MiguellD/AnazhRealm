@@ -182,13 +182,6 @@ const SCHUSS_FN = async (kam) => {
         set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
         if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
     }
-    const cv = document.createElement("canvas");
-    cv.width = 640;
-    cv.height = 360;
-    const ctx = cv.getContext("2d");
-    const img = ctx.createImageData(640, 360);
-    img.data.set(u8.subarray(0, 640 * 360 * 4)); // WebGPU-Readback ist TOP-DOWN (diag-blick-Messwert)
-    ctx.putImageData(img, 0, 0);
     const wm = r.state.weltMarch;
     const fp = r.state.feldPass;
     zahlen.weltMarch = wm
@@ -202,7 +195,7 @@ const SCHUSS_FN = async (kam) => {
     try {
         zahlen.zeile = String(r._analogEMetrologieZeile());
     } catch {}
-    return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
+    return { ok: true, farben: set.size, nonzero, png: window.__png(u8, 640, 360), zahlen }; // der Readback ist TOP-DOWN (diag-blick-Messwert)
 };
 
 hauptLauf(async () => {

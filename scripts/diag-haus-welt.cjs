@@ -664,11 +664,6 @@ async function proben(phasen) {
         const BILD = P.has("bild");
         o.w9 = { bild: BILD, haeuser: [] };
         const [WB, HB, cam] = [480, 270, s.camera];
-        const pngVon = (G) => {
-            const cv = Object.assign(document.createElement("canvas"), { width: WB, height: HB });
-            cv.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(G), WB, HB), 0, 0);
-            return cv.toDataURL("image/png");
-        };
         let tick = null;
         if (BILD) {
             await window.__weltStehtNach(() => pumpe(1));
@@ -886,7 +881,7 @@ async function proben(phasen) {
                         if (boden && (m.traegt || mg > mr + 60) && drinnen((k / 4) % WB, Math.floor(k / 4 / WB)))
                             b.boden++;
                     }
-                    b.png.push(pngVon(G));
+                    b.png.push(window.__png(G, WB, HB));
                 }
             }
             // W10 DAS INNEN-BILD (siedlung.K1 Staffel 2, Schatten K4; `--bild`): der dunkelste Innen-Blick (`innen`) gegen den
@@ -914,7 +909,7 @@ async function proben(phasen) {
                     const G = await schuss([], []);
                     const v = f.clone().project(cam);
                     h.aussen = luma(G, Math.round(((v.x + 1) / 2) * WB), Math.round(((1 - v.y) / 2) * HB), 6);
-                    h.png = pngVon(G);
+                    h.png = window.__png(G, WB, HB);
                 }
                 h.quote = Math.round((h.innen / h.aussen) * 1000) / 1000;
             }

@@ -1578,13 +1578,6 @@ async function starte() {
                         }
                         mu8[i + 3] = 255;
                     }
-                    const cv2 = document.createElement("canvas");
-                    cv2.width = W;
-                    cv2.height = H;
-                    const ctx2 = cv2.getContext("2d");
-                    const img2 = ctx2.createImageData(W, H);
-                    img2.data.set(mu8);
-                    ctx2.putImageData(img2, 0, 0);
                     klasse = {
                         ausdruck: k.klasse,
                         schwelle,
@@ -1596,7 +1589,7 @@ async function starte() {
                         gesicht,
                         // die Armlänge, wie die Tiefe der Bildmitte sie misst
                         arm: k.arm == null ? undefined : { soll: +k.arm, ist: +(mitte(spiegel) || cam.position).distanceTo(cam.position).toFixed(3) },
-                        maske: cv2.toDataURL("image/png"),
+                        maske: window.__png(mu8, W, H),
                     };
                 } finally {
                     for (const [o, c] of wurf) o.castShadow = c;
@@ -1620,13 +1613,6 @@ async function starte() {
                     n++;
                 }
             (cam.fov = fov0), cam.updateProjectionMatrix();
-            const cv = document.createElement("canvas");
-            cv.width = W;
-            cv.height = H;
-            const ctx = cv.getContext("2d");
-            const img = ctx.createImageData(W, H);
-            img.data.set(u8.subarray(0, W * H * 4));
-            ctx.putImageData(img, 0, 0);
             return {
                 kamera: auf.abnahme.pose.kamera.map((v) => +v.toFixed(2)),
                 abnahme: auf.abnahme,
@@ -1636,7 +1622,7 @@ async function starte() {
                 dreiecke: auf.info.triangles,
                 ms: Math.round(auf.ms),
                 klasse,
-                png: cv.toDataURL("image/png"),
+                png: window.__png(u8, W, H),
             };
         }, k);
 
