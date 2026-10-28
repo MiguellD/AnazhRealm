@@ -104,6 +104,7 @@ async function probeLeben(expected) {
     // die Eingabe, die der Welt-Schritt dem Kern gab (Verb-Tafel, Tiefe, Haft, Wind am Ort): die Labor-Spur fährt genau sie
     const kraefte = VC.fahrKraefte;
     VC.fahrKraefte = function (q, e, G, dt) {
+        z.eLetzt = e;
         if (z.spur && z.ent && q === z.ent._fahr) z.e = e;
         return kraefte.call(this, q, e, G, dt);
     };
@@ -189,30 +190,9 @@ async function probeLeben(expected) {
         return Number.isFinite(ws) && ws > hh(a, b) - 0.3;
     };
     // Die Strecke: trocken, eben, Fahrt in +x — der nächste Ring um die Mess-Wiese (32 m, bis 512 m) mit Stufe ≤ 0,16 m je 2 m
-    // und Quergefälle ≤ 0,05 m je m, darin die kleinste Stufe.
+    // und Quergefälle ≤ 0,05 m je m, darin die kleinste Stufe (welt-orte `strecke`).
     const mo = expected.messort;
-    let start = null;
-    for (let ring = 0; ring <= 16 && !start; ring++)
-        for (let k = 0; k < (ring ? 8 : 1); k++) {
-            const cx = mo[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
-            const cz = mo[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
-            let trocken = true;
-            let stufe = 0;
-            for (const dz of [-3, 0, 3]) {
-                let vor = null;
-                for (let s = 0; s <= 36 && trocken; s++) {
-                    const hx = hh(cx + s * 2, cz + dz);
-                    if (!Number.isFinite(hx) || nass(cx + s * 2, cz + dz)) trocken = false;
-                    if (vor !== null) stufe = Math.max(stufe, Math.abs(hx - vor));
-                    vor = hx;
-                }
-            }
-            let quer = 0;
-            for (let s = 0; s <= 36 && trocken; s++)
-                quer = Math.max(quer, Math.abs(hh(cx + s * 2, cz + 3) - hh(cx + s * 2, cz - 3)) / 6);
-            if (trocken && stufe <= 0.16 && quer <= 0.05 && (!start || stufe < start.stufe))
-                start = { x: cx, z: cz, stufe, quer };
-        }
+    const start = window.__strecke(mo, 16, 0.16, 0.05, true);
     res.start = start;
     if (!start) {
         aufraeumen();
@@ -460,9 +440,100 @@ async function probeLeben(expected) {
         out.labor = await weltLabor();
         return out;
     };
-    if (expected.nurKette) {
+    // DER HANG (T2 und die Rückmeldung RM) aus der Welt (welt-orte `hang`): das Gefälle über ±3 m
+    // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
+    const grad = (t) => (Math.atan(t) * 180) / Math.PI;
+    const hangOrt = window.__weltOrt("hang", {
+        min: grad(0.2),
+        max: grad(0.45),
+        basis: 3,
+        bergab: [6, grad(0.15)],
+        rMax: 800,
+    });
+    const hang = hangOrt
+        ? { x: hangOrt.x, z: hangOrt.z, g: Math.tan((hangOrt.neigung * Math.PI) / 180), fahrt: hangOrt.gier }
+        : null;
+    res.hang = hang;
+    // RM — DIE RÜCKMELDUNG (fahrzeug.K5): der GT fährt Glatt (auf dem Weg der Strecke, Vollgas), Drift (12 m daneben auf der
+    // Wiese: Vollgas, dann Handbremse und volle Lenkung) und Hang (bergauf, Vollgas); je Bild die Kanäle an ihrem Ausgang — die
+    // Federung im gezeichneten Bild (die Instanz-Matrix eines Aufbau-Blatts gegen den Rahmen der Räder, je Ecke der Hülle) mit dem
+    // Boden-Stoß, das Rumble an einem Pad mit Stub-vibrationActuator mit dem Schlupf, die Stimme der Fahrt im Sattel und still
+    // danach (ihre Tonhöhe je Drehzahl misst gate:klang-zensus F am Master-Bus). `mutiert`: dieselben Fahrten mit gekappter
+    // Kopplung (hubBoden 0, das Rumble ohne Schlupf und Boden).
+    const rueck = async (B) => {
+        await r._weltbildKommt(); // unter dem Ladeschirm gehört der Welt kein Pad
+        const el = document.getElementById("fahr-tacho");
+        const sichtbar = () => el && !el.hidden && getComputedStyle(el).display !== "none";
+        const tacho = { element: !!el, proben: 0, unsichtbar: 0, falsch: 0, maxKmh: 0 };
+        const out = { hilfe: { zeilen: r._hilfeZeilen() }, tacho };
+        r.initSymphony();
+        const [stimmen, fx, hand] = [() => (st.symphony.fahrt || {}).size, [{}], [0, 0, 0, 0]];
+        const akt = { effects: ["dual-rumble"], playEffect: (t, f) => (fx.push(f), Promise.resolve()), reset: () => fx.push({}) };
+        navigator.getGamepads = () => [{ connected: true, axes: [0, 0, 0, 0], buttons: [], vibrationActuator: akt }];
+        strasse(start.x, start.z, Math.PI / 2, 72);
+        const orte = { glatt: [start.x, start.z, Math.PI / 2], drift: [start.x, start.z + 12, Math.PI / 2], hang: hang && [hang.x, hang.z, hang.fahrt] };
+        const [M, L, Bu, V] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3()];
+        const lauf = async (n) => {
+            const e = orte[n] && (await setzen("fahrzeug_gt", ...orte[n]));
+            if (!e) return null;
+            const [m, [x, zz, kurs]] = [{ bild: [] }, orte[n]];
+            bahnWache = { sx: x, sz: zz, ux: Math.sin(kurs), uz: Math.cos(kurs), len: 90, quer: 8, n: 0 };
+            // die Ecken der Hülle (Rahmen des Studio-Wagens, Bug +x) und ein Aufbau-Blatt, das er zeichnet
+            const hu = r._fahrzeugGesetzFor(e).drive.huelle;
+            const ecken = [hu.fAx, hu.rAx].flatMap((ax) => [-1, 1].map((q) => [ax, 0, (q * hu.spur) / 2]));
+            const f = r._foundryFlattenFor(e, r._foundryPresetForEntry(e), e._servedLod ?? e._lodLevel);
+            const k = f.leaves.findIndex((lf, i) => !lf.rad && e.instSlots[i] && st.archInstanceGroups.get(e.instSlots[i].key));
+            L.copy(f.leaves[k].localMatrix).invert();
+            for (let i = 0; i < B.bilder; i++) {
+                const d = n === "drift" && i >= B.driftAb;
+                tasten(true);
+                [st.keys.d, st.keys.shift, z.eLetzt] = [d, d && i < B.driftAb + 80, null];
+                frame(i);
+                const fz = e._fahr;
+                if (z.eLetzt) hand[2 * st.keys.shift + !!z.eLetzt.hand]++;
+                if (i % 10 === 0 && el && ++tacho.proben) {
+                    const [zahl, kmh] = [parseInt(el.textContent), Math.round(Math.abs(fz.vlong) * VC.FAHR.kmh)];
+                    [tacho.unsichtbar, tacho.maxKmh] = [tacho.unsichtbar + !sichtbar(), Math.max(tacho.maxKmh, kmh)];
+                    if (!(Math.abs(zahl - kmh) <= B.tachoKmh) && ++tacho.falsch === 1) tacho.beispiel = `zeigt ${zahl}, Fahrt ${kmh} km/h`;
+                }
+                // das Bild: der Aufbau, wie er gezeichnet ist (Instanz-Matrix × Blatt⁻¹), je Ecke über dem Rahmen der Räder; der
+                // Boden-Stoß des Schritts; das letzte Rumble am Pad (stark, schwach)
+                st.archInstanceGroups.get(e.instSlots[k].key).mesh.getMatrixAt(e.instSlots[k].slot, M);
+                M.multiply(L);
+                r._archEntryWorldMatrix(e, Bu, true);
+                const { strongMagnitude: stark = 0, weakMagnitude: schwach = 0 } = fx[fx.length - 1];
+                m.bild.push([ecken.map((p) => V.set(...p).applyMatrix4(M).y - V.set(...p).applyMatrix4(Bu).y), Math.abs(fz.bodenStoss || 0), stark, schwach]);
+            }
+            [bahnWache, m.klingt] = [null, stimmen()];
+            weg(e);
+            bilder(10);
+            m.still = !stimmen();
+            tacho.nachAbsteigenSichtbar = !!(tacho.nachAbsteigenSichtbar || sichtbar());
+            return m;
+        };
+        const runde = async () => {
+            const o = {};
+            for (const n in orte) o[n] = await lauf(n);
+            return o;
+        };
+        out.echt = await runde();
+        out.hilfe.handbremseWirkt = hand[3] > 9 * hand[2] && !hand[1];
+        out.hilfe.handbremseDetail = `Shift im Fahr-Schritt ${hand[3]}/${hand[2] + hand[3]} (ohne ${hand[1]}/${hand[0] + hand[1]}) Bilder`;
+        // DIE MUTANTE: je Kanal die Kopplung gekappt (den stummen Motor schneidet gate:klang-zensus S13)
+        const [pg, hb] = [A.PAD_GESETZ, VC.FAHR.schritt.hubBoden];
+        A.PAD_GESETZ = { ...pg, rumble: { ...pg.rumble, schlupfVoll: Infinity, bodenVoll: Infinity } };
+        VC.FAHR.schritt.hubBoden = 0;
         try {
-            res.kette = await kette(expected.kette);
+            out.mutiert = await runde();
+        } finally {
+            [A.PAD_GESETZ, VC.FAHR.schritt.hubBoden] = [pg, hb];
+        }
+        return out;
+    };
+    if (expected.nurKette || expected.nurRueck) {
+        try {
+            if (expected.nurRueck) res.rueck = await rueck(expected.rueck);
+            else res.kette = await kette(expected.kette);
         } catch (e) {
             res.err = String((e && e.stack) || e);
         }
@@ -547,20 +618,7 @@ async function probeLeben(expected) {
             r._foundry = fo;
         }
         r.setCameraMode(sicht5);
-        // (2) Am Hang ohne Taste: der GT steht bergauf. Der Hang aus der Welt (welt-orte `hang`): das Gefälle über ±3 m
-        // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
-        const grad = (t) => (Math.atan(t) * 180) / Math.PI;
-        const hangOrt = window.__weltOrt("hang", {
-            min: grad(0.2),
-            max: grad(0.45),
-            basis: 3,
-            bergab: [6, grad(0.15)],
-            rMax: 800,
-        });
-        const hang = hangOrt
-            ? { x: hangOrt.x, z: hangOrt.z, g: Math.tan((hangOrt.neigung * Math.PI) / 180), fahrt: hangOrt.gier }
-            : null;
-        res.hang = hang;
+        // (2) Am Hang ohne Taste: der GT steht bergauf (der Hang der Welt, oben vor der Rückmeldung gesucht).
         if (hang) {
             const gh = await setzen("fahrzeug_gt", hang.x, hang.z, hang.fahrt);
             res.gtHang = gh ? fahrt(gh, 180, false) : { gestartet: false };
@@ -2153,6 +2211,7 @@ async function probeLeben(expected) {
         }
         res.kette = await kette(expected.kette); // W (feld.K1) zuletzt, darin S1 (Labor = Welt)
         S.labor = res.kette.labor;
+        res.rueck = await rueck(expected.rueck); // RM (fahrzeug.K5) auf dem Weg der Kette
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
