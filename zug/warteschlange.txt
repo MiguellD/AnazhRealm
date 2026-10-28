@@ -145,3 +145,4 @@ z55n-abab 2 abab A=19606f2ee8492be703fb6aff52d4e48c9279919f B=a03b7b0626826d1dd4
 z55-abab 0 storno
 takt14c-gtx 1 punkte sha=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 geraet=gtx nur=ferne.K2#2,klang.K5#2,material.K1#2,mensch.K2#2,speicher.K1#2,tiere.K1#2,tiere.K2#2,tiere.K3#2,tore.K3#2,gelaende.K5#2
 z56-abab 2 abab A=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 B=9e92be45bfe89c1137b0dffc6e0e479e70a4a6ec zellen=w-ego,d-ego,stadt
+takt15a-gtx 1 punkte sha=ea07267e8a2953458963e1811a2df6741ed7aa48 geraet=gtx nur=affekt.K1#2,bauen.K1#2,bauen.K5#2,ferne.K5#1,gelaende.K2#1,gelaende.K2#2,gelaende.K3#1,gelaende.K5#2,halten.K1#2,halten.K2#1,halten.K5#1,halten.K5#2,klang.K2#1,klang.K4#1,klang.K4#2,klang.K5#2,leib.K1#1,leib.K1#2,leib.K2#1,leib.K2#2,leib.K4#2,licht.K5#1,luftwasser.K5#1
