@@ -743,3 +743,4 @@
 2026-10-28 22:02:46 takt18d-gtx leib.K2#2 GRÜN 2.8 · 3/16
 2026-10-28 22:08:40 takt18d-gtx halten.K2#1 GRÜN 5.8 · 4/16
 2026-10-28 22:09:37 takt18d-gtx halten.K5#2 GRÜN 0.8 · 5/16
+2026-10-28 22:13:07 takt18d-gtx fahrzeug.K5#1 GRÜN 3.4 · 6/16
