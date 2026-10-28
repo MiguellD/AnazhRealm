@@ -469,7 +469,8 @@
             // 25.10. sang hier ein Chor aus dem Feld (Morgenchor × √lebendig × Lebensraum), ohne einen Vogel in der Welt.
             // DIE ANTWORT DES ORTS (affekt K1): das gewertete δ einer Tat (lage.antwort = {d, delta}, der Wirt wertet sie am Ort
             // und laesst sie abklingen) hebt oder senkt den Chor um dbJeDelta·δ dB (geklemmt dbMin..dbMax) — voll bis dVoll
-            // Meter von der Tat, still ab dAus: die Voegel DIESES Orts antworten, die der Nachbar-Zelle (16 m Raster) nicht.
+            // Meter von der Tat, still ab dAus: die Voegel DIESES Orts antworten, die der Nachbar-Zelle (16 m Raster) nicht; in der
+            // Nacht antworten die Grillen mit derselben Antwort.
             vogel:  { textur: ["vogelA", "vogelB"], sr: 24000, sek: [23.3, 17.9], saat: [83, 89], quellen: 2, spreizung: 0.55,
                       filter: "lowpass", refDb: -39, dRef: 10, dMin: 1, hoerweiteM: 100, hz: 9000, kalibHz: 9000,
                       antwort: { dbJeDelta: 40, dbMin: -24, dbMax: 9, dVoll: 8, dAus: 24 } },
@@ -909,7 +910,8 @@
         var nacht = glatt(Sc.nachtAb, Sc.nachtVoll, sonne);
         var aktivG = nacht * glatt(Sc.tStumm, Sc.tVoll, T) * (1 - regen) * (0.3 + 0.7 * (1 - deck));
         var zirp = Math.max(20, 7 * (T - 10) + 40);
-        setze("grille", aktivG > 0 ? Sc.refDb + db(aktivG) : -Infinity, Sc.hz, 0.707, 0, zirp / Sc.nRef);
+        // die Antwort des Orts auch in der Nacht (affekt K1#2): wo der Chor schlaeft, heben oder senken die Grillen um dieselben dB
+        setze("grille", aktivG > 0 ? Sc.refDb + db(aktivG) + antwortDb : -Infinity, Sc.hz, 0.707, 0, zirp / Sc.nRef);
         return out;
     }
 
