@@ -1325,3 +1325,5 @@
 2026-10-28 16:34:57 takt17n-radeon ENDE 6 grün / 2 rot · 52.8 min
 2026-10-28 16:53:14 takt17m-radeon START 2 Stationen
 2026-10-28 17:08:49 takt17m-radeon leib.K1#2 GRÜN 15.6 · 1/2
+2026-10-28 17:15:07 takt17m-radeon halten.K2#1 GRÜN 6.3 · 2/2
+2026-10-28 17:15:12 takt17m-radeon ENDE 2 grün / 0 rot · 22.0 min
