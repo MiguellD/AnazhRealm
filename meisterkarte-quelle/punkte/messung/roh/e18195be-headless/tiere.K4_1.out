@@ -4,6 +4,6 @@ $ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-kreatur-takt.cjs -
 
   ✅ lebensraum {"n":783,"drin":783,"gattung":{"deer":538,"wolf":180,"bear":41,"fox":24},"klasse":{"wiese":117,"waldrand":445,"wald":180,"fluss":19,"hang":22},"geburten":213,"gruppen":148,"journal":213,"minM":130.2,"imBlick":0,"fensterMax":2.36,"fernMin":130,"baer":{"fluss":[19,19],"sonst":[194,22]},"anteil":1,"saat":"anazh-realm-seed","fensterRaum":2.5,"gegen":{"n":774,"drin":774,"gattung":{"deer":513,"bear":41,"wolf":186,"fox":34},"klasse":{"wiese":114,"waldrand":433,"hang":28,"wald":186,"fluss":13},"geburten":219,"gruppen":143,"journal":219,"minM":130.2,"imBlick":1,"fensterMax":2.45,"fernMin":130,"baer":{"fluss":[13,13],"sonst":[206,28]},"anteil":1,"saat":"lebensraum-gegen","fensterRaum":2.5}}
 
-  (29 s) — Sekunden je Probe: lebensraum: 16
+  (26 s) — Sekunden je Probe: lebensraum: 14
 
 ✅ GRÜN — lebensraum

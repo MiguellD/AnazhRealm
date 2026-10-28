@@ -1,4 +1,4 @@
-$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-wasser-leben.cjs --nur koerper
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-wasser-leben.cjs --nur koerper
   Orte aus der Welt: {"mess":[-280.4,-1045.6],"see":{"x":1816,"z":-6168,"tiefe":3.4,"level":0.9304924564577954,"ufer":[1866,-6168],"mitte":[1816,-6168],"fenster":[1826,-6208,1906,-6128]},"fluss":{"x":-258.4,"z":-1132.8,"breite":4.2},"bach":{"x":-269.2,"z":-1127.4},"kueste":[1537,10609],"meer":[1896,8776]}
 {
  "hashSin": null,
@@ -508,18 +508,18 @@ $ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-wasser-leben.cjs -
     "T": 1103.12,
     "glut": 0.56,
     "kelvin": 1376,
-    "luft": 21.07,
+    "luft": 21.06,
     "esse": "esse"
    },
    "kalt": {
     "wechsel": 123,
-    "T": 46.68,
+    "T": 46.67,
     "glut": 0,
     "kelvin": null,
-    "luft": 21.07,
+    "luft": 21.06,
     "esse": null
    },
-   "feld": 9.79
+   "feld": 9.8
   }
  }
 }

@@ -95,6 +95,6 @@ folge: zuege.map((z) => z.wort[0] + (z.quelle ? "*" : "")).join(""),
 };
 }
 [linse-gpu] google/swiftshader
-AFFEKT-gemuet {"mutante":null,"bauten":49,"zuege":15,"sonne":12,"frontSonne":3,"ausGesetz":0,"gesetz":null,"hoffnungS":908.5,"folge":"rcsss*s*s*s*s*s*s*s*s*s*c"}
+AFFEKT-gemuet {"mutante":null,"bauten":49,"zuege":15,"sonne":12,"frontSonne":3,"ausGesetz":0,"gesetz":null,"hoffnungS":885.8,"folge":"rcssss*s*s*s*s*s*s*s*s*c"}
 AFFEKT-gemuet {"mutante":"starr","bauten":49,"zuege":15,"sonne":3,"frontSonne":3,"ausGesetz":0,"gesetz":null,"hoffnungS":0,"folge":"rcssssrffrrrffc"}
 AFFEKT-gemuet {"mutante":"gesetz-aus","bauten":49,"zuege":15,"sonne":3,"frontSonne":3,"ausGesetz":0,"gesetz":null,"hoffnungS":900.5,"folge":"rcssssrffrrrffc"}

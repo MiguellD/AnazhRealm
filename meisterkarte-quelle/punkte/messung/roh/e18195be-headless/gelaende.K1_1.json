@@ -7,7 +7,7 @@
    "wert": 0.55,
    "wirkt": true,
    "traegt": true,
-   "ms": 513,
+   "ms": 458,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -267,7 +267,7 @@
    "wert": 11000,
    "wirkt": true,
    "traegt": true,
-   "ms": 469,
+   "ms": 393,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -531,7 +531,7 @@
    "wert": 1.2,
    "wirkt": true,
    "traegt": true,
-   "ms": 464,
+   "ms": 425,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -747,7 +747,7 @@
    "wert": 3600,
    "wirkt": true,
    "traegt": true,
-   "ms": 453,
+   "ms": 383,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -971,7 +971,7 @@
    "wert": 1.2,
    "wirkt": true,
    "traegt": true,
-   "ms": 642,
+   "ms": 575,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -1243,7 +1243,7 @@
    "wert": 1.5,
    "wirkt": true,
    "traegt": true,
-   "ms": 511,
+   "ms": 428,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -1519,7 +1519,7 @@
    "wert": 0.9,
    "wirkt": true,
    "traegt": true,
-   "ms": 490,
+   "ms": 440,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -1799,7 +1799,7 @@
    "wert": 1.2,
    "wirkt": true,
    "traegt": true,
-   "ms": 505,
+   "ms": 450,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -2099,7 +2099,7 @@
    "wert": 8,
    "wirkt": true,
    "traegt": true,
-   "ms": 485,
+   "ms": 435,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -2379,7 +2379,7 @@
    "wert": 0.49,
    "wirkt": true,
    "traegt": true,
-   "ms": 515,
+   "ms": 458,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -2691,7 +2691,7 @@
    "wert": 0.7,
    "wirkt": true,
    "traegt": true,
-   "ms": 486,
+   "ms": 433,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -2999,7 +2999,7 @@
    "wert": 78,
    "wirkt": true,
    "traegt": true,
-   "ms": 497,
+   "ms": 431,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -3307,7 +3307,7 @@
    "wert": 37,
    "wirkt": true,
    "traegt": true,
-   "ms": 497,
+   "ms": 420,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -3615,7 +3615,7 @@
    "wert": 4.5,
    "wirkt": true,
    "traegt": true,
-   "ms": 489,
+   "ms": 443,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -3927,7 +3927,7 @@
    "wert": 30,
    "wirkt": true,
    "traegt": true,
-   "ms": 495,
+   "ms": 412,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -4239,7 +4239,7 @@
    "wert": 0.35,
    "wirkt": true,
    "traegt": true,
-   "ms": 595,
+   "ms": 519,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -4551,7 +4551,7 @@
    "wert": 1.2,
    "wirkt": true,
    "traegt": true,
-   "ms": 526,
+   "ms": 412,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -4859,7 +4859,7 @@
    "wert": 0.8,
    "wirkt": true,
    "traegt": true,
-   "ms": 498,
+   "ms": 423,
    "statistik": {
     "landKm2": 16.16,
     "loecher": 0,
@@ -6887,5 +6887,5 @@
   "startSieht": true,
   "presetSieht": true
  },
- "sekunden": 41
+ "sekunden": 34
 }

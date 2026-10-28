@@ -1,24 +1,24 @@
-$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-persistence.cjs
-  [T] 0 Tod idb · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
-  [T] 1 Tod zufall · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":876,"e":15,"b":0,"l":15} · Alter 4.915 s · 
-  [T] 2 Tod fest · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":6863,"e":98,"b":3,"l":98} · Alter 1.221 s · 
-  [T] 3 Tod zufall · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":18509,"e":329,"b":12,"l":329} · Alter 0.001 s · 
-  [T] 4 Tod idb · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":19284,"e":341,"b":12,"l":341} · Alter 0.853 s · 
-  [T] 5 Tod zufall · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":25189,"e":415,"b":14,"l":415} · Alter 0.002 s · 
-  [T] 6 Tod fest · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":25679,"e":422,"b":14,"l":422} · Alter 1.07 s · 
-  [T] 7 Tod zufall · geladen {"w":"c4661675-801a-4191-9bb5-236fc291e716","x":0,"z":31614,"e":490,"b":16,"l":490} · Alter 0.004 s · 
-  [V] 18.534.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
-  [V] 18.532.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-persistence.cjs
+  [T] 0 Tod idb · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":0,"e":0,"b":0,"l":0} · Alter undefined s · 
+  [T] 1 Tod zufall · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":6424,"e":86,"b":3,"l":86} · Alter 4.938 s · 
+  [T] 2 Tod fest · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":7550,"e":103,"b":3,"l":103} · Alter 2.923 s · 
+  [T] 3 Tod zufall · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":13543,"e":192,"b":6,"l":192} · Alter 0.007 s · 
+  [T] 4 Tod idb · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":14223,"e":199,"b":6,"l":199} · Alter 3.614 s · 
+  [T] 5 Tod zufall · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":14864,"e":208,"b":6,"l":208} · Alter 5.15 s · 
+  [T] 6 Tod fest · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":15446,"e":217,"b":6,"l":217} · Alter 4.48 s · 
+  [T] 7 Tod zufall · geladen {"w":"d4ed8078-5190-4638-885c-0d6bd1f18fd6","x":0,"z":27114,"e":443,"b":15,"l":443} · Alter 0.001 s · 
   [V] 18.530.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
-  [V] 18.540.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.532.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.534.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.536.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.540.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.538.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.4: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
-  [V] 18.541.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.41: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.541.0: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.53: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
-  [V] 18.546.66: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.60: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
+  [V] 18.546.66: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.72: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.78: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
   [V] 18.546.77: Bauten 5/5 · Gruben 3/3 · Inventar 2/2
@@ -26,14 +26,14 @@ $ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-persistence.cjs
   [V] 18.546.81: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.80: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.82: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.85: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.84: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.85: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.86: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.87: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.88: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.89: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.90: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.91: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.90: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.92: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.93: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.94: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
@@ -41,23 +41,23 @@ $ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-persistence.cjs
   [V] 18.546.96: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.97: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.98: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.100: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.99: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.100: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.101: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.102: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.103: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.104: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.106: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.105: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.106: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.107: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.109: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.108: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.109: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.110: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.112: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.111: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.112: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.113: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
-  [V] 18.546.115: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.114: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
+  [V] 18.546.115: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.116: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.117: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
   [V] 18.546.117 Kopf: Bauten 5/5 · Gruben 3/3 · Inventar 3/3
@@ -72,7 +72,7 @@ $ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-persistence.cjs
   ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 54/54
   ✅ (S) save-server: ein voller Save hält den Stand davor im .bak (voll: Ziel neu, .bak alt · Tod an Punkt 1 → alt, 2 → alt, 3 → alt, 4 → alt, 5 → alt, 6 → alt, 7 → alt, 8 → neu)
   ✅ (S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (8/8)
-  ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 4.915 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 500 Löcher
+  ✅ (T) Tab-Tod ohne save-server, Zyklen 0-7: 8 Tode: Alter max 5.15 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt · Linie 450 Löcher
   ✅ (C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (erst 200 ETag ja „no-cache" · nachgefragt 304 (0 B) · Inhalt geändert 200 neuer ETag)
 
 11/11 Persistenz-Invarianten OK.

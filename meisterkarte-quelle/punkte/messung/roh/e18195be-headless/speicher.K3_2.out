@@ -13,10 +13,10 @@ $ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-persistence.cjs --
 [welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1704,"soll":1700}]
 
 === Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
-  ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.7 kB, am stärksten worldMeta.settlementCells 3.6 kB · gesamt roh 67.5 kB, Platte 135.0 kB · Leben worldJournal 32.4 kB, dslHistory 19.6 kB, dslAbilities 7.8 kB, knowledgeBase 2.8 kB, creatures 2.1 kB, dslPatternMemory 0.0 kB
-  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1019.2 kB, Platte 2038.4 kB, am stärksten wegSpur 1019.2 kB · gesamt roh 1019.2 kB, Platte 2038.4 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJournal 0.0 kB
+  ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.7 kB, am stärksten worldMeta.settlementCells 3.6 kB · gesamt roh 67.6 kB, Platte 135.2 kB · Leben worldJournal 32.7 kB, dslHistory 19.3 kB, dslAbilities 7.5 kB, knowledgeBase 2.8 kB, creatures 2.5 kB, dslPatternMemory 0.0 kB
+  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.1 kB, Platte 2018.2 kB, am stärksten wegSpur 1009.1 kB · gesamt roh 1009.1 kB, Platte 2018.2 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJournal 0.0 kB
   ✅ (D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: gleich · gleich · gleich · gleich
-  ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.8 kB, Platte 85.6 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 44.1 kB, Platte 88.1 kB · Leben dslHistory 1.2 kB, worldJournal 0.6 kB, dslAbilities 0.2 kB, knowledgeBase 0.2 kB, dslPatternMemory 0.0 kB, creatures -1.0 kB
+  ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.8 kB, Platte 85.7 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 44.5 kB, Platte 89.0 kB · Leben dslHistory 1.3 kB, dslAbilities 0.3 kB, knowledgeBase 0.2 kB, creatures 0.0 kB, dslPatternMemory 0.0 kB, worldJournal 0.0 kB
 
 4/4 Persistenz-Invarianten OK.
 ✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.

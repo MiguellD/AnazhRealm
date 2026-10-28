@@ -1,4 +1,4 @@
-$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-praegung-welt.cjs
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-praegung-welt.cjs
 [stall-akte] Seite #5 ohne Puls: Protocol error (Runtime.enable): Target closed
 
 === (S) SELBST-TEST — der alte Riss ist ERKENNBAR (nicht vakuös) ===
@@ -37,18 +37,18 @@ $ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-praegung-welt.cjs
 
 === (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===
   ✅ A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB — 530 Zeichen, eigener Bauplan 845
-  ✅ B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer) — --user-data-dir=/tmp/puppeteer_dev_chrome_profile-hJ5QST,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-O0mN3c,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-hJ5QST 0
+  ✅ B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer) — --user-data-dir=/tmp/puppeteer_dev_chrome_profile-ChxQ7j,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-Hrj27A,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-ChxQ7j 0
   ✅ SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT
-  ✅ B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss) — p-j1pz-nbsbzqix{"ok":true,"id":"w-fahrzeug_gt-xajf6","name":"fahrzeug_gt","autor":"0307c3fd25853ed4c0e5099cc7f23f177f2e76bfc3793a808781618d5b91fb1a","fremd":[]}
-  ✅ B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild) — 12 m 0,-0.3588473871620475,0.9835316865019835
-  ✅ ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s — 294 ms (A 641)
+  ✅ B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss) — p-ic5j-4h4lqgds{"ok":true,"id":"w-fahrzeug_gt-xajf6","name":"fahrzeug_gt","autor":"d8aa907a498d82cbe5789bcef6071a5c0143c98c262e5f1588d6ebe4803aaf0f","fremd":[]}
+  ✅ B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild) — 12 m 0,-0.35785302620257076,0.9835316865019835
+  ✅ ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s — 320 ms (A 552)
   ✅ B: Stempel und Same reisen tief gleich
   ✅ BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt) — A=9c183437/12 B=9c183437/12 ohne=515787a7/12
   ✅ der eigene Bauplan kommt byte-gleich (kanonische Substanz)
-  ✅ WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A — 514 Zeichen
-  ✅ WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss — 0fc5bdc8-122c-43d9-9254-d146ffcd7790 136 KB guest true
-  ✅ WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild — 1440 ms (A 313, B null)
-  ✅ WELT: der Leib geht unter W ≥ 1 m — 1268 ms
+  ✅ WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A — 515 Zeichen
+  ✅ WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss — 4a6c0b9c-582f-4534-b281-2418b70789e7 136 KB guest true
+  ✅ WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild — 1149 ms (A 236, B null)
+  ✅ WELT: der Leib geht unter W ≥ 1 m — 1167 ms
 
 === (U) FUSION auf zwei Geräten ===
   ✅ FUSION A+B byte-gleich — 1150 Bytes
@@ -77,7 +77,7 @@ $ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-praegung-welt.cjs
   ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true
   ✅ P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)
   ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)
-  ✅ must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt — {"ok":true,"id":"w-fahrzeug_gt-xajf6~2","name":"fahrzeug_gt","autor":"0307c3fd25853ed4c0e5099cc7f23f177f2e76bfc3793a808781618d5b91fb1a","fremd":["zukunft"],"laut":"Geteiltes Werk steht: GT (von 0307 c3fd 2585 3ed4)."}
+  ✅ must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt — {"ok":true,"id":"w-fahrzeug_gt-xajf6~2","name":"fahrzeug_gt","autor":"d8aa907a498d82cbe5789bcef6071a5c0143c98c262e5f1588d6ebe4803aaf0f","fremd":["zukunft"],"laut":"Geteiltes Werk steht: GT (von d8aa 907a 498d 82cb)."}
   ✅ ein Name aus fremder Hand erreicht die KI nie (Werk steht, System-Prompt ohne ihn)
   ✅ TÄTER-PROBE: ohne die Vertrags-Wand käme der Täter durch — das Urteil wird ROT
 
