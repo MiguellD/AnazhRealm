@@ -658,14 +658,81 @@ const alle = [
         ],
         quelle: "1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom",
     },
+    // ── bauen.K1 Staffel 2 ── L-BILD (diag-werkstatt-weg --echt, bauen-k1-bild): je Weg (Werkstatt · Rezeptbuch · Hotbar) ein
+    // frischer Browser auf der Karte (leeres Profil: Platte und Foundry kalt), die Welt steht unter der Bühne; je Lage mit Bau
+    // (schöpfer · frieden mit Material · pfad) × Werk (Eiche · Haus · GT · Teil) × Sicht (Ego · Third) über echte Eingaben die Zeit
+    // von der ersten Eingabe bis zum von der GPU abgearbeiteten Bild, in dem jede L0-Senke des Werks für die Kamera der Szene zog
+    // (der Haken am Render des Takts, gezählt am Backend); der Bau-Hash des Bilds gleicht dem L0-Bau derselben Anfrage im Werk.
+    // kalt = der erste Bau des Werks im frischen Profil (4 je Weg), warm = jeder weitere (20 je Weg); p95 je Weg und Klasse.
     {
         kriterium: "bauen.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "diag-werkstatt-weg misst die ms bis zum stehenden Werk im Null-Renderer (kein --echt), nicht das erste Ausgabe-Bild in L0; " +
-            "die Radeon-Zeiten des Belegs (kalt 1 519 / 2 346 ms) sind ein Hand-Lauf, die GTX ungemessen",
+        befehl: [
+            "bash",
+            "-c",
+            "rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --echt; e=$?; " +
+                "cp artifacts/werkstatt-weg/weg.json \"$PUNKTE_AUS\" 2>/dev/null; exit $e",
+        ],
+        env: { WERKSTATT_WEG_PORT: "{PORT}", PUNKTE_AUS: "{AUS}" },
+        gpu: true,
+        zeit: true,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            if (!j || j.gestartet !== true || j.bild !== true || j.echt !== true || !j.wege)
+                return { gruen: false, zahl: "keine Rohdatei des Bild-Wegs auf der Karte (Exit " + lauf.exit + ")" };
+            const p95 = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1] : null);
+            const rot = [];
+            let n = 0, imBild = 0;
+            const jeWeg = WEG_WEGE.map((weg) => {
+                const jeKlasse = { kalt: [], warm: [] };
+                for (const lage of WEG_LAGEN)
+                    for (const werk of WEG_WERKE)
+                        for (const sicht of WEG_SICHTEN) {
+                            const e = ((((j.wege[lage] || {})[weg] || {})[werk] || {})[sicht]) || null;
+                            n++;
+                            const ms = e && Array.isArray(e.zeiten) ? e.zeiten[4] : null; // [eingabe, steht, l0, bild, gpu] ab der ersten Eingabe
+                            const ok = e && !e.fehler && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
+                            if (!ok) {
+                                rot.push(weg + " · " + lage + " · " + werk + " · " + sicht);
+                                continue;
+                            }
+                            imBild++;
+                            jeKlasse[e.kalt ? "kalt" : "warm"].push(ms);
+                        }
+                const k = p95(jeKlasse.kalt), w = p95(jeKlasse.warm);
+                if (!(k <= 1000) || !(w <= 1000)) rot.push(weg + " p95 kalt " + k + " · warm " + w + " ms");
+                return weg + " kalt " + k + " · warm " + w + " ms (" + jeKlasse.kalt.length + "+" + jeKlasse.warm.length + ")";
+            });
+            return {
+                gruen: n === 72 && imBild === n && !rot.length,
+                zahl: imBild + "/" + n + " Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild " + jeWeg.join(" · ") +
+                    (rot.length ? " · ROT: " + rot.slice(0, 6).join(" · ") + (rot.length > 6 ? " … (" + rot.length + ")" : "") : ""),
+            };
+        },
+        pfad: [
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-seele.js",
+            "stamm/siedlung-*.js",
+            "stamm/bau-*.js",
+            "stamm/studio-*.js",
+            "stamm/stoff-*.js",
+            "stamm/bild-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "index.html",
+            "worlds/huelle/huelle.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "fachwerk-core.js",
+            "vehicle-core.js",
+            "phyto-core.js",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ],
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
     {
