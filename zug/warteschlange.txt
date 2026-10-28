@@ -154,3 +154,4 @@ z60-abab 1 abab A=be1febba0567940c4b18a991b60af96d80a15ca5 B=e18195be8b143f9d333
 takt16b-gtx 0 storno
 z59-abab 0 storno
 z60-abab 0 storno
+takt17a-gtx 1 punkte sha=e18195be8b143f9d333de6ea8a8b43dea93dd198 geraet=gtx nur=affekt.K1#2,ankunft.K2#1,ankunft.K3#1,bauen.K1#2,bauen.K5#2,fahrzeug.K3#1,fahrzeug.K3#2,fahrzeug.K4#1,fahrzeug.K4#2,fahrzeug.K5#1,ferne.K1#1,ferne.K1#2,ferne.K2#1,ferne.K2#2,ferne.K5#1,gelaende.K2#1,gelaende.K2#2,gelaende.K3#1,gelaende.K5#2,haar.K1#1,haar.K2#1,halten.K1#2,halten.K2#1,halten.K5#1,halten.K5#2,klang.K2#1,klang.K4#1,klang.K4#2,klang.K5#2,leib.K1#1,leib.K1#2,leib.K2#1,leib.K2#2,leib.K4#1,leib.K4#2,licht.K2#1,licht.K2#2,licht.K5#1,luftwasser.K5#1
