@@ -489,7 +489,7 @@ const foundryKanal = (() => {
     // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
     // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
     // der ERSTE Manifest-Kern mit einer SIEDLUNG-Daten-Zeile (fachwerk-core:
-    // cellM/rarity/nHMin/nHSpan/slopeMax) das WO/WIEVIEL der
+    // cellM/rarity/nHMin/nHSpan) das WO/WIEVIEL der
     // Doerfer. Reine JSON-Daten; kein Kern -> null (der Host bleibt byte-alt).
     function __zweitKernSiedlung() {
         try {

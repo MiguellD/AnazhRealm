@@ -28,6 +28,8 @@
 //   r.gerufen — je Funktion die Zahl der verschiebbaren Aufrufe eines Baus (der Nenner: 0 heißt, die Probe sah nichts)
 //   r.selbst  — die grobe Drift (2^30 ULP auf allen Funktionen) kippt mindestens einen Fall: die Probe erreicht den Bau
 "use strict";
+const fs = require("fs");
+const path = require("path");
 
 const ULP_SELBST = 2 ** 30;
 const FUNKTIONEN = [
@@ -207,9 +209,9 @@ async function plattformProbe({ laden, bauen, drift, funktionen = FUNKTIONEN, ei
 // erreicht, ist der Kern BENANNT: je Satz und Funktion die Zahl der kippenden Fälle als Ratsche (sie darf nur fallen),
 // die erste Täter-Stelle als Name, das Soll 0 (EIN Byte-Raster am Ausgang, das Muster porta-core/fachwerk-core
 // ausRaster — es kommt mit dem nächsten Re-Mint des Kerns, nie als eigener Byte-Akt).
-const RATSCHE_DATEI = require("path").join(__dirname, "..", "..", "spec", "asset-contract", "plattform-ratsche.json");
+const RATSCHE_DATEI = path.join(__dirname, "..", "..", "spec", "asset-contract", "plattform-ratsche.json");
 function ratscheLesen() {
-    return JSON.parse(require("fs").readFileSync(RATSCHE_DATEI, "utf8"));
+    return JSON.parse(fs.readFileSync(RATSCHE_DATEI, "utf8"));
 }
 // urteil → { rot: [Sätze mit Täter], faellt: [Zeilen, die fallen dürfen] }
 function ratscheUrteil(satz, PP, R) {
@@ -386,7 +388,50 @@ function goldenSelbsttest(actual, check) {
     check("SELBST-TEST: objects-Drift wird erkannt", rot({ cases: actual }, t2, "objects"));
 }
 
+// DAS IST EINES VERTRAGS (porta · schmiede · vehicle): jeder Fall doppelt gebaut und gefingert, je Schlüssel der Abdruck des
+// ersten Baus — trägt ein zweiter Bau ein anderes Byte, bricht die Determinismus-Zeile.
+function vertragIst(faelle, bau, check, schluessel = fallSchluessel) {
+    const ist = {};
+    let gleich = true;
+    for (const c of faelle) {
+        const [a, b] = [0, 1].map(() => fingerabdruck(bau(c)));
+        gleich = gleich && a.sha256 === b.sha256;
+        ist[schluessel(c)] = a;
+    }
+    check(`Determinismus: jeder der ${faelle.length} Fälle baut doppelt byte-gleich`, gleich);
+    return ist;
+}
+
+// DIE GOLDEN-WAND eines Vertrags (fachwerk · porta · schmiede · vehicle — bis hier fünfmal wortgleich): beim ersten Lauf
+// (oder MINT_FORCE=1) friert sie das Ist in `datei` ein ({ cv, minted, cases }), danach vergleicht sie byte-exakt und nennt
+// jede Abweichung; `n` ist die Zahl der Fälle, die das Golden tragen muss.
+function goldenWand(datei, cv, ist, check, n, minted = "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall") {
+    const name = path.basename(datei);
+    if (!fs.existsSync(datei) || process.env.MINT_FORCE === "1") {
+        fs.mkdirSync(path.dirname(datei), { recursive: true });
+        fs.writeFileSync(datei, JSON.stringify({ cv, minted, cases: ist }, null, 2) + "\n");
+        console.log(`  🧊 GOLDEN GEMINTET (${Object.keys(ist).length} Fälle) → ${name} — ab jetzt EINGEFROREN`);
+    }
+    const golden = JSON.parse(fs.readFileSync(datei, "utf8"));
+    const zahl = Object.keys(golden.cases).length;
+    check(`Golden ${name} trägt cv:${cv} + alle ${n} Fälle`, golden.cv === cv && zahl === n);
+    const diffs = goldenVergleich(golden, ist);
+    check(`Goldens ${name} byte-exakt (${zahl} Fälle)`, diffs.length === 0, diffs[0] || "");
+    for (const d of diffs.slice(1)) console.log(`      ↳ ${d}`);
+}
+
+// DER FRISCHE KERN der Plattform-Probe: je Lauf neu geladen (die Stoffe rechnen ihre Farbe beim ersten Bau) — danach legt
+// die Linse ihren eigenen Kern wieder unter `globalThis[name]`.
+const frischerKern = (kern, name) => () => {
+    delete require.cache[require.resolve(kern)];
+    require(kern);
+    return globalThis[name];
+};
+
 module.exports = {
+    vertragIst,
+    goldenWand,
+    frischerKern,
     plattformProbe,
     installiereDrift,
     FUNKTIONEN,

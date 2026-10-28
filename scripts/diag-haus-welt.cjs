@@ -301,14 +301,12 @@ async function proben(phasen) {
     const hh = (x, z) => r.getTerrainHeightAt(x, z);
     const rund = (v, k = 100) => Math.round(v * k) / k;
     const gruende = () => (r._erdbauLage() || {}).gruende || [];
-    // das Gefälle des Gesetzes an (x, z) über ±d m: [∂h/∂x, ∂h/∂z]
-    const grad = (x, z, d = 4) => [(hh(x + d, z) - hh(x - d, z)) / 2 / d, (hh(x, z + d) - hh(x, z - d)) / 2 / d];
     {
         const nass = (x, z) => {
             const ws = r._atlasWaterLevelAt(x, z, hh(x, z));
             return Number.isFinite(ws) && ws > hh(x, z) - 0.3;
         };
-        const hang = (x, z) => Math.hypot(...grad(x, z, 8));
+        const hang = (x, z) => r._slopeAt(x, z, hh, 8); // die EINE Steilheit über ±8 m
         const trocken = (x, z) => {
             if (nass(x, z)) return false;
             for (let b = 0; b < 12; b++)
@@ -362,6 +360,22 @@ async function proben(phasen) {
         Hh.build({ gelaende: false });
         return Hh;
     };
+    // ein trockener Ort 150 m um M, 60 m von jedem Haus (`wild`: die Wildnis trägt ihn), null ohne
+    const ort150 = (M, wild) => {
+        for (let a = 0; a < 16; a++) {
+            const gx = M.x + Math.cos((a / 16) * Math.PI * 2) * 150;
+            const gz = M.z + Math.sin((a / 16) * Math.PI * 2) * 150;
+            if (!r._landAt(gx, gz, 0.5) || (wild && !r._wildnisTraegt(gx, gz))) continue;
+            if (!s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60))
+                return [gx, gz];
+        }
+        return null;
+    };
+    // das 5 × 5-Raster über den Grundriss eines Hauses (`_grundrissVon`), 0,1 m innen
+    const raster5 = (e, f) =>
+        [0, 1, 2, 3, 4].flatMap((i) =>
+            [0, 1, 2, 3, 4].map((j) => welt(e, f.ox + (f.ex - 0.1) * (i / 2 - 1), f.oz + (f.ez - 0.1) * (j / 2 - 1)))
+        );
     const welt = (e, lx, lz) => {
         const c = Math.cos(e.rotationY || 0);
         const sn = Math.sin(e.rotationY || 0);
@@ -475,9 +489,9 @@ async function proben(phasen) {
         const tu = e.tuer;
         const base = e.position.y - 0.5;
         // W10 TIER IM HAUS: kein Leib in der Fundament-Box vor dem Gang (der Wurf des Felds weicht dem Bau, `_naturRaeumen`)
-        const fu = e.fundament;
+        const fu = r._grundrissVon(e);
         // die Saat: ein Wurf des Felds genau in der Box (`precise`, ohne Spieler-Klemme), am Deckel weicht der fernste Leib
-        const sp = welt(e, fu.ox || 0, fu.oz || 0);
+        const sp = welt(e, fu.ox, fu.oz);
         const weit = (c) => Math.hypot(c.position.x - sp.x, c.position.z - sp.z);
         for (let k = 0; k < 64 && s.creatures.length >= s.maxCreatures; k++)
             r.removeCreature(s.creatures.reduce((m, c) => (weit(c) > weit(m) ? c : m)));
@@ -486,7 +500,7 @@ async function proben(phasen) {
         h.saat = !!saat && r._grundrissRaeumen(e) >= 0;
         h.tiere = s.creatures
             .map((c) => [c, lokal(e, c.position.x, c.position.z)])
-            .filter(([, q]) => Math.abs(q.x - (fu.ox || 0)) <= fu.ex && Math.abs(q.z - (fu.oz || 0)) <= fu.ez)
+            .filter(([, q]) => Math.abs(q.x - fu.ox) <= fu.ex && Math.abs(q.z - fu.oz) <= fu.ez)
             .map(([c]) => c.userData.gattung + " " + (c.position.y - base).toFixed(2));
         // W10 DER SPIELGANG (siedlung.K1): EIN Gang ohne Versetzen, je Sim-Schritt der Hub, je Ziel Rest und Fuß
         const dm = Hh.dims || {};
@@ -575,15 +589,15 @@ async function proben(phasen) {
         // W4c DER GRUNDRISS DECKT DAS HAUS: die Solids des Gesetzbuchs liegen in der Fundament-Box des Eintrags (Mitte
         // {ox,oz} + halbe Maße {ex,ez}, haus-lokal) — Podest, Natur-Wand und Räumen lesen sie
         {
-            const f = e.fundament;
+            const f = r._grundrissVon(e);
             let ueber = 0;
             for (const so of Hh.solids || []) {
                 ueber = Math.max(
                     ueber,
-                    (f.ox || 0) - f.ex - so.min[0],
-                    so.max[0] - ((f.ox || 0) + f.ex),
-                    (f.oz || 0) - f.ez - so.min[2],
-                    so.max[2] - ((f.oz || 0) + f.ez)
+                    f.ox - f.ex - so.min[0],
+                    so.max[0] - (f.ox + f.ex),
+                    f.oz - f.ez - so.min[2],
+                    so.max[2] - (f.oz + f.ez)
                 );
             }
             h.grundrissUeberM = rund(ueber);
@@ -822,7 +836,7 @@ async function proben(phasen) {
         // Slots aus dem Gedächtnis des Orts an seinem Ort und Boden; die Platte des Vorplatzes ist Boden (Dichte ±0,3 m)
         const vs = H.find((e) => e.tuer);
         const sw = (o.w9.slot = {});
-        const gefaelle = (x, z) => (sw.hang = Math.hypot(...grad(x, z))) >= 0.15;
+        const gefaelle = (x, z) => (sw.hang = r._slopeAt(x, z, hh, 4)) >= 0.15; // die EINE Steilheit über ±4 m
         const se = vs && (await setze(vs, "w9-slot", ring(dorfMitte, [60, 90, 120, 160]), gefaelle, vs.rotationY));
         for (const v of se ? r._ortPlaene.values() : [])
             for (const d of v.slots)
@@ -1080,16 +1094,11 @@ async function proben(phasen) {
     if (P.has("haus")) {
         const STEP = A.PLAYER_STEP_UP;
         const w7 = { haeuser: H.length, imBau: 0, taeter: [] };
-        // je Bau aus `vor` (nah, er weicht nicht) die Punkte des Hauses `e` in seinen Boxen: Mitte, Grundriss 5 × 5, mit `tuer`
-        // der Vorplatz
+        // je Bau aus `vor` (nah, er weicht nicht) die Punkte des Hauses `e` in seinen Boxen: Mitte, Grundriss 5 × 5 (der EINE
+        // Grundriss-Leser `_grundrissVon`), mit `tuer` der Vorplatz
         const imBau = (e, vor, tuer) => {
-            const [f, tu, boden] = [e.fundament || { ex: 0.1, ez: 0.1 }, e.tuer, e.position.y - 0.5];
-            const pkt = [{ x: e.position.x, z: e.position.z }];
-            for (let i = 0; i <= 4; i++)
-                for (let j = 0; j <= 4; j++)
-                    pkt.push(
-                        welt(e, (f.ox || 0) + (f.ex - 0.1) * (i / 2 - 1), (f.oz || 0) + (f.ez - 0.1) * (j / 2 - 1))
-                    );
+            const [f, tu, boden] = [e.fundament && r._grundrissVon(e), e.tuer, e.position.y - 0.5];
+            const pkt = [{ x: e.position.x, z: e.position.z }, ...(f ? raster5(e, f) : [])];
             if (tuer && tu && Number.isFinite(tu.w))
                 for (let i = 0; i <= 2; i++)
                     for (const dz of [0.3, 1.1]) pkt.push(welt(e, tu.x + (tu.w / 2 - 0.05) * (i - 1), tu.z - dz));
@@ -1137,8 +1146,8 @@ async function proben(phasen) {
     const imGrundrissVon = (liste, x, z) => {
         for (const hs of liste) {
             const lx = lokal(hs, x, z);
-            const f = hs.fundament;
-            if (Math.abs(lx.x - (f.ox || 0)) <= f.ex && Math.abs(lx.z - (f.oz || 0)) <= f.ez) return hs;
+            const f = r._grundrissVon(hs);
+            if (Math.abs(lx.x - f.ox) <= f.ex && Math.abs(lx.z - f.oz) <= f.ez) return hs;
         }
         return null;
     };
@@ -1375,21 +1384,15 @@ async function proben(phasen) {
             }
             const h0 = H[0];
             if (h0) {
-                const mitte = welt(h0, h0.fundament.ox || 0, h0.fundament.oz || 0);
+                const mitte = welt(h0, r._grundrissVon(h0).ox, r._grundrissVon(h0).oz);
                 const kiH = hain(mitte.x, mitte.z);
                 w8.kiHaus = kiH.neu.filter((e) => imGrundrissVon([h0], e.position.x, e.position.z)).length;
                 w8.kiWeichtHaus = kiH.weicht.haus;
                 w8.kiHausTyp = h0.type;
             }
             // die Gegenprobe: ein trockener Ort 150 m von der Plattform, 60 m von jedem Haus
-            w8.gegenprobe = null;
-            for (const [gx, gz] of ring(L, [150], 16)) {
-                if (!r._landAt(gx, gz, 0.5)) continue;
-                if (s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60))
-                    continue;
-                w8.gegenprobe = hain(gx, gz).neu.length;
-                break;
-            }
+            const g8 = ort150(L);
+            w8.gegenprobe = g8 ? hain(...g8).neu.length : null;
         }
     }
     // W8 BAU — DER GRUNDRISS JEDES BAUS: an einem trockenen Ort 150 m von der Plattform (60 m von jedem Haus) wächst der
@@ -1400,13 +1403,7 @@ async function proben(phasen) {
         o.bau = wb;
         const plat = s.architectures.find((a) => a && a.type === "start_plattform");
         const M0 = plat ? plat.position : start;
-        const ort =
-            ring(M0, [150], 16).find(
-                ([gx, gz]) =>
-                    r._landAt(gx, gz, 0.5) &&
-                    r._wildnisTraegt(gx, gz) &&
-                    !s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60)
-            ) || null;
+        const ort = ort150(M0, true);
         const inBau = (bau, x, z) =>
             (bau.blockerAABBs || []).some((b) => {
                 const ob = b.obb;
@@ -1445,8 +1442,8 @@ async function proben(phasen) {
         // (`_naturSetzen`) — keiner steht
         const wurf = [];
         for (const hs of H) {
-            const f = hs.fundament;
-            const m = welt(hs, f.ox || 0, f.oz || 0);
+            const f = r._grundrissVon(hs);
+            const m = welt(hs, f.ox, f.oz);
             for (const t of A.FELD_WURF) {
                 const e = r._naturSetzen(
                     t,
@@ -1683,7 +1680,8 @@ async function proben(phasen) {
                     if (Math.hypot(cx - fx, cz - fz) < 120 || Math.hypot(cx - dorfMitte.x, cz - dorfMitte.z) < 90)
                         continue;
                     if (!r._landAt(cx, cz, 0.5)) continue;
-                    const [gx, gz] = grad(cx, cz);
+                    const gx = (hh(cx + 4, cz) - hh(cx - 4, cz)) / 8;
+                    const gz = (hh(cx, cz + 4) - hh(cx, cz - 4)) / 8;
                     if (!Number.isFinite(gx) || !Number.isFinite(gz) || Math.hypot(gx, gz) < 0.02) continue;
                     const gier = Math.atan2(-gx, -gz); // haus-lokal −z (die Front) = Welt (−sin, −cos) = bergauf
                     const c = Math.cos(gier);
