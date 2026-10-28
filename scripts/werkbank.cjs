@@ -238,7 +238,7 @@ function lauf(k) {
         // Frame Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
         const uhr = window.__passUhr();
         const proben = [];
-        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine ? r._gpuLeine.erledigt : 0;
+        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine.erledigt;
         // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
         // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
         // DIE BAHN (`wandern: "bahn"`): 4 m/s die Kette des Orts (haushalt.json `bahn`) oder −z 0 → −60 m, hin und zurück;
@@ -257,7 +257,7 @@ function lauf(k) {
         // DER SPRUNG (`wandern: "sprung"`, streaming.K3): mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
         // Gesetzes (der Loop übernimmt den Teleport, `_loopFixedStep`); gemessen wird die Kadenz, während die Welt dort neu
         // entsteht, dazu nach wie vielen s sie steht (A9 `_weltSteht`) und jeder Bau im Haupt-Faden (`_syncBauten`).
-        const sprung = k.wandern === "sprung" ? { m: 1000, stehtS: null } : null;
+        const sprung = k.wandern === "sprung" && { m: 1000, stehtS: null };
         const kette = window.__ortBahn || [[ort.x, ort.z], [ort.x, ort.z - 60]];
         const laenge = kette.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - kette[i][0], q[1] - kette[i][1]), 0);
         // DER WEG des Spielers im Mess-Fenster (die Bahn oder ein Geher von außen) — „Weg 0 m" nennt eine stehende Zerlegung
@@ -271,7 +271,7 @@ function lauf(k) {
             // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
             window.__wetterHalten();
             const c0 = performance.now();
-            const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
+            const g0 = r._gpuLeine.gerendert;
             const z = (uhr.frameZ = {}), aussen = H && diff(H.acc, snap);
             if (H) snap = Object.assign({}, H.acc);
             if (bahn) {
@@ -304,7 +304,7 @@ function lauf(k) {
             const c1 = performance.now(), innen = H && diff(H.acc, snap);
             if (H) snap = Object.assign({}, H.acc);
             // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
-            const gerendert = !r._gpuLeine || r._gpuLeine.gerendert > g0;
+            const gerendert = r._gpuLeine.gerendert > g0;
             const pm = st.playerMesh.position;
             if (messen) weg += Math.hypot(pm.x - lage.x, pm.z - lage.z);
             lage.copy(pm);
@@ -329,7 +329,7 @@ function lauf(k) {
             // Abstand der Zeitpunkte, an denen die GPU ein Bild abgearbeitet hat, ist der echte Durchsatz — die Leine
             // des Spiels zählt sie (`erledigt`).
             const L = r._gpuLeine;
-            if (L && L.erledigt !== erledigtVor) {
+            if (L.erledigt !== erledigtVor) {
                 p.erledigt = L.erledigt - erledigtVor;
                 p.gpuErledigt = L.erledigtMs;
                 erledigtVor = L.erledigt;
@@ -354,7 +354,7 @@ function lauf(k) {
             const ruheZustand = () => {
                 const z = r._impostorCensus() || {};
                 return {
-                    chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                    chunks: st.voxelChunks.size,
                     foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
                     karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: window.__ungebaut(),
                 };
@@ -379,7 +379,7 @@ function lauf(k) {
                 ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
             }
             const v0 = Object.assign({}, window.__vram || {});
-            const wache = () => (window.__stempelWache ? window.__stempelWache() : null);
+            const wache = window.__stempelWache;
             const s0 = wache();
             if (k.spur) await window.__spurAn();
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
@@ -417,9 +417,9 @@ function lauf(k) {
             if (H) H.an = false;
             const haenger = H && {
                 takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures ? st.creatures.length : 0, wetter: st.weather,
-                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                chunks: st.voxelChunks.size,
                 sprung: sprung && Object.assign(sprung, { bau: [sprung.bau, r._syncBauten()] }),
-                loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
+                loadScale: +st.perfSense.loadScale.toFixed(2),
                 erst: erst0 && Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
                     { offen: E.offen.size }),
             };
@@ -427,7 +427,7 @@ function lauf(k) {
             const s1 = wache();
             rend.setAnimationLoop(null);
             // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
-            if (rend.backend && rend.backend.device) await rend.backend.device.queue.onSubmittedWorkDone();
+            await rend.backend.device.queue.onSubmittedWorkDone();
             await sleep(50);
             const jePassFrame = (await uhr.lesen()) || {};
             const quant = (arr, q) => {
@@ -464,10 +464,7 @@ function lauf(k) {
                 fps: dt.length ? +((1000 * dt.length) / dt.reduce((a, b) => a + b, 0)).toFixed(1) : null,
                 frameMs: zahl(dt),
                 cpuTaktMs: zahl(cpu),
-                leine: r._gpuLeine
-                    ? { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length))
-                        .toFixed(1), imFlug: r._gpuLeine.imFlug }
-                    : null,
+                leine: { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length)).toFixed(1), imFlug: r._gpuLeine.imFlug },
                 gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
                 gpuDurchsatzMs: (() => {
                     const g = proben.filter((p) => p.erledigt);
@@ -511,7 +508,7 @@ function lauf(k) {
                     pos: [cam.position.x, cam.position.y, cam.position.z].map((x) => +x.toFixed(1)),
                     blick: [dir.x, dir.y, dir.z].map((x) => +x.toFixed(2)),
                 },
-                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                chunks: st.voxelChunks.size,
                 ruhe,
                 wetter: st.weather,
                 // das Rohe der Wetter-Wache — das Urteil spricht die Werkbank (`wetterUrteil`)
