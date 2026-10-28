@@ -1619,12 +1619,16 @@ const stationen = [
     // ───────── tore.K5 Staffel 2 — beide Flüsse an beiden Geräten (tore-k5-welt) ─────────
     // DIESELBE Probe wie #1 (gate:praegung-welt), B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte. Nach dem Bauplan (≤ 4 KB,
     // Bau-Hash A = B) teilt A seine Welt in EINER Geste (Bibliothek → Teilen: dieselbe Hülle `anazh-werk:`, signiert wie jede
-    // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten`, Neuladen); die Kontrolle ist das
-    // Ereignis `_weltbildKommt` in A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m. Das Urteil
-    // verlangt jede Zeile von #1, die vier WELT-Zeilen und „B echt" (ein Lauf mit Null-Renderer zählt nie). Headless (B null)
+    // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten` tauscht die Welt AM ORT, `_weltWechsel`:
+    // Renderer, Programme, Buch und Fäden bleiben warm — tore-k5-tuer); die Kontrolle ist das Ereignis `_weltbildKommt` in
+    // A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m; die Seite von B lädt dabei nie neu (Zeile
+    // „Am Ort": jede Navigation ist ROT). Das Urteil verlangt jede Zeile von #1, die fünf WELT-Zeilen und „B echt" (ein Lauf mit
+    // Null-Renderer zählt nie). Headless (B null)
     // an tore-k5-welt: Bauplan 530 Zeichen, Welt-Code 515, Welt 136 KB, Kontrolle 1 610 ms, Leib 1 236 ms, Bau-Hash
     // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
-    // der signaling-server las nur den ersten (Join-Timeout 10 s).
+    // der signaling-server las nur den ersten (Join-Timeout 10 s). Am 27.10. ROT an Radeon und GTX an der Kontrolle (der
+    // Beitritt lud die Seite neu, Zweit-Boot GTX 12,0 s); tore-k5-tuer: Kontrolle headless 2001 → 906–969 ms, B auf
+    // swiftshader-WebGPU 83,4/74,9 → 68,7/40,0 s (ABAB, Zwischenstand), Bau-Hash 9c183437/12 = 9c183437/12.
     {
         kriterium: "tore.K5",
         staffel: 2,
@@ -1649,6 +1653,7 @@ const stationen = [
                 ["Beitritt", /^\s*(✅|❌) WELT: B steht in A's Welt \(Id, Same, Gast, > 128 KB\) und kennt A am Anschluss/],
                 ["Kontrolle", /^\s*(✅|❌) WELT: KONTROLLE ≤ 5 s — Klick bis Code \+ Enter bis zum ersten Weltbild — .*, B echt\)/],
                 ["Leib", /^\s*(✅|❌) WELT: der Leib geht unter W ≥ 1 m/],
+                ["Am Ort", /^\s*(✅|❌) WELT: am Ort — die Seite von B lädt nicht neu/],
             ];
             const je = soll.map(([, re]) => l.find((x) => re.test(x)));
             const fehlt = soll.filter((_, i) => !je[i]).map(([n]) => n);
@@ -1658,7 +1663,7 @@ const stationen = [
             return {
                 gruen: !rot.length && lauf.exit === 0,
                 zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Bauplan " + nach(0) + " · Welt-Code " + nach(8) +
-                    " · Welt " + nach(9) + " · Kontrolle " + nach(10) + " · Leib " + nach(11) + " · " + nach(7),
+                    " · Welt " + nach(9) + " · Kontrolle " + nach(10) + " · Leib " + nach(11) + " · " + nach(12) + " · " + nach(7),
             };
         },
         pfad: [
@@ -1670,7 +1675,9 @@ const stationen = [
             "stamm/studio-bruecke.js",
             "stamm/werkstatt-*.js",
             "stamm/speicher-laden.js",
+            "stamm/speicher-welten.js",
             "stamm/dirigent-ankunft.js",
+            "stamm/dirigent-takt.js",
             "index.html",
             "signaling-server.js",
             "scripts/diag-praegung-welt.cjs",
