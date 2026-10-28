@@ -21,7 +21,7 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -74,14 +74,8 @@ hauptLauf(async () => {
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
-
     const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
-    const eps = await page.evaluate(kernStufen.epsilonSeite, W);
-    const out = await page.evaluate(async () => {
+    const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { c: {}, d: {}, f: {} };
         const r = window.anazhRealm;
         const A = r.constructor;
@@ -151,13 +145,6 @@ hauptLauf(async () => {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
-
-    await browser.close();
-    server.close();
-
-    kernStufen.epsilonUrteil(check, eps, W, kern);
     check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", eps.b.s.radstand === 2.9, String(eps.b.s.radstand));
     check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", JSON.stringify(eps.b.ks.vehicle) === "[0,1]", JSON.stringify(eps.b.ks.vehicle));
     check(

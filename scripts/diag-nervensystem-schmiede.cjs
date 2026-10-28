@@ -27,7 +27,7 @@
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -98,14 +98,8 @@ hauptLauf(async () => {
     console.log("=== ε-BEWEIS SCHMIEDE — TEIL S: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
-
     const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
-    const eps = await page.evaluate(kernStufen.epsilonSeite, W);
-    const out = await page.evaluate(async () => {
+    const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
         const r = window.anazhRealm;
         const A = r.constructor;
@@ -304,13 +298,6 @@ hauptLauf(async () => {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
-
-    await browser.close();
-    server.close();
-
-    kernStufen.epsilonUrteil(check, eps, W, kern);
     check("B: die Regler-Daten fliessen (langschwert.s.griff == 0.24)", eps.b.s.griff === 0.24, String(eps.b.s.griff));
     check(
         "B: die Werkzeug-Marke reist (9 tool:true — Messer/Faellaxt/Spaltmaul/Vorschlaghammer/Beil/Spitzhacke/Spaten/Schaufel/Sichel)",
