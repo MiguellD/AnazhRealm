@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K5 (Zweig schwarm), mensch.K5#1 und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -946,6 +946,39 @@ async function affektLauf() {
     } finally {
         tor.stop();
     }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+
+// ───────── DIE SICHTBARE BÖE (vegetation.K2#1; Zweig boe-zeit): EIN Lauf (`boeLauf`) ─────────
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
+// das Auge 1,6 m über dem Spieler-Ort des Messorts blickt zum Blick-Punkt (`wahl` 0: die Kamera steht) und schießt `bild --zeit
+// 0,25` — am Kamm und im Tal der Böe in der Mitte des Nah-Felds je zwei Paare in Quadratur der Halm-Phase, je Paar der Rausch-Boden
+// derselben Bild-Uhren bei Wind 0. Die Mutante „wind0" legt die Böen-Drift der Welt auf 0 (`_windWob`): ohne Wind MUSS das Urteil
+// ROT sein. Die Zeile „BOE-ZEIT {…}" und {AUS} tragen das Maß, die zwei Bilder am Kamm liegen neben {AUS} (`-boe-zeit-0/1.png`).
+async function boeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const [aus, port, mutante] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    let erg;
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        await werkbankRuf(W, "/umstellen", { ort: "wiese" });
+        if (mutante === "wind0") await werkbankRuf(W, "/eval", { code: "r._windWob = () => 0; return 1;" });
+        const b = await werkbankRuf(W, "/bild", {
+            px: M.x, py: "+1.6", pz: M.z, lx: M.blick.x, ly: "+0", lz: M.blick.z, wahl: 0, zeit: 0.25, datei: aus.replace(/\.json$/, "") + "-boe.png",
+        });
+        erg = b.zeit ? Object.assign({ abnahme: b.abnahme, mutante: mutante || null }, b.zeit) : { fehler: String(b.fehler || "keine Zeit-Messung").slice(0, 400) };
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    } finally {
+        tor.stop();
+    }
+    console.log("BOE-ZEIT " + JSON.stringify(erg));
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 }
 
@@ -2555,6 +2588,40 @@ const stationen = [
         "scripts/lib/welt-boot.cjs",
     ],
     quelle: "1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand",
+    },
+
+    // ───────── vegetation.K2 Staffel 1 — die sichtbare Böe nah (0–15 m) an einem Gerät (Zweig boe-zeit) ─────────
+    // Der Lauf `boeLauf` (oben): `werkbank bild --zeit 0,25` an der Mess-Wiese. GRÜN, wenn das Nah-Feld (0–15 m aus der Tiefe des
+    // Schusses) ≥ 5 % des Bilds trägt, die zeitliche Luma-Varianz am Kamm der Böe ≥ 2× über dem Rausch-Boden liegt (dieselben Uhren
+    // bei Wind 0, nie unter 1 Stufe²) und der Kamm ≥ 2× so viel bewegt wie das Tal (Varianz über dem Boden) — die EINE wandernde
+    // Böe (WIND_BOE, λ ≈ 164 m, ≈ 10,4 m/s) erreicht den Ort zu ihrer Laufzeit; TAAU-Flimmern und ein eigener Sinus je Schicht
+    // heben Kamm und Tal gleich. Dazu die Abnahme des Bilds GRÜN. Headless (Werkbank, swiftshader, Mess-Wiese, Zweig boe-zeit 572ca42e):
+    // Kamm 2999 über Boden 0,001, Tal 878 — Kamm/Tal 3,42, Nah-Feld 53,6 % GRÜN; die Mutante wind0 ROT (Kamm 0,0 = Boden, ueber · lauf).
+    {
+        kriterium: "vegetation.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"],
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j) => {
+            if (!j || j.fehler || !j.kamm || !j.tal) return { gruen: false, zahl: "ohne Zeit-Messung: " + ((j && j.fehler) || "kein {AUS}") };
+            const [K, T] = [j.kamm, j.tal];
+            const z = { nah: j.nahAnteil * 40, ueber: K.v / Math.max(K.boden, 1), lauf: (K.v - K.boden) / Math.max(T.v - T.boden, 1e-3) };
+            const rot = Object.keys(z).filter((k) => !(z[k] >= 2)).concat(/ABNAHME GRÜN/.test(j.abnahme || "") ? [] : ["abnahme"]);
+            const r = (x, n) => Number(x).toFixed(n);
+            return {
+                gruen: !rot.length,
+                zahl:
+                    "Kamm " + r(K.v, 1) + " über Rausch-Boden " + r(K.boden, 3) + " (×" + r(z.ueber, 1) + "), Tal " + r(T.v, 1) + " — Kamm/Tal " + r(z.lauf, 2) +
+                    " bei Böe " + r(K.boe, 2) + "/" + r(T.boe, 2) + " (t " + r(K.t, 1) + "/" + r(T.t, 1) + " s), Nah-Feld " + r(j.nahAnteil * 100, 1) + " % in 0–15 m, Δt " +
+                    j.dt + " s" + (rot.length ? " · ROT " + rot.join(",") : ""),
+            };
+        },
+        pfad: ["stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/dirigent-takt.js", "stamm/daten.js", "phyto-core.js", "stamm/vegetation-*.js",
+            "scripts/werkbank.cjs", "scripts/lib/abnahme-urteil.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit",
     },
 ];
 
