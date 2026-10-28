@@ -872,6 +872,8 @@ jobs:
               # Teleport-Zähler 0, Sim-Weg = Fahr-Weg, der Reiter sitzt (nie „in der Luft"), keine Gier ohne Lenkung.
               # Befund 06.10.: 114 von 114 Frames Teleport, 25,95 m simuliert gegen 10,27 m gefahren, 84° Gier am Hang.
               # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
+              # RM (fahrzeug.K5): Glatt · Drift · Hang — die Federung im gezeichneten Bild antwortet dem Boden-Stoß und wankt im
+              # Drift, das Rumble am Stub-Pad folgt Schlupf und Stoß, die Stimme schweigt nach dem Absteigen; die Mutante ROT.
               run: npm run gate:fahr-leben
 
             - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)

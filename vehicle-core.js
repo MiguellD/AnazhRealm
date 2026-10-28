@@ -2338,6 +2338,7 @@
             luftEps: 0.02, // m: so weit unter der Fallkurve verliert das Rad den Griff (darunter haftet es)
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
+            hubBoden: 1, // Anteil des Boden-Stosses, den die Hub-Feder als Fusspunkt-Erregung traegt (fahrzeug.K5)
         },
         // ── SCHAU 2 (10.10., fahr-bahn; rein additive DATEN-Zeile — Praezedenz: schritt) — DER PLATZ EINES WAGENS, den die
         //    Welt hinstellt (die Vorschau am Garage-Tor, „bau mir einen gt"): er steht auf der Ebene seiner vier Raeder und
@@ -2889,8 +2890,15 @@
                 z.luft = z.y - eb.y > S.luftEps;
             } else if (eb.y - yBall <= stufe) {
                 // DER BODEN TRAEGT: folgen — oder LANDEN, dann schlaegt der Stoss (relativ zum Boden) in die Hub-Feder.
+                // fahrzeug.K5 (rein additiv — auf ebenem Grund byte-gleich): folgt das Rad dem Boden, ist jede Aenderung seiner
+                // Steig-Rate ein Stoss von unten (bodenStoss, m/s²); der Aufbau bleibt mit seiner Traegheit zurueck, die
+                // Hub-Feder nimmt ihn als Fusspunkt-Erregung (Anteil hubBoden). Vorher folgte der Aufbau jeder Unebenheit starr
+                // (am 10°-Hang bei 9 m/s Hub 0,0044 m wie auf der Ebene). Dieselbe Groesse liest das Rumble des Wirts.
                 const vb = vBoden(eb);
-                if (warLuft) z.fHubV = (Number.isFinite(z.fHubV) ? z.fHubV : 0) + Math.min(0, z.vy - g * dt - vb);
+                z.bodenStoss = !warLuft && dt > 0 ? (vb - z.vy) / dt : 0;
+                const hubV = Number.isFinite(z.fHubV) ? z.fHubV : 0;
+                if (warLuft) z.fHubV = hubV + Math.min(0, z.vy - g * dt - vb);
+                else if (z.bodenStoss) z.fHubV = hubV - z.bodenStoss * dt * S.hubBoden;
                 z.y = eb.y;
                 z.vy = vb;
                 z.luft = false;
