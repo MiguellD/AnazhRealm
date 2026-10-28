@@ -1719,6 +1719,89 @@ const stationen = [
         ],
         quelle: "2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
     },
+
+    // ───────── spielgang.K3 — Bedienung: HUD und Menü antworten, ohne das Bild zu verdecken (Zweig hud-zugang) ─────────
+    {
+        kriterium: "spielgang.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // `werkbank bedienung` an der Mess-Wiese, 1920×1080, echtes Fenster: der Klick fängt den Zeiger (im Spiel), die HUD-Maske
+        // aus dem Bild des Spielers (Canvas + DOM, der Loop steht: die Pixel, die sich mit verborgenem HUD ändern); dann je Runde
+        // ein Klick auf jeden Hotbar-Platz (HUD) und Tab, Tab, I, Esc (Menü) als echte Eingabe im laufenden Loop — die INP (p98 der
+        // Interaktionen, Event-Timing) misst das Bedienungs-Ohr des Spiels (`_bedienungInp`); gezählt sind die Interaktionen, die
+        // der Browser zählt (performance.interactionCount: 5 Runden ≈ 50 HUD, 20 Menü — ein Klick, der in ein Bild fällt, das noch
+        // rechnet, zählt nicht doppelt). Am Grund a03b7b06 fehlt das Verb
+        // (ROT „keine Bedienung"); swiftshader in der Cloud: Deckung 12,51 % ohne → 3,18 % mit dem Spiel-Zustand (zwei Läufe gleich, HUD 50 · Menü 21 Interaktionen), INP Sekunden
+        // (CPU-Raster, kein Urteil).
+        befehl: sitzung(
+            "boot",
+            "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
+            "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
+            "teil BEDIENUNG $W bedienung --runden 5"
+        ),
+        env: K,
+        gpu: true,
+        zeit: true,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const b = jsonBlock(teil("BEDIENUNG"));
+            if (!b || !b.inp || !b.inp.hud || !b.inp.menue) return { gruen: false, zahl: "keine Bedienung" + (b && b.fehler ? " — " + b.fehler : "") + " (Exit " + lauf.exit + ")" };
+            const { hud, menue } = b.inp;
+            const gruen = b.imSpiel === true && b.bild[0] === 1920 && b.deckungPct <= 5 && hud.n >= 30 && menue.n >= 15 && hud.inpMs <= 200 && menue.inpMs <= 200;
+            return {
+                gruen,
+                zahl: "HUD deckt " + b.deckungPct + " % (" + b.bild.join("×") + (b.imSpiel ? ", im Spiel" : ", OHNE Zeiger-Fang") + ") · INP HUD " + hud.inpMs +
+                    " ms (" + hud.n + ") · Menü " + menue.inpMs + " ms (" + menue.n + ")",
+            };
+        },
+        pfad: [
+            "index.html",
+            "stamm/werkstatt-hud.js",
+            "stamm/dirigent-*.js",
+            "stamm/werkstatt-bauen.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "save-server.js",
+        ],
+        quelle: "1 = HUD und Menü antworten INP ≤ 200 ms und das HUD deckt ≤ 5 % des Bilds, an einem Gerät",
+    },
+
+    // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
+    {
+        kriterium: "spielgang.K4",
+        staffel: 1,
+        geraet: "headless",
+        // die Wand (Ü) der Klang-Linse, Zwilling von klang.K1#1: EIN Klang-Ereignis, zwei Leser (Ton und Zeile) — jedes Ereignis der
+        // Tour mit Quelle (Treffer, Wasser, Abschied, Singen, Inventar, der Ruf auf Auftrag und Stufe) trägt seine Zeile, ein stilles
+        // (Wasser auf trockenem Land, der Ruf ohne Leib) keine, jede gespielte Stimme an jedem Ort steht in der Umgebungs-Zeile, und
+        // die Tafel `UNTERTITEL` deckt jeden Namen des Gesetzes (Stimmen · Ruf-Stimmungen · SUBSTANZ). Am Grund a03b7b06 fehlt die
+        // Zeile (ROT); am Zweig 31 von 31. Die Mutante „Untertitel aus" fällt im Selbsttest der Linse (S14, gate:klang-zensus).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const z = (lauf.stdout.match(/^── \(Ü\) UNTERTITEL: (\d+) von (\d+) /m) || []).slice(1).map(Number);
+            if (z.length !== 2) return { gruen: false, zahl: "keine Zeile (Ü) UNTERTITEL (Exit " + lauf.exit + ")" };
+            const rot = ((j && j.rot) || []).filter((t) => /^Ü /.test(t));
+            return {
+                gruen: z[1] > 0 && z[0] === z[1] && rot.length === 0,
+                zahl: z[0] + " von " + z[1] + " Klang-Ereignissen und Stimmen tragen ihre Zeile" + (rot.length ? " · " + rot.slice(0, 3).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "stamm/klang.js",
+            "stamm/werkstatt-hud.js",
+            "stamm/dirigent-kern.js",
+            "index.html",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Untertitel für jede Stimme und jeden Ruf aus dem Klang-Gesetz ODER ein Farb-Modus (jede Klassen-Grenze unter Deuteranopie-Simulation ΔE ≥ 10)",
+    },
 ];
 
 module.exports = stationen;
