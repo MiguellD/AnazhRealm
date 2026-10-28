@@ -2056,10 +2056,8 @@ class AnazhRealm_feld_dsl {
         let spawned = 0;
         let lastBorn = null;
         const gruende = {};
-        // DIE EINE REGEL DER GEBURT (K60, `_kreaturenBereit`) gilt auch der Welt: die autonome Geburt des Nexus wartet auf das
-        // erste Weltbild und den Ofen-Vorrat, die Absage nennt den Grund, sein nächster Takt wirft neu. Bis streaming.K4 goss
-        // sie vor dem Vorrat jede Gattung im Haupt-Faden (Fenster, Fahrt: 8 Güsse „kreatur", je Tier ≈ 1 s, `_fadenUmgangen`).
-        if (autonom && !this._kreaturenBereit()) return { spawned, gruende: { vorrat: n }, lastBorn };
+        // Der Zähler synchroner Bauten (`_fadenUmgangen`) zählt den Guss einer Gattung vor dem Ofen-Vorrat, er hält die Geburt nie
+        // auf: bis heil-zaehler sagte die Nexus-Geburt vor dem Vorrat „vorrat" ab, und kein Tier entstand (gate:weltakt-wache F).
         const absage = (g) => (gruende[g] = (gruende[g] || 0) + 1);
         const opts = dialsOv ? { absage, dialsOv } : { absage };
         for (let i = 0; i < n; i++) {
