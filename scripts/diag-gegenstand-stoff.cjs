@@ -36,6 +36,7 @@
 // Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
 // Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
 "use strict";
+const { urteilEnde } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -385,12 +386,7 @@ if (process.argv.includes("--tafel")) {
 
 const fehlSelbst = selbstTest();
 if (process.argv.includes("--selftest")) {
-    if (fehlSelbst.length) {
-        console.error("❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "));
-        process.exit(1);
-    }
-    console.log("✅ SELBST-TEST GRÜN — die Stoff-Linse feuert auf Ton, rohen Reifen, Lack ohne Lackschicht, blinde Scheibe, Tönung, Namenlose und fehlenden Transport.");
-    process.exit(0);
+    urteilEnde(fehlSelbst.length, "❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "), "✅ SELBST-TEST GRÜN — die Stoff-Linse feuert auf Ton, rohen Reifen, Lack ohne Lackschicht, blinde Scheibe, Tönung, Namenlose und fehlenden Transport.");
 }
 const befunde = alles();
 console.log("=== DIE STOFF-LINSE DER GEGENSTÄNDE (Fahrzeuge × 8 Lacke · Klingen/Werkzeuge) ===");

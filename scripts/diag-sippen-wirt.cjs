@@ -14,7 +14,7 @@
 //      MUSS die Linse die Abweichung nennen — sonst ist sie vakuös. Beide Stubs werden zurückgesetzt.
 //   node scripts/diag-sippen-wirt.cjs
 
-const { statikServer, hauptLauf, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.SIPPEN_PORT || 4413);
 const server = statikServer();
 
@@ -213,12 +213,5 @@ hauptLauf(async () => {
         !s2.fehler && s2.wd > s2.gd,
         s2.fehler || `Wirt ${s2.wd} Meshes, Gesetz ${s2.gd}`
     );
-    if (errs.length) {
-        console.error(
-            `\n❌ ROT — ${errs.length} Verletzung(en): das Budget-Gesetz zählt nicht, was der Wirt zeichnet.`
-        );
-        process.exit(1);
-    }
-    console.log(`\n✅ GRÜN — ${out.items.length} Stufen: das Gesetz zählt jede Leaf des Wirts.`);
-    process.exit(0);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): das Budget-Gesetz zählt nicht, was der Wirt zeichnet.`, () => `\n✅ GRÜN — ${out.items.length} Stufen: das Gesetz zählt jede Leaf des Wirts.`);
 });

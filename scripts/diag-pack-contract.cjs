@@ -18,7 +18,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, urteilEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
@@ -96,12 +96,7 @@ async function selftest() {
     const ohne = JSON.stringify(PK.readManifest(PK.ROOT).map((c) => Object.assign({}, c, { bruecke: undefined })));
     const t = await bootLauf(ohne);
     check(t.laden !== t.sollLaden && t.stempel !== t.sollStempel, "Täter-Manifest ohne core.bruecke → Laden und Stempel rot");
-    if (fails) {
-        console.error("\n❌ SELBST-TEST ROT — der Detektor ist vakuös.");
-        process.exit(1);
-    }
-    console.log("\n✅ SELBST-TEST GRÜN — ein korruptes Pack-Artefakt wird sicher rot.");
-    process.exit(0);
+    urteilEnde(fails, "\n❌ SELBST-TEST ROT — der Detektor ist vakuös.", "\n✅ SELBST-TEST GRÜN — ein korruptes Pack-Artefakt wird sicher rot.");
 }
 
 // DER BOOT ALS LAUF (B3a): die Geburt des Wirts (`_ensureAssetFoundry` der echten Klasse im vm, `ladeKlasse`) baut den
@@ -243,14 +238,7 @@ async function main() {
         await realm.close();
     }
 
-    if (fails) {
-        console.error(`\n❌ ROT — ${fails} Prüfung(en) verletzt (Pack-Kanon N3 nicht bestätigt).`);
-        process.exit(1);
-    }
-    console.log(
-        "\n✅ GRÜN — Vertrag dokumentiert · Stempel-Drift-Wand steht · Ship-Hook lebt · Roundtrip byte-gleich."
-    );
-    process.exit(0);
+    urteilEnde(fails, `\n❌ ROT — ${fails} Prüfung(en) verletzt (Pack-Kanon N3 nicht bestätigt).`, "\n✅ GRÜN — Vertrag dokumentiert · Stempel-Drift-Wand steht · Ship-Hook lebt · Roundtrip byte-gleich.");
 }
 
 if (process.argv.includes("--selftest")) selftest();

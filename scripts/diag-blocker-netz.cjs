@@ -26,7 +26,7 @@
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
@@ -895,13 +895,5 @@ hauptLauf(async () => {
         `  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`
     );
     for (const b of wand.befunde) rot.push(`(W) BOX-WAND: ${b.methode} Zeile ${b.zeile}: ${b.art} — ${b.text}`);
-    if (rot.length) {
-        console.error("\nROT:");
-        for (const e of rot) console.error("  • " + e);
-        process.exit(1);
-    }
-    console.log(
-        "\nGRÜN — Strahl, Löser und Tier-Leib urteilen byte-gleich wie die Schleife über den Bestand und fassen nur ihre Nachbarschaft an; das Netz ist der Bestand."
-    );
-    process.exit(0);
+    wandEnde(rot, "Strahl, Löser und Tier-Leib urteilen byte-gleich wie die Schleife über den Bestand und fassen nur ihre Nachbarschaft an; das Netz ist der Bestand.");
 });

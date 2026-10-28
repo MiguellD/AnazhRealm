@@ -44,7 +44,7 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
@@ -73,7 +73,7 @@ hauptLauf(async () => {
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => !!!(f && !f.ready));
-        o.foundryReady = !!(f && f.ready);
+        o.foundryReady = !!f?.ready;
         for (let it = 0; it < 350; it++) {
             r.state._frameOverBudget = false;
             try {
@@ -118,7 +118,7 @@ hauptLauf(async () => {
         // die Verletzungs-Klasse ist per Konstruktion unmöglich, der Detektor entfällt.
         // Platzierte/gemergte Architektur: mesh → Bauplan-Name (Wurzel-Objekt des Eintrags).
         const archMeshName = new Map();
-        for (const a of st.architectures || []) if (a && a.mesh) archMeshName.set(a.mesh, a.type || "(arch)");
+        for (const a of st.architectures || []) if (a?.mesh) archMeshName.set(a.mesh, a.type || "(arch)");
         // Instanz-Gruppen + Batch-Wrapper: mesh → [keys] (ein Batch-Mesh trägt MEHRERE Namen-Keys).
         const meshKeys = new Map();
         if (st.archInstanceGroups)
@@ -144,13 +144,13 @@ hauptLauf(async () => {
             }
         if (st.chunkSaetze)
             for (const [art, s] of st.chunkSaetze)
-                if (s.spec && s.spec.userData && s.spec.userData.streuSatz && streuKeys.has(art))
+                if (s.spec?.userData?.streuSatz && streuKeys.has(art))
                     meshKeys.set(s.mesh, streuKeys.get(art));
         // der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values())
-                if (s.spec && s.spec.userData && s.spec.userData.bauSatz && s.bloecke.size > 0)
+                if (s.spec?.userData?.bauSatz && s.bloecke.size > 0)
                     meshKeys.set(s.mesh, [...s.bloecke.keys()].map(String));
 
         // ── Die Regeln (erste trifft; Schlüssel = Gruppen-Key `name#leaf[@region]`):
@@ -276,7 +276,7 @@ hauptLauf(async () => {
                     return tally(worst.b, worst.why);
                 }
                 // 2) Welt-Substanz-Identitäten:
-                if ((node.userData && node.userData.isHydrosphere) || waterSet.has(node))
+                if (node.userData?.isHydrosphere || waterSet.has(node))
                     return tally("substanz", "wasser");
                 // das Fern-Wasser-Sheet (`_ensureFarWaterSheet`, hydroKind "farWater")
                 // und jede andere Hydro-Fläche tragen ihre Identität als hydroKind-Stempel.
@@ -286,10 +286,10 @@ hauptLauf(async () => {
                 if (grassSet.has(node)) {
                     // Studio-Gras trägt den Bäcker-Stempel; ein Gras-Mesh OHNE ihn wäre der
                     // Alt-Tuft-Nachbau (der W6-Fail-Open) → Verletzung.
-                    if (g.userData && g.userData.foundryGras) return tally("studio", "gras (foundryGras)");
+                    if (g.userData?.foundryGras) return tally("studio", "gras (foundryGras)");
                     return tally("verletzung", "Gras ohne foundryGras-Stempel (Alt-Tuft?)");
                 }
-                if (chain.some((p) => skySet.has(p) || (p.userData && p.userData.skyOffset)))
+                if (chain.some((p) => skySet.has(p) || p.userData?.skyOffset))
                     return tally("substanz", "himmel/gestirn");
                 if (chain.some((p) => p.userData && p.userData.kind === "creature"))
                     return tally("substanz", "kreatur");
@@ -355,7 +355,7 @@ hauptLauf(async () => {
         o.studioScatterGroups = 0;
         if (st.archInstanceGroups)
             for (const [k, g2] of st.archInstanceGroups)
-                if (String(k).startsWith("fscatter:") && g2 && g2.mesh && g2.mesh.count > 0) o.studioScatterGroups++;
+                if (String(k).startsWith("fscatter:") && g2?.mesh && g2.mesh.count > 0) o.studioScatterGroups++;
         // ── Positiv-Beweis der Stempel: mindestens EINE gestempelte Klasse lebt in der
         // Szene (sonst wäre das Inventar-Wörterbuch toter Code — KONSUM, nicht Existenz).
         o.stampedClasses = Object.keys(o.zensus.detail.substanz).filter((k) =>
@@ -406,11 +406,11 @@ hauptLauf(async () => {
             res.lruEvicted = f.lruEvicted ? f.lruEvicted.size : 0;
             res.pending = f.pending ? f.pending.size : 0;
             for (const key of requested) {
-                if (f.cache && f.cache.has(key)) continue; // resident (auch null = bewusstes Verdikt)
+                if (f.cache?.has(key)) continue; // resident (auch null = bewusstes Verdikt)
                 const pp = String(key).split("|");
                 const triple = pp.length === 4 ? pp[0] + "|" + pp[1] + "|" + pp[2] : null;
                 if (triple && attested.has(triple)) continue; // sichtbar attestiert
-                if (f.lruEvicted && f.lruEvicted.has(key)) continue; // bewusste Räumung, re-anfragbar
+                if (f.lruEvicted?.has(key)) continue; // bewusste Räumung, re-anfragbar
                 res.lost.push(key); // angefragt, weder geliefert noch resident = das stille Verhungern
             }
             return res;
@@ -586,7 +586,7 @@ hauptLauf(async () => {
             `  Selbst-Test Zensus: Regeln ${JSON.stringify(out.selftestRules)} · Injektion vorher=${out.selftest.before} nachher=${out.selftest.after} → ${out.selftest.fired ? "feuert ✅" : "feuert NICHT ❌"}`
         );
         console.log(
-            `  Selbst-Test Inventur: verloren vorher=${out.selftestLost ? out.selftestLost.before : "?"} nachher=${out.selftestLost ? out.selftestLost.after : "?"} → ${out.selftestLost && out.selftestLost.fired ? "feuert ✅" : "feuert NICHT ❌"}`
+            `  Selbst-Test Inventur: verloren vorher=${out.selftestLost ? out.selftestLost.before : "?"} nachher=${out.selftestLost ? out.selftestLost.after : "?"} → ${out.selftestLost?.fired ? "feuert ✅" : "feuert NICHT ❌"}`
         );
         console.log(
             `  Selbst-Test Tuft-Wand (N4.3): Gras ohne foundryGras-Stempel → ${out.selftest.tuftWallFired ? "feuert ✅" : "feuert NICHT ❌"}`
@@ -620,12 +620,8 @@ hauptLauf(async () => {
                 "Selbst-Test: leere Senken der Nah-Wiese mit Soll (blinder Sicht-Satz) röten das W-Urteil nicht"
             );
     }
-    if (fails.length) {
-        console.log(`\n❌ ASSET-INVENTUR ROT: ${fails.join(" · ")}`);
-        process.exit(1);
-    }
-    console.log(
-        `\n✅ ASSET-INVENTUR GRÜN — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend); die Nah-Wiese zeichnet ${out.wieseZensus} belegte Studio-Senken.`
+    wandEnde(
+        fails,
+        `ASSET-INVENTUR — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend); die Nah-Wiese zeichnet ${out.wieseZensus} belegte Studio-Senken.`
     );
-    process.exit(0);
 });

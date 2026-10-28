@@ -22,7 +22,7 @@ global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "porta-core.js"));
 const PC = globalThis.__portaCore;
 
-const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 function eq(a, b, tol) {
     if (Array.isArray(a) && Array.isArray(b))
         return a.length === b.length && a.every((v, i) => eq(v, b[i], tol));
@@ -178,8 +178,4 @@ let selbst = [];
 })(kaputt, MG, "");
 check("SELBST-TEST: injizierte kk-Drift wird erkannt", selbst.length === 1 && selbst[0] === "kk");
 
-if (errs.length) {
-    console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
-    process.exit(1);
-}
-console.log("\n✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Zahlen (Welle + Film), die Ableitung ist formel-identisch, die Alt-Literale der Shell und der Nebel sind fort.");
+wandEnde(errs, "die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Zahlen (Welle + Film), die Ableitung ist formel-identisch, die Alt-Literale der Shell und der Nebel sind fort.");

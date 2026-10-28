@@ -133,7 +133,7 @@ function bildMasse(u8, W, H) {
         sw = 0,
         ws = 0;
     for (let i = 0; i < n * 4; i += 4) {
-        const l = 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+        const l = luma709(u8, i);
         s += l;
         s2 += l * l;
         if (l < 4) sw++;
@@ -351,6 +351,18 @@ function abnahmeSelbsttest(fixtureDir) {
 
 // ═══ DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle"; spec/abnahme/soll-tafel.json) ═══
 //
+// DIE sRGB-KURVE (IEC 61966-2-1), EINE für jede Linse (rein, in der Seite global über ABNAHME_INSTALL): `srgbLin` ein Byte
+// 0–255 → linear, `linSrgb` linear → 0–1.
+const srgbLin = (u) => (u <= 10.31475 ? u / 3294.6 : ((u / 255 + 0.055) / 1.055) ** 2.4);
+const linSrgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
+// DIE LUMA (Rec. 709) der drei Kanäle ab Index i (ein Byte-Bild oder ein Tripel), EINE für jede Linse (in der Seite global)
+const luma709 = (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+// CIELAB (D65) eines linearen Tripels → [L*, a*, b*], EINE für jede Linse (in der Seite global)
+const cielab = (c) => {
+    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+    const [x, y, z] = [[0.4124, 0.3576, 0.1805, 0.95047], [0.2126, 0.7152, 0.0722, 1], [0.0193, 0.1192, 0.9505, 1.08883]].map((w) => f((w[0] * c[0] + w[1] * c[1] + w[2] * c[2]) / w[3]));
+    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+};
 // DIE KLASSEN-TEILUNG (rein, in der Seite als `__klassenTeilung`): welche Klasse ein Pixel des Ausgabe-Bilds zeichnet, aus
 // Schüssen derselben Pose unter EINER Uhr (`__ausgabeAufnahme` unter der Bühne: dieselbe Zeit, dieselbe TRAA-Folge, dieselbe
 // Dither-Phase je Schuss; `werkbank bild --klasse`): G die Szene, die gemessenen Klassen ohne Schattenwurf; O_k dieselbe ohne
@@ -475,7 +487,7 @@ const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
 function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     const L = new Float32Array(W * H);
-    for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
+    for (let p = 0; p < W * H; p++) L[p] = luma709(F, p * 4);
     let n = 0,
         s = 0;
     for (let y = 0; y < H; y++)
@@ -535,19 +547,12 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     let wt = 0,
         wtZiel = 0,
         cs = 0;
-    const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-    const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
     let cab = 0;
     const weissIn = (U, p) => {
-        const R = lin(U[p * 4]),
-            G2 = lin(U[p * 4 + 1]),
-            B = lin(U[p * 4 + 2]);
-        const fy = fl(0.2126 * R + 0.7152 * G2 + 0.0722 * B);
-        const a = 500 * (fl((0.4124 * R + 0.3576 * G2 + 0.1805 * B) / 0.95047) - fy),
-            b = 200 * (fy - fl((0.0193 * R + 0.1192 * G2 + 0.9505 * B) / 1.08883));
+        const [L, a, b] = cielab([0, 1, 2].map((k) => srgbLin(U[p * 4 + k])));
         cab = Math.hypot(a, b);
-        if (0.2126 * U[p * 4] + 0.7152 * U[p * 4 + 1] + 0.0722 * U[p * 4 + 2] > 240) return true;
-        return 116 * fy - 16 >= 50 && cab < 5;
+        if (luma709(U, p * 4) > 240) return true;
+        return L >= 50 && cab < 5;
     };
     for (let p = 0; p < W * H; p++) {
         if (m[p] !== 1) continue;
@@ -755,14 +760,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
 //   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
 //                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
 function gesichtMasse(F, teil, W, H, proben, haarK) {
-    const lin = (v) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : Math.pow((v / 255 + 0.055) / 1.055, 2.4));
-    const lab = (c) => {
-        const X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047,
-            Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
-            Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
-        const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-        return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
-    };
+    const lab = cielab;
     const px = (x, y) => y * W + x;
     const sicht = (p) => teil[px(p.x, p.y)] === p.k;
     const farbMittel = (liste) => {
@@ -772,7 +770,7 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
             const i = px(p.x, p.y);
             if (seen.has(i)) continue;
             seen.add(i);
-            for (let ch = 0; ch < 3; ch++) c[ch] += lin(F[i * 4 + ch]);
+            for (let ch = 0; ch < 3; ch++) c[ch] += srgbLin(F[i * 4 + ch]);
         }
         return seen.size ? { lab: lab(c.map((v) => v / seen.size)), n: seen.size } : null;
     };
@@ -810,7 +808,7 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
             } else if (t === p.k) {
                 kal++;
                 const i = px(p.x, p.y);
-                const c = lab([lin(F[i * 4]), lin(F[i * 4 + 1]), lin(F[i * 4 + 2])]);
+                const c = lab([srgbLin(F[i * 4]), srgbLin(F[i * 4 + 1]), srgbLin(F[i * 4 + 2])]);
                 if (d2(c, haar.lab) < d2(c, wange.lab)) h++;
             }
         }
@@ -840,12 +838,8 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
 // Flächen-Mittel in linearem Licht nach CIELAB D65; die Kachel k = [Proben, Σcos h, Σsin h, bunte Proben] zählt den Farbton
 // h = atan2(b*, a*) der Proben mit Buntheit C* > 5. Rein (läuft auch in der Seite, ABNAHME_INSTALL).
 function farbtonProbe(k, u8, i, W) {
-    const lin = (u) => (u <= 10.31475 ? u / 3294.6 : Math.pow((u / 255 + 0.055) / 1.055, 2.4));
-    const [r, g, b] = [0, 1, 2].map((c) => [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + lin(u8[i + d + c]) / 4, 0));
-    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-    const fy = f(0.2126 * r + 0.7152 * g + 0.0722 * b),
-        A = 500 * (f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047) - fy),
-        B = 200 * (fy - f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883)),
+    const [r, g, b] = [0, 1, 2].map((c) => [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + srgbLin(u8[i + d + c]) / 4, 0));
+    const [, A, B] = cielab([r, g, b]),
         C = Math.hypot(A, B);
     k[0]++;
     if (C > 5) [k[1], k[2], k[3]] = [k[1] + A / C, k[2] + B / C, k[3] + 1];
@@ -2434,8 +2428,16 @@ module.exports = {
     pngLesen,
     fixtureMessung,
     abnahmeSelbsttest,
+    srgbLin,
+    linSrgb,
+    luma709,
+    cielab,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
+        `window.srgbLin = ${srgbLin};` +
+        `window.linSrgb = ${linSrgb};` +
+        `window.luma709 = ${luma709};` +
+        `window.cielab = ${cielab};` +
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
