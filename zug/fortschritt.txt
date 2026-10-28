@@ -563,3 +563,4 @@
 2026-10-28 03:53:56 z56-abab d-ego VERLÄNGERN 11.1 · 2/3 (2+2)
 2026-10-28 04:11:34 z56-abab stadt VERLÄNGERN 17.6 · 3/3 (2+2)
 2026-10-28 04:25:27 z56-abab w-ego(4+4) nicht-langsamer 13.8 · verlängert (4+4)
+2026-10-28 04:36:31 z56-abab d-ego(4+4) nicht-langsamer 10.9 · verlängert (4+4)
