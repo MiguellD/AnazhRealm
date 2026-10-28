@@ -1643,31 +1643,36 @@ module.exports = [
         ],
         quelle: "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5)",
     },
-    // ── physik.K3 ── gate:fahr-leben --frei (Null-Renderer, im Spiel-Takt `_gameLoopTick`): DER FREIE KÖRPER — der EINE Löser
-    // `_freiSchritt` (stamm/koerper-bewegung.js: Starrkörper mit Quaternion, Sequential Impulses, Schlaf), auf dem Boden des
-    // Gesetzes und den Blocker-Boxen, mit der Stoff-Tafel; der Wagen stößt über seine EINE Hülle und das EINE Impuls-Gesetz
-    // (`_freiStoss`). 5 Kisten (Bauplan kiste, 42 kg) fallen gestapelt (10 cm Spalt): bis alle schlafen, ihr Weg 3 s danach, wach
-    // (ohne Schlaf) ihr Weg von 2 bis 4 s, die untere am Boden und jede auf der darunter (±2 cm); der GT fährt auf ein Fass (45 kg):
-    // der größte Winkel seiner Achse. Mutanten im selben Lauf: Schwere 0 (die Kisten ruhen nicht am Boden), der Stoß am freien Körper
-    // aus (das Fass steht). Gemessen wird der Zustand des Lösers, nie ein Bild. An main 675a3889 ROT (die Linse kennt `--frei` nicht,
-    // die Welt keinen Bauplan kiste und kein `_freiSchritt`: „keine FREI-Zeile"); am Zweig w3t-koerper GRÜN: Ruhe 0,78 s, Zittern 0 cm, wach 0 cm, Fugen ≤ 1 mm, GT 9,19 →
-    // Fass 8,49 m/s, 172°; Schwere 0: Boden 0,10 m, ohne Stoß 2,2°.
+    // ── physik.K3 ── gate:fahr-leben (Null-Renderer, im Spiel-Takt `_gameLoopTick`), Zwilling des Befehls von physik.K2#1 (EIN Lauf):
+    // DER FREIE KÖRPER — der EINE Löser `_freiSchritt` (stamm/koerper-bewegung.js: Starrkörper mit Quaternion, Sequential Impulses,
+    // Schlaf) auf dem Boden des Gesetzes und den Blocker-Boxen, mit der Stoff-Tafel; der Wagen stößt über seine EINE Hülle und das
+    // EINE Impuls-Gesetz (`_freiStoss`). In der freien Gasse der Stoß-Proben fallen 5 Kisten (Bauplan kiste, 42 kg) gestapelt (10 cm
+    // Spalt): bis alle schlafen, ihr Weg 3 s danach, wach (ohne Schlaf) ihr Weg, die untere am Boden und jede auf der darunter
+    // (±2 cm); das Fass (45 kg) ist ein Hindernis der Stoß-Probe L3–L5: der GT fährt mit W hinein, der größte Winkel seiner Achse.
+    // Mutanten im selben Lauf: Schwere 0 (die Kisten ruhen nicht am Boden), der Stoß am freien Körper aus (das Fass steht). Gemessen
+    // wird der Zustand des Lösers, nie ein Bild. An main 675a3889 ROT (keine K3-Zeile: kein Bauplan kiste, kein `_freiSchritt`); am
+    // Zweig w3t-koerper GRÜN: Ruhe 0,87 s, Zittern 0 cm, wach 0 cm, Boden +2 mm, Fugen ≤ 1 mm, GT 8,77 → 8,56 m/s, Fass 161°;
+    // Schwere 0: Boden 0,107 m, ohne Stoß 3,0°.
     {
         kriterium: "physik.K3",
         staffel: 1,
         geraet: "headless",
-        befehl: ["bash", "-c", 'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs --frei; echo "FREI EXIT $?"'],
+        befehl: [
+            "bash",
+            "-c",
+            'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT={PORT} node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))',
+        ],
         gpu: false,
         zeit: false,
-        minuten: 6,
+        minuten: 10,
         urteil: (j, lauf) => {
-            const F = jsonZeile(lauf.stdout, /^FREI \{/);
+            const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) K3#1 \(physik\.K3\)/.test(x));
+            const F = l ? jsonZeile(l, /K3#1/) : null;
             const [k, f, s, o] = F ? [F.kisten || {}, F.fass || {}, F.schwerelos || {}, F.fassOhneStoss || {}] : [];
-            if (!F || !k.fugen) return { gruen: false, zahl: "keine FREI-Zeile (Exit " + lauf.exit + ")" };
+            if (!F || !k.fugen || !s.fugen) return { gruen: false, zahl: "keine K3-Zeile (Exit " + lauf.exit + ")" };
             const amBoden = (x) => x.ruheS !== null && x.ruheS <= 2 && [x.boden, ...x.fugen].every((d) => Math.abs(d) <= 0.02);
             const gruen =
-                lauf.exit === 0 &&
-                /FREI EXIT 0\b/.test(lauf.stdout) &&
+                /^\s*✅/.test(l) &&
                 amBoden(k) &&
                 k.zittern <= 0.01 &&
                 F.wachZittern <= 0.01 &&
@@ -1680,7 +1685,7 @@ module.exports = [
                 zahl:
                     "5 Kisten ruhen nach " + z(k.ruheS, 2) + " s, Zittern " + z(k.zittern * 100, 2) + " cm (wach " +
                     z(F.wachZittern * 100, 2) + "), Boden " + z(k.boden, 3) + " m, Fugen " + k.fugen.map((d) => z(d, 3)).join("/") +
-                    " m · Wagen " + z(f.vWagen, 2) + " → Fass " + z(f.vFass, 2) + " m/s, Kipp " + z(f.kipp, 1) + "° · Mutanten: Schwere 0 Boden " +
+                    " m · GT " + z(f.vVor, 2) + " → " + z(f.vNach, 2) + " m/s, Fass " + z(f.kipp, 1) + "° · Mutanten: Schwere 0 Boden " +
                     z(s.boden, 3) + " m, ohne Stoß " + z(o.kipp, 1) + "°",
             };
         },
