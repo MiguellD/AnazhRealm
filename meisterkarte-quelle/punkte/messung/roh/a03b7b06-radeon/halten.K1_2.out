@@ -1,0 +1,56 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe scripts/diag-kampf-gefuehl.cjs --k1
+[linse-gpu] amd/rdna-3
+[stall-akte] ═══ diag-kampf-gefuehl.cjs · Seite #3 http://127.0.0.1:7754/index.html?holz=kienspan · evaluate(K1_BILD) riss nach 300.0 s: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+[stall-akte] offen evaluate(K1_BILD) seit 302.0 s
+[stall-akte] Puls 333×, zuletzt vor 0.9 s — complete · verborgen · renderer bereit · weltbild da · frames 1632 · welt 6101 Takte · Ruhe 32 · zuletzt Felder offen 1080 · programme 62 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #62 renderPipeline_MeshPhysicalNodeMaterial_92
+[stall-akte] Stempel 00:49:48.755 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 5726 fs 43141 Zeichen · 3 Lichter
+[stall-akte] Stempel 00:49:48.755 gpu.createRenderPipelineAsync #57 renderPipeline_MeshStandardNodeMaterial_86
+[stall-akte] Stempel 00:49:48.815 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 5842 fs 50997 Zeichen · 3 Lichter
+[stall-akte] Stempel 00:49:48.815 gpu.createRenderPipelineAsync #58 renderPipeline_MeshPhysicalNodeMaterial_87
+[stall-akte] Stempel 00:49:48.872 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 5726 fs 43237 Zeichen · 3 Lichter
+[stall-akte] Stempel 00:49:48.872 gpu.createRenderPipelineAsync #59 renderPipeline_MeshStandardNodeMaterial_93
+[stall-akte] Stempel 00:49:48.929 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 4776 fs 29157 Zeichen · 3 Lichter
+[stall-akte] Stempel 00:49:48.929 gpu.createRenderPipelineAsync #60 renderPipeline_MeshStandardNodeMaterial_88
+[stall-akte] Stempel 00:49:48.979 Pipeline MeshStandardNodeMaterial · geometrie-arena · vs 4776 fs 29157 Zeichen · 3 Lichter
+[stall-akte] Stempel 00:49:48.980 gpu.createRenderPipelineAsync #61 renderPipeline_MeshStandardNodeMaterial_89
+[stall-akte] Stempel 00:49:49.125 Pipeline MeshPhysicalNodeMaterial · geometrie-arena · vs 5322 fs 46227 Zeichen · 3 Lichter
+[stall-akte] Stempel 00:49:49.126 gpu.createRenderPipelineAsync #62 renderPipeline_MeshPhysicalNodeMaterial_92
+[stall-akte] CPU (2 s) GPU 33812 48 % · renderer 36212 28 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 54:07 gpu 59/r 34 · 54:09 gpu 56/r 32 · 54:11 gpu 54/r 31 · 54:13 gpu 56/r 32 · 54:15 gpu 54/r 31 · 54:17 gpu 55/r 31 · 54:19 gpu 53/r 30 · 54:21 gpu 58/r 33 · 54:23 gpu 58/r 31 · 54:25 gpu 55/r 30 · 54:27 gpu 53/r 29 · 54:29 gpu 59/r 33 · 54:31 gpu 58/r 32 · 54:33 gpu 59/r 32 · 54:35 gpu 53/r 30 · 54:37 gpu 52/r 29 · 54:39 gpu 53/r 29 · 54:41 gpu 53/r 30 · 54:43 gpu 54/r 31 · 54:45 gpu 53/r 30 · 54:47 gpu 51/r 28 · 54:49 gpu 53/r 30 · 54:51 gpu 63/r 35 · 54:53 gpu 56/r 30 · 54:55 gpu 53/r 31 · 54:57 gpu 52/r 30 · 54:59 gpu 53/r 31 · 55:01 gpu 53/r 31 · 55:03 gpu 52/r 30 · 55:05 gpu 49/r 29
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] KAMIN-RAUCH: 1 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] AUSGABE: rg11b10ufloat, das Gerät rundet gegen null — Ausgleich 1.0056/1.0056/1.0113
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [ERROR] BEWOHNER: das Wege-Netz von „Steintal" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Stern-Feld erstellt — 2803 InstancedMesh-Billboards (V10.0-i.a, WGSL-konformer Soft-Falloff)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.113] [INFO] Flugschreiber LECK-VERDACHT — LECK: Heap +3.39 MB/s über 22s — der größte Wächst: architectures 220→432 (+212 über 22s).
+[stall-akte] Stderr [23992:10472:1028/015007.216:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [23992:10472:1028/015007.251:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [23992:10472:1028/015007.252:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [23992:10472:1028/015032.363:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [23992:10472:1028/015114.929:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [23992:10472:1028/015251.354:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.9 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 00:49:49.126 gpu.createRenderPipelineAsync #62 renderPipeline_MeshPhysicalNodeMaterial_92
+
+===== gate:kampf-gefuehl =====
+
+FEHLER: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+
+  ── WELLE L ──
+
+FEHLER: die Welle-L-Proben liefen nicht
+
+  ❌ ROT — gate:kampf-gefuehl
+
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 3 von 3) nach 15 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

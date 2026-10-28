@@ -509,3 +509,59 @@
 2026-10-27 22:33:33 z54n-abab stadt nicht-langsamer 17.7 · 3/3 (2+2)
 2026-10-27 22:47:22 z54n-abab w-ego(4+4) nicht-langsamer 13.7 · verlängert (4+4)
 2026-10-27 22:58:46 z54n-abab d-ego(4+4) nicht-langsamer 11.3 · verlängert (4+4)
+2026-10-27 23:27:46 z55-abab START 3 Zellen
+2026-10-27 23:31:26 z55-abab STORNO in w-ego
+2026-10-27 23:44:22 takt14a-gtx START 12 Stationen in 10 Läufen
+2026-10-27 23:47:18 takt14a-gtx tore.K5#2 ROT 2.9 · 1/12
+2026-10-27 23:50:44 takt14a-gtx klang.K4#2 GRÜN 3.4 · 2/12
+2026-10-27 23:56:33 takt14a-gtx halten.K1#2 ROT 5.7 · 3/12
+2026-10-27 23:57:30 takt14a-gtx halten.K5#2,halten.K5#1 ROT/ROT 0.9 · 5/12
+2026-10-27 23:57:50 takt14a-gtx luftwasser.K5#2,luftwasser.K5#1 GRÜN/GRÜN 0.2 · 7/12
+2026-10-28 00:03:35 takt14a-gtx siedlung.K5#2 GRÜN 5.7 · 8/12
+2026-10-28 00:05:44 takt14a-gtx siedlung.K2#2 GRÜN 2.1 · 9/12
+2026-10-28 00:08:41 takt14a-gtx leib.K2#1 GRÜN 2.9 · 10/12
+2026-10-28 00:10:19 takt14a-gtx tore.K3#1 GRÜN 1.5 · 11/12
+2026-10-28 00:11:38 takt14a-gtx klang.K4#1 ROT 1.2 · 12/12
+2026-10-28 00:11:56 takt14b-gtx START 20 Stationen in 19 Läufen
+2026-10-28 00:13:45 takt14b-gtx fahrzeug.K3#1 GRÜN 1.7 · 1/20
+2026-10-28 00:17:49 takt14b-gtx fahrzeug.K3#2 GRÜN 4.0 · 2/20
+2026-10-28 00:21:21 takt14b-gtx fahrzeug.K4#2 GRÜN 3.4 · 3/20
+2026-10-28 00:24:48 takt14b-gtx ferne.K1#1,ferne.K2#1 GRÜN/GRÜN 3.4 · 5/20
+2026-10-28 00:27:03 takt14b-gtx gelaende.K2#1 GRÜN 2.1 · 6/20
+2026-10-28 00:28:32 takt14b-gtx gelaende.K3#1 GRÜN 1.4 · 7/20
+2026-10-28 00:34:36 takt14b-gtx halten.K2#1 ROT 6.0 · 8/20
+2026-10-28 00:36:28 takt14b-gtx klang.K2#1 GRÜN 1.8 · 9/20
+2026-10-28 00:42:45 takt14b-gtx leib.K1#1 GRÜN 6.2 · 10/20
+2026-10-28 00:44:04 takt14b-gtx licht.K2#1 GRÜN 1.2 · 11/20
+2026-10-28 00:47:28 takt14b-gtx material.K1#1 GRÜN 3.3 · 12/20
+2026-10-28 00:53:21 takt14b-gtx material.K2#1 ROT 5.8 · 13/20
+2026-10-28 00:55:29 takt14b-gtx material.K3#1 GRÜN 2.0 · 14/20
+2026-10-28 01:00:21 takt14b-gtx mensch.K1#1 GRÜN 4.8 · 15/20
+2026-10-28 01:15:05 takt14b-gtx profiband.K4#1 ROT 14.6 · 16/20
+2026-10-28 01:16:14 takt14b-gtx schatten.K1#1 GRÜN 1.1 · 17/20
+2026-10-28 01:28:47 takt14b-gtx speicher.K1#1 GRÜN 12.5 · 18/20
+2026-10-28 01:32:15 takt14b-gtx speicher.K2#1 GRÜN 3.4 · 19/20
+2026-10-28 01:35:17 takt14b-gtx wetter.K2#1 GRÜN 3.0 · 20/20
+2026-10-28 01:35:39 z55n-abab START 3 Zellen
+2026-10-28 01:49:44 z55n-abab w-ego nicht-langsamer 14.0 · 1/3 (2+2)
+2026-10-28 02:00:50 z55n-abab d-ego VERLÄNGERN 11.0 · 2/3 (2+2)
+2026-10-28 02:18:43 z55n-abab stadt nicht-langsamer 17.8 · 3/3 (2+2)
+2026-10-28 02:29:48 z55n-abab d-ego(4+4) LANGSAMER 11.0 · verlängert (4+4)
+2026-10-28 02:30:02 takt14c-gtx START 10 Stationen in 10 Läufen
+2026-10-28 02:38:13 takt14c-gtx ferne.K2#2 GRÜN 8.1 · 1/10
+2026-10-28 02:51:41 takt14c-gtx klang.K5#2 GRÜN 13.4 · 2/10
+2026-10-28 02:55:03 takt14c-gtx material.K1#2 GRÜN 3.3 · 3/10
+2026-10-28 02:59:27 takt14c-gtx mensch.K2#2 GRÜN 4.3 · 4/10
+2026-10-28 03:10:43 takt14c-gtx speicher.K1#2 GRÜN 11.2 · 5/10
+2026-10-28 03:12:50 takt14c-gtx tiere.K1#2 GRÜN 2.0 · 6/10
+2026-10-28 03:19:06 takt14c-gtx tiere.K2#2 GRÜN 6.2 · 7/10
+2026-10-28 03:21:24 takt14c-gtx tiere.K3#2 GRÜN 2.2 · 8/10
+2026-10-28 03:23:01 takt14c-gtx tore.K3#2 GRÜN 1.5 · 9/10
+2026-10-28 03:28:23 takt14c-gtx gelaende.K5#2 GRÜN 5.3 · 10/10
+2026-10-28 03:28:48 z56-abab START 3 Zellen
+2026-10-28 03:42:47 z56-abab w-ego VERLÄNGERN 13.9 · 1/3 (2+2)
+2026-10-28 03:53:56 z56-abab d-ego VERLÄNGERN 11.1 · 2/3 (2+2)
+2026-10-28 04:11:34 z56-abab stadt VERLÄNGERN 17.6 · 3/3 (2+2)
+2026-10-28 04:25:27 z56-abab w-ego(4+4) nicht-langsamer 13.8 · verlängert (4+4)
+2026-10-28 04:36:31 z56-abab d-ego(4+4) nicht-langsamer 10.9 · verlängert (4+4)
+2026-10-28 04:53:55 z56-abab stadt(4+4) nicht-langsamer 17.3 · verlängert (4+4)

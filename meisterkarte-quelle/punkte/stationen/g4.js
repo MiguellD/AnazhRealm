@@ -97,6 +97,48 @@ const REGLER_PFAD = [
     "scripts/lib/stamm.cjs",
     "scripts/lib/welt-boot.cjs",
 ];
+// DER LOKALE ANBIETER der Stationen mit Modell (ki.K1#2, ki.K3#1, ki.K4#1): läuft ollama auf 127.0.0.1:11434 nicht, startet ihn die
+// Station und beendet ihn danach; die Zeile ANBIETER beweist, dass der Host das Modell trägt (kein Stub, kein Mitschnitt)
+const OLLAMA_AN =
+    "set -u; O=127.0.0.1:11434; S=''; " +
+    "if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X=\"${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe\"; " +
+    "[ -x \"$X\" ] || X=ollama; (\"$X\" serve > /dev/null 2>&1 < /dev/null &); S=1; " +
+    "for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; " +
+    "echo \"ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e \"let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{" +
+    "try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}" +
+    "catch(e){console.log('{}')}})\")\"; ";
+const OLLAMA_AUS = "[ -n \"$S\" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e";
+const OLLAMA_ENV = { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" };
+const anbieterVon = (out) => {
+    try {
+        return JSON.parse((/^ANBIETER \S+ (.*)$/m.exec(out) || [])[1]);
+    } catch (_e) {
+        return null;
+    }
+};
+const KEIN_ANBIETER = (anb) => ({
+    gruen: false,
+    zahl: "kein echter Anbieter: 127.0.0.1:11434 trägt qwen3:4b-instruct nicht (" + JSON.stringify(anb) + ")",
+});
+// der gemessene Pfad des Korpus mit Modell (ki.K1#2 und die Teile seele, regeln)
+const KI_KORPUS_PFAD = [
+    "spec/abnahme/ki-korpus.json",
+    "stamm/feld-*.js",
+    "stamm/werkstatt-vorschau.js",
+    "stamm/studio-*.js",
+    "stamm/bild-himmel.js",
+    "stamm/dirigent-*.js",
+    "stamm/kreatur-*.js",
+    "stamm/koerper-*.js",
+    "stamm/daten.js",
+    "*-core.js",
+    "foundry-bruecke.js",
+    "index.html",
+    "scripts/diag-v1-pfad.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/stamm.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
 // gate:praegung-welt (K): spawn_studio und sein Stempel, die Werke je Art (Bau, Wesen, Prägung) und ihre Leser in der Welt
 // (die Gesetze des Tors und des Wagens, der Guss der Gattung, der Leib des Spielers, der Klang), der Korpus-Teil Regler-Wörter
 const KI_K2_PFAD = [
@@ -215,12 +257,121 @@ const alle = [
         kriterium: "studios.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
+        // DIE GANG-PROBE (H7, Zweig studios-k2-sitzung): je Studio-Seite 20 zufällige Griffe (Saat, nie zweimal derselbe Wert) —
+        // die Zeit vom Eingabe-Ereignis bis zum ersten Bild mit neuem Bau-Hash (AnazhHuelle.gang: der rAF nach dem Render der
+        // Seite trägt den Plan, den bei/nachRuhe anwandte); die Klasse je Zeile steht im Vertrag (`uniform: true` ≤ 200 ms, sonst
+        // Neubau ≤ 1 s); dann das Neuladen (jeder Regler der Sitzung steht wieder, der EINE Speicher-Weg localStorage) und A/B
+        // (der Gang H3: A zeigt den Stand der Öffnung, B den Zug). Die Zeit urteilt nur auf der Karte (Kopfzeile „geurteilt“).
+        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
+        env: { STUDIO_HUELLE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const karte = /=== H7 DIE SITZUNG — Saat \d+, die Zeit geurteilt \(Karte\)/.test(out);
+            const je = {};
+            for (const l of zeilen(out)) {
+                const t = /^\s{2}⏱ (\S+)\s+Griff → Bild p95 Gesetz-Wert (\S+) ms · Neubau (\S+) ms · (\d+) Griffe mit Bild · Neuladen (\d+)\/(\d+)/.exec(l);
+                if (t && SEITEN[t[1]]) je[t[1]] = Object.assign(je[t[1]] || {}, { u: +t[2], n: +t[3], mit: +t[4], bleibt: +t[5] > 0 && t[5] === t[6] });
+                const g = /^\s{2}(\S+)\s+\d+ Anfragen · .*?Schieber ([^,\s]+) → ([^,\s]+),.*, A → ([^,\s]+), B → ([^,\s]+)/.exec(l);
+                if (g && SEITEN[g[1]]) je[g[1]] = Object.assign(je[g[1]] || {}, { ab: g[2] !== g[3] && g[4] === g[2] && g[5] === g[3] });
+            }
+            const s = Object.keys(SEITEN).map((id) => ({ id, ...(je[id] || {}) }));
+            const klasse = (z, k, max) => !(z[k] > max); // „–“ (keine Zeile der Klasse im Studio) ist NaN und zählt nicht
+            const zeit = s.filter((z) => z.mit === 20 && klasse(z, "u", 200) && klasse(z, "n", 1000));
+            const bleibt = s.filter((z) => z.bleibt).length;
+            const ab = s.filter((z) => z.ab).length;
+            const hoch = (k) => s.reduce((m, z) => (z[k] > m.v ? { v: z[k], id: z.id } : m), { v: 0, id: "–" });
+            const u = hoch("u"),
+                n = hoch("n");
+            return {
+                gruen: karte && zeit.length === 8 && bleibt === 8 && ab === 8,
+                zahl:
+                    (karte ? "" : "die Zeit ungeurteilt (kein Hardware-Adapter) · ") +
+                    "p95 Griff → Bild unter der Schranke in " + zeit.length + "/8 (Gesetz-Wert höchstens " + u.v + " ms " + u.id +
+                    ", Neubau höchstens " + n.v + " ms " + n.id + ") · Neuladen " + bleibt + "/8 · A/B " + ab + "/8",
+            };
+        },
+        pfad: [
+            "worlds/huelle/",
+            "worlds/garage/",
+            "worlds/schmiede/",
+            "worlds/portale/",
+            "worlds/klang/",
+            "worlds/fachwerk/",
+            "worlds/koerperstudio/",
+            "worlds/tetrapoda/",
+            "worlds/terrain/",
+            "*-core.js",
+            "scripts/diag-studio-huelle.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle:
+            "2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) " +
+            "auf beiden Geräten, dazu A/B und Persistenz über das Neuladen in 8/8",
+    },
+    // ── studios.K3 ── das Thermometer: die Kosten-Leiste der Hülle zeichnet je Stufe das Werk ALLEIN in einem eigenen
+    // Render-Abschnitt (worlds/huelle/huelle.js `zeichne`, renderer.info) und trägt neben der gezählten Zahl die gezeichnete;
+    // der Gang (H7, Zwilling von studios.K2#1) druckt je Seite `Kosten [{stufe, leiste, deckel, gezeichnet}]`.
+    {
+        kriterium: "studios.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
+        env: { ...SOFT, STUDIO_HUELLE_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const je = {};
+            for (const l of zeilen(lauf.stdout)) {
+                const m = /^\s{2}(\S+)\s+\d+ Anfragen · .* · Kosten (\[.*\])\s*$/.exec(l);
+                if (m && SEITEN[m[1]]) je[m[1]] = JSON.parse(m[2]);
+            }
+            // die Mesh-Studios: jede Seite außer klang (meshfrei, Studio-Vertrag §8); je Seite die größte Abweichung ihrer Stufen
+            const mesh = Object.keys(SEITEN).filter((s) => s !== "klang");
+            const abw = (k) => (k.leiste > 0 && k.gezeichnet > 0 ? Math.abs(k.leiste / k.gezeichnet - 1) : Infinity);
+            const groesste = (s) => (je[s] && je[s].length ? Math.max(...je[s].map(abw)) : Infinity);
+            const wahr = mesh.filter((s) => groesste(s) <= 0.05);
+            const ohne = mesh.filter((s) => !wahr.includes(s));
+            if (!Object.keys(je).length) return { gruen: false, zahl: "keine Kosten-Zeile des Gangs (Exit " + lauf.exit + ")" };
+            const stufen = wahr.reduce((n, s) => n + je[s].length, 0);
+            return {
+                gruen: wahr.length >= 4,
+                zahl:
+                    "Dreiecke ±5 % gegen renderer.info in " + wahr.length + "/" + mesh.length + " Mesh-Studios (" + stufen +
+                    " Stufen, größte Abweichung " + (Math.max(0, ...wahr.map(groesste)) * 100).toFixed(1) + " %)" +
+                    (ohne.length ? ", ohne " + ohne.map((s) => s + (je[s] ? " " + (groesste(s) * 100).toFixed(1) + " %" : " (keine Zeile)")).join(", ") : ""),
+            };
+        },
+        pfad: [
+            "worlds/huelle/",
+            "worlds/garage/",
+            "worlds/schmiede/",
+            "worlds/portale/",
+            "worlds/fachwerk/",
+            "worlds/koerperstudio/",
+            "worlds/tetrapoda/",
+            "worlds/terrain/",
+            "*-core.js",
+            "scripts/diag-studio-huelle.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Dreiecke ±5 % gegen renderer.info in ≥ 4/7 Mesh-Studios",
+    },
+    {
+        kriterium: "studios.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
         befehl: null,
         grund:
-            "kein Werkzeug misst Griff → erstes Ausgabe-Bild mit neuem Bau-Hash: die Gang-Probe (20 zufällige Griffe je Studio) " +
-            "fehlt in diag-studio-huelle --engine, die Zeilen tragen kein `uniform: true` im Vertrag, A/B nur im Gelände-Studio, " +
-            "Persistenz über das Neuladen 0 (worlds/huelle/huelle.js ohne localStorage/indexedDB)",
-        quelle: "2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms",
+            "die Leiste trägt gezeichnete Dreiecke und Befehle aus renderer.info (Zähl-Abschnitt, studios.K3#1), aber kein VRAM " +
+            "(info.memoryMap je Werk-Attribut), keine GPU-ms (Timer-Query gegen gpu-bank) und beim Klang keine Audio-Graph-ms; " +
+            "der Gang urteilt nur die Dreiecke",
+        quelle: "2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms",
     },
 
     // ───────────────────────────── Pipeline ─────────────────────────────
@@ -448,20 +599,14 @@ const alle = [
         befehl: [
             "bash",
             "-c",
-            "set -u; O=127.0.0.1:11434; S=''; " +
-                "if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X=\"${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe\"; " +
-                "[ -x \"$X\" ] || X=ollama; (\"$X\" serve > /dev/null 2>&1 < /dev/null &); S=1; " +
-                "for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; " +
-                "echo \"ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e \"let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{" +
-                "try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}" +
-                "catch(e){console.log('{}')}})\")\"; " +
+            OLLAMA_AN +
                 "node scripts/diag-v1-pfad.cjs --korpus --echt; e=$?; " +
                 "node -e \"const k=require('./spec/abnahme/ki-korpus.json'); " +
                 "console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); " +
                 "console.log('KORPUS ' + Object.keys(k.saetze).length)\"; " +
-                "[ -n \"$S\" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e",
+                OLLAMA_AUS,
         ],
-        env: { ...SOFT, V1_PFAD_PORT: "{PORT}", KI_ENDPUNKT: "http://127.0.0.1:11434/", KI_MODELL: "qwen3:4b-instruct" },
+        env: OLLAMA_ENV,
         gpu: false,
         zeit: false,
         minuten: 15,
@@ -502,24 +647,7 @@ const alle = [
                     " ms (genannt)" + (taeter.length ? ", Täter " + taeter.join(" · ").slice(0, 160) : ""),
             };
         },
-        pfad: [
-            "spec/abnahme/ki-korpus.json",
-            "stamm/feld-*.js",
-            "stamm/werkstatt-vorschau.js",
-            "stamm/studio-*.js",
-            "stamm/bild-himmel.js",
-            "stamm/dirigent-*.js",
-            "stamm/kreatur-*.js",
-            "stamm/koerper-*.js",
-            "stamm/daten.js",
-            "*-core.js",
-            "foundry-bruecke.js",
-            "index.html",
-            "scripts/diag-v1-pfad.cjs",
-            "scripts/lib/ausgabe-aufnahme.cjs",
-            "scripts/lib/stamm.cjs",
-            "scripts/lib/welt-boot.cjs",
-        ],
+        pfad: KI_KORPUS_PFAD,
         quelle: "2 = das Soll mit Modell (gültig ≥ 95 %, Absicht ≥ 85 %, 0 Brüche, Negativ-Sätze scheitern benannt)",
     },
     {
@@ -598,6 +726,97 @@ const alle = [
         pfad: [...KI_K2_PFAD, "spec/profiband/ratsche-ki-korpus*.json", "scripts/diag-v1-pfad.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
         quelle: "2 = ≥ 95 % und der Korpus-Teil Regler-Wörter („knorrig“, „schmal und hoch“) ≥ 80 % mit Modell",
     },
+    {
+        kriterium: "ki.K3",
+        staffel: 1,
+        geraet: "headless",
+        // die Seele im Gespräch (ki-seele-regeln): der Teil seele des Korpus (spec/abnahme/ki-korpus.json, 12 Fragen) über den echten
+        // Chat-Pfad gegen das lokale Modell — je Frage ein Wesen und seine Taten über die Wege des Spiels (der Schlag des Spielers
+        // `damageCreature`, die Gabe `activateCreatureConsumable`, die Geste „folge mir", erinnert, wenn es beim Spieler ankommt),
+        // dann die Frage im Chat an seinen Namen (`maybeAnswerCreature` → Persona-Prompt mit den letzten 8 Erinnerungen in den Worten
+        // von ERINNERUNG_SATZ). Das Prädikat sucht in der Antwort den Bezug auf eine erlebte Tat und keinen auf eine fremde (das
+        // Nachplappern aller Taten fällt). Soll ≥ 70 % der Antworten. Trocken am Kopf f1400431 gegen einen Stub-Anbieter auf
+        // 11434 (Mechanik, kein Modell): 11 von 12 GRÜN, Mutante V1_MUTANTE=gedaechtnis-leer 0 von 12 ROT; vorher (main a03b7b06)
+        // trug der Prompt „Deine Erinnerungen: ." — 0 von 12. Das Urteil mit qwen3:4b-instruct fällt am Laptop.
+        befehl: [
+            "bash",
+            "-c",
+            OLLAMA_AN +
+                "node scripts/diag-v1-pfad.cjs --korpus --seele --echt; e=$?; " +
+                "node -e \"console.log('KORPUS ' + Object.keys(require('./spec/abnahme/ki-korpus.json').seele.saetze).length)\"; " +
+                OLLAMA_AUS,
+        ],
+        env: OLLAMA_ENV,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const anb = anbieterVon(out);
+            if (!anb || anb.traegt !== true) return KEIN_ANBIETER(anb);
+            const n = +((/^KORPUS (\d+)$/m.exec(out) || [])[1] || 0);
+            const s = zeilen(out).map((l) => /^\s*(✓|✗)( ungültig)?( BRUCH)? „(.+?)“ .*? · (.*)$/.exec(l)).filter(Boolean);
+            const wort = /^\s*(✅|❌) WORT der Korpus über den echten Chat-Pfad \(echter Anbieter\).*? · seele · /m.exec(out);
+            const erf = s.filter((x) => x[1] === "✓");
+            return {
+                gruen: !!wort && n > 0 && s.length === n && erf.length / n >= 0.7,
+                zahl:
+                    erf.length + " von " + s.length + "/" + n + " Antworten nennen eine erlebte Tat (Soll 70 %) gegen qwen3:4b-instruct @ " +
+                    "127.0.0.1:11434" + (wort ? "" : ", keine WORT-Zeile des echten Anbieters (Exit " + lauf.exit + ")") +
+                    (erf.length ? ", z. B. „" + erf[0][4] + "“ → " + erf[0][5].slice(0, 90) : ""),
+            };
+        },
+        pfad: KI_KORPUS_PFAD,
+        quelle: "1 = mit lokalem Modell nennen ≥ 70 % der Antworten aus dem Gesprächs-Korpus eine der letzten 8 Erinnerungen, an einem Gerät",
+    },
+    {
+        kriterium: "ki.K4",
+        staffel: 1,
+        geraet: "headless",
+        // die Regeln des Modells in der Wertung (ki-seele-regeln): der Teil regeln des Korpus (6 Sätze, die Regeln verlangen) über den
+        // echten Chat-Pfad gegen das lokale Modell, verteilt über einen Selbstlauf von 600 s Welt-Zeit im Zeitraffer, in dem der Nexus
+        // je 3 s eine Regel schreibt; gezählt je Drittel und Quelle (source llm gegen nexus): neu · erneuert · verfallen · verdrängt.
+        // Der Gegenlauf mischt das δ (je Quelle im Wechsel +1 / −1 über die Baseline des Rewards, der Nexus schreibt je Sekunde, die
+        // Kappe verdrängt). GRÜN, wenn die WORT-Zeile des echten Anbieters ohne Täter steht: je Drittel eine neue LLM-Regel, LLM- und
+        // Nexus-Regeln gewertet und verdrängt, im Gegenlauf je Quelle die Heiler um ≥ 0,25 öfter erneuert als die Schädlinge
+        // (regelVerdict). Trocken am Kopf f1400431 gegen einen Stub-Anbieter (Mechanik, kein Modell): LLM-Regeln 2/2/2 je Drittel,
+        // Gegenlauf δ+ 0,75 · δ− 0,00 GRÜN; Mutante V1_MUTANTE=wertung-aus ROT (0,00 · 0,00). Das Urteil mit Modell fällt am Laptop.
+        befehl: [
+            "bash",
+            "-c",
+            OLLAMA_AN + "node scripts/diag-v1-pfad.cjs --korpus --regeln --echt; e=$?; " + OLLAMA_AUS,
+        ],
+        env: OLLAMA_ENV,
+        gpu: false,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const anb = anbieterVon(out);
+            if (!anb || anb.traegt !== true) return KEIN_ANBIETER(anb);
+            const wort = /^\s*(✅|❌) WORT der Korpus über den echten Chat-Pfad \(echter Anbieter\).*? · regeln · .*?(?: — Täter: (.*))?$/m.exec(out);
+            let R = null;
+            try {
+                R = JSON.parse((/^REGELN (.*)$/m.exec(out) || [])[1]);
+            } catch (_e) {
+                R = null;
+            }
+            if (!wort || !R) return { gruen: false, zahl: "keine WORT- oder REGELN-Zeile des echten Anbieters (Exit " + lauf.exit + ")" };
+            const sum = (k) => [...R.echt, ...R.gegen].reduce((a, d) => a + (d[k] || 0), 0);
+            const fort = (q) => sum(q + "erneuert") + sum(q + "verfallen") + sum(q + "verdraengt");
+            const heil = (v) => (sum("llm" + v + "erneuert") / Math.max(1, fort("llm" + v))).toFixed(2);
+            return {
+                gruen: wort[1] === "✅" && lauf.exit === 0,
+                zahl:
+                    "LLM-Regeln neu je Drittel " + R.echt.map((d) => d["llm neu"] || 0).join("/") + ", erneuert " + sum("llm erneuert") +
+                    " · verfallen " + sum("llm verfallen") + " · verdrängt " + sum("llm verdraengt") + " (Nexus " + sum("nexus erneuert") + " · " +
+                    sum("nexus verfallen") + " · " + sum("nexus verdraengt") + "); Gegenlauf: erneuert LLM δ+ " + heil("+ ") + " · δ− " +
+                    heil("- ") + ", verdrängt " + (sum("llm+ verdraengt") + sum("llm- verdraengt")) + (wort[2] ? ", Täter " + wort[2].slice(0, 160) : ""),
+            };
+        },
+        pfad: KI_KORPUS_PFAD,
+        quelle: "1 = im Selbstlauf mit Modell registrierte LLM-Regeln (source llm) werden von derselben Fitness gewertet und verdrängt wie Nexus-Regeln, gegen den Gegenlauf mit gemischtem δ",
+    },
 
     // ───────────────────────────── Bauen ─────────────────────────────
     {
@@ -658,14 +877,81 @@ const alle = [
         ],
         quelle: "1 = jeder Weg (Werkstatt, Rezeptbuch, Hotbar) stellt das Werk über echte DOM-Ereignisse, gezählt am Ereignis-Strom",
     },
+    // ── bauen.K1 Staffel 2 ── L-BILD (diag-werkstatt-weg --echt, bauen-k1-bild): je Weg (Werkstatt · Rezeptbuch · Hotbar) ein
+    // frischer Browser auf der Karte (leeres Profil: Platte und Foundry kalt), die Welt steht unter der Bühne; je Lage mit Bau
+    // (schöpfer · frieden mit Material · pfad) × Werk (Eiche · Haus · GT · Teil) × Sicht (Ego · Third) über echte Eingaben die Zeit
+    // von der ersten Eingabe bis zum von der GPU abgearbeiteten Bild, in dem jede L0-Senke des Werks für die Kamera der Szene zog
+    // (der Haken am Render des Takts, gezählt am Backend); der Bau-Hash des Bilds gleicht dem L0-Bau derselben Anfrage im Werk.
+    // kalt = der erste Bau des Werks im frischen Profil (4 je Weg), warm = jeder weitere (20 je Weg); p95 je Weg und Klasse.
     {
         kriterium: "bauen.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "diag-werkstatt-weg misst die ms bis zum stehenden Werk im Null-Renderer (kein --echt), nicht das erste Ausgabe-Bild in L0; " +
-            "die Radeon-Zeiten des Belegs (kalt 1 519 / 2 346 ms) sind ein Hand-Lauf, die GTX ungemessen",
+        befehl: [
+            "bash",
+            "-c",
+            "rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --echt; e=$?; " +
+                "cp artifacts/werkstatt-weg/weg.json \"$PUNKTE_AUS\" 2>/dev/null; exit $e",
+        ],
+        env: { WERKSTATT_WEG_PORT: "{PORT}", PUNKTE_AUS: "{AUS}" },
+        gpu: true,
+        zeit: true,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            if (!j || j.gestartet !== true || j.bild !== true || j.echt !== true || !j.wege)
+                return { gruen: false, zahl: "keine Rohdatei des Bild-Wegs auf der Karte (Exit " + lauf.exit + ")" };
+            const p95 = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1] : null);
+            const rot = [];
+            let n = 0, imBild = 0;
+            const jeWeg = WEG_WEGE.map((weg) => {
+                const jeKlasse = { kalt: [], warm: [] };
+                for (const lage of WEG_LAGEN)
+                    for (const werk of WEG_WERKE)
+                        for (const sicht of WEG_SICHTEN) {
+                            const e = ((((j.wege[lage] || {})[weg] || {})[werk] || {})[sicht]) || null;
+                            n++;
+                            const ms = e && Array.isArray(e.zeiten) ? e.zeiten[4] : null; // [eingabe, steht, l0, bild, gpu] ab der ersten Eingabe
+                            const ok = e && !e.fehler && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll;
+                            if (!ok) {
+                                rot.push(weg + " · " + lage + " · " + werk + " · " + sicht);
+                                continue;
+                            }
+                            imBild++;
+                            jeKlasse[e.kalt ? "kalt" : "warm"].push(ms);
+                        }
+                const k = p95(jeKlasse.kalt), w = p95(jeKlasse.warm);
+                if (!(k <= 1000) || !(w <= 1000)) rot.push(weg + " p95 kalt " + k + " · warm " + w + " ms");
+                return weg + " kalt " + k + " · warm " + w + " ms (" + jeKlasse.kalt.length + "+" + jeKlasse.warm.length + ")";
+            });
+            return {
+                gruen: n === 72 && imBild === n && !rot.length,
+                zahl: imBild + "/" + n + " Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild " + jeWeg.join(" · ") +
+                    (rot.length ? " · ROT: " + rot.slice(0, 6).join(" · ") + (rot.length > 6 ? " … (" + rot.length + ")" : "") : ""),
+            };
+        },
+        pfad: [
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-seele.js",
+            "stamm/siedlung-*.js",
+            "stamm/bau-*.js",
+            "stamm/studio-*.js",
+            "stamm/stoff-*.js",
+            "stamm/bild-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "index.html",
+            "worlds/huelle/huelle.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "fachwerk-core.js",
+            "vehicle-core.js",
+            "phyto-core.js",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ],
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
     {
@@ -903,14 +1189,76 @@ const alle = [
         ],
         quelle: "1 = von 6 gesetzten Werken (Haus, Wagen, Tor, Brücke, Leiter, Bank) ist jedes Verb aus KIND_POLICY (betreten, drive, portal, sitzen, klettern) über die echte Eingabe nutzbar, an einem Gerät",
     },
+    // Staffel 2 (bauen-k5-verben 57f568bd): L-VERBEN je Herkunft — die Werkstatt (das Tor über die Hotbar) · der Satz an die KI (Enter, der
+    // Satz, Enter → maybeAnswerWithLlm, die Antwort ein fester DSL-Text: spawn_studio mit dem Wort hinter dem Art-Präfix, das eigene
+    // Werk spawn_blueprint) · geteilt (der Teilen-Knopf der Werkstatt, sein Code getippt in den Chat → empfangeWerk) — × Ego und
+    // Third × 6 Werke, benutzt über die Taste; `--verben` fährt nur L-VERBEN, mit echtem Renderer (die Karte). Das Haus in Third:
+    // die Kamera steht hinter dem Spieler, das Haus bleibt bis zur Schwelle in Stufe 1 (K36), die die Tür offen bäckt — dort zählt
+    // der Eintritt durch die offene Tür, die der Tür-Takt hält (`_tuerRec`), nicht ihr Drehen. Cloud headless (Null-Renderer)
+    // 26/36 → 36/36 (Wurzel `_werkFuss`: spawn_blueprint stellte das Werk in die Fußhöhe des Spielers).
     {
         kriterium: "bauen.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "L-VERBEN setzt nur über Werkstatt und Hotbar in Ego; das KI-gesetzte (spawn_studio) und das geteilte Werk (Werk-Code), Third " +
-            "und die Geräte misst kein Werkzeug",
+        befehl: [
+            "bash",
+            "-c",
+            "rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --verben; e=$?; " +
+                "cp artifacts/werkstatt-weg/weg.json \"$PUNKTE_AUS\" 2>/dev/null; exit $e",
+        ],
+        env: { WERKSTATT_WEG_PORT: "{PORT}", PUNKTE_AUS: "{AUS}" },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const je = j && j.verbenJe;
+            if (!je) return { gruen: false, zahl: "keine verbenJe in weg.json (Exit " + lauf.exit + ")" };
+            const [teile, nein] = [[], []];
+            let [ja, n] = [0, 0];
+            for (const h of ["werkstatt", "ki", "geteilt"])
+                for (const s of ["Ego", "Third"]) {
+                    let k = 0;
+                    for (const w of ["Haus", "Wagen", "Tor", "Brücke", "Leiter", "Bank"]) {
+                        const e = ((je[h] || {})[s] || {})[w];
+                        n++;
+                        if (e && e.steht === 1 && e.verb === true && !e.fehler) k++;
+                        else nein.push(`${h} · ${s} · ${w} (${e ? e.fehler || e.warum || "steht nicht" : "nicht gelaufen"})`);
+                    }
+                    ja += k;
+                    teile.push(`${h} ${s} ${k}/6`);
+                }
+            return {
+                gruen: lauf.exit === 0 && ja === n,
+                zahl:
+                    `${ja}/${n} Herkunft × Sicht × Werk tragen ihr Verb über die Taste (${teile.join(" · ")})` +
+                    (nein.length ? " — offen: " + nein.slice(0, 6).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "stamm/werkstatt-*.js",
+            "stamm/koerper-*.js",
+            "stamm/netz-*.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/siedlung-*.js",
+            "stamm/vegetation-baum.js",
+            "stamm/bau-*.js",
+            "stamm/studio-*.js",
+            "stamm/kampf.js",
+            "stamm/dirigent-*.js",
+            "stamm/stoff-material.js",
+            "index.html",
+            "fachwerk-core.js",
+            "vehicle-core.js",
+            "porta-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "spec/pruefsatz/bauen-k3.json",
+            "scripts/diag-werkstatt-weg.cjs",
+            "scripts/lib/stamm.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
         quelle: "2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte",
     },
     // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)

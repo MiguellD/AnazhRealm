@@ -138,3 +138,10 @@ z54-abab 1 abab A=f1faa0467fd4b3b63bcae3524c1e06ae18dcb2cb B=19606f2ee8492be703f
 z54-abab 0 storno
 takt13-gtx 1 punkte sha=19606f2ee8492be703fb6aff52d4e48c9279919f geraet=gtx nur=tiere.K1#2,leib.K2#1,profiband.K4#1,profiband.K4#2,siedlung.K5#1,siedlung.K5#2,gelaende.K2#1,gelaende.K5#2,tiere.K3#2,tiere.K2#2,mensch.K2#2,ferne.K2#2,material.K1#2,fahrzeug.K3#1,fahrzeug.K3#2,fahrzeug.K4#2,siedlung.K2#2,leib.K1#1,halten.K2#1,halten.K5#1,tore.K3#2,klang.K2#1,klang.K4#1,klang.K5#2,speicher.K1#1,speicher.K1#2,speicher.K2#1
 z54n-abab 2 abab A=f1faa0467fd4b3b63bcae3524c1e06ae18dcb2cb B=19606f2ee8492be703fb6aff52d4e48c9279919f zellen=w-ego,d-ego,stadt
+z55-abab 1 abab A=19606f2ee8492be703fb6aff52d4e48c9279919f B=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 zellen=w-ego,d-ego,stadt
+takt14a-gtx 1 punkte sha=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 geraet=gtx nur=tore.K5#2,klang.K4#2,halten.K1#2,halten.K5#2,luftwasser.K5#2,luftwasser.K5#1,siedlung.K5#2,siedlung.K2#2,leib.K2#1,tore.K3#1,halten.K5#1,klang.K4#1
+takt14b-gtx 1 punkte sha=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 geraet=gtx nur=fahrzeug.K3#1,fahrzeug.K3#2,fahrzeug.K4#2,ferne.K1#1,ferne.K2#1,gelaende.K2#1,gelaende.K3#1,halten.K2#1,klang.K2#1,leib.K1#1,licht.K2#1,material.K1#1,material.K2#1,material.K3#1,mensch.K1#1,profiband.K4#1,schatten.K1#1,speicher.K1#1,speicher.K2#1,wetter.K2#1
+z55n-abab 2 abab A=19606f2ee8492be703fb6aff52d4e48c9279919f B=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 zellen=w-ego,d-ego,stadt
+z55-abab 0 storno
+takt14c-gtx 1 punkte sha=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 geraet=gtx nur=ferne.K2#2,klang.K5#2,material.K1#2,mensch.K2#2,speicher.K1#2,tiere.K1#2,tiere.K2#2,tiere.K3#2,tore.K3#2,gelaende.K5#2
+z56-abab 2 abab A=a03b7b0626826d1dd47c21a85bdcf123ecae6e39 B=9e92be45bfe89c1137b0dffc6e0e479e70a4a6ec zellen=w-ego,d-ego,stadt

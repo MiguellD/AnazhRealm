@@ -2,7 +2,7 @@
 //
 // Erfasst ist jedes g6-Kriterium mit Punkten (klang K2 K4 K5, speicher K4 K5), aus der Messschuld (speicher K1 K2 = M30 M35
 // M37 M38, profiband K4 = M34 M39, klang K2 K5 = M33 M15) und aus dem Stau (hydro-faden: streaming K4 K5; speicher-journal:
-// speicher K2 K3), dazu aus einer Karte (klang-k1-zensus: klang K1). Je Kriterium und Staffel steht hier der Befehl, mit dem
+// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2). Je Kriterium und Staffel steht hier der Befehl, mit dem
 // der Beleg gemessen wurde.
 //
 // HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
@@ -55,6 +55,14 @@ const ECHT_K1 =
     // werk: echt-k1 mit dem Lese-Haken der OMEN (042f681a, 23.10.: das Alter am gelesenen Stand, die Versetzung als eigene Zahl)
     ': werk 2310-lese-haken; WT="$B" OUT_DIR="$D" ECHT_PORT={PORT} node "$D/echt-k1.cjs" ';
 
+// DIE MESS-BAHN speicher-zwei (Karte speicher-zwei, 27.10.): `bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs` fährt das
+// echte Spiel aus dem Spiel-Baum (dessen welt-boot, Ausgabe-Aufnahme, Messort) — `takt` für speicher.K2#2, `bild` für
+// speicher.K4#2. Unter scripts/ des Spiels trüge die Decke die zwei Bahnen nicht (+2 139 Atome); die Bahn kopiert sich neben die
+// Ausgabe wie die HARNESS, `# werk` nennt ihren Stand.
+const SPEICHER_ZWEI =
+    VOR +
+    'cp "$K/bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs" "$D/"; ' +
+    ': werk 2710-speicher-zwei; cd "$B"; BAUM="$B" PORT={PORT} node "$D/speicher-zwei.cjs" ';
 const HYDRO_PFAD = [
     "voxel-worker.js",
     "gelaende-core.js",
@@ -147,6 +155,53 @@ module.exports = [
         pfad: HYDRO_PFAD,
         quelle:
             "1 = im Spiel 0 synchrone Bauten außerhalb der drei benannten forceSync-Stellen (Fußabdruck, Test-Naht, `_drainDirty`), Kalt-Boot-Rückfälle laut über `_bruchMelden`",
+    },
+    {
+        kriterium: "streaming.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // der Zähler des Spiels selbst (Karte streaming-k4-zaehler): jeder Bau im Haupt-Faden meldet sich am EINEN Melder
+        // (`_fadenUmgangen`) — an den Sync-Stellen (fussabdruck · naht · drain) in `_syncBau`, sonst laut im Buch
+        // „FADEN-UMGANGEN"; die Faden-Linse liest ihn (`_syncBauten`) im Fenster an der echten GPU nach der Ankunft (kalt),
+        // 2 min Gang, einer Minute Fahrt mit sechs Bau-Klicks und dem Damm. Vor der Karte kennt die Linse --echt und den
+        // Gang nicht (die Gang-Zeile fehlt): ROT. Die Stau-Zeile (Takt) gehört gelaende.K2 und urteilt hier nicht.
+        // Soll: 0 sonst an Radeon und GTX; Cloud-Fenster swiftshader (Xvfb) am Kopf 82bb2353 in 3 von 3 Läufen 0 sonst ·
+        // 25 naht (der Damm-Ring der Wasser-Linse), vor dem Nexus-Schnitt 8 Güsse „kreatur" in 1 von 2.
+        befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden", "--echt"],
+        env: { WORKER_DICHTE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const g = /^ {2}gang +([\d.]+) s/m.exec(t);
+            const h = /Hydrosphären: (\d+) aus dem Faden · (\d+) im Haupt-Faden/.exec(t);
+            const b = /Bauten im Haupt-Faden \(Chunk-Stoff, Guss\): (\d+) an Sync-Stellen und Test-Nähten · (\d+) sonst ?(\{[^}]*\})?/.exec(t);
+            const k = /Bau-Klicks in der Fahrt: (\d+)/.exec(t);
+            const blind = /⛔ BLIND: (.*)/.exec(t);
+            if (!g || !h || !b) return { gruen: false, zahl: "keine Gang- oder Faden-Zeile (die Linse kennt --echt nicht?) · Exit " + lauf.exit };
+            const gruen = hw && !blind && +h[1] > 0 && +h[2] === 0 && +b[2] === 0 && !!k && +k[1] >= 6;
+            return {
+                gruen,
+                zahl:
+                    "Bauten " + b[2] + " außerhalb der Sync-Stellen · " + b[1] + " an ihnen " + (b[3] || "") + " · Hydrosphären " + h[1] +
+                    " aus dem Faden · " + h[2] + " im Haupt-Faden · Gang " + g[1] + " s · " + (k ? k[1] : 0) + " Bau-Klicks · " +
+                    (ad || "Adapter ungenannt") + (blind ? " · BLIND " + blind[1] : ""),
+            };
+        },
+        pfad: [
+            ...HYDRO_PFAD,
+            "stamm/dienst.js",
+            "stamm/feld-dsl.js",
+            "stamm/koerper-leib.js",
+            "stamm/kreatur-verhalten.js",
+            "stamm/siedlung-satz.js",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "2 = 0 überall, beide Geräte",
     },
     {
         kriterium: "streaming.K5",
@@ -414,6 +469,77 @@ module.exports = [
         quelle: "1 = Mittag im Stand: jedes Soll je Ort hält, und jeder Pegel einer Quelle mit Körper (Vogel, Tier) hat einen Körper in der Welt",
     },
     {
+        kriterium: "klang.K1",
+        staffel: 2,
+        geraet: "headless",
+        // der Zensus (N), Zweig klang-k1-nacht: zusätzlich zu Staffel 1 die Wiese in vier Szenen, Wetter und Uhr als Wort des
+        // Spielers (R9) — nachts (Mitternacht im Sommer: die Grillen aus Nacht × Wärme des Bodens ihrer Röhre × offenem Gras, ihr
+        // Ton die Harfe 4,4/4,8 kHz, Band 3,5–5,6 kHz offline nachgemessen; kein Vogel singt), im Regen (das Wort „rainy“: der
+        // Regen-Teppich ≥ −34 dB, die Vögel singen nur aus Leibern), gehend (W/S pendelnd, ≥ 10 m) und fahrend (im Sattel des GT,
+        // ≥ 30 m): je Szene das Soll und Ruf ← Leib in Bewegung. Unter dieser Linse am Welt-Stand von main 19606f2e ROT: nacht
+        // grille −∞ (Luft 10,3 °C < 12); nach der Trägheit −40,1 dB mit Schwerpunkt 2 898 Hz (die rate trug den Ton); am Kopf von
+        // klang-k1-nacht −40,1 dB bei 4 606 Hz. Derselbe Lauf wie klang.K1#1 und klang.K5#1 (Zwilling).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const d = (j && j.daten) || {};
+            const orte = ["wiese", "seeufer", "wald", "dorf", "nacht", "regen", "gehend", "fahrend"];
+            if (!orte.every((o) => d[o] && d[o].mixMitte && d[o].um) || !d.wieseOhneLeib)
+                return { gruen: false, zahl: "kein Zensus der Orte, Szenen und der Mutation (Exit " + lauf.exit + ")" };
+            const db = (o, s) => d[o].mixMitte[s].db;
+            const leib = (o) => d[o].zensus.leiber || { gehoert: 0, gezeichnet: 0 };
+            const chorOhne = d.wieseOhneLeib.zensus.stimmen.some((v) => v.name === "vogel" && v.an);
+            // die Befunde dieses Kriteriums: SOLL, Lab = Welt, Ruf ← Leib, Ort fehlt, je Szene (N), der Tier-Ruf ohne Leib
+            const rot = (j.rot || []).filter((t) => /^(S|L|R|O|N)[ :]|^E tier:/.test(t));
+            const szenen = ["nacht", "regen", "gehend", "fahrend"];
+            const ruf = ["wiese", ...szenen].every((o) => leib(o).gehoert === leib(o).gezeichnet);
+            const bewegt = d.gehend.um.weg >= 10 && !d.gehend.um.sattel && d.fahrend.um.weg >= 30 && d.fahrend.um.sattel;
+            const gruen =
+                rot.length === 0 && ruf && bewegt && leib("wiese").gehoert > 0 && leib("wieseOhneLeib").gezeichnet === 0 &&
+                !chorOhne && db("nacht", "grille") >= -46 && !(db("nacht", "vogel") > -64) && db("regen", "regen") >= -34;
+            const f = (v) => (v > -999 ? v.toFixed(1) : "−∞");
+            const m = (v) => Math.round(v);
+            return {
+                gruen,
+                zahl:
+                    "Nacht grille " + f(db("nacht", "grille")) + " · vogel " + f(db("nacht", "vogel")) + " dB (" + leib("nacht").gehoert +
+                    " Leiber) · Regen regen " + f(db("regen", "regen")) + " (wind " + f(db("regen", "wind")) + ", vogel " + f(db("regen", "vogel")) +
+                    " aus " + leib("regen").gehoert + " Leibern) · gehend " + m(d.gehend.um.weg) + " m wind " + f(db("gehend", "wind")) + " vogel " +
+                    f(db("gehend", "vogel")) + " (" + leib("gehend").gehoert + "/" + leib("gehend").gezeichnet + ") · fahrend " + m(d.fahrend.um.weg) +
+                    " m " + (d.fahrend.um.sattel ? "im Sattel" : "ZU FUSS") + " wind " + f(db("fahrend", "wind")) + " vogel " + f(db("fahrend", "vogel")) +
+                    " (" + leib("fahrend").gehoert + "/" + leib("fahrend").gezeichnet + ")" +
+                    (rot.length ? " · " + rot.length + " Befund(e): " + rot.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/stoff-*.js",
+            "stamm/feld-leben.js",
+            "stamm/dirigent-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/koerper-*.js",
+            "stamm/wasser-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/daten.js",
+            "worlds/klang/klang.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ],
+        quelle: "2 = zusätzlich Nacht (Grillen), Regen, gehend und fahrend",
+    },
+    {
         kriterium: "klang.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
@@ -505,6 +631,61 @@ module.exports = [
         quelle: "2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte",
     },
     {
+        kriterium: "klang.K3",
+        staffel: 1,
+        geraet: "headless",
+        // der Zensus (Ra), Zweig klang-raum: derselbe Tier-Ruf (ein Leib der Welt, `_tierRuf` → Gesetzbuch `tierRuf`) in 3 · 8 ·
+        // 20 m und dieselbe Glut (der Bau des Dorfs, die Lage am Ohr durch den Studio-Graphen) in 1,5 · 3 · 6 m; das Ohr dreht sich
+        // (die Kamera), die Quelle klingt −90° · +90° · −30° · +30° neben dem Blick, der Master an einem Stereo-OfflineAudioContext.
+        // Je Probe ILD = R − L und der Pegel in dB (j.raum.proben). GRÜN: 24 Proben (je Quelle 12), 100 % mit dem Vorzeichen der
+        // Seite ≥ 3 dB, der Pegel fällt je Abstands-Stufe ≥ 1 dB, kein Befund „Ra" (dort auch: die Welt hört die Quelle in einem
+        // anderen Abstand). Die Mutation „Panner aus" (S15, `--selftest`) ist ROT an Ruf und Glut. Am Kopf von klang-raum 24/24:
+        // ±90° ILD ±80 … ±102 dB (die andere Seite schweigt), ±30° ±7,7 dB, tier −23,0 › −31,5 › −39,4 dB, glut −17,7 › −23,7 ›
+        // −29,7 dB. Derselbe Lauf wie klang.K1#1 und klang.K5#1 (Zwilling).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const ra = j && j.raum;
+            if (!ra || !Array.isArray(ra.proben)) return { gruen: false, zahl: "kein Raum-Teil (Ra) im Zensus (Exit " + lauf.exit + ")" };
+            const p = ra.proben
+                .map((t) => /^(tier|glut) (-?\d+)° ([\d.]+) m (-?[\d.]+)\/(-?[\d.]+)$/.exec(t))
+                .filter(Boolean)
+                .map((m) => ({ q: m[1], w: +m[2], d: +m[3], ild: +m[4], db: +m[5] }));
+            const richtig = p.filter((x) => x.ild * Math.sign(x.w) >= 3).length;
+            // der Pegel fällt mit dem Abstand: je Quelle und Winkel die Abstände aufsteigend
+            const faellt = p.every((x) => p.every((y) => y.q !== x.q || y.w !== x.w || !(y.d > x.d) || y.db <= x.db - 1));
+            const je = (q) => p.filter((x) => x.q === q).length;
+            const rot = (j.rot || []).filter((t) => /^Ra /.test(t));
+            const gruen = p.length === 24 && je("tier") === 12 && je("glut") === 12 && richtig === 24 && faellt && rot.length === 0;
+            const pegel = (q, w) => p.filter((x) => x.q === q && x.w === w).map((x) => x.d + " m " + x.db.toFixed(1)).join(" › ");
+            const ild = (w) => p.filter((x) => x.w === w).map((x) => Math.abs(x.ild)).reduce((a, b) => Math.min(a, b), Infinity);
+            return {
+                gruen,
+                zahl:
+                    richtig + "/" + p.length + " Vorzeichen richtig (tier " + je("tier") + ", glut " + je("glut") + ") · |ILD| ≥ " +
+                    ild(90).toFixed(1) + " dB bei 90°, ≥ " + ild(30).toFixed(1) + " dB bei 30° · Pegel " + (faellt ? "fällt" : "FÄLLT NICHT") +
+                    ": tier " + pegel("tier", 90) + " · glut " + pegel("glut", 90) + " dB" +
+                    (rot.length ? " · " + rot.length + " Befund(e): " + rot.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "tetrapoda-core.js",
+            "stamm/klang.js",
+            "stamm/kreatur-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = Richtung und Entfernung: links/rechts zu 100 % mit richtigem Vorzeichen (ILD/ITD am Stereo-Abgriff)",
+    },
+    {
         kriterium: "klang.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
@@ -543,6 +724,112 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden",
+    },
+    {
+        kriterium: "klang.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // EIN Lauf, alle vier Teile: (S) die Schritte je Stoff wie klang.K4#1 (m15-schritt im echten Spiel, Analyser am Schritt-Gain,
+        // stdout); (F) der Körper-Teil des Klang-Zensus (`diag-klang-zensus --json`, Port {PORT}+1, j.koerper): je Abgriff liegt der
+        // Master-Bus EINEN Klang-Takt lang an einem OfflineAudioContext, die Linse fährt den festen Schritt des Leibs —
+        // motor [Upm, Hz] im Sattel des GT mit Gas (der Grundton = die stärkste Linie gegen die Drehzahl klang `fahrtUpm`),
+        // landung [h, Aufprall des Leib-Lösers `_sturzTempo`, Landungen, Aufprall des Klangs, dB] für einen Hopser aus 0,2 m und
+        // Stürze aus 1 · 2 · 4 · 8 · 12 m, doppler [wo, soll, ist] an sechs Punkten 9 · 4,5 · 2 m vor und hinter dem nächsten Punkt
+        // einer Vorbeifahrt (die Periode des Abrollens, c 343 m/s). Urteil, nie weicher als die Staffel: Schritte ≥ 3 Stoffe
+        // (n ≥ 5) mit kleinstem Abstand ≥ 300 Hz UND Motor r ≥ 0,9 (≥ 10 Abgriffe) UND Landung genau einmal je Sturz mit dem
+        // Aufprall des Leib-Lösers, je Stufe lauter und r(dB, Aufprall) ≥ 0,9, der Hopser stumm UND Doppler: die Radial-
+        // Geschwindigkeit am Ohr v = c·(1 − 1/f) über die des Gesetzes, beide Vorzeichen, Steigung durch den Ursprung 1 ± 10 %,
+        // r ≥ 0,9, jeder Punkt ± 10 % — dazu kein Befund „F …" der Linse. Der Körper-Teil rechnet am Null-Renderer (das Klang-Gesetz
+        // ist CPU), die Schritte tragen die Karte (`[linse-gpu]` aus m15-schritt).
+        befehl: [
+            "bash",
+            "-c",
+            HARNESS +
+                ': werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten; ' +
+                'KLANG_ZENSUS_PORT=$(( {PORT} + 1 )) node scripts/diag-klang-zensus.cjs --json "$A" > "$D/zensus.log" 2>&1; ' +
+                'echo "zensus EXIT=$?"; grep -F "(F)" "$D/zensus.log"',
+        ],
+        gpu: true,
+        zeit: false,
+        minuten: 9,
+        urteil: (j, lauf) => {
+            const f = (x, n) => (typeof x === "number" && isFinite(x) ? x.toFixed(n) : "—");
+            const r = (a, b) => {
+                const mu = (v) => v.reduce((s, x) => s + x, 0) / v.length;
+                const [ma, mb] = [mu(a), mu(b)];
+                const k = (u, mu1, v, mu2) => u.reduce((s, x, i) => s + (x - mu1) * (v[i] - mu2), 0);
+                return a.length > 2 ? k(a, ma, b, mb) / Math.sqrt(k(a, ma, a, ma) * k(b, mb, b, mb)) : NaN;
+            };
+            // (S) die Schritte je Stoff — dasselbe Urteil wie klang.K4#1
+            const je = [];
+            for (const l of String(lauf.stdout || "").split(/\r?\n/)) {
+                const m = /^(\S+) n (\d+) median ([\d.]+) p10 (\S+) p90 (\S+)$/.exec(l.trim());
+                if (m && !/^(undefined|null)$/.test(m[1]) && +m[2] >= 5) je.push({ stoff: m[1], n: +m[2], hz: +m[3] });
+            }
+            let dHz = je.length >= 3 ? Infinity : NaN;
+            for (let a = 0; a < je.length; a++) for (let b = a + 1; b < je.length; b++) dHz = Math.min(dHz, Math.abs(je[a].hz - je[b].hz));
+            const schritt = dHz >= 300;
+            const F = j && j.koerper;
+            if (!F || !Array.isArray(F.motor) || !Array.isArray(F.landung) || !Array.isArray(F.doppler))
+                return { gruen: false, zahl: "Schritte " + je.length + " Stoffe, Δ " + f(dHz, 0) + " Hz · kein Körper-Teil (F) im Zensus (Exit " + lauf.exit + ")" };
+            // (M) der Motor-Grundton über die Drehzahl
+            const M = F.motor.filter((x) => x[0] > 0 && x[1] > 0);
+            const rM = r(M.map((x) => x[0]), M.map((x) => x[1]));
+            const motor = M.length >= 10 && rM >= 0.9;
+            // (L) die Landung mit dem Aufprall des Leib-Lösers
+            const fall = F.landung.slice(1);
+            const rL = r(fall.map((x) => x[1]), fall.map((x) => x[4]));
+            const landung =
+                !(F.landung[0] && F.landung[0][2]) &&
+                fall.length === 5 &&
+                fall.every((x, i) => x[2] === 1 && Math.abs(x[3] - x[1]) <= 1e-3 && (!i || x[4] >= fall[i - 1][4] + 0.5)) &&
+                rL >= 0.9;
+            const dbJe = fall.length > 1 ? (fall[fall.length - 1][4] - fall[0][4]) / (fall[fall.length - 1][1] - fall[0][1]) : NaN;
+            // (D) Doppler proportional zur Radial-Geschwindigkeit: v = c·(1 − 1/f) am Ohr gegen die des Gesetzes
+            const D = F.doppler.filter((x) => x[2] > 0);
+            const [vs, vi] = [D.map((x) => 343 * (1 - 1 / x[1])), D.map((x) => 343 * (1 - 1 / x[2]))];
+            const k = vs.reduce((s, x, i) => s + x * vi[i], 0) / vs.reduce((s, x) => s + x * x, 0);
+            const rD = r(vs, vi);
+            const doppler =
+                D.length === F.doppler.length &&
+                D.length >= 6 &&
+                vs.some((x) => x > 0) &&
+                vs.some((x) => x < 0) &&
+                D.every((x) => (x[2] - 1) * (x[1] - 1) > 0 && Math.abs(x[2] - x[1]) <= 0.1 * Math.abs(x[1] - 1)) &&
+                Math.abs(k - 1) <= 0.1 &&
+                rD >= 0.9;
+            const rotF = (j.rot || []).filter((t) => /^F /.test(t));
+            return {
+                gruen: schritt && motor && landung && doppler && rotF.length === 0,
+                zahl:
+                    (schritt ? "✅" : "❌") + " Schritte " + je.map((s) => s.stoff + " " + Math.round(s.hz) + " Hz (n " + s.n + ")").join(" · ") +
+                    ", kleinster Abstand " + f(dHz, 0) + " Hz · " + (motor ? "✅" : "❌") + " Motor r " + f(rM, 4) + " (" + M.length +
+                    " Abgriffe, " + f(M.length ? (M[0][1] / M[0][0]) * 1000 : NaN, 1) + " Hz je 1000 Upm) · " + (landung ? "✅" : "❌") +
+                    " Landung " + f(dbJe, 2) + " dB je m/s, r " + f(rL, 4) + " (" + fall.map((x) => x[0] + " m " + f(x[1], 1) + " m/s " + f(x[4], 1) + " dB").join(" · ") +
+                    ") · " + (doppler ? "✅" : "❌") + " Doppler Steigung " + f(k, 4) + " r " + f(rD, 4) + " (" +
+                    F.doppler.map((x) => x[0] + " m " + f(343 * (1 - 1 / x[1]), 1) + " m/s " + f(x[2], 4) + "/" + f(x[1], 4)).join(" · ") + ")" +
+                    (rotF.length ? " · " + rotF.length + " Befund(e): " + rotF.slice(0, 2).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "vehicle-core.js",
+            "koerper-core.js",
+            "stamm/klang.js",
+            "stamm/koerper-seele.js",
+            "stamm/kampf.js",
+            "stamm/dirigent-takt.js",
+            "stamm/vegetation-wiese.js",
+            "stamm/wasser-hydro.js",
+            "stamm/daten.js",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/band-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
     },
     {
         kriterium: "klang.K5",
@@ -721,6 +1008,36 @@ module.exports = [
         quelle: "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers",
     },
     {
+        kriterium: "speicher.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // speicher-zwei `takt --echt`: Fenster und Karte, der echte Takt mit dem Autosave des Spiels (saveInterval); eine Hülle
+        // um jeden Speicher-Schritt des Haupt-Fadens — der Ruf (saveState), das Zusammensetzen (_standNachholen), der Besen
+        // (_standFegen), der Versand (schicke) — summiert je Task das SPEICHER-BILD. 20 Stände frisch, dann 10 000 Gruben am
+        // Ereignis (der Zustand „nach 2 h mit 10 000 Edits", nie die Wanduhr), wieder 20 Stände. Ein Bild über 16,7 ms (am
+        // vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms darunter bliebe.
+        befehl: ["bash", "-c", SPEICHER_ZWEI + 'takt --echt --json "$A"'],
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const ph = j ? [j.frisch, j.edits] : [];
+            if (!ph[0] || !ph[1]) return { gruen: false, zahl: "keine Speicher-Bilder (Exit " + lauf.exit + ")" };
+            // eine Sonde ohne Messung ist ROT: kein Stand kam an, oder die Gruben fehlen
+            if (ph.some((p) => !(p.staende >= 20 && p.bilder > 0)) || !(j.edits.n >= 10000))
+                return { gruen: false, zahl: "Sonde blind: " + ph.map((p) => p.staende + " Stände").join(" / ") + ", " + j.edits.n + " Edits" };
+            const zeile = (p) =>
+                "p50 " + p.p50 + " / p95 " + p.p95 + " / max " + p.max + " ms (" + p.bilder + " Bilder), " + p.wegen + " von " + p.ueber +
+                " Bildern > 16,7 ms durch Speichern";
+            return {
+                gruen: ph.every((p) => p.p95 <= 0.1 && p.max <= 16.7 && p.wegen === 0),
+                zahl: "Speicher-Bild frisch " + zeile(j.frisch) + " · nach " + j.edits.n + " Edits " + zeile(j.edits) + " (Soll p95 ≤ 0,1)",
+            };
+        },
+        pfad: SPEICHER_PFAD.concat(["speicher-faden.js"]),
+        quelle: "2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
+    },
+    {
         kriterium: "speicher.K3",
         staffel: 1,
         geraet: "headless",
@@ -822,6 +1139,44 @@ module.exports = [
         quelle: "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen",
     },
     {
+        kriterium: "speicher.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // speicher-zwei `bild` (Rezept linse: am Gerät die Karte, ohne Karte das Software-Holz): am Bach der Mess-Wiese
+        // (welt-boot uferStellen — das Wasser zeichnet im Blick) setzt der Spieler einen Stein-Block 6 m vor sich und gräbt eine
+        // Grube (r 2 m) 9 m vor sich ans Ufer; die Welt steht, die Bühne (Mittag · Sonne · Sommer, das Wetter als Wort, die Uhr
+        // gehalten) — Ausgabe-Bild A 320×180. Der Stand ist fest (__stand), die Seite lädt neu (dasselbe Profil: die
+        // Wiederkehr), derselbe Ort und Blick, Bild B. diff = Anteil der Pixel mit |ΔLuma| > 8 (von 255); der Pflicht-Inhalt:
+        // Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick der Kamera (Third, Neigung −0,5), das Wasser zeichnet.
+        // Daneben das RAUSCHEN der Bahn (derselbe Blick ohne Neuladen) und die drei Bilder neben der Ausgabe ({AUS}-vor/-vor2/-nach.png).
+        befehl: ["bash", "-c", SPEICHER_ZWEI + 'bild --json "$A"'],
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            if (!j || !(j.diff >= 0)) return { gruen: false, zahl: "kein Bild-Rundlauf (Exit " + lauf.exit + ")" };
+            const ganz = (q) => !!q && q.bau && q.grube && q.wasser > 0;
+            return {
+                gruen: j.diff <= 1 && ganz(j.vor) && ganz(j.nach),
+                zahl:
+                    "bild-diff " + (+j.diff).toFixed(2) + " % (Soll ≤ 1; Rauschen ohne Neuladen " + (+j.rauschen).toFixed(2) +
+                    " %) · Pflicht vor " + JSON.stringify(j.vor) + " · nach " +
+                    JSON.stringify(j.nach) + " · " + ((j.adapter && (j.adapter.renderer || j.adapter.vendor)) || "?"),
+            };
+        },
+        pfad: SPEICHER_PFAD.concat([
+            "speicher-faden.js",
+            "stamm/bild-himmel.js",
+            "stamm/wasser-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/vegetation-baum.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+        ]),
+        quelle: "2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
+    },
+    {
         kriterium: "speicher.K5",
         staffel: 1,
         geraet: "headless",
@@ -871,29 +1226,4 @@ module.exports = [
 ];
 
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
-module.exports.fehlt = [
-    {
-        kriterium: "klang.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "m15-schritt misst nur die Schritte je Stoff; kein Abgriff am Motor über die Drehzahl (klang-core FAHRT), an der Landung nach Aufprall und am Doppler einer Vorbeifahrt",
-    },
-    {
-        kriterium: "speicher.K2",
-        staffel: 2,
-        befehl: null,
-        grund: "kein Werkzeug fährt 2 h Spiel mit 10 000 Edits und ordnet Frames > 16,7 ms dem Speichern zu; echt-k1 misst nur die frische Welt",
-    },
-    {
-        kriterium: "speicher.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "m16-k2k4 (bild-diff 6,75 % am 21.10., Radeon) setzt Bau und Edit, bringt aber kein Wasser sicher ins Bild: der Pflicht-Inhalt der Staffel (Bauten, Edits, Wasser) ist im Urteil nicht prüfbar",
-    },
-    {
-        kriterium: "streaming.K4",
-        staffel: 2,
-        befehl: null,
-        grund: "die Faden-Linse (`diag-worker-dichte --faden`, Zweig hydro-faden) läuft nur am Null-Renderer; keine Zählung synchroner Bauten im echten Spiel an Radeon und GTX",
-    },
-];
+module.exports.fehlt = [];
