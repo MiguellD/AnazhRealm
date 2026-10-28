@@ -1092,7 +1092,7 @@ function booteWelt(page, name = "der Boot der Welt") {
     return page.evaluate(async (name) => {
         const start = performance.now();
         await window.__weltDa();
-        for (const weiter = window.__deckel(name, 7500); weiter(); ) {
+        for (const weiter = window.__deckel(name, 7500); weiter();) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
                 try {
@@ -1111,12 +1111,12 @@ function booteWelt(page, name = "der Boot der Welt") {
 }
 
 // ZWEI SEITEN IM MESH (smoke-webrtc · smoke-copresence): save- und signaling-server auf den eigenen Ports (`eigenePorte` der
-// Variablen portEnv, signalEnv), ein WebGL-Browser mit den Seiten A und B (1024×640); beide laden das Spiel, bis init
+// Variablen portEnv, signalEnv), im Browser des Aufrufers (sein Rezept) die Seiten A und B (1024×640); beide laden das Spiel, bis init
 // durchlief (`_gameLoopTick`: init wartet auf den IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft —
 // ein Raum-Beitritt davor fiele in init hinein), `vor(seite, i)` läuft vor dem Beitritt (die Namen der Ko-Präsenz), dann
 // treten beide demselben Raum bei (der roomOverride zwingt Seiten verschiedener worldId zusammen), bis beide `meshActive`
 // melden (alle Peer-Kanäle offen). Liefert {seiten, peerIds, ende}; `ende` schließt Browser und Server.
-async function zweiImMesh(portEnv, signalEnv, raum, vor = async () => {}) {
+async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {}) {
     const [port, signal] = await eigenePorte(portEnv, signalEnv);
     const env = { PORT: String(port), ANAZH_SIGNALING_PORT: String(signal) };
     console.log("Starte save-server + signaling-server ...");
@@ -1124,10 +1124,6 @@ async function zweiImMesh(portEnv, signalEnv, raum, vor = async () => {}) {
         await startProc("save-server.js", /läuft/, env),
         await startProc("signaling-server.js", /lauscht/, env),
     ];
-    const browser = await starteBrowser({
-        art: "webgl",
-        zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"],
-    });
     const ende = async () => (await browser.close().catch(() => {}), server.forEach((p) => p.kill()));
     try {
         const seiten = [await browser.newPage(), await browser.newPage()];

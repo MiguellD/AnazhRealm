@@ -21,14 +21,15 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { halteBis, waitFor, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
 
 // Die eigenen Ports: COPRESENCE_PORT und COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `zweiImMesh`) — nie
 // 4312/4313, die Server des Schöpfers. Die Namen setzt jede Seite vor dem Beitritt — die peer-join-Injektion trägt sie in
 // die Fremd-Welt.
 (async () => {
     const { errs: failures, check } = pruefer();
-    const mesh = await zweiImMesh("COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT", "smoke-copresence-room", (p, i) =>
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
+    const mesh = await zweiImMesh(browser, "COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT", "smoke-copresence-room", (p, i) =>
         p.evaluate((n) => (window.anazhRealm.state.player.name = n), ["Anna", "Bo"][i])
     );
     try {

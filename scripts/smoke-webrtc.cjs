@@ -11,7 +11,7 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { ROOT, waitFor, hauptLauf, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
+const { starteBrowser, ROOT, waitFor, hauptLauf, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const fs = require("fs");
 
@@ -100,9 +100,10 @@ const W17JS_WORLD_HTML = `<!doctype html>
 
 hauptLauf(async () => {
     const { errs: failures, check } = pruefer();
-    const mesh = await zweiImMesh("WEBRTC_PORT", "WEBRTC_SIGNAL_PORT", "smoke-webrtc-room");
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
+    const mesh = await zweiImMesh(browser, "WEBRTC_PORT", "WEBRTC_SIGNAL_PORT", "smoke-webrtc-room");
     try {
-        const [pageA, pageB, peerIdA, peerIdB] = [...mesh.seiten, ...mesh.peerIds];
+        const [pageA, pageB, peerIdA] = [...mesh.seiten, ...mesh.peerIds];
         check("Seite A: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
         check("Seite B: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
 
