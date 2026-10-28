@@ -45,6 +45,107 @@ function geklemmteStufe(listeJson, wahl) {
     return st;
 }
 
+// DER ε-DRAHT EINER DOMÄNE (Nervensystem §ε — porta, schmiede, fachwerk, vehicle: dieselbe Probe, nie vier Abschriften).
+// In der Seite: `await page.evaluate(epsilonSeite, w)` mit w = { bp (der Auto-Klon), donor (die Substanz), preset, entry (der
+// Entry-Typ, sonst bp), praefix, stufen ([0]), wahl (die Distanz-Wahl der Klemme, null = keine) } — B das Buch nach dem
+// ready-Handshake, D der Auto-Blueprint am EINEN Chokepoint, P die Place-Auflösung, E das Asset je Stufe, F der Schlüssel der Wahl.
+async function epsilonSeite(w) {
+    await window.__weltDa();
+    const r = window.anazhRealm;
+    const A = r.constructor;
+    const f = r._ensureAssetFoundry();
+    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
+    const fehler = (x) => (x && x.message) || String(x);
+    const rez = f.recipes[w.preset];
+    const out = { b: { kind: rez.kind, s: rez.s, anzahl: Object.values(f.recipes).filter((x) => x && x.kind === rez.kind).length, ks: JSON.parse(JSON.stringify(A._studioRenderConfig.lod.kindStages)) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
+    const { d, p, e } = out;
+    try {
+        const B = r.state.blueprints || {};
+        const bp = B[w.bp];
+        const sub = (A.KIND_SUBSTANCE || {})[w.donor];
+        const gleich = (k) => !!bp && !!sub && JSON.stringify(bp[k] || null) === JSON.stringify(sub[k] || null);
+        Object.assign(d, {
+            blueprint: !!bp,
+            autoSpecies: bp ? bp._foundryAutoSpecies : null,
+            grownSpecies: bp ? bp._grownSpecies || null : "kein-bp",
+            label: bp ? bp.label : null,
+            parts: bp && Array.isArray(bp.parts) ? bp.parts.length : 0,
+            builtIn: bp ? !!bp.builtIn : null,
+            donorAbsent: !B[w.donor],
+            substanzParts: sub && Array.isArray(sub.parts) ? sub.parts.length : 0,
+            clonePartsMatch: gleich("parts"),
+            cloneConnMatch: gleich("connections"),
+            presetResolves: r._foundryPresetFor(w.bp),
+            entryResolves: r._foundryPresetForEntry({ type: w.entry || w.bp }),
+        });
+    } catch (x) {
+        d.err = fehler(x);
+    }
+    try {
+        const pol = r._placePolicyFor(rez);
+        Object.assign(p, { mode: pol.mode, siteTag: pol.siteTag, dispatch: r._placeDispatch(pol, { id: w.preset }) });
+        r._forestExtraCache = null;
+        p.inExtras = r._forestExtraSpecies().some((x) => String(x.species).indexOf(w.praefix) === 0);
+        r._forestExtraCache = null;
+    } catch (x) {
+        p.err = fehler(x);
+    }
+    try {
+        for (const L of w.stufen || [0]) {
+            const meshes = await Promise.race([r._foundryRequest(w.preset, 7, L), new Promise((ja) => setTimeout(() => ja(null), 45000))]);
+            const n = (e.meshCount[L] = Array.isArray(meshes) ? meshes.length : -1);
+            e.fern = e.fern || (n > 0 && meshes.some((m) => m && m.kind === "__fern" && m.huelle && Array.isArray(m.huelle.teile)));
+            if (L !== (w.stufen || [0])[0] || !(n > 0)) continue;
+            e.hasMatColor = meshes.some((m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3);
+            const g = r._foundryBuildGroup(meshes);
+            e.groupChildren = g && g.children ? g.children.length : 0;
+            e.allHaveColor = !!g && g.children.every((ch) => !!(ch.geometry && ch.geometry.attributes && ch.geometry.attributes.color));
+            if (g) g.traverse((o) => o.isMesh && o.geometry && o.geometry.dispose()); // kein Leck in der Probe
+        }
+    } catch (x) {
+        e.err = fehler(x);
+    }
+    if (w.wahl != null)
+        try {
+            if (!f.requested) f.requested = new Set();
+            const vor = new Set(f.requested);
+            r._foundryFlattenFor({ seed: 7 }, w.preset, w.wahl);
+            out.f.key = [...f.requested].find((k) => !vor.has(k) && k.startsWith(w.preset + "|")) || null;
+        } catch (x) {
+            out.f.err = fehler(x);
+        }
+    return out;
+}
+
+// Der Spruch des ε-Drahts — dieselben Wände je Domäne: w wie oben, dazu name (das Werk im Satz), art, anzahl (Rezepte der Art im
+// Buch), teile (Parts der Substanz), label (oder null), place { mode, siteTag, dispatch } (oder null); `kern` = seitenStufen.
+function epsilonUrteil(check, { b, d, p, e }, w, kern) {
+    const stufen = w.stufen || [0];
+    check(`B: das LIVE-Buch traegt ${w.preset} als kind:${w.art} (Worker-Draht lebt)`, b.kind === w.art, String(b.kind));
+    check(`B: alle ${w.anzahl} Rezepte der Art ${w.art} im Buch`, b.anzahl === w.anzahl, String(b.anzahl));
+    const ab = stufenAbweichung(b.ks, kern);
+    check("B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)", ab.length === 0, ab.join(" · ") || `${Object.keys(kern).length} Arten`);
+    check(`D: Auto-Blueprint ${w.bp} registriert (Donor-Klon)`, d.blueprint === true && d.parts >= w.teile, d.err || `parts=${d.parts}`);
+    check(`D: die Herkunfts-Marke sitzt (_foundryAutoSpecies == ${w.preset})`, d.autoSpecies === w.preset);
+    check(`D: KEIN _grownSpecies (${w.name} ist keine gewachsene Art)`, d.grownSpecies === null, String(d.grownSpecies));
+    if (w.label) check(`D: das Label reist aus dem Rezept (lab == ${w.label})`, d.label === w.label, String(d.label));
+    check(`D: der Alt-Donor ${w.donor} ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (${w.teile} Parts)`, d.donorAbsent === true && d.substanzParts === w.teile, `substanzParts=${d.substanzParts}`);
+    check(`D: der Auto-Klon traegt die Substanz byte-gleich (${w.bp} parts+connections == KIND_SUBSTANCE.${w.donor})`, d.clonePartsMatch && d.cloneConnMatch);
+    check(`D: die generische ${w.praefix}-Regel loest auf (${w.bp} -> ${w.preset})`, d.presetResolves === w.preset, String(d.presetResolves));
+    const entry = (w.entry || w.bp).slice(w.praefix.length);
+    check(`D: der Entry-Pfad loest auf (_foundryPresetForEntry, ${w.entry || w.bp} -> ${entry})`, d.entryResolves === entry, String(d.entryResolves));
+    if (w.place) {
+        const { mode, siteTag, dispatch } = w.place;
+        check(`P: die Place-Aufloesung liest die Rezept-DATEN (mode "${mode}", siteTag ${siteTag})`, p.mode === mode && p.siteTag === siteTag, p.err || `${p.mode}/${p.siteTag}`);
+        check(`P: Dispatch ${dispatch} (N5.6 — die Welt streut ${w.name} nie)`, p.dispatch === dispatch, String(p.dispatch));
+        check(`P: keine ${w.praefix}-Nische in der Wald-Liste`, p.inExtras === false);
+    }
+    check(`E: der Worker liefert ${w.name} auf den Stufen ${stufen} (Meshes > 0 je Stufe)`, stufen.every((L) => e.meshCount[L] > 0), e.err || JSON.stringify(e.meshCount));
+    check("E: die Material-Farbe reist mit (mat.color)", e.hasMatColor === true);
+    check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", e.groupChildren > 0, String(e.groupChildren));
+    check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", e.allHaveColor === true);
+}
+
 // Selbsttest: ein Buch mit einer abgeschriebenen Liste muss beim Namen fallen, ein treues Buch nicht.
 function selbsttest() {
     const kern = { gate: "[0,1,2,3]", tree: "[0,1,2]" };
@@ -60,4 +161,4 @@ function selbsttest() {
     );
 }
 
-module.exports = { kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, selbsttest };
+module.exports = { kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };

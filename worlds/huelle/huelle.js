@@ -120,6 +120,50 @@
         return z.min === 0 && z.max === 1 && z.step === 1;
     }
 
+    // ── DER GANG (studios.K2): Griff → erstes Bild mit neuem Bau-Hash. Der Bau-Hash ist der Plan der Bühne (die Werte der
+    // Regler-Zeilen samt Zustand: Rezept, Saat — der Kern baut deterministisch, gleicher Plan = gleiche Bytes). Ein Griff stempelt
+    // seine Zeit am Eingabe-Ereignis; hat der Zeichner der Seite den Plan angewandt (bei bzw. nachRuhe kehrte zurück), trägt der
+    // nächste rAF-Rückruf (er läuft nach dem Render-Rückruf der Seite im selben Bild) das Bild. Leser: diag-studio-huelle --engine.
+    function bauHash(s) {
+        var t = JSON.stringify(s);
+        var h = 0x811c9dc5;
+        for (var i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 0x01000193);
+        return (h >>> 0).toString(16);
+    }
+    var gang = { griffe: [], bild: null };
+    var gangBild = 0;
+    function jetzt() {
+        return wurzel.performance ? wurzel.performance.now() : Date.now();
+    }
+    function imBild(fn) {
+        return wurzel.requestAnimationFrame ? wurzel.requestAnimationFrame(fn) : setTimeout(fn, 16);
+    }
+    function gangGriff(z, t0) {
+        gang.griffe.push({ id: z.id, uniform: !!z.uniform, t0: t0, hash: null, t1: null });
+        if (gang.griffe.length > 256) gang.griffe.shift();
+    }
+    function gangBau(s) {
+        var h = bauHash(s);
+        var neu = gang.griffe.filter(function (g) {
+            return g.hash == null;
+        });
+        if (!neu.length || h === gang.bild) return;
+        neu.forEach(function (g) {
+            g.hash = h;
+        });
+        if (gangBild) return;
+        gangBild = imBild(function () {
+            gangBild = 0;
+            var t = jetzt();
+            gang.griffe.forEach(function (g) {
+                if (g.hash != null && g.t1 == null) {
+                    g.t1 = t;
+                    gang.bild = g.hash;
+                }
+            });
+        });
+    }
+
     // ── DER REGLER-GENERATOR ──
     // zeilen: die PARAMS-Zeilen des Kerns (oder Bedienungs-Zeilen der Shell in DERSELBEN Form).
     // opt: werte (P, in place) · start(z) Startwert ohne Wert · format(z, v) · bei(id, v, z) sofort · nachRuhe(ids, bau)
@@ -139,6 +183,8 @@
         var vorher = null;
         var uhr = null;
         var bild = 0;
+        var gesetzBild = 0;
+        var gesetzOffen = {};
         var ruheMs = opt.ruheMs == null ? 180 : opt.ruheMs;
         var sitz = opt.sitzung || null;
         function startwert(z) {
@@ -170,36 +216,59 @@
         function flush() {
             uhr = null;
             bild = 0;
+            gesetzOffen = {};
             var ids = Object.keys(offen);
             offen = {};
             if (!ids.length) return;
             var a = vorher;
             vorher = null;
             var bau = ids.some(function (id) {
-                return !(nachId[id] && nachId[id].dyn);
+                return !(nachId[id] && (nachId[id].dyn || nachId[id].uniform));
             });
             // erst die Folge (ein Meta-Gesetz leitet weitere Achsen ab), dann der Schritt: EIN Rückgängig für Zug + Folge
-            if (opt.nachRuhe) opt.nachRuhe(ids, bau);
+            if (opt.nachRuhe) {
+                opt.nachRuhe(ids, bau);
+                gangBau(stand());
+            }
             if (sitz && a) {
                 var d = diffVon(a, sitz.schnapp());
                 if (d) sitz.merke(d);
             }
         }
-        function planen() {
+        function stand() {
+            return sitz ? sitz.schnapp() : schnapp(werte);
+        }
+        // EIN GESETZ-WERT WARTET NIE (studios.K2): eine Zeile mit `uniform: true` im Vertrag wirkt im nächsten Bild (nachRuhe
+        // ohne Neubau), die Ruhe schreibt nur noch den Rückgängig-Schritt.
+        function gesetzJetzt() {
+            gesetzBild = 0;
+            var ids = Object.keys(gesetzOffen);
+            gesetzOffen = {};
+            if (!ids.length) return;
+            opt.nachRuhe(ids, false);
+            gangBau(stand());
+        }
+        function planen(z) {
             if (ruheMs > 0) {
                 clearTimeout(uhr);
                 uhr = setTimeout(flush, ruheMs);
+                if (z.uniform && opt.nachRuhe) {
+                    gesetzOffen[z.id] = 1;
+                    if (!gesetzBild) gesetzBild = imBild(gesetzJetzt);
+                }
             } else if (!bild) {
-                bild = wurzel.requestAnimationFrame ? wurzel.requestAnimationFrame(flush) : setTimeout(flush, 16);
+                bild = imBild(flush);
             }
         }
-        function eingabe(z, v) {
-            if (!vorher) vorher = sitz ? sitz.schnapp() : schnapp(werte);
+        function eingabe(z, v, t0) {
+            if (!vorher) vorher = stand();
             werte[z.id] = v;
             anzeigen(z);
+            gangGriff(z, t0 == null ? jetzt() : t0);
             if (opt.bei) opt.bei(z.id, v, z);
+            if (!opt.nachRuhe) gangBau(stand()); // ohne nachRuhe wendet bei den Plan an
             offen[z.id] = 1;
-            planen();
+            planen(z);
         }
         var R = {
             werte: werte,
@@ -254,6 +323,7 @@
             var schalter = istSchalter(z);
             var zeile = el("div", "h-regler" + (schalter ? " h-schalter" : "") + (kl.zeile ? " " + kl.zeile : ""));
             zeile.setAttribute("data-regler", z.id);
+            if (z.uniform) zeile.setAttribute("data-uniform", "1"); // die Klasse der Zeile steht im Vertrag (≤ 200 ms)
             var kopf = el("div", "h-kopf" + (kl.kopf ? " " + kl.kopf : ""));
             var lab = el("label", "h-lab", z.lab || z.id);
             if (typeof z.law === "string" && z.law) lab.title = z.law;
@@ -274,8 +344,8 @@
                 zeile.classList.add("h-fest");
             }
             els[z.id] = { inp: inp, wert: wert, schalter: schalter };
-            inp.addEventListener(schalter ? "change" : "input", function () {
-                eingabe(z, schalter ? (inp.checked ? 1 : 0) : +inp.value);
+            inp.addEventListener(schalter ? "change" : "input", function (ev) {
+                eingabe(z, schalter ? (inp.checked ? 1 : 0) : +inp.value, ev.timeStamp);
             });
             kopf.appendChild(lab);
             if (sitz && sitz.sperren && !z.fest) {
@@ -320,12 +390,26 @@
         return R;
     }
 
-    // ── DIE SITZUNG — Seed · Sperre · Undo/Redo ──
-    // opt: werte (P) · anwenden(ids, quelle) nach Undo/Redo/Würfel · zustand() / zustandSetzen(z) für Nicht-Zahlen
+    // ── DIE SITZUNG — Seed · Sperre · Undo/Redo · A/B · der Stand über das Neuladen ──
+    // opt: werte (P) · anwenden(ids, quelle) nach Undo/Redo/Würfel/A-B/Laden · zustand() / zustandSetzen(z) für Nicht-Zahlen
     //      (Preset, Kultur …) · seed · beiSeed(seed) · sperren (Schloss je Achse) · tasten (false = keine Tasten)
+    // DIE SITZUNG, DIE BLEIBT (studios.K2): jeder Schritt schreibt den Stand der Seite (Werte + Zustand + Same) in den EINEN
+    // Speicher-Weg der Welt (localStorage, Schlüssel `anazh.sitzung.<seite>`, wie `anazh.vibePass`); beim Öffnen legt ihn die
+    // Sitzung über den Weg des Verlaufs zurück (anwenden(ids, "laden")). A = der Stand, mit dem die Seite öffnete (gebaut),
+    // B = der Entwurf; ein Zug unter A wird der neue Entwurf.
+    function speicherOrt() {
+        var l = wurzel.location;
+        if (!l) return null;
+        var studio = /[?&]studio=([\w-]+)/.exec(l.search || "");
+        return "anazh.sitzung." + l.pathname + (studio ? "?studio=" + studio[1] : "") + (sitzungZahl++ ? "#" + sitzungZahl : "");
+    }
+    var sitzungZahl = 0;
     function sitzung(opt) {
         opt = opt || {};
         var werte = opt.werte || {};
+        var ort = speicherOrt();
+        var abA = null;
+        var abB = null;
         var stapel = [];
         var zeiger = 0;
         var gesperrt = {};
@@ -358,7 +442,9 @@
                 stapel.push(d);
                 if (stapel.length > 200) stapel.shift();
                 zeiger = stapel.length;
+                abB = null; // ein Zug unter A ist der neue Entwurf
                 malen();
+                speichern();
             },
             // EINE Tat = EIN Schritt: Werte (und Zustand) vorher ↔ nachher.
             schritt: function (tat) {
@@ -370,12 +456,14 @@
                 return r;
             },
             zurueck: function () {
+                if (abB) S.ab("B"); // der Verlauf ist der des Entwurfs
                 abschliessen();
                 if (!zeiger) return toast("Nichts mehr rückgängig zu machen."), false;
                 anwendenDiff(stapel[--zeiger], 0, "zurueck");
                 return true;
             },
             vor: function () {
+                if (abB) S.ab("B");
                 abschliessen();
                 if (zeiger >= stapel.length) return toast("Nichts zum Wiederholen."), false;
                 anwendenDiff(stapel[zeiger++], 1, "vor");
@@ -388,6 +476,23 @@
                 S.seed = (n >>> 0) || 1;
                 if (anzeige && anzeige.seed) anzeige.seed.value = String(S.seed);
                 if (!still && opt.beiSeed) opt.beiSeed(S.seed);
+                speichern();
+            },
+            // A/B gegen den gebauten Stand: "A" zeigt den Stand der Öffnung, "B" den Entwurf — kein Rückgängig-Schritt
+            ab: function (seite) {
+                abschliessen();
+                if (!abA || (seite === "A") === !!abB) return false;
+                var jetzt_ = S.schnapp();
+                var ziel = seite === "A" ? abA : abB;
+                if (seite === "A") abB = jetzt_;
+                else abB = null;
+                var d = diffVon(jetzt_, ziel);
+                if (d) anwendenDiff(d, 1, seite === "A" ? "a" : "b");
+                malen();
+                return true;
+            },
+            zeigt: function () {
+                return abB ? "A" : "B";
             },
             // Der Würfel: ein neuer Same zieht jede FREIE Achse der Zeilen aus dem Gesetz (min..max, auf step), EIN Schritt.
             wuerfeln: function (zeilen, neuerSame) {
@@ -426,7 +531,19 @@
                 l.appendChild(z);
                 l.appendChild(v);
                 l.appendChild(n);
-                anzeige = { z: z, v: v, n: n, seed: null };
+                anzeige = { z: z, v: v, n: n, seed: null, ab: [] };
+                if (lo.ab !== false)
+                    ["A", "B"].forEach(function (seite) {
+                        var k = el("button", "h-knopf h-ab", seite);
+                        k.type = "button";
+                        k.setAttribute("data-ab", seite);
+                        k.title = seite === "A" ? "A · gebaut: der Stand, mit dem die Seite öffnete" : "B · Entwurf: dein Stand";
+                        k.addEventListener("click", function () {
+                            S.ab(seite);
+                        });
+                        l.appendChild(k);
+                        anzeige.ab.push(k);
+                    });
                 if (lo.seed !== false) {
                     var lab = el("label", "h-same", "Same");
                     var inp = el("input", "h-same-feld");
@@ -467,7 +584,45 @@
             anzeige.z.disabled = !zeiger;
             anzeige.v.disabled = zeiger >= stapel.length;
             anzeige.n.textContent = zeiger + "/" + stapel.length;
+            anzeige.ab.forEach(function (k) {
+                k.classList.toggle("an", k.getAttribute("data-ab") === S.zeigt());
+            });
         }
+        function speichern() {
+            if (!ort || !wurzel.localStorage || !abA) return; // vor dem Laden schreibt nichts über den Stand von gestern
+            try {
+                wurzel.localStorage.setItem(ort, JSON.stringify({ v: 1, werte: abB || S.schnapp(), seed: S.seed }));
+                gang.gespeichert = jetzt();
+            } catch (e) {
+                console.error("[huelle] die Sitzung ist nicht gespeichert (" + ort + "): " + e.message);
+            }
+        }
+        // DAS LADEN nach dem Aufbau der Seite (ihr Skript lief, die Regler stehen): der Stand von gestern als EIN Diff über den
+        // Weg des Verlaufs; eine Regler-Zeile, die der Stand nicht kennt (der Vertrag wuchs), behält ihren Startwert.
+        function laden() {
+            var alt = null;
+            try {
+                alt = ort && wurzel.localStorage ? JSON.parse(wurzel.localStorage.getItem(ort) || "null") : null;
+            } catch (e) {
+                console.error("[huelle] die Sitzung " + ort + " ist nicht lesbar: " + e.message);
+            }
+            if (alt && alt.v === 1 && alt.werte) {
+                var d = diffVon(S.schnapp(), alt.werte);
+                for (var k in d || {})
+                    if (d[k][1] === undefined && regler_.some(function (r) {
+                            return r.zeilen.some(function (z) {
+                                return z.id === k;
+                            });
+                        }))
+                        delete d[k];
+                if (alt.seed) S.seed = alt.seed >>> 0 || S.seed;
+                if (d && Object.keys(d).length) anwendenDiff(d, 1, "laden");
+            }
+            abA = S.schnapp();
+            gang.geladen = ort || true;
+            malen();
+        }
+        setTimeout(laden, 0);
         // Der Zustand zuerst (ein Preset setzt seine Werte), die Werte darüber (der Regler-Zug nach dem Preset).
         function anwendenDiff(d, i, quelle) {
             var ids = [];
@@ -483,7 +638,9 @@
             });
             if (opt.anwenden) opt.anwenden(ids, quelle);
             malen();
-            toast((quelle === "zurueck" ? "↶ rückgängig · " : "↷ wiederholt · ") + zeiger + "/" + stapel.length, 1200);
+            speichern();
+            var wort = { zurueck: "↶ rückgängig · ", vor: "↷ wiederholt · ", a: "A · gebaut", b: "B · Entwurf", laden: "die Sitzung von zuletzt" };
+            toast(wort[quelle] + (quelle === "zurueck" || quelle === "vor" ? zeiger + "/" + stapel.length : ""), 1200);
         }
         if (opt.tasten !== false && wurzel.addEventListener)
             wurzel.addEventListener("keydown", function (ev) {
@@ -1022,6 +1179,9 @@
         kosten: kosten,
         zaehle: zaehle,
         bruecke: bruecke,
+        gang: function () {
+            return gang;
+        },
         reisender: function () {
             return reisender;
         },
