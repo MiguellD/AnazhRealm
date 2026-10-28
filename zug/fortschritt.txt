@@ -736,3 +736,4 @@
 2026-10-28 21:27:35 takt18c-gtx fahrzeug.K3#2 GRÜN 3.8 · 14/17
 2026-10-28 21:31:09 takt18c-gtx fahrzeug.K4#2 GRÜN 3.5 · 15/17
 2026-10-28 21:33:13 takt18c-gtx siedlung.K2#2 GRÜN 1.9 · 16/17
+2026-10-28 21:38:54 takt18c-gtx siedlung.K5#1 GRÜN 5.6 · 17/17
