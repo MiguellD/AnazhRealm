@@ -1509,7 +1509,7 @@ function probe(selbsttest) {
             check(
                 "K7 der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu und wirft",
                 a.k7.gehalten && a.k7.neuGelegt && a.k7.wirft,
-                JSON.stringify(a.k7)
+                a.k7
             );
         // DAS URTEIL VON K8 (auch für die Selbsttest-Täter S11–S13): die Grenze des Halts ist höchstens das halbe Budget, die Lage
         // hält die Folge, kein echter Werfer fehlt, über dem Rand wählt jede Kaskade neu
@@ -1526,7 +1526,7 @@ function probe(selbsttest) {
             check(
                 "K8 die Wahl hält über die Stufen der Sonne (ohne Saum): die Grenze des Halts ist das halbe Budget, die Lage hält über eine Neu-Wahl mitten in der Drehung und trägt jeden echten Werfer; über dem Rand wählt jede Kaskade neu",
                 k8gut(a.k8),
-                JSON.stringify(a.k8)
+                a.k8
             );
         check(
             "K5 die Karte trägt die längste Kante bei texelM (kleinste Zweierpotenz)",
@@ -1552,7 +1552,7 @@ function probe(selbsttest) {
         check(
             "W5 der Boden außerhalb der Bundles: das Tal empfängt, der Hang wirft",
             !!a.w5 && a.w5.talDrin === true && a.w5.hangWirft === true,
-            JSON.stringify(a.w5)
+            a.w5
         );
         check(
             "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Insel · Bauplan-Bau)",
@@ -1624,7 +1624,7 @@ function probe(selbsttest) {
         check(
             "Z1 Karten-Ziele: Farbe r8 ohne GPU-Textur (WebGPU) · Tiefe 16 bit · benannt",
             a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt && a.z1.ohneFarbe,
-            JSON.stringify(a.z1)
+            a.z1
         );
         check(
             "Z2 Bildziele je Leser: EINE Szenen-Tiefe (_szeneTiefe baut den einen Knoten), kein namenloses Ziel",
@@ -1636,7 +1636,7 @@ function probe(selbsttest) {
         check(
             "A1 die CSM fährt Geburt und Fit des Hosts — der Fit im Haken des Haupt-Passes, vor jeder Karte (Konsum)",
             a.a1.eigeneMethode && a.a1.konsum && a.a1.addonStumm,
-            JSON.stringify(a.a1.zaehl)
+            a.a1.zaehl
         );
         check("A1 das Addon schreibt keine Box mehr (updateFrustums lässt die Kaskaden-Kameras stehen)", a.a1.zweitStumm);
         check("A1 kein Karten-Umbau im laufenden Frame", a.a1.keinUmbau);
@@ -1655,7 +1655,7 @@ function probe(selbsttest) {
             check(
                 "S3 Selbsttest: die alte Hüllen-Regel (nur Bundles) macht W5 rot",
                 !!a.s3 && a.s3.talDrin === false && a.s3.hangWirft === false,
-                JSON.stringify(a.s3)
+                a.s3
             );
             check(
                 "S8 Selbsttest: die alte Regel (der ganze Ring in jedem Pass) macht W7 rot",

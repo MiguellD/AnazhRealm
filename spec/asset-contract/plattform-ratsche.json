@@ -95,11 +95,11 @@
         },
         "ofen": {
             "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
-            "faelle": 526,
-            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut; mensch.K1: die Mengen-Stufe mensch-L2 bringt 36 Klassen, davon kippen cos 10 und sin 12 - die 460 alten Klassen stehen byte-gleich; mensch.K1 Staffel 2: die ferne Mengen-Stufe mensch-L3 bringt 30 Klassen, davon kippen cos 10 und sin 12 - die 496 alten stehen byte-gleich)",
+            "faelle": 510,
+            "probe": "jede Klasse des Ofen-Goldens (166 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks; A4: die Hoehlen-Kugel mensch-L0|socket|head ist Ton der Kopf-Haut; mensch.K1: die Mengen-Stufe mensch-L2 bringt 36 Klassen, davon kippen cos 10 und sin 12 - die 460 alten Klassen stehen byte-gleich; mensch.K1 Staffel 2: die ferne Mengen-Stufe mensch-L3 bringt 30 Klassen, davon kippen cos 10 und sin 12 - die 496 alten stehen byte-gleich; mensch.K4: der Leib der Menge ist EINE Hülle je Stufe - mensch-L2 und mensch-L3 tragen 50 statt 66 Klassen (je eine Stoff-Klasse leib statt neun Hüllen und Primitive), davon kippen cos 22 und sin 26 (vorher 20 und 24) - die 460 alten Klassen stehen byte-gleich)",
             "kippt": {
-                "cos": 273,
-                "sin": 226
+                "cos": 275,
+                "sin": 228
             },
             "taeter": {
                 "cos": "tetrapoda-core.js:2209 cos (frontYReach, die Reichweite des Vorderlaufs)",
