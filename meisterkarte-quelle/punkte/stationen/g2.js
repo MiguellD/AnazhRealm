@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -3131,6 +3131,133 @@ const stationen = [
         pfad: ["stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/dirigent-takt.js", "stamm/daten.js", "phyto-core.js", "stamm/vegetation-*.js",
             "scripts/werkbank.cjs", "scripts/lib/abnahme-urteil.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit",
+    },
+    // ───────── mensch.K4 Staffel 1 — der Kopf des Spielers an der Kamera des Spiels (Zweig w3v-leib-menge, Messschuld M7) ─────────
+    // Im Stand umkreist die Third-Kamera den Leib frei (`_loopCamera`: er dreht erst beim Gehen, Springen, Reiten oder einer
+    // gehaltenen Aktion auf die Gier). Die Pose des Spiels: an der Mess-Wiese in Third die Gier um π gedreht, 30 Bilder des
+    // echten Takts — der Leib bleibt (`leib` ≤ 0,01 rad), die Kamera steht vor dem Gesicht (`vorn`); dann die Soll-Tafel
+    // mensch-kopf aus dieser Pose: die Kamera im Abstand der Third-Kamera (`cameraThirdDistance`) vor dem Kopf
+    // (`werkbank bild --gesicht <d>`), die Klasse spieler:kopf/ (abnahme-urteil `sollTafelUrteil`, KOPF_SOLL im Bild). Die Tafel
+    // trägt keine REF dieser Klasse (die Kopf-Züge stehen im Gesetz): ihr Pfad fällt aus der Liste. GPU: an der Station.
+    (() => {
+        const st = sollKlasseStation({
+            kriterium: "mensch.K4",
+            id: "mensch-kopf",
+            klasse: "^spieler:kopf/",
+            vorher: [
+                "node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1",
+                "K=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh, y0 = pm.rotation.y; s.yaw = y0 + Math.PI; for (let i = 0; i < 30; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(30); } let k = null; pm.traverse((o) => { if (!k && o.name === \"head\") k = o; }); const h = k.getWorldPosition(new T.Vector3()), fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion())), c = s.camera.position; return { leib: +Math.abs(Math.atan2(Math.sin(pm.rotation.y - y0), Math.cos(pm.rotation.y - y0))).toFixed(3), vorn: (c.x - h.x) * fw.x + (c.z - h.z) * fw.z > 0, abstand: +h.distanceTo(c).toFixed(2), d: s.cameraThirdDistance };' | erg); echo \"KAMERA $K\"",
+            ],
+            schuesse: { third: "0 0 0 0 0 0 --gesicht \"$(node -e 'console.log(JSON.parse(process.argv[1]).d)' \"$K\")\" --spieler" },
+            pfad: ["koerper-core.js", "foundry-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js"],
+            quelle: "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf",
+        });
+        const tafel = st.urteil;
+        st.urteil = (j, lauf) => {
+            const k = jsonZeile(lauf.stdout, /^KAMERA /);
+            const u = tafel(j, lauf);
+            const pose = !!k && k.vorn === true && k.leib <= 0.01;
+            return {
+                gruen: pose && u.gruen,
+                zahl: (k ? "Spiel-Pose: Leib " + k.leib + " rad, Kamera " + (k.vorn ? "vor" : "hinter") + " dem Gesicht auf " + k.abstand + " m" : "ohne Spiel-Pose") + " · " + u.zahl,
+            };
+        };
+        st.pfad = st.pfad.filter((p) => !p.startsWith("spec/abnahme/ref-"));
+        return st;
+    })(),
+    // ───────── mensch.K4 Staffel 2 — die Menge: 50 Bewohner aus 50 Samen (Zweig w3v-leib-menge) ─────────
+    // Headless (Null-Renderer, 1920×1080): die Linse `bewohner --ort stadt-voll` (die Metropole, der Spieler am Markt, 7 Uhr, 600
+    // Takte) liefert roh die 50 Nächsten draußen — je Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah] (die Matrix seines
+    // Satzes: das eigene Genom über der Gestalt seines Typs, `_bewohnerGenome`), je Typ Dials, Maße der Vorlage in m und die
+    // Dreiecke seiner Senken (Leib · Wurf), die Bildpunkte je m am Rand der Nah-Wahl, die Kaskaden, den Takt; danach
+    // misst die Anatomie-Linse (`messe`) die Gesichtsmaße jedes Typs, dazu die Zeilen 2 und 3 des Kerns (Zeile GESICHT). Grün: 50 aus 50 Samen; keine zwei gleich
+    // (die Gestalt-Distanz je Paar: gleicher Typ und gleiche Farben — dann der größte Unterschied der Maße in Bildpunkten — unter
+    // 1 px ist gleich); die Höhe ±8 % um ihre Mitte, ihre Spanne ≥ 8 %; jedes Gesichtsmaß in MENSCH_SOLL (die Breiten × der Breite
+    // des Bewohners); je Typ Leib ≤ Zeile 2, Wurf ≤ Zeile 3; die 50 ≤ 150k Dreiecke (im Auge der Leib jedes, der Wurf je
+    // Kaskade; die Nah-Wahl trägt ihren Leib für sich); der Takt je 50 Bewohner ≤ 1 ms. Am Kopf des Zweigs (Cloud, 29.10.):
+    // 50 aus 50 Samen, Höhe 1,703–1,951 m um 1,82, Gesicht 50 von 50, Leib/Wurf je Typ 1700/360, die 50: 132 200 Dreiecke,
+    // 0,253 ms je 50 — ROT nur an „keine zwei gleich" (14 von 1 225 Paaren unter 1 px, je desselben Typs, min 0,284 px): die Farbe
+    // je Person verlangt den Knoten des Gang-Satzes (stoff-instanz `_gangSatzKnoten`). Mutanten ROT: zwei gleiche Samen
+    // (samen, gleich), die Zeile 2 halbiert (budget).
+    {
+        kriterium: "mensch.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "export KREATUR_TAKT_PORT=$(( {PORT} ))",
+                "node scripts/diag-kreatur-takt.cjs --proben bewohner --ort stadt-voll | tee \"$B-probe.txt\"",
+                "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\").split(\"\\n\").find((z) => /^\\s*(✅|❌) bewohner\\s/.test(z)); const m = JSON.parse(t.slice(t.indexOf(\"{\"))).stadt.menge; const A = require(\"./scripts/diag-mensch-anatomie.cjs\"), sb = A.ladeWelt(); const K = sb.__koerperCore; console.log(\"GESICHT \" + JSON.stringify({ typ: m.typ.map((x) => A.messe(sb, null, x.dials)), soll: K.MENSCH_SOLL, zeile: [2, 3].map((l) => K.PORTAL_RENDER_CONFIG.lod.budget.koerper[l].tris) }))' \"$B-probe.txt\"",
+            ].join("\n"),
+        ],
+        gpu: false,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "bewohner");
+            const g = jsonZeile(lauf.stdout, /^GESICHT /);
+            const m = z && z.stadt && z.stadt.menge;
+            if (!m || !g) return { gruen: false, zahl: "ohne Menge oder Gesicht (Exit " + lauf.exit + ")" };
+            const r3 = (x) => Math.round(x * 1000) / 1000;
+            const T = m.typ;
+            // je Bewohner seine Maße (m) und sein Kleid: die Vorlage seines Typs × Breite · Höhe · Tiefe
+            const B = m.je.map(([seed, t, h, b, d, nah]) => ({ seed, t, nah, b, mass: [b * h, h, d * h].map((x, e) => x * T[t].mass[e]) }));
+            const farbe = (x) => ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor", "gender"].map((k) => T[x.t].dials[k]).join();
+            let [min, paar, gleich] = [Infinity, null, 0];
+            for (let i = 0; i < B.length; i++)
+                for (let k = i + 1; k < B.length; k++) {
+                    const d = farbe(B[i]) === farbe(B[k]) ? Math.max(...B[i].mass.map((x, e) => Math.abs(x - B[k].mass[e]))) * m.pxM : 99;
+                    if (d < 1) gleich++;
+                    if (d < min) [min, paar] = [d, B[i].seed + "/" + B[k].seed];
+                }
+            const H = B.map((x) => x.mass[1]);
+            const mitte = H.reduce((a, h) => a + h, 0) / H.length;
+            const [hMin, hMax] = [Math.min(...H), Math.max(...H)];
+            const aus = [];
+            for (const k of ["kopfH", "kopfB", "augenAbstand", "augapfel", "iris", "mund"])
+                for (const x of B) {
+                    const v = g.typ[x.t][k] * (k === "kopfH" ? 1 : x.b);
+                    if (v < g.soll[k][0] || v > g.soll[k][1]) aus.push(k + " " + r3(v) + " (Typ " + x.t + ")");
+                }
+            const zeile = g.zeile;
+            const dreiecke = B.reduce((a, x) => a + T[x.t].dreiecke[1] * m.kaskaden + (x.nah ? 0 : T[x.t].dreiecke[0]), 0);
+            const takt50 = (m.takt[0] / z.stadt.ring.gesamt) * 50;
+            const rot = {
+                samen: !(B.length === 50 && new Set(B.map((x) => x.seed)).size === 50),
+                gleich: !(min >= 1),
+                hoehe: !(hMax <= 1.08 * mitte && hMin >= 0.92 * mitte && hMax - hMin >= 0.08 * mitte),
+                gesicht: aus.length > 0,
+                budget: !T.every((x) => x.dreiecke[0] <= zeile[0] && x.dreiecke[1] <= zeile[1]),
+                dreiecke: !(dreiecke <= 150000),
+                takt: !(takt50 <= 1),
+            };
+            const fehlt = Object.keys(rot).filter((k) => rot[k]);
+            return {
+                gruen: !fehlt.length,
+                zahl:
+                    B.length + " Bewohner aus " + new Set(B.map((x) => x.seed)).size + " Samen, " + T.length + " Typen · Gestalt-Distanz min " + r3(min) + " px (" + paar + "; " + gleich + " Paare unter 1 px) · Höhe " +
+                    r3(hMin) + "–" + r3(hMax) + " m um " + r3(mitte) + " · Gesicht " + (aus.length ? "außerhalb: " + aus.slice(0, 3).join(", ") : "50 von 50 in MENSCH_SOLL") + " · Leib/Wurf je Typ " +
+                    T.map((x) => x.dreiecke.join("/")).join(" ") + " (Zeilen " + zeile + ") · die 50: " + Math.round(dreiecke) + " Dreiecke · Takt " + m.takt[0] + " ms für " + z.stadt.ring.gesamt +
+                    " → " + r3(takt50) + " ms je 50" + (fehlt.length ? " · ROT " + fehlt.join(",") : ""),
+            };
+        },
+        pfad: [
+            "stamm/siedlung-bewohner.js",
+            "stamm/koerper-*.js",
+            "stamm/stoff-instanz.js",
+            "koerper-core.js",
+            "foundry-core.js",
+            "fachwerk-core.js",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/diag-mensch-anatomie.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
     },
     // haar.K1 Staffel 1 — der Wolf aus dem Gesetz der Tetrapoda (fellStreu) 3 m vor dem Ego-Auge, gehalten; arm: die Kamera 0,7 m
     // vor seinem Fell quer zum Leib, 0,5 m über seiner Mitte; third: 4 m quer, 1 m darüber (der Blick des Third). Soll: strich der REF
