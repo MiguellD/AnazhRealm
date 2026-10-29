@@ -496,14 +496,7 @@ async function checkBandTailleOmega5(ctx) {
             label: "Ω5-Werk",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0.75, z: 0 },
-                    size: { x: 1.5, y: 1.5, z: 1.5 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                },
+                __teil("box", "stein", 0, 0.75, 0, 1.5, 1.5, 1.5, { rotation: { x: 0, y: 0, z: 0 }, opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }] }),
             ],
             connections: [],
         };
@@ -783,7 +776,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             _grownSpecies: "baum_eiche",
             instanced: true,
             parts: [
-                { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("cylinder", "holz", 0, 0, 0, 1, 1, 1),
             ],
         };
         r.state.architectures = r.state.architectures || [];

@@ -36,6 +36,7 @@ const DAUER_S = {
     gier: 5,
     jagd: 77,
     herde: 44,
+    schwarm: 2,
     peer: 1,
     zufall: 1,
     nexus: 1,
@@ -127,21 +128,30 @@ async function headless(laeufe) {
             if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
             await einschwingen();
         };
-        // je fremde Welt (die Bühne, umgeschrieben) der zweite Lauf ihrer Probe: die Rampe des Querhangs und die Gegenprobe des
-        // Lebensraums (Tiere K4: die Wildnis anderer Saat, `g` = "lebensraum-gegen")
-        const g = "lebensraum-gegen";
-        for (const [p, feld, um, mehr] of [
-            ["querhang", "rampe", { playerPosition: { x: RAMPE.x, y: 40, z: RAMPE.z - 8 } }, { hangOrt: RAMPE }],
-            ["lebensraum", "gegen", { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } }],
-        ]) {
-            const mit = laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(p));
-            if (!mit.length) continue;
-            const json = Object.assign(JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")), um);
-            if (p === "lebensraum") json.worldMeta = { ...json.worldMeta, erbgut: undefined, worldId: g, slug: g, seed: g };
+        const mit = (probe) => laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(probe));
+        // je Probe ihre fremde Welt aus der Prüfbühne, ihr Feld am Ergebnis des eigenen Laufs und ihr Zusatz: die Rampe am
+        // Querhang, die Gegenprobe des Lebensraums (Tiere K4: die Wildnis anderer Saat)
+        const FREMD = {
+            querhang: ["rampe", { hangOrt: RAMPE }, (j) => (j.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 })],
+            lebensraum: [
+                "gegen",
+                {},
+                (j) => {
+                    delete j.worldMeta.erbgut;
+                    const id = "lebensraum-gegen";
+                    Object.assign(j.worldMeta, { worldId: id, slug: id, seed: id });
+                    Object.assign(j, { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } });
+                },
+            ],
+        };
+        for (const [p, [feld, zusatz, welt]] of Object.entries(FREMD)) {
+            if (!mit(p).length) continue;
+            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            welt(json);
             await zeit(p, () => fremdeWelt(json));
-            for (const [l, li] of mit) {
-                const z = await zeit(p, () => lauf({ proben: [p], taeter: l.taeter, ...mehr }));
-                if (aus[li][p]) aus[li][p][feld] = z[p] || (mehr && { fehler: "die Rampe lief nicht" });
+            for (const [l, li] of mit(p)) {
+                const z = await zeit(p, () => lauf({ proben: [p], taeter: l.taeter, ...zusatz }));
+                if (aus[li][p]) aus[li][p][feld] = z[p] || { fehler: "die fremde Welt lief nicht" };
             }
         }
     } finally {

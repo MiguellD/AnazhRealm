@@ -18,19 +18,14 @@
 //   node scripts/diag-charakter-achsen.cjs
 "use strict";
 const crypto = require("crypto");
-const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "schmiede-core.js"));
-require(path.join(root, "vehicle-core.js"));
-require(path.join(root, "klang-core.js"));
-const SC = globalThis.__schmiedeCore;
-const VC = globalThis.__vehicleCore;
-const KC = globalThis.__klangCore;
+const { studioKern, pruefer } = require("./lib/welt-boot.cjs");
+const SC = studioKern("schmiede-core.js", "__schmiedeCore");
+const VC = studioKern("vehicle-core.js", "__vehicleCore");
+const KC = studioKern("klang-core.js", "__klangCore");
 
-const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = pruefer();
 function fp(g) {
     const h = crypto.createHash("sha256");
     let n = 0;

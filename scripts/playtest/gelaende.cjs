@@ -514,12 +514,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             label: "Mode-Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "holz", 0, 0, 0, 1, 1, 1),
             ],
         };
         // Stamina voll setzen

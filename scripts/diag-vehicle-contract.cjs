@@ -23,16 +23,11 @@
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
+const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const root = path.resolve(__dirname, "..");
-
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "vehicle-core.js");
-require(KERN);
-const VC = globalThis.__vehicleCore;
-
-const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { errs, check, wandEnde } = pruefer();
+const VC = studioKern("vehicle-core.js", "__vehicleCore");
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Kultur-Kanal) ──
 const GATTUNGEN = ["gt", "supersport", "limousine", "kompakt_fwd", "suv"];
@@ -46,14 +41,12 @@ for (const g of GATTUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 1 });
 CASES.push({ rezeptId: "gt", seed: 7, lod: 0, ovKultur: "toro" });
 CASES.push({ rezeptId: "supersport", seed: 7, lod: 0, ovKultur: "cavallo" });
 
-function buildCase(c) {
-    const ov = c.ovKultur ? VC.CULTURES[c.ovKultur].fx : undefined;
-    return VC.buildInstance(c.rezeptId, c.seed, c.lod, ov);
+function buildCase(c, K = VC) {
+    return K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined);
 }
 function caseKey(c) {
     return `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ovKultur ? "-ov_" + c.ovKultur : ""}`;
 }
-
 
 (async function main() {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
@@ -82,22 +75,7 @@ function caseKey(c) {
     // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
     //     der Same wählt den Lack.
-    await probeWand(
-        "v3",
-        {
-            laden: frischerKern(KERN, "__vehicleCore"),
-            bauen: (K) => {
-                const r = {};
-                for (const c of CASES)
-                    r[caseKey(c)] = fingerprint(
-                        K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined)
-                    ).sha256;
-                return r;
-            },
-        },
-        check
-    );
-    globalThis.__vehicleCore = VC;
+    await kernProbe("v3", "vehicle-core.js", "__vehicleCore", CASES, check, { bau: (K, c) => buildCase(c, K), schluessel: caseKey });
 
     // 5) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst

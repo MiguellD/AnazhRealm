@@ -38,19 +38,15 @@
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
+const { fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
+const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
-const root = path.resolve(__dirname, "..");
 // die Goldens der Häuser und der AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens)
 const golden = (n) => path.join(root, "spec/asset-contract/v6/golden", n + ".json");
 
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "fachwerk-core.js");
-require(KERN);
-const FC = globalThis.__fachwerkCore;
-
-const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = pruefer();
+const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -197,7 +193,6 @@ function shellPfad(name, seed, stufe) {
     g.updateMatrixWorld(true);
     return g;
 }
-
 
 // ── DER BOGEN IM VERBAND (K66: kein Bogen ragt über die Traufe, kein Keilstein schwebt lose neben dem Pfeilerkopf). Je
 //    Bogen —
@@ -903,20 +898,9 @@ function bogenLinse() {
     //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
     //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
     //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
-    const frisch = frischerKern(KERN, "__fachwerkCore");
-    const fingerAlle = (K, faelle) => {
-        const r = {};
-        for (const c of faelle) {
-            const g = K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
-            r[caseKey(c)] = fingerprint(g).sha256;
-            disposeGroup(g);
-        }
-        return r;
-    };
     const PROBE_HAUS = CASES.filter((c) => !c.ov && c.seed === 7 && KULTUREN.indexOf(c.rezeptId) % 4 === 0);
-    await probeWand("v6", { laden: frisch, bauen: (K) => fingerAlle(K, PROBE_HAUS) }, check);
-    await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
-    globalThis.__fachwerkCore = FC;
+    for (const [satz, faelle] of [["v6", PROBE_HAUS], ["v6a", AUS_CASES]])
+        await kernProbe(satz, "fachwerk-core.js", "__fachwerkCore", faelle, check, { finger: fingerprint, weg: disposeGroup });
 
     // 12) DER BOGEN IM VERBAND
     bogenLinse();

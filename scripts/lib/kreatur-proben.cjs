@@ -184,10 +184,10 @@ async function kreaturProben(r, T, opts) {
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
-    const kamera = (blickX, blickZ) => {
+    const kamera = (blickX, blickZ, blickY = 0) => {
         const cam = s.camera;
         cam.position.set(pm.x, pm.y + 1.6, pm.z);
-        cam.lookAt(pm.x + blickX, pm.y + 1.6, pm.z + blickZ);
+        cam.lookAt(pm.x + blickX, pm.y + 1.6 + blickY, pm.z + blickZ);
         cam.updateMatrixWorld(true);
         if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
         r._loopFrustumCulling();
@@ -431,7 +431,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── huepfer: jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), auf die Höhe des Freude-Gesetzes
     // (VERHALTEN.freude), und die Flugzeit hängt nie am Takt ──
-    await buehne("huepfer", async (restore) => {
+    await buehne("huepfer", async () => {
         r.setGameMode("frieden");
         // Die Kreatur-Uhr fest (die Aktions-Wahl hasht Index × Zeit): jeder Lauf wählt dieselben Aktionen — sonst hing die
         // Zahl der Sprünge (3–5) an der Boot-Dauer der Welt.
@@ -579,7 +579,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── wachsen: 3600 Wachstums-Takte am Loop-Pfad ──
-    await buehne("wachsen", async (restore) => {
+    await buehne("wachsen", async () => {
         const c = tier(land(95, -40), "wesen");
         r.assignCreatureTask(c, "wait", {}, { silent: true });
         const s0 = c.scale.x;
@@ -600,7 +600,7 @@ async function kreaturProben(r, T, opts) {
     });
 
     // ── gier: die Tiere folgen dem Spieler im Quadrat ──
-    await buehne("gier", async (restore) => {
+    await buehne("gier", async () => {
         r.setGameMode("frieden");
         const arten = ["wesen", "wolf", "fuchs"];
         const start = feldOhneHoehle(0, 0);
@@ -752,7 +752,7 @@ async function kreaturProben(r, T, opts) {
     // einen Jäger, dessen Maul den Leib erreicht (`_kreaturBissSpalt` ≤ `_kreaturBissReich`: nah als Körper, oekologie.K2);
     // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), ist gefallen — je Riss
     // EINES (der Übergang ändert nie den Bestand) ──
-    await buehne("jagd", async (restore) => {
+    await buehne("jagd", async () => {
         r.setGameMode("pfad");
         s.player.hp = 1e9;
         // der heutige Riss als Täter: er tötet das Opfer im Nah-Kreis wie fern (die Zahl, kein Jäger am Leib) — oder fällt nah aus
@@ -1026,8 +1026,81 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── schwarm (luftwasser.K2): der Vogel-Schwarm fliegt aus dem Verband der Herde (`_schwarmVerband`, tetrapoda verbandZug).
+    // Mittag und Sonne als Wort des Reglers; die Schwarm-Karte frisch, die Zelle unter dem Auge trägt den festen Schwarm von
+    // 100 Gliedern, jede andere keinen; je Takt des Spiels (`_vogelTakt`, 60 Hz, 60 s) steht das Auge 40 m quer zum Kurs des
+    // Zentrums (nah) mit dem Blick auf es. Gemessen an den Lagen, die der Takt zeichnet, ab 10 s: die Ausrichtung Φ = |Σv̂|/N
+    // (v aus dem Weg je Takt, wie die Herde), die Kohäsion = der Anteil der Glieder im größten Verbund, Glied zu Glied binnen
+    // fensterRaum × Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom Mittel) trägt fünf Leiber,
+    // hundert Glieder füllen einen Ball weiter als das Fenster; je Takt die Züge des Verbands je Glied durch DIE Funktion
+    // der Herde (`verbandZug`). Die Täter: der Verband aus (der Zug gibt den Wunsch zurück) und der Zwilling (eine Kopie des
+    // Zugs, nicht die Funktion der Herde) ──
+    await buehne("schwarm", async (restore) => {
+        const [K, VG, tag0, wetter0] = [A._steuerGesetz(), A._vogelGesetz(), s.timeOfDay, s.weather];
+        const [zug, S] = [K.verbandZug, VG.V.schwarm];
+        let zuege = 0;
+        K.verbandZug = function (x, z, vx, vz, tempo, raum, gl, H, out) {
+            zuege += taeter !== "schwarm-zwilling";
+            return taeter === "schwarm-verband" ? Object.assign(out, { x: vx, z: vz }) : zug.apply(this, arguments);
+        };
+        restore.push(() => ((K.verbandZug = zug), r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler")));
+        r._uhrSetzen(0.5, "regler");
+        r._setWeather("sunny", "regler");
+        const fenster = A._verhaltenGesetz().herde.fensterRaum * S.raumM;
+        const [sonne, regen] = [r._sonnenRichtung().y, r._weatherFieldFor(s.weather).rain];
+        r._schwarmKarte = null;
+        r._vogelSchwarmTakt(sonne, regen);
+        const sk = r._schwarmKarte;
+        const c = sk.zellen.get(Math.floor(pm.x / S.zelleM) * 1048576 + Math.floor(pm.z / S.zelleM));
+        c.wurf[4] = (100 - S.glieder[0]) / (S.glieder[1] - S.glieder[0]);
+        const [zt, t] = [{}, { takte: 0, phi: 0, k: [], zuege: 0 }];
+        for (let k = 0, alt; k < 3600; k++, s.spielZeit += 1 / 60) {
+            for (const q of sk.zellen.values()) [q.revier, q.frisch] = [q === c, s.spielZeit];
+            VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt);
+            const [x, z] = [c.x + zt.dx, c.z + zt.dz];
+            pm.set(x + Math.cos(zt.gier) * 40, 0, z - Math.sin(zt.gier) * 40);
+            pm.y = r.getTerrainHeightAt(pm.x, pm.z);
+            kamera(x - pm.x, z - pm.z, r._terrainMacroSurfaceY(x, z) + zt.h - pm.y - 1.6);
+            const z0 = zuege;
+            r._vogelTakt();
+            const L = sk.voegel.map((v) => [v.x, v.y, v.z]);
+            if (k >= 600 && L.length === zt.n && alt.length === zt.n) {
+                const d = L.map((p, i) => [p[0] - alt[i][0], p[2] - alt[i][2]].map((v, e, a) => v / Math.hypot(...a)));
+                t.phi += Math.hypot(...[0, 1].map((e) => d.reduce((m, v) => m + v[e], 0))) / zt.n;
+                t.zuege += (zuege - z0) / zt.n;
+                t.takte++;
+                // der größte Verbund: wer Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar ist
+                for (let frei = new Set(L.keys()), gross = 0; k % 6 === 0 && frei.size;) {
+                    const kette = [frei.values().next().value];
+                    for (const a of kette) {
+                        frei.delete(a);
+                        for (const b of frei)
+                            if (Math.hypot(...L[b].map((v, e) => v - L[a][e])) <= fenster)
+                                (frei.delete(b), kette.push(b));
+                    }
+                    gross = Math.max(gross, kette.length);
+                    if (!frei.size) t.k.push(gross / zt.n);
+                }
+            }
+            alt = L;
+        }
+        const zahl = (v, n = t.takte) => +(v / n).toFixed(3);
+        return {
+            glieder: zt.n,
+            takte: t.takte,
+            fensterM: fenster,
+            phi: zahl(t.phi),
+            kohaesion: zahl(
+                t.k.reduce((m, v) => m + v),
+                t.k.length
+            ),
+            kohaesionMin: Math.min(...t.k),
+            zuegeJeGlied: zahl(t.zuege),
+        };
+    });
+
     // ── reload: ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
-    await buehne("reload", async (restore) => {
+    await buehne("reload", async () => {
         const c = tier(land(30, 12), "wesen");
         const hpMax = c.userData.hpMax;
         c.userData.hp = 0.55 * hpMax;
@@ -1061,7 +1134,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── zufall (Lehre 7): kein Math.random im Kreatur-Leben — der LEBENDE Code (r[name]) über window.__codeOf je Methode
     // mit Tier im Namen, dazu die benannten Wurf-Stellen; eine benannte Methode, die fehlt, ist rot ──
-    await buehne("zufall", async (restore) => {
+    await buehne("zufall", async () => {
         const BENANNT = [
             "_spawnOneInitialCreature",
             "_creatureNaturalBirth",
@@ -1288,7 +1361,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── temperament (Lehre 8): das Temperament aus Gattung und Größe — je Seele und Größe, die Wariness vor einem ruhigen
     // Spieler, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und der Kampf liest dasselbe Temperament ──
-    await buehne("temperament", async (restore) => {
+    await buehne("temperament", async () => {
         if (taeter === "temperament")
             decke(
                 "_creatureTemperament",
@@ -1761,7 +1834,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── querhang: die Beine stehen lotrecht, der Leib rollt — Wolf und Hirsch QUER zur Fall-Linie eines Hangs von 20–30°
     // (je Bein Winkel gegen das Lot, Sohle über dem Boden), dann längs der Höhenlinie: der Stand-Schlupf ──
-    await buehne("querhang", async (restore) => {
+    await buehne("querhang", async () => {
         r.setGameMode("frieden");
         if (taeter === "querhang")
             decke(
@@ -1940,7 +2013,7 @@ async function kreaturProben(r, T, opts) {
     // ── ferngang: ferne Tiere gehen, sie gleiten nie — 4 Hirsche in der Grobstufen-Zone (45–60 m), 4 in der Kapsel-Zone
     // (70–90 m) folgen dem Spieler im Blick; je laufendem Takt GLEITET ein Tier, wenn sein SICHTBARER Leib (Satz,
     // Grobstufe oder feine Stufe) die Hüft-Winkel der vier Beine über 24 Takte in 0,02 rad hält ──
-    await buehne("ferngang", async (restore) => {
+    await buehne("ferngang", async () => {
         r.setGameMode("frieden");
         if (taeter === "ferngang")
             decke(
@@ -2179,7 +2252,7 @@ async function kreaturProben(r, T, opts) {
     // DIE TOD-LAGE IM LEERLAUF (dorf-takt-z13, Lehre 14): der Tod eines Wolfs liest keine Karte, der Leib steht im Vorlauf
     // (`TOD_LAGE.vorlaufSec`), der Leerlauf rechnet die Tafel (`_todLageTick`), ein Fenster ohne Zeit genau einen Winkel; ohne
     // Leerlauf rechnet die Frist sie am Ende des Vorlaufs (`_todLageFrist`, halten.K5 — die Lage bei 60 und 15 Hz misst Q13).
-    await buehne("todlage", async (restore) => {
+    await buehne("todlage", async () => {
         if (taeter === "todlage-takt")
             decke("_kreaturFaellt", (f) => (c) => (f.call(r, c), r._todLageTick({ timeRemaining: () => Infinity })));
         let n = 0;
@@ -3050,6 +3123,7 @@ const PROBEN = [
     "gier",
     "jagd",
     "herde",
+    "schwarm",
     "peer",
     "zufall",
     "nexus",
@@ -3288,6 +3362,15 @@ function urteil(name, z) {
         soll(z.fluchtWegM >= 30, `Fluchtweg ${z.fluchtWegM} m`);
         const I = z.id.bruch || [];
         soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
+    }
+    if (name === "schwarm") {
+        soll(z.glieder >= 60 && z.takte >= 3000, `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte`);
+        soll(z.zuegeJeGlied >= 0.99, `Schwarm ohne Verband: ${z.zuegeJeGlied} Züge je Glied und Takt (Soll 1)`);
+        soll(z.phi >= 0.8, `Schwarm fliegt ungerichtet: Φ ${z.phi} (Soll ≥ 0,8)`);
+        soll(
+            z.kohaesion >= 0.9,
+            `Schwarm zerfällt: ${z.kohaesion} im größten Verbund, Glied zu Glied ≤ ${z.fensterM} m (Soll ≥ 0,9; min ${z.kohaesionMin})`
+        );
     }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
@@ -3536,6 +3619,10 @@ const TAETER = {
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
+    ],
+    schwarm: [
+        ["schwarm-verband", /Schwarm zerfällt/],
+        ["schwarm-zwilling", /Schwarm ohne Verband: 0 Züge/],
     ],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],

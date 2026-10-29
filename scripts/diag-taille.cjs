@@ -1,17 +1,10 @@
 // diag-taille.cjs — Ω0: die INVENTUR der gefrorenen Taille (docs/taille-spec.md).
 //
 // Zwei Rollen in EINEM Werkzeug:
-//   (1) MINT (einmalig): existiert `spec/golden/v1/` NICHT, werden die vier
-//       Draht-Artefakte aus den ECHTEN Code-Pfaden erzeugt + eingefroren:
-//         blueprint-signed.json  — kanonischer signierter Bauplan (parts/
-//                                  connections/opChain/provenance/signature)
-//         world-manifest.json    — signiertes Welt-Manifest (exportWorldManifest)
-//         snapshot-head.json     — der Snapshot-KOPF als SCHEMA (Keys + Typen,
-//                                  nicht der Welt-Inhalt)
-//         p2p-envelopes.json     — ein Umschlag pro Kern-Nachrichtentyp (pv-Vertrag)
-//       Die Signaturen sind DETERMINISTISCH: ein eingefrorenes Ed25519-Test-JWK
-//       (RFC 8032 — deterministische Signatur) → die goldene Datei ist für immer
-//       verifizierbar. DIE DATEIEN WERDEN NIE REGENERIERT (git, taille-plan Ω0).
+//   (1) KONFORMANZ: die vier Draht-Artefakte in `spec/golden/v1/` (blueprint-signed · world-manifest · snapshot-head ·
+//       p2p-envelopes), einmal aus den ECHTEN Code-Pfaden gemintet und eingefroren — der heutige Code liest sie und
+//       verifiziert ihre Signaturen (ein eingefrorenes Ed25519-Test-JWK, RFC 8032 deterministisch). Sie werden NIE
+//       regeneriert (taille-plan Ω0); der Mint lebt in `git log` — fehlt ein Golden, ist die Linse ROT, nie ein neuer Mint.
 //   (2) MESSEN (immer): die Round-Trip-Matrix — überlebt ein injiziertes
 //       `xZukunft:{…}`-Feld jeden Pfad (Rezepte-Import · Snapshot serialize/
 //       deserialize · Manifest-Sanitize · p2p-Stempel)? Plus: welcher Import-Pfad
@@ -43,7 +36,6 @@ const GOLDEN_JWK = {
 const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeitfelder
 
 (async () => {
-    const minting = !fs.existsSync(GOLDEN_DIR);
     const [port] = await eigenePorte("TAILLE_PORT");
     const SERVER_URL = `http://127.0.0.1:${port}/index.html`;
     const server = await startProc("save-server.js", /läuft/, { PORT: String(port) });
@@ -57,111 +49,12 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
         });
 
         const result = await page.evaluate(
-            async (GOLDEN_JWK, GOLDEN_TIME, minting) => {
+            async (GOLDEN_JWK, GOLDEN_TIME) => {
                 const r = window.anazhRealm;
-                const out = { mint: null, matrix: {}, findings: [] };
+                const out = { matrix: {}, findings: [] };
 
                 // ── die goldene Identität adoptieren (deterministische Signaturen) ──
                 await r._adoptVibePassJwk(GOLDEN_JWK, GOLDEN_TIME, false);
-
-                // ───────────────────────── MINT (nur einmal) ─────────────────────────
-                if (minting) {
-                    const mint = {};
-                    // (a) der kanonische signierte Bauplan — voll: drei Materialien,
-                    // drei Formen, opChain, connections, Rolle (weapon+roleManual =
-                    // der Riss-1-Fall: die Behauptung reist in der Signatur),
-                    // forgedPrecision, provenance.
-                    const op = () => [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }];
-                    r.state.blueprints["taille_golden"] = {
-                        name: "taille_golden",
-                        label: "Taille-Golden",
-                        builtIn: false,
-                        role: "weapon",
-                        roleManual: true,
-                        forgedPrecision: 0.8,
-                        parts: [
-                            {
-                                shape: "cylinder",
-                                material: "holz",
-                                position: { x: 0, y: 0.8, z: 0 },
-                                size: { x: 0.18, y: 1.6, z: 0.18 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                opChain: op(),
-                            },
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 1.7, z: 0 },
-                                size: { x: 0.5, y: 0.3, z: 0.3 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                opChain: op(),
-                            },
-                            {
-                                shape: "cone",
-                                material: "eisen",
-                                position: { x: 0, y: 2.0, z: 0 },
-                                size: { x: 0.3, y: 0.5, z: 0.3 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                opChain: op(),
-                            },
-                        ],
-                        connections: [
-                            { type: "hafting", partA: 0, partB: 1 },
-                            { type: "welding", partA: 1, partB: 2 },
-                        ],
-                    };
-                    const sig = await r.signBlueprint("taille_golden", { skipConfirm: true });
-                    if (!sig.ok) return { error: "signBlueprint scheiterte: " + sig.reason };
-                    const live = r.state.blueprints["taille_golden"];
-                    // Draht-Form: _serializeBlueprint + der Ω-VERTRAG (provenance reist —
-                    // heute strippt der Snapshot sie, Ω2 heilt das; golden friert das SOLL).
-                    const wire = r._serializeBlueprint(live);
-                    wire.provenance = (live.provenance || []).map((l) => ({ by: l.by, at: GOLDEN_TIME }));
-                    wire.signedAt = GOLDEN_TIME;
-                    mint.blueprint = wire;
-
-                    // (b) das signierte Welt-Manifest (Built-in-Welt „fluid").
-                    const sw = await r.signWorld("fluid", { skipConfirm: true });
-                    if (!sw.ok) return { error: "signWorld scheiterte: " + sw.reason };
-                    const exp = r.exportWorldManifest("fluid");
-                    if (!exp.ok) return { error: "exportWorldManifest scheiterte: " + exp.reason };
-                    const man = JSON.parse(JSON.stringify(exp.manifest));
-                    man.signedAt = GOLDEN_TIME;
-                    man.provenance = (man.provenance || []).map((l) => ({ by: l.by, at: GOLDEN_TIME }));
-                    mint.manifest = man;
-
-                    // (c) der Snapshot-KOPF als SCHEMA (Keys + Typen — der Inhalt ist
-                    // welt-abhängig und gehört NICHT in die Taille).
-                    const snap = r.buildStateSnapshot();
-                    const schema = {};
-                    for (const k of Object.keys(snap).sort()) {
-                        const v = snap[k];
-                        schema[k] = Array.isArray(v) ? "array" : v === null ? "null" : typeof v;
-                    }
-                    mint.snapshotHead = {
-                        v: 1,
-                        schema,
-                        worldMetaKeys: Object.keys(snap.worldMeta || {}).sort(),
-                    };
-
-                    // (d) ein p2p-Umschlag pro Kern-Typ (pv-Vertrag). Die Feld-Listen
-                    // sind source-verifiziert (der Mess-Teil unten prüft Handler+Sender).
-                    mint.envelopes = {
-                        v: 1,
-                        pv: r.constructor.PROTO_VERSION,
-                        types: [
-                            { type: "pos", fields: ["x", "y", "z", "ry"] },
-                            { type: "dsl", fields: ["program"] },
-                            { type: "soul", fields: ["soul"] },
-                            { type: "aura", fields: ["hue", "intensity"] },
-                            { type: "vibe", fields: ["vibePassId", "proof"] },
-                            { type: "creature-pos", fields: ["list"] },
-                            { type: "social-rating", fields: ["r"] },
-                            { type: "subworld-net", fields: ["worldId", "data"] },
-                        ],
-                    };
-                    out.mint = mint;
-                }
 
                 // ──────────────────────── MESSEN: die Matrix ────────────────────────
                 const M = out.matrix;
@@ -320,13 +213,12 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                 return out;
             },
             GOLDEN_JWK,
-            GOLDEN_TIME,
-            minting
+            GOLDEN_TIME
         );
 
         // ── KONFORMANZ (immer, wenn golden existiert): der heutige Code muss die
         // eingefrorenen Artefakte LESEN + die Signaturen als "valid" verifizieren.
-        if (!result.error && fs.existsSync(GOLDEN_DIR)) {
+        if (!result.error) {
             const golden = {
                 blueprint: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "blueprint-signed.json"), "utf8")),
                 manifest: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "world-manifest.json"), "utf8")),
@@ -384,18 +276,6 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
             console.error("FEHLER:", result.error);
             fail = true;
         } else {
-            if (minting && result.mint) {
-                fs.mkdirSync(GOLDEN_DIR, { recursive: true });
-                const write = (name, obj) =>
-                    fs.writeFileSync(path.join(GOLDEN_DIR, name), JSON.stringify(obj, null, 2) + "\n");
-                write("blueprint-signed.json", result.mint.blueprint);
-                write("world-manifest.json", result.mint.manifest);
-                write("snapshot-head.json", result.mint.snapshotHead);
-                write("p2p-envelopes.json", result.mint.envelopes);
-                console.log(`GEMINTET → ${GOLDEN_DIR} (4 Dateien — ab jetzt EINGEFROREN, nie regenerieren)`);
-            } else {
-                console.log("Golden-Dateien existieren — kein Mint (eingefroren).");
-            }
             console.log("\n── Ω0 ROUND-TRIP-MATRIX (must-preserve: überlebt xZukunft?) ──");
             console.log(JSON.stringify(result.matrix, null, 2));
             const m = result.matrix;
