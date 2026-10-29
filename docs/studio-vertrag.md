@@ -1014,8 +1014,9 @@ DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `p
 die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DER ORT (K10): DER ERDBAU `ERDBAU` der Siedlungs-Pläne
 (Platte, Trasse, Brücken-Etikett als letzter Term der Höhe) mit seiner Normalform `erdbauNormal`, der Höhe `erdbauY`, der
 Fläche `erdbauFlaeche` und seiner Wand `erdbauWand` (K66: Böschung und Kante zwischen zwei Flächen tragen im Fels-Stoff den
-Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der Keller eines Hauses aus fachwerk `grundVon`; das gesetzte Haus fragt ihn beim Setzen als
-Plan im Foundry-Faden, Kanal `grund-plan` → `grundPlan`) mit
+Schutt), DER GRUND DER HÄUSER (S4: die Art `grund` — der Körper-Satz und der Keller eines Hauses aus fachwerk `grundVon`; das gesetzte Haus ist ein
+Ein-Slot-Ort (bauen.K2): seinen Slot rechnet der Foundry-Faden, Kanal `slot-plan` → `slotPlan`, dieselbe Slot-Zeile wie der Export des Dorfs, seinen Plan v2
+mit Platte, Grund und Vorplatz der Ort-Faden über `ortPlan`) mit
 seinem Grundriss-Leser `erdbauGrund`, dem hohlen Keller `erdbauHohl` (das Feld des Wirts, je Spalte gefragt über `erdbauKeller`) und dem Schnitt des gezeichneten
 Bodens `erdbauSchnitt` (Voxel-Faden und Sync-Bau), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund`, die Hang-Suche eines Orts `hangOrt` und das
