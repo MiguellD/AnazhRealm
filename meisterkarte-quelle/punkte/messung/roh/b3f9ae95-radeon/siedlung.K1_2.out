@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:/Program Files/Git/bin/bash.exe -c A=$(cygpath -m "$1" 2> /dev/null || echo "$1"); HAUS_WELT_JSON="$A.gang" node scripts/diag-haus-welt.cjs --phasen=haus,start; echo "GANG EXIT $?"; HAUS_WELT_JSON="$A.bild" node scripts/diag-haus-welt.cjs --phasen=grund --bild; echo "BILD EXIT $?"; node -e 'const f = require("fs"), a = process.argv[1]; f.writeFileSync(a, JSON.stringify({ gang: JSON.parse(f.readFileSync(a + ".gang")), bild: JSON.parse(f.readFileSync(a + ".bild")) }))' "$A" siedlung-k1 C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\siedlung.K1_2.json
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 26 Häuser, Start-Dorf 18/18 · Gier 114/-83/119/-37/176/135/-46/134/224/-75/105/-76/18/-162/88/115/18/-162/231/141/-39/-39/141/141/-39/141° · W1 Vorplatz über der Diele -0.36/-0.36/-0.36/-0.37/-0.37/-0.36/-0.37/-0.36/-0.37/-0.36/-0.36/-0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.37/-0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.37/-0.36 m · W2 Diele 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0 cm · W4c Überstand 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0 m · W5 Optik 100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/99.8/100 % · {"fern":{"x":212,"z":212},"W7":{"haeuser":24,"imBau":0,"zweitesDorf":30,"zweitesImBau":0}}
+  ❌ W10 Wand: haus_italienisch 0.41 · haus_italienisch 0.46 · haus_italienisch 0.28 m geklettert (Soll > 0,5)
+  1 Welten, 1 zugleich, 80 s
+❌ gate:haus-welt ROT (1)
+GANG EXIT 1
+[linse-gpu] amd/rdna-3
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[56899],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41159,1325,18645,39175],[23172,304,5488,39282]]],["fluss",0,0,[[28222,1283,28117,56717],[5864,603,5753,64357]]]],"innen":[0.825,0.109,null,null,0.484,0.493,0.412,0.24,0.84,0.12,1.726,0.283,0.279,0.267,0.538,0.385,0.472,0.221],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":95,"gesperrt":true,"ohne":33,"slots":36,"haeuser":3,"reload":3,"zugOffen":true,"ausstattung":{"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]},"verblasst":true,"ms":41030}}
+  ❌ W10 Innen-Bild: 4 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.022462650694452795/0.2066638394322911 · haus_alpenchalet 0.020731019780571583/undefined · haus_skandinavisch undefined/0.11097010565138377 · haus_schwarzwald 0.03016980078711524/0.2519183905065372)
+  ❌ W9 Wasser: [["see",0,0,[[41159,1325,18645,39175],[23172,304,5488,39282]]],["fluss",0,0,[[28222,1283,28117,56717],[5864,603,5753,64357]]]]
+  ❌ W9 Waise: 33 von 95 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-362/-1358,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  ❌ W9 Ausstattung: {"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]}
+  1 Welten, 1 zugleich, 412 s
+❌ gate:haus-welt ROT (5)
+BILD EXIT 1
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 2 von 3) nach 33 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

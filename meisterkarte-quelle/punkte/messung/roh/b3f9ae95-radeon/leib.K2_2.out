@@ -1,0 +1,1 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/diag-koerper-stand.cjs --k8 --bild
