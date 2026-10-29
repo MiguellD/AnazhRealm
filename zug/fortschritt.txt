@@ -904,3 +904,4 @@
 2026-10-29 15:52:09 takt21b-gtx profiband.K4#2 ROT 20.3 · 33/50
 2026-10-29 16:40:25 takt21b-gtx profiband.K1#1,profiband.K1#2,profiband.K2#1,profiband.K2#2,profiband.K3#1,profiband.K3#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 48.1 · 39/50
 2026-10-29 17:04:29 takt21b-gtx profiband.K5#1,profiband.K5#2 ROT/ROT 23.9 · 41/50
+2026-10-29 17:06:21 takt21b-gtx klang.K2#1 GRÜN 1.8 · 42/50
