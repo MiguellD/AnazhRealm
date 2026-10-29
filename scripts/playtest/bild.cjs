@@ -5,7 +5,7 @@
 
 const path = require("path");
 const stammLib = require("../lib/stamm.cjs");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), geprüft als KONSUM: der Welt-Tint liest
@@ -15,49 +15,48 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        const out = {};
         if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
         // Default `auraTintStrength` ist 0 (Slider hebt ihn) → die KONSUM-Probe forciert 1 (deterministisch),
         // um zu beweisen, dass die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
-        const _origAuraK1731 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
-        for (const k of Object.keys(e)) e[k] = 0;
-        const cold = r._dayNightComputeTint();
-        for (const k of Object.keys(e)) e[k] = 0;
-        e.joy = 0.9;
-        const warm = r._dayNightComputeTint();
-        out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
-        out.coldR = cold.skyColor.r;
-        out.warmR = warm.skyColor.r;
+        const atmo = r.state.atmosphere;
+        const k0 = atmo.auraTintStrength;
+        atmo.auraTintStrength = 1;
+        // der Rot-Anteil des Himmels-Tints, die Emotionen auf 0 (dazu `extra`)
+        const rot = (extra) => {
+            for (const k of Object.keys(e)) e[k] = 0;
+            Object.assign(e, extra);
+            return r._dayNightComputeTint().skyColor.r;
+        };
+        const cold = rot();
+        const warm = rot({ joy: 0.9 });
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
-        return out;
+        atmo.auraTintStrength = k0; // restore Default (0)
+        return [warm > cold, `cold.r=${cold} warm.r=${warm}`];
     });
-    check(
-        "Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
-        res.joyWarmsWorld,
-        `cold.r=${res.coldR} warm.r=${res.warmR}`
-    );
+    check("Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)", ...res);
 }
 
 async function checkBandWelle6G3Lebendigkeit(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
-    // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
+    // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM; je Prüfung ein Satz der Seite (`out[satz] = urteil`, mit
+    // Detail `[urteil, detail]`).
     const wave6g3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
         const AnazhRealm = window.AnazhRealm || r.constructor;
+        // die Uhr der Welt steht bei `t` (± 0,001)
+        const uhr = (t) => Math.abs(st.timeOfDay - t) < 0.001;
 
         // --- a) Tag-Nacht-Zyklus
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl.
-        out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
+        out["Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)"] =
+            st.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
         // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; der Morgen um 0,32 steigt und knickt nicht)
         const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
         r._luftBeta = () => klar;
@@ -65,145 +64,107 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             const L = [0.5, 0, 0.317, 0.32, 0.323].map(
                 (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum
             );
-            out.atmoUhr = L;
+            out["Welle 6.G3.a: der Durchlass zur Sonne mittags ≥ 0,7"] = [L[0] >= 0.7, L[0]];
+            out["Welle 6.G3.a: um Mitternacht unter 0,35 des Mittags"] = [L[1] < 0.35 * L[0], L[1]];
+            out["der Morgen um 0,32 steigt"] = [L[4] - L[2] > 0.0018, L.join(" ")];
+            out["der Morgen um 0,32 knickt nicht (C1)"] = [Math.abs(2 * L[3] - L[2] - L[4]) < 0.0018, L.join(" ")];
         } finally {
             delete r._luftBeta;
         }
 
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
-        out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
-        out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
+        out["Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt"] = uhr(0.25);
+        out["Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00"] = r._timeOfDayLabel(0.25).includes("06:");
 
         // tickDayNight schreitet voran
         r.setTimeOfDay(0.4, "human");
-        const beforeT = r.state.timeOfDay;
-        r.state._lastDayNightTick = 0;
+        const beforeT = st.timeOfDay;
+        st._lastDayNightTick = 0;
         r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
-        out.tickAdvances = r.state.timeOfDay > beforeT;
-        // setDayLength clamped
-        r.setDayLength(5);
-        out.setDayLength5 = r.state.dayLengthMinutes === 5;
-        r.setDayLength(999); // > max 60
-        out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
-        r.setDayLength(0); // < min 1
-        out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
+        out["Welle 6.G3.a: tickDayNight schreitet timeOfDay voran"] = st.timeOfDay > beforeT;
+        // setDayLength clamped: 5 wirkt, > max 60, < min 1
+        for (const [satz, l, soll] of [
+            ["Welle 6.G3.a: setDayLength(5) wirkt", 5, 5],
+            ["Welle 6.G3.a: setDayLength clamped >60 auf 60", 999, 60],
+            ["Welle 6.G3.a: setDayLength clamped <1 auf 1", 0, 1],
+        ]) {
+            r.setDayLength(l);
+            out[satz] = st.dayLengthMinutes === soll;
+        }
         r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
 
         // DSL-Op set_time_of_day — die Uhr gehört dem Spieler: sein Satz stellt sie, der Nexus nie
         r.dslRun(["set_time_of_day", 0.7], { source: "human" });
-        out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
+        out["Welle 6.G3.a: DSL-Op set_time_of_day wirkt (Satz des Spielers)"] = uhr(0.7);
         const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
-        out.dslNexusUhrGehalten =
-            Math.abs(r.state.timeOfDay - 0.7) < 0.001 && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
+        out["Leben-Schau 2: set_time_of_day des Nexus stellt die Uhr nie (uhr_gehalten im Protokoll)"] =
+            uhr(0.7) && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
         // NON_BROADCASTABLE
-        out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
+        out["Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS"] =
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
 
         // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität: tags die SONNE (oben,
         // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
         // (ein Licht von unten wüsche die Nacht aus).
+        const dl = st.directionalLight;
         r.setTimeOfDay(0.5, "human"); // Mittag
-        const noonY = r.state.directionalLight.position.y;
-        const noonInt = r.state.directionalLight.intensity;
+        const noonY = dl.position.y;
+        const noonInt = dl.intensity;
         r.setTimeOfDay(0, "human"); // Mitternacht
-        const dlN = r.state.directionalLight;
-        const midnightY = dlN.position.y;
-        const midnightCool = dlN.color.b > dlN.color.r; // Mondlicht ist kühl (b > r)
-        out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
+        // Mondlicht ist kühl (b > r)
+        out[
+            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)"
+        ] = noonY > 0 && dl.position.y > 0 && dl.intensity < noonInt && dl.color.b > dl.color.r;
 
         // --- b) Sanfte Wetter-Übergänge
         const wxL = globalThis.__phytoCore.WX_LICHT; // K2: der Tint IST die Sonne der Wetter-Zeile, kein zweiter Wert
-        out.weatherTintsSunnyRainy = Object.keys(AnazhRealm.WEATHER_FIELD).every((w) => {
-            const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
-            return t.skyMul === s && t.lightMul === wxL.sockel + wxL.sonne * s;
-        });
+        out["Welle 6.G3.b: WEATHER_TINTS = die Sonne der Wetter-Zeile (skyMul = sun, lightMul = WX_LICHT)"] =
+            Object.keys(AnazhRealm.WEATHER_FIELD).every((w) => {
+                const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
+                return t.skyMul === s && t.lightMul === wxL.sockel + wxL.sonne * s;
+            });
 
         // Setze sunny als Ausgangspunkt
-        r.state.weather = "sunny";
-        r.state.weatherTransition = null;
+        st.weather = "sunny";
+        st.weatherTransition = null;
         // der Satz des Spielers blendet vom Wetter davor über
         r.dslRun(["weather", "rainy"], { source: "human" });
-        out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
+        out["Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)"] =
+            st.weatherTransition && st.weatherTransition.from === "sunny";
         // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
-        const okSameTarget = r.requestWeatherTransition("rainy");
-        out.transitionSameTargetNoop = okSameTarget === true;
+        out["Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)"] =
+            r.requestWeatherTransition("rainy") === true;
         // tickWeatherTransition setzt progress voran
-        r.state.weatherTransition.startedAt -= 0.1; // 100 ms der Welt-Uhr
+        st.weatherTransition.startedAt -= 0.1; // 100 ms der Welt-Uhr
         r.tickWeatherTransition(0);
-        out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
+        out["Welle 6.G3.b: tickWeatherTransition schreitet progress voran"] =
+            st.weatherTransition && st.weatherTransition.progress > 0;
         // Bei progress=1 wird die transition geclearet. Offset > Cap (120 s), damit die Probe deterministisch
         // ist — die Emotion-Modulation streckt die Default-Dauer auf bis zu ~86 s.
-        if (r.state.weatherTransition) {
-            r.state.weatherTransition.startedAt -= 200; // 200 s > 120-s-Cap
+        if (st.weatherTransition) {
+            st.weatherTransition.startedAt -= 200; // 200 s > 120-s-Cap
         }
         r.tickWeatherTransition(0);
-        out.transitionClearedOnComplete = r.state.weatherTransition === null;
+        out["Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1"] = st.weatherTransition === null;
 
         // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt kaskade
 
         return out;
     });
 
-    if (wave6g3Results && !wave6g3Results.error) {
-        // --- a) Tag-Nacht
-        check(
-            "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
-            wave6g3Results.dayLengthDefault
-        );
-        const L = wave6g3Results.atmoUhr || [];
-        check("Welle 6.G3.a: der Durchlass zur Sonne mittags ≥ 0,7", L[0] >= 0.7, L[0]);
-        check("Welle 6.G3.a: um Mitternacht unter 0,35 des Mittags", L[1] < 0.35 * L[0], L[1]);
-        check("der Morgen um 0,32 steigt", L[4] - L[2] > 0.0018, L.join(" "));
-        check("der Morgen um 0,32 knickt nicht (C1)", Math.abs(2 * L[3] - L[2] - L[4]) < 0.0018, L.join(" "));
-        check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
-        check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
-        check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
-        check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
-        check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
-        check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
-        check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt (Satz des Spielers)", wave6g3Results.dslSetTimeOfDay);
-        check(
-            "Leben-Schau 2: set_time_of_day des Nexus stellt die Uhr nie (uhr_gehalten im Protokoll)",
-            wave6g3Results.dslNexusUhrGehalten
-        );
-        check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
-        check(
-            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)",
-            wave6g3Results.lightPosFollowsTimeOfDay
-        );
-
-        // --- b) Wetter-Übergang
-        check(
-            "Welle 6.G3.b: WEATHER_TINTS = die Sonne der Wetter-Zeile (skyMul = sun, lightMul = WX_LICHT)",
-            wave6g3Results.weatherTintsSunnyRainy
-        );
-        check(
-            "Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)",
-            wave6g3Results.weatherTransitionFromSunny
-        );
-        check(
-            "Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)",
-            wave6g3Results.transitionSameTargetNoop
-        );
-        check(
-            "Welle 6.G3.b: tickWeatherTransition schreitet progress voran",
-            wave6g3Results.transitionProgressAdvanced
-        );
-        check(
-            "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
-            wave6g3Results.transitionClearedOnComplete
-        );
-    } else {
-        check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
-    }
+    if (erreichbar(check, "Welle 6.G3: alle Tests laufen", wave6g3Results, "no result"))
+        for (const s in wave6g3Results) check(s, ...[wave6g3Results[s]].flat());
 
     // ### Welle 6.G3 V2 — Vision-Invarianten ###
     // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität auf die Soul-Wahl? Folgen Frequenzen den
     // Tags? Modulieren Emotionen den Tint? Ist die Wetter-Dauer emotion-abhängig?
     const wave6g3v2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
         const AnazhRealm = window.AnazhRealm || r.constructor;
+        const emo = st.player.emotions;
 
         // --- Wurzel-Helper existieren
 
@@ -214,212 +175,163 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             { name: "magieSoul", tags: { lebendig: 0, dichte: 0, glut: 0, magieleitung: 1.0 } },
             { name: "dichteSoul", tags: { lebendig: 0, dichte: 1.0, glut: 0, magieleitung: 0 } },
         ];
-        // Welt-Feld mit dominanter Magie-Achse
-        const fieldMagie = { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
-        // 10× Durchläufe sammeln — Statistik gegen das Noise
-        let magieWins = 0;
-        for (let i = 0; i < 30; i++) {
-            const pickResult = r._affinityPickFromCandidates(candidates, fieldMagie, 0.05);
-            if (pickResult.pick && pickResult.pick.name === "magieSoul") magieWins++;
-        }
-        out.affinityPicksMagieInMagieField = magieWins > 20; // > 66% (statistisch sicher)
-
+        // die Welt-Felder mit dominanter Magie- und Dichte-Achse
+        const feldMagie = { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
+        const feldDichte = { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
+        // wie oft die Seele `name` im Welt-Feld `feld` gewinnt — 30 Durchläufe, Statistik gegen das Noise
+        const siege = (feld, name) => {
+            let n = 0;
+            for (let i = 0; i < 30; i++) {
+                const pickResult = r._affinityPickFromCandidates(candidates, feld, 0.05);
+                if (pickResult.pick && pickResult.pick.name === name) n++;
+            }
+            return n;
+        };
+        // Welt-Feld mit dominanter Magie-Achse: > 66% (statistisch sicher)
+        out["Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)"] =
+            siege({ ...feldMagie }, "magieSoul") > 20;
         // Diskrimination: in einer dichte-Welt wird dichteSoul bevorzugt
-        const fieldDichte = { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
-        let dichteWins = 0;
-        for (let i = 0; i < 30; i++) {
-            const pickResult = r._affinityPickFromCandidates(candidates, fieldDichte, 0.05);
-            if (pickResult.pick && pickResult.pick.name === "dichteSoul") dichteWins++;
-        }
-        out.affinityPicksDichteInDichteField = dichteWins > 20;
+        out["Welle 6.G3 V2 Vision: Affinity-Pick wählt dichteSoul in dichte-Welt (>66%, 30 Runs)"] =
+            siege({ ...feldDichte }, "dichteSoul") > 20;
 
         // --- Vision 2: die Stimme folgt dem KÖRPER — der Tier-Ruf des klang-Gesetzbuchs
         // (Grundton ∝ Körperlänge^−0,9): das kleine Wesen ruft höher als das große.
         const rufKern = AnazhRealm._umweltGesetz().kern;
         const kleinF0 = rufKern.tierRufPuffer({ laengeM: 0.7, stimmung: "freude", saat: 1 }).f0;
         const grossF0 = rufKern.tierRufPuffer({ laengeM: 2.2, stimmung: "freude", saat: 1 }).f0;
-        out.rufKleinHoeher = kleinF0 > grossF0;
-        out.bothFrequenciesInRange = kleinF0 >= 60 && kleinF0 <= 2000 && grossF0 >= 60 && grossF0 <= 2000;
+        out["Welle 5 Klang: der Tier-Ruf folgt dem Körper (0,7 m ruft höher als 2,2 m)"] = kleinF0 > grossF0;
+        out["Welle 5 Klang: beide Ruf-Grundtöne im Range [60, 2000] Hz"] =
+            kleinF0 >= 60 && kleinF0 <= 2000 && grossF0 >= 60 && grossF0 <= 2000;
 
         // --- Vision 3: _emotionModulate moduliert mit Emotion-Achsen
-        const noEmo = { joy: 0, sorrow: 0 };
-        const happyEmo = { joy: 1, sorrow: 0 };
-        const baseMod = r._emotionModulate(10, { joy: 5 }, noEmo);
-        const happyMod = r._emotionModulate(10, { joy: 5 }, happyEmo);
-        out.emotionModulateAdditiveWorks = Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
+        const baseMod = r._emotionModulate(10, { joy: 5 }, { joy: 0, sorrow: 0 });
+        const happyMod = r._emotionModulate(10, { joy: 5 }, { joy: 1, sorrow: 0 });
+        out["Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)"] =
+            Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
         // Mul-Spec
         const peaceMod = r._emotionModulate(100, { peace: { mul: 1.5 } }, { peace: 1 });
-        out.emotionModulateMulWorks = Math.abs(peaceMod - 150) < 0.001;
+        out["Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)"] =
+            Math.abs(peaceMod - 150) < 0.001;
 
         // --- Vision 4: Sky-Tint moduliert mit awe
         // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
         r.setTimeOfDay(0.5, "human"); // Mittag
-        r.state.player.emotions.awe = 0;
-        r.state.player.emotions.joy = 0;
-        r.state.player.emotions.sorrow = 0;
-        r.state.weather = "sunny";
-        r.state.weatherTransition = null;
+        Object.assign(emo, { awe: 0, joy: 0, sorrow: 0 });
+        st.weather = "sunny";
+        st.weatherTransition = null;
         // der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
         // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
         // aus früheren _feelAction-Bands rein).
-        if (r.state.emotionField) r.state.emotionField.clear();
+        if (st.emotionField) st.emotionField.clear();
         // Der Look-Default `auraTintStrength` macht den Feld/Emotion-Tint subtil → Margen-Tests würden
         // flaky. Die Proben prüfen den MECHANISMUS bei VOLLER Stärke (1.0: große, deterministische Marge);
         // zurückgesetzt am Block-Ende (vor Vision 6).
-        const _origAuraKg3 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
+        const atmo = st.atmosphere;
+        const _origAuraKg3 = atmo.auraTintStrength;
+        atmo.auraTintStrength = 1;
         r._applyDayNightToScene();
         // Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
-        const skyU = r.state.skyboxUniforms.himmelTint;
-        const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        r.state.player.emotions.awe = 1.0;
+        const skyU = st.skyboxUniforms.himmelTint;
+        const skyAtAweZero = skyU.value.clone();
+        emo.awe = 1.0;
         r._applyDayNightToScene();
-        const skyAtAweHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+        const skyAtAweHigh = skyU.value.clone();
         // Bei awe=1 sollte b (Blau-Anteil) sichtbar höher sein
-        out.aweRaisesBlue = skyAtAweHigh.b > skyAtAweZero.b + 0.02;
+        out["Welle 6.G3 V2 Vision: awe=1 hebt Sky-Blau-Anteil sichtbar"] = skyAtAweHigh.b > skyAtAweZero.b + 0.02;
         // r-Anteil auch (Lila = Rot + Blau)
-        out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
+        out["Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)"] = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
         // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-        r.state.player.emotions.awe = 0;
-        r.state.player.emotions.sorrow = 0;
+        emo.awe = 0;
+        emo.sorrow = 0;
         const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
-        r.state.player.emotions.sorrow = 1.0;
-        const satG3High = satG3(r._dayNightComputeTint().skyColor);
-        out.sorrowReducesSaturation = satG3High < satG3Zero;
+        emo.sorrow = 1.0;
+        out["Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung"] =
+            satG3(r._dayNightComputeTint().skyColor) < satG3Zero;
         // Reset
-        r.state.player.emotions.sorrow = 0;
+        emo.sorrow = 0;
         r._applyDayNightToScene();
 
         // --- Vision 6: Wetter-Dauer skaliert mit Emotion
-        // peace=1 → Dauer > Default. chaos=1 → Dauer < Default.
-        r.state.player.emotions.peace = 0;
-        r.state.player.emotions.chaos = 0;
-        r.state.weather = "sunny";
-        r.state.weatherTransition = null;
-        r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
-        const defaultDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r.state.player.emotions.peace = 1.0;
-        r.requestWeatherTransition("rainy");
-        const peaceDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r.state.player.emotions.peace = 0;
-        r.state.player.emotions.chaos = 1.0;
-        r.requestWeatherTransition("rainy");
-        const chaosDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r.state.player.emotions.chaos = 0;
-        out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
-        out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
+        // peace=1 → Dauer > Default. chaos=1 → Dauer < Default; die Dauer des Übergangs sonnig → Regen bei
+        // Frieden `peace` und Chaos `chaos` (Default-Dauer ~45000)
+        const dauer = (peace, chaos) => {
+            st.weatherTransition = null;
+            st.weather = "sunny";
+            Object.assign(emo, { peace, chaos });
+            r.requestWeatherTransition("rainy");
+            return st.weatherTransition && st.weatherTransition.duration;
+        };
+        const defaultDur = dauer(0, 0);
+        const peaceDur = dauer(1, 0);
+        const chaosDur = dauer(0, 1);
+        st.weatherTransition = null;
+        st.weather = "sunny";
+        emo.chaos = 0;
+        out["Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)"] = peaceDur > defaultDur * 1.2;
+        out["Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)"] = chaosDur < defaultDur * 0.7;
 
         // BÜHNE: zurück an den Ursprung der Testzelle
-        r.state.playerMesh.position.x = 0;
+        st.playerMesh.position.x = 0;
 
         // --- Vision 9: Sonne + Mond folgen der Tageszeit (Sternfeld, Mittags-Grenze und Unendlich prüft Himmel-Tag)
-        if (r.state.sunMesh && r.state.moonMesh) {
-            // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
-            // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
-            // ist das kamera-unabhängige Maß für über/unter dem Horizont.
-            const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
-            r.setTimeOfDay(0.5, "human"); // Mittag
+        // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
+        // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
+        // ist das kamera-unabhängige Maß für über/unter dem Horizont.
+        const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
+        // die Höhen von Sonne und Mond um `t`
+        const himmel = (t) => {
+            r.setTimeOfDay(t, "human");
             r._applyDayNightToScene();
-            const sunYNoon = offY(r.state.sunMesh);
-            const moonYNoon = offY(r.state.moonMesh);
-            r.setTimeOfDay(0, "human"); // Mitternacht
-            r._applyDayNightToScene();
-            const sunYMidnight = offY(r.state.sunMesh);
-            const moonYMidnight = offY(r.state.moonMesh);
-            // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
-            out.sunHighAtNoon = sunYNoon > 100;
-            out.moonLowAtNoon = moonYNoon < -100;
-            out.sunLowAtMidnight = sunYMidnight < -100;
-            out.moonHighAtMidnight = moonYMidnight > 100;
-        }
+            return [offY(st.sunMesh), offY(st.moonMesh)];
+        };
+        const [sunYNoon, moonYNoon] = himmel(0.5); // Mittag
+        const [sunYMidnight, moonYMidnight] = himmel(0); // Mitternacht
+        // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
+        out["Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)"] = sunYNoon > 100;
+        out["Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)"] = moonYNoon < -100;
+        out["Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)"] = sunYMidnight < -100;
+        out["Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)"] = moonYMidnight > 100;
         r.setTimeOfDay(0.5, "human"); // Reset
 
         // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
         // (auraTintStrength=1 gilt noch aus dem Block-Anfang — Mechanismus-Marge.)
         // Mock worldFieldAt für hohe magieleitung
         const origWFA = r.worldFieldAt;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
-        };
-        r.state.player.emotions.awe = 0;
+        r.worldFieldAt = () => ({ ...feldMagie });
+        emo.awe = 0;
         r._applyDayNightToScene();
-        const skyMagieField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        r.worldFieldAt = function () {
-            return { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
-        };
+        const skyMagieField = skyU.value.clone();
+        r.worldFieldAt = () => ({ ...feldDichte });
         r._applyDayNightToScene();
-        const skyDichteField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         // Magie-Region sollte mehr Blau haben als dichte-Region
-        out.magieFieldRaisesBlue = skyMagieField.b > skyDichteField.b + 0.02;
+        out["Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)"] =
+            skyMagieField.b > skyU.value.b + 0.02;
         // Reset (auch den Aura-Tint-Default vom Block-Anfang)
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraKg3;
+        atmo.auraTintStrength = _origAuraKg3;
         r.worldFieldAt = origWFA;
         r._applyDayNightToScene();
 
         return out;
     });
 
-    if (wave6g3v2Results && !wave6g3v2Results.error) {
-        check(
-            "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
-            wave6g3v2Results.affinityPicksMagieInMagieField
-        );
-        check(
-            "Welle 6.G3 V2 Vision: Affinity-Pick wählt dichteSoul in dichte-Welt (>66%, 30 Runs)",
-            wave6g3v2Results.affinityPicksDichteInDichteField
-        );
-        check(
-            "Welle 5 Klang: der Tier-Ruf folgt dem Körper (0,7 m ruft höher als 2,2 m)",
-            wave6g3v2Results.rufKleinHoeher
-        );
-        check("Welle 5 Klang: beide Ruf-Grundtöne im Range [60, 2000] Hz", wave6g3v2Results.bothFrequenciesInRange);
-        check(
-            "Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)",
-            wave6g3v2Results.emotionModulateAdditiveWorks
-        );
-        check(
-            "Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)",
-            wave6g3v2Results.emotionModulateMulWorks
-        );
-        check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Blau-Anteil sichtbar", wave6g3v2Results.aweRaisesBlue);
-        check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)", wave6g3v2Results.aweRaisesRedToo);
-        check("Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung", wave6g3v2Results.sorrowReducesSaturation);
-        check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
-        check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
-        check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
-        check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
-        check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
-        check("Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)", wave6g3v2Results.moonHighAtMidnight);
-        check(
-            "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
-            wave6g3v2Results.magieFieldRaisesBlue
-        );
-    } else {
-        check("Welle 6.G3 V2: Vision-Tests laufen", false, wave6g3v2Results ? wave6g3v2Results.error : "no result");
-    }
+    if (erreichbar(check, "Welle 6.G3 V2: Vision-Tests laufen", wave6g3v2Results, "no result"))
+        for (const s in wave6g3v2Results) check(s, wave6g3v2Results[s]);
 }
 
 async function checkBandWelle6G4Atmosphere(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
-    // Material + atmosphärischer Fog.
+    // Material + atmosphärischer Fog; je Prüfung ein Satz der Seite (`out[satz] = urteil`).
     const v827Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
 
         // 1. HemisphereLight im Scene + state-cached
@@ -428,24 +340,25 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r._applyDayNightToScene();
         const atmoU = r._atmoLutBau().U;
         const mE = atmoU.mondE.value;
-        out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
+        out["V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht"] =
+            atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
         // EIN Himmel: am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
         // 18-%-Karte am Anker (Mittelgrau + 1 EV unter der Zenit-Sonne, `_belichtungAnker`), nachts am Deckel.
         // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
         r.setTimeOfDay(0.5, "human");
-        const intensityNoon = r.state.hemiLight.intensity;
-        const belichtungMittag = r.state.renderer.toneMappingExposure;
+        const intensityNoon = st.hemiLight.intensity;
+        const belichtungMittag = st.renderer.toneMappingExposure;
         r.setTimeOfDay(0, "human");
-        const intensityNight = r.state.hemiLight.intensity;
-        const belichtungNacht = r.state.renderer.toneMappingExposure;
-        out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
+        const belichtungNacht = st.renderer.toneMappingExposure;
+        out["EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)"] =
+            intensityNoon < 0.01 && st.hemiLight.intensity > 0.05;
         const B = r.constructor.BELICHTUNG;
         const kAnker = B.zielKarte / ((0.18 / Math.PI) * r._belichtungAnker());
-        out.belichtungAusLicht =
-            Math.abs(belichtungMittag / kAnker - 1) < 0.1 && Math.abs(belichtungNacht - B.max) < 1e-6;
-        out.belichtungZahlen = [belichtungMittag, kAnker, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
+        out[
+            `Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${[belichtungMittag, kAnker, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ")})`
+        ] = Math.abs(belichtungMittag / kAnker - 1) < 0.1 && Math.abs(belichtungNacht - B.max) < 1e-6;
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
@@ -453,40 +366,33 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r.setTimeOfDay(0.5, "human");
         const origWFA = r.worldFieldAt;
         const origAuraAt = r.auraAt;
-        const savedAuraStrength = r.state.atmosphere ? r.state.atmosphere.auraTintStrength : undefined;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
-        };
-        r.auraAt = function (x, z) {
-            return r.worldFieldAt(x, z);
-        };
+        const atmo = st.atmosphere;
+        const savedAuraStrength = atmo.auraTintStrength;
+        atmo.auraTintStrength = 1;
+        r.worldFieldAt = () => ({ lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 });
+        r.auraAt = (x, z) => r.worldFieldAt(x, z);
         r._applyDayNightToScene();
         // Mit `ColorManagement.enabled=true` speichert THREE.Color LINEAR (setHex/setRGB konvertieren
         // sRGB→linear) → verglichen wird die sRGB-Display-Form via `convertLinearToSRGB()`; die Schwelle
         // meint die wahrgenommene Helligkeit.
         const tmpColor = new window.THREE.Color();
-        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
-        const groundLebendigG = tmpColor.g;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
-        };
+        const boden = () => tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
+        const groundLebendigG = boden().g;
+        r.worldFieldAt = () => ({ lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 });
         r._applyDayNightToScene();
-        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
-        const groundGlutR = tmpColor.r;
         // lebendig erhöht Grün, glut erhöht Rot
-        out.groundColorFollowsLebendig = groundLebendigG > 0.3;
-        out.groundColorFollowsGlut = groundGlutR > 0.5;
+        out["HemisphereLight.groundColor.g hoch in lebendig-Region"] = groundLebendigG > 0.3;
+        out["HemisphereLight.groundColor.r hoch in glut-Region"] = boden().r > 0.5;
         r.worldFieldAt = origWFA;
         r.auraAt = origAuraAt;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = savedAuraStrength;
+        atmo.auraTintStrength = savedAuraStrength;
         r._applyDayNightToScene();
 
         // 4. Architektur-Material ist licht-reaktiv (Toon/PBR) — geprüft am KLASSISCHEN Bau-Pfad
         // (_buildFromBlueprint): stein_block ist Studio-bekannt und stünde foundry-ON als f:-Instanz ohne
         // entry.mesh → lokaler Hook; der Spawn wird IMMER entfernt (auch mesh-los — kein Test-Leck).
         let hasToonMaterial = false;
-        if (r.state.blueprints.stein_block) {
+        if (st.blueprints.stein_block) {
             window.__withNoFoundry(() => {
                 const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
                 if (arch && arch.mesh) {
@@ -506,7 +412,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 if (arch) r.removeArchitecture(arch);
             });
         }
-        out.architectureUsesLambert = hasToonMaterial;
+        out["V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)"] = hasToonMaterial;
 
         // Terrain-Tag/Nacht = die geteilten PBR-Lichter (Sonne/Fog/Hemisphere) — geprüft in den
         // `_applyDayNightToScene`-Bändern, nicht hier.
@@ -514,73 +420,54 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         return out;
     });
 
-    if (v827Results && !v827Results.error) {
-        check(
-            "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
-            v827Results.fogColorSet
-        );
-        check("EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
-        check(
-            `Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
-            v827Results.belichtungAusLicht
-        );
-        check("HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
-        check("HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
-        check(
-            "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
-            v827Results.architectureUsesLambert
-        );
-    } else {
-        check("Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
-    }
+    if (erreichbar(check, "Tiefe-Welle Tests laufen", v827Results, "no result"))
+        for (const s in v827Results) check(s, v827Results[s]);
 
     // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
     // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
     // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
     const v828Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
 
         // --- Phase D: Wind + Wolken + Wasser ---
-        // Wind lebt jetzt im Instanced-Gras-Material.
-        const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
+        // Wind lebt jetzt im Instanced-Gras-Material — geteilt.
+        const wm1 = r._grassInstanceMat();
+        out["D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)"] = !!wm1 && wm1 === r._grassInstanceMat();
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
-        r.state.weatherTransition = null;
-        r.state.weather = "rainy";
-        r._applyDayNightToScene();
-        const cloudRainy = r.state.skyboxUniforms.cloudCover.value;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r._applyDayNightToScene();
-        const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
-        out.cloudsFollowWeather = cloudRainy > cloudSunny;
+        const wolken = (w) => {
+            st.weatherTransition = null;
+            st.weather = w;
+            r._applyDayNightToScene();
+            return st.skyboxUniforms.cloudCover.value;
+        };
+        out["D: Wolken-Cover folgt weather (rainy > sunny)"] = wolken("rainy") > wolken("sunny");
         // ===== WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Ursprung =====
         // KONSUM: nach fernem Kamera-Teleport steht die Sonne nahe der Kamera (in Himmelsrichtung),
         // nicht um den Welt-Ursprung.
-        out.sunFollowsCamera = false;
-        out.sunNotAtOrigin = false;
-        if (r.state.sunMesh && r.state.camera) {
+        let folgt = false,
+            fern = false;
+        if (st.sunMesh && st.camera) {
             r._updateCelestialBodies(Math.PI * 0.3, 1.0); // setzt skyOffset
-            const camOrig = r.state.camera.position.clone();
+            const camOrig = st.camera.position.clone();
             // BÜHNE: ein ferner Spieler für den Himmels-Folger (nur der Abstand zählt)
-            r.state.camera.position.set(2000, 50, 2000); // ferner Spieler
+            st.camera.position.set(2000, 50, 2000); // ferner Spieler
             r._followCelestialBodies();
-            const sun = r.state.sunMesh;
+            const sun = st.sunMesh;
             const off = sun.userData && sun.userData.skyOffset ? sun.userData.skyOffset : null;
             if (off) {
-                const dCam = sun.position.distanceTo(r.state.camera.position);
-                const dOrig = sun.position.length();
                 // Sonne ~|skyOffset| von der Kamera entfernt (in Himmelsrichtung)…
-                out.sunFollowsCamera = Math.abs(dCam - off.length()) < 1.0;
+                folgt = Math.abs(sun.position.distanceTo(st.camera.position) - off.length()) < 1.0;
                 // …und WEIT vom Ursprung (sie orbitiert nicht mehr um (0,0,0)).
-                out.sunNotAtOrigin = dOrig > 1500;
+                fern = sun.position.length() > 1500;
             }
-            r.state.camera.position.copy(camOrig);
+            st.camera.position.copy(camOrig);
             r._followCelestialBodies();
         }
+        out["V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)"] = folgt;
+        out["V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)"] = fern;
         // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE Stoff-Bruch — der Zeuge zählt jede Meldung
         // „STOFF: …" über den Bau (K22; der Marker `__toonColorNodeError` hatte keinen Schreiber mehr).
         const _zTerr = window.__stoffZeuge(r);
@@ -590,18 +477,22 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         } finally {
             _zTerr.zu();
         }
-        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && _zTerr.brueche.length === 0;
-        out.terrainColorNodeError = _zTerr.brueche[0] || null;
+        const terrBruch = _zTerr.brueche[0];
+        out[
+            `Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${terrBruch ? " — " + terrBruch : ""}`
+        ] = !!(_terrMat && _terrMat.colorNode) && _zTerr.brueche.length === 0;
         const _zAer = window.__stoffZeuge(r); // der Zeuge der Aerial-Prüfung (6): Struktur und Phantom
         // Die 2.5D-Lichtung flacht nur die SHADING-Normale (normalNode, eingefrorene Konstante); die
         // GEOMETRIE behält die echte Normale (Schatten-Bias-Vertrag — gebackene Normalen = Akne an Hängen).
-        out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode);
+        out["B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)"] = !!(
+            _terrMat && _terrMat.normalNode
+        );
         // Der AKNE-WÄCHTER: ein echter Chunk trägt VARIIERENDE Normalen
         // (mindestens ein gesampelter Vertex weicht von up ab) — ein
         // up-gebackenes Normal-Attribut wäre die Akne-Regression.
-        out.terrainNormalsReal = (() => {
+        out["AKNE-WÄCHTER: die Chunk-GEOMETRIE trägt echte Oberflächen-Normalen (Schatten-Vertrag)"] = (() => {
             try {
-                for (const entry of r.state.voxelChunks.values()) {
+                for (const entry of st.voxelChunks.values()) {
                     const g = entry && entry.mesh && entry.mesh.geometry;
                     const n = g && g.attributes && g.attributes.normal;
                     if (!n || n.count < 64) continue;
@@ -621,10 +512,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // transparente Phantome bleiben unberührt, material.color bleibt setzbar (kein colorNode-Override).
         // (1) Terrain (vertexColors) trägt KEINE Antwort: seine Mikro-Tiefe trägt der colorNode, und Licht trägt kein Profil
         // (F6 — das additive Band leuchtete den Boden am streifenden Blick der Ferne aus sich selbst).
-        out.terrainOhneAntwort = !!_terrMat && !_terrMat.outputNode;
+        out[
+            "V17.J → F6: das Terrain trägt keine Antwort nach dem Licht (kein outputNode — der Boden leuchtet nicht aus sich selbst)"
+        ] = !!_terrMat && !_terrMat.outputNode;
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
         const _structMat = r._buildToonNodeMaterial({ color: 0x808080 });
-        out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
+        out["V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)"] = !!(
+            _structMat && _structMat.outputNode
+        );
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
@@ -637,63 +532,58 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 _dynColorOk = false;
             }
         }
-        out.structDynamicColorPreserved = _dynColorOk;
+        out["V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)"] = _dynColorOk;
         // (5) transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element).
         const _phantomMat = r._buildToonNodeMaterial({ color: 0x44ccff, transparent: true, opacity: 0.4 });
-        out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
-        // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
+        out["V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)"] =
+            !!_phantomMat && !_phantomMat.outputNode;
+        // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin): der Zeuge zählte jeden Stoff-Bruch von
+        // Terrain, Struktur, Phantom
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
-        out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
-        out.aerialOutputError = _aerBrueche[0] || null;
+        out[`V17.J: kein still gefangener Aerial-Node-Fehler${_aerBrueche[0] ? " — " + _aerBrueche[0] : ""}`] =
+            _aerBrueche.length === 0;
         // Welt-Wasser — das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
 
         // --- Atmosphäre-Persistenz --- (der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
-        const microAlt = r.state.atmosphere ? r.state.atmosphere.microStrength : undefined;
+        const microAlt = st.atmosphere.microStrength;
         r.setMicroStrength(0.15);
         const snap = r.buildStateSnapshot();
-        out.atmospherePersisted = !!(snap && snap.atmosphere && Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01);
-        r.setMicroStrength(microAlt == null ? r.constructor.AERIAL.microStrength : microAlt);
+        out["state.atmosphere persistiert im Snapshot"] = !!(
+            snap &&
+            snap.atmosphere &&
+            Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01
+        );
+        r.setMicroStrength(microAlt ?? r.constructor.AERIAL.microStrength);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
-        r._ensureAtmoUniforms();
-        const aoRet = r.setCavityAO(0.3);
-        out.cavityAOSetter =
-            aoRet === 0.3 &&
-            r.state.atmosphere.cavityAO === 0.3 &&
-            r.state.atmoUniforms &&
-            Math.abs(r.state.atmoUniforms.aoScale.value - 0.3) < 1e-6;
-        const esRet = r.setEdgeSharp(0);
-        out.edgeSharpSetter = esRet === 0 && r.state.atmosphere.kantenSchaerfe === 0;
-        const txRet = r.setSurfaceTexture(0);
-        out.surfTexSetter =
-            txRet === 0 &&
-            r.state.atmosphere.triplanar === 0 &&
-            r.state.atmoUniforms &&
-            r.state.atmoUniforms.triplanarScale.value === 0;
-        const cvRet = r.setColorVariation(0);
-        out.colorVarSetter =
-            cvRet === 0 &&
-            r.state.atmosphere.colorVar === 0 &&
-            r.state.atmoUniforms &&
-            r.state.atmoUniforms.tintScale.value === 0;
+        const au = r._ensureAtmoUniforms();
+        out["V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)"] =
+            r.setCavityAO(0.3) === 0.3 && st.atmosphere.cavityAO === 0.3 && Math.abs(au.aoScale.value - 0.3) < 1e-6;
+        out["V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert"] =
+            r.setEdgeSharp(0) === 0 && st.atmosphere.kantenSchaerfe === 0;
+        out["setSurfaceTexture pusht live ins triplanar-Uniform + persistiert"] =
+            r.setSurfaceTexture(0) === 0 && st.atmosphere.triplanar === 0 && au.triplanarScale.value === 0;
+        out["setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)"] =
+            r.setColorVariation(0) === 0 && st.atmosphere.colorVar === 0 && au.tintScale.value === 0;
         // B3: setTerrainFlatten/Slider/Uniform sind GESCHNITTEN (gebacken);
         // die Wahrheit lebt als statische Konstante (Worker-Mirror-Vertrag).
-        out.terrainFlattenSetter =
+        out["B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante"] =
             typeof r.setTerrainFlatten === "undefined" &&
             Number.isFinite(AnazhRealm.TERRAIN_NORMAL_FLATTEN) &&
-            !!(r.state.atmoUniforms && r.state.atmoUniforms.terrainFlatten) &&
-            Math.abs(r.state.atmoUniforms.terrainFlatten.value - AnazhRealm.TERRAIN_NORMAL_FLATTEN) < 1e-6 &&
+            !!au.terrainFlatten &&
+            Math.abs(au.terrainFlatten.value - AnazhRealm.TERRAIN_NORMAL_FLATTEN) < 1e-6 &&
             !document.getElementById("slider-flatten");
-        out.sliderHeadroom = r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
+        out["Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0"] =
+            r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
         // Werte wiederherstellen, die der j4SlidersPersist-Test unten erwartet
         // (mein Headroom-Check hat cavityAO/triplanar verändert).
         r.setCavityAO(0.3);
         r.setSurfaceTexture(0);
         r.setColorVariation(1.0);
         const snap2 = r.buildStateSnapshot();
-        out.j4SlidersPersist = !!(
+        out["V17.J4: die beiden Render-Regler reisen im Snapshot mit"] = !!(
             snap2 &&
             snap2.atmosphere &&
             Math.abs(snap2.atmosphere.cavityAO - 0.3) < 1e-6 &&
@@ -707,78 +597,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         return out;
     });
 
-    if (v828Results && !v828Results.error) {
-        check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
-        check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
-        check(
-            "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
-            v828Results.sunFollowsCamera
-        );
-        check(
-            "V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)",
-            v828Results.sunNotAtOrigin
-        );
-        check(
-            `Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
-            v828Results.terrainColorNodeBuilds === true
-        );
-        // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
-        check(
-            "V17.J → F6: das Terrain trägt keine Antwort nach dem Licht (kein outputNode — der Boden leuchtet nicht aus sich selbst)",
-            v828Results.terrainOhneAntwort
-        );
-        check(
-            "V17.J: Struktur bekommt DENSELBEN Aerial-outputNode (eine Atmosphäre, viele Leser)",
-            v828Results.structHasAerialOutput
-        );
-        check(
-            "V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)",
-            v828Results.structDynamicColorPreserved
-        );
-        check(
-            "B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)",
-            v828Results.terrainNormalFlatten
-        );
-        check(
-            "AKNE-WÄCHTER: die Chunk-GEOMETRIE trägt echte Oberflächen-Normalen (Schatten-Vertrag)",
-            v828Results.terrainNormalsReal
-        );
-        check(
-            "V17.J: transparentes Phantom bekommt KEINEN Aerial-outputNode (UI-Element)",
-            v828Results.phantomNoAerial
-        );
-        check(
-            `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
-            v828Results.aerialNoError === true
-        );
-        check("state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
-        check(
-            "V17.J4: setCavityAO pusht live ins aoScale-Uniform + persistiert (Slider-KONSUM)",
-            v828Results.cavityAOSetter
-        );
-        check("V17.J4: setEdgeSharp setzt die Post-FX-Kanten-Schärfe + persistiert", v828Results.edgeSharpSetter);
-        check("setSurfaceTexture pusht live ins triplanar-Uniform + persistiert", v828Results.surfTexSetter);
-        check(
-            "setColorVariation pusht live ins tint-Uniform (die warm/kühl-Patches)",
-            v828Results.colorVarSetter
-        );
-        check("V17.J4: die beiden Render-Regler reisen im Snapshot mit", v828Results.j4SlidersPersist);
-        check(
-            "B3: Slider+Setter geschnitten; der Konsolen-Hebel lebt aus der Konstante",
-            v828Results.terrainFlattenSetter
-        );
-        check(
-            "Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
-            v828Results.sliderHeadroom
-        );
-    } else {
-        check("Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
-    }
+    if (erreichbar(check, "Welt-Atem-Vollendung Tests laufen", v828Results, "no result"))
+        for (const s in v828Results) check(s, v828Results[s]);
 
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
     // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
     const v829Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
 
         // --- Avatar-Hide im 1st-Person ---
@@ -787,7 +613,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // der im 3rd warf, liegt weiter auf SHADOW_TWIN_LAYER (der Wurf-Ebene, K72 — die Kaskaden werfen ihn); 3rd gibt jede
         // Maske genau zurück; `visible` wechselt nie.
         {
-            const pm = r.state.playerMesh;
+            const pm = st.playerMesh;
             const E = r.constructor.SHADOW_TWIN_LAYER;
             const knoten = [];
             const sammle = (o) => {
@@ -798,7 +624,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
             if (kopf) sammle(kopf);
             for (const ch of (pm && pm.children) || []) if (ch.userData && ch.userData._creatureSkin) sammle(ch);
-            const vorher = r.state.cameraMode;
+            const vorher = st.cameraMode;
             r.setCameraMode("third");
             const dritt = knoten.map((o) => o.layers.mask);
             const sicht = knoten.map((o) => o.visible);
@@ -814,23 +640,28 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.setCameraMode("third");
             const zurueck = knoten.every((o, i) => o.layers.mask === dritt[i] && o.visible === sicht[i]);
             r.setCameraMode(vorher);
-            out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
+            out[
+                "(0910-5): die Ego-Sicht ist EIN Ebenen-Schalter — 1st nimmt den Leib aus Ebene 0 auf SHADOW_TWIN_LAYER (er wirft), 3rd gibt die Maske zurück, visible wechselt nie"
+            ] = [
+                leib > 0 && ego === true && zurueck === true,
+                JSON.stringify({ knoten: knoten.length, leib, ego, zurueck }),
+            ];
         }
 
         // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), `_grassInstanceMat` ist geteilt
-        out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
+        out["(V9.39): state.voxelChunkGrass ist eine Map"] = !!st.voxelChunkGrass && st.voxelChunkGrass instanceof Map;
         // die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
         let grassInstances = 0,
             grassCells = 0;
-        if (r.state.voxelChunkGrass) {
-            for (const v of r.state.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass) {
+            for (const v of st.voxelChunkGrass.values()) {
                 grassCells++;
                 if (v && v.isInstancedMesh) grassInstances++;
             }
         }
-        out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
-        out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
+        out["(V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)"] =
+            grassCells > 0 && grassInstances === 0;
 
         // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
@@ -838,8 +669,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
         {
             const cfg = r._voxelChunkConfig(0);
-            const lpc = r.state.lastPlayerVoxelChunk;
-            const e = lpc && r.state.voxelChunks && r.state.voxelChunks.get(lpc.cx + "," + lpc.cz);
+            const lpc = st.lastPlayerVoxelChunk;
+            const e = lpc && st.voxelChunks && st.voxelChunks.get(lpc.cx + "," + lpc.cz);
             let geo = e && e.mesh && e.mesh.geometry;
             if (geo && !(geo.attributes.position.array && geo.attributes.position.array.length)) geo = null;
             const karte = [];
@@ -862,14 +693,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             }
             const median = (a) => (a.length ? a.slice().sort((u, v) => u - v)[Math.floor(a.length / 2)] : null);
             const anteil = (a) => (a.length ? a.filter((d) => d <= 0.05).length / a.length : 0);
-            out.bodenKarteTrifftMesh = karte.length >= 128 && median(karte) <= 0.02 && anteil(karte) >= 0.75;
-            out.bodenKarteZahl =
-                `${karte.length} Punkte: Karte Median ${(100 * (median(karte) || 0)).toFixed(1)} cm, ` +
-                `${Math.round(100 * anteil(karte))} % ≤ 5 cm · Gesetz Median ${(100 * (median(gesetz) || 0)).toFixed(1)} cm, ` +
-                `${Math.round(100 * anteil(gesetz))} % ≤ 5 cm`;
+            // die Abweichung einer Reihe: Median in cm und Anteil ≤ 5 cm
+            const zahl = (a) =>
+                `Median ${(100 * (median(a) || 0)).toFixed(1)} cm, ${Math.round(100 * anteil(a))} % ≤ 5 cm`;
+            out[
+                `die Boden-Karte ist der gerenderte Boden (${karte.length} Punkte: Karte ${zahl(karte)} · Gesetz ${zahl(gesetz)})`
+            ] = karte.length >= 128 && median(karte) <= 0.02 && anteil(karte) >= 0.75;
             // Die büschel-reichste Kachel im 7×7-Umkreis des Spielers (die Spawn-Kachel selbst kann Fels sein).
             const NW = r.constructor.NAH_WIESE;
-            const pp = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+            const pp = st.playerMesh.position;
             const t0x = Math.floor(pp.x / NW.kachel);
             const t0z = Math.floor(pp.z / NW.kachel);
             let tx = t0x;
@@ -890,82 +722,58 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 const y = r._bodenSichtAt(b.x, b.z);
                 return y !== null && Math.abs(y - b.y) < 1e-6;
             };
-            out.nahWieseStabil =
-                Array.isArray(b1) && b1.length > 0 && JSON.stringify(b1) === JSON.stringify(b2) && b1.every(fuss);
-            out.nahWieseZahl = Array.isArray(b1) ? `${b1.length} Büschel in Kachel ${tx},${tz}` : "Kachel wartet";
+            const reihe = Array.isArray(b1);
+            out[
+                `Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${reihe ? `${b1.length} Büschel in Kachel ${tx},${tz}` : "Kachel wartet"})`
+            ] = reihe && b1.length > 0 && JSON.stringify(b1) === JSON.stringify(b2) && b1.every(fuss);
         }
+        out["Gras-Material ist geteilt (ein Draw-Call-Material)"] = r._grassInstanceMat() === r._grassInstanceMat();
 
         // --- Genesis-Plattform ---
-        // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
-        out.genesisArchExists = !!(
-            r.state.architectures && r.state.architectures.some((a) => a && a.type === "start_plattform")
-        );
-        // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
-        const before = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+        // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein; ein zweiter Aufruf erzeugt KEINE
+        // zweite Plattform (Idempotenz)
+        const plattformen = () => st.architectures.filter((a) => a && a.type === "start_plattform").length;
+        const before = plattformen();
+        out["Genesis-Plattform-Architektur nach Spawn vorhanden"] = before > 0;
         r._ensureGenesisPlatform();
-        const after = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
-        out.genesisIdempotent = before === after;
+        out["_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)"] = plattformen() === before;
 
         // --- Adaptives Wasser ---
-        out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
+        out["state.waterLevel ist gesetzt (adaptiv)"] =
+            typeof st.waterLevel === "number" && Number.isFinite(st.waterLevel);
 
         return out;
     });
 
-    if (v829Results && !v829Results.error) {
-        {
-            const e = v829Results.egoEbene || {};
-            check(
-                "(0910-5): die Ego-Sicht ist EIN Ebenen-Schalter — 1st nimmt den Leib aus Ebene 0 auf SHADOW_TWIN_LAYER (er wirft), 3rd gibt die Maske zurück, visible wechselt nie",
-                e.leib > 0 && e.ego === true && e.zurueck === true,
-                JSON.stringify(e)
-            );
-        }
-        check("(V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
-        check(
-            "(V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
-            v829Results.grassCellsBookedHalmFree
-        );
-        check(
-            `die Boden-Karte ist der gerenderte Boden (${v829Results.bodenKarteZahl})`,
-            v829Results.bodenKarteTrifftMesh
-        );
-        check(
-            `Nah-Wiese Γ5-stabil, Fuß auf der Boden-Karte (${v829Results.nahWieseZahl})`,
-            v829Results.nahWieseStabil
-        );
-        check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-        check("Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
-        check("_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
-        check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-    } else {
-        check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
-    }
+    if (erreichbar(check, "Die lebendige Welt Tests laufen", v829Results, "no result"))
+        for (const s in v829Results) check(s, ...[v829Results[s]].flat());
 
     // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
     const v833Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
 
         // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
         const dive = r._swimVerticalVelocity(0, 4, true, false);
         const rise = r._swimVerticalVelocity(0, 4, false, true);
         const neutral = r._swimVerticalVelocity(0, 4, false, false);
-        out.diveSinks = dive < 0;
-        out.riseLifts = rise > 0;
-        out.neutralFloats = neutral > 0 && neutral <= 2.5;
-        out.diveBelowNeutral = dive < neutral;
+        out["Tauchen — Shift erzeugt Sink-Geschwindigkeit"] = dive < 0;
+        out["Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit"] = rise > 0;
+        out["Neutral — natürlicher Auftrieb treibt zur Oberfläche"] = neutral > 0 && neutral <= 2.5;
+        out["Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)"] = dive < neutral;
         // Aktives Auftauchen konvergiert per lerp gegen das Gesetz (schwimmen.aufV ≈ 1.0 m/s): gemessen wird
         // die KONVERGIERTE Steig-Geschwindigkeit gegen den Neutral-Auftrieb, nicht der erste lerp-Schritt.
         let riseKonv = 0;
         for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
-        out.riseAboveNeutral = riseKonv > neutral;
-        out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
+        out["Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)"] = riseKonv > neutral;
+        out["An der Oberfläche kein Auftriebs-Drift (depth 0)"] =
+            Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
         // Im echten Charakter-Schritt (Wasser 3 m über dem Körper): Shift sinkt, Space steigt, die Augen sind getaucht.
         // Die Bühne ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie
         // mit.
         {
-            const s = r.state,
+            const s = st,
                 pm = s.playerMesh,
                 pos = pm.position.clone(),
                 sta = s.player.stamina,
@@ -994,8 +802,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 const tauch = vy({ sprint: true }),
                     auf = vy({ sprung: true }),
                     ruhe = vy({});
-                out.eyesFlagComputed = s.playerUnderwater === true && s.playerEyesUnderwater === true;
-                out.physicsUsesSwimFn = tauch < 0 && tauch < ruhe && auf > 0;
+                out["getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)"] =
+                    s.playerUnderwater === true && s.playerEyesUnderwater === true;
+                out["im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)"] =
+                    tauch < 0 && tauch < ruhe && auf > 0;
             } finally {
                 for (const k in buehne) delete r[k];
                 Object.assign(s.verbTafel, { sprint: false, sprung: false });
@@ -1008,66 +818,49 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         {
             const gh = r._buildHumanGroup();
-            out.humanYXZ = gh.rotation.order === "YXZ";
+            out["Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)"] = gh.rotation.order === "YXZ";
             r._animateHuman(gh, 1.0, 0, false, true);
-            out.humanSwimLean = Math.abs(gh.rotation.x) > 0.05;
+            out["Mensch neigt sich unter Wasser (Schwimm-Pose)"] = Math.abs(gh.rotation.x) > 0.05;
             r._animateHuman(gh, 1.0, 0, false, false);
-            out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
+            out["Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)"] = Math.abs(gh.rotation.x) < 0.001;
             r._disposeSoulGroup(gh);
 
             // Phoenix/Drache sind Compound-Seelen: die EINE Schwimm-Lehne (SOUL_SWIM_LEAN) wirkt über
             // animatePlayerSoul. Echter Pfad: Seele wechseln, underwater setzen, rotation.x lesen.
-            const savedSoulSwim = r.state.player.soul;
-            const savedUw = r.state.playerUnderwater;
+            const savedSoulSwim = st.player.soul;
+            const savedUw = st.playerUnderwater;
             const L = r.constructor.SOUL_SWIM_LEAN;
             const swimProbe = (soulName) => {
                 r.applyPlayerSoul(soulName);
-                r.state.playerUnderwater = true;
-                r.state.player.animationLastTick = -Infinity;
+                st.playerUnderwater = true;
+                st.player.animationLastTick = -Infinity;
                 r.animatePlayerSoul(20.0);
-                const lean = r.state.playerMesh.rotation.x;
-                r.state.playerUnderwater = false;
+                const lean = st.playerMesh.rotation.x;
+                st.playerUnderwater = false;
                 r.animatePlayerSoul(20.1);
-                const reset = r.state.playerMesh.rotation.x;
+                const reset = st.playerMesh.rotation.x;
                 return (Math.abs(lean - L.idle) < 1e-6 || Math.abs(lean - L.moving) < 1e-6) && Math.abs(reset) < 1e-9;
             };
             // ALTLASTEN-NULL: die Compound-Schwimm-Lehne an den TIER-Körpern
             // (dieselbe EINE SOUL_SWIM_LEAN-Quelle für jede Compound-Seele).
-            out.phoenixSwimLean = swimProbe("wolf");
-            out.dragonSwimLean = swimProbe("baer");
-            r.state.playerUnderwater = savedUw;
+            out["(NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)"] = swimProbe("wolf");
+            out["(NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)"] = swimProbe("baer");
+            st.playerUnderwater = savedUw;
             r.applyPlayerSoul(savedSoulSwim);
         }
 
-        if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
+        r._ensureHydroSurfaceMaterial();
 
         return out;
     });
 
-    if (v833Results && !v833Results.error) {
-        check("Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
-        check("Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
-        check("Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
-        check("Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
-        check("Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
-        check("An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-        check("im Charakter-Schritt sinkt Sprint und steigt Sprung unter Wasser (die Verb-Tafel)", v833Results.physicsUsesSwimFn);
-        check("getaucht sind die Augen unter dem Spiegel (playerEyesUnderwater)", v833Results.eyesFlagComputed);
-        check("Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
-        check("Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
-        check("Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
-        check("(NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
-        check("(NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
-    } else {
-        check("Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
-    }
+    if (erreichbar(check, "Wasser-Vollendung Tests laufen", v833Results, "no result"))
+        for (const s in v833Results) check(s, v833Results[s]);
 }
 
 async function checkBandV8LatePolishAnd6XContinued(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
-    // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
+    const { page, check } = ctx;
+    // ### Regler: Sicht-Ring + Cel-Stufen + Fog ### — je Prüfung ein Satz der Seite (`out[satz] = urteil`)
     const v840Results = await safeEvaluate(
         page,
         (stammDateien) => {
@@ -1075,24 +868,22 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             const ring = document.getElementById("slider-ring");
             // der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
             // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
-            out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
+            out["V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)"] =
+                !!ring && ring.max === "12" && ring.value === "4";
 
             // Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
             const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
             const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
-            out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
+            out["jede Stamm-Datei mit Cache-Buster ?v= eingebunden"] =
+                stammDateien.length > 0 && ohneBuster.length === 0;
 
             return out;
         },
         stammLib.dateien(path.join(SKRIPTE, ".."))
     );
 
-    if (v840Results && !v840Results.error) {
-        check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
-    } else {
-        check("Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
-    }
+    if (erreichbar(check, "Regler-Tests laufen", v840Results, "no result"))
+        for (const s in v840Results) check(s, v840Results[s]);
 
     // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
     const v847 = await safeEvaluate(page, () => {
@@ -1104,199 +895,179 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     // ### Terrain-Schatten + Tag-Nacht-Glättung ###
     const v848Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
         // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
-        out.targetInScene =
-            !!r.state.directionalLight &&
-            !!r.state.directionalLight.target &&
-            r.state.directionalLight.target.parent === r.state.scene;
-        const pm = r.state.playerMesh;
-        if (pm) {
-            const ox = pm.position.x;
-            const oz = pm.position.z;
-            const oTod = r.state.timeOfDay;
-            // deterministische schräge Sonne: der Light-Space-Snap
-            // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
-            // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
-            r.setTimeOfDay(0.3, "human");
-            // BÜHNE: eine nicht achsparallele Lage für den Schatten-Snap (nur die Bruchteile zählen)
-            pm.position.x = 123.5;
-            pm.position.z = -77.25;
-            r._applyDayNightToScene();
-            const tgt = r.state.directionalLight.target.position;
-            // Texel-Snap-Toleranz: das Shadow-Target FOLGT dem Spieler, auf das
-            // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
-            // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
-            out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
-            // Snap-Stabilität: Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (Texel-Grid). Der Light-Space-
-            // Snap quantisiert die laterale Target-Bewegung auf ganze Texel: ~0 (gleiche Zelle) ODER ein sauberer
-            // Sprung (≥~0.29 m), NIE ein Kriechen in Schritt-Höhe (~0.05 m). Bewegung entlang sunDir verschiebt
-            // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der replizierten _dayNightSunDirection-Formel.
-            const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
-            let _sx = Math.cos(_ang);
-            let _sy = Math.sin(_ang);
-            let _sz = Math.sin(_ang * 0.5) * 0.4;
-            const _sl = Math.hypot(_sx, _sy, _sz) || 1;
-            _sx /= _sl;
-            _sy /= _sl;
-            _sz /= _sl;
-            const tgtX1 = tgt.x;
-            const tgtY1 = tgt.y;
-            const tgtZ1 = tgt.z;
-            pm.position.x = 123.5 + 0.05;
-            pm.position.z = -77.25 + 0.05;
-            r._applyDayNightToScene();
-            const tgt2 = r.state.directionalLight.target.position;
-            const dX = tgt2.x - tgtX1;
-            const dY = tgt2.y - tgtY1;
-            const dZ = tgt2.z - tgtZ1;
-            const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
-            const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
-            out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
-            pm.position.x = ox;
-            pm.position.z = oz;
-            r.setTimeOfDay(oTod, "human");
-            r._applyDayNightToScene();
-        }
+        const dl = st.directionalLight;
+        out["Light-Target im Szenengraph"] = !!dl && !!dl.target && dl.target.parent === st.scene;
+        const pm = st.playerMesh;
+        const ox = pm.position.x;
+        const oz = pm.position.z;
+        const oTod = st.timeOfDay;
+        // deterministische schräge Sonne: der Light-Space-Snap
+        // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
+        // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
+        r.setTimeOfDay(0.3, "human");
+        // BÜHNE: eine nicht achsparallele Lage für den Schatten-Snap (nur die Bruchteile zählen)
+        pm.position.x = 123.5;
+        pm.position.z = -77.25;
+        r._applyDayNightToScene();
+        const tgt = st.directionalLight.target.position;
+        // Texel-Snap-Toleranz: das Shadow-Target FOLGT dem Spieler, auf das
+        // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
+        // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
+        out["Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)"] =
+            Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
+        // Snap-Stabilität: Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (Texel-Grid). Der Light-Space-
+        // Snap quantisiert die laterale Target-Bewegung auf ganze Texel: ~0 (gleiche Zelle) ODER ein sauberer
+        // Sprung (≥~0.29 m), NIE ein Kriechen in Schritt-Höhe (~0.05 m). Bewegung entlang sunDir verschiebt
+        // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der replizierten _dayNightSunDirection-Formel.
+        const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
+        const sd = [Math.cos(_ang), Math.sin(_ang), Math.sin(_ang * 0.5) * 0.4];
+        const _sl = Math.hypot(...sd) || 1;
+        const [_sx, _sy, _sz] = sd.map((v) => v / _sl);
+        const vor = tgt.clone();
+        pm.position.x = 123.5 + 0.05;
+        pm.position.z = -77.25 + 0.05;
+        r._applyDayNightToScene();
+        const tgt2 = st.directionalLight.target.position;
+        const dX = tgt2.x - vor.x;
+        const dY = tgt2.y - vor.y;
+        const dZ = tgt2.z - vor.z;
+        const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
+        const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
+        out["Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT"] =
+            latMove < 0.01 || latMove > 0.2;
+        pm.position.x = ox;
+        pm.position.z = oz;
+        r.setTimeOfDay(oTod, "human");
+        r._applyDayNightToScene();
         return out;
     });
 
-    if (v848Results && !v848Results.error) {
-        check("Light-Target im Szenengraph", v848Results.targetInScene);
-        check("Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
-        check(
-            "Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
-            v848Results.shadowSnapStable
-        );
-    } else {
-        check("Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
-    }
+    if (erreichbar(check, "Terrain-Schatten-Tests laufen", v848Results, "no result"))
+        for (const s in v848Results) check(s, v848Results[s]);
 
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
     const v849Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
         // Die Herde (Kern verbandZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
         // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).
-        const _saveMax849 = r.state.maxCreatures;
-        const _baseN849 = r.state.creatures.length;
-        r.state.maxCreatures = 70;
+        const _saveMax849 = st.maxCreatures;
+        const _baseN849 = st.creatures.length;
+        st.maxCreatures = 70;
         let _g849 = 0;
-        while (r.state.creatures.length < 60 && _g849++ < 120) {
-            const p = r.state.playerMesh.position;
+        while (st.creatures.length < 60 && _g849++ < 120) {
+            const p = st.playerMesh.position;
             r.spawnCreatureAt(p.x + (Math.random() - 0.5) * 50, p.y, p.z + (Math.random() - 0.5) * 50, "happy");
         }
-        const before = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
-        let crashed = false;
+        const lagen = () => st.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+        const before = lagen();
+        let fehler = null;
         try {
             for (let k = 0; k < 8; k++) r.updateCreatures(0.05);
         } catch (e) {
-            crashed = true;
-            out.err = String(e && e.message);
+            fehler = String(e && e.message);
         }
-        out.noCrash = !crashed;
-        const after = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+        out["updateCreatures läuft mit 60 Kreaturen ohne Crash"] = [fehler === null, fehler];
+        const after = lagen();
         let moved = 0;
         for (let k = 0; k < before.length; k++) {
             if (Math.abs(before[k] - after[k]) > 0.001) moved++;
         }
-        out.creaturesMoved = before.length > 0 && moved > before.length * 0.5;
-        out.allFinite = r.state.creatures.every(
+        out["Kreaturen bewegen sich weiterhin (Verhalten erhalten)"] = before.length > 0 && moved > before.length * 0.5;
+        out["alle Kreatur-Positionen endlich (keine NaN)"] = st.creatures.every(
             (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
         );
         // sauber abräumen: die Test-Kreaturen entfernen + den Cap restaurieren (kein Leck).
-        while (r.state.creatures.length > _baseN849) {
-            r.removeCreature(r.state.creatures[r.state.creatures.length - 1]);
+        while (st.creatures.length > _baseN849) {
+            r.removeCreature(st.creatures[st.creatures.length - 1]);
         }
-        r.state.maxCreatures = _saveMax849;
+        st.maxCreatures = _saveMax849;
         return out;
     });
 
-    if (v849Results && !v849Results.error) {
-        check("updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
-        check("Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
-        check("alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
-    } else {
-        check("updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
-    }
+    if (erreichbar(check, "updateCreatures-Politur-Tests laufen", v849Results, "no result"))
+        for (const s in v849Results) check(s, ...[v849Results[s]].flat());
 
     // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
     const wave6x4bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
+        const $ = (id) => document.getElementById(id);
+        // der Regler `el` auf `v`, wie die Hand ihn schiebt (der input-Ruf)
+        const schiebe = (el, v) => {
+            el.value = v;
+            el.dispatchEvent(new Event("input"));
+        };
 
         // --- B3: Stats-HUD DOM-Existenz
-        out.statsHudExists = !!document.getElementById("stats-hud");
-        out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
+        out["Welle 6.X.4 B3: #stats-hud im DOM"] = !!$("stats-hud");
+        out["Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert"] = !!$("stats-hud-stam-fill");
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // Fix: HP/Stamina liegen auf state.player.*, nicht state.*
-        r.state.player.hp = 50;
-        r.state.player.hpMax = 100;
-        r.state.player.stamina = 75;
-        r.state.player.staminaMax = 100;
+        Object.assign(st.player, { hp: 50, hpMax: 100, stamina: 75, staminaMax: 100 });
         // Force-Update durch Reset des Throttles
-        delete r.state._statsHudLastTick;
-        delete r.state._statsHudTooltipLastTick;
+        delete st._statsHudLastTick;
+        delete st._statsHudTooltipLastTick;
         r.tickStatsHud(performance.now() / 1000);
-        const hpText = document.getElementById("stats-hud-hp-text");
-        out.hpTextShowsRatio = !!hpText && /50\/100/.test(hpText.textContent);
-        const stamText = document.getElementById("stats-hud-stam-text");
-        out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
-        const hpFill = document.getElementById("stats-hud-hp-fill");
+        const hpText = $("stats-hud-hp-text");
+        out["Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen"] = !!hpText && /50\/100/.test(hpText.textContent);
+        const stamText = $("stats-hud-stam-text");
+        out["Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen"] =
+            !!stamText && /75\/100/.test(stamText.textContent);
+        const hpFill = $("stats-hud-hp-fill");
         // Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
-        out.hpFillProportional = !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
+        out["Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)"] =
+            !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
 
         // --- B3: Tooltip enthält slow stats nach Hover
         r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
-        const tooltip = document.getElementById("stats-hud-tooltip");
-        out.tooltipHasDamage = !!tooltip && /Schaden/.test(tooltip.innerHTML);
-        out.tooltipHasSpeed = !!tooltip && /Geschwindigk/.test(tooltip.innerHTML);
-        out.tooltipHasPrecision = !!tooltip && /Präzision/.test(tooltip.innerHTML);
+        const tooltip = $("stats-hud-tooltip");
+        for (const [satz, re] of [
+            ["Welle 6.X.4 B3: Tooltip enthält Schaden", /Schaden/],
+            ["Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", /Geschwindigk/],
+            ["Welle 6.X.4 B3: Tooltip enthält Präzision", /Präzision/],
+        ])
+            out[satz] = !!tooltip && re.test(tooltip.innerHTML);
 
         // --- D2: state-Felder + UI-Slider existieren
-        out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
-        out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
-        out.ringRadiusDefault = r.state.chunkRingRadius === 4;
-        out.slidersSectionExists = !!document.getElementById("sliders-section");
+        out["Welle 6.X.4 D2: state.symphony.masterVolume default 1.0"] = st.symphony.masterVolume === 1.0;
+        out["Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0"] = st.symphony.creaturePingVolume === 1.0;
+        out["Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)"] = st.chunkRingRadius === 4;
+        out["Welle 6.X.4 D2: #sliders-section im DOM"] = !!$("sliders-section");
 
         // --- D2: Master-Slider ändert state + Persistenz
-        const ms = document.getElementById("slider-master");
-        if (ms) {
-            ms.value = "50";
-            ms.dispatchEvent(new Event("input"));
-            out.masterSliderUpdates = Math.abs(r.state.symphony.masterVolume - 0.5) < 0.01;
-            out.masterSliderPersists =
-                typeof localStorage !== "undefined" &&
-                Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
-            // Reset auf default
-            ms.value = "100";
-            ms.dispatchEvent(new Event("input"));
-        }
+        const ms = $("slider-master");
+        schiebe(ms, "50");
+        out["Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume"] =
+            Math.abs(st.symphony.masterVolume - 0.5) < 0.01;
+        out["Welle 6.X.4 D2: Master-Slider persistiert in localStorage"] =
+            typeof localStorage !== "undefined" &&
+            Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
+        // Reset auf default
+        schiebe(ms, "100");
 
         // --- D2: der Umgebungs-Regler (slider-pings) schreibt creaturePingVolume (den Bus der Klang-Welt)
-        const ps = document.getElementById("slider-pings");
-        if (ps) {
-            ps.value = "0";
-            ps.dispatchEvent(new Event("input"));
-            out.pingsSliderUpdates = r.state.symphony.creaturePingVolume === 0;
-            ps.value = "100";
-            ps.dispatchEvent(new Event("input"));
-        }
+        const ps = $("slider-pings");
+        schiebe(ps, "0");
+        out["Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume"] =
+            st.symphony.creaturePingVolume === 0;
+        schiebe(ps, "100");
 
         // --- D2: Ring-Slider ändert chunkRingRadius
-        const rs = document.getElementById("slider-ring");
-        if (rs) {
-            rs.value = "3";
-            rs.dispatchEvent(new Event("input"));
-            out.ringSliderUpdates = r.state.chunkRingRadius === 3;
-            const rsv = document.getElementById("slider-ring-val");
-            out.ringValueDisplaysCorrectly = !!rsv && rsv.textContent === "7×7";
-            rs.value = "2";
-            rs.dispatchEvent(new Event("input"));
-        }
+        const rs = $("slider-ring");
+        schiebe(rs, "3");
+        out["Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius"] = st.chunkRingRadius === 3;
+        const rsv = $("slider-ring-val");
+        out["Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3"] = !!rsv && rsv.textContent === "7×7";
+        schiebe(rs, "2");
 
         return out;
     });
@@ -1304,121 +1075,76 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
     const wave6x4cResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
+        const st = r.state;
         const out = {};
 
         // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
 
+        // die Probe-Kugel der Werkstatt aus dem Stoff `material` (Teil ohne Lage)
+        const kugel = (material) => ({ shape: "sphere", material, size: { x: 0.5, y: 0.5, z: 0.5 } });
         // Test: Bauplan ohne opChain → leere counts
         const tn = "audit_v816_test";
-        if (r.state.blueprints[tn]) delete r.state.blueprints[tn];
+        if (st.blueprints[tn]) delete st.blueprints[tn];
         r.createBlueprint(tn, "V816-Test");
-        r.addPartToBlueprint(tn, {
-            shape: "sphere",
-            material: "stein",
-            size: { x: 0.5, y: 0.5, z: 0.5 },
-        });
-        const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
-        out.emptyChainNoDomain = Object.keys(c0).length === 0;
+        r.addPartToBlueprint(tn, kugel("stein"));
+        out["Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts"] =
+            Object.keys(r.computeBlueprintDomainCounts(st.blueprints[tn])).length === 0;
 
         // Schmiede-Hammer (domain:"forging") → counts.forging = 1; der Starter-Hammer hat domain:null.
         // schmiede-hammer in den Besitz legen (frieden-Modus: keine Stamina) und Material auf eisen setzen —
         // opClass=plastic ist mit stein inkompatibel (MATERIAL_OP_COMPATIBILITY).
-        r.state.player.tools = Array.isArray(r.state.player.tools) ? r.state.player.tools : [];
-        if (!r.state.player.tools.includes("schmiede-hammer")) {
-            r.state.player.tools.push("schmiede-hammer");
+        st.player.tools = Array.isArray(st.player.tools) ? st.player.tools : [];
+        if (!st.player.tools.includes("schmiede-hammer")) {
+            st.player.tools.push("schmiede-hammer");
         }
-        r.state.blueprints[tn].parts[0].material = "eisen";
+        st.blueprints[tn].parts[0].material = "eisen";
         r.applyOpToPart(tn, 0, "schmiede-hammer");
-        const c1 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
-        out.afterForgingHasDomain = (c1.forging || 0) === 1;
+        out["Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count"] =
+            (r.computeBlueprintDomainCounts(st.blueprints[tn]).forging || 0) === 1;
 
         // Cleanup
-        delete r.state.blueprints[tn];
+        delete st.blueprints[tn];
 
         // UI-Rendering: Stats-Panel hat workshop-domain-row +
         // workshop-synergy-row + workshop-growth-row Elemente nach
         // Render eines eigenen Bauplans.
         const tn2 = "audit_v816_render";
         r.createBlueprint(tn2, "V816-Render");
-        r.addPartToBlueprint(tn2, {
-            shape: "sphere",
-            material: "eisen", // schmiede-hammer braucht plastic-kompatibles Material
-            size: { x: 0.5, y: 0.5, z: 0.5 },
-        });
-        r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
-        r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+        r.addPartToBlueprint(tn2, kugel("eisen")); // schmiede-hammer braucht plastic-kompatibles Material
+        r.selectBlueprintForEdit(tn2);
+        r._workshopRenderStatsPanel();
         // Spec-Sheet: die „Synergie" ist jetzt die ROLLEN-RESONANZ (der Fingerabdruck), das
         // „Wachstum" der actionable Hinweis im Footer (.spec-growth, nur eigene Baupläne).
         const panel = document.getElementById("workshop-stats-panel");
-        out.synergyRowRendered = [...panel.querySelectorAll(".spec-col-head")].some(
-            (l) => l.textContent === "Rollen-Resonanz"
+        out["Spec-Sheet: Stats hat die Rollen-Resonanz (Fingerabdruck)"] = [
+            ...panel.querySelectorAll(".spec-col-head"),
+        ].some((l) => l.textContent === "Rollen-Resonanz");
+        out["Spec-Sheet: Stats hat den Wachstums-Hinweis (.spec-growth)"] = !!(
+            panel && panel.querySelector(".spec-growth")
         );
-        out.growthRowRendered = !!(panel && panel.querySelector(".spec-growth"));
-        // Bei 0 opChain steht der Emergenz-Hinweis im growth-text
-        const growthText = panel && panel.querySelector(".spec-growth-text");
-        out.growthShowsEmptyHint = !!growthText && /emergiert|Werkzeug/.test(growthText.textContent);
-        // Nach Schmiede-Hammer-Anwendung spiegelt der Wachstums-Hinweis die Domain (Mehrheit/forging)
+        // der Wachstums-Hinweis trägt `re`: bei 0 opChain den Emergenz-Hinweis, nach der Schmiede-Hammer-Anwendung die
+        // Domain (Mehrheit/forging)
+        const wachstum = (re) => {
+            const g = panel && panel.querySelector(".spec-growth-text");
+            return !!g && re.test(g.textContent);
+        };
+        out["Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Emergenz-Hinweis"] = wachstum(/emergiert|Werkzeug/);
         r.applyOpToPart(tn2, 0, "schmiede-hammer");
-        r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-        const growthText2 = panel && panel.querySelector(".spec-growth-text");
-        out.domainBarsAppearAfterOp = !!growthText2 && /Mehrheit|forging/.test(growthText2.textContent);
+        r._workshopRenderStatsPanel();
+        out["Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op"] =
+            wachstum(/Mehrheit|forging/);
 
         // Cleanup
-        delete r.state.blueprints[tn2];
-        r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+        delete st.blueprints[tn2];
+        r._workshopRenderStatsPanel();
 
         return out;
     });
 
-    if (wave6x4cResults && !wave6x4cResults.error) {
-        check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
-        check(
-            "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
-            wave6x4cResults.afterForgingHasDomain
-        );
-        check("Spec-Sheet: Stats hat die Rollen-Resonanz (Fingerabdruck)", wave6x4cResults.synergyRowRendered);
-        check("Spec-Sheet: Stats hat den Wachstums-Hinweis (.spec-growth)", wave6x4cResults.growthRowRendered);
-        check("Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Emergenz-Hinweis", wave6x4cResults.growthShowsEmptyHint);
-        check(
-            "Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op",
-            wave6x4cResults.domainBarsAppearAfterOp
-        );
-    } else {
-        check(
-            "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
-            false,
-            wave6x4cResults ? wave6x4cResults.error : "no result"
-        );
-    }
-
-    if (wave6x4bResults && !wave6x4bResults.error) {
-        check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
-        check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
-        check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
-        check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
-        check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
-        check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
-        check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
-        check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
-        check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
-        check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
-        check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
-        check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
-        check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
-        check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
-        check(
-            "Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume",
-            wave6x4bResults.pingsSliderUpdates
-        );
-        check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
-        check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
-    } else {
-        check(
-            "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
-            false,
-            wave6x4bResults ? wave6x4bResults.error : "no result"
-        );
-    }
+    if (erreichbar(check, "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen", wave6x4cResults, "no result"))
+        for (const s in wave6x4cResults) check(s, wave6x4cResults[s]);
+    if (erreichbar(check, "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen", wave6x4bResults, "no result"))
+        for (const s in wave6x4bResults) check(s, wave6x4bResults[s]);
 }
 
 async function checkBandV18164WarumLicht(ctx) {
@@ -1426,23 +1152,18 @@ async function checkBandV18164WarumLicht(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const P = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         // (1) die WARUM-Führung ist ARITHMETISCH EHRLICH: für einen Bauplan,
         // dessen Wunsch-Rolle machbar ist, flippt die empfohlene Achsen-Drehung
         // die Ziel-Rolle wirklich über den Sieger (dieselbe Spektrum-Skala).
-        const probe = { name: "__warum", parts: [P("box", "holz", 0, 0.5, 0, 1.6, 1, 1.6)] };
+        const probe = { name: "__warum", parts: [__teil("box", "holz", 0, 0.5, 0, 1.6, 1, 1.6)] };
         const spectrum = r._blueprintRoleSpectrum(probe);
         let hinted = null;
         for (let i = 1; i < spectrum.length && !hinted; i++) {
             const h = r._blueprintRoleGapHint(probe, spectrum[i].role);
             if (h && h.text && Number.isFinite(h.need)) hinted = h;
         }
-        out.hintGefunden = !!hinted;
+        let ehrlich = false,
+            flippt = false;
         if (hinted) {
             const cfg = r.constructor.QUALITY_ROLE_FIT;
             const sigs = r.constructor.ROLE_SIGNATURES;
@@ -1458,8 +1179,8 @@ async function checkBandV18164WarumLicht(ctx) {
                     winner2 = role;
                 }
             }
-            out.hintEhrlich = score(hinted.targetRole, v2) >= score(hinted.winner, v2) - 1e-6;
-            out.hintFlippt = winner2 === hinted.targetRole || out.hintEhrlich;
+            ehrlich = score(hinted.targetRole, v2) >= score(hinted.winner, v2) - 1e-6;
+            flippt = winner2 === hinted.targetRole || ehrlich;
         }
         // …und der KONJUNKTIONS-RUF spricht als TAT: der sitzlose Wagen resoniert Fahrzeug schon als
         // Spektrum-Spitze, der Klassifikator wartet auf den Sitz → der Ruf nennt die Tat (Sitz-Anker).
@@ -1467,69 +1188,67 @@ async function checkBandV18164WarumLicht(ctx) {
         const wagenOhneSitz = {
             name: "__warum2",
             parts: [
-                P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1),
-                { ...P("cylinder", "holz", -0.72, 0.34, 0.8, 0.62, 0.14, 0.62), rotation: RZ },
-                { ...P("cylinder", "holz", 0.72, 0.34, 0.8, 0.62, 0.14, 0.62), rotation: RZ },
+                __teil("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1),
+                ...[-0.72, 0.72].map((x) =>
+                    __teil("cylinder", "holz", x, 0.34, 0.8, 0.62, 0.14, 0.62, { rotation: RZ })
+                ),
             ],
-            connections: [
-                { type: "lashing", partA: 0, partB: 1, auto: 1 },
-                { type: "lashing", partA: 0, partB: 2, auto: 1 },
-            ],
+            connections: [1, 2].map((partB) => ({ type: "lashing", partA: 0, partB, auto: 1 })),
         };
         const ruf = r._blueprintConjunctionCall(wagenOhneSitz);
-        out.tatHinweis = !!ruf && /Sitz-Anker/.test(ruf.text) && ruf.role === "vehicle";
         // …und der SPEKTRUM-Spiegel-Heal selbst: der sitzlose Holz-Wagen liest
         // im Spektrum NICHT mehr „Trank" oben (der V18.162-Heal erreicht jetzt
         // BEIDE Register — eine Wahrheit, alle Leser).
         const spec2 = r._blueprintRoleSpectrum(wagenOhneSitz);
-        out.spektrumKeinTrank = spec2[0].role !== "consumable";
+        out[
+            "§7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)"
+        ] =
+            !!hinted &&
+            ehrlich &&
+            flippt &&
+            !!ruf &&
+            /Sitz-Anker/.test(ruf.text) &&
+            ruf.role === "vehicle" &&
+            spec2[0].role !== "consumable";
 
         // (3) §7.5(b) GEMESSEN ENCODIERT: die HISM-Bäume (instanced) laufen
         // durch den microTexture-Zweig — _archLeafMaterial → _buildToonNode-
         // Material(color) → isFlatStructure → Aerial-Chain (outputNode lebt).
         const flat = r._archFlattenBlueprint("baum_eiche");
-        out.baumInstanced = !!flat && flat.instanceable === true;
         // Der Schatten-Zwilling (`l.shadowTwin`, SHADOW_TWIN_LAYER) ist ein opaker, kamera-unsichtbarer
         // Schatten-Caster ohne Anzeige-Node → bewusst NICHT im microTexture-/Aerial-Zweig. Die §7.5(b)-
         // Invariante gilt nur den ANZEIGE-Leaves (bark/card/core); der Zwilling wird gefiltert.
         const displayLeavesE = flat ? flat.leaves.filter((l) => !l.shadowTwin) : [];
-        out.baumMicro =
-            !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
+        out[
+            "§7.5(b) GEMESSEN: die HISM-Bäume laufen durch den microTexture-Zweig (instanceable + Aerial-outputNode auf jedem Leaf-Material)"
+        ] =
+            !!flat &&
+            flat.instanceable === true &&
+            displayLeavesE.length > 0 &&
+            displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
 
         // (5) der GEHEILTE M7-Persistenz-Riss (Klasse): der Snapshot trägt microStrength, der Restore liest sie.
         const au = r._ensureAtmoUniforms();
         const snap = r.buildStateSnapshot();
-        out.persistenz = !!snap.atmosphere && Number.isFinite(snap.atmosphere.microStrength);
+        const persistenz = !!snap.atmosphere && Number.isFinite(snap.atmosphere.microStrength);
         // …und der Restore setzt sie in die Welt (Stand UND Uniform); danach der alte Stand zurück
         const a0 = { ...r.state.atmosphere };
         r._loadStateRestoreSoulAndAtmosphere({ atmosphere: { microStrength: 0.21 } });
-        out.restoreLiest = r.state.atmosphere.microStrength === 0.21 && au.microStrength.value === 0.21;
+        out[
+            "§7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength reist im Snapshot + der Restore liest sie"
+        ] = persistenz && r.state.atmosphere.microStrength === 0.21 && au.microStrength.value === 0.21;
         r.setMicroStrength(a0.microStrength ?? r.constructor.AERIAL.microStrength);
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
+        const ohneFront = window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();
-        out.builtRing = Number.isInteger(bk) && bk >= 0;
-        out.fogDeckel = !r.state.scene.fog;
+        out[
+            "§6.5 → V18.530: kein Lade-Nebel — die Luft liest keine Ring-Front (der Fern-Ring deckt Ungebautes); im warmen Ring steht der Spieler-Chunk"
+        ] = ohneFront && Number.isInteger(bk) && bk >= 0 && !r.state.scene.fog;
         return out;
     });
-    check(
-        "§7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)",
-        res.hintGefunden && res.hintEhrlich && res.hintFlippt && res.tatHinweis && res.spektrumKeinTrank
-    );
-    check(
-        "§7.5(b) GEMESSEN: die HISM-Bäume laufen durch den microTexture-Zweig (instanceable + Aerial-outputNode auf jedem Leaf-Material)",
-        res.baumInstanced && res.baumMicro
-    );
-    check(
-        "§7.5 M7-Regler-Persistenz GEHEILT (V8.59-Klasse): microStrength reist im Snapshot + der Restore liest sie",
-        res.persistenz && res.restoreLiest
-    );
-    check(
-        "§6.5 → V18.530: kein Lade-Nebel — die Luft liest keine Ring-Front (der Fern-Ring deckt Ungebautes); im warmen Ring steht der Spieler-Chunk",
-        res.ladeNebelKonsum && res.builtRing && res.fogDeckel
-    );
+    for (const s in res) check(s, res[s]);
 }
 
 // Verifikation + Atmosphäre: Büsche/Understory sind echte gewachsene Bauten (kein Kugel-Bug); die
@@ -1542,8 +1261,12 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
 
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
         const busch = r._phytoArt("busch_hazel");
-        out.buschGrammar = !!(busch && busch.rec.kind === "shrub");
-        out.understoryArts = !!(r._phytoArt("farn_busch") && r._phytoArt("blume_gross"));
+        out["Ω-OPSIS S4 (IV1) Büsche wachsen aus dem Gesetz (busch_hazel = Studio-Strauch, kein Kugel-Haufen)"] = !!(
+            busch && busch.rec.kind === "shrub"
+        );
+        out["Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)"] = !!(
+            r._phytoArt("farn_busch") && r._phytoArt("blume_gross")
+        );
         let buschParts = 0;
         try {
             // N7.3 — UNIT-RICHTER: busch_hazel ist Studio-bekannt → foundry-ON gäbe der
@@ -1555,43 +1278,34 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         } catch {
             /* gen < 7 → Grammatik-Struktur trägt den Beweis */
         }
-        out.buschParts = buschParts;
-        out.buschIsRich = buschParts >= 8 || buschParts === 0;
+        out[`Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${buschParts})`] =
+            buschParts >= 8 || buschParts === 0;
 
         // (V) die Luft koppelt ans Wetter: EINE Extinktion aus dem Wetter-Feld (fog- + rain-Kanal),
         // gemessen am Konsum — Regen trübt die Sicht, Sturm mehr; die Luft-Uniforms tragen sie.
         const WF = r.constructor.WEATHER_FIELD;
-        out.hazeNearWeather =
+        out["Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)"] =
             r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
 
         return out;
     });
-
-    check(
-        "Ω-OPSIS S4 (IV1) Büsche wachsen aus dem Gesetz (busch_hazel = Studio-Strauch, kein Kugel-Haufen)",
-        res.buschGrammar === true
-    );
-    check("Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)", res.understoryArts === true);
-    check(
-        `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
-        res.buschIsRich === true
-    );
-    check(
-        "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
-        res.hazeNearWeather === true
-    );
+    for (const s in res) check(s, res[s]);
 }
 
 // V6 Wetter-5-Kanal-Feld — eingefaltet aus gate:weather-vector (D3b, die Welt des Läufers statt eines eigenen Boots): V6-GATE (Look-Finale) — DAS WETTER-5-KANAL-FELD (Null-Renderer, GPU-frei): beweist, dass
 async function checkBandWetterVektor(ctx) {
     const { page, check } = ctx;
-    const out = await safeEvaluate(page, async () => {
+    // die Seite urteilt: die Brüche des Wetter-Felds beim Namen (leer = grün)
+    const fails = (await safeEvaluate(page, async () => {
         const r = await window.__weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
         r.state.weatherTransition = null;
-        const sunny = r._weatherFieldFor("sunny");
-        const rainy = r._weatherFieldFor("rainy");
-        const stormy = r._weatherFieldFor("stormy");
+        const W = {
+            sunny: r._weatherFieldFor("sunny"),
+            rainy: r._weatherFieldFor("rainy"),
+            stormy: r._weatherFieldFor("stormy"),
+        };
+        const { sunny, rainy, stormy } = W;
         // Transition-Monotonie: fog steigt von sunny (.15) → stormy (.70) mit progress.
         const fogRamp = [];
         for (const p of [0, 0.25, 0.5, 0.75, 1.0]) {
@@ -1599,37 +1313,29 @@ async function checkBandWetterVektor(ctx) {
             fogRamp.push(r._weatherFieldFor("sunny").fog);
         }
         r.state.weatherTransition = null;
-        return { sunny, rainy, stormy, fogRamp };
-    });
-    const fails = [];
-    if (!out || out.err) fails.push(`keine Antwort der Seite: ${out && out.err}`);
-    else {
-        const CH = ["fog", "sun", "grey", "wind", "rain"];
-        for (const w of ["sunny", "rainy", "stormy"]) {
-            for (const c of CH) {
-                if (typeof out[w][c] !== "number" || !Number.isFinite(out[w][c]))
+        const fails = [];
+        for (const w in W)
+            for (const c of ["fog", "sun", "grey", "wind", "rain"])
+                if (typeof W[w][c] !== "number" || !Number.isFinite(W[w][c]))
                     fails.push(`${w}.${c} ist kein finiter Kanal`);
-            }
-        }
         // grey — entsättigt das Licht (stormy stark, sunny gar nicht).
-        if (!(out.stormy.grey >= 0.8)) fails.push(`stormy.grey ${out.stormy.grey} < 0.8 (kein deutliches Entsättigen)`);
-        if (out.sunny.grey !== 0)
-            fails.push(`sunny.grey ${out.sunny.grey} != 0 (sunny darf das Licht NICHT entsättigen)`);
+        if (!(stormy.grey >= 0.8)) fails.push(`stormy.grey ${stormy.grey} < 0.8 (kein deutliches Entsättigen)`);
+        if (sunny.grey !== 0) fails.push(`sunny.grey ${sunny.grey} != 0 (sunny darf das Licht NICHT entsättigen)`);
         // wind — dramatisiert (stormy ≥ 5× sunny).
-        if (!(out.stormy.wind >= 5 * out.sunny.wind))
-            fails.push(`stormy.wind ${out.stormy.wind} < 5× sunny.wind ${out.sunny.wind}`);
+        if (!(stormy.wind >= 5 * sunny.wind)) fails.push(`stormy.wind ${stormy.wind} < 5× sunny.wind ${sunny.wind}`);
         // rain — kontinuierlich (sunny 0 · rainy ~0.6 · stormy 1.0).
-        if (out.sunny.rain !== 0) fails.push(`sunny.rain ${out.sunny.rain} != 0`);
-        if (Math.abs(out.rainy.rain - 0.6) > 0.05) fails.push(`rainy.rain ${out.rainy.rain} ≉ 0.6`);
-        if (Math.abs(out.stormy.rain - 1.0) > 0.01) fails.push(`stormy.rain ${out.stormy.rain} ≉ 1.0`);
+        if (sunny.rain !== 0) fails.push(`sunny.rain ${sunny.rain} != 0`);
+        if (Math.abs(rainy.rain - 0.6) > 0.05) fails.push(`rainy.rain ${rainy.rain} ≉ 0.6`);
+        if (Math.abs(stormy.rain - 1.0) > 0.01) fails.push(`stormy.rain ${stormy.rain} ≉ 1.0`);
         // Transition-Monotonie (fog steigt streng mit dem Sturm-Anteil).
-        for (let i = 1; i < out.fogRamp.length; i++) {
-            if (!(out.fogRamp[i] >= out.fogRamp[i - 1]))
-                fails.push(`fog-Ramp nicht monoton bei p-Schritt ${i} (${out.fogRamp[i - 1]} → ${out.fogRamp[i]})`);
+        for (let i = 1; i < fogRamp.length; i++) {
+            if (!(fogRamp[i] >= fogRamp[i - 1]))
+                fails.push(`fog-Ramp nicht monoton bei p-Schritt ${i} (${fogRamp[i - 1]} → ${fogRamp[i]})`);
         }
-        if (!(out.fogRamp[out.fogRamp.length - 1] > out.fogRamp[0]))
-            fails.push(`fog-Ramp steigt gar nicht (${out.fogRamp[0]} → ${out.fogRamp[out.fogRamp.length - 1]})`);
-    }
+        if (!(fogRamp[fogRamp.length - 1] > fogRamp[0]))
+            fails.push(`fog-Ramp steigt gar nicht (${fogRamp[0]} → ${fogRamp[fogRamp.length - 1]})`);
+        return fails;
+    })) || ["keine Antwort der Seite: null"];
     check(
         "V6 Wetter-5-Kanal-Feld: _weatherFieldFor liefert fog·sun·grey·wind·rain finit, grey entsättigt, wind dramatisiert, rain stetig, fog monoton über die Transition",
         fails.length === 0,
@@ -1648,7 +1354,7 @@ async function checkBandLookPhysik(ctx) {
         const r = window.anazhRealm;
         const K = r.constructor;
         const T = window.THREE || {};
-        const rend = r.state && r.state.renderer;
+        const rend = r.state.renderer;
         return {
             meadow: K.MEADOW_GREEN,
             tints: K.WEATHER_TINTS,
@@ -1744,65 +1450,67 @@ async function checkBandHimmelTag(ctx) {
             }
             return { n, venus, grenze: +g.toFixed(2) };
         };
-        const out = { punkte: mags ? mags.count : 0, fremdeKoerper: 0 };
+        const punkte = mags ? mags.count : 0;
+        let fremdeKoerper = 0;
         st.scene.traverse(
-            (o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && out.fremdeKoerper++
+            (o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && fremdeKoerper++
         );
+        // was sichtbar ist und ob das Sternfeld zeichnet
+        const blick = () => Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
         const zeitWar = st.timeOfDay;
         zeit(0.5);
-        out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
-        out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
+        const mittag = blick();
+        const mondTag = +st.moonMesh.material.opacity.toFixed(3);
         zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
-        out.daemmerung = sichtbar();
+        const daemmerung = sichtbar();
         zeit(0);
-        out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf && sf.visible) });
-        out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
-        out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
+        const nacht = blick();
+        const mondNacht = +st.moonMesh.material.opacity.toFixed(3);
+        const einDurchgang = !!(sf && sf.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
         const unendlich = r.constructor._unendlichKnoten;
-        out.vorn = [];
+        const vorn = [];
         for (const [name, o] of [
             ["himmel", st.skybox],
             ["himmel-sterne", sf],
             ["himmel-sonne", st.sunMesh],
             ["himmel-mond", st.moonMesh],
         ]) {
-            if (!o) out.vorn.push(`${name} fehlt`);
+            if (!o) vorn.push(`${name} fehlt`);
             else if (!(unendlich && o.material.vertexNode === unendlich && o.material.depthTest !== false))
-                out.vorn.push(name);
+                vorn.push(name);
         }
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
         if (kugel) st.scene.remove(kugel);
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
         if (stoerung === "grenze") delete r._tagAchse;
         zeit(zeitWar);
-        return out;
-    };
-    const urteil = (S) => {
+        // das Urteil der Probe: jede verletzte Regel beim Namen
         const rot = [];
-        if (!S) return ["keine Antwort der Seite"];
-        if (S.fremdeKoerper > 0) rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz`);
-        if (!(S.punkte > 1000)) rot.push(`Sternfeld fehlt (${S.punkte} Punkte)`);
-        if (S.mittag.n !== 0) rot.push(`2 MITTAG: ${S.mittag.n} Punkte sichtbar (Grenze ${S.mittag.grenze})`);
-        if (!(S.daemmerung.venus && S.daemmerung.n < S.punkte * 0.05))
-            rot.push(`3 DÄMMERUNG: Abendstern ${S.daemmerung.venus ? "da" : "fehlt"}, ${S.daemmerung.n} Punkte`);
-        if (!(S.nacht.n === S.punkte)) rot.push(`4 NACHT: nur ${S.nacht.n}/${S.punkte} Punkte`);
-        if (!(S.mondTag < 0.5 && S.mondNacht > 0.85)) rot.push(`5 MOND: Tag ${S.mondTag} · Nacht ${S.mondNacht}`);
-        if (S.mittag.n === 0 && S.mittag.zeichnet)
+        if (fremdeKoerper > 0) rot.push(`1 KÖRPER: ${fremdeKoerper} Kugel(n) ohne Gesetz`);
+        if (!(punkte > 1000)) rot.push(`Sternfeld fehlt (${punkte} Punkte)`);
+        if (mittag.n !== 0) rot.push(`2 MITTAG: ${mittag.n} Punkte sichtbar (Grenze ${mittag.grenze})`);
+        if (!(daemmerung.venus && daemmerung.n < punkte * 0.05))
+            rot.push(`3 DÄMMERUNG: Abendstern ${daemmerung.venus ? "da" : "fehlt"}, ${daemmerung.n} Punkte`);
+        if (!(nacht.n === punkte)) rot.push(`4 NACHT: nur ${nacht.n}/${punkte} Punkte`);
+        if (!(mondTag < 0.5 && mondNacht > 0.85)) rot.push(`5 MOND: Tag ${mondTag} · Nacht ${mondNacht}`);
+        if (mittag.n === 0 && mittag.zeichnet)
             rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld ohne sichtbaren Punkt");
-        if (S.nacht.n > 0 && !S.nacht.zeichnet) rot.push("6 ZEICHNEN: nachts zeichnet das Sternfeld nicht");
-        if (!S.einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen");
-        if (S.vorn.length) rot.push(`7 UNENDLICH: ${S.vorn.join(" · ")} ohne den Unendlich-Knoten`);
+        if (nacht.n > 0 && !nacht.zeichnet) rot.push("6 ZEICHNEN: nachts zeichnet das Sternfeld nicht");
+        if (!einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen");
+        if (vorn.length) rot.push(`7 UNENDLICH: ${vorn.join(" · ")} ohne den Unendlich-Knoten`);
         return rot;
     };
-    const rot = urteil(await safeEvaluate(page, probe, null));
+    // das Urteil der Probe unter der Störung `k` (null: die heile Welt)
+    const urteil = async (k) => (await safeEvaluate(page, probe, k)) || ["keine Antwort der Seite"];
+    const rot = await urteil(null);
     check(
         "Himmel-Tag: mittags kein Punkt, in der Dämmerung der Abendstern, nachts alle Sterne, der Mond blass/deckend, jeder Himmelskörper im Unendlichen",
         rot.length === 0,
         rot.join(" · ")
     );
     const s = {};
-    for (const k of ["kugel", "grenze", "doppel", "vorne", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
+    for (const k of ["kugel", "grenze", "doppel", "vorne", null]) s[k] = await urteil(k);
     const selbst = [
         s.kugel.some((e) => e.startsWith("1 KÖRPER")) || "Himmelskugel blieb grün",
         s.grenze.some((e) => e.startsWith("2 MITTAG")) || "Mittags-Grenze −3 blieb grün",
@@ -1826,6 +1534,7 @@ async function checkBandHimmelTag(ctx) {
 // S1/S2 der alte Schreiber und das Gesetz vor 1410-3 fallen.
 async function checkBandSchattenTakt(ctx) {
     const { page, check } = ctx;
+    // je Prüfung ein Satz der Seite (`aus[satz] = [urteil, detail]`)
     const a = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const st = r.state;
@@ -1849,91 +1558,121 @@ async function checkBandSchattenTakt(ctx) {
             }
             return z;
         };
-        const aus = { T };
-        try {
-            const k = [kaskade(), kaskade()];
-            st.csmNode = { lights: k };
-            st.directionalLight = sonne;
+        // die Lage des Takts: die Kaskaden `lights` (ohne: kein CSM), das Haupt-Licht `dl`, Intervall 1, kein letzter Schuss
+        const lage = (lights, dl) => {
+            st.csmNode = lights && { lights };
+            st.directionalLight = dl;
             st._shadowMinInterval = 1;
             r._shadowLast = null;
+        };
+        // `fn` mit dem Takt `takt` an der Naht `_loopShadowUpdate` (danach fällt die eigene Naht)
+        const unter = (takt, fn) => {
+            r._loopShadowUpdate = takt;
+            try {
+                return fn();
+            } finally {
+                delete r._loopShadowUpdate;
+            }
+        };
+        const aus = {};
+        try {
+            const k = [kaskade(), kaskade()];
+            lage(k, sonne);
             r._shadowFrame = 0;
             lauf(k, 1); // Sonnen-Erstlauf
-            aus.t2 = lauf(k, 30);
-            aus.t2doppelt = aus.t2.doppelt;
-            aus.t1 = k.every((l) => l.shadow.autoUpdate === false);
+            const t2 = lauf(k, 30);
+            const t1 = k.every((l) => l.shadow.autoUpdate === false);
             st._shadowMinInterval = 4;
-            aus.t3 = lauf(k, 60);
-            aus.t3doppelt = aus.t3.doppelt;
+            const t3 = lauf(k, 60);
             lauf(k, 3);
             sonne.position.x += 100;
             k.forEach((l) => (l.shadow.needsUpdate = false));
             r._loopShadowUpdate();
-            aus.t4 = k.map((l) => l.shadow.needsUpdate);
-            st.csmNode = null;
+            const t4 = k.map((l) => l.shadow.needsUpdate);
             const dl = Object.assign(kaskade(), { position: sonne.position });
-            st.directionalLight = dl;
-            st._shadowMinInterval = 1;
-            r._shadowLast = null;
-            aus.t5 = lauf([dl], 20)[0];
-            aus.t5aus = dl.shadow.autoUpdate === false;
+            lage(null, dl);
+            const t5 = lauf([dl], 20)[0];
+            const t5aus = dl.shadow.autoUpdate === false;
             // T7 — die Kamera bewegt sich: je Takt ein Schritt der Kamera-Matrix
-            st.csmNode = { lights: k };
-            st.directionalLight = sonne;
-            st._shadowMinInterval = 1;
-            r._shadowLast = null;
+            lage(k, sonne);
             const kam = st.camera;
             const kamAlt = kam ? kam.position.x : 0;
             const roh = r._loopShadowUpdate;
             let schritt = 0;
-            r._loopShadowUpdate = function () {
-                if (kam) {
-                    kam.position.x = kamAlt + 0.05 * ++schritt;
-                    kam.updateMatrixWorld(true);
-                }
-                return roh.call(this);
-            };
+            let t7;
             try {
-                lauf(k, 1);
-                aus.t7 = lauf(k, 30);
-                aus.t7doppelt = aus.t7.doppelt;
+                t7 = unter(
+                    function () {
+                        if (kam) {
+                            kam.position.x = kamAlt + 0.05 * ++schritt;
+                            kam.updateMatrixWorld(true);
+                        }
+                        return roh.call(this);
+                    },
+                    () => (lauf(k, 1), lauf(k, 30))
+                );
             } finally {
-                delete r._loopShadowUpdate;
                 if (kam) {
                     kam.position.x = kamAlt;
                     kam.updateMatrixWorld(true);
                 }
             }
-            aus.t7kamera = !!kam;
             const k6 = [kaskade(), kaskade()];
             k6.forEach((l) => (l.shadow.needsUpdate = false));
             st.csmNode = { lights: k6 };
             r._schattenAlleNeu();
-            aus.t6 = k6.every((l) => l.shadow.needsUpdate === true);
-            aus.ohneKarte = window.__fehlt(r._loopShadowUpdate, /shadowMap\.needsUpdate\s*=/);
+            const t6 = k6.every((l) => l.shadow.needsUpdate === true);
+            const ohneKarte = window.__fehlt(r._loopShadowUpdate, /shadowMap\.needsUpdate\s*=/);
             // S1 — der alte Schreiber (nur renderer.shadowMap.needsUpdate) markiert keine Kaskade
             const k7 = [kaskade(), kaskade()];
             st.csmNode = { lights: k7 };
-            r._loopShadowUpdate = function () {};
-            try {
-                aus.s1 = { z: lauf(k7, 30), auto: k7.every((l) => l.shadow.autoUpdate === true) };
-            } finally {
-                delete r._loopShadowUpdate;
-            }
+            const s1 = unter(
+                function () {},
+                () => ({ z: lauf(k7, 30), auto: k7.every((l) => l.shadow.autoUpdate === true) })
+            );
             // S2 — das Gesetz vor 1410-3 (nah jeden Frame, fern jeden fernFaktor-ten im selben Frame) trägt Doppel-Frames
             const k8 = [kaskade(), kaskade()];
             st.csmNode = { lights: k8 };
             let f8 = 0;
-            r._loopShadowUpdate = function () {
-                f8++;
-                k8[0].shadow.autoUpdate = k8[1].shadow.autoUpdate = false;
-                k8[0].shadow.needsUpdate = true;
-                if (f8 % T.fernFaktor === 0) k8[1].shadow.needsUpdate = true;
-            };
-            try {
-                aus.s2 = lauf(k8, 30).doppelt;
-            } finally {
-                delete r._loopShadowUpdate;
-            }
+            const s2 = unter(
+                function () {
+                    f8++;
+                    k8[0].shadow.autoUpdate = k8[1].shadow.autoUpdate = false;
+                    k8[0].shadow.needsUpdate = true;
+                    if (f8 % T.fernFaktor === 0) k8[1].shadow.needsUpdate = true;
+                },
+                () => lauf(k8, 30).doppelt
+            );
+            const fern2 = 30 / (T.nahMax * T.fernFaktor);
+            aus[
+                "Schatten-Takt T1/T2: autoUpdate aus, Intervall 1 nah jeden nahMax-ten Frame, fern dazwischen, kein Frame mit zwei Kaskaden"
+            ] = [
+                t1 &&
+                    t2[0] === 30 / T.nahMax &&
+                    t2[1] >= Math.floor(fern2) - 1 &&
+                    t2[1] <= Math.ceil(fern2) &&
+                    t2.doppelt === 0,
+                `30 Frames → ${t2.join(" / ")}, doppelt ${t2.doppelt}`,
+            ];
+            aus["Schatten-Takt T3: Intervall 4 nah höchstens jeden nahMax-ten, fern im 4×fernFaktor-Takt"] = [
+                t3[0] === 60 / Math.min(T.nahMax, 4) && t3[1] === 60 / (4 * T.fernFaktor) && t3.doppelt === 0,
+                `60 Frames → ${t3.join(" / ")}`,
+            ];
+            aus[
+                "Schatten-Takt T4–T6: der Sonnen-Sprung erzwingt beide, ohne CSM das Haupt-Licht im Nah-Takt, `_schattenAlleNeu` markiert jede"
+            ] = [t4[0] === true && t4[1] === true && t5 === 20 / T.nahMax && t5aus && t6, `T5 20 Frames → ${t5}`];
+            aus[
+                "Schatten-Takt T7: die Kamera bewegt sich — nah jeden Frame, fern jeden fernFaktor-ten, beide dürfen in einen Frame"
+            ] = [
+                !!kam && t7[0] === 30 && t7[1] === 30 / T.fernFaktor && t7.doppelt > 0,
+                `30 Frames → ${t7.join(" / ")}`,
+            ];
+            aus[
+                "Schatten-Takt SELBSTTEST: der alte Schreiber markiert keine Kaskade, das Gesetz vor 1410-3 trägt Doppel-Frames, der Takt schreibt nie shadowMap.needsUpdate"
+            ] = [
+                s1.z[0] === 0 && s1.z[1] === 0 && s1.auto && s2 > 0 && ohneKarte,
+                `S1 ${s1.z.join(" / ")} · S2 doppelt ${s2}`,
+            ];
         } finally {
             st.csmNode = echt.csm;
             st.directionalLight = echt.dl;
@@ -1943,38 +1682,8 @@ async function checkBandSchattenTakt(ctx) {
         }
         return aus;
     });
-    if (!a) return check("Schatten-Takt: die Probe antwortet", false, "keine Antwort der Seite");
-    const T = a.T;
-    const fern2 = 30 / (T.nahMax * T.fernFaktor);
-    check(
-        "Schatten-Takt T1/T2: autoUpdate aus, Intervall 1 nah jeden nahMax-ten Frame, fern dazwischen, kein Frame mit zwei Kaskaden",
-        a.t1 &&
-            a.t2[0] === 30 / T.nahMax &&
-            a.t2[1] >= Math.floor(fern2) - 1 &&
-            a.t2[1] <= Math.ceil(fern2) &&
-            a.t2doppelt === 0,
-        `30 Frames → ${a.t2.join(" / ")}, doppelt ${a.t2doppelt}`
-    );
-    check(
-        "Schatten-Takt T3: Intervall 4 nah höchstens jeden nahMax-ten, fern im 4×fernFaktor-Takt",
-        a.t3[0] === 60 / Math.min(T.nahMax, 4) && a.t3[1] === 60 / (4 * T.fernFaktor) && a.t3doppelt === 0,
-        `60 Frames → ${a.t3.join(" / ")}`
-    );
-    check(
-        "Schatten-Takt T4–T6: der Sonnen-Sprung erzwingt beide, ohne CSM das Haupt-Licht im Nah-Takt, `_schattenAlleNeu` markiert jede",
-        a.t4[0] === true && a.t4[1] === true && a.t5 === 20 / T.nahMax && a.t5aus && a.t6,
-        `T5 20 Frames → ${a.t5}`
-    );
-    check(
-        "Schatten-Takt T7: die Kamera bewegt sich — nah jeden Frame, fern jeden fernFaktor-ten, beide dürfen in einen Frame",
-        a.t7kamera && a.t7[0] === 30 && a.t7[1] === 30 / T.fernFaktor && a.t7doppelt > 0,
-        `30 Frames → ${a.t7 ? a.t7.join(" / ") : "–"}`
-    );
-    check(
-        "Schatten-Takt SELBSTTEST: der alte Schreiber markiert keine Kaskade, das Gesetz vor 1410-3 trägt Doppel-Frames, der Takt schreibt nie shadowMap.needsUpdate",
-        a.s1.z[0] === 0 && a.s1.z[1] === 0 && a.s1.auto && a.s2 > 0 && a.ohneKarte,
-        `S1 ${a.s1.z.join(" / ")} · S2 doppelt ${a.s2}`
-    );
+    if (erreichbar(check, "Schatten-Takt: die Probe antwortet", a, "keine Antwort der Seite"))
+        for (const s in a) check(s, ...[a[s]].flat());
 }
 
 module.exports = {
