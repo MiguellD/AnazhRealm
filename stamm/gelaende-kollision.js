@@ -381,6 +381,7 @@ class AnazhRealm_gelaende_kollision {
         ];
         const reich = (v) => Math.max(0, ...v.slots.map((s) => Math.hypot(s.x || 0, s.z || 0) + 16));
         const p = key.startsWith("haus:") && splats && splats.find((q) => q.art === "platte" && q.vorplatz == null);
+        if (p && E && E[key]) this._ortKernAkt(p, reich); // das gesetzte Haus wird Kern eines Rings (siedlung.K4 Staffel 2)
         for (const [k, v] of P && E ? P : [])
             if (E[k] && (p ? k : key) === k) {
                 const um = (f) => FC.festWeg(v, f) || (v.fest || []).some((g) => g.cx === f.cx && g.cz === f.cz);
@@ -396,23 +397,25 @@ class AnazhRealm_gelaende_kollision {
     // in der Reihe (es wirken die Splats, die gingen und kamen, `_erdbauWirkt`), das Objekt des Plans selbst (Erlebnis, Zug,
     // Vorrat und Bewohner halten es), die Formen der Wege-Karte (`_stlWegeBuild` an der Stelle der alten) und das Netz der
     // Bewohner. Je Ort ein Lauf zur Zeit (`_ortNeuOffen`, die Linse wartet auf ihn), ein weiterer Wunsch rechnet danach.
-    _ortNeuPlanen(key) {
+    // DER ORT WÄCHST (siedlung.K4 Staffel 2) auf demselben Weg: `neu` ist der Export seines neuen Jahrs (statt seines eigenen
+    // Plans), `vorTausch(alt, v2)` nimmt vor dem Tausch, was der neue Plan nicht trägt (`_ortWaechst`); true = der Plan ist Welt.
+    _ortNeuPlanen(key, neu, vorTausch) {
         const q = this._ortNeuOffen || (this._ortNeuOffen = new Map());
         const lauf = (q.get(key) || Promise.resolve())
-            .then(() => this._ortNeuRechnen(key))
+            .then(() => this._ortNeuRechnen(key, neu, vorTausch))
             .catch((e) => this.log(`ORT: ${key} rechnet nicht neu — ${e && e.message}`, "ERROR"));
         q.set(key, lauf);
         lauf.then(() => q.get(key) === lauf && q.delete(key));
         return lauf;
     }
-    async _ortNeuRechnen(key) {
+    async _ortNeuRechnen(key, wuchs, vorTausch) {
         const [alt, wm] = [this._ortPlaene.get(key), this.state.worldMeta];
         const liegt = alt && wm.erdbau[key];
         if (!liegt) return false;
         // der Plan ohne seine Ausgabe: ohne Erdbau und Fremd-Slots, die Wege ohne Profil (die Wahl rechnet sie neu)
         const ohne = (o, weg) => (weg.forEach((k) => delete o[k]), o);
-        const plan = ohne(Object.assign({}, alt), ["version", "erdbau", "fest", "wasserSlots"]);
-        plan.roads = alt.roads.map((rd) => ohne(Object.assign({}, rd), ["ys", "bruecken"]));
+        const plan = wuchs || ohne(Object.assign({}, alt), ["version", "erdbau", "fest", "wasserSlots"]);
+        if (!wuchs) plan.roads = alt.roads.map((rd) => ohne(Object.assign({}, rd), ["ys", "bruecken"]));
         let ab = 0; // die Stelle seines Erdbaus in der Reihe (`_erdbauRoh`)
         for (const k of Object.keys(wm.erdbau)) {
             if (k === key) break;
@@ -423,6 +426,7 @@ class AnazhRealm_gelaende_kollision {
             ab + liegt.length,
         ]);
         if (!neu || this._ortPlaene.get(key) !== alt || wm.erdbau[key] !== liegt) return false;
+        if (vorTausch) vorTausch(alt, neu);
         const sig = (l) => new Set(l.map((p) => JSON.stringify(p)));
         const [a, b] = [sig(liegt), sig(neu.erdbau)];
         const wirkt = liegt
@@ -431,7 +435,7 @@ class AnazhRealm_gelaende_kollision {
         for (const k of Object.keys(alt)) if (!(k in neu)) delete alt[k];
         Object.assign(alt, neu);
         wm.erdbau[key] = neu.erdbau; // an seinem Platz in der Reihe der Orte
-        if (!wirkt.length) return false;
+        if (!wirkt.length) return !!wuchs;
         this._erdbauWirkt(wirkt, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(wirkt)));
         const wk = this.state.wegeKarte;
         const statt = wk ? wk.siedlungen.findIndex((x) => x.plan === alt) : -1;

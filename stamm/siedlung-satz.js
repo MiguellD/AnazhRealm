@@ -2459,7 +2459,16 @@ class AnazhRealm_siedlung_satz {
         const P = this._stlMauerEnsurePool();
         const wk = this._wegeKarteEnsure();
         const FUSS = AnazhRealm.STADTMAUER_FUSS_M;
-        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [] };
+        // die Mauer merkt ihren Plan und ihre Streifen im Pool (`_stlMauerNeu`: sie wächst mit dem Ort)
+        const box = {
+            x0: Infinity,
+            z0: Infinity,
+            x1: -Infinity,
+            z1: -Infinity,
+            formen: [],
+            mauerVon: plan,
+            streifen: [P ? P.top : 0],
+        };
         const form = (f) => {
             box.formen.push(f);
             const r = AnazhRealm._wegeFormRadius(f);
@@ -2543,6 +2552,7 @@ class AnazhRealm_siedlung_satz {
             form({ typ: "kasten", kanal: -1, ax: x, az: z, bx: x, bz: z, ex: tb, ez: tb, phi: 0, halb: 0 });
             n++;
         }
+        box.streifen.push(P ? P.top : 0);
         if (box.formen.length) {
             wk.siedlungen.push(box); // die Natur-Wand liest die Linie (`_aufWeg`); einen Boden-Kanal malt sie nicht
             wk.raeumen.push(box); // was schon in der Linie der Mauer wuchs, räumt der Takt (`_wegeRaeumen`)
@@ -2792,22 +2802,17 @@ class AnazhRealm_siedlung_satz {
         // das Auge sieht — der Stand-Leser der Sicht um den Boden des Fahr-Schritts (`_standSicht`, wie Huf und Fuß; die Sim
         // bleibt auf dem Gesetz). Bis H5 federte das Rad auf das Gesetz: an der Mess-Wiese p95 4,9 cm neben dem Mesh (K8).
         const P = this._archTmpRadP || (this._archTmpRadP = new THREE.Vector3());
-        // fern federt kein Rad einzeln (`_radGrob`, der Verkehr jenseits `VERKEHR.genauM`: der Hub eines Rads deckt dort keinen
-        // Bildpunkt) — es steht in der Ebene der vier
-        if (entry._radGrob) return out;
+        if (entry._radGrob) return out; // fern (jenseits `VERKEHR.genauM`) steht das Rad in der Ebene der vier, ohne Hub
         P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
-        // je Nabe EIN Boden in dieser Lage (Rad, Sattel und Nabe eines Rads teilen ihn — jedes Blatt fragte die Säule und das
-        // Mesh): der Merker gilt, solange die ungefederte Lage dieselbe ist (Ort und Gier)
+        // je Nabe EIN Boden in der ungefederten Lage (Ort und Gier): Rad, Sattel und Nabe fragten je Blatt Säule und Mesh
         const E = ewU.elements;
         let M = entry._radBodenMerk;
         if (!M || M.x !== E[12] || M.z !== E[14] || M.c !== E[0] || M.s !== E[2])
             M = entry._radBodenMerk = { x: E[12], z: E[14], c: E[0], s: E[2], naben: new Map() };
-        const nabe = rd.hx * 1009 + rd.hz;
-        let boden = M.naben.get(nabe);
+        let boden = M.naben.get(rd.hx * 1009 + rd.hz);
         if (boden === undefined) {
-            const gesetz = this._fahrBoden(entry)(P.x, P.z);
-            boden = Number.isFinite(gesetz) ? this._standSicht(P.x, P.z, gesetz, false) : gesetz;
-            M.naben.set(nabe, boden);
+            const g = this._fahrBoden(entry)(P.x, P.z);
+            M.naben.set(rd.hx * 1009 + rd.hz, (boden = Number.isFinite(g) ? this._standSicht(P.x, P.z, g, false) : g));
         }
         if (Number.isFinite(boden)) {
             // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die

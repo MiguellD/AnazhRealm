@@ -470,6 +470,7 @@ class AnazhRealm_siedlung_verkehr {
         const e = W.entry;
         b.amSteuer = true;
         [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
+        this._bewohnerRasterLage(S, b);
         g.userData._drinnen = true; // kein Feld trägt ihn (`_kzBesitztFeld`)
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
         g.visible = false;
@@ -576,6 +577,8 @@ class AnazhRealm_siedlung_verkehr {
         g.visible = false;
         this._leibMatrix(g);
         Object.assign(b, { stand: werk, da: b.ziel === werk, weg: null, tagVon: null, zielUhr: NaN, lageNeu: true });
+        this._bewohnerRasterLage(S, b);
+        this._bewohnerWecken(S, b); // sein Takt geht ab hier wieder im Gedränge
         W.sitzt = false;
     }
 
@@ -1138,18 +1141,28 @@ class AnazhRealm_siedlung_verkehr {
         });
     }
 
-    // DER WAGEN IM GEDRÄNGE (`_tickBewohner`, nach dem Raster der Leiber): je fahrendem Wagen drei Leiber längs seiner Achse
+    // DER WAGEN IM GEDRÄNGE (`_tickBewohner`, vor dem Takt der Köpfe; die Zelle legt `_bewohnerRasterLage`): je fahrendem Wagen drei Leiber längs seiner Achse
     // (Bug, Mitte, Heck; je Radius die halbe Breite × √2 — so deckt der vordere und hintere Leib die Ecken, deren Abstand zu
     // seiner Mitte; `kR` die Berührung samt Kapsel) mit seinem Tempo und Vorrang (`rueck` ∞; der fahrende mit `weg`: keiner
     // geht um ihn wie um einen Stehenden; der ruhende ohne — um ihn geht man; seinen Platz verlangt keiner) — das Ausweichen der
     // Bewohner (`_bewohnerAusweichen`) sieht ihn wie den Spieler.
-    _verkehrImRaster(S, R) {
+    _verkehrImRaster(S) {
         const VK = S.verkehr;
         if (!VK || !VK.wagen.length) return;
-        const M = AnazhRealm.BEWOHNER.rasterM;
+        // ein neues Raster (die Liste der Siedlung wechselte, `_tickBewohner`) kennt keinen Leib des Wagens
+        if (VK.raster !== S.raster) for (const W of VK.wagen) for (const o of W.leiber || []) o.rk = undefined;
+        VK.raster = S.raster;
         for (const W of VK.wagen) {
             const e = W.entry;
-            if (W.zustand !== "faehrt" || !e || !e._fahr) continue;
+            const faehrt = W.zustand === "faehrt" && e && e._fahr;
+            // wer nicht fährt, steht auf seinem Platz als Wand der Wege: seine Leiber verlassen das Raster
+            if (!faehrt) {
+                for (const o of W.leiber || []) {
+                    o.drinnen = true;
+                    this._bewohnerRasterLage(S, o);
+                }
+                continue;
+            }
             const fz = e._fahr;
             const [cy, sy] = [Math.cos(fz.yaw), Math.sin(fz.yaw)];
             const vx = fz.vlong * cy - fz.vlat * sy;
@@ -1182,10 +1195,8 @@ class AnazhRealm_siedlung_verkehr {
                     vx,
                     vz,
                 ];
-                const k = Math.floor(o.leib.position.x / M) * 2097152 + Math.floor(o.leib.position.z / M);
-                const l = R.get(k);
-                if (l) l.push(o);
-                else R.set(k, [o]);
+                o.drinnen = false;
+                this._bewohnerRasterLage(S, o);
             }
         }
     }

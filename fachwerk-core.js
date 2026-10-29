@@ -3368,6 +3368,21 @@
         for (var k = 0; k < achse.length; k++) if (EPOCHEN[achse[k]].jahr + d + EPOCHEN[achse[k]].spanne <= t) e = achse[k];
         return e;
     }
+    // DAS JAHR EINES SATZES (siedlung.K4, „dorf 7 300 1560"): die Epoche der Tafel, deren Zeitachse eine Chronik trägt (mehr als
+    // eine Epoche ihrer Region), die bis zum Jahr j begann — die jüngste, vor der ersten die erste. Der Ort steht am Ende ihrer
+    // Spanne (DORF), wie Teil J ihn misst; Leser: der Satz „dorf" und der Akt `spawn_village` des Wirts
+    function epocheImJahr(j) {
+        var E = Object.keys(EPOCHEN)
+            .filter(function (k) {
+                return zeitachse(EPOCHEN[k].region).length > 1;
+            })
+            .sort(function (a, b) {
+                return EPOCHEN[a].jahr - EPOCHEN[b].jahr;
+            });
+        var e = E[0];
+        for (var k = 0; k < E.length; k++) if (EPOCHEN[E[k]].jahr <= j) e = E[k];
+        return e;
+    }
     // die Anker [[jahr, häuser], …] eines Orts der Region mit nEnde Häusern am Jahr tEnde, dessen Gegenwart die Klasse
     // `klasse` trägt; `vor` = die Epochen der Achse vor seiner (ihre Anker), gr0 = die Gründung
     function chronikAnker(vor, d, gr0, tEnde, nEnde, klasse) {
@@ -3401,28 +3416,107 @@
         }
         return A[A.length - 1][0];
     }
+    // DIE GESTALT EINER ZAHL (siedlung.K4): die kleinste Gegenwart nE (bis GROESSE_WAND), deren Schnitt am Jahr t mindestens nH
+    // Häuser trägt (die Häuser i mit chronikJahr(A, i) ≤ t) — die Anker wachsen mit nE, die Suche halbiert
+    function gestaltFuer(nH, vor, d, gr0, tEnde, klasse, t) {
+        var zaehl = function (nE) {
+            var A = chronikAnker(vor, d, gr0, tEnde, nE, klasse);
+            for (var k = 0; k < nE && chronikJahr(A, k) <= t; ) k++;
+            return k;
+        };
+        var a = nH,
+            b = GROESSE_WAND;
+        if (zaehl(b) < nH) return b;
+        while (a < b) {
+            var m = (a + b) >> 1;
+            if (zaehl(m) >= nH) b = m;
+            else a = m + 1;
+        }
+        return a;
+    }
+    // ── DAS WACHSTUM (siedlung.K4 Staffel 2): der Ort wächst in Spielzeit aus seinen Bewohnern. Je Sekunde der Welt-Uhr gründet
+    // jeder Bewohner eines stehenden Loses `kraftJeS` × den Wohlstand seines Hauses (`wohl` des Plans) an Kraft, geteilt durch
+    // die Furcht des Orts: die Erinnerung seiner Akten (die Gewalt, die seine Bewohner sahen) nach dem EINEN Furcht-Gesetz
+    // (tetrapoda `furchtErinnert`, der Wirt reicht es als `furcht`), um `jeFurcht` je Einheit — derselbe Faktor, um den sie
+    // den Raum vor dem Spieler weitet (`fluchtJeFurcht`). Das nächste Los der Chronik (die Lose seines Gründungsjahrs) steht,
+    // wenn die Kraft seine Leute trägt: der Ort springt in sein Jahr, nach dem letzten in die Gegenwart (bis zu ihr die
+    // Ersatzbauten). Ohne Bewohner oder ohne Wohlstand (wohl → 0) wächst nichts, in Furcht langsamer — ein Zeitplan, der
+    // Häuser setzt, wäre kein Wachstum. Die Größe wächst mit den Leuten (Verdopplung ≈ 21 min Welt-Uhr bei Wohlstand 1).
+    // C = die Chronik des Exports (`chronik`: gr0, ende, je Los jahre · leute · wohl), Z = {jahr, kraft, uhr} (uhr: die Welt-Uhr
+    // `spielZeit` in s), akten = [{t, type}] nach t, t = jetzt. Rein und deterministisch: dieselben Akten, dieselbe Uhr, derselbe Ort.
+    var WACHSTUM = { kraftJeS: 1 / 1800, aktenMax: 16 };
+    function wachstum(C, Z, akten, t, furcht, jeFurcht) {
+        var jahr = Z.jahr,
+            kraft = Z.kraft || 0,
+            a0 = Z.uhr;
+        var n = C.jahre.length,
+            m = 0,
+            rate = 0;
+        while (m < n && C.jahre[m] <= jahr) rate += C.leute[m] * C.wohl[m++];
+        var ak = (akten || []).filter(function (a) {
+            return a && a.t <= t;
+        });
+        // die Grenzen gleichen Wohls: jede Akte nach der letzten Rechnung, dann jetzt
+        var grenzen = ak
+            .filter(function (a) {
+                return a.t > a0;
+            })
+            .map(function (a) {
+                return a.t;
+            })
+            .concat([t]);
+        for (var gi = 0; gi < grenzen.length && m < n; gi++) {
+            var g = grenzen[gi];
+            var f = furcht(
+                ak.filter(function (a) {
+                    return a.t <= a0;
+                })
+            );
+            var w = 1 / (1 + Math.max(0, f) * jeFurcht);
+            while (m < n) {
+                var R = rate * WACHSTUM.kraftJeS * w;
+                if (!(R > 0)) break; // ohne Kraft gründet niemand, auch kein Los ohne Leute (die Scheune folgt ihrem Hof)
+                var e = m,
+                    kost = 0;
+                while (e < n && C.jahre[e] === C.jahre[m]) kost += C.leute[e++];
+                if (kost > kraft) {
+                    if (a0 + (kost - kraft) / R > g) break;
+                    a0 += (kost - kraft) / R;
+                    kraft = kost;
+                }
+                kraft -= kost;
+                for (; m < e; m++) rate += C.leute[m] * C.wohl[m];
+                jahr = m < n ? C.jahre[m - 1] : C.ende;
+            }
+            if (m < n) kraft += rate * WACHSTUM.kraftJeS * w * Math.max(0, g - a0);
+            a0 = g;
+        }
+        return { jahr: jahr, kraft: m < n ? kraft : 0, uhr: Math.max(Z.uhr, t), lose: m };
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const leg0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null, achse=leg0?zeitachse(leg0.region):[];
-  const chronik=!!leg0&&!DP.nH&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): ohne Zahl lebt die Epoche in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr der Epoche schneidet ihn (unten)*/
+  const chronik=!!leg0&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): die Epoche lebt in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr schneidet ihn (unten). Die ZAHL ist die Groesse der Gegenwart (die Gestalt); bis w3w schaltete sie die Chronik ab: jede Zelle der Welt (Rang-Gesetz), der Satz „dorf 7 300" und der Akt des DSL trugen eine Zahl und rechneten je Epoche einen eigenen Plan — die Mutante ohne Erbe (Teil J 0,222)*/
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
-  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   let region,jahr,spanne,d=0;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
   else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
-  const n=nZiel;
-  const groesse=groesseVon(n), staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole');
+  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
+  const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
+  const ringe=(staedtischVon(groesseVon(nZiel))&&jahr>1700)||chronik;                                  /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
+  const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
+  /*DIE ZAHL STEHT IM JAHR IHRER EPOCHE (siedlung.K4): mit Chronik traegt der Schnitt der verlangten Epoche die Zahl, die Gestalt ist die kleinste Gegenwart, deren Schnitt sie traegt (`gestaltFuer`) — die Zelle des Rang-Gesetzes zeigt ihre Groesse, „dorf 7 18 gruenderzeit" steht mit 18 Haeusern*/
+  const n=chronik&&DP.nH&&leg0!==leg?gestaltFuer(nZiel, vor, d, gr0, jahr+spanne, leg.groesse, leg0.jahr+d+leg0.spanne):nZiel;
+  const groesse=groesseVon(n);
   const staedtisch=staedtischVon(groesse);
-  const kr=rnd(); const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
+  const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
   const poolAt=(y,hist)=>{ if(!hist&&leg&&leg.pool)return leg.pool; const H=REGION_HIST[region]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
   const geb=[];
-  const ringe=(staedtisch&&jahr>1700)||chronik;                                                        /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
-  const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
-  const anker=ringe? chronikAnker(achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr), d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
+  const anker=ringe? chronikAnker(vor, d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
   const gr=[], fr=[];                                                                         /*je Los: das Gruendungsjahr und die frueheren Bauten [{ab, v}] (der Schnitt der Chronik liest sie)*/
   for(let i=0;i<n;i++){
     const t9r=i/Math.max(1,n-1);
@@ -3482,14 +3576,22 @@
   // DER SCHNITT DER CHRONIK: das Jahr der Epoche (T = jahr + d + spanne) nimmt die Lose, die bis T gegruendet sind — der Anfang
   // der Liste (Kern = alt) —, je Los den Bau, der bei T steht; `lose` traegt das Los der Gegenwart, wo ein frueherer Bau steht
   // (das Layout packt die Lose: ein frueherer Plan liegt in der Gestalt des juengeren). Ohne Chronik ist der Plan sein Schnitt.
-  const T=chronik?leg0.jahr+d+leg0.spanne:jahr+spanne, houses=[], lose=[];
+  // DAS JAHR DES ORTS (siedlung.K4 Staffel 2): `DP.jahr` schneidet statt des Endes der Epoche — das Jahr, bis zu dem der Ort in
+  // Spielzeit gewachsen ist (`wachstum`), zwischen seiner Gruendung und der Gegenwart; die Epoche des Schnitts ist die seines Jahrs
+  const T=chronik?(isFinite(DP.jahr)?Math.max(gr0,Math.min(jahr+spanne,Number(DP.jahr))):leg0.jahr+d+leg0.spanne):jahr+spanne, houses=[], lose=[];
   for(let a=0;a<alle.length&&za[a].gr<=T;a++){ let v=alle[a];
     if(v.baujahr>T) for(const f of za[a].fr) if(f.ab<=T) v=f.v;
     houses.push(v); lose.push(v===alle[a]?null:alle[a]); }
   const nS=houses.filter(h=>h.rolle!=='scheune').length, gS=chronik?groesseVon(nS):groesse;
-  const tracht=EPOCHEN[epocheBei(region,T,d)].tracht;
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length,
-          schnitt:{jahr:chronik?leg0.jahr+d:jahr, spanne:chronik?leg0.spanne:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
+  const eT=epocheBei(region,T,d), tracht=EPOCHEN[eT].tracht, j0=chronik?Math.min(T,EPOCHEN[eT].jahr+d):jahr;
+  // DIE CHRONIK DER GESTALT (Staffel 2, der Leser ist `wachstum`): je Los sein Gruendungsjahr und die Leute und der Wohlstand seines
+  // ersten Baus (`leuteVon`, `wohl`); das Ende ist die Gegenwart — ohne Chronik (keine Zeitachse) waechst der Ort nicht
+  const C=chronik?{gr0, ende:jahr+spanne, jahre:[], leute:[], wohl:[]}:null;
+  if(C) for(let a=0;a<alle.length;a++){ let v=alle[a];
+    if(v.baujahr>za[a].gr) for(const f of za[a].fr) if(f.ab<=za[a].gr) v=f.v;
+    C.jahre.push(za[a].gr); C.leute.push(leuteVon(v)); C.wohl.push(isFinite(v.wohl)?v.wohl:1); }
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length, chronik:C,
+          schnitt:{jahr:j0, spanne:chronik?T-j0:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
           kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
 }
@@ -4095,6 +4197,36 @@
         edges.push({a:i2,b:j2,pts,w:sW*0.78,gen:1}); added++; } } } }
   return {nodes, edges, gates};
 }
+    // DER RING DER MAUER (STADTMAUER-GESETZ, EIN Gesetz fuer das Layout und den Schnitt): NV Ecken auf dem Radius Rw (je ±1,5 %
+    // aus rnd), offen auf gA rad um jedes Tor, je fuenfte Ecke ein Turm. Leser: dorfLayout (die ummauerte Gestalt) · schnittMauer.
+    // prettier-ignore
+    function mauerRing(Rw, gatePts, rnd){ const NV=30, segs=[], towers=[], vr=[];
+    for(let k2=0;k2<NV;k2++) vr.push(Rw*(0.985+rnd()*0.03));
+    const gA=0.30;
+    for(let k2=0;k2<NV;k2++){ const a0=k2/NV*2*Math.PI, a1=(k2+1)/NV*2*Math.PI, am=(a0+a1)/2;
+      const nearGate=gatePts.some(g2=>Math.abs(Math.atan2(Math.sin(am-g2.th),Math.cos(am-g2.th)))<gA);
+      if(nearGate) continue;
+      segs.push({x0:Math.cos(a0)*vr[k2], z0:Math.sin(a0)*vr[k2], x1:Math.cos(a1)*vr[(k2+1)%NV], z1:Math.sin(a1)*vr[(k2+1)%NV]});
+      if(k2%5===0) towers.push({x:Math.cos(a0)*vr[k2], z:Math.sin(a0)*vr[k2]}); }
+    return {segs, towers, R:Rw, gates:gatePts}; }
+    // DIE MAUER DES SCHNITTS (siedlung.K4): die Gestalt einer Chronik ist die Gegenwart (unummauert, ihr Layout traegt keinen Ring);
+    // steht ihr Schnitt staedtisch vor MAUER_BIS (das STADTMAUER-GESETZ an seiner Epoche), umschliesst ihn sein Ring — ueber dem
+    // Layout, das er nicht beruehrt (die Jahresringe bleiben): der Radius traegt jeden Grundriss des Schnitts samt MAUER_SAUM, ein
+    // Tor steht, wo eine Gasse den Ring kreuzt (je 0,5 rad eines). Bis w3w fiel die Mauer im Schnitt: die Hanse von 56 Haeusern
+    // stand ohne sie. Leser: exportSettlement.
+    var MAUER_BIS = 1750, MAUER_SAUM = 6;
+    // prettier-ignore
+    function schnittMauer(slots, roads, seed){
+  let Rw=0; for(const q of slots){ const o=q.obb; if(o) Rw=Math.max(Rw, Math.hypot(o.cx,o.cz)+Math.hypot(o.ex,o.ez)); }
+  if(!(Rw>0)) return null; Rw+=MAUER_SAUM;
+  const th=[];
+  for(const rd of roads||[]) for(let k=1;k<(rd.pts||[]).length;k++){ const A=rd.pts[k-1], B=rd.pts[k], ra=Math.hypot(A.x,A.z), rb=Math.hypot(B.x,B.z);
+    if((ra-Rw)*(rb-Rw)>0||ra===rb) continue; const f=(Rw-ra)/(rb-ra); th.push(Math.atan2(A.z+(B.z-A.z)*f, A.x+(B.x-A.x)*f)); }
+  const gatePts=[];
+  for(const t of th){ if(gatePts.some(g=>Math.abs(Math.atan2(Math.sin(g.th-t),Math.cos(g.th-t)))<0.5)) continue; gatePts.push({x:Math.cos(t)*Rw, z:Math.sin(t)*Rw, th:t}); }
+  if(gatePts.length<2){ const t=(gatePts[0]?gatePts[0].th:0)+Math.PI; gatePts.push({x:Math.cos(t)*Rw, z:Math.sin(t)*Rw, th:t}); }
+  let s=((Math.round((seed||1)*577+13)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  return mauerRing(Rw, gatePts, rnd); }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
@@ -4103,7 +4235,7 @@
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
-  const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
+  const walled= staedt&&plan.jahr<MAUER_BIS;                                                // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
   const Rw= walled? Math.min(195, 26+Math.sqrt(nG)*8.4) : 0;
   const G=strassengraph(rnd, plan, sW, lw, Rw, H||null);
   const roads=G.edges;
@@ -4173,7 +4305,7 @@
           const qp=[]; if(H){ let x=qx, z=qz, th=qth; for(let u=0;u<=40+rnd()*22;u+=DS){ th=trasseLenk(H,x,z,th,DS); qp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
           else for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
-  const pl=new Array(n), obbs=[], brunnen=[], fences=[], felder=[], staende=[];
+  const pl=new Array(n), obbs=(plan.belegt||[]).map(o=>({i:'belegt',o})), brunnen=[], fences=[], felder=[], staende=[];   /*belegt: Grundrisse, die vor jedem Haus stehen (der Kern eines Rings, `ringUm`)*/
   let platz=null;
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=Math.max(6,PW*0.55);
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
@@ -4300,16 +4432,7 @@
       if(ok&&Rw){ let mn=1e9; for(let a2=0;a2<12;a2++){ const wx=Math.cos(a2/12*2*Math.PI)*Rw, wz=Math.sin(a2/12*2*Math.PI)*Rw;
         mn=Math.min(mn,distPunktOBB(wx,wz,fo)); } if(Math.hypot(fcx,fcz)<Rw+3&&mn<1.5)ok=false; }
       if(ok) felder.push(fo); } }
-  let mauer=null;
-  if(walled){ const NV=30, segs=[], towers=[], vr=[];
-    for(let k2=0;k2<NV;k2++) vr.push(Rw*(0.985+rnd()*0.03));
-    const gA=0.30;
-    for(let k2=0;k2<NV;k2++){ const a0=k2/NV*2*Math.PI, a1=(k2+1)/NV*2*Math.PI, am=(a0+a1)/2;
-      const nearGate=gatePts.some(g2=>Math.abs(Math.atan2(Math.sin(am-g2.th),Math.cos(am-g2.th)))<gA);
-      if(nearGate) continue;
-      segs.push({x0:Math.cos(a0)*vr[k2], z0:Math.sin(a0)*vr[k2], x1:Math.cos(a1)*vr[(k2+1)%NV], z1:Math.sin(a1)*vr[(k2+1)%NV]});
-      if(k2%5===0) towers.push({x:Math.cos(a0)*vr[k2], z:Math.sin(a0)*vr[k2]}); }
-    mauer={segs, towers, R:Rw, gates:gatePts}; }
+  const mauer=walled?mauerRing(Rw, gatePts, rnd):null;
   let X0=1e9,X1=-1e9,Z0=1e9,Z1=-1e9;
   obbs.forEach(q2=>{ const o=q2.o, rr=Math.hypot(o.ex,o.ez); X0=Math.min(X0,o.cx-rr);X1=Math.max(X1,o.cx+rr);Z0=Math.min(Z0,o.cz-rr);Z1=Math.max(Z1,o.cz+rr); });
   roads.forEach(rd=>{ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); X0=Math.min(X0,q.x-rd.w);X1=Math.max(X1,q.x+rd.w);Z0=Math.min(Z0,q.z-rd.w);Z1=Math.max(Z1,q.z+rd.w); } });
@@ -7062,6 +7185,48 @@
     var PASSUNG_LUFT = 0.02,
         PASSUNG_SCHRITTE = 4;
     // die obb des Baus mit der Hülle e im Rahmen q seines Loses (der Ursprung des Hauses bei q.x/q.z, gedreht um q.phi)
+    // DER RING UM DEN KERN (siedlung.K4 Staffel 2, `exportSettlement`): die Lose des Rings (das Layout LB um den Kern K, ab der
+    // Nummer nA) stehen um das Haus verschoben im Layout des Orts; wessen Grundriss das Haus oder einen Grundriss des Orts
+    // berührt (Abstand < gap), steht nicht; ihre Gassen, Laternen und ihre Welt kommen dazu — ihr Platz, Brunnen und Acker
+    // nicht: der Kern ist das Haus
+    function ringUm(lay, LB, K, nA, gap) {
+        var vs = function (q) {
+            return Object.assign({}, q, { x: q.x + K.x, z: q.z + K.z });
+        };
+        var belegt = lay.pl
+            .filter(Boolean)
+            .map(function (q) {
+                return q.obb;
+            })
+            .concat([{ cx: K.x, cz: K.z, phi: K.phi || 0, ex: K.ex || 4, ez: K.ez || 4 }]);
+        LB.pl.forEach(function (q, j) {
+            var o = q && q.obb ? Object.assign({}, q.obb, { cx: q.obb.cx + K.x, cz: q.obb.cz + K.z }) : null;
+            var frei =
+                !!o &&
+                belegt.every(function (a) {
+                    return obbSep(o, a) >= gap;
+                });
+            lay.pl[nA + j] = frei ? Object.assign(vs(q), { obb: o }) : null;
+            if (frei) belegt.push(o);
+        });
+        lay.roads = lay.roads.concat(
+            LB.roads.map(function (rd) {
+                return Object.assign({}, rd, { pts: rd.pts.map(vs) });
+            })
+        );
+        lay.laternen = lay.laternen.concat(
+            LB.laternen.map(function (l) {
+                return Object.assign(vs(l), l.wand ? { haus: nA + l.haus } : null);
+            })
+        );
+        var w = LB.welt;
+        lay.welt = {
+            x0: Math.min(lay.welt.x0, w.x0 + K.x),
+            x1: Math.max(lay.welt.x1, w.x1 + K.x),
+            z0: Math.min(lay.welt.z0, w.z0 + K.z),
+            z1: Math.max(lay.welt.z1, w.z1 + K.z),
+        };
+    }
     function obbImLos(q, e) {
         var lx = (e.x0 + e.x1) / 2,
             lz = (e.z0 + e.z1) / 2,
@@ -7076,6 +7241,7 @@
             nH: isFinite(dp.nH) ? Number(dp.nH) : undefined, // ohne Zahl entscheidet DORF (die Epoche, sonst 18)
             epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
+            jahr: isFinite(dp.jahr) ? Number(dp.jahr) : undefined, // das Jahr des Orts (Staffel 2, `wachstum`); ohne es das Ende der Epoche
         });
         var ext = [];
         var Bs = [];
@@ -7107,20 +7273,48 @@
         // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
         // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
         var Htr = dp.hoehe ? hoeheAusRaster(dp.hoehe) : null;
-        var lay = dorfLayout(plan, ext, plan.seed, Htr);
-        // U6c — KONSUM BEIDSEITIG: der Export wendet DIESELBE Snap-/Brandwand-
-        // Wahrheit an wie buildDorf (Lab): reihenSnap rückt lay.pl zusammen
-        // (Slot-x/z/obb), brandwand markiert hp.brandwand (reist als ov.brandwand).
-        reihenSnap(Bs, lay.pl, plan.norm.gap);
-        for (i = 0; i < Bs.length; i++) Bs[i].q = lay.pl[i];
-        brandwand(
-            Bs.filter(function (b) {
-                return b.q;
-            }),
-            plan.norm.gap
-        );
-        brunnenWeicht(Bs, lay.pl, lay); // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie buildDorf
-        wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
+        // DER KERN EINES RINGS (siedlung.K4 Staffel 2): ein gesetztes Haus im Ort (`dp.kern` {x, z, phi, ex, ez, ab}: seine Platte
+        // plan-lokal, ab = das Jahr des Orts, als es stand) wird Kern der Lose, die danach gegründet sind — sie wachsen in ihrem
+        // eigenen Layout um das Haus (`ringUm`), die älteren liegen, wie sie lagen (ihr Layout ist das des Schnitts bis ab)
+        var K = dp.kern && plan.chronik && isFinite(dp.kern.x) && isFinite(dp.kern.z) ? dp.kern : null;
+        var nA = plan.houses.length;
+        if (K) for (nA = 0; nA < plan.houses.length && plan.chronik.jahre[nA] <= K.ab; ) nA++;
+        // EIN Layout der Lose von…bis (um den Kern `kern`: die Kreuzung als Kern, ihr eigener Same, die Höhe am Haus) samt der
+        // Wahrheit des Labors (buildDorf): U6c — reihenSnap rückt die Reihe zusammen (Slot-x/z/obb), brandwand markiert
+        // hp.brandwand (reist als ov.brandwand); DER BRUNNEN WEICHT DEM HAUS (S4-N4) und DIE WANDLATERNE (K66-2) nach dem Snap
+        var teil = function (von, bis, kern, ort) {
+            var Bt = Bs.slice(von, bis),
+                p = Object.assign({}, plan, { houses: plan.houses.slice(von, bis), lose: plan.lose.slice(von, bis) });
+            var H =
+                Htr && kern
+                    ? function (x, z) {
+                          return Htr(x + kern.x, z + kern.z);
+                      }
+                    : Htr;
+            // der Ring trägt das Haus und die Grundrisse des Orts als belegt (in seinem Rahmen um das Haus)
+            if (kern)
+                Object.assign(p, {
+                    kernel: "kreuzung",
+                    nGestalt: bis - von,
+                    belegt: [{ cx: kern.x, cz: kern.z, phi: kern.phi || 0, ex: kern.ex || 4, ez: kern.ez || 4 }]
+                        .concat(ort.pl.filter(Boolean).map(function (q) { return q.obb; }))
+                        .map(function (o) { return Object.assign({}, o, { cx: o.cx - kern.x, cz: o.cz - kern.z }); }),
+                });
+            var L = dorfLayout(p, ext.slice(von, bis), kern ? (plan.seed ^ 0x2545f491) >>> 0 : plan.seed, H);
+            reihenSnap(Bt, L.pl, plan.norm.gap);
+            for (var j = 0; j < Bt.length; j++) Bt[j].q = L.pl[j];
+            brandwand(
+                Bt.filter(function (b) {
+                    return b.q;
+                }),
+                plan.norm.gap
+            );
+            brunnenWeicht(Bt, L.pl, L);
+            wandLaternen(Bt, L.pl, L);
+            return L;
+        };
+        var lay = teil(0, nA);
+        if (nA < plan.houses.length) ringUm(lay, teil(nA, plan.houses.length, K, lay), K, nA, plan.norm.gap);
         var slots = [],
             slotVon = {};
         for (i = 0; i < plan.houses.length; i++) {
@@ -7141,6 +7335,12 @@
                 )
             );
         }
+        // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
+        var mz =
+            lay.mauer ||
+            (plan.chronik && plan.schnitt.staedtisch && plan.schnitt.jahr < MAUER_BIS
+                ? schnittMauer(slots, lay.roads, plan.seed)
+                : null);
         var aus = {
             seed: plan.seed,
             name: plan.name,
@@ -7161,16 +7361,16 @@
             // der Graph der Gassen (nV/nE/zyklen, der Leser gate:settlement Z). Einen Siedlungs-Fluss plant das
             // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
             // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
-            mauer: lay.mauer
+            mauer: mz
                 ? {
-                      R: lay.mauer.R,
-                      segs: lay.mauer.segs.map(function (s) {
+                      R: mz.R,
+                      segs: mz.segs.map(function (s) {
                           return { x0: s.x0, z0: s.z0, x1: s.x1, z1: s.z1 };
                       }),
-                      towers: lay.mauer.towers.map(function (t) {
+                      towers: mz.towers.map(function (t) {
                           return { x: t.x, z: t.z };
                       }),
-                      gates: lay.mauer.gates.map(function (g) {
+                      gates: mz.gates.map(function (g) {
                           return { x: g.x, z: g.z, th: g.th };
                       }),
                   }
@@ -7196,6 +7396,15 @@
                 }),
         };
         if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
+        // die Mauer des Schnitts liegt in der Welt des Plans wie die der Gestalt (dorfLayout: ihr Radius + 8 m, der Rand 9 m)
+        if (mz && !lay.mauer)
+            aus.welt = {
+                x0: Math.min(lay.welt.x0, -mz.R - 17),
+                x1: Math.max(lay.welt.x1, mz.R + 17),
+                z0: Math.min(lay.welt.z0, -mz.R - 17),
+                z1: Math.max(lay.welt.z1, mz.R + 17),
+            };
+        if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
         return aus;
     }
 
@@ -8330,6 +8539,10 @@
         EPOCHEN: EPOCHEN,
         zeitachse: zeitachse, // die Epochen einer Region nach dem Jahr (siedlung.K4; Leser: DORF, gate:settlement J)
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
+        epocheImJahr: epocheImJahr, // die Epoche des Jahrs eines Satzes (Leser: der Wirt, „dorf … 1560")
+        MAUER_BIS: MAUER_BIS, // bis zu diesem Jahr steht die Mauer der Stadt (Leser: gate:settlement J)
+        WACHSTUM: WACHSTUM, // das Wachstum in Spielzeit (Staffel 2; Leser: der Wirt, gate:settlement W)
+        wachstum: wachstum,
         REGION_HIST: REGION_HIST,
         // Vertrags-/Paritäts-Fläche (der Gate komponiert die Lab-Pfade selbst)
         LAB_SEED: LAB_SEED,

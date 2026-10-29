@@ -170,11 +170,19 @@ async function probeLeben(expected) {
         r._naesseTakt(s);
     };
     wetter("sunny", 1e6);
+    // DER BESTAND RUHT (Fixture der ganzen Probe, dieselbe wie gate:kollision-bild): die Bilanz des Bestands
+    // (`tickFaunaLifecycle`, Ökologie K1/K2) geht auf der Welt-Uhr, und die trägt jedes Warten auf Bau und Welt — unter Last
+    // fiel ihr Takt in einen der zwei Läufe von L8, ihr Hungertod nahm den ältesten Bären der Welt: den der Probe. Der Leichnam
+    // kippt, der Wagen fährt durch (Wagen 3,205 m · Bär 7,891 m, CI 40844494928, „zuerst Schritt 97: Bär y“), im Stoß hält
+    // der Bär (Wagen 0,22 m · Bär 3,21 m) — 6 von 38 Läufen unter 6–8 parallelen Linsen rot, mit der Ruhe 0 von 32 (der Takt
+    // fiele 19-mal in den gemischten Lauf). Gemessen wird der Stoß; den Bestand misst sein eigenes Gesetz (gate:kreatur-leben).
+    r.tickFaunaLifecycle = () => {};
     const aufraeumen = () => {
         delete r._loopFixedStep;
         delete r._stepFixedSim;
         delete r._stepCharacter;
         delete r._fahrWind;
+        delete r.tickFaunaLifecycle;
     };
     const tasten = (w, a) => {
         for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
@@ -2113,7 +2121,8 @@ async function probeLeben(expected) {
                     const bx = gasse.x + ux * 9;
                     const bz = gasse.z + uz * 9;
                     // die Welt der anderen Tiere ruht: der Umkreis 60 m geräumt, keine Geburt während der Probe (die Kappe
-                    // steht auf dem Bestand + dem Bären) — der Lockstep prüft den Stoß, nicht den Takt des Spawners
+                    // steht auf dem Bestand + dem Bären), kein Tod (der Bestand ruht, oben) — der Lockstep prüft den Stoß, nicht
+                    // den Takt des Spawners
                     for (const cr of (st.creatures || []).slice())
                         if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
@@ -2158,17 +2167,16 @@ async function probeLeben(expected) {
                         {
                             const sv = b.userData._stossV;
                             const pmT = st.playerMesh.position;
-                            let nah = 0;
-                            for (const cr of st.creatures || [])
-                                if (cr && cr !== b && flach(cr.position, pmT) < 12) nah++;
+                            // zuerst: lebt der Bär? Fällt er in einem der Läufe (der Bestand, ein Treffer), kippt der Leichnam
+                            // (Bär y) und der Wagen fährt durch — die Linse nennt den Fall, nie erst seine Folge
                             spur.push([
+                                st.leichname.includes(b),
                                 pmT.x,
                                 pmT.z,
                                 b.position.x,
                                 b.position.z,
                                 b.position.y,
                                 sv ? Math.hypot(sv.x, sv.z) : 0,
-                                nah,
                             ]);
                         }
                         // die Sim-Lage des Reiters (im Schritt die Wahrheit; die Lage des Werks folgt ihr je Frame)
@@ -2199,7 +2207,7 @@ async function probeLeben(expected) {
                 // der erste Schritt, in dem die Läufe auseinandergehen, und die Größe, die zuerst abweicht (die Linse nennt sie)
                 let erst = null;
                 if (l60 && lMix) {
-                    const namen = ["Wagen x", "Wagen z", "Bär x", "Bär z", "Bär y", "Bär Stoß", "Tiere nahe dem Wagen"];
+                    const namen = ["Bär gefallen", "Wagen x", "Wagen z", "Bär x", "Bär z", "Bär y", "Bär Stoß"];
                     for (let i = 0; i < Math.min(l60.spur.length, lMix.spur.length) && !erst; i++)
                         for (let k = 0; k < namen.length; k++)
                             if (l60.spur[i][k] !== lMix.spur[i][k]) {
@@ -2207,7 +2215,6 @@ async function probeLeben(expected) {
                                     schritt: i + 1,
                                     groesse: namen[k],
                                     d: +(lMix.spur[i][k] - l60.spur[i][k]).toFixed(5),
-                                    tiere: [l60.spur[i][6], lMix.spur[i][6]], // die Tiere nahe dem Wagen in beiden Läufen
                                 };
                                 break;
                             }

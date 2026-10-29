@@ -49,8 +49,10 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
-                // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
+                // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`) — und mit ihm die Schwellen der Stufen
+                // (das Gesetz des Wechsels, `_stufenSchirm`: sie folgen dem Schirm, nie der Bildrate).
                 this._schirmMessen();
+                this._stufenSchirm();
                 // Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt ~1–2 s, und `_ensureAssetFoundry`
                 // entstünde sonst erst lazy beim ersten Foundry-Baum (`_foundryRewarmColdTrees` liest `_foundry`,
                 // erzeugt es nicht). Billig (nur iframe); das Gate (foundry-aus → null, headless-Null → No-op)
@@ -1596,7 +1598,7 @@ class AnazhRealm_dirigent_takt {
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
-            if (_lu.uLodPerf) _lu.uLodPerf.value = this._lodPerfMul();
+            if (_lu.uLodPerf) _lu.uLodPerf.value = this._ankunftsFerne();
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;
