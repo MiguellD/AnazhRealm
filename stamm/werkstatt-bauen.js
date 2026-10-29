@@ -849,6 +849,7 @@ class AnazhRealm_werkstatt_bauen {
         this._cullWecken(entry, "weg");
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
+        if (this._freiImTakt) this._freiImTakt.delete(entry); // ein abgebauter freier Körper verlässt den Löser
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         this._werkGesetzAus(entry); // ein Werk im Takt des Gesetzes (Sturz, Rollen, Schale) verlässt ihn
         if (!still && typeof this.journalAppend === "function") {

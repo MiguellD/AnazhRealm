@@ -975,6 +975,39 @@ class AnazhRealm_bau_vorlagen {
                 parts: steinBlockParts,
             },
             kiesel: { name: "kiesel", label: "Kiesel", builtIn: true, instanced: true, parts: kieselParts },
+            // DIE FREIEN KÖRPER (physik.K3): EIN Teil, `frei` — der Löser (`_freiSchritt`) trägt sie, die Statik des Werks nicht.
+            // Holz mit 3 cm Wand (`wand`): die Kiste 0,6 m wiegt 42 kg, das Fass ⌀ 0,6 × 0,9 m 45 kg (ρ 720 der Stoff-Zeile).
+            kiste: {
+                name: "kiste",
+                label: "Kiste",
+                builtIn: true,
+                frei: true,
+                parts: [
+                    {
+                        shape: "box",
+                        material: "holz",
+                        wand: 0.03,
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                        position: { x: 0, y: 0.3, z: 0 },
+                    },
+                ],
+            },
+            fass: {
+                name: "fass",
+                label: "Fass",
+                builtIn: true,
+                frei: true,
+                parts: [
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        wand: 0.03,
+                        segments: 16,
+                        size: { x: 0.6, y: 0.9, z: 0.6 },
+                        position: { x: 0, y: 0.45, z: 0 },
+                    },
+                ],
+            },
             felsbrocken: {
                 name: "felsbrocken",
                 label: "Felsbrocken",
