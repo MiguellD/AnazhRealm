@@ -1865,7 +1865,8 @@ async function selbsttest() {
         pruef(name, r.fehler.some((f) => re.test(f)), r.fehler.join(" | "));
     }
     {
-        const r = pruefeStationen([{ ...st0, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }], karte);
+        const r = pruefeStationen([{ ...st0, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
+            quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }], karte);
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
@@ -1874,11 +1875,34 @@ async function selbsttest() {
         const fl = pruefeFehlt([{ kriterium: "gelaende.K4", staffel: 2, befehl: null }, { kriterium: "gelaende.K4", staffel: 1, befehl: null, grund: "kein Werkzeug" }], karte, [st0]);
         pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
         // `beide`: eine Staffel 1, deren Text beide Geräte nennt, trägt es; nie an Staffel 2 oder an einem Gerät
-        const pb = { ...st0, kriterium: "profiband.K1", geraet: ["radeon", "gtx"], gpu: true, zeit: true, quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten" };
+        const pb = { ...st0, kriterium: "profiband.K1", geraet: ["radeon", "gtx"], gpu: true, zeit: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
+            quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten" };
         const bf = [pb, { ...pb, beide: true, geraet: "radeon" }, { ...st0, staffel: 2, beide: true, geraet: ["radeon", "gtx"], gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }]
             .map((s) => pruefeStationen([s, ...(s.staffel === 2 ? [st0] : [])], karte).fehler.join(" | "));
         pruef("FORMAT-ROT die Staffel 1 nennt beide Geräte ohne beide · beide an einem Gerät · beide an Staffel 2",
             /nennt beide Geräte — beide: true/.test(bf[0]) && /beide nur als true/.test(bf[1]) && /beide nur als true/.test(bf[2]) && pruefeStationen([{ ...pb, beide: true }], karte).fehler.length === 0, bf.join(" || "));
+        // DIE FAHRT (29.10., eine Fahrt durch jedes System ≤ 30 min je Gerät): (a) ein befehl auf einer Karte, (b) eine 80-min-Station und
+        // ein Deckel über 45 s ohne ausnahme, (c) die Summe 1 801 s — jede Klasse ROT beim Namen, die Grenze selbst grün
+        const fa = (mut) => pruefeStationen([{ ...pb, beide: true, ...mut }], karte).fehler.join(" | ");
+        const fb = [fa({ befehl: ["node", "-e", "0"], probe: undefined, geraet: "gtx", beide: undefined }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 4800, ausnahme: "achtzig Minuten eigener Boot" } }),
+            fa({ probe: { befehl: ["node", "-e", "0"], sek: 60 } }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 45, ausnahme: "der Grund beim Namen" } }),
+            fa({ probe: { befehl: ["node", "-e", "0"], sek: 90, ausnahme: "der Grund beim Namen" } }), fa({ probe: { befehl: ["node", "-e", "0"] } })];
+        pruef("FAHRT-ROT (a) ein befehl auf gtx · (b) eine 80-min-Station, 60 s ohne ausnahme, eine ausnahme an 45 s — je beim Namen; 90 s mit ausnahme und die Vorgabe 45 s grün",
+            /befehl auf gtx — eine Station der Karte misst nur als Probe/.test(fb[0]) && /Deckel 4800 s über 90 s — nie, auch mit ausnahme/.test(fb[1]) &&
+            /Deckel 60 s über 45 s ohne ausnahme/.test(fb[2]) && /ausnahme an einem Deckel von 45 s/.test(fb[3]) && fb[4] === "" && fb[5] === "" && probeSek({ probe: {} }) === PROBE_DECKEL_S, fb.join(" || "));
+        const fp = (n, sek, ge = ["radeon", "gtx"], befehl = "p" + n) => ({ kriterium: "f.K" + n, staffel: 1, geraet: ge, gpu: true, probe: { befehl: ["node", befehl], sek } });
+        const grenze = Array.from({ length: 37 }, (_, i) => fp(i + 1, 45)).concat([fp(38, 15)]); // 37 × 45 + 15 + Boot 120 = 1800
+        const zw = [fp(90, 45, ["radeon", "gtx"], "zw"), { ...fp(90, 45, ["radeon", "gtx"], "zw"), staffel: 2 }]; // Zwillinge: EIN Lauf
+        const uf = [fahrtUrteil(grenze), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16)]), fahrtUrteil([...grenze.slice(0, 36), ...zw, fp(38, 15)]),
+            fahrtUrteil([...grenze.slice(0, 35), fp(36, 90), fp(37, 60), fp(38, 15)]), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16, ["radeon"])])];
+        pruef("FAHRT-ROT (c) Σ Deckel + Boot " + SITZUNG_BOOT_S + " s: 1 800 s grün, 1 801 s ROT je Karte mit den drei größten beim Namen, Zwillinge EIN Lauf, eine Karte allein",
+            uf[0].length === 0 && uf[1].length === 2 && /^radeon: die Fahrt 1801 s über 1800 s \(Σ Deckel 1681 s in 38 Läufen \+ Boot 120 s\) — die größten: f\.K1#1 45 s, f\.K2#1 45 s, f\.K3#1 45 s$/.test(uf[1][0]) &&
+            /^gtx: die Fahrt 1801 s/.test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 && /die größten: f\.K36#1 90 s, f\.K37#1 60 s, f\.K1#1 45 s/.test(uf[3][0]) &&
+            uf[4].length === 1 && /^radeon: /.test(uf[4][0]), JSON.stringify(uf));
+        const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
+        const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
+        pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 90 s gebläht reißt die Fahrt beider Karten (liste, run und buchen fallen dort)",
+            eg.length === 2 && eg.every((f) => /die größten: /.test(f)), eg.join(" | "));
     }
     // (3) Läufer: grün / rot / Absturz / Deckel / Urteil ungültig / GPU ohne Schloss / GPU über das Schloss
     const ctx = (n) => ({ baum: tmp, koord: KOORD, port: null, aus: path.join(tmp, n + ".json"), roh: path.join(tmp, n + ".out"), geraet: "radeon", bash: findeBash(), gpuLauf: null, deckelMinS: 0 });
@@ -2339,14 +2363,14 @@ async function selbsttest() {
         const fe = (mut) => pruefeStationen([{ ...gp, ...mut }], karte).fehler.join(" | ");
         const f = [fe({ befehl: ["node", "-e", "0"] }), fe({ geraet: "headless", gpu: false }), fe({ probe: { befehl: ["node", "-e", "0"], sek: 5000 } }),
             fe({ probe: { befehl: ["bash", "-c", "raeum() { for p in $(netstat -ano); do :; done; }; node scripts/werkbank.cjs start --echt"] } }), fe({})];
-        pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_MAX_S + " s · die Feinde der Welt beim Namen",
-            /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /probe.sek nicht/.test(f[2]) &&
+        pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_AUSNAHME_S + " s · die Feinde der Welt beim Namen",
+            /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /Deckel 5000 s über 90 s/.test(f[2]) &&
             /greift die Welt der Sitzung an: netstat \(räumt Ports\), werkbank start\|stop/.test(f[3]) && f[4] === "", f.join(" || "));
         const pb = (p) => fe({ probe: { befehl: ["node", "-e", "0"], sek: 30, ...p } });
         const f2 = [pb({ mutiert: "ja" }), pb({ stellung: "mitte" }), pb({ ausnahme: "weil" }), pb({ ausnahme: "der Grund beim Namen", sek: 91 }), pb({ wache: 1 }),
             pb({ mutiert: true, stellung: "ende", ausnahme: "der Grund beim Namen", sek: 90 })];
         pruef("SITZUNG-FORMAT die Schlüssel der Fahrt: mutiert boolesch · stellung anfang|ende · ausnahme mit Grund und nie über " + PROBE_AUSNAHME_S + " s · nichts sonst",
-            /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /ausnahme ohne Grund/.test(f2[2]) && /über 90 s auch mit ausnahme/.test(f2[3]) &&
+            /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /ausnahme ohne Grund/.test(f2[2]) && /Deckel 91 s über 90 s — nie, auch mit ausnahme/.test(f2[3]) &&
             /probe trägt nur befehl, sek, mutiert, ausnahme, stellung/.test(f2[4]) && f2[5] === "", f2.join(" || "));
         const h = "hilfe";
         const alt = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
@@ -2393,12 +2417,12 @@ async function selbsttest() {
             '.end(JSON.stringify({ code: process.argv[2] }));', "{AUS}"];
         const warm = (j, l) => ({ gruen: !!j && j.welt === "warm" && j.log && /^\[linse-gpu\] amd\/stub-sitzung$/m.test(l.stdout), zahl: "welt " + (j && j.welt) });
         const S = (k, s, probe, urteil) => ({ ...gp, kriterium: k, staffel: s, probe, urteil });
-        const lauf = async (gruppen, art, gpuLauf) => {
+        const lauf = async (gruppen, art, gpuLauf, fahrtMaxS) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
             const es = {}, reihe = [];
             const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
-                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200 },
+                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, ...(fahrtMaxS ? { fahrtMaxS } : {}) },
             (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
             return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
         };
@@ -2413,7 +2437,8 @@ async function selbsttest() {
         const zeile = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/;
         const schloss = gl && fs.existsSync(glLog) ? fs.readFileSync(glLog, "utf8").trim().split("\n") : [];
         pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
-            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /Deckel 2 s/.test(x["b.K1#1"].grund) && x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
+            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
+            x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
         pruef("SITZUNG die Grundstellung (Spielstand weg, die Seite neu) nur nach einem Abbruch (b.K1 am Deckel) oder einer mutierenden Probe — nie vor jeder; nie ein zweiter Start; am Ende stop",
             r1.z.join(",") === "start,grund,reload,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
@@ -2421,7 +2446,8 @@ async function selbsttest() {
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
             Object.values(x).every((e) => ["gruen", "zahl", "exit", "minuten", "zeit", "abdruck", "port", "bahn"].every((k) => k in e) && e.modus === "session" && e.bahn === "sitzung") &&
-            Object.entries(x).every(([id, e]) => zeile.test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))), JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
+            Object.entries(x).every(([id, e]) => (e.ungemessen ? /^  OFFEN \S+ · Deckel .* · Sitzung · ungemessen/ : zeile).test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))),
+            JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
         // DIE REIHE und DER STROM: anfang, die Welt lassend, ende, mutierend — die Grundstellung nur nach der mutierenden; jede Probe kennt
         // den Strom und ihren Namen, die Bilder ihres Loops stehen unter ihrem Namen, der Kopf trägt die Dauerlast
         const umw = ["node", "-e", 'require("fs").writeFileSync(process.argv[1], JSON.stringify({ strom: process.env.PUNKTE_SITZUNG_STROM, probe: process.env.PUNKTE_PROBE }))', "{AUS}"];
@@ -2444,6 +2470,15 @@ async function selbsttest() {
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        // DIE WACHE DER FAHRT: reißt die Uhr der Fahrt (hier 8 s), fällt die laufende Probe am Rest (UNGEMESSEN beim Namen), jede folgende
+        // ist offen, die Sitzung endet und nennt sie; die Fahrt davor misst wie immer
+        const r6 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 30 }, lies)],
+            [S("c.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm), S("c.K1", 2, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "fahrt", null, 8);
+        pruef("SITZUNG DIE WACHE DER FAHRT: die Probe am Rest der Fahrt UNGEMESSEN (Deckel der Fahrt), die folgenden offen beim Namen, die Sitzung endet und nennt sie",
+            r6.es["a.K1#1"].gruen && r6.es["b.K1#1"].ungemessen === true && /^Deckel der Fahrt 8 s gerissen nach \d+ s der Probe — beendet, UNGEMESSEN$/.test(r6.es["b.K1#1"].grund) &&
+            ["c.K1#1", "c.K1#2"].every((id) => r6.es[id].ungemessen === true && /^die Fahrt riss 8 s \(in b\.K1#1\) — offen, UNGEMESSEN$/.test(r6.es[id].grund)) &&
+            JSON.stringify(r6.kopf.offen) === JSON.stringify(["b.K1#1", "c.K1#1", "c.K1#2"]) && /^die Fahrt riss 8 s in b\.K1#1 — offen: b\.K1#1, c\.K1#1, c\.K1#2$/.test(r6.kopf.grund) &&
+            r6.kopf.fahrtS < 14 && r6.z.filter((l) => l === "start").length === 1 && r6.z[r6.z.length - 1] === "stop", JSON.stringify([r6.es, r6.kopf, r6.z]));
         const r3 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "kaputt", null);
         pruef("SITZUNG eine Welt, die nie steht, ist ROT beim Grund (die Station misst, ob das Spiel bootet)",
             r3.es["a.K1#1"].gruen === false && !r3.es["a.K1#1"].ungemessen && /startet nicht: die Werkbank startet nicht/.test(r3.es["a.K1#1"].grund), JSON.stringify(r3));
