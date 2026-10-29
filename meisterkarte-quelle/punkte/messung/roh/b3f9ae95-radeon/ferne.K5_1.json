@@ -1,0 +1,310 @@
+{
+ "gy": 210,
+ "zeilen": [
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 0,
+   "kante": {
+    "spalten": 60,
+    "rand": 43,
+    "linie": 0,
+    "stufe": 0
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 1374,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 2000,
+     "n": 820,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 5000,
+     "n": 113,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 196,
+     "q": [
+      0,
+      0,
+      0
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.157,
+    0.157,
+    0.1331
+   ],
+   "rand": {
+    "km": 19.8,
+    "C": 0
+   },
+   "sicht": {
+    "m": 1484,
+    "n": 3732
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 90,
+   "kante": {
+    "spalten": 60,
+    "rand": 31,
+    "linie": 0,
+    "stufe": 0
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 354,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0.5455
+    },
+    {
+     "d": 2000,
+     "n": 822,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 5000,
+     "n": 78,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 114,
+     "q": [
+      0,
+      0,
+      0
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.147,
+    0.1495,
+    0.1244
+   ],
+   "rand": {
+    "km": 21.8,
+    "C": 0
+   },
+   "sicht": {
+    "m": 1455,
+    "n": 3808
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 180,
+   "kante": {
+    "spalten": 60,
+    "rand": 30,
+    "linie": 0,
+    "stufe": 0
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 1358,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0.5455
+    },
+    {
+     "d": 2000,
+     "n": 546,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 5000,
+     "n": 92,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 280,
+     "q": [
+      0,
+      0,
+      0
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.1446,
+    0.147,
+    0.1244
+   ],
+   "rand": {
+    "km": 23,
+    "C": 0
+   },
+   "sicht": {
+    "m": 1612,
+    "n": 4568
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sonne": 74.21,
+   "az": 270,
+   "kante": {
+    "spalten": 60,
+    "rand": 36,
+    "linie": 0,
+    "stufe": 0
+   },
+   "blende": 16,
+   "baender": [
+    {
+     "d": 1000,
+     "n": 5,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 5.455
+    },
+    {
+     "d": 2000,
+     "n": 299,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 5000,
+     "n": 351,
+     "q": [
+      null,
+      null,
+      null
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    },
+    {
+     "d": 8000,
+     "n": 257,
+     "q": [
+      0,
+      0,
+      0
+     ],
+     "dk": null,
+     "nk": 0,
+     "dh": 0
+    }
+   ],
+   "himmel": [
+    0.147,
+    0.1495,
+    0.1244
+   ],
+   "rand": {
+    "km": 18.1,
+    "C": 0
+   },
+   "sicht": {
+    "m": 1456,
+    "n": 4864
+   }
+  }
+ ],
+ "weiss": {
+  "sonne": 5.04,
+  "blende": 1,
+  "RB": null
+ }
+}

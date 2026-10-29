@@ -1,0 +1,8 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-klang-zensus.cjs --gesehen --selftest --json /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/79bda111-headless/klang.K2_2.json
+Bach (x, z, Abstand): -396 · -878 · 204
+✅ ufer: r 0.93 bei Lag 0 (n 272), Spitze 0.93 bei 0.5 s, CV Bild 0.33 / Ohr 0.42, stumm im Bild 0 von 268 Fenstern
+✅ regen: r 1.00 bei Lag 0 (n 272), Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm im Bild 0 von 264 Fenstern
+❌ ufer: r 0.01 bei Lag 0 (n 136), Spitze 0.01 bei -3 s, CV Bild 0.31 / Ohr 0.09, stumm im Bild 0 von 136 Fenstern
+❌ regen: r -0.20 bei Lag 0 (n 136), Spitze 0.09 bei -3 s, CV Bild 0.36 / Ohr 0.04, stumm im Bild 0 von 136 Fenstern
+✅ SELBSTTEST: der eingefrorene Pegel ist ROT
+✅ GRÜN — gesehen = gehört

@@ -1,0 +1,11 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:\Program Files\nodejs\node.exe scripts/diag-kampf-gefuehl.cjs --k1
+[linse-gpu] amd/rdna-3
+  (Q15) {"welt":{"vor":{"lauf":"vor","traf":true,"zielFehl":0.022,"schaden":16.238,"kraft":19.961,"art":"SCHNITT","KE":76.762,"v":23.613,"p":6.048,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":26.27,"schneideBild":1},"masse":{"lauf":"masse","traf":true,"zielFehl":0.014,"schaden":22.779,"kraft":20.339,"art":"SCHNITT","KE":105.681,"v":24.555,"p":7.827,"mEff":0.319,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.646,"mEffWerk":0.319,"edgeWinkel":26.27,"schneideBild":1},"schneide":{"lauf":"schneide","traf":true,"zielFehl":0.017,"schaden":23.791,"kraft":20.339,"art":"SCHNITT","KE":110.374,"v":27.158,"p":6.956,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":22.677,"schneideBild":1}},"labor":{"vor":{"kg":1.383,"edgeWinkel":26.27},"masse":{"kg":1.646,"edgeWinkel":26.27},"schneide":{"kg":1.383,"edgeWinkel":22.677}}}
+  ✅ Q15 halten.K1 Staffel 2: Masse × Schneide × Tempo im Bild und am Labor-Werk 
+  ✅ SELBST-TEST (S21): die Breitseite im Bild, ein Bild ohne Frame, ein Labor ohne Mutation
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 2 von 3) nach 49 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

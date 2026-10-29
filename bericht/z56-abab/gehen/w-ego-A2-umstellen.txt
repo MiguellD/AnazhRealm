@@ -1,0 +1,39 @@
+{
+ "ms": 46324,
+ "ort": "wiese",
+ "sicht": "ego",
+ "pose": null,
+ "welt": null,
+ "spieler": [
+  -280.4,
+  -1045.6
+ ],
+ "wiese": {
+  "messung": {
+   "x": -280.4,
+   "z": -1045.6,
+   "y": 27.48,
+   "hang": 1.81,
+   "rauh": 0.14,
+   "nass": 0,
+   "krone": 0.108,
+   "baeume": 8,
+   "kranz": 0.204,
+   "imBlick": 0,
+   "horizont": 2.6,
+   "blick": [
+    -289.6,
+    -1049.5
+   ],
+   "gras": 1
+  },
+  "befunde": []
+ },
+ "takte": 537,
+ "steht": true,
+ "chunks": 81,
+ "gier": -1.9717,
+ "dorfZug": false,
+ "ortTakt": [],
+ "dorfSchwebt": null
+}

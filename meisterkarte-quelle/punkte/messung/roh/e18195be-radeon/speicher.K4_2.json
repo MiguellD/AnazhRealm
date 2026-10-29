@@ -1,0 +1,54 @@
+{
+ "lage": {
+  "vor": {
+   "kamera": [
+    -387.955,
+    34.158,
+    -893.369
+   ],
+   "blick": [
+    -0.5485,
+    -0.5
+   ],
+   "uhr": 0.5004348055555552,
+   "wetter": "sunny",
+   "tiere": 6,
+   "bauten": 1254,
+   "edits": 1,
+   "chunks": 81
+  },
+  "nach": {
+   "kamera": [
+    -387.955,
+    34.158,
+    -893.369
+   ],
+   "blick": [
+    -0.5485,
+    -0.5
+   ],
+   "uhr": 0.5001790277777779,
+   "wetter": "sunny",
+   "tiere": 4,
+   "bauten": 1525,
+   "edits": 1,
+   "chunks": 81
+  }
+ },
+ "diff": 0.8489583333333417,
+ "rauschen": 0.4218749999999988,
+ "vor": {
+  "bau": true,
+  "grube": true,
+  "wasser": 2
+ },
+ "nach": {
+  "bau": true,
+  "grube": true,
+  "wasser": 2
+ },
+ "adapter": {
+  "vendor": "amd",
+  "architecture": "rdna-3"
+ }
+}

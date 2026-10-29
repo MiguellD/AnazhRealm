@@ -1,0 +1,237 @@
+{
+ "datum": "2026-10-28T10:43:55.748Z",
+ "stand": {
+  "version": "18.546.114",
+  "sha": "ea07267e8a2953458963e1811a2df6741ed7aa48",
+  "quellen": {
+   "phyto-core.js": "c:32da934d79079d6d",
+   "foundry-core.js": "c:6775c096fe7680eb",
+   "vehicle-core.js": "c:b95dd7df48a4ac29",
+   "porta-core.js": "c:11bc6e763f4f7298",
+   "schmiede-core.js": "c:42616f6ff917f783",
+   "fachwerk-core.js": "c:82b719806903611d",
+   "klang-core.js": "c:f9e906e6fa861e82",
+   "koerper-core.js": "c:af5f778945376ea9",
+   "tetrapoda-core.js": "c:80b878e8d74070fa",
+   "gelaende-core.js": "c:9661e2a38a0f9765",
+   "stamm/dirigent-kern.js": "c:6b7fae00ae048135",
+   "stamm/dienst.js": "c:0c4d1b1086b591a8",
+   "stamm/daten.js": "c:c1d05f96439aa3b7",
+   "stamm/gelaende-boden.js": "c:c8486099798d2841",
+   "stamm/gelaende-chunks.js": "c:563facddcb70eb75",
+   "stamm/gelaende-fern.js": "c:43e803f2cba1440f",
+   "stamm/gelaende-kollision.js": "c:1761e19b7ca111c3",
+   "stamm/wasser-hydro.js": "c:efdcb9c361c4ed8a",
+   "stamm/wasser-zellen.js": "c:c5c06b2743129042",
+   "stamm/stoff-material.js": "c:436fd5b4d039468f",
+   "stamm/stoff-instanz.js": "c:c7bc5811bbe608da",
+   "stamm/studio-bruecke.js": "c:6e8805ce3ae0ea45",
+   "stamm/studio-gestalt.js": "c:0cd41c769e475df3",
+   "stamm/bau-vorlagen.js": "c:2a4b851ac0cbcce1",
+   "stamm/bau-buch.js": "c:72332df9a0426209",
+   "stamm/bau-teile.js": "c:12fdff454bc44596",
+   "stamm/siedlung-ort.js": "c:530ebc937ca7680e",
+   "stamm/siedlung-bauten.js": "c:2a2b656c28fbbcd9",
+   "stamm/siedlung-satz.js": "c:5936fdb3a1f1f8d3",
+   "stamm/siedlung-bewohner.js": "c:f3809cb788834fb4",
+   "stamm/vegetation-wiese.js": "c:17cc7e329210ee2c",
+   "stamm/vegetation-baum.js": "c:372bdc1f059b4570",
+   "stamm/vegetation-streu.js": "c:97a89d8e6c7a820b",
+   "stamm/bild-kosten.js": "c:bf15642d8a353b7a",
+   "stamm/bild-diaet.js": "c:6c397620cf33128e",
+   "stamm/bild-sicht.js": "c:b19ab3b595a2bea1",
+   "stamm/bild-himmel.js": "c:4efd0f7798119212",
+   "stamm/klang.js": "c:7c49aefd8c7fab3a",
+   "stamm/koerper-leib.js": "c:93548e179de402e9",
+   "stamm/koerper-seele.js": "c:fd7b96a4fd1a80ea",
+   "stamm/koerper-bewegung.js": "c:e84a7fb815db28a0",
+   "stamm/koerper-fahrt.js": "c:4aedd64346d565a6",
+   "stamm/kreatur-leben.js": "c:ce3244d9648ff4ea",
+   "stamm/kreatur-verhalten.js": "c:d192deefa72e2c42",
+   "stamm/kampf.js": "c:e5b182e8d34c7016",
+   "stamm/netz-p2p.js": "c:ecbec003dbeda20e",
+   "stamm/netz-identitaet.js": "c:f59174e795230467",
+   "stamm/netz-portal.js": "c:5b01cde2889a4eb1",
+   "stamm/feld-leben.js": "c:6f9fda7fc439cfbe",
+   "stamm/feld-dsl.js": "c:6b5ebe019b0df76a",
+   "stamm/feld-nexus.js": "c:7b79e04c1ec21195",
+   "stamm/feld-sprache.js": "c:4ee6229cc30d73e3",
+   "stamm/speicher-welten.js": "c:198bd576bd6882a6",
+   "stamm/speicher-laden.js": "c:72d0ca515025feb6",
+   "stamm/werkstatt-hud.js": "c:cc53187379624bf7",
+   "stamm/werkstatt-vorschau.js": "c:5078e9912569fe97",
+   "stamm/werkstatt-bauen.js": "c:5e67fb2d00b76842",
+   "stamm/werkstatt-hof.js": "c:9f322c99f6c9e528",
+   "stamm/werkstatt-sozial.js": "c:f32f46282de34a94",
+   "stamm/dirigent-regler.js": "c:1351743aa7e33099",
+   "stamm/dirigent-takt.js": "c:45e457cd38cb464d",
+   "stamm/dirigent-ankunft.js": "c:6c9355b5dde96484"
+  }
+ },
+ "echt": true,
+ "geraet": "amd rdna-3",
+ "ort": "genesis",
+ "spieler": [
+  0,
+  0
+ ],
+ "eichung": 0.1799,
+ "welt": {
+  "rinde": {
+   "Y": 0.0866,
+   "rgb": "0.1037/0.0842/0.0598",
+   "pixel": 7429,
+   "zuege": 2,
+   "stoffe": [
+    "bark|0.93|0.00|0|1.00|xf|wind:5.07/0.0136/1",
+    "bark|0.93|0.00|0|1.00|xf|wind:5.16/0.0134/1"
+   ],
+   "gesetzt": true,
+   "stufen": [
+    0,
+    1
+   ]
+  },
+  "laub": {
+   "Y": 0.1678,
+   "rgb": "0.0906/0.2032/0.0447",
+   "pixel": 54752,
+   "zuege": 2,
+   "stoffe": [
+    "foliageTex|0.62|0.00|0|1.00|xf|wind:5.07/0.0136/1|krone",
+    "foliageTex|0.62|0.00|0|1.00|xf|wind:5.16/0.0134/1|krone"
+   ],
+   "gesetzt": false,
+   "stufen": [
+    0,
+    1
+   ]
+  },
+  "fels": {
+   "Y": 0.2389,
+   "rgb": "0.2641/0.2377/0.1761",
+   "pixel": 79682,
+   "zuege": 1,
+   "stoffe": [
+    "unknown|0.62|0.00|1|0.50|xf|satz"
+   ],
+   "gesetzt": false,
+   "stufen": [
+    0
+   ]
+  },
+  "boden": {
+   "Y": 0.0856,
+   "rgb": "0.1174/0.0799/0.0479",
+   "pixel": 256000,
+   "zuege": 1,
+   "stoffe": [],
+   "gesetzt": false,
+   "stufen": []
+  },
+  "tor": {
+   "Y": 0.6493,
+   "rgb": "0.8196/0.6359/0.2799",
+   "pixel": 4072,
+   "zuege": 1,
+   "stoffe": [
+    "unknown|0.62|0.00|0|1.00|v:metall|xf|satz"
+   ],
+   "gesetzt": false,
+   "stufen": [
+    2
+   ]
+  },
+  "haut": {
+   "Y": 0.0609,
+   "rgb": "0.1222/0.0463/0.0251",
+   "pixel": 29864,
+   "zuege": 4,
+   "stoffe": [
+    "haut|0.58|0.00|0|1.00|t:0.144,0.054,0.030|v:haut|xf",
+    "skin|0.62|0.00|0|1.00|t:0.144,0.054,0.030|v:haut|xf"
+   ],
+   "gesetzt": true,
+   "stufen": []
+  },
+  "fell": {
+   "Y": 0.1848,
+   "rgb": "0.227/0.1787/0.121",
+   "pixel": 44603,
+   "zuege": 3,
+   "stoffe": [
+    "fell|0.93|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf"
+   ],
+   "gesetzt": true,
+   "stufen": []
+  },
+  "klinge": {
+   "Y": 0.3493,
+   "rgb": "0.388/0.3419/0.3081",
+   "pixel": 6474,
+   "zuege": 2,
+   "stoffe": [
+    "unknown|0.17|1.00|0|2.60|cc:0.35@0.18|v:metall|xf",
+    "unknown|0.32|1.00|0|2.00|v:metall|xf"
+   ],
+   "gesetzt": true,
+   "stufen": [
+    0
+   ]
+  },
+  "haus": {
+   "Y": 0.1592,
+   "rgb": "0.2758/0.1316/0.0889",
+   "pixel": 159552,
+   "zuege": 5,
+   "stoffe": [
+    "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz",
+    "unknown|0.88|0.00|0|1.00|s2|v:stoff|xf",
+    "unknown|0.62|0.00|0|1.00|v:stoff|xf|satz"
+   ],
+   "gesetzt": false,
+   "stufen": [
+    0
+   ]
+  },
+  "haus-l1": {
+   "Y": 0.1579,
+   "rgb": "0.2745/0.1304/0.0873",
+   "pixel": 161942,
+   "zuege": 1,
+   "stoffe": [
+    "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz"
+   ],
+   "gesetzt": false,
+   "stufen": [
+    1
+   ]
+  },
+  "haus-l2": {
+   "Y": 0.1568,
+   "rgb": "0.2798/0.1269/0.0909",
+   "pixel": 187904,
+   "zuege": 1,
+   "stoffe": [
+    "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz"
+   ],
+   "gesetzt": false,
+   "stufen": [
+    2
+   ]
+  },
+  "lack": {
+   "Y": 0.0164,
+   "rgb": "0.0142/0.0165/0.0224",
+   "pixel": 77839,
+   "zuege": 1,
+   "stoffe": [
+    "unknown|0.40|0.00|0|2.60|cc:1.00@0.03|v:metall|xf"
+   ],
+   "gesetzt": true,
+   "stufen": [
+    0
+   ]
+  }
+ }
+}

@@ -1,0 +1,29 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben jagdkreis
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.7 s
+[stall-akte] Puls 11×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 375 · welt 375 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 3305 121 % · GPU 3198 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) Chrome_ChildIOT 1 % · VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 44:49 gpu 4 [VizCompositorTh 4 %]/r 166 · 44:51 gpu 1/r 291 · 44:53 gpu 0/r 356 · 44:55 gpu 1 [VizCompositorTh 1 %]/r 322 · 44:57 gpu 1/r 197 · 44:59 gpu 1 [VizCompositorTh 1 %]/r 130 · 45:01 gpu 1 [VizCompositorTh 1 %]/r 127 · 45:03 gpu 1 [Chrome_ChildIOT 1 %]/r 136 · 45:05 gpu 0 [VizCompositorTh 1 %]/r 111 · 45:07 gpu 1 [VizCompositorTh 1 %]/r 109 · 45:09 gpu 1 [VizCompositorTh 1 %]/r 108 · 45:11 gpu 0 [Chrome_ChildIOT 1 %]/r 103 · 45:13 gpu 1 [VizCompositorTh 1 %]/r 106 · 45:15 gpu 1 [VizCompositorTh 1 %]/r 109 · 45:17 gpu 1 [Chrome_ChildIOT 1 %]/r 102 · 45:19 gpu 1 [VizCompositorTh 1 %]/r 104
+[stall-akte] Stapel _kreaturGliedTreffer :2696 < _kreaturBissKontakt :1905 < _kreaturBissTakt :1663 < updateCreatures :3660 < takt :246 < (anonym) :1717 < buehne :61 < kreaturProben :1617
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Nervensystem: 74 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [WARN] FPS-Einbruch: 13 (zuvor ~46)
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [WARN] Der Rundblick steht nach 120 Takten ohne: 166 Bäume und Bauten wachsen · 375 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _kreaturGliedTreffer :2696
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"hp0":168},"rudel":{"jagden":60,"risse":18,"erschoepft":42,"hp0":168},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"hp0":60}},"rissS":49,"fleisch0":56.5,"fleischEnde":0,"fressS":110.7,"gaeste":[{"seele":"fuchs","kommtS":20.2,"frissS":31.14},{"seele":"baer","kommtS":16.8,"frissS":32.16}]}}
+
+  (73 s) — Sekunden je Probe: jagdkreis: 60
+
+✅ GRÜN — jagdkreis

@@ -1,0 +1,8 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-klang-zensus.cjs --gesehen --selftest --json /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/e18195be-headless/klang.K2_2.json
+Gesehen = gehört am Bach der Mess-Wiese (x, z, Abstand): -396 · -878 · 204
+✅ ufer: r 0.94 bei Lag 0 (n 272), Spitze 0.94 bei 0 s, CV Bild 0.32 / Ohr 0.40, stumm im Bild 0 von 270 Fenstern
+✅ regen: r 1.00 bei Lag 0 (n 272), Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.63, stumm im Bild 0 von 263 Fenstern
+❌ ufer: r -0.01 bei Lag 0 (n 136), Spitze 0.00 bei -0.5 s, CV Bild 0.30 / Ohr 0.08, stumm im Bild 0 von 136 Fenstern
+❌ regen: r -0.19 bei Lag 0 (n 136), Spitze 0.05 bei -3 s, CV Bild 0.36 / Ohr 0.04, stumm im Bild 0 von 136 Fenstern
+✅ SELBSTTEST: der eingefrorene Pegel ist ROT (ufer und regen)
+✅ GRÜN — gesehen = gehört: der Bach-Pegel folgt der sichtbaren Strömung, der Regen-Pegel dem gezeichneten Regen

@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon-2'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\ea07267e-radeon\speicher.K4_2.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp "$K/bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs" "$D/"; : werk 2710-speicher-zwei; cd "$B"; BAUM="$B" PORT=7764 node "$D/speicher-zwei.cjs" bild --json "$A"
+[linse-gpu] amd/rdna-3
+  ✅ (B) bild-diff 0.57 % an derselben Pose nach dem Neuladen (Soll ≤ 1 %), Pflicht-Inhalt vor {"bau":true,"grube":true,"wasser":2} · nach {"bau":true,"grube":true,"wasser":2}
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 1 von 3) nach 46 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

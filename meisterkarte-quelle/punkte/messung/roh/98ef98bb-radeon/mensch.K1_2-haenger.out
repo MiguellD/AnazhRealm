@@ -1,0 +1,25 @@
+HÄNGER-LINSE: 3 Frames > 100 ms in 20 s (436 Frames, 445 Takte; Frame p50/p95/p99/max 41.9/67/92.1/100.4 ms) — TAKT 3 · NEBEN 0 · GC 0 · GPU 0
+Lauf: Regler voll · Tiere frei (7) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Proben ja (445 Takt-Marken)
+Pipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module
+Erst-Zeichnung: 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)
+Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms
+
+   n    Σ ms   max ms  Ursache
+   2     201      100  TAKT: verteilt
+   1     100      100  TAKT: _gpuKehraus › traverse [three.core.min.js]
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=2 dt=100.4 ms (1 Takte, 0 ohne Bild) [TAKT 95 · NEBEN 3] TAKT: verteilt
+      Zweige: _perfSenseFoldFrame 44% · renderer._renderScene 20% · _loopWeatherAndGrowth 20%
+      Selbst: traverse [three.core.min.js] 31% · (anonym) [stamm/dirigent-regler.js:1355] 10% · _tickBewohner 6%
+      Gerät: texKB 512
+  t=16062 dt=100.2 ms (1 Takte, 0 ohne Bild) [TAKT 93 · NEBEN 2] TAKT: _gpuKehraus › traverse [three.core.min.js]
+      Pfad: _loopRender 52% › _gpuKehraus 51% › traverse [three.core.min.js] 51%
+      Selbst: traverse [three.core.min.js] 51% · _tickBewohner 6% · erdbauY [gelaende-core.js] 5%
+      Gerät: texKB 512
+  t=18088 dt=100.4 ms (1 Takte, 0 ohne Bild) [TAKT 98 · NEBEN 1] TAKT: verteilt
+      Zweige: _loopRender 40% · _loopWeatherAndGrowth 26% · renderer._renderScene 24%
+      Selbst: traverse [three.core.min.js] 38% · _tickBewohner 11% · _loopWeatherAndGrowth 4%
+      Gerät: texKB 512
+
+C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\mensch.K1_2-haenger.json

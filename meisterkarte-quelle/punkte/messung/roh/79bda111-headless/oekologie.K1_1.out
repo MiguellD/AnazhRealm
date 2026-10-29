@@ -1,0 +1,29 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben kaskade
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.0 s
+[stall-akte] Puls 13×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 340 · welt 340 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 3733 113 % · browser 3591 1 % · GPU 3624 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 % · Chrome_ChildIOT 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 08:35 gpu 11 [VizCompositorTh 9 %]/r 189 · 08:37 gpu 1 [VizCompositorTh 2 %]/r 162 · 08:39 gpu 1 [VizCompositorTh 1 %]/r 341 · 08:41 gpu 2 [VizCompositorTh 2 %]/r 346 · 08:43 gpu 0 [VizCompositorTh 1 %]/r 329 · 08:45 gpu 2 [VizCompositorTh 2 %]/r 242 · 08:47 gpu 0/r 131 · 08:49 gpu 1 [VizCompositorTh 1 %]/r 122 · 08:51 gpu 2 [VizCompositorTh 1 %]/r 118 · 08:53 gpu 1 [Chrome_ChildIOT 1 %]/r 114 · 08:55 gpu 2 [VizCompositorTh 1 %]/r 113 · 08:57 gpu 1 [VizCompositorTh 1 %]/r 168 · 08:59 gpu 2 [VizCompositorTh 1 %]/r 111 · 09:01 gpu 1 [VizCompositorTh 1 %]/r 111 · 09:03 gpu 2 [VizCompositorTh 1 %]/r 112 · 09:05 gpu 1 [VizCompositorTh 1 %]/r 111 · 09:07 gpu 2 [Chrome_ChildIOT 1 %]/r 111 · 09:09 gpu 1 [VizCompositorTh 1 %]/r 113
+[stall-akte] Stapel _imGrundriss :1727 < _kreaturGrundFrei :1720 < _kreaturGeburtsOrt :1700 < _creatureNaturalBirth :1812 < tickFaunaLifecycle :2108 < (anonym) :3061 < (anonym) :3108 < buehne :61
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] Nervensystem: 74 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 14 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 18 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 27 (zuvor ~39)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] Der Rundblick steht nach 120 Takten ohne: 157 Bäume und Bauten wachsen · 333 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _imGrundriss :1727
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ kaskade   {"saaten":[{"deer":[4.24,3.91],"fox":[0.12,0.19],"wolf":[1.77,2.22],"bear":[0.88,0.72]},{"deer":[4.05,4.49],"fox":[0.29,0.76],"wolf":[1.38,1.94],"bear":[0.14,0.81]},{"deer":[3.75,5.21],"fox":[0.38,0.6],"wolf":[1.1,2.14],"bear":[0.23,0.85]},{"deer":[4.17,3.43],"fox":[0.25,0.08],"wolf":[1.99,1.69],"bear":[0.53,0.59]},{"deer":[5.35,6.24],"fox":[0.59,1.08],"wolf":[1.51,3.26],"bear":[1.01,0.82]},{"deer":[4.21,4.8],"fox":[0.66,0.83],"wolf":[2.05,1.77],"bear":[0.22,0.38]},{"deer":[5.25,4.06],"fox":[0.61,0.58],"wolf":[1.48,1.63],"bear":[0.54,0.82]},{"deer":[4.6,6.29],"fox":[0.15,0.93],"wolf":[1.29,0.74],"bear":[0.71,0.79]}],"kappe":0,"richtungen":{"hirsche":{"effekt":0.542,"ki":[0.258,0.857],"soll":0.3,"haelt":true},"jungwuchs":{"effekt":-0.302,"ki":[-0.472,-0.144],"soll":-0.2,"haelt":true},"woelfe":{"effekt":-0.746,"ki":[-1.228,-0.315],"soll":0,"haelt":true},"nahrung":{"effekt":-0.313,"ki":[-0.576,-0.098],"soll":-0.3,"haelt":true},"mutante":{"effekt":0.554,"ki":[0.407,0.695],"soll":-0.2,"haelt":false}},"hungertod":{"n":4016,"aeltester":4016,"trauer":4016,"journal":4016}}
+
+  (94 s) — Sekunden je Probe: kaskade: 78
+
+✅ GRÜN — kaskade

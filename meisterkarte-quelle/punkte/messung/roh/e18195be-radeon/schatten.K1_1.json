@@ -1,0 +1,44 @@
+{
+ "plan": "schatten.K1#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 24,
+    "fenster": [
+     1920,
+     1080
+    ]
+   }
+  },
+  "kontakt": {
+   "exit": 0,
+   "json": {
+    "0.5": {
+     "uhr": 0.5,
+     "sonneGrad": 74.2,
+     "schattenM": 0.85,
+     "posen": {
+      "ego": {
+       "fuss": {
+        "halbschattenCm": 2.3,
+        "kanten": 12,
+        "von": 12
+       }
+      },
+      "third": {
+       "fuss": {
+        "halbschattenCm": 2.3,
+        "kanten": 12,
+        "von": 12
+       }
+      }
+     },
+     "version": "18.546.117"
+    }
+   }
+  }
+ },
+ "dateien": {}
+}

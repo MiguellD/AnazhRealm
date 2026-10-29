@@ -1,0 +1,510 @@
+{
+ "plan": "material.K3#2",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "ort": {
+   "exit": 0,
+   "json": {
+    "ms": 48131,
+    "takte": 572,
+    "steht": true,
+    "chunks": 81,
+    "gier": 0,
+    "dorfZug": true,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   }
+  },
+  "ruhe": {
+   "exit": 0,
+   "json": {
+    "ms": 10010,
+    "ergebnis": 1
+   }
+  },
+  "welt": {
+   "exit": 1,
+   "json": null,
+   "rest": "nein  – · 0.2793/0.1267/0.0907\nlack          Metall/Lack    0.0166   0.0164    1.01    0.012  ja    0.0144/0.0166/0.0226 · 0.0142/0.0165/0.0224\ntor           Metall/Lack    0.6496   0.6493    1.00    0.000  ja    0.8196/0.6364/0.2799 · 0.8196/0.6359/0.2799\nhaut          Haut/Fell      0.0607   0.0609    1.00    0.003  ja    0.1217/0.0462/0.025 · 0.1222/0.0463/0.0251\nfell          Haut/Fell      0.1689   0.1849    0.91    0.090  ja    0.206/0.1636/0.1123 · 0.2271/0.1788/0.1211\nklinge        Klinge         0.3322   0.3493    0.95    0.050  ja    0.3642/0.3258/0.3022 · 0.388/0.3419/0.3081\n\nKarte (18 %)         k·L /Eichung  Ratsche  Soll  Ausgabe-Pixel\nterrain           0.6760     2.14    0.761  nein  171/176/169\ngarage            0.5658     1.79    0.583  nein  188/197/201\nportale           0.8012     2.54    0.929  nein  199/210/205\nschmiede          0.6427     2.04    0.711  nein  174/162/150\nfachwerk          0.4811     1.52    0.418  nein  197/194/192\nkoerperstudio     0.6990     2.21    0.795  nein  170/181/178\ntetrapoda         0.8802     2.79    1.025  nein  255/255/255\n\n  [stumm] birke: das Labor maß nichts (keine Zeile)\n  [stumm] fichte: das Labor maß nichts (keine Zeile)\n\nC:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\e18195be-radeon\\material.K3_2.json.d\\welt.json\nC:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\e18195be-radeon\\material.K3_2.json.d\\albw\n"
+  },
+  "fels": {
+   "exit": 0,
+   "json": {
+    "ms": 4,
+    "ergebnis": {
+     "findling": [
+      0
+     ],
+     "basalt": [
+      0
+     ],
+     "sediment": [
+      0
+     ],
+     "zacken": [
+      0
+     ],
+     "geroell": [
+      0
+     ],
+     "kristalle": [
+      0
+     ]
+    }
+   }
+  }
+ },
+ "dateien": {
+  "welt": {
+   "datum": "2026-10-28T13:49:25.283Z",
+   "stand": {
+    "version": "18.546.117",
+    "sha": "e18195be8b143f9d333de6ea8a8b43dea93dd198",
+    "quellen": {
+     "phyto-core.js": "c:32da934d79079d6d",
+     "foundry-core.js": "c:6775c096fe7680eb",
+     "vehicle-core.js": "c:830aaa683845ae20",
+     "porta-core.js": "c:47e215047c48adf6",
+     "schmiede-core.js": "c:42616f6ff917f783",
+     "fachwerk-core.js": "c:69b5b62e27c03371",
+     "klang-core.js": "c:1af8960b94e85d44",
+     "koerper-core.js": "c:1e61e093deb1c87f",
+     "tetrapoda-core.js": "c:f42c7e6e899b0ac4",
+     "gelaende-core.js": "c:9661e2a38a0f9765",
+     "stamm/dirigent-kern.js": "c:8bd8862100cfee69",
+     "stamm/dienst.js": "c:7a0f04fc48f3500b",
+     "stamm/daten.js": "c:c1d05f96439aa3b7",
+     "stamm/gelaende-boden.js": "c:c8486099798d2841",
+     "stamm/gelaende-chunks.js": "c:edaac3c17f5a9136",
+     "stamm/gelaende-fern.js": "c:7ed18bedafe0e883",
+     "stamm/gelaende-kollision.js": "c:1761e19b7ca111c3",
+     "stamm/wasser-hydro.js": "c:efdcb9c361c4ed8a",
+     "stamm/wasser-zellen.js": "c:c5c06b2743129042",
+     "stamm/stoff-material.js": "c:436fd5b4d039468f",
+     "stamm/stoff-instanz.js": "c:c7bc5811bbe608da",
+     "stamm/studio-bruecke.js": "c:637d001997d82e50",
+     "stamm/studio-gestalt.js": "c:0cd41c769e475df3",
+     "stamm/bau-vorlagen.js": "c:2a4b851ac0cbcce1",
+     "stamm/bau-buch.js": "c:72332df9a0426209",
+     "stamm/bau-teile.js": "c:12fdff454bc44596",
+     "stamm/siedlung-ort.js": "c:530ebc937ca7680e",
+     "stamm/siedlung-bauten.js": "c:2a2b656c28fbbcd9",
+     "stamm/siedlung-satz.js": "c:16f9098c6f6ee9c5",
+     "stamm/siedlung-bewohner.js": "c:f3809cb788834fb4",
+     "stamm/vegetation-wiese.js": "c:17cc7e329210ee2c",
+     "stamm/vegetation-baum.js": "c:372bdc1f059b4570",
+     "stamm/vegetation-streu.js": "c:97a89d8e6c7a820b",
+     "stamm/bild-kosten.js": "c:bf15642d8a353b7a",
+     "stamm/bild-diaet.js": "c:6c397620cf33128e",
+     "stamm/bild-sicht.js": "c:b19ab3b595a2bea1",
+     "stamm/bild-himmel.js": "c:7cf420dd7c186773",
+     "stamm/klang.js": "c:5c88091cf296bb6e",
+     "stamm/koerper-leib.js": "c:b951a81116a97be5",
+     "stamm/koerper-seele.js": "c:fd7b96a4fd1a80ea",
+     "stamm/koerper-bewegung.js": "c:edcad20b90578703",
+     "stamm/koerper-fahrt.js": "c:4aedd64346d565a6",
+     "stamm/kreatur-leben.js": "c:30f19ff77be27c1d",
+     "stamm/kreatur-verhalten.js": "c:556684bfd5da0b7d",
+     "stamm/kampf.js": "c:e5b182e8d34c7016",
+     "stamm/netz-p2p.js": "c:28db0461f2023043",
+     "stamm/netz-identitaet.js": "c:f59174e795230467",
+     "stamm/netz-portal.js": "c:5b01cde2889a4eb1",
+     "stamm/feld-leben.js": "c:9b38a28eb8180524",
+     "stamm/feld-dsl.js": "c:660f32e549dbb3fd",
+     "stamm/feld-nexus.js": "c:399713ffeb5117f1",
+     "stamm/feld-sprache.js": "c:4ee6229cc30d73e3",
+     "stamm/speicher-welten.js": "c:198bd576bd6882a6",
+     "stamm/speicher-laden.js": "c:37bdc106bfe90489",
+     "stamm/werkstatt-hud.js": "c:cc53187379624bf7",
+     "stamm/werkstatt-vorschau.js": "c:5078e9912569fe97",
+     "stamm/werkstatt-bauen.js": "c:5e67fb2d00b76842",
+     "stamm/werkstatt-hof.js": "c:8598b8f6bcbee17b",
+     "stamm/werkstatt-sozial.js": "c:f32f46282de34a94",
+     "stamm/dirigent-regler.js": "c:1351743aa7e33099",
+     "stamm/dirigent-takt.js": "c:557d35ddcc56fbe8",
+     "stamm/dirigent-ankunft.js": "c:f761214fbeec007f"
+    }
+   },
+   "echt": false,
+   "geraet": "amd rdna-3",
+   "ort": null,
+   "spieler": [
+    0,
+    0
+   ],
+   "eichung": 0.1799,
+   "welt": {
+    "rinde": {
+     "Y": 0.0872,
+     "rgb": "0.1044/0.0848/0.0603",
+     "pixel": 6887,
+     "zuege": 2,
+     "stoffe": [
+      "bark|0.93|0.00|0|1.00|xf|wind:5.07/0.0136/1",
+      "bark|0.93|0.00|0|1.00|xf|wind:5.16/0.0134/1"
+     ],
+     "gesetzt": true,
+     "stufen": [
+      0,
+      1
+     ]
+    },
+    "laub": {
+     "Y": 0.1651,
+     "rgb": "0.0888/0.2/0.0442",
+     "pixel": 49438,
+     "zuege": 2,
+     "stoffe": [
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:5.07/0.0136/1|krone",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:5.16/0.0134/1|krone"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      0,
+      1
+     ]
+    },
+    "fels": {
+     "Y": 0.2389,
+     "rgb": "0.2641/0.2377/0.1761",
+     "pixel": 79682,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.62|0.00|1|0.50|xf|satz"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      0
+     ]
+    },
+    "boden": {
+     "Y": 0.0856,
+     "rgb": "0.1174/0.0799/0.0479",
+     "pixel": 256000,
+     "zuege": 1,
+     "stoffe": [],
+     "gesetzt": false,
+     "stufen": []
+    },
+    "tor": {
+     "Y": 0.6493,
+     "rgb": "0.8196/0.6359/0.2799",
+     "pixel": 4072,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|v:metall|xf|satz"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "haut": {
+     "Y": 0.0609,
+     "rgb": "0.1222/0.0463/0.0251",
+     "pixel": 29864,
+     "zuege": 4,
+     "stoffe": [
+      "haut|0.58|0.00|0|1.00|t:0.144,0.054,0.030|v:haut|xf",
+      "skin|0.62|0.00|0|1.00|t:0.144,0.054,0.030|v:haut|xf"
+     ],
+     "gesetzt": true,
+     "stufen": []
+    },
+    "fell": {
+     "Y": 0.1849,
+     "rgb": "0.2271/0.1788/0.1211",
+     "pixel": 44607,
+     "zuege": 3,
+     "stoffe": [
+      "fell|0.93|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf"
+     ],
+     "gesetzt": true,
+     "stufen": []
+    },
+    "klinge": {
+     "Y": 0.3493,
+     "rgb": "0.388/0.3419/0.3081",
+     "pixel": 6474,
+     "zuege": 2,
+     "stoffe": [
+      "unknown|0.17|1.00|0|2.60|cc:0.35@0.18|v:metall|xf",
+      "unknown|0.32|1.00|0|2.00|v:metall|xf"
+     ],
+     "gesetzt": true,
+     "stufen": [
+      0
+     ]
+    },
+    "birke": {
+     "Y": 0.2943,
+     "rgb": "0.2068/0.3408/0.0919",
+     "pixel": 43851,
+     "zuege": 2,
+     "stoffe": [
+      "bark|0.74|0.00|0|1.00|xf|wind:4.44/0.0198/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:4.44/0.0198/1|krone"
+     ],
+     "gesetzt": true,
+     "stufen": [
+      0
+     ]
+    },
+    "birke-l1": {
+     "Y": 0.2922,
+     "rgb": "0.2038/0.339/0.0881",
+     "pixel": 40990,
+     "zuege": 3,
+     "stoffe": [
+      "bark|0.74|0.00|0|1.00|xf|wind:4.54/0.0197/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:4.54/0.0197/1|krone",
+      "schatten|0.70|0.00|0|1.00|s2|xf|wind:4.54/0.0197/1"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      1
+     ]
+    },
+    "birke-karte": {
+     "Y": 0.2938,
+     "rgb": "0.2058/0.3407/0.0887",
+     "pixel": 48566,
+     "zuege": 1,
+     "stoffe": [],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "fichte": {
+     "Y": 0.0953,
+     "rgb": "0.0633/0.1105/0.0392",
+     "pixel": 32811,
+     "zuege": 2,
+     "stoffe": [
+      "bark|0.93|0.00|0|1.00|xf|wind:6.50/0.0121/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:6.50/0.0121/1|krone"
+     ],
+     "gesetzt": true,
+     "stufen": [
+      0
+     ]
+    },
+    "fichte-l1": {
+     "Y": 0.095,
+     "rgb": "0.0606/0.111/0.0386",
+     "pixel": 30565,
+     "zuege": 3,
+     "stoffe": [
+      "bark|0.93|0.00|0|1.00|xf|wind:6.59/0.0119/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:6.59/0.0119/1|krone",
+      "schatten|0.70|0.00|0|1.00|s2|xf|wind:6.59/0.0119/1"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      1
+     ]
+    },
+    "fichte-karte": {
+     "Y": 0.0954,
+     "rgb": "0.0623/0.111/0.0383",
+     "pixel": 44854,
+     "zuege": 1,
+     "stoffe": [],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "haus": {
+     "Y": 0.1592,
+     "rgb": "0.2758/0.1316/0.0889",
+     "pixel": 159552,
+     "zuege": 5,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz",
+      "unknown|0.62|0.00|0|1.00|v:stoff|xf|satz",
+      "unknown|0.88|0.00|0|1.00|s2|v:stoff|xf"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      0
+     ]
+    },
+    "haus-l1": {
+     "Y": 0.1579,
+     "rgb": "0.2745/0.1304/0.0873",
+     "pixel": 161942,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      1
+     ]
+    },
+    "haus-l2": {
+     "Y": 0.1565,
+     "rgb": "0.2793/0.1267/0.0907",
+     "pixel": 187904,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "lack": {
+     "Y": 0.0164,
+     "rgb": "0.0142/0.0165/0.0224",
+     "pixel": 77839,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.40|0.00|0|2.60|cc:1.00@0.03|v:metall|xf"
+     ],
+     "gesetzt": true,
+     "stufen": [
+      0
+     ]
+    },
+    "birke@0.27": {
+     "Y": 0.2941,
+     "rgb": "0.2066/0.3405/0.0918",
+     "pixel": 44084,
+     "zuege": 2,
+     "stoffe": [
+      "bark|0.74|0.00|0|1.00|xf|wind:4.44/0.0198/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:4.44/0.0198/1|krone"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      0
+     ]
+    },
+    "birke-l1@0.27": {
+     "Y": 0.292,
+     "rgb": "0.2037/0.3389/0.0879",
+     "pixel": 40975,
+     "zuege": 3,
+     "stoffe": [
+      "schatten|0.70|0.00|0|1.00|s2|xf|wind:4.54/0.0197/1",
+      "bark|0.74|0.00|0|1.00|xf|wind:4.54/0.0197/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:4.54/0.0197/1|krone"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      1
+     ]
+    },
+    "birke-karte@0.27": {
+     "Y": 0.2939,
+     "rgb": "0.2059/0.3408/0.0888",
+     "pixel": 48568,
+     "zuege": 1,
+     "stoffe": [],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "fichte@0.27": {
+     "Y": 0.0967,
+     "rgb": "0.059/0.1137/0.0387",
+     "pixel": 30344,
+     "zuege": 2,
+     "stoffe": [
+      "bark|0.93|0.00|0|1.00|xf|wind:6.50/0.0121/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:6.50/0.0121/1|krone"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      0
+     ]
+    },
+    "fichte-l1@0.27": {
+     "Y": 0.0951,
+     "rgb": "0.0607/0.111/0.0386",
+     "pixel": 30512,
+     "zuege": 3,
+     "stoffe": [
+      "bark|0.93|0.00|0|1.00|xf|wind:6.59/0.0119/1",
+      "foliageTex|0.62|0.00|0|1.00|xf|wind:6.59/0.0119/1|krone",
+      "schatten|0.70|0.00|0|1.00|s2|xf|wind:6.59/0.0119/1"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      1
+     ]
+    },
+    "fichte-karte@0.27": {
+     "Y": 0.0954,
+     "rgb": "0.0623/0.1111/0.0383",
+     "pixel": 44779,
+     "zuege": 1,
+     "stoffe": [],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "haus@0.27": {
+     "Y": 0.1592,
+     "rgb": "0.2758/0.1316/0.0889",
+     "pixel": 159552,
+     "zuege": 5,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz",
+      "unknown|0.62|0.00|0|1.00|v:stoff|xf|satz",
+      "unknown|0.88|0.00|0|1.00|s2|v:stoff|xf"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      0
+     ]
+    },
+    "haus-l1@0.27": {
+     "Y": 0.1579,
+     "rgb": "0.2745/0.1304/0.0873",
+     "pixel": 161942,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      1
+     ]
+    },
+    "haus-l2@0.27": {
+     "Y": 0.1565,
+     "rgb": "0.2793/0.1267/0.0907",
+     "pixel": 187904,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.62|0.00|0|1.00|s2|v:stoff|xf|satz"
+     ],
+     "gesetzt": false,
+     "stufen": [
+      2
+     ]
+    },
+    "lack@0.27": {
+     "Y": 0.0165,
+     "rgb": "0.0143/0.0165/0.0225",
+     "pixel": 77716,
+     "zuege": 1,
+     "stoffe": [
+      "unknown|0.40|0.00|0|2.60|cc:1.00@0.03|v:metall|xf"
+     ],
+     "gesetzt": true,
+     "stufen": [
+      0
+     ]
+    }
+   }
+  }
+ }
+}

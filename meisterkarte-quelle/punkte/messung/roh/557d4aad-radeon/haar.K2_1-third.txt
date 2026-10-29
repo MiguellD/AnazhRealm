@@ -1,0 +1,10 @@
+{
+ "ms": 7310,
+ "fehler": "--gesicht: keine Kopf-Haut am Gelenk head",
+ "stapel": [
+  "at evaluate (evaluate at bild (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon-2\\scripts\\werkbank.cjs:990:14), <anonymous>:406:44)",
+  "at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)",
+  "at async ExecutionContext.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16)",
+  "at async IsolatedWorld.evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\IsolatedWorld.js:105:16)"
+ ]
+}

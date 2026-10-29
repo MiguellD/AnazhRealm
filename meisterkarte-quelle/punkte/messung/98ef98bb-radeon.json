@@ -1,0 +1,58 @@
+{
+ "sha": "98ef98bb5eac304c23b97c2c8d1e6dd6ebb6ff7f",
+ "geraet": "radeon",
+ "zeit": "2026-10-29T10:55:39.673Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 2007 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 39.7–421.4 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 8.36,
+   "gpu": "amd/rdna-3",
+   "warten": 5.53,
+   "zeit": "2026-10-29T10:33:08.733Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "zahl": "(a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0, Bild ) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.52 m, Faden 5/5 an 21 Säulen",
+   "exit": 1,
+   "minuten": 6.53,
+   "grund": "ROT: (a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0, Bild ) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.52 m, Faden 5/5 an 21 Säulen",
+   "gpu": "amd/rdna-3",
+   "warten": 1.02,
+   "zeit": "2026-10-29T10:41:30.525Z",
+   "abdruck": "c2446a63171f",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "mensch.K1#2": {
+   "gruen": false,
+   "zahl": "Probe-Fehler: keine volle Stadt",
+   "exit": 0,
+   "minuten": 7.62,
+   "grund": "ROT: Probe-Fehler: keine volle Stadt",
+   "gpu": "amd/rdna-3",
+   "warten": 0.85,
+   "zeit": "2026-10-29T10:48:02.265Z",
+   "abdruck": "db7525ca4016",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "luftwasser.K5#2": {
+   "gruen": true,
+   "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 565 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+   "exit": 0,
+   "minuten": 28.9,
+   "gpu": "amd/rdna-3",
+   "warten": 28.36,
+   "zeit": "2026-10-29T10:55:39.673Z",
+   "abdruck": "c287869fc49a",
+   "port": 7754,
+   "bahn": "allein"
+  }
+ }
+}

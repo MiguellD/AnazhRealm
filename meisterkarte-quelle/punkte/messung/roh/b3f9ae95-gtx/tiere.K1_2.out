@@ -1,0 +1,242 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe -e (async function herdeHang() {
+const fs = require("fs");
+const path = require("path");
+const cp = require("child_process");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, szene, pulk] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const B = aus.replace(/\.json$/, "");
+const erg = { serie: [] };
+const ruf = async (src, o) => {
+const a = await werkbankRuf(W, "/eval", { code: "return (" + src + ")(r, T, " + JSON.stringify(o || {}) + ");" });
+if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+return a.ergebnis;
+};
+const tor = werkbankTor(W);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+const p = cp.spawnSync(process.execPath, ["scripts/diag-kreatur-takt.cjs", "--werkbank", String(W), "--proben", "herde"], {
+encoding: "utf8",
+maxBuffer: 1 << 26,
+});
+process.stdout.write(p.stdout || "");
+process.stderr.write(p.stderr || "");
+await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
+erg.szene = await ruf(szene, { phase: "start" });
+let auge = null;
+for (let i = 0; i < 3 && !erg.szene.fehler; i++) {
+const q = i ? await ruf(szene, { phase: "weiter", takte: 30 }) : erg.szene;
+const [, , , lx, ly, lz] = q.kamera;
+const [px, py, pz] = auge || q.kamera;
+const datei = B + "-herde-" + (i + 1) + ".png";
+const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", punkte: q.punkte, wahl: 14, datei });
+const kl = b && b.klasse ? Object.fromEntries(Object.entries(b.klasse.klassen || {}).map(([k, v]) => [k, v.pixel])) : null;
+const kam = b && Array.isArray(b.kamera) ? [...b.kamera, lx, ly, lz] : q.kamera;
+auge = kam;
+erg.serie.push({
+schuss: i + 1,
+abstand: +Math.hypot(kam[0] - lx, kam[1] - ly, kam[2] - lz).toFixed(1),
+spieler: q.abstand,
+glieder: q.glieder,
+fliehen: q.fliehen,
+takte: q.takte,
+kamera: kam,
+abnahme: (b && b.abnahme) || null,
+fehler: (b && b.fehler) || null,
+klassen: kl,
+pulk: kl ? await ruf(pulk, { kamera: kam }) : null,
+datei,
+});
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+} finally {
+tor.stop();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+const kurz = erg.serie.map((x) => [x.abstand, x.fliehen + "/" + x.glieder, x.pulk, x.fehler]);
+console.log("HERDE AM HANG " + JSON.stringify({ szene: erg.szene, fehler: erg.fehler || null, serie: kurz }));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-gtx\tiere.K1_2.json 7754 function herdeSzene(r, T, o) {
+const s = r.state;
+const A = r.constructor;
+const pm = s.playerMesh.position;
+const H = (x, z) => r.getTerrainHeightAt(x, z);
+const Z = o.phase === "start" ? (window.__herdeHang = { takte: 0 }) : window.__herdeHang;
+const takt = () => {
+pm.set(Z.sx, H(Z.sx, Z.sz) + 0.5, Z.sz);
+r._kreaturStossSchritt(1 / 60);
+r._leibKontakte();
+A.prototype.updateCreatures.call(r, 1 / 60);
+Z.takte++;
+};
+const lebend = () => Z.glieder.filter((c) => s.creatures.includes(c));
+const flieht = (c) => c.userData._motionZustand === "flucht";
+const mitte = (g) => g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
+const leibMitte = (c) => {
+const b = new T.Box3().setFromObject(c);
+return [c.position.x, c.position.y + (b.isEmpty() ? 0.5 : Math.min(3, b.max.y - b.min.y) / 2), c.position.z].map((v) => +v.toFixed(2));
+};
+const pose = () => {
+const g = lebend();
+const m = mitte(g);
+const a = Z.auge || pm;
+const ey = H(a.x, a.z) + A.EGO_AUGE_M;
+return {
+kamera: [a.x, ey, a.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
+abstand: +Math.hypot(m.x - a.x, m.y + 0.6 - ey, m.z - a.z).toFixed(1),
+punkte: g.map(leibMitte),
+glieder: g.length,
+fliehen: g.filter(flieht).length,
+takte: Z.takte,
+};
+};
+if (o.phase !== "start") {
+for (let k = 0; k < o.takte; k++) takt();
+return pose();
+}
+s.renderer.setAnimationLoop(null);
+window.__buehne();
+r.setGameMode("frieden");
+r.setCameraMode("first");
+for (const c of s.creatures.slice()) r.removeCreature(c);
+const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z);
+let hang = null;
+for (let ring = 0; ring < 50 && !hang; ring++)
+for (let q = 0, n = Math.max(1, ring * 6); q < n && !hang; q++) {
+const a = (q / n) * 2 * Math.PI;
+const x = pm.x + Math.cos(a) * ring * 12;
+const z = pm.z + Math.sin(a) * ring * 12;
+if (!trocken(x, z)) continue;
+const gx = (H(x + 4, z) - H(x - 4, z)) / 8;
+const gz = (H(x, z + 4) - H(x, z - 4)) / 8;
+const t = Math.hypot(gx, gz);
+const grad = (Math.atan(t) * 180) / Math.PI;
+if (!(grad >= 15 && grad <= 30)) continue;
+const [ux, uz] = [gx / t, gz / t];
+let frei = true;
+for (let d = -50; d <= 60 && frei; d += 5) frei = trocken(x + ux * d, z + uz * d);
+if (frei && !(s.architectures || []).some((e) => e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 70))
+hang = { x, z, ux, uz, neigung: +grad.toFixed(1) };
+}
+if (!hang) return { fehler: "kein trockener Hang 15–30° in 600 m um den Spieler" };
+pm.set(hang.x + 140, H(hang.x + 140, hang.z) + 0.5, hang.z);
+s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
+s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
+s.camera.updateMatrixWorld(true);
+r._loopFrustumCulling();
+Object.assign(s, { maxCreatures: 64, creatureAnimationTime: 100 });
+r._faunaStroeme = null;
+Z.glieder = r._kreaturWurf({ x: hang.x, z: hang.z }, "wesen", "happy", r._faunaRng("verband"), 7);
+s.maxCreatures = s.creatures.length;
+r.updateCreatures = function (dt) {
+const fest = this.state.creatures.map((c) => [c, c.position.x, c.position.z]);
+const aus = A.prototype.updateCreatures.call(this, dt);
+for (const [c, x, z] of fest) [c.position.x, c.position.z] = [x, z];
+return aus;
+};
+let d = 60;
+for (; Z.takte < 3600 && !Z.glieder.some(flieht); d -= 1.4 / 60) {
+[Z.sx, Z.sz] = [hang.x + hang.ux * d, hang.z + hang.uz * d];
+takt();
+}
+if (!Z.glieder.some(flieht)) return Object.assign(pose(), { fehler: "die Herde flieht nicht (der Spieler ging bis " + d.toFixed(0) + " m)" });
+for (let k = 0; k < 120 && lebend().some((c) => !flieht(c)); k++) takt();
+for (let k = 0; k < 30; k++) takt();
+const m = mitte(lebend());
+const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
+Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
+return Object.assign(pose(), { hang: { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
+} function herdePulk(r, T, o) {
+const L = window.__letzteTeilung;
+const Z = window.__herdeHang;
+if (!L || !Z) return { fehler: "keine Teilung oder keine Herde in der Seite" };
+const { teil, W, H } = L;
+const cam = r.state.camera.clone();
+const [px, py, pz, lx, ly, lz] = o.kamera;
+cam.position.set(px, py, pz);
+cam.lookAt(lx, ly, lz);
+cam.aspect = W / H;
+cam.updateProjectionMatrix();
+cam.updateMatrixWorld(true);
+const g = Z.glieder.filter((c) => r.state.creatures.includes(c));
+const kreise = g.map((c) => {
+const b = new T.Box3().setFromObject(c);
+const h = b.isEmpty() ? 1 : Math.min(3, b.max.y - b.min.y);
+const v = new T.Vector3(c.position.x, c.position.y + h / 2, c.position.z).project(cam);
+const d = cam.position.distanceTo(c.position);
+const rp = (Math.max(0.5, r._kreaturRaum(c)) / d / Math.tan((cam.fov * Math.PI) / 360)) * (H / 2);
+return { x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H, r: Math.max(2, rp), vorn: v.z < 1 };
+});
+const im = kreise.map((k) => {
+let n = 0;
+if (k.vorn)
+for (let y = Math.max(0, Math.floor(k.y - k.r)); y < Math.min(H, Math.ceil(k.y + k.r)); y++)
+for (let x = Math.max(0, Math.floor(k.x - k.r)); x < Math.min(W, Math.ceil(k.x + k.r)); x++)
+if (teil[y * W + x] && (x - k.x) ** 2 + (y - k.y) ** 2 <= k.r * k.r) n++;
+return n;
+});
+const B = 4;
+const [bw, bh] = [Math.ceil(W / B), Math.ceil(H / B)];
+const voll = new Uint16Array(bw * bh);
+let pixel = 0;
+for (let p = 0; p < W * H; p++)
+if (teil[p]) {
+pixel++;
+voll[Math.floor(Math.floor(p / W) / B) * bw + Math.floor((p % W) / B)]++;
+}
+const rs = kreise.map((k) => k.r).sort((a, b) => a - b);
+const weit = Math.max(1, Math.ceil((2 * (rs[rs.length >> 1] || 2)) / B));
+const marke = new Int32Array(bw * bh).fill(-1);
+const flecken = [];
+for (let i = 0; i < bw * bh; i++) {
+if (!voll[i] || marke[i] >= 0) continue;
+const st = [i];
+let n = 0;
+marke[i] = flecken.length;
+while (st.length) {
+const j = st.pop();
+n += voll[j];
+for (let dy = -weit; dy <= weit; dy++)
+for (let dx = -weit; dx <= weit; dx++) {
+const x = (j % bw) + dx;
+const y = Math.floor(j / bw) + dy;
+const k = y * bw + x;
+if (x >= 0 && y >= 0 && x < bw && y < bh && voll[k] && marke[k] < 0) {
+marke[k] = flecken.length;
+st.push(k);
+}
+}
+}
+flecken.push(n);
+}
+const gross = flecken.filter((n) => n >= 20);
+return {
+glieder: g.length,
+sichtbar: im.filter((n) => n >= 20).length,
+je: im,
+flecken: gross.length,
+kruemel: flecken.length - gross.length,
+pixel,
+leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
+};
+}
+[linse-gpu] nvidia/pascal
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27754) =====
+
+  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":3,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.98,"engst":[0.85,"Fae","Vex",0]},"flucht":{"n":3,"wurfAnteil":1,"mittel":1,"fluchtAnteil":0.337,"fluchtMittel":1,"fluchtMin":1,"enge":1,"engst":[0.46,"Fae","Vex",45]}},"ausrichtung":{"mittel":0.997,"takte":1150},"alarm":{"laufen":3,"zweiteHand":1,"letzterS":0.4},"fluchtWegM":32.9,"id":{"bruch":null,"fluchtS":[5,5]}}
+
+  (11 s)
+
+✅ GRÜN — herde
+HERDE AM HANG {"szene":{"kamera":[-93.58,89.28,-66.23,-60.84,88.63,-38.36],"abstand":43,"punkte":[[-61.07,89.37,-37.89],[-61.29,88.38,-40.37],[-59.85,89.61,-35.55],[-64.07,89.39,-38.72],[-57.9,88.21,-39.3]],"glieder":5,"fliehen":5,"takte":2006,"hang":{"x":-62.4,"z":-36,"neigung":17.7},"wurf":5,"fluchtBei":14.2},"fehler":null,"serie":[[43,"5/5",{"glieder":5,"sichtbar":5,"je":[425,234,337,273,333],"flecken":1,"kruemel":0,"pixel":869,"leibPx":38.9},null],[43.6,"5/5",{"glieder":5,"sichtbar":5,"je":[418,324,158,378,351],"flecken":1,"kruemel":0,"pixel":835,"leibPx":38.4},null],[45.8,"5/5",{"glieder":5,"sichtbar":5,"je":[344,147,136,326,275],"flecken":1,"kruemel":0,"pixel":722,"leibPx":36.2},null]]}
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  9496 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

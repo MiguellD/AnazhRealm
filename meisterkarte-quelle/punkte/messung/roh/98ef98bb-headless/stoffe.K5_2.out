@@ -1,0 +1,9 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-stand-takt.cjs --brand
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+BRAND {"halt":{"herd":[-360,-888],"fluss":[-348,-846],"nassZellen":1,"trockenZellen":1,"schritte":3600,"brannte":3,"wasser":0,"nass":2,"fels":5,"asche":1,"mager":0,"wasserGebrannt":0,"nassGebrannt":0},"haltM":{"brannte":23,"wasser":2,"nass":0,"fels":15,"asche":20,"mager":0,"wasserGebrannt":0,"nassGebrannt":2},"fels":{"stein":[-16,-66],"herd":[-17,-67],"erreicht":true,"grund":"fels:stein","gehalten":true},"leserM":{"licht":0,"rauch":0,"glutD":12.94,"glutF":0.385},"regenM":{"brannte":4,"s":300,"naesse":0.699},"leser":{"licht":4,"rauch":4,"glutD":5.6,"glutF":256},"regen":{"brannte":4,"s":20,"naesse":0.077},"zeit":{"brennend":2000,"echt":451,"bildMs":0.2,"leserMs":0.2,"verzugS":0.983},"asche":{"vor":{"halme":477,"kraut":23,"a":0,"Y":0.148},"asche":{"halme":6,"kraut":0,"a":1,"Y":0.052},"gras":{"halme":476,"kraut":0,"a":0,"Y":0.148,"s":0.31},"mutante":{"halme":477,"kraut":0,"a":0,"Y":0.148}}}
+SUKZESSION {"asche":{"vor":{"halme":477,"kraut":23,"a":0,"Y":0.148},"zelle":[-18,-66],"tat":true,"asche":{"halme":6,"kraut":0,"a":1,"Y":0.052},"mutante":{"halme":477,"kraut":0,"a":0,"Y":0.148},"dauer":97.561,"gras":{"halme":476,"kraut":0,"a":0,"Y":0.148,"s":0.31},"busch":{"halme":477,"kraut":23,"a":0,"Y":0.148,"s":0.61}},"naehr":{"ernte":{"n":15,"N0":1,"W0":0.748,"N":0.7,"W":0.698},"mutante":{"W0":0.748,"W":0.748},"asche":1.4,"leichnam":1.2},"saemling":null}
+✅ BRAND GRÜN — die Front hält an Wasser, Fels und nassem Gras, der Regen löscht, die Asche liegt im Boden-Stoff und grünt nach, Licht, Rauch und Knistern lesen den Brand
+❌ SUKZESSION ROT — SÄMLING: "kein Jungwuchs aus dem Stubben, der Wald wirft den gewachsenen Baum (treeParams(alter))"
+
+--- stderr ---
+❌ BRAND · SUKZESSION ROT

@@ -1,0 +1,58 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 34.7 s
+[stall-akte] Puls 23×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 815 · welt 815 Takte · Ruhe 19 · zuletzt Fege-Takt nahStreu 0/1 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2944 104 % · GPU 2837 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 53:11 gpu 3 [VizCompositorTh 3 %]/r 171 · 53:13 gpu 1 [VizCompositorTh 1 %]/r 299 · 53:15 gpu 0 [VizCompositorTh 1 %]/r 345 · 53:17 gpu 2 [VizCompositorTh 1 %]/r 325 · 53:19 gpu 0/r 197 · 53:21 gpu 1 [VizCompositorTh 1 %]/r 269 · 53:23 gpu 1/r 329 · 53:25 gpu 0 [VizCompositorTh 1 %]/r 237 · 53:27 gpu 0/r 179 · 53:29 gpu 0 [Chrome_ChildIOT 1 %]/r 172 · 53:31 gpu 0 [VizCompositorTh 1 %]/r 168 · 53:33 gpu 0/r 111 · 53:35 gpu 0/r 106 · 53:37 gpu 0/r 102 · 53:39 gpu 0/r 100 · 53:41 gpu 0/r 120 · 53:43 gpu 0/r 103 · 53:45 gpu 0/r 104 · 53:47 gpu 0/r 100 · 53:49 gpu 0/r 100 · 53:51 gpu 0/r 103 · 53:53 gpu 0/r 104
+[stall-akte] Stapel messen :2309 < takt :2354 < (anonym) :2599
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 16 (zuvor ~50)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] Der Rundblick steht nach 120 Takten ohne: 233 Bäume und Bauten wachsen · 389 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: das Wege-Netz von „Steintal" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 8 (zuvor ~51)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 21 (zuvor ~47)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 23 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [WARN] FPS-Einbruch: 25 (zuvor ~42)
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [INFO] WERK IM WASSER: glutbrunnen bei -153/244 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in messen :2309
+[stall-akte] Seite #2: der Puls kehrt zurück nach 38.7 s — complete · renderer bereit · weltbild da · frames 836 · welt 836 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 161.7 s
+[stall-akte] Puls 114×, zuletzt vor 20.0 s — complete · renderer bereit · weltbild da · frames 3867 · welt 3867 Takte · Ruhe 0 · zuletzt Bau-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2944 104 % · browser 2802 1 % · GPU 2837 0 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 55:03 gpu 0/r 101 · 55:05 gpu 0/r 115 · 55:07 gpu 1/r 99 · 55:09 gpu 0/r 102 · 55:11 gpu 0/r 109 · 55:14 gpu 0/r 108 · 55:16 gpu 1 [VizCompositorTh 2 %]/r 243 · 55:18 gpu 1 [VizCompositorTh 1 %]/r 336 · 55:20 gpu 2 [VizCompositorTh 2 %]/r 250 · 55:22 gpu 0 [VizCompositorTh 1 %]/r 278 · 55:24 gpu 2 [VizCompositorTh 1 %]/r 224 · 55:26 gpu 0/r 219 · 55:28 gpu 0/r 194 · 55:30 gpu 1/r 181 · 55:32 gpu 0/r 230 · 55:34 gpu 0/r 208 · 55:36 gpu 0/r 172 · 55:38 gpu 0 [Chrome_ChildIOT 1 %]/r 170 · 55:40 gpu 0/r 231 · 55:42 gpu 1 [VizCompositorTh 1 %]/r 125 · 55:44 gpu 1 [Chrome_ChildIOT 1 %]/r 102 · 55:46 gpu 1 [chrome 1 %]/r 104 · 55:48 gpu 1 [VizCompositorTh 1 %]/r 102 · 55:50 gpu 1 [Chrome_ChildIOT 1 %]/r 102 · 55:52 gpu 1 [VizCompositorTh 1 %]/r 101 · 55:54 gpu 1 [VizCompositorTh 1 %]/r 102 · 55:56 gpu 1 [Chrome_ChildIOT 1 %]/r 100 · 55:58 gpu 1 [VizCompositorTh 1 %]/r 101 · 56:00 gpu 1 [VizCompositorTh 1 %]/r 103 · 56:02 gpu 0/r 105
+[stall-akte] Stapel erdbauY :1751 < hoehe :2347 < dichteSpalte :5226 < _terrainColumnContextIn :1067 < _terrainColumnContext :1063 < _fieldSurfaceBelow :2446 < _koerperGrund :1530 < _koerperBodenUnter :1518
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 654.9/172.6 zu 792.3/149.7
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 892.4/423.9 zu 987.4/337.1
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 789.4/150.9 zu 611.4/184.7
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 789.7/155.4 zu 648.6/179.2
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 779.9/151.0 zu 623.9/186.3
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 790.7/153.2 zu 620.2/182.8
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 792.3/149.7 zu 652.9/169.6
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 863.0/432.7 zu 718.2/477.2
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 863.2/426.5 zu 977.7/338.2
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 859.3/428.0 zu 987.4/337.1
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 666.9/176.0 zu 789.4/150.9
+[stall-akte] Konsole log: [AnazhRealm V18.546.119] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Steinheim" von 648.6/179.2 zu 789.7/155.4
+[stall-akte] Stderr [2802:2818:1028/165410.903973:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2802:2818:1028/165436.973527:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] Stderr [2802:2818:1028/165534.851414:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in erdbauY :1751
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":27,"third":29},"nahLeiber":4,"planGleich":true,"trefferMin":0.987,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.019,"wegLeib":1477.9},"blick":{"n":163,"quote":0.988,"sektorMax":0.196},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":269,"tuer":269,"falsch":[],"aufWeg":0.938,"sprungN":0,"wegeMin":6,"wegeMax":8,"streckeMin":131,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.389,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.964,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (216 s) — Sekunden je Probe: bewohner: 203
+
+✅ GRÜN — bewohner

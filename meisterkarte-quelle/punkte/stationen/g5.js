@@ -5,13 +5,27 @@
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
 
-// EINE echte Werkbank-Sitzung je Boot (das Muster von bericht/2210-radeon-beweise/skripte/werkbank-lauf.sh und
-// 2210-messschuld-gtx-6cfce/m36.sh): eigener save-server auf {PORT}+20000, Werkbank auf {PORT} (Seite {PORT}−1), eine Linse
-// neben ihr auf {PORT}+20001; jeder Boot frisch, der Spielstand des Baums fällt vor und nach jedem Boot. Die Schritte
-// schreiben ihre Ausgabe unter „@@PUNKTE@@ NAME" (nie „=== " — damit beginnen die Überschriften der Linsen); das Urteil liest die Abschnitte.
-// Läuft nur unter gpu-lauf.sh (gpu: true).
-// Die Ports räumt das Skript selbst (netstat LISTEN | ABHÖREN — die Radeon spricht deutsch).
+// DIE PROBE IN DER SITZUNG (punkte.cjs fahreSitzung, 29.10.): die Welt steht schon — save-server {PORT}, `werkbank start --echt`
+// auf {PORT}+20000 (WERKBANK_PORT), eine Linse neben ihr auf {PORT}+20001. `boot` holt eine FRISCHE Welt: die erste ist es schon
+// (die Sitzung stellt vor jeder Probe den Grund: Spielstand weg, die Seite neu im warmen Browser), jede weitere über
+// `punkte.cjs grundstellung` (dieselbe Grundstellung) — nie ein eigener Boot; `boot --ort X` stellt danach um. Die Schritte
+// schreiben ihre Ausgabe unter „@@PUNKTE@@ NAME" (nie „=== " — damit beginnen die Überschriften der Linsen); das Urteil liest die
+// Abschnitte. Bis 29.10. bootete jede Station hier ihre eigene Welt (weg/boot: save-server, werkbank start, netstat je Boot).
 const KOPF = [
+    "set -u",
+    "WP=$(({PORT} + 20000)); LP=$(({PORT} + 20001)); export WERKBANK_PORT=$WP",
+    'L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1',
+    'boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; ' +
+        'if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }',
+    'teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }',
+];
+// die Probe einer Station: Deckel sek, die Schritte nach dem KOPF
+const sitzung = (sek, ...zeilen) => ({ sek, befehl: ["bash", "-c", [...KOPF, ...zeilen].join("\n")] });
+// DER EIGENE BOOT — nur wo das Kriterium Kälte misst (siedlung.K5: das erste Haus nach dem Erwachen der Zelle in einem kalten Profil,
+// je nH ein frischer Boot; die warme Welt der Sitzung trüge Asset- und Chunk-Cache der Proben davor): eigener save-server auf
+// {PORT}+20000, Werkbank auf {PORT} (Seite {PORT}−1), eine Linse neben ihr auf {PORT}+20001; der Spielstand des Baums fällt vor und
+// nach jedem Boot; die Ports räumt das Skript selbst (netstat LISTEN | ABHÖREN — die Radeon spricht deutsch). Nur unter gpu-lauf.sh.
+const KOPF_BOOT = [
     "set -u",
     "WP={PORT}; SP=$(({PORT} + 20000)); LP=$(({PORT} + 20001)); export WERKBANK_PORT=$WP",
     'L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=',
@@ -26,7 +40,7 @@ const KOPF = [
         'grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }',
     'teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }',
 ];
-const sitzung = (...zeilen) => ["bash", "-c", [...KOPF, ...zeilen].join("\n")];
+const bootSitzung = (...zeilen) => ["bash", "-c", [...KOPF_BOOT, ...zeilen].join("\n")];
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
 
 // Pfade (R6): die Dateien, die die Messung liest
@@ -142,6 +156,44 @@ const STADT_HUEGEL = [
     "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
 ];
 
+// DER RING VOM HÜGEL (siedlung.K4 Staffel 2, w3w-jahrhunderte): ein Ort von 1320 (der Akt `spawnSettlement` mit Jahr, Same 7) auf
+// dem ebensten Land 500–800 m vor dem Genesis-Ort; der Hügel ist der höchste Land-Punkt 140–240 m vor ihm. Am Ort: ein gesetztes
+// Haus 6 m vor seinem Rand zum Hügel hin (Werk, `haus_alemannisch`), die Welt-Uhr 1500 s vor — jedes `umstellen` tickt die Welt,
+// bis sie steht (der Ort im Wachstum zählt in `_dorfOffen`). Der Code trägt kein einfaches Hochkomma (bash '…').
+const K4_ORT =
+    "const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = null; " +
+    "for (const R of [500, 650, 800]) for (let k = 0; k < 24; k++) { const a = (k / 24) * 2 * Math.PI, x = g.x + Math.cos(a) * R, z = g.z + Math.sin(a) * R; " +
+    "const ys = [0, 1, 2, 3, 4, 5, 6, 7].map((j) => [x + Math.cos(j * 0.785) * 80, z + Math.sin(j * 0.785) * 80]); " +
+    "if (!land(x, z) || !ys.every(([u, v]) => land(u, v))) continue; const h = ys.map(([u, v]) => hoch(u, v)), hang = Math.max(...h) - Math.min(...h); " +
+    "if (!S || hang < S.hang) S = { x, z, hang }; } if (!S) return { fehler: \"kein ebenes Land 500–800 m vor dem Genesis-Ort\" }; " +
+    "const huegel = (c) => { let b = null; for (const R of [140, 190, 240]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R, y = hoch(x, z); " +
+    "if (Number.isFinite(y) && land(x, z) && (!b || y > b.y)) b = { x, y, z }; } return b; }; " +
+    "window.__k4 = { S, huegel, land, hoch, hill: huegel(S) }; r.spawnSettlement({ seed: 7, jahr: 1320, position: { x: S.x, y: 0, z: S.z } }); " +
+    "return { S, hill: window.__k4.hill };";
+const K4_VOR =
+    "const K = window.__k4, Z = r.state.worldMeta.settlementCells; " +
+    "const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\") && Math.hypot(Z[q].x - K.S.x, Z[q].z - K.S.z) < 250); if (!k) return { fehler: \"der Ort von 1320 steht nicht\" }; " +
+    "const c = Z[k], S = r._bewohnerSiedlungen.get(k), P = S && S.plan; if (!P) return { fehler: \"der Ort trägt keinen Plan\" }; " +
+    "K.haeuser = () => S.plan.slots.map((s) => r._dorfHaus(S.ox + s.x, S.oz + s.z, s.seed >>> 0)).filter(Boolean); " +
+    "Object.assign(K, { k, c, E0: K.haeuser(), hill: K.huegel(c) }); const R = 6 + Math.max(...P.slots.map((s) => Math.hypot(s.obb.cx, s.obb.cz) + Math.hypot(s.obb.ex, s.obb.ez))); " +
+    "const a0 = Math.atan2(K.hill.z - c.z, K.hill.x - c.x); for (let i = 0; i < 16 && !K.haus; i++) { const a = a0 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.39, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R; " +
+    "if (K.land(x, z) && r.spawnArchitecture(\"haus_alemannisch\", { x, y: K.hoch(x, z) + 0.5, z }, { seed: 4711, werk: true })) K.haus = [x, z]; } " +
+    "return { k, groesse: P.groesse, jahr: P.jahr + P.spanne, slots: P.slots.length, haeuser: K.E0.length, haus: K.haus || null, hill: K.haus ? K.hill : null };";
+const K4_UHR =
+    "const K = window.__k4; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; " +
+    "return { kern: !!K.c.kern, jahr: K.j0, haeuser: K.E1.length, uhr: r.state.spielZeit };";
+const K4_STAND =
+    "const K = window.__k4, c = K.c, E = K.haeuser(), ring = E.filter((e) => !K.E1.includes(e)).map((e) => [e.position.x, e.position.z]); " +
+    "const med = (q) => (ring.length ? Math.round(ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[ring.length >> 1]) : null); " +
+    "return { jahr: [K.j0, c.wachs && c.wachs.jahr], haeuser: [K.E1.length, E.length], slots: r._bewohnerSiedlungen.get(K.k).plan.slots.length, " +
+    "bleiben: +(K.E1.filter((e) => E.includes(e)).length / K.E1.length).toFixed(3), ring: { neu: ring.length, zumHaus: med(K.haus), zumOrt: med([c.x, c.z]) }, offen: r._dorfOffen() };";
+const K4_KAMERA =
+    "const K = window.__k4, h = K.hill, mx = (K.c.x + K.haus[0]) / 2, mz = (K.c.z + K.haus[1]) / 2, my = K.hoch(mx, mz); " +
+    "return { pose: [h.x, h.y + 1.7, h.z, mx, my + 4, mz].map((v) => +v.toFixed(2)), d: Math.round(Math.hypot(h.x - mx, h.z - mz)), hoeher: Math.round((h.y - my) * 10) / 10 };";
+const K4_SCHRITT = (name, code, sek) =>
+    "timeout " + sek + " $W eval '" + code + "' > \"$L/k4-" + name + ".json\" 2>&1; echo '@@PUNKTE@@ " + name.toUpperCase() + "'; cat \"$L/k4-" + name + ".json\"; echo";
+const K4_HUEGEL = (datei) => "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/k4-" + datei + ".json\" 2> /dev/null)";
+
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
 // die Hand im gesetzten Halt je Takt noch gleitet. So heißt ein ROT beim Namen: kein Treffer am Ziel (gesetzt 0) ist das
@@ -200,7 +252,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // Garage: gate:garage-labor mit dem Mess-Patch bei vmax (bericht/2110-mk-kopf/garage-mk.diff, Zeile MK2110); Welt: der GT
         // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/2110-gtx-messschuld/tempo3.js über werkbank eval, M27)
-        befehl: sitzung(
+        probe: sitzung(600,
             'echo "@@PUNKTE@@ GARAGE"',
             'git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 600 node scripts/diag-garage-mk.cjs',
             'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs',
@@ -237,7 +289,7 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // die Zusätze der 2: Drift, Rückkehr (tempo3.js in der Welt), Ruck (gate:fahr-leben T4) und EIN FOV-Schreiber (T5)
-        befehl: sitzung(
+        probe: sitzung(480,
             'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
             "boot",
             'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"'
@@ -278,7 +330,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:fahr-leben T4 (Absteigen in Fahrt, Azimut nach 10 Bildern) + der Blick im Bild am Steilhang bergab, Third → Ego →
         // Third (bericht/2010-buendel-abab/blick.js über werkbank eval, M8): der GT in den Bildern 1–3 nach dem Wechsel
-        befehl: sitzung(
+        probe: sitzung(480,
             'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
             "boot",
             'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"'
@@ -320,7 +372,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: sitzung(
+        probe: sitzung(720,
             "A=$(cygpath -m '{AUS}')",
             "teil Z node scripts/diag-settlement.cjs --nur-z",
             ...STADT_HUEGEL,
@@ -382,7 +434,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: sitzung(
+        probe: sitzung(720,
             "A=$(cygpath -m '{AUS}')",
             "teil ZIPF node scripts/diag-settlement.cjs --nur-z --zipf",
             ...STADT_HUEGEL,
@@ -564,7 +616,7 @@ const stationen = [
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        befehl: sitzung(
+        befehl: bootSitzung(
             ...[12, 300].flatMap((nh) => [
                 "boot --ort dorf",
                 "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
@@ -699,6 +751,143 @@ const stationen = [
         quelle: "2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei",
     },
 
+    // ───────── siedlung.K4 — durch die Jahrhunderte (w3s-jahrhunderte: die Chronik im fachwerk-core; w3w-jahrhunderte: die Zahl der Welt) ─────────
+    // gate:settlement Teil J (`--nur-j`, Node): je Saat (8) dieselbe Zelle unter 1320 · 1560 · 1860 · 1935 (die Epochen ohne Zahl
+    // — die Chronik ihrer Region, `chronikJahr`); je Paar die Überdeckung je Slot (3 × 3 Punkte des Grundrisses im Grundriss des
+    // jüngeren), die kleinste ≥ 0,8 — und die Zelle der Welt MIT ihrer Zahl (nH 24, Legende mittelalter, 4 Saaten: die Zahl
+    // zählt die Häuser ihres Schnitts, `gestaltFuer`), geschnitten am Ende jeder Epoche; bis w3w schaltete die Zahl die Chronik
+    // ab, jede Welt-Handlung rechnete je Epoche einen eigenen Plan. Die Mutante ohne Erbe (je Epoche ein eigener Plan) bricht
+    // beide (< 0,8). J2: moderne ergibt stadt mit Turm, vier Epochen vier Kirchen, jedes Baujahr bis zum Schnitt, kein Turm vor
+    // 1905, keine Halle vor 1850, die Kultur aus REGION_HIST ihres Baujahrs, die Kleidung die Tracht der Epoche, die Mauer genau
+    // am städtischen Schnitt vor 1750 und durch kein Haus; die Mutante (Turm von 1455, keine Tracht, keine Mauer) fällt beim
+    // Namen. Teil WW (`--nur-ww`, Null-Renderer-Welt, kein Bild): der Satz „dorf 7 300 jahr 1560" trägt Same, Zahl und Jahr,
+    // „dorf 7 hanse" die Epoche; die Akte mit Jahr 1320 und 1935 stehen in der Welt als dorf in Poncho und als stadt mit Turm in
+    // T-Shirt (die Tracht liest der Wirt aus dem Export, `_bewohnerGestalten`). Rot-Grund der Buchung (b3f9ae95): „keine Zeile
+    // JAHRESRINGE" — Teil J landete erst mit V18.546.122; an 98ef98bb grün 0,915, aber nur am Weg ohne Zahl, den keine Handlung
+    // der Welt geht. Am Zweig w3w: Teil J 0,915, mit Zahl 0,958 (ohne Erbe 0,194 · 0,298), 0 Brüche, Mutante 10; WW1 grün. Der
+    // Exit von `--nur-ww` trägt auch die Welt-Proben der Staffel 2 (WW2 Wachstum, WW3 Ring-Kern, WW4 jeder nahe Ort je Takt).
+    {
+        kriterium: "siedlung.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["bash", "-c", "node scripts/diag-settlement.cjs --nur-j; J=$?; node scripts/diag-settlement.cjs --nur-ww; W=$?; exit $((J > W ? J : W))"],
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const z = jsonZeile(out, /^JAHRESRINGE /);
+            const w = jsonZeile(out, /^WELTWACHSTUM /);
+            const [j1, j2, ww1] = [
+                /^\s*(✅|❌) J1 JAHRESRINGE/m,
+                /^\s*(✅|❌) J2 EPOCHE: (\d+) Brüche, die Mutante (\d+)/m,
+                /^\s*(✅|❌) WW1 DAS JAHR/m,
+            ].map((re) => re.exec(out));
+            const zz = (z && z.zahl) || [];
+            const gruen =
+                !!z && z.min >= 0.8 && zz[0] >= 0.8 && z.ohneErbe < 0.8 && zz[1] < 0.8 && Array.isArray(z.fehl) && !z.fehl.length &&
+                !!j1 && j1[1] === "✅" && !!j2 && j2[1] === "✅" && +j2[3] > 0 && !!ww1 && ww1[1] === "✅" && !!w && !w.bruch && lauf.exit === 0;
+            const welt = w && w.alt && w.neu
+                ? "1320 " + w.alt.groesse + " " + w.alt.tracht + " · 1935 " + w.neu.groesse + (w.neu.turm ? " mit Turm " : " ohne Turm ") + w.neu.tracht
+                : "keine Zeile WELTWACHSTUM" + (w && w.bruch ? " (" + String(w.bruch).slice(0, 160) + ")" : "");
+            return {
+                gruen,
+                zahl: z
+                    ? "Überdeckung je Slot " + z.min + ", mit der Zahl der Welt " + zz[0] + " (ohne Erbe " + z.ohneErbe + " · " + zz[1] +
+                      "), Rolle/Bauart/Kleidung/Mauer " + (z.fehl || []).length + " Brüche" + (j2 ? ", Mutante " + j2[3] : "") + "; in der Welt " + welt + ", Exit " + lauf.exit
+                    : "keine Zeile JAHRESRINGE (Exit " + lauf.exit + ")",
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "stamm/siedlung-*.js",
+            "stamm/feld-leben.js",
+            "stamm/gelaende-kollision.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export",
+    },
+
+    // siedlung.K4 Staffel 2 (w3w-jahrhunderte): das Gesetz des Wachstums (gate:settlement Teil W, Node: 6 Orte in 3 h Welt-Uhr bis
+    // zur Gegenwart, die Jahresringe je Sprung; wohl 0 und ohne Leute halten, Gewalt bremst, ein Zeitplan fällt — fachwerk
+    // `wachstum`: Kraft = Leute × Wohlstand ÷ (1 + Furcht × fluchtJeFurcht) je s, die Akten gesehener Gewalt im Gedächtnis des Orts)
+    // und in der warmen Welt der Ring vom Hügel (K4_ORT … K4_KAMERA): der Ort von 1320 steht, ein gesetztes Haus an seinem Rand wird
+    // Kern (`_ortKernAkt`), nach 1500 s Welt-Uhr ist er gewachsen (`_ortWachstumTakt` → `_ortWaechst`, der Zug hebt die neuen
+    // Häuser), die alten stehen (≥ 0,9), der Median der neuen liegt näher am Haus als am Kern des Orts, und das Beweisbild vom
+    // Hügel mittags urteilt grün. Headless am Zweig (Teil WW, Null-Renderer): 1412 → 1724, 12 → 21 Häuser, die alten 0,917;
+    // der Ring 26 neue, Median 54 m vom Haus gegen 100 m vom Ort; der Nachbar wächst im selben Takt (WW4). Die Schritte dieser
+    // Probe headless am Zweig (Null-Renderer, `umstellen` nachgestellt bis Dorf und Foundry ruhen): Ort 400/693 dorf 12/12, Kern
+    // ja, 1412 → 1724, 12 → 19/20 Häuser, die alten 0,917, Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort, Hügel 210 m, 11,9 m
+    // höher. Das Bild und die Dauer der Probe an der GPU: ungemessen.
+    {
+        kriterium: "siedlung.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: sitzung(600,
+            "A=$(cygpath -m '{AUS}')",
+            "teil W node scripts/diag-settlement.cjs --nur-w",
+            "boot",
+            "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
+            K4_SCHRITT("ort", K4_ORT, 120),
+            K4_HUEGEL("ort"),
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN ORT'; exit 4; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("vor", K4_VOR, 60),
+            K4_HUEGEL("vor"),
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN HAUS AM RAND'; exit 5; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("uhr", K4_UHR, 60),
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("stand", K4_STAND, 60),
+            K4_SCHRITT("kamera", K4_KAMERA, 60),
+            "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/k4-kamera.json\" 2> /dev/null)",
+            "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 6; }",
+            "rm -f \"$L/ring.abnahme.json\"",
+            "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
+            "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
+        ),
+        gpu: true,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const erg = (n) => ((b) => (b && b.ergebnis) || {})(jsonBlock(teil(n)));
+            const [w1, w2] = [/^\s*(✅|❌) W1 WACHSTUM in \d+ s: (.*)$/m, /^\s*(✅|❌) W2 AUS BEWOHNERN/m].map((re) => re.exec(out));
+            const [o, v, u, s, k] = ["ORT", "VOR", "UHR", "STAND", "KAMERA"].map(erg);
+            const ring = s.ring || {};
+            const steht = v.slots > 0 && v.haeuser >= 0.9 * v.slots && v.groesse === "dorf" && !!v.haus;
+            const waechst = Array.isArray(s.jahr) && s.jahr[1] > s.jahr[0] && s.haeuser[1] > s.haeuser[0] && s.bleiben >= 0.9 && s.offen === 0;
+            const kern = u.kern === true && ring.neu > 0 && ring.zumHaus < ring.zumOrt;
+            const bild = !!j && j.ok === true;
+            const gruen = !!w1 && w1[1] === "✅" && !!w2 && w2[1] === "✅" && steht && waechst && kern && !k.fehler && k.hoeher > 0 && bild;
+            return {
+                gruen,
+                zahl:
+                    "W1 " + (w1 ? w1[1] + " " + w1[2].slice(0, 70) : "keine Zeile") + " · W2 " + (w2 ? w2[1] : "keine Zeile") + " · Ort " +
+                    (o.fehler || v.fehler || v.groesse + " " + v.jahr + " " + v.haeuser + "/" + v.slots) + ", Haus " + (v.haus ? "gesetzt" : "fehlt") +
+                    ", Kern " + (u.kern ? "ja" : "nein") + " · 1500 s: " +
+                    (Array.isArray(s.jahr) ? s.jahr.join(" → ") + ", Häuser " + s.haeuser.join(" → ") + "/" + s.slots + ", die alten " + s.bleiben + (s.offen ? ", offen " + s.offen : "") : "kein Stand") +
+                    " · Ring " + ring.neu + " neu, Median " + ring.zumHaus + " m vom Haus / " + ring.zumOrt + " m vom Ort · Schuss vom Hügel " + k.d + " m, " +
+                    k.hoeher + " m höher · " + (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "tetrapoda-core.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/gelaende-boden.js",
+            "stamm/dirigent-takt.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+        ],
+        quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
+    },
+
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
     {
         kriterium: "leib.K1",
@@ -706,7 +895,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
-        befehl: sitzung(
+        probe: sitzung(600,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -729,7 +918,7 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
-        befehl: sitzung(
+        probe: sitzung(1080,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -1043,7 +1232,7 @@ const stationen = [
         // werkbank latenz --verb hieb (halten-latenz): Klick per CDP bis zur Marke getCurrentTexture, an der die rechte Hand ≥ 1 cm
         // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
         // schlechteste urteilt (bildraten-fest, wie leib.K1)
-        befehl: sitzung(
+        probe: sitzung(600,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -1198,6 +1387,58 @@ const stationen = [
         },
         pfad: ["stamm/speicher-*.js", "stamm/netz-identitaet.js", "stamm/siedlung-ort.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
         quelle: "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten",
+    },
+
+    // ───────── ultiversum.K3 — Die Bibliothek (w3s-bibliothek) ─────────
+    // gate:praegung-welt (L) --bibliothek (Null-Renderer, ein Gerät, ~20 s): je Art (Welt, Regel, Bauplan) legt bibliothekLege einen
+    // Eintrag an — die EINE Hülle des Teilens (_werkCode), signiert, Code = SHA-256 der Bytes; bibliothekFinde(code) findet ihn
+    // durch den EINEN Eingang (Größe, Signatur, Rückruf) wieder. Mutanten: ein Byte (everySec 30 → 31) auf der Platte → „signatur",
+    // ein Eintrag unter fremdem Code → „code", ein Mesh (2400 Zahlen) im Welt-Gesetz → „gross" (> 8192 B). Am Kopf vor w3s-bibliothek
+    // ROT (bibliothekLege fehlt: ABSTURZ, Exit 2); an w3s-bibliothek 24b9ccaa GRÜN: Welt 1041 B (Akten 1, Regeln 7), Regel 335 B,
+    // Bauplan 428 B, Mesh 17850 B ROT, Exit 0.
+    {
+        kriterium: "ultiversum.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-praegung-welt.cjs", "--bibliothek"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = ["BIBLIOTHEK welt:", "BIBLIOTHEK regel:", "BIBLIOTHEK bauplan:", "MUTANTE Byte:", "MUTANTE Code:", "MUTANTE Mesh:"];
+            const je = soll.map((k) => l.find((x) => x.includes(k) && /^\s*(✅|❌) /.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt: " + soll.filter((_, i) => !je[i]).join(" ") + " (Exit " + lauf.exit + ")" };
+            const bytes = je.slice(0, 3).map((x) => (x.match(/— (\d+) B/) || [])[1]);
+            return {
+                gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)) && bytes.every((b) => b && +b <= 8192),
+                zahl: "Welt " + bytes[0] + " B · Regel " + bytes[1] + " B · Bauplan " + bytes[2] + " B · " + je.slice(3).map((x) => x.split(" — ")[1]).join(" · "),
+            };
+        },
+        pfad: ["stamm/netz-identitaet.js", "stamm/speicher-welten.js", "stamm/feld-dsl.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = Welten, Regeln und Baupläne liegen signiert vor, je Gesetz ≤ 8 KB, auffindbar über einen Code",
+    },
+    {
+        kriterium: "ultiversum.K3",
+        staffel: 2,
+        geraet: "headless",
+        // derselbe Lauf: bibliothekForke(Welt) verändert das Gesetz (wetter storm) und signiert mit dem eigenen Pass, ein zweiter Fork
+        // darauf; die Kette des Enkels nennt je Vorgänger Autor und Code ([Welt-Code, Fork-Code]), der Eintrag ist offenes JSON —
+        // sein Gesetz byte-gleich das Gesetz der Welt (Stand-Tafel). Offen bleibt der Pull eines Codes über das Mesh (ein Gerät).
+        befehl: ["node", "scripts/diag-praegung-welt.cjs", "--bibliothek"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const je = ["FORK: Herkunfts-Kette", "BIBLIOTHEK offen lesbar:"].map((k) => l.find((x) => x.includes(k) && /^\s*(✅|❌) /.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt (Exit " + lauf.exit + ")" };
+            return { gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)), zahl: je.map((x) => x.trim().slice(0, 90)).join(" | ") };
+        },
+        pfad: ["stamm/netz-identitaet.js", "stamm/speicher-welten.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = forkbar mit Herkunfts-Kette, offen lesbar",
     },
 
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
@@ -1400,6 +1641,47 @@ const stationen = [
         },
         pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html"],
         quelle: "2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
+    },
+    // ───────── fahrzeug.K5 — Rückmeldung: der Körper fühlt die Fahrt (fahr-rueckmeldung) ─────────
+    // (1) gate:fahr-leben --rueckmeldung (Rezept linse, `[linse-gpu]`): der GT fährt Glatt (auf dem Weg der Strecke, Vollgas), Drift
+    // (12 m daneben auf der Wiese: Vollgas, dann Handbremse und volle Lenkung) und Hang (bergauf); je Kanal das Paar an seinem
+    // Ausgang und die Mutante (Kopplung aus) ROT — RM2 die Federung im gezeichneten Bild (die Instanz-Matrix eines Aufbau-Blatts
+    // gegen den Rahmen der Räder, je Ecke der Hülle): Drift-Wank ≥ 3 mm und ≥ 1,5× Glatt, die Antwort auf den Boden-Stoß
+    // (vehicle-core `bodenStoss` ≥ 10 m/s²) ≥ 5 mm auf Glatt und am Hang; RM3 das Rumble an einem Pad mit Stub-vibrationActuator:
+    // Drift stark ≥ 0,5, Glatt ≤ 0,1, das schwache Summen im Bild des Stoßes ≥ 0,4; RM1 die Stimme der Fahrt im Sattel, still
+    // danach. (2) Der Motor-Klang am Klang-Abgriff: gate:klang-zensus (F) — der Grundton je Drehzahl am Master-Bus
+    // (OfflineAudioContext), Hz je 1000 Upm fest ± 2 % über ≥ 4 Stufen (Mutante S13 „motor stumm“). An main ea07267e ROT (RM2
+    // 0 Stöße: der Aufbau folgte jeder Unebenheit starr, die Antwort der Mutante 1,0–2,7 mm; RM3 kein Summen); am Zweig headless
+    // Antwort Glatt/Hang 7,2/7,7 mm, Summen 0,54–0,60, Drift-Wank 8,6 gegen 0,5 mm, Rumble Drift 1,0 gegen Glatt 0,004;
+    // swiftshader dasselbe Urteil (Antwort 8,0/9,9 mm). Erwartet an Radeon und GTX: RM1–RM3 ✅ und die Zeile (F) ohne „motor stumm“.
+    {
+        kriterium: "fahrzeug.K5", staffel: 1, geraet: ["radeon", "gtx"],
+        befehl: ["bash", "-c", [
+            'echo "@@PUNKTE@@ RM"; timeout 900 node scripts/diag-fahr-leben.cjs --rueckmeldung; echo "@@PUNKTE@@ EXIT $?"',
+            'echo "@@PUNKTE@@ KLANG"; KLANG_ZENSUS_PORT=$(({PORT} + 1)) timeout 1500 node scripts/diag-klang-zensus.cjs; echo "@@PUNKTE@@ EXIT $?"',
+        ].join("\n")],
+        env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 30,
+        urteil: (j, lauf) => {
+            const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const rm = jsonZeile(teil("RM"), /^RUECKMELDUNG /);
+            const gruen3 = [1, 2, 3].map((n) => new RegExp("^\\s*✅ RM" + n + " ", "m").test(teil("RM")));
+            const motor = (teil("KLANG").match(/^── \(F\) DER KÖRPER KLINGT: Motor ([\d.]+) Hz je 1000 Upm/m) || [])[1];
+            const stumm = /F motor stumm/.test(teil("KLANG"));
+            if (!rm || !rm.echt) return { gruen: false, zahl: "keine Zeile RUECKMELDUNG (Exit " + lauf.exit + ")" };
+            const w = (r, n, k) => (r && r[n] ? r[n][k] : "?");
+            const [e, m] = [rm.echt, rm.mutiert];
+            return {
+                gruen: gruen3.every(Boolean) && !!motor && !stumm,
+                zahl:
+                    "Federung im Bild: Drift-Wank " + w(e, "drift", "wankMm") + " gegen Glatt " + w(e, "glatt", "wankMm") + " mm, Stoß-Antwort Glatt/Hang " +
+                    w(e, "glatt", "antwortMm") + "/" + w(e, "hang", "antwortMm") + " mm (Mutante " + w(m, "glatt", "antwortMm") + "/" + w(m, "hang", "antwortMm") +
+                    ") · Rumble Drift " + w(e, "drift", "stark") + " gegen Glatt " + w(e, "glatt", "stark") + ", Summen " + w(e, "glatt", "summen") + "/" +
+                    w(e, "hang", "summen") + " (Mutante " + w(m, "drift", "stark") + ", " + w(m, "glatt", "summen") + ") · Motor " + (motor ? (+motor).toFixed(1) : "?") +
+                    " Hz je 1000 Upm (klang-zensus F" + (stumm ? ", STUMM" : "") + ") · RM1–3 " + gruen3.map((g) => (g ? "✅" : "❌")).join(""),
+            };
+        },
+        pfad: [...FAHRT, "stamm/klang.js", "klang-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "scripts/diag-klang-zensus.cjs"],
+        quelle: "1 = ≥ 3 Kanäle mit gemessenem Paar aus dem Ausgabe-Pfad bzw. am Klang-Abgriff",
     },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
     // gate:fahr-leben K8 Reifen (--kern, Node): je Rezept und Achse die Seitenkraft des Kerns (`fahrKraefte`, dieselbe Funktion wie
@@ -1685,9 +1967,173 @@ const stationen = [
         ],
         quelle: "2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
     },
+
+    // ───────── spielgang.K3 — Bedienung: HUD und Menü antworten, ohne das Bild zu verdecken (Zweig hud-zugang) ─────────
+    {
+        kriterium: "spielgang.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // `werkbank bedienung` an der Mess-Wiese, 1920×1080, echtes Fenster: der Klick fängt den Zeiger (im Spiel), die HUD-Maske
+        // aus dem Bild des Spielers (Canvas + DOM, der Loop steht: die Pixel, die sich mit verborgenem HUD ändern); dann je Runde
+        // ein Klick auf jeden Hotbar-Platz (HUD) und Tab, Tab, I, Esc (Menü) als echte Eingabe im laufenden Loop — die INP (p98 der
+        // Interaktionen, Event-Timing) misst das Bedienungs-Ohr des Spiels (`_bedienungInp`); gezählt sind die Interaktionen, die
+        // der Browser zählt (performance.interactionCount: 5 Runden ≈ 50 HUD, 20 Menü — ein Klick, der in ein Bild fällt, das noch
+        // rechnet, zählt nicht doppelt). Am Grund a03b7b06 fehlt das Verb
+        // (ROT „keine Bedienung"); swiftshader in der Cloud: Deckung 12,51 % ohne → 3,18 % mit dem Spiel-Zustand (zwei Läufe gleich, HUD 50 · Menü 21 Interaktionen), INP Sekunden
+        // (CPU-Raster, kein Urteil).
+        probe: sitzung(180,
+            "boot",
+            "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
+            "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
+            "teil BEDIENUNG $W bedienung --runden 5"
+        ),
+        env: K,
+        gpu: true,
+        zeit: true,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const b = jsonBlock(teil("BEDIENUNG"));
+            if (!b || !b.inp || !b.inp.hud || !b.inp.menue) return { gruen: false, zahl: "keine Bedienung" + (b && b.fehler ? " — " + b.fehler : "") + " (Exit " + lauf.exit + ")" };
+            const { hud, menue } = b.inp;
+            const gruen = b.imSpiel === true && b.bild[0] === 1920 && b.deckungPct <= 5 && hud.n >= 30 && menue.n >= 15 && hud.inpMs <= 200 && menue.inpMs <= 200;
+            return {
+                gruen,
+                zahl: "HUD deckt " + b.deckungPct + " % (" + b.bild.join("×") + (b.imSpiel ? ", im Spiel" : ", OHNE Zeiger-Fang") + ") · INP HUD " + hud.inpMs +
+                    " ms (" + hud.n + ") · Menü " + menue.inpMs + " ms (" + menue.n + ")",
+            };
+        },
+        pfad: [
+            "index.html",
+            "stamm/werkstatt-hud.js",
+            "stamm/dirigent-*.js",
+            "stamm/werkstatt-bauen.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "save-server.js",
+        ],
+        quelle: "1 = HUD und Menü antworten INP ≤ 200 ms und das HUD deckt ≤ 5 % des Bilds, an einem Gerät",
+    },
+
+    // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
+    {
+        kriterium: "spielgang.K4",
+        staffel: 1,
+        geraet: "headless",
+        // die Wand (Ü) der Klang-Linse, Zwilling von klang.K1#1: EIN Klang-Ereignis, zwei Leser (Ton und Zeile) — jedes Ereignis der
+        // Tour mit Quelle (Treffer, Wasser, Abschied, Singen, Inventar, der Ruf auf Auftrag und Stufe) trägt seine Zeile, ein stilles
+        // (Wasser auf trockenem Land, der Ruf ohne Leib) keine, jede gespielte Stimme an jedem Ort steht in der Umgebungs-Zeile, und
+        // die Tafel `UNTERTITEL` deckt jeden Namen des Gesetzes (Stimmen · Ruf-Stimmungen · SUBSTANZ). Am Grund a03b7b06 fehlt die
+        // Zeile (ROT); am Zweig 31 von 31. Die Mutante „Untertitel aus" fällt im Selbsttest der Linse (S14, gate:klang-zensus).
+        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--json", "{AUS}"],
+        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 5,
+        urteil: (j, lauf) => {
+            const z = (lauf.stdout.match(/^── \(Ü\) UNTERTITEL: (\d+) von (\d+) /m) || []).slice(1).map(Number);
+            if (z.length !== 2) return { gruen: false, zahl: "keine Zeile (Ü) UNTERTITEL (Exit " + lauf.exit + ")" };
+            const rot = ((j && j.rot) || []).filter((t) => /^Ü /.test(t));
+            return {
+                gruen: z[1] > 0 && z[0] === z[1] && rot.length === 0,
+                zahl: z[0] + " von " + z[1] + " Klang-Ereignissen und Stimmen tragen ihre Zeile" + (rot.length ? " · " + rot.slice(0, 3).join(" · ") : ""),
+            };
+        },
+        pfad: [
+            "klang-core.js",
+            "stamm/klang.js",
+            "stamm/werkstatt-hud.js",
+            "stamm/dirigent-kern.js",
+            "index.html",
+            "scripts/diag-klang-zensus.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Untertitel für jede Stimme und jeden Ruf aus dem Klang-Gesetz ODER ein Farb-Modus (jede Klassen-Grenze unter Deuteranopie-Simulation ΔE ≥ 10)",
+    },
+
+    // ───────── ultiversum.K4 — Spieler schreiben Gesetze und teilen sie (Zweig w3t-spielergesetz) ─────────
+    {
+        kriterium: "ultiversum.K4",
+        staffel: 1,
+        geraet: "headless",
+        // gate:mp-sync (h), zwei Seiten einer Maschine, ein echter Broker (Zwilling von feld.K2 — EIN Lauf): A schreibt im Gespräch
+        // „wann immer es zufällig passt, dann erzähle …" (der EINE Satz-Parser `_regelAusSatz` → `rule` → `_registerWorldRule`,
+        // der dsl-Kanal `p2pBroadcastDsl`); neu heißt: sein Hash (`_regelHash`) steht in keiner Vorlage (`GESETZ_VORLAGEN` und die
+        // Gesetze, die A's Welt schon trägt). B trägt es, würfelt in 40 Scheiben der Welt-Uhr denselben Wurf, obwohl B drei
+        // Platz-Nummern mehr zählt, und die Wirkung steht bei beiden (die Erzählung im Wissen, B's Tagebuch „Das Gesetz von …"),
+        // gewartet bis zur Scheibe nach dem ersten wahren Wurf (die Welt-Uhr ist die Frist). Mutanten im selben Lauf: A sagt die
+        // Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz. Am Grund 675a3889 fehlt (h) (ROT „keine (h)-Zeile"); mit
+        // der alten Saat (Platz-Nummer + Feuer) und dem Gesetz des Mitspielers als Experiment ROT (Wurf VERSCHIEDEN, das Gesetz
+        // schlief auf beiden Seiten, B's Tagebuch schweigt); am Zweig 0708ba56 GRÜN (Hash d7ff724d, Wurf gleich, wirkt bei A und B).
+        befehl: ["node", "scripts/diag-mp-sync.cjs"],
+        env: { MP_SYNC_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = [/^\s*(OK|ROT)\s+\(h\) A schreibt ein neues Gesetz/, /^\s*(OK|ROT)\s+\(h\) Selbsttest: /];
+            const je = soll.map((re) => z.find((x) => re.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "keine (h)-Zeile (Exit " + lauf.exit + ")" };
+            return { gruen: je.every((x) => /^\s*OK/.test(x)), zahl: je.map((x) => x.trim().slice(0, 220)).join(" | ") };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/netz-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "signaling-server.js",
+            "save-server.js",
+            "scripts/diag-mp-sync.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = ein Spieler schreibt eine DSL-Regel im Spiel, sie wirkt und reist zum Mitspieler",
+    },
+
+    // ───────── fahrzeug.K2 — die Fahrt kommt durch: das Wegenetz trägt das Rad (Staffel 1, w3t-wegenetz) ─────────
+    // gate:fahr-leben --wegenetz: die feste Route der Saat — von der Mess-Wiese über die Orte −1,−5 · 0,−5 · 1,−6 · 2,−7 · 3,−6 ·
+    // 4,−7 (je zwei Nachbarn im Wegenetz, `_wegenetzNachbarn`), die am Spieler erwachen wie im Spiel; die Feldwege zwischen ihnen
+    // und die Nähte ihrer Netze legt das Gesetz (fachwerk `wegZwischen`, `wegeNetz`), die Route ist die kürzeste über das Netz
+    // (`_wegenetzRoute`, 2632 m, Weg 98 %, Boden Wiese/Wald/Dorf); der GT fährt sie mit dem Fahrer am Steuer (`fahrerSetzen`:
+    // Verb-Tafel → der EINE Fahr-Schritt des Kerns), die Telemetrie zählt der Sim-Schritt (FIXED_DT). Das Urteil liest
+    // `WEGENETZ {…}`. An main 675a3889 ROT (kein Feldweg zwischen Orten, die Dorf-Netze in 4–6 Teilen: keine Route); die Mutante
+    // (`--mutante`, die Weg-Erkennung aus: die Luftlinie) ROT (Weg 0, fest nach 120 m). Am Zweig headless: 0 Steckenbleiber, über
+    // 0,8 · vmax 73,7 % (gemischte Bilder 8,3–33,3 ms) bzw. 75,3 % (`--gleich`, 60 fps) — der Sim-Schritt ist fest, die Welt
+    // (Natur-Strom, Boden) kommt je Bild: 12 444 gegen 12 225 Takte, darum urteilen Radeon und GTX. Erwartet dort: Route ✅,
+    // an ✅, Steckenbleiber 0 ✅, Tempo ❌ (~74 % gegen 80 %: drei Bäche quer — zwei Feldwege und eine Gasse von 4,−7 — und
+    // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax).
+    {
+        kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 10,
+        urteil: (j, lauf) => {
+            const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
+            if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ")" };
+            const b = m.boden || {};
+            const teile = {
+                route: m.lang >= 2000 && m.wegAnteil >= 0.95,
+                an: m.ende === true,
+                steck: (m.steck || []).length === 0,
+                tempo: m.anteil >= 0.8,
+                boden: b.wiese > 0 && b.wald >= 0.1 && b.dorf >= 0.05,
+            };
+            const aus = Object.keys(teile).filter((k) => !teile[k]);
+            const p = (x) => Math.round((x || 0) * 1000) / 10 + " %";
+            return {
+                gruen: !aus.length && lauf.exit === 0,
+                zahl: "Route " + m.lang + " m (Weg " + p(m.wegAnteil) + "), gefahren " + m.weg + " m · Steckenbleiber " + (m.steck || []).length +
+                    " · über 0,8 · vmax " + p(m.anteil) + " von " + m.schritte + " Sim-Schritten · Boden Wiese " + p(b.wiese) + " / Wald " + p(b.wald) +
+                    " / Dorf " + p(b.dorf) + (aus.length ? " · außer Soll: " + aus.join(", ") : "") + " · Exit " + lauf.exit,
+            };
+        },
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs"],
+        quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
+    },
 ];
 
 module.exports = stationen;
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
-module.exports.fehlt = [];
+module.exports.fehlt = [
+    { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
+];

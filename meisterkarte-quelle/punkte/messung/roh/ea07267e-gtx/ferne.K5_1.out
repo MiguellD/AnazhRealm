@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter stormy --eigen --port 7754 --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\ea07267e-gtx\ferne.K5_1.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie und leere Messung beim Namen ROT
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.37° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 28.63° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 13.33° von der In-Streuung > 10°
+  OFFEN K1-2 HIMMEL Azimut 0°: Ton der In-Streuung nicht blau 0.3915,0.4472,0.3915 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 90°: Ton der In-Streuung nicht blau 0.345,0.4063,0.354 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 180°: Ton der In-Streuung nicht blau 0.3189,0.3867,0.3361 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 270°: Ton der In-Streuung nicht blau 0.345,0.4063,0.354 statt 222° ±15
+  OFFEN K1-2 SONNENSEITE Uhr 0.5: Y der In-Streuung zur Sonne / gegen sie 1.17 < 1.2
+LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN · K2-2 GRUEN (offen: FARBTON, HIMMEL, SONNENSEITE Uhr 0.5)
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  6797 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

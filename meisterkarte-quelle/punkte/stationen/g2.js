@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K5 (Zweig schwarm), mensch.K5#1 und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit), vegetation.K1 und K5 (Zweig w3w-wald) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -235,7 +235,7 @@ async function herdeHang() {
     const fs = require("fs");
     const path = require("path");
     const cp = require("child_process");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const [aus, port, szene, pulk] = process.argv.slice(1);
     const W = Number(port) + 20000;
     const B = aus.replace(/\.json$/, "");
@@ -245,7 +245,8 @@ async function herdeHang() {
         if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
         return a.ergebnis;
     };
-    const tor = werkbankTor(W);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: Promise.resolve(), stop: () => {} };
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -366,11 +367,12 @@ function schwarmSzene(r, T, o) {
 async function schwarmLauf() {
     const fs = require("fs");
     const path = require("path");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const [aus, port, szene] = process.argv.slice(1);
     const W = Number(port) + 20000;
     const erg = {};
-    const tor = werkbankTor(W);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: Promise.resolve(), stop: () => {} };
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -729,7 +731,7 @@ function rudelGefuehl(r, T, o) {
 async function wertLauf() {
     const fs = require("fs");
     const path = require("path");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
     const [aus, port, art, szene] = process.argv.slice(1);
     const W = Number(port) + 20000;
@@ -741,7 +743,8 @@ async function wertLauf() {
         erg.laeufe.push(a.ergebnis);
         return a.ergebnis;
     };
-    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: werkbankRuf(W, "/umstellen", { ort: "wiese" }).then((a) => { if (!a || a.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(a).slice(0, 200)); }), stop: () => {} };
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -949,12 +952,509 @@ async function affektLauf() {
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 }
 
+// ───────── DIE SICHTBARE BÖE (vegetation.K2#1; Zweig boe-zeit): EIN Lauf (`boeLauf`) ─────────
+// Der Lauf (im Spiel-Baum, cwd): EINE Werkbank an der Weiche (`[linse-gpu]` nennt die Karte) an der Mess-Wiese, Port {PORT}+20000;
+// das Auge 1,6 m über dem Spieler-Ort des Messorts blickt zum Blick-Punkt (`wahl` 0: die Kamera steht) und schießt `bild --zeit
+// 0,25` — am Kamm und im Tal der Böe in der Mitte des Nah-Felds je zwei Paare in Quadratur der Halm-Phase, je Paar der Rausch-Boden
+// derselben Bild-Uhren bei Wind 0. Die Mutante „wind0" legt die Böen-Drift der Welt auf 0 (`_windWob`): ohne Wind MUSS das Urteil
+// ROT sein. Die Zeile „BOE-ZEIT {…}" und {AUS} tragen das Maß, die zwei Bilder am Kamm liegen neben {AUS} (`-boe-zeit-0/1.png`).
+async function boeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const [aus, port, mutante] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: werkbankRuf(W, "/umstellen", { ort: "wiese" }).then((a) => { if (!a || a.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(a).slice(0, 200)); }), stop: () => {} };
+    let erg;
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        await werkbankRuf(W, "/umstellen", { ort: "wiese" });
+        if (mutante === "wind0") await werkbankRuf(W, "/eval", { code: "r._windWob = () => 0; return 1;" });
+        const b = await werkbankRuf(W, "/bild", {
+            px: M.x, py: "+1.6", pz: M.z, lx: M.blick.x, ly: "+0", lz: M.blick.z, wahl: 0, zeit: 0.25, datei: aus.replace(/\.json$/, "") + "-boe.png",
+        });
+        erg = b.zeit ? Object.assign({ abnahme: b.abnahme, mutante: mutante || null }, b.zeit) : { fehler: String(b.fehler || "keine Zeit-Messung").slice(0, 400) };
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    } finally {
+        tor.stop();
+    }
+    console.log("BOE-ZEIT " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+
+// ───────── DIE STIMME DES FELDS (affekt.K4#1; Zweig w3s-stimme): EIN Lauf (`stimmeLauf`), die Seite `stimmeGang` ─────────
+// DER GANG (in der Seite, Null-Renderer): 30 Spielminuten an der Mess-Wiese im Takt des Spiels (`_gameLoopTick` je 0,1 s
+// Spielzeit), das Wetter über das Wort des Spielers (sonnig, nach 10 min „setze wetter frei"), der Nexus wirkt wie im Spiel
+// (seine Evolution je `nexusEvolutionInterval` — der Treiber ruft `generateEvolution` wie `evolveNexus` außerhalb der Mess-Welt —,
+// seine Gesetze, sein Wirk-Budget), die KI handelt auf vier Worte (ohne Modell: die Antwort steht fest), der Spieler pflegt einmal
+// selbst. Die WAHRHEIT hört an der Effekt-Tafel mit (jeder Welt-Akt und das Wetter: Schreiber `ctx.source`, Gesetz, die Bedingung
+// des Zweigs, Wort, Programm, der erste Ort und sein Blick in der Kamera, ob die Tat wirkte: neue Wesen, ein geändertes Wetter oder
+// Wort oder ein neuer Wunsch), nie am Buch der Stimme; jede Zeile der Dialog-Box steht gegen sie in der Folge der Ereignisse
+// (die letzte wirkende Tat der Welt oder KI im Blick vor ihr, die übrigen sind „weitere"): Schreiber beim Namen (ein Gesetz mit
+// dem seines Gebers), Ort in Abstand und Richtung, Ursache, Gesetz oder Programm, die Zahl der übrigen. Mutanten: „schreiber"
+// (jede Zeile nennt den Nexus), „takt" (die Pause der Stimme fällt).
+async function stimmeGang(o) {
+    const r = window.anazhRealm;
+    const [st, P] = [r.state, Object.getPrototypeOf(r)];
+    const pm = st.playerMesh.position;
+    pm.set(o.x, r._voxelSurfaceY(o.x, o.z) + 1.8, o.z);
+    let t = performance.now();
+    const takt = () => (pm.setX(o.x).setZ(o.z), r._gameLoopTick((t += 100)), pm.setX(o.x).setZ(o.z));
+    await window.__weltStehtNach(takt);
+    window.__buehne();
+    st.weatherEffectTime = 0;
+    r._setWeather("sunny", "regler");
+    [st.taten, st.llm.enabled] = [[], true];
+    const t0 = st.spielZeit;
+    const [W, Z, tafel, pos, gr, gs, wetter] = [[], [], r.dslEffects, r.dslEvalPos, r.grokRender, r.grokSpeak, () => [st.weather, st.wetterWort, st.wetterWunsch]];
+    let [jetzt, art, seq] = [null, null, 0];
+    const blick = (x, z) =>
+        new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(st.camera.projectionMatrix, st.camera.matrixWorldInverse))
+            .containsPoint(new THREE.Vector3(x, r.getTerrainHeightAt(x, z) + 1, z));
+    for (const op of [...P.constructor.DSL_WELTAKTE, "weather"]) {
+        const f = tafel[op];
+        tafel[op] = (a, ctx) => {
+            const w = { op, wer: ctx.source, regel: ctx.regel, weil: ctx.weil, grund: ctx.grund, prog: ctx.programId, t: st.spielZeit - t0, n: st.creatures.length, vor: wetter(), aussen: jetzt };
+            jetzt = w;
+            try {
+                const x = f(a, ctx);
+                w.ok = op !== "spawn_creature" || st.creatures.length > w.n;
+                return x;
+            } finally {
+                [jetzt, w.seq, w.wunsch] = [w.aussen, ++seq, st.wetterWunsch !== w.vor[2]];
+                w.ok = !!w.ok && (op !== "weather" || wetter().some((x, k) => x !== w.vor[k]));
+                W.push(w);
+            }
+        };
+    }
+    r.dslEvalPos = function (node, ...x) {
+        const p = pos.call(this, node, ...x);
+        if (jetzt && !jetzt.ort && p) jetzt.ort = { x: p.x, z: p.z, k: node && node[0], blick: blick(p.x, p.z) };
+        return p;
+    };
+    r.grokSpeak = function (k, ...x) {
+        const a = art;
+        art = "begleiter:" + k;
+        try {
+            return gs.call(this, k, ...x);
+        } finally {
+            art = a;
+        }
+    };
+    r.grokRender = function (text) {
+        Z.push({ t: st.spielZeit - t0, seq: ++seq, text, art: st.taten.some((e) => e.zeile === text && e.gesprochen === st.spielZeit) ? "stimme" : art });
+        return gr.call(this, text);
+    };
+    if (o.mutante === "schreiber") r._tatSchreiber = () => ({ nom: "Der Nexus", gen: "des Nexus" });
+    if (o.mutante === "takt")
+        r._feldStimmeTakt = function () {
+            if (this._stimme) this._stimme.t = -Infinity;
+            return P._feldStimmeTakt.call(this);
+        };
+    const KI = {
+        "pflege den Ort vor mir": ["deposit_life", ["at_player_forward", 15]],
+        "ein paar frohe Tiere": ["spawn_creature", ["at_player_forward", 12], 3, "happy"],
+        "wann immer hier Leben fehlt, pflege es": ["rule", ["field_below", "lebendig", 1.01], ["deposit_life", ["at_player_forward", 12]], { everySec: 60, ttlSec: 900 }],
+        "es soll regnen": ["weather", "rainy"],
+    };
+    r.llmCall = async (text, _, h) => (h && h.hintergrund ? {} : { say: "Ich tue es.", program: KI[text] });
+    const plan = { 2400: "pflege den Ort vor mir", 4800: "pflege das land", 6000: "setze wetter frei", 7200: "ein paar frohe Tiere", 12000: "wann immer hier Leben fehlt, pflege es", 15000: "es soll regnen" };
+    for (let i = 0, evo = 0; i <= 18000; i++) {
+        if (st.spielZeit - t0 >= evo * st.nexusEvolutionInterval) evo++, st.nexusEvolutionQueue.push(r.generateEvolution());
+        if (KI[plan[i]]) (art = "antwort"), await r.maybeAnswerWithLlm(plan[i], () => {}), (art = null);
+        else if (plan[i]) r.processChatCommand(plan[i]);
+        takt();
+    }
+    const welt = W.filter((w) => w.ok && /^(rule:)*(nexus|llm:|emotion:|creature:)/.test(w.wer) && (!w.ort || w.ort.blick));
+    const RI = ["nördlich", "nordöstlich", "östlich", "südöstlich", "südlich", "südwestlich", "westlich", "nordwestlich"];
+    let k = 0;
+    const zeilen = Z.filter((z) => z.art === "stimme").map((z) => {
+        const seit = welt.slice(k, (k = welt.filter((w) => w.seq < z.seq).length));
+        const w = seit[seit.length - 1] || { wer: "keine Tat" };
+        const b = w.wer.replace(/^(rule:)+/, "");
+        const NAME = { nexus: ["Der Nexus", "des Nexus"], llm: ["Die KI", "der KI"], emotion: [`Die Stimmung „${b.slice(8)}“`, `der Stimmung „${b.slice(8)}“`], creature: [`Das Wesen „${b.slice(9)}“`, `des Wesens „${b.slice(9)}“`] };
+        const [nom0, gen] = NAME[b.split(":")[0]] || ["?", "?"];
+        const nom = b === w.wer ? nom0 : "Ein Gesetz " + gen;
+        const [dx, dz] = w.ort ? [w.ort.x - o.x, w.ort.z - o.z] : [0, 0];
+        const d = Math.round(Math.hypot(dx, dz));
+        const wo = !w.ort ? " — überall, " : d < 2 ? " — bei dir, " : ` — ${d} m ${RI[Math.round((Math.atan2(dx, -dz) / Math.PI) * 4 + 8) % 8]} von dir, `;
+        const weil = [w.regel, w.weil].filter(Boolean).map((x) => r._describeDslCondition(x.cond)).concat(w.weil && !w.weil.ja ? ["nicht gilt, dass"] : []);
+        const ursache = w.regel || w.weil ? "weil " : w.grund ? `auf dein Wort „${w.grund}“` : w.ort && w.ort.k === "at_field_need" ? "weil das Feld dort am ärmsten war" : "aus eigenem Antrieb";
+        const was = w.op === "weather" && w.wunsch ? `wünscht sich das Wetter „` : "";
+        const soll = [nom + " ", was, wo, ...weil, ursache, w.regel ? `(Gesetz Nr. ${w.regel.id} ${gen}` : `(Programm ${w.prog}`, seit.length > 1 ? `dazu ${seit.length - 1} weitere Tat` : ""];
+        const falsch = soll.filter((x) => !z.text.includes(x)).concat(seit.length > 1 || !/weitere/.test(z.text) ? [] : ["weitere"]);
+        return { t: +z.t.toFixed(1), text: z.text, falsch: z.text.startsWith(nom) ? falsch : [nom, ...falsch] };
+    });
+    const rest = welt.slice(k);
+    const ende = st.spielZeit - t0;
+    const n = (re, f) => W.filter((w) => w.ok && re.test(w.wer) && f(w)).length;
+    const imBlick = (w) => welt.includes(w);
+    return {
+        mutante: o.mutante || null,
+        minuten: +(ende / 60).toFixed(2),
+        zeilen: zeilen.length,
+        falschN: zeilen.filter((z) => z.falsch.length).length,
+        falsch: zeilen.filter((z) => z.falsch.length).slice(0, 6),
+        abstand: zeilen.length > 1 ? Math.min(...zeilen.slice(1).map((z, i) => +(z.t - zeilen[i].t).toFixed(2))) : null,
+        offen: rest.length ? +(ende - Math.max(rest[0].t, zeilen.length ? zeilen[zeilen.length - 1].t + 30 : 0)).toFixed(1) : 0,
+        ohneTat: Z.filter((z) => !z.art || z.art === "begleiter:dslSay").map((z) => z.text),
+        begleiter: Z.filter((z) => /^begleiter:/.test(z.art || "")).length,
+        klassen: {
+            nexus: n(/^nexus$/, imBlick),
+            "rule:nexus": n(/^rule:nexus$/, imBlick),
+            llm: n(/^llm:/, imBlick),
+            "rule:llm": n(/^rule:llm:/, imBlick),
+            wunsch: n(/^(rule:)*nexus$/, (w) => w.op === "weather" && w.wunsch),
+            human: n(/^human$/, () => true),
+            fern: n(/^(rule:)*(nexus|llm:)/, (w) => w.ort && !w.ort.blick),
+        },
+        beispiele: zeilen.filter((z, i) => i % 12 === 0).map((z) => "[" + z.t + " s] " + z.text),
+    };
+}
+
+// DAS URTEIL DES GANGS (rein): die Befunde beim Namen, leer = GRÜN
+function stimmeUrteil(g) {
+    if (!g || !g.klassen) return ["kein Gang"];
+    const leer = Object.keys(g.klassen).filter((k) => !(g.klassen[k] > 0));
+    return [
+        ...(g.minuten >= 30 ? [] : [g.minuten + " Spielminuten, nicht 30"]),
+        ...(g.zeilen > 0 ? [] : ["keine Zeile"]),
+        ...(leer.length ? ["keine wirkende Tat von " + leer.join(", ")] : []),
+        ...(g.falschN ? [g.falschN + " Zeilen falsch"] : []),
+        ...g.falsch.map((z) => "falsch [" + z.t + " s] " + z.falsch.join(" | ") + ": " + z.text),
+        ...(g.abstand === null || g.abstand >= 30 - 1e-6 ? [] : ["zwei Zeilen binnen " + g.abstand + " s"]),
+        ...(g.offen > 0.5 ? ["eine Tat im Blick wartet " + g.offen + " s über ihre Pause ohne Zeile"] : []),
+        ...g.ohneTat.map((x) => "Zeile ohne Tat: „" + x + "“"),
+    ];
+}
+
+// Der Lauf (im Spiel-Baum, cwd): EINE Null-Seite (Rezept null, der Seiten-Server lauscht frei), die Welt an der Mess-Wiese, dann je
+// Mutante (argv: „-" = echt) ein Gang auf frischer Seite. Je Gang eine Zeile „STIMME {…}" mit seinem Urteil, alle in {AUS}.
+async function stimmeLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, nullSeite } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { AUSGABE_INSTALL } = require(path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const [aus, mutanten, seite, urteil] = process.argv.slice(1);
+    const erg = { laeufe: [] };
+    const server = statikServer();
+    let browser;
+    try {
+        await server.lausche(0);
+        for (const m of mutanten.split(",")) {
+            const s = await nullSeite({ frist: 900000 });
+            browser = s.browser;
+            await server.zeige(s.page, 60000);
+            await s.page.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
+            await s.page.evaluate(AUSGABE_INSTALL);
+            const g = await s.page.evaluate("(" + seite + ")(" + JSON.stringify({ x: M.x, z: M.z, mutante: m === "-" ? null : m }) + ")");
+            g.rot = eval("(" + urteil + ")")(g);
+            console.log("STIMME " + JSON.stringify(g));
+            erg.laeufe.push(g);
+            await browser.close();
+            browser = null;
+        }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+        console.log("FEHLER " + erg.fehler);
+    } finally {
+        if (browser) await browser.close();
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    process.exit(0);
+}
+
 // die Zeilen eines Laufs (stdout) als Objekte
 const zeilenVon = (lauf, marke) =>
     String(lauf.stdout || "")
         .split(/\r?\n/)
         .filter((z) => z.startsWith(marke + " {"))
         .map((z) => JSON.parse(z.slice(marke.length + 1)));
+
+// ───────── HAAR UND FELL IN DER SOLL-TAFEL (haar.K1#1, haar.K2#1; Zweig haar-fell-soll) ─────────
+// EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server an der Mess-Wiese, 1920×1080; zwei Schüsse der Klasse aus dem
+// Ausgabe-Pfad (`werkbank bild --klasse … --ist <id>`), nach jedem das Urteil der EINEN Soll-Tafel (abnahme-urteil
+// `sollTafelUrteil`, K5) als Zeile „<NAME> {…}": `strich` (die Kohärenz des Strichs im Inneren der Maske) gegen das Band,
+// das die Linse aus der REF rechnet (spec/abnahme/ref-<id>.png), bei haar dazu die Albedo (die Zeile haar der Albedo-Tafel).
+// `vorher` stellt die Szene (bash-Zeilen), `schuesse` je Name die Argumente von `werkbank bild` (die Kamera aus `$K`).
+const sollUrteil = (id, name) =>
+    "node -e 'const AU = require(\"./scripts/lib/abnahme-urteil.cjs\"); const u = AU.sollTafelUrteil(require(\"./spec/abnahme/soll-tafel.json\"), " +
+    "AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === \"" + id + "\"); console.log(\"" + name + " \" + " +
+    "JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'";
+function sollKlasseStation(o) {
+    return {
+        kriterium: o.kriterium,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 300, befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "trap 'git checkout spec/abnahme/soll-tafel.json' EXIT",
+                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
+                ...o.vorher,
+                ...Object.entries(o.schuesse).flatMap(([n, a]) => [
+                    "node scripts/werkbank.cjs bild " + a + " --wahl 0 --klasse '" + o.klasse + "' --ist " + o.id + " --datei \"$B-" + n + ".png\" > \"$B-" + n + ".txt\" 2>&1; echo \"BILD " + n + " $?\"",
+                    sollUrteil(o.id, n.toUpperCase()),
+                ]),
+            ].join("\n"),
+        ] },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const z = Object.keys(o.schuesse).map((n) => [n, jsonZeile(lauf.stdout, new RegExp("^" + n.toUpperCase() + " "))]);
+            return {
+                gruen: z.every(([, x]) => x && x.urteil === "GRÜN"),
+                zahl: z
+                    .map(([n, x]) => n + " " + (x ? x.urteil + " strich " + x.ist + " Soll [" + x.band + "]" + (x.grund ? " — " + x.grund : "") + (x.teile ? " · " + x.teile : "") : "ohne Zeile (Exit " + lauf.exit + ")"))
+                    .join(" · "),
+            };
+        },
+        pfad: [
+            ...o.pfad,
+            "stamm/bild-*.js",
+            "stamm/stoff-*.js",
+            "save-server.js",
+            "spec/abnahme/soll-tafel.json",
+            "spec/abnahme/ref-" + o.id + ".png",
+            "scripts/werkbank.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: o.quelle,
+    };
+}
+
+// ───────── vegetation.K1 · K5 — DIE WIESE BIS ZUM SAUM, DAS JAHR ALS GESTALT (Zweig w3w-wald) ─────────
+// EIN Lauf (`vegetationLauf`, im Spiel-Baum; die Werkbank der Sitzung auf {PORT} + 20000) je Station, `plan` = die Schüsse
+// [Ort, Sicht, Uhr, Saison, Was]. „wiese“: die Kamera des Spiels (`umstellen --ort … --sicht …`, 30 Takte `_loopCamera`), die
+// Teilung der Wiese mit den FESTEN Ringen der Meisterkarte (`bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand
+// --ringe 2,5,10,20,40` — nie der Radius der gemessenen Welt) und der Zähler an derselben Kamera (`zaehlen --alle`). „krone“: der
+// nächste Laubbaum (eiche · birke · buche) 15–80 m um den Spieler, das Auge 14 m vor seinem Fuß zum Spieler hin auf 1,7 m, der
+// Blick 6 m über den Fuß, die Maske `^f:(eiche|birke|buche):L[01]$` (die Stufen, die das Auge nah zeichnet; die Karte L2 trägt
+// den Laubfall nicht — offen benannt im Zweig). Die Jahreszeit über das Wort des Spielers (`bild --saison`: die Phase springt auf
+// die Mitte der Jahreszeit — nie durch Warten); jedes Bild 1920 × 1080 aus dem Ausgabe-Pfad, `--wahl 0`. Die Zeile
+// „VEGETATION {…}“ trägt je Schuss das Rohe, die Urteile rechnen daraus.
+async function vegetationLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, plan] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const B = aus.replace(/\.json$/, "");
+    const erg = { schuesse: [] };
+    const ruf = async (weg, o) => {
+        const a = await werkbankRuf(W, weg, o);
+        if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+        return a;
+    };
+    const SPIEL = "const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));";
+    const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
+    for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+    try {
+        await ruf("/fenster", { w: 1920, h: 1080 });
+        for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
+            const n = [ort, sicht, uhr, saison, was].join("-");
+            await ruf("/umstellen", { ort, sicht });
+            const k = (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
+            if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
+            const [px, py, pz, lx, ly, lz] = k;
+            const wiese = was === "wiese";
+            const datei = B + "-" + n + ".png";
+            const b = await ruf("/bild", {
+                px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, ringe: wiese ? "2,5,10,20,40" : undefined,
+                klasse: wiese ? "^(nahWiese:.*|streuSatz|bodenSatz)$" : "^f:(eiche|birke|buche):L[01]$",
+            });
+            const ab = JSON.parse(fs.readFileSync(datei.replace(/\.png$/, ".abnahme.json"), "utf8"));
+            const kl = b.klasse || {};
+            const sch = { n, was, kamera: k, pose: ab.pose, leinwand: [ab.bild.w, ab.bild.h], ok: ab.ok, zeile: String(ab.zeile || "").slice(0, 300), pixel: Object.values(kl.klassen || {}).reduce((q, v) => q + (v.pixel || 0), 0) };
+            if (wiese) {
+                const a = kl.abstand;
+                Object.assign(sch, { baender: a.baender, cos: a.cos, klassen: a.klassen, farbton: a.farbton.kacheln });
+                const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
+                sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+            }
+            erg.schuesse.push(sch);
+        }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("VEGETATION " + JSON.stringify(erg));
+}
+// DIE RINGE EINES WIESEN-SCHUSSES: je fester Ring (die Bänder 2–5 · 5–10 · 10–20 · 20–40 m) der wirksame Blatt-Flächen-Index wie
+// abnahme-urteil `laiWirk` (Nilson: P = Grund / (Halm + Grund), LAI = −ln P · cos θ / G, G 0,5; Halm = nahWiese + streuSatz, Grund =
+// bodenSatz). Ein Ring mit Halmen und OHNE Grund-Pixel ist geschlossen („satt“): die Lücke 0 misst Nilson nur als untere Schranke
+// (−ln(0,5/n) · cos θ / G, unter flachem Blick klein) — er zählt als dicht; sein Sprung zum Nachbarn ist ungemessen, den Nachbarn
+// hält dort sein eigenes LAI ≥ 1,7.
+const wieseRinge = (s) =>
+    s.baender.slice(1, -1).map((von, i) => {
+        let h = 0, g = 0; // prettier-ignore
+        for (const [n, z] of Object.entries(s.klassen || {}))
+            if (/^(nahWiese:.*|streuSatz)$/.test(n)) h += z[i + 1] || 0;
+            else if (n === "bodenSatz") g += z[i + 1] || 0;
+        const lai = h + g && s.cos[i + 1] > 0 ? (-Math.log(Math.max(g, 0.5) / (h + g)) * s.cos[i + 1]) / 0.5 : null;
+        return { ring: von + "–" + s.baender[i + 2], h, g, lai, satt: h > 0 && g === 0 };
+    });
+// die Farbton-Streuung 2–5 m wie abnahme-urteil `farbtonStreuung` (σh je 2-m-Kachel ab 400 Proben, gewichtet nach Proben)
+const wieseFarbton = (s) => {
+    const ks = (s.farbton || []).filter((k) => k[1] >= 400);
+    const sig = (k) => (Math.sqrt(-2 * Math.log(Math.max(1e-9, Math.min(1, k[4] ? Math.hypot(k[2], k[3]) / k[4] : 1)))) * 180) / Math.PI;
+    const n = ks.reduce((a, k) => a + k[1], 0);
+    return n ? ks.reduce((a, k) => a + sig(k) * k[1], 0) / n : null;
+};
+// die Pose des Schusses ist die Kamera, die der Lauf rechnete — Ort UND Blick (die Blick-Wahl verschiebt sie nie, `--wahl 0`)
+const posePasst = (s) => {
+    const [pk, pb] = [(s.pose && s.pose.kamera) || [], (s.pose && s.pose.blick) || []];
+    const d = Math.hypot(s.kamera[3] - s.kamera[0], s.kamera[4] - s.kamera[1], s.kamera[5] - s.kamera[2]) || 1;
+    return pk.length === 3 && pb.length === 3 && [0, 1, 2].every((i) => Math.abs(s.kamera[i] - pk[i]) <= 0.05 && Math.abs((s.kamera[i + 3] - s.kamera[i]) / d - pb[i]) <= 0.01);
+};
+// das Urteil eines Wiesen-Schusses (K1): jeder feste Ring LAI ≥ 1,7 (oder satt), der Sprung zwischen Nachbar-Ringen ≤ 15 % des
+// inneren, die Farbton-Streuung 2–5 m ≥ 10,7°, nahWiese im Haupt-Pass ≤ 4 Befehle / 80k Dreiecke (spec/profiband/haushalt.json),
+// die Pose = die Kamera des Spiels, 1920 × 1080, die Abnahme des Bilds ok
+function wieseUrteil(s) {
+    const R = wieseRinge(s);
+    const ft = wieseFarbton(s);
+    const dicht = R.every((x) => x.satt || (x.lai != null && x.lai >= 1.7));
+    const saum = R.slice(1).every((x, i) => x.satt || R[i].satt || (x.lai != null && R[i].lai > 0 && Math.abs(x.lai - R[i].lai) / R[i].lai <= 0.15));
+    const budget = !!s.budget && s.budget[0] <= 4 && s.budget[1] <= 80000;
+    const bild = s.leinwand[0] === 1920 && s.leinwand[1] === 1080 && s.ok === true && posePasst(s);
+    return {
+        gruen: dicht && saum && ft != null && ft >= 10.7 && budget && bild,
+        zahl:
+            s.n + ": LAI " + R.map((x) => x.ring + " " + (x.satt ? "satt" : x.lai == null ? "—" : x.lai.toFixed(2))).join(" · ") + (saum ? "" : " (Saum springt > 15 %)") +
+            ", Farbton 2–5 m " + (ft == null ? "ungemessen" : ft.toFixed(2) + "°") + ", nahWiese " + (s.budget ? s.budget[0] + " Befehle / " + s.budget[1] + " Dreiecke" : "ungezählt") +
+            (bild ? "" : ", Bild/Pose WEICHT AB (" + s.leinwand.join("×") + ", ok " + s.ok + ", Pose " + posePasst(s) + ")"),
+    };
+}
+// das Rohe der Zeile (stdout, so urteilt auch die Probe des Selbsttests) oder {AUS}
+const vegetationRoh = (j, lauf) => jsonZeile(lauf.stdout, /^VEGETATION /) || j;
+const wieseStation = (staffel, posen, sek, quelle) => ({
+    kriterium: "vegetation.K1",
+    staffel,
+    geraet: ["radeon", "gtx"],
+    probe: { sek, befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(posen.map((p) => [...p, null, "wiese"]))] },
+    gpu: true,
+    zeit: false,
+    minuten: staffel === 1 ? 2 : 6,
+    urteil: (j, lauf) => {
+        const e = vegetationRoh(j, lauf);
+        if (!e || e.fehler || !Array.isArray(e.schuesse) || e.schuesse.length !== posen.length)
+            return { gruen: false, zahl: "ohne alle Schüsse: " + ((e && e.fehler) || "kein VEGETATION (Exit " + lauf.exit + ")") };
+        const u = e.schuesse.map(wieseUrteil);
+        return { gruen: u.every((x) => x.gruen), zahl: u.map((x) => x.zahl).join(" | ") };
+    },
+    proben: wieseProben(posen),
+    pfad: VEGETATION_PFAD,
+    quelle,
+});
+// die Schlupflöcher als Mutanten (der Selbsttest urteilt jede): eine Wiese, die bis 40 m dicht steht, ist GRÜN; ein dünner Ring
+// 5–10 m, ein Saum, der bei 20 m abreißt, ein Budget über 4 Befehle, eine verschobene Pose und ein fehlender Schuss sind ROT
+function wieseProben(posen) {
+    const ring = (h, g) => ({ "nahWiese:L1:0:0": [9, h, h, h, h], bodenSatz: [9, g[0], g[1], g[2], g[3]] });
+    const schuss = (o) => ({ n: "probe", was: "wiese", kamera: [0, 1.7, 0, 100, 1.7, 0], pose: { kamera: [0, 1.7, 0], blick: [1, 0, 0] }, leinwand: [1920, 1080], ok: true, baender: [0, 2, 5, 10, 20, 40], cos: [0.9, 0.5, 0.3, 0.15, 0.08], klassen: ring(20000, [400, 0, 0, 0]), farbton: [["0,0", 800, 0.6, 0.55, 1]], budget: [4, 52000], ...o }); // prettier-ignore
+    const zeile = (o, n = posen.length) => "VEGETATION " + JSON.stringify({ schuesse: Array.from({ length: n }, () => schuss(o)) });
+    return [
+        { name: "dicht bis 40 m", stdout: zeile({}), gruen: true },
+        { name: "Ring 5–10 m dünn", stdout: zeile({ klassen: ring(20000, [400, 8000, 0, 0]) }), gruen: false },
+        { name: "Saum reißt bei 20 m", stdout: zeile({ klassen: ring(20000, [400, 0, 0, 15000]) }), gruen: false },
+        { name: "Saum springt 19 %", stdout: zeile({ klassen: ring(20000, [400, 100, 0, 0]) }), gruen: false },
+        { name: "5 Befehle", stdout: zeile({ budget: [5, 52000] }), gruen: false },
+        { name: "Pose verschoben", stdout: zeile({ kamera: [0.5, 1.7, 0, 100, 1.7, 0] }), gruen: false },
+        { name: "ein Schuss fehlt", stdout: zeile({}, posen.length - 1), gruen: false },
+    ];
+}
+// das Jahr (K5): je Saison die Pixel der Laub-Maske an DERSELBEN Pose; Winter ≤ 0,3 × Sommer, der Frühling dazwischen (der
+// Austrieb); die Wiese (Staffel 2): der LAI 2–10 m (Pixel-Mittel der Ringe 2–5 und 5–10 m) im Winter ≤ 0,5 × Sommer, der Frühling
+// dazwischen. Ohne Krone im Bild (< 2 000 Pixel im Sommer) misst der Schuss nichts: ROT.
+function jahrUrteil(e, zeiten) {
+    const je = (was) => Object.fromEntries(e.schuesse.filter((s) => s.was === was).map((s) => [s.n.split("-")[3], s]));
+    const [k, w] = [je("krone"), je("wiese")];
+    const lai = (s) => {
+        const R = wieseRinge(s).slice(0, 2).filter((x) => x.lai != null);
+        const n = R.reduce((a, x) => a + x.h + x.g, 0);
+        return n ? R.reduce((a, x) => a + x.lai * (x.h + x.g), 0) / n : null;
+    };
+    const L = Object.fromEntries(Object.entries(w).map(([z, s]) => [z, lai(s)]));
+    const P = Object.fromEntries(Object.entries(k).map(([z, s]) => [z, s.pixel]));
+    const bild = Object.values({ ...k, ...w }).every((s) => s.ok === true && posePasst(s) && s.leinwand[0] === 1920) && Object.values(k).every((s) => JSON.stringify(s.kamera) === JSON.stringify(k.sommer && k.sommer.kamera));
+    const krone = P.sommer >= 2000 && P.winter <= 0.3 * P.sommer && (!zeiten.includes("fruehling") || (P.fruehling > P.winter && P.fruehling < P.sommer));
+    const wiese = !w.sommer || (L.sommer > 0 && L.winter <= 0.5 * L.sommer && L.fruehling > L.winter && L.fruehling < L.sommer);
+    const f = (x, n = 0) => (x == null ? "—" : Number(x).toFixed(n));
+    return {
+        gruen: bild && krone && wiese && Object.keys(k).length === zeiten.length,
+        zahl:
+            "Krone " + zeiten.map((z) => z + " " + f(P[z]) + " px").join(" · ") + " → Winter " + (P.sommer ? f(P.winter / P.sommer, 3) : "—") + " × Sommer" +
+            (w.sommer ? ", Wiese LAI 2–10 m " + zeiten.map((z) => z + " " + f(L[z], 2)).join(" · ") + " → Winter " + (L.sommer ? f(L.winter / L.sommer, 3) : "—") + " × Sommer" : "") +
+            (bild ? "" : ", Bild/Pose WEICHT AB"),
+    };
+}
+// die Schlupflöcher des Jahrs als Mutanten: ein Laubfall auf 0,15 und eine Wiese auf 0,3 ihres Sommers sind GRÜN; ein Winter, der
+// nur färbt (die Krone deckt 0,9), ein Frühling ohne Austrieb, eine Wiese, die im Winter steht, und ein Schuss an anderer Pose ROT
+function jahrProben(plan) {
+    const px = { sommer: 40000, winter: 6000, fruehling: 30000 };
+    const ring = (g) => ({ "nahWiese:L1:0:0": [0, 20000, 20000, 0, 0], bodenSatz: [0, g, g, 0, 0] });
+    const lg = { sommer: 400, winter: 9000, fruehling: 2500 };
+    const schuss = ([, , , z, was], o = {}) => ({ n: "wiese-ego-0.5-" + z + "-" + was, was, kamera: [0, 1.7, 0, 100, 1.7, 0], pose: { kamera: [0, 1.7, 0], blick: [1, 0, 0] }, leinwand: [1920, 1080], ok: true, pixel: px[z], baender: [0, 2, 5, 10, 20, 40], cos: [0.9, 0.5, 0.3, 0.15, 0.08], klassen: ring(lg[z]), ...((o[was] || {})[z] || {}) }); // prettier-ignore
+    const zeile = (o) => "VEGETATION " + JSON.stringify({ schuesse: plan.map((p) => schuss(p, o)) });
+    const mit = [
+        { name: "Laub und Wiese fallen", o: {}, gruen: true },
+        { name: "der Winter färbt nur", o: { krone: { winter: { pixel: 36000 } } }, gruen: false },
+        { name: "die Wiese steht im Winter", o: { wiese: { winter: { klassen: ring(500) } } }, gruen: false },
+        { name: "der Winter an anderer Pose", o: { krone: { winter: { kamera: [3, 1.7, 0, 103, 1.7, 0], pose: { kamera: [3, 1.7, 0], blick: [1, 0, 0] } } } }, gruen: false },
+    ];
+    if (plan.some((p) => p[3] === "fruehling")) mit.push({ name: "kein Austrieb", o: { krone: { fruehling: { pixel: 5000 } } }, gruen: false });
+    return mit.filter((m) => plan.some((p) => p[4] === "wiese") || !m.o.wiese).map((m) => ({ name: m.name, stdout: zeile(m.o), gruen: m.gruen }));
+}
+const jahrStation = (staffel, plan, zeiten, sek, quelle) => ({
+    kriterium: "vegetation.K5",
+    staffel,
+    geraet: ["radeon", "gtx"],
+    probe: { sek, befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] },
+    gpu: true,
+    zeit: false,
+    minuten: staffel === 1 ? 2 : 6,
+    urteil: (j, lauf) => {
+        const e = vegetationRoh(j, lauf);
+        if (!e || e.fehler || !Array.isArray(e.schuesse) || e.schuesse.length !== plan.length)
+            return { gruen: false, zahl: "ohne alle Schüsse: " + ((e && e.fehler) || "kein VEGETATION (Exit " + lauf.exit + ")") };
+        return jahrUrteil(e, zeiten);
+    },
+    proben: jahrProben(plan),
+    pfad: VEGETATION_PFAD,
+    quelle,
+});
+// R6 der Vegetation: die Gestalt (Stamm Vegetation · Stoff · Bild · Studio), die Gesetzbücher (Saison und Gras im foundry-core,
+// Blatt-Atlas im phyto-core), die Werkbank und ihre Linsen-Hilfen, der Haushalt des Budgets
+const VEGETATION_PFAD = [
+    "stamm/vegetation-*.js",
+    "stamm/stoff-*.js",
+    "stamm/bild-*.js",
+    "stamm/dirigent-*.js",
+    "stamm/studio-*.js",
+    "stamm/daten.js",
+    "foundry-core.js",
+    "phyto-core.js",
+    "index.html",
+    "spec/profiband/haushalt.json",
+    "scripts/werkbank.cjs",
+    "scripts/lib/abnahme-urteil.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/draw-zaehler.cjs",
+    "scripts/lib/software-gpu.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
 
 const stationen = [
     {
@@ -1148,7 +1648,7 @@ const stationen = [
         kriterium: "tiere.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
@@ -1156,7 +1656,7 @@ const stationen = [
             "{PORT}",
             knapp(herdeSzene),
             knapp(herdePulk),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1281,24 +1781,14 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
                 "TIER_GANG_PORT=$(( {PORT} + 10000 )) node scripts/diag-tier-gang.cjs; echo \"TIER-GANG EXIT=$?\"",
                 "KREATUR_TAKT_PORT=$(( {PORT} + 30000 )) node scripts/diag-kreatur-takt.cjs --proben querhang; echo \"QUERHANG EXIT=$?\"",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
                 "G=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position, h = (x, z) => r.getTerrainHeightAt(x, z), V = () => new window.THREE.Vector3(); r.setGameMode(\"pfad\"); for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); s.renderer.setAnimationLoop(null); s.faunaLifecycle.lastTick = 1e12; const z0 = pm.z + 24; const tiere = [\"wolf\", \"fuchs\", \"baer\", \"wesen\"].map((seele, n) => { const x0 = pm.x - 5 + n * 3.4; s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4); const c = r.spawnCreatureAt(x0, h(x0, z0) + 0.3, z0, \"happy\", seele, { precise: true, bodySize: 1 }); c.userData.task = { name: \"wait\", args: {}, since: 0 }; c.userData.emotions = null; c.rotation.set(0, Math.PI / 2, 0); c.userData._animFade = 1; const tb = c.userData._tierBaum, T = tb.teile, P = [T.flP, T.frP, T.hlP, T.hrP]; r._tierBaumNeutralStance(c); c.updateMatrixWorld(true); const lokal = P.map((p) => { const w = V().setFromMatrixPosition(p.matrixWorld); w.y = c.position.y; return p.worldToLocal(w); }); const hl = V().setFromMatrixPosition(T.legHL.matrixWorld).y - c.position.y; const v = 0.5 * Math.sqrt(-s.gravity * tb.beinL * (c.scale.x || 1)); c.position.x = x0 - v * 4.3; for (let i = 0, t = 0; i < 258 + n * 7; i++) { c.position.x += v / 60; const y = h(c.position.x, c.position.z); c.position.y = y; c.userData._traegerY = y; c.userData._traegerStruktur = false; r._animateCompoundMotion(c, r._motionRolesForSoul(c.userData.soul), (t += 1 / 60), 0, true, null); } c.updateMatrixWorld(true); const amBoden = P.filter((p, j) => { const w = p.localToWorld(lokal[j].clone()); return w.y - h(w.x, w.z) <= 0.05 * hl; }).length; return { seele, x: +c.position.x.toFixed(1), art: tb._gang.art, amBoden }; }); const xc = tiere.reduce((a, t) => a + t.x, 0) / 4; return { tiere, kamera: [xc, h(xc, z0 - 10) + 2, z0 - 10, xc, h(xc, z0) + 0.5, z0].map((v) => +v.toFixed(2)) };' | erg); echo \"BUEHNE $G\"",
@@ -1306,7 +1796,7 @@ const stationen = [
                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
                 "cp \"$B-gang.abnahme.json\" \"$A\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 14,
@@ -1369,27 +1859,17 @@ const stationen = [
         // Spieler-Wort, Loop 12 s, gezählt im Frustum der Spiel-Kamera, gezeichnet, Sichtlinie frei) mit dem Bild aus dem
         // Ausgabe-Pfad (`b64png.cjs` → <aus>-platz-8uhr-third.png). Ports: save-server {PORT}, Werkbank {PORT}+20000 (Seite −1).
         // platz-8.js und b64png.cjs leben im Koord-Baum (R6 sieht sie nicht; ihr Text steht hier per Pfad im Abdruck).
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"; SK=\"$(printf %s '{KOORD}' | tr '\\\\' /)/bericht/2210-messschuld-6cfce/skripte\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
                 "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner",
                 "node scripts/werkbank.cjs eval \"$(cat \"$SK/platz-8.js\")\" > \"$B-platz.txt\"",
                 "node \"$SK/b64png.cjs\" \"$B-platz.txt\" \"$B-platz-8uhr-third.png\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1438,6 +1918,73 @@ const stationen = [
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät",
+    },
+    {
+        kriterium: "mensch.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // DIE STADT LEBT (Zweig w3u-stadt-leben): EINE Werkbank-Sitzung `--echt` (save-server und Werkbank wie M40) am Messort
+        // stadt-voll (spec/profiband/haushalt.json: „dorf 7 300" am Anker, die Metropole, der Spieler am Markt, Third). Darin die
+        // Linse `bewohner --ort stadt-voll` im Fenster (um 7 Uhr 600 Takte zu 1/60 s am echten Bewohner-Takt, dann Bewohner
+        // gesamt, im Nah-Ring der Feld-Grenze draußen und davon mit laufendem Gang), danach `haenger 20 --regler voll --tiere
+        // frei` im echten Loop: Frame p95 und CPU-Takt p95 gegen das Profi-Band (PFLICHT-OFFEN E: ≤ 33 ms, ≤ 5,8 ms — das ABAB an
+        // der GTX bleibt ein Lauf des Richter-Zugs, die Station hält das Band). Headless (Null-Renderer, 1920x1080, Laptop 29.10.,
+        // Zweig w3u-stadt-leben b361f456): 1 094 Bewohner, im Nah-Ring (19,8 m) 136–142 draußen, 40–50 mit laufendem Gang in 12
+        // Läufen (am Rand des Solls); vor dem Zweig 0 Bewohner (die Liste wartete auf die Hüllen der kalten Häuser). Mutanten ROT
+        // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
+        probe: { sek: 600, befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "grep -m1 '\\[linse-gpu\\]' \"$PUNKTE_SITZUNG_LOG\"",
+                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                "node scripts/werkbank.cjs umstellen --ort stadt-voll --sicht third > \"$B-umstellen.txt\" 2>&1",
+                "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort stadt-voll",
+                "node scripts/werkbank.cjs haenger 20 --regler voll --tiere frei --json \"$B-haenger.json\" > \"$B-haenger.out\" 2>&1; echo \"HAENGER EXIT=$?\"",
+                "node -e 'try{const j=require(process.argv[1]);console.log(\"TAKT \"+JSON.stringify({frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs}))}catch(e){console.log(\"TAKT {}\")}' \"$B-haenger.json\"",
+            ].join("\n"),
+        ] },
+        gpu: true,
+        zeit: true,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = probeZeile(t, "bewohner");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner im Fenster (kennt sie --ort stadt-voll? Exit " + lauf.exit + ")" };
+            const v = z.voll;
+            if (z.fehler || !v) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "keine volle Stadt") };
+            const k = jsonZeile(t, /^TAKT /) || {};
+            const [f95, c95] = [k.frameMs ? k.frameMs.p95 : null, k.taktMs ? k.taktMs.p95 : null];
+            const stadt = v.gesamt >= 200 && v.nahGang >= 40;
+            const band = k.frames >= 30 && f95 !== null && f95 <= 33 && c95 !== null && c95 <= 5.8;
+            return {
+                gruen: hw && stadt && band,
+                zahl:
+                    "Stadt " + v.gesamt + " Bewohner, im Nah-Ring (" + v.ring + " m) " + v.nah + " draußen, " + v.nahGang +
+                    " mit laufendem Gang (Soll ≥ 200, ≥ 40) · Frame p95 " + f95 + " ms (Soll ≤ 33), CPU-Takt p95 " + c95 +
+                    " ms (Soll ≤ 5,8) in " + k.frames + " Bildern · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [
+            "stamm/*.js",
+            "*-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "index.html",
+            "save-server.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/haenger-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
     },
     {
         kriterium: "vegetation.K4",
@@ -1762,23 +2309,13 @@ const stationen = [
         kriterium: "tiere.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
                 "KREATUR_TAKT_PORT=$(( {PORT} + 10000 )) node scripts/diag-kreatur-takt.cjs --proben jagdkreis",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
                 "O=$(node scripts/werkbank.cjs eval 'const pm = r.state.playerMesh.position; let O = null; for (let ring = 2; ring <= 16 && !O; ring++) for (let q = 0, n = ring * 6; q < n && !O; q++) { const a = (q / n) * 2 * Math.PI, x = pm.x + Math.cos(a) * ring * 25, z = pm.z + Math.sin(a) * ring * 25; if (r._landAt(x, z) && r._bodenKlasseAt(x, z) === \"wald\" && r._bodenKlasseAt(x + 30, z) !== \"fluss\" && r._kreaturGrundFrei(x, z) && r._kreaturGrundFrei(x + 30, z)) O = [+x.toFixed(1), +z.toFixed(1)]; } return O;' | erg); echo \"ORT $O\"",
@@ -1788,7 +2325,7 @@ const stationen = [
                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
                 "cp \"$B-wolfsrevier.abnahme.json\" \"$A\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -1827,6 +2364,74 @@ const stationen = [
         quelle: "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
     },
 
+    // ───────── tiere.K5 Staffel 1 — Begegnung im Bild (Zweig tier-sicht, `werkbank lauf --wandern kreis`) ─────────
+    // EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
+    // Bestand des Spiels (`--tiere frei`, das Bestands-Gesetz; keine Tiere der Bühne). Je Sicht (Ego, Third) `umstellen --ort
+    // wiese` und `lauf 600 --ein 20 --wandern kreis`: der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
+    // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (zwei Schüsse mit und ohne
+    // Tiere unter der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in
+    // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
+    // Mutante „Bestand 0" (keine Geburt, kein Tier) ist ROT mit 0 Sichtungen. Genesis fehlt der Station: der Ring der Tore
+    // liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
+    // Headless (swiftshader 320×180, die Schwelle auf 1280×720 normiert, 28.10., Zweig tier-sicht): main Ego 1 Sichtung (Hirsch
+    // 90 m), Third 3 (Hirsch 94/54/51 m), keines im Blick erschienen — ROT an Ego; mit oeko-k2-bestand (d9928c7e) Ego 3 (Bär 5 m,
+    // Wolf 19/31 m), Third 5, aber 3 bzw. 2 Tiere erschienen im Blick (die Verkörperung prüft nur den Anker der Gruppe auf „außer
+    // Blick", `_bestandLeiber` → `_kreaturWurf`) — ROT am Schlupfloch; Mutante „Bestand 0" 0 Sichtungen — ROT. Das Urteil fällt an
+    // Radeon oder GTX bei 1280×720.
+    // Ports: save-server {PORT}, Werkbank {PORT}+20000.
+    {
+        kriterium: "tiere.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+                "trap ende EXIT; trap 'exit 143' INT TERM",
+                "raeum; stand",
+                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S --ort wiese > \"$B-werkbank.log\" 2>&1 &)",
+                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "grep -E '^\\[linse-gpu\\] ' \"$B-werkbank.log\"",
+                "node scripts/werkbank.cjs fenster 1280 720 > /dev/null 2>&1",
+                "for SICHT in ego third; do node scripts/werkbank.cjs umstellen --ort wiese --sicht $SICHT > \"$B-umstellen-$SICHT.txt\" 2>&1; node scripts/werkbank.cjs lauf 600 --ein 20 --tiere frei --wandern kreis > \"$B-kreis-$SICHT.txt\" 2>&1; echo \"KREIS-$SICHT EXIT=$? $(grep -E '^KREIS ' \"$B-kreis-$SICHT.txt\" | cut -c7-)\"; done",
+            ].join("\n"),
+        ],
+        gpu: true,
+        zeit: false,
+        minuten: 30,
+        urteil: (j, lauf) => {
+            const K = ["ego", "third"].map((s) => [s, jsonZeile(lauf.stdout, new RegExp("^KREIS-" + s + " "))]);
+            const fehlt = K.filter(([, k]) => !k || !Array.isArray(k.gesehen));
+            if (fehlt.length) return { gruen: false, zahl: "keine KREIS-Zeile in " + fehlt.map(([s]) => s).join(", ") + " (Exit " + lauf.exit + ")" };
+            const gut = (s, k) => k.gesehen.length >= 3 && k.imBlick === 0 && k.spielS >= 600 && k.sicht === { ego: "first", third: "third" }[s];
+            return {
+                gruen: K.every(([s, k]) => gut(s, k)),
+                zahl: K.map(([s, k]) => s + " (" + k.sicht + ") " + k.gesehen.length + " Sichtungen in " + k.spielS + " Spiel-s (" + k.gesehen.map((g) => g.join(" ")).join(" · ") +
+                    "), " + k.schuesse + " Schuss-Paare, Bestand bis " + k.max + ", im Blick erschienen " + k.imBlick).join(" | "),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/bild-*.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/dirigent-takt.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät",
+    },
+
     // ───────── affekt.K1 — die Wertung antwortet am Ort (affekt-k1-ort) ─────────
     {
         kriterium: "affekt.K1",
@@ -1859,6 +2464,38 @@ const stationen = [
         quelle: "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose",
     },
 
+    // ───────── affekt.K4 Staffel 1 — die Stimme des Felds (Zweig w3s-stimme) ─────────
+    // Der Gang (`stimmeGang`, oben) auf einer Null-Seite: 30 Spielminuten mit Nexus, KI und Spieler; jede Zeile der Dialog-Box gegen
+    // die Wahrheit der Effekt-Tafel (Schreiber, Ort, Ursache, Gesetz, die übrigen Taten), je 30 s höchstens eine Zeile, keine Zeile
+    // ohne Tat, keine Tat im Blick ohne Zeile, jede Klasse wirkt (Nexus, sein Gesetz, sein Wetter-Wunsch, KI, ihr Gesetz, Spieler,
+    // fern). Headless (Null-Renderer, Zweig w3s-stimme am Kopf 232b6f23, trocken über diesen Befehl): 30 Spielminuten, 55 Zeilen, 0 falsch,
+    // Abstand 30 s, 0 ohne Tat, Klassen Nexus 66 · sein Gesetz 214 · sein Wetter-Wunsch 21 · KI 3 · ihr Gesetz 11 · Spieler 2 · fern
+    // 86 — GRÜN; Mutante „schreiber" ROT (jede Gesetzes-Zeile „Der Nexus"), Mutante „takt" ROT (243 Zeilen, Abstand 0 s). Vorher
+    // (main 557d4aad, derselbe Gang): der Nexus würfelte `say` aus dem Pool (Zeile ohne Tat), sein Wetter war keine Tat (ohne Zeile),
+    // die Ursache einer Tat im Zweig eines `when` hieß „aus eigenem Antrieb".
+    {
+        kriterium: "affekt.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(stimmeLauf) + ")()", "{AUS}", "-", knapp(stimmeGang), knapp(stimmeUrteil)],
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j) => {
+            const g = j && Array.isArray(j.laeufe) ? j.laeufe[0] : null;
+            if (!g || j.fehler || g.mutante) return { gruen: false, zahl: "kein Gang" + (j && j.fehler ? ": " + j.fehler : "") };
+            const rot = stimmeUrteil(g);
+            return {
+                gruen: rot.length === 0,
+                zahl: g.minuten + " Spielminuten, " + g.zeilen + " Zeilen, " + g.falschN + " falsch, Abstand " + g.abstand + " s, offen " + g.offen +
+                    " s, ohne Tat " + g.ohneTat.length + ", Klassen " + JSON.stringify(g.klassen) + (rot.length ? " · " + rot.slice(0, 3).join(" · ") : ""),
+            };
+        },
+        pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/werkstatt-hud.js",
+            "stamm/bild-himmel.js", "stamm/dirigent-takt.js", "stamm/kreatur-leben.js", "scripts/lib/welt-boot.cjs", "scripts/lib/ausgabe-aufnahme.cjs"],
+        quelle: "1 = jede Tat von Nexus oder KI im Blick schreibt eine Zeile mit Ort, Ursache und Gesetz in die Dialog-Box, Faktentreue gegen state 100 %, ≤ 1 Zeile je 30 s (Vorlage ohne Modell)",
+    },
+
     // ───────── affekt.K1 Staffel 2 — die schädliche Tat kehrt das Vorzeichen um (Zweig affekt-wert) ─────────
     // Der Wert-Gang (`wertGang`, oben) in EINER Werkbank an der Weiche an der Mess-Wiese, Port {PORT}+20000: vier Gänge (12 und
     // 22 Uhr × Ego und Third) mit den echten Verben — fällen (tryMouseBreak), töten (damageCreature von Spieler-Hand), pflegen
@@ -1873,7 +2510,7 @@ const stationen = [
         kriterium: "affekt.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)],
+        probe: { sek: 300, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2228,7 +2865,7 @@ const stationen = [
         kriterium: "oekologie.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)],
+        probe: { sek: 300, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2259,25 +2896,15 @@ const stationen = [
     // über 24 Spielstunden je ≥ 0,9 ihrer Soll-Orte (unterN 0), 4–10 Wege je Bewohner und Tag, und je 1,5 h die Lage, die sah,
     // wer blieb, gegen die, die findet, wer 1 h fort war (16 Prüf-Stunden, die Liste neu, die Uhr gesprungen): jeder ±2 m.
     // Das Schlupfloch Teleport fällt an sprungN, der Plan bit-gleich je Same. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-    befehl: [
+    probe: { sek: 360, befehl: [
         "bash",
         "-c",
         [
             "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-            "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-            "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-            "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-            "trap ende EXIT; trap 'exit 143' INT TERM",
-            "raeum; stand",
-            "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-            "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-            "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-            "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-            "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner",
         ].join("\n"),
-    ],
+    ] },
     gpu: true,
     zeit: false,
     minuten: 10,
@@ -2423,6 +3050,87 @@ const stationen = [
         quelle: "2 = jeder Vogel-Pegel im Klang-Zensus hat einen Körper (Konsum-Kette Ruf ← Leib), ohne Körper ROT",
     },
 
+    // ───────── luftwasser.K2 Staffel 1 — der Schwarm aus dem Verbands-Gesetz (Zweig w3s-schwarm: `_schwarmVerband`, tetrapoda verbandZug) ─────────
+    // Die Probe schwarm der Kreatur-Linse (Null-Renderer, R3: der Verband ist Mechanik, wie tiere.K1#1): der feste Schwarm von
+    // 100 Gliedern im Takt des Spiels (`_vogelTakt`, 60 Hz, 60 s; Mittag und Sonne als Wort des Reglers), das Auge 40 m quer
+    // zum Kurs des Zentrums (nah: der Verband fliegt). Gemessen ab 10 s an den Lagen, die der Takt zeichnet: Φ = |Σv̂|/N aus dem
+    // Weg je Takt (wie die Herde), die Kohäsion = der Anteil der Glieder im größten Verbund, Glied zu Glied binnen fensterRaum ×
+    // Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom Mittel) trägt fünf Leiber, hundert Glieder
+    // füllen einen Ball weiter als das Fenster —, und je Takt die Züge je Glied durch DIE Funktion der Herde (`verbandZug`).
+    // Soll aus der Staffel: Φ ≥ 0,8 und Kohäsion ≥ 0,9; das Schlupfloch Zwilling (eigener Boid-Code) fällt an 1 Zug je Glied
+    // und Takt, vakuös unter 60 Gliedern und 3000 Takten. Gefahren 28.10. in der Cloud am Zweig w3s-schwarm 1e214869: Φ 0,966,
+    // Kohäsion 1,0 (min 1,0), 1,0 Züge; die Mutante „Verband aus" (der Zug gibt den Wunsch zurück) Kohäsion 0,143 ROT, der
+    // Zwilling (eine Kopie des Zugs) 0 Züge ROT.
+    {
+        kriterium: "luftwasser.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "schwarm"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "schwarm");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe schwarm (Exit " + lauf.exit + ")" };
+            if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+            const echt = z.glieder >= 60 && z.takte >= 3000 && z.zuegeJeGlied >= 0.99;
+            return {
+                gruen: echt && z.phi >= 0.8 && z.kohaesion >= 0.9,
+                zahl:
+                    "Φ " + z.phi + ", Kohäsion " + z.kohaesion + " (min " + z.kohaesionMin + ", Glied zu Glied ≤ " + z.fensterM +
+                    " m) bei " + z.glieder + " Gliedern, " + z.zuegeJeGlied + " Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, " +
+                    "Kohäsion ≥ 0,9, 1 Zug)",
+            };
+        },
+        pfad: KREATUR,
+        quelle: "1 = Vogel- oder Fischschwarm mit Φ ≥ 0,8 und Kohäsion ≥ 0,9 aus `verbandZug`",
+    },
+    // ───────── luftwasser.K2 Staffel 2 — die Flucht als EIN Pulk, die Landung auf den Bäumen der Welt (Zweig w3u-leittier: tetrapoda
+    // schwarmLeittier, `_schwarmLeittier`, der Scheitel der Kronen-Karte `_kronenOben`) ─────────
+    // Derselbe Lauf der Probe schwarm (ein Zwilling der Staffel 1, Null-Renderer, R3: Ereignis und Landung sind Mechanik), ihr
+    // Akt II nach den 60 s: ein Baum an der Mitte des Kreises (im Bild gebaut), jede Krone der Welt daneben zählt; der Spieler geht
+    // dem Leittier mit 5 m/s entgegen, bis es auffliegt, dann steht er. Soll aus der Staffel: der Pulk flieht — das Mittel der
+    // Glieder entfernt sich vom Spieler bis zur Ruhe um ≥ 40 m, ≥ 95 % der Glieder ≥ 20 m mit, sein größter Verbund im Flug
+    // (Glied zu Glied wie Staffel 1) ≥ 0,9 —, und er landet in der Ruhe auf einer Krone der Welt: das Leittier ± 0,25 m auf dem
+    // Scheitel aus der Quelle, die den Baum baut (Eintrag: Fuß + `_lodTreeVisHeight`, Streu-Zelle: Fuß + `_scatterSichtHoehe`),
+    // ≥ 99 % der Glieder auf der Krone (binnen Radius, unter dem Scheitel). Schlupflöcher: das Leittier als Funktion der Uhr ohne
+    // Ereignis (ROT „flieht nie“), die Landung auf einer zweiten Höhe (ROT „neben dem Scheitel“). Gefahren 29.10. lokal (Laptop,
+    // headless) am Zweig w3u-leittier e00c21fb: Flucht nach 5,3 s, Abstand 30,2 → 95,6 m, 1,0 der Glieder mit, Verbund 1,0;
+    // Landung nach 25 s auf a:1298, Δ 0,000 m über dem Scheitel 79,0 m, 1,0 auf der Krone; die Mutanten Uhr und Höhe ROT.
+    {
+        kriterium: "luftwasser.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "schwarm"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "schwarm");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe schwarm (Exit " + lauf.exit + ")" };
+            if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+            const [F, L] = [z.flucht || {}, z.landung || {}];
+            if (F.ausloesS == null) return { gruen: false, zahl: "das Leittier flieht nie vor dem Spieler (30 s im Gang auf es zu)" };
+            const pulk = F.ruheM - F.abstandM >= 40 && F.wegAnteil >= 0.95 && F.kohaesion >= 0.9 && F.kohaesion <= 1;
+            const landet = L.nachS != null && L.dyM <= 0.25 && L.aufKrone >= 0.99;
+            return {
+                gruen: pulk && landet,
+                zahl:
+                    "Flucht nach " + (+F.ausloesS).toFixed(1) + " s, Abstand " + F.abstandM + " → " + F.ruheM + " m, " + F.wegAnteil +
+                    " der Glieder mit, Verbund " + F.kohaesion + "; " +
+                    (L.nachS != null
+                        ? "Landung nach " + (+L.nachS).toFixed(1) + " s auf " + L.krone + ", Δ " + L.dyM + " m zum Scheitel " +
+                          L.scheitelM + " m, " + L.aufKrone + " auf der Krone"
+                        : "keine Landung (Modus " + L.modus + ")") +
+                    " (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99)",
+            };
+        },
+        pfad: [...KREATUR, "stamm/siedlung-satz.js", "stamm/vegetation-streu.js"],
+        quelle: "2 = Flucht vor dem Spieler als EIN Pulk, Landung auf Bäumen der Welt",
+    },
+
     // ───────── luftwasser.K5 — der Schwarm fern EIN Agent (Zweig schwarm: tetrapoda VOGEL_GESETZ.schwarm, `_vogelSchwarmTakt`) ─────────
     // EINE Werkbank an der Weiche (`schwarmLauf` oben, Port {PORT}+20000), die Prüfbühne mit dem festen Schwarm von 100 Gliedern,
     // das Auge 40 m quer zur Flugrichtung (nah: die Separation rechnet mit): 60 Reihen × 20 Takte des Schwarm-Takts auf der Uhr
@@ -2437,7 +3145,7 @@ const stationen = [
         kriterium: "luftwasser.K5",
         staffel: 1,
         geraet: "gtx",
-        befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)],
+        probe: { sek: 180, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)] },
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -2459,7 +3167,7 @@ const stationen = [
         kriterium: "luftwasser.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)],
+        probe: { sek: 180, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)] },
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -2492,25 +3200,15 @@ const stationen = [
     // kein Bewohner draußen näher als zwei Kapseln (0,7 m) zum Spieler; die Erinnerung (Furcht > 0) weitet den kleinsten
     // Abstand des vierten Gangs um ≥ 0,3 m gegen den zweiten, die Gegenprobe ohne Erinnerung (der dritte) bleibt auf 0,15 m bei
     // ihm. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-    befehl: [
+    probe: { sek: 180, befehl: [
         "bash",
         "-c",
         [
             "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-            "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-            "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-            "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-            "trap ende EXIT; trap 'exit 143' INT TERM",
-            "raeum; stand",
-            "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-            "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-            "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-            "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-            "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung",
         ].join("\n"),
-    ],
+    ] },
     gpu: true,
     zeit: false,
     minuten: 8,
@@ -2556,20 +3254,235 @@ const stationen = [
     ],
     quelle: "1 = ohne Modell im Bild: Kopf-Zuwendung ≤ 0,5 s auf 3 m, Ausweichen ohne Berührung, die Erinnerung lenkt den Abstand",
     },
+    // ───────── vegetation.K2 Staffel 1 — die sichtbare Böe nah (0–15 m) an einem Gerät (Zweig boe-zeit) ─────────
+    // Der Lauf `boeLauf` (oben): `werkbank bild --zeit 0,25` an der Mess-Wiese. GRÜN, wenn das Nah-Feld (0–15 m aus der Tiefe des
+    // Schusses) ≥ 5 % des Bilds trägt, die zeitliche Luma-Varianz am Kamm der Böe ≥ 2× über dem Rausch-Boden liegt (dieselben Uhren
+    // bei Wind 0, nie unter 1 Stufe²) und der Kamm ≥ 2× so viel bewegt wie das Tal (Varianz über dem Boden) — die EINE wandernde
+    // Böe (WIND_BOE, λ ≈ 164 m, ≈ 10,4 m/s) erreicht den Ort zu ihrer Laufzeit; TAAU-Flimmern und ein eigener Sinus je Schicht
+    // heben Kamm und Tal gleich. Dazu die Abnahme des Bilds GRÜN. Headless (Werkbank, swiftshader, Mess-Wiese, Zweig boe-zeit 572ca42e):
+    // Kamm 2999 über Boden 0,001, Tal 878 — Kamm/Tal 3,42, Nah-Feld 53,6 % GRÜN; die Mutante wind0 ROT (Kamm 0,0 = Boden, ueber · lauf).
+    {
+        kriterium: "vegetation.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 240, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j) => {
+            if (!j || j.fehler || !j.kamm || !j.tal) return { gruen: false, zahl: "ohne Zeit-Messung: " + ((j && j.fehler) || "kein {AUS}") };
+            const [K, T] = [j.kamm, j.tal];
+            const z = { nah: j.nahAnteil * 40, ueber: K.v / Math.max(K.boden, 1), lauf: (K.v - K.boden) / Math.max(T.v - T.boden, 1e-3) };
+            const rot = Object.keys(z).filter((k) => !(z[k] >= 2)).concat(/ABNAHME GRÜN/.test(j.abnahme || "") ? [] : ["abnahme"]);
+            const r = (x, n) => Number(x).toFixed(n);
+            return {
+                gruen: !rot.length,
+                zahl:
+                    "Kamm " + r(K.v, 1) + " über Rausch-Boden " + r(K.boden, 3) + " (×" + r(z.ueber, 1) + "), Tal " + r(T.v, 1) + " — Kamm/Tal " + r(z.lauf, 2) +
+                    " bei Böe " + r(K.boe, 2) + "/" + r(T.boe, 2) + " (t " + r(K.t, 1) + "/" + r(T.t, 1) + " s), Nah-Feld " + r(j.nahAnteil * 100, 1) + " % in 0–15 m, Δt " +
+                    j.dt + " s" + (rot.length ? " · ROT " + rot.join(",") : ""),
+            };
+        },
+        pfad: ["stamm/stoff-material.js", "stamm/stoff-instanz.js", "stamm/dirigent-takt.js", "stamm/daten.js", "phyto-core.js", "stamm/vegetation-*.js",
+            "scripts/werkbank.cjs", "scripts/lib/abnahme-urteil.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit",
+    },
+    // ───────── mensch.K4 Staffel 1 — der Kopf des Spielers an der Kamera des Spiels (Zweig w3v-leib-menge, Messschuld M7) ─────────
+    // Im Stand umkreist die Third-Kamera den Leib frei (`_loopCamera`: er dreht erst beim Gehen, Springen, Reiten oder einer
+    // gehaltenen Aktion auf die Gier). Die Pose des Spiels: an der Mess-Wiese in Third die Gier um π gedreht, 30 Bilder des
+    // echten Takts — der Leib bleibt (`leib` ≤ 0,01 rad), die Kamera steht vor dem Gesicht (`vorn`); dann die Soll-Tafel
+    // mensch-kopf aus dieser Pose: die Kamera im Abstand der Third-Kamera (`cameraThirdDistance`) vor dem Kopf
+    // (`werkbank bild --gesicht <d>`), die Klasse spieler:kopf/ (abnahme-urteil `sollTafelUrteil`, KOPF_SOLL im Bild). Die Tafel
+    // trägt keine REF dieser Klasse (die Kopf-Züge stehen im Gesetz): ihr Pfad fällt aus der Liste. GPU: an der Station.
+    (() => {
+        const st = sollKlasseStation({
+            kriterium: "mensch.K4",
+            id: "mensch-kopf",
+            klasse: "^spieler:kopf/",
+            vorher: [
+                "node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1",
+                "K=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh, y0 = pm.rotation.y; s.yaw = y0 + Math.PI; for (let i = 0; i < 30; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(30); } let k = null; pm.traverse((o) => { if (!k && o.name === \"head\") k = o; }); const h = k.getWorldPosition(new T.Vector3()), fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion())), c = s.camera.position; return { leib: +Math.abs(Math.atan2(Math.sin(pm.rotation.y - y0), Math.cos(pm.rotation.y - y0))).toFixed(3), vorn: (c.x - h.x) * fw.x + (c.z - h.z) * fw.z > 0, abstand: +h.distanceTo(c).toFixed(2), d: s.cameraThirdDistance };' | erg); echo \"KAMERA $K\"",
+            ],
+            schuesse: { third: "0 0 0 0 0 0 --gesicht \"$(node -e 'console.log(JSON.parse(process.argv[1]).d)' \"$K\")\" --spieler" },
+            pfad: ["koerper-core.js", "foundry-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js"],
+            quelle: "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf",
+        });
+        const tafel = st.urteil;
+        st.urteil = (j, lauf) => {
+            const k = jsonZeile(lauf.stdout, /^KAMERA /);
+            const u = tafel(j, lauf);
+            const pose = !!k && k.vorn === true && k.leib <= 0.01;
+            return {
+                gruen: pose && u.gruen,
+                zahl: (k ? "Spiel-Pose: Leib " + k.leib + " rad, Kamera " + (k.vorn ? "vor" : "hinter") + " dem Gesicht auf " + k.abstand + " m" : "ohne Spiel-Pose") + " · " + u.zahl,
+            };
+        };
+        st.pfad = st.pfad.filter((p) => !p.startsWith("spec/abnahme/ref-"));
+        return st;
+    })(),
+    // ───────── mensch.K4 Staffel 2 — die Menge: 50 Bewohner aus 50 Samen (Zweig w3v-leib-menge) ─────────
+    // Headless (Null-Renderer, 1920×1080): die Linse `bewohner --ort stadt-voll` (die Metropole, der Spieler am Markt, 7 Uhr, 600
+    // Takte) liefert roh die 50 Nächsten draußen — je Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah] (die Matrix seines
+    // Satzes: das eigene Genom über der Gestalt seines Typs, `_bewohnerGenome`), je Typ Dials, Maße der Vorlage in m und die
+    // Dreiecke seiner Senken (Leib · Wurf), die Bildpunkte je m am Rand der Nah-Wahl, die Kaskaden, den Takt; danach
+    // misst die Anatomie-Linse (`messe`) die Gesichtsmaße jedes Typs, dazu die Zeilen 2 und 3 des Kerns (Zeile GESICHT). Grün: 50 aus 50 Samen; keine zwei gleich
+    // (die Gestalt-Distanz je Paar: gleicher Typ und gleiche Farben — dann der größte Unterschied der Maße in Bildpunkten — unter
+    // 1 px ist gleich); die Höhe ±8 % um ihre Mitte, ihre Spanne ≥ 8 %; jedes Gesichtsmaß in MENSCH_SOLL (die Breiten × der Breite
+    // des Bewohners); je Typ Leib ≤ Zeile 2, Wurf ≤ Zeile 3; die 50 ≤ 150k Dreiecke (im Auge der Leib jedes, der Wurf je
+    // Kaskade; die Nah-Wahl trägt ihren Leib für sich); der Takt je 50 Bewohner ≤ 1 ms. Am Kopf des Zweigs (Cloud, 29.10.):
+    // 50 aus 50 Samen, Höhe 1,703–1,951 m um 1,82, Gesicht 50 von 50, Leib/Wurf je Typ 1700/360, die 50: 132 200 Dreiecke,
+    // 0,253 ms je 50 — ROT nur an „keine zwei gleich" (14 von 1 225 Paaren unter 1 px, je desselben Typs, min 0,284 px): die Farbe
+    // je Person verlangt den Knoten des Gang-Satzes (stoff-instanz `_gangSatzKnoten`). Mutanten ROT: zwei gleiche Samen
+    // (samen, gleich), die Zeile 2 halbiert (budget).
+    {
+        kriterium: "mensch.K4",
+        staffel: 2,
+        geraet: "headless",
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "export KREATUR_TAKT_PORT=$(( {PORT} ))",
+                "node scripts/diag-kreatur-takt.cjs --proben bewohner --ort stadt-voll | tee \"$B-probe.txt\"",
+                "node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\").split(\"\\n\").find((z) => /^\\s*(✅|❌) bewohner\\s/.test(z)); const m = JSON.parse(t.slice(t.indexOf(\"{\"))).stadt.menge; const A = require(\"./scripts/diag-mensch-anatomie.cjs\"), sb = A.ladeWelt(); const K = sb.__koerperCore; console.log(\"GESICHT \" + JSON.stringify({ typ: m.typ.map((x) => A.messe(sb, null, x.dials)), soll: K.MENSCH_SOLL, zeile: [2, 3].map((l) => K.PORTAL_RENDER_CONFIG.lod.budget.koerper[l].tris) }))' \"$B-probe.txt\"",
+            ].join("\n"),
+        ],
+        gpu: false,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "bewohner");
+            const g = jsonZeile(lauf.stdout, /^GESICHT /);
+            const m = z && z.stadt && z.stadt.menge;
+            if (!m || !g) return { gruen: false, zahl: "ohne Menge oder Gesicht (Exit " + lauf.exit + ")" };
+            const r3 = (x) => Math.round(x * 1000) / 1000;
+            const T = m.typ;
+            // je Bewohner seine Maße (m) und sein Kleid: die Vorlage seines Typs × Breite · Höhe · Tiefe
+            const B = m.je.map(([seed, t, h, b, d, nah]) => ({ seed, t, nah, b, mass: [b * h, h, d * h].map((x, e) => x * T[t].mass[e]) }));
+            const farbe = (x) => ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor", "gender"].map((k) => T[x.t].dials[k]).join();
+            let [min, paar, gleich] = [Infinity, null, 0];
+            for (let i = 0; i < B.length; i++)
+                for (let k = i + 1; k < B.length; k++) {
+                    const d = farbe(B[i]) === farbe(B[k]) ? Math.max(...B[i].mass.map((x, e) => Math.abs(x - B[k].mass[e]))) * m.pxM : 99;
+                    if (d < 1) gleich++;
+                    if (d < min) [min, paar] = [d, B[i].seed + "/" + B[k].seed];
+                }
+            const H = B.map((x) => x.mass[1]);
+            const mitte = H.reduce((a, h) => a + h, 0) / H.length;
+            const [hMin, hMax] = [Math.min(...H), Math.max(...H)];
+            const aus = [];
+            for (const k of ["kopfH", "kopfB", "augenAbstand", "augapfel", "iris", "mund"])
+                for (const x of B) {
+                    const v = g.typ[x.t][k] * (k === "kopfH" ? 1 : x.b);
+                    if (v < g.soll[k][0] || v > g.soll[k][1]) aus.push(k + " " + r3(v) + " (Typ " + x.t + ")");
+                }
+            const zeile = g.zeile;
+            const dreiecke = B.reduce((a, x) => a + T[x.t].dreiecke[1] * m.kaskaden + (x.nah ? 0 : T[x.t].dreiecke[0]), 0);
+            const takt50 = (m.takt[0] / z.stadt.ring.gesamt) * 50;
+            const rot = {
+                samen: !(B.length === 50 && new Set(B.map((x) => x.seed)).size === 50),
+                gleich: !(min >= 1),
+                hoehe: !(hMax <= 1.08 * mitte && hMin >= 0.92 * mitte && hMax - hMin >= 0.08 * mitte),
+                gesicht: aus.length > 0,
+                budget: !T.every((x) => x.dreiecke[0] <= zeile[0] && x.dreiecke[1] <= zeile[1]),
+                dreiecke: !(dreiecke <= 150000),
+                takt: !(takt50 <= 1),
+            };
+            const fehlt = Object.keys(rot).filter((k) => rot[k]);
+            return {
+                gruen: !fehlt.length,
+                zahl:
+                    B.length + " Bewohner aus " + new Set(B.map((x) => x.seed)).size + " Samen, " + T.length + " Typen · Gestalt-Distanz min " + r3(min) + " px (" + paar + "; " + gleich + " Paare unter 1 px) · Höhe " +
+                    r3(hMin) + "–" + r3(hMax) + " m um " + r3(mitte) + " · Gesicht " + (aus.length ? "außerhalb: " + aus.slice(0, 3).join(", ") : "50 von 50 in MENSCH_SOLL") + " · Leib/Wurf je Typ " +
+                    T.map((x) => x.dreiecke.join("/")).join(" ") + " (Zeilen " + zeile + ") · die 50: " + Math.round(dreiecke) + " Dreiecke · Takt " + m.takt[0] + " ms für " + z.stadt.ring.gesamt +
+                    " → " + r3(takt50) + " ms je 50" + (fehlt.length ? " · ROT " + fehlt.join(",") : ""),
+            };
+        },
+        pfad: [
+            "stamm/siedlung-bewohner.js",
+            "stamm/koerper-*.js",
+            "stamm/stoff-instanz.js",
+            "koerper-core.js",
+            "foundry-core.js",
+            "fachwerk-core.js",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/diag-mensch-anatomie.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
+    },
+    // haar.K1 Staffel 1 — der Wolf aus dem Gesetz der Tetrapoda (fellStreu) 3 m vor dem Ego-Auge, gehalten; arm: die Kamera 0,7 m
+    // vor seinem Fell quer zum Leib, 0,5 m über seiner Mitte; third: 4 m quer, 1 m darüber (der Blick des Third). Soll: strich der REF
+    // ref-fell.png ± 20 % = [0,4358; 0,6538]. Headless/swiftshader (kienspan, 1920×1080, Spawn) am Kopf haar-fell-soll: arm
+    // 0,3026 (vor dem Strich der Schale 0,2804), third 0,2518 — ROT erwartet, bis die Strähne Kontrast gegen die Unterwolle trägt.
+    sollKlasseStation({
+        kriterium: "haar.K1",
+        id: "fell",
+        klasse: "^tier:wolf$",
+        vorher: [
+            "node scripts/werkbank.cjs umstellen --ort wiese --sicht ego > \"$B-umstellen.txt\" 2>&1",
+            "K=$(node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, \"happy\", \"wolf\", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__tiereHalten(); const b = new T.Box3().setFromObject(c), m = b.getCenter(new T.Vector3()), g = b.getSize(new T.Vector3()), q = g.x > g.z; const kam = (d, h) => [m.x + (q ? 0 : d), m.y + h, m.z + (q ? d : 0), m.x, m.y, m.z].map((v) => +v.toFixed(2)); return { arm: kam(0.7 + Math.min(g.x, g.z) / 2, 0.5), third: kam(4 + Math.min(g.x, g.z) / 2, 1) };' | erg); echo \"WOLF $K\"",
+        ],
+        schuesse: {
+            arm: "$(node -e 'console.log(JSON.parse(process.argv[1]).arm.join(\" \"))' \"$K\")",
+            third: "$(node -e 'console.log(JSON.parse(process.argv[1]).third.join(\" \"))' \"$K\")",
+        },
+        pfad: ["tetrapoda-core.js", "foundry-core.js", "stamm/kreatur-*.js", "stamm/studio-bruecke.js"],
+        quelle: "1 = Klasse fell in der Soll-Tafel (Soll aus externer REF), GRÜN auf Armlänge (0,7 m) und im Third (4 m) an einem Gerät",
+    }),
+    // haar.K2 Staffel 1 — das Haar des Spielers (haarStreu, Genom START_PARAMS): arm die Kamera 0,7 m vor dem Gesicht
+    // (`--gesicht 0.7`), third 4 m hinter dem Kopf (`--gesicht -4`, der Blick des Third); der Kopf in Stoffen, die Klasse
+    // spieler:kopf/hair. Soll: strich der REF ref-haar.png ± 20 % = [0,3554; 0,533] UND die Albedo der Zeile haar der Albedo-Tafel
+    // im Natur-Band [0,01; 0,3] — die Zeile fehlt (die Tafel misst nur ganz auf der Karte), ROT „albedo: … ohne Ist“ bis sie steht.
+    sollKlasseStation({
+        kriterium: "haar.K2",
+        id: "haar",
+        klasse: "^spieler:kopf/hair$",
+        vorher: ["node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1"],
+        schuesse: { arm: "0 0 0 0 0 0 --gesicht 0.7 --spieler", third: "0 0 0 0 0 0 --gesicht -4 --spieler" },
+        pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js", "spec/farbe/albedo-tafel.json"],
+        quelle: "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät",
+    }),
+    // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
+    // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
+    wieseStation(1, [["wiese", "third", 0.5]], 60, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
+    wieseStation(
+        2,
+        ["wiese", "genesis"].flatMap((o) => ["ego", "third"].flatMap((s) => [0.5, 0.3].map((u) => [o, s, u]))),
+        300,
+        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte"
+    ),
+    // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
+    // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
+    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 60, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
+    jahrStation(
+        2,
+        ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was])),
+        ["sommer", "winter", "fruehling"],
+        180,
+        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"
+    ),
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
 const fehlt = [
+    // vegetation.K3 (Zweig w3w-wald, 29.10.): das Band der REF real-mischwald (Stämme je Bildbreite, Unterholz-Deckung 0–2 m) steht
+    // nirgends — weder im Spiel-Baum (spec/abnahme) noch hier; aus der Cloud ist die Quelle nicht ladbar (Wikimedia: 403 am Proxy).
     {
-        kriterium: "mensch.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
+        kriterium: "vegetation.K3",
+        staffel: 1,
         befehl: null,
-        grund:
-            "Werkzeug und Welt fehlen: keine Stadt ≥ 200 Bewohner mit ≥ 40 nah animiert in einer Linse (die Probe bewohner " +
-            "kennt nur das Start-Dorf), das ABAB an der GTX ist ein Lauf des Richter-Zugs, keine Station",
-        quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
+        grund: "die REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Repo, aus der Cloud nicht ladbar): ohne Band urteilt keine Station; die Licht-Flecken (Boden-Luma unter Kronen gegen offenen Boden, zwei Uhrzeiten) misst erst die Station Wald mit diesem Band",
+    },
+    {
+        kriterium: "vegetation.K3",
+        staffel: 2,
+        befehl: null,
+        grund: "dieselbe fehlende REF real-mischwald wie Staffel 1, dazu fehlt das Gesetz der Strahlen: Volumen-Licht über die EINE Luft gibt es nicht (Strahl-Kontrast im Gegenlicht ungemessen)",
     },
 ];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)

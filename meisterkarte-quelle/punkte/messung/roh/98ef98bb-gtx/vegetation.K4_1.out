@@ -1,0 +1,21 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] nvidia/pascal
+[welt-boot] FEHLER console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":44,"weite":0.6828020898649549,"summe":[0,0,0,0,98],"gegenprobe":[56143],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41160,1339,18647,39235],[23176,312,5497,39276]]],["fluss",0,0,[[28218,1294,28113,56800],[5865,605,5753,64504]]]],"innen":[0.113,0.443,null,null,0.585,0.49,0.567,0.372,0.28,0.54,0.14,0.279,0.344,0.39,0.466,0.403,0.556,0.453],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"slot":{"hang":0.25524668657792005,"typ":"haus_alpenchalet","splats":3,"byte":true,"boden":1},"waise":{"start":true,"gruende":96,"gesperrt":true,"ohne":33,"slots":36,"haeuser":3,"reload":3,"zugOffen":true,"ausstattung":{"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]},"verblasst":true,"ms":42526}}
+  ❌ W10 Innen-Bild: 4 von 18 Häusern unter 15 % des Außen-Schattens (haus_alpenchalet 0.0199839127222548/0.17643521324197886 · haus_alpenchalet 0.021422964818713405/undefined · haus_skandinavisch undefined/0.011771633666696852 · haus_schwarzwald 0.020357089401636223/0.14579036160886544)
+  ❌ W9 Wasser: [["see",0,0,[[41160,1339,18647,39235],[23176,312,5497,39276]]],["fluss",0,0,[[28218,1294,28113,56800],[5865,605,5753,64504]]]]
+  ❌ W9 Waise: 33 von 96 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-362/-1358,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  ❌ W9 Ausstattung: {"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]}
+  1 Welten, 1 zugleich, 403 s
+❌ gate:haus-welt ROT (5)
+[welt-boot] ROT — 1 Fehler der Welt:
+  · console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 26985 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

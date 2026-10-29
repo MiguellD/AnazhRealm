@@ -1,0 +1,46 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2474,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1297,"soll":760}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2191,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1095,"soll":760}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2442,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1251,"soll":760}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2363,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1216,"soll":760}]
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 21.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 148.9 s
+[stall-akte] Puls 101×, zuletzt vor 21.0 s — complete · renderer bereit · weltbild da · frames 1317 · welt 1317 Takte · Ruhe 0 · zuletzt Foundry offen 4 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2414 100 % · GPU 2305 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 39:21 gpu 0/r 100 · 39:23 gpu 0/r 106 · 39:25 gpu 0/r 98 · 39:27 gpu 0/r 117 · 39:29 gpu 0/r 98 · 39:31 gpu 0/r 99 · 39:33 gpu 0/r 116 · 39:35 gpu 0/r 91 · 39:37 gpu 0/r 104 · 39:39 gpu 0/r 99 · 39:41 gpu 0 [chrome 1 %]/r 99 · 39:43 gpu 0/r 114 · 39:45 gpu 2 [VizCompositorTh 2 %]/r 192 · 39:47 gpu 0/r 300 · 39:49 gpu 2 [VizCompositorTh 2 %]/r 258 · 39:51 gpu 1/r 201 · 39:53 gpu 0 [VizCompositorTh 1 %]/r 172 · 39:55 gpu 0/r 206 · 39:57 gpu 2 [VizCompositorTh 1 %]/r 186 · 39:59 gpu 0/r 109 · 40:01 gpu 0/r 102 · 40:03 gpu 0/r 103 · 40:05 gpu 0/r 100 · 40:07 gpu 0/r 101 · 40:09 gpu 0/r 100 · 40:11 gpu 0/r 101 · 40:13 gpu 0/r 100 · 40:15 gpu 0/r 100 · 40:17 gpu 0/r 101 · 40:19 gpu 0/r 102
+[stall-akte] Stapel ab :2327 < messen :2424 < takt :2470 < stadtTag :2505
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [ERROR] BUDGET-BRUCH mensch L3: [{"feld":"tris","ist":1095,"soll":760}]
+[stall-akte] Konsole error: [budget] mensch L2: [{"feld":"tris","ist":2442,"soll":1700}]
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [ERROR] BUDGET-BRUCH mensch L2: [{"feld":"tris","ist":2442,"soll":1700}]
+[stall-akte] Konsole error: [budget] mensch L3: [{"feld":"tris","ist":1251,"soll":760}]
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [ERROR] BUDGET-BRUCH mensch L3: [{"feld":"tris","ist":1251,"soll":760}]
+[stall-akte] Konsole error: [budget] mensch L2: [{"feld":"tris","ist":2363,"soll":1700}]
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [ERROR] BUDGET-BRUCH mensch L2: [{"feld":"tris","ist":2363,"soll":1700}]
+[stall-akte] Konsole error: [budget] mensch L3: [{"feld":"tris","ist":1216,"soll":760}]
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [ERROR] BUDGET-BRUCH mensch L3: [{"feld":"tris","ist":1216,"soll":760}]
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] Siedlung „Westerhausen" gewachsen (Zelle 3,1, 21 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] A3: Hydro-Kachel 0,1 aus dem Faden (24 Fluesse, 0 Seen)
+[stall-akte] Konsole log: [AnazhRealm V18.546.122] [INFO] A3: Hydro-Kachel 1,1 aus dem Faden (27 Fluesse, 0 Seen)
+[stall-akte] Stderr [2271:2271:1029/013741.251245:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[stall-akte] Stderr [2271:2288:1029/013800.401709:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2271:2288:1029/013828.541375:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2271:2288:1029/013922.786258:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in ab :2327
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":28,"third":33},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.016,"wegLeib":1919.1},"blick":{"n":155,"quote":0.961,"sektorMax":0.132},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":274,"tuer":274,"falsch":[],"aufWeg":0.871,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":261,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.204,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.965,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (168 s) — Sekunden je Probe: bewohner: 158
+
+✅ GRÜN — bewohner

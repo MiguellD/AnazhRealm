@@ -1,0 +1,37 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe -e (async function boeLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, mutante] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const tor = werkbankTor(W, ["--ort", "wiese"]);
+let erg;
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+await werkbankRuf(W, "/umstellen", { ort: "wiese" });
+if (mutante === "wind0") await werkbankRuf(W, "/eval", { code: "r._windWob = () => 0; return 1;" });
+const b = await werkbankRuf(W, "/bild", {
+px: M.x, py: "+1.6", pz: M.z, lx: M.blick.x, ly: "+0", lz: M.blick.z, wahl: 0, zeit: 0.25, datei: aus.replace(/\.json$/, "") + "-boe.png",
+});
+erg = b.zeit ? Object.assign({ abnahme: b.abnahme, mutante: mutante || null }, b.zeit) : { fehler: String(b.fehler || "keine Zeit-Messung").slice(0, 400) };
+} catch (e) {
+erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+} finally {
+tor.stop();
+}
+console.log("BOE-ZEIT " + JSON.stringify(erg));
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\98ef98bb-gtx\vegetation.K2_1.json 7754
+[linse-gpu] nvidia/pascal
+BOE-ZEIT {"abnahme":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.1 m · Luma 84.4 σ 33.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.128 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","mutante":null,"dt":0.25,"nahAnteil":0.5358854166666667,"tempo":10.416666666666668,"kamm":{"t":25.55,"boe":1.1499993836170879,"v":536.3867323281104,"boden":0.0010370225039686388},"tal":{"t":48.8,"boe":0.2500001854256985,"v":91.10931231214826,"boden":0.001056370895130721},"nah":21.43541666666667,"ueber":536.3867323281104,"lauf":5.887344563498938,"rot":[]}
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 30885 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

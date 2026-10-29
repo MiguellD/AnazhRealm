@@ -1,6 +1,6 @@
 // Stationen der Gruppe I (src/g1.js): je Kriterium und Staffel EINE Station — Befehl im Spiel-Baum am SHA, Urteil über
 // seine Ausgabe, Pfad für R6. Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K5, physik K1 K2, feld K2 K3, stoffe K3;
+// Erfasst ist jedes Kriterium der Gruppe mit Punkten (gelaende K1–K5, wetter K1 K2 K3 K5, physik K1 K2, feld K2 K3, stoffe K2 K3;
 // physik K2 ist zugleich das Ziel des Zweigs kontakt-tempo). Die Messschuld M30–M43 trägt kein Kriterium der Gruppe I.
 // Was kein Werkzeug im Spiel-Baum misst, steht NICHT in der Liste (der Läufer verlangt ein argv), sondern in
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
@@ -285,7 +285,9 @@ module.exports = [
     },
 
     // ── gelaende.K2 Staffel 2 ── (a) der Graben im Ausgabe-Bild wie Staffel 1 (dasselbe eingefrorene Mess-Bahn-Skript m2-graben.cjs,
-    // Third und als Ego-Kopie mit der Sicht "first"), (b) und (d) über die Wasser-Wand des Spiel-Baums (gate:wasser-leben, Zweig
+    // Third und mit `--sicht first` im Ich-Auge: die Kamera des Spiels am Kopf, der Blick nach unten auf den Boden vor dem Leib, der
+    // Stand 2,2 m vom Graben-Punkt mit freier Abnahme des Blicks — die sed-Kopie stellte die Third-Pose ins Ich-Auge, ein Hasel
+    // 1–2 m vor dem Auge ließ die Aufnahme vor dem ersten Graben werfen: Ego 0/0 am 27.10.), (b) und (d) über die Wasser-Wand des Spiel-Baums (gate:wasser-leben, Zweig
     // gk2-damm): G6/G7 der Damm aus dem Verb (`voxel_fill`) 60 m stromab des Graben-Orts — stromauf das gezeichnete Wasser auf der
     // Überlaufhöhe (Minimax über den Boden des Feldes) ±0,1 m über dem Fluss von vorher, stromab der Fluss auf seinem Spiegel —, G8
     // der Fern-Ring unter den Säulen im Takt des Edits (byte-Diff) und der Fern-Faden an den Säulen-Mitten auf der Krone (--bild
@@ -297,7 +299,7 @@ module.exports = [
         befehl: [
             "bash",
             "-c",
-            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; sed -e 's/"third"/"first"/g' -e 's/m2-graben[.]json/m2-graben-ego.json/' -e 's/m2-s/m2e-s/g' "$D/m2-graben.cjs" > "$D/m2-graben-ego.cjs"; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben-ego.cjs"; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
+            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben.cjs" --sicht first; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
         ],
         gpu: true,
         zeit: true,
@@ -305,16 +307,19 @@ module.exports = [
         urteil: (j, lauf) => {
             if (!j) return { gruen: false, zahl: "keine Ausgabe (Exit " + lauf.exit + ")" };
             // (a) je Sicht dasselbe Urteil wie Staffel 1
-            const graben = (m) => {
-                const g = (m && Array.isArray(m.graeben) ? m.graeben : []).filter((x) => x.verb === "graben");
+            const graben = (m, sicht) => {
+                const g = (m && Array.isArray(m.graeben) ? m.graeben : []).filter((x) => x.verb === "graben" && (!sicht || x.sicht === sicht));
                 const neu = g.filter((x) => x.nassEnde > x.nassVor);
                 const je = (a) => neu.filter((x) => x.abstand === a && x.gefuelltMs != null && x.gefuelltMs <= 2000).length;
                 const ok =
                     g.length >= 8 && Math.max(...g.map((x) => x.doppeltMax)) === 0 && Math.max(...g.map((x) => x.ueberMax)) === 0 &&
-                    g.every((x) => x.bilder > 0) && neu.every((x) => x.gefuelltMs != null && x.gefuelltMs <= 2000) && je(1) >= 1 && je(3) >= 1;
-                return { ok, zahl: g.length + "/" + (m && m.graeben ? m.graeben.length : 0) + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + ")" };
+                    g.every((x) => x.bilder > 0) && neu.every((x) => x.gefuelltMs != null && x.gefuelltMs <= 2000) && je(1) >= 1 && je(3) >= 1 &&
+                    (!sicht || [1, 3].every((a) => g.some((x) => x.abstand === a && (x.bild || []).includes("2s"))));
+                // Ego: je Abstand ein Bild 2 s nach dem Klick von einem freien Stand (die Abnahme des Blicks, m2-graben --sicht first)
+                const bild = sicht ? ", Bild " + g.filter((x) => (x.bild || []).includes("2s")).map((x) => "s" + x.saat + "/" + x.abstand + " m").join(" ") : "";
+                return { ok, zahl: g.length + "/" + (m && m.graeben ? m.graeben.length : 0) + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + bild + ")" };
             };
-            const [t, e] = [graben(j.third), graben(j.ego)];
+            const [t, e] = [graben(j.third), graben(j.ego, "first")];
             // (b) G6 · G7 — (d) G8, wie die Wand sie urteilt
             const d = j.damm || {};
             const auf = d.stromauf || [];
@@ -324,13 +329,14 @@ module.exports = [
                 auf.every((u) => Math.abs(u.wasser - u.ueberlauf) <= 0.1 && u.ueberlauf > u.fluss + 0.1) &&
                 ab.every((u) => Math.abs(u.wasser - u.fluss) <= 0.1);
             const f = (j.ferne && j.ferne.ring) || {};
-            const fern = f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === j.ferne.saeulen;
+            // der Faden je Ring-Punkt wie die Wand (diag-wasser-leben G8: faden === punkte), nicht je Säule (5/21 am 27.10. war die Station)
+            const fern = f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte;
             return {
                 gruen: t.ok && e.ok && b && fern,
                 zahl:
                     "(a) Third " + t.zahl + " · Ego " + e.zahl + " · (b) stromauf " + auf.map((u) => u.wasser + "/" + u.ueberlauf).join(", ") +
                     " m Wasser/Überlauf über Fluss " + auf.map((u) => u.fluss).join(", ") + ", stromab " + ab.map((u) => u.wasser + "/" + u.fluss).join(", ") +
-                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + (j.ferne ? j.ferne.saeulen : "?"),
+                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + f.punkte + " an " + (j.ferne ? j.ferne.saeulen : "?") + " Säulen",
             };
         },
         pfad: [
@@ -363,11 +369,11 @@ module.exports = [
         kriterium: "gelaende.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 240, befehl: [
             "bash",
             "-c",
-            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; W() { node scripts/werkbank.cjs "$@"; }; raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=$SP node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; (node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP > "$D/werkbank.log" 2>&1 < /dev/null &); for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/werkbank.log" 2>/dev/null && break; sleep 5; done; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; W stop > /dev/null 2>&1; sleep 3; raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E`,
-        ],
+            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
+        ] },
         gpu: true,
         zeit: false,
         minuten: 6,
@@ -697,7 +703,7 @@ module.exports = [
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 240, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--datei", "{AUS}"] },
         gpu: true,
         zeit: false,
         minuten: 4,
@@ -742,6 +748,48 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "1 = Boden-Luma nass/trocken 0,5–0,8 nur auf porösem Stoff, im SELBEN Schuss mit trockenem Innenraum unter dem Dach, an einer Pose",
+    },
+
+    // ── wetter.K3 ── gate:wasser-leben P4 im Block koerper (Null-Renderer, Mess-Wiese): das Wort des Spielers „Sturm", 20 min
+    // Welt-Uhr im Takt des Regens (`_tickRain` je 5 s) — der Regen des Wetter-Felds ist ein Term im Abfluss neben der Schmelze
+    // (gelaende-core `abfluss`, `regenAbfluss`: ein linearer Speicher des Einzugsgebiets), die Pegel-Tafel folgt ihm je Stufe und
+    // reist in den Faden; gemessen der Spiegel des Kerns (`_waterLevelAt`) am Bach der Mess-Wiese über dem trockenen, das Regen-
+    // Feld gehalten (der Sturm regnet nicht) hebt er nichts. An main ea07267e ROT (keine Probe: der Abfluss trug nur die Schmelze);
+    // am Zweig pegel-regen df64100a +0,2 m (die Krone des Betts, `pegelTafel`), 26 Tafeln an den Faden, gehalten 0.
+    {
+        kriterium: "wetter.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-wasser-leben.cjs", "--nur", "koerper"],
+        env: { WASSER_LEBEN_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const b = jsonBlock(lauf.stdout);
+            const p = (b && b.koerper && b.koerper.pegel) || {};
+            const rg = p.regen;
+            if (!rg) return { gruen: false, zahl: "keine Regen-Probe am Bach (koerper.pegel.regen fehlt, Exit " + lauf.exit + ")" };
+            return {
+                gruen: rg.hub >= 0.2 && rg.post > 0 && rg.fest <= 0.001 && !/P4 REGEN/.test(lauf.stdout),
+                zahl:
+                    "Bach +" + rg.hub + " m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), " + rg.post +
+                    " Tafeln an den Faden · Regen-Feld gehalten +" + rg.fest + " m · Exit " + lauf.exit,
+            };
+        },
+        pfad: [
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "stamm/wasser-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-takt.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "scripts/diag-wasser-leben.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = Pegel am Bach +≥ 0,2 m nach 20 min Sturm an einem Ort",
     },
 
     // ── wetter.K5 ── gate:kopplung F3: die Phase am Verhalten (quer gleich, längs verschieden, die Richtung dreht mit, Saat)
@@ -1029,9 +1077,11 @@ module.exports = [
             const z = (n) => (new RegExp("^\\s*" + n + ": (.*)$", "m").exec(out) || [])[1];
             const [ruhe, feld, brand] = [z("Sim-Ruhe 60 s"), z("Sim-Wecken feld"), z("Sim-Wecken brand")];
             if (!ruhe || !feld || !brand) return { gruen: false, zahl: "keine Sim-Ruhe-, Feld- oder Brand-Zeile (Exit " + lauf.exit + ")" };
-            const rot = (out.split("❌ STAND-TAKT ROT:")[1] || "").split("\n").map((x) => x.trim()).filter(Boolean);
+            // das Ende der Linse in beiden Formen: „✅ STAND-TAKT GRÜN“/„❌ STAND-TAKT ROT:“ und seit z63 (mensch-begegnung, das EINE
+            // wandEnde) „✅ GRÜN — STAND-TAKT …“/„❌ ROT — n Verletzung(en): …“
+            const rot = (out.split("❌ STAND-TAKT ROT:")[1] || out.split(/❌ ROT — \d+ Verletzung\(en\): /)[1] || "").split(/\n| · /).map((x) => x.trim()).filter(Boolean);
             return {
-                gruen: lauf.exit === 0 && /✅ STAND-TAKT GRÜN/.test(out) && / brand 0 /.test(ruhe + " "),
+                gruen: lauf.exit === 0 && /✅ (STAND-TAKT GRÜN|GRÜN — STAND-TAKT)/.test(out) && / brand 0 /.test(ruhe + " "),
                 zahl: "Ruhe 60 s: " + ruhe + " · Feld: " + feld.split(" — ")[0] + " · Brand: " + brand.split(" — ")[0] +
                     (rot.length ? " · ROT: " + rot.slice(0, 3).join(" | ") : ""),
             };
@@ -1329,6 +1379,161 @@ module.exports = [
         quelle: "1 = ≥ 3 von 7 Wirkungen je Stoff bestehen ihre Mutation",
     },
 
+    // ── stoffe.K2 ── gate:stand-takt, der Brand-Block der Sim-Wecken (Null-Renderer, Mess-Wiese, Spielzeit-Takte): das Wort bewölkt
+    // (Wind 0,3; die Bühne hält die Nässe trocken wie die W-Kette ihren Vorgänger), gezündet über den Weg des Brennglases
+    // (`_brandEntfachen`), je Bild genau EIN Schritt des Brands. Die Front ist die kürzeste Lauf-Zeit vom Eintrittspunkt jeder
+    // 16-m-Zelle, ihr Tempo Rothermel 1972 aus der Spalte `brenn` der Stoff-Tafel, dem EINEN Wind (`_windAt` in seiner
+    // Beaufort-Stärke, ohne die wandernde Böe) und dem Hang (stamm/feld-leben.js `_brandTempo`). Gemessen am Zustand der Zellen
+    // (je Sprung der Front die Zelle, von der sie kam → der Punkt, an dem sie ankam): mit dem Wind der Median der Köpfe (je
+    // Gras-Quelle ihr schnellster Sprung, ±20° um den Kopf), gegen den Wind (±30°) der schnellste Sprung; die Mutante im selben
+    // Lauf (derselbe Herd, `_windAt` ohne m/s) läuft nirgends ≥ 0,5 m/s. An main 557d4aad ROT (die Brand-Zeile trägt kein Tempo: Übergriff nach Würfeln ohne Wind),
+    // am Zweig w3s-feuer GRÜN in vier Läufen: mit dem Wind 0,882–0,919 m/s (21–24 Köpfe), gegen 0,028, ohne Wind höchstens 0,041,
+    // bis 18,3 Einheiten je Zelle.
+    {
+        kriterium: "stoffe.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const m = /^\s*Sim-Wecken brand: (\{.*\}) — /m.exec(String(lauf.stdout || ""));
+            let b = null;
+            try {
+                b = m && JSON.parse(m[1]);
+            } catch (_e) {}
+            if (!b || !Number.isFinite(b.mit)) return { gruen: false, zahl: "keine Front im Brand-Block (Exit " + lauf.exit + ")" };
+            const gruen = b.start === true && b.koepfe >= 3 && b.mit >= 0.5 && b.mit <= 2 && b.gegen <= 0.2 && b.ohneWind < 0.5;
+            return {
+                gruen,
+                zahl:
+                    "mit dem Wind " + b.mit + " m/s (" + b.koepfe + " Köpfe) · gegen " + b.gegen + " m/s · Mutante ohne Wind bis " +
+                    b.ohneWind + " m/s · bis " + b.einheiten + " Einheiten je Zelle",
+            };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/stoff-material.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose",
+    },
+
+    // ── stoffe.K2#2 ── gate:stand-takt --brand (Null-Renderer, Mess-Wiese, Spielzeit-Schritte des Takts `_tickBrand`; headless, die ms
+    // je Bild an der CPU des Läufers — das Bild von Asche, Rauch und Glut an Radeon und GTX misst diese Station nicht): die Feuchte des Betts ist EINE Funktion des Orts (stamm/feld-leben.js `_brandFeuchte`: die Luft-Trockene,
+    // der Boden der Zelle aus der Hydrosphäre `_feuchteAt` bis zur Faser-Sättigung, der Regen als freies Wasser bis 250 %), die
+    // Asche liegt im Boden-Stoff (Kanal G der Kronen-Karte, `_ascheMalen`, die Palette `asche` Y 0,052) als weiche Grenze aus dem Feld
+    // (`_brandNarbe`: der Anteil verbrannter Zell-Mitten, vom EINEN Rauschen verschoben — nie das 16-m-Raster) und grünt mit der
+    // Sukzession nach; das Bild (`_brandBild`: die Flammen der Front aus derselben Zelle, die das Licht liest, Länge nach Byram, und
+    // die Fahne als Linien-Plume mit Körper) und Knistern (`_glutAmOhr`) lesen `brandFeld` wie das Licht. Gemessen: HALT windauf des Flusses
+    // nächst der Mess-Wiese (je Zelle, die die Front erreichte und nicht fing, ihr Grund; die Mutante ohne die Feuchte des Orts
+    // brennt ins nasse Ufer), FELS die Stein-Zellen, die dieselbe Front erreichte und nicht fing, REGEN (30 s Brand, dann das Wort Regen; die Mutante ohne freies
+    // Wasser), LESER im Brand (Licht, Flammen, Fahne, Ohr; DECKUNG der Fahne 8 m über den Flammen, die Mutante Fäden ohne Körper),
+    // KANTE der Narbe (am Saum der Asche der Anteil der Gefälle in den Achsen und der Abstand zum 16-m-Raster, die Mutante malt das
+    // Quadrat der Zelle), ASCHE an der Zelle des Herds (Asche, Halme; nach der Stufe Gras), ZEIT 2 km fern bei ≥ 2 000 brennenden
+    // Zellen (je Bild p95 von Takt und Lesern, der Verzug des Schritts) und SCHIRM (das Bild des Brands je Bild, im Deckel seiner
+    // Flammen und Zellen). Die Uhr ist Spieler-Wort: HALT brennt mittags (bis w3v-brand-bild lief die Uhr, so weit das Booten
+    // brauchte — derselbe Herd trug 0 bis 95 Aschen). Vorher (main b3f9ae95 + w3s-feuer): das Laub fiel im
+    // Landregen erst nach 196 s, das nasse Ufer brannte wie die Kuppe, die Asche trug keine Albedo, Rauch und Knistern lasen den Brand
+    // nicht, 2 000 Zellen kosteten je Schritt 7,4 ms und die Leser 2,5 ms je Bild. Am Zweig w3u-nachfolge (Null-Renderer, Radeon-Laptop):
+    // GRÜN — Regen 20 s (Mutante 300), Halt 2× am nassen Gras (Mutante: 7 nasse brennen, 4× Halt am Wasser), Fels hält, Asche Y 0,052
+    // → nach der Stufe Gras 0,148, je Bild p95 0,3 ms bei 2 000 Zellen (451 der Welt), Verzug 1 s. In der Nacht (Radeon) brannte EINE
+    // Zelle als Fleck ohne Flamme, die Fahne ein Faden, die Asche eine Platte mit geraden Kanten im Raster. Am Zweig w3v-brand-bild
+    // (Null-Renderer, Cloud): GRÜN — Halt 95 Zellen, 3× am nassen Gras, 11× am Stein (Mutante 7 nasse), Regen 7 s (Mutante 300), Flammen 21 bis
+    // 2,23 m, Deckung 0,989 (Mutante 0,163), Kante Achse 0,31 · Linie 1,25 m (Mutante 0,963 · 0), Asche voll 0,81 → Gras 0, je Bild
+    // p95 0,2 ms, Schirm 0,7 ms bei 2 000 Zellen. Der Schritt des Brands fällt mit einem Hauch (bis dahin hing ein Lauf, der die Uhr
+    // auf `_brandUhr + schrittS` stellte, an ~0,1 % der Uhren: derselbe Herd trug 0 bis 95 Aschen). GPU: an der Station.
+    {
+        kriterium: "stoffe.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--brand"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const B = jsonZeile(lauf.stdout, /^BRAND \{/);
+            if (!B || !B.halt || !B.regen || !B.zeit || !B.asche || !B.asche.asche)
+                return { gruen: false, zahl: "keine BRAND-Zeile (Exit " + lauf.exit + ")" };
+            const [h, m, rg, rm, l, a, z, k, km] = [B.halt, B.haltM, B.regen, B.regenM, B.leser, B.asche, B.zeit, B.kante || {}, B.kanteM || {}];
+            const gruen =
+                /✅ BRAND GRÜN/.test(lauf.stdout) &&
+                h.nass >= 1 &&
+                h.wasser + m.wasser >= 1 &&
+                h.wasserGebrannt === 0 &&
+                h.nassGebrannt === 0 &&
+                m.nassGebrannt >= 1 &&
+                h.fels >= 1 &&
+                rg.s <= 60 &&
+                rm.s > 60 &&
+                l.licht >= 1 &&
+                l.rauch >= 1 &&
+                l.flammen >= 1 &&
+                l.deckung >= 0.9 &&
+                l.glutF >= 64 &&
+                k.achse <= 0.4 &&
+                k.linie >= 0.8 &&
+                km.linie < 0.5 &&
+                a.asche.a >= 0.99 &&
+                a.gras.a === 0 &&
+                z.brennend >= 2000 &&
+                z.bildMs <= 0.5 &&
+                z.schirmMs <= 1 &&
+                z.verzugS <= 2;
+            return {
+                gruen,
+                zahl:
+                    "Halt: " + h.brannte + " Zellen brannten, die Front hielt " + h.nass + "× am nassen Gras (ohne die Feuchte des Orts brannten " +
+                    m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + h.fels + "× gehalten" +
+                    " · Regen löscht nach " + rg.s + " s (Mutante " + rm.s + " s) · Asche " + a.asche.a + " (voll " + a.asche.voll +
+                    ") → nach der Stufe Gras " + a.gras.a + " · Kante Achse " + k.achse + ", Linie " + k.linie + " m (Mutante " + km.achse +
+                    ", " + km.linie + ") · Licht " + l.licht + ", Flammen " + l.flammen + " bis " + l.lang + " m, Fahne " + l.rauch +
+                    " Ballen, Deckung " + l.deckung + ", Glut am Ohr " + l.glutF + " m² · " + z.brennend + " brennende Zellen (" + z.echt +
+                    " der Welt): je Bild p95 " + z.bildMs + " ms (Leser " + z.leserMs + "), Schirm " + z.schirmMs + " ms, der Schritt bis " + z.verzugS + " s hinter der Uhr",
+            };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-ort.js",
+            "stamm/stoff-material.js",
+            "stamm/klang.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "foundry-core.js",
+            "fachwerk-core.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle:
+            "2 = Halt an Fluss, Fels und nassem Gras, Regen löscht ≤ 60 s, Asche ≤ 0,08 grünt nach, Licht/Rauch/Knistern aus demselben Zustand, 2 000 brennende Zellen ≤ 0,5 ms CPU an der GTX-CPU, beide Geräte",
+    },
+
     // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
     // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
     // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
@@ -1475,6 +1680,215 @@ module.exports = [
         quelle:
             "2 = alle vier: Schnee schmilzt über 0 °C und speist den Pegel, Lava (glut-Achse) erstarrt am Wasser unter Dampf zu Basalt, Stahl glüht in der Esse ab seiner Temperatur (Schmiede = Welt)",
     },
+
+    // ── stoffe.K5 ── gate:stand-takt --nachwuchs (Null-Renderer, die Seite der Tat): das Wuchs-Gesetz `_wuchsAt` = Wasser
+    // (`_feuchteAt`, aus der Hydrosphäre; ohne Fluss und See der Regen `WUCHS.wasserBasis`) × Licht am Boden unter den stehenden
+    // Kronen (`_bodenLichtFeld`); jede Tat misst es beim Schreiben (`w`) und heilt in TAT_NARBE.stunden / w Spielstunden
+    // (`_tatDauer`, gelesen von `_tatIndex`). Die Linse sucht das offene Ufer nächst der Mess-Wiese in der Welt (heute
+    // −348/−662), pflückt mit dem Verb der Ernte jede Pflanze der Nah-Streu im Ring, springt die Uhr als Spieler-Wort ein
+    // Spieljahr und zählt je Pflanze die Stunde der Rückkehr (`_geerntetIn`), am Ende die gezeichneten; danach die Mutante
+    // (Feuchte gleich ½ an `_feuchteAt`). Je 4-m-Kachel Tempo = 1/Stunde. An main 675a3889 ROT (das Rauschen `lebendig`:
+    // r 0,028, im Offenen 0,152, nass 0,836 × trocken), am Zweig w3s-sukzession GRÜN: r 0,834 über alle Kacheln, im Offenen
+    // 0,999, nass 1,298 × trocken; die Mutante offen r 0, 1,000 ×.
+    {
+        kriterium: "stoffe.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--nachwuchs"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const N = jsonZeile(lauf.stdout, /^NACHWUCHS \{/);
+            const [e, m] = N ? [N.echt, N.mutante] : [];
+            if (!e || !m || !N.ufer) return { gruen: false, zahl: "keine NACHWUCHS-Zeile (Exit " + lauf.exit + ")" };
+            const gruen =
+                lauf.exit === 0 &&
+                /✅ NACHWUCHS GRÜN/.test(lauf.stdout) &&
+                e.jahr >= 8760 &&
+                e.n >= 30 &&
+                e.da === e.n &&
+                e.r >= 0.5 &&
+                e.offen >= 6 &&
+                e.rOffen >= 0.5 &&
+                e.quote >= 1.15 &&
+                m.rOffen < 0.2 &&
+                m.quote < 1.05;
+            return {
+                gruen,
+                zahl:
+                    "Ufer " + Math.round(N.ufer.x) + "/" + Math.round(N.ufer.z) + ": nach " + e.jahr + " h " + e.da + " von " + e.n +
+                    " Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) " + e.r + ", im Offenen (" + e.offen + " Kacheln) " +
+                    e.rOffen + ", nass " + e.quote + " × trocken · Mutante Feuchte gleich: offen r " + m.rOffen + ", nass " +
+                    m.quote + " × trocken",
+            };
+        },
+        pfad: [
+            "stamm/vegetation-*.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-boden.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-ort.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/wasser-hydro.js",
+            "stamm/daten.js",
+            "gelaende-core.js",
+            "phyto-core.js",
+            "voxel-worker.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/kamera-nah.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5)",
+    },
+    // ── stoffe.K5#2 ── gate:stand-takt --brand, die Zeile SUKZESSION (Null-Renderer, Mess-Wiese, Spielzeit-Sprung als Spieler-Wort):
+    // die Asche des Brands geht ihre Sukzession als FUNKTION ihres Rests (stamm/vegetation-wiese.js `_sukzession`: die Asche liegt bis
+    // 0,08 und ist bei 0,3 nachgegrünt — Kanal G der Boden-Decke, den Boden-Stoff und Nah-Wiese lesen —, die Kräuter der Nah-Streu
+    // wachsen von 0,3 bis 0,6, `_streuNachBrand`); der Nährstoff ist EINE Funktion der Taten der Zelle (`_naehrstoffAt`: Ernte −0,02,
+    // Fällen −0,3, Asche +0,4, Leichnam +0,2, abklingend mit der Narbe), der Wuchs liest ihn nach Monod (`_wuchsAt`). Gemessen an der
+    // Zelle des Herds: Halme und Kräuter vor dem Brand, auf der Asche, nach der Stufe Gras und nach der Stufe Busch; an ihrer
+    // Nachbarin die Ernte jeder Pflanze (Nährstoff und Wuchs, die Mutante bei festem Nährstoff), die Asche frisch, der Leichnam eines
+    // Risses von Spieler-Hand. DER SÄMLING: der nächste Baum fällt, am Stubben steht bis zum Austrieb kein Baum, dann sein Jungwuchs
+    // in den Stufen `SUKZESSION.jugend` (die Jugend-Gestalt `treeParams(…, alter)` im Pfad der Foundry, `studioOv.alter`, Größe =
+    // Alter), nach der Heilung der gewachsene; seine Gestalt (das Skelett der Prägung) trägt weniger Ordnungen und Glieder, die
+    // Mutante (treeParams ohne `alter`) dieselben. DER WALD: der Brand nimmt jeden Baum seiner Narbe (≥ ½), mit dem Wald der
+    // Sukzession kehrt ihr Jungwuchs zurück, nach der letzten Heilung der gewachsene. Die Asche zählt auf ihrer vollen Fläche (die
+    // Narbe ist eine weiche Grenze, kein Quadrat). Am Zweig w3v-brand-bild (Null-Renderer, Cloud): GRÜN — auf voller Asche (0,81 der
+    // Zelle) kein Halm und kein Kraut, Gras 464/477, Busch 20/23 Kräuter, Sämling 0 → 0,06 → 0,18 → 0,7 → 1 (Skala = Alter),
+    // Gestalt [5 Ordnungen, 1 461 Glieder] gegen [9, 2 933] (Mutante gleich), Wald 79 Bäume: der Brand nimmt 79, Jungwuchs 79, heil 79.
+    {
+        kriterium: "stoffe.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--brand"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const S = jsonZeile(lauf.stdout, /^SUKZESSION \{/);
+            const [a, n] = S ? [S.asche, S.naehr] : [];
+            const [J, G, W] = [(S && S.saemling && S.saemling.stufen) || [], S && S.saemling && S.saemling.gestalt, S && S.wald];
+            if (!a || !a.asche || !a.gras || !a.busch || !n || !n.ernte)
+                return { gruen: false, zahl: "keine SUKZESSION-Zeile (Exit " + lauf.exit + ")" };
+            const gruen =
+                /✅ SUKZESSION GRÜN/.test(lauf.stdout) &&
+                a.vor.halme >= 20 &&
+                a.vor.kraut >= 3 &&
+                a.asche.voll >= 0.4 &&
+                a.asche.halmeVoll <= 0.05 * a.vor.halme * a.asche.voll &&
+                a.asche.krautVoll === 0 &&
+                a.gras.halme >= 0.8 * a.vor.halme &&
+                a.gras.kraut <= 0.3 * a.vor.kraut &&
+                a.busch.kraut >= 0.8 * a.vor.kraut &&
+                n.ernte.N < n.ernte.N0 - 0.04 &&
+                n.ernte.W < n.ernte.W0 &&
+                n.asche >= 1.2 &&
+                n.leichnam >= 1.1 &&
+                n.mutante.W === n.mutante.W0 &&
+                !!(J.length === 5 && J[0].alter === 0 && J[2].alter > 0 && J[2].alter < 1 && J[4].alter === 1 && J[4].skala === 1) &&
+                !!(G && G[0][1] < G[1][1]) &&
+                !!(W && W.vor >= 3 && W.brand === 0 && W.jung >= 0.6 * W.vor && W.heil >= 0.9 * W.vor);
+            return {
+                gruen,
+                zahl:
+                    "Halme " + a.vor.halme + " → Asche " + a.asche.halme + " → Gras " + a.gras.halme + " · Kräuter " + a.vor.kraut +
+                    " → Asche " + a.asche.kraut + " → Gras " + a.gras.kraut + " → Busch " + a.busch.kraut + " · Ernte (" + n.ernte.n +
+                    "): Nährstoff " + n.ernte.N0 + " → " + n.ernte.N + ", Wuchs " + n.ernte.W0 + " → " + n.ernte.W + " · Asche " + n.asche +
+                    ", Leichnam " + n.leichnam + " · Sämling " + (J.length ? J.map((q) => q.alter).join(" → ") : "fehlt") +
+                    (G ? ", Gestalt " + JSON.stringify(G) : "") + (W ? " · Wald " + W.vor + ": Brand nimmt " + (W.vor - W.brand) + ", Jungwuchs " + W.jung + ", heil " + W.heil : ""),
+            };
+        },
+        pfad: [
+            "stamm/vegetation-*.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/kreatur-leben.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/wasser-hydro.js",
+            "stamm/daten.js",
+            "foundry-core.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück",
+    },
+    // ── physik.K3 ── gate:fahr-leben (Null-Renderer, im Spiel-Takt `_gameLoopTick`), Zwilling des Befehls von physik.K2#1 (EIN Lauf):
+    // DER FREIE KÖRPER — der EINE Löser `_freiSchritt` (stamm/koerper-bewegung.js: Starrkörper mit Quaternion, Sequential Impulses,
+    // Schlaf) auf dem Boden des Gesetzes und den Blocker-Boxen, mit der Stoff-Tafel; der Wagen stößt über seine EINE Hülle und das
+    // EINE Impuls-Gesetz (`_freiStoss`). In der freien Gasse der Stoß-Proben fallen 5 Kisten (Bauplan kiste, 42 kg) gestapelt (10 cm
+    // Spalt): bis alle schlafen, ihr Weg 3 s danach, wach (ohne Schlaf) ihr Weg, die untere am Boden und jede auf der darunter
+    // (±2 cm); das Fass (45 kg) ist ein Hindernis der Stoß-Probe L3–L5: der GT fährt mit W hinein, der größte Winkel seiner Achse.
+    // Mutanten im selben Lauf: Schwere 0 (die Kisten ruhen nicht am Boden), der Stoß am freien Körper aus (das Fass steht). Gemessen
+    // wird der Zustand des Lösers, nie ein Bild. An main 675a3889 ROT (keine K3-Zeile: kein Bauplan kiste, kein `_freiSchritt`); am
+    // Zweig w3t-koerper 0ca91cdb (gemergt mit main b3f9ae95) GRÜN: Ruhe 0,87 s, Zittern 0 cm, wach 0 cm, Boden +2 mm, Fugen ≤ 1 mm, GT 8,77 → 8,56 m/s, Fass 161°;
+    // Schwere 0: Boden 0,107 m, ohne Stoß 3,0°.
+    {
+        kriterium: "physik.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: [
+            "bash",
+            "-c",
+            'FAHR_LEBEN_PORT={PORT} node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT={PORT} node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))',
+        ],
+        gpu: false,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) K3#1 \(physik\.K3\)/.test(x));
+            const F = l ? jsonZeile(l, /K3#1/) : null;
+            const [k, f, s, o] = F ? [F.kisten || {}, F.fass || {}, F.schwerelos || {}, F.fassOhneStoss || {}] : [];
+            if (!F || !k.fugen || !s.fugen) return { gruen: false, zahl: "keine K3-Zeile (Exit " + lauf.exit + ")" };
+            const amBoden = (x) => x.ruheS !== null && x.ruheS <= 2 && [x.boden, ...x.fugen].every((d) => Math.abs(d) <= 0.02);
+            const gruen =
+                /^\s*✅/.test(l) &&
+                amBoden(k) &&
+                k.zittern <= 0.01 &&
+                F.wachZittern <= 0.01 &&
+                f.kipp > 45 &&
+                !amBoden(s) &&
+                o.kipp < 45;
+            const z = (x, n) => (Number.isFinite(x) ? x.toFixed(n) : String(x));
+            return {
+                gruen,
+                zahl:
+                    "5 Kisten ruhen nach " + z(k.ruheS, 2) + " s, Zittern " + z(k.zittern * 100, 2) + " cm (wach " +
+                    z(F.wachZittern * 100, 2) + "), Boden " + z(k.boden, 3) + " m, Fugen " + k.fugen.map((d) => z(d, 3)).join("/") +
+                    " m · GT " + z(f.vVor, 2) + " → " + z(f.vNach, 2) + " m/s, Fass " + z(f.kipp, 1) + "° · Mutanten: Schwere 0 Boden " +
+                    z(s.boden, 3) + " m, ohne Stoß " + z(o.kipp, 1) + "°",
+            };
+        },
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/bau-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/vegetation-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "vehicle-core.js",
+            "gelaende-core.js",
+            "scripts/diag-fahr-leben.cjs",
+            "scripts/lib/fahr-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/lib/wasser-linse.cjs",
+        ],
+        quelle: "1 = Körper fallen und ruhen (5 Kisten ≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um",
+    },
 ];
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
@@ -1482,4 +1896,5 @@ module.exports.fehlt = [
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
+    { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
 ];

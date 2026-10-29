@@ -1,0 +1,38 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/diag-kollision-bild.cjs --bild
+=== KOLLISION = BILD — die Karte zeichnet, Mess-Wiese 150 m ===
+[linse-gpu] amd/rdna-3
+  747 Studio-Werke · Box ohne Bild seitlich/oben 4.30/0.09 m · Bild ohne Box 0.16 m
+  OFFEN (U) haus: haus_roemisch#300 — 3.26 m neben jeder Box (bei 6.3/0.6/5.0)
+  OFFEN (U) haus: haus_griechisch#304 — 2.15 m neben jeder Box (bei -2.1/0.2/4.2)
+  OFFEN (U) haus: haus_alemannisch#921 — 1.02 m neben jeder Box (bei 0.8/1.7/2.1)
+  OFFEN (U) ausstattung: brunnen_dorf#922 — 0.33 m neben jeder Box (bei 1.4/1.2/0.0)
+  OFFEN (U) ausstattung: marktstand_dorf#923 — 0.69 m neben jeder Box (bei 1.6/0.3/-0.1)
+  (V) Kontakt beim Tempo: 126/126 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#925","durch":true,"tief":0.285,"spalt":0}
+      fuchs      5.860 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      wolf       7.450 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      baer       8.230 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      riese      13.520 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      gehen      1.150 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      sprint     5.170 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      fall       25.000 m/s · Durchtritt 0/2 · Eindringen max 0.001 m · Spalt max 0.000 m
+      wagen      19.630 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.018 m · im Bild Spalt max 0.028 m, Eindringen max 0.073 m · fahrzeug_supersport vmax 16.36 m/s × 1.2
+      gestossen  16.370 m/s · Durchtritt 0/4 · Eindringen max 0.000 m · Spalt max 0.000 m · im Bild Spalt max 0.000 m, Eindringen max 0.171 m
+  Stoß im Ausgabe-Bild: Wagen 8114 px · Bär 600 px in 640×360 · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Bär an der Mauer im Bild frei 7.48 m · Luma 92.8 σ 42.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.114 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 m, Eindringen 0.073 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @60 → _t_kontakt_mauer#925 — im Bild Spalt 0 m, Eindringen 0.069 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @144 → _t_kontakt_mauer#925 — im Bild Spalt 0 m, Eindringen 0.052 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @60 → _t_kontakt_mauer#925 — im Bild Spalt 0 m, Eindringen 0.093 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @30 → _t_kontakt_mauer#925 — im Bild Spalt 0 m, Eindringen 0.162 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.24 m/s @deckel → _t_kontakt_mauer#925 — im Bild Spalt 0 m, Eindringen 0.171 m
+
+❌ KOLLISION = BILD ROT:
+  (B) BLOCKER OHNE BILD: haus_roemisch#298 bei -201.1/-1136.5 — eine Box ragt 3.34 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_roemisch#301 bei -181.9/-1134.9 — eine Box ragt 4.30 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_roemisch#306 bei -183.7/-1155.9 — eine Box ragt 0.56 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_griechisch#308 bei -162.1/-1136.5 — eine Box ragt 0.56 m seitlich über das Bild
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 3 von 3) nach 198 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

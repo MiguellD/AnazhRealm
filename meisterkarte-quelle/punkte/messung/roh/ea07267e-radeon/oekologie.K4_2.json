@@ -1,0 +1,5 @@
+{
+ "art": "rudel",
+ "laeufe": [],
+ "fehler": "eval: {\"ms\":28,\"fehler\":\"Cannot read properties of undefined (reading 'hpMax')\",\"stapel\":[\"at evaluate (evaluate at IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon-2\\\\scripts\\\\werkbank.cjs:1934:42), <anonymous>:1:89)\",\"at #evaluate (C:\\\\Users\\\\micha\\\\"
+}
