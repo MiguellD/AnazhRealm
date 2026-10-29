@@ -1,0 +1,110 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7754; SP=$((7754 + 20000)); LP=$((7754 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-gtx\siedlung.K2_1.json')
+teil Z node scripts/diag-settlement.cjs --nur-z
+boot
+timeout 60 $W fenster 1600 900 > /dev/null 2>&1
+timeout 120 $W eval 'const g = r._genesisMitte(); const out = []; for (let cx = -10; cx <= 10; cx++) for (let cz = -10; cz <= 10; cz++) { const i = r._autoSettlementCellInfo(cx, cz); if (!i || !(i.stufe > 0)) continue; const d = Math.hypot(i.x - g.x, i.z - g.z); if (d > 2000) continue; out.push({ cx, cz, nH: i.nH, stufe: i.stufe, d: Math.round(d), site: r._autoSettlementFindSite(i) }); } out.sort((a, b) => a.d - b.d); const c = out.find((o) => o.site); let hill = null; if (c) for (const R of [180, 220, 260]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, x = c.site.x + Math.cos(a) * R, z = c.site.z + Math.sin(a) * R, y = r.getTerrainHeightAt(x, z); if (Number.isFinite(y) && r._landAt(x, z, 0.2) && (!hill || y > hill.y)) hill = { x, y, z, R }; } window.__stadtWahl = { c, hill }; return { seed: r.state.worldMeta && r.state.worldMeta.seed, staedte: out.length, wahl: c ? { cx: c.cx, cz: c.cz, nH: c.nH, stufe: c.stufe, d: c.d } : null, hill };' > "$L/wahl.json" 2>&1; echo '@@PUNKTE@@ WAHL'; cat "$L/wahl.json"; echo
+HILL=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.hill ? e.hill.x.toFixed(1) + " " + e.hill.z.toFixed(1) : "")' "$L/wahl.json" 2> /dev/null)
+[ -n "$HILL" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }
+timeout 300 $W umstellen $HILL > /dev/null 2>&1
+for i in $(seq 1 60); do timeout 60 $W eval 'const P = r.state.stlMauer, q = r._autoSettlementQueue, c = window.__stadtWahl.c.site; let haeuser = 0; for (const e of r.state.architectures) if (e && /^haus_/.test(e.type) && Math.hypot(e.position.x - c.x, e.position.z - c.z) < 400) haeuser++; return { mauer: P ? P.top : 0, zug: !!(q && q.plan), pending: r._autoSettlementPendingKey || null, haeuser };' > "$L/stand.json" 2>&1; node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)' "$L/stand.json" 2> /dev/null && break; sleep 5; done
+echo '@@PUNKTE@@ STAND'; cat "$L/stand.json"; echo
+timeout 60 $W eval 'const c = window.__stadtWahl.c.site; let v2 = null; for (const p of r._ortPlaene.values()) if (p && p.ort && p.mauer && (!v2 || Math.hypot(p.ort.x - c.x, p.ort.z - c.z) < Math.hypot(v2.ort.x - c.x, v2.ort.z - c.z))) v2 = p; if (!v2) return { fehler: "kein Ortsplan mit Mauer" }; const o = v2.ort, cand = []; for (const f of v2.felder || []) cand.push({ x: o.x + f.cx, z: o.z + f.cz, art: "acker" }); for (const fw of v2.feldwege || []) for (const q of fw.pts) cand.push({ x: o.x + q.x, z: o.z + q.z, art: "feldweg" }); let best = null; for (const q of cand) { const d = Math.hypot(q.x - o.x, q.z - o.z); if (d < 70 || d > 260) continue; const y = r.getTerrainHeightAt(q.x, q.z); if (!Number.isFinite(y)) continue; if (!best || y > best.y) best = Object.assign({ y, d: Math.round(d) }, q); } if (!best) return { fehler: "kein Acker oder Feldweg 70–260 m vor der Stadt" }; const cy = r.getTerrainHeightAt(o.x, o.z); return { pose: [best.x, best.y + 1.7, best.z, o.x, cy + 5, o.z].map((v) => +v.toFixed(2)), art: best.art, d: best.d, hoeher: Math.round((best.y - cy) * 10) / 10, segs: v2.mauer.segs.length, tuerme: v2.mauer.towers.length };' > "$L/kamera.json" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat "$L/kamera.json"; echo
+K=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.pose ? e.pose.join(" ") : "")' "$L/kamera.json" 2> /dev/null)
+[ -n "$K" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }
+rm -f "$L/stadt-mittag.abnahme.json"
+teil BILD $W bild $K --datei "$L/stadt-mittag.png" --w 1600 --h 900
+cp "$L/stadt-mittag.abnahme.json" "$A" 2> /dev/null; true
+@@PUNKTE@@ Z
+=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===
+  ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6) — saat-0: metropole 286 Slots 416 m · saat-1: stadt 35 Slots 618 m · saat-2: stadt 39 Slots 266 m · saat-3: stadt 41 Slots 691 m · saat-4: grossstadt 68 Slots 1139 m · saat-5: keine · saat-6: stadt 32 Slots 970 m · saat-7: stadt 30 Slots 1105 m
+  ✅ Z2 EPOCHE → GRÖSSE: „moderne" ohne Zahl stadt, ohne Epoche 21 Slots (18 Häuser)
+ZIPF {"zeta":1.022,"ki":[0.956,1.158],"je":[0.981,1.017,1.158,1.054,0.956,0.997,1.051,0.963],"n":[240,241,245,237,241,244,237,244],"export":"Mauer und Graph 7/7","gruen":true}
+  ✅ Z3 ZIPF: ζ 1.022 [0.956; 1.158] über 8 Saaten × 32 × 32 km (Soll 0,8–1,2), Mauer und Graph 7/7
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ WAHL
+{
+ "ms": 16,
+ "ergebnis": {
+  "seed": "anazh-realm-seed",
+  "staedte": 3,
+  "wahl": {
+   "cx": -2,
+   "cz": -6,
+   "nH": 35,
+   "stufe": 1,
+   "d": 1424
+  },
+  "hill": {
+   "x": -524.9094571208057,
+   "y": 41.5461893858737,
+   "z": -1118.3481842921635,
+   "R": 260
+  }
+ }
+}
+
+@@PUNKTE@@ STAND
+{
+ "ms": 2,
+ "ergebnis": {
+  "mauer": 104,
+  "zug": false,
+  "pending": null,
+  "haeuser": 49
+ }
+}
+
+@@PUNKTE@@ KAMERA
+{
+ "ms": 2,
+ "ergebnis": {
+  "pose": [
+   -470.09,
+   33.3,
+   -1265.5,
+   -425.41,
+   33.12,
+   -1358.56
+  ],
+  "art": "acker",
+  "d": 103,
+  "hoeher": 3.5,
+  "segs": 21,
+  "tuerme": 3
+ }
+}
+
+@@PUNKTE@@ BILD
+{
+ "ms": 215,
+ "kamera": [
+  -492.65,
+  33.08,
+  -1280.23
+ ],
+ "hell": 61.3,
+ "kontrast": 4.06,
+ "dc": 32,
+ "dreiecke": 324342,
+ "klasse": null,
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 62.1 σ 25.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-7754\\stadt-mittag.png",
+ "gesamtMs": 30565
+}
+@@PUNKTE@@ EXIT 0
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  5287 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

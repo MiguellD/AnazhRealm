@@ -1,0 +1,9 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-kreatur-takt.cjs --proben folgen
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ folgen    {"proben":600,"aufgabe":600,"nassS":45,"steilS":302,"abstand":{"p50":3.57,"p95":4.94,"max":8.8},"bindung":[0.12,1],"hindernisse":[{"art":"wand","kontakt":6,"drin":0,"quer":0,"vornMinM":0.275},{"art":"haus","kontakt":55,"drin":0,"quer":0,"vornMinM":0.275},{"art":"sockel","ueber":134,"imSockel":0,"tiefMaxM":0,"stufeM":0.35},{"art":"wand","kontakt":47,"drin":0,"quer":0,"vornMinM":0.275}],"leibRufe":20733,"strahlenJeTakt":0,"spielerWand":0,"gegenlauf":{"abstandM":139.8}}
+
+  (11 s) — Sekunden je Probe: folgen: 3
+
+✅ GRÜN — folgen

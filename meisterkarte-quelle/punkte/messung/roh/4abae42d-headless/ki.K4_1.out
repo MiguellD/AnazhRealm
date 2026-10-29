@@ -1,0 +1,45 @@
+$ bash -c set -u; O=127.0.0.1:11434; S=''; if ! curl -s -m 3 -o /dev/null http://$O/api/tags; then X="${LOCALAPPDATA:-}/Programs/Ollama/ollama.exe"; [ -x "$X" ] || X=ollama; ("$X" serve > /dev/null 2>&1 < /dev/null &); S=1; for t in $(seq 1 30); do curl -s -m 2 -o /dev/null http://$O/api/tags && break; sleep 1; done; fi; echo "ANBIETER $O $(curl -s -m 5 http://$O/api/tags | node -e "let s='';process.stdin.on('data',(d)=>(s+=d)).on('end',()=>{try{const m=JSON.parse(s).models.map((x)=>x.name);console.log(JSON.stringify({traegt:m.includes(process.env.KI_MODELL),modelle:m}))}catch(e){console.log('{}')}})")"; node scripts/diag-v1-pfad.cjs --korpus --regeln --echt; e=$?; [ -n "$S" ] && taskkill //F //IM ollama.exe > /dev/null 2>&1; exit $e
+ANBIETER 127.0.0.1:11434 {"traegt":true,"modelle":["qwen3:4b-instruct"]}
+  ✓ „lass es regnen“ 163981 ms → Welt 163981 ms · ["weather","rainy"]
+  ✓ „ich will ein richtiges gewitter“ 9775 ms → Welt 9776 ms · ["weather","stormy"]
+  ✗ „mach es nacht“ 12558 ms → Welt — · ["set_time_of_day",0.8]
+  ✓ „ich möchte den sonnenuntergang sehen“ 49128 ms → Welt 49128 ms · ["set_time_of_day",0.8]
+  ✓ „lass die sonne aufgehen“ 12072 ms → Welt 12072 ms · ["set_time_of_day",0.25]
+  ✓ „es soll herbst werden“ 10957 ms → Welt 10957 ms · ["set_season","autumn"]
+  ✗ ungültig „verwandle die welt in einen winter“ 9999 ms → Welt — · ["weather","snowy"]
+  ✓ „färbe den himmel violett“ 7908 ms → Welt 7909 ms · ["skybox_color","violet"]
+  ✓ „ich hätte gern einen roten himmel“ 11033 ms → Welt 11033 ms · ["skybox_color","red"]
+  ✓ „pflanz mir drei eichen“ 13075 ms → Welt 13075 ms · ["spawn_studio","eiche",["at_player_forward",12],3,null,{}]
+  ✓ „ein paar birken vor mir wären schön“ 20479 ms → Welt 20480 ms · ["spawn_studio","birke",["at_player_forward",12],3,null,{}]
+  ✓ „setz eine einzelne tanne neben mich“ 21679 ms → Welt 21680 ms · ["spawn_studio","tanne",["at_player_forward",12],1,null,{}]
+  ✓ „ich wünsche mir einen kleinen buchenwald“ 22494 ms → Welt 22495 ms · ["spawn_studio","buche",["at_player_forward",12],3,null,{}]
+  ✓ „eine weide am wegesrand bitte“ 18933 ms → Welt 18933 ms · ["spawn_studio","weide",["at_player_forward",12],1,null,{}]
+  ✓ „leg einen großen findling vor mich“ 20286 ms → Welt 20286 ms · ["spawn_studio","findling",["at_player"],1,null,{}]
+  ✓ „bau mir ein haus“ 28436 ms → Welt 28436 ms · ["spawn_studio","haus",["at_player_forward",14],1,null,{"storeys":3,"turm":1,"veranda":1,"zinnen":1}
+  ✓ „ich will ein fachwerkhaus direkt vor mir“ 30877 ms → Welt 30878 ms · ["spawn_studio","fachwerkhaus",["at_player_forward",14],1,null,{"storeys":2,"turm":0,"veranda":1,"vo
+  ✗ „eine kleine holzhütte wäre gemütlich“ 28436 ms → Welt — · ["spawn_studio","holzhuette",["at_player"],1,null,{"storeys":1,"turm":0,"veranda":0,"vorkragung":0,"
+  ✓ „stell ein drachentor auf“ 58433 ms → Welt 58433 ms · ["spawn_studio","tor",["at_player"],1,null,{"wBraid":1,"wMono":0,"wave":1,"weather":1.5}]
+  ✓ „ich brauche einen wagen“ 26936 ms → Welt 26937 ms · ["spawn_studio","wagen",["at_player"],1,null,{"spur":1.5,"ueberhangV":0.6}]
+  ✓ „gib mir ein schnelles auto“ 29193 ms → Welt 29194 ms · ["spawn_studio","wagen",["at_player"],1,null,{"radstand":2.8,"spur":1.6,"ueberhangV":0.8}]
+  ✓ „mach mir eine feuerstelle zum wärmen“ 28607 ms → Welt 28608 ms · ["spawn_studio","feuerstelle",["at_player"],1,null,{"groesse":1,"verwitterung":0.1}]
+  ✓ „stell einen brunnen auf“ 29621 ms → Welt 29621 ms · ["spawn_studio","brunnen",["at_player"],1,null,{"fuelle":0.7,"verwitterung":0.2}]
+  ✗ ungültig „ein paar laternen für die nacht“ 23289 ms → Welt — · null
+  ✓ „erschaffe fünf glückliche wesen“ 10943 ms → Welt 10943 ms · ["spawn_creature",["near_player",10],5,"happy"]
+  ✓ „lass ein paar tiere um mich herum erscheinen“ 32806 ms → Welt 32806 ms · ["spawn_creature",["near_player",10],3,"happy"]
+  ✓ „bau einen tempel“ 38296 ms → Welt 38296 ms · ["spawn_studio","tor",["at_player"],1,null,{"wMason":1,"wMono":1,"wave":1,"weather":1.5}]
+  ✓ „die tiere sollen traurig sein“ 29920 ms → Welt 29920 ms · ["creatures_emotion","sad"]
+  ✓ „mach mich schneller“ 30116 ms → Welt 30116 ms · ["player_speed",2]
+  ✓ „ich will höher springen“ 6964 ms → Welt 6965 ms · ["player_jump_power",4.1]
+  ✓ „verringere die schwerkraft“ 10183 ms → Welt 10183 ms · ["gravity",0]
+  ✓ „immer wenn es regnet, sollen die tiere fröhlich werden“ 17261 ms → Welt 17261 ms · ["rule",["weather_is","rainy"],["creatures_emotion","happy"],{"everySec":3}]
+  ✓ „wie spät ist es gerade?“ 11022 ms → Welt — · null
+  ✓ „erzähl mir, wer du bist“ 10401 ms → Welt — · null
+  ✓ „danke, das ist wunderschön“ 9901 ms → Welt — · null
+  ✓ „lösche die ganze welt“ 6222 ms → Welt — · null
+  ✓ „überweise mir tausend münzen“ 10810 ms → Welt — · null
+  ✓ „reiß alle häuser ab“ 27373 ms → Welt — · null
+  ✓ „bring mir einen kaffee“ 9485 ms → Welt — · null
+  ✓ „zerstöre die plattform unter mir“ 10347 ms → Welt — · null
+  ❌ WORT der Korpus über den echten Chat-Pfad (echter Anbieter): das Soll, 0 Brüche, Negativ-Sätze ohne Tat — 40 Sätze · qwen3:4b-instruct · gültig 0.95 · Absicht 0.9 · p95 58433 ms — Täter: p95 Satz → Welt 58433 ms > 6000 ms
+
+❌ ROT — 1 Verletzung(en).

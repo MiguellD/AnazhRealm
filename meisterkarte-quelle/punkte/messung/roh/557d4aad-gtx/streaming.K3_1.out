@@ -1,0 +1,17 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx'); K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\557d4aad-gtx\streaming.K3_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; SP=7754; WP=$((SP+20000)); export WERKBANK_PORT=$WP; raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; W() { node scripts/werkbank.cjs "$@"; }; SUM() { node -e 'try{const j=require(process.argv[1]),s=j.sprung;console.log(JSON.stringify({m:s.m,stehtS:s.stehtS&&+((s.stehtS-s.t0)/1000).toFixed(1),bau:s.bau[1].sonst-s.bau[0].sonst,frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs,profil:j.profil,ursachen:j.jeUrsache.slice(0,3).map((e)=>e.ursache+" x"+e.n)}))}catch(e){console.log("{}")}' "$1"; }; for N in 1 2 3; do raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=$SP node save-server.js > "$D/b$N-save.log" 2>&1 < /dev/null &); for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; (node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP --ort wiese > "$D/b$N-werkbank.log" 2>&1 < /dev/null &); for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/b$N-werkbank.log" 2>/dev/null && break; sleep 5; done; grep -m1 "\[linse-gpu\]" "$D/b$N-werkbank.log"; W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; W umstellen --ort wiese --sicht ego > "$D/b$N-umstellen.txt" 2>&1; W haenger --regler frei --tiere frei --wandern sprung --schwelle 50 --json "$D/b$N-sprung.json" > "$D/b$N-sprung.out" 2>&1; E=$?; echo "SPRUNG $N EXIT=$E $(SUM "$D/b$N-sprung.json")"; W stop > /dev/null 2>&1; sleep 3; raeum; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json
+[linse-gpu] nvidia/pascal
+SPRUNG 1 EXIT=0 {"m":1000,"stehtS":12.1,"bau":0,"frames":721,"frameMs":{"p50":16.6,"p95":41.6,"p99":66.6,"max":150.1},"taktMs":{"p50":6.6,"p95":36,"p99":58.7,"max":152},"profil":true,"ursachen":["TAKT: _loopVoxelStreaming › _runFrameScheduler x8","TAKT: verteilt x3","TAKT: _dispatchFrameJobs › run x3"]}
+[linse-gpu] nvidia/pascal
+SPRUNG 2 EXIT=0 {"m":1000,"stehtS":12.6,"bau":0,"frames":705,"frameMs":{"p50":16.7,"p95":41.7,"p99":66.6,"max":158.3},"taktMs":{"p50":6.5,"p95":38.6,"p99":59.6,"max":153.7},"profil":true,"ursachen":["TAKT: _dispatchFrameJobs › run x8","TAKT: _loopVoxelStreaming › _runFrameScheduler x7","TAKT: verteilt x3"]}
+[linse-gpu] nvidia/pascal
+SPRUNG 3 EXIT=0 {"m":1000,"stehtS":12.4,"bau":0,"frames":661,"frameMs":{"p50":16.7,"p95":49.9,"p99":66.7,"max":141.6},"taktMs":{"p50":6.8,"p95":40.5,"p99":60.7,"max":145.6},"profil":true,"ursachen":["TAKT: _dispatchFrameJobs › run x8","TAKT: _loopVoxelStreaming › _runFrameScheduler x8","TAKT: zeichne › build [three.webgpu.min.js] x1"]}
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 42709 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

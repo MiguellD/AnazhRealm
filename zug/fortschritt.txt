@@ -565,3 +565,352 @@
 2026-10-28 04:25:27 z56-abab w-ego(4+4) nicht-langsamer 13.8 · verlängert (4+4)
 2026-10-28 04:36:31 z56-abab d-ego(4+4) nicht-langsamer 10.9 · verlängert (4+4)
 2026-10-28 04:53:55 z56-abab stadt(4+4) nicht-langsamer 17.3 · verlängert (4+4)
+2026-10-28 06:37:34 takt15a-gtx START 23 Stationen in 21 Läufen
+2026-10-28 06:37:56 takt15a-gtx affekt.K1#2 ROT 0.3 · 1/23
+2026-10-28 06:39:48 takt15a-gtx bauen.K1#2 ROT 1.8 · 2/23
+2026-10-28 06:41:38 takt15a-gtx bauen.K5#2 ROT 1.8 · 3/23
+2026-10-28 06:44:48 takt15a-gtx ferne.K5#1 ROT 3.1 · 4/23
+2026-10-28 06:47:02 takt15a-gtx gelaende.K2#1 GRÜN 2.1 · 5/23
+2026-10-28 06:51:17 takt15a-gtx gelaende.K2#2 ROT 4.2 · 6/23
+2026-10-28 06:52:41 takt15a-gtx gelaende.K3#1 GRÜN 1.3 · 7/23
+2026-10-28 06:57:52 takt15a-gtx gelaende.K5#2 GRÜN 5.1 · 8/23
+2026-10-28 07:03:39 takt15a-gtx halten.K1#2 ROT 5.7 · 9/23
+2026-10-28 07:09:41 takt15a-gtx halten.K2#1 ROT 5.9 · 10/23
+2026-10-28 07:10:32 takt15a-gtx halten.K5#1,halten.K5#2 ROT/ROT 0.8 · 12/23
+2026-10-28 07:12:24 takt15a-gtx klang.K2#1 GRÜN 1.8 · 13/23
+2026-10-28 07:13:44 takt15a-gtx klang.K4#1 GRÜN 1.2 · 14/23
+2026-10-28 07:17:10 takt15a-gtx klang.K4#2 ROT 3.3 · 15/23
+2026-10-28 07:30:38 takt15a-gtx klang.K5#2 GRÜN 13.4 · 16/23
+2026-10-28 07:36:55 takt15a-gtx leib.K1#1 ROT 6.2 · 17/23
+2026-10-28 07:52:04 takt15a-gtx leib.K1#2 GRÜN 15.1 · 18/23
+2026-10-28 07:54:48 takt15a-gtx leib.K2#1,leib.K2#2 GRÜN/ROT 2.6 · 20/23
+2026-10-28 07:59:06 takt15a-gtx leib.K4#2 ROT 4.2 · 21/23
+2026-10-28 08:02:25 takt15a-gtx licht.K5#1 ROT 3.2 · 22/23
+2026-10-28 08:02:42 takt15a-gtx luftwasser.K5#1 GRÜN 0.2 · 23/23
+2026-10-28 08:03:02 takt15b-gtx START 24 Stationen in 22 Läufen
+2026-10-28 08:03:20 takt15b-gtx luftwasser.K5#2 GRÜN 0.2 · 1/24
+2026-10-28 08:06:41 takt15b-gtx material.K1#1,material.K1#2 GRÜN/GRÜN 3.3 · 3/24
+2026-10-28 08:08:44 takt15b-gtx material.K3#2 ROT 1.9 · 4/24
+2026-10-28 08:13:30 takt15b-gtx mensch.K1#1 GRÜN 4.7 · 5/24
+2026-10-28 08:17:53 takt15b-gtx mensch.K2#2 GRÜN 4.3 · 6/24
+2026-10-28 08:18:14 takt15b-gtx mensch.K5#1 ROT 0.3 · 7/24
+2026-10-28 08:18:30 takt15b-gtx oekologie.K4#2 ROT 0.2 · 8/24
+2026-10-28 08:21:07 takt15b-gtx physik.K2#2 ROT 2.5 · 9/24
+2026-10-28 08:35:35 takt15b-gtx profiband.K4#1 ROT 14.4 · 10/24
+2026-10-28 08:56:00 takt15b-gtx profiband.K4#2 ROT 20.3 · 11/24
+2026-10-28 09:01:20 takt15b-gtx siedlung.K1#2 ROT 5.2 · 12/24
+2026-10-28 09:12:48 takt15b-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 11.4 · 14/24
+2026-10-28 09:16:17 takt15b-gtx speicher.K2#1 GRÜN 3.4 · 15/24
+2026-10-28 09:19:52 takt15b-gtx speicher.K2#2 ROT 3.5 · 16/24
+2026-10-28 09:21:26 takt15b-gtx speicher.K4#2 ROT 1.5 · 17/24
+2026-10-28 09:22:37 takt15b-gtx streaming.K4#2 ROT 1.1 · 18/24
+2026-10-28 09:23:45 takt15b-gtx studios.K2#2 ROT 1.1 · 19/24
+2026-10-28 09:25:36 takt15b-gtx tiere.K1#2 GRÜN 1.8 · 20/24
+2026-10-28 09:29:02 takt15b-gtx tiere.K2#2 GRÜN 3.3 · 21/24
+2026-10-28 09:31:18 takt15b-gtx tiere.K3#2 GRÜN 2.2 · 22/24
+2026-10-28 09:34:04 takt15b-gtx tore.K5#2 ROT 2.7 · 23/24
+2026-10-28 09:37:59 takt15b-gtx vegetation.K4#2 ROT 3.8 · 24/24
+2026-10-28 10:14:30 takt16a-gtx START 36 Stationen in 30 Läufen
+2026-10-28 10:14:53 takt16a-gtx affekt.K1#2 ROT 0.3 · 1/36
+2026-10-28 10:19:00 takt16a-gtx bauen.K1#2 ROT 4.0 · 2/36
+2026-10-28 10:23:14 takt16a-gtx bauen.K5#2 ROT 4.2 · 3/36
+2026-10-28 10:33:24 takt16a-gtx fahrzeug.K3#1 OFFEN 10.1 · 4/36
+2026-10-28 10:43:36 takt16a-gtx fahrzeug.K3#2 OFFEN 10.1 · 5/36
+2026-10-28 10:48:33 takt16a-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 4.9 · 7/36
+2026-10-28 10:51:48 takt16a-gtx ferne.K1#1,ferne.K1#2,ferne.K2#1 GRÜN/ROT/GRÜN 3.1 · 10/36
+2026-10-28 10:59:55 takt16a-gtx ferne.K2#2 GRÜN 8.0 · 11/36
+2026-10-28 11:03:12 takt16a-gtx ferne.K5#1 ROT 3.2 · 12/36
+2026-10-28 11:05:26 takt16a-gtx gelaende.K2#1 GRÜN 2.1 · 13/36
+2026-10-28 11:09:34 takt16a-gtx gelaende.K2#2 ROT 4.0 · 14/36
+2026-10-28 11:10:57 takt16a-gtx gelaende.K3#1 GRÜN 1.3 · 15/36
+2026-10-28 11:15:35 takt16a-gtx gelaende.K5#2 GRÜN 4.5 · 16/36
+2026-10-28 11:21:27 takt16a-gtx halten.K1#2 ROT 5.8 · 17/36
+2026-10-28 11:27:19 takt16a-gtx halten.K2#1 GRÜN 5.8 · 18/36
+2026-10-28 11:28:11 takt16a-gtx halten.K5#1,halten.K5#2 GRÜN/GRÜN 0.8 · 20/36
+2026-10-28 11:30:01 takt16a-gtx klang.K2#1 GRÜN 1.8 · 21/36
+2026-10-28 11:31:17 takt16a-gtx klang.K4#1 GRÜN 1.2 · 22/36
+2026-10-28 11:34:42 takt16a-gtx klang.K4#2 GRÜN 3.3 · 23/36
+2026-10-28 11:51:58 takt16a-gtx VORFAHRT klang.K5#2 verloren 7.1
+2026-10-28 11:52:03 takt16a-gtx klang.K5#2 OFFEN 17.2 · 24/36
+2026-10-28 12:02:26 takt16a-gtx leib.K1#1 OFFEN 10.1 · 25/36
+2026-10-28 12:18:27 takt16a-gtx leib.K1#2 GRÜN 15.9 · 26/36
+2026-10-28 12:21:30 takt16a-gtx leib.K2#1,leib.K2#2 GRÜN/GRÜN 3.0 · 28/36
+2026-10-28 12:24:17 takt16a-gtx leib.K4#1 GRÜN 2.7 · 29/36
+2026-10-28 12:28:40 takt16a-gtx leib.K4#2 ROT 4.3 · 30/36
+2026-10-28 12:29:56 takt16a-gtx licht.K2#1 GRÜN 1.2 · 31/36
+2026-10-28 12:31:42 takt16a-gtx licht.K2#2 ROT 1.7 · 32/36
+2026-10-28 12:35:02 takt16a-gtx licht.K5#1 ROT 3.2 · 33/36
+2026-10-28 12:35:18 takt16a-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 35/36
+2026-10-28 12:39:38 takt16a-gtx material.K1#1 ROT 4.2 · 36/36
+2026-10-28 12:40:01 takt16b-gtx START 36 Stationen in 32 Läufen
+2026-10-28 12:44:22 takt16b-gtx material.K1#2 ROT 4.2 · 1/36
+2026-10-28 12:50:09 takt16b-gtx material.K2#1 ROT 5.7 · 2/36
+2026-10-28 12:53:43 takt16b-gtx material.K3#1 GRÜN 3.5 · 3/36
+2026-10-28 12:57:16 takt16b-gtx material.K3#2 GRÜN 3.5 · 4/36
+2026-10-28 13:01:54 takt16b-gtx mensch.K1#1 GRÜN 4.5 · 5/36
+2026-10-28 13:06:11 takt16b-gtx mensch.K2#2 GRÜN 4.2 · 6/36
+2026-10-28 13:06:32 takt16b-gtx mensch.K5#1 ROT 0.2 · 7/36
+2026-10-28 13:06:46 takt16b-gtx oekologie.K4#2 ROT 0.1 · 8/36
+2026-10-28 13:09:15 takt16b-gtx physik.K2#2 ROT 2.4 · 9/36
+2026-10-28 13:23:39 takt16b-gtx profiband.K4#1 ROT 14.3 · 10/36
+2026-10-28 13:43:46 takt16b-gtx profiband.K4#2 ROT 20.0 · 11/36
+2026-10-28 13:44:01 takt17c-gtx START 23 Stationen in 22 Läufen
+2026-10-28 13:47:44 takt17c-gtx gelaende.K2#1 GRÜN 2.1 · 1/23
+2026-10-28 13:52:02 takt17c-gtx gelaende.K2#2 ROT 4.2 · 2/23
+2026-10-28 13:57:15 takt17c-gtx gelaende.K5#2 GRÜN 5.1 · 3/23
+2026-10-28 13:59:18 takt17c-gtx tiere.K1#2 GRÜN 1.9 · 4/23
+2026-10-28 14:01:34 takt17c-gtx tiere.K3#2 GRÜN 2.2 · 5/23
+2026-10-28 14:07:50 takt17c-gtx tiere.K2#2 GRÜN 6.2 · 6/23
+2026-10-28 14:08:06 takt17c-gtx affekt.K1#2 ROT 0.2 · 7/23
+2026-10-28 14:08:22 takt17c-gtx oekologie.K4#2 ROT 0.2 · 8/23
+2026-10-28 14:12:35 takt17c-gtx mensch.K2#2 GRÜN 4.1 · 9/23
+2026-10-28 14:12:51 takt17c-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 11/23
+2026-10-28 14:13:55 takt17c-gtx vegetation.K2#1 ROT 1.0 · 12/23
+2026-10-28 14:15:26 takt17c-gtx haar.K1#1 GRÜN 1.4 · 13/23
+2026-10-28 14:16:43 takt17c-gtx haar.K2#1 ROT 1.2 · 14/23
+2026-10-28 14:24:51 takt17c-gtx ferne.K2#2 GRÜN 8.0 · 15/23
+2026-10-28 14:28:46 takt17c-gtx material.K3#2 GRÜN 3.8 · 16/23
+2026-10-28 14:33:32 takt17c-gtx material.K1#2 ROT 4.7 · 17/23
+2026-10-28 14:38:57 takt17c-gtx studios.K2#2 ROT 5.3 · 18/23
+2026-10-28 14:43:08 takt17c-gtx bauen.K5#2 ROT 4.1 · 19/23
+2026-10-28 14:53:24 takt17c-gtx fahrzeug.K3#2 OFFEN 10.1 · 20/23
+2026-10-28 15:03:38 takt17c-gtx fahrzeug.K4#2 OFFEN 10.1 · 21/23
+2026-10-28 15:07:31 takt17c-gtx siedlung.K2#2 GRÜN 3.8 · 22/23
+2026-10-28 15:13:03 takt17c-gtx siedlung.K5#1 GRÜN 5.5 · 23/23
+2026-10-28 15:13:29 takt17d-gtx START 23 Stationen in 21 Läufen
+2026-10-28 15:19:03 takt17d-gtx siedlung.K5#2 GRÜN 5.5 · 1/23
+2026-10-28 15:24:58 takt17d-gtx halten.K2#1 GRÜN 5.8 · 2/23
+2026-10-28 15:25:51 takt17d-gtx halten.K5#1,halten.K5#2 GRÜN/GRÜN 0.8 · 4/23
+2026-10-28 15:26:44 takt17d-gtx halten.K1#2 GRÜN 0.8 · 5/23
+2026-10-28 15:37:05 takt17d-gtx VORFAHRT fahrzeug.K5#1 verloren 0.2
+2026-10-28 15:37:39 takt17d-gtx fahrzeug.K5#1 OFFEN 10.8 · 6/23
+2026-10-28 15:47:54 takt17d-gtx tore.K3#2 OFFEN 10.1 · 7/23
+2026-10-28 15:50:56 takt17d-gtx spielgang.K3#1 ROT 2.9 · 8/23
+2026-10-28 15:51:39 takt17d-gtx ankunft.K2#1 ROT 0.6 · 9/23
+2026-10-28 15:53:25 takt17d-gtx ankunft.K3#1 ROT 1.7 · 10/23
+2026-10-28 16:04:42 takt17d-gtx streaming.K3#1 ROT 11.2 · 11/23
+2026-10-28 16:07:07 takt17d-gtx streaming.K4#2 GRÜN 2.3 · 12/23
+2026-10-28 16:08:57 takt17d-gtx klang.K2#1 GRÜN 1.7 · 13/23
+2026-10-28 16:12:55 takt17d-gtx klang.K4#2 ROT 3.9 · 14/23
+2026-10-28 16:26:25 takt17d-gtx klang.K5#2 GRÜN 13.4 · 15/23
+2026-10-28 16:37:32 takt17d-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 11.0 · 17/23
+2026-10-28 16:40:52 takt17d-gtx speicher.K2#1 GRÜN 3.2 · 18/23
+2026-10-28 16:44:25 takt17d-gtx speicher.K2#2 ROT 3.5 · 19/23
+2026-10-28 16:45:53 takt17d-gtx speicher.K4#2 ROT 1.4 · 20/23
+2026-10-28 16:52:01 takt17d-gtx vegetation.K4#2 ROT 6.0 · 21/23
+2026-10-28 16:54:27 takt17d-gtx leib.K2#2 GRÜN 2.3 · 22/23
+2026-10-28 17:01:46 takt17d-gtx siedlung.K1#2 ROT 7.2 · 23/23
+2026-10-28 17:02:16 z58c-z60-abab START 3 Zellen
+2026-10-28 17:16:17 z58c-z60-abab w-ego VERLÄNGERN 13.9 · 1/3 (2+2)
+2026-10-28 17:19:02 z58c-z60-abab STORNO in d-ego
+2026-10-28 17:19:10 takt17n-gtx START 18 Stationen in 16 Läufen
+2026-10-28 17:22:47 takt17n-gtx fahrzeug.K3#2 GRÜN 3.5 · 1/18
+2026-10-28 17:26:05 takt17n-gtx fahrzeug.K4#2 GRÜN 3.2 · 2/18
+2026-10-28 17:34:07 takt17n-gtx ferne.K2#2 GRÜN 7.9 · 3/18
+2026-10-28 17:39:32 takt17n-gtx gelaende.K5#2 GRÜN 5.3 · 4/18
+2026-10-28 17:43:25 takt17n-gtx klang.K4#2 GRÜN 3.8 · 5/18
+2026-10-28 17:56:51 takt17n-gtx klang.K5#2 GRÜN 13.3 · 6/18
+2026-10-28 17:57:10 takt17n-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 8/18
+2026-10-28 18:01:52 takt17n-gtx material.K1#1,material.K1#2 ROT/ROT 4.6 · 10/18
+2026-10-28 18:06:00 takt17n-gtx mensch.K2#2 GRÜN 4.0 · 11/18
+2026-10-28 18:07:59 takt17n-gtx siedlung.K2#2 GRÜN 1.9 · 12/18
+2026-10-28 18:13:30 takt17n-gtx siedlung.K5#2 GRÜN 5.4 · 13/18
+2026-10-28 18:24:28 takt17n-gtx speicher.K1#2 GRÜN 10.9 · 14/18
+2026-10-28 18:26:29 takt17n-gtx tiere.K1#2 GRÜN 1.9 · 15/18
+2026-10-28 18:29:55 takt17n-gtx tiere.K2#2 GRÜN 3.3 · 16/18
+2026-10-28 18:32:13 takt17n-gtx tiere.K3#2 GRÜN 2.2 · 17/18
+2026-10-28 18:33:48 takt17n-gtx tore.K3#2 GRÜN 1.5 · 18/18
+2026-10-28 20:33:58 takt18c-gtx START 17 Stationen in 16 Läufen
+2026-10-28 20:36:24 takt18c-gtx gelaende.K2#1 GRÜN 2.3 · 1/17
+2026-10-28 20:41:01 takt18c-gtx gelaende.K2#2 ROT 4.5 · 2/17
+2026-10-28 20:46:49 takt18c-gtx gelaende.K5#2 GRÜN 5.5 · 3/17
+2026-10-28 20:48:53 takt18c-gtx tiere.K1#2 GRÜN 2.0 · 4/17
+2026-10-28 20:51:18 takt18c-gtx tiere.K3#2 GRÜN 2.3 · 5/17
+2026-10-28 20:57:43 takt18c-gtx tiere.K2#2 GRÜN 6.3 · 6/17
+2026-10-28 21:08:07 takt18c-gtx tiere.K5#1 OFFEN 10.2 · 7/17
+2026-10-28 21:12:47 takt18c-gtx mensch.K2#2 GRÜN 4.6 · 8/17
+2026-10-28 21:13:04 takt18c-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 10/17
+2026-10-28 21:14:11 takt18c-gtx vegetation.K2#1 ROT 1.0 · 11/17
+2026-10-28 21:15:32 takt18c-gtx haar.K2#1 ROT 1.3 · 12/17
+2026-10-28 21:23:43 takt18c-gtx ferne.K2#2 GRÜN 8.1 · 13/17
+2026-10-28 21:27:35 takt18c-gtx fahrzeug.K3#2 GRÜN 3.8 · 14/17
+2026-10-28 21:31:09 takt18c-gtx fahrzeug.K4#2 GRÜN 3.5 · 15/17
+2026-10-28 21:33:13 takt18c-gtx siedlung.K2#2 GRÜN 1.9 · 16/17
+2026-10-28 21:38:54 takt18c-gtx siedlung.K5#1 GRÜN 5.6 · 17/17
+2026-10-28 21:39:18 takt18d-gtx START 16 Stationen in 15 Läufen
+2026-10-28 21:44:54 takt18d-gtx siedlung.K5#2 GRÜN 5.5 · 1/16
+2026-10-28 21:59:51 takt18d-gtx leib.K1#2 GRÜN 14.8 · 2/16
+2026-10-28 22:02:46 takt18d-gtx leib.K2#2 GRÜN 2.8 · 3/16
+2026-10-28 22:08:40 takt18d-gtx halten.K2#1 GRÜN 5.8 · 4/16
+2026-10-28 22:09:37 takt18d-gtx halten.K5#2 GRÜN 0.8 · 5/16
+2026-10-28 22:13:07 takt18d-gtx fahrzeug.K5#1 GRÜN 3.4 · 6/16
+2026-10-28 22:14:41 takt18d-gtx tore.K3#2 GRÜN 1.5 · 7/16
+2026-10-28 22:15:46 takt18d-gtx spielgang.K3#1 ROT 1.0 · 8/16
+2026-10-28 22:17:22 takt18d-gtx ankunft.K2#1 ROT 1.5 · 9/16
+2026-10-28 22:19:08 takt18d-gtx ankunft.K3#1 ROT 1.7 · 10/16
+2026-10-28 22:23:36 takt18d-gtx streaming.K3#1 GRÜN 4.4 · 11/16
+2026-10-28 22:25:30 takt18d-gtx klang.K2#1 GRÜN 1.8 · 12/16
+2026-10-28 22:38:58 takt18d-gtx klang.K5#2 GRÜN 13.4 · 13/16
+2026-10-28 22:51:00 takt18d-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 11.9 · 15/16
+2026-10-28 22:54:39 takt18d-gtx speicher.K2#1 GRÜN 3.5 · 16/16
+2026-10-28 22:55:00 takt19a-gtx START 35 Stationen in 29 Läufen
+2026-10-28 22:55:19 takt19a-gtx affekt.K1#2 ROT 0.2 · 1/35
+2026-10-28 23:05:31 takt19a-gtx bauen.K1#2 OFFEN 10.1 · 2/35
+2026-10-28 23:14:19 takt19a-gtx bauen.K5#2 ROT 8.7 · 3/35
+2026-10-28 23:18:18 takt19a-gtx fahrzeug.K3#2 GRÜN 3.9 · 4/35
+2026-10-28 23:21:53 takt19a-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 3.4 · 6/35
+2026-10-28 23:25:21 takt19a-gtx ferne.K1#1,ferne.K1#2,ferne.K2#1 GRÜN/ROT/GRÜN 3.3 · 9/35
+2026-10-28 23:33:37 takt19a-gtx ferne.K2#2 GRÜN 8.1 · 10/35
+2026-10-28 23:35:05 takt19a-gtx ferne.K5#1 GRÜN 1.4 · 11/35
+2026-10-28 23:37:24 takt19a-gtx gelaende.K2#1 GRÜN 2.2 · 12/35
+2026-10-28 23:41:52 takt19a-gtx gelaende.K2#2 ROT 4.3 · 13/35
+2026-10-28 23:43:18 takt19a-gtx gelaende.K3#1 GRÜN 1.4 · 14/35
+2026-10-28 23:49:11 takt19a-gtx gelaende.K5#2 GRÜN 5.8 · 15/35
+2026-10-28 23:50:48 takt19a-gtx haar.K1#1 GRÜN 1.5 · 16/35
+2026-10-28 23:51:31 takt19a-gtx halten.K1#2 GRÜN 0.6 · 17/35
+2026-10-28 23:57:39 takt19a-gtx halten.K2#1 GRÜN 6.0 · 18/35
+2026-10-28 23:58:22 takt19a-gtx halten.K5#1,halten.K5#2 GRÜN/GRÜN 0.6 · 20/35
+2026-10-29 00:00:15 takt19a-gtx klang.K2#1 GRÜN 1.8 · 21/35
+2026-10-29 00:01:33 takt19a-gtx klang.K4#1 GRÜN 1.2 · 22/35
+2026-10-29 00:05:33 takt19a-gtx klang.K4#2 GRÜN 3.9 · 23/35
+2026-10-29 00:18:57 takt19a-gtx klang.K5#2 GRÜN 13.3 · 24/35
+2026-10-29 00:25:10 takt19a-gtx leib.K1#1 GRÜN 6.1 · 25/35
+2026-10-29 00:40:25 takt19a-gtx leib.K1#2 ROT 15.2 · 26/35
+2026-10-29 00:43:24 takt19a-gtx leib.K2#1,leib.K2#2 GRÜN/GRÜN 2.9 · 28/35
+2026-10-29 00:46:17 takt19a-gtx leib.K4#1 GRÜN 2.8 · 29/35
+2026-10-29 00:50:40 takt19a-gtx leib.K4#2 ROT 4.3 · 30/35
+2026-10-29 00:51:55 takt19a-gtx licht.K2#1 GRÜN 1.1 · 31/35
+2026-10-29 00:53:44 takt19a-gtx licht.K2#2 ROT 1.7 · 32/35
+2026-10-29 00:55:14 takt19a-gtx licht.K5#1 ROT 1.4 · 33/35
+2026-10-29 00:55:33 takt19a-gtx luftwasser.K5#1,luftwasser.K5#2 GRÜN/GRÜN 0.2 · 35/35
+2026-10-29 00:55:57 takt19b-gtx START 34 Stationen in 30 Läufen
+2026-10-29 00:59:49 takt19b-gtx material.K3#1 GRÜN 3.8 · 1/34
+2026-10-29 01:03:45 takt19b-gtx material.K3#2 ROT 3.8 · 2/34
+2026-10-29 01:08:12 takt19b-gtx mensch.K1#1 ROT 4.3 · 3/34
+2026-10-29 01:13:38 takt19b-gtx mensch.K2#2 GRÜN 5.3 · 4/34
+2026-10-29 01:14:39 takt19b-gtx mensch.K5#1 ROT 0.9 · 5/34
+2026-10-29 01:14:56 takt19b-gtx oekologie.K4#2 ROT 0.2 · 6/34
+2026-10-29 01:17:25 takt19b-gtx physik.K2#2 ROT 2.4 · 7/34
+2026-10-29 01:18:15 takt19b-gtx pipeline.K4#1 GRÜN 0.7 · 8/34
+2026-10-29 01:32:48 takt19b-gtx profiband.K4#1 ROT 14.4 · 9/34
+2026-10-29 01:53:18 takt19b-gtx profiband.K4#2 ROT 20.4 · 10/34
+2026-10-29 01:54:27 takt19b-gtx schatten.K1#1 GRÜN 1.1 · 11/34
+2026-10-29 02:02:01 takt19b-gtx siedlung.K1#2 ROT 7.5 · 12/34
+2026-10-29 02:03:58 takt19b-gtx siedlung.K2#1 GRÜN 1.9 · 13/34
+2026-10-29 02:06:02 takt19b-gtx siedlung.K2#2 GRÜN 2.0 · 14/34
+2026-10-29 02:11:36 takt19b-gtx siedlung.K5#1,siedlung.K5#2 GRÜN/GRÜN 5.5 · 16/34
+2026-10-29 02:22:12 takt19b-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 10.5 · 18/34
+2026-10-29 02:25:11 takt19b-gtx speicher.K2#1 GRÜN 2.9 · 19/34
+2026-10-29 02:29:03 takt19b-gtx speicher.K2#2 ROT 3.8 · 20/34
+2026-10-29 02:30:34 takt19b-gtx speicher.K4#2 ROT 1.4 · 21/34
+2026-10-29 02:31:59 takt19b-gtx spielgang.K3#1 ROT 1.3 · 22/34
+2026-10-29 02:34:21 takt19b-gtx streaming.K4#2 GRÜN 2.2 · 23/34
+2026-10-29 02:36:22 takt19b-gtx tiere.K1#2 GRÜN 1.9 · 24/34
+2026-10-29 02:40:07 takt19b-gtx tiere.K2#2 GRÜN 3.7 · 25/34
+2026-10-29 02:42:18 takt19b-gtx tiere.K3#2 GRÜN 2.1 · 26/34
+2026-10-29 02:52:35 takt19b-gtx tiere.K5#1 OFFEN 10.2 · 27/34
+2026-10-29 02:54:29 takt19b-gtx tore.K3#1,tore.K3#2 GRÜN/GRÜN 1.8 · 29/34
+2026-10-29 02:57:13 takt19b-gtx tore.K5#2 ROT 2.6 · 30/34
+2026-10-29 02:58:22 takt19b-gtx vegetation.K2#1 GRÜN 1.1 · 31/34
+2026-10-29 03:04:16 takt19b-gtx vegetation.K4#1,vegetation.K4#2 GRÜN/ROT 5.8 · 33/34
+2026-10-29 03:07:16 takt19b-gtx wetter.K2#1 GRÜN 2.9 · 34/34
+2026-10-29 03:07:49 takt19-abab START 3 Zellen
+2026-10-29 03:21:51 takt19-abab w-ego VERLÄNGERN 14.0 · 1/3 (2+2)
+2026-10-29 03:32:51 takt19-abab d-ego nicht-langsamer 10.9 · 2/3 (2+2)
+2026-10-29 06:55:59 z67-abab START 3 Zellen
+2026-10-29 07:10:12 z67-abab w-ego VERLÄNGERN 14.1 · 1/3 (2+2)
+2026-10-29 07:11:14 MELDEN takt19-abab: Dienst hing 03:36-06:54 im Boot stadt-A1 (werkbank lauf --wandern bahn ohne Frist, sonst ~47 s) und hielt das GPU-Schloss omen-mp; echt-Job 40809054698 /1 und /2 warteten im job-start-Hook je 25 min auf das Schloss -> ROT (kein Runner-Fehler, keine Runner-Version). Behoben: serie.sh Frist je lauf 600/900 s + HÄNGER-Zeile, Neustart 06:55, z67-abab läuft, takt19-abab setzt an stadt fort. echt darf zurück auf die OMEN: ein Boot hält das Schloss jetzt höchstens ~25 min, normal 3-5 min
+2026-10-29 07:21:09 z67-abab d-ego nicht-langsamer 10.9 · 2/3 (2+2)
+2026-10-29 07:38:55 z67-abab stadt VERLÄNGERN 17.7 · 3/3 (2+2)
+2026-10-29 07:52:53 z67-abab w-ego(4+4) nicht-langsamer 13.9 · verlängert (4+4)
+2026-10-29 08:10:42 z67-abab stadt(4+4) LANGSAMER 17.8 · verlängert (4+4)
+2026-10-29 08:10:57 takt19-abab START 3 Zellen
+2026-10-29 08:11:04 takt19-abab w-ego VERLÄNGERN 0.1 · 1/3 (2+2)
+2026-10-29 08:11:12 takt19-abab d-ego nicht-langsamer 0.1 · 2/3 (2+2)
+2026-10-29 08:24:43 takt19-abab stadt nicht-langsamer 13.4 · 3/3 (2+2)
+2026-10-29 08:39:21 takt19-abab w-ego(4+4) nicht-langsamer 14.5 · verlängert (4+4)
+2026-10-29 08:39:44 spike-pixel-gtx START 1 Stationen
+2026-10-29 08:39:53 spike-pixel-gtx spike-pixel-gtx.sh Exit1 0.1 · 1/1
+2026-10-29 08:56:37 z67-bisekt START 1 Zellen
+2026-10-29 09:14:30 z67-bisekt stadt VERLÄNGERN 17.8 · 1/1 (2+2)
+2026-10-29 09:32:22 z67-bisekt stadt(4+4) LANGSAMER 17.8 · verlängert (4+4)
+2026-10-29 11:30:57 takt21a-gtx START 44 Stationen in 38 Läufen
+2026-10-29 11:33:15 takt21a-gtx gelaende.K2#1 GRÜN 2.2 · 1/44
+2026-10-29 11:37:43 takt21a-gtx gelaende.K2#2 ROT 4.4 · 2/44
+2026-10-29 11:39:09 takt21a-gtx gelaende.K3#1 GRÜN 1.3 · 3/44
+2026-10-29 11:44:24 takt21a-gtx gelaende.K5#2 GRÜN 5.2 · 4/44
+2026-10-29 11:47:23 takt21a-gtx wetter.K2#1 GRÜN 2.9 · 5/44
+2026-10-29 11:49:59 takt21a-gtx physik.K2#2 ROT 2.5 · 6/44
+2026-10-29 11:51:40 takt21a-gtx tiere.K1#2 ROT 1.6 · 7/44
+2026-10-29 11:54:08 takt21a-gtx tiere.K3#2 GRÜN 2.4 · 8/44
+2026-10-29 12:01:04 takt21a-gtx mensch.K1#1 GRÜN 6.8 · 9/44
+2026-10-29 12:05:51 takt21a-gtx mensch.K1#2 ROT 4.7 · 10/44
+2026-10-29 12:12:47 takt21a-gtx vegetation.K4#1,vegetation.K4#2 GRÜN/ROT 6.8 · 12/44
+2026-10-29 12:16:14 takt21a-gtx tiere.K2#2 GRÜN 3.4 · 13/44
+2026-10-29 12:26:31 takt21a-gtx tiere.K5#1 OFFEN 10.2 · 14/44
+2026-10-29 12:27:04 takt21a-gtx affekt.K1#2 ROT 0.5 · 15/44
+2026-10-29 12:27:21 takt21a-gtx oekologie.K4#2 ROT 0.2 · 16/44
+2026-10-29 12:34:06 takt21a-gtx mensch.K2#2 GRÜN 6.7 · 17/44
+2026-10-29 12:34:23 takt21a-gtx luftwasser.K5#1,luftwasser.K5#2 ROT/GRÜN 0.2 · 19/44
+2026-10-29 12:35:38 takt21a-gtx mensch.K5#1 ROT 1.1 · 20/44
+2026-10-29 12:36:47 takt21a-gtx vegetation.K2#1 GRÜN 1.1 · 21/44
+2026-10-29 12:38:14 takt21a-gtx mensch.K4#1 ROT 1.4 · 22/44
+2026-10-29 12:39:46 takt21a-gtx haar.K1#1 GRÜN 1.4 · 23/44
+2026-10-29 12:41:05 takt21a-gtx haar.K2#1 ROT 1.2 · 24/44
+2026-10-29 12:42:15 takt21a-gtx licht.K2#1 GRÜN 1.1 · 25/44
+2026-10-29 12:43:59 takt21a-gtx licht.K2#2 ROT 1.6 · 26/44
+2026-10-29 12:47:14 takt21a-gtx ferne.K1#1,ferne.K2#1,ferne.K1#2 GRÜN/GRÜN/ROT 3.1 · 29/44
+2026-10-29 12:55:22 takt21a-gtx ferne.K2#2 GRÜN 8.1 · 30/44
+2026-10-29 12:56:46 takt21a-gtx ferne.K5#1 GRÜN 1.3 · 31/44
+2026-10-29 12:58:14 takt21a-gtx licht.K5#1 ROT 1.4 · 32/44
+2026-10-29 13:04:19 takt21a-gtx material.K2#1 ROT 6.0 · 33/44
+2026-10-29 13:08:24 takt21a-gtx material.K3#1 GRÜN 4.0 · 34/44
+2026-10-29 13:12:27 takt21a-gtx material.K3#2 ROT 3.9 · 35/44
+2026-10-29 13:17:10 takt21a-gtx material.K1#1,material.K1#2 ROT/ROT 4.6 · 37/44
+2026-10-29 13:18:15 takt21a-gtx schatten.K1#1 GRÜN 1.0 · 38/44
+2026-10-29 13:25:48 takt21a-gtx lod.K5#1 ROT 7.5 · 39/44
+2026-10-29 13:27:38 takt21a-gtx lod.K2#1 ROT 1.8 · 40/44
+2026-10-29 13:31:16 takt21a-gtx studios.K2#2,studios.K3#2 ROT/ROT 3.5 · 42/44
+2026-10-29 13:32:23 takt21a-gtx pipeline.K4#1 GRÜN 1.0 · 43/44
+2026-10-29 13:33:53 takt21a-gtx pipeline.K4#2 GRÜN 1.4 · 44/44
+2026-10-29 13:34:17 takt21b-gtx START 50 Stationen in 38 Läufen
+2026-10-29 13:44:30 takt21b-gtx bauen.K1#2 OFFEN 10.1 · 1/50
+2026-10-29 13:49:19 takt21b-gtx bauen.K5#2 ROT 4.7 · 2/50
+2026-10-29 13:51:12 takt21b-gtx fahrzeug.K3#1 GRÜN 1.8 · 3/50
+2026-10-29 13:56:13 takt21b-gtx fahrzeug.K3#2 GRÜN 4.9 · 4/50
+2026-10-29 14:00:17 takt21b-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 4.0 · 6/50
+2026-10-29 14:02:16 takt21b-gtx siedlung.K2#1 GRÜN 1.9 · 7/50
+2026-10-29 14:04:26 takt21b-gtx siedlung.K2#2 GRÜN 2.1 · 8/50
+2026-10-29 14:13:00 takt21b-gtx siedlung.K1#2 ROT 8.5 · 9/50
+2026-10-29 14:18:44 takt21b-gtx siedlung.K5#1,siedlung.K5#2 GRÜN/GRÜN 5.6 · 11/50
+2026-10-29 14:19:04 takt21b-gtx leib.K1#1 ROT 0.2 · 12/50
+2026-10-29 14:34:08 takt21b-gtx leib.K1#2 ROT 15.0 · 13/50
+2026-10-29 14:37:12 takt21b-gtx leib.K2#1,leib.K2#2 GRÜN/GRÜN 3.0 · 15/50
+2026-10-29 14:40:03 takt21b-gtx leib.K4#1 GRÜN 2.8 · 16/50
+2026-10-29 14:44:22 takt21b-gtx leib.K4#2 ROT 4.2 · 17/50
+2026-10-29 14:50:15 takt21b-gtx halten.K2#1 ROT 5.8 · 18/50
+2026-10-29 14:51:20 takt21b-gtx halten.K5#1,halten.K5#2 GRÜN/GRÜN 1.0 · 20/50
+2026-10-29 14:52:22 takt21b-gtx halten.K1#2 GRÜN 0.9 · 21/50
+2026-10-29 14:56:15 takt21b-gtx fahrzeug.K5#1 GRÜN 3.8 · 22/50
+2026-10-29 14:57:54 takt21b-gtx tore.K3#1,tore.K3#2 GRÜN/GRÜN 1.5 · 24/50
+2026-10-29 15:00:57 takt21b-gtx tore.K5#2 ROT 3.0 · 25/50
+2026-10-29 15:02:29 takt21b-gtx spielgang.K3#1 ROT 1.4 · 26/50
+2026-10-29 15:05:59 takt21b-gtx fahrzeug.K2#1 ROT 3.4 · 27/50
+2026-10-29 15:07:40 takt21b-gtx ankunft.K2#1 ROT 1.6 · 28/50
+2026-10-29 15:09:59 takt21b-gtx ankunft.K3#1 ROT 2.2 · 29/50
+2026-10-29 15:14:28 takt21b-gtx streaming.K3#1 GRÜN 4.4 · 30/50
+2026-10-29 15:17:04 takt21b-gtx streaming.K4#2 GRÜN 2.5 · 31/50
+2026-10-29 15:31:43 takt21b-gtx profiband.K4#1 ROT 14.6 · 32/50
+2026-10-29 15:52:09 takt21b-gtx profiband.K4#2 ROT 20.3 · 33/50
+2026-10-29 16:40:25 takt21b-gtx profiband.K1#1,profiband.K1#2,profiband.K2#1,profiband.K2#2,profiband.K3#1,profiband.K3#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 48.1 · 39/50
+2026-10-29 17:04:29 takt21b-gtx profiband.K5#1,profiband.K5#2 ROT/ROT 23.9 · 41/50
+2026-10-29 17:06:21 takt21b-gtx klang.K2#1 GRÜN 1.8 · 42/50
+2026-10-29 17:07:39 takt21b-gtx klang.K4#1 ROT 1.2 · 43/50
+2026-10-29 17:11:38 takt21b-gtx klang.K4#2 GRÜN 3.9 · 44/50
+2026-10-29 17:25:04 takt21b-gtx klang.K5#2 GRÜN 13.3 · 45/50
+2026-10-29 17:38:34 takt21b-gtx speicher.K1#1,speicher.K1#2 GRÜN/GRÜN 13.4 · 47/50
+2026-10-29 17:42:14 takt21b-gtx speicher.K2#1 GRÜN 3.5 · 48/50
+2026-10-29 17:46:03 takt21b-gtx speicher.K2#2 ROT 3.7 · 49/50
+2026-10-29 17:47:31 takt21b-gtx speicher.K4#2 ROT 1.4 · 50/50
+2026-10-29 22:58:00 z77-abab START 2 Zellen
+2026-10-29 23:17:14 z77-abab stadt VERLÄNGERN 19.2 · 1/2 (2+2)

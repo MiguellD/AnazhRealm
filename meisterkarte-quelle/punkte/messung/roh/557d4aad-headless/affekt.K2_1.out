@@ -1,0 +1,100 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node -e (async function affektLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, art, szene] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const erg = { art, laeufe: [] };
+const tor = werkbankTor(W, ["--ort", "wiese"]);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+const b = await werkbankRuf(W, "/eval", { code: "const da = () => !!r.state._weltbildDa && r._buehneSteht(); for (let i = 0; i < 9000 && !da(); i++) await window.__seitenTakt(); return da();" });
+if (!b || b.ergebnis !== true) throw new Error("die Bühne steht nicht: " + JSON.stringify(b).slice(0, 200));
+const plan = art === "gemuet" ? [null, "starr", "gesetz-aus"].map((m) => [m, 0]) : [0, 1, 2].flatMap((n) => [null, "gemischt", "aus"].map((m) => [m, n]));
+for (const [mutante, saat] of plan) {
+const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, mutante, saat }) + ");" });
+if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+console.log("AFFEKT-" + art + " " + JSON.stringify(a.ergebnis));
+erg.laeufe.push(a.ergebnis);
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+console.log("FEHLER " + erg.fehler);
+} finally {
+tor.stop();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/557d4aad-headless/affekt.K2_1.json 7704 gemuet function gemuetWetter(r, T, o) {
+const s = r.state;
+const p = s.player;
+const pm = s.playerMesh.position;
+const y = (x, z) => r._voxelSurfaceY(x, z);
+if (s.renderer && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
+const A = window.__affektAnfang || (window.__affektAnfang = {
+u: window.__gangUhr || performance.now(), sz: s.spielZeit, same: JSON.stringify(s.worldMeta.bauSame || {}),
+regel: s.dsl.nextRuleId, wesen: new Set(s.creatures), werke: new Set(s.architectures),
+});
+let u = A.u;
+s.spielZeit = A.sz;
+s.worldMeta.bauSame = JSON.parse(A.same);
+for (const c of [...s.creatures]) if (!A.wesen.has(c)) r.removeCreature(c);
+for (const a of [...s.architectures]) if (!A.werke.has(a)) r.removeArchitecture(a, { still: true });
+r._clearBuildMode();
+p.inventory = new Array(27).fill(null);
+Object.assign(s, { lifeField: new Map(), wohlBaseline: new Map(), emotionField: new Map(), taten: [], tatErwartung: new Map() });
+s.weatherEffectTime = 0;
+s.nexusEvolutionQueue.length = 0;
+s.dsl.pending = [];
+s.perfRegulator = false;
+s.worldRules = s.worldRules.filter((g) => /^emotion:/.test(g.source));
+for (const g of s.worldRules) Object.assign(g, { lastFired: -Infinity, fires: 0, disabled: o.mutante === "gesetz-aus" && g.source === "emotion:hope" });
+for (const k in p.emotions) p.emotions[k] = 0;
+if (p.mood) for (const k in p.mood) p.mood[k] = 0;
+p.wohlBaseline = undefined;
+p.appraisalDelta = 0;
+r.setGameMode("frieden");
+r.setTimeOfDay(0.5, "regler");
+r._setWeather("sunny", "regler");
+r._wetterFreigeben("regler");
+if (o.mutante === "starr") Object.defineProperty(p.emotions, "hope", { configurable: true, enumerable: true, get: () => 0, set: () => {} });
+const takt = () => {
+s.nexusLastEvolution = Infinity;
+r._gameLoopTick((window.__gangUhr = u += 100));
+};
+const bauen = () => {
+if (!s.buildMode.active || s.buildMode.blueprintName !== "stein_block") (r.setHotbarSlot(0, "stein_block"), r.selectHotbarSlot(0));
+for (const [m, n] of Object.entries(r.computeBuildCost("stein_block") || {})) r.addMaterialToInventory(m, n);
+return r.confirmBuild() ? 1 : 0;
+};
+const Z = r.constructor.WETTER_ZUG_SEK;
+const zuege = [];
+let bauten = 0;
+let ueber = 0;
+try {
+for (let k = 0; k < 18000; k++) {
+if (k % 300 === 0 && k < 15000) bauten += bauen();
+pm.set(o.x, y(o.x, o.z) + 1.8, o.z);
+const zug = Math.floor(s.spielZeit / Z);
+const w = s.wetterWunsch && s.wetterWunsch.quelle;
+takt();
+if (Math.floor(s.spielZeit / Z) !== zug) zuege.push({ wort: s.weather, quelle: w || null, front: r._wetterAmOrt(pm.x, pm.z, (zug + 1) * Z) });
+if (p.emotions.hope > p.emotionThreshold) ueber++;
+}
+} finally {
+if (o.mutante === "starr") (delete p.emotions.hope, (p.emotions.hope = 0));
+for (const g of s.worldRules) g.disabled = false;
+}
+const g = s.worldRules.find((x) => x.source === "emotion:hope");
+const n = (f) => zuege.filter(f).length;
+return {
+mutante: o.mutante || null, bauten, zuege: zuege.length, sonne: n((z) => z.wort === "sunny"), frontSonne: n((z) => z.front === "sunny"),
+ausGesetz: n((z) => z.quelle === "rule:emotion:hope"), gesetz: g ? { id: g.id, feuer: g.fires } : null, hoffnungS: ueber / 10,
+folge: zuege.map((z) => z.wort[0] + (z.quelle ? "*" : "")).join(""),
+};
+}
+[linse-gpu] google/swiftshader
+AFFEKT-gemuet {"mutante":null,"bauten":49,"zuege":15,"sonne":12,"frontSonne":3,"ausGesetz":9,"gesetz":{"id":4,"feuer":33},"hoffnungS":886.7,"folge":"rcssss*s*s*s*s*s*s*s*s*c"}
+AFFEKT-gemuet {"mutante":"starr","bauten":49,"zuege":15,"sonne":3,"frontSonne":3,"ausGesetz":0,"gesetz":{"id":4,"feuer":0},"hoffnungS":0,"folge":"rcssssrffrrrffc"}
+AFFEKT-gemuet {"mutante":"gesetz-aus","bauten":49,"zuege":15,"sonne":3,"frontSonne":3,"ausGesetz":0,"gesetz":{"id":4,"feuer":0},"hoffnungS":900.5,"folge":"rcssssrffrrrffc"}

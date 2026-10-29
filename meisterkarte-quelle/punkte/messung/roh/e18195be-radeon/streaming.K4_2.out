@@ -1,0 +1,32 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden --echt
+[linse-gpu] amd/rdna-3
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1705,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":1710,"soll":1700}]
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   6.6 s · 14.50 MB/min am Empfang: Faden → Main 1.15 MB · Main → Faden 0.40 MB · Kopie 0.06 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.56 MB · buch:asset 0.31 MB · ort:ort-wahl-result 0.12 MB · buch:book 0.10 MB
+         Main → Faden: speicher:? 0.10 MB · ort:ort-wahl 0.06 MB · wald:state-set 0.03 MB · voxel:state-update 0.03 MB
+         Kopie: buch:export-settlement 0.06 MB
+  gang   120.0 s · 1.18 MB/min am Empfang: Faden → Main 0.93 MB · Main → Faden 1.26 MB · Kopie 0.17 MB · Platte 0.00 MB
+         Faden → Main: buch:asset 0.27 MB · werk:asset 0.26 MB · ort:ort-wahl-result 0.20 MB · buch:settlement 0.09 MB
+         Main → Faden: voxel:spiegel-feld 0.81 MB · ort:ort-wahl 0.11 MB · voxel:state-update 0.03 MB · ort:state-update 0.03 MB
+         Kopie: buch:export-settlement 0.12 MB · voxel:spiegel-feld 0.05 MB
+  fahrt  60.0 s · 3.71 MB/min am Empfang: Faden → Main 1.68 MB · Main → Faden 1.77 MB · Kopie 0.26 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.50 MB · ort:ort-wahl-result 0.40 MB · buch:asset 0.29 MB · voxel:chunk-mesh-result 0.18 MB
+         Main → Faden: voxel:spiegel-feld 0.63 MB · ort:ort-wahl 0.22 MB · voxel:water-sheet 0.20 MB · voxel:state-update 0.07 MB
+         Kopie: werk:export-settlement 0.22 MB · buch:export-settlement 0.04 MB
+  Fäden: buch · werk · werk · werk · voxel · ort · streu · fern · feld · speicher · wald · voxel
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 5.4 ms): 1 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 5 an Sync-Stellen und Test-Nähten · 0 sonst {"naht":5}
+  Bau-Klicks in der Fahrt: 6, die Hand 14.7 · 3.5 · 7.5 · 5.2 · 5.4 · 8.2 ms
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 3.71 MB/min ≤ 5 in der Fahrt
+
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 2 von 3) nach 33 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

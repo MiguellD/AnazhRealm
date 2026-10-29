@@ -1,0 +1,33 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\gelaende.K2_2.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben.cjs" --sicht first; E2=$?; export WASSER_LEBEN_PORT=$(( 7754 + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\n{\n"); const e = t.indexOf("\n}\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))
+[linse-gpu] amd/rdna-3
+{"saat":11,"abstand":1,"sicht":"third","bild":"vor+2s","verb":"abbau","edits":0,"k":62,"krone":3.68,"nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":342}
+{"saat":11,"abstand":3,"sicht":"third","bild":"vor+2s","verb":"graben","edits":1,"k":62,"krone":3.68,"nassVor":55,"nassEnde":281,"gefuelltMs":305.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":240}
+{"saat":23,"abstand":1,"sicht":"third","bild":"","verb":"pfluecken","edits":1,"k":49,"krone":3.68,"nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":457}
+{"saat":23,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":2,"k":49,"krone":3.68,"nassVor":41,"nassEnde":263,"gefuelltMs":204.8,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":408}
+{"saat":37,"abstand":1,"sicht":"third","bild":"2s","verb":"graben","edits":3,"k":47,"krone":3.34,"nassVor":105,"nassEnde":306,"gefuelltMs":256.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":295}
+{"saat":37,"abstand":3,"sicht":"third","bild":"2s","verb":"graben","edits":4,"k":47,"krone":3.34,"nassVor":240,"nassEnde":273,"gefuelltMs":60.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":322}
+{"saat":51,"abstand":1,"sicht":"third","bild":"","verb":"graben","edits":5,"k":7,"krone":3.34,"nassVor":153,"nassEnde":337,"gefuelltMs":299.6,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":264}
+{"saat":51,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":6,"k":7,"krone":3.34,"nassVor":262,"nassEnde":282,"gefuelltMs":59.8,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":394}
+{"saat":73,"abstand":1,"sicht":"third","bild":"","verb":"graben","edits":7,"k":16,"krone":3.34,"nassVor":116,"nassEnde":291,"gefuelltMs":263.7,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":276}
+{"saat":73,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":8,"k":16,"krone":3.34,"nassVor":211,"nassEnde":247,"gefuelltMs":72,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":204}
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 49 s
+FEHLER Error: ABNAHME ROT [Sicht verdeckt 8.3 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub grown_busch_hazel_v0 8.2 %, Rinde grown_busch_hazel_v0 0.1 %] · beweis · Sicht 8.3 % (Laub grown_busch_hazel_v0 8.2 %, Rinde grown_busch_hazel_v0 0.1 %) · Ziel ungenannt · Luma 52.1 σ 46.5 schwarz 0.0 % weiß 0.5 % · Stand 18.546.128 · Bühne summer sunny 0.51 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts
+abnahme (pptr:evaluate;oeffne%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Ckoordination%5Cmeisterkarte-quelle%5Cpunkte%5Cmessung%5Croh%5C98ef98bb-radeon%5Cgelaende.K2_2-werk%5Cspiel.cjs%3A34%3A16):1341:32)
+    at abnahme (evaluate at oeffne (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\gelaende.K2_2-werk\spiel.cjs:34:16), <anonymous>:1340:31)
+    at evaluate (evaluate at oeffne (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\gelaende.K2_2-werk\spiel.cjs:34:16), <anonymous>:1453:44)
+    at #evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:391:56)
+    at async ExecutionContext.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:277:16)
+    at async IsolatedWorld.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\IsolatedWorld.js:105:16)
+    at async CdpFrame.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Frame.js:362:20)
+    at async CdpPage.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Page.js:830:20)
+    at async bild (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\gelaende.K2_2-werk\m2-graben.cjs:101:27)
+    at async C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\gelaende.K2_2-werk\m2-graben.cjs:156:46
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

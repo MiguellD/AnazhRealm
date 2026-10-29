@@ -1,0 +1,101 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --verben; e=$?; cp artifacts/werkstatt-weg/weg.json "$PUNKTE_AUS" 2>/dev/null; exit $e
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)
+  ✅ W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)
+  ✅ W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)
+  ✅ W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · _workshopRecipeSpec · dslCompose · generateEvolution · confirmBuild)
+  ✅ W8 EIN Same-Hash (`_werkSame`)
+  ✅ W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ diag-werkstatt-weg.cjs · Seite #3 http://127.0.0.1:7754/index.html · waitForFunction(ziel) riss nach 120.0 s: Waiting failed: 120000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 122.0 s
+[stall-akte] Puls 276×, zuletzt vor 0.2 s — complete · renderer bereit · weltbild da · frames 17812 · welt 22895 Takte · Ruhe 127 · zuletzt Fege-Takt streuLod 1120/1230 · programme 152 · gl-sync 0 · zuletzt gpu.createRenderPipeline #152 renderPipeline_MeshStandardNodeMaterial_1105
+[stall-akte] Stempel 22:08:12.380 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5165 fs 59276 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:12.380 gpu.createRenderPipelineAsync #146 renderPipeline_MeshStandardNodeMaterial_281
+[stall-akte] Stempel 22:08:13.378 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.378 gpu.createRenderPipelineAsync #147 renderPipeline_ShadowMaterial_54
+[stall-akte] Stempel 22:08:13.487 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11713 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.487 gpu.createRenderPipelineAsync #148 renderPipeline_MeshStandardNodeMaterial_295
+[stall-akte] Stempel 22:08:13.575 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5548 fs 60688 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.575 gpu.createRenderPipelineAsync #149 renderPipeline_MeshStandardNodeMaterial_297
+[stall-akte] Stempel 22:08:13.718 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11712 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.718 gpu.createRenderPipelineAsync #150 renderPipeline_MeshStandardNodeMaterial_295
+[stall-akte] Stempel 22:08:35.549 gpu.createRenderPipeline #151 renderPipeline_MeshStandardNodeMaterial_105
+[stall-akte] Stempel 22:08:41.614 gpu.createRenderPipeline #152 renderPipeline_MeshStandardNodeMaterial_1105
+[stall-akte] CPU (2 s) renderer 22548 96 % · GPU 8328 43 % · browser 2580 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 09:58 gpu 43/r 83 · 10:00 gpu 46/r 95 · 10:02 gpu 46/r 98 · 10:04 gpu 44/r 97 · 10:06 gpu 44/r 89 · 10:08 gpu 47/r 90 · 10:10 gpu 46/r 96 · 10:12 gpu 47/r 129 · 10:14 gpu 46/r 92 · 10:16 gpu 45/r 90 · 10:18 gpu 49/r 155 · 10:20 gpu 35/r 99 · 10:22 gpu 44/r 94 · 10:24 gpu 45/r 89 · 10:26 gpu 39/r 98 · 10:28 gpu 34/r 172 · 10:30 gpu 47/r 97 · 10:32 gpu 45/r 92 · 10:34 gpu 44/r 88 · 10:36 gpu 44/r 89 · 10:38 gpu 47/r 90 · 10:40 gpu 41/r 95 · 10:42 gpu 46/r 138 · 10:44 gpu 44/r 83 · 10:46 gpu 46/r 89 · 10:48 gpu 45/r 121 · 10:50 gpu 41/r 93 · 10:52 gpu 41/r 77 · 10:54 gpu 43/r 85 · 10:56 gpu 42/r 98
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] CAD-Kamera zentriert
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_34
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Wissen hinzugefügt: chat - anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibW
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Geteiltes Werk steht: eigen_bruecke-geteilt (von 7e4e f197 d7cb 79f3).
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Pointer-Lock: Aktiv
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 32 (zuvor ~70)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_36, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_37
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_38, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 44 (zuvor ~89)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_39, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_40, fitness=1.00
+[stall-akte] Stderr [2580:21580:1028/230701.993:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2580:21580:1028/230701.993:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2580:21580:1028/230701.998:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2580:21580:1028/230702.038:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [2580:21580:1028/230702.038:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [2580:21580:1028/230723.860:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2580:21580:1028/230814.179:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2580:21580:1028/230959.529:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.2 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 22:08:41.614 gpu.createRenderPipeline #152 renderPipeline_MeshStandardNodeMaterial_1105
+[stall-akte] ═══ diag-werkstatt-weg.cjs · Seite #3 http://127.0.0.1:7754/index.html · waitForFunction(ziel) riss nach 120.0 s: Waiting failed: 120000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 122.0 s
+[stall-akte] Puls 433×, zuletzt vor 0.3 s — complete · renderer bereit · weltbild da · frames 29362 · welt 36192 Takte · Ruhe 0 · zuletzt Fege-Takt nahStreu wartet, archLod 1024/1425, streuLod 800/1230 · programme 153 · gl-sync 0 · zuletzt gpu.createRenderPipeline #153 renderPipeline_MeshStandardNodeMaterial_1579
+[stall-akte] Stempel 22:08:12.380 gpu.createRenderPipelineAsync #146 renderPipeline_MeshStandardNodeMaterial_281
+[stall-akte] Stempel 22:08:13.378 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.378 gpu.createRenderPipelineAsync #147 renderPipeline_ShadowMaterial_54
+[stall-akte] Stempel 22:08:13.487 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11713 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.487 gpu.createRenderPipelineAsync #148 renderPipeline_MeshStandardNodeMaterial_295
+[stall-akte] Stempel 22:08:13.575 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5548 fs 60688 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.575 gpu.createRenderPipelineAsync #149 renderPipeline_MeshStandardNodeMaterial_297
+[stall-akte] Stempel 22:08:13.718 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11712 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 22:08:13.718 gpu.createRenderPipelineAsync #150 renderPipeline_MeshStandardNodeMaterial_295
+[stall-akte] Stempel 22:08:35.549 gpu.createRenderPipeline #151 renderPipeline_MeshStandardNodeMaterial_105
+[stall-akte] Stempel 22:08:41.614 gpu.createRenderPipeline #152 renderPipeline_MeshStandardNodeMaterial_1105
+[stall-akte] Stempel 22:11:42.329 gpu.createRenderPipeline #153 renderPipeline_MeshStandardNodeMaterial_1579
+[stall-akte] CPU (2 s) renderer 22548 106 % · GPU 8328 32 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 12:58 gpu 36/r 105 · 13:00 gpu 33/r 106 · 13:02 gpu 33/r 107 · 13:04 gpu 34/r 107 · 13:06 gpu 34/r 105 · 13:08 gpu 32/r 106 · 13:10 gpu 34/r 160 · 13:13 gpu 32/r 106 · 13:15 gpu 33/r 107 · 13:17 gpu 39/r 106 · 13:19 gpu 32/r 109 · 13:21 gpu 32/r 109 · 13:23 gpu 31/r 106 · 13:25 gpu 35/r 106 · 13:27 gpu 36/r 105 · 13:29 gpu 32/r 106 · 13:31 gpu 32/r 106 · 13:33 gpu 33/r 106 · 13:35 gpu 33/r 159 · 13:37 gpu 35/r 109 · 13:39 gpu 31/r 106 · 13:41 gpu 32/r 136 · 13:43 gpu 31/r 107 · 13:45 gpu 32/r 106 · 13:47 gpu 37/r 105 · 13:49 gpu 32/r 107 · 13:51 gpu 32/r 107 · 13:53 gpu 31/r 124 · 13:55 gpu 39/r 218 · 13:57 gpu 32/r 106
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] CAD-Kamera zentriert
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Wissen hinzugefügt: chat - anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibW
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Geteiltes Werk steht: eigen_bruecke-geteilt2 (von 7e4e f197 d7cb 79f3).
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Pointer-Lock: Aktiv
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 29 (zuvor ~69)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 28 (zuvor ~65)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_49, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_50
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 42 (zuvor ~63)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (Regel) registriert: evo_51
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_52, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_53, fitness=1.00
+[stall-akte] Stderr [2580:21580:1028/230701.993:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2580:21580:1028/230701.993:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2580:21580:1028/230701.998:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2580:21580:1028/230702.038:ERROR:google_apis\gcm\engine\mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [2580:21580:1028/230702.038:ERROR:google_apis\gcm\engine\mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [2580:21580:1028/230723.860:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2580:21580:1028/230814.179:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2580:21580:1028/230959.529:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2580:21580:1028/231301.493:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.3 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 22:11:42.329 gpu.createRenderPipeline #153 renderPipeline_MeshStandardNodeMaterial_1579
+=== L-VERBEN — JEDES WERK TRÄGT SEIN VERB, EGAL WER ES SETZTE (Bauen K5) ===
+  ❌ L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte — 31/36 Herkunft × Sicht × Werk — Täter: werkstatt · Ego · Haus: #workshop-search: nicht offen · werkstatt · Ego · Wagen: #workshop-search: nicht offen · werkstatt · Ego · Tor: DER BAU STEHT NICHT: der Weg nach 385 Takten — die Welt hat nichts mehr offen · geteilt · Ego · Brücke × betreten: vom Deck · geteilt · Third · Brücke × betreten: vom Deck
+
+--- stderr ---
+23:05:39 verwaistes Schloss 'omen-punkte-gtx-1' geloest - pid 17444 lebt nicht
+
+❌ ROT — 1 Verletzung(en): L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 48324 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

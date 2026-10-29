@@ -1,0 +1,32 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-worker-dichte.cjs --faden --echt
+[linse-gpu] nvidia/pascal
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===
+  boot   7.1 s · 11.72 MB/min am Empfang: Faden → Main 0.95 MB · Main → Faden 0.37 MB · Kopie 0.06 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.36 MB · buch:asset 0.29 MB · ort:ort-wahl-result 0.15 MB · buch:book 0.10 MB
+         Main → Faden: ort:ort-wahl 0.07 MB · voxel:state-update 0.04 MB · ort:state-update 0.04 MB · streu:state-update 0.04 MB
+         Kopie: werk:export-settlement 0.06 MB
+  gang   120.0 s · 0.90 MB/min am Empfang: Faden → Main 0.88 MB · Main → Faden 0.82 MB · Kopie 0.11 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.43 MB · buch:asset 0.20 MB · ort:ort-wahl-result 0.10 MB · voxel:chunk-mesh-result 0.05 MB
+         Main → Faden: voxel:spiegel-feld 0.46 MB · speicher:? 0.11 MB · ort:ort-wahl 0.06 MB · fern:fern 0.03 MB
+         Kopie: buch:export-settlement 0.06 MB · voxel:spiegel-feld 0.05 MB
+  fahrt  60.0 s · 2.43 MB/min am Empfang: Faden → Main 1.05 MB · Main → Faden 1.20 MB · Kopie 0.17 MB · Platte 0.00 MB
+         Faden → Main: werk:asset 0.25 MB · buch:asset 0.22 MB · ort:ort-wahl-result 0.19 MB · voxel:chunk-mesh-result 0.17 MB
+         Main → Faden: voxel:spiegel-feld 0.33 MB · voxel:water-sheet 0.17 MB · ort:ort-wahl 0.11 MB · voxel:chunk-mesh 0.07 MB
+         Kopie: buch:export-settlement 0.13 MB · werk:export-settlement 0.04 MB · voxel:spiegel-feld 0.00 MB
+  Fäden: buch · werk · werk · voxel · ort · streu · fern · feld · wald · speicher · voxel
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 3.4 ms): 1 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 5 an Sync-Stellen und Test-Nähten · 0 sonst {"naht":5}
+  Bau-Klicks in der Fahrt: 6, die Hand 14.4 · 4.5 · 7.3 · 12.3 · 5.5 · 4.2 ms
+
+✅ FADEN GRÜN: K4 0 synchrone Bauten außerhalb der Sync-Stellen · K5 2.43 MB/min ≤ 5 in der Fahrt
+
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 51550 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

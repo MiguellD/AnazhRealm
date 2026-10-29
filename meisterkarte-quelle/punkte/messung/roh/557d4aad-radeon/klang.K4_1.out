@@ -1,0 +1,14 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon-2'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\557d4aad-radeon\klang.K4_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7764 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7764/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7764; : werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten
+[linse-gpu] amd/rdna-3
+{"klang":{"weg":"cdp-klick","an":true,"ctx":"running"},"orte":{"gras":[-280.4,-1045.6],"quarz":[-241.8,-1091.6],"laub":[-221.3,-1064.7]},"fahrten":[{"hinweis":"stein","ort":[-240.4,-1045.6],"karte":true,"neu":["laub"]}],"stoffe":{"gras":{"wegM":11.2,"bursts":21,"medianHz":5697,"p10":4608,"p90":6163},"quarz":{"wegM":11.6,"bursts":18,"medianHz":3302,"p10":2621,"p90":5829},"laub":{"wegM":11.5,"bursts":21,"medianHz":5072,"p10":3158,"p90":5664}}}
+gras n 19 median 5727 p10 4814 p90 6180
+eisen n 2 median 3064 p10 2909 p90 3064
+laub n 22 median 5346 p10 4691 p90 5771
+quarz n 13 median 3264 p10 3110 p90 3353
+stein n 4 median 2583 p10 2221 p90 2621
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 1 von 3) nach 37 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

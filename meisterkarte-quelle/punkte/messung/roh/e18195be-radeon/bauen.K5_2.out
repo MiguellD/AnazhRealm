@@ -1,0 +1,93 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --verben; e=$?; cp artifacts/werkstatt-weg/weg.json "$PUNKTE_AUS" 2>/dev/null; exit $e
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)
+  ✅ W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)
+  ✅ W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)
+  ✅ W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · _workshopRecipeSpec · dslCompose · generateEvolution · confirmBuild)
+  ✅ W8 EIN Same-Hash (`_werkSame`)
+  ✅ W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)
+[linse-gpu] amd/rdna-3
+[stall-akte] ═══ diag-werkstatt-weg.cjs · Seite #3 http://127.0.0.1:7754/index.html · waitForFunction(ziel) riss nach 120.0 s: Waiting failed: 120000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 122.0 s
+[stall-akte] Puls 250×, zuletzt vor 0.6 s — complete · renderer bereit · weltbild da · frames 6763 · welt 11678 Takte · Ruhe 3 · zuletzt Fege-Takt nahStreu 0/1 · programme 156 · gl-sync 0 · zuletzt gpu.createRenderPipeline #156 renderPipeline_MeshStandardNodeMaterial_2293
+[stall-akte] Stempel 13:52:26.215 gpu.createRenderPipeline #149 renderPipeline_MeshStandardNodeMaterial_104
+[stall-akte] Stempel 13:52:26.223 gpu.createRenderPipeline #150 renderPipeline_MeshStandardNodeMaterial_105
+[stall-akte] Stempel 13:52:27.035 Pipeline ShadowMaterial · SkinnedMesh · vs 8948 fs 860 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:52:27.035 gpu.createRenderPipelineAsync #151 renderPipeline_ShadowMaterial_55
+[stall-akte] Stempel 13:52:27.061 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11713 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:52:27.061 gpu.createRenderPipelineAsync #152 renderPipeline_MeshStandardNodeMaterial_960
+[stall-akte] Stempel 13:52:27.101 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5548 fs 60688 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:52:27.101 gpu.createRenderPipelineAsync #153 renderPipeline_MeshStandardNodeMaterial_962
+[stall-akte] Stempel 13:52:27.174 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11712 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:52:27.174 gpu.createRenderPipelineAsync #154 renderPipeline_MeshStandardNodeMaterial_960
+[stall-akte] Stempel 13:52:44.813 gpu.createRenderPipeline #155 renderPipeline_MeshStandardNodeMaterial_88
+[stall-akte] Stempel 13:52:49.987 gpu.createRenderPipeline #156 renderPipeline_MeshStandardNodeMaterial_2293
+[stall-akte] CPU (2 s) GPU 9980 24 % · renderer 32368 14 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 54:08 gpu 21/r 14 · 54:10 gpu 21/r 13 · 54:12 gpu 22/r 14 · 54:14 gpu 21/r 13 · 54:16 gpu 21/r 13 · 54:18 gpu 24/r 14 · 54:20 gpu 25/r 14 · 54:22 gpu 30/r 17 · 54:24 gpu 24/r 14 · 54:26 gpu 28/r 16 · 54:28 gpu 34/r 21 · 54:30 gpu 36/r 21 · 54:32 gpu 36/r 21 · 54:34 gpu 29/r 17 · 54:36 gpu 34/r 19 · 54:38 gpu 29/r 16 · 54:40 gpu 28/r 16 · 54:42 gpu 25/r 15 · 54:44 gpu 28/r 16 · 54:46 gpu 25/r 15 · 54:48 gpu 27/r 16 · 54:50 gpu 27/r 16 · 54:52 gpu 26/r 15 · 54:54 gpu 26/r 15 · 54:56 gpu 29/r 17 · 54:58 gpu 31/r 19 · 55:00 gpu 26/r 15 · 55:02 gpu 26/r 15 · 55:04 gpu 26/r 16 · 55:06 gpu 27/r 16
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 22 (zuvor ~58)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 31 (zuvor ~55)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Emotion 'awe' triggert Welt-Effekt (Wert 0.96)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 33 (zuvor ~52)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_40, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Wissen hinzugefügt: chat - anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibW
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Geteiltes Werk steht: eigen_bruecke-geteilt (von ab3d 38ab 9e59 1d3b).
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Pointer-Lock: Aktiv
+[stall-akte] Konsole warn: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Portal betreten: „tor_drachentor"
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Pointer-Lock: Inaktiv
+[stall-akte] Konsole warn: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+[stall-akte] Stderr [36932:29436:1028/145143.341:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [36932:29436:1028/145143.341:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [36932:29436:1028/145143.372:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [36932:29436:1028/145203.581:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [36932:29436:1028/145300.595:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [36932:29436:1028/145441.858:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.6 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 13:52:49.987 gpu.createRenderPipeline #156 renderPipeline_MeshStandardNodeMaterial_2293
+[stall-akte] ═══ diag-werkstatt-weg.cjs · Seite #3 http://127.0.0.1:7754/index.html · waitForFunction(ziel) riss nach 120.0 s: Waiting failed: 120000ms exceeded
+[stall-akte] offen waitForFunction(ziel) seit 122.0 s
+[stall-akte] Puls 405×, zuletzt vor 0.9 s — complete · renderer bereit · weltbild da · frames 9844 · welt 17855 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 512/951, streuLod 800/820 · programme 160 · gl-sync 0 · zuletzt gpu.createRenderPipeline #160 renderPipeline_MeshStandardNodeMaterial_2313
+[stall-akte] Stempel 13:52:27.101 gpu.createRenderPipelineAsync #153 renderPipeline_MeshStandardNodeMaterial_962
+[stall-akte] Stempel 13:52:27.174 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11712 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:52:27.174 gpu.createRenderPipelineAsync #154 renderPipeline_MeshStandardNodeMaterial_960
+[stall-akte] Stempel 13:52:44.813 gpu.createRenderPipeline #155 renderPipeline_MeshStandardNodeMaterial_88
+[stall-akte] Stempel 13:52:49.987 gpu.createRenderPipeline #156 renderPipeline_MeshStandardNodeMaterial_2293
+[stall-akte] Stempel 13:55:14.290 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 11713 fs 59401 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:55:14.290 gpu.createRenderPipelineAsync #157 renderPipeline_MeshStandardNodeMaterial_480
+[stall-akte] Stempel 13:55:14.441 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5929 fs 60459 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:55:14.441 gpu.createRenderPipelineAsync #158 renderPipeline_MeshStandardNodeMaterial_486
+[stall-akte] Stempel 13:55:14.567 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5929 fs 60459 Zeichen · 3 Lichter
+[stall-akte] Stempel 13:55:14.567 gpu.createRenderPipelineAsync #159 renderPipeline_MeshStandardNodeMaterial_487
+[stall-akte] Stempel 13:55:56.140 gpu.createRenderPipeline #160 renderPipeline_MeshStandardNodeMaterial_2313
+[stall-akte] CPU (2 s) GPU 9980 28 % · renderer 32368 17 % · browser 36932 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:13 gpu 28/r 16 · 57:15 gpu 27/r 16 · 57:17 gpu 28/r 16 · 57:19 gpu 30/r 17 · 57:21 gpu 36/r 21 · 57:23 gpu 26/r 16 · 57:25 gpu 25/r 15 · 57:27 gpu 25/r 15 · 57:29 gpu 25/r 15 · 57:31 gpu 24/r 15 · 57:33 gpu 27/r 16 · 57:35 gpu 27/r 17 · 57:37 gpu 32/r 19 · 57:39 gpu 33/r 19 · 57:41 gpu 30/r 17 · 57:43 gpu 26/r 15 · 57:45 gpu 25/r 14 · 57:47 gpu 26/r 15 · 57:49 gpu 25/r 14 · 57:51 gpu 26/r 15 · 57:53 gpu 26/r 15 · 57:55 gpu 26/r 15 · 57:57 gpu 33/r 21 · 57:59 gpu 37/r 23 · 58:01 gpu 37/r 23 · 58:03 gpu 40/r 25 · 58:05 gpu 35/r 20 · 58:07 gpu 31/r 17 · 58:09 gpu 33/r 19 · 58:11 gpu 28/r 17
+[stall-akte] Stapel (nicht gefragt: der Puls lebt oder die Akte fragte schon)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Pointer-Lock: Inaktiv
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] CAD-Kamera zentriert
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 33 (zuvor ~53)
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_49, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Wissen hinzugefügt: chat - anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibW
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Geteiltes Werk steht: eigen_bruecke-geteilt2 (von ab3d 38ab 9e59 1d3b).
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Pointer-Lock: Aktiv
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [WARN] FPS-Einbruch: 27 (zuvor ~55)
+[stall-akte] Konsole warn: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Portal betreten: „tor_drachentor"
+[stall-akte] Konsole log: [AnazhRealm V18.546.117] [INFO] Pointer-Lock: Inaktiv
+[stall-akte] Konsole warn: An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.
+[stall-akte] Stderr [36932:29436:1028/145143.341:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [36932:29436:1028/145143.341:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [36932:29436:1028/145143.372:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [36932:29436:1028/145203.581:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [36932:29436:1028/145300.595:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [36932:29436:1028/145441.858:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL AWAIT — der Haupt-Thread lebt (Puls vor 0.9 s), ein Versprechen der Seite kehrt nie zurück; zuletzt 13:55:56.140 gpu.createRenderPipeline #160 renderPipeline_MeshStandardNodeMaterial_2313
+=== L-VERBEN — JEDES WERK TRÄGT SEIN VERB, EGAL WER ES SETZTE (Bauen K5) ===
+  ❌ L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte — 28/36 Herkunft × Sicht × Werk — Täter: werkstatt · Ego · Haus: #workshop-search: nicht offen · werkstatt · Ego · Wagen: #workshop-search: nicht offen · werkstatt · Ego · Tor: DER BAU STEHT NICHT: der Weg nach 697 Takten — die Welt hat nichts mehr offen · geteilt · Ego · Wagen × drive: kein Fahren · geteilt · Ego · Brücke × betreten: vom Deck · geteilt · Ego · Bank × sitzen: sitzt nicht · geteilt · Third · Brücke × betreten: vom Deck · geteilt · Third · Bank × sitzen: sitzt nicht
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 1 von 3) nach 28 s
+
+❌ ROT — 1 Verletzung(en).
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

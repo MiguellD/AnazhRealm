@@ -1,0 +1,152 @@
+{
+ "sha": "4abae42d1ffce063bc3026fe5d463ea1a3180b42",
+ "geraet": "radeon",
+ "zeit": "2026-10-28T12:18:30.586Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "pfad-Glob trifft am 4abae42d keine Datei (R6 blind): spec/abnahme/ref-fell.png",
+   "exit": null,
+   "minuten": 0,
+   "grund": "pfad-Glob trifft am 4abae42d keine Datei (R6 blind): spec/abnahme/ref-fell.png",
+   "zeit": "2026-10-28T11:14:14.675Z",
+   "abdruck": "6b37cf767174"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "pfad-Glob trifft am 4abae42d keine Datei (R6 blind): spec/abnahme/ref-haar.png",
+   "exit": null,
+   "minuten": 0,
+   "grund": "pfad-Glob trifft am 4abae42d keine Datei (R6 blind): spec/abnahme/ref-haar.png",
+   "zeit": "2026-10-28T11:14:14.678Z",
+   "abdruck": "bd2f8de9436d"
+  },
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "8 von 10 Gräben über das Verb, in 1761 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 31.3–207.4 ms (1 m 3, 3 m 5)",
+   "exit": 0,
+   "minuten": 2.42,
+   "gpu": "amd/rdna-3",
+   "warten": 0.16,
+   "zeit": "2026-10-28T11:14:15.617Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "zahl": "(a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0, Bild ) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.33 m, Faden 5/5 an 21 Säulen",
+   "exit": 1,
+   "minuten": 4.93,
+   "grund": "ROT: (a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0, Bild ) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.33 m, Faden 5/5 an 21 Säulen",
+   "gpu": "amd/rdna-3",
+   "warten": 0.36,
+   "zeit": "2026-10-28T11:16:40.619Z",
+   "abdruck": "c2446a63171f",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "luftwasser.K5#2": {
+   "gruen": true,
+   "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 565 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
+   "exit": 0,
+   "minuten": 0.56,
+   "gpu": "amd/rdna-3",
+   "warten": 0.26,
+   "zeit": "2026-10-28T11:21:36.423Z",
+   "abdruck": "c287869fc49a",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "p95 Griff → Bild unter der Schranke in 6/8 (Gesetz-Wert höchstens 31 ms portale, Neubau höchstens 5157 ms fachwerk) · Neuladen 8/8 · A/B 8/8",
+   "exit": 1,
+   "minuten": 3.5,
+   "grund": "ROT: p95 Griff → Bild unter der Schranke in 6/8 (Gesetz-Wert höchstens 31 ms portale, Neubau höchstens 5157 ms fachwerk) · Neuladen 8/8 · A/B 8/8",
+   "gpu": "amd/rdna-3",
+   "warten": 0.24,
+   "zeit": "2026-10-28T11:22:10.018Z",
+   "abdruck": "6e3598474a8e",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) · keine Rohdatei des Bild-Wegs auf der Karte (Exit 0)",
+   "exit": 0,
+   "minuten": 12.56,
+   "grund": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…)",
+   "gpu": null,
+   "warten": 0.23,
+   "zeit": "2026-10-28T11:25:39.897Z",
+   "abdruck": "8ea21b5f845f",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "siedlung.K5#1": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 99.9 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 144.8 ms (haus_fraenkisch, mesh in 23.2 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 11.12,
+   "gpu": "amd/rdna-3",
+   "warten": 1.3,
+   "zeit": "2026-10-28T11:38:13.277Z",
+   "abdruck": "1bf868639fe6",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "siedlung.K5#2": {
+   "gruen": true,
+   "zahl": "nH 12 erstes Haus nach 99.9 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 144.8 ms (haus_fraenkisch, mesh in 23.2 m, Bau-Hash 88b58bbf)",
+   "exit": 0,
+   "minuten": 11.12,
+   "gpu": "amd/rdna-3",
+   "warten": 1.3,
+   "zeit": "2026-10-28T11:38:13.277Z",
+   "abdruck": "607c1995be2b",
+   "port": 7754,
+   "bahn": "allein",
+   "zwilling": "siedlung.K5#1"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 68.3 · third/gehen 72.7 · ego/wechsel 64.6 · third/wechsel 68 · Bild 17.2/33.3/33.5 ms",
+   "exit": 0,
+   "minuten": 9.6,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 68.3 · third/gehen 72.7 · ego/wechsel 64.6 · third/wechsel 68 · Bild 17.2/33.3/33.5 ms",
+   "gpu": "amd/rdna-3",
+   "warten": 0.31,
+   "zeit": "2026-10-28T11:49:20.484Z",
+   "abdruck": "9687c62fd915",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 68.1 · third/gehen 53.5 · ego/springen 56.5 · third/springen 50.3 · ego/einsteigen 91.4 · third/einsteigen 73.2 · ego/hieb 54.6 · third/hieb 90 · Bild 31.9/17.8/16.7 ms",
+   "exit": 0,
+   "minuten": 19.57,
+   "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 68.1 · third/gehen 53.5 · ego/springen 56.5 · third/springen 50.3 · ego/einsteigen 91.4 · third/einsteigen 73.2 · ego/hieb 54.6 · third/hieb 90 · Bild 31.9/17.8/16.7 ms",
+   "gpu": "amd/rdna-3",
+   "warten": 0.25,
+   "zeit": "2026-10-28T11:58:56.259Z",
+   "abdruck": "160f0c239df2",
+   "port": 7754,
+   "bahn": "allein"
+  },
+  "halten.K2#1": {
+   "gruen": true,
+   "zahl": "schlechtester von 3 Läufen p95 ms third/hieb 41.7 · ego/hieb 41.7 · Bild 16.8/16.8/16.8 ms · Hit-Stop im schlechtesten Lauf 9 Bilder · im Spiel Halt gesetzt 59-mal (145–174 ms, gleitet bis 0 mm je Takt) / 59-mal (88–173 ms, gleitet bis 0 mm je Takt) / 59-mal (73–178 ms, gleitet bis 0 mm je Takt)",
+   "exit": 0,
+   "minuten": 6.99,
+   "gpu": "amd/rdna-3",
+   "warten": 0.33,
+   "zeit": "2026-10-28T12:18:30.586Z",
+   "abdruck": "631137359d80",
+   "port": 7754,
+   "bahn": "allein"
+  }
+ }
+}

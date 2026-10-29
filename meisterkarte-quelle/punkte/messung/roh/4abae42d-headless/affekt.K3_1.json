@@ -1,0 +1,157 @@
+{
+ "art": "nexus",
+ "laeufe": [
+  {
+   "mutante": null,
+   "saat": 0,
+   "erstes": [
+    0,
+    27
+   ],
+   "letztes": [
+    18,
+    20
+   ],
+   "verlauf": "0/0 0/1 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 1/1 0/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 0/1 1/1 1/1 0/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 10,
+   "zeilen": []
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 0,
+   "erstes": [
+    18,
+    21
+   ],
+   "letztes": [
+    20,
+    20
+   ],
+   "verlauf": "0/0 0/1 1/2 1/2 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 15,
+   "zeilen": []
+  },
+  {
+   "mutante": "aus",
+   "saat": 0,
+   "erstes": [
+    0,
+    22
+   ],
+   "letztes": [
+    0,
+    20
+   ],
+   "verlauf": "0/0 0/1 0/2 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1",
+   "taten": 32,
+   "gesprochen": 15,
+   "zeilen": []
+  },
+  {
+   "mutante": null,
+   "saat": 1,
+   "erstes": [
+    54,
+    105
+   ],
+   "letztes": [
+    20,
+    20
+   ],
+   "verlauf": "0/1 0/2 0/2 2/3 2/3 2/4 3/4 3/4 3/6 3/6 3/7 4/7 4/7 4/7 4/7 4/7 3/7 4/7 3/7 3/7 4/7 3/8 3/7 3/7 1/2 1/2 1/2 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1",
+   "taten": 32,
+   "gesprochen": 2,
+   "zeilen": [
+    "Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 16 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 18 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 1,
+   "erstes": [
+    54,
+    105
+   ],
+   "letztes": [
+    79,
+    85
+   ],
+   "verlauf": "0/1 0/2 0/2 2/3 2/3 2/4 3/4 3/4 3/6 3/6 3/7 4/7 4/7 4/7 4/7 4/7 3/7 4/7 3/7 3/7 4/7 3/7 3/7 4/7 2/7 2/5 2/5 2/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/6 4/6 4/5 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4 4/4",
+   "taten": 32,
+   "gesprochen": 1,
+   "zeilen": [
+    "Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 26 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 1,
+   "erstes": [
+    0,
+    105
+   ],
+   "letztes": [
+    0,
+    47
+   ],
+   "verlauf": "0/1 0/2 0/2 0/3 0/3 0/4 0/4 0/4 0/6 0/6 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/7 0/8 0/7 0/5 0/3 0/2 0/2 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1 0/1",
+   "taten": 32,
+   "gesprochen": 2,
+   "zeilen": [
+    "Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 17 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus setzt die Kreaturen-Stimmung auf „sad\" — überall, weil lebendig am Ort hoch ist (>0.58). (Gesetz Nr. 3 des Nexus; dazu 16 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 2,
+   "erstes": [
+    32,
+    71
+   ],
+   "letztes": [
+    38,
+    64
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/2 0/2 1/3 1/3 1/4 1/4 1/4 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/6 3/4 3/4 3/4 3/4 1/2 1/2 1/2 1/2 1/2 1/2 1/2 1/2 1/2 1/2 1/2",
+   "taten": 32,
+   "gesprochen": 0,
+   "zeilen": []
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 2,
+   "erstes": [
+    32,
+    71
+   ],
+   "letztes": [
+    60,
+    100
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/2 0/2 1/3 1/3 1/4 1/4 1/4 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5 3/5",
+   "taten": 32,
+   "gesprochen": 0,
+   "zeilen": []
+  },
+  {
+   "mutante": "aus",
+   "saat": 2,
+   "erstes": [
+    0,
+    76
+   ],
+   "letztes": [
+    0,
+    120
+   ],
+   "verlauf": "0/1 0/1 0/1 0/1 0/2 0/2 0/3 0/3 0/4 0/4 0/4 0/5 0/5 0/5 0/5 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6 0/6",
+   "taten": 32,
+   "gesprochen": 0,
+   "zeilen": []
+  }
+ ]
+}

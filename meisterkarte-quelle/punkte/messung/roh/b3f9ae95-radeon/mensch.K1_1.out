@@ -1,0 +1,15 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\mensch.K1_1.json' | tr '\\' /); B="${A%.json}"; SK="$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination' | tr '\\' /)/bericht/2210-messschuld-6cfce/skripte"
+S=$(( 7774 )); W=$(( 7774 + 20000 )); export WERKBANK_PORT=$W
+raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
+stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
+ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
+trap ende EXIT; trap 'exit 143' INT TERM
+raeum; stand
+(PORT=$S node save-server.js > "$B-save.log" 2>&1 &)
+for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done
+(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > "$B-werkbank.log" 2>&1 &)
+for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
+grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+node scripts/werkbank.cjs eval "$(cat "$SK/platz-8.js")" > "$B-platz.txt"
+node "$SK/b64png.cjs" "$B-platz.txt" "$B-platz-8uhr-third.png"

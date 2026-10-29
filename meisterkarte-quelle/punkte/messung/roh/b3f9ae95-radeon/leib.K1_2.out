@@ -1,0 +1,59 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7754; SP=$((7754 + 20000)); LP=$((7754 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf3.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ2 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf2.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ3 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf3.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\leib.K1_2.json.lauf3.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":50,"fehlt":0,"p50":34.9,"p95":52.1,"max":61.6,"eingabe":2.1,"hoerer":0.1,"kette":14.8,"kurve":16.7,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":20.5,"p95":36.1,"max":44,"eingabe":0.6,"hoerer":0.3,"kette":14,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":34.5,"p95":48.8,"max":74.2,"eingabe":5.9,"hoerer":0.9,"kette":26.6,"kurve":0,"takte":2}
+ego/hieb {"n":50,"fehlt":0,"p50":26.4,"p95":38.8,"max":53,"eingabe":2.7,"hoerer":2.3,"kette":19.8,"kurve":0,"takte":3,"halt":9}
+third/gehen {"n":50,"fehlt":0,"p50":36.9,"p95":52.5,"max":56.9,"eingabe":2.4,"hoerer":0.1,"kette":13.4,"kurve":17.3,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":20.8,"p95":34.4,"max":44,"eingabe":1,"hoerer":0.3,"kette":11.2,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":21.8,"p95":43.5,"max":48,"eingabe":2.2,"hoerer":0.5,"kette":18.3,"kurve":0,"takte":1}
+third/hieb {"n":50,"fehlt":0,"p50":33.5,"p95":49.1,"max":50.3,"eingabe":8.8,"hoerer":5.1,"kette":23,"kurve":0,"takte":3,"halt":8}
+LATENZ ROT (Bild 17.2 ms) ego/gehen p95 52.1 ms > 50 (fehlt 0) — Täter kurve 16.7 ms, 4 Takte · third/gehen p95 52.5 ms > 50 (fehlt 0) — Täter kurve 17.3 ms, 4 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ LATENZ2
+ego/gehen {"n":50,"fehlt":0,"p50":32.5,"p95":54,"max":101.6,"eingabe":0.6,"hoerer":0.1,"kette":15.4,"kurve":16.9,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":21,"p95":35.4,"max":40.2,"eingabe":0.6,"hoerer":0.2,"kette":13.9,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":19.4,"p95":32.4,"max":72.7,"eingabe":0.6,"hoerer":0.6,"kette":18.5,"kurve":0,"takte":2}
+ego/hieb {"n":50,"fehlt":0,"p50":19.6,"p95":34.7,"max":39.2,"eingabe":0.7,"hoerer":1.9,"kette":13.1,"kurve":0,"takte":2,"halt":7}
+third/gehen {"n":50,"fehlt":0,"p50":30.9,"p95":52.3,"max":62.6,"eingabe":0.6,"hoerer":0,"kette":15.7,"kurve":16.7,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":19.7,"p95":35.1,"max":36.9,"eingabe":0.6,"hoerer":0.3,"kette":13.3,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":15.2,"p95":27,"max":33.2,"eingabe":0.8,"hoerer":0.4,"kette":13.6,"kurve":0,"takte":1}
+third/hieb {"n":50,"fehlt":0,"p50":20.5,"p95":36.9,"max":38.4,"eingabe":1.1,"hoerer":2.2,"kette":15.9,"kurve":0,"takte":3,"halt":8}
+LATENZ ROT (Bild 17.8 ms) ego/gehen p95 54 ms > 50 (fehlt 0) — Täter kurve 16.9 ms, 4 Takte · third/gehen p95 52.3 ms > 50 (fehlt 0) — Täter kurve 16.7 ms, 4 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ LATENZ3
+ego/gehen {"n":50,"fehlt":0,"p50":37.7,"p95":52.3,"max":56.4,"eingabe":0.6,"hoerer":0.1,"kette":18.3,"kurve":18,"takte":5}
+ego/springen {"n":50,"fehlt":0,"p50":17.8,"p95":38.6,"max":40.2,"eingabe":0.5,"hoerer":0.3,"kette":14.7,"kurve":0,"takte":2}
+ego/einsteigen {"n":50,"fehlt":0,"p50":22.5,"p95":34.3,"max":50.3,"eingabe":0.6,"hoerer":0.7,"kette":22,"kurve":0,"takte":2}
+ego/hieb {"n":50,"fehlt":0,"p50":18.1,"p95":32.8,"max":40.5,"eingabe":1,"hoerer":1.3,"kette":11.1,"kurve":0,"takte":2,"halt":8}
+third/gehen {"n":50,"fehlt":0,"p50":34.3,"p95":48.2,"max":51.5,"eingabe":0.7,"hoerer":0,"kette":14.2,"kurve":16.5,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":19.9,"p95":40.1,"max":42,"eingabe":0.8,"hoerer":0.3,"kette":10.8,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":16.5,"p95":30.8,"max":33.4,"eingabe":0.6,"hoerer":0.4,"kette":15.3,"kurve":0,"takte":2}
+third/hieb {"n":50,"fehlt":0,"p50":21.5,"p95":35.8,"max":39.5,"eingabe":2.1,"hoerer":1.8,"kette":14.9,"kurve":0,"takte":3,"halt":8}
+LATENZ ROT (Bild 20 ms) ego/gehen p95 52.3 ms > 50 (fehlt 0) — Täter kette 18.3 ms, 5 Takte
+@@PUNKTE@@ EXIT 1
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 18 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

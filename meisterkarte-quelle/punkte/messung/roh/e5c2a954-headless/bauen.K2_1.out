@@ -1,0 +1,12 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-haus-welt.cjs --phasen=grund
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2474,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1297,"soll":760}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2191,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1095,"soll":760}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2442,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1251,"soll":760}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L2: [{"feld":"tris","ist":2363,"soll":1700}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] mensch L3: [{"feld":"tris","ist":1216,"soll":760}]
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/– · {"fern":{"x":212,"z":212}} · W9 {"haeuser":24,"weite":0.6828020898649549,"summe":[0,0,0,0,0],"gegenprobe":[],"third":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"wasser":[],"innen":[],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}}],"waise":{"start":true,"gruende":40,"gesperrt":true,"ohne":0,"slots":18,"haeuser":17,"reload":3,"zugOffen":false,"ausstattung":{"brunnen":[1,1],"laternen":[37,37],"staende":[2,2]},"verblasst":true,"ms":11113}}
+  1 Welten, 4 zugleich, 60 s
+✅ gate:haus-welt grün

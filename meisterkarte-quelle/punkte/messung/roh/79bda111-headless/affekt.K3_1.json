@@ -1,0 +1,171 @@
+{
+ "art": "nexus",
+ "laeufe": [
+  {
+   "mutante": null,
+   "saat": 0,
+   "erstes": [
+    13,
+    29
+   ],
+   "letztes": [
+    43,
+    51
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/0 0/1 0/1 0/2 0/0 0/0 1/1 1/2 1/2 1/4 1/3 1/2 1/1 1/1 2/2 3/3 3/3 3/3 3/3 3/3 3/3 4/4 5/5 5/5 3/4 3/4 3/4 3/3 3/3 2/3 1/2 1/1 1/1 1/2 1/2 2/3 2/2 2/3 2/3 2/2 2/2 2/3 2/3 2/2 2/3 2/3 2/2 2/2 2/2 3/3 3/3 3/3 2/2 2/3 2/3 2/2",
+   "taten": 32,
+   "gesprochen": 2,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 7 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 6 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 0,
+   "erstes": [
+    4,
+    11
+   ],
+   "letztes": [
+    3,
+    3
+   ],
+   "verlauf": "0/0 0/1 1/2 1/1 0/0 0/1 0/1 1/2 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 11,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 14 des Nexus)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 0,
+   "erstes": [
+    0,
+    11
+   ],
+   "letztes": [
+    0,
+    3
+   ],
+   "verlauf": "0/0 0/1 0/2 0/1 0/0 0/1 0/1 0/2 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 10,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 14 des Nexus)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 1,
+   "erstes": [
+    0,
+    10
+   ],
+   "letztes": [
+    19,
+    19
+   ],
+   "verlauf": "0/1 0/2 0/1 0/1 0/1 0/2 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 1/1 0/0",
+   "taten": 32,
+   "gesprochen": 4,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.52). (Gesetz Nr. 12 des Nexus; dazu 9 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südlich von dir, weil das Feld dort am ärmsten war. (Gesetz Nr. 12; dazu 6 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 1,
+   "erstes": [
+    0,
+    12
+   ],
+   "letztes": [
+    2,
+    3
+   ],
+   "verlauf": "0/1 0/2 0/1 0/1 0/1 0/2 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 1/1 1/1 1/1 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 1/1 1/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 4,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.52). (Gesetz Nr. 12 des Nexus; dazu 11 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 1,
+   "erstes": [
+    0,
+    12
+   ],
+   "letztes": [
+    0,
+    3
+   ],
+   "verlauf": "0/1 0/2 0/1 0/1 0/1 0/2 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1",
+   "taten": 32,
+   "gesprochen": 4,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.52). (Gesetz Nr. 13 des Nexus; dazu 6 weitere Taten seit der letzten Zeile)",
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südwestlich von dir, weil das Feld dort am ärmsten war. (Gesetz Nr. 13; dazu 3 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": null,
+   "saat": 2,
+   "erstes": [
+    11,
+    24
+   ],
+   "letztes": [
+    0,
+    4
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/0 0/1 1/1 1/1 1/2 1/2 1/1 1/2 1/2 1/2 1/1 0/1 0/0 0/1 1/2 1/2 1/1 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 14,
+   "zeilen": [
+    "Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.48. (Gesetz Nr. 14 des Nexus)",
+    "Ein Gesetz des Nexus färbt alle Kreaturen — überall, weil Zufall ≤ 0.48. (Gesetz Nr. 14 des Nexus)"
+   ]
+  },
+  {
+   "mutante": "gemischt",
+   "saat": 2,
+   "erstes": [
+    8,
+    17
+   ],
+   "letztes": [
+    0,
+    3
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/0 0/1 1/1 1/1 0/1 0/0 0/0 1/1 1/1 1/1 1/1 1/2 1/1 0/1 0/1 0/1 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 10,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südwestlich von dir, weil das Wetter „rainy\" ist. (Gesetz Nr. 11 des Nexus; dazu 21 weitere Taten seit der letzten Zeile)"
+   ]
+  },
+  {
+   "mutante": "aus",
+   "saat": 2,
+   "erstes": [
+    0,
+    13
+   ],
+   "letztes": [
+    0,
+    5
+   ],
+   "verlauf": "0/1 0/1 0/1 0/0 0/0 0/1 0/1 0/1 0/1 0/0 0/0 0/1 0/1 0/0 0/0 0/1 0/0 0/1 0/1 0/1 0/0 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/0 0/1 0/1 0/1 0/1 0/1 0/0 0/0 0/0 0/0 0/0 0/0 0/0",
+   "taten": 32,
+   "gesprochen": 13,
+   "zeilen": [
+    "Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 42 m südwestlich von dir, weil das Feld dort am ärmsten war. (Gesetz Nr. 11; dazu 21 weitere Taten seit der letzten Zeile)"
+   ]
+  }
+ ]
+}

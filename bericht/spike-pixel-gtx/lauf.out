@@ -1,0 +1,6 @@
+werkbank.cjs ABSTURZ: Error: --echt braucht den save-server auf http://localhost:4312 (npm start)
+    at starte (C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\mp-baum\f653389d\scripts\werkbank.cjs:792:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 19413 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )

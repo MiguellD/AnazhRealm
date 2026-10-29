@@ -1,0 +1,38 @@
+{
+ "art": "gemuet",
+ "laeufe": [
+  {
+   "mutante": null,
+   "bauten": 49,
+   "zuege": 15,
+   "sonne": 12,
+   "frontSonne": 3,
+   "ausGesetz": 0,
+   "gesetz": null,
+   "hoffnungS": 908.5,
+   "folge": "rcsss*s*s*s*s*s*s*s*s*s*c"
+  },
+  {
+   "mutante": "starr",
+   "bauten": 49,
+   "zuege": 15,
+   "sonne": 3,
+   "frontSonne": 3,
+   "ausGesetz": 0,
+   "gesetz": null,
+   "hoffnungS": 0,
+   "folge": "rcssssrffrrrffc"
+  },
+  {
+   "mutante": "gesetz-aus",
+   "bauten": 49,
+   "zuege": 15,
+   "sonne": 3,
+   "frontSonne": 3,
+   "ausGesetz": 0,
+   "gesetz": null,
+   "hoffnungS": 900.5,
+   "folge": "rcssssrffrrrffc"
+  }
+ ]
+}

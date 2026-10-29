@@ -1,0 +1,120 @@
+$ bash -c FAHR_LEBEN_PORT=7704 node scripts/diag-fahr-leben.cjs; E1=$?; echo "FAHR-LEBEN EXIT $E1"; KOLLISION_BILD_PORT=7704 node scripts/diag-kollision-bild.cjs; E2=$?; echo "KOLLISION-BILD EXIT $E2"; exit $(( E1 > E2 ? E1 : E2 ))
+=== K — DER EINE FAHR-SCHRITT (Q13 · F-D6 F-D7): der Kern selbst (Node) ===
+  ✅ K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ — gt 40.6°/45.0° · supersport 35.7°/40.4° · limousine 38.8°/45.0° · kompakt_fwd 40.6°/45.0° · suv 34.0°/45.0°
+  ✅ K3 Halt: 21°-Hang ohne Eingabe hält (≤ 0,01 m, Gier 0), 50° rutscht — 21°: 0.000 m · 50°: -8.22 m
+  ✅ K4 Querhang: Fahrt längs 35° ohne Lenkung driftet talwärts, am Stand hält 30°, 50° rutscht — 35° Fahrt 3.25 m · 30° Stand 0.000 m · 50° Stand 37.24 m
+  ✅ K5 Vertikale: Kuppe R 12 m hebt ab, R 40 m nicht; die 7-m-Klippe ohne Höhen-Sprung > 0,5 m je Schritt, gelandet — Kuppe R12 Luft 36 · R40 Luft 0 · Klippe Luft 70, größter Sprung 0.19 m, Ende y -7.00
+  ✅ K7 die Wand ist ein Sprung des Bodens: sie hält EINEN Schritt, dann steigt der Wagen auf sein Gesetz (je Schritt ≤ eine Stufe) — nie für immer darunter — Boden +0,35 m: Höhe je Schritt 0.000 · 0.170 · 0.340 · 0.350 · 0.350 · 0.350 (Stufe 0.170 m)
+  ✅ K6 Verwindung: kein Rad tiefer im Boden als sein Federweg (GT: radHub × radR, starr: 0); im Federweg hebt sie nicht — GT tau 0,45: 0.204 m im Boden (Federweg 0.204) · starr tau 0,45: 0.000 m · GT tau 0,10: Hub 0.000 m
+  ✅ K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, ≤ 50 µs je Schritt — Takt 240 Hz · 4.78 µs 
+REIFEN {"achsen":[{"wo":"gt vorn","spitze":8.5,"abfall":0.19976725760161385},{"wo":"gt hinten","spitze":7.6,"abfall":0.2190159221567215},{"wo":"supersport vorn","spitze":7.2,"abfall":0.22696887466474147},{"wo":"supersport hinten","spitze":6.5,"abfall":0.24434125691530406},{"wo":"limousine vorn","spitze":8.5,"abfall":0.19976725760161385},{"wo":"limousine hinten","spitze":7.6,"abfall":0.2190159221567215},{"wo":"kompakt_fwd vorn","spitze":8.5,"abfall":0.19976725760161385},{"wo":"kompakt_fwd hinten","spitze":7.6,"abfall":0.21901592215672172},{"wo":"suv vorn","spitze":8.5,"abfall":0.19976725760161396},{"wo":"suv hinten","spitze":7.6,"abfall":0.2190159221567215}],"hz":240,"kostenUs":4.78}
+=== T — DER RITT-TAKT (Q1 · F-D1 F-D2 F-D10), echter Frame (_gameLoopTick) ===
+  ✅ T1 GT geradeaus (W, wechselnde Frame-Zeiten): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt, keine Gier ohne Sim-Schritt — teleport 0/240 · sim 18.65 m · fahrt 18.62 m · luft 0/266 · gier ohne Schritt 0.0° (gesamt 0.2°) · v 0.0 m/s
+  ✅ T0 die echte Vertikale sieht ihre Täter: Reiter 0,3 m über dem Sitz und geerdeter Wagen 0,3 m über dem Boden zählen als Luft — Reiter über dem Sitz → luft 10 · Wagen über dem Boden → luft 1 (je 10 Frames)
+  ✅ T2 GT am Hang ohne Taste: kein Teleport, er hält (Haltebremse bis zum Reibkreis), keine Gier — Hang 25 % · teleport 0/180 · sim 0.00 m · fahrt 0.00 m · luft 0/199 · gier ohne Schritt 0.0° (gesamt 0.0°) · v 0.0 m/s
+  ✅ T3 Pferd (richtungs-folgender Ritt): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt — teleport 0/180 · sim 4.12 m · fahrt 4.11 m · luft 0/199 · gier ohne Schritt 0.0° (gesamt 0.0°) · v 1.3 m/s
+  ✅ T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck — {"gestartet":true,"ort":[-62,-37,17.4],"stufeM":0,"band":211,"ego":[75,76],"nach10":[0.5,0.7],"abV":[7.7,8.8],"abSprung":[0.31,0.22],"abFov":[0.4,0.4,0],"stufeWer":"L1 (Band)","wiederauf":0,"ruckN":165,"ruckP95":0.002,"gleichN":445,"gleichP95":0.016,"hochN":210,"hochP05":16.436}
+  ✅ T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s — {"n":316,"zeigt":0.005,"quelle":true,"orbit":69,"rueck":1.08,"fov":{"10":5.39},"schreiber":["_kamFov"],"zoom":true,"laut":true,"kern":[],"fovMax":10,"arm":0.2,"drift":9,"knick":0.07}
+  ✅ W (feld.K1) DIE WETTER-KETTE: Sturm → Regen-Feld → Nässe → Grip | Brand → Licht, jedes Glied zieht und steht, wenn sein Vorgänger gehalten wird (Tiefe ≥ 4) — Tiefe 4 {"trocken":{"regen":0,"naesse":0,"stoff":0,"brand":1,"licht":21.227395392442613,"s":20.599899856333764},"sturm":{"regen":1,"naesse":1,"stoff":1,"brand":0,"licht":0,"s":35.47663012605099},"festRegen":{"regen":0,"naesse":0,"stoff":0,"brand":1,"licht":21.227395392442613,"s":20.599899856333764},"festNaesse":{"regen":1,"naesse":0,"stoff":0,"brand":1,"licht":21.227395392442613,"s":20.599899856333764},"festBrand":{"regen":1,"naesse":1,"stoff":1,"brand":1,"licht":21.227395392442613,"s":35.47663012605099},"stern":{"regen":1,"naesse":0,"stoff":0,"brand":1,"licht":21.227395392442613,"s":35.47663012605099},"zeile":{"regen":0,"naesse":0,"stoff":0,"brand":1,"licht":21.227395392442613,"s":35.47663012605099},"weg":{"regen":0,"naesse":0,"stoff":0,"brand":1,"licht":21.227395392442613,"s":12.621310023119804},"wegNass":{"regen":1,"naesse":1,"stoff":1,"brand":0,"licht":0,"s":18.64392286560866},"labor":{"schritte":198,"maxM":4.440892098500626e-16,"bei":188,"maxY":0,"kontakte":0,"weg":27.755968617844434,"hz":240}} 
+  ✅ K8 Reifen in der Welt (fahrzeug.K1): Bremsweg Gras/Weg, nass, μ(gras) halb, Takt, Labor = Welt
+=== S — DIE STATIONEN IN DER WELT (Q13 · F-D6 F-D7), echter Sim-Schritt ===
+  ✅ S1 Welt == Labor: der Welt-Ritt fährt die Spur des Labor-Aufrufs (VC.fahrSchritt), W und W + A — 198 Schritte · 27.8 m · größte Abweichung 4.4e-16 m (Höhe 0.0e+0 m) · Kontakt-Schritte 0
+  ✅ S2 Klippe: kein Höhen-Sprung > 0,5 m je Sim-Schritt, der Wagen fliegt — Bahn-Wache 0 · Fall 7.4 m bei (589.7459495520051, 147.86383934892203) · größter Sprung 0.19 m · Luft 54/531 · danach -5.50 m über dem Grund
+  ✅ S4 Absteigen im Flug: der Wagen fällt ballistisch auf seinen Boden und steht dort (nie in der Luft, kein Sprung) — Bahn-Wache 0 · abgestiegen 5.82 m über dem Boden (im Flug true) · nach 240 Frames 0.000 m über der Ebene seiner Räder · größter Sprung 0.19 m · Flug 9 Takte, höchstens 5.82 m über dem Grund, Kante 5.94 m auf 3 m · 28.0 m längs der Bahn, -4.25 m quer, in 111 Frames (Kante bei 24.0 m)
+  ✅ S3 Querhang: Fahrt längs der Höhenlinie ohne Lenkung driftet quer talwärts (der Quer-Hangabtrieb wirkt) — 26.0° bei (-69, -48) · 4.7 m gefahren · Quer-Abdrift talwärts 0.362 m · Bahn-Wache 3
+=== R — DIE RÄDER IN DER INSTANZ (Q13 · F-D8), echter Sim-Schritt ===
+  ✅ R1 die Räder rollen und lenken: Rad-Leaves je Ecke, Rolle relativ zum Aufbau > 1 rad, vorn Einschlag > 0,1 rad, hinten 0; der Sattel hängt an der Nabe (rollt nie) — 8 drehende + 4 stehende Rad-Leaves · Rolle 3.12 rad · Einschlag vorn 0.454 / hinten 0.001 rad · Sattel-Rolle 0.000 rad
+  ✅ R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m — Eintauchen beim Bremsen 0.001 m · Rad-Spalt p75 0.026 m (max 0.036; das Rad gegen den gezeichneten Boden misst gate:koerper-stand K8)
+  ✅ P4 ein alter Kern ohne fahrGesetz/fahrEbene bricht im Spiel laut (KERN-PFLICHT), nie still der richtungs-folgende Ritt — _fahrSatz → bruch · _rittEbene → bruch
+=== H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5), echter Sim-Schritt ===
+  ✅ H5/H6 Konsum: Kapsel und Hülle gleiten über `_wandGleiten`, Wagen und Tier lösen gegen `_kreaturLeib` (Zähl-Spion) — {"gleiten":true,"leibWagen":true,"leibTier":true,"kapsel":true}
+  ✅ H3 ein Bär steht 0,5 m im Bug des stehenden Wagens: der Wagen bleibt stehen (ein Wesen schiebt keinen Wagen) — Weg des Wagens in 60 Frames 0.000 m
+  ✅ H4 ein Kasten schiebt die Hülle zur Gelände-Wand: sie dringt nie ins Gelände (die echte Methode, synthetische Welt) — Schub des Kastens 0.80 m · Eindringen in die Wand 0.000 m
+=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===
+  ✅ L1 Hangfuß (der Glutbrunnen am Dorf-Messort, 9,3 m/s, Gier 92,3°, seine Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter — unter dem Gesetz höchstens 0.000 m (0 Schritte > 0,05 m) · größter Schub 0.170 m · 9 Kontakt-Schritte · 39.2 m gefahren
+  ✅ L2 Spaltkante (die nächste Kante am Schicht-Ort des Gesetzes, 11,4 m/s über sie): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand) — Kante -7836/-6961 in (0, 1) · Rand 114.9 m, Grund 97.7 m · 23.35 m über die Kante · tiefste Höhe 93.02 m · größter Schub 0.000 m · 31.3 m gefahren
+  ✅ L3 Stoß am Fels (der Baum der Schau: 10,41 → 0,16 m/s): der Wagen prallt zurück (≤ −0,3 m/s), Kamera und Klang hören den Stoß — Fahrt 8.39 → -1.70 m/s (kleinste danach -1.70) · Gegner 0.00 m · 2 Stoß-Ereignisse · Kamera-Ruck 6.50 · ohne Annäherung 0 · erster Kontakt: Ereignis Δv 10.18, 0.3° zur Richtung des Ziels, 3.02 m davor (0.01 m quer), Quer-Fahrt 0.01 m/s
+  ✅ L4 Stoß an den geparkten GT (Schau: 11,28 → 0,00): er bekommt seinen Impuls und rutscht (≥ 0,3 m), der stoßende behält Fahrt (≥ 20 %) — Fahrt 7.27 → 2.58 m/s (kleinste danach 2.58) · Gegner 2.10 m · 2 Stoß-Ereignisse · Kamera-Ruck 4.70 · ohne Annäherung 0 · erster Kontakt: Wagen fahrzeug_gt + Ereignis Δv 4.79, 0.1° zur Richtung des Ziels, 4.68 m davor (0.01 m quer), Quer-Fahrt 0.02 m/s
+  ✅ L5 Stoß an den Bären (Schau: 9,27 → 0,17): der Bär bekommt seinen Impuls (≥ 0,5 m), der schwerere Wagen behält Fahrt (≥ 50 %) — Fahrt 8.77 → 6.92 m/s (kleinste danach 6.92) · Gegner 12.19 m · 1 Stoß-Ereignisse · Kamera-Ruck 3.10 · ohne Annäherung 0 · erster Kontakt: Tier baer + Ereignis Δv 1.95, 0.3° zur Richtung des Ziels, 2.59 m davor (0.02 m quer), Quer-Fahrt 0.03 m/s · Tiere in der Gasse: 1 (baer)
+  ✅ L6 Spieler und Wagen (0710-4): der laufende Spieler prallt am gebremsten GT ab (der Wagen hält), ein rutschender GT stößt den stehenden Spieler — Impuls nach Masse, keine Durchdringung — Spieler → GT: Fahrt in den Wagen 1.15 → -0.04 m/s, Wagen 0.000 m gerutscht, tiefste Berührung 0.000 m, Schub des Wagens in 7 Schritten, 8 Stöße (Rest der Fahrt in den Wagen danach höchstens -3 %), Fuß bis 1.17 m über dem Boden · GT → Spieler: Spieler 3.65 m/s, tiefste Berührung -0.028 m
+  ✅ L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle, ein gestoßener Schwimmer nach 20 (auch in der Höhe) — Schwimmer 0 m / Höhe 0 m · Start 0 nach 4,4 Bildern · Abweichung Wagen 0 m · Bär 0 m · zuerst Schritt 2: Bär y 0.00054 (Tiere nahe dem Wagen 0 / 0)
+  ✅ L9 der Reiter im Wagen (0710-4 Klasse 4): je Wagen-Art die Oberkante ≤ Dachlinie, die Oberschenkel auf dem Polster, das Hüftgelenk über dem Sitz-Anker, der Leib schaut längs der Fahrt (die Maus quer); abgestiegen steht er wie vorher — gt: Kopf -0.05 · Schenkel -0.00 · Anker 0.00 · Blick 0° · Lehne 61.6° · durch die Tür 0.0 % · außen 0 · kompakt_fwd: Kopf -0.05 · Schenkel -0.01 · Anker 0.00 · Blick 0° · Lehne 33.7° · durch die Tür 0.0 % · außen 0 · limousine: Kopf -0.05 · Schenkel -0.01 · Anker 0.00 · Blick 0° · Lehne 37.4° · durch die Tür 0.0 % · außen 0 · supersport: Kopf -0.05 · Schenkel -0.00 · Anker 0.00 · Blick 0° · Lehne 65° · durch die Tür 0.0 % · außen 0 · suv: Kopf -0.08 · Schenkel -0.00 · Anker 0.00 · Blick 0° · Lehne 7.4° · durch die Tür 0.0 % · außen 0 · abgestiegen: Wurzel 0 m, Gier 0
+  ✅ L10 der gestoßene Schwimmer (0710-5): ein Fuchs in tiefem Wasser gleitet nach einem Stoß an seiner Schwimm-Linie, nicht auf dem Grund — Wasser 3.43 m tief · vor dem Stoß 0 m, beim Gleiten tiefstens 0 m gegen die Linie (36 Frames gleitend)
+=== F — DIE FAHR-BAHN (K12): Platz an jedem Tor, rückwärts, Befreiung, Tacho, Tasten ===
+  ✅ FK rückwärts aus dem Stand: jedes Rezept fährt S (und S + Gegenlenkung) 2,5 s eben, 10° und 15° bergauf ≥ 3 m (45 Läufe) — GT S 0° 11.17 m · S + Gegenlenkung links 0° 9.59 m · S + Gegenlenkung rechts 0° 9.59 m · S 10° 10.71 m · S + Gegenlenkung links 10° 9.10 m · S + Gegenlenkung rechts 10° 9.10 m · S 15° 10.38 m · S + Gegenlenkung links 15° 8.75 m · S + Gegenlenkung rechts 15° 8.75 m
+  ✅ FK2 die Drehzahl über 0…vmax (klang:FAHRT): Stand = Leerlauf, vmax = Begrenzer, steigt in jedem Gang, Motor-Ton = U/min/60 · Zylinder/2 — 5 Rezepte
+  ✅ F2 die Vorschau des Spiels am Garage-Tor steht auf fahrbarem Grund (≤ 15°, ohne Berührung) und fährt an (E · W 2 s · S 2,5 s ≥ 3 m · E) — bei (-5.87, 18.07) · Neigung 3.1° · Wände 0 · Blocker 0 · W 2 s 10.17 m · S 2,5 s 9.89 m
+  ✅ F1 an jedem Tor des Genesis-Rings (10) steht der GT der Welt nach 1 s Welt auf fahrbarem Grund (≤ 15°, ohne Berührung), E steigt ein und aus — 10/10 Tore · Neigung höchstens 3.2° · weiter als der Wunsch-Ort höchstens 8 m
+  ✅ F3 die Natur-Wand kennt den Wagen: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT fällt („wagen“), der Wagen ist kein Grundriss — Urteil wagen · Grundriss false
+  ✅ F-SCHMUGGEL die Vorschau ohne Platz-Gesetz und die Natur-Wand ohne die Wagen → ROT beim Namen — ohne Platz-Gesetz: bei (-5.87, 18.07) · Neigung 3.1° · Wände 0 · Blocker 3 · W 2 s — m · S 2,5 s — m — 3 Blocker im Band (baum_kiefer) · ohne Wagen: ein Wurf (baum_tanne) 1.5 m vor dem Ursprung steht im Wagen (Urteil false)
+  ✅ F4 der Stoß am Glutbrunnen der Schau: S + Gegenlenkung bringt den GT ≥ 1 m frei in ≤ 2 s — Stoß ja · mit A frei nach 0.93 s (1.02 m in 2 s) · mit D frei nach 0.93 s (1.03 m in 2 s)
+  ✅ F4 der Stoß am Kiefern-Stamm: S + Gegenlenkung bringt den GT ≥ 1 m frei in ≤ 2 s — Stoß ja · mit A frei nach 0.93 s (1.02 m in 2 s) · mit D frei nach 0.93 s (1.03 m in 2 s)
+  ✅ F5 im Sattel zeigt #fahr-tacho |vlong| × vehicle:FAHR.kmh (die Zahl der Probefahrt), nach dem Absteigen ist er fort — 144 Proben · max 54 km/h
+  ✅ F7 „hilfe“ nennt E (einsteigen) und Shift (Handbremse), Shift kommt in Fahrt als Handbremse im Fahr-Schritt an — „Fahren: E einsteigen/aussteigen · W Gas · S Bremse/rückwärts · A/D lenken · Shift Handbremse“ · Shift im Fahr-Schritt 74/74 (ohne 0/574) Bilder
+  · Dauer: Boot + F2 8.7 s · F1 1.7 s · F3 + Schmuggel 1.9 s · F4 7.0 s
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: bau vor ihm).
+  · Fahr-Platz: fahrzeug_gt steht 8 m weiter auf fahrbarem Grund (dort: tor).
+  · Fahr-Platz: fahrzeug_gt steht 4 m weiter auf fahrbarem Grund (dort: bau).
+  · Fahr-Platz: fahrzeug_gt steht 6 m weiter auf fahrbarem Grund (dort: steil vor ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+  · Fahr-Platz: fahrzeug_gt steht 0 m weiter auf fahrbarem Grund (dort: tor hinter ihm).
+=== RM — DIE RÜCKMELDUNG (fahrzeug.K5) ===
+  ✅ RM1 die Stimme der Fahrt klingt im Sattel, danach still (die Tonhöhe: gate:klang-zensus F) — gekoppelt · Mutante: —
+  ✅ RM2 die Federung im Bild: Drift-Wank, Boden-Stoß — gekoppelt · Mutante: Boden-Stoß ohne Federweg (31 Stöße, Antwort 1.576 mm)
+  ✅ RM3 das Rumble: Schlupf, Boden-Stoß — gekoppelt · Mutante: Schlupf ohne Rumble (Drift 0, Glatt 0) · Boden-Stoß ohne Summen (0.03 auf 31 Stößen)
+RUECKMELDUNG {"echt":{"glatt":{"klingt":1,"still":true,"wankMm":0.541,"stoesse":8,"antwortMm":7.239,"stark":0.004,"summen":0.594},"drift":{"klingt":1,"still":true,"wankMm":8.614,"stoesse":11,"antwortMm":12.764,"stark":1,"summen":0.512},"hang":{"klingt":1,"still":true,"wankMm":1.321,"stoesse":23,"antwortMm":7.779,"stark":0.012,"summen":0.54}},"mutiert":{"glatt":{"klingt":1,"still":true,"wankMm":0.542,"stoesse":8,"antwortMm":2.765,"stark":0,"summen":0.126},"drift":{"klingt":1,"still":true,"wankMm":10.253,"stoesse":18,"antwortMm":11.85,"stark":0,"summen":0.079},"hang":{"klingt":1,"still":true,"wankMm":1.322,"stoesse":23,"antwortMm":1.576,"stark":0,"summen":0.03}}}
+
+✅ GRÜN — der Ritt fährt im Sim-Schritt den EINEN Fahr-Schritt des Kerns: kein Teleport, Welt == Labor, Reibkreis, Querhang und Vertikale wirken.
+FAHR-LEBEN EXIT 0
+=== KOLLISION = BILD — Null-Renderer, Mess-Wiese 150 m ===
+[stall-akte] ═══ diag-kollision-bild.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 21.0 s
+[stall-akte] offen evaluate(tempo) seit 22.9 s
+[stall-akte] Puls 23×, zuletzt vor 21.0 s — complete · renderer bereit · weltbild da · frames 1254 · welt 1254 Takte · Ruhe 0 · zuletzt Foundry offen 1 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 4120 106 % · browser 3979 1 % · GPU 4017 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 31:26 gpu 4 [VizCompositorTh 3 %]/r 174 · 31:28 gpu 0/r 351 · 31:30 gpu 0/r 376 · 31:32 gpu 2 [VizCompositorTh 2 %]/r 340 · 31:34 gpu 0/r 337 · 31:36 gpu 1 [VizCompositorTh 1 %]/r 137 · 31:38 gpu 0 [Chrome_ChildIOT 1 %]/r 118 · 31:40 gpu 0 [VizCompositorTh 1 %]/r 170 · 31:42 gpu 0/r 145 · 31:44 gpu 0/r 108 · 31:46 gpu 0/r 130 · 31:48 gpu 1/r 206 · 31:50 gpu 1 [VizCompositorTh 1 %]/r 158 · 31:52 gpu 1 [VizCompositorTh 1 %]/r 122 · 31:54 gpu 1 [Chrome_ChildIOT 1 %]/r 104 · 31:56 gpu 1 [VizCompositorTh 1 %]/r 107 · 31:58 gpu 1 [Chrome_ChildIOT 1 %]/r 109 · 32:00 gpu 1 [VizCompositorTh 1 %]/r 113 · 32:02 gpu 0 [VizCompositorTh 1 %]/r 105 · 32:04 gpu 1 [VizCompositorTh 1 %]/r 113 · 32:06 gpu 1 [Chrome_ChildIOT 1 %]/r 129 · 32:08 gpu 1 [VizCompositorTh 1 %]/r 117
+[stall-akte] Stapel _foundryDeclaredStage :1616 < _foundryHoehenStufe :1691 < _foundryBaumHoehe :1666 < _foundrySichtHoehe :1652 < _lodTreeVisHeight :1639 < _tickArchitectureLOD :185 < _runFrameScheduler :1452 < _loopVoxelStreaming :1478
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~43)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~40)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~37)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~40)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~37)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 21 (zuvor ~34)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 17 (zuvor ~40)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~38)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~35)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 10 (zuvor ~35)
+[stall-akte] Stderr [3979:3996:1028/213142.550423:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [3979:3996:1028/213205.039730:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _foundryDeclaredStage :1616
+[stall-akte] Seite #2: der Puls kehrt zurück nach 24.9 s — complete · renderer bereit · weltbild da · frames 8701 · welt 8701 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+  1124 Studio-Werke · Box ohne Bild seitlich/oben 0.10/0.20 m · Bild ohne Box 0.16 m
+  OFFEN (U) haus: haus_alemannisch#2306 — 1.02 m neben jeder Box (bei 0.8/1.7/2.1)
+  OFFEN (U) ausstattung: brunnen_dorf#2307 — 0.33 m neben jeder Box (bei 1.4/1.2/0.0)
+  OFFEN (U) ausstattung: marktstand_dorf#2308 — 0.69 m neben jeder Box (bei 1.6/0.3/-0.1)
+  (V) Kontakt beim Tempo: 126/126 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#2310","durch":true,"tief":0.285,"spalt":0}
+      fuchs      5.860 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      wolf       7.450 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      baer       8.230 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      riese      13.520 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      gehen      1.150 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      sprint     5.170 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      fall       25.000 m/s · Durchtritt 0/2 · Eindringen max 0.001 m · Spalt max 0.000 m
+      wagen      19.620 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.018 m · im Bild Spalt max 0.074 m, Eindringen max 0.045 m · fahrzeug_supersport vmax 16.36 m/s × 1.2
+      gestossen  16.370 m/s · Durchtritt 0/4 · Eindringen max 0.000 m · Spalt max 0.000 m · im Bild Spalt max 0.000 m, Eindringen max 0.171 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @144 → _t_kontakt_mauer#2310 — im Bild Spalt 0 m, Eindringen 0.045 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @60 → _t_kontakt_mauer#2310 — im Bild Spalt 0.056 m, Eindringen 0 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.61 m/s @30 → _t_kontakt_mauer#2310 — im Bild Spalt 0.074 m, Eindringen 0 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @144 → _t_kontakt_mauer#2310 — im Bild Spalt 0 m, Eindringen 0.067 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @60 → _t_kontakt_mauer#2310 — im Bild Spalt 0 m, Eindringen 0.098 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @30 → _t_kontakt_mauer#2310 — im Bild Spalt 0 m, Eindringen 0.164 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.24 m/s @deckel → _t_kontakt_mauer#2310 — im Bild Spalt 0 m, Eindringen 0.171 m
+
+✅ KOLLISION = BILD GRÜN (OFFEN oben: 3)
+KOLLISION-BILD EXIT 0

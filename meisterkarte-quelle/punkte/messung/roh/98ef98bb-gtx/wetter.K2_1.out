@@ -1,0 +1,60 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --naesse --eigen --port 7754 --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\98ef98bb-gtx\wetter.K2_1.json
+NÄSSE Selbsttest: 5/5
+{
+ "wiese": {
+  "ort": "wiese",
+  "haus": null,
+  "naesse": 0.909,
+  "innen": {
+   "n": 0,
+   "verhaeltnis": null
+  },
+  "aussen": {
+   "n": 25920,
+   "verhaeltnis": 0.771
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 153
+  },
+  "regenbild": 0.642
+ },
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.909,
+  "innen": {
+   "n": 13809,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 5949,
+   "verhaeltnis": 0.552
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 5
+  },
+  "regenbild": 0.696,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
+NÄSSE GRUEN
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 24200 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

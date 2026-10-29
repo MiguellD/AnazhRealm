@@ -1,0 +1,27 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-mp-sync.cjs
+  OK   (d) Urteil am Schub vor dem Fenster: jeder Takt hält das Gesetz (ein fester Verzug sähe einen Täter) — 11 Takte, Gesetz gebrochen in 0 · fester Verzug max 235 > 12
+  OK   (b) Tür: der nackte Aufruf heilt nach 3 s Server-Ausfall (Rejoin ≤ 31 s) — Rejoin 0.9 s nach Server-Start, Absicht false→true
+  OK   Knopf liest die Absicht der Tür („an“ nach dem nackten Aufruf) — enabled=true aria-pressed=true
+  OK   Knopf aus: Absicht fällt, Verbindung zu, kein Rejoin geplant — enabled=false connected=false timer=false aria=false
+  OK   Knopf an startet EIN Init, der zweite Klick im Aufbau keines (er liest „an“ und schaltet aus) — Inits 3→4→4, verbunden beim 2. Klick=false
+  OK   Knopf an: A verbunden, Knopf „an“ — Inits 5
+  OK   B verbunden über den Boot, beide kennen einander mit Gestalt über die Leitung — A=p-h15u-s856enej B=p-h9w9-t2pwb10j
+  OK   W13 P3: der Broker relayt den Vibe-Pass mit peerId-Stempel, B verifiziert A — 795 ms
+  OK   A lief über die Tastatur (> 1 m) — 1.83 m nach 1435 ms W
+  OK   (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 209 geteilte Schritte, maxΔ 0
+  OK   (g) Stille: A schwieg 15 s, B rechnet A ab dem ersten Anker danach bit-gleich — Anker 240, 209 geteilte Schritte, maxΔ 0
+  OK   B sieht A an dessen Ort (±0.3 m waagrecht) — Abstand 0.000 m, Leib soul, sichtbar=true, Rückstau 2 Schritte
+  OK   (d) lange Takte bei B (je 20 Schritte von A): B sieht A an dessen Ort (±0.3 m waagrecht), jeder Takt hält das Gesetz — Lauf 1.71 m · Abstand 0.000 m, Leib soul, sichtbar=true, Rückstau 2 Schritte · 12 Takte (dt bis 336 ms), Zufluss je Takt Median 20 Schritte, Verbrauch je Takt bis 20, Puffer nach dem Takt bis 2, Gesetz gehalten 12/12
+  OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz — Lauf 1.63 m · Abstand 0.002 m, Leib soul, sichtbar=true, Rückstau 116 Schritte · 12 Takte (dt bis 352 ms), Zufluss je Takt Median 20 Schritte, Verbrauch je Takt bis 10, Puffer nach dem Takt bis 112, Gesetz gehalten 1/12 — (d) ROT: GESETZ gebrochen in 11 von 12 Takten (erster: 10 Schritte bei Puffer 12 über der Reserve 2 (dt 304 ms, Kappe 183)) — Täter _lockstepTickPeers: die Aufhol-Kappe zählt Frames statt Wanduhr
+  OK   A gräbt, schüttet und baut per Chat (zwei Edits und ein Bau bei A) — 2 Edits, Bauten w-haus_alemannisch-1htvm5b
+  OK   (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gleich · zug gleich
+  OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 0/126 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht
+  OK   (a) Seite A: kein Mitspieler-Takt im Ursprung — 0 Takte am Ursprung (davon 0 ohne je empfangenen Ort) von 1273 Peer-Takten
+  OK   (a) Seite B: kein Mitspieler-Takt im Ursprung — 0 Takte am Ursprung (davon 0 ohne je empfangenen Ort) von 2002 Peer-Takten
+  OK   (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich
+  OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter gleich · Leben 0/126 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen reisen nicht
+  OK   (e)(f) Selbsttest: B wendet jede Akt-Nachricht doppelt an, verschiebt den Samen des Baus, trägt eigene Uhr → Edits, Bauten, Zug ROT — edits VERSCHIEDEN · bauten VERSCHIEDEN · boden VERSCHIEDEN · zug VERSCHIEDEN
+  OK   (e) Netz-Log: keine Zustands-Nachricht, nur Schreib-Akte, Leib, Sicht und Leitung — {"A":{"join":3,"pos":902,"creature-pos":226,"soul":6,"stats":2,"vibe":6,"rtc-offer":2,"rtc-ice":6,"input":413,"dsl":8},"B":{"join":2,"pos":759,"creature-pos":206,"soul":4,"stats":2,"vibe":4,"rtc-answer":2,"rtc-ice":5,"input":543}}
+  OK   (e) Selbsttest: eine Wetter-Nachricht von A macht das Netz-Log ROT — A wetter×1
+  OK   (g) Selbsttest: der alte Leerlauf-Abschied macht (g) ROT beim Namen — B: kein Eintrag — Täter p2pTick: der Leerlauf-Abschied riss die Leitung
+gate:mp-sync GRÜN — 84 s

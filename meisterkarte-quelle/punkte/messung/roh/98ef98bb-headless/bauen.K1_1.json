@@ -1,0 +1,3899 @@
+{
+ "gestartet": true,
+ "wege": {
+  "schöpfer": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@508 · Klick@707",
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@451 · Klick@558",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@670 · Klick@775",
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@396 · Klick@514",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@385 · Klick@445",
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@328 · Klick@426",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@349 · Klick@441",
+      "kalt": true,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@368 · Klick@474",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@547",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@1598",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@361",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@667",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@379",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@517",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@361",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@625",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "phantom": {
+       "studio": true,
+       "meshes": 2,
+       "verworfen": 0,
+       "farbe": "grün"
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@141",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@132",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@131",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@151",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@158",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@190",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@132",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@139",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "frieden mit Material": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@362 · Klick@443",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@367 · Klick@450",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@383 · Klick@479",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@372 · Klick@428",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@358 · Klick@435",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@388 · Klick@447",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@342 · Klick@429",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@332 · Klick@401",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@495",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@545",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@539",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@424",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@488",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@540",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@527",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@542",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@136",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@147",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@129",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@239",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@203",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 19,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@224",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@147",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@156",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "frieden ohne Material": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@358 · Klick@421",
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@220 · Klick@287",
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@225 · Klick@302",
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@231 · Klick@326",
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@92 · Klick@158",
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@70 · Klick@159",
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@686 · Klick@753",
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@53 · Klick@120",
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 44× holz, 63× laub",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@644",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 44× holz, 63× laub",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@377",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 98× holz, 24× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@377",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 98× holz, 24× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@378",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 16× holz, 4× eisen",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@361",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 16× holz, 4× eisen",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@347",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "gesperrt": "Es fehlt: 52× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@364",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "gesperrt": "Es fehlt: 52× stein",
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@378",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@107",
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@124",
+      "kalt": false,
+      "zeile": "Eiche: fehlt 44× holz · 63× laub — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "laub": 0
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@129",
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@140",
+      "kalt": false,
+      "zeile": "Alemannisch: fehlt 98× holz · 24× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "stein": 0
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@147",
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@133",
+      "kalt": false,
+      "zeile": "GT: fehlt 16× holz · 4× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "holz": 0,
+       "eisen": 0
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@135",
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "rot",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "rot"
+       }
+      },
+      "steht": 0,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@132",
+      "kalt": false,
+      "zeile": "Hütte: fehlt 52× stein — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)",
+      "verbraucht": {
+       "stein": 0
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  },
+  "pfad": {
+   "werkstatt": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@368 · Klick@446",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@398 · Klick@468",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@411 · Klick@479",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@359 · Klick@442",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@360 · Klick@454",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@357 · Klick@437",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@326 · Klick@392",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 3,
+      "unecht": 0,
+      "folge": "KeyB@0 · Klick@334 · Klick@412",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "rezeptbuch": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@1430",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@504",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@538",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@429",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@436",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@411",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@540",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": false,
+      "farbe": null,
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 0,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Tab@0 · Klick@543",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   },
+   "hotbar": {
+    "Eiche": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@147",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit1@0 · KeyF@151",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 44,
+       "laub": 63
+      },
+      "kosten": {
+       "holz": 44,
+       "laub": 63
+      },
+      "imInventar": false
+     }
+    },
+    "Haus": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 12,
+        "lesen": 12,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@167",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 2,
+        "lesen": 2,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit4@0 · KeyF@185",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 98,
+       "stein": 24
+      },
+      "kosten": {
+       "holz": 98,
+       "stein": 24
+      },
+      "imInventar": false
+     }
+    },
+    "GT": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@235",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 21,
+        "lesen": 21,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit2@0 · KeyF@168",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "kosten": {
+       "holz": 16,
+       "eisen": 4
+      },
+      "imInventar": false
+     }
+    },
+    "Teil": {
+     "Ego": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@135",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     },
+     "Third": {
+      "bauModus": true,
+      "farbe": "grün",
+      "lichtung": {
+       "wand": false,
+       "toenung": {
+        "stoffe": 5,
+        "lesen": 0,
+        "farbe": "grün"
+       }
+      },
+      "steht": 1,
+      "eingaben": 2,
+      "unecht": 0,
+      "folge": "Digit7@0 · KeyF@158",
+      "kalt": false,
+      "zeile": "",
+      "verbraucht": {
+       "stein": 52
+      },
+      "kosten": {
+       "stein": 52
+      },
+      "imInventar": false
+     }
+    }
+   }
+  }
+ },
+ "konsum": {
+  "Stoff → alphaTest": true
+ },
+ "phantom": {
+  "studio": true,
+  "meshes": 2,
+  "verworfen": 0,
+  "farbe": "grün"
+ },
+ "geraet": {
+  "name": "klinge_spitzhacke",
+  "zeile": "Spitzhacke: fehlt 1× holz · 1× eisen — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)"
+ },
+ "sucheHaus": 32,
+ "lichtung": {
+  "steht": 0,
+  "zeile": "Eiche: die Lichtung des Genesis-Platzes bleibt frei, keine Krone steht über der Scheibe und dem Ring der Tore — setz es ein paar Schritte weiter.",
+  "wand": "lichtung",
+  "toenung": {
+   "stoffe": 2,
+   "lesen": 2,
+   "farbe": "rot"
+  }
+ },
+ "verbenJe": {
+  "werkstatt": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 62°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@362 · Klick@447 · KeyW@573",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 6,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@844 · Klick@952 · KeyE@1103 · KeyW@1395 · KeyE@2905",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": true,
+     "farbe": "grün",
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 4,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 3,
+     "unecht": 0,
+     "folge": "Digit3@0 · KeyF@132 · KeyE@165",
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@359 · Klick@408 · KeyW@489",
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@366 · Klick@418 · KeyW@559",
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 17,
+     "unecht": 0,
+     "folge": "KeyB@0 · Rad@406 · Rad@473 · Rad@540 · Rad@606 · Rad@673 · Rad@740 · Rad@806 · Rad@873 · Rad@940 · Rad@1006 · Rad@1073 · Rad@1140 · Rad@1206 · Klick@1226 · Klick@1316 · KeyE@1451",
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@366 · Klick@451 · KeyW@1667",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 6,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@387 · Klick@577 · KeyE@688 · KeyW@1002 · KeyE@2505",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": true,
+     "farbe": "grün",
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 13,
+       "lesen": 13,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 3,
+     "unecht": 0,
+     "folge": "Digit3@0 · KeyF@128 · KeyE@133",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@372 · Klick@429 · KeyW@491",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@366 · Klick@445 · KeyW@605",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 17,
+     "unecht": 0,
+     "folge": "KeyB@0 · Rad@408 · Rad@475 · Rad@545 · Rad@608 · Rad@675 · Rad@744 · Rad@808 · Rad@875 · Rad@945 · Rad@1008 · Rad@1074 · Rad@1143 · Rad@1208 · Klick@1227 · Klick@1289 · KeyE@1405",
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  },
+  "ki": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 63°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@7 · KeyC@10 · KeyH@12 · Space@14 · KeyW@16 · KeyN@19 · KeyS@22 · KeyC@24 · KeyH@26 · KeyE@29 · Space@45 · KeyM@48 · KeyI@50 · KeyR@52 · Space@55 · KeyH@57 · KeyI@58 · KeyE@60 · KeyR@62 · Space@64 · KeyE@66 · KeyI@68 · KeyN@70 · Space@72 · KeyW@75 · KeyE@77 · KeyR@79 · KeyK@81 · Enter@83 · KeyW@510",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Alemannisch · steil, hell\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 33,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@5 · KeyC@7 · KeyH@9 · Space@11 · KeyW@17 · KeyN@21 · KeyS@24 · KeyC@27 · KeyH@29 · KeyE@31 · Space@32 · KeyM@34 · KeyI@36 · KeyR@37 · Space@39 · KeyH@40 · KeyI@41 · KeyE@43 · KeyR@58 · Space@63 · KeyE@65 · KeyI@67 · KeyN@69 · Space@72 · KeyW@74 · KeyE@76 · KeyR@110 · KeyK@112 · Enter@114 · KeyE@172 · KeyW@411 · KeyE@1916",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „GT\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@3 · KeyC@6 · KeyH@10 · Space@11 · KeyW@13 · KeyN@16 · KeyS@17 · KeyC@19 · KeyH@21 · KeyE@22 · Space@24 · KeyM@26 · KeyI@27 · KeyR@29 · Space@31 · KeyH@33 · KeyI@34 · KeyE@35 · KeyR@37 · Space@38 · KeyE@40 · KeyI@41 · KeyN@42 · Space@44 · KeyW@45 · KeyE@57 · KeyR@59 · KeyK@60 · Enter@61 · KeyE@91",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Drachentor\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@71 · KeyC@94 · KeyH@99 · Space@103 · KeyW@106 · KeyN@111 · KeyS@115 · KeyC@145 · KeyH@154 · KeyE@177 · Space@182 · KeyM@190 · KeyI@192 · KeyR@194 · Space@195 · KeyH@197 · KeyI@199 · KeyE@200 · KeyR@202 · Space@203 · KeyE@204 · KeyI@205 · KeyN@207 · Space@208 · KeyW@209 · KeyE@210 · KeyR@212 · KeyK@213 · Enter@215 · KeyW@265",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok baut „Brücke\" an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@5 · KeyC@7 · KeyH@9 · Space@10 · KeyW@12 · KeyN@14 · KeyS@16 · KeyC@17 · KeyH@23 · KeyE@25 · Space@28 · KeyM@31 · KeyI@32 · KeyR@34 · Space@43 · KeyH@45 · KeyI@46 · KeyE@48 · KeyR@50 · Space@51 · KeyE@53 · KeyI@54 · KeyN@56 · Space@58 · KeyW@59 · KeyE@61 · KeyR@62 · KeyK@64 · Enter@65 · KeyW@355",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Podestleiter · Holme, Stufen, Podest, Bügel\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@299 · KeyC@302 · KeyH@303 · Space@305 · KeyW@307 · KeyN@310 · KeyS@311 · KeyC@312 · KeyH@314 · KeyE@315 · Space@316 · KeyM@317 · KeyI@318 · KeyR@320 · Space@321 · KeyH@322 · KeyI@324 · KeyE@325 · KeyR@327 · Space@328 · KeyE@329 · KeyI@330 · KeyN@332 · Space@333 · KeyW@334 · KeyE@336 · KeyR@337 · KeyK@338 · Enter@340 · KeyE@367",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | KI-Vorschlag: Soll ich die Physik weiter optimieren? Sage 'Entwickle Physik' | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Sitzbank · Latten, Lehne, Wangen\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@4 · KeyC@7 · KeyH@21 · Space@24 · KeyW@26 · KeyN@29 · KeyS@31 · KeyC@32 · KeyH@34 · KeyE@35 · Space@37 · KeyM@38 · KeyI@40 · KeyR@41 · Space@43 · KeyH@45 · KeyI@46 · KeyE@48 · KeyR@50 · Space@54 · KeyE@56 · KeyI@59 · KeyN@61 · Space@63 · KeyW@64 · KeyE@66 · KeyR@68 · KeyK@69 · Enter@71 · KeyW@355",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Alemannisch · steil, hell\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 33,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@24 · KeyC@32 · KeyH@38 · Space@41 · KeyW@43 · KeyN@45 · KeyS@47 · KeyC@48 · KeyH@50 · KeyE@52 · Space@54 · KeyM@55 · KeyI@57 · KeyR@59 · Space@60 · KeyH@62 · KeyI@63 · KeyE@64 · KeyR@66 · Space@69 · KeyE@70 · KeyI@72 · KeyN@74 · Space@75 · KeyW@77 · KeyE@78 · KeyR@79 · KeyK@81 · Enter@82 · KeyE@111 · KeyW@387 · KeyE@1995",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „GT\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@4 · KeyC@6 · KeyH@8 · Space@9 · KeyW@11 · KeyN@13 · KeyS@14 · KeyC@16 · KeyH@17 · KeyE@19 · Space@25 · KeyM@28 · KeyI@30 · KeyR@32 · Space@33 · KeyH@35 · KeyI@37 · KeyE@39 · KeyR@40 · Space@42 · KeyE@43 · KeyI@45 · KeyN@47 · Space@48 · KeyW@50 · KeyE@59 · KeyR@61 · KeyK@62 · Enter@64 · KeyE@360",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Drachentor\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@7 · KeyC@10 · KeyH@12 · Space@14 · KeyW@15 · KeyN@19 · KeyS@27 · KeyC@29 · KeyH@31 · KeyE@32 · Space@35 · KeyM@37 · KeyI@38 · KeyR@40 · Space@42 · KeyH@43 · KeyI@45 · KeyE@46 · KeyR@48 · Space@49 · KeyE@59 · KeyI@61 · KeyN@62 · Space@63 · KeyW@65 · KeyE@66 · KeyR@68 · KeyK@69 · Enter@70 · KeyW@101",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok baut „Brücke\" an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@10 · KeyC@14 · KeyH@17 · Space@18 · KeyW@37 · KeyN@39 · KeyS@41 · KeyC@42 · KeyH@44 · KeyE@45 · Space@46 · KeyM@48 · KeyI@49 · KeyR@51 · Space@53 · KeyH@55 · KeyI@56 · KeyE@58 · KeyR@59 · Space@60 · KeyE@62 · KeyI@63 · KeyN@65 · Space@66 · KeyW@67 · KeyE@69 · KeyR@82 · KeyK@84 · Enter@86 · KeyW@125",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Podestleiter · Holme, Stufen, Podest, Bügel\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter@0 · KeyI@450 · KeyC@459 · KeyH@460 · Space@462 · KeyW@463 · KeyN@465 · KeyS@466 · KeyC@468 · KeyH@469 · KeyE@471 · Space@472 · KeyM@473 · KeyI@475 · KeyR@476 · Space@477 · KeyH@479 · KeyI@480 · KeyE@481 · KeyR@483 · Space@484 · KeyE@486 · KeyI@487 · KeyN@489 · Space@490 · KeyW@491 · KeyE@493 · KeyR@494 · KeyK@495 · Enter@497 · KeyE@513",
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Sitzbank · Latten, Lehne, Wangen\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  },
+  "geteilt": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 65°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 415,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@384 · Rad@503 · Klick@526 · KeyB@559 · Enter@946 · KeyA@953 · KeyN@957 · KeyA@960 · KeyZ@962 · KeyH@966 · NumpadSubtract@969 · KeyW@975 · KeyE@979 · KeyR@981 · KeyK@984 · Semicolon@985 · KeyE@988 · KeyY@991 · KeyJ@993 · Digit2@995 · KeyI@997 · KeyJ@999 · KeyO@1001 · KeyX@1003 · KeyL@1016 · KeyC@1018 · KeyJ@1025 · KeyW@1027 · KeyC@1029 · KeyM@1031 · Digit9@1033 · KeyN@1035 · KeyC@1038 · KeyM@1039 · KeyF@1041 · KeyT@1043 · KeyB@1045 · KeyS@1047 · KeyI@1048 · Digit6@1050 · KeyW@1052 · KeyY@1060 · KeyJ@1062 · KeyZ@1064 · KeyC@1066 · KeyG@1067 · KeyF@1070 · Digit3@1072 · KeyB@1074 · KeyL@1076 · Digit9@1078 · KeyI@1080 · KeyB@1082 · KeyH@1084 · KeyV@1086 · KeyL@1088 · KeyC@1089 · KeyH@1091 · KeyJ@1092 · KeyP@1093 · KeyB@1095 · KeyN@1096 · KeyQ@1097 · KeyI@1099 · KeyL@1100 · KeyC@1102 · KeyJ@1103 · KeyO@1105 · KeyY@1107 · KeyX@1108 · KeyV@1110 · KeyZ@1111 · KeyX@1113 · Digit2@1114 · KeyF@1116 · KeyS@1117 · KeyZ@1118 · KeyW@1125 · Digit1@1127 · KeyH@1128 · KeyB@1130 · KeyM@1131 · Digit5@1133 · KeyP@1134 · KeyC@1136 · Digit2@1138 · KeyN@1139 · KeyO@1141 · KeyI@1142 · KeyI@1144 · KeyX@1145 · KeyU@1146 · KeyD@1148 · KeyW@1149 · KeyX@1150 · KeyS@1152 · KeyL@1153 · KeyD@1155 · KeyE@1156 · KeyX@1157 · KeyN@1159 · KeyZ@1160 · KeyM@1161 · KeyY@1163 · KeyM@1164 · KeyZ@1166 · KeyI@1167 · Digit5@1168 · KeyN@1170 · KeyJ@1171 · KeyK@1173 · KeyS@1174 · KeyB@1176 · KeyN@1177 · KeyV@1178 · KeyS@1180 · KeyB@1181 · KeyC@1182 · KeyX@1184 · KeyU@1185 · KeyD@1191 · KeyW@1193 · KeyX@1194 · KeyS@1195 · KeyL@1197 · KeyD@1198 · KeyB@1200 · KeyD@1201 · KeyL@1203 · KeyC@1205 · KeyJ@1206 · KeyZ@1207 · KeyA@1209 · KeyW@1210 · KeyC@1211 · KeyI@1212 · KeyO@1214 · KeyI@1215 · KeyJ@1216 · KeyJ@1218 · KeyO@1219 · KeyT@1226 · KeyU@1227 · Digit4@1229 · KeyN@1230 · KeyG@1231 · KeyY@1233 · KeyY@1234 · KeyO@1235 · KeyG@1237 · KeyR@1239 · KeyM@1240 · KeyY@1241 · KeyM@1243 · KeyY@1244 · Digit3@1245 · KeyN@1246 · KeyG@1248 · KeyI@1249 · Digit2@1250 · KeyO@1252 · KeyD@1253 · KeyU@1255 · KeyZ@1256 · KeyZ@1258 · KeyW@1259 · KeyE@1261 · Digit2@1262 · KeyM@1264 · KeyJ@1265 · KeyQ@1267 · KeyZ@1273 · KeyY@1277 · Digit2@1278 · KeyV@1280 · KeyM@1281 · KeyO@1282 · KeyW@1283 · KeyF@1285 · KeyJ@1286 · KeyY@1288 · KeyZ@1289 · KeyC@1290 · Digit5@1292 · KeyZ@1293 · KeyD@1294 · KeyJ@1296 · KeyH@1297 · KeyM@1299 · KeyD@1300 · KeyV@1302 · KeyH@1311 · KeyY@1313 · Digit2@1314 · KeyQ@1316 · KeyY@1317 · KeyO@1319 · KeyD@1321 · KeyB@1322 · KeyM@1323 · KeyN@1325 · KeyZ@1326 · KeyQ@1327 · KeyY@1329 · KeyM@1330 · Digit2@1331 · KeyQ@1333 · KeyZ@1334 · KeyZ@1335 · KeyW@1341 · KeyN@1343 · KeyL@1344 · KeyO@1346 · KeyW@1347 · KeyV@1349 · KeyI@1350 · KeyM@1351 · KeyJ@1353 · KeyE@1354 · KeyY@1356 · KeyO@1357 · KeyT@1359 · KeyU@1360 · KeyZ@1361 · KeyO@1363 · KeyT@1365 · KeyF@1366 · KeyL@1367 · KeyO@1369 · KeyW@1371 · KeyU@1372 · Digit5@1373 · KeyZ@1375 · KeyJ@1376 · KeyJ@1377 · KeyH@1379 · KeyN@1380 · KeyD@1381 · KeyM@1383 · KeyX@1384 · KeyN@1385 · KeyZ@1391 · KeyG@1393 · Digit1@1394 · KeyM@1396 · KeyJ@1397 · KeyE@1398 · KeyW@1400 · KeyN@1401 · KeyZ@1402 · KeyJ@1404 · KeyH@1405 · KeyN@1407 · KeyJ@1408 · KeyM@1409 · Digit0@1411 · KeyO@1412 · KeyW@1413 · KeyQ@1414 · KeyZ@1416 · KeyO@1417 · KeyG@1418 · KeyZ@1420 · KeyI@1422 · KeyN@1423 · KeyT@1424 · KeyH@1426 · KeyK@1427 · KeyM@1428 · KeyM@1430 · KeyZ@1431 · KeyJ@1432 · KeyY@1434 · KeyJ@1435 · KeyZ@1437 · KeyI@1438 · KeyZ@1439 · KeyG@1441 · KeyI@1442 · KeyY@1443 · KeyY@1445 · KeyZ@1446 · KeyG@1447 · Digit4@1449 · KeyO@1450 · KeyW@1452 · KeyE@1458 · KeyX@1460 · KeyM@1461 · KeyD@1462 · KeyU@1464 · KeyX@1466 · KeyN@1467 · KeyG@1469 · KeyQ@1470 · Digit3@1472 · KeyY@1473 · KeyT@1474 · KeyY@1475 · Digit1@1477 · KeyO@1478 · KeyT@1479 · KeyY@1481 · KeyW@1482 · KeyZ@1483 · KeyD@1485 · KeyC@1486 · KeyW@1488 · KeyZ@1489 · KeyC@1490 · KeyI@1492 · KeyS@1493 · KeyI@1494 · KeyM@1496 · KeyF@1497 · Digit1@1498 · KeyD@1499 · KeyG@1501 · Digit9@1502 · KeyY@1508 · KeyI@1509 · KeyJ@1511 · KeyO@1512 · KeyI@1514 · KeyZ@1515 · KeyJ@1517 · KeyG@1518 · Digit5@1520 · KeyO@1522 · KeyT@1523 · KeyE@1525 · Digit4@1526 · KeyM@1528 · KeyZ@1529 · KeyQ@1530 · Digit4@1532 · KeyN@1534 · Digit2@1535 · KeyN@1537 · KeyL@1538 · KeyN@1539 · KeyT@1541 · KeyM@1542 · Digit4@1544 · KeyO@1545 · KeyD@1547 · KeyE@1548 · KeyZ@1549 · KeyO@1551 · KeyT@1552 · KeyY@1558 · KeyY@1559 · KeyY@1561 · Digit2@1562 · KeyU@1563 · KeyY@1565 · KeyY@1567 · Digit2@1568 · KeyM@1570 · KeyX@1571 · KeyM@1573 · KeyG@1574 · KeyE@1576 · Digit2@1577 · KeyY@1578 · KeyZ@1580 · KeyU@1581 · KeyZ@1583 · KeyM@1584 · Digit2@1585 · KeyI@1593 · KeyX@1595 · KeyM@1596 · KeyZ@1598 · KeyF@1599 · KeyI@1600 · KeyZ@1602 · KeyW@1604 · KeyE@1605 · KeyY@1607 · KeyN@1608 · KeyG@1609 · KeyM@1610 · Digit0@1612 · KeyN@1613 · KeyD@1615 · KeyJ@1616 · KeyI@1618 · KeyN@1619 · KeyD@1621 · KeyH@1622 · KeyL@1623 · KeyY@1625 · KeyW@1626 · KeyE@1627 · Digit2@1629 · KeyM@1630 · KeyM@1632 · KeyJ@1633 · KeyL@1634 · KeyY@1636 · KeyT@1638 · KeyR@1639 · KeyM@1640 · KeyM@1642 · KeyJ@1643 · KeyH@1645 · KeyL@1646 · KeyN@1647 · KeyS@1649 · KeyJ@1650 · Digit9@1652 · Enter@1658 · KeyW@2035",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJoYXVzX2FsZW1hbm5pc2NoIixudWxsLDExNzMyMzI5NjksbnVsbCxudWxsLDBdLCJzaWciOiJjOTU4NGYyOGRmYmY3NGI2ODUzZWE2MjQzY2VmOWFjYzc5ZDJhMDVhY2QyODBmNzQyM2QzZWNlOWViMjEyOTUzOTFlOWU5ZjJhNDMxNzg1MjEwNzJhNjM0OWQzOGZiNThkMmZjYjZiZGIyYzg4OWExMDUxNGQ3YTY1OTYwZDcwZCIsImF1dG9yIjoiZjg5OTE4MzQ4N2NlNTM4ODEzOTYyY2UyY2MxMGE2YzUzM2IxMzFiZWEyNGM0NDJiNDhlYWE2MmJlYTRmMjhlNSJ9 | Geteiltes Werk steht: Alemannisch (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 408,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@532 · Rad@752 · Klick@765 · KeyB@785 · Enter@1155 · KeyA@1158 · KeyN@1160 · KeyA@1162 · KeyZ@1166 · KeyH@1168 · NumpadSubtract@1170 · KeyW@1172 · KeyE@1174 · KeyR@1176 · KeyK@1177 · Semicolon@1179 · KeyE@1182 · KeyY@1184 · KeyJ@1185 · Digit2@1187 · KeyI@1188 · KeyJ@1190 · KeyO@1192 · KeyX@1194 · KeyL@1195 · KeyC@1206 · KeyJ@1208 · KeyW@1210 · KeyC@1211 · KeyM@1213 · Digit9@1215 · KeyN@1216 · KeyC@1218 · KeyM@1220 · KeyF@1221 · KeyT@1223 · KeyB@1224 · KeyS@1226 · KeyI@1228 · Digit6@1229 · KeyW@1240 · KeyY@1242 · KeyJ@1243 · KeyZ@1245 · KeyC@1247 · KeyG@1249 · KeyF@1250 · Digit3@1252 · KeyB@1253 · KeyL@1255 · Digit9@1257 · KeyI@1258 · KeyB@1260 · KeyH@1262 · KeyV@1265 · KeyL@1266 · KeyC@1268 · KeyH@1270 · KeyJ@1271 · KeyP@1273 · KeyB@1275 · KeyN@1277 · KeyQ@1279 · KeyI@1282 · KeyL@1284 · KeyC@1286 · KeyJ@1288 · KeyM@1289 · KeyY@1291 · KeyW@1293 · KeyH@1294 · KeyY@1296 · KeyE@1307 · KeyM@1308 · KeyV@1310 · Digit1@1311 · KeyZ@1314 · Digit1@1315 · Digit9@1317 · KeyN@1319 · KeyD@1321 · KeyC@1323 · KeyI@1324 · KeyS@1326 · KeyB@1327 · KeyN@1329 · KeyV@1339 · KeyS@1341 · KeyB@1343 · KeyC@1345 · KeyW@1347 · Digit1@1348 · KeyN@1350 · KeyT@1351 · KeyK@1353 · KeyX@1355 · KeyO@1357 · KeyT@1359 · KeyA@1361 · Digit1@1363 · KeyO@1372 · KeyC@1374 · KeyX@1375 · KeyU@1377 · KeyD@1379 · KeyW@1381 · KeyX@1383 · KeyS@1384 · KeyL@1386 · KeyG@1387 · Digit5@1389 · Digit1@1391 · KeyB@1392 · KeyG@1394 · KeyW@1395 · KeyS@1397 · KeyM@1398 · KeyF@1400 · Digit0@1401 · KeyS@1402 · KeyI@1404 · KeyN@1405 · KeyN@1406 · KeyP@1408 · KeyZ@1409 · KeyY@1410 · KeyI@1411 · Digit6@1413 · KeyI@1418 · KeyJ@1420 · KeyM@1421 · Digit5@1423 · KeyM@1424 · KeyT@1425 · KeyZ@1427 · KeyK@1428 · KeyM@1429 · KeyZ@1431 · KeyK@1432 · Digit5@1433 · KeyM@1435 · Digit2@1436 · KeyU@1437 · KeyY@1439 · KeyZ@1440 · KeyG@1441 · KeyE@1443 · KeyZ@1444 · KeyO@1445 · KeyD@1451 · KeyD@1453 · KeyM@1454 · KeyN@1455 · KeyZ@1457 · KeyV@1458 · KeyM@1459 · KeyN@1461 · KeyZ@1463 · KeyQ@1464 · Digit3@1466 · KeyZ@1467 · KeyM@1469 · KeyU@1470 · KeyW@1471 · KeyO@1473 · KeyG@1474 · KeyY@1476 · Digit2@1477 · KeyM@1478 · KeyT@1480 · KeyC@1482 · Digit5@1483 · KeyM@1484 · KeyZ@1486 · KeyD@1487 · KeyJ@1488 · KeyZ@1489 · KeyM@1491 · KeyU@1492 · Digit2@1493 · KeyZ@1495 · KeyD@1496 · KeyA@1502 · KeyZ@1503 · KeyN@1505 · KeyT@1506 · KeyM@1508 · Digit4@1509 · KeyO@1510 · KeyG@1511 · KeyN@1513 · KeyK@1518 · KeyN@1520 · KeyW@1521 · KeyU@1523 · Digit0@1524 · KeyM@1525 · Digit2@1526 · KeyM@1528 · Digit5@1529 · KeyO@1531 · KeyD@1532 · KeyG@1533 · Digit5@1535 · KeyM@1536 · KeyD@1537 · KeyZ@1539 · KeyI@1540 · KeyM@1541 · KeyG@1542 · KeyQ@1544 · KeyW@1545 · KeyO@1547 · KeyG@1548 · KeyY@1550 · KeyZ@1551 · KeyZ@1552 · KeyW@1554 · KeyM@1555 · Digit5@1556 · KeyN@1557 · KeyT@1559 · KeyM@1560 · KeyY@1562 · KeyM@1564 · KeyD@1565 · KeyB@1566 · KeyM@1568 · KeyO@1569 · KeyG@1570 · KeyM@1571 · Digit5@1573 · KeyO@1574 · KeyT@1575 · KeyC@1577 · Digit4@1578 · KeyN@1579 · KeyJ@1585 · KeyU@1587 · KeyX@1588 · KeyO@1589 · KeyT@1591 · KeyR@1592 · KeyJ@1594 · KeyO@1595 · KeyD@1597 · KeyU@1598 · Digit5@1600 · KeyM@1601 · KeyD@1602 · KeyV@1603 · KeyH@1605 · KeyY@1606 · KeyM@1607 · KeyZ@1609 · KeyH@1610 · KeyN@1611 · KeyZ@1613 · KeyJ@1615 · KeyI@1616 · KeyM@1617 · KeyW@1619 · KeyV@1620 · KeyK@1621 · KeyN@1623 · KeyZ@1624 · KeyQ@1625 · KeyX@1627 · KeyN@1628 · KeyZ@1629 · KeyE@1635 · KeyW@1636 · KeyN@1638 · KeyJ@1639 · KeyV@1640 · KeyJ@1642 · KeyZ@1643 · KeyG@1644 · KeyM@1646 · Digit1@1647 · KeyN@1649 · Digit2@1650 · KeyY@1651 · KeyZ@1653 · KeyN@1654 · KeyJ@1655 · KeyZ@1657 · KeyK@1658 · KeyZ@1659 · KeyT@1661 · KeyG@1662 · Digit5@1664 · KeyY@1665 · KeyZ@1667 · KeyR@1668 · KeyJ@1670 · KeyM@1671 · KeyZ@1672 · KeyB@1674 · KeyK@1675 · KeyI@1677 · KeyI@1678 · KeyW@1680 · KeyI@1681 · KeyY@1683 · KeyX@1684 · KeyV@1685 · Digit0@1687 · KeyB@1688 · Digit3@1689 · KeyI@1690 · KeyI@1692 · KeyO@1693 · KeyI@1694 · KeyJ@1696 · KeyM@1697 · KeyO@1699 · KeyD@1700 · KeyK@1701 · Digit5@1703 · KeyM@1704 · KeyT@1705 · KeyG@1707 · KeyZ@1708 · KeyN@1709 · KeyD@1711 · KeyG@1712 · Digit3@1714 · KeyY@1715 · Digit2@1716 · KeyU@1718 · Digit1@1719 · KeyM@1720 · KeyZ@1722 · KeyG@1723 · Digit4@1724 · KeyM@1726 · KeyT@1727 · KeyM@1728 · Digit5@1730 · KeyN@1736 · KeyJ@1738 · KeyJ@1739 · KeyJ@1740 · KeyZ@1742 · KeyT@1743 · KeyJ@1744 · KeyJ@1746 · KeyY@1752 · KeyZ@1753 · KeyE@1755 · KeyW@1756 · KeyY@1757 · KeyT@1759 · KeyZ@1760 · KeyJ@1762 · KeyN@1764 · KeyT@1765 · KeyM@1767 · KeyZ@1768 · KeyY@1769 · KeyJ@1770 · KeyE@1772 · KeyZ@1773 · KeyM@1774 · KeyW@1776 · KeyJ@1777 · KeyL@1778 · KeyY@1780 · KeyT@1782 · KeyI@1783 · Digit0@1784 · KeyY@1786 · KeyZ@1787 · KeyQ@1788 · Digit0@1790 · KeyM@1791 · KeyM@1792 · KeyI@1794 · Digit0@1795 · KeyO@1797 · KeyG@1798 · KeyV@1800 · KeyH@1801 · KeyY@1802 · KeyT@1803 · KeyY@1805 · KeyY@1806 · KeyY@1807 · KeyM@1809 · KeyV@1810 · KeyH@1812 · KeyN@1813 · KeyG@1815 · KeyY@1816 · KeyY@1818 · KeyO@1819 · KeyG@1820 · KeyU@1821 · Digit1@1823 · KeyI@1824 · KeyN@1826 · Digit0@1827 · Enter@1828 · KeyE@1844 · KeyW@2631 · KeyE@4234",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJmYWhyemV1Z19ndCIsbnVsbCw1NTkxOTA1OCxudWxsLG51bGwsMF0sInNpZyI6IjM5MTZkMzk5M2UyZGEzODdmNzVmNzQ3ZmUwOGY2MTc5MzdjZmU2ZDAzNTM4OGNkNWU0M2M5ODg5MDZiMGQwOGYzZWM5NTMyMDBmOGM5OTc4NjUxOTRjODU5MDVhYmZhNzJiMWVkNzQxNzEwNjVjZGM1N2YzNjZkZTg5YzRjMzBkIiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: GT (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@374 · Klick@450 · KeyB@463 · Enter@836 · KeyA@838 · KeyN@840 · KeyA@842 · KeyZ@843 · KeyH@844 · NumpadSubtract@845 · KeyW@847 · KeyE@848 · KeyR@870 · KeyK@872 · Semicolon@873 · KeyE@875 · KeyY@876 · KeyJ@878 · Digit2@879 · KeyI@881 · KeyJ@883 · KeyO@884 · KeyX@886 · KeyL@887 · KeyC@889 · KeyJ@890 · KeyW@892 · KeyC@893 · KeyM@895 · Digit9@896 · KeyN@898 · KeyC@900 · KeyM@901 · KeyF@902 · KeyT@904 · KeyB@905 · KeyS@906 · KeyI@907 · Digit6@909 · KeyW@910 · KeyY@912 · KeyJ@913 · KeyZ@914 · KeyC@916 · KeyG@917 · KeyF@919 · Digit3@920 · KeyB@921 · KeyL@922 · Digit9@924 · KeyI@925 · KeyB@926 · KeyH@928 · KeyV@929 · KeyL@930 · KeyC@932 · KeyH@934 · KeyJ@935 · KeyP@936 · KeyB@938 · KeyN@939 · KeyQ@941 · KeyI@942 · KeyL@944 · KeyC@945 · KeyJ@947 · Digit0@949 · KeyB@950 · Digit3@951 · KeyJ@953 · KeyF@954 · KeyZ@955 · KeyH@957 · KeyJ@958 · KeyH@959 · KeyY@961 · Digit2@962 · KeyH@963 · KeyL@966 · KeyB@967 · KeyN@969 · KeyR@970 · KeyV@971 · KeyC@973 · KeyI@974 · KeyI@976 · KeyS@977 · KeyB@979 · KeyN@980 · KeyV@987 · KeyS@989 · KeyB@990 · KeyC@991 · KeyW@993 · Digit5@994 · KeyO@995 · KeyT@996 · KeyU@998 · Digit2@1003 · KeyM@1005 · KeyZ@1006 · KeyE@1008 · KeyW@1009 · KeyM@1011 · KeyT@1012 · KeyQ@1014 · KeyS@1015 · KeyB@1017 · KeyN@1018 · KeyV@1019 · KeyS@1021 · KeyB@1022 · KeyC@1023 · KeyX@1025 · KeyU@1026 · KeyD@1027 · KeyW@1029 · KeyX@1030 · KeyS@1031 · KeyL@1033 · KeyD@1034 · KeyB@1035 · KeyD@1037 · KeyL@1038 · KeyC@1039 · KeyJ@1040 · KeyZ@1042 · KeyA@1043 · KeyW@1045 · KeyC@1046 · KeyI@1048 · KeyO@1054 · KeyI@1055 · KeyJ@1057 · KeyM@1058 · KeyM@1060 · KeyT@1061 · KeyM@1062 · Digit5@1064 · KeyM@1065 · KeyZ@1067 · KeyD@1068 · KeyJ@1069 · KeyN@1071 · KeyJ@1072 · KeyA@1073 · Digit4@1075 · KeyO@1077 · KeyT@1079 · KeyQ@1080 · KeyY@1081 · KeyN@1088 · KeyW@1089 · KeyM@1091 · KeyZ@1093 · KeyZ@1094 · KeyT@1095 · KeyM@1097 · KeyY@1099 · KeyO@1100 · KeyT@1102 · KeyG@1103 · KeyW@1104 · KeyM@1106 · KeyW@1107 · KeyU@1108 · Digit1@1110 · KeyO@1111 · KeyD@1112 · KeyF@1114 · KeyJ@1115 · KeyM@1117 · KeyW@1118 · KeyN@1120 · KeyM@1121 · KeyO@1122 · KeyD@1123 · KeyA@1125 · Digit1@1126 · KeyN@1127 · Digit2@1129 · KeyJ@1130 · KeyH@1132 · KeyZ@1133 · KeyT@1135 · KeyQ@1137 · Digit3@1138 · KeyO@1139 · KeyG@1141 · KeyM@1143 · Digit1@1144 · KeyY@1146 · KeyM@1147 · KeyE@1154 · Digit3@1156 · KeyZ@1158 · KeyJ@1159 · KeyE@1160 · Digit0@1162 · KeyO@1164 · KeyD@1165 · KeyY@1168 · Digit3@1169 · KeyM@1171 · KeyT@1172 · KeyZ@1174 · KeyM@1175 · KeyZ@1177 · KeyG@1178 · KeyJ@1180 · KeyJ@1181 · KeyO@1183 · KeyG@1185 · KeyM@1186 · KeyZ@1188 · KeyO@1189 · KeyW@1190 · KeyI@1192 · KeyY@1193 · KeyM@1195 · Digit2@1196 · KeyU@1199 · KeyY@1200 · KeyZ@1201 · KeyJ@1203 · KeyZ@1204 · KeyJ@1206 · KeyO@1207 · KeyG@1209 · KeyQ@1210 · Digit4@1212 · KeyO@1213 · KeyD@1215 · KeyM@1217 · Digit0@1218 · KeyN@1219 · Digit2@1221 · KeyM@1222 · KeyX@1223 · KeyY@1225 · KeyT@1226 · KeyE@1227 · KeyZ@1229 · KeyZ@1230 · KeyJ@1232 · KeyE@1233 · KeyW@1235 · KeyZ@1236 · KeyJ@1238 · KeyY@1239 · KeyY@1241 · KeyM@1242 · KeyD@1244 · KeyK@1246 · Digit3@1247 · KeyN@1249 · KeyG@1250 · KeyN@1252 · KeyH@1253 · KeyY@1254 · KeyW@1256 · KeyM@1257 · Digit3@1258 · KeyY@1260 · KeyZ@1261 · KeyD@1262 · KeyH@1264 · KeyM@1265 · KeyJ@1267 · KeyA@1268 · Digit0@1269 · KeyY@1271 · KeyT@1272 · KeyC@1273 · Digit3@1275 · KeyN@1276 · KeyD@1277 · KeyJ@1279 · KeyM@1280 · KeyM@1287 · KeyT@1289 · KeyY@1290 · Digit0@1292 · KeyY@1293 · KeyT@1294 · KeyU@1296 · KeyY@1297 · KeyZ@1299 · KeyW@1300 · KeyI@1302 · KeyX@1303 · KeyZ@1305 · KeyJ@1306 · KeyG@1307 · KeyW@1309 · KeyN@1310 · KeyD@1312 · KeyI@1313 · KeyX@1314 · KeyM@1316 · KeyM@1318 · KeyM@1319 · KeyW@1321 · KeyO@1322 · KeyC@1323 · KeyI@1325 · KeyS@1326 · KeyI@1328 · KeyM@1329 · KeyF@1331 · Digit1@1332 · KeyD@1334 · KeyG@1335 · Digit9@1336 · KeyY@1337 · KeyI@1339 · KeyJ@1340 · KeyO@1341 · KeyI@1343 · KeyZ@1344 · KeyJ@1346 · KeyG@1347 · Digit5@1349 · KeyO@1350 · KeyT@1351 · KeyE@1353 · Digit4@1354 · KeyM@1356 · KeyZ@1357 · KeyQ@1358 · Digit4@1360 · KeyN@1361 · Digit2@1362 · KeyN@1364 · KeyL@1370 · KeyN@1372 · KeyT@1373 · KeyM@1375 · Digit4@1376 · KeyO@1378 · KeyD@1379 · KeyE@1380 · KeyZ@1382 · KeyO@1383 · KeyT@1385 · KeyY@1386 · KeyY@1388 · KeyY@1389 · Digit2@1390 · KeyU@1391 · KeyY@1393 · KeyY@1394 · Digit2@1396 · KeyM@1397 · KeyX@1399 · KeyM@1400 · KeyG@1402 · KeyE@1403 · Digit2@1404 · KeyY@1406 · KeyZ@1407 · KeyU@1408 · KeyZ@1410 · KeyM@1412 · Digit2@1413 · KeyI@1414 · KeyX@1422 · KeyM@1423 · KeyZ@1425 · KeyF@1427 · KeyI@1428 · KeyZ@1430 · KeyW@1431 · KeyE@1433 · KeyY@1434 · KeyN@1436 · KeyG@1437 · KeyM@1439 · Digit0@1440 · KeyN@1442 · KeyD@1443 · KeyJ@1445 · KeyI@1447 · KeyN@1453 · KeyD@1455 · KeyH@1456 · KeyL@1458 · KeyY@1459 · KeyW@1460 · KeyE@1461 · Digit2@1463 · KeyM@1475 · KeyM@1477 · KeyJ@1478 · KeyL@1480 · KeyY@1481 · KeyT@1483 · KeyR@1485 · KeyM@1486 · KeyM@1488 · KeyJ@1489 · KeyH@1490 · KeyL@1492 · KeyN@1493 · KeyS@1495 · KeyJ@1497 · Digit9@1499 · Enter@1500 · KeyE@1509",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJ0b3JfZHJhY2hlbnRvciIsbnVsbCw5OTU2MzEwMTQsbnVsbCxudWxsLDBdLCJzaWciOiJmMTM5MzdjNjA4OTQyNWMzZTMyOTgwMWU1ODFjMWNmODA1N2JhZTQ3OGM1YmE3ZjE0ODY3MTZmZGJjOGMzOWIyM2UyZjZjOGQ4ODM0N2MxYTEzZjEwZjYyMDk3NGNhYWM3YzdhMjA0YTc3NDJmMTY0YTUyZWIxZjgwNDIxMmMwOCIsImF1dG9yIjoiZjg5OTE4MzQ4N2NlNTM4ODEzOTYyY2UyY2MxMGE2YzUzM2IxMzFiZWEyNGM0NDJiNDhlYWE2MmJlYTRmMjhlNSJ9 | Geteiltes Werk steht: Drachentor (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 1318,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@367 · Rad@480 · Klick@499 · KeyB@512 · Enter@900 · KeyA@902 · KeyN@904 · KeyA@906 · KeyZ@907 · KeyH@909 · NumpadSubtract@910 · KeyW@912 · KeyE@914 · KeyR@917 · KeyK@918 · Semicolon@920 · KeyE@921 · KeyY@923 · KeyJ@924 · Digit2@926 · KeyI@927 · KeyJ@929 · KeyO@937 · KeyX@939 · KeyL@940 · KeyC@942 · KeyJ@943 · KeyW@944 · KeyC@946 · KeyM@952 · Digit9@953 · KeyN@955 · KeyC@956 · KeyM@958 · KeyF@959 · KeyT@961 · KeyB@963 · KeyS@965 · KeyI@966 · Digit6@968 · KeyW@970 · KeyY@971 · KeyJ@973 · KeyJ@974 · KeyA@976 · KeyG@977 · KeyF@979 · KeyP@988 · KeyB@990 · KeyI@991 · KeyI@993 · KeyS@994 · KeyW@995 · KeyY@1002 · KeyJ@1004 · KeyK@1006 · KeyZ@1007 · KeyW@1009 · KeyZ@1010 · KeyP@1012 · KeyB@1016 · KeyM@1018 · KeyV@1019 · KeyF@1021 · KeyY@1023 · KeyM@1024 · KeyX@1026 · Digit1@1027 · KeyZ@1029 · KeyX@1031 · KeyB@1033 · KeyY@1034 · KeyA@1036 · KeyW@1038 · Digit5@1040 · Digit0@1042 · KeyI@1044 · KeyI@1045 · KeyW@1054 · KeyI@1056 · KeyZ@1058 · KeyW@1060 · KeyL@1061 · KeyN@1063 · KeyZ@1065 · KeyW@1067 · Digit5@1068 · KeyF@1070 · KeyY@1072 · KeyN@1073 · KeyJ@1075 · Digit1@1077 · KeyZ@1079 · KeyW@1087 · KeyN@1089 · KeyR@1091 · KeyZ@1092 · KeyS@1094 · KeyI@1096 · KeyS@1099 · KeyW@1100 · Digit3@1102 · KeyS@1104 · KeyI@1105 · KeyC@1107 · Digit2@1108 · KeyH@1110 · KeyH@1111 · KeyC@1112 · KeyG@1114 · KeyU@1115 · KeyI@1117 · KeyO@1118 · KeyI@1119 · KeyJ@1121 · KeyI@1122 · KeyB@1123 · Digit3@1125 · KeyG@1126 · KeyI@1127 · KeyL@1128 · KeyC@1130 · KeyJ@1132 · KeyJ@1133 · KeyB@1134 · Digit2@1135 · KeyX@1137 · KeyV@1138 · KeyC@1139 · KeyI@1141 · KeyI@1142 · Digit6@1143 · KeyO@1145 · KeyD@1146 · KeyA@1152 · KeyY@1153 · KeyN@1155 · KeyJ@1156 · KeyC@1157 · Digit0@1159 · KeyN@1160 · KeyI@1161 · KeyW@1163 · KeyI@1164 · KeyB@1166 · KeyW@1167 · KeyF@1169 · Digit0@1170 · KeyZ@1171 · KeyX@1172 · KeyJ@1174 · KeyP@1176 · KeyY@1177 · KeyW@1178 · KeyW@1180 · KeyI@1182 · KeyO@1183 · KeyI@1185 · KeyJ@1186 · KeyZ@1188 · KeyD@1189 · KeyG@1190 · KeyV@1191 · KeyP@1193 · KeyB@1194 · KeyI@1195 · KeyI@1197 · KeyS@1198 · KeyI@1200 · KeyN@1201 · KeyB@1203 · KeyV@1204 · KeyC@1206 · Digit2@1208 · KeyL@1209 · Digit0@1210 · KeyA@1212 · KeyW@1214 · Digit9@1215 · KeyU@1216 · KeyI@1218 · KeyJ@1219 · KeyP@1220 · Digit7@1222 · KeyI@1223 · KeyN@1224 · KeyG@1225 · KeyI@1227 · KeyO@1228 · KeyI@1229 · Digit0@1236 · KeyZ@1238 · KeyL@1239 · KeyC@1240 · KeyJ@1242 · Digit5@1243 · KeyI@1244 · KeyJ@1246 · KeyO@1248 · KeyX@1249 · KeyL@1250 · KeyJ@1252 · KeyI@1253 · Digit1@1254 · KeyL@1256 · KeyC@1257 · KeyJ@1258 · Digit6@1260 · KeyI@1261 · KeyJ@1262 · KeyO@1264 · KeyW@1266 · KeyF@1267 · KeyS@1268 · KeyW@1270 · KeyI@1271 · KeyC@1273 · KeyM@1274 · Digit9@1275 · Digit0@1277 · KeyY@1278 · KeyX@1280 · KeyR@1282 · KeyP@1283 · KeyB@1284 · Digit2@1286 · Digit4@1287 · KeyI@1288 · KeyO@1290 · KeyN@1291 · KeyS@1292 · KeyI@1293 · KeyE@1295 · KeyC@1296 · KeyI@1302 · Digit6@1303 · KeyM@1305 · KeyC@1306 · KeyW@1308 · KeyI@1309 · KeyE@1311 · KeyS@1312 · KeyI@1313 · Digit6@1315 · KeyM@1316 · KeyC@1317 · KeyW@1319 · KeyI@1320 · KeyE@1321 · KeyI@1323 · KeyI@1324 · Digit6@1325 · KeyM@1327 · KeyH@1328 · Digit0@1329 · KeyS@1331 · KeyI@1332 · KeyN@1333 · KeyN@1335 · KeyP@1336 · KeyE@1337 · KeyM@1339 · KeyU@1340 · KeyI@1342 · KeyO@1343 · KeyN@1344 · KeyS@1345 · KeyI@1353 · KeyE@1354 · KeyC@1356 · KeyI@1357 · Digit6@1359 · KeyM@1360 · KeyS@1362 · KeyW@1364 · KeyI@1365 · KeyE@1367 · KeyS@1368 · KeyI@1369 · Digit6@1371 · KeyM@1372 · KeyI@1374 · Digit4@1375 · Digit1@1376 · KeyL@1378 · KeyC@1379 · KeyJ@1381 · Digit6@1382 · KeyI@1384 · KeyJ@1385 · KeyO@1386 · KeyX@1387 · KeyL@1389 · KeyJ@1390 · KeyV@1392 · Digit9@1393 · KeyL@1394 · KeyC@1395 · KeyJ@1397 · KeyV@1399 · KeyC@1400 · KeyE@1401 · KeyN@1403 · KeyO@1404 · KeyY@1405 · KeyW@1407 · KeyL@1409 · KeyU@1410 · KeyI@1411 · KeyJ@1412 · KeyP@1418 · KeyB@1420 · KeyE@1421 · KeyY@1423 · KeyJ@1424 · Digit0@1425 · KeyB@1427 · Digit2@1428 · Digit9@1429 · KeyS@1431 · KeyI@1432 · KeyJ@1434 · KeyO@1435 · KeyI@1436 · KeyA@1438 · KeyM@1439 · KeyO@1440 · KeyK@1442 · KeyB@1443 · KeyM@1444 · KeyR@1446 · KeyL@1447 · KeyI@1449 · KeyI@1450 · KeyW@1451 · KeyI@1453 · KeyB@1454 · Digit3@1455 · KeyA@1456 · KeyI@1458 · KeyO@1459 · KeyI@1460 · KeyJ@1462 · KeyO@1464 · KeyY@1465 · KeyW@1467 · Digit5@1468 · KeyK@1469 · KeyX@1470 · Digit2@1472 · KeyT@1473 · KeyU@1474 · KeyY@1476 · KeyX@1477 · KeyA@1478 · KeyI@1480 · KeyL@1482 · KeyC@1483 · KeyJ@1485 · KeyJ@1486 · KeyY@1487 · KeyX@1489 · KeyA@1490 · KeyI@1491 · KeyO@1492 · KeyJ@1494 · KeyA@1495 · KeyU@1497 · KeyN@1498 · KeyC@1500 · KeyW@1501 · KeyI@1502 · KeyY@1504 · KeyX@1505 · KeyQ@1506 · KeyI@1507 · KeyO@1509 · KeyJ@1511 · KeyB@1512 · Digit9@1514 · KeyX@1515 · KeyX@1516 · Digit0@1518 · KeyS@1519 · KeyE@1520 · KeyY@1522 · KeyJ@1523 · KeyZ@1525 · KeyA@1526 · KeyG@1528 · KeyF@1529 · KeyW@1535 · KeyZ@1537 · KeyS@1539 · KeyI@1540 · Digit6@1541 · KeyI@1543 · KeyM@1544 · KeyJ@1545 · KeyV@1547 · KeyE@1549 · KeyC@1550 · KeyI@1552 · KeyS@1553 · KeyI@1555 · KeyM@1556 · KeyN@1558 · KeyV@1560 · KeyB@1561 · KeyG@1562 · Digit9@1568 · KeyY@1569 · KeyI@1571 · KeyJ@1573 · KeyO@1574 · Digit4@1576 · KeyM@1577 · KeyD@1579 · KeyI@1580 · Digit2@1582 · KeyN@1583 · KeyZ@1584 · KeyQ@1586 · Digit2@1588 · KeyL@1589 · KeyC@1591 · KeyJ@1592 · KeyT@1594 · KeyY@1595 · KeyX@1597 · KeyR@1598 · KeyL@1600 · KeyC@1601 · KeyM@1603 · KeyL@1604 · KeyH@1606 · KeyB@1607 · KeyC@1609 · KeyI@1611 · Digit6@1612 · KeyI@1614 · KeyN@1615 · KeyN@1617 · Digit0@1618 · KeyZ@1620 · KeyW@1622 · KeyL@1623 · KeyU@1625 · KeyI@1626 · KeyI@1628 · KeyW@1629 · KeyI@1636 · KeyC@1637 · KeyG@1638 · Digit9@1640 · KeyZ@1641 · KeyA@1643 · KeyX@1644 · KeyR@1645 · KeyP@1647 · KeyB@1649 · Digit2@1650 · Digit4@1651 · KeyI@1653 · KeyO@1654 · KeyN@1656 · KeyS@1658 · KeyI@1659 · KeyE@1661 · KeyC@1662 · KeyI@1664 · Digit6@1665 · KeyM@1667 · KeyY@1668 · KeyW@1669 · KeyI@1671 · KeyE@1672 · KeyS@1673 · KeyI@1675 · Digit6@1676 · KeyM@1677 · KeyS@1679 · Digit4@1680 · KeyY@1682 · KeyN@1683 · KeyS@1684 · KeyW@1686 · KeyI@1687 · KeyE@1689 · KeyI@1690 · KeyI@1691 · Digit6@1693 · KeyM@1694 · KeyH@1695 · Digit0@1697 · KeyS@1699 · KeyI@1700 · KeyN@1702 · KeyJ@1703 · KeyV@1704 · KeyD@1706 · KeyG@1707 · KeyF@1709 · Digit0@1711 · KeyA@1712 · KeyW@1714 · Digit9@1715 · KeyU@1717 · KeyI@1718 · KeyJ@1719 · KeyP@1721 · Digit7@1722 · KeyI@1724 · KeyN@1725 · KeyG@1727 · KeyI@1728 · KeyO@1730 · KeyJ@1735 · KeyA@1737 · KeyS@1738 · KeyI@1740 · KeyN@1741 · KeyK@1743 · KeyI@1744 · KeyO@1747 · KeyJ@1749 · KeyA@1750 · KeyS@1751 · KeyI@1752 · KeyN@1754 · KeyO@1755 · KeyI@1757 · KeyO@1758 · KeyJ@1760 · KeyB@1761 · Digit9@1763 · KeyL@1768 · KeyC@1770 · KeyJ@1771 · KeyZ@1773 · KeyA@1774 · KeyX@1775 · KeyP@1777 · KeyL@1778 · KeyI@1779 · KeyJ@1781 · KeyP@1782 · Digit7@1784 · KeyI@1785 · KeyN@1786 · KeyG@1788 · KeyI@1789 · KeyO@1790 · KeyJ@1792 · KeyE@1793 · KeyS@1794 · KeyI@1796 · KeyN@1797 · KeyK@1799 · KeyI@1800 · KeyO@1802 · KeyJ@1803 · KeyI@1804 · KeyU@1806 · KeyN@1807 · KeyS@1808 · KeyW@1810 · KeyI@1811 · KeyE@1813 · KeyI@1815 · KeyI@1816 · Digit6@1818 · KeyM@1819 · KeyS@1820 · Digit4@1822 · Digit1@1823 · KeyF@1824 · KeyS@1826 · KeyW@1827 · KeyI@1828 · KeyB@1830 · Digit3@1832 · KeyB@1833 · KeyD@1835 · KeyA@1836 · KeyG@1837 · KeyF@1838 · KeyP@1840 · KeyB@1841 · KeyI@1843 · KeyI@1844 · Digit6@1845 · KeyW@1847 · Digit3@1849 · KeyS@1850 · KeyI@1852 · KeyD@1853 · KeyG@1854 · Digit9@1856 · KeyV@1857 · KeyB@1859 · KeyC@1860 · KeyI@1861 · Digit6@1863 · KeyI@1865 · KeyM@1866 · KeyJ@1868 · KeyD@1869 · KeyP@1870 · KeyG@1872 · Digit5@1873 · KeyK@1875 · KeyZ@1876 · KeyS@1877 · KeyI@1879 · KeyS@1880 · KeyI@1882 · KeyM@1883 · Digit9@1885 · KeyW@1886 · KeyI@1887 · KeyJ@1889 · KeyO@1890 · KeyI@1892 · KeyA@1893 · KeyG@1894 · KeyF@1896 · KeyU@1902 · KeyZ@1904 · KeyF@1906 · Digit9@1907 · KeyR@1909 · KeyB@1910 · KeyM@1912 · KeyF@1914 · KeyW@1915 · KeyI@1917 · KeyI@1918 · KeyW@1919 · KeyI@1921 · KeyY@1922 · Digit2@1924 · KeyF@1925 · KeyW@1926 · KeyI@1928 · KeyJ@1929 · KeyO@1931 · KeyW@1932 · KeyL@1934 · KeyJ@1935 · KeyQ@1936 · KeyS@1938 · KeyI@1939 · KeyM@1940 · KeyF@1942 · Digit0@1943 · KeyI@1944 · KeyJ@1946 · KeyO@1947 · KeyW@1949 · KeyF@1950 · KeyV@1952 · Digit1@1953 · Digit9@1954 · KeyL@1956 · KeyH@1957 · KeyS@1958 · KeyI@1960 · KeyC@1961 · Digit2@1962 · KeyH@1968 · KeyH@1970 · KeyC@1971 · KeyG@1972 · KeyU@1974 · KeyI@1975 · KeyO@1977 · KeyI@1978 · KeyJ@1979 · KeyI@1981 · KeyB@1983 · Digit3@1984 · KeyG@1986 · KeyI@1987 · KeyL@1988 · KeyC@1990 · KeyJ@1991 · KeyJ@1992 · KeyB@1994 · Digit2@1995 · KeyX@1997 · KeyV@1998 · KeyC@2000 · KeyI@2001 · KeyI@2002 · Digit6@2004 · KeyO@2005 · KeyD@2007 · KeyA@2008 · KeyY@2009 · KeyN@2011 · KeyJ@2013 · KeyC@2019 · Digit0@2020 · KeyN@2022 · KeyI@2023 · KeyW@2025 · KeyI@2026 · KeyB@2028 · KeyW@2030 · KeyF@2032 · Digit0@2034 · KeyZ@2035 · KeyX@2037 · KeyJ@2038 · KeyP@2040 · KeyY@2041 · KeyW@2043 · KeyW@2044 · KeyI@2046 · KeyO@2048 · KeyI@2049 · KeyJ@2051 · KeyZ@2052 · KeyD@2054 · KeyG@2055 · KeyV@2057 · KeyP@2058 · KeyB@2059 · KeyI@2061 · KeyI@2062 · KeyS@2064 · KeyI@2066 · KeyN@2067 · KeyB@2068 · KeyV@2070 · KeyC@2071 · Digit2@2073 · KeyL@2074 · Digit0@2076 · KeyA@2077 · KeyW@2079 · Digit9@2086 · KeyU@2088 · KeyI@2090 · KeyJ@2091 · KeyP@2092 · Digit7@2094 · KeyI@2095 · KeyN@2097 · KeyG@2098 · KeyI@2100 · KeyO@2102 · KeyJ@2103 · KeyA@2105 · KeyS@2106 · KeyI@2108 · KeyN@2109 · KeyK@2111 · KeyI@2113 · KeyO@2119 · KeyJ@2120 · KeyI@2122 · KeyU@2123 · KeyN@2125 · KeyY@2126 · KeyW@2128 · KeyI@2129 · KeyE@2132 · KeyI@2133 · KeyI@2135 · Digit6@2137 · KeyM@2138 · KeyH@2140 · Digit0@2141 · KeyS@2143 · KeyI@2144 · KeyN@2145 · KeyJ@2147 · KeyV@2149 · KeyD@2150 · KeyG@2151 · KeyF@2153 · Digit0@2154 · KeyA@2155 · KeyW@2157 · Digit9@2158 · KeyU@2159 · KeyI@2161 · KeyJ@2162 · KeyP@2164 · Digit7@2165 · KeyI@2166 · KeyN@2168 · KeyG@2169 · KeyI@2171 · KeyO@2176 · KeyJ@2177 · KeyA@2178 · KeyS@2180 · KeyI@2182 · KeyN@2183 · KeyK@2185 · KeyI@2186 · KeyO@2188 · KeyJ@2189 · KeyA@2191 · KeyS@2192 · KeyI@2193 · KeyN@2195 · KeyO@2197 · KeyI@2198 · KeyO@2200 · KeyJ@2201 · KeyB@2203 · Digit9@2204 · KeyL@2206 · KeyC@2207 · KeyJ@2209 · KeyZ@2210 · KeyA@2212 · KeyX@2219 · KeyP@2220 · KeyL@2222 · KeyI@2223 · KeyJ@2225 · KeyP@2226 · Digit7@2228 · KeyI@2229 · KeyN@2231 · KeyG@2232 · KeyI@2234 · KeyO@2235 · KeyJ@2237 · KeyG@2239 · KeyS@2240 · KeyI@2242 · KeyN@2243 · KeyK@2245 · KeyI@2247 · KeyO@2248 · KeyJ@2250 · KeyA@2251 · KeyU@2253 · KeyN@2254 · KeyC@2256 · KeyW@2257 · KeyI@2259 · KeyE@2260 · KeyI@2261 · KeyI@2263 · Digit6@2268 · KeyM@2270 · KeyN@2271 · Digit0@2273 · KeyS@2274 · KeyI@2276 · KeyM@2277 · Digit9@2279 · KeyW@2281 · KeyQ@2282 · Digit2@2284 · KeyH@2285 · KeyH@2287 · KeyA@2289 · KeyW@2290 · Digit4@2292 · KeyI@2293 · KeyO@2295 · KeyL@2297 · KeyT@2298 · Digit7@2300 · KeyI@2301 · KeyN@2303 · KeyR@2304 · KeyV@2306 · KeyB@2308 · Digit2@2309 · KeyW@2311 · KeyI@2312 · KeyO@2314 · KeyI@2316 · KeyJ@2318 · KeyO@2319 · KeyW@2321 · Digit6@2322 · KeyR@2324 · KeyU@2326 · KeyZ@2327 · KeyG@2329 · KeyU@2336 · KeyI@2338 · KeyL@2339 · KeyC@2341 · KeyJ@2342 · KeyV@2343 · KeyC@2345 · KeyC@2347 · KeyI@2349 · Digit6@2350 · KeyI@2352 · KeyM@2353 · KeyH@2355 · KeyH@2356 · KeyB@2358 · KeyM@2359 · KeyR@2361 · KeyF@2362 · KeyA@2368 · Digit2@2370 · Digit5@2371 · KeyH@2373 · KeyC@2374 · KeyC@2376 · KeyI@2377 · KeyS@2379 · KeyI@2381 · KeyM@2382 · KeyN@2384 · KeyH@2385 · KeyC@2387 · KeyC@2388 · KeyI@2390 · Digit6@2392 · KeyM@2393 · KeyC@2395 · Digit4@2397 · Digit0@2398 · KeyL@2400 · KeyC@2401 · KeyJ@2403 · KeyH@2405 · KeyD@2406 · KeyC@2408 · KeyI@2409 · Digit6@2411 · KeyM@2413 · KeyH@2419 · Digit1@2421 · KeyD@2422 · KeyF@2424 · KeyV@2426 · Digit1@2427 · KeyD@2429 · KeyL@2430 · KeyF@2432 · KeyS@2433 · KeyI@2435 · KeyC@2436 · Digit3@2438 · KeyB@2439 · KeyH@2441 · KeyD@2442 · Digit2@2444 · Digit5@2445 · KeyF@2447 · KeyY@2449 · KeyM@2450 · KeyX@2452 · Digit1@2453 · KeyZ@2455 · KeyX@2457 · KeyB@2458 · KeyY@2460 · KeyA@2461 · KeyW@2464 · Digit5@2465 · Digit0@2467 · KeyI@2468 · KeyI@2470 · KeyW@2471 · KeyI@2473 · KeyZ@2474 · KeyW@2475 · KeyL@2477 · KeyN@2478 · KeyZ@2480 · KeyW@2482 · Digit5@2483 · KeyF@2485 · KeyY@2486 · KeyN@2488 · KeyJ@2489 · Digit1@2491 · KeyZ@2492 · KeyW@2494 · KeyN@2495 · KeyR@2497 · KeyZ@2499 · KeyS@2507 · KeyI@2509 · KeyS@2510 · KeyB@2512 · KeyN@2514 · KeyV@2516 · KeyS@2517 · KeyB@2519 · KeyC@2521 · KeyW@2522 · KeyZ@2524 · KeyO@2525 · KeyT@2527 · KeyE@2528 · KeyZ@2530 · KeyM@2532 · KeyJ@2533 · KeyQ@2535 · Digit2@2537 · KeyO@2538 · KeyT@2540 · KeyU@2541 · Digit4@2543 · KeyL@2544 · KeyG@2546 · Digit5@2552 · Digit1@2554 · KeyB@2555 · KeyG@2557 · KeyW@2559 · KeyS@2560 · KeyB@2561 · KeyN@2564 · KeyV@2565 · KeyS@2567 · KeyB@2569 · KeyC@2570 · KeyW@2572 · KeyW@2573 · KeyX@2575 · KeyV@2577 · Digit0@2578 · KeyS@2580 · KeyI@2582 · KeyN@2583 · KeyN@2585 · KeyP@2586 · KeyZ@2588 · KeyY@2589 · KeyI@2591 · Digit6@2592 · KeyI@2594 · KeyM@2595 · KeyQ@2597 · Digit3@2598 · KeyN@2600 · KeyZ@2601 · KeyN@2603 · KeyI@2604 · KeyY@2606 · KeyZ@2607 · KeyH@2609 · KeyJ@2611 · KeyY@2612 · KeyT@2614 · KeyG@2616 · KeyW@2617 · KeyZ@2619 · KeyT@2620 · KeyG@2622 · Digit2@2623 · KeyM@2625 · KeyW@2626 · KeyM@2628 · KeyZ@2629 · KeyZ@2637 · KeyJ@2639 · KeyU@2641 · Digit0@2642 · KeyM@2644 · KeyJ@2645 · KeyI@2647 · KeyZ@2649 · KeyM@2650 · KeyT@2652 · KeyC@2653 · Digit3@2655 · KeyO@2656 · KeyW@2658 · KeyJ@2659 · KeyJ@2661 · KeyN@2662 · KeyG@2664 · KeyE@2666 · KeyW@2667 · KeyY@2669 · KeyT@2670 · KeyE@2672 · KeyY@2673 · KeyY@2675 · KeyM@2676 · KeyF@2678 · KeyM@2679 · KeyM@2685 · KeyM@2687 · KeyE@2689 · Digit1@2690 · KeyN@2692 · KeyT@2693 · KeyM@2695 · Digit5@2697 · KeyM@2699 · KeyZ@2700 · KeyQ@2702 · Digit1@2703 · KeyM@2704 · KeyT@2706 · KeyL@2707 · KeyJ@2709 · KeyM@2710 · KeyD@2712 · KeyJ@2714 · KeyK@2716 · KeyM@2717 · Digit2@2718 · KeyU@2720 · KeyW@2721 · KeyO@2723 · KeyD@2724 · KeyL@2726 · KeyL@2727 · KeyZ@2729 · KeyT@2731 · KeyN@2732 · KeyH@2734 · KeyM@2736 · KeyJ@2737 · KeyY@2739 · KeyX@2740 · KeyN@2742 · KeyT@2743 · KeyR@2744 · KeyL@2746 · KeyM@2752 · KeyT@2754 · KeyM@2755 · KeyZ@2757 · KeyM@2758 · KeyD@2760 · KeyU@2761 · Digit3@2763 · KeyM@2767 · Digit2@2776 · KeyU@2790 · Digit4@2799 · KeyM@2802 · KeyG@2806 · KeyM@2811 · Digit4@2818 · KeyZ@2822 · KeyT@2826 · KeyB@2829 · KeyL@2842 · KeyM@2845 · KeyT@2852 · KeyU@2855 · KeyX@2857 · KeyN@2861 · KeyM@2864 · KeyF@2867 · KeyM@2870 · KeyN@2874 · KeyZ@2876 · KeyH@2878 · KeyL@2903 · KeyN@2909 · KeyD@2915 · KeyI@2920 · Digit0@2927 · KeyM@2929 · KeyD@2936 · KeyE@2937 · Digit0@2939 · KeyZ@2941 · KeyD@2942 · KeyQ@2944 · Digit5@2945 · KeyM@2947 · KeyJ@2949 · KeyY@2950 · Digit3@2952 · KeyZ@2953 · KeyT@2954 · KeyR@2956 · KeyL@2957 · KeyM@2959 · KeyZ@2960 · KeyG@2961 · Digit5@2963 · KeyM@2968 · KeyJ@2970 · KeyQ@2971 · Digit4@2972 · KeyM@2974 · KeyW@2975 · KeyJ@2977 · KeyL@2978 · KeyO@2979 · KeyD@2986 · KeyZ@2988 · KeyI@2989 · KeyM@2990 · KeyG@2991 · KeyI@2993 · KeyY@2994 · KeyY@2996 · Digit2@2997 · KeyQ@2999 · Digit4@3000 · KeyY@3002 · KeyJ@3003 · KeyB@3004 · KeyL@3006 · KeyI@3007 · KeyI@3009 · KeyW@3010 · KeyI@3011 · KeyY@3013 · KeyX@3019 · KeyV@3020 · Digit0@3022 · KeyB@3023 · Digit3@3025 · KeyI@3026 · KeyI@3027 · KeyO@3029 · KeyI@3031 · KeyJ@3032 · KeyM@3033 · KeyO@3035 · KeyD@3036 · KeyK@3038 · Digit5@3039 · KeyM@3041 · KeyT@3042 · KeyG@3043 · KeyZ@3045 · KeyN@3046 · KeyD@3051 · KeyG@3053 · Digit3@3055 · KeyY@3056 · Digit2@3057 · KeyU@3059 · Digit1@3060 · KeyM@3061 · KeyZ@3063 · KeyG@3065 · Digit4@3066 · KeyM@3067 · KeyT@3069 · KeyM@3070 · Digit5@3072 · KeyN@3073 · KeyJ@3074 · KeyJ@3075 · KeyJ@3077 · KeyZ@3078 · KeyT@3080 · KeyJ@3082 · KeyJ@3083 · KeyY@3084 · KeyZ@3086 · KeyE@3087 · KeyW@3089 · KeyY@3090 · KeyT@3096 · KeyZ@3102 · KeyJ@3109 · KeyN@3115 · KeyT@3118 · KeyM@3124 · KeyZ@3131 · KeyY@3137 · KeyJ@3143 · KeyE@3147 · KeyZ@3149 · KeyM@3151 · KeyW@3152 · KeyJ@3153 · KeyL@3155 · KeyY@3156 · KeyT@3158 · KeyI@3159 · Digit0@3160 · KeyY@3162 · KeyZ@3163 · KeyQ@3165 · Digit0@3166 · KeyM@3168 · KeyM@3169 · KeyI@3170 · Digit0@3172 · KeyO@3173 · KeyG@3174 · KeyV@3176 · KeyH@3177 · KeyY@3178 · KeyT@3180 · KeyY@3182 · KeyY@3183 · KeyY@3184 · KeyM@3186 · KeyV@3187 · KeyH@3189 · KeyN@3190 · KeyG@3191 · KeyY@3193 · KeyY@3194 · KeyO@3195 · KeyG@3201 · KeyU@3203 · Digit1@3204 · KeyI@3206 · KeyN@3207 · Digit0@3208 · Enter@3210 · KeyW@3501",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOi0zLCJ5IjoxLjI1LCJ6IjowfSwicm90YXRpb24iOnsieCI6MCwieSI6MCwieiI6MH0sInNpemUiOnsieCI6MSwieSI6Mi41LCJ6IjoxLjV9LCJvcENoYWluIjpbeyJ0b29sIjoiaMOkbmRlIiwib3AiOiJoYW5kX2tuYXAiLCJjYXAiOjAuNCwiYXQiOjB9XX0seyJzaGFwZSI6ImJveCIsImNvbG9yIjo4MDI2NzQ2LCJtYXRlcmlhbCI6InN0ZWluIiwicG9zaXRpb24iOnsieCI6MywieSI6MS4yNSwieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjEsInkiOjIuNSwieiI6MS41fSwib3BDaGFpbiI6W3sidG9vbCI6ImjDpG5kZSIsIm9wIjoiaGFuZF9rbmFwIiwiY2FwIjowLjQsImF0IjowfV19LHsic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOjAsInkiOjIuNywieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjgsInkiOjAuNCwieiI6Mn0sIm9wQ2hhaW4iOlt7InRvb2wiOiJow6RuZGUiLCJvcCI6ImhhbmRfa25hcCIsImNhcCI6MC40LCJhdCI6MH1dfV1dLFsic3Bhd25fYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsbnVsbCwzOTEzMjQ2OTU4LG51bGwsbnVsbCwwXV0sInNpZyI6ImQ3NzNiYzhjYTgwZTg2MWMzZjU0MjIzMTc3OWJjNGEwYTEyYmFmMmE1NTM5MzQ1MTljMDJkM2UwODllZTNhMjYxNTRlMTMzMDU3M2U4MGM4ZTBlMTUxNmFmNzhlNDI0MDE0ZDQ5MjY3ZTRlMzg5MjQ4MWJlODZiMGIyY2Q4YjBlIiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | KI-Vorschlag: Möchtest du eine neue Fähigkeit lernen? Beispiel: 'Lerne Fähigkeit farbwechsel Ändere Farbe von Kreaturen zu blau' | Geteiltes Werk steht: eigen_bruecke-geteilt (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 418,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@490 · Rad@616 · Klick@635 · KeyB@661 · Enter@1019 · KeyA@1022 · KeyN@1023 · KeyA@1025 · KeyZ@1026 · KeyH@1028 · NumpadSubtract@1029 · KeyW@1031 · KeyE@1033 · KeyR@1036 · KeyK@1037 · Semicolon@1039 · KeyE@1041 · KeyY@1042 · KeyJ@1044 · Digit2@1046 · KeyI@1047 · KeyJ@1049 · KeyO@1056 · KeyX@1058 · KeyL@1059 · KeyC@1061 · KeyJ@1062 · KeyW@1064 · KeyC@1065 · KeyM@1067 · Digit9@1069 · KeyN@1071 · KeyC@1072 · KeyM@1074 · KeyF@1075 · KeyT@1077 · KeyB@1079 · KeyS@1080 · KeyI@1082 · Digit6@1092 · KeyW@1094 · KeyY@1096 · KeyJ@1097 · KeyZ@1099 · KeyC@1101 · KeyG@1103 · KeyF@1105 · Digit3@1106 · KeyB@1108 · KeyL@1109 · Digit9@1111 · KeyI@1113 · KeyB@1114 · KeyH@1116 · KeyV@1118 · KeyL@1120 · KeyC@1121 · KeyH@1123 · KeyJ@1125 · KeyP@1127 · KeyB@1128 · KeyN@1130 · KeyQ@1132 · KeyI@1141 · KeyL@1143 · KeyC@1144 · KeyJ@1146 · KeyS@1148 · KeyZ@1150 · KeyW@1152 · KeyL@1153 · Digit0@1155 · KeyZ@1156 · KeyX@1158 · KeyJ@1160 · KeyF@1161 · KeyC@1163 · KeyG@1165 · Digit9@1167 · KeyK@1169 · KeyZ@1170 · KeyX@1172 · KeyN@1174 · Digit0@1175 · KeyB@1177 · KeyG@1179 · KeyV@1180 · KeyP@1182 · KeyD@1192 · KeyG@1193 · KeyV@1195 · KeyY@1197 · KeyI@1198 · KeyI@1200 · KeyX@1202 · KeyU@1203 · KeyD@1205 · KeyW@1207 · KeyX@1209 · KeyS@1211 · KeyL@1213 · KeyD@1215 · KeyI@1217 · Digit1@1218 · KeyN@1220 · KeyT@1222 · KeyE@1223 · Digit2@1225 · KeyO@1227 · KeyD@1229 · KeyU@1230 · Digit5@1232 · KeyM@1239 · KeyI@1240 · KeyX@1242 · KeyU@1244 · KeyD@1245 · KeyW@1246 · KeyX@1248 · KeyS@1249 · KeyL@1254 · KeyG@1256 · Digit5@1257 · Digit1@1259 · KeyB@1261 · KeyG@1262 · KeyW@1264 · KeyS@1265 · KeyM@1267 · KeyF@1269 · Digit0@1270 · KeyS@1271 · KeyI@1273 · KeyN@1274 · KeyN@1275 · KeyP@1277 · KeyZ@1278 · KeyY@1280 · KeyI@1281 · Digit6@1282 · KeyI@1284 · KeyJ@1285 · KeyD@1287 · KeyK@1288 · KeyN@1290 · KeyM@1291 · KeyQ@1292 · KeyZ@1294 · KeyM@1295 · KeyM@1296 · KeyF@1297 · KeyI@1299 · KeyM@1305 · KeyM@1307 · KeyV@1308 · KeyJ@1309 · KeyY@1311 · KeyW@1312 · KeyN@1313 · KeyL@1315 · KeyN@1316 · KeyG@1318 · KeyF@1319 · KeyM@1320 · KeyY@1322 · KeyZ@1323 · KeyB@1324 · KeyI@1326 · KeyN@1327 · KeyD@1329 · KeyY@1330 · KeyZ@1331 · KeyN@1332 · KeyZ@1334 · KeyI@1335 · KeyZ@1337 · KeyZ@1338 · KeyG@1339 · KeyF@1341 · KeyK@1342 · KeyO@1343 · KeyW@1344 · KeyE@1346 · KeyZ@1347 · KeyY@1348 · KeyJ@1350 · KeyU@1351 · KeyW@1352 · KeyN@1354 · KeyG@1355 · KeyE@1356 · KeyZ@1358 · KeyM@1359 · KeyM@1360 · KeyF@1361 · KeyI@1363 · KeyO@1364 · KeyT@1365 · KeyI@1372 · Digit3@1373 · KeyN@1375 · Digit2@1376 · KeyZ@1377 · KeyK@1379 · KeyM@1380 · Digit2@1381 · KeyU@1383 · Digit4@1385 · KeyO@1386 · KeyG@1388 · KeyI@1389 · KeyY@1390 · KeyN@1392 · KeyZ@1393 · KeyM@1395 · KeyY@1396 · KeyM@1397 · KeyJ@1399 · KeyM@1401 · Digit2@1402 · KeyN@1403 · KeyT@1405 · KeyM@1407 · KeyY@1408 · KeyZ@1409 · KeyG@1411 · KeyR@1412 · KeyI@1414 · KeyO@1415 · KeyD@1422 · KeyR@1423 · KeyI@1424 · KeyY@1426 · KeyZ@1427 · KeyR@1429 · KeyM@1430 · KeyO@1431 · KeyT@1433 · KeyQ@1435 · Digit2@1436 · KeyO@1438 · KeyD@1439 · KeyK@1440 · KeyY@1442 · KeyM@1443 · KeyT@1445 · KeyG@1446 · KeyY@1447 · KeyM@1449 · KeyZ@1451 · KeyF@1452 · KeyJ@1453 · KeyM@1455 · KeyJ@1456 · KeyU@1457 · Digit0@1458 · KeyM@1460 · KeyM@1461 · KeyE@1462 · KeyX@1464 · KeyZ@1465 · KeyD@1474 · KeyK@1476 · Digit2@1478 · KeyZ@1479 · KeyM@1480 · KeyF@1482 · KeyH@1484 · KeyN@1485 · KeyD@1486 · KeyF@1488 · KeyH@1489 · KeyY@1491 · Digit2@1492 · KeyE@1494 · Digit1@1495 · KeyY@1496 · Digit2@1498 · KeyY@1500 · KeyW@1501 · KeyN@1503 · KeyT@1504 · KeyQ@1505 · Digit5@1507 · KeyY@1508 · KeyT@1510 · KeyE@1511 · Digit4@1512 · KeyM@1514 · Digit2@1515 · KeyM@1522 · KeyY@1523 · KeyM@1525 · KeyM@1526 · KeyY@1528 · KeyY@1530 · KeyO@1531 · KeyW@1532 · KeyM@1534 · Digit5@1536 · KeyZ@1537 · KeyG@1539 · KeyJ@1540 · KeyL@1541 · KeyO@1543 · KeyG@1544 · KeyE@1546 · Digit2@1547 · KeyY@1549 · KeyZ@1550 · KeyA@1552 · KeyW@1553 · KeyI@1555 · KeyI@1556 · KeyW@1557 · KeyI@1559 · KeyY@1560 · KeyX@1562 · KeyV@1563 · Digit0@1565 · KeyB@1566 · Digit3@1568 · KeyI@1569 · KeyI@1571 · KeyO@1572 · KeyI@1573 · KeyJ@1575 · KeyM@1576 · KeyO@1577 · KeyD@1578 · KeyK@1580 · Digit5@1581 · KeyM@1582 · KeyT@1588 · KeyG@1590 · KeyZ@1591 · KeyN@1593 · KeyD@1594 · KeyG@1595 · Digit3@1596 · KeyY@1598 · Digit2@1600 · KeyU@1602 · Digit1@1603 · KeyM@1605 · KeyZ@1606 · KeyG@1607 · Digit4@1608 · KeyM@1610 · KeyT@1611 · KeyM@1612 · Digit5@1614 · KeyN@1615 · KeyJ@1617 · KeyJ@1619 · KeyJ@1621 · KeyZ@1622 · KeyT@1624 · KeyJ@1626 · KeyJ@1627 · KeyY@1629 · KeyZ@1630 · KeyE@1632 · KeyW@1633 · KeyY@1635 · KeyT@1636 · KeyZ@1637 · KeyJ@1639 · KeyN@1640 · KeyT@1641 · KeyM@1643 · KeyZ@1644 · KeyY@1646 · KeyJ@1647 · KeyE@1649 · KeyZ@1653 · KeyM@1655 · KeyW@1656 · KeyJ@1657 · KeyL@1659 · KeyY@1660 · KeyT@1661 · KeyI@1663 · Digit0@1664 · KeyY@1665 · KeyZ@1667 · KeyQ@1669 · Digit0@1670 · KeyM@1672 · KeyM@1673 · KeyI@1674 · Digit0@1676 · KeyO@1677 · KeyG@1679 · KeyV@1680 · KeyH@1681 · KeyY@1683 · KeyT@1685 · KeyY@1687 · KeyY@1688 · KeyY@1689 · KeyM@1691 · KeyV@1692 · KeyH@1694 · KeyN@1695 · KeyG@1697 · KeyY@1698 · KeyY@1700 · KeyO@1702 · KeyG@1703 · KeyU@1704 · Digit1@1707 · KeyI@1708 · KeyN@1709 · Digit0@1711 · Enter@1712 · KeyW@2250",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJsZWl0ZXJfcG9kZXN0bGVpdGVyIixudWxsLDI1NTE2ODU5MixudWxsLG51bGwsMF0sInNpZyI6IjdkNmQzMmFiMmVjYWNlNGFmYzBiNDYzNzIzZGFkOWEzYjUwNGEzMmFiOTI3N2ZkM2U4OGIyNzMyMjM2NTMyZGRiODRiYzRmOTQ2ODkyMTgyMzFjMjU0MmExZDk2ZmFhNDFhY2E1Y2YwNTQ5YTE4M2MyMmYyOWM5ZGJlOGE2YzAwIiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: Podestleiter (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 423,
+     "unecht": 0,
+     "folge": "KeyB@0 · Rad@406 · Rad@473 · Rad@540 · Rad@606 · Rad@673 · Rad@740 · Rad@806 · Rad@873 · Rad@940 · Rad@1006 · Rad@1073 · Rad@1140 · Rad@1206 · Klick@1228 · Rad@1356 · Klick@1385 · KeyB@1402 · Enter@1760 · KeyA@1763 · KeyN@1765 · KeyA@1767 · KeyZ@1768 · KeyH@1770 · NumpadSubtract@1771 · KeyW@1774 · KeyE@1776 · KeyR@1777 · KeyK@1779 · Semicolon@1781 · KeyE@1782 · KeyY@1784 · KeyJ@1785 · Digit2@1787 · KeyI@1789 · KeyJ@1790 · KeyO@1792 · KeyX@1794 · KeyL@1795 · KeyC@1797 · KeyJ@1798 · KeyW@1800 · KeyC@1802 · KeyM@1803 · Digit9@1805 · KeyN@1806 · KeyC@1813 · KeyM@1815 · KeyF@1816 · KeyT@1818 · KeyB@1819 · KeyS@1821 · KeyI@1822 · Digit6@1829 · KeyW@1830 · KeyY@1832 · KeyJ@1833 · KeyZ@1835 · KeyC@1836 · KeyG@1838 · KeyF@1839 · Digit3@1842 · KeyB@1843 · KeyL@1845 · Digit9@1846 · KeyI@1848 · KeyB@1849 · KeyH@1851 · KeyV@1852 · KeyL@1854 · KeyC@1855 · KeyH@1857 · KeyJ@1859 · KeyP@1860 · KeyB@1862 · KeyN@1864 · KeyQ@1866 · KeyI@1867 · KeyL@1869 · KeyC@1871 · KeyJ@1872 · KeyI@1874 · KeyY@1876 · KeyW@1878 · Digit5@1879 · KeyR@1881 · KeyX@1883 · Digit3@1884 · KeyN@1886 · KeyP@1887 · KeyD@1889 · KeyH@1898 · KeyP@1900 · KeyI@1901 · KeyY@1903 · KeyW@1905 · Digit5@1906 · KeyR@1915 · KeyI@1916 · KeyI@1918 · KeyX@1920 · KeyU@1922 · KeyD@1924 · KeyW@1926 · KeyX@1928 · KeyS@1929 · KeyL@1931 · KeyD@1933 · KeyM@1934 · KeyY@1936 · KeyM@1938 · KeyD@1939 · KeyY@1948 · Digit3@1949 · KeyM@1951 · KeyD@1953 · KeyY@1954 · Digit0@1956 · KeyN@1958 · KeyY@1960 · KeyX@1961 · KeyU@1963 · KeyD@1964 · KeyW@1967 · KeyX@1968 · KeyS@1970 · KeyL@1972 · KeyG@1974 · Digit5@1976 · Digit1@1979 · KeyB@1981 · KeyG@1983 · KeyW@1986 · KeyS@1996 · KeyM@1997 · KeyF@1999 · Digit0@2001 · KeyS@2002 · KeyI@2003 · KeyN@2005 · KeyN@2006 · KeyP@2007 · KeyZ@2009 · KeyY@2010 · KeyI@2011 · Digit6@2013 · KeyI@2014 · KeyM@2015 · KeyM@2016 · KeyX@2018 · KeyY@2019 · KeyM@2020 · KeyE@2021 · KeyY@2023 · KeyM@2024 · KeyZ@2026 · KeyJ@2027 · KeyI@2029 · KeyM@2030 · KeyT@2031 · KeyK@2033 · KeyZ@2034 · KeyM@2036 · KeyJ@2037 · KeyK@2038 · Digit2@2040 · KeyN@2045 · KeyZ@2047 · KeyY@2048 · Digit0@2049 · KeyZ@2050 · KeyD@2052 · KeyU@2053 · Digit5@2054 · KeyY@2056 · KeyM@2057 · KeyZ@2059 · KeyM@2060 · KeyM@2061 · KeyZ@2062 · KeyH@2064 · KeyM@2065 · KeyZ@2067 · KeyW@2068 · KeyM@2070 · KeyY@2071 · KeyY@2073 · KeyZ@2074 · KeyE@2075 · KeyX@2077 · KeyN@2078 · KeyT@2079 · KeyL@2080 · KeyK@2082 · KeyM@2083 · KeyW@2084 · KeyJ@2085 · KeyK@2087 · KeyY@2088 · KeyT@2089 · KeyK@2095 · KeyX@2097 · KeyZ@2098 · KeyW@2100 · KeyY@2101 · Digit1@2102 · KeyN@2104 · KeyT@2105 · KeyE@2107 · KeyW@2109 · KeyO@2110 · KeyD@2111 · KeyA@2112 · KeyW@2114 · KeyZ@2115 · KeyW@2116 · KeyZ@2118 · KeyK@2119 · KeyM@2121 · KeyT@2122 · KeyQ@2128 · Digit3@2129 · KeyO@2131 · KeyG@2132 · KeyY@2134 · KeyY@2135 · KeyZ@2137 · KeyT@2138 · KeyC@2139 · KeyZ@2141 · KeyO@2142 · KeyT@2144 · KeyM@2145 · KeyW@2146 · KeyO@2148 · KeyW@2149 · KeyI@2150 · KeyX@2152 · KeyY@2153 · KeyM@2154 · KeyJ@2155 · KeyM@2161 · KeyM@2162 · KeyZ@2164 · KeyN@2165 · KeyJ@2167 · KeyO@2169 · KeyD@2170 · KeyD@2171 · KeyH@2173 · KeyO@2178 · KeyT@2180 · KeyQ@2181 · Digit0@2182 · KeyZ@2184 · KeyM@2185 · KeyQ@2186 · Digit5@2187 · KeyN@2188 · Digit2@2190 · KeyU@2191 · Digit1@2193 · KeyN@2194 · KeyT@2196 · KeyC@2197 · Digit5@2198 · KeyY@2199 · KeyZ@2201 · KeyK@2202 · Digit1@2203 · KeyM@2205 · KeyD@2206 · KeyD@2207 · KeyH@2209 · KeyN@2210 · KeyG@2211 · KeyN@2213 · KeyM@2214 · KeyM@2215 · KeyT@2216 · KeyM@2218 · KeyX@2219 · KeyN@2220 · KeyJ@2222 · KeyA@2223 · Digit4@2224 · KeyM@2226 · Digit2@2227 · KeyR@2229 · KeyM@2230 · KeyM@2231 · Digit2@2234 · KeyR@2235 · KeyK@2237 · KeyY@2238 · KeyT@2239 · KeyN@2245 · KeyL@2247 · KeyZ@2248 · KeyG@2250 · KeyY@2251 · Digit5@2253 · KeyZ@2254 · KeyT@2255 · KeyG@2257 · KeyY@2258 · KeyY@2260 · KeyT@2261 · KeyG@2263 · Digit2@2264 · KeyO@2265 · KeyG@2267 · KeyM@2268 · Digit5@2270 · KeyZ@2271 · KeyD@2272 · KeyA@2274 · Digit5@2275 · KeyI@2276 · KeyI@2278 · KeyW@2279 · KeyI@2280 · KeyY@2282 · KeyX@2283 · KeyV@2284 · Digit0@2285 · KeyB@2287 · Digit3@2288 · KeyI@2289 · KeyI@2291 · KeyO@2293 · KeyI@2294 · KeyJ@2295 · KeyM@2297 · KeyO@2298 · KeyD@2300 · KeyK@2301 · Digit5@2303 · KeyM@2304 · KeyT@2306 · KeyG@2307 · KeyZ@2309 · KeyN@2310 · KeyD@2311 · KeyG@2313 · Digit3@2314 · KeyY@2315 · Digit2@2316 · KeyU@2318 · Digit1@2319 · KeyM@2320 · KeyZ@2322 · KeyG@2323 · Digit4@2329 · KeyM@2330 · KeyT@2332 · KeyM@2333 · Digit5@2334 · KeyN@2336 · KeyJ@2337 · KeyJ@2339 · KeyJ@2352 · KeyZ@2363 · KeyT@2371 · KeyJ@2386 · KeyJ@2389 · KeyY@2395 · KeyZ@2401 · KeyE@2408 · KeyW@2416 · KeyY@2420 · KeyT@2424 · KeyZ@2428 · KeyJ@2431 · KeyN@2434 · KeyT@2437 · KeyM@2439 · KeyZ@2452 · KeyY@2454 · KeyJ@2455 · KeyE@2459 · KeyZ@2460 · KeyM@2463 · KeyW@2465 · KeyJ@2467 · KeyL@2469 · KeyY@2471 · KeyT@2474 · KeyI@2475 · Digit0@2501 · KeyY@2506 · KeyZ@2519 · KeyQ@2521 · Digit0@2522 · KeyM@2524 · KeyM@2525 · KeyI@2526 · Digit0@2528 · KeyO@2529 · KeyG@2530 · KeyV@2532 · KeyH@2533 · KeyY@2534 · KeyT@2535 · KeyY@2537 · KeyY@2539 · KeyY@2540 · KeyM@2542 · KeyV@2543 · KeyH@2545 · KeyN@2546 · KeyG@2547 · KeyY@2549 · KeyY@2550 · KeyO@2552 · KeyG@2553 · KeyU@2555 · Digit1@2556 · KeyI@2563 · KeyN@2565 · Digit0@2566 · Enter@2567 · KeyE@2585",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJiYW5rX3NpdHpiYW5rIixudWxsLDMyMDY3MDY0NyxudWxsLG51bGwsMF0sInNpZyI6ImMxYmEyMzJiMTkzMjk2NzY0ZDU5YmZmMzhmZWMyYzExNTlkMWJkYTkxZWY1NTEwODAwZWZkMTQ3OGYyZTczOTMwOWIxYmJmMzNjODdhOTQ0ZmQ5N2U1NTc5Yzk1MDdhNGNmMTMxNjA4M2RmM2RkYTNlZGY5ZTgyYTg2OGM5ZDA5IiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: Sitzbank (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 415,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@487 · Rad@602 · Klick@633 · KeyB@663 · Enter@1040 · KeyA@1043 · KeyN@1045 · KeyA@1047 · KeyZ@1049 · KeyH@1051 · NumpadSubtract@1061 · KeyW@1064 · KeyE@1065 · KeyR@1067 · KeyK@1071 · Semicolon@1072 · KeyE@1075 · KeyY@1077 · KeyJ@1080 · Digit2@1082 · KeyI@1084 · KeyJ@1088 · KeyO@1091 · KeyX@1093 · KeyL@1095 · KeyC@1097 · KeyJ@1100 · KeyW@1102 · KeyC@1114 · KeyM@1116 · Digit9@1118 · KeyN@1122 · KeyC@1124 · KeyM@1127 · KeyF@1129 · KeyT@1131 · KeyB@1133 · KeyS@1135 · KeyI@1137 · Digit6@1139 · KeyW@1142 · KeyY@1144 · KeyJ@1147 · KeyZ@1149 · KeyC@1151 · KeyG@1161 · KeyF@1163 · Digit3@1165 · KeyB@1167 · KeyL@1171 · Digit9@1173 · KeyI@1175 · KeyB@1177 · KeyH@1180 · KeyV@1181 · KeyL@1183 · KeyC@1184 · KeyH@1186 · KeyJ@1188 · KeyP@1189 · KeyB@1190 · KeyN@1192 · KeyQ@1193 · KeyI@1195 · KeyL@1196 · KeyC@1197 · KeyJ@1198 · KeyO@1200 · KeyY@1201 · KeyX@1203 · KeyV@1204 · KeyZ@1205 · KeyX@1207 · Digit2@1208 · KeyF@1210 · KeyS@1211 · KeyZ@1212 · KeyW@1213 · Digit1@1215 · KeyH@1216 · KeyB@1217 · KeyM@1219 · Digit5@1220 · KeyP@1222 · KeyC@1223 · Digit2@1225 · KeyN@1226 · KeyO@1227 · KeyI@1228 · KeyI@1230 · KeyX@1231 · KeyU@1232 · KeyD@1234 · KeyW@1235 · KeyX@1241 · KeyS@1242 · KeyL@1244 · KeyD@1245 · KeyE@1247 · KeyX@1248 · KeyN@1250 · KeyZ@1251 · KeyM@1257 · KeyY@1258 · KeyM@1260 · KeyZ@1261 · KeyI@1263 · Digit5@1264 · KeyN@1266 · KeyJ@1267 · KeyK@1268 · KeyS@1270 · KeyB@1271 · KeyN@1273 · KeyV@1274 · KeyS@1276 · KeyB@1277 · KeyC@1278 · KeyX@1280 · KeyU@1281 · KeyD@1283 · KeyW@1284 · KeyX@1286 · KeyS@1287 · KeyL@1288 · KeyD@1290 · KeyB@1291 · KeyD@1292 · KeyL@1294 · KeyC@1295 · KeyJ@1296 · KeyZ@1298 · KeyA@1299 · KeyW@1300 · KeyC@1302 · KeyI@1304 · KeyO@1305 · KeyI@1306 · KeyJ@1308 · KeyJ@1309 · KeyO@1311 · KeyT@1312 · KeyU@1313 · Digit4@1315 · KeyN@1316 · KeyG@1318 · KeyY@1324 · KeyY@1325 · KeyO@1327 · KeyG@1328 · KeyR@1329 · KeyM@1331 · KeyY@1332 · KeyM@1333 · KeyY@1335 · Digit3@1336 · KeyN@1337 · KeyG@1339 · KeyI@1340 · Digit2@1341 · KeyO@1343 · KeyD@1344 · KeyU@1345 · KeyZ@1347 · KeyZ@1349 · KeyW@1350 · KeyE@1351 · Digit2@1358 · KeyM@1359 · KeyJ@1360 · KeyQ@1361 · KeyZ@1363 · KeyY@1364 · Digit2@1365 · KeyV@1367 · KeyM@1368 · KeyO@1370 · KeyW@1371 · KeyF@1372 · KeyJ@1373 · KeyY@1375 · KeyZ@1376 · KeyC@1377 · Digit5@1379 · KeyZ@1380 · KeyD@1381 · KeyJ@1383 · KeyH@1384 · KeyM@1386 · KeyD@1387 · KeyV@1395 · KeyH@1398 · KeyY@1399 · Digit2@1401 · KeyQ@1403 · KeyY@1404 · KeyO@1405 · KeyD@1406 · KeyB@1408 · KeyM@1409 · KeyN@1410 · KeyZ@1412 · KeyQ@1413 · KeyY@1414 · KeyM@1415 · Digit2@1417 · KeyQ@1418 · KeyZ@1419 · KeyZ@1421 · KeyW@1422 · KeyN@1423 · KeyL@1425 · KeyO@1426 · KeyW@1427 · KeyV@1428 · KeyI@1430 · KeyM@1431 · KeyJ@1432 · KeyE@1434 · KeyY@1435 · KeyO@1441 · KeyT@1443 · KeyU@1444 · KeyZ@1445 · KeyO@1447 · KeyT@1449 · KeyF@1450 · KeyL@1451 · KeyO@1457 · KeyW@1459 · KeyU@1460 · Digit5@1462 · KeyZ@1463 · KeyJ@1465 · KeyJ@1466 · KeyH@1468 · KeyN@1469 · KeyD@1471 · KeyM@1472 · KeyX@1474 · KeyN@1475 · KeyZ@1476 · KeyG@1478 · Digit1@1479 · KeyM@1480 · KeyJ@1482 · KeyE@1483 · KeyW@1484 · KeyN@1486 · KeyZ@1487 · KeyJ@1489 · KeyH@1490 · KeyN@1492 · KeyJ@1493 · KeyM@1495 · Digit0@1496 · KeyO@1498 · KeyW@1499 · KeyQ@1501 · KeyZ@1502 · KeyO@1504 · KeyG@1505 · KeyZ@1506 · KeyI@1508 · KeyN@1509 · KeyT@1510 · KeyH@1512 · KeyK@1513 · KeyM@1514 · KeyM@1515 · KeyZ@1517 · KeyJ@1518 · KeyY@1525 · KeyJ@1526 · KeyZ@1528 · KeyI@1529 · KeyZ@1530 · KeyG@1531 · KeyI@1533 · KeyY@1534 · KeyY@1536 · KeyZ@1537 · KeyG@1539 · Digit4@1540 · KeyO@1541 · KeyW@1543 · KeyE@1544 · KeyX@1545 · KeyM@1546 · KeyD@1548 · KeyU@1550 · KeyX@1551 · KeyN@1557 · KeyG@1558 · KeyQ@1560 · Digit3@1561 · KeyY@1562 · KeyT@1564 · KeyY@1565 · Digit1@1566 · KeyO@1568 · KeyT@1569 · KeyY@1571 · KeyW@1572 · KeyZ@1573 · KeyD@1575 · KeyC@1576 · KeyW@1577 · KeyZ@1578 · KeyC@1580 · KeyI@1581 · KeyS@1582 · KeyI@1584 · KeyM@1586 · KeyF@1587 · Digit1@1588 · KeyD@1590 · KeyG@1591 · Digit9@1593 · KeyY@1594 · KeyI@1596 · KeyJ@1597 · KeyO@1598 · KeyI@1600 · KeyZ@1601 · KeyJ@1602 · KeyG@1604 · Digit5@1605 · KeyO@1606 · KeyT@1608 · KeyE@1609 · Digit4@1610 · KeyM@1611 · KeyZ@1613 · KeyQ@1614 · Digit4@1615 · KeyN@1617 · Digit2@1618 · KeyN@1624 · KeyL@1625 · KeyN@1627 · KeyT@1628 · KeyM@1629 · Digit4@1630 · KeyO@1632 · KeyD@1633 · KeyE@1634 · KeyZ@1636 · KeyO@1637 · KeyT@1639 · KeyY@1640 · KeyY@1642 · KeyY@1643 · Digit2@1644 · KeyU@1646 · KeyY@1647 · KeyY@1649 · Digit2@1650 · KeyM@1652 · KeyX@1653 · KeyM@1655 · KeyG@1656 · KeyE@1657 · Digit2@1659 · KeyY@1660 · KeyZ@1662 · KeyU@1663 · KeyZ@1664 · KeyM@1665 · Digit2@1667 · KeyI@1668 · KeyX@1674 · KeyM@1676 · KeyZ@1677 · KeyF@1679 · KeyI@1680 · KeyZ@1682 · KeyW@1683 · KeyE@1684 · KeyY@1686 · KeyN@1688 · KeyG@1689 · KeyM@1690 · Digit0@1692 · KeyN@1693 · KeyD@1695 · KeyJ@1696 · KeyI@1697 · KeyN@1699 · KeyD@1700 · KeyH@1702 · KeyL@1703 · KeyY@1704 · KeyW@1706 · KeyE@1707 · Digit2@1709 · KeyM@1710 · KeyM@1711 · KeyJ@1713 · KeyL@1714 · KeyY@1716 · KeyT@1717 · KeyR@1719 · KeyM@1720 · KeyM@1722 · KeyJ@1723 · KeyH@1725 · KeyL@1726 · KeyN@1728 · KeyS@1729 · KeyJ@1730 · Digit9@1732 · Enter@1733 · KeyW@1873",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJoYXVzX2FsZW1hbm5pc2NoIixudWxsLDExNzMyMzI5NjksbnVsbCxudWxsLDBdLCJzaWciOiJjOTU4NGYyOGRmYmY3NGI2ODUzZWE2MjQzY2VmOWFjYzc5ZDJhMDVhY2QyODBmNzQyM2QzZWNlOWViMjEyOTUzOTFlOWU5ZjJhNDMxNzg1MjEwNzJhNjM0OWQzOGZiNThkMmZjYjZiZGIyYzg4OWExMDUxNGQ3YTY1OTYwZDcwZCIsImF1dG9yIjoiZjg5OTE4MzQ4N2NlNTM4ODEzOTYyY2UyY2MxMGE2YzUzM2IxMzFiZWEyNGM0NDJiNDhlYWE2MmJlYTRmMjhlNSJ9 | Geteiltes Werk steht: Alemannisch (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 408,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@888 · Rad@1070 · Klick@1088 · KeyB@1106 · Enter@1473 · KeyA@1476 · KeyN@1477 · KeyA@1479 · KeyZ@1481 · KeyH@1482 · NumpadSubtract@1484 · KeyW@1485 · KeyE@1487 · KeyR@1490 · KeyK@1491 · Semicolon@1493 · KeyE@1495 · KeyY@1496 · KeyJ@1498 · Digit2@1499 · KeyI@1501 · KeyJ@1502 · KeyO@1510 · KeyX@1511 · KeyL@1513 · KeyC@1514 · KeyJ@1516 · KeyW@1517 · KeyC@1519 · KeyM@1521 · Digit9@1522 · KeyN@1524 · KeyC@1525 · KeyM@1527 · KeyF@1528 · KeyT@1530 · KeyB@1531 · KeyS@1533 · KeyI@1534 · Digit6@1536 · KeyW@1538 · KeyY@1539 · KeyJ@1541 · KeyZ@1542 · KeyC@1544 · KeyG@1545 · KeyF@1547 · Digit3@1548 · KeyB@1550 · KeyL@1552 · Digit9@1558 · KeyI@1560 · KeyB@1562 · KeyH@1563 · KeyV@1565 · KeyL@1566 · KeyC@1568 · KeyH@1572 · KeyJ@1574 · KeyP@1576 · KeyB@1578 · KeyN@1580 · KeyQ@1582 · KeyI@1583 · KeyL@1585 · KeyC@1593 · KeyJ@1595 · KeyM@1597 · KeyY@1599 · KeyW@1600 · KeyH@1602 · KeyY@1604 · KeyE@1605 · KeyM@1607 · KeyV@1609 · Digit1@1610 · KeyZ@1612 · Digit1@1614 · Digit9@1615 · KeyN@1617 · KeyD@1619 · KeyC@1621 · KeyI@1622 · KeyS@1624 · KeyB@1625 · KeyN@1627 · KeyV@1629 · KeyS@1630 · KeyB@1632 · KeyC@1633 · KeyW@1636 · Digit1@1638 · KeyN@1640 · KeyT@1641 · KeyK@1643 · KeyX@1645 · KeyO@1646 · KeyT@1648 · KeyA@1650 · Digit1@1652 · KeyO@1661 · KeyC@1663 · KeyX@1664 · KeyU@1666 · KeyD@1667 · KeyW@1668 · KeyX@1674 · KeyS@1676 · KeyL@1677 · KeyG@1679 · Digit5@1680 · Digit1@1681 · KeyB@1683 · KeyG@1684 · KeyW@1685 · KeyS@1687 · KeyM@1688 · KeyF@1690 · Digit0@1691 · KeyS@1692 · KeyI@1693 · KeyN@1695 · KeyN@1696 · KeyP@1697 · KeyZ@1698 · KeyY@1700 · KeyI@1701 · Digit6@1702 · KeyI@1704 · KeyJ@1705 · KeyM@1707 · Digit5@1708 · KeyM@1709 · KeyT@1710 · KeyZ@1712 · KeyK@1713 · KeyM@1714 · KeyZ@1716 · KeyK@1717 · Digit5@1718 · KeyM@1724 · Digit2@1726 · KeyU@1727 · KeyY@1729 · KeyZ@1730 · KeyG@1732 · KeyE@1733 · KeyZ@1734 · KeyO@1736 · KeyD@1738 · KeyD@1739 · KeyM@1741 · KeyN@1742 · KeyZ@1743 · KeyV@1745 · KeyM@1746 · KeyN@1747 · KeyZ@1748 · KeyQ@1750 · Digit3@1751 · KeyZ@1753 · KeyM@1754 · KeyU@1756 · KeyW@1757 · KeyO@1758 · KeyG@1759 · KeyY@1761 · Digit2@1762 · KeyM@1763 · KeyT@1765 · KeyC@1766 · Digit5@1767 · KeyM@1768 · KeyZ@1774 · KeyD@1776 · KeyJ@1777 · KeyZ@1779 · KeyM@1781 · KeyU@1782 · Digit2@1784 · KeyZ@1785 · KeyD@1791 · KeyA@1792 · KeyZ@1794 · KeyN@1795 · KeyT@1796 · KeyM@1798 · Digit4@1799 · KeyO@1800 · KeyG@1801 · KeyN@1803 · KeyK@1804 · KeyN@1806 · KeyW@1807 · KeyU@1808 · Digit0@1810 · KeyM@1811 · Digit2@1812 · KeyM@1814 · Digit5@1815 · KeyO@1816 · KeyD@1818 · KeyG@1819 · Digit5@1820 · KeyM@1822 · KeyD@1823 · KeyZ@1824 · KeyI@1826 · KeyM@1827 · KeyG@1828 · KeyQ@1830 · KeyW@1831 · KeyO@1832 · KeyG@1833 · KeyY@1835 · KeyZ@1841 · KeyZ@1842 · KeyW@1844 · KeyM@1845 · Digit5@1846 · KeyN@1848 · KeyT@1849 · KeyM@1850 · KeyY@1852 · KeyM@1854 · KeyD@1855 · KeyB@1856 · KeyM@1858 · KeyO@1859 · KeyG@1860 · KeyM@1862 · Digit5@1863 · KeyO@1864 · KeyT@1866 · KeyC@1867 · Digit4@1868 · KeyN@1870 · KeyJ@1871 · KeyU@1873 · KeyX@1875 · KeyO@1879 · KeyT@1882 · KeyR@1884 · KeyJ@1887 · KeyO@1888 · KeyD@1890 · KeyU@1892 · Digit5@1894 · KeyM@1895 · KeyD@1897 · KeyV@1899 · KeyH@1900 · KeyY@1902 · KeyM@1908 · KeyZ@1910 · KeyH@1912 · KeyN@1914 · KeyZ@1916 · KeyJ@1917 · KeyI@1919 · KeyM@1921 · KeyW@1925 · KeyV@1926 · KeyK@1928 · KeyN@1930 · KeyZ@1931 · KeyQ@1933 · KeyX@1935 · KeyN@1937 · KeyZ@1939 · KeyE@1941 · KeyW@1942 · KeyN@1944 · KeyJ@1946 · KeyV@1947 · KeyJ@1949 · KeyZ@1958 · KeyG@1959 · KeyM@1961 · Digit1@1962 · KeyN@1963 · Digit2@1964 · KeyY@1966 · KeyZ@1967 · KeyN@1968 · KeyJ@1970 · KeyZ@1972 · KeyK@1973 · KeyZ@1974 · KeyT@1975 · KeyG@1977 · Digit5@1978 · KeyY@1979 · KeyZ@1981 · KeyR@1982 · KeyJ@1984 · KeyM@1985 · KeyZ@1986 · KeyB@1988 · KeyK@1989 · KeyI@1990 · KeyI@1992 · KeyW@1993 · KeyI@1994 · KeyY@1996 · KeyX@1997 · KeyV@1998 · Digit0@2000 · KeyB@2001 · Digit3@2003 · KeyI@2004 · KeyI@2006 · KeyO@2007 · KeyI@2009 · KeyJ@2010 · KeyM@2012 · KeyO@2013 · KeyD@2014 · KeyK@2016 · Digit5@2017 · KeyM@2018 · KeyT@2020 · KeyG@2021 · KeyZ@2022 · KeyN@2024 · KeyD@2025 · KeyG@2026 · Digit3@2028 · KeyY@2029 · Digit2@2030 · KeyU@2031 · Digit1@2033 · KeyM@2034 · KeyZ@2035 · KeyG@2042 · Digit4@2044 · KeyM@2045 · KeyT@2047 · KeyM@2048 · Digit5@2049 · KeyN@2050 · KeyJ@2052 · KeyJ@2053 · KeyJ@2055 · KeyZ@2056 · KeyT@2057 · KeyJ@2059 · KeyJ@2060 · KeyY@2061 · KeyZ@2063 · KeyE@2064 · KeyW@2065 · KeyY@2066 · KeyT@2068 · KeyZ@2069 · KeyJ@2071 · KeyN@2072 · KeyT@2074 · KeyM@2075 · KeyZ@2076 · KeyY@2077 · KeyJ@2079 · KeyE@2080 · KeyZ@2081 · KeyM@2083 · KeyW@2085 · KeyJ@2086 · KeyL@2088 · KeyY@2089 · KeyT@2091 · KeyI@2092 · Digit0@2093 · KeyY@2095 · KeyZ@2096 · KeyQ@2098 · Digit0@2099 · KeyM@2101 · KeyM@2103 · KeyI@2104 · Digit0@2106 · KeyO@2107 · KeyG@2108 · KeyV@2110 · KeyH@2111 · KeyY@2113 · KeyT@2114 · KeyY@2116 · KeyY@2117 · KeyY@2118 · KeyM@2120 · KeyV@2121 · KeyH@2123 · KeyN@2124 · KeyG@2125 · KeyY@2127 · KeyY@2128 · KeyO@2129 · KeyG@2131 · KeyU@2132 · Digit1@2133 · KeyI@2135 · KeyN@2136 · Digit0@2138 · Enter@2139 · KeyE@2146 · KeyW@2148 · KeyE@3651",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJmYWhyemV1Z19ndCIsbnVsbCw1NTkxOTA1OCxudWxsLG51bGwsMF0sInNpZyI6IjM5MTZkMzk5M2UyZGEzODdmNzVmNzQ3ZmUwOGY2MTc5MzdjZmU2ZDAzNTM4OGNkNWU0M2M5ODg5MDZiMGQwOGYzZWM5NTMyMDBmOGM5OTc4NjUxOTRjODU5MDVhYmZhNzJiMWVkNzQxNzEwNjVjZGM1N2YzNjZkZTg5YzRjMzBkIiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: GT (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@471 · Klick@538 · KeyB@557 · Enter@940 · KeyA@942 · KeyN@944 · KeyA@946 · KeyZ@947 · KeyH@948 · NumpadSubtract@950 · KeyW@951 · KeyE@952 · KeyR@955 · KeyK@956 · Semicolon@958 · KeyE@959 · KeyY@960 · KeyJ@961 · Digit2@963 · KeyI@964 · KeyJ@966 · KeyO@967 · KeyX@968 · KeyL@975 · KeyC@977 · KeyJ@978 · KeyW@980 · KeyC@981 · KeyM@983 · Digit9@984 · KeyN@986 · KeyC@988 · KeyM@989 · KeyF@991 · KeyT@992 · KeyB@993 · KeyS@994 · KeyI@996 · Digit6@997 · KeyW@998 · KeyY@1000 · KeyJ@1001 · KeyZ@1002 · KeyC@1004 · KeyG@1005 · KeyF@1007 · Digit3@1008 · KeyB@1010 · KeyL@1011 · Digit9@1013 · KeyI@1014 · KeyB@1016 · KeyH@1017 · KeyV@1019 · KeyL@1025 · KeyC@1026 · KeyH@1027 · KeyJ@1029 · KeyP@1030 · KeyB@1031 · KeyN@1033 · KeyQ@1034 · KeyI@1035 · KeyL@1037 · KeyC@1038 · KeyJ@1040 · Digit0@1041 · KeyB@1042 · Digit3@1044 · KeyJ@1046 · KeyF@1047 · KeyZ@1048 · KeyH@1050 · KeyJ@1051 · KeyH@1052 · KeyY@1054 · Digit2@1056 · KeyH@1057 · KeyL@1058 · KeyB@1059 · KeyN@1061 · KeyR@1062 · KeyV@1063 · KeyC@1065 · KeyI@1066 · KeyI@1067 · KeyS@1069 · KeyB@1075 · KeyN@1077 · KeyV@1078 · KeyS@1079 · KeyB@1081 · KeyC@1082 · KeyW@1083 · Digit5@1085 · KeyO@1086 · KeyT@1088 · KeyU@1089 · Digit2@1091 · KeyM@1092 · KeyZ@1093 · KeyE@1095 · KeyW@1096 · KeyM@1097 · KeyT@1099 · KeyQ@1100 · KeyS@1101 · KeyB@1103 · KeyN@1105 · KeyV@1106 · KeyS@1107 · KeyB@1109 · KeyC@1110 · KeyX@1111 · KeyU@1113 · KeyD@1114 · KeyW@1115 · KeyX@1117 · KeyS@1118 · KeyL@1120 · KeyD@1121 · KeyB@1123 · KeyD@1124 · KeyL@1125 · KeyC@1127 · KeyJ@1128 · KeyZ@1129 · KeyA@1131 · KeyW@1132 · KeyC@1133 · KeyI@1134 · KeyO@1136 · KeyI@1138 · KeyJ@1139 · KeyM@1141 · KeyM@1142 · KeyT@1145 · KeyM@1146 · Digit5@1147 · KeyM@1148 · KeyZ@1150 · KeyD@1151 · KeyJ@1153 · KeyN@1155 · KeyJ@1156 · KeyA@1157 · Digit4@1159 · KeyO@1160 · KeyT@1161 · KeyQ@1163 · KeyY@1164 · KeyN@1165 · KeyW@1167 · KeyM@1168 · KeyZ@1170 · KeyZ@1172 · KeyT@1173 · KeyM@1174 · KeyY@1176 · KeyO@1177 · KeyT@1178 · KeyG@1180 · KeyW@1181 · KeyM@1183 · KeyW@1184 · KeyU@1186 · Digit1@1192 · KeyO@1193 · KeyD@1195 · KeyF@1196 · KeyJ@1197 · KeyM@1199 · KeyW@1200 · KeyN@1201 · KeyM@1203 · KeyO@1205 · KeyD@1206 · KeyA@1207 · Digit1@1209 · KeyN@1210 · Digit2@1211 · KeyJ@1213 · KeyH@1214 · KeyZ@1216 · KeyT@1217 · KeyQ@1219 · Digit3@1225 · KeyO@1226 · KeyG@1228 · KeyM@1229 · Digit1@1230 · KeyY@1232 · KeyM@1233 · KeyE@1234 · Digit3@1235 · KeyZ@1237 · KeyJ@1238 · KeyE@1240 · Digit0@1241 · KeyO@1242 · KeyD@1244 · KeyY@1246 · Digit3@1247 · KeyM@1248 · KeyT@1250 · KeyZ@1251 · KeyM@1252 · KeyZ@1254 · KeyG@1256 · KeyJ@1257 · KeyJ@1259 · KeyO@1260 · KeyG@1262 · KeyM@1263 · KeyZ@1265 · KeyO@1266 · KeyW@1267 · KeyI@1269 · KeyY@1275 · KeyM@1276 · Digit2@1278 · KeyU@1279 · KeyY@1281 · KeyZ@1282 · KeyJ@1284 · KeyZ@1285 · KeyJ@1287 · KeyO@1288 · KeyG@1290 · KeyQ@1291 · Digit4@1293 · KeyO@1294 · KeyD@1296 · KeyM@1297 · Digit0@1299 · KeyN@1300 · Digit2@1301 · KeyM@1303 · KeyX@1305 · KeyY@1306 · KeyT@1307 · KeyE@1309 · KeyZ@1310 · KeyZ@1311 · KeyJ@1314 · KeyE@1315 · KeyW@1317 · KeyZ@1318 · KeyJ@1320 · KeyY@1322 · KeyY@1323 · KeyM@1325 · KeyD@1326 · KeyK@1328 · Digit3@1329 · KeyN@1331 · KeyG@1332 · KeyN@1334 · KeyH@1335 · KeyY@1337 · KeyW@1339 · KeyM@1340 · Digit3@1342 · KeyY@1343 · KeyZ@1344 · KeyD@1346 · KeyH@1348 · KeyM@1349 · KeyJ@1351 · KeyA@1352 · Digit0@1359 · KeyY@1360 · KeyT@1362 · KeyC@1363 · Digit3@1364 · KeyN@1366 · KeyD@1367 · KeyJ@1368 · KeyM@1370 · KeyM@1371 · KeyT@1373 · KeyY@1374 · Digit0@1375 · KeyY@1377 · KeyT@1378 · KeyU@1379 · KeyY@1381 · KeyZ@1382 · KeyW@1383 · KeyI@1385 · KeyX@1386 · KeyZ@1391 · KeyJ@1393 · KeyG@1394 · KeyW@1396 · KeyN@1397 · KeyD@1399 · KeyI@1400 · KeyX@1402 · KeyM@1403 · KeyM@1405 · KeyM@1407 · KeyW@1408 · KeyO@1409 · KeyC@1411 · KeyI@1412 · KeyS@1414 · KeyI@1415 · KeyM@1417 · KeyF@1418 · Digit1@1420 · KeyD@1421 · KeyG@1423 · Digit9@1424 · KeyY@1426 · KeyI@1427 · KeyJ@1429 · KeyO@1430 · KeyI@1432 · KeyZ@1433 · KeyJ@1435 · KeyG@1437 · Digit5@1438 · KeyO@1439 · KeyT@1441 · KeyE@1442 · Digit4@1443 · KeyM@1445 · KeyZ@1447 · KeyQ@1448 · Digit4@1449 · KeyN@1451 · Digit2@1452 · KeyN@1454 · KeyL@1455 · KeyN@1456 · KeyT@1458 · KeyM@1459 · Digit4@1460 · KeyO@1462 · KeyD@1463 · KeyE@1464 · KeyZ@1466 · KeyO@1467 · KeyT@1469 · KeyY@1474 · KeyY@1476 · KeyY@1477 · Digit2@1479 · KeyU@1480 · KeyY@1482 · KeyY@1483 · Digit2@1485 · KeyM@1486 · KeyX@1488 · KeyM@1489 · KeyG@1491 · KeyE@1492 · Digit2@1494 · KeyY@1495 · KeyZ@1497 · KeyU@1498 · KeyZ@1500 · KeyM@1501 · Digit2@1503 · KeyI@1505 · KeyX@1506 · KeyM@1508 · KeyZ@1509 · KeyF@1510 · KeyI@1512 · KeyZ@1513 · KeyW@1514 · KeyE@1516 · KeyY@1517 · KeyN@1519 · KeyG@1528 · KeyM@1529 · Digit0@1531 · KeyN@1532 · KeyD@1534 · KeyJ@1535 · KeyI@1537 · KeyN@1539 · KeyD@1540 · KeyH@1541 · KeyL@1543 · KeyY@1544 · KeyW@1546 · KeyE@1548 · Digit2@1549 · KeyM@1551 · KeyM@1552 · KeyJ@1554 · KeyL@1555 · KeyY@1557 · KeyT@1558 · KeyR@1560 · KeyM@1561 · KeyM@1563 · KeyJ@1564 · KeyH@1566 · KeyL@1567 · KeyN@1568 · KeyS@1576 · KeyJ@1577 · Digit9@1579 · Enter@1580 · KeyE@1589",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJ0b3JfZHJhY2hlbnRvciIsbnVsbCw5OTU2MzEwMTQsbnVsbCxudWxsLDBdLCJzaWciOiJmMTM5MzdjNjA4OTQyNWMzZTMyOTgwMWU1ODFjMWNmODA1N2JhZTQ3OGM1YmE3ZjE0ODY3MTZmZGJjOGMzOWIyM2UyZjZjOGQ4ODM0N2MxYTEzZjEwZjYyMDk3NGNhYWM3YzdhMjA0YTc3NDJmMTY0YTUyZWIxZjgwNDIxMmMwOCIsImF1dG9yIjoiZjg5OTE4MzQ4N2NlNTM4ODEzOTYyY2UyY2MxMGE2YzUzM2IxMzFiZWEyNGM0NDJiNDhlYWE2MmJlYTRmMjhlNSJ9 | Geteiltes Werk steht: Drachentor (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 1318,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@361 · Rad@473 · Klick@495 · KeyB@517 · Enter@909 · KeyA@912 · KeyN@914 · KeyA@916 · KeyZ@917 · KeyH@918 · NumpadSubtract@920 · KeyW@922 · KeyE@924 · KeyR@926 · KeyK@927 · Semicolon@929 · KeyE@931 · KeyY@932 · KeyJ@934 · Digit2@935 · KeyI@936 · KeyJ@938 · KeyO@939 · KeyX@946 · KeyL@948 · KeyC@950 · KeyJ@951 · KeyW@952 · KeyC@954 · KeyM@955 · Digit9@957 · KeyN@959 · KeyC@960 · KeyM@962 · KeyF@963 · KeyT@965 · KeyB@967 · KeyS@968 · KeyI@970 · Digit6@972 · KeyW@981 · KeyY@982 · KeyJ@984 · KeyJ@986 · KeyA@988 · KeyG@989 · KeyF@991 · KeyP@993 · KeyB@994 · KeyI@996 · KeyI@997 · KeyS@999 · KeyW@1001 · KeyY@1003 · KeyJ@1004 · KeyK@1006 · KeyZ@1014 · KeyW@1017 · KeyZ@1018 · KeyP@1020 · KeyB@1022 · KeyM@1024 · KeyV@1026 · KeyF@1027 · KeyY@1029 · KeyM@1031 · KeyX@1032 · Digit1@1034 · KeyZ@1036 · KeyX@1038 · KeyB@1039 · KeyY@1042 · KeyA@1043 · KeyW@1045 · Digit5@1047 · Digit0@1048 · KeyI@1050 · KeyI@1052 · KeyW@1053 · KeyI@1055 · KeyZ@1064 · KeyW@1066 · KeyL@1067 · KeyN@1069 · KeyZ@1071 · KeyW@1072 · Digit5@1074 · KeyF@1076 · KeyY@1077 · KeyN@1079 · KeyJ@1081 · Digit1@1082 · KeyZ@1084 · KeyW@1085 · KeyN@1087 · KeyR@1088 · KeyZ@1090 · KeyS@1092 · KeyI@1094 · KeyS@1095 · KeyW@1097 · Digit3@1098 · KeyS@1100 · KeyI@1101 · KeyC@1103 · Digit2@1104 · KeyH@1105 · KeyH@1112 · KeyC@1114 · KeyG@1115 · KeyU@1117 · KeyI@1118 · KeyO@1120 · KeyI@1121 · KeyJ@1123 · KeyI@1125 · KeyB@1126 · Digit3@1128 · KeyG@1129 · KeyI@1131 · KeyL@1133 · KeyC@1134 · KeyJ@1135 · KeyJ@1137 · KeyB@1138 · Digit2@1139 · KeyX@1141 · KeyV@1142 · KeyC@1144 · KeyI@1145 · KeyI@1146 · Digit6@1148 · KeyO@1149 · KeyD@1150 · KeyA@1152 · KeyY@1153 · KeyN@1154 · KeyJ@1156 · KeyC@1162 · Digit0@1163 · KeyN@1165 · KeyI@1166 · KeyW@1167 · KeyI@1169 · KeyB@1170 · KeyW@1172 · KeyF@1174 · Digit0@1175 · KeyZ@1176 · KeyX@1178 · KeyJ@1179 · KeyP@1180 · KeyY@1182 · KeyW@1183 · KeyW@1184 · KeyI@1186 · KeyO@1187 · KeyI@1189 · KeyJ@1194 · KeyZ@1196 · KeyD@1197 · KeyG@1199 · KeyV@1200 · KeyP@1202 · KeyB@1203 · KeyI@1204 · KeyI@1206 · KeyS@1207 · KeyI@1209 · KeyN@1210 · KeyB@1212 · KeyV@1213 · KeyC@1215 · Digit2@1216 · KeyL@1218 · Digit0@1219 · KeyA@1221 · KeyW@1222 · Digit9@1224 · KeyU@1225 · KeyI@1227 · KeyJ@1228 · KeyP@1229 · Digit7@1231 · KeyI@1232 · KeyN@1233 · KeyG@1235 · KeyI@1236 · KeyO@1237 · KeyI@1239 · Digit0@1240 · KeyZ@1242 · KeyL@1243 · KeyC@1245 · KeyJ@1246 · Digit5@1247 · KeyI@1249 · KeyJ@1250 · KeyO@1252 · KeyX@1253 · KeyL@1254 · KeyJ@1256 · KeyI@1262 · Digit1@1264 · KeyL@1265 · KeyC@1267 · KeyJ@1268 · Digit6@1270 · KeyI@1271 · KeyJ@1273 · KeyO@1275 · KeyW@1276 · KeyF@1278 · KeyS@1280 · KeyW@1282 · KeyI@1283 · KeyC@1285 · KeyM@1286 · Digit9@1288 · Digit0@1289 · KeyY@1295 · KeyX@1297 · KeyR@1299 · KeyP@1302 · KeyB@1304 · Digit2@1306 · Digit4@1307 · KeyI@1309 · KeyO@1310 · KeyN@1311 · KeyS@1313 · KeyI@1314 · KeyE@1315 · KeyC@1317 · KeyI@1319 · Digit6@1320 · KeyM@1321 · KeyC@1323 · KeyW@1325 · KeyI@1326 · KeyE@1327 · KeyS@1329 · KeyI@1330 · Digit6@1332 · KeyM@1333 · KeyC@1335 · KeyW@1336 · KeyI@1337 · KeyE@1338 · KeyI@1340 · KeyI@1341 · Digit6@1343 · KeyM@1344 · KeyH@1346 · Digit0@1347 · KeyS@1348 · KeyI@1350 · KeyN@1351 · KeyN@1352 · KeyP@1354 · KeyE@1355 · KeyM@1362 · KeyU@1363 · KeyI@1365 · KeyO@1366 · KeyN@1368 · KeyS@1369 · KeyI@1370 · KeyE@1372 · KeyC@1373 · KeyI@1375 · Digit6@1376 · KeyM@1378 · KeyS@1379 · KeyW@1380 · KeyI@1381 · KeyE@1383 · KeyS@1384 · KeyI@1385 · Digit6@1387 · KeyM@1388 · KeyI@1389 · Digit4@1395 · Digit1@1396 · KeyL@1397 · KeyC@1399 · KeyJ@1400 · Digit6@1402 · KeyI@1403 · KeyJ@1404 · KeyO@1405 · KeyX@1407 · KeyL@1409 · KeyJ@1410 · KeyV@1411 · Digit9@1413 · KeyL@1414 · KeyC@1416 · KeyJ@1417 · KeyV@1419 · KeyC@1420 · KeyE@1422 · KeyN@1428 · KeyO@1430 · KeyY@1431 · KeyW@1433 · KeyL@1434 · KeyU@1436 · KeyI@1437 · KeyJ@1439 · KeyP@1440 · KeyB@1442 · KeyE@1443 · KeyY@1445 · KeyJ@1447 · Digit0@1448 · KeyB@1450 · Digit2@1451 · Digit9@1452 · KeyS@1454 · KeyI@1455 · KeyJ@1457 · KeyO@1459 · KeyI@1460 · KeyA@1462 · KeyM@1463 · KeyO@1465 · KeyK@1466 · KeyB@1468 · KeyM@1469 · KeyR@1470 · KeyL@1472 · KeyI@1474 · KeyI@1475 · KeyW@1476 · KeyI@1478 · KeyB@1479 · Digit3@1481 · KeyA@1482 · KeyI@1483 · KeyO@1484 · KeyI@1486 · KeyJ@1487 · KeyO@1488 · KeyY@1490 · KeyW@1492 · Digit5@1493 · KeyK@1495 · KeyX@1496 · Digit2@1497 · KeyT@1499 · KeyU@1500 · KeyY@1501 · KeyX@1503 · KeyA@1504 · KeyI@1505 · KeyL@1512 · KeyC@1513 · KeyJ@1515 · KeyJ@1516 · KeyY@1518 · KeyX@1520 · KeyA@1521 · KeyI@1522 · KeyO@1524 · KeyJ@1526 · KeyA@1527 · KeyU@1528 · KeyN@1530 · KeyC@1531 · KeyW@1532 · KeyI@1534 · KeyY@1535 · KeyX@1537 · KeyQ@1538 · KeyI@1540 · KeyO@1542 · KeyJ@1543 · KeyB@1544 · Digit9@1546 · KeyX@1547 · KeyX@1548 · Digit0@1550 · KeyS@1551 · KeyE@1552 · KeyY@1554 · KeyJ@1555 · KeyZ@1557 · KeyA@1558 · KeyG@1560 · KeyF@1561 · KeyW@1562 · KeyZ@1563 · KeyS@1565 · KeyI@1566 · Digit6@1567 · KeyI@1569 · KeyM@1570 · KeyJ@1571 · KeyV@1574 · KeyE@1575 · KeyC@1576 · KeyI@1578 · KeyS@1579 · KeyI@1580 · KeyM@1582 · KeyN@1583 · KeyV@1584 · KeyB@1586 · KeyG@1587 · Digit9@1588 · KeyY@1590 · KeyI@1592 · KeyJ@1593 · KeyO@1594 · Digit4@1596 · KeyM@1597 · KeyD@1598 · KeyI@1600 · Digit2@1601 · KeyN@1603 · KeyZ@1604 · KeyQ@1605 · Digit2@1607 · KeyL@1608 · KeyC@1610 · KeyJ@1611 · KeyT@1612 · KeyY@1614 · KeyX@1615 · KeyR@1616 · KeyL@1618 · KeyC@1620 · KeyM@1621 · KeyL@1622 · KeyH@1629 · KeyB@1630 · KeyC@1631 · KeyI@1633 · Digit6@1634 · KeyI@1636 · KeyN@1637 · KeyN@1638 · Digit0@1640 · KeyZ@1642 · KeyW@1643 · KeyL@1644 · KeyU@1646 · KeyI@1647 · KeyI@1648 · KeyW@1650 · KeyI@1651 · KeyC@1652 · KeyG@1653 · Digit9@1655 · KeyZ@1657 · KeyA@1658 · KeyX@1660 · KeyR@1661 · KeyP@1662 · KeyB@1664 · Digit2@1665 · Digit4@1667 · KeyI@1668 · KeyO@1670 · KeyN@1671 · KeyS@1673 · KeyI@1679 · KeyE@1681 · KeyC@1682 · KeyI@1684 · Digit6@1685 · KeyM@1686 · KeyY@1688 · KeyW@1689 · KeyI@1691 · KeyE@1692 · KeyS@1694 · KeyI@1695 · Digit6@1697 · KeyM@1698 · KeyS@1699 · Digit4@1701 · KeyY@1702 · KeyN@1703 · KeyS@1705 · KeyW@1706 · KeyI@1712 · KeyE@1714 · KeyI@1715 · KeyI@1717 · Digit6@1718 · KeyM@1720 · KeyH@1721 · Digit0@1723 · KeyS@1725 · KeyI@1726 · KeyN@1728 · KeyJ@1729 · KeyV@1731 · KeyD@1732 · KeyG@1734 · KeyF@1735 · Digit0@1737 · KeyA@1738 · KeyW@1740 · Digit9@1742 · KeyU@1743 · KeyI@1745 · KeyJ@1746 · KeyP@1748 · Digit7@1749 · KeyI@1751 · KeyN@1752 · KeyG@1754 · KeyI@1755 · KeyO@1757 · KeyJ@1758 · KeyA@1760 · KeyS@1761 · KeyI@1762 · KeyN@1764 · KeyK@1765 · KeyI@1767 · KeyO@1769 · KeyJ@1770 · KeyA@1772 · KeyS@1773 · KeyI@1775 · KeyN@1776 · KeyO@1778 · KeyI@1779 · KeyO@1781 · KeyJ@1782 · KeyB@1783 · Digit9@1785 · KeyL@1786 · KeyC@1787 · KeyJ@1789 · KeyZ@1790 · KeyA@1792 · KeyX@1793 · KeyP@1794 · KeyL@1796 · KeyI@1797 · KeyJ@1798 · KeyP@1800 · Digit7@1801 · KeyI@1802 · KeyN@1804 · KeyG@1805 · KeyI@1807 · KeyO@1808 · KeyJ@1810 · KeyE@1811 · KeyS@1812 · KeyI@1814 · KeyN@1815 · KeyK@1816 · KeyI@1818 · KeyO@1819 · KeyJ@1821 · KeyI@1822 · KeyU@1828 · KeyN@1830 · KeyS@1832 · KeyW@1833 · KeyI@1835 · KeyE@1836 · KeyI@1838 · KeyI@1839 · Digit6@1841 · KeyM@1842 · KeyS@1844 · Digit4@1845 · Digit1@1847 · KeyF@1848 · KeyS@1850 · KeyW@1851 · KeyI@1853 · KeyB@1854 · Digit3@1856 · KeyB@1862 · KeyD@1863 · KeyA@1865 · KeyG@1867 · KeyF@1868 · KeyP@1869 · KeyB@1871 · KeyI@1872 · KeyI@1874 · Digit6@1876 · KeyW@1877 · Digit3@1879 · KeyS@1881 · KeyI@1882 · KeyD@1883 · KeyG@1885 · Digit9@1886 · KeyV@1887 · KeyB@1889 · KeyC@1890 · KeyI@1892 · Digit6@1893 · KeyI@1895 · KeyM@1896 · KeyJ@1897 · KeyD@1899 · KeyP@1900 · KeyG@1901 · Digit5@1903 · KeyK@1904 · KeyZ@1905 · KeyS@1907 · KeyI@1909 · KeyS@1910 · KeyI@1911 · KeyM@1913 · Digit9@1914 · KeyW@1915 · KeyI@1917 · KeyJ@1918 · KeyO@1919 · KeyI@1921 · KeyA@1923 · KeyG@1925 · KeyF@1926 · KeyU@1928 · KeyZ@1929 · KeyF@1930 · Digit9@1932 · KeyR@1933 · KeyB@1934 · KeyM@1936 · KeyF@1937 · KeyW@1938 · KeyI@1940 · KeyI@1942 · KeyW@1943 · KeyI@1945 · KeyY@1946 · Digit2@1947 · KeyF@1949 · KeyW@1950 · KeyI@1951 · KeyJ@1953 · KeyO@1954 · KeyW@1956 · KeyL@1964 · KeyJ@1966 · KeyQ@1967 · KeyS@1969 · KeyI@1970 · KeyM@1972 · KeyF@1973 · Digit0@1975 · KeyI@1976 · KeyJ@1978 · KeyO@1979 · KeyW@1980 · KeyF@1982 · KeyV@1983 · Digit1@1984 · Digit9@1986 · KeyL@1987 · KeyH@1988 · KeyS@1990 · KeyI@1992 · KeyC@1993 · Digit2@1995 · KeyH@1996 · KeyH@1998 · KeyC@1999 · KeyG@2001 · KeyU@2002 · KeyI@2004 · KeyO@2005 · KeyI@2007 · KeyJ@2009 · KeyI@2010 · KeyB@2011 · Digit3@2013 · KeyG@2014 · KeyI@2017 · KeyL@2018 · KeyC@2020 · KeyJ@2022 · KeyJ@2024 · KeyB@2025 · Digit2@2026 · KeyX@2028 · KeyV@2029 · KeyC@2030 · KeyI@2032 · KeyI@2033 · Digit6@2034 · KeyO@2035 · KeyD@2037 · KeyA@2038 · KeyY@2040 · KeyN@2042 · KeyJ@2043 · KeyC@2045 · Digit0@2046 · KeyN@2048 · KeyI@2049 · KeyW@2051 · KeyI@2052 · KeyB@2053 · KeyW@2055 · KeyF@2057 · Digit0@2058 · KeyZ@2060 · KeyX@2061 · KeyJ@2063 · KeyP@2065 · KeyY@2066 · KeyW@2068 · KeyW@2069 · KeyI@2071 · KeyO@2072 · KeyI@2074 · KeyJ@2075 · KeyZ@2077 · KeyD@2078 · KeyG@2080 · KeyV@2081 · KeyP@2082 · KeyB@2084 · KeyI@2085 · KeyI@2086 · KeyS@2088 · KeyI@2089 · KeyN@2091 · KeyB@2092 · KeyV@2094 · KeyC@2095 · Digit2@2096 · KeyL@2098 · Digit0@2099 · KeyA@2101 · KeyW@2102 · Digit9@2103 · KeyU@2105 · KeyI@2107 · KeyJ@2108 · KeyP@2110 · Digit7@2111 · KeyI@2113 · KeyN@2114 · KeyG@2116 · KeyI@2117 · KeyO@2119 · KeyJ@2120 · KeyA@2122 · KeyS@2124 · KeyI@2125 · KeyN@2126 · KeyK@2128 · KeyI@2129 · KeyO@2131 · KeyJ@2132 · KeyI@2133 · KeyU@2135 · KeyN@2136 · KeyY@2137 · KeyW@2139 · KeyI@2140 · KeyE@2142 · KeyI@2143 · KeyI@2145 · Digit6@2146 · KeyM@2147 · KeyH@2149 · Digit0@2150 · KeyS@2151 · KeyI@2153 · KeyN@2154 · KeyJ@2156 · KeyV@2157 · KeyD@2159 · KeyG@2160 · KeyF@2162 · Digit0@2163 · KeyA@2165 · KeyW@2166 · Digit9@2168 · KeyU@2169 · KeyI@2171 · KeyJ@2172 · KeyP@2174 · Digit7@2175 · KeyI@2177 · KeyN@2178 · KeyG@2179 · KeyI@2181 · KeyO@2182 · KeyJ@2183 · KeyA@2185 · KeyS@2186 · KeyI@2187 · KeyN@2189 · KeyK@2196 · KeyI@2198 · KeyO@2199 · KeyJ@2201 · KeyA@2202 · KeyS@2203 · KeyI@2205 · KeyN@2206 · KeyO@2208 · KeyI@2209 · KeyO@2211 · KeyJ@2212 · KeyB@2213 · Digit9@2215 · KeyL@2216 · KeyC@2218 · KeyJ@2219 · KeyZ@2220 · KeyA@2222 · KeyX@2224 · KeyP@2226 · KeyL@2227 · KeyI@2228 · KeyJ@2230 · KeyP@2231 · Digit7@2232 · KeyI@2234 · KeyN@2235 · KeyG@2236 · KeyI@2238 · KeyO@2239 · KeyJ@2241 · KeyG@2242 · KeyS@2244 · KeyI@2245 · KeyN@2246 · KeyK@2248 · KeyI@2249 · KeyO@2250 · KeyJ@2252 · KeyA@2253 · KeyU@2254 · KeyN@2256 · KeyC@2257 · KeyW@2259 · KeyI@2260 · KeyE@2262 · KeyI@2263 · KeyI@2264 · Digit6@2266 · KeyM@2267 · KeyN@2268 · Digit0@2270 · KeyS@2271 · KeyI@2272 · KeyM@2280 · Digit9@2281 · KeyW@2283 · KeyQ@2284 · Digit2@2285 · KeyH@2287 · KeyH@2288 · KeyA@2290 · KeyW@2291 · Digit4@2293 · KeyI@2294 · KeyO@2296 · KeyL@2297 · KeyT@2298 · Digit7@2300 · KeyI@2301 · KeyN@2303 · KeyR@2304 · KeyV@2305 · KeyB@2307 · Digit2@2308 · KeyW@2310 · KeyI@2311 · KeyO@2312 · KeyI@2314 · KeyJ@2315 · KeyO@2317 · KeyW@2318 · Digit6@2319 · KeyR@2321 · KeyU@2323 · KeyZ@2328 · KeyG@2330 · KeyU@2332 · KeyI@2333 · KeyL@2335 · KeyC@2336 · KeyJ@2338 · KeyV@2340 · KeyC@2342 · KeyC@2344 · KeyI@2345 · Digit6@2346 · KeyI@2348 · KeyM@2349 · KeyH@2350 · KeyH@2352 · KeyB@2353 · KeyM@2354 · KeyR@2356 · KeyF@2361 · KeyA@2363 · Digit2@2364 · Digit5@2366 · KeyH@2367 · KeyC@2368 · KeyC@2370 · KeyI@2371 · KeyS@2373 · KeyI@2375 · KeyM@2376 · KeyN@2378 · KeyH@2379 · KeyC@2380 · KeyC@2382 · KeyI@2383 · Digit6@2385 · KeyM@2386 · KeyC@2388 · Digit4@2389 · Digit0@2395 · KeyL@2396 · KeyC@2397 · KeyJ@2399 · KeyH@2401 · KeyD@2402 · KeyC@2403 · KeyI@2405 · Digit6@2407 · KeyM@2408 · KeyH@2410 · Digit1@2411 · KeyD@2412 · KeyF@2414 · KeyV@2415 · Digit1@2417 · KeyD@2418 · KeyL@2420 · KeyF@2421 · KeyS@2423 · KeyI@2425 · KeyC@2426 · Digit3@2428 · KeyB@2429 · KeyH@2430 · KeyD@2432 · Digit2@2433 · Digit5@2434 · KeyF@2436 · KeyY@2437 · KeyM@2438 · KeyX@2440 · Digit1@2442 · KeyZ@2443 · KeyX@2445 · KeyB@2446 · KeyY@2448 · KeyA@2449 · KeyW@2451 · Digit5@2452 · Digit0@2454 · KeyI@2455 · KeyI@2457 · KeyW@2459 · KeyI@2460 · KeyZ@2461 · KeyW@2463 · KeyL@2464 · KeyN@2465 · KeyZ@2467 · KeyW@2469 · Digit5@2470 · KeyF@2471 · KeyY@2473 · KeyN@2479 · KeyJ@2480 · Digit1@2482 · KeyZ@2483 · KeyW@2485 · KeyN@2486 · KeyR@2488 · KeyZ@2489 · KeyS@2491 · KeyI@2492 · KeyS@2494 · KeyB@2495 · KeyN@2497 · KeyV@2498 · KeyS@2500 · KeyB@2501 · KeyC@2503 · KeyW@2504 · KeyZ@2506 · KeyO@2511 · KeyT@2513 · KeyE@2514 · KeyZ@2516 · KeyM@2517 · KeyJ@2519 · KeyQ@2520 · Digit2@2521 · KeyO@2524 · KeyT@2525 · KeyU@2526 · Digit4@2528 · KeyL@2529 · KeyG@2531 · Digit5@2532 · Digit1@2533 · KeyB@2535 · KeyG@2536 · KeyW@2538 · KeyS@2539 · KeyB@2541 · KeyN@2542 · KeyV@2544 · KeyS@2545 · KeyB@2546 · KeyC@2548 · KeyW@2549 · KeyW@2550 · KeyX@2552 · KeyV@2553 · Digit0@2555 · KeyS@2556 · KeyI@2562 · KeyN@2563 · KeyN@2565 · KeyP@2566 · KeyZ@2567 · KeyY@2569 · KeyI@2570 · Digit6@2571 · KeyI@2573 · KeyM@2574 · KeyQ@2576 · Digit3@2577 · KeyN@2578 · KeyZ@2580 · KeyN@2581 · KeyI@2583 · KeyY@2584 · KeyZ@2585 · KeyH@2587 · KeyJ@2588 · KeyY@2590 · KeyT@2592 · KeyG@2593 · KeyW@2594 · KeyZ@2596 · KeyT@2597 · KeyG@2598 · Digit2@2600 · KeyM@2601 · KeyW@2603 · KeyM@2604 · KeyZ@2605 · KeyZ@2613 · KeyJ@2614 · KeyU@2616 · Digit0@2617 · KeyM@2618 · KeyJ@2620 · KeyI@2621 · KeyZ@2624 · KeyM@2625 · KeyT@2627 · KeyC@2628 · Digit3@2629 · KeyO@2631 · KeyW@2633 · KeyJ@2634 · KeyJ@2635 · KeyN@2637 · KeyG@2638 · KeyE@2640 · KeyW@2642 · KeyY@2643 · KeyT@2644 · KeyE@2646 · KeyY@2647 · KeyY@2649 · KeyM@2650 · KeyF@2651 · KeyM@2653 · KeyM@2654 · KeyM@2655 · KeyE@2657 · Digit1@2659 · KeyN@2660 · KeyT@2662 · KeyM@2663 · Digit5@2665 · KeyM@2666 · KeyZ@2667 · KeyQ@2669 · Digit1@2670 · KeyM@2671 · KeyT@2673 · KeyL@2675 · KeyJ@2676 · KeyM@2678 · KeyD@2679 · KeyJ@2681 · KeyK@2682 · KeyM@2684 · Digit2@2685 · KeyU@2687 · KeyW@2688 · KeyO@2690 · KeyD@2692 · KeyL@2693 · KeyL@2694 · KeyZ@2696 · KeyT@2697 · KeyN@2699 · KeyH@2700 · KeyM@2701 · KeyJ@2703 · KeyY@2704 · KeyX@2705 · KeyN@2707 · KeyT@2709 · KeyR@2710 · KeyL@2711 · KeyM@2713 · KeyT@2714 · KeyM@2716 · KeyZ@2717 · KeyM@2719 · KeyD@2720 · KeyU@2722 · Digit3@2728 · KeyM@2730 · Digit2@2731 · KeyU@2733 · Digit4@2734 · KeyM@2736 · KeyG@2737 · KeyM@2739 · Digit4@2740 · KeyZ@2742 · KeyT@2743 · KeyB@2745 · KeyL@2746 · KeyM@2748 · KeyT@2758 · KeyU@2760 · KeyX@2761 · KeyN@2763 · KeyM@2764 · KeyF@2765 · KeyM@2767 · KeyN@2768 · KeyZ@2770 · KeyH@2771 · KeyL@2772 · KeyN@2774 · KeyD@2776 · KeyI@2777 · Digit0@2778 · KeyM@2780 · KeyD@2781 · KeyE@2783 · Digit0@2784 · KeyZ@2785 · KeyD@2787 · KeyQ@2788 · Digit5@2789 · KeyM@2795 · KeyJ@2797 · KeyY@2799 · Digit3@2800 · KeyZ@2801 · KeyT@2803 · KeyR@2804 · KeyL@2806 · KeyM@2807 · KeyZ@2809 · KeyG@2810 · Digit5@2812 · KeyM@2813 · KeyJ@2814 · KeyQ@2816 · Digit4@2817 · KeyM@2819 · KeyW@2820 · KeyJ@2822 · KeyL@2824 · KeyO@2825 · KeyD@2827 · KeyZ@2828 · KeyI@2830 · KeyM@2832 · KeyG@2833 · KeyI@2835 · KeyY@2836 · KeyY@2838 · Digit2@2839 · KeyQ@2846 · Digit4@2848 · KeyY@2849 · KeyJ@2851 · KeyB@2852 · KeyL@2854 · KeyI@2855 · KeyI@2858 · KeyW@2860 · KeyI@2862 · KeyY@2864 · KeyX@2865 · KeyV@2867 · Digit0@2869 · KeyB@2870 · Digit3@2872 · KeyI@2874 · KeyI@2876 · KeyO@2877 · KeyI@2879 · KeyJ@2880 · KeyM@2882 · KeyO@2883 · KeyD@2885 · KeyK@2886 · Digit5@2888 · KeyM@2889 · KeyT@2905 · KeyG@2910 · KeyZ@2912 · KeyN@2914 · KeyD@2915 · KeyG@2917 · Digit3@2918 · KeyY@2920 · Digit2@2921 · KeyU@2924 · Digit1@2925 · KeyM@2927 · KeyZ@2928 · KeyG@2930 · Digit4@2931 · KeyM@2933 · KeyT@2934 · KeyM@2936 · Digit5@2937 · KeyN@2939 · KeyJ@2941 · KeyJ@2942 · KeyJ@2944 · KeyZ@2945 · KeyT@2947 · KeyJ@2949 · KeyJ@2950 · KeyY@2952 · KeyZ@2953 · KeyE@2955 · KeyW@2957 · KeyY@2959 · KeyT@2960 · KeyZ@2962 · KeyJ@2963 · KeyN@2965 · KeyT@2966 · KeyM@2968 · KeyZ@2969 · KeyY@2971 · KeyJ@2973 · KeyE@2980 · KeyZ@2981 · KeyM@2983 · KeyW@2984 · KeyJ@2986 · KeyL@2987 · KeyY@2989 · KeyT@2998 · KeyI@3015 · Digit0@3017 · KeyY@3018 · KeyZ@3020 · KeyQ@3022 · Digit0@3024 · KeyM@3025 · KeyM@3027 · KeyI@3029 · Digit0@3030 · KeyO@3032 · KeyG@3033 · KeyV@3035 · KeyH@3036 · KeyY@3038 · KeyT@3040 · KeyY@3042 · KeyY@3044 · KeyY@3045 · KeyM@3047 · KeyV@3048 · KeyH@3050 · KeyN@3051 · KeyG@3053 · KeyY@3054 · KeyY@3056 · KeyO@3058 · KeyG@3060 · KeyU@3061 · Digit1@3063 · KeyI@3064 · KeyN@3066 · Digit0@3068 · Enter@3069 · KeyW@3477",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOi0zLCJ5IjoxLjI1LCJ6IjowfSwicm90YXRpb24iOnsieCI6MCwieSI6MCwieiI6MH0sInNpemUiOnsieCI6MSwieSI6Mi41LCJ6IjoxLjV9LCJvcENoYWluIjpbeyJ0b29sIjoiaMOkbmRlIiwib3AiOiJoYW5kX2tuYXAiLCJjYXAiOjAuNCwiYXQiOjB9XX0seyJzaGFwZSI6ImJveCIsImNvbG9yIjo4MDI2NzQ2LCJtYXRlcmlhbCI6InN0ZWluIiwicG9zaXRpb24iOnsieCI6MywieSI6MS4yNSwieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjEsInkiOjIuNSwieiI6MS41fSwib3BDaGFpbiI6W3sidG9vbCI6ImjDpG5kZSIsIm9wIjoiaGFuZF9rbmFwIiwiY2FwIjowLjQsImF0IjowfV19LHsic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOjAsInkiOjIuNywieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjgsInkiOjAuNCwieiI6Mn0sIm9wQ2hhaW4iOlt7InRvb2wiOiJow6RuZGUiLCJvcCI6ImhhbmRfa25hcCIsImNhcCI6MC40LCJhdCI6MH1dfV1dLFsic3Bhd25fYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsbnVsbCwzOTEzMjQ2OTU4LG51bGwsbnVsbCwwXV0sInNpZyI6ImQ3NzNiYzhjYTgwZTg2MWMzZjU0MjIzMTc3OWJjNGEwYTEyYmFmMmE1NTM5MzQ1MTljMDJkM2UwODllZTNhMjYxNTRlMTMzMDU3M2U4MGM4ZTBlMTUxNmFmNzhlNDI0MDE0ZDQ5MjY3ZTRlMzg5MjQ4MWJlODZiMGIyY2Q4YjBlIiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: eigen_bruecke-geteilt2 (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 418,
+     "unecht": 0,
+     "folge": "KeyB@0 · Klick@367 · Rad@490 · Klick@510 · KeyB@534 · Enter@893 · KeyA@896 · KeyN@898 · KeyA@899 · KeyZ@901 · KeyH@902 · NumpadSubtract@904 · KeyW@905 · KeyE@909 · KeyR@910 · KeyK@912 · Semicolon@914 · KeyE@915 · KeyY@917 · KeyJ@919 · Digit2@920 · KeyI@922 · KeyJ@932 · KeyO@934 · KeyX@936 · KeyL@937 · KeyC@939 · KeyJ@942 · KeyW@943 · KeyC@945 · KeyM@947 · Digit9@949 · KeyN@951 · KeyC@952 · KeyM@954 · KeyF@956 · KeyT@964 · KeyB@966 · KeyS@968 · KeyI@970 · Digit6@972 · KeyW@974 · KeyY@975 · KeyJ@977 · KeyZ@978 · KeyC@980 · KeyG@981 · KeyF@983 · Digit3@984 · KeyB@986 · KeyL@987 · Digit9@989 · KeyI@992 · KeyB@993 · KeyH@995 · KeyV@997 · KeyL@999 · KeyC@1000 · KeyH@1002 · KeyJ@1003 · KeyP@1005 · KeyB@1006 · KeyN@1013 · KeyQ@1014 · KeyI@1016 · KeyL@1018 · KeyC@1019 · KeyJ@1021 · KeyS@1024 · KeyZ@1026 · KeyW@1027 · KeyL@1029 · Digit0@1030 · KeyZ@1032 · KeyX@1033 · KeyJ@1035 · KeyF@1037 · KeyC@1038 · KeyG@1040 · Digit9@1042 · KeyK@1044 · KeyZ@1046 · KeyX@1047 · KeyN@1049 · Digit0@1051 · KeyB@1053 · KeyG@1055 · KeyV@1057 · KeyP@1059 · KeyD@1061 · KeyG@1063 · KeyV@1065 · KeyY@1067 · KeyI@1068 · KeyI@1070 · KeyX@1072 · KeyU@1074 · KeyD@1076 · KeyW@1078 · KeyX@1079 · KeyS@1081 · KeyL@1082 · KeyD@1084 · KeyI@1086 · Digit1@1088 · KeyN@1089 · KeyT@1099 · KeyE@1101 · Digit2@1103 · KeyO@1105 · KeyD@1106 · KeyU@1108 · Digit5@1109 · KeyM@1110 · KeyI@1112 · KeyX@1113 · KeyU@1114 · KeyD@1116 · KeyW@1117 · KeyX@1118 · KeyS@1120 · KeyL@1121 · KeyG@1123 · Digit5@1124 · Digit1@1126 · KeyB@1127 · KeyG@1128 · KeyW@1130 · KeyS@1131 · KeyM@1132 · KeyF@1133 · Digit0@1135 · KeyS@1136 · KeyI@1137 · KeyN@1139 · KeyN@1140 · KeyP@1142 · KeyZ@1143 · KeyY@1144 · KeyI@1146 · Digit6@1147 · KeyI@1148 · KeyJ@1150 · KeyD@1151 · KeyK@1152 · KeyN@1153 · KeyM@1155 · KeyQ@1156 · KeyZ@1162 · KeyM@1163 · KeyM@1165 · KeyF@1166 · KeyI@1167 · KeyM@1169 · KeyM@1170 · KeyV@1171 · KeyJ@1173 · KeyY@1174 · KeyW@1176 · KeyN@1177 · KeyL@1179 · KeyN@1180 · KeyG@1181 · KeyF@1183 · KeyM@1184 · KeyY@1185 · KeyZ@1187 · KeyB@1188 · KeyI@1189 · KeyN@1191 · KeyD@1192 · KeyY@1194 · KeyZ@1195 · KeyN@1196 · KeyZ@1198 · KeyI@1199 · KeyZ@1200 · KeyZ@1202 · KeyG@1204 · KeyF@1205 · KeyK@1207 · KeyO@1208 · KeyW@1210 · KeyE@1211 · KeyZ@1212 · KeyY@1214 · KeyJ@1215 · KeyU@1217 · KeyW@1218 · KeyN@1219 · KeyG@1220 · KeyE@1222 · KeyZ@1224 · KeyM@1225 · KeyM@1227 · KeyF@1228 · KeyI@1230 · KeyO@1231 · KeyT@1233 · KeyI@1234 · Digit3@1236 · KeyN@1237 · Digit2@1239 · KeyZ@1240 · KeyK@1242 · KeyM@1243 · Digit2@1245 · KeyU@1246 · Digit4@1247 · KeyO@1249 · KeyG@1250 · KeyI@1252 · KeyY@1253 · KeyN@1254 · KeyZ@1256 · KeyM@1262 · KeyY@1264 · KeyM@1265 · KeyJ@1266 · KeyM@1268 · Digit2@1269 · KeyN@1270 · KeyT@1272 · KeyM@1274 · KeyY@1275 · KeyZ@1277 · KeyG@1278 · KeyR@1280 · KeyI@1282 · KeyO@1283 · KeyD@1285 · KeyR@1286 · KeyI@1288 · KeyY@1289 · KeyZ@1291 · KeyR@1292 · KeyM@1294 · KeyO@1295 · KeyT@1297 · KeyQ@1298 · Digit2@1300 · KeyO@1301 · KeyD@1303 · KeyK@1305 · KeyY@1306 · KeyM@1309 · KeyT@1311 · KeyG@1312 · KeyY@1314 · KeyM@1315 · KeyZ@1316 · KeyF@1318 · KeyJ@1319 · KeyM@1321 · KeyJ@1322 · KeyU@1324 · Digit0@1326 · KeyM@1327 · KeyM@1328 · KeyE@1330 · KeyX@1331 · KeyZ@1332 · KeyD@1334 · KeyK@1335 · Digit2@1336 · KeyZ@1338 · KeyM@1339 · KeyF@1346 · KeyH@1347 · KeyN@1349 · KeyD@1350 · KeyF@1352 · KeyH@1353 · KeyY@1355 · Digit2@1357 · KeyE@1359 · Digit1@1360 · KeyY@1361 · Digit2@1363 · KeyY@1364 · KeyW@1365 · KeyN@1367 · KeyT@1368 · KeyQ@1370 · Digit5@1371 · KeyY@1373 · KeyT@1374 · KeyE@1376 · Digit4@1377 · KeyM@1379 · Digit2@1380 · KeyM@1382 · KeyY@1383 · KeyM@1385 · KeyM@1386 · KeyY@1387 · KeyY@1389 · KeyO@1391 · KeyW@1392 · KeyM@1394 · Digit5@1395 · KeyZ@1397 · KeyG@1398 · KeyJ@1400 · KeyL@1402 · KeyO@1404 · KeyG@1405 · KeyE@1407 · Digit2@1409 · KeyY@1411 · KeyZ@1412 · KeyA@1414 · KeyW@1415 · KeyI@1417 · KeyI@1418 · KeyW@1420 · KeyI@1422 · KeyY@1424 · KeyX@1425 · KeyV@1427 · Digit0@1428 · KeyB@1430 · Digit3@1432 · KeyI@1433 · KeyI@1435 · KeyO@1437 · KeyI@1438 · KeyJ@1441 · KeyM@1442 · KeyO@1443 · KeyD@1445 · KeyK@1446 · Digit5@1448 · KeyM@1449 · KeyT@1451 · KeyG@1452 · KeyZ@1453 · KeyN@1455 · KeyD@1456 · KeyG@1463 · Digit3@1464 · KeyY@1466 · Digit2@1467 · KeyU@1469 · Digit1@1470 · KeyM@1471 · KeyZ@1473 · KeyG@1475 · Digit4@1476 · KeyM@1478 · KeyT@1479 · KeyM@1480 · Digit5@1482 · KeyN@1483 · KeyJ@1485 · KeyJ@1486 · KeyJ@1487 · KeyZ@1489 · KeyT@1491 · KeyJ@1493 · KeyJ@1494 · KeyY@1495 · KeyZ@1497 · KeyE@1498 · KeyW@1500 · KeyY@1501 · KeyT@1503 · KeyZ@1505 · KeyJ@1507 · KeyN@1509 · KeyT@1510 · KeyM@1511 · KeyZ@1513 · KeyY@1514 · KeyJ@1516 · KeyE@1517 · KeyZ@1518 · KeyM@1520 · KeyW@1521 · KeyJ@1522 · KeyL@1524 · KeyY@1527 · KeyT@1528 · KeyI@1529 · Digit0@1531 · KeyY@1532 · KeyZ@1534 · KeyQ@1535 · Digit0@1537 · KeyM@1538 · KeyM@1540 · KeyI@1546 · Digit0@1547 · KeyO@1549 · KeyG@1551 · KeyV@1552 · KeyH@1554 · KeyY@1556 · KeyT@1558 · KeyY@1559 · KeyY@1561 · KeyY@1562 · KeyM@1564 · KeyV@1565 · KeyH@1566 · KeyN@1568 · KeyG@1569 · KeyY@1570 · KeyY@1572 · KeyO@1574 · KeyG@1576 · KeyU@1577 · Digit1@1579 · KeyI@1580 · KeyN@1582 · Digit0@1583 · Enter@1585 · KeyW@2161",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJsZWl0ZXJfcG9kZXN0bGVpdGVyIixudWxsLDI1NTE2ODU5MixudWxsLG51bGwsMF0sInNpZyI6IjdkNmQzMmFiMmVjYWNlNGFmYzBiNDYzNzIzZGFkOWEzYjUwNGEzMmFiOTI3N2ZkM2U4OGIyNzMyMjM2NTMyZGRiODRiYzRmOTQ2ODkyMTgyMzFjMjU0MmExZDk2ZmFhNDFhY2E1Y2YwNTQ5YTE4M2MyMmYyOWM5ZGJlOGE2YzAwIiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: Podestleiter (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 423,
+     "unecht": 0,
+     "folge": "KeyB@0 · Rad@577 · Rad@660 · Rad@727 · Rad@793 · Rad@860 · Rad@926 · Rad@993 · Rad@1060 · Rad@1126 · Rad@1193 · Rad@1260 · Rad@1326 · Rad@1393 · Klick@1413 · Rad@1560 · Klick@1592 · KeyB@1605 · Enter@1964 · KeyA@1967 · KeyN@1969 · KeyA@1970 · KeyZ@1972 · KeyH@1974 · NumpadSubtract@1975 · KeyW@1977 · KeyE@1979 · KeyR@1981 · KeyK@1983 · Semicolon@1984 · KeyE@1986 · KeyY@1988 · KeyJ@1989 · Digit2@1991 · KeyI@1993 · KeyJ@2002 · KeyO@2004 · KeyX@2006 · KeyL@2008 · KeyC@2009 · KeyJ@2012 · KeyW@2014 · KeyC@2015 · KeyM@2017 · Digit9@2018 · KeyN@2020 · KeyC@2021 · KeyM@2023 · KeyF@2025 · KeyT@2026 · KeyB@2028 · KeyS@2030 · KeyI@2031 · Digit6@2033 · KeyW@2035 · KeyY@2036 · KeyJ@2038 · KeyZ@2040 · KeyC@2041 · KeyG@2043 · KeyF@2050 · Digit3@2052 · KeyB@2055 · KeyL@2057 · Digit9@2059 · KeyI@2061 · KeyB@2063 · KeyH@2065 · KeyV@2067 · KeyL@2068 · KeyC@2070 · KeyH@2072 · KeyJ@2073 · KeyP@2075 · KeyB@2077 · KeyN@2079 · KeyQ@2080 · KeyI@2082 · KeyL@2084 · KeyC@2085 · KeyJ@2087 · KeyI@2089 · KeyY@2090 · KeyW@2092 · Digit5@2100 · KeyR@2102 · KeyX@2104 · Digit3@2105 · KeyN@2106 · KeyP@2108 · KeyD@2109 · KeyH@2116 · KeyP@2118 · KeyI@2119 · KeyY@2121 · KeyW@2123 · Digit5@2125 · KeyR@2128 · KeyI@2130 · KeyI@2131 · KeyX@2133 · KeyU@2135 · KeyD@2137 · KeyW@2138 · KeyX@2140 · KeyS@2142 · KeyL@2144 · KeyD@2146 · KeyM@2148 · KeyY@2150 · KeyM@2151 · KeyD@2153 · KeyY@2155 · Digit3@2156 · KeyM@2158 · KeyD@2160 · KeyY@2167 · Digit0@2169 · KeyN@2171 · KeyY@2173 · KeyX@2175 · KeyU@2176 · KeyD@2178 · KeyW@2180 · KeyX@2182 · KeyS@2184 · KeyL@2185 · KeyG@2187 · Digit5@2189 · Digit1@2191 · KeyB@2193 · KeyG@2195 · KeyW@2197 · KeyS@2198 · KeyM@2200 · KeyF@2202 · Digit0@2204 · KeyS@2205 · KeyI@2207 · KeyN@2208 · KeyN@2210 · KeyP@2212 · KeyZ@2213 · KeyY@2215 · KeyI@2216 · Digit6@2218 · KeyI@2219 · KeyM@2220 · KeyM@2222 · KeyX@2223 · KeyY@2224 · KeyM@2226 · KeyE@2232 · KeyY@2234 · KeyM@2235 · KeyZ@2237 · KeyJ@2238 · KeyI@2239 · KeyM@2241 · KeyT@2242 · KeyK@2244 · KeyZ@2245 · KeyM@2247 · KeyJ@2248 · KeyK@2250 · Digit2@2251 · KeyN@2252 · KeyZ@2254 · KeyY@2257 · Digit0@2258 · KeyZ@2260 · KeyD@2261 · KeyU@2263 · Digit5@2265 · KeyY@2266 · KeyM@2267 · KeyZ@2269 · KeyM@2271 · KeyM@2273 · KeyZ@2274 · KeyH@2276 · KeyM@2282 · KeyZ@2284 · KeyW@2285 · KeyM@2287 · KeyY@2288 · KeyY@2289 · KeyZ@2291 · KeyE@2292 · KeyX@2294 · KeyN@2295 · KeyT@2297 · KeyL@2298 · KeyK@2299 · KeyM@2301 · KeyW@2302 · KeyJ@2303 · KeyK@2305 · KeyY@2306 · KeyT@2307 · KeyK@2309 · KeyX@2310 · KeyZ@2312 · KeyW@2313 · KeyY@2315 · Digit1@2316 · KeyN@2317 · KeyT@2319 · KeyE@2320 · KeyW@2321 · KeyO@2323 · KeyD@2324 · KeyA@2326 · KeyW@2327 · KeyZ@2329 · KeyW@2330 · KeyZ@2332 · KeyK@2333 · KeyM@2334 · KeyT@2336 · KeyQ@2337 · Digit3@2339 · KeyO@2340 · KeyG@2341 · KeyY@2343 · KeyY@2349 · KeyZ@2350 · KeyT@2352 · KeyC@2353 · KeyZ@2355 · KeyO@2356 · KeyT@2358 · KeyM@2359 · KeyW@2361 · KeyO@2362 · KeyW@2364 · KeyI@2365 · KeyX@2367 · KeyY@2368 · KeyM@2369 · KeyJ@2371 · KeyM@2373 · KeyM@2374 · KeyZ@2375 · KeyN@2377 · KeyJ@2379 · KeyO@2380 · KeyD@2381 · KeyD@2383 · KeyH@2384 · KeyO@2385 · KeyT@2387 · KeyQ@2388 · Digit0@2389 · KeyZ@2391 · KeyM@2392 · KeyQ@2394 · Digit5@2396 · KeyN@2397 · Digit2@2399 · KeyU@2401 · Digit1@2402 · KeyN@2404 · KeyT@2405 · KeyC@2407 · Digit5@2408 · KeyY@2410 · KeyZ@2412 · KeyK@2414 · Digit1@2415 · KeyM@2417 · KeyD@2418 · KeyD@2420 · KeyH@2421 · KeyN@2422 · KeyG@2424 · KeyN@2425 · KeyM@2427 · KeyM@2429 · KeyT@2430 · KeyM@2432 · KeyX@2433 · KeyN@2435 · KeyJ@2436 · KeyA@2438 · Digit4@2439 · KeyM@2441 · Digit2@2442 · KeyR@2444 · KeyM@2446 · KeyM@2447 · Digit2@2449 · KeyR@2450 · KeyK@2452 · KeyY@2453 · KeyT@2455 · KeyN@2456 · KeyL@2457 · KeyZ@2459 · KeyG@2465 · KeyY@2467 · Digit5@2468 · KeyZ@2470 · KeyT@2472 · KeyG@2473 · KeyY@2474 · KeyY@2476 · KeyT@2478 · KeyG@2479 · Digit2@2481 · KeyO@2482 · KeyG@2484 · KeyM@2485 · Digit5@2487 · KeyZ@2488 · KeyD@2490 · KeyA@2491 · Digit5@2493 · KeyI@2495 · KeyI@2496 · KeyW@2497 · KeyI@2499 · KeyY@2500 · KeyX@2501 · KeyV@2503 · Digit0@2504 · KeyB@2506 · Digit3@2507 · KeyI@2508 · KeyI@2510 · KeyO@2512 · KeyI@2513 · KeyJ@2515 · KeyM@2516 · KeyO@2518 · KeyD@2519 · KeyK@2520 · Digit5@2522 · KeyM@2523 · KeyT@2524 · KeyG@2526 · KeyZ@2527 · KeyN@2529 · KeyD@2530 · KeyG@2532 · Digit3@2533 · KeyY@2534 · Digit2@2536 · KeyU@2537 · Digit1@2539 · KeyM@2540 · KeyZ@2541 · KeyG@2543 · Digit4@2549 · KeyM@2551 · KeyT@2552 · KeyM@2553 · Digit5@2555 · KeyN@2556 · KeyJ@2558 · KeyJ@2559 · KeyJ@2561 · KeyZ@2562 · KeyT@2564 · KeyJ@2565 · KeyJ@2566 · KeyY@2568 · KeyZ@2569 · KeyE@2571 · KeyW@2572 · KeyY@2574 · KeyT@2575 · KeyZ@2577 · KeyJ@2579 · KeyN@2580 · KeyT@2581 · KeyM@2583 · KeyZ@2584 · KeyY@2585 · KeyJ@2587 · KeyE@2588 · KeyZ@2589 · KeyM@2591 · KeyW@2592 · KeyJ@2594 · KeyL@2596 · KeyY@2597 · KeyT@2598 · KeyI@2600 · Digit0@2601 · KeyY@2602 · KeyZ@2604 · KeyQ@2605 · Digit0@2607 · KeyM@2608 · KeyM@2609 · KeyI@2615 · Digit0@2617 · KeyO@2619 · KeyG@2620 · KeyV@2621 · KeyH@2623 · KeyY@2625 · KeyT@2626 · KeyY@2628 · KeyY@2629 · KeyY@2631 · KeyM@2632 · KeyV@2634 · KeyH@2636 · KeyN@2637 · KeyG@2639 · KeyY@2640 · KeyY@2642 · KeyO@2644 · KeyG@2645 · KeyU@2647 · Digit1@2648 · KeyI@2650 · KeyN@2651 · Digit0@2653 · Enter@2654 · KeyE@2672",
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJiYW5rX3NpdHpiYW5rIixudWxsLDMyMDY3MDY0NyxudWxsLG51bGwsMF0sInNpZyI6ImMxYmEyMzJiMTkzMjk2NzY0ZDU5YmZmMzhmZWMyYzExNTlkMWJkYTkxZWY1NTEwODAwZWZkMTQ3OGYyZTczOTMwOWIxYmJmMzNjODdhOTQ0ZmQ5N2U1NTc5Yzk1MDdhNGNmMTMxNjA4M2RmM2RkYTNlZGY5ZTgyYTg2OGM5ZDA5IiwiYXV0b3IiOiJmODk5MTgzNDg3Y2U1Mzg4MTM5NjJjZTJjYzEwYTZjNTMzYjEzMWJlYTI0YzQ0MmI0OGVhYTYyYmVhNGYyOGU1In0 | Geteiltes Werk steht: Sitzbank (von f899 1834 87ce 5388).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  }
+ },
+ "verben": {
+  "Haus": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "die Tür dreht 62°, beim Eintritt offen",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB@0 · Klick@362 · Klick@447 · KeyW@573",
+   "kalt": false,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "stein": 0
+   },
+   "kosten": {
+    "holz": 98,
+    "stein": 24
+   },
+   "imInventar": false
+  },
+  "Wagen": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "kein Fahren",
+   "steht": 1,
+   "eingaben": 6,
+   "unecht": 0,
+   "folge": "KeyB@0 · Klick@844 · Klick@952 · KeyE@1103 · KeyW@1395 · KeyE@2905",
+   "kalt": false,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "eisen": 0
+   },
+   "kosten": {
+    "holz": 16,
+    "eisen": 4
+   },
+   "imInventar": false
+  },
+  "Tor": {
+   "bauModus": true,
+   "farbe": "grün",
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 4,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "kein Portal",
+   "steht": 1,
+   "eingaben": 3,
+   "unecht": 0,
+   "folge": "Digit3@0 · KeyF@132 · KeyE@165",
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 22
+   },
+   "imInventar": false
+  },
+  "Brücke": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "vom Deck",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB@0 · Klick@359 · Klick@408 · KeyW@489",
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 56
+   },
+   "imInventar": false
+  },
+  "Leiter": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "nicht auf dem Podest",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB@0 · Klick@366 · Klick@418 · KeyW@559",
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 9
+   },
+   "imInventar": false
+  },
+  "Bank": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "sitzt nicht",
+   "steht": 1,
+   "eingaben": 17,
+   "unecht": 0,
+   "folge": "KeyB@0 · Rad@406 · Rad@473 · Rad@540 · Rad@606 · Rad@673 · Rad@740 · Rad@806 · Rad@873 · Rad@940 · Rad@1006 · Rad@1073 · Rad@1140 · Rad@1206 · Klick@1226 · Klick@1316 · KeyE@1451",
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 6
+   },
+   "imInventar": false
+  }
+ }
+}

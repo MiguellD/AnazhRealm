@@ -1,0 +1,1592 @@
+{
+ "haeuser": [],
+ "phasen": [
+  "grund",
+  "bild",
+  "start"
+ ],
+ "dorfOrt": {
+  "x": -129,
+  "z": -94,
+  "hang": 0.598
+ },
+ "startOrt": {
+  "x": 0,
+  "z": 0
+ },
+ "gesamt": 42,
+ "startDorf": {
+  "slots": 18,
+  "fehlt": []
+ },
+ "w9": {
+  "bild": true,
+  "haeuser": [
+   {
+    "typ": "haus_skandinavisch",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 299,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-0-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1015,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-0-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.02597439104147121,
+    "aussen": 0.015778773480968632,
+    "png": "grund-0-aussen",
+    "quote": 1.646,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-0-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 525,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-1-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.0208849810698762,
+    "aussen": 0.17945347279357912,
+    "png": "grund-1-aussen",
+    "quote": 0.116,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-1-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 253,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-2-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-2-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.017314714522116487,
+    "aussen": 0.23109730883048857,
+    "png": "grund-2-aussen",
+    "quote": 0.075,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-2-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1715,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-3-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.026698077647319417,
+    "aussen": 0.1402818574270828,
+    "png": "grund-3-aussen",
+    "quote": 0.19,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-3-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-4-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 4,
+    "innen": 0.029050788964170966,
+    "aussen": 0.16546172213395866,
+    "png": "grund-4-aussen",
+    "quote": 0.176,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-4-third"
+    }
+   },
+   {
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1683,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-5-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.01675129502237117,
+    "aussen": 0.1760230505940277,
+    "png": "grund-5-aussen",
+    "quote": 0.095,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-5-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1947,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-6-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.026424220034474873,
+    "quote": null,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-6-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-7-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 14,
+    "innen": 0.026884373924216647,
+    "aussen": 0.15491979850144189,
+    "png": "grund-7-aussen",
+    "quote": 0.174,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-7-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1739,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-8-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 9,
+    "innen": 0.031093148745094543,
+    "aussen": 0.14431763737549083,
+    "png": "grund-8-aussen",
+    "quote": 0.215,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-8-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-9-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.03128623682608183,
+    "aussen": 0.09186108247251666,
+    "png": "grund-9-aussen",
+    "quote": 0.341,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-9-third"
+    }
+   },
+   {
+    "typ": "haus_gotisch",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-10-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "turm",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 5,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-10-1-turm",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 945,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-10-2-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.016839104668214023,
+    "quote": null,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-10-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1767,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-11-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.017085176734494254,
+    "aussen": 0.1780050539587116,
+    "png": "grund-11-aussen",
+    "quote": 0.096,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-11-third"
+    }
+   },
+   {
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 399,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-12-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.017441105439878816,
+    "aussen": 0.2161984328504252,
+    "png": "grund-12-aussen",
+    "quote": 0.081,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-12-third"
+    }
+   },
+   {
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1683,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-13-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.03059051774743899,
+    "quote": null,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-13-third"
+    }
+   },
+   {
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-14-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 2183,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-14-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.018370162084579884,
+    "aussen": 0.1758711347932156,
+    "png": "grund-14-aussen",
+    "quote": 0.104,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-14-third"
+    }
+   },
+   {
+    "typ": "haus_alpenchalet",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-15-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1505,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-15-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 0,
+    "innen": 0.028691697580376006,
+    "quote": null,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-15-third"
+    }
+   },
+   {
+    "typ": "haus_schwarzwald",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1961,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-16-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 62,
+    "innen": 0.02941336794439479,
+    "quote": null,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-16-third"
+    }
+   },
+   {
+    "typ": "haus_skandinavisch",
+    "spieler": false,
+    "start": true,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 825,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-17-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 99,
+    "aussen": 0.19611741455989493,
+    "png": "grund-17-aussen",
+    "quote": null,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-17-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 315,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-18-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 351,
+    "innen": 0.11537928297642414,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-18-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1333,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 1,
+      "png": "grund-19-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 321,
+    "innen": 0.12297378706410624,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-19-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1395,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-20-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 65,
+    "innen": 0.05566482713207295,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-20-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 437,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-21-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 19,
+    "innen": 0.12164322698901386,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-21-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1421,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-22-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 244,
+    "innen": 0.058327187489768714,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-22-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 285,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-23-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 388,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-23-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1519,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-24-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 96,
+    "innen": 0.0637901725839309,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-24-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1323,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 1,
+      "png": "grund-25-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 346,
+    "innen": 0.10601021770107918,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-25-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1617,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-26-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 339,
+    "innen": 0.07298022431334499,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-26-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 437,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-27-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 53,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-27-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 399,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-28-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 251,
+    "innen": 0.15200794762700146,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-28-third"
+    }
+   },
+   {
+    "typ": "haus_barock",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-29-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 2365,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-29-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 456,
+    "innen": 0.05990964703079295,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-29-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 276,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-30-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1855,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-30-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 511,
+    "innen": 0.03430988892435912,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-30-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1581,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-31-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 76,
+    "innen": 0.034620245198243034,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-31-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1505,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 1,
+      "png": "grund-32-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 219,
+    "innen": 0.14400030081904794,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-32-third"
+    }
+   },
+   {
+    "typ": "haus_gotisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "turm",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 8,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-33-0-turm",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 2365,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-33-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 527,
+    "innen": 0.016729380374158945,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-33-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1215,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-34-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 136,
+    "innen": 0.054486024760233745,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-34-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1767,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-35-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 70,
+    "innen": 0.056977427425895656,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-35-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1551,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-36-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 33,
+    "innen": 0.05566482713207295,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-36-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1271,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-37-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 79,
+    "innen": 0.13359377817747678,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-37-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1377,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-38-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 32,
+    "innen": 0.06151382844450902,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-38-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1189,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 1,
+      "png": "grund-39-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 144,
+    "innen": 0.1705764292008848,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-39-third"
+    }
+   },
+   {
+    "typ": "haus_italienisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1643,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-40-0-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 275,
+    "innen": 0.06189040591879037,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-40-third"
+    }
+   },
+   {
+    "typ": "haus_provenzalisch",
+    "spieler": false,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 285,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 0,
+      "png": "grund-41-0-haupt"
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 131,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-41-third"
+    }
+   },
+   {
+    "typ": "haus_skandinavisch",
+    "spieler": true,
+    "start": false,
+    "sc": 1,
+    "koerper": [
+     {
+      "art": "anbau",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 299,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 2,
+      "png": "grund-42-0-anbau",
+      "innen": 0
+     },
+     {
+      "art": "haupt",
+      "bueschel": 0,
+      "dichte": 0,
+      "proben": 1015,
+      "halm": 0,
+      "boden": 0,
+      "blicke": 1,
+      "png": "grund-42-1-haupt",
+      "innen": 0
+     }
+    ],
+    "stufe": 0,
+    "steht": true,
+    "ring": 298,
+    "innen": 0.029161720995973917,
+    "third": {
+     "halm": 0,
+     "boden": null,
+     "innen": 0,
+     "png": "grund-42-third"
+    },
+    "gegenprobe": 59274
+   }
+  ],
+  "suche": {
+   "typ": "haus_skandinavisch",
+   "orte": [
+    [
+     48,
+     0,
+     372
+    ]
+   ]
+  },
+  "spieler": {
+   "typ": "haus_skandinavisch",
+   "x": 48,
+   "z": 0,
+   "wiese": 372
+  },
+  "weite": 0.6828020898649549,
+  "wasser": [
+   {
+    "ort": "see",
+    "x": 1856,
+    "z": -6168,
+    "wiese": 0,
+    "streu": 0,
+    "blicke": [
+     {
+      "sicht": "ego",
+      "spiegel": 41177,
+      "halm": 1321,
+      "boden": 18664,
+      "gegen": 38950,
+      "innen": 0,
+      "png": "wasser-see-ego"
+     },
+     {
+      "sicht": "third",
+      "spiegel": 23184,
+      "halm": 298,
+      "boden": 5490,
+      "gegen": 39203,
+      "innen": 0,
+      "png": "wasser-see-third"
+     }
+    ]
+   },
+   {
+    "ort": "fluss",
+    "x": -258,
+    "z": -1133,
+    "wiese": 0,
+    "streu": 0,
+    "blicke": [
+     {
+      "sicht": "ego",
+      "spiegel": 28177,
+      "halm": 1285,
+      "boden": 28072,
+      "gegen": 56667,
+      "innen": 0,
+      "png": "wasser-fluss-ego"
+     },
+     {
+      "sicht": "third",
+      "spiegel": 5854,
+      "halm": 600,
+      "boden": 5744,
+      "gegen": 64175,
+      "innen": 0,
+      "png": "wasser-fluss-third"
+     }
+    ]
+   }
+  ],
+  "abbau": [
+   {
+    "art": "dorf",
+    "vorher": {
+     "gruende": 1,
+     "offen": 1,
+     "kellerErde": 0
+    },
+    "boxen": 1,
+    "weg": true,
+    "nachher": {
+     "gruende": 0,
+     "offen": 0,
+     "kellerErde": 1
+    }
+   },
+   {
+    "art": "gesetzt",
+    "plan": 1,
+    "vorher": {
+     "gruende": 1,
+     "offen": 2,
+     "kellerErde": null
+    },
+    "boxen": 2,
+    "weg": true,
+    "nachher": {
+     "gruende": 0,
+     "offen": 0,
+     "kellerErde": null
+    }
+   }
+  ],
+  "waise": {
+   "start": true,
+   "gruende": 96,
+   "gesperrt": true,
+   "ohne": [
+    "-422/-1339",
+    "-402/-1346",
+    "-427/-1376",
+    "-409/-1365",
+    "-410/-1373",
+    "-396/-1363",
+    "-427/-1331",
+    "-445/-1342",
+    "-434/-1387",
+    "-448/-1353",
+    "-453/-1384",
+    "-445/-1374",
+    "-431/-1321",
+    "-383/-1362",
+    "-458/-1378",
+    "-439/-1394",
+    "-387/-1346",
+    "-464/-1403",
+    "-449/-1412",
+    "-452/-1318",
+    "-453/-1307",
+    "-460/-1389",
+    "-436/-1308",
+    "-456/-1345",
+    "-372/-1360",
+    "-362/-1358",
+    "-464/-1332",
+    "-470/-1399",
+    "-470/-1382",
+    "-464/-1372",
+    "-477/-1394",
+    "-474/-1343",
+    "-485/-1389"
+   ],
+   "slots": 36,
+   "haeuser": 3,
+   "reload": 3,
+   "zugOffen": true,
+   "ausstattung": {
+    "brunnen": [
+     0,
+     4
+    ],
+    "laternen": [
+     23,
+     23
+    ],
+    "staende": [
+     0,
+     3
+    ]
+   },
+   "verblasst": true,
+   "ms": 51287
+  }
+ },
+ "werkstatt": true,
+ "fernOrt": {
+  "x": 212,
+  "z": 212
+ }
+}

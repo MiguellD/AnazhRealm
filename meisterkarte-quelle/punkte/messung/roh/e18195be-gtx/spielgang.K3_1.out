@@ -1,0 +1,88 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7754; SP=$((7754 + 20000)); LP=$((7754 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+boot
+timeout 60 $W fenster 1920 1080 > /dev/null 2>&1
+timeout 600 $W umstellen --ort wiese > /dev/null 2>&1
+teil BEDIENUNG $W bedienung --runden 5
+@@PUNKTE@@ BEDIENUNG
+// werkbank.cjs — DIE WERKBANK der Look-Arbeit: EINE Welt bleibt offen, Fragen gehen per Befehl hinein, eine Methode aus
+// dem Arbeitsbaum wird in die laufende Seite getauscht, das Bild ist in Sekunden da.
+//
+//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]  Welt + Steuer-Server (bleibt offen)
+//   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
+//   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
+//                                                           `messorte`): Spieler, Blick, Dorf-Zug, Ort-Takt und Sicht; buehne betritt ihre Welt;
+//                                                           mit `anlauf` schwingt der Ort dort ein (Gründung, Stadt), `dach` stellt aufs Dach
+//   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
+//                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
+//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
+//                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
+//                                                           `--ist` schreibt in die Tafel, `--arm <m>` die Kamera <m> vor die Fläche des Ego-Blicks
+//   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus dem Stamm live tauschen
+//                                                           (`--quelle` ein anderer Stand; --terrain das Chunk-Material neu)
+//   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
+//   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (je Klasse ihr Exemplar,
+//                                                           jede Stufe zu jeder Uhr der Tafel; die Zählung je Mesh-Klasse fiel mit material-k3-stufen)
+//                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
+//   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht; `--ist` in die Soll-Tafel)
+//   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] | --selbsttest  DIE LUFT IM BILD (Koschmieder je Kanal, Farbton,
+//                                                           Sonnenseite, fernes Weiß; Rand und Kante an Hügel und Gipfel)
+//   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
+//   node scripts/werkbank.cjs licht --kontakt [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
+//   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
+//   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
+//   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
+//   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: jeder Geometrie-Puffer beim Halter nach GC
+//   node scripts/werkbank.cjs puffer --gang [min]          DER GANG (profiband K5): Heap ≤ 5 MB/min, VRAM ≤ 2 MB zurück
+//   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE des Foundry-Kanals (scripts/lib/fluss-linse.cjs)
+//   node scripts/werkbank.cjs diaet [frames] [--modus ruhe|drehen|gehen] [--tiere halten|frei] | diaet --selbsttest
+//                                                           DIE DIÄT-LINSE: Arbeit der Observer-Diät und Bundles je Frame (scripts/lib/diaet-linse.cjs)
+//   node scripts/werkbank.cjs takt [sek] [--ein s] [--wandern bahn|fahrt|aus] [--json datei] | takt --auswerten <x.roh.json>
+//                                                           DIE TAKT-SPITZE je Methode beim Gehen oder Fahren (scripts/lib/haenger-linse.cjs)
+//   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten] [--sim s]
+//                                                           DIE STAND-LINSE: die Fege-Takte im Stand, Folge B A A B (scripts/lib/stand-linse.cjs)
+//   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
+//                                                           [--ein s] [--regler voll] DIE SICHT-LINSE je Frame im echten Loop (scripts/lib/sicht-linse.cjs)
+//   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei|n] [--wetter w] [--ruhe max-s] [--wandern bahn]
+//                                                           | lauf --selbsttest — DER ECHTE LAUF: Frame- und GPU-Zeit, Befehle, Dreiecke und VRAM je Frame und Pass
+//   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
+//                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
+//   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern bahn]
+//                                                           [--schwelle ms] [--probe] [--json datei] | haenger --auswerten <x.roh.json>
+//                                                           DIE HÄNGER-LINSE: jeder Frame über der Schwelle mit Ursache (scripts/lib/haenger-linse.cjs)
+//   node scripts/werkbank.cjs schirm [--datei f.png]         DER SCHIRM: das präsentierte Canvas nach 1 s echtem Loop
+//   node scripts/werkbank.cjs fenster <w> <h>               Viewport wechseln wie ein Spieler (resize-Ereignis)
+//   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
+//   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
+//                                                           [--selbsttest [--last iter]] DIE GPU-ZERLEGUNG je Verbraucher, ABBA (scripts/lib/zerlege-linse.cjs)
+//   node scripts/werkbank.cjs ziele [--n frames] [--json datei] [--selbsttest]
+//                                                           DER ZIEL-ZENSUS: jede GPU-Textur mit Erzeuger, Schreibern, Lesern (scripts/lib/ziel-zensus.cjs)
+//   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
+//                                                           [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
+//                                                           DIE SHADER-KOSTEN je gezeichnetem Programm (scripts/lib/shader-kosten.cjs)
+//   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
+//                                                           DIE BAND-LINSE gegen Haushalt und Ratsche des Orts (spec/profiband/, scripts/lib/band-urteil.cjs)
+//   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
+//                                                           DIE RATSCHE aus ≥ 4 Läufen eines Orts × Geräts × Sicht; `--neu` der Re-Mint (nur Node)
+//   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE nach `start --gpu-fehler` (scripts/lib/gpu-fehler.cjs)
+//   node scripts/werkbank.cjs reload | status | stop
+//
+// DIE MESS-SERIE: jeder `start` fährt ein eigenes Browser-Profil (ERST-Boot), jedes `reload` einen ZWEIT-Boot; `--serie <name>`
+// hält das Profil unter artifacts/werkbank/profil-<name>. `start --echt [--seite <url>]` fährt die ECHTE GPU im Fenster gegen den
+// save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
+// Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
+@@PUNKTE@@ EXIT 1
+
+--- stderr ---
+environment: line 3:  3335 Terminated              PORT=$SP node save-server.js > "$L/save.log" 2>&1
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  3314 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

@@ -1,0 +1,10 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter rainy --zug --eigen --port 7764 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\licht.K5_1.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+ZUG ROT · Sprung {"t":152.80709999995872,"wetter":"sunny","zug":0.7906814622432521,"Y":3121.8064694723457,"d":0.2769981363269554} EV/s (Soll ≤ 0.1) · klar → rainy → klar gezogen true, 127 s
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 1 von 3) nach 207 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

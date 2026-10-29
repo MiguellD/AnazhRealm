@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-2 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] amd/rdna-3
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,93],"gegenprobe":[59251],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41111,1303,18633,39010],[23161,307,5481,39291]]],["fluss",0,0,[[28172,1302,28067,56660],[5853,608,5743,64179]]]],"innen":[1.671,0.117,0.073,0.183,0.164,0.095,null,0.169,0.17,0.698,null,0.091,0.078,null,0.106,null,null,null],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":96,"gesperrt":true,"ohne":33,"slots":36,"haeuser":3,"reload":3,"zugOffen":true,"ausstattung":{"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]},"verblasst":true,"ms":48432}}
+  ❌ W10 Innen-Bild: 12 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.02081867837342049/0.1785468192125845 · haus_schwarzwald 0.017314714522116487/0.2357051109178006 · haus_alpenchalet 0.01675129502237117/0.1766710937273425 · haus_schwarzwald 0.026424220034474873/undefined · haus_gotisch 0.016839104668214023/undefined · haus_schwarzwald 0.01706326208628203/0.1873508077769834 · haus_alpenchalet 0.017441105439878816/0.2232671310877972 · haus_alpenchalet 0.030568603099226765/undefined · haus_alpenchalet 0.018370162084579884/0.1739485867785419 · haus_alpenchalet 0.028691697580376006/undefined · haus_schwarzwald 0.02941336794439479/undefined · haus_skandinavisch undefined/0.20063445760530074)
+  ❌ W9 Wasser: [["see",0,0,[[41111,1303,18633,39010],[23161,307,5481,39291]]],["fluss",0,0,[[28172,1302,28067,56660],[5853,608,5743,64179]]]]
+  ❌ W9 Waise: 33 von 96 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-362/-1358,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  ❌ W9 Ausstattung: {"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]}
+  1 Welten, 1 zugleich, 320 s
+❌ gate:haus-welt ROT (5)
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-2 (bild, Platz 3 von 3) nach 41 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
