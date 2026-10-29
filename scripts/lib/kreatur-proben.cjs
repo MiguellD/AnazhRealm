@@ -79,6 +79,14 @@ async function kreaturProben(r, T, opts) {
                 }
             }
             for (const c of s.creatures.slice()) r.removeCreature(c);
+            // DIE WELT KEHRT MIT DEM SPIELER HEIM: ließ die Probe die Welt fern takten (der Baum des Schwarms 526 m fort,
+            // `__gebautNach`), streamt sie dort (Chunks, Streu, Wald) — die nächste Probe stünde mit ihren Tieren am Ort des
+            // Spielers in einer Welt um den fremden Ort (jagdkreis nach dem Leittier: 1 von 42 Jagden ohne Ende, allein 0).
+            // Steht der Strom in einem anderen Chunk als der Spieler, steht die Welt um ihn neu auf, ehe ihre Tiere zurückkehren.
+            pm.copy(P0);
+            const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
+            if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
+                await window.__weltStehtNach();
             s.creatures = altK;
             s.creatureEmotions = altE;
             s.maxCreatures = altMax;
