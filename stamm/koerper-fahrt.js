@@ -1343,6 +1343,25 @@ class AnazhRealm_koerper_fahrt {
             if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
                 P.push({ x: q.x, z: q.z });
         if (P.length < 2) return (this._fahrer = null);
+        // DIE LINIE DES FAHRERS: die Route je Meter, gemittelt über ±kurveM (an den Enden das symmetrische Stück) — der Knick
+        // einer Gasse wird der Bogen, den die Drehung über ±kurveM misst (am Knick schoss er über den Bogen hinaus und kroch zurück)
+        const M = [P[0]];
+        for (let i = 1; i < P.length; i++) {
+            const [a, b] = [P[i - 1], P[i]];
+            const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z));
+            for (let t = 1; t <= n; t++) M.push({ x: a.x + ((b.x - a.x) * t) / n, z: a.z + ((b.z - a.z) * t) / n });
+        }
+        const sx = [0];
+        const sz = [0];
+        for (const q of M) {
+            sx.push(sx[sx.length - 1] + q.x);
+            sz.push(sz[sz.length - 1] + q.z);
+        }
+        P.length = 0;
+        for (let i = 0; i < M.length; i++) {
+            const w = Math.min(D.kurveM, i, M.length - 1 - i);
+            P.push({ x: (sx[i + w + 1] - sx[i - w]) / (2 * w + 1), z: (sz[i + w + 1] - sz[i - w]) / (2 * w + 1) });
+        }
         const s = [0];
         const th = [];
         for (let i = 1; i < P.length; i++) {
@@ -1353,9 +1372,13 @@ class AnazhRealm_koerper_fahrt {
         }
         // die Krümmung je Punkt: die Drehung der Route über ±kurveM, je Meter (ein Zickzack hebt sich auf, eine Kehre nicht)
         const richtung = (u) => {
-            let i = 0;
-            while (i + 2 < s.length && s[i + 1] < u) i++;
-            return th[Math.min(i, th.length - 1)];
+            let [i, j] = [0, th.length - 1];
+            while (i < j) {
+                const m = (i + j + 1) >> 1;
+                if (s[m] < u) i = m;
+                else j = m - 1;
+            }
+            return th[i];
         };
         const k = s.map((u) => Math.abs(richtung(u + D.kurveM) - richtung(u - D.kurveM)) / (2 * D.kurveM));
         return (this._fahrer = {

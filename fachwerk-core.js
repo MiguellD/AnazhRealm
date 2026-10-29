@@ -3500,13 +3500,15 @@
     // `ORT_GESETZ.trasse`, je trasse)²), steiler als `WEG_ZWISCHEN.steilMax` trägt keiner (der Saumpfad weicht dem Hang aus wie die
     // Gassen, `trasseLenk`, aber er sieht den ganzen Hang, nicht nur den nächsten Schritt: der Lauf von Schritt zu Schritt fand
     // zwischen −6,−6 und −5,−5 nach 172 m Luftlinie keinen Weg); kein Punkt liegt in `sperren` (`planSperren` der beiden Orte:
-    // der Feldweg läuft nie durch ein Haus).
+    // der Feldweg läuft nie durch ein Haus). `nass(x, z)` (optional, Raster-Koordinaten: das Wasser des Gesetzes) macht jeden
+    // Schritt auf einen nassen Punkt `WEG_ZWISCHEN.furt`-mal so teuer: der Weg geht um den Bach, wo der Grund es trägt, und quert
+    // ihn sonst auf dem kürzesten Stück (die Route Wiese → Wald → Dorf fuhr drei Bäche quer, 3–5 m/s im Wasser).
     // Rückgabe: die Punkte (geglättet, `glaetten`) oder null (kein Lauf). Leser: der Ort-Faden (voxel-worker `ort-weg`, Lehre 14)
     // für den Wirt (`_wegenetzLegen`).
-    const WEG_ZWISCHEN = { steilMax: 0.3, hang: 4, glaett: 16 };
-    function wegZwischen(r, A, B, sperren){
+    const WEG_ZWISCHEN = { steilMax: 0.3, hang: 4, glaett: 16, furt: 20 };
+    function wegZwischen(r, A, B, sperren, nass){
       const n=r.n, d=r.d, h=r.h, lim=ORT_GESETZ.trasse, W=WEG_ZWISCHEN;
-      const zu=new Uint8Array(n*n); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
+      const zu=new Uint8Array(n*n), feucht=new Int8Array(n*n).fill(-1); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
       const knoten=(p)=>Math.max(0,Math.min(n-1,Math.round((p.x-r.x0)/d)))+n*Math.max(0,Math.min(n-1,Math.round((p.z-r.z0)/d)));
       const drin=(p)=>p.x>=r.x0&&p.z>=r.z0&&p.x<=r.x0+(n-1)*d&&p.z<=r.z0+(n-1)*d;
       const quelle=new Map(), ziel=new Map();
@@ -3526,7 +3528,9 @@
       while(heap.length){ const [f,k]=pop(); if(f-rest(k)>kost[k]+1e-9) continue; if(ziel.has(k)){ fund=k; break; }
         const x=k%n, z=(k/n)|0;
         for(const [i,j,L] of NB){ const x2=x+i, z2=z+j; if(x2<0||z2<0||x2>=n||z2>=n) continue; const k2=x2+z2*n, g=Math.abs(h[k2]-h[k])/L;
-          if(g>W.steilMax||zu[k2]) continue; const u=Math.max(0,g-lim)/lim, c=kost[k]+L*(1+W.hang*u*u);
+          if(g>W.steilMax||zu[k2]) continue; const u=Math.max(0,g-lim)/lim;
+          if(feucht[k2]<0) feucht[k2]=nass&&nass(r.x0+x2*d,r.z0+z2*d)?1:0;
+          const c=kost[k]+L*(1+W.hang*u*u)*(feucht[k2]?W.furt:1);
           if(c<kost[k2]){ kost[k2]=c; von[k2]=k; push(c+rest(k2),k2); } } }
       if(fund<0) return null;
       const pts=[ziel.get(fund)];

@@ -3100,10 +3100,10 @@ class AnazhRealm_siedlung_ort {
         for (const n of this._wegenetzNachbarn(key)) if (B.has(n)) this._wegenetzLegen(key, n);
     }
 
-    // DER FELDWEG ZWISCHEN ZWEI ORTEN: er setzt an den Enden ihrer Feldwege an (die Flucht der Straße: an einem Punkt mitten
-    // in der Gasse bog die Route rechtwinklig ab, der Fahrer kroch um 12 Ecken mit 2–5 m/s); das Raster liegt um das Paar der
-    // Enden, das sich am nächsten kommt, das Höhen-Raster (gelaende-core `hoehenRaster`) und den Lauf über ihm von den Enden des
-    // einen Orts zu denen des anderen (fachwerk `wegZwischen`: der günstigste über den Grund) rechnet der Ort-Faden (`ort-weg`,
+    // DER FELDWEG ZWISCHEN ZWEI ORTEN: er setzt an ihren Feldwegen an (die Flucht der Straße: an einem Punkt mitten in der
+    // Gasse bog die Route rechtwinklig ab, der Fahrer kroch um 12 Ecken mit 2–5 m/s); das Raster liegt um das Paar ihrer
+    // Punkte, das sich am nächsten kommt, das Höhen-Raster (gelaende-core `hoehenRaster`) und den Lauf über ihm von den
+    // Feldwegen des einen Orts zu denen des anderen (fachwerk `wegZwischen`: der günstigste über den Grund) rechnet der Ort-Faden (`ort-weg`,
     // Lehre 14). Gelegt als Feldweg des Wege-Hebels (`_stlWegeBuild`, Schlüssel „netz:a|b“: der Boden malt ihn, die Natur-Wand
     // hält ihn frei, was schon auf ihm stand, räumt der Takt) und gemerkt als Kante des Netzes (`_wegenetzKanten`). Trägt der
     // Grund keinen Weg, sagt es das Log beim Namen der Orte.
@@ -3113,10 +3113,11 @@ class AnazhRealm_siedlung_ort {
         if (K.has(paar)) return K.get(paar).fertig;
         const W = AnazhRealm.WEGENETZ;
         const B = this._bewohnerSiedlungen;
-        // der Anschluss eines Orts: die Enden seiner Feldwege (sie verlassen das Dorf in der Flucht seiner Straßen), ohne
-        // Feldweg jeder Punkt seiner Wege
+        // der Anschluss eines Orts: jeder Punkt seiner Feldwege (sie verlassen das Dorf in der Flucht seiner Straßen; nur an
+        // ihrem Ende lief der Weg am Dorf −1,−5 70 m neben ihm zurück — die Haarnadel, an der der Fahrer festsaß), ohne Feldweg
+        // jeder Punkt seiner Wege
         const anschluss = (S) => {
-            const fw = (S.plan.feldwege || []).map((f) => f.pts[f.pts.length - 1]).filter(Boolean);
+            const fw = (S.plan.feldwege || []).flatMap((f) => f.pts || []).filter(Boolean);
             const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
             return fw.length ? fw.map((q) => ({ x: S.ox + q.x, z: S.oz + q.z })) : G.knoten;
         };
@@ -3138,6 +3139,9 @@ class AnazhRealm_siedlung_ort {
             rahmen: { x0: -m * W.schrittM, z0: -m * W.schrittM, d: W.schrittM, n: 2 * m + 1 },
             a: Aa.map((q) => ({ x: q.x - mx, z: q.z - mz })),
             b: Ab.map((q) => ({ x: q.x - mx, z: q.z - mz })),
+            W: AnazhRealm.ORT_WAHL, // das Urteil über das Wasser (`ortNass` im Faden): wie bei der Wahl des Orts
+            M: AnazhRealm.WERK_LAND_M,
+            wegHalbM: W.breiteM / 2,
             // was dem Weg in beiden Orten im Weg steht (fachwerk `planSperren`), in den Koordinaten des Rasters
             sperren: [Sa, Sb].flatMap((S) =>
                 AnazhRealm.Gesetz("fachwerk:planSperren")(S.plan, S.ox - mx, S.oz - mz, W.halbM)
@@ -3178,12 +3182,27 @@ class AnazhRealm_siedlung_ort {
             kanten[i].push(j, w);
             kanten[j].push(i, w);
         };
+        // die Netze der Orte; wo zwei Orte sich berühren, verbindet sie jedes Knotenpaar näher als `kreuzM` (die Kreuzung, wie
+        // im Netz eines Orts, fachwerk `wegeNetz`: am Rand von −1,−5 und 0,−5 lagen Feldweg und Straße 0,45 m nebeneinander,
+        // unverbunden — die Route lief 30 m zurück und wieder vor)
+        const kreuzM = AnazhRealm.BEWOHNER.kreuzM;
+        const fach = new Map();
         for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
             const G = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(S.plan, S.ox, S.oz));
             const o = knoten.length;
             for (let i = 0; i < G.knoten.length; i++) {
-                knoten.push(G.knoten[i]);
+                const q = G.knoten[i];
+                knoten.push(q);
                 kanten.push(G.kanten[i].map((v, k) => (k % 2 ? v : v + o)));
+                const [fx, fz] = [Math.floor(q.x / kreuzM), Math.floor(q.z / kreuzM)];
+                for (let dx = -1; dx <= 1; dx++)
+                    for (let dz = -1; dz <= 1; dz++)
+                        for (const j of fach.get(fx + dx + "," + (fz + dz)) || [])
+                            if (j < o && (knoten[j].x - q.x) ** 2 + (knoten[j].z - q.z) ** 2 < kreuzM * kreuzM)
+                                kante(j, knoten.length - 1);
+                const f = fx + "," + fz;
+                if (!fach.has(f)) fach.set(f, []);
+                fach.get(f).push(knoten.length - 1);
             }
         }
         const naechster = (p, bis) => {

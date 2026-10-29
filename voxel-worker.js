@@ -265,7 +265,13 @@ self.onmessage = function (e) {
             self.postMessage({
                 type: "ort-weg-result",
                 requestId: msg.requestId,
-                pts: self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren),
+                // das Wasser des Gesetzes über die Breite des Wegs (`wegHalbM` um den Punkt des Rasters): das Urteil der Ort-Wahl
+                // (`ortNass`, ohne Erdbau) — am Punkt allein fädelte er zwischen zwei Armen eines Bachs, die Räder im Wasser
+                pts: self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren, (x, z) =>
+                    [0, 0, msg.wegHalbM, 0, -msg.wegHalbM, 0, 0, msg.wegHalbM, 0, -msg.wegHalbM].some(
+                        (v, i, R) => i % 2 === 0 && ortNass(msg, null, msg.x + x + v, msg.z + z + R[i + 1])
+                    )
+                ),
             });
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
