@@ -615,7 +615,13 @@ class AnazhRealm_vegetation_streu {
                 const kc = AnazhRealm.FOREST.crown[species];
                 const kr = kc ? kc * tf.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
                 // der Scheitel: der Fuß der Zelle + ihre Sichthöhe — der Schwarm landet auf ihm (`_kronenOben`)
-                this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr, visH > 0 ? rec.fuss.y + visH : NaN);
+                this._kronenStreuNeu(
+                    `s:${layer.name}:${cellX},${cellZ}`,
+                    tf.x,
+                    tf.z,
+                    kr,
+                    visH > 0 ? rec.fuss.y + visH : NaN
+                );
             }
             emitted++;
         }

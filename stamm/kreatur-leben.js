@@ -2895,7 +2895,8 @@ class AnazhRealm_kreatur_leben {
                         const d = Math.hypot(c[0] - x, c[1] - z);
                         if (!(d < bd) || Math.hypot(c[0] - s.x, c[1] - s.z) < ruheM) continue;
                         const oben = this._kronenOben(c);
-                        if (Number.isFinite(oben)) [best, bd] = [{ schluessel: k, c, x: c[0], y: oben, z: c[1], r: c[2] }, d];
+                        if (Number.isFinite(oben))
+                            [best, bd] = [{ schluessel: k, c, x: c[0], y: oben, z: c[1], r: c[2] }, d];
                     }
             }
         return best;
