@@ -33,7 +33,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
-const { probeWand } = require("./lib/plattform-probe.cjs");
+const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const GOLDEN_DIR = path.join(ROOT, "spec/asset-contract/ofen/golden");
@@ -86,32 +86,11 @@ function fingerabdruck(g, fall) {
         k.meshes++;
         k.verts += geo.attributes.position.count;
         k.tris += (geo.index ? geo.index.count : geo.attributes.position.count) / 3;
-        h.update(String(o.type));
-        h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
-        h.update(
-            JSON.stringify({
-                c: m.color ? m.color.getHex() : null,
-                e: m.emissive ? m.emissive.getHex() : null,
-                r: typeof m.roughness === "number" ? m.roughness : null,
-                mt: typeof m.metalness === "number" ? m.metalness : null,
-                o: typeof m.opacity === "number" ? m.opacity : null,
-                t: !!m.transparent,
-                ud: Object.keys(mu)
-                    .sort()
-                    .map((x) => [x, mu[x]]),
-            })
-        );
-        for (const name of Object.keys(geo.attributes).sort()) {
-            const a = geo.attributes[name];
-            h.update(name);
-            h.update(String(a.itemSize));
-            h.update(Buffer.from(a.array.buffer, a.array.byteOffset, a.array.byteLength));
-        }
-        if (geo.index) {
-            const ia = geo.index.array;
-            h.update("index");
-            h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
-        }
+        objektAbdruck(h, o, m, {
+            ud: Object.keys(mu)
+                .sort()
+                .map((x) => [x, mu[x]]),
+        });
     });
     for (const key in hashes) klassen[key].sha256 = hashes[key].digest("hex");
     const sk = g.userData && g.userData.__skelett;
