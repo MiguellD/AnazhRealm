@@ -8,10 +8,9 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
-const { messe } = require("./ci-zeiten.cjs");
+const { messe, klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./ci-zeiten.cjs");
 const { taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");

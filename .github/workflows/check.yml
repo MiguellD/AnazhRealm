@@ -279,7 +279,7 @@ jobs:
                 gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
                 # K61 — DIE KLASSE je Gruppe: gpu braucht einen Echt-Renderer (Rezept linse · webgl · echt an der Weiche
                 # scripts/lib/welt-boot.cjs), cpu nie — die Weiche meldet ein Echt-Rezept in einer CPU-Gruppe ROT (CI_KLASSE),
-                # gate:ci-deckung (K) hält die Trennung statisch (scripts/lib/ci-klasse.cjs). Vorbereitet für einen eigenen
+                # gate:ci-deckung (K) hält die Trennung statisch (scripts/ci-zeiten.cjs). Vorbereitet für einen eigenen
                 # GPU-Läufer (die GPU-Gruppen), noch nicht eingeschaltet: alle Gruppen laufen auf ubuntu-latest.
                 include:
                     - gruppe: 1

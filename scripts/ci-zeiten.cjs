@@ -9,9 +9,8 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, GPU_REZEPTE } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
@@ -19,9 +18,93 @@ const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
 const [JE_SCHRITT, HOECHSTENS] = [7, 40]; // Messungen je Schritt; Läufe höchstens
 const VORBEREITUNG =
-    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Post Run |Complete job)/;
+    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Konsum-Zeuge|Run actions\/upload-artifact@|Post Run |Complete job)/;
 // die Jobs und ihr Gruppen-Schlüssel („voll 16/18 gpu" → „voll 16", „echt (…)" → „echt")
 const GRUPPE = /^(puls|voll|kopf|echt)(?: (\d+)\/\d+)?/;
+
+// DIE KLASSE EINES CI-SCHRITTS (vormals scripts/lib/ci-klasse.cjs): braucht er einen Echt-Renderer? Der run-Text wird über package.json bis
+// auf die Befehle aufgelöst, jedes `node <datei>` samt seinen lokalen `require` nach dem Rezept an der Weiche durchsucht
+// (welt-boot `starteBrowser({ art })`): ein Echt-Rezept (GPU_REZEPTE) ohne Bedingung macht ihn `gpu`; im Zweig
+// (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Der Richter
+// ist die Laufzeit: die Weiche nennt ein Echt-Rezept in einer CPU-Gruppe ROT und eines, das nie zeichnet.
+const ART = /\bart:\s*([^\n,}]+)/g;
+const REZEPT_RE = new RegExp(`["'](${GPU_REZEPTE.join("|")})["']`);
+
+// die Befehle eines run-Texts: `npm run x` wird über die Skripte aufgelöst (&& · ; · Zeilen trennen)
+function befehle(text, skripte, tiefe = 0) {
+    const out = [];
+    for (const b of String(text || "")
+        .split(/&&|\|\||;|\n/)
+        .map((x) => x.trim())
+        .filter(Boolean)) {
+        const m = /^npm run ([\w:.-]+)/.exec(b);
+        if (m && typeof skripte[m[1]] === "string" && tiefe < 16) out.push(...befehle(skripte[m[1]], skripte, tiefe + 1));
+        else out.push(b);
+    }
+    return out;
+}
+
+// das Rezept einer Datei und ihrer lokalen requires: { klasse: "gpu" | "bedingt" | null, wo }
+// trägt der Befehl die Bedingung X des Zweigs? true · false · null (nicht zu lesen)
+function bedingungIm(t, ausdruck, befehl) {
+    const m = /^\s*\(?\s*([A-Za-z_$][\w$]*)\s*\?/.exec(ausdruck);
+    const def = m && new RegExp(`(?:const|let|var)\\s+${m[1]}\\s*=\\s*([^;\\n]+)`).exec(t);
+    if (!def) return null;
+    const schalter = [...def[1].matchAll(/["'](--[\w-]+)["']/g)].map((x) => x[1]);
+    const env = [...def[1].matchAll(/process\.env\.(\w+)/g)].map((x) => x[1]);
+    if (!schalter.length && !env.length) return null;
+    const worte = String(befehl || "").split(/\s+/);
+    return schalter.some((x) => worte.includes(x)) || env.some((x) => worte.some((w) => w.startsWith(x + "=")));
+}
+
+function klasseDerDatei(datei, lies, gesehen = new Set(), befehl = "") {
+    if (gesehen.has(datei)) return { klasse: null };
+    gesehen.add(datei);
+    const t = lies(datei);
+    if (t == null) return { klasse: null };
+    let bedingt = null;
+    for (const m of t.matchAll(ART)) {
+        if (!REZEPT_RE.test(m[1])) continue;
+        const wo = `${path.relative(root, datei).replace(/\\/g, "/")} (art: ${m[1].trim()})`;
+        // jeder Zweig ein Echt-Rezept (`ECHT ? "echt" : "linse"`) ist so fest wie keiner
+        const zweige = [...m[1].matchAll(/["']([\w-]+)["']/g)].map((x) => x[1]);
+        if (!/\?/.test(m[1]) || zweige.every((z) => GPU_REZEPTE.includes(z))) return { klasse: "gpu", wo };
+        // der Zweig `X ? <Echt> : "null"` (oder `X ? "null" : <Echt>`): der Befehl entscheidet X
+        const dann = /\?\s*["'](null|standard)["']\s*:/.test(m[1]);
+        const an = dann || /:\s*["'](null|standard)["']\s*\)?\s*$/.test(m[1]) ? bedingungIm(t, m[1], befehl) : null;
+        if (an !== null && an !== dann) return { klasse: "gpu", wo: wo + " — der Befehl entscheidet die Bedingung" };
+        if (an !== null) continue;
+        bedingt = bedingt || { klasse: "bedingt", wo };
+    }
+    for (const m of t.matchAll(/require\(\s*["'](\.{1,2}\/[^"']+)["']\s*\)/g)) {
+        let f = path.resolve(path.dirname(datei), m[1]);
+        if (!/\.c?js$/.test(f)) f += ".cjs";
+        const k = klasseDerDatei(f, lies, gesehen, befehl);
+        if (k.klasse === "gpu") return { klasse: "gpu", wo: `${path.relative(root, datei).replace(/\\/g, "/")} → ${k.wo}` };
+        if (k.klasse === "bedingt") bedingt = bedingt || k;
+    }
+    return bedingt || { klasse: null };
+}
+
+const liesPlatte = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null);
+
+// die Klasse eines Schritts (run-Text): "gpu" schlägt "bedingt" schlägt "cpu"
+function klasseDesLaufs(run, skripte, lies = liesPlatte, wurzel = root) {
+    let bedingt = null;
+    for (const b of befehle(run, skripte)) {
+        const m = /\bnode\s+(?:--\S+\s+)*([\w./-]+\.c?js)\b/.exec(b);
+        if (!m) continue;
+        const k = klasseDerDatei(path.resolve(wurzel, m[1]), lies, new Set(), b);
+        if (k.klasse === "gpu") return k;
+        if (k.klasse === "bedingt") bedingt = bedingt || k;
+    }
+    return bedingt || { klasse: "cpu" };
+}
+
+// DIE LÄUFER-PLÄTZE des Kontos: höchstens 20 Jobs zugleich — die EINE Zahl für die Waage und das Verteilen.
+const LAEUFER_PLAETZE = 20;
+// DER GROSSE SCHRITT (CW): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
+const GROSS_S = 300;
 
 const sek = (a, b) => (a && b ? (new Date(b) - new Date(a)) / 1000 : null);
 const sortiert = (a) => [...a].sort((x, y) => x - y);
@@ -263,7 +346,7 @@ async function tafel(api) {
   Nacht-Batterien auf grünem Kopf: ${nacht.length} (${nacht.map((r) => `${r.head_sha.slice(0, 8)} ${min(sek(r.run_started_at, r.updated_at))} min`).join(" · ")})`);
 }
 
-module.exports = { messe };
+module.exports = { messe, klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE };
 
 if (require.main === module) {
     const args = process.argv.slice(2);
