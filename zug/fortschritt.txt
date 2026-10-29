@@ -870,3 +870,4 @@
 2026-10-29 13:18:15 takt21a-gtx schatten.K1#1 GRÜN 1.0 · 38/44
 2026-10-29 13:25:48 takt21a-gtx lod.K5#1 ROT 7.5 · 39/44
 2026-10-29 13:27:38 takt21a-gtx lod.K2#1 ROT 1.8 · 40/44
+2026-10-29 13:31:16 takt21a-gtx studios.K2#2,studios.K3#2 ROT/ROT 3.5 · 42/44
