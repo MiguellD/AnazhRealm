@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, ausDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -49,7 +49,7 @@ const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
 const STATIONEN = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
+    ausDatei(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"))
 ).stationen;
 const S4 = STATIONEN.find((st) => st.id === "s4-hindernisse");
 const S0 = STATIONEN.find((st) => st.id === "s0-atrium");
@@ -1019,7 +1019,7 @@ async function lichtLauf() {
         }, 1);
     });
     const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
-    const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+    const json = ausDatei(BUEHNE_DATEI, true);
     const ergebnis = {};
     const himmel = {}; // der Himmel folgt dem Sprung (oben `himmelProbe`): sauber und — im Selbsttest — der taube Maler
     let wache = null; // der Schein der Wache (Selbsttest): das Urteil über ein Werk, das ein benannter Rufer räumte
@@ -1650,7 +1650,7 @@ hauptLauf(async () => {
     let importiert = false;
     for (const [welt, schein] of laeufe) {
         if (welt === "buehne" && !importiert) {
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            const json = ausDatei(BUEHNE_DATEI, true);
             // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
             const id = await page.evaluate((json) => {
                 const res = r.importWorldBeside(json);

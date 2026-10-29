@@ -17,7 +17,7 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -40,7 +40,7 @@ function staticLaws(q) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art.
         check("Selbst-Test 4: eine abgeschriebene Stufen-Liste faellt beim Namen (kern-stufen)", kernStufen.selbsttest());

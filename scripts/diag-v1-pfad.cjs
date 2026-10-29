@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -2152,7 +2152,7 @@ async function korpusHaupt() {
     const [soll, form] = KORPUS_TEILE[teil] || [];
     const mutante = process.env.V1_MUTANTE;
     const ratschePfad = teil ? RATSCHE_PFAD.replace(".json", `-${teil}.json`) : RATSCHE_PFAD;
-    const lies = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : null);
+    const lies = (p) => (fs.existsSync(p) ? ausDatei(p, true) : null);
     const [roh, ratsche] = [lies(KORPUS_PFAD), lies(ratschePfad) || {}];
     const saetze = roh && Object.entries((teil ? roh[teil] : roh).saetze);
     const korpus = roh && { saetze: form ? saetze.map(([s, x]) => [s, form(x)]) : saetze };
@@ -2357,12 +2357,12 @@ const gehorsam = (korpus, log) => (req) =>
         });
     });
 async function feindHaupt(quelle) {
-    const korpus = fs.existsSync(FEIND_PFAD) ? JSON.parse(fs.readFileSync(FEIND_PFAD, "utf8")) : null;
+    const korpus = fs.existsSync(FEIND_PFAD) ? ausDatei(FEIND_PFAD, true) : null;
     const log = [];
     let m = { korpus };
     if (korpus) {
         const { srv, browser, page } = await kiWelt({ "/api/chat": gehorsam(korpus, log) });
-        const golden = JSON.parse(fs.readFileSync(path.join(root, "spec/golden/v1/blueprint-signed.json"), "utf8"));
+        const golden = ausDatei("spec/golden/v1/blueprint-signed.json", true);
         const arg = { inj: korpus.injektionen, tat: korpus.tat, golden, endpunkt: `http://127.0.0.1:${PORT}/` };
         m = { ...(await page.evaluate(feindLauf, arg)), korpus, erreicht: log };
         await browser.close();
@@ -2393,10 +2393,10 @@ async function feindHaupt(quelle) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--korpus") && !process.argv.includes("--selftest")) return korpusHaupt();
+    if (process.argv.includes("--korpus") && !SELBSTTEST) return korpusHaupt();
     const quelle = stammLib.text(root);
     if (process.argv.includes("--feind")) return feindHaupt(quelle);
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesundV = {
             gestartet: true,

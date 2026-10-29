@@ -25,7 +25,7 @@
 //     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen.
 // ============================================================================
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
+const { urteilEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -174,7 +174,7 @@ function linsenDateien(root) {
         }
     };
     for (const d of ["scripts", "spec"]) if (fs.existsSync(path.join(root, d))) lauf(path.join(root, d));
-    return dateien.map((p) => ({ name: path.relative(root, p).replace(/\\/g, "/"), src: fs.readFileSync(p, "utf8") }));
+    return dateien.map((p) => ({ name: path.relative(root, p).replace(/\\/g, "/"), src: ausDatei(p) }));
 }
 function scanParameterAnker(dateien, stammSrc) {
     const errs = [];
@@ -514,18 +514,18 @@ function selftest() {
         L +
         "const quelle = stammLib.text(root);\nstammLib.ersetze(quelle, \"chatDslPatterns\", 'x', 'y');\nstammLib.treffer(quelle, null, /V/);\n" +
         'quelle.includes("x");\nquelle.indexOf("x", 9);\nquelle.replace(/x/g, "");\nquelle.indexOf(`\\n    ${name}(`);\n' +
-        'fs.readFileSync(p, "utf8").replace("x", "y");\nfunction f(src) {\n    return src.replace("x", "y");\n}\n' +
-        '{\n    const quelle = fs.readFileSync(p, "utf8");\n    quelle.replace("x", "y");\n}\n// quelle.replace("x", "y");\n';
+        'ausDatei(p).replace("x", "y");\nfunction f(src) {\n    return src.replace("x", "y");\n}\n' +
+        '{\n    const quelle = ausDatei(p);\n    quelle.replace("x", "y");\n}\n// quelle.replace("x", "y");\n';
     for (const [datei, q] of [["probe.cjs", ersterStill], ["scripts/lib/stamm.cjs", ersterRot[0][1]]])
         if (ersterTreffer(datei, q).length) fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
     urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm), Kommentare zählen nicht");
 }
 
 function main() {
-    if (process.argv.includes("--selftest")) selftest();
+    if (SELBSTTEST) selftest();
     const root = path.join(__dirname, "..");
     const richter = ["playtest.cjs", ...fs.readdirSync(path.join(root, "scripts", "playtest")).map((f) => "playtest/" + f)];
-    const playtestSrc = richter.map((f) => fs.readFileSync(path.join(root, "scripts", f), "utf8")).join("\n");
+    const playtestSrc = richter.map((f) => ausDatei(path.join(root, "scripts", f))).join("\n");
     const stammSrc = stammLib.text(root);
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);

@@ -39,12 +39,12 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
-const SELBST = process.argv.includes("--selftest");
+const SELBST = SELBSTTEST;
 const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (gelaende.K5)
 const BILD = process.argv.includes("--bild");

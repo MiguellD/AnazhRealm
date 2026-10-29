@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite } = require("./welt-boot.cjs");
+const { statikServer, nullSeite, ausDatei } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -39,7 +39,7 @@ const stripComments = require("./stamm.cjs").ohneKommentare;
 // als `<kern>:<sha>` in Manifest-Folge mit "," verbunden. Die Platte stellt `f<FOUNDRY_PLATTE_FORMAT>|` voran — der
 // Pack-Index trägt den reinen Generator-Stempel (den Stempel des echten Boots misst gate:pack-contract `bootLauf`).
 function computeStamp(root) {
-    const lese = (rel) => fs.readFileSync(path.join(root || ROOT, rel), "utf8");
+    const lese = (rel) => ausDatei(path.join(root || ROOT, rel));
     const quellen = (k) => ["scripts", "lib", "bruecke"].flatMap((f) => [].concat(k[f] || [])).map(lese);
     return JSON.parse(lese("cores.manifest.json"))
         .map((k) => (k.id || k.ns) + ":" + sha256Hex(Buffer.from(quellen(k).join("\n"), "utf8")).slice(0, 16))
@@ -47,7 +47,7 @@ function computeStamp(root) {
 }
 
 function readManifest(root) {
-    return JSON.parse(fs.readFileSync(path.join(root || ROOT, "cores.manifest.json"), "utf8"));
+    return ausDatei(path.join(root || ROOT, "cores.manifest.json"), true);
 }
 
 // `meta.coreId` — DATEN-getrieben (M8, kein kind-if): Zweit-Kern-Rezepte reisen im gemergten
@@ -146,7 +146,7 @@ function writePack(dir, pack) {
 }
 
 function readPack(file) {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
+    return ausDatei(file, true);
 }
 
 // ---------------------------------------------------------------------------

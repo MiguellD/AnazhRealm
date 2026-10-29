@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, ausDatei } = require("./lib/welt-boot.cjs");
 const {
     dek,
     bildDeckung,
@@ -426,7 +426,7 @@ hauptLauf(async () => {
     const sehProben = [];
     let gestaltWand = null;
     const tafelSchreiben = process.argv.includes("--tafel");
-    const tafel = fs.existsSync(TAFEL_BILD) ? JSON.parse(fs.readFileSync(TAFEL_BILD, "utf8")) : null;
+    const tafel = fs.existsSync(TAFEL_BILD) ? ausDatei(TAFEL_BILD, true) : null;
     const lagenMess = [];
     const quotePaare = {};
     const bildMess = {};
@@ -445,7 +445,7 @@ hauptLauf(async () => {
         for (const [field, key] of DATEN_KANAELE) {
             const goldPath = path.join(DIR, key + ".json");
             if (!fs.existsSync(goldPath)) continue;
-            const gold = fs.readFileSync(goldPath, "utf8").trim();
+            const gold = ausDatei(goldPath).trim();
             const live = JSON.stringify(bookReply[field]);
             if (live === gold) continue;
             const a = live === undefined ? null : ersteAbweichung(bookReply[field], JSON.parse(gold));
@@ -551,7 +551,7 @@ hauptLauf(async () => {
         };
         for (const f of files) {
             const c = parseName(f);
-            const gold = JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8"));
+            const gold = ausDatei(path.join(DIR, f), true);
             const a = await build(c);
             const rec = {
                 cv: a.cv,

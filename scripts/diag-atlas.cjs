@@ -23,6 +23,7 @@
 //              Karte und ein Karten-Name ohne Glied; der Weg: `node scripts/stamm-umzug.cjs --nach-karte`.
 //   Dazu SYNTAX je Datei (V8, wie `node --check`).
 "use strict";
+const { ausDatei } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 const fs = require("fs");
 const path = require("path");
@@ -38,7 +39,7 @@ const UMZUG = "node scripts/stamm-umzug.cjs --nach-karte";
 const zeileAn = (text, at) => text.slice(0, at).split("\n").length;
 function lies(root) {
     return stammLib.dateien(root).map((p) => {
-        const text = fs.readFileSync(path.join(root, p), "utf8");
+        const text = ausDatei(path.join(root, p));
         const marker = stammLib.marker(text).map((m) => ({
             id: m.schluessel || m.nn + m.x,
             name: m.schluessel || m.name,
@@ -109,7 +110,7 @@ function ladeLeser(knoten, aus) {
 // ── die Ratsche ──────────────────────────────────────────────────────────────────────────────────────────────────
 function pruefe(root, opt = {}) {
     const fehler = [];
-    const R = opt.ratsche || JSON.parse(fs.readFileSync(path.join(root, RATSCHE), "utf8"));
+    const R = opt.ratsche || ausDatei(path.join(root, RATSCHE), true);
     const info = {};
     // R5 der Name ist tot
     if (fs.existsSync(path.join(root, stammLib.ALT)))
@@ -166,8 +167,8 @@ function pruefe(root, opt = {}) {
         }
     }
     // R6 Cache: jeder Stamm-Tag trägt ?v= = package.version
-    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
-    for (const tag of stammLib.tagsVon(fs.readFileSync(path.join(root, "index.html"), "utf8")))
+    const version = ausDatei(path.join(root, "package.json"), true).version;
+    for (const tag of stammLib.tagsVon(ausDatei(path.join(root, "index.html"))))
         if (tag.v !== `?v=${version}`)
             fehler.push(`R6 CACHE: ${tag.pfad}${tag.v || " (ohne ?v=)"} statt ?v=${version}`);
     // R2 die Decke
@@ -295,11 +296,11 @@ function finde(root, rx) {
     // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf; dazu
     // die Gesetzbücher neben dem Spiel-Manifest (`worlds/<buch>/*-core.js`, sie docken über die Kern-Zeile an) und je Buch
     // seine Arten (PARAMS_BY_KIND): eine Art in zwei Büchern hat zwei Quellen
-    const kerne = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8")).flatMap((c) => c.scripts);
+    const kerne = ausDatei(path.join(root, "cores.manifest.json"), true).flatMap((c) => c.scripts);
     const daneben = fs.readdirSync(path.join(root, "worlds"), { recursive: true }).map((f) => "worlds/" + f.replace(/\\/g, "/"))
         .filter((f) => /^worlds\/[^/]+\/[^/]+-core\.js$/.test(f));
     for (const k of [...new Set(kerne), ...daneben]) {
-        const text = fs.readFileSync(path.join(root, k), "utf8");
+        const text = ausDatei(path.join(root, k));
         const ast = acorn.parse(text, { ecmaVersion: "latest", sourceType: "script", locations: true, allowHashBang: true });
         stammLib.wandere(ast, (n, ahnen) => {
             const fnWert = (v) => v && /Function/.test(v.type);
@@ -482,7 +483,7 @@ if (argv.includes("--check")) {
         if (fehler.length > 60) console.error(`  … und ${fehler.length - 60} weitere`);
         process.exit(1);
     }
-    const R = JSON.parse(fs.readFileSync(path.join(ROOT, RATSCHE), "utf8"));
+    const R = ausDatei(path.join(ROOT, RATSCHE), true);
     const teile = lies(ROOT);
     console.log(
         `Atlas-Ratsche OK — ${teile.length} Dateien (größte ${Math.max(...teile.map((t) => t.zeilen))} ≤ ${R.decke_zeilen} Z.), ` +

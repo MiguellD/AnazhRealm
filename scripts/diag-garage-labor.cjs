@@ -4,7 +4,7 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
@@ -33,7 +33,7 @@ function laborVerdict(m) {
 const server = statikServer({ start: "/worlds/garage/index.html" });
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Labor-Linse nennt jeden Täter des Befunds ===");
         const gesund = {
             geladen: true,

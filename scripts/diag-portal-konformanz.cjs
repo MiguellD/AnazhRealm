@@ -38,7 +38,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -773,7 +773,7 @@ async function lauf(welten, taeter) {
 }
 
 function ratscheLesen() {
-    const r = JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8"));
+    const r = ausDatei(RATSCHE_PFAD, true);
     for (const b of ["dslEinzelwort", "readyEcho"]) if (!r[b] || !Array.isArray(r[b].welten)) throw new Error(`ratsche.json ohne Block ${b}.welten`);
     return r;
 }
@@ -840,7 +840,7 @@ async function selbsttest() {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) process.exit((await selbsttest()) ? 0 : 1);
+    if (SELBSTTEST) process.exit((await selbsttest()) ? 0 : 1);
     const { ergebnisse } = await lauf(WELTEN, false);
     console.log("Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht · K8 getragen");
     ergebnisse.forEach(drucke);

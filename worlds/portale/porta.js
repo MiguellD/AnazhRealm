@@ -46,7 +46,7 @@ var laborPano=null;
 function membranSetzen(){
   if(!memMat||!D)return;
   var p=readParams();D.p=p;var MU=PC.membranUniforms(p),u=memMat.uniforms,PAL=MU.pal;
-  u.uWave.value=MU.wave;u.uSwirl.value=MU.swirl;
+  u.uWave.value=MU.wave;u.uSwirl.value=MU.swirl;u.uDrall.value=MU.drall;u.uFraktal.value=MU.fraktal;u.uTiefe.value=MU.tiefe;u.uSpiegel.value=MU.spiegel;
   u.uPA.value.fromArray(PAL.PA);u.uPB.value.fromArray(PAL.PB);u.uPC.value.fromArray(PAL.PC);u.uPD.value.fromArray(PAL.PD);
 }
 function buildMembrane(){
@@ -72,10 +72,11 @@ function buildMembrane(){
       uTopTex:{value:topTex},uLeft:{value:MU.left},uW:{value:MU.spanW},uBaseY:{value:MU.baseY},uHspan:{value:MU.height},uSpringX:{value:MU.springX},
       uWave:{value:MU.wave},uWaveDepth:{value:MU.waveDepth},uRimAx:{value:MU.rimAx},uRimAy:{value:MU.rimAy},uCenter:{value:centerW},
       uSwirl:{value:MU.swirl},uActivate:{value:doorAngle/DOOR_OPEN},uPulse:{value:1},
+      uDrall:{value:MU.drall},uFraktal:{value:MU.fraktal},uTiefe:{value:MU.tiefe},uSpiegel:{value:MU.spiegel},
       uPA:{value:new THREE.Vector3(PA[0],PA[1],PA[2])},uPB:{value:new THREE.Vector3(PB[0],PB[1],PB[2])},uPC:{value:new THREE.Vector3(PC[0],PC[1],PC[2])},uPD:{value:new THREE.Vector3(PD[0],PD[1],PD[2])}},
     side:THREE.DoubleSide,transparent:false,depthWrite:true,
     vertexShader:[
-      "precision highp float;uniform float uTime,uWave,uSwirl,uWaveDepth,uRimAx,uRimAy;uniform vec3 uCenter;varying vec2 vXY;varying vec3 vW;varying vec3 vN;varying float vWelle;",
+      "precision highp float;uniform float uTime,uWave,uSwirl,uWaveDepth,uRimAx,uRimAy,uDrall,uFraktal;uniform vec3 uCenter;varying vec2 vXY;varying vec3 vW;varying vec3 vN;varying float vWelle;",
       "float hash(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}",
       "float vn(vec2 p){vec2 i=floor(p),f=fract(p);float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));vec2 u=f*f*(3.-2.*f);return mix(a,b,u.x)+(c-a)*u.y*(1.-u.x)+(d-b)*u.x*u.y;}",
       "float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<3;i++){s+=a*vn(p);p=p*2.05+1.3;a*=.5;}return s;}",
@@ -83,13 +84,13 @@ function buildMembrane(){
       " vec2 c=q-uCenter.xy;float r=length(c);float a=atan(c.y,c.x);float t=uTime;",
       " float Rb=1.0/sqrt(pow(cos(a)/uRimAx,2.0)+pow(sin(a)/uRimAy,2.0)+1e-4);",   // Randradius in Blickrichtung (Öffnungs-Ellipse)
       " float rr=clamp(r/Rb,0.0,1.4);",                                            // normiert: 1.0 = Sheetrand
-      " float twist=a*"+GN(MG.twistK)+"+uSwirl/(r+"+GN(MG.swirlR0)+");",
+      " float twist=a*"+GN(MG.twistK)+"*uDrall+uSwirl/(r+"+GN(MG.swirlR0)+");",
       " float om=t*"+GN(MG.om)+",kk="+GN(MG.kk)+";",
       " float outw=sin(rr*kk-om+twist);",                                           // auslaufende Welle
       " float refl=sin((2.0-rr)*kk-om+twist);",                                     // am Rand REFLEKTIERT (Pfad 2-rr) → Interferenz
       " float wave=(outw+refl*"+GN(MG.refl)+")*exp(-rr*"+GN(MG.damp)+");",
       " float pierce=sin(t*"+GN(MG.pierce[0])+")*exp(-rr*rr*"+GN(MG.pierce[1])+")*"+GN(MG.pierce[2])+";",
-      " float micro=fbm(c*"+GN(MG.micro[0])+"-vec2(t*"+GN(MG.micro[1])+"))*"+GN(MG.micro[2])+";",
+      " float micro=fbm(c*"+GN(MG.micro[0])+"-vec2(t*"+GN(MG.micro[1])+"))*"+GN(MG.micro[2])+"*uFraktal;",
       " float h=clamp((wave*"+GN(MG.hGain[0])+"+pierce+micro)*"+GN(MG.hGain[1])+",-1.0,1.0);",
       " return h*uWaveDepth*("+GN(MG.waveDepthK[0])+"+"+GN(MG.waveDepthK[1])+"*uWave);",
       "}",
@@ -98,7 +99,7 @@ function buildMembrane(){
       " vec3 pos=vec3(xy,d0);vec4 wp=modelMatrix*vec4(pos,1.0);vW=wp.xyz;vN=normalize(mat3(modelMatrix)*nrm);",
       " gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);}"].join('\n'),
     fragmentShader:[
-      "precision highp float;uniform float uTime,uLeft,uW,uBaseY,uHspan,uSpringX,uRimAx,uRimAy,uWaveDepth,uActivate,uPulse;uniform vec3 uCam,uCenter,uPA,uPB,uPC,uPD;uniform sampler2D uTopTex,uPano;varying vec2 vXY;varying vec3 vW;varying vec3 vN;varying float vWelle;",
+      "precision highp float;uniform float uTime,uLeft,uW,uBaseY,uHspan,uSpringX,uRimAx,uRimAy,uWaveDepth,uActivate,uPulse,uTiefe,uSpiegel;uniform vec3 uCam,uCenter,uPA,uPB,uPC,uPD;uniform sampler2D uTopTex,uPano;varying vec2 vXY;varying vec3 vW;varying vec3 vN;varying float vWelle;",
       "vec3 pal(float t){return uPA+uPB*cos(6.28318*(uPC*vec3("+GN(FI.welle[0])+","+GN(FI.welle[1])+","+GN(FI.welle[2])+")*t+uPD));}",
       "vec2 equi(vec3 d){return vec2(atan(d.z,d.x)*0.15915494309+0.5,asin(clamp(d.y,-1.0,1.0))*0.31830988618+0.5);}",
       "void main(){",
@@ -106,7 +107,7 @@ function buildMembrane(){
       " if(vXY.y>topY+0.002||vXY.y<uBaseY-0.002||abs(vXY.x)>uSpringX+0.002)discard;",
       " vec3 Vd=normalize(uCam-vW);vec3 rd=-Vd;vec3 N0=normalize(vN);vec3 N=dot(N0,Vd)<0.0?-N0:N0;",
       // die Parallaxe: der Strahl trifft die Stellvertreter-Kugel (Radius Tor-Höhe × kugel) um die Tor-Mitte
-      " float R=uHspan*"+GN(FI.kugel)+";vec3 oc=vW-uCenter;float bq=dot(oc,rd);float cq=dot(oc,oc)-R*R;float tq=-bq+sqrt(max(bq*bq-cq,0.0));",
+      " float R=uHspan*"+GN(FI.kugel)+"*uTiefe;vec3 oc=vW-uCenter;float bq=dot(oc,rd);float cq=dot(oc,oc)-R*R;float tq=-bq+sqrt(max(bq*bq-cq,0.0));",
       " vec3 dir=normalize((oc+rd*tq)/R-vec3(N.xy,0.0)*"+GN(FI.brechung)+");vec3 ziel=texture2D(uPano,equi(dir)).rgb;",
       // der Seifenfilm: Dicke aus Rand-Abstand und Welle, Gangunterschied je Blickwinkel (Brechzahl n)
       " float rr=length((vXY-uCenter.xy)/vec2(uRimAx,uRimAy));float cosI=max(dot(N,Vd),0.0);",
@@ -117,7 +118,7 @@ function buildMembrane(){
       " float rand=smoothstep("+GN(FI.rand[0])+","+GN(FI.rand[1])+",rr);",
       " float fw=min(fres+rand*"+GN(FI.rand[2])+"+"+GN(FI.basis)+","+GN(FI.gewichtMax)+")*("+GN(FI.act[0])+"+"+GN(FI.act[1])+"*uActivate);",
       " vec3 spiegel=texture2D(uPano,equi(reflect(rd,N))).rgb;",
-      " vec3 glanz=film*spiegel*"+GN(FI.glanz[0])+"*("+GN(FI.glanz[1])+"+"+GN(FI.glanz[2])+"*uPulse);",
+      " vec3 glanz=film*spiegel*"+GN(FI.glanz[0])+"*("+GN(FI.glanz[1])+"+"+GN(FI.glanz[2])+"*uPulse)*uSpiegel;",
       " gl_FragColor=vec4(mix(ziel,glanz,fw),1.0);",
       " #include <tonemapping_fragment>",
       " #include <encodings_fragment>",

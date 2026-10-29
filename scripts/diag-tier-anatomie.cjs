@@ -19,7 +19,7 @@
 // (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
-const { urteilEnde, fadenScope } = require("./lib/welt-boot.cjs");
+const { urteilEnde, fadenScope, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const ARTEN = ["wolf", "fox", "bear", "deer"];
 const WOLLE_SCHWELLE = 0.05; // aSchale.y, ab der die inneren Schalen decken (Welt-Material fellSchale)
@@ -407,7 +407,7 @@ function zeige(ergebnis) {
     }
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== SELBST-TEST: die Anatomie-Linse feuert ===");
     let rot = 0;
     const pruefe = (name, fehler, muster) => {

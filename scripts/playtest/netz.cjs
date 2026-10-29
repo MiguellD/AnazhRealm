@@ -1,4 +1,5 @@
 "use strict";
+const { ausDatei } = require("../lib/welt-boot.cjs");
 // scripts/playtest/netz.cjs — der Richter von Netz (spec/stamm/modul-karte.json): Einladung · WebRTC-Mesh · Lockstep · Stimme · Welt-Bündel · Vibe-Pass · Signaturen · Regionen · Pins und Hallen · Bann · Portal-Eintritt · Ko-Präsenz · Dwelling · Portal-Server.
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
@@ -1384,8 +1385,8 @@ async function checkBandTailleGolden({ page, check }) {
     // dokumentiert sein (ein Broker-Typ ohne Andock-Vertrag ist der Riss von morgen); plus der
     // Ein-Befehl-Self-Host existiert.
     try {
-        const brokerSrc = fs.readFileSync(path.join(SKRIPTE, "..", "signaling-server.js"), "utf8");
-        const specDe = fs.readFileSync(path.join(SKRIPTE, "..", "docs", "taille-spec.md"), "utf8");
+        const brokerSrc = ausDatei(path.join(SKRIPTE, "..", "signaling-server.js"));
+        const specDe = ausDatei(path.join(SKRIPTE, "..", "docs", "taille-spec.md"));
         const typen = new Set();
         for (const m of brokerSrc.matchAll(/msg\.type === "([a-z-]+)"/g)) typen.add(m[1]);
         const fehltDe = [...typen].filter((t) => !specDe.includes("`" + t));
@@ -1393,12 +1394,12 @@ async function checkBandTailleGolden({ page, check }) {
             `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert${fehltDe.length ? " (fehlt: " + fehltDe.join(",") + ")" : ""}`,
             fehltDe.length === 0
         );
-        const pkg = JSON.parse(fs.readFileSync(path.join(SKRIPTE, "..", "package.json"), "utf8"));
+        const pkg = ausDatei(path.join(SKRIPTE, "..", "package.json"), true);
         check(
             "Leuchtturm: der Ein-Befehl-Self-Host steht (npm run leuchtturm + scripts/leuchtturm.cjs + README-Sektion)",
             !!(pkg.scripts && pkg.scripts.leuchtturm) &&
                 fs.existsSync(path.join(SKRIPTE, "..", "scripts", "leuchtturm.cjs")) &&
-                /Dein eigener Leuchtturm/.test(fs.readFileSync(path.join(SKRIPTE, "..", "README.md"), "utf8"))
+                /Dein eigener Leuchtturm/.test(ausDatei(path.join(SKRIPTE, "..", "README.md")))
         );
     } catch (e) {
         check("Leuchtturm §7: Drift-Wächter lesbar", false, e.message);
@@ -1407,10 +1408,10 @@ async function checkBandTailleGolden({ page, check }) {
     let golden = null;
     try {
         golden = {
-            blueprint: JSON.parse(fs.readFileSync(path.join(goldenDir, "blueprint-signed.json"), "utf8")),
-            manifest: JSON.parse(fs.readFileSync(path.join(goldenDir, "world-manifest.json"), "utf8")),
-            snapshotHead: JSON.parse(fs.readFileSync(path.join(goldenDir, "snapshot-head.json"), "utf8")),
-            envelopes: JSON.parse(fs.readFileSync(path.join(goldenDir, "p2p-envelopes.json"), "utf8")),
+            blueprint: ausDatei(path.join(goldenDir, "blueprint-signed.json"), true),
+            manifest: ausDatei(path.join(goldenDir, "world-manifest.json"), true),
+            snapshotHead: ausDatei(path.join(goldenDir, "snapshot-head.json"), true),
+            envelopes: ausDatei(path.join(goldenDir, "p2p-envelopes.json"), true),
         };
     } catch (e) {
         check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", false, e.message);

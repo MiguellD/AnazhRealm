@@ -532,13 +532,20 @@ class AnazhRealm_koerper_fahrt {
                     : Math.max(HE.kBrakeBeinMin, Math.min(HE.kBrakeBeinMax, HE.kBrakeBein / mass)),
             roles,
         };
-        // fahrprofil-Daten-Override: trägt das LIVE-Rezept des Zweit-Kerns (fx.fahrprofil) Fahr-Werte,
-        // führen SIE; sonst trägt das emergente Profil allein. Der Cache hängt am entry — eine Kern-Änderung
-        // greift beim nächsten Aufsitzen.
+        // fahrprofil-Daten-Override: trägt das Werk ein Fahr-Gesetz, führen SEINE Fahr-Werte; sonst trägt das emergente Profil
+        // allein. Der Cache hängt am entry — eine Kern-Änderung greift beim nächsten Aufsitzen. DAS GESETZ DES WERKS (studios.K1):
+        // `_fahrzeugGesetzFor` rechnet dieselbe Formel wie das Buch (exportDrive über s + fx) mit dem Stempel dahinter — ein
+        // geprägter Wagen fährt Griff, Feder und Geometrie, mit denen er gebaut ist; bis dahin las der Ritt das Rezept allein
+        // (fx.fahrprofil), und jede Fahr-Zeile des Stempels hatte keinen Leser. Ungeprägt ist es dieselbe Zahl.
         try {
             const _pf = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(entry.type) : null;
             const _rec = _pf && this._foundry && this._foundry.recipes ? this._foundry.recipes[_pf] : null;
-            const _fp = _rec && _rec.fx && typeof _rec.fx.fahrprofil === "object" ? _rec.fx.fahrprofil : null;
+            const _fp =
+                fzgH && fzgH.drive && typeof fzgH.drive === "object"
+                    ? fzgH.drive
+                    : _rec && _rec.fx && typeof _rec.fx.fahrprofil === "object"
+                      ? _rec.fx.fahrprofil
+                      : null;
             if (_fp) {
                 if (Number.isFinite(_fp.topSpeedMul)) prof.topSpeedMul = _fp.topSpeedMul;
                 if (Number.isFinite(_fp.kAcc)) prof.kAcc = _fp.kAcc;

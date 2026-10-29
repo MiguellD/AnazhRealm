@@ -6,7 +6,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { GPU_REZEPTE } = require("./welt-boot.cjs");
+const { GPU_REZEPTE, ausDatei } = require("./welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const ART = /\bart:\s*([^\n,}]+)/g;
@@ -68,7 +68,7 @@ function klasseDerDatei(datei, lies, gesehen = new Set(), befehl = "") {
     return bedingt || { klasse: null };
 }
 
-const liesPlatte = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null);
+const liesPlatte = (f) => (fs.existsSync(f) ? ausDatei(f) : null);
 
 // die Klasse eines Schritts (run-Text): "gpu" schlägt "bedingt" schlägt "cpu"
 function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {

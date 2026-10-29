@@ -25,7 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -71,7 +71,7 @@ const triasStaticLaws = () => [
 
 hauptLauf(async () => {
     // ===== SELBST-TEST =====
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Trias-Linse feuert ===");
         // Die ZAHLEN-Linse ist nicht vakuoes: die Nahstufe L0 (gemessen ~93k) liegt allein
         // ueber dem Fern-Deckel — klebte sie fern, risse der Deckel (L1 ist seit V18.500 die

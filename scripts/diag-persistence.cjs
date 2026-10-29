@@ -19,7 +19,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -152,7 +152,7 @@ async function serverLauf(quelle, tod) {
     ]);
     const lies = (f) => {
         try {
-            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            const j = ausDatei(f, true);
             return j && (j.marker === "alt" || j.marker === "neu") ? j.marker : "fremd";
         } catch {
             return fs.existsSync(f) ? `zerrissen (${fs.statSync(f).size} B)` : "fehlt";
@@ -695,7 +695,7 @@ function korpusUrteil(z, selbst) {
 
     // (S) Der save-server schreibt ganz, (C) sein Cache-Kopf — im Selbsttest je die alte Art in der Kopie, die rot werden MUSS:
     // das direkte Schreiben aufs Ziel, der Kopf ohne Validator. Fehlt der Anker einer Verfälschung, greift sie nicht (ROT).
-    const quelle = fs.readFileSync(path.join(root, "save-server.js"), "utf8");
+    const quelle = ausDatei("save-server.js");
     const verfaelscht = (anker, neu) => {
         if (quelle.includes(anker)) return quelle.replace(anker, neu);
         console.log(`⛔ SELBSTTEST: save-server.js trägt „${anker}" nicht — die Verfälschung greift nicht`);

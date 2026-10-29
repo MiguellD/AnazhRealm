@@ -20,10 +20,10 @@
 //   wählt den Galopp → die Kreuz-Probe feuert. Jede Zeile des Selbsttests trägt „[Selbsttest]“ (ihr ❌ ist das Soll).
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
-const SELBST = process.argv.includes("--selftest");
+const SELBST = SELBSTTEST;
 // die Ratsche: 0,2 → 0,05 — der Fuß im Stand steht (Gleiten < 5 %), Tier und Mensch an EINER Schwelle
 const SCHWELLE = 0.05;
 const KADENZ_GEHEN = 1.5; // Schritte/s bei 1,15 m/s (physio-pedia, Weidmann 1993)

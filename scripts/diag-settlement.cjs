@@ -3,7 +3,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
+const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -835,7 +835,7 @@ hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 
     // ===== SELBST-TEST =====
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Settlement-Linse feuert ===");
         const a = FC.exportSettlement(FIXTURES[0]);
         // V2: ein manipulierter Export (ein Slot verschoben) kippt den Fingerabdruck — die Byte-Wand ist nicht vakuös.
@@ -1115,7 +1115,7 @@ hauptLauf(async () => {
         fs.writeFileSync(goldenFile, JSON.stringify(golden, null, 4) + "\n");
         console.log(`  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
     }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
+    const golden = ausDatei(goldenFile, true);
     for (const dp of FIXTURES) {
         const key = JSON.stringify(dp);
         check(
@@ -2767,7 +2767,7 @@ hauptLauf(async () => {
         return { outO, gtO };
     };
     const MESSORT_DORF = JSON.parse(
-        fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")
+        ausDatei("spec/profiband/haushalt.json")
     ).messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);

@@ -12,7 +12,7 @@
 //   doppelt → augenAbstand rot. Die Linse feuert, sonst ist sie vakuös.
 //   node scripts/diag-mensch-anatomie.cjs [--selftest] [--json]
 "use strict";
-const { urteilEnde, fadenScope } = require("./lib/welt-boot.cjs");
+const { urteilEnde, fadenScope, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "koerper-core.js"]);
 
@@ -378,7 +378,7 @@ const zeige = (m) =>
 
 module.exports = { ladeWelt, messe };
 if (require.main !== module) return;
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== SELBST-TEST: die Mensch-Anatomie-Linse feuert ===");
     let rot = 0;
     // je Fall der Eingriff am Gesetz (`verzerre`) oder am Kopf (`eingriff`, mit `kopf`): er muss sein Maß beim Namen rot machen

@@ -41,7 +41,7 @@
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, ausDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -71,7 +71,7 @@ let verzoegerung = 0;
 const WEGE = opt("--wege", ALLE_WEGE.join(","))
     .split(",")
     .filter((w) => ALLE_WEGE.includes(w));
-const BUEHNE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json"), "utf8"));
+const BUEHNE = ausDatei(path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json"), true);
 
 // die Tür der Seite: `verzoegerung` hält /index.html zurück (das Fenster, in dem die alte Seite noch schreibt)
 const server = statikServer({

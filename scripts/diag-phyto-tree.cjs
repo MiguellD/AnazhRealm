@@ -11,14 +11,14 @@
 // Konstante zwischen den Scopes (ein window/self-Leck), fällt die Linse. Dazu der P-Zwilling und das Skelett im Haupt-Thread
 // (unten). Das ist die Gesetz-#0-Wand: EINE Quelle, viele Leser, KEIN Mirror, der driften kann.
 "use strict";
-const fs = require("fs");
+const { ausDatei } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const vm = require("vm");
 
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
 // aber der IIFE-Seiteneffekt setzt globalThis.__phytoCore).
-const src = fs.readFileSync(path.join(__dirname, "..", "phyto-core.js"), "utf8");
+const src = ausDatei(path.join(__dirname, "..", "phyto-core.js"));
 require("../phyto-core.js");
 const mainCore = globalThis.__phytoCore;
 if (!mainCore || typeof mainCore.growSkeleton !== "function") {
@@ -244,7 +244,7 @@ const kernScope = (name, bruecke) => {
     const sb = { console, performance: { now: () => 0 } };
     sb.self = sb.globalThis = sb;
     const ctx = vm.createContext(sb);
-    const lies = (...p) => fs.readFileSync(path.join(__dirname, "..", ...p), "utf8");
+    const lies = (...p) => ausDatei(path.join(__dirname, "..", ...p));
     vm.runInContext(lies("worlds", "terrain", "lib", "three-r128.min.js"), ctx, { filename: "three-r128" });
     vm.runInContext(src, ctx, { filename: `phyto-core.js(${name})` });
     if (bruecke) vm.runInContext(bruecke, ctx);

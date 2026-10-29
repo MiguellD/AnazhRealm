@@ -28,7 +28,7 @@
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
 //   node scripts/diag-look-golden.cjs --mint      → mintet das Golden aus dem aktuellen Render
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, ausDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -217,7 +217,7 @@ async function renderLuma() {
         process.exit(lensOk ? 0 : 1);
     }
 
-    const golden = JSON.parse(fs.readFileSync(GOLDEN_FILE, "utf8"));
+    const golden = ausDatei(GOLDEN_FILE, true);
     const score = mssim(golden.luma, luma, N);
     console.log(`\n=== Look-Golden-Vergleich (Spot '${SPOT}') ===`);
     console.log(`  MSSIM gegen Golden: ${score.toFixed(4)}  (Schwelle ${THRESHOLD})`);

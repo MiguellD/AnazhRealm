@@ -21,12 +21,10 @@ const { statikServer,
     ROOT,
     hauptLauf,
     sleep,
-    wandEnde,
-} = require("./lib/welt-boot.cjs");
+    wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
-const fs = require("fs");
 
-const lies = (f) => fs.readFileSync(ROOT + "/" + f, "utf8");
+const lies = (f) => ausDatei(ROOT + "/" + f);
 const MANIFEST = JSON.parse(lies("cores.manifest.json"));
 const NEUN = "worlds/neuntes-buch/stele-core.js";
 const server = statikServer({
@@ -88,7 +86,7 @@ function seitenHelfer() {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         const lod = [160, 32, 14].map((tris, ist) => ({ ist, tris, bau: "b" + ist }));
         const kosten = lod.map((x) => ({ klasse: "pass", leiste: x.tris }));
         const gut = {

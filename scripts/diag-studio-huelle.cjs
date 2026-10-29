@@ -43,7 +43,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -169,7 +169,7 @@ function panoramaStempel(id, lies) {
 const liesAus = (karte) => (rel) => {
     if (rel in karte) return karte[rel];
     const f = path.join(ROOT, rel);
-    return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
+    return fs.existsSync(f) ? ausDatei(f) : null;
 };
 
 // Die Werkstatt-Dateien des Stamms: die Dateien, die die Regler-Glieder der Werkstatt tragen (am Glied, nie am Datei-Namen).
@@ -184,10 +184,10 @@ function baum() {
         if (!fs.statSync(d).isDirectory()) continue;
         for (const f of fs.readdirSync(d)) {
             if (!/\.(html|js)$/.test(f)) continue;
-            karte[`worlds/${id}/${f}`] = fs.readFileSync(path.join(d, f), "utf8");
+            karte[`worlds/${id}/${f}`] = ausDatei(path.join(d, f));
         }
     }
-    for (const rel of WERKSTATT) karte[rel] = fs.readFileSync(path.join(ROOT, rel), "utf8");
+    for (const rel of WERKSTATT) karte[rel] = ausDatei(rel);
     karte[TOR_ZIELE] = liesAus({})(TOR_ZIELE);
     return karte;
 }
@@ -475,7 +475,7 @@ async function panoramaBacken(nur) {
     const s = statikServer({ seiten: { "/__panorama.html": '<!DOCTYPE html><meta charset="utf-8"><title>Panorama</title><body style="margin:0"></body>' } });
     await s.lausche(PORT);
     const kp = path.join(ROOT, TOR_ZIELE);
-    const K = fs.existsSync(kp) ? JSON.parse(fs.readFileSync(kp, "utf8")) : {};
+    const K = fs.existsSync(kp) ? ausDatei(kp, true) : {};
     const neu = { format: PANO.format, w: PANO.w, h: PANO.h, welten: K.welten || {}, ohne: {} };
     for (const [id, grund] of Object.entries(OHNE_PANORAMA)) neu.ohne[seite(id)] = grund;
     for (const k of Object.keys(neu.welten)) if (!k.startsWith("worlds/") || OHNE_PANORAMA[k.split("/")[1]]) delete neu.welten[k];

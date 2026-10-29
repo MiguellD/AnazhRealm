@@ -25,9 +25,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
@@ -68,7 +66,7 @@ function schaleVon() {
 // `teile` trägt im Selbsttest einen gebrochenen Stamm; der Solitär und der Kern-Wert kommen aus den echten Statiken.
 function gestalten(teile) {
     const rc = JSON.parse(
-        fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
+        ausDatei("spec/asset-contract/v1/golden/render-config.json")
     );
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
     const { AnazhRealm: A } = stammLib.ladeKlasse(root, teile ? { teile } : {});
@@ -638,7 +636,7 @@ const VERHALTEN = [
 
 hauptLauf(async () => {
     const { errs, check } = pruefer();
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
         // Ein Bruch, dessen Anker im Quelltext fehlt, läuft ins Leere: er bricht den Selbsttest beim Namen.
         const bruch = (quelle, alt, neu, glied = null) => {
@@ -654,7 +652,7 @@ hauptLauf(async () => {
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
         // die Klon-Linse an einem gebrochenen Stamm: die Datei mit dem Anker trägt den Bruch, die Klasse lädt ihn
         const gebrochen = (alt, neu) => {
-            const teile = stammLib.dateien(root).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+            const teile = stammLib.dateien(root).map((p) => ({ pfad: p, text: ausDatei(p) }));
             const t = teile.find((x) => x.text.includes(alt));
             if (t) t.text = t.text.replace(alt, neu);
             else check(`Selbst-Test-Anker steht im Stamm: ${alt.slice(0, 70)}`, false);

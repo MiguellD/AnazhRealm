@@ -47,7 +47,9 @@ const FROZEN = {
     waveDepthK: [0.65, 0.35],
     waveDepthMin: 0.05,
     waveDepthZ: 0.1,
-    stepK: [0.06, 0.2],
+    // studios.K1 (ein erklärter Akt): der Raymarch-Schritt stepK fiel mit D8 ohne Leser — Drall und Fraktal tragen die Welle
+    drall: [0.5, 1.0],
+    fraktal: [0.5, 1.0],
     rimAyK: 0.52,
     swirlK: 0.5,
     openK: [0.4, 0.6],
@@ -65,6 +67,8 @@ const FROZEN = {
         gewichtMax: 0.55,
         act: [0.65, 0.35],
         glanz: [0.8, 0.9, 0.15],
+        tiefe: [0.5, 1.0],
+        spiegel: [0.5, 1.0],
         welle: [1.0, 1.22, 1.44],
         farbe: 2.6,
     },
@@ -121,7 +125,10 @@ function altUniforms(p) {
         waveDepth: Math.max(0.05, D.zFace * 0.1),
         rimAx: Math.abs(D.leftSpringX),
         rimAy: (D.apexY - D.baseY) * 0.52,
-        step: 0.06 + p.tunnel * 0.2,
+        tiefe: 0.5 + p.tunnel,
+        drall: 0.5 + p.twist,
+        fraktal: 0.5 + p.fractal,
+        spiegel: 0.5 + p.reflect,
         open: clamp(0.4 + p.energy * 0.6, 0, 1),
         centerY: baseY + D.jambH * 0.55,
         swirl: p.swirl * 0.5,
@@ -129,7 +136,7 @@ function altUniforms(p) {
         pal: PC.membranPalette(p),
     };
 }
-const FELDER = ["left", "spanW", "height", "midY", "springX", "wave", "waveDepth", "rimAx", "rimAy", "step", "open", "centerY", "swirl"];
+const FELDER = ["left", "spanW", "height", "midY", "springX", "wave", "waveDepth", "rimAx", "rimAy", "tiefe", "drall", "fraktal", "spiegel", "open", "centerY", "swirl"];
 let abl = [];
 const faelle = Object.keys(PC.PRESETS).map((id) => ({ name: id, p: PC.gateParams(PC.PRESETS[id]) }));
 // deterministischer Dial-Fächer (mulberry32 — kein Math.random)

@@ -44,13 +44,13 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
 const server = statikServer();
 hauptLauf(async () => {
-    const selftest = process.argv.includes("--selftest");
+    const selftest = SELBSTTEST;
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 240000 });
     await page.evaluateOnNewDocument(installWieseSicht);

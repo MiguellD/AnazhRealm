@@ -17,23 +17,27 @@
         "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert den Bau an KEINEM Rezept seiner Art bewegt (erste Stufe der Art, min und max) — gemessen am Kanal, den die Werkstatt-Vorschau nimmt: die Mesh-Arten über build-asset (ov {id: wert}, Seed 1), die MESHFREI-Arten (Vertrag §8) über den Host-Ofen (_workshopStudioPreviewFrom → _workshopOvenPreview, der Wert aus ws.studioOv). Schlüssel kern:art:id, Wert = der Befund.",
         "soll": 0,
         "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
-        "tot": {
-            "klang:klang:bpm": "die Vorschau ist stumm (MESHFREI, Vertrag §8.4) — die Welt liest den Regler im Klang (_klangStudioPreset), gate:praegung-welt (K) urteilt dort",
-            "klang:klang:color": "kein Guss (wie bpm)",
-            "klang:klang:darkness": "kein Guss (wie bpm)",
-            "klang:klang:flow": "kein Guss (wie bpm)",
-            "klang:klang:space": "kein Guss (wie bpm)",
-            "klang:klang:swing": "kein Guss (wie bpm)",
-            "klang:klang:tension": "kein Guss (wie bpm)",
-            "porta:gate:energy": "die Vorschau zeigt den Körper — die Welt liest den Regler in der Membran (_torGesetzFor), gate:praegung-welt (K) urteilt dort",
-            "porta:gate:fractal": "wie energy",
-            "porta:gate:reflect": "wie energy",
-            "porta:gate:swirl": "wie energy",
-            "porta:gate:temp": "wie energy",
-            "porta:gate:tunnel": "wie energy",
-            "porta:gate:twist": "wie energy",
-            "porta:gate:wave": "wie energy",
-            "vehicle:vehicle:grip": "die Vorschau zeigt den Körper — die Welt liest den Regler im Fahr-Gesetz (_fahrzeugGesetzFor), gate:praegung-welt (K) urteilt dort"
+        "tot": {}
+    },
+    "reglerGesetz": {
+        "zweck": "DIE GESETZ-WERTE (Vertrag B4 `uniform: true`, studios.K1): die Zeile bewegt an keinem Rezept ihrer Art ein Bau- bzw. Guss-Byte (der Byte-Beweis, gemessen von gate:regler-wirkt; gate:studio-vertrag liest ihn) und wirkt an ihrem Leser der Welt — die Membran des Tors (die Stoff-Werte, die der Graph liest), der Ritt des Wagens (der Fahr-Satz im Fahr-Schritt), das Ohr des Klangs (das Spektrogramm der Lofi-Kette). Schlüssel kern:art:id, Wert = der Leser. Eine uniform-Zeile ohne Eintrag ist rot, ein Eintrag, dessen Bau sich bewegt, ebenso.",
+        "zeilen": {
+            "klang:klang:bpm": "Ohr",
+            "klang:klang:color": "Ohr",
+            "klang:klang:darkness": "Ohr",
+            "klang:klang:flow": "Ohr",
+            "klang:klang:space": "Ohr",
+            "klang:klang:swing": "Ohr",
+            "klang:klang:tension": "Ohr",
+            "porta:gate:energy": "Membran",
+            "porta:gate:fractal": "Membran",
+            "porta:gate:reflect": "Membran",
+            "porta:gate:swirl": "Membran",
+            "porta:gate:temp": "Membran",
+            "porta:gate:tunnel": "Membran",
+            "porta:gate:twist": "Membran",
+            "porta:gate:wave": "Membran",
+            "vehicle:vehicle:grip": "Ritt"
         }
     },
     "reglerBudget": {

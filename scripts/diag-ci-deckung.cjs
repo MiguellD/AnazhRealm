@@ -12,7 +12,7 @@ const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cj
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
-const { taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -428,7 +428,7 @@ function playtestUrteil(docs, skripte) {
 function workflowsLesen() {
     const docs = {};
     for (const f of fs.readdirSync(path.join(root, WORKFLOWS)).sort())
-        if (/\.ya?ml$/.test(f)) docs[f] = yaml.load(fs.readFileSync(path.join(root, WORKFLOWS, f), "utf8"));
+        if (/\.ya?ml$/.test(f)) docs[f] = yaml.load(ausDatei(path.join(root, WORKFLOWS, f)));
     return docs;
 }
 
@@ -647,7 +647,7 @@ function selbsttestKlasse() {
         "g.cjs": 'const { x } = require("./lib/h.cjs");',
         "lib/h.cjs": 'starteBrowser({ art: "linse", frist: 1 });',
         "b.cjs": 'const BILD = process.argv.includes("--bild");\nstarteBrowser({ art: BILD ? "linse" : "null" });',
-        "s.cjs": 'const SELBST = process.argv.includes("--selftest");\nstarteBrowser({ art: SELBST ? "null" : "linse" });',
+        "s.cjs": 'const SELBST = SELBSTTEST;\nstarteBrowser({ art: SELBST ? "null" : "linse" });',
     };
     const lies = (f) => {
         const k = Object.keys(dateien).find((d) => f.replace(/\\/g, "/").endsWith("/scripts/" + d));
@@ -1491,8 +1491,8 @@ async function selbsttestLauf() {
 }
 
 function hauptlauf() {
-    const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
-    const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
+    const doc = yaml.load(ausDatei(path.join(root, DATEI)));
+    const skripte = ausDatei(path.join(root, "package.json"), true).scripts || {};
     const v = urteil(doc);
     v.push(...klassenUrteil(doc, skripte));
     const alleWorkflows = workflowsLesen();
@@ -1502,7 +1502,7 @@ function hauptlauf() {
     v.push(...playtestUrteil(alleWorkflows, skripte));
     const zeitenDatei = path.join(root, ZEITEN);
     const w = fs.existsSync(zeitenDatei)
-        ? waage(doc, JSON.parse(fs.readFileSync(zeitenDatei, "utf8")))
+        ? waage(doc, ausDatei(zeitenDatei, true))
         : { v: [`(T) ZEITEN: ${ZEITEN} fehlt — die Waage hat keine Zeiten`], zeilen: [] };
     v.push(...w.v);
     const jeKlasse = g.zahl.jeKlasse;
@@ -1535,5 +1535,5 @@ function hauptlauf() {
         `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
     );
 }
-if (process.argv.includes("--selftest")) selbsttestLauf();
+if (SELBSTTEST) selbsttestLauf();
 else hauptlauf();

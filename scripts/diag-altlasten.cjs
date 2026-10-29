@@ -15,7 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { scanWarteWand } = require("./lib/welt-boot.cjs");
+const { scanWarteWand, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
@@ -1059,7 +1059,7 @@ function scan(files) {
     const errs = [];
     const root = path.join(__dirname, "..");
     const pruefe = (f, liste) => {
-        const code = stripComments(fs.readFileSync(f, "utf8"));
+        const code = stripComments(ausDatei(f));
         for (const { token, fiel } of liste) {
             let idx = code.indexOf(token);
             if (idx >= 0) {
@@ -1336,7 +1336,7 @@ function scanZwillinge(ersatz = {}) {
     const roh = new Map();
     const lies = (f) => {
         if (f in ersatz) return ersatz[f];
-        if (!roh.has(f)) roh.set(f, fs.readFileSync(path.join(root, f), "utf8"));
+        if (!roh.has(f)) roh.set(f, ausDatei(path.join(root, f)));
         return roh.get(f);
     };
     const code = new Map();
@@ -1383,7 +1383,7 @@ function scanLabBuster() {
     // die Shell-Buster standen bei 18.446 während tetrapoda.js/koerperstudio.js
     // sich bewegten (Cache-Lüge-Klasse). EIN Gesetz: alle ?v= == package.json.
     const root = path.join(__dirname, "..");
-    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+    const version = ausDatei(path.join(root, "package.json"), true).version;
     const errs = [];
     const seiten = [path.join(root, "index.html")];
     for (const w of fs.readdirSync(path.join(root, "worlds"))) {
@@ -1391,7 +1391,7 @@ function scanLabBuster() {
         if (fs.existsSync(idx)) seiten.push(idx);
     }
     for (const idx of seiten) {
-        const src = fs.readFileSync(idx, "utf8");
+        const src = ausDatei(idx);
         const re = /\?v=([0-9.]+)/g;
         let m;
         while ((m = re.exec(src))) {
@@ -1413,7 +1413,7 @@ function scanLabBuster() {
     // von CLAUDE.md ist die Chronik-Spitze — trägt er eine andere Version als
     // package.json, LÜGT die Doku relativ zum Code (die 18.490/18.491-Drift-
     // Klasse). DIESELBE Wand, ein weiterer Träger.
-    const claude = fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8");
+    const claude = ausDatei(path.join(root, "CLAUDE.md"));
     const cm = claude.match(/## Stand \(V([0-9.]+)/);
     if (!cm) errs.push("CLAUDE.md Stand-Kopf nicht gefunden (## Stand (V… — die Doku-Wand braucht den Anker)");
     else if (cm[1] !== version)
@@ -2793,7 +2793,7 @@ function markerDateien(root) {
             if (!/\.c?js$/.test(f) || f === "diag-altlasten.cjs") continue;
             out.push({
                 datei: path.join(dir, f).split(path.sep).join("/"),
-                text: fs.readFileSync(path.join(root, dir, f), "utf8"),
+                text: ausDatei(path.join(root, dir, f)),
             });
         }
     return out;
@@ -3023,7 +3023,7 @@ function ortsName(code, i) {
 // `const X = x, Z = z`, die Blick-Tabelle einer Linse.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
 function messortPaare() {
-    const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));
+    const h = ausDatei(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), true);
     return h.messorte
         .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
         .map((o) => o.spieler)
@@ -3079,20 +3079,20 @@ function wirtsDateien(root, files) {
         const n = path.relative(root, f).split(path.sep).join("/");
         if (gesehen.has(n)) continue;
         gesehen.add(n);
-        aus.push([n, fs.readFileSync(f, "utf8")]);
+        aus.push([n, ausDatei(f)]);
     }
     return aus;
 }
 // die Kapitel des Playtests (scripts/playtest) — die Warte-Wand liest sie mit
 function playtestDateien(root) {
     const d = "scripts/playtest";
-    return fs.readdirSync(path.join(root, d)).filter((f) => /\.cjs$/.test(f)).map((f) => [`${d}/${f}`, fs.readFileSync(path.join(root, d, f), "utf8")]);
+    return fs.readdirSync(path.join(root, d)).filter((f) => /\.cjs$/.test(f)).map((f) => [`${d}/${f}`, ausDatei(path.join(root, d, f))]);
 }
 function gateDateien(root) {
     const aus = [];
     for (const d of ["scripts", "scripts/lib"])
         for (const f of fs.readdirSync(path.join(root, d)))
-            if (/\.cjs$/.test(f)) aus.push([d + "/" + f, fs.readFileSync(path.join(root, d, f), "utf8")]);
+            if (/\.cjs$/.test(f)) aus.push([d + "/" + f, ausDatei(path.join(root, d, f))]);
     return aus;
 }
 
@@ -3138,7 +3138,7 @@ function scanStammLeser(root, ersatz = {}) {
         Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f)))
     );
     for (const rel of dateien) {
-        const src = rel in ersatz ? ersatz[rel] : fs.readFileSync(path.join(root, rel), "utf8");
+        const src = rel in ersatz ? ersatz[rel] : ausDatei(path.join(root, rel));
         // Vorfilter: der Name als Text oder als Regex-Quelle (anazhRealm\.js)
         if (!src.includes(stammLib.ALT) && !src.includes(stammLib.ALT.replace(".", "\\."))) continue;
         let toks = null;
@@ -3194,7 +3194,7 @@ function main() {
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
 
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.
         const stamm = stammLib.text(root);
         const instanzFeuert =
@@ -3328,7 +3328,7 @@ function main() {
         }
         // Die Stufen-Wand muss feuern: buildInstance bildet die Stufe selbst ab, und emitTree
         // verliert die Abbildung (das Labor bekäme wieder ein anderes Rezept als die Welt).
-        const kern = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
+        const kern = ausDatei(path.join(root, "foundry-core.js"));
         const zweite = scanStufenWand(kern.replace("__lod = lod;", "__lod = lod <= 1 ? 1 : lod;"));
         const ohne = scanStufenWand(
             kern
@@ -3507,7 +3507,7 @@ function main() {
         const tmpLinse = path.join(require("os").tmpdir(), "altlasten-selftest-linse.cjs");
         let linsenFeuert = false;
         if (fernwald) {
-            const quelle = fs.readFileSync(fernwald, "utf8");
+            const quelle = ausDatei(fernwald);
             const anker = "                    delete h.__fw;\n                }\n";
             fs.writeFileSync(
                 tmpLinse,
@@ -3842,7 +3842,7 @@ function main() {
         const leserRot = scanStammLeser(root, {
             [leserDatei]:
                 `const fs = require("fs");\nconst path = require("path");\n` +
-                `const s = fs.readFileSync(path.join(__dirname, "..", "${n}"), "utf8");\n` +
+                `const s = ausDatei(path.join(__dirname, "..", "${n}"));\n` +
                 `if (p === "/${n}") x();\n` +
                 `if (/${n.replace(".", "\\.")}/.test(rahmen)) y();\n`,
         });
@@ -3876,7 +3876,7 @@ function main() {
         .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))
-        .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
+        .concat(scanStufenWand(ausDatei(path.join(root, "foundry-core.js"))))
         .concat(scanPortWand(gateDateien(root)))
         .concat(scanWarteWand(gateDateien(root).concat(playtestDateien(root))))
         .concat(scanBootWand(gateDateien(root)))

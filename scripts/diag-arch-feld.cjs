@@ -19,7 +19,7 @@
 // (`werkbank licht --laub feld,feld0,feld90,feld180 --uhr 0.5,0.27,0.05`, gate:licht-weg:echt): je Uhr und Lage im Band 0,9–1,1.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.ARCH_FELD_PORT || 4467);
@@ -37,7 +37,7 @@ function kartenGesetz(buch, zelleF) {
 }
 
 {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         // Das Karten-Gesetz feuert: eine fernere Zelle (40 m, ohne Bedarf) vor der Eichen-Zelle (Rang 15 m) ist überholt,
         // nähere (9 m, 15 m) sind es nicht.
         const F = "fimp:eiche|2";

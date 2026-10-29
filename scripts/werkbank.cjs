@@ -70,7 +70,7 @@
 // save-server (`npm start`, :4312), ohne `--echt` headless an der Weiche des Start-Rezepts (`[linse-gpu]` nennt den Adapter);
 // Zeit-Urteile (band, gpu-bank) zählen nur mit `--echt` unter dem GPU-Schloss. `bild` nimmt py/ly mit `+` über dem Boden.
 "use strict";
-const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE } = require("./lib/welt-boot.cjs");
+const { statikServer, werkbankRuf, werkbankTor, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -119,7 +119,7 @@ const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = AU.standLe
 // DER EINE SCHUSS (W1-n1, abnahme-urteil `schussVon`): das erste Ziel von „a,b:L1,…" trägt den Schuss mit dem Abdruck der
 // Quellen ALLER Ziele, jedes weitere NENNT es; geschrieben wird einmal, nach der Prüfung jeder Zeile
 function sollIstSchreiben(ziele, messung) {
-    const text = fs.readFileSync(SOLL_TAFEL, "utf8");
+    const text = ausDatei(SOLL_TAFEL);
     const t = JSON.parse(text);
     const liste = String(ziele).split(",").filter(Boolean);
     const orte = liste.map((ziel) => [t.klassen.find((x) => x.id === ziel.split(":")[0]), ziel.split(":")[1], ziel]);
@@ -900,7 +900,7 @@ async function starte() {
     // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Neuladen). Steht die Seite schon in ihr
     // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
-        const json = JSON.parse(fs.readFileSync(path.join(root, "spec", ort.welt), "utf8"));
+        const json = ausDatei(path.join("spec", ort.welt), true);
         const slug = json.worldMeta && json.worldMeta.slug;
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
         const steht = () =>
@@ -2423,7 +2423,7 @@ async function starte() {
                             rot.push(
                                 `der Stoff ${b.stoff} (state.${stoff.zustand}) zeichnet in diesem Frame kein Programm (die Linse ist blind)`
                             );
-                        const vor = b.gegen ? SK.wgslKosten(fs.readFileSync(path.resolve(b.gegen), "utf8")) : null;
+                        const vor = b.gegen ? SK.wgslKosten(ausDatei(path.resolve(b.gegen))) : null;
                         if (vor && !vor.einstieg)
                             rot.push(`--gegen ${b.gegen}: kein Fragment-Einstieg (die Linse ist blind)`);
                         if (b.datei)
@@ -3343,7 +3343,7 @@ hauptLauf(async () => {
         // externe Referenz spec/farbe/luft-referenz.json. `--wetter <wort>` misst nur vom Hügel die Sicht im Wetter (Ferne K5),
         // mit `--zug` den Wetter-Zug klar → Wort → klar, die Ausgabe-Luma je Sekunde (Licht K5); Urteil `wetterLuftUrteil`.
         const LL = require("./lib/licht-linsen.cjs");
-        const ref = JSON.parse(fs.readFileSync(path.join(__dirname, "../spec/farbe/luft-referenz.json"), "utf8"));
+        const ref = ausDatei(path.join(__dirname, "../spec/farbe/luft-referenz.json"), true);
         const fehl = LL.luftTiefeSelbsttest(ref);
         selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT");
         if (SELBST) process.exit(0);
@@ -3597,7 +3597,7 @@ hauptLauf(async () => {
             .filter((x) => /\.json$/i.test(x))
             .map((f) => path.resolve(f));
         const laeufe = dateien.map((f) => {
-            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            const j = ausDatei(f, true);
             const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
             return e ? (e.ergebnis && e.ergebnis.messung) || null : j;
         });
@@ -3713,7 +3713,7 @@ hauptLauf(async () => {
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {
-            const { roh, spur } = JSON.parse(fs.readFileSync(opt("--auswerten"), "utf8"));
+            const { roh, spur } = ausDatei(opt("--auswerten"), true);
             const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle"), posten: opt("--posten") });
             console.log(w.tabelle);
             if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
@@ -3803,7 +3803,7 @@ hauptLauf(async () => {
     } else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
-        endeMit(fs.readFileSync(__filename, "utf8").split('"use strict"')[0].trimEnd());
+        endeMit(ausDatei(__filename).split('"use strict"')[0].trimEnd());
     }
     // `fehler` als Zeichenkette ist das Versagen des Befehls; als Liste ist es das Konsolen-Buch der Sitzung (pageerror und
     // WebGPU-Meldungen, auch INFO) — ein Buch urteilt nicht, und `[]` ist wahr: status · wache · stand · lauf endeten immer mit 1.

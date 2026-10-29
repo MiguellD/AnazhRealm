@@ -24,7 +24,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { Worker, isMainThread, parentPort } = require("worker_threads");
-const { hauptLauf, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, selbsttestEnde, ausDatei } = require("./lib/welt-boot.cjs");
 
 const TEIL_BYTES = 160 * 1024;
 
@@ -215,7 +215,7 @@ async function pruefen(dateien) {
             continue;
         }
         const optionen = { ...((await prettier.resolveConfig(abs)) || {}), filepath: abs };
-        const tt = teile(fs.readFileSync(abs, "utf8"));
+        const tt = teile(ausDatei(abs));
         je.set(d, { teile: tt.length, befund: [] });
         for (const teil of tt) auftraege.push({ d, teil, optionen });
     }

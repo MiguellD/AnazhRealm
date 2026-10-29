@@ -41,14 +41,13 @@ const {
     teilAus,
     ROOT,
     hauptLauf,
-    pngDatei,
-} = require("./lib/welt-boot.cjs");
+    pngDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
-const SELBST = process.argv.includes("--selftest");
+const SELBST = SELBSTTEST;
 // --nur=promotion,nahstreu: nur diese Selbsttests (der Hauptlauf fährt immer)
 const NUR = (process.argv.find((a) => a.startsWith("--nur=")) || "--nur=").slice(6).split(",").filter(Boolean);
 // --phasen=lichtung,w4: der Hauptlauf fährt nur diese Phasen (eine gezielte Messung; ohne die Option alle)

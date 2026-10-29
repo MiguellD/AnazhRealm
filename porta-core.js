@@ -102,8 +102,8 @@
       ['VOK','h'],
       ['wMason','Mauerwerk',0,1,0.01,0.0,'',1],['wBraid','Geflecht',0,1,0.01,1.0,'',1],['wMono','Monolith',0,1,0.01,0.0,'',1],['wLace','Filigran',0,1,0.01,0.25,'',1],
       ['DEP','h'],
-      ['orders','Ordnungen',1,9,1,3,'Staffel-Ebenen (Türfreiheit autom.)',2],['depth','Tiefe',0,1,0.01,0.45,'z-Staffelung Rahmen',2],['wave','Welle',0,1,0.01,0.45,'Oberflächen-Verformung (z)',2],['tunnel','Innentiefe',0,1,0.01,0.6,'Raymarch-Tiefe',2],['fractal','Fraktal',0,1,0.01,0.6,'Innen-Selbstähnlichkeit',2],['twist','Drall',0,1,0.01,0.4,'Drall',2],
-      ['realm','Innenwelt',0,1,0.01,0.0,'Wurmloch↔Kristall',2],['swirl','Sog',0,1,0.01,0.3,'Gravitationslinse',2],['reflect','Spiegel',0,1,0.01,0.5,'Oberflächen-Spiegelung',2],
+      ['orders','Ordnungen',1,9,1,3,'Staffel-Ebenen (Türfreiheit autom.)',2],['depth','Tiefe',0,1,0.01,0.45,'z-Staffelung Rahmen',2],['wave','Welle',0,1,0.01,0.45,'Oberflächen-Verformung (z)',2],['tunnel','Innentiefe',0,1,0.01,0.6,'Tiefe des Ziels (Stellvertreter-Kugel)',2],['fractal','Fraktal',0,1,0.01,0.6,'Selbstähnlichkeit der Welle',2],['twist','Drall',0,1,0.01,0.4,'Drall der Welle',2],
+      ['realm','Innenwelt',0,1,0.01,0.0,'Wurmloch↔Kristall',2],['swirl','Sog',0,1,0.01,0.3,'Gravitationslinse',2],['reflect','Spiegel',0,1,0.01,0.5,'Glanz des Films',2],
       ['FORM','h'],
       ['k','Spitze',1.0,3.4,0.01,2.6,''],['rise','Stich',0.55,1.25,0.01,1.0,''],['ogee','Ogee',0,1,0.01,0,''],['horse','Hufeisen',0,1,0.01,0,''],['aspect','Schlank',1.4,2.8,0.01,2.4,''],['mass','Dicke',0,1,0.01,0.7,''],
       ['MAT','h'],
@@ -1078,7 +1078,10 @@
         waveDepthK: [0.65, 0.35], // * uWaveDepth*(0.65+0.35*wave)
         waveDepthMin: 0.05,
         waveDepthZ: 0.1, // uWaveDepth = max(0.05, zFace*0.10)
-        stepK: [0.06, 0.2], // uStep = 0.06 + tunnel*0.20
+        // DIE REGLER DER PASSAGE IM GESETZ (studios.K1, die Membran-Zeilen seit D8 ohne Leser): Drall und Fraktal tragen die Welle,
+        // Innentiefe und Spiegel den Film (`film.tiefe`, `film.spiegel`) — je Faktor = k[0] + k[1] · Regler, die Mitte 0,5 ist 1
+        drall: [0.5, 1.0], // twist = a·twistK·(drall[0] + drall[1]·twist) + swirl/(r + swirlR0)
+        fraktal: [0.5, 1.0], // micro · (fraktal[0] + fraktal[1]·fractal): die Selbstähnlichkeit der Oberfläche
         rimAyK: 0.52, // uRimAy = (apexY-baseY)*0.52
         swirlK: 0.5, // uSwirl = swirl*0.5
         openK: [0.4, 0.6], // uOpen = clamp(0.4+energy*0.6, 0, 1)
@@ -1105,6 +1108,10 @@
             gewichtMax: 0.55,
             act: [0.65, 0.35],
             glanz: [0.8, 0.9, 0.15],
+            // die Innentiefe (tunnel): der Radius der Stellvertreter-Kugel × (tiefe[0] + tiefe[1]·tunnel) — das Ziel liegt tiefer
+            tiefe: [0.5, 1.0],
+            // der Spiegel (reflect): der Glanz des Films × (spiegel[0] + spiegel[1]·reflect)
+            spiegel: [0.5, 1.0],
             // die Dispersion: der Gangunterschied in Wellenlängen je Farbe, λ_R / λ (650 / 650, 650 / 532, 650 / 450 nm)
             welle: [1.0, 1.22, 1.44],
             // die Buntheit der Bänder um ihre Helligkeit (1 = die Palette, mehr = Farbe statt Licht)
@@ -1207,16 +1214,16 @@
             springX: Math.max(Math.abs(left), Math.abs(right)),
             rimAx: Math.abs(D.leftSpringX),
             rimAy: (D.apexY - D.baseY) * MG.rimAyK,
-            step: MG.stepK[0] + p.tunnel * MG.stepK[1],
+            tiefe: MG.film.tiefe[0] + p.tunnel * MG.film.tiefe[1],
+            drall: MG.drall[0] + p.twist * MG.drall[1],
+            fraktal: MG.fraktal[0] + p.fractal * MG.fraktal[1],
+            spiegel: MG.film.spiegel[0] + p.reflect * MG.film.spiegel[1],
             waveDepth: Math.max(MG.waveDepthMin, D.zFace * MG.waveDepthZ),
             swirl: p.swirl * MG.swirlK,
             open: clamp(MG.openK[0] + p.energy * MG.openK[1], 0, 1),
             wave: clamp(p.wave, 0, 1),
-            twist: p.twist,
-            fractal: p.fractal,
             energy: p.energy,
             realm: p.realm,
-            reflect: p.reflect,
             glow: p.glow,
             profil: profil,
             pal: membranPalette(p),

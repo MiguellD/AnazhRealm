@@ -32,7 +32,7 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const { pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
@@ -42,7 +42,7 @@ function ladeKontext(file) {
     const ctx = vm.createContext({ console: { log() {}, warn() {}, error() {} }, Math });
     ctx.self = ctx;
     ctx.globalThis = ctx;
-    vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), ctx, { timeout: 20000, filename: file });
+    vm.runInContext(ausDatei(path.join(root, file)), ctx, { timeout: 20000, filename: file });
     return ctx;
 }
 function loadCore(file, ns) {
@@ -128,7 +128,7 @@ function validateDaten(N, spec) {
 }
 
 (async function main() {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Daten-Vertrags-Linse feuert ===");
         const N = loadCore(CORES[0].file, CORES[0].ns);
         // V1: Schema-Verletzung (bpm 0 + kaputte dna) wird erkannt.
@@ -156,7 +156,7 @@ function validateDaten(N, spec) {
         // V4: ein Kern, der beim Laden eine Transzendente ruft (der Täter: Math.sin vor dem Kern-Code), erscheint im
         // Nenner der Plattform-Probe — die transzendenten-freie Zeile v7 reißt beim Namen.
         const { plattformProbe } = require("./lib/plattform-probe.cjs");
-        const quelle = fs.readFileSync(path.join(root, CORES[0].file), "utf8");
+        const quelle = ausDatei(path.join(root, CORES[0].file));
         const PPt = await plattformProbe({
             laden: () => {
                 const ctx = vm.createContext({ console: { log() {}, warn() {}, error() {} }, Math });
@@ -194,7 +194,7 @@ function validateDaten(N, spec) {
         fs.writeFileSync(goldenFile, JSON.stringify(prints, null, 4) + "\n");
         console.log(`\n  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
     }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
+    const golden = ausDatei(goldenFile, true);
     for (const spec of CORES) {
         check(
             `GOLDEN byte-treu: ${spec.file}`,

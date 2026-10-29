@@ -7,8 +7,7 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser } = require("./welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, starteBrowser, ausDatei } = require("./welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
@@ -22,7 +21,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
 // kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
 // (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
-const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
+const CORES_MANIFEST = ausDatei(path.join(ROOT, "cores.manifest.json"), true);
 const WORKER_SCRIPTS = (() => {
     const rel = [];
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);
@@ -396,7 +395,7 @@ function kanalImVm(quellen = {}) {
         const f = p.replace(/^\//, "");
         const src = Object.prototype.hasOwnProperty.call(quellen, f)
             ? quellen[f]
-            : fs.readFileSync(path.join(ROOT, f), "utf8");
+            : ausDatei(path.join(ROOT, f));
         vm.runInContext(src, ctx, { filename: f, timeout: 60000 });
     }
     return (msg) => {

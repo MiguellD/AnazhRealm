@@ -16,13 +16,13 @@
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
 // je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten.
 const ORT = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort;
 const PORT = Number(process.env.ANALOG_NAH_PORT || 4477);
-const SELBST = process.argv.includes("--selftest");
+const SELBST = SELBSTTEST;
 const GRENZE_E = 1500; // Takte bis zum ersten satzfreien Zustand nach dem Boot
 const RUHE = 100; // Takte, in denen eingeschwungen kein Satz auftauchen darf
 const GRENZE_T = 120; // Takte nach der Rückkehr bis 0

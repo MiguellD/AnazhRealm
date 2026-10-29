@@ -18,7 +18,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -201,7 +201,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== KAMERA-TREUE — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);

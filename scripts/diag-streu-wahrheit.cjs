@@ -23,13 +23,13 @@
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const fs = require("fs");
+const { ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
-const PHYTO = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
-const KERN = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
+const PHYTO = ausDatei(path.join(root, "phyto-core.js"));
+const KERN = ausDatei(path.join(root, "foundry-core.js"));
 const vm = require("vm");
 
 // Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
@@ -186,7 +186,7 @@ function pruefe(o = {}) {
 }
 
 function main() {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         const echt = pruefe();
         // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
         const codec = (bruch) => { const c = Object.assign({}, codecAus(PHYTO)); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };

@@ -10,7 +10,7 @@
 //   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
-const { selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
@@ -66,7 +66,7 @@ function pruefe(o) {
 const WELT = (ph) => A.prototype._saisonMul.call(null, ph, {});
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== SAISON-FARBE — SELBST-TEST: die Linse feuert auf injizierte Brüche ===");
     const roh = (o, wer) => pruefe(Object.assign({ welt: WELT }, o)).find((g) => g[0].startsWith(wer))[1] === false;
     check("Selbst-Test 1: Welt ohne Phasen-Versatz (+0,125) → F1 rot", roh({ welt: (ph) => WELT(ph + 0.125) }, "F1"));

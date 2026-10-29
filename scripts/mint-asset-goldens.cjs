@@ -9,7 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -55,12 +55,12 @@ const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;
 // render-config) neu einfrieren, jede Geometrie-Golden bleibt unberührt (ein neues Rezept im Buch ändert den Umschlag,
 // nicht die Bytes der Bäume). Das Manifest trägt die neuen Hashes der drei.
 async function nurDaten() {
-    const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8"));
+    const manifest = ausDatei(path.join(DIR, "manifest.json"), true);
     await runWithWorker(PORT, async ({ getData }) => {
         const bookReply = await getData("get-book");
         for (const [field, key] of DATEN_KANAELE) {
             const json = JSON.stringify(bookReply[field]);
-            const alt = fs.readFileSync(path.join(DIR, key + ".json"), "utf8").trim();
+            const alt = ausDatei(path.join(DIR, key + ".json")).trim();
             fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");
             manifest.files[key + ".json"] = crypto.createHash("sha256").update(json).digest("hex");
             console.log(`  ${alt === json ? "=" : "✔ neu"} ${key}.json`);

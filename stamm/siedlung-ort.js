@@ -134,7 +134,8 @@ class AnazhRealm_siedlung_ort {
             u,
             a: new T.Vector4(MU.centerY, MU.rimAx, MU.rimAy, MU.swirl),
             b: new T.Vector4(MU.wave, MU.left, MU.spanW, MU.baseY),
-            c: new T.Vector4(MU.height, MU.step, MU.fractal, MU.twist),
+            c: new T.Vector4(MU.height, MU.tiefe, MU.fraktal, MU.drall),
+            spiegel: MU.spiegel,
             zeile: this._torProfilZeile(MG.profilW, MU.profil),
             ziel,
             dreh: Number.isFinite(dreh) ? dreh : 0,
@@ -226,7 +227,8 @@ class AnazhRealm_siedlung_ort {
         const waveDepth = W("u.waveDepth.value");
         const ga = W("a", "vec4"); // centerY · rimAx · rimAy · swirl
         const gb = W("b", "vec4"); // wave · left · spanW · baseY
-        const gc = W("c", "vec4"); // height · step · fractal · twist
+        const gc = W("c", "vec4"); // height · tiefe · fraktal · drall (die Regler der Passage im Gesetz, studios.K1)
+        const spiegelK = W("spiegel");
         const zeile = W("zeile");
         const zielZeile = W("ziel");
         const dreh = W("dreh");
@@ -276,7 +278,10 @@ class AnazhRealm_siedlung_ort {
                 )
             );
             const rr = TSL.clamp(r.div(Rb), F(0.0), F(1.4));
-            const twist = a.mul(F(MG.twistK)).add(ga.w.div(r.add(F(MG.swirlR0))));
+            const twist = a
+                .mul(F(MG.twistK))
+                .mul(gc.w)
+                .add(ga.w.div(r.add(F(MG.swirlR0))));
             const om = t.mul(F(MG.om));
             const outw = TSL.sin(rr.mul(F(MG.kk)).sub(om).add(twist));
             const refl = TSL.sin(F(2.0).sub(rr).mul(F(MG.kk)).sub(om).add(twist));
@@ -284,10 +289,9 @@ class AnazhRealm_siedlung_ort {
             const pierce = TSL.sin(t.mul(F(MG.pierce[0])))
                 .mul(TSL.exp(rr.mul(rr).negate().mul(F(MG.pierce[1]))))
                 .mul(F(MG.pierce[2]));
-            const micro = fbmN(
-                c.mul(F(MG.micro[0])).sub(TSL.vec2(t.mul(F(MG.micro[1])), t.mul(F(MG.micro[1])))),
-                3
-            ).mul(F(MG.micro[2]));
+            const micro = fbmN(c.mul(F(MG.micro[0])).sub(TSL.vec2(t.mul(F(MG.micro[1])), t.mul(F(MG.micro[1])))), 3)
+                .mul(F(MG.micro[2]))
+                .mul(gc.z);
             const h = TSL.clamp(wave.mul(F(MG.hGain[0])).add(pierce).add(micro).mul(F(MG.hGain[1])), F(-1.0), F(1.0));
             return h.mul(waveDepth).mul(F(MG.waveDepthK[0]).add(gb.x.mul(F(MG.waveDepthK[1]))));
         };
@@ -318,7 +322,7 @@ class AnazhRealm_siedlung_ort {
         // Die Zahlen des Films liest der Graph im Gesetz (`MEMBRAN_GESETZ.film`, porta-core) — dieselben wie das Labor.
         const FI = MG.film;
         const center3 = TSL.vec3(0.0, ga.x, 0.0);
-        const R = gc.x.mul(FI.kugel);
+        const R = gc.x.mul(FI.kugel).mul(gc.y);
         const oc = vLocal.sub(center3);
         const bq = TSL.dot(oc, rd);
         const cq = TSL.dot(oc, oc).sub(R.mul(R));
@@ -379,7 +383,7 @@ class AnazhRealm_siedlung_ort {
         const sr = TSL.sin(dreh);
         const RfW = TSL.vec3(Rf.x.mul(cr).add(Rf.z.mul(sr)), Rf.y, Rf.z.mul(cr).sub(Rf.x.mul(sr)));
         const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb;
-        const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1]));
+        const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1])).mul(spiegelK);
         const col = TSL.mix(ziel, glanz, filmW);
         // `ohneFilm`: dieselbe Öffnung ohne den Film — nur das Ziel (die Linse milchweiss: Milch ist, was der Film dem Ziel
         // hinzufügt; `__membranOhneFilm` in scripts/lib/ausgabe-aufnahme.cjs)

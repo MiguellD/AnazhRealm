@@ -14,6 +14,7 @@
 // mit `wenn` gilt nur, wenn die Messung den Teil trägt (das Ziel ist benannt). Der Satz „messung" (ein Mess-Frame, kein
 // Beweisbild: 32×18 Takt-Bilder, Luma-Proben der Post-Kette) prüft nur Stand, Bühne und Gerät — er steht in der Zeile.
 "use strict";
+const { ausDatei } = require("./welt-boot.cjs");
 
 const zlib = require("zlib");
 
@@ -334,9 +335,8 @@ function abnahmeSelbsttest(fixtureDir) {
     if (abnahmeUrteil(ms, SCHWELLEN).ok) v.push("messung: fehlender Stand ist grün");
     // DIE FIXTURES: die Beweisbilder vom 13.10. — jede fällt ROT mit ihrem erwarteten Grund
     if (fixtureDir) {
-        const fs = require("fs");
         const path = require("path");
-        const F = JSON.parse(fs.readFileSync(path.join(fixtureDir, "faelle.json"), "utf8"));
+        const F = ausDatei(path.join(fixtureDir, "faelle.json"), true);
         if (!F.faelle || F.faelle.length < 4) v.push(`Fixtures: ${F.faelle ? F.faelle.length : 0} statt 4 Bilder`);
         for (const f of F.faelle || []) {
             const u = abnahmeUrteil(fixtureMessung(f, fixtureDir), SCHWELLEN);
@@ -1517,7 +1517,7 @@ function standLeser(root) {
         gitStand,
         stammVersion: () => {
             const m = /AnazhRealm\.VERSION = "([^"]+)"/.exec(
-                fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")
+                ausDatei(path.join(root, require("./stamm.cjs").versionsDatei(root)))
             );
             return m ? m[1] : null;
         },
@@ -1526,11 +1526,11 @@ function standLeser(root) {
         // (cores.manifest.json) und JEDER Stamm-Zone (K63-n4, der Stand über den Inhalt: die Liste der Stamm-Tags,
         // scripts/lib/stamm.cjs `dateien`) — jede Klasse und jede Zeile prüft daraus die Quellen, die sie trägt
         kernStand: () => {
-            const m = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
+            const m = ausDatei(path.join(root, "cores.manifest.json"), true);
             const quellen = {};
             for (const c of m) for (const d of c.scripts) quellen[d] = pruefsumme(d);
             for (const d of require("./stamm.cjs").dateien(root)) quellen[d] = pruefsumme(d);
-            const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8"));
+            const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(ausDatei(path.join(root, require("./stamm.cjs").versionsDatei(root))));
             return { version: v ? v[1] : null, sha: gitStand(), quellen };
         },
         // DIE QUELLE DES URTEILS (K63-n7, `sollTafelUrteil(tafel, q)`): Haushalt, Datei-Leser, Prüfsumme und die Symbole der Kerne
@@ -1541,11 +1541,11 @@ function standLeser(root) {
             const vm = require("vm");
             return {
                 version: (/AnazhRealm\.VERSION = "([^"]+)"/.exec(
-                    fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")
+                    ausDatei(path.join(root, require("./stamm.cjs").versionsDatei(root)))
                 ) || [])[1],
                 pruefsumme,
-                haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),
-                lesen: (d) => (fs.existsSync(path.join(root, d)) ? fs.readFileSync(path.join(root, d), "utf8") : null),
+                haushalt: ausDatei(path.join(root, "spec", "profiband", "haushalt.json"), true),
+                lesen: (d) => (fs.existsSync(path.join(root, d)) ? ausDatei(path.join(root, d)) : null),
                 kern: (d, sym) => {
                     if (!(d in kerne)) {
                         const sb = { console, Math };
@@ -1554,7 +1554,7 @@ function standLeser(root) {
                         sb.globalThis = sb;
                         vm.createContext(sb);
                         try {
-                            vm.runInContext(fs.readFileSync(path.join(root, d), "utf8"), sb, { filename: d });
+                            vm.runInContext(ausDatei(path.join(root, d)), sb, { filename: d });
                         } catch {}
                         kerne[d] = sb;
                     }
@@ -1568,7 +1568,7 @@ function standLeser(root) {
     };
     function pruefsumme(d) {
         const p = path.join(root, d);
-        return fs.existsSync(p) ? codeAbdruck(fs.readFileSync(p, "utf8"), d) : null;
+        return fs.existsSync(p) ? codeAbdruck(ausDatei(p), d) : null;
     }
 }
 

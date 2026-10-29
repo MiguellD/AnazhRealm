@@ -13,9 +13,7 @@
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.NERV_LABS_PORT || 4437);
 const server = statikServer();
@@ -40,9 +38,9 @@ function staticLaws(manifestSrc) {
 }
 
 hauptLauf(async () => {
-    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
+    const manifestSrc = ausDatei("cores.manifest.json");
 
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Labs-Linse feuert ===");
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "klang"));
         const s1 = staticLaws(brokenManifest).find((l) => l[0].includes("klang-Kern"));

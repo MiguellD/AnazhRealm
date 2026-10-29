@@ -27,12 +27,12 @@
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 // Port über TAKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 
 const PORT = Number(process.env.TAKT_PORT || 4563);
-const SELBST = process.argv.includes("--selftest");
+const SELBST = SELBSTTEST;
 
 hauptLauf(async () => {
     const realm = await PK.bootRealm(PORT);

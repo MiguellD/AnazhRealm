@@ -7,8 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt } = require("./lib/welt-boot.cjs"); // prettier-ignore
-const fs = require("fs");
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, ausDatei } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
@@ -22,7 +21,7 @@ const taeterVon = (p) => TAETER[ORT ? `${p}@${ORT}` : p];
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
 const RAMPE = JSON.parse(
-    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
+    ausDatei("spec/pruefbuehne/stationen.json")
 ).stationen.find((s) => s.id === "s2-hang30");
 if (!RAMPE || !Number.isFinite(RAMPE.winkel))
     throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
@@ -149,7 +148,7 @@ async function headless(laeufe) {
         };
         for (const [p, [feld, zusatz, welt]] of Object.entries(FREMD)) {
             if (!mit(p).length) continue;
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            const json = ausDatei(BUEHNE_DATEI, true);
             welt(json);
             await zeit(p, () => fremdeWelt(json));
             for (const [l, li] of mit(p)) {

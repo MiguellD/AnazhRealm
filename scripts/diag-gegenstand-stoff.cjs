@@ -36,7 +36,7 @@
 // Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
 // Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
 "use strict";
-const { urteilEnde, studioKern } = require("./lib/welt-boot.cjs");
+const { urteilEnde, studioKern, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 const SC = studioKern("schmiede-core.js", "__schmiedeCore");
@@ -376,7 +376,7 @@ if (process.argv.includes("--tafel")) {
 }
 
 const fehlSelbst = selbstTest();
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     urteilEnde(fehlSelbst.length, "❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "), "✅ SELBST-TEST GRÜN — die Stoff-Linse feuert auf Ton, rohen Reifen, Lack ohne Lackschicht, blinde Scheibe, Tönung, Namenlose und fehlenden Transport.");
 }
 const befunde = alles();

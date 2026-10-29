@@ -1057,6 +1057,14 @@ const hauptLauf = (rumpf, zuletzt) =>
         if (zuletzt) zuletzt();
         process.exit(2);
     });
+// DER EINE DATEI-LESER einer Linse: `ausDatei(p)` der Text, `ausDatei(p, true)` sein JSON — `p` ab der Wurzel des Baums oder
+// absolut (bis zur Decke w3w-studios las jede Linse in eigenen Zeilen: JSON.parse(fs.readFileSync(…, "utf8")), 86-mal)
+const ausDatei = (p, json) => {
+    const t = fs.readFileSync(path.resolve(ROOT, p), "utf8");
+    return json ? JSON.parse(t) : t;
+};
+// DER EINE SCHALTER des Selbsttests jeder Linse (`--selftest`; bis zur Decke w3w-studios las ihn jede Linse selbst, 76-mal)
+const SELBSTTEST = process.argv.includes("--selftest");
 // DER EINE ARGUMENT-LESER einer Linse: `argOpt("--port", 4490)` — der Wert hinter dem Schalter, fehlt er (oder folgt ein
 // Schalter), die Vorgabe
 const argOpt = (k, d) => {
@@ -1321,6 +1329,8 @@ module.exports = {
     hauptLauf,
     urteilEnde,
     argOpt,
+    ausDatei,
+    SELBSTTEST,
     waitFor,
     zweiImMesh,
     booteWelt,

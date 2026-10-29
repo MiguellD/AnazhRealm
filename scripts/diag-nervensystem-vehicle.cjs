@@ -21,7 +21,7 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -51,7 +51,7 @@ function staticLaws(q) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const a3 = staticLaws((t) =>

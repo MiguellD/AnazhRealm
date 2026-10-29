@@ -27,7 +27,7 @@
 const fs = require("fs");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");
@@ -72,7 +72,7 @@ hauptLauf(async () => {
         }
         const idxFile = path.join(OUT_DIR, "index.json");
         if (fs.existsSync(idxFile)) {
-            const idx = JSON.parse(fs.readFileSync(idxFile, "utf8"));
+            const idx = ausDatei(idxFile, true);
             if (idx.stamp && idx.stamp !== stamp) {
                 console.error("❌ --verify: Stempel-Mismatch — die Packs sind STALE (Generator-Quelle editiert).");
                 console.error(`   Pack-Index: ${String(idx.stamp).slice(0, 16)}… · live: ${stamp.slice(0, 16)}…`);

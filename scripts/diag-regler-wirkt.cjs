@@ -16,6 +16,9 @@
 // Ein neuer toter Regler ist rot (beim Namen); ein geheilter ist ebenfalls rot, bis seine Zeile im selben Commit
 // fällt (die Zahl sinkt, sie wächst nie still zurück). Das Soll steht daneben (Synthese W4: „Regler-wirkt-Probe grün"
 // = 0 tote Regler).
+// Die GESETZ-WERTE (B4 `uniform`, studios.K1): ihr Bau bzw. Guss bewegt sich nie — der Byte-Beweis jeder Zeile steht in
+// `reglerGesetz` (gate:studio-vertrag liest ihn), eine Zeile ohne ihn oder ein Eintrag, dessen Bau sich bewegt, ist rot —, sie
+// wirken an ihrem Leser der Welt (`leserMessen`: die Membran des Tors, der Ritt des Wagens, das Ohr des Klangs).
 //
 // DIE STUFEN (pipeline.K3, unten `stufenMessen`): jede Stufe jeder Budget-Art, jedes Rezept, jeder Regler-Rand über die
 // echte Brücke gegen die Budget-Zeile (Ratsche reglerBudget mit Staffel) und die Reduktion je Art (L1/L0, L2/L0).
@@ -41,8 +44,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
 const PORT = Number(process.env.REGLER_WIRKT_PORT || 4561);
@@ -66,20 +68,24 @@ function vergleichTeil(jetzt, ratsche, ids, teil = TEIL) {
 }
 // Der Kern je Art, wie die Brücke die Tabellen sammelt (`__mergeParamsMap`: die Zweit-Kerne in Manifest-Reihenfolge,
 // first-wins, danach der Primär-Kern): jeder Zweit-Kern mit Namensraum wird THREE-frei im vm gelesen (nur seine
-// PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto).
+// PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto). Dazu `gesetz`: je Art die Zeilen, die der Kern zum
+// GESETZ-WERT erklärt (B4 `uniform: true`, die Brücke reicht das Feld nicht durch) — ihr Kanal ist der Leser der Welt.
 function kernVonArt() {
     const vm = require("vm");
     const aus = {};
-    const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
+    const gesetz = {};
+    Object.defineProperty(aus, "gesetz", { value: gesetz });
+    const manifest = ausDatei("cores.manifest.json", true);
     for (const c of manifest) {
         if (!c || typeof c.ns !== "string" || !c.ns) continue;
         const ctx = { console, Math, JSON, Date };
         ctx.self = ctx;
         ctx.globalThis = ctx;
         vm.createContext(ctx);
-        for (const s of c.scripts) vm.runInContext(fs.readFileSync(path.join(ROOT, s), "utf8"), ctx, { filename: s });
+        for (const s of c.scripts) vm.runInContext(ausDatei(s), ctx, { filename: s });
         const pbk = (ctx[c.ns] && ctx[c.ns].PARAMS_BY_KIND) || {};
         for (const art of Object.keys(pbk)) if (!(art in aus)) aus[art] = c.id;
+        for (const art of Object.keys(pbk)) for (const d of pbk[art]) if (d.uniform === true) (gesetz[art] ||= []).push(d.id);
     }
     return aus;
     }
@@ -93,7 +99,7 @@ function kernVonArt() {
 // Vertex-Puffer, Index, Stoff-Farbe). Gebrochen ist ein Guss, der wirft, ERROR meldet, den Not-Körper
 // (`__kaltPlatzhalter`) statt der Gestalt liefert, leer bleibt oder NaN trägt; ein Grund-Guss, der zweimal verschieden
 // ausfällt, rauscht (beides rot). Eine Ofen-Art ohne Gestalt-Bäcker (`BAKERS_BY_KIND[art]` fehlt, Vertrag §8.4) gießt
-// nichts: ihre Regler sind tot mit diesem Grund (Ratsche).
+// nichts: ihre Zeilen hört der Leser der Welt (`leserMessen`, das Ohr).
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
@@ -266,17 +272,17 @@ function ofenMessen(page, opts) {
                 r._wsOvenMemo = null;
                 // Die Werkstatt entscheidet den Kanal: undefined = keine Ofen-Domäne → der Foundry-Pfad (build-asset).
                 if (r._workshopOvenPreview(f.recipes[rezepte[0]], rezepte[0], null, lod) === undefined) continue;
-                const baecker = typeof B[art] === "function";
-                aus.arten[art] = { lod, baecker, rezepte: rezepte.length };
-                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], keinGuss: false, gusse: 0 }));
+                aus.arten[art] = { lod, baecker: typeof B[art] === "function", rezepte: rezepte.length };
+                // eine Ofen-Art ohne Gestalt-Bäcker (Vertrag §8.4: der Klang) gießt nichts — ihre Zeilen urteilt ihr Leser (`leserMessen`)
+                if (!aus.arten[art].baecker) continue;
+                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], gusse: 0 }));
                 for (const p of rezepte) {
                     const offen = zeilen.filter((z) => !z.wirkt);
                     if (!offen.length) break;
                     const b0 = guss(p, lod, null);
                     const bB = bruch(b0);
                     if (bB) {
-                        if (!b0.teile && !b0.wurf && !b0.fehler.length && !baecker) offen.forEach((z) => (z.keinGuss = true));
-                        else offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
+                        offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
                         continue;
                     }
                     for (const z of offen)
@@ -306,6 +312,173 @@ function ofenMessen(page, opts) {
         return aus;
     }, opts || {});
     }
+// ── DIE LESER DER GESETZ-WERTE (studios.K1 „jeder Griff wirkt sichtbar oder hörbar"). Eine Zeile `uniform: true` bewegt kein
+// Bau-Byte (Vertrag B4): sie wirkt, wo die Welt sie liest — die Linse misst DORT, im echten Stamm, mit dem Stempel am Eintrag
+// bzw. der Prägung im Speicher der Werkstatt (`ws.studioOv`), wie ein Werk der Welt ihn trägt, was Bild und Ohr erreicht:
+//   Membran (gate)    der Stoff des Welt-Graphen (`_torGesetzFor` → `_membranMaterialFor` → `userData.tor`); gezählt nur die
+//                     Komponenten, die `_membranGraph` liest — der Graph wird von Farbe, Lage und Deckkraft aus abgeschritten,
+//                     jede Referenz auf `userData.tor.*` mit ihrem Swizzle. Ein Wert, den niemand liest, wirkt nie (bis
+//                     studios.K1 trugen tunnel, fractal, twist und reflect Zahlen in den Stoff, die kein Knoten las);
+//   Ritt (vehicle)    der Fahr-Satz des Werks (`_vehicleProfile` → `_fahrSatz`) im Fahr-Schritt des Kerns: 2 s Gas, dann 2 s
+//                     Gas und volle Lenkung auf ebenem Grund — Weg, Gier und Quer-Geschwindigkeit;
+//   Ohr (klang)       die Lofi-Kette der Welt (`_buildLofiLayer`; Akkord · Melodie · Bass · Groove · Raum aus
+//                     `_klangStudioPreset`) in einem OfflineAudioContext, OHR_SEK Sekunden, ihr Spektrogramm gegen den Grund-
+//                     Klang: hörbar ab KLANG_SCHWELLE relativer Abstand; der Grund zweimal muss gleich klingen (sonst rauscht er).
+// Je Art die Rezepte der Reihe nach, bis die Zeile wirkt. Täter (Selbsttest): `ohneStempel` — jeder Leser verliert den
+// Stempel bzw. die Prägung (`_artifactStudioOv`, `_studioPraegung`) → jede Zeile tot; `blind` — die Linse liest den Graphen
+// nicht (kein Wert gilt als gelesen) → jede Membran-Zeile tot.
+const KLANG_SCHWELLE = 0.02;
+const OHR_SEK = 6;
+function leserMessen(page, opts) {
+    return page.evaluate(
+        async (o) => {
+            const f = r._foundry;
+            const ws = r._ensureWorkshopState();
+            const KP = AnazhRealm.KIND_POLICY;
+            const vc = AnazhRealm._fahrSchrittGesetz().vc;
+            const strom = (s) => () => {
+                s = (s + 0x6d2b79f5) >>> 0;
+                let t = Math.imul(s ^ (s >>> 15), s | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            const TRIG = [Math.cos, Math.sin].map((fn) => Float64Array.from({ length: 65536 }, (_, k) => fn((2 * Math.PI * (2 + 8 * (k >> 10)) * (k & 1023)) / 1024)));
+            const tor = (p, ov) => r._membranMaterialFor(r._torGesetzFor({ type: KP.gate.prefix + p, studioOv: ov }), 0, 0).mat.userData.tor;
+            // was der Graph liest: Pfad.Komponente je Referenz auf `material.userData.tor.*`
+            const liest = new Set();
+            const gesehen = new Set();
+            const gehe = (n) => {
+                if (!n || !n.isNode || gesehen.has(n)) return;
+                gesehen.add(n);
+                for (const k of n.getChildren()) {
+                    const pf = /^material\.userData\.tor\.(\w+)$/.exec(k.property || "");
+                    if (pf) for (const c of n.isSplitNode ? n.components : "xyzw") liest.add(pf[1] + "." + c);
+                    gehe(k);
+                }
+            };
+            const kanal = {
+                gate: (p, ov) => {
+                    const u = tor(p, ov);
+                    if (!gesehen.size && o.taeter !== "blind") {
+                        const G = r._membranGraph(r._torGesetzFor({ type: KP.gate.prefix + p }).gesetz);
+                        [G.colorNode, G.positionNode, G.opacityNode].forEach(gehe);
+                    }
+                    const flach = [];
+                    for (const k of Object.keys(u))
+                        for (const c of "xyzw") {
+                            const v = typeof u[k] === "number" ? (c === "x" ? u[k] : undefined) : u[k] && u[k][c];
+                            if (typeof v === "number" && liest.has(k + "." + c)) flach.push(k + "." + c + "=" + v);
+                        }
+                    return flach.join(",");
+                },
+                vehicle: (p, ov) => {
+                    const e = { type: KP.vehicle.prefix + p, studioOv: ov, position: { x: 0, y: 0, z: 0 }, scale: 1, id: "regler-ritt" };
+                    const G = r._fahrSatz(e, r._vehicleProfile(e));
+                    if (!G) return null;
+                    const z = vc.fahrZustand(0, 0, 0);
+                    for (let i = 0; i < 240; i++) vc.fahrSchritt(z, { throttle: 1, brake: 0, steer: i < 120 ? 0 : 1, hand: false }, G, () => 0, 1 / 60);
+                    return [z.x, z.z, z.yaw, z.vlat, z.vlong].map((v) => v.toFixed(4)).join(",");
+                },
+                klang: async (p, ov) => {
+                    const s = r.state.symphony;
+                    const alt = [s.ctx, s.lofi, s.enabled, Math.random, r.state.klangPreset, ws.studioOv[p]];
+                    const ctx = new OfflineAudioContext(1, 22050 * o.sek, 22050);
+                    Math.random = strom(7);
+                    r.state.klangPreset = p;
+                    if (ov) ws.studioOv[p] = ov;
+                    else delete ws.studioOv[p];
+                    try {
+                        Object.assign(s, { ctx, enabled: true, lofi: r._buildLofiLayer(ctx, ctx.destination) });
+                        const dur = r._lofiChordDurationMs() / 1000;
+                        for (let t = 0.05, g = s.lofi.degree; t < o.sek; t += dur, g = r._lofiNextDegree(g)) {
+                            r._lofiPlayChord(r._lofiChordFromDegree(g), t);
+                            r._lofiPlayMelody(g, dur, t);
+                            r._lofiPlayBass(g, dur, t);
+                            r._lofiPlayGroove(dur, t);
+                            r._lofiRaum(dur);
+                        }
+                        const x = (await ctx.startRendering()).getChannelData(0);
+                        // das Spektrogramm: je 1024er-Fenster der Betrag in 64 Bändern (eine DFT je Band-Mitte)
+                        const bild = [];
+                        for (let a = 0; a + 1024 <= x.length; a += 1024)
+                            for (let b = 0; b < 64; b++) {
+                                let re = 0,
+                                    im = 0;
+                                for (let i = 0, k = b * 1024; i < 1024; i++, k++) {
+                                    re += x[a + i] * TRIG[0][k];
+                                    im += x[a + i] * TRIG[1][k];
+                                }
+                                bild.push(Math.log1p(Math.hypot(re, im)));
+                            }
+                        return bild;
+                    } finally {
+                        [s.ctx, s.lofi, s.enabled, Math.random, r.state.klangPreset] = alt;
+                        if (alt[5]) ws.studioOv[p] = alt[5];
+                        else delete ws.studioOv[p];
+                    }
+                },
+            };
+            const abstand = (a, b) => {
+                if (typeof a === "string" || a == null) return a === b ? 0 : 1;
+                let d = 0,
+                    n = 0;
+                for (let i = 0; i < a.length; i++) [d, n] = [d + Math.abs(a[i] - b[i]), n + a[i] + b[i]];
+                return n ? (2 * d) / n : 0;
+            };
+            const halt = [r._artifactStudioOv, r._studioPraegung];
+            if (o.taeter === "ohneStempel") [r._artifactStudioOv, r._studioPraegung] = [() => null, () => null];
+            const aus = [];
+            try {
+                for (const art of Object.keys(o.gesetz)) {
+                    const rezepte = Object.keys(f.recipes).filter((id) => f.recipes[id].kind === art).sort();
+                    for (const id of o.gesetz[art]) {
+                        const d = f.paramsByKind[art].find((x) => x.id === id);
+                        const z = { art, id, min: d.min, max: d.max, rezepte: rezepte.length, wirkt: false, an: null, bricht: [], abstand: 0 };
+                        for (const p of rezepte) {
+                            const b0 = await kanal[art](p, null);
+                            if (b0 == null) {
+                                z.bricht.push("kein Leser an " + p);
+                                continue;
+                            }
+                            // das Ohr rechnet in Fließkomma (der Graph mischt in Quanten): der Grund rauscht über einem Zehntel der Schwelle
+                            const still = art === "klang" ? o.schwelle / 10 : 0;
+                            if (abstand(b0, await kanal[art](p, null)) > still) z.bricht.push("der Grund an " + p + " rauscht");
+                            for (const v of [d.min, d.max]) {
+                                const a = abstand(b0, await kanal[art](p, { [id]: v }));
+                                if (a > z.abstand) z.abstand = a;
+                                if (a > (art === "klang" ? o.schwelle : 0) && !z.wirkt) [z.wirkt, z.an] = [true, p];
+                            }
+                            if (z.wirkt) break;
+                        }
+                        aus.push(z);
+                    }
+                }
+            } finally {
+                [r._artifactStudioOv, r._studioPraegung] = halt;
+            }
+            return { zeilen: aus, liest: [...liest].sort() };
+        },
+        { sek: OHR_SEK, schwelle: KLANG_SCHWELLE, ...opts }
+    );
+}
+// Die Zeilen der Leser in die gemeinsame Form (der Kanal nach der Art, der Kern wie die Brücke ihn sammelt).
+const LESER = { gate: "Membran", vehicle: "Ritt", klang: "Ohr" };
+function leserZeilen(leser, kerne) {
+    return leser.zeilen.map((z) => ({
+        kern: kerne[z.art] || "phyto",
+        art: z.art,
+        id: z.id,
+        d: { min: z.min, max: z.max },
+        kanal: LESER[z.art],
+        wirkt: z.wirkt,
+        bricht: z.bricht,
+        grund: z.bricht.length
+            ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ")
+            : z.wirkt
+              ? `wirkt an ${z.an} (${LESER[z.art]} der Welt, Abstand ${z.abstand.toFixed(3)})`
+              : `bewegt ${LESER[z.art]} der Welt an keinem der ${z.rezepte} Rezepte (min ${z.min} · max ${z.max}, Abstand ${z.abstand.toFixed(3)})`,
+    }));
+}
 // DER GEBROCHENE BAU: 0 Teile (der Bäcker wirft — die Brücke fängt und liefert [] — oder liefert nichts) oder
 // nicht-endliche Zahlen in einem Fließkomma-Puffer (der Bäcker rechnet mit einem Wert, den er nicht rechnen kann).
 // Ein gebrochener Bau hat einen anderen Hash als die Basis, aber er WIRKT nicht: er ist ein benannter Fehler (rot).
@@ -571,25 +744,32 @@ function ofenZeilen(ofen) {
             ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
             : z.wirkt
               ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt)"
-              : z.keinGuss
-                ? "kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser"
-                : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
+              : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
         return n;
     });
     }
 // Die ganze Messung: erst der Stamm (er entscheidet die Ofen-Arten und gießt sie), dann die Brücke für den Rest.
+// Die Gesetz-Werte (B4 `uniform`) urteilt ihr Leser der Welt (`leserMessen`): ihr Bau- bzw. Guss-Abdruck bewegt sich nie.
 async function messenAlle() {
-    const ofen = TEIL === 1 ? await imStamm((page) => ofenMessen(page, {})) : { zeilen: [], arten: {} };
+    const kerne = kernVonArt();
+    const [ofen, leser] =
+        TEIL === 1
+            ? await imStamm(async (page) => [await ofenMessen(page, {}), await leserMessen(page, { gesetz: kerne.gesetz })])
+            : [{ zeilen: [], arten: {} }, { zeilen: [] }];
+    const lz = leserZeilen(leser, kerne);
     let stufen = null;
     await runWithWorker(PORT, async (h) => {
         const imTeil = { regler: (art, id, ids) => teilDer(art, id, ids) === TEIL, grund: (art, ids) => teilDer(art, null, ids) === TEIL };
         stufen = await stufenMessen(h, TEIL === 1 ? { ohneArten: [...Object.keys(ofen.arten), HAUS] } : { nurArt: HAUS, ...imTeil });
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
+    const roh = [...wirkenAus(stufen), ...ofenZeilen(ofen)];
     return {
-        zeilen: [...wirkenAus(stufen), ...ofenZeilen(ofen)],
+        zeilen: roh.filter((z) => !lz.some((l) => name(l) === name(z))).concat(lz),
+        ohneByte: lz.filter((l) => !roh.some((z) => name(z) === name(l) && (z.wirkt || bricht(z)))).map(name),
         builds: stufen.builds,
         gusse,
+        leser: lz.length,
         ofenArten: ofen.arten,
         wurf: wurfAus(stufen, stammRegel()),
         stufen,
@@ -608,13 +788,13 @@ function vergleich(tot, ratsche) {
     return { neu, geheilt, ok: !neu.length && !geheilt.length };
     }
 function ratscheLesen() {
-    const r = JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8"));
+    const r = ausDatei(RATSCHE_PFAD, true);
     if (!r.reglerTot || typeof r.reglerTot.tot !== "object") throw new Error("ratsche.json ohne Block reglerTot.tot");
     if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object") throw new Error("ratsche.json ohne Block reglerBudget.bruch");
     return r.reglerTot;
 }
 function budgetRatscheLesen() {
-    return JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8")).reglerBudget;
+    return ausDatei(RATSCHE_PFAD, true).reglerBudget;
     }
 function bericht(zeilen) {
     const jeKern = {};
@@ -689,10 +869,15 @@ async function selbsttest() {
     // (d) der Ofen-Kanal (MESHFREI koerper, Q0): heil wirken die Regler über den Host-Ofen der Werkstatt; der Täter
     // „der Ofen verliert den Wert" (`_studioPraegung` liefert nichts) macht jeden koerper-Regler tot → NEU TOT gegen die
     // Ratsche; der Täter „der Mensch-Bäcker wirft bei height = max" liefert den Not-Körper → BRICHT, nie „wirkt".
+    // (d2) DIE LESER der Gesetz-Werte, je Leser eine Zeile: heil wirkt jede; der Täter „der Leser verliert den Stempel" macht jede
+    // tot, der Täter „die Linse liest den Graphen nicht" die der Membran (die anderen wirken weiter).
     let oHeil = null,
         oOhne = null,
         oBruch = null;
+    const lp = { gate: ["twist"], vehicle: ["grip"], klang: ["space"] };
+    const lT = {};
     await imStamm(async (page) => {
+        for (const t of [null, "ohneStempel", "blind"]) lT[t] = (await leserMessen(page, { gesetz: lp, taeter: t })).zeilen;
         oHeil = await ofenMessen(page, { nurArt: "koerper" });
         oOhne = await ofenMessen(page, { nurArt: "koerper", taeter: "ohneOv" });
         const hMax = oHeil.zeilen.find((z) => z.id === "height");
@@ -711,6 +896,9 @@ async function selbsttest() {
     const hB = zB2.find((z) => z.id === "height");
     const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
     console.log(`${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`);
+    const lw = (t) => lT[t].map((z) => (z.wirkt && !z.bricht.length ? 1 : 0)).join("");
+    const leserOk = lw(null) === "111" && lw("ohneStempel") === "000" && lw("blind") === "011";
+    console.log(`${leserOk ? "✅" : "❌"} SELBST-TEST Leser (Membran · Ritt · Ohr): heil ${lw(null)} · ohne Stempel ${lw("ohneStempel")} · blind ${lw("blind")} (Soll 111 · 000 · 011)`);
     // (e) DIE WURF-PROBE am Tor kathedrale (Grund-Bau und jeder Rand): die Regel des Stamms wirft nie von der teureren
     // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, von Hand neben die Regel gesetzt) wirft am
     // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
@@ -741,11 +929,11 @@ async function selbsttest() {
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
-    return rein && teile && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk && stufenOk;
+    return rein && teile && kanal && bruchOk && ofenKanal && ofenBruch && leserOk && wurfOk && stufenOk;
     }
 hauptLauf(async () => {
     // Der Selbsttest läuft EINMAL: vor Teil 1 (alle Teile ein Befehl bis auf --teil) oder allein (--selftest).
-    if (process.argv.includes("--selftest") || TEIL === 1) {
+    if (SELBSTTEST || TEIL === 1) {
         const ok = await selbsttest();
         if (!ok || TEIL !== 1) process.exit(ok ? 0 : 1);
     }
@@ -755,7 +943,7 @@ hauptLauf(async () => {
     const brechend = m.zeilen.filter(bricht);
     const oa = Object.keys(m.ofenArten).sort();
     console.log(
-        `Regler-wirkt Teil ${TEIL} (${TEIL === 1 ? "ohne " + HAUS : HAUS + " Regler " + m.zeilen.map((z) => z.id).join(",")}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")})`
+        `Regler-wirkt Teil ${TEIL} (${TEIL === 1 ? "ohne " + HAUS : HAUS + " Regler " + m.zeilen.map((z) => z.id).join(",")}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")}) · ${m.leser} Gesetz-Werte an ihrem Leser der Welt (${Object.values(LESER).join(" · ")})`
     );
     bericht(m.zeilen);
     for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);
@@ -793,6 +981,10 @@ hauptLauf(async () => {
     const v = vergleichTeil(toteZ.map(name), ratsche.tot, ids);
     for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
     for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
+    // der Byte-Beweis der Gesetz-Werte (Teil 1 trägt jede Art mit `uniform`-Zeilen)
+    const vG = TEIL === 1 ? vergleich(m.ohneByte, { tot: ausDatei(RATSCHE_PFAD, true).reglerGesetz.zeilen }) : { neu: [], geheilt: [], ok: true };
+    for (const n of vG.neu) console.log(`❌ GESETZ-WERT OHNE BEWEIS: ${n} bewegt kein Bau-Byte — seine Zeile gehört in reglerGesetz.zeilen`);
+    for (const n of vG.geheilt) console.log(`❌ KEIN GESETZ-WERT: ${n} steht in reglerGesetz, ist aber kein uniform-Wert ohne Bau-Byte (die Zeile baut neu)`);
     const soll = ratsche.soll;
     // Die Budget-Ratsche: ein Regler, dessen Rand-Wert die Stufe über ihre Budget-Zeile treibt (der Guss steht, das
     // Gesetz bricht) — neu rot, geheilt rot bis die Zeile fällt.
@@ -819,7 +1011,7 @@ hauptLauf(async () => {
             `❌ QUOTE GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.quote)`
         );
     for (const l of m.stufen.leer) console.log(`❌ LEER: ${l} baut 0 Teile`);
-    if (!v.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
+    if (!v.ok || !vG.ok || !vB.ok || !vQ.ok || ueberStaffel || m.stufen.leer.length || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
         `✅ gate:regler-wirkt Teil ${TEIL}: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).filter(v.eigen).length} von ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${Object.keys(budget).length} = Ratsche ${Object.keys(rb.bruch).length - anderer} von ${Object.keys(rb.bruch).length} (Staffel ${rb.staffel}, Soll ${rb.soll}) · über der Quote ${Object.keys(quote).length} · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`

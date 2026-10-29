@@ -49,8 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
@@ -2171,7 +2170,7 @@ function selbsttest() {
     taeterFaelle([{ name: "der echte Stamm" }, ...gifte.map(giftFall("Leser"))], leserUrteil, { fehler });
     // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
     const vm = require("vm");
-    const kernSrc = fs.readFileSync(path.join(__dirname, "..", "vehicle-core.js"), "utf8");
+    const kernSrc = ausDatei(path.join(__dirname, "..", "vehicle-core.js"));
     const kernLaden = (s) => {
         const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN };
         for (const T of [Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array]) ctx[T.name] = T;
@@ -2422,9 +2421,9 @@ async function lauf() {
                 await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel (Welt-Tor + aktiv + Reload): ihre Klamm S6 trägt den Stau (s. Kopf D)
-                const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
+                const buehne = ausDatei(path.join(root, "spec", "pruefbuehne", "welt.json"), true);
                 const S6 = JSON.parse(
-                    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
+                    ausDatei(path.join(root, "spec", "pruefbuehne", "stationen.json"))
                 ).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
@@ -2470,5 +2469,5 @@ async function lauf() {
     process.exit(exit);
 }
 
-if (process.argv.includes("--selftest")) selbsttest();
+if (SELBSTTEST) selbsttest();
 else lauf();

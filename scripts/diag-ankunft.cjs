@@ -30,7 +30,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
@@ -1642,7 +1642,7 @@ async function probe(arg) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
         const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         // die gesunden Köpfe der Ankunft (ihre Mutanten tauschen je einen Teil)

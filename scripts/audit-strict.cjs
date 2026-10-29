@@ -25,7 +25,7 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
-const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt, hauptLauf } = require("./lib/welt-boot.cjs");
+const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt, hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -52,7 +52,7 @@ function pass(category, msg) {
 // ============================================================
 function auditCssVariables() {
     console.log("\n=== CSS-Variable-Audit ===");
-    const html = fs.readFileSync(INDEX_HTML, "utf8");
+    const html = ausDatei(INDEX_HTML);
     // Definitionen: `--name:` innerhalb von Style-Block
     const defRe = /--([a-zA-Z][\w-]*)\s*:/g;
     const defs = new Set();
@@ -451,7 +451,7 @@ function auditPlaytestSkipGates() {
     console.log("\n=== Playtest-Skip-Gate-Audit (§6.5) ===");
     // der Richter: der Läufer und seine Domänen-Dateien (scripts/playtest/*.cjs, D3b) — je Zeile mit ihrer Datei
     const orte = ["playtest.cjs", ...fs.readdirSync(path.join(ROOT, "scripts", "playtest")).map((f) => "playtest/" + f)]
-        .flatMap((f) => fs.readFileSync(path.join(ROOT, "scripts", f), "utf8").split("\n").map((z, i) => [z, `${f}:${i + 1}`]));
+        .flatMap((f) => ausDatei(path.join("scripts", f)).split("\n").map((z, i) => [z, `${f}:${i + 1}`]));
     const lines = orte.map((o) => o[0]);
     // Pattern: `if (X && X.add)`, `if (X.has)`, `if (X.delete)` — Set/Map-API-
     // Existenz-Sniff. `set` und `size` ausgenommen: `set` matcht zu viele

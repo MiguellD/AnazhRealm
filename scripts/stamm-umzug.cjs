@@ -1,4 +1,5 @@
 "use strict";
+const { ausDatei } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 // scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
@@ -40,7 +41,7 @@ function schreibeZonen(ziel, T) {
     fs.writeFileSync(
         html,
         stamm.tagsSetzen(
-            fs.readFileSync(html, "utf8"),
+            ausDatei(html),
             S.map((x) => x.pfad)
         )
     );
@@ -81,7 +82,7 @@ function tafelnMitziehen(root, alt, neu) {
     for (const t of TAFELN) {
         const datei = path.join(root, t);
         if (!fs.existsSync(datei)) continue;
-        const L = fs.readFileSync(datei, "utf8").split("\n");
+        const L = ausDatei(datei).split("\n");
         const out = [];
         let laeufe = 0;
         for (let i = 0; i < L.length; ) {
@@ -154,7 +155,7 @@ const beweisZeile = (r) =>
     `Fingerabdruck: ${r.n} Glieder, Abweichungen ${r.summe} (Art ${r.ab.art}, Rumpf ${r.ab.quelle}, name/length ${r.ab.namelen}, ` +
     `Daten ${r.ab.daten}, nur alt ${r.ab.nurAlt}, nur neu ${r.ab.nurNeu}) · ${r.ordnung} Schlüssel umgeordnet · ` +
     `${r.dateien} Dateien · vm-Laden ${r.msAlt.toFixed(0)} ↔ ${r.msNeu.toFixed(0)} ms`;
-const teileVon = (root) => stamm.dateien(root).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+const teileVon = (root) => stamm.dateien(root).map((p) => ({ pfad: p, text: ausDatei(path.join(root, p)) }));
 
 // ── --nach-karte ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function nachKarte(root, trocken) {
@@ -229,7 +230,7 @@ function richterLesen(root) {
     const baender = new Map();
     let laeufer = null;
     for (const q of [RICHTER, ...neben.map((f) => `${RICHTER_DIR}/${f}`)]) {
-        const src = fs.readFileSync(path.join(root, q), "utf8").replace(/\r\n/g, "\n");
+        const src = ausDatei(path.join(root, q)).replace(/\r\n/g, "\n");
         const Z = src.split("\n");
         const weg = [];
         let vor = 0;
@@ -449,7 +450,7 @@ function selbsttest() {
         fs.mkdirSync(path.join(tmp, "spec", "abnahme"), { recursive: true });
         fs.writeFileSync(path.join(tmp, TAFELN[0]), tafel);
         tafelnMitziehen(tmp, altT, neuT);
-        const j = JSON.parse(fs.readFileSync(path.join(tmp, TAFELN[0]), "utf8"));
+        const j = ausDatei(path.join(tmp, TAFELN[0]), true);
         const kern = neuT[0].pfad;
         pruef(
             "Tafeln: frisch bleibt frisch, veraltet bleibt veraltet, die Reihe folgt den Gliedern",

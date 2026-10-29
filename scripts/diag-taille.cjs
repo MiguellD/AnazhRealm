@@ -13,9 +13,8 @@
 //
 //   node scripts/diag-taille.cjs
 
-const { starteBrowser, startProc, eigenePorte } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, ausDatei } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const fs = require("fs");
 
 // Der Port des eigenen save-servers: TAILLE_PORT, sonst ein freier des Systems (welt-boot `eigenePorte`) — auf 4312 fände die
 // Seite den Spiel-Server des Schöpfers und prüfte dessen Dateien.
@@ -219,8 +218,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
         // eingefrorenen Artefakte LESEN + die Signaturen als "valid" verifizieren.
         if (!result.error) {
             const golden = {
-                blueprint: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "blueprint-signed.json"), "utf8")),
-                manifest: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "world-manifest.json"), "utf8")),
+                blueprint: ausDatei(path.join(GOLDEN_DIR, "blueprint-signed.json"), true),
+                manifest: ausDatei(path.join(GOLDEN_DIR, "world-manifest.json"), true),
             };
             const conf = await page.evaluate(async (g) => {
                 const out = {};
