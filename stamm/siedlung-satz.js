@@ -1437,7 +1437,8 @@ class AnazhRealm_siedlung_satz {
             const fluss = { daten: fluesse.schicht(si), tex: fluesse.tex, hydroN: -1 };
             return { S, N, schicht: si, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
-        // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
+        // `kronen` ist das Register (Schlüssel → [x, z, Radius, Scheitel, Baum], der Scheitel über `_kronenOben`),
+        // `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
         // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
         // `raeumen`: die neuen Flächen, deren schon gewachsene Natur der Takt räumt (`_wegeRaeumen`, K52).
         st.wegeKarte = {
@@ -1472,14 +1473,19 @@ class AnazhRealm_siedlung_satz {
     // vergaß der Umzug der fernen Stufe alles jenseits ihres Fensters, auch die Eintrags-Kronen, die nur beim Entstehen
     // eintragen; wer > 1 km lief und zurückkam, fand unter jedem Eintrags-Baum (Mess-Wiese: 722 von 789 Kronen) bis zum
     // Reload keine Streu. Der Raum-Index (`kronenZellen`) bindet die Kosten des Umzugs an den Streifen, nie an den Bestand.
-    _kronenStreuNeu(schluessel, x, z, radius) {
+    // DER SCHEITEL (luftwasser.K2: der Schwarm landet auf ihm): `oben` = der Fuß der Streu-Zelle + ihre Sichthöhe, oder der
+    // Eintrags-Baum `baum` selbst (seine Höhen-Stufe lädt beim Eintrag oft noch) — gelesen über `_kronenOben`.
+    _kronenStreuNeu(schluessel, x, z, radius, oben = NaN, baum = null) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
         // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt; eine GEÄNDERTE fällt erst heraus.
         const alt = wk.kronen.get(schluessel);
-        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) {
+            [alt[3], alt[4]] = [oben, baum];
+            return;
+        }
         if (alt) this._kronenStreuWeg(schluessel);
-        const c = [x, z, radius];
+        const c = [x, z, radius, oben, baum];
         wk.kronen.set(schluessel, c);
         const zk = AnazhRealm._kronenZelle(x, z);
         let zelle = wk.kronenZellen.get(zk);
@@ -1505,6 +1511,17 @@ class AnazhRealm_siedlung_satz {
         if (zelle && zelle.delete(schluessel) && zelle.size === 0) wk.kronenZellen.delete(zk);
         for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, c[0], c[1], c[2], null, -1);
         this._kronenStreuWiese(c[0], c[1], c[2]);
+    }
+
+    // DER SCHEITEL EINER KRONE c der Karte (der Schwarm landet auf ihm, luftwasser.K2): der Fuß des Baums + seine Sichthöhe —
+    // dieselbe Zahl, die seine Stufen stempeln (die Streu-Zelle trägt sie seit ihrem Bau, `_scatterSichtHoehe`; der
+    // Eintrags-Baum liest sie aus seinem Höhen-Buch, `_lodTreeVisHeight`, nur wenn er im Bild steht: ein kalter Eintrag bestellt
+    // nichts). NaN = unbekannt, dort landet keiner.
+    _kronenOben(c) {
+        const e = c[4];
+        if (!e) return c[3];
+        const h = this._archIsRendered(e) ? this._lodTreeVisHeight(e) : null;
+        return h > 0 ? e.position.y + h : NaN;
     }
 
     // Der Schlüssel der Index-Zelle (Kante `LAUB_STREU.zelleM`), in der der Kronen-Mittelpunkt (x, z) liegt.
@@ -3427,7 +3444,7 @@ class AnazhRealm_siedlung_satz {
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
-        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone);
+        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone, NaN, entry);
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);

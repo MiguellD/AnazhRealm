@@ -614,7 +614,8 @@ class AnazhRealm_vegetation_streu {
                 // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
                 const kc = AnazhRealm.FOREST.crown[species];
                 const kr = kc ? kc * tf.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
-                this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
+                // der Scheitel: der Fuß der Zelle + ihre Sichthöhe — der Schwarm landet auf ihm (`_kronenOben`)
+                this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr, visH > 0 ? rec.fuss.y + visH : NaN);
             }
             emitted++;
         }
@@ -837,6 +838,7 @@ class AnazhRealm_vegetation_streu {
                     scale: tf.scale, // die Größe der Zelle: ihre Krone (`_naturKrone`, die Natur-Wand räumt die Lichtung)
                     gestalt,
                     yaw: tf.yaw,
+                    fuss, // der Fuß, auf dem ihr Platz im Gesetz steht — der Scheitel ihrer Krone liest ihn (`_kronenOben`)
                 };
             }
             let ff = this._foundryFlattenFor({ seed: fseed, wo: tf }, preset, lod);

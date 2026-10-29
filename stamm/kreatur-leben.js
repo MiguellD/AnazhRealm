@@ -2628,8 +2628,10 @@ class AnazhRealm_kreatur_leben {
     // oder mit der Hülle außer dem Blick (`_frustumCache`) rechnet er nur das; im Bild trägt er seine Glieder, nah (nahM) fliegen
     // sie im Verband (`_schwarmVerband`: verbandZug wie die Herde, die Separation über das Gitter). Die Kosten hängen an den
     // Gliedern im Bild, nie an der Welt. Gezeichnet über
-    // `_vogelZeichnen` in EINEN Pool (Stoff und Leib der Sänger: EIN Programm, EIN Befehl). `state.schwarm` trägt die Lage des
-    // Takts: fliegende Schwärme, Schwärme und Glieder im Bild, nahe Schwärme, Paare der Separation.
+    // `_vogelZeichnen` in EINEN Pool (Stoff und Leib der Sänger: EIN Programm, EIN Befehl). Das Zentrum ist das LEITTIER
+    // (`_schwarmLeittier`, luftwasser.K2 Staffel 2): die Uhr, bis der Spieler es aufscheucht — dann flieht der Pulk mit ihm
+    // und landet in der Ruhe auf einer Krone der Welt. `state.schwarm` trägt die Lage des Takts: fliegende Schwärme, Schwärme
+    // und Glieder im Bild, nahe Schwärme, Paare der Separation, fliehende und sitzende Schwärme.
     _vogelSchwarmTakt(sonne, regen) {
         const st = this.state;
         const cam = st.camera;
@@ -2659,7 +2661,7 @@ class AnazhRealm_kreatur_leben {
                 if (Math.abs(c.ix * Z - ax) > 2 * S.sichtM || Math.abs(c.iz * Z - az) > 2 * S.sichtM)
                     sk.zellen.delete(k);
         const lage = st.schwarm || (st.schwarm = {});
-        Object.assign(lage, { fliegen: 0, imBild: 0, glieder: 0, nah: 0, paare: 0 });
+        Object.assign(lage, { fliegen: 0, imBild: 0, glieder: 0, nah: 0, paare: 0, flucht: 0, sitzt: 0 });
         const F = this._frustumCache;
         const f = S.form;
         const uhr = st.spielZeit;
@@ -2690,15 +2692,20 @@ class AnazhRealm_kreatur_leben {
                     c.frisch = uhr;
                     c.revier = VG.schwarmRevier(c.u, this._kronenStreuAt(c.x, c.z), V);
                 }
-                if (!c.revier || !VG.schwarmZentrum(c.wurf, uhr, sonne, regen, V, zt)) continue;
+                if (!c.revier || !VG.schwarmZentrum(c.wurf, uhr, sonne, regen, V, zt)) {
+                    c.leit = null;
+                    continue;
+                }
                 lage.fliegen++;
-                const x = c.x + zt.dx;
-                const z = c.z + zt.dz;
+                // das LEITTIER trägt das Zentrum: die Uhr, bis ein Ereignis (der Spieler, die Ruhe, die Krone) es führt
+                const L = this._schwarmLeittier(c, zt, uhr);
+                const [x, y, z] = [L.x, L.y, L.z];
+                lage.flucht += L.modus === "flieht";
+                lage.sitzt += L.modus === "sitzt";
                 // die Hülle: der Ball der Formation, atmend und mit Welle und Zittern (großzügig: die Längs-Achse × 1,5)
                 const huelle =
                     1.5 * f[0] * S.abstandM * Math.cbrt((zt.n * S.raumJeGlied) / (4.18879 * f[0] * f[1] * f[2])) + 1;
                 if (Math.hypot(x - ax, z - az) > S.sichtM + huelle) continue;
-                const y = this._terrainMacroSurfaceY(x, z) + zt.h;
                 if (F && !F.intersectsSphere(sk.kugel.set(sk.kugel.center.set(x, y, z), huelle))) continue;
                 lage.imBild++;
                 lage.glieder += zt.n;
@@ -2721,8 +2728,10 @@ class AnazhRealm_kreatur_leben {
     // wünscht seinen Kurs (`schwarmWunsch`), verbandZug zieht ihn zum Leittier (das Zentrum, leit) und zu den Gliedern
     // i + 1 + m·⌊n/k⌋ (k = maxNachbarn − 1 neben dem Leittier; VERHALTEN.herde, der Paar-Raum raumM), es fliegt ihn, die
     // Separation hält die Paare auseinander. Fern trägt das Zentrum die Formation in seinem Rahmen (gedreht mit seinem Kurs).
-    // Die Höhe ist die Scheibe der Funktion, der Blick der Lauf. Schreibt die Lagen in die Karte (`lagen`), Blick und Schlag
-    // in voegel ab n0; liefert die Paare der Separation.
+    // Die Höhe ist die Scheibe der Funktion, der Blick der Lauf. Das Tempo ist das des Leittiers (zt.tempo: die Flucht, der
+    // Anflug). SITZT das Leittier, sitzt jedes Glied auf seinem Platz der Kuppel seiner Krone (`schwarmSitz`, die Schwingen
+    // angelegt); im Anflug binnen bremsM sinkt jedes Glied mit der Nähe auf ihn. Schreibt die Lagen in die Karte (`lagen`),
+    // Blick, Schlag und Sitz in voegel ab n0; liefert die Paare der Separation.
     _schwarmVerband(c, zt, x, y, z, uhr, nah, voegel, n0) {
         const VG = AnazhRealm._vogelGesetz();
         const V = VG.V;
@@ -2730,6 +2739,9 @@ class AnazhRealm_kreatur_leben {
         const sk = this._schwarmKarte;
         const [g, p, n] = [sk.glied, sk.lagen, zt.n];
         const [co, si] = [Math.cos(zt.gier), Math.sin(zt.gier)];
+        const tempo = zt.tempo >= 0 ? zt.tempo : S.tempoMs;
+        const leit = c.leit;
+        const krone = leit && leit.krone;
         let vb = c.verband;
         if (!vb || vb.n !== n) {
             vb = c.verband = { n, lage: new Float32Array(2 * n), lauf: new Float32Array(2 * n), zeit: uhr };
@@ -2737,8 +2749,27 @@ class AnazhRealm_kreatur_leben {
                 VG.glied(i, n, uhr, c.wurf[0], zt.gier, V, g);
                 vb.lage[2 * i] = co * g.x - si * g.z;
                 vb.lage[2 * i + 1] = si * g.x + co * g.z;
-                vb.lauf[2 * i + 1] = S.tempoMs;
+                vb.lauf[2 * i + 1] = tempo;
             }
+        }
+        const L = vb.lage;
+        const U = vb.lauf;
+        if (leit && leit.modus === "sitzt") {
+            for (let i = 0; i < n; i++) {
+                VG.sitz(i, n, krone.r, V, g);
+                p[3 * i] = krone.x + g.x;
+                p[3 * i + 1] = krone.y + g.y;
+                p[3 * i + 2] = krone.z + g.z;
+                const v = voegel[n0 + i] || (voegel[n0 + i] = {});
+                [v.gier, v.schlag, v.sitzt] = [g.gier, 0, true];
+                // der Rahmen dieses Takts trägt den Sitz: fliegt der Pulk auf, fliegt jedes Glied von seinem Platz
+                const [rx, rz] = [p[3 * i] - x, p[3 * i + 2] - z];
+                L[2 * i] = co * rx - si * rz;
+                L[2 * i + 1] = si * rx + co * rz;
+            }
+            U.fill(0);
+            Object.assign(vb, { zeit: uhr, x, z, gier: zt.gier });
+            return 0;
         }
         const dt = uhr - vb.zeit;
         const fliegt = nah && dt > 0 && dt <= S.verband.dtMax;
@@ -2746,8 +2777,6 @@ class AnazhRealm_kreatur_leben {
         // z = −s·q + c·l
         const [bx, bz, bg] = fliegt ? [vb.x, vb.z, vb.gier] : [x, z, zt.gier];
         const [bc, bs] = [Math.cos(bg), Math.sin(bg)];
-        const L = vb.lage;
-        const U = vb.lauf;
         const W = vb.welt || (vb.welt = new Float32Array(2 * n));
         for (let i = 0; i < n; i++) {
             p[3 * i] = bx + bc * L[2 * i] + bs * L[2 * i + 1];
@@ -2756,7 +2785,8 @@ class AnazhRealm_kreatur_leben {
             W[2 * i + 1] = -bs * U[2 * i] + bc * U[2 * i + 1];
             VG.glied(i, n, uhr, c.wurf[0], zt.gier, V, g);
             p[3 * i + 1] = y + g.y;
-            (voegel[n0 + i] || (voegel[n0 + i] = {})).schlag = g.schlag;
+            const v = voegel[n0 + i] || (voegel[n0 + i] = {});
+            [v.schlag, v.sitzt] = [g.schlag, false];
         }
         let paare = 0;
         if (fliegt) {
@@ -2768,7 +2798,7 @@ class AnazhRealm_kreatur_leben {
             const E = sk.eintraege || (sk.eintraege = []);
             for (let m = 0; m <= k; m++) E[m] = E[m] || { x: 0, z: 0, vx: 0, vz: 0, raum, leit: false };
             E.length = k + 1;
-            Object.assign(E[0], { x, z, vx: S.tempoMs * si, vz: S.tempoMs * co, raum, leit: true });
+            Object.assign(E[0], { x, z, vx: tempo * si, vz: tempo * co, raum, leit: true });
             const N = vb.neu || (vb.neu = new Float32Array(2 * n));
             const w = sk.wunsch || (sk.wunsch = { x: 0, z: 0 });
             const zug = sk.zug || (sk.zug = { x: 0, z: 0, n: 0 });
@@ -2780,8 +2810,8 @@ class AnazhRealm_kreatur_leben {
                     e.vx = W[2 * j];
                     e.vz = W[2 * j + 1];
                 }
-                VG.wunsch(i, uhr, zt.gier, V, w);
-                K.verbandZug(p[3 * i], p[3 * i + 2], w.x, w.z, S.tempoMs, raum, E, H, zug);
+                VG.wunsch(i, uhr, zt.gier, V, w, tempo);
+                K.verbandZug(p[3 * i], p[3 * i + 2], w.x, w.z, tempo, raum, E, H, zug);
                 N[2 * i] = zug.x;
                 N[2 * i + 1] = zug.z;
             }
@@ -2792,6 +2822,17 @@ class AnazhRealm_kreatur_leben {
                 p[3 * i + 2] += W[2 * i + 1] * dt;
             }
             paare = VG.separation(p, n, S.raumM, sk.gitter);
+        }
+        // DER ANFLUG: binnen bremsM vor der Krone sinkt jedes Glied mit der Nähe (smoothstep) auf seinen Platz der Kuppel
+        const a = leit && leit.modus === "landet" ? 1 - Math.hypot(krone.x - x, krone.z - z) / S.leittier.bremsM : 0;
+        if (a > 0) {
+            const b = a * a * (3 - 2 * a);
+            for (let i = 0; i < n; i++) {
+                VG.sitz(i, n, krone.r, V, g);
+                p[3 * i] += (krone.x + g.x - p[3 * i]) * b;
+                p[3 * i + 1] += (krone.y + g.y - p[3 * i + 1]) * b;
+                p[3 * i + 2] += (krone.z + g.z - p[3 * i + 2]) * b;
+            }
         }
         // zurück in den Rahmen dieses Takts (Welt → Rahmen: q = c·x − s·z, l = s·x + c·z); der Blick längs des Laufs
         for (let i = 0; i < n; i++) {
@@ -2804,6 +2845,60 @@ class AnazhRealm_kreatur_leben {
         }
         Object.assign(vb, { zeit: uhr, x, z, gier: zt.gier });
         return paare;
+    }
+    // DAS LEITTIER DES SCHWARMS (luftwasser.K2 Staffel 2, tetrapoda schwarmLeittier): c die Zelle, zt ihr Zentrum der Uhr in
+    // diesem Takt. Der Zustand c.leit trägt die Ereignisse — der Spieler (sein Leib) scheucht es auf, in der Ruhe nennt der
+    // Wirt die Krone (`_schwarmKrone`), eine gefällte Krone lässt es auffliegen (die Karte trägt sie nicht mehr); über
+    // leittier.dtMax ohne Takt (fern, Pause, gestellte Uhr) gilt wieder die Uhr. Liefert c.leit (Welt: x, y, z, gier, tempo,
+    // modus) und setzt Kurs und Tempo des Zentrums (zt.gier, zt.tempo) für den Verband.
+    _schwarmLeittier(c, zt, uhr) {
+        const VG = AnazhRealm._vogelGesetz();
+        const V = VG.V;
+        const E = V.schwarm.leittier;
+        const sk = this._schwarmKarte;
+        const ziel = sk.ziel || (sk.ziel = { x: 0, y: 0, z: 0, gier: 0 });
+        [ziel.x, ziel.z, ziel.gier] = [c.x + zt.dx, c.z + zt.dz, zt.gier];
+        const boden = this._terrainMacroSurfaceY(ziel.x, ziel.z);
+        ziel.y = boden + zt.h;
+        let L = c.leit;
+        const dt = L ? uhr - L.zeit : 0;
+        if (!L || !(dt >= 0 && dt <= E.dtMax)) L = c.leit = { modus: "zieht", krone: null };
+        L.zeit = uhr;
+        const wk = this.state.wegeKarte;
+        if (L.krone && !(wk && wk.kronen.get(L.krone.schluessel) === L.krone.c))
+            [L.modus, L.krone] = [L.modus === "sitzt" ? "kehrt" : "sucht", null];
+        const s = this.state.playerMesh.position;
+        const unter = L.modus === "zieht" ? boden : this._terrainMacroSurfaceY(L.x, L.z);
+        VG.leittier(L, uhr, dt, s, ziel, unter, c.wurf, V);
+        if (L.modus === "sucht") {
+            L.krone = this._schwarmKrone(L.x, L.z, s, E.kroneSuchM, L.ruheM);
+            L.modus = L.krone ? "landet" : "kehrt";
+            VG.leittier(L, uhr, dt, s, ziel, unter, c.wurf, V);
+        }
+        [zt.gier, zt.tempo] = [L.gier, L.tempo];
+        return L;
+    }
+    // DIE KRONE ZUM LANDEN: die nächste Krone der Kronen-Karte (`wegeKarte.kronen` über ihren Raum-Index) binnen suchM um
+    // (x, z), die ruheM fern vom Spieler s steht (die Ruhe) und deren Scheitel das Bild trägt (`_kronenOben`: der Fuß des
+    // Baums + seine Sichthöhe) — {schluessel, c, x, y (der Scheitel), z, r} oder null. Die Kosten hängen am Streifen der
+    // Index-Zellen um den Ort, nie am Bestand, und fallen einmal je Ruhe.
+    _schwarmKrone(x, z, s, suchM, ruheM) {
+        const wk = this.state.wegeKarte;
+        if (!wk || !wk.kronen.size) return null;
+        const Z = AnazhRealm.LAUB_STREU.zelleM;
+        let [best, bd] = [null, suchM];
+        for (let ix = Math.floor((x - suchM) / Z); ix <= Math.floor((x + suchM) / Z); ix++)
+            for (let iz = Math.floor((z - suchM) / Z); iz <= Math.floor((z + suchM) / Z); iz++) {
+                const zelle = wk.kronenZellen.get(ix + "," + iz);
+                if (zelle)
+                    for (const [k, c] of zelle) {
+                        const d = Math.hypot(c[0] - x, c[1] - z);
+                        if (!(d < bd) || Math.hypot(c[0] - s.x, c[1] - s.z) < ruheM) continue;
+                        const oben = this._kronenOben(c);
+                        if (Number.isFinite(oben)) [best, bd] = [{ schluessel: k, c, x: c[0], y: oben, z: c[1], r: c[2] }, d];
+                    }
+            }
+        return best;
     }
     // DIE ZELLE der Vogel-Karte: ihre Würfe (einmal: das Revier, die Mitte, die Bahn) und ihr Revier aus Leben und Deckung an
     // der Mitte (je Aufruf neu; die Deckung hebt auch den Singflug über das Dach); die Mitte steht auf der EINEN 2D-Höhe, im
@@ -2822,7 +2917,7 @@ class AnazhRealm_kreatur_leben {
         c.revier = !this._nassAt(c.x, c.z) && VG.revier(c.u, this.auraAt(c.x, c.z).lebendig, c.deckung, VG.V);
         return c;
     }
-    // DER LEIB IM BILD: je singenden Vogel seine Teile und zwei Flügel (am Schultergelenk, um die Längsachse im Schlag) —
+    // DER LEIB IM BILD: je Vogel seine Teile und zwei Flügel (am Schultergelenk, um die Längsachse im Schlag; sitzend angelegt) —
     // die Matrizen direkt in den Puffer des Pools (Spalten-Ordnung, Gier um y), die Farben je Platz einmal beim Bau (die
     // Teile-Folge ist je Vogel gleich). `cap` = so viele Plätze, wie der Hör-Kreis Zellen trägt; `feld` = der Pool im Stand
     // (`vogelPool` die Sänger, `vogelSchwarmPool` der Schwarm) — trägt das Bild mehr Teile als der Pool Plätze, wächst er auf das
@@ -2876,6 +2971,13 @@ class AnazhRealm_kreatur_leben {
             for (const T of L.teile)
                 teil(v, c, s, T.groesse[0], 0, 0, T.groesse[1], T.groesse[2], T.lage[0], T.lage[1], T.lage[2]);
             for (const seite of [1, -1]) {
+                // der sitzende Vogel (der Schwarm auf seiner Krone) legt die Schwinge an den Leib: die Spannweite längs nach
+                // hinten, die Tiefe hoch, an der Flanke des Rumpfs
+                if (v.sitzt) {
+                    const flanke = (seite * (L.teile[0].groesse[0] + gy)) / 2;
+                    teil(v, c, s, gy, 0, 0, gz, gx, flanke, F.schulter[1], F.schulter[2] - gx / 2);
+                    continue;
+                }
                 const cf = Math.cos(seite * v.schlag);
                 const sf = Math.sin(seite * v.schlag);
                 const h = (seite * gx) / 2;
@@ -3207,7 +3309,8 @@ AnazhRealm._bestandGesetz = function () {
 };
 // DER VOGEL (tetrapoda VOGEL_GESETZ + vogelWurf · vogelRevier · vogelLied · vogelBahn, Klang K1): Revier, Lied, Singflug und
 // Leib — gelesen vom Vogel-Takt und vom Klang-Zensus (die Teile je Vogel); dazu der Schwarm (schwarmRevier · schwarmZentrum ·
-// schwarmGlied · schwarmWunsch · schwarmSeparation, luftwasser.K5 und K2), gelesen vom Schwarm-Takt. Fail-closed.
+// schwarmGlied · schwarmWunsch · schwarmLeittier · schwarmSitz · schwarmSeparation, luftwasser.K5 und K2), gelesen vom
+// Schwarm-Takt. Fail-closed.
 AnazhRealm._vogelGesetz = function () {
     if (AnazhRealm._vogelGesetzMemo) return AnazhRealm._vogelGesetzMemo;
     const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -3228,9 +3331,12 @@ AnazhRealm._vogelGesetz = function () {
             "schwarmZentrum",
             "schwarmGlied",
             "schwarmWunsch",
+            "schwarmLeittier",
+            "schwarmSitz",
             "schwarmSeparation",
         ].every((f) => typeof k[f] === "function") &&
-        V.schwarm.verband
+        V.schwarm.verband &&
+        V.schwarm.leittier
     ) {
         AnazhRealm._vogelGesetzMemo = Object.freeze({
             V,
@@ -3242,6 +3348,8 @@ AnazhRealm._vogelGesetz = function () {
             schwarmZentrum: k.schwarmZentrum,
             glied: k.schwarmGlied,
             wunsch: k.schwarmWunsch,
+            leittier: k.schwarmLeittier,
+            sitz: k.schwarmSitz,
             separation: k.schwarmSeparation,
         });
         return AnazhRealm._vogelGesetzMemo;
