@@ -1,0 +1,4 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-stand-takt.cjs --nachwuchs
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+NACHWUCHS {"ufer":{"x":-347.99632815406255,"z":-661.5026992803928},"echt":{"n":138,"da":138,"jahr":8766,"r":0.834,"offen":16,"rOffen":0.999,"quote":1.298},"mutante":{"n":138,"da":138,"jahr":8764,"r":0.57,"offen":16,"rOffen":0,"quote":1}}
+✅ NACHWUCHS GRÜN — der Nachwuchs folgt Feuchte × Licht

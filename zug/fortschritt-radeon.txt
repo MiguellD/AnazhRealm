@@ -1638,3 +1638,16 @@
 2026-10-29 03:31:32 takt19-radeon licht.K5#1 ROT 17.9 · 42/71
 2026-10-29 03:35:34 takt19-radeon schatten.K1#1 GRÜN 8.5 · 43/71
 2026-10-29 03:43:25 takt19-radeon fahrzeug.K3#1 GRÜN 13.9 · 44/71
+2026-10-29 03:47:30 takt19-radeon fahrzeug.K3#2 GRÜN 16.0 · 45/71
+2026-10-29 03:50:45 takt19-radeon fahrzeug.K4#1 GRÜN 15.2 · 46/71
+2026-10-29 03:51:00 takt19-radeon fahrzeug.K4#2 GRÜN 15.2 · 47/71
+2026-10-29 03:53:30 takt19-radeon leib.K4#2 ROT 10.1 · 48/71
+2026-10-29 04:01:24 takt19-radeon streaming.K4#2 GRÜN 13.9 · 49/71
+2026-10-29 04:05:12 takt19-radeon gelaende.K3#1 GRÜN 14.5 · 50/71
+2026-10-29 04:08:19 takt19-radeon vegetation.K4#1 GRÜN 14.8 · 51/71
+2026-10-29 04:08:26 takt19-radeon vegetation.K4#2 ROT 14.8 · 52/71
+2026-10-29 04:12:20 takt19-radeon ferne.K5#1 GRÜN 10.9 · 53/71
+2026-10-29 04:15:27 takt19-radeon material.K3#1 GRÜN 10.2 · 54/71
+2026-10-29 04:18:55 takt19-radeon pipeline.K4#1 GRÜN 10.6 · 55/71
+2026-10-29 04:21:52 takt19-radeon leib.K4#1 GRÜN 9.5 · 56/71
+2026-10-29 04:23:08 takt19-radeon halten.K1#2 GRÜN 7.7 · 57/71
