@@ -898,3 +898,4 @@
 2026-10-29 15:05:59 takt21b-gtx fahrzeug.K2#1 ROT 3.4 · 27/50
 2026-10-29 15:07:40 takt21b-gtx ankunft.K2#1 ROT 1.6 · 28/50
 2026-10-29 15:09:59 takt21b-gtx ankunft.K3#1 ROT 2.2 · 29/50
+2026-10-29 15:14:28 takt21b-gtx streaming.K3#1 GRÜN 4.4 · 30/50
