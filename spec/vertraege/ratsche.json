@@ -27,7 +27,7 @@
         }
     },
     "reglerGesetz": {
-        "zweck": "DIE GESETZ-WERTE (Vertrag B4 `uniform: true`, studios.K1): die Zeile bewegt an keinem Rezept ihrer Art ein Bau- bzw. Guss-Byte (der Byte-Beweis, gemessen von gate:regler-wirkt; gate:studio-vertrag liest ihn) und wirkt an ihrem Leser der Welt — die Membran des Tors (die Stoff-Werte, die der Graph liest), der Ritt des Wagens (der Fahr-Satz im Fahr-Schritt), das Ohr des Klangs (das Spektrogramm der Lofi-Kette). Schlüssel kern:art:id, Wert = der Leser. Eine uniform-Zeile ohne Eintrag ist rot, ein Eintrag, dessen Bau sich bewegt, ebenso.",
+        "zweck": "DIE GESETZ-WERTE (Vertrag B4 `uniform: true`, studios.K1): die Zeile bewegt an keinem Rezept ihrer Art ein Bau- bzw. Guss-Byte (der Byte-Beweis von gate:regler-wirkt, gate:studio-vertrag liest ihn) und wirkt an ihrem Leser der Welt (Membran · Ritt · Ohr). Schlüssel kern:art:id, Wert = der Leser; eine uniform-Zeile ohne Eintrag ist rot, ein Eintrag, dessen Bau sich bewegt, ebenso.",
         "zeilen": {
             "klang:klang:bpm": "Ohr",
             "klang:klang:color": "Ohr",
