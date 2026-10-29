@@ -1,7 +1,7 @@
 {
  "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
  "geraet": "radeon",
- "zeit": "2026-10-29T03:31:30.579Z",
+ "zeit": "2026-10-29T03:47:15.686Z",
  "host": "MiguellD",
  "je": {
   "gelaende.K2#1": {
@@ -443,15 +443,16 @@
   },
   "mensch.K2#2": {
    "gruen": false,
-   "zahl": "Deckel 1320 s überschritten — beendet",
+   "zahl": "Probe-Fehler: Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 553 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)\n    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:2938:20)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:274:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)",
    "exit": 1,
-   "minuten": 27.92,
-   "grund": "Deckel 1320 s überschritten — beendet",
-   "warten": 5.9,
-   "zeit": "2026-10-29T01:31:20.140Z",
+   "minuten": 13.23,
+   "grund": "ROT: Probe-Fehler: Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 553 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)\n    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:2938:20)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:274:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)",
+   "gpu": "amd/rdna-3",
+   "warten": 2.61,
+   "zeit": "2026-10-29T03:47:15.686Z",
    "abdruck": "dc99c476be49",
-   "port": 7774,
-   "bahn": "3/3"
+   "port": 7754,
+   "bahn": "1/1"
   },
   "klang.K4#2": {
    "gruen": true,

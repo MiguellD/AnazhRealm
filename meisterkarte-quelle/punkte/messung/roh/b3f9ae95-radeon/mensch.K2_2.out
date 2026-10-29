@@ -1,5 +1,5 @@
-$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
-S=$(( 7774 )); W=$(( 7774 + 20000 )); export WERKBANK_PORT=$W
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-radeon\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7754 )); W=$(( 7754 + 20000 )); export WERKBANK_PORT=$W
 raeum() { for p in $(netstat -ano | grep -E ":($S|$W|$((W - 1))) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }
 stand() { mkdir -p "$B-stand"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json "$B-stand/" 2> /dev/null; }
 ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }
@@ -11,12 +11,12 @@ for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost
 for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' "$B-werkbank.log" 2> /dev/null && break; sleep 5; done
 grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; tail -5 "$B-werkbank.log"; exit 1; }
 node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
-WERKBANK bereit: Steuer 127.0.0.1:27774 · Seite :27773
+WERKBANK bereit: Steuer 127.0.0.1:27754 · Seite :27753
 
-===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27774) =====
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27754) =====
 
-  ❌ bewohner  {"fehler":"Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 560 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)\n    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:2938:20)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:274:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)"}
-       ↳ Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 560 Takten — die Welt hat nichts mehr offen
+  ❌ bewohner  {"fehler":"Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 553 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)\n    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:2938:20)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:274:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)"}
+       ↳ Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 553 Takten — die Welt hat nichts mehr offen
     at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)
     at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)
     at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)
@@ -25,10 +25,10 @@ WERKBANK bereit: Steuer 127.0.0.1:27774 · Seite :27773
     at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)
     at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)
 
-  (168 s)
+  (137 s)
 
 --- stderr ---
-gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 1 von 3) nach 264 s
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 1 von 1) nach 114 s
 tr: warning: an unescaped backslash at end of string is not portable
 
 ❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
