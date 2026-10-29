@@ -3,7 +3,7 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
 async function checkBandWaves1to3(ctx) {
     const { page, check, errors, finalState } = ctx;
@@ -37,13 +37,7 @@ async function checkBandWaves1to3(ctx) {
         return out;
     });
 
-    if (!journalResults || journalResults.error) {
-        check(
-            "Welle 1 D: Journal-Snapshot erreichbar",
-            false,
-            (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 1 D: Journal-Snapshot erreichbar", journalResults)) {
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
@@ -137,13 +131,7 @@ async function checkBandWaves1to3(ctx) {
         return out;
     });
 
-    if (!wave2Results || wave2Results.error) {
-        check(
-            "Welle 2: Snapshot erreichbar",
-            false,
-            (wave2Results && wave2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 2: Snapshot erreichbar", wave2Results)) {
         check("Welle 2 C: Validation lehnt unbekannte Shape ab", wave2Results.rejectsUnknownShape);
         check("Welle 2 C: Validation lehnt leeren Parts-Array ab", wave2Results.rejectsEmpty);
         check("Welle 2 C: Validation akzeptiert gültige box-Parts", wave2Results.acceptsValid);
@@ -224,13 +212,7 @@ async function checkBandWaves1to3(ctx) {
         return out;
     });
 
-    if (!wave3Results || wave3Results.error) {
-        check(
-            "Welle 3: Snapshot erreichbar",
-            false,
-            (wave3Results && wave3Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 3: Snapshot erreichbar", wave3Results)) {
         check("Welle 3 E: journalEvent-Trigger im Grok-State", wave3Results.hasJournalEventTrigger);
         check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
         check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
@@ -885,7 +867,7 @@ async function checkBandWave10b(ctx) {
         return out;
     });
 
-    if (wave10bResults && !wave10bResults.error) {
+    if (ohneWurf(check, "Welle 10b.1", wave10bResults)) {
         check(
             "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
             wave10bResults.thresholdsFrozen && wave10bResults.noShapeWhitelists && wave10bResults.affordanceLabelsExist
@@ -1053,8 +1035,6 @@ async function checkBandWave10b(ctx) {
             "W10 ext.: _tickLiftingAffordances setzt das Auftriebs-Feld nahe einem Heber, löscht es fern (Reichweite-Gate)",
             wave10bResults.liftFieldActiveNear && wave10bResults.liftFieldInactiveFar
         );
-    } else if (wave10bResults && wave10bResults.error) {
-        check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
     }
 
     // ### Welt-Reaktionen (die Mount-Absagen + zoom) ###
@@ -1104,7 +1084,7 @@ async function checkBandWave10b(ctx) {
         return out;
     });
 
-    if (wave10b3Results && !wave10b3Results.error) {
+    if (ohneWurf(check, "Welle 10b.3", wave10b3Results)) {
         check(
             "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
             wave10b3Results.nonMoveableRejected
@@ -1118,8 +1098,6 @@ async function checkBandWave10b(ctx) {
             "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
             wave10b3Results.zoomFailsWithoutTarget
         );
-    } else if (wave10b3Results && wave10b3Results.error) {
-        check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
     }
 }
 

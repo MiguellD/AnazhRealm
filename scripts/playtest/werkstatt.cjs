@@ -4,7 +4,7 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Ω-PHYSIS Säule IV — Wahrheits-Spiegel: die gerechnete Physik treibt Ω-W2 (physik-wahre
@@ -264,7 +264,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
 
-    if (wave6bResults && !wave6bResults.error) {
+    if (ohneWurf(check, "Welle 6.B", wave6bResults)) {
         check("Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint", wave6bResults.selectedSetToVillage);
         check(
             "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
@@ -373,8 +373,6 @@ async function checkBandCadWorkshop(ctx) {
             "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons enabled bei eigenem Bauplan",
             wave6bResults.modeBarEnabledOnCustom
         );
-    } else if (wave6bResults && wave6bResults.error) {
-        check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
     }
 
     // ### Resize-Handles (Konsole + Drawer) + Background-Fix ###
@@ -433,7 +431,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
 
-    if (resizeResults && !resizeResults.error) {
+    if (ohneWurf(check, "Resize", resizeResults)) {
         check(
             "Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
             resizeResults.consoleHasHandle
@@ -452,8 +450,6 @@ async function checkBandCadWorkshop(ctx) {
             "BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
             resizeResults.drawerHasInsetShadow
         );
-    } else if (resizeResults && resizeResults.error) {
-        check(`Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
     // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
@@ -503,7 +499,7 @@ async function checkBandCadWorkshop(ctx) {
         }
         return out;
     });
-    if (omniResults && !omniResults.error) {
+    if (ohneWurf(check, "Omnibox", omniResults)) {
         check("Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
@@ -514,8 +510,6 @@ async function checkBandCadWorkshop(ctx) {
         check("Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
         check("Omnibox: Esc schließt das Overlay", omniResults.escCloses);
         check("Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
-    } else if (omniResults && omniResults.error) {
-        check(`Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
     }
 
     // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
@@ -729,7 +723,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
 
-    if (v802Results && !v802Results.error) {
+    if (ohneWurf(check, "Phase 3", v802Results)) {
         check("Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
             "Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
@@ -763,8 +757,6 @@ async function checkBandCadWorkshop(ctx) {
             "Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
             v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
         );
-    } else if (v802Results && v802Results.error) {
-        check(`Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
     }
 
     // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +

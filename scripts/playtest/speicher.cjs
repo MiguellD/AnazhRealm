@@ -3,7 +3,7 @@
 // 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Regel-Persistenz: worldRules überleben den Reload (buildStateSnapshot/loadState: definierende
 // Felder, frische Akkus, dedup, cap), fuseWorlds VEREINIGT die Regel-Sätze. Eine restaurierte Regel
@@ -330,13 +330,7 @@ async function checkBandRing8(ctx) {
 
         return out;
     });
-    if (!ring8Results || ring8Results.error) {
-        check(
-            "Ring 8: Snapshot erreichbar",
-            false,
-            (ring8Results && ring8Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8: Snapshot erreichbar", ring8Results)) {
         check("Ring 8: Schema-Version ist 8.0-multiworld-v1", ring8Results.schemaIsMultiworld);
         check(
             "Ring 8: eine neue Welt erbt kein Identitäts-Feld der alten (Positiv-Liste visibility · creator)",
@@ -415,13 +409,7 @@ async function checkBandRing8(ctx) {
         }
         return out;
     });
-    if (!ring8UiResults || ring8UiResults.error) {
-        check(
-            "Ring 8 UI: Snapshot erreichbar",
-            false,
-            (ring8UiResults && ring8UiResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8 UI: Snapshot erreichbar", ring8UiResults)) {
         check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block (V18.73)", ring8UiResults.pickerSectionInDom);
         check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
         check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
@@ -500,13 +488,7 @@ async function checkBandRing8(ctx) {
         }
         return out;
     });
-    if (!ring81Results || ring81Results.error) {
-        check(
-            "Ring 8.1: Snapshot erreichbar",
-            false,
-            (ring81Results && ring81Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8.1: Snapshot erreichbar", ring81Results)) {
         check("Ring 8.1: Aktive Welt trägt einen Seed", ring81Results.activeHasSeed);
         check("Ring 8.1: Neue Welt A hat eigenen Seed", ring81Results.newWorldAHasSeed);
         check("Ring 8.1: Neue Welt B hat eigenen Seed", ring81Results.newWorldBHasSeed);
@@ -564,13 +546,7 @@ async function checkBandRing8(ctx) {
 
         return out;
     });
-    if (!ring82Results || ring82Results.error) {
-        check(
-            "Ring 8.2: Snapshot erreichbar",
-            false,
-            (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8.2: Snapshot erreichbar", ring82Results)) {
         check("leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
         check(
             "Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
@@ -688,13 +664,7 @@ async function checkBandRing9to10(ctx) {
         }
         return out;
     });
-    if (!ring9Results || ring9Results.error) {
-        check(
-            "Ring 9: Snapshot erreichbar",
-            false,
-            (ring9Results && ring9Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 9: Snapshot erreichbar", ring9Results)) {
         check(
             "Ring 9: #world-tor-* Dialog, Knöpfe und Summary im DOM",
             !ring9Results.domFehlt.length,
@@ -919,13 +889,7 @@ async function checkBandRing9to10(ctx) {
         }
         return out;
     });
-    if (!ring10Results || ring10Results.error) {
-        check(
-            "Ring 10: Snapshot erreichbar",
-            false,
-            (ring10Results && ring10Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 10: Snapshot erreichbar", ring10Results)) {
         check(
             "Ring 10: Verschmelzen-Knöpfe (Dialog, Bibliothek) im DOM",
             !ring10Results.domFehlt.length,
@@ -1093,13 +1057,7 @@ async function checkBandRing9to10(ctx) {
         }
         return out;
     });
-    if (!recipeResults || recipeResults.error) {
-        check(
-            "Ring 10.1: Snapshot erreichbar",
-            false,
-            (recipeResults && recipeResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 10.1: Snapshot erreichbar", recipeResults)) {
         check("Ring 10.1: importRecipesFromWorld liefert ok=true", recipeResults.importOk);
         check("Ring 10.1: counts = {3 Baupläne, 1 Material, 1 Werkzeug}", recipeResults.importCounts);
         check("Ring 10.1: Bauplan in aktiver Welt verfügbar", recipeResults.bpAddedToState);
