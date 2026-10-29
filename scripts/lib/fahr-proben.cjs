@@ -528,9 +528,49 @@ async function probeLeben(expected) {
         }
         return out;
     };
-    if (expected.nurKette || expected.nurRueck) {
+    // ── DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2, `expected.wegenetz` {orte, mutante, gleich}): die Orte (Zellen, je zwei Nachbarn
+    // im Wegenetz) erwachen am Spieler wie im Spiel (der Dorf-Zug, `__anazhAutoSettlement`), ihre Feldwege legt das Gesetz; die
+    // Route ist die kürzeste über das Netz (`_wegenetzRoute`) von der Mess-Wiese zum letzten Ort, der GT fährt sie mit dem
+    // Fahrer am Steuer (`fahrerSetzen` → Verb-Tafel → der EINE Fahr-Schritt) in den Bildern der Probe (`gleich`: 60 fps); die
+    // Zählung des Sim-Takts trägt der Fahrer (`F.takte`, `F.tempo`, `F.fest`). Je 10 m der Route der Boden am Wagen: dorf (ein
+    // Haus in 25 m), wald (≥ 3 Bäume der Natur in 15 m), sonst wiese. `mutante` (die Weg-Erkennung aus): die Luftlinie.
+    const wegenetz = async (o) => {
+        await window.__weltDa(() => A._siedlungGesetz());
+        let i = 0;
+        const bild = () => (o.gleich ? r._gameLoopTick((tMs += 1000 / 60)) : frame(i++));
+        const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._wegenetzMemo.orte.get(k));
+        for (const ort of orte) {
+            stelle(ort.x + 30, ort.z + 30, 2);
+            await window.__gebautNach("der Ort " + ort.key, { takt: bild, fertig: () => (r._bewohnerSiedlungen || new Map()).has(ort.key) });
+        }
+        await Promise.all([...r._wegenetzKanten.values()].map((k) => k.fertig));
+        const [W, Z] = [{ x: mo[0], z: mo[1] }, orte[orte.length - 1]];
+        const route = o.mutante ? [W, Z] : r._wegenetzRoute([W, Z]);
+        if (!route) throw new Error("das Wegenetz trägt keine Route von der Wiese zum Ort " + Z.key);
+        const [a, c] = route;
+        await setzen("fahrzeug_gt", a.x, a.z, Math.atan2(c.x - a.x, c.z - a.z));
+        const F = r.fahrerSetzen(route);
+        const b = { wiese: 0, wald: 0, dorf: 0, weg: 0, n: 0 };
+        const p = st.playerMesh.position;
+        const nah = (x, m) => x && x.position && flach(x.position, p) < m;
+        for (let bis = 0; i < 30000 && !F.ende; ) {
+            bild();
+            if (i % 4 === 3) await window.sleep();
+            if (F.s < bis) continue;
+            bis = F.s + 10; // je 10 m der Route: steht der Wagen auf Weg und Feldweg, welcher Boden trägt ihn
+            const baeume = st.architectures.filter((x) => nah(x, 15) && r._istNatur(x) && /^baum_/.test(x.type)).length;
+            b[st.architectures.some((x) => x && x.tuer && nah(x, 25)) ? "dorf" : baeume >= 3 ? "wald" : "wiese"]++;
+            [b.weg, b.n] = [b.weg + r._aufWeg(p.x, p.z, 0), b.n + 1];
+        }
+        r.fahrerSetzen(null);
+        const t = F.tempo;
+        return { lang: Math.round(F.lang), weg: Math.round(F.s), ende: F.ende, schritte: F.takte, tempo: t, steck: F.fest, anteil: (t[8] + t[9] + t[10]) / F.takte,
+            wegAnteil: b.weg / b.n, boden: { wiese: b.wiese / b.n, wald: b.wald / b.n, dorf: b.dorf / b.n }, lage: [p.x, p.z] };
+    };
+    if (expected.nurKette || expected.nurRueck || expected.wegenetz) {
         try {
             if (expected.nurRueck) res.rueck = await rueck(expected.rueck);
+            else if (expected.wegenetz) res.wegenetz = await wegenetz(expected.wegenetz);
             else res.kette = await kette(expected.kette);
         } catch (e) {
             res.err = String((e && e.stack) || e);

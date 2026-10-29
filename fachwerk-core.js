@@ -3590,6 +3590,112 @@
         const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
         return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
       H.mass=mass; return H; }
+    // DER FELDWEG ZWISCHEN ORTEN (fahrzeug.K2): das Wegenetz der Welt verbindet je zwei benachbarte Orte über einen Feldweg, der
+    // dem Grund folgt — der günstigste Lauf von einem Punkt der Wege des einen Orts (`A`) zu einem des anderen (`B`) über das
+    // Höhen-Raster `r` um die Strecke (alle Punkte in seinen Koordinaten; er beginnt, wo das Netz ihm am günstigsten liegt — vom
+    // Ende einer Gasse lief er sonst zurück an den Häusern vorbei, der Fahrer wendete im Dorf −3,−5 auf 3 m),
+    // je Punkt zu 16 Nachbarn (Schritt und Rösselsprung: 26,6° Teilung), ein Schritt kostet seine Länge × (1 + 4 · (Steigung über
+    // `ORT_GESETZ.trasse`, je trasse)²), steiler als `WEG_ZWISCHEN.steilMax` trägt keiner (der Saumpfad weicht dem Hang aus wie die
+    // Gassen, `trasseLenk`, aber er sieht den ganzen Hang, nicht nur den nächsten Schritt: der Lauf von Schritt zu Schritt fand
+    // zwischen −6,−6 und −5,−5 nach 172 m Luftlinie keinen Weg); kein Punkt liegt in `sperren` (`planSperren` der beiden Orte:
+    // der Feldweg läuft nie durch ein Haus). `nass(x, z)` (optional, Raster-Koordinaten: das Wasser des Gesetzes) macht jeden
+    // Schritt auf einen nassen Punkt `WEG_ZWISCHEN.furt`-mal so teuer: der Weg geht um den Bach, wo der Grund es trägt, und quert
+    // ihn sonst auf dem kürzesten Stück (die Route Wiese → Wald → Dorf fuhr drei Bäche quer, 3–5 m/s im Wasser).
+    // Rückgabe: die Punkte (geglättet, `glaetten`) oder null (kein Lauf). Leser: der Ort-Faden (voxel-worker `ort-weg`, Lehre 14)
+    // für den Wirt (`_wegenetzLegen`).
+    const WEG_ZWISCHEN = { steilMax: 0.3, hang: 4, glaett: 16, furt: 20 };
+    function wegZwischen(r, A, B, sperren, nass){
+      const n=r.n, d=r.d, h=r.h, lim=ORT_GESETZ.trasse, W=WEG_ZWISCHEN;
+      const zu=new Uint8Array(n*n), feucht=new Int8Array(n*n).fill(-1); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
+      const knoten=(p)=>Math.max(0,Math.min(n-1,Math.round((p.x-r.x0)/d)))+n*Math.max(0,Math.min(n-1,Math.round((p.z-r.z0)/d)));
+      const drin=(p)=>p.x>=r.x0&&p.z>=r.z0&&p.x<=r.x0+(n-1)*d&&p.z<=r.z0+(n-1)*d;
+      const quelle=new Map(), ziel=new Map();
+      for(const p of A) if(drin(p)) quelle.set(knoten(p),p); for(const p of B) if(drin(p)) ziel.set(knoten(p),p);
+      if(!quelle.size||!ziel.size) return null;
+      for(const k of quelle.keys()) zu[k]=0; for(const k of ziel.keys()) zu[k]=0;
+      let gx=0, gz=0, gr=0; for(const k of ziel.keys()){ gx+=k%n/ziel.size; gz+=((k/n)|0)/ziel.size; }
+      for(const k of ziel.keys()) gr=Math.max(gr,Math.hypot(k%n-gx,((k/n)|0)-gz));
+      const NB=[]; for(let i=-2;i<=2;i++) for(let j=-2;j<=2;j++){ const g=Math.abs(i)===2&&Math.abs(j)===2||Math.abs(i)===2&&j===0||i===0&&Math.abs(j)===2; if((i||j)&&!g) NB.push([i,j,d*Math.hypot(i,j)]); }
+      const kost=new Float64Array(n*n).fill(Infinity), von=new Int32Array(n*n).fill(-1), heap=[];
+      const rest=(k)=>d*Math.max(0,Math.hypot(k%n-gx,((k/n)|0)-gz)-gr);
+      const push=(f,k)=>{ heap.push([f,k]); let i=heap.length-1; while(i>0){ const p=(i-1)>>1; if(heap[p][0]<=heap[i][0]) break; [heap[p],heap[i]]=[heap[i],heap[p]]; i=p; } };
+      const pop=()=>{ const top=heap[0], last=heap.pop(); if(heap.length){ heap[0]=last; let i=0; for(;;){ const l=2*i+1, q=l+1; let m=i;
+        if(l<heap.length&&heap[l][0]<heap[m][0]) m=l; if(q<heap.length&&heap[q][0]<heap[m][0]) m=q; if(m===i) break; [heap[m],heap[i]]=[heap[i],heap[m]]; i=m; } } return top; };
+      for(const k of quelle.keys()){ kost[k]=0; push(rest(k),k); }
+      let fund=-1;
+      while(heap.length){ const [f,k]=pop(); if(f-rest(k)>kost[k]+1e-9) continue; if(ziel.has(k)){ fund=k; break; }
+        const x=k%n, z=(k/n)|0;
+        for(const [i,j,L] of NB){ const x2=x+i, z2=z+j; if(x2<0||z2<0||x2>=n||z2>=n) continue; const k2=x2+z2*n, g=Math.abs(h[k2]-h[k])/L;
+          if(g>W.steilMax||zu[k2]) continue; const u=Math.max(0,g-lim)/lim;
+          if(feucht[k2]<0) feucht[k2]=nass&&nass(r.x0+x2*d,r.z0+z2*d)?1:0;
+          const c=kost[k]+L*(1+W.hang*u*u)*(feucht[k2]?W.furt:1);
+          if(c<kost[k2]){ kost[k2]=c; von[k2]=k; push(c+rest(k2),k2); } } }
+      if(fund<0) return null;
+      const pts=[ziel.get(fund)];
+      let k=von[fund];
+      for(;k>=0&&von[k]>=0;k=von[k]) pts.push({x:r.x0+(k%n)*d, z:r.z0+((k/n)|0)*d});
+      pts.push(k>=0?quelle.get(k):quelle.get(fund));
+      return glaetten(pts.reverse(), hoeheAusRaster(r), W.steilMax, sperren||[]); }
+    // der Lauf über das Raster knickt in seiner Teilung (26,6°): `WEG_ZWISCHEN.glaett` Durchgänge ¼ · ½ · ¼ über die Nachbarn
+    // glätten ihn (≈ ±13 m), die Enden bleiben — ein Feldweg schlägt keine Haken (der Fahrer fuhr seine Knicke mit 8–11 m/s);
+    // geglättet wird nur, was nicht steiler wird (die Kehre bleibt) und in keinen Grundriss rückt
+    function glaetten(pts, H, max, sperren){
+      const g=(p,q)=>Math.abs(H(q.x,q.z)-H(p.x,p.z))/(Math.hypot(q.x-p.x,q.z-p.z)||1);
+      for(let n=0;n<WEG_ZWISCHEN.glaett;n++)
+        pts=pts.map((p,i)=>{ if(i===0||i===pts.length-1) return p;
+          const q={x:(pts[i-1].x+2*p.x+pts[i+1].x)/4, z:(pts[i-1].z+2*p.z+pts[i+1].z)/4};
+          return g(pts[i-1],q)<=Math.max(max,g(pts[i-1],p))&&g(q,pts[i+1])<=Math.max(max,g(p,pts[i+1]))&&!gesperrt(sperren,q.x,q.z)? q : p; });
+      return pts; }
+    // WAS EINEM WEG IM PLAN IM WEG STEHT (fahrzeug.K2): der Grundriss jedes Slots (seine obb) und der Tritt jeder Ausstattung
+    // (Stand, Brunnen, Laterne, Hof-Baum: AUSSTATTUNG `tritt`, der Baum 0,8 m) — je eine gedrehte Box {cx, cz, phi, ex, ez}, um
+    // `halbM` (die halbe Breite des Wagens) gewachsen, am Ursprung (ox, oz). Leser: die Nähte des Netzes (`wegeNetz`) und der
+    // Feldweg zwischen zwei Orten (`wegZwischen`), beide über `gesperrt`.
+    function planSperren(plan, ox, oz, halbM){
+      const A=AUSSTATTUNG, box=(x,z,phi,ex,ez)=>({cx:ox+x, cz:oz+z, phi:phi||0, ex:ex+halbM, ez:ez+halbM});
+      const kreis=(p,r)=>box(p.x,p.z,0,r,r);
+      return [].concat((plan.slots||[]).filter(sl=>sl.obb).map(sl=>box(sl.obb.cx,sl.obb.cz,sl.obb.phi,sl.obb.ex,sl.obb.ez)),
+        (plan.staende||[]).map(p=>box(p.x,p.z,0,A.marktstand.tritt.ex,A.marktstand.tritt.ez)), (plan.brunnen||[]).map(p=>kreis(p,A.brunnen.tritt.r)),
+        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)))
+        .filter(o=>isFinite(o.cx)&&isFinite(o.cz)); }
+    function gesperrt(sperren, x, z){
+      for(const o of sperren){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
+        if(Math.abs(dx*c-dz*s)<=o.ex&&Math.abs(dx*s+dz*c)<=o.ez) return true; }
+      return false; }
+    // DAS WEGE-NETZ EINES PLANS (fahrzeug.K2, plan-lokal): je Punkt der Straßen und Feldwege ein Knoten, die Folge eines Wegs
+    // seine Kanten, Knoten zweier Wege näher als `kreuzM` verbunden (die Kreuzung). Der Export trägt jede Straße nur so weit,
+    // wie Häuser an ihr stehen (`len`), den Feldweg aber am Ende der ganzen Straße: das Netz zerfiel in Teile (das Dorf −1,−5:
+    // sechs, Lücken 21–41 m längs der Hauptstraße, der Feldweg 33 m vor dem letzten Stück im Wald). DIE NÄHTE schließen es: der
+    // kürzeste freie gerade Schritt aus dem Teil des ersten Knotens zum Rest (bis `bisM`), frei, wo er keinen Grundriss (die
+    // obb jedes Slots) und keinen Tritt der Ausstattung (Stand, Brunnen, Laterne, Hof-Baum) näher als `halbM` streift — bis
+    // EIN Netz steht. Rückgabe {knoten, kanten (je Knoten die Paare j, Länge, die Nähte darin), naehte [[i, j]]}. Leser: der
+    // Wirt (`_wegeNetzGrund`: die Bewohner gehen, der Fahrer fährt es, die Nähte liegen als Feldweg).
+    function wegeNetz(plan, kreuzM, halbM, bisM){
+      const kn=[], kan=[], zug=[], naehte=[];
+      const kante=(i,j)=>{ const w=Math.hypot(kn[i].x-kn[j].x,kn[i].z-kn[j].z); kan[i].push(j,w); kan[j].push(i,w); };
+      let wi=0;
+      for(const rd of (plan.roads||[]).concat(plan.feldwege||[])){ let vor=-1;
+        for(const q of rd.pts||[]){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue;
+          kn.push({x:q.x,z:q.z}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
+        wi++; }
+      for(let i=0;i<kn.length;i++) for(let j=i+1;j<kn.length;j++)
+        if(zug[i]!==zug[j]&&(kn[i].x-kn[j].x)**2+(kn[i].z-kn[j].z)**2<kreuzM*kreuzM) kante(i,j);
+      const sperren=planSperren(plan,0,0,halbM);
+      const frei=(a,b)=>{ const L=Math.hypot(b.x-a.x,b.z-a.z);
+        for(let u=0;u<=L;u+=0.5) if(gesperrt(sperren,a.x+(b.x-a.x)*u/(L||1),a.z+(b.z-a.z)*u/(L||1))) return false;
+        return true; };
+      const teil=new Int32Array(kn.length);
+      for(;;){ teil.fill(-1); let n=0;
+        for(let i=0;i<kn.length;i++){ if(teil[i]>=0) continue; const offen=[i]; teil[i]=n;
+          while(offen.length){ const k=offen.pop(); for(let e=0;e<kan[k].length;e+=2){ const j=kan[k][e]; if(teil[j]<0){teil[j]=n;offen.push(j);} } }
+          n++; }
+        if(n<2) break;
+        const paare=[];
+        for(let i=0;i<kn.length;i++) if(teil[i]===0) for(let j=0;j<kn.length;j++) if(teil[j]!==0){ const d=(kn[i].x-kn[j].x)**2+(kn[i].z-kn[j].z)**2; if(d<=bisM*bisM) paare.push([d,i,j]); }
+        paare.sort((p,q)=>p[0]-q[0]);
+        const naht=paare.find(p=>frei(kn[p[1]],kn[p[2]]));
+        if(!naht) break;
+        kante(naht[1],naht[2]); naehte.push([naht[1],naht[2]]); }
+      return {knoten:kn, kanten:kan, naehte}; }
     function strassengraph(rnd, plan, sW, lw, Rw, H){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
   const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
@@ -7496,6 +7602,9 @@
         siedlungsZelle: siedlungsZelle,
         trasseRahmen: trasseRahmen, // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
+        wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
+        wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen
+        planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
         siedlungsEpoche: siedlungsEpoche,
