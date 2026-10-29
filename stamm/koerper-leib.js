@@ -5,8 +5,8 @@ class AnazhRealm_koerper_leib {
     // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core SKIN_TONES · HAIR_COLORS · CLOTH_COLORS): der Roller
     // PICKT ihre SCHLÜSSEL, die Dials tragen sie in den EINEN Farb-Münzer (`_menschGussFarben`) und den Guss — kein Hex-Zwilling.
     // Das Haar der Natur: die Töne, deren Farbton im Braun-Orange liegt (≤ 50°) oder die kaum gesättigt sind (Schwarz, Grau,
-    // Weiß) — die Färbe-Töne der Palette (Blau, Pink, Teal) trägt nur, wer sie im Studio wählt. Leser: die Bewohner
-    // (`_bewohnerGestalt`). Kalter Kern → lauter Bruch (fail-closed).
+    // Weiß) — die Färbe-Töne der Palette (Blau, Pink, Teal) trägt nur, wer sie im Studio wählt. Leser: die Gestalten jeder
+    // Siedlung (`_bewohnerGestalten`) und jeder Bewohner (`_bewohnerGenome`). Kalter Kern → lauter Bruch (fail-closed).
     _rollHumanoidGenome(seed) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
         const core = typeof window !== "undefined" && window.__koerperCore;
@@ -35,7 +35,10 @@ class AnazhRealm_koerper_leib {
             build: g.axis("build"),
             muscle: Math.max(0, Math.min(1, g.axis("muscle") * 0.65 + g.axis("build") * 0.35)),
             headRatio: g.range("head", 0.92, 1.16),
-            kh: g.range("height", 0.195, 0.235), // Welt-Höhe ~1.56–1.88 m
+            // DIE KÖRPERHÖHE (mensch.K4, die EINE Quelle der Höhe jedes Bewohners): ±8 % um 0,215 (1,72 m), die Summe zweier
+            // Achsen — gehäuft um die Mitte wie die Größen einer Menge, nie über den Rand (bis mensch.K4 0,195–0,235 gleich verteilt,
+            // ±9,3 %, und die Liste trug je Person eine zweite Größe ±4 % darüber)
+            kh: 0.215 * (1 + 0.08 * (g.axis("height") + g.axis("hoehe") - 1)),
             skinTone: g.pick("skin", Object.keys(core.SKIN_TONES)),
             hairColor: g.pick("hair", natur),
             topColor: g.pick("top", Object.keys(core.CLOTH_COLORS)),

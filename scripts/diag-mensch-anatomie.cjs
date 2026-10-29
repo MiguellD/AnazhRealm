@@ -16,8 +16,9 @@ const { urteilEnde, fadenScope } = require("./lib/welt-boot.cjs");
 
 const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "koerper-core.js"]);
 
-// Der Mensch aus dem Gesetz (THREE-Fabrik wie der Bäcker; die Hornhaut ist im Bäcker keine Fläche).
-function baue(sb, verzerre) {
+// Der Mensch aus dem Gesetz (THREE-Fabrik wie der Bäcker; die Hornhaut ist im Bäcker keine Fläche) — mit den Start-Dials oder
+// den Dials eines Bewohner-Typs (mensch.K4: die Probe der Menge, `kreatur-proben`).
+function baue(sb, verzerre, dials) {
     const T = sb.THREE;
     const K = sb.__koerperCore;
     const mats = {};
@@ -33,7 +34,7 @@ function baue(sb, verzerre) {
         zylinder: (rt, rb, h, k) => new T.Mesh(new T.CylinderGeometry(rt, rb, h, 12, 1), mat(k)),
     };
     const B = K.bauMensch(F);
-    K.morphAuf(B, Object.assign({}, K.START_PARAMS));
+    K.morphAuf(B, Object.assign({}, K.START_PARAMS, dials));
     for (const k of ["arm1", "arm-1"]) if (B.parts[k]) B.parts[k].rotation.set(0, 0, 0);
     if (verzerre) verzerre(B, T);
     B.character.updateMatrixWorld(true);
@@ -79,8 +80,14 @@ function maxBreite(P, y0, y1, n) {
     return best;
 }
 
-function messe(sb, verzerre) {
-    const { B, T } = baue(sb, verzerre);
+// die Ohren des Kopfs: seine Gruppen-Kinder seitlich jenseits 0,8 Schädel-Radius (der Schädel ist sein erstes Mesh)
+function ohrenVon(kopf) {
+    const s = kopf.children.find((c) => c.isMesh);
+    const rS = s.geometry.parameters.radius * Math.abs(s.scale.x);
+    return kopf.children.filter((c) => !c.isMesh && c.children.length && Math.abs(c.position.x) > 0.8 * rS);
+}
+function messe(sb, verzerre, dials) {
+    const { B, T } = baue(sb, verzerre, dials);
     const P = B.parts;
     const lage = (n) => new T.Vector3().setFromMatrixPosition(n.matrixWorld);
     const alle = punkte(T, B.character);
@@ -106,12 +113,7 @@ function messe(sb, verzerre) {
     // der Kopf: Höhe des Teilbaums; Breite ohne die Ohren (Gruppen-Kinder seitlich jenseits 0,8 Schädel-Radius)
     const kopf = P.head;
     const kopfP = punkte(T, kopf);
-    const schaedel = kopf.children.find((c) => c.isMesh);
-    const rS = schaedel.geometry.parameters.radius * Math.abs(schaedel.scale.x);
-    const ohren = new Set(
-        kopf.children.filter((c) => !c.isMesh && c.children.length && Math.abs(c.position.x) > 0.8 * rS)
-    );
-    const kopfOhneOhren = punkte(T, kopf, ohren);
+    const kopfOhneOhren = punkte(T, kopf, new Set(ohrenVon(kopf)));
     const kopfH = spanne(kopfP, 1).l;
     const kopfB = spanne(kopfOhneOhren, 0).l;
     const aug = B.augen;
@@ -184,9 +186,7 @@ function messeKopf(sb, eingriff) {
     const ipd = eL.distanceTo(eR);
     const augW = spanne(punkte(T, aug.eyeL), 0).l;
     const lippen = punkte(T, aug.upperLipRef).concat(punkte(T, aug.lowerLipRef));
-    const schaedel = kopf.children.find((c) => c.isMesh);
-    const rS = schaedel.geometry.parameters.radius * Math.abs(schaedel.scale.x);
-    const ohr = kopf.children.find((c) => !c.isMesh && c.children.length && c.position.x > 0.8 * rS);
+    const ohr = ohrenVon(kopf).find((c) => c.position.x > 0);
     const op = spanne(punkte(T, ohr), 1);
     const nase = [P.noseTip, P.noseA1, P["noseA-1"]].filter(Boolean).reduce((a, n) => a.concat(punkte(T, n)), []);
     const yNase = spanne(nase, 1).a;
@@ -212,6 +212,8 @@ function messeKopf(sb, eingriff) {
     g.traverse((n) => n.isMesh && ms.push(n));
     const kl = (n) => n.material.userData.__klasse,
         jn = (n) => n.userData.__assetJoint || "";
+    // die Punkte eines Teils im Ofen-Raum (an seinem Gelenk)
+    const imOfen = (n) => punkte(T, n).map((p) => new T.Vector3(...p).applyMatrix4(welt(jn(n))).toArray());
     const hautK = ms.find((n) => kl(n) === "haut" && jn(n) === "head");
     const v = new T.Vector3();
     const hp = [],
@@ -253,13 +255,7 @@ function messeKopf(sb, eingriff) {
     // die Hornhaut vor der Haut: der Augapfel-Scheitel gegen den Median der Haut im Ring 1,0–1,8 Augapfel-Radien
     let vorstand = -Infinity;
     for (const n of ms.filter((n) => kl(n) === "eye")) {
-        const Mj = welt(jn(n));
-        const bp = punkte(T, n).map((p) =>
-            v
-                .set(...p)
-                .applyMatrix4(Mj)
-                .toArray()
-        );
+        const bp = imOfen(n);
         const sx = spanne(bp, 0),
             sy = spanne(bp, 1),
             sz = spanne(bp, 2);
@@ -304,12 +300,7 @@ function messeKopf(sb, eingriff) {
     let irisN = 0,
         irisFrei = 0;
     for (const n of ms.filter((n) => kl(n) === "iris")) {
-        const ip = punkte(T, n).map((p) =>
-            v
-                .set(...p)
-                .applyMatrix4(welt(jn(n)))
-                .toArray()
-        );
+        const ip = imOfen(n);
         const zc = (spanne(ip, 2).a + spanne(ip, 2).b) / 2;
         for (const p of ip) {
             if (p[2] <= zc) continue;
@@ -324,15 +315,7 @@ function messeKopf(sb, eingriff) {
     const iz = ms
         .filter((n) => kl(n) === "iris")
         .map((n) => {
-            const b = spanne(
-                punkte(T, n).map((p) =>
-                    v
-                        .set(...p)
-                        .applyMatrix4(welt(jn(n)))
-                        .toArray()
-                ),
-                0
-            );
+            const b = spanne(imOfen(n), 0);
             return (b.a + b.b) / 2;
         });
     const skala = Math.abs(iz[0] - iz[1]) / ipd;
@@ -372,32 +355,18 @@ function messeKopf(sb, eingriff) {
         kopfDreiecke: tris,
     };
 }
-function urteileKopf(sb, m) {
-    const S = sb.__koerperCore.KOPF_SOLL;
-    if (!S) return ["koerper-core KOPF_SOLL fehlt"];
-    const v = [];
-    for (const [k, x] of Object.entries(m)) {
+// DAS URTEIL DER BÄNDER (MENSCH_SOLL, KOPF_SOLL): je Maß sein Band (…Min/…Max im Band des Maßes), nicht messbar ist ROT
+function urteile(sb, m, soll = "MENSCH_SOLL") {
+    const S = sb.__koerperCore[soll];
+    if (!S) return [`koerper-core ${soll} fehlt`];
+    return Object.entries(m).flatMap(([k, x]) => {
         const band = S[k.replace(/(Min|Max)$/, "")];
-        if (!Array.isArray(band)) continue;
-        if (!Number.isFinite(x)) v.push(`${k} nicht messbar`);
-        else if (x < band[0]) v.push(`${k} ${+x.toFixed(4)} < ${band[0]}`);
-        else if (x > band[1]) v.push(`${k} ${+x.toFixed(4)} > ${band[1]}`);
-    }
-    return v;
+        if (!Array.isArray(band)) return [];
+        if (!Number.isFinite(x)) return [`${k} nicht messbar`];
+        return x < band[0] ? [`${k} ${+x.toFixed(4)} < ${band[0]}`] : x > band[1] ? [`${k} ${+x.toFixed(4)} > ${band[1]}`] : [];
+    });
 }
-
-function urteile(sb, m) {
-    const S = sb.__koerperCore.MENSCH_SOLL;
-    const v = [];
-    if (!S) return ["koerper-core MENSCH_SOLL fehlt"];
-    for (const [k, band] of Object.entries(S)) {
-        const x = m[k];
-        if (!Number.isFinite(x)) v.push(`${k} nicht messbar`);
-        else if (x < band[0]) v.push(`${k} ${x.toFixed(4)} < ${band[0]}`);
-        else if (x > band[1]) v.push(`${k} ${x.toFixed(4)} > ${band[1]}`);
-    }
-    return v;
-}
+const urteileKopf = (sb, m) => urteile(sb, m, "KOPF_SOLL");
 
 const zeige = (m) =>
     console.log(
@@ -407,12 +376,15 @@ const zeige = (m) =>
                 .join(" · ")
     );
 
+module.exports = { ladeWelt, messe };
+if (require.main !== module) return;
 if (process.argv.includes("--selftest")) {
     console.log("=== SELBST-TEST: die Mensch-Anatomie-Linse feuert ===");
     let rot = 0;
-    const pruefe = (name, verzerre, muster) => {
-        const sb = ladeWelt();
-        const f = urteile(sb, messe(sb, verzerre));
+    // je Fall der Eingriff am Gesetz (`verzerre`) oder am Kopf (`eingriff`, mit `kopf`): er muss sein Maß beim Namen rot machen
+    const pruefe = (name, verzerre, muster, kopf) => {
+        const sb = kopf ? ladeOfen() : ladeWelt();
+        const f = kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre));
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -434,45 +406,31 @@ if (process.argv.includes("--selftest")) {
         },
         /^augenAbstand/
     );
-    const pruefeKopf = (name, eingriff, muster) => {
-        const so = ladeOfen();
-        const f = urteileKopf(so, messeKopf(so, eingriff));
-        const ok = f.some((x) => muster.test(x));
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
-        if (!ok) rot++;
-    };
-    const ohren = (B) =>
-        B.parts.head.children.filter((c) => !c.isMesh && c.children.length && Math.abs(c.position.x) > 0.3);
-    pruefeKopf(
+    pruefe(
         "S4 das um ein Viertel Kopfhöhe gehobene Ohr wird erkannt",
-        { gesetz: (B) => ohren(B).forEach((o) => (o.position.y += 0.25)) },
-        /^ohrOben/
+        { gesetz: (B) => ohrenVon(B.parts.head).forEach((o) => (o.position.y += 0.25)) },
+        /^ohrOben/,
+        true
     );
-    const vor = (K) => (F) => {
-        const B = K.bauMensch(F);
-        for (const e of [B.augen.eyeL, B.augen.eyeR]) e.position.z += 0.12;
-        return B;
-    };
-    pruefeKopf(
-        "S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt",
-        { kern: (K) => Object.assign({}, K, { bauMensch: vor(K) }) },
-        /^augenVorstand/
-    );
-    const begrabe = (K) => (F) => {
-        const B = K.bauMensch(F);
-        for (const e of [B.augen.eyeL, B.augen.eyeR]) e.position.z -= 0.12;
-        return B;
-    };
-    pruefeKopf(
-        "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
-        { kern: (K) => Object.assign({}, K, { bauMensch: begrabe(K) }) },
-        /^(augeFrei|augenVorstand)/
-    );
+    // der Augapfel eine Augapfel-Breite vor (dz +0,12) oder zurück (−0,12) — im Kern, den der Ofen liest
+    const auge = (dz) => ({
+        kern: (K) =>
+            Object.assign({}, K, {
+                bauMensch: (F) => {
+                    const B = K.bauMensch(F);
+                    for (const e of [B.augen.eyeL, B.augen.eyeR]) e.position.z += dz;
+                    return B;
+                },
+            }),
+    });
+    pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
+    pruefe("S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt", auge(-0.12), /^(augeFrei|augenVorstand)/, true);
     const rot0 = (K) => (h) => Object.assign({}, K.kopfToene(h), { lips: 0xaa5544 });
-    pruefeKopf(
+    pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
         { kern: (K) => Object.assign({}, K, { kopfToene: rot0(K) }) },
-        /^lippe[LA]/
+        /^lippe[LA]/,
+        true
     );
     urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
