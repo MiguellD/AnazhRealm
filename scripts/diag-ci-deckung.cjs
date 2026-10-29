@@ -997,12 +997,12 @@ function selbsttestZeuge() {
     // die Probe liest über jede Art (auch ein Kind mit eigener env); die Mutante ohne den readFile-Haken verschweigt, was sie las
     const probe = (zeuge) => {
         const ordner = fs.mkdtempSync(path.join(require("os").tmpdir(), "zeuge-"));
-        const kind = JSON.stringify(`require("fs").readFileSync("scripts/ci-schluessel.cjs")`);
-        const code = `const fs = require("fs"); fs.readFileSync("scripts/ci-kopf.cjs"); fs.readdirSync("spec/ci"); fs.statSync("scripts/ci-zeiten.cjs"); require("child_process").execFileSync(process.execPath, ["-e", ${kind}], { env: { PATH: process.env.PATH } }); fs.promises.readFile(".gitattributes");`;
+        const kind = JSON.stringify(`require("fs").readFileSync(".prettierrc.json")`);
+        const code = `const fs = require("fs"); fs.readFileSync("spec/ci/ci-zeiten.json"); fs.readdirSync("spec/ci"); fs.statSync("README.md"); require("child_process").execFileSync(process.execPath, ["-e", ${kind}], { env: { PATH: process.env.PATH } }); fs.promises.readFile(".gitattributes");`;
         const env = { ...process.env, NODE_OPTIONS: `--require=${zeuge}`, KONSUM_ZEUGE: ordner, KONSUM_WURZEL: "" };
         require("child_process").execFileSync(process.execPath, ["-e", code], { cwd: root, env });
         const s = Object.values(sammle(ordner).schritte)[0] || {};
-        const soll = { lies: ["scripts/ci-kopf.cjs", "scripts/ci-schluessel.cjs", ".gitattributes"], liste: ["spec/ci"], frage: ["scripts/ci-zeiten.cjs"] };
+        const soll = { lies: ["spec/ci/ci-zeiten.json", ".prettierrc.json", ".gitattributes"], liste: ["spec/ci"], frage: ["README.md"] };
         return Object.entries(soll).flatMap(([a, ds]) => ds.filter((d) => !(s[a] || []).includes(d)).map((d) => `(Z) ZEUGE: die Probe ${a} ${d}, die Spur verschweigt es`));
     };
     // zwei Mutanten, die je eine gelesene Datei verschweigen: ohne readFile-Haken (fs.promises.readFile) und ohne das Erbe der env
@@ -1017,7 +1017,7 @@ function selbsttestZeuge() {
         [
             { name: "der Zeuge an der Probe (grün)", z: ZEUGE_DATEI, muss: null },
             { name: "die Mutante ohne readFile-Haken", z: mutante('["readFile", ', "["), muss: /die Probe lies \.gitattributes, die Spur verschweigt es/ },
-            { name: "die Mutante ohne das Erbe der env", z: mutante("o2.env = mitZeuge(o2.env)", "o2.env"), muss: /die Probe lies scripts\/ci-schluessel\.cjs/ },
+            { name: "die Mutante ohne das Erbe der env", z: mutante("o2.env = mitZeuge(o2.env)", "o2.env"), muss: /die Probe lies \.prettierrc\.json/ },
         ],
         probe,
         { fehler: f }
