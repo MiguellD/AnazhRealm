@@ -197,3 +197,4 @@ takt20a-gtx 2 punkte sha=e5c2a954fecaa796b50e60c59a20ea49910577a5 geraet=gtx nur
 takt20b-gtx 2 punkte sha=e5c2a954fecaa796b50e60c59a20ea49910577a5 geraet=gtx nur=bauen.K5#2,fahrzeug.K3#1,fahrzeug.K3#2,fahrzeug.K4#1,fahrzeug.K4#2,siedlung.K2#1,siedlung.K2#2,siedlung.K1#2,siedlung.K5#1,siedlung.K5#2,leib.K1#1,leib.K1#2,leib.K2#1,leib.K2#2,leib.K4#1,leib.K4#2,halten.K2#1,halten.K5#1,halten.K5#2,halten.K1#2,fahrzeug.K5#1,tore.K3#1,tore.K3#2,tore.K5#2,spielgang.K3#1,ankunft.K2#1,ankunft.K3#1,streaming.K3#1,streaming.K4#2,profiband.K4#1,profiband.K4#2,klang.K2#1,klang.K4#1,klang.K4#2,klang.K5#2,speicher.K1#1,speicher.K1#2,speicher.K2#1,speicher.K2#2,speicher.K4#2
 takt20a-gtx 0 storno
 takt20b-gtx 0 storno
+z67-abab 1 abab A=b3f9ae95d3bf1188285b135c757b074a12ee3f22 B=29a5f696dbfa0ddac659b8ce808e83f32bf1ad29 zellen=w-ego,d-ego,stadt
