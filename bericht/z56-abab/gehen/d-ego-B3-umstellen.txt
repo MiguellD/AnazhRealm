@@ -1,0 +1,19 @@
+{
+ "ms": 50296,
+ "ort": "dorf",
+ "sicht": "ego",
+ "pose": null,
+ "welt": null,
+ "spieler": [
+  -841,
+  -861
+ ],
+ "wiese": null,
+ "takte": 546,
+ "steht": true,
+ "chunks": 81,
+ "gier": 0.7641,
+ "dorfZug": true,
+ "ortTakt": [],
+ "dorfSchwebt": null
+}

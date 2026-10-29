@@ -1,0 +1,116 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.119",
+  "sha": "557d4aaddd489ba2dd2cc31322e5a349348c11a8"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.958188394836906,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.96,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 1.92,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.56,
+   28.98,
+   -1042.59
+  ],
+  "blick": [
+   0,
+   -0.26092,
+   -0.96536
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 77.6,
+  "sigma": 29.6,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1.92 m · Luma 77.6 σ 29.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.119 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^tier:wolf$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:wolf=255/80/80"
+  ],
+  "klassen": {
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": -0.2124,
+    "spiegelEbene": 28.952,
+    "sp": [
+     1226,
+     0,
+     0,
+     853523.14,
+     853523.14,
+     -181309.72
+    ],
+    "zweiton": 0,
+    "weiss": 0.0001,
+    "wt": 27,
+    "wtZiel": null,
+    "bunt": 21.16,
+    "pixel": 363191,
+    "luma": 62.43,
+    "kante": 0.532,
+    "kr": 15429,
+    "strich": 0.505,
+    "si": 245939,
+    "bloecke": 4781,
+    "glatt": 0.7061,
+    "nyquist": 0.1102,
+    "beta": 2.1456
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\557d4aad-radeon\\haar.K1_1-arm.maske.png"
+ }
+}

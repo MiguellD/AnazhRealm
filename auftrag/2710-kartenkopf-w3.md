@@ -26,3 +26,12 @@ Die Meisterkarte steht bei 123/330 (gebucht am 19606f2e). Der Weg zu 330 ist ein
 5. **Datei-Besitz:** deine Karte nennt ihre Dateien. Fremde Dateien einer laufenden Karte nicht editieren — Stelle und Grund im Rumpf.
 6. **Nie warten:** keine Schleife ohne Obergrenze, kein Pollen der CI über 20 min. Ist die CI rot an einem fremden Wackler
    (z. B. STAND-TAKT BRAND-ZELLEN 66 > 64), nenne ihn im Rumpf und gib ab — der Koordinator heilt Wackler in main.
+
+**Nachtrag 28.10. 17:50 (bindend für jede Karte ab w3r):**
+7. **Kein swiftshader-Bild in der Cloud.** Bild-, Zeit- und Werkbank-Läufe (`--bild`, `--echt`, `werkbank bild|lauf`, Frame-p95)
+   laufen unter swiftshader 20–60 min, hängen an `createRenderPipelineAsync` und urteilen nichts, was die Karte zählt. Die Cloud
+   beweist Mechanik: Null-Renderer-Linsen, `--selbsttest`, Mutante ROT, `npm run check`, `gate:apparat`. Das GPU-Urteil fällt an
+   der Station auf Radeon und GTX. Im Rumpf steht dann „GPU: an der Station“ statt einer swiftshader-Zahl.
+8. **Kurz vor dem Push `git merge origin/main`** — main wandert am Tag um 4–6 Züge; ein Zweig, der gegen einen Kopf von heute früh
+   gebaut ist, fällt im Einlass. Linsen enden über das EINE `urteilEnde`/`wandEnde` aus `scripts/lib/welt-boot.cjs`, Seiten-Server
+   lauschen über `lausche` — keine eigenen Enden, keine festen Ports.

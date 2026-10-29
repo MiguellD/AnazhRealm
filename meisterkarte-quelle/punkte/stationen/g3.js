@@ -3,10 +3,10 @@
 // ein Zweig im Stau kippen soll (material-lack K1, material-mikro K2, material-albedo K3). Jede Station misst im Ausgabe-Bild
 // auf der Karte (gpu: true, über gpu-lauf.sh); headless ist hier keine, weil keines dieser Sollwerte reine Mechanik ist.
 //
-// DIE FOLGE (`folge`, unten): eine Werkbank-Welt `start --port {PORT}` (die Seite einen Port darunter, ohne --echt, also headless
-// am Hardware-Adapter der Weiche, wie gate:luft-tiefe:echt) fährt die Schritte der Station der Reihe nach und hält immer mit
-// `stop` an. Nach {AUS} schreibt sie `{ adapter, schritte: { name: { exit, json, rest } }, dateien, fehler }`; Bilder und
-// base64 fallen weg. Weil der Code der Folge im Befehl steht, gehört er zum Abdruck: ändert er sich, zählt die alte Messung nicht.
+// DIE FOLGE (`folge`, unten) fährt die Schritte der Station der Reihe nach in der Welt der Sitzung (punkte.cjs fahreSitzung:
+// `werkbank start --echt` an WERKBANK_PORT, ihr Log PUNKTE_SITZUNG_LOG nennt die Karte) — sie startet und stoppt nie eine Welt
+// (bis 29.10. bootete jede Folge ihre eigene, ohne --echt, und hielt mit `stop` an). Nach {AUS} schreibt sie
+// `{ adapter, schritte: { name: { exit, json, rest } }, dateien, fehler }`; Bilder und base64 fallen weg. Weil der Code der Folge im Befehl steht, gehört er zum Abdruck: ändert er sich, zählt die alte Messung nicht.
 // Ein Adapter wie swiftshader, llvmpipe, lavapipe oder software ist in jedem Urteil ROT.
 //
 // `stationen.fehlt` enthält, was sich nicht als Station fassen lässt, mit Grund und den Teilen, die schon messbar wären. Es steht
@@ -50,19 +50,11 @@ async function folge(plan) {
                 }
         return null;
     };
-    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
     const wb = (args, ms) =>
         cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
-    const log = path.join(DIR, "werkbank.log");
-    const w = cp.spawn(process.execPath, [WB, "start", "--port", P], { stdio: ["ignore", fs.openSync(log, "w"), fs.openSync(log, "a")] });
     let code = 0;
     try {
-        for (let t = 0; !/WERKBANK bereit/.test(fs.readFileSync(log, "utf8")); t += 2) {
-            if (w.exitCode != null) throw new Error("die Werkbank startet nicht (Exit " + w.exitCode + "): " + fs.readFileSync(log, "utf8").slice(-300));
-            if (t > 900) throw new Error("die Werkbank steht nach 900 s nicht");
-            await warte(2000);
-        }
-        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(log, "utf8")) || [null])[0];
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
         for (const s of plan.schritte) {
             let args = (s.args || []).map(ers);
             if (s.probe) {
@@ -87,9 +79,6 @@ async function folge(plan) {
         aus.fehler = String((e && e.message) || e);
         code = 1;
     } finally {
-        wb(["stop"], 60000);
-        await warte(2000);
-        if (w.exitCode == null) w.kill();
         fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
     }
     console.log(aus.adapter || "[linse-gpu] ungenannt");
@@ -97,8 +86,26 @@ async function folge(plan) {
     process.exit(code);
 }
 const befehlDer = (plan) => ["node", "-e", "(" + folge.toString() + ")(" + JSON.stringify(plan) + ")", "{AUS}", "{KOORD}"];
-// MSYS2_ARG_CONV_EXCL: gpu-lauf.sh ruft node über die Git-bash; ohne diese Variable würde msys die Pfade in den Argumenten umschreiben
-const envDer = { WERKBANK_PORT: "{PORT}", MSYS2_ARG_CONV_EXCL: "*" };
+// MSYS2_ARG_CONV_EXCL: gpu-lauf.sh ruft node über die Git-bash; ohne diese Variable würde msys die Pfade in den Argumenten umschreiben.
+// Die Folge trifft die Werkbank der Sitzung über WERKBANK_PORT (punkte.cjs setzt {PORT}+20000); die Albedo-Tafel (material.K1, eigene
+// Welt) behält ihren Port {PORT}
+const envDer = { MSYS2_ARG_CONV_EXCL: "*" };
+const envAlbedo = { WERKBANK_PORT: "{PORT}", MSYS2_ARG_CONV_EXCL: "*" };
+
+// Der Pfad des Wechsels (lod.K5, lod.K2): das Gesetz, seine Leser, der Regler, die Stufen der Kerne
+const LOD_PFAD = [
+    "stamm/vegetation-*.js",
+    "stamm/siedlung-bauten.js",
+    "stamm/studio-bruecke.js",
+    "stamm/dirigent-regler.js",
+    "stamm/dirigent-takt.js",
+    "stamm/stoff-material.js",
+    "foundry-core.js",
+    "fachwerk-core.js",
+    "porta-core.js",
+    "vehicle-core.js",
+    "phyto-core.js",
+];
 
 // Der Pfad, den jedes Ausgabe-Bild liest: Szene, Stoffe, Licht, Loop, Kerne, Seite, three r184, die Werkbank und ihre Aufnahme
 const BILD = [
@@ -497,14 +504,14 @@ const stationen = [
         // Die Kugel-Bilanz aus bericht/2110-messschuld2 (licht.K2 S1, GTX, n = 3, 5,0132 / 0,1995): koordination
         // `bericht/2110-messschuld2/kugel.js` über `werkbank eval` am Messort wiese, drei Schüsse aus dem Ausgabe-Pfad bei
         // 1920×1080: A ist die Welt, B die Kugeln ohne Schatten-Empfang, C die Sonne aus.
-        befehl: befehlDer({
+        probe: { sek: 120, befehl: befehlDer({
             name: "licht.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
                 { name: "kugel", probe: "@KOORD@/bericht/2110-messschuld2/kugel.js", blob: "3d42b5fefd53dafb551534e030bdc5c7c958e842", muss: true },
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -548,7 +555,7 @@ const stationen = [
         // Himmel zur Sonne ≥ 1,2; die tiefe Sonne (Uhr 0,27 und 0,73, klar) ≥ 2,5; bedeckt (Regen, jede Uhr) ≤ 1,5. Gültig ist eine
         // Spalte wie Staffel 1 nur mit A = B an der Sonnen-Kugel und A = C an der Schatten-Kugel (±2 %), ≥ 100 px, und wenn ihr
         // `stand` die Uhr und das Wetter der Spalte trägt.
-        befehl: befehlMitHimmel({
+        probe: { sek: 180, befehl: befehlMitHimmel({
             name: "licht.K2#2",
             texte: SPALTE_TEXTE,
             schritte: [
@@ -561,7 +568,7 @@ const stationen = [
                 ]),
                 { name: "himmel", probe: "@DIR@/himmel.js", blob: HIMMEL_BLOB },
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -629,7 +636,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:luft-tiefe:echt mit Messung (ferne-luft e9f79deb, Beleg an d3a626ee): luftTiefe vom Hügel Genesis + 120 m,
         // 4 Azimute, Uhr 0,5 und 0,27, Urteil luftTiefeUrteil gegen spec/farbe/luft-referenz.json (Bucholtz 1995)
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -662,7 +669,7 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // derselbe Lauf wie ferne.K1#1 (gate:luft-tiefe:echt): der Restkontrast am Rand der letzten Fern-Schale, 4 Azimute, klar, Uhr 0,5
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -696,7 +703,7 @@ const stationen = [
         // 0,27 je Kanal (Δβ blau−rot), den Farbton bei 8 km (≤ 10° von der In-Streuung), die Sonnenseite (Y der In-Streuung zur Sonne /
         // gegen sie ≥ 1,2), das ferne Weiß bei Sonne 5° (weiße Lambert-Tafel 5 km, R/B ≥ 1,3) und den Ton des Himmels (Hillaire). Ein
         // OFFEN der Referenz hält nur den Exit des Gates, die Staffel K1-2 bleibt ROT, solange ein K1-2-Befund steht.
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -736,14 +743,14 @@ const stationen = [
         // binnen 3 km, Auge 40 m) — K2-2 je Rand-Spalte der Struktur-Tensor von ln Y, keine waagrechte Linie ab 1° (luft-referenz
         // `band.linie`), 4 Azimute je Ort, Uhr 0,5 —, danach am Messort Genesis die Band-Linse: die Klasse boden (Boden-Satz · Wasser-Satz ·
         // Fern-Ring · Fern-Wasser) über Haupt + k0 + k1 im Haushalt (12 Befehle / 120k Dreiecke, spec/profiband/haushalt.json).
-        befehl: befehlDer({
+        probe: { sek: 900, befehl: befehlDer({
             name: "ferne.K2#2",
             schritte: [
                 { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
                 { name: "genesis", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
                 { name: "band", args: ["band", "--ort", "genesis", "--datei", "@DIR@/band.json"], datei: "@DIR@/band.json" },
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -781,7 +788,7 @@ const stationen = [
         // EINEN Wetter-Schreiber), Uhr 0,5, 4 Azimute ab der Sonne; je Sicht die Sichtweite am Bezugsniveau aus dem Kontrast-Abfall
         // im Bild, −ln 0,02 · g·d / −ln T_grün je Pixel der Szene (T 0,02…0,95, T = (L − S)/(L0 − S) aus drei Schüssen), der Median;
         // das Urteil der Median der Azimute (≥ 10 Pixel, ≥ 3 Azimute) gegen 1 500 m ±15 %
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -810,7 +817,7 @@ const stationen = [
         // --zug`), je Wort ≥ 60 s der Welt-Uhr im echten Takt (`_gameLoopTick`, 0,1 s) über die Transition des Spiels (45 s, das Gemüt
         // moduliert sie), bis das Wort steht; die Uhr steht auf Mittag; je Sekunde die Leuchtdichte des Ausgabe-Bilds (linear). Das Urteil: der größte Sprung |log2 Y_k/Y_k−1| je
         // Sekunde ≤ 0,1 EV/s, und beide Wörter standen am Ende ihrer Phase (sonst misst die Reihe keinen Übergang)
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 420, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -844,7 +851,7 @@ const stationen = [
         // Kamera <m> vor die Fläche, die der Ego-Blick trifft; klassenMasse liefert glatt (8×8-Blöcke mit σ Luma < 4) und nyquist.
         // Die Schüsse: Boden (bodenSatz) an der Mess-Wiese, Fels (formationenSatz) am höchsten Punkt einer Genesis-Formation.
         // An origin/main gibt es `--arm` noch nicht; die Station ist dort ROT („arm fehlt“).
-        befehl: befehlDer({
+        probe: { sek: 300, befehl: befehlDer({
             name: "material.K2#1",
             texte: { FELS_ZIEL },
             schritte: [
@@ -864,7 +871,7 @@ const stationen = [
                     { name: "fels-" + d, args: ["bild", "0", "0", "0", "0", "0", "0", "--arm", d, "--wahl", "0", "--klasse", "^formationenSatz$", "--datei", "@DIR@/fels-" + d + ".png"] },
                 ]),
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -918,7 +925,7 @@ const stationen = [
         // Umgebungslicht π, nicht das belichtete Bild. Für das Haus wird der Ton jeder Stufe gegen L0 gerechnet (`stufeVon`); für den Fels
         // werden die Stufen der Art rock abgefragt (`_foundryKindStages`): ist es nur [0], zeigt die Welt den Fels nur in L0, und die
         // Fels-Hälfte ist erfüllt (M43).
-        befehl: befehlDer({
+        probe: { sek: 300, befehl: befehlDer({
             name: "material.K3#1",
             schritte: [
                 { name: "ort", args: ["umstellen", "0", "0"], muss: true },
@@ -932,7 +939,7 @@ const stationen = [
                     ],
                 },
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -986,7 +993,7 @@ const stationen = [
         // in ihrer Stufe; der Fels zeigt nur L0 (wie #1). Die Haus-Stufen des Glas-Stils (hochhaus, volle_moderne) hält offline
         // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
         // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
-        befehl: befehlDer({
+        probe: { sek: 300, befehl: befehlDer({
             name: "material.K3#2",
             schritte: [
                 { name: "ort", args: ["umstellen", "0", "0"], muss: true },
@@ -1000,7 +1007,7 @@ const stationen = [
                     ],
                 },
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -1057,7 +1064,7 @@ const stationen = [
         // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
         // Seiten auf der Karte (nie ein Ersatz-Renderer).
         befehl: ALBEDO_TAFEL_ECHT,
-        env: envDer,
+        env: envAlbedo,
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -1087,7 +1094,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // dieselbe Messung; dazu liest die 18-%-Karte auf beiden Seiten 0,180 (± eichRand der Tafel), je Gerät
         befehl: ALBEDO_TAFEL_ECHT,
-        env: envDer,
+        env: envAlbedo,
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -1117,13 +1124,13 @@ const stationen = [
         // schatten-k1-kontakt: werkbank licht --kontakt (scripts/lib/licht-linsen.cjs `kontaktSicht` + `kontaktUrteil`): Pfosten
         // 0,5 × 0,5 × 3 m auf der Prüfbühne, A Welt / B ohne Pfosten / C ohne Sonne aus dem Ausgabe-Pfad, Halbschatten 10–90 % am
         // Fuß je Pose bei Uhr 0,5; am Kopf vor dem Zweig kennt licht kein --kontakt (ROT beim Namen)
-        befehl: befehlDer({
+        probe: { sek: 240, befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "kontakt", args: ["licht", "--kontakt"], ms: 900000 },
             ],
-        }),
+        }) },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -1143,6 +1150,247 @@ const stationen = [
         },
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
         quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
+    },
+
+    // ───────── lod.K5 · lod.K2 — die Stufe folgt dem Schirm, nicht dem Regler (w3v-lod) ─────────
+    // DAS GESETZ DES WECHSELS im Spiel-Baum (`AnazhRealm._wechselGesetz`, stamm/vegetation-streu.js): der Abstand, an dem der Fehler der
+    // Stufe (LOD_SCHIRM.fehler, am Bau gemessen) am Schirm 1 px trägt, höchstens der Haushalt des Buchs; jeder Leser fragt es (die
+    // Schwellen der Masken von Baum, Streu und Wagen, die Grenzen von Haus, Tor, Ausstattung), der Laub- und der Bau-Rand sind der Haushalt
+    // (`_randSchirm`), kein Regler. K5#1 an der GPU: je Familie die schlechteste Vorlage im Wechsel-Abstand des Gesetzes, L0 erzwungen gegen
+    // die gewählte Stufe im Ausgabe-Bild, Chamfer der Masken-Kanten (bericht/2910-lod-k5/kanten.js); die Mechanik ohne Bild misst
+    // bericht/2910-lod-k5/fehler-am-bau.cjs am Bau (29.10.: Baum 12,06 px, Haus 2,95, Tor 7,85, Wagen 0,02, Ausstattung 0,72 — ROT
+    // erwartet an Baum, Haus und Tor: der Haushalt hält, die Stufe trägt das Soll dort nicht).
+    // K5#2 headless: die Regler-Simulation des Playtests (S6, die echte Kette Fold → PID → Aktuator) bei 30/60/144 fps, Puls und Regler
+    // ±10 %. K2#1 an der GPU: Gehen 4 m/s an der Mess-Wiese, je Schritt dieselbe Pose vor und nach dem Takt (bericht/2910-lod-k5/pop.js).
+    {
+        kriterium: "lod.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 900, befehl: befehlDer({
+            name: "lod.K5#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "c87ffc92ffac2801f75fc7eb5fdb7d956706f099", muss: true, ms: 1800000 },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.kanten;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e || !Array.isArray(e.faelle)) return { gruen: false, zahl: "keine Kanten-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            const FAM = { tree: "Baum", haus: "Haus", gate: "Tor", vehicle: "Wagen" };
+            const je = {};
+            const bruch = [];
+            for (const f of e.faelle) {
+                if (f.fehler || !f.ok || f.px == null || !(f.pixel >= 200)) bruch.push(f.kind + " L" + f.stufe + ": " + (f.fehler || (f.ok ? "Exemplar " + f.pixel + " px" : "Stufe nicht gestellt")));
+                else je[f.kind] = Math.max(je[f.kind] || 0, f.px);
+            }
+            const fehlt = Object.keys(FAM).filter((x) => !(x in je));
+            const gruen = hw && !bruch.length && !fehlt.length && Object.values(je).every((x) => x <= 1);
+            return {
+                gruen,
+                zahl:
+                    Object.keys(FAM).map((x) => FAM[x] + " " + (x in je ? je[x].toFixed(2) : "—") + " px").join(" · ") + " (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080)" +
+                    (bruch.length ? " · " + bruch.join(" · ") : "") + ", " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, ...LOD_PFAD],
+        quelle: "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät",
+    },
+    {
+        kriterium: "lod.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/playtest.cjs"],
+        env: { PLAYTEST_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) Regler-Sim S6 die Stufe und der Rand am Schirm/.test(x));
+            const m = l && /— K5#2 Spanne ([\d.]+) · (\{.*)$/.exec(l);
+            if (!m) return { gruen: false, zahl: "keine S6-Zeile der Regler-Simulation (Exit " + lauf.exit + ")" };
+            let s = null;
+            try {
+                s = JSON.parse(m[2]);
+            } catch (_e) {
+                return { gruen: false, zahl: "die S6-Zeile trägt kein JSON" };
+            }
+            const gruen = /^\s*✅/.test(l) && +m[1] >= 0.3 && s.laeufe >= 17 && s.anders === null;
+            return {
+                gruen,
+                zahl: s.laeufe + " Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale " + s.loadScale.join("–") + "): " +
+                    (s.anders === null ? "Abstände, Schwellen, Grenzen, Wahl und Ränder gleich" : "es wandert " + String(s.anders).slice(0, 120)) +
+                    ", die Mutante (Regler-Term im Gesetz) " + (/^\s*✅/.test(l) ? "wandert" : "oder die Spanne fehlt"),
+            };
+        },
+        pfad: [...LOD_PFAD, "scripts/playtest.cjs", "scripts/playtest/dirigent.cjs"],
+        quelle: "2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte",
+    },
+    {
+        kriterium: "lod.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 600, befehl: befehlDer({
+            name: "lod.K2#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "umstellen", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
+                { name: "pop", probe: "@KOORD@/bericht/2910-lod-k5/pop.js", blob: "711c63c1c83fc438d1e29dedb4a9fc6cfa96e84a", muss: true, ms: 1800000 },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.pop;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e || !Array.isArray(e.schritte) || e.schritte.length < 8) return { gruen: false, zahl: "keine Pop-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            const gruen = hw && e.anteilJeSekunde <= 0.05;
+            return {
+                gruen,
+                zahl:
+                    "Gehen 4 m/s: " + e.anteilJeSekunde + " % Pop-Pixel je Sekunde (" + e.popPixel + " px, Soll ≤ 0,05 %), je Schritt " +
+                    e.schritte.map((x) => x.pop + (x.stufen ? "*" : "")).join("/") + " (* = Stufen-Wechsel), Laub " + e.laub[0] + "–" + e.laub[e.laub.length - 1] +
+                    " m, perfTarget " + e.perfTargetMs + " ms, " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, ...LOD_PFAD, "stamm/gelaende-*.js"],
+        quelle: "1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde",
+    },
+    {
+        kriterium: "material.K4",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // w3w-glanz (EIN Spiegel-Pass für Wasser, Glas, Lack, Metall, Nässe — das Glanz-Ziel des Szenen-Passes, `_spiegelUmgebung`):
+        // koordination `bericht/2910-w3w-glanz/spiegel-lack.js` über `werkbank eval` in der Welt der Sitzung — ein GT rechts neben dem
+        // Spieler, der Ego-Blick (`_loopCamera`) trifft seine Flanke streifend; Lack und Seiten-Scheibe je mit ihrer Maske (der Schuss
+        // ohne sie) und ihrer Ebene (Haupt-Achsen der Welt-Punkte, ≤ 3 cm), das Maß der Wasser-Station (`klassenMasse` spiegelTreue,
+        // die Achse an der Ebene: abnahme-urteil `spiegelPartner` mit `normale`). Gültig: Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel
+        // in der Ebene und ≥ 8 Blöcke.
+        probe: { sek: 60, befehl: befehlDer({
+            name: "material.K4#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "spiegel", probe: "@KOORD@/bericht/2910-w3w-glanz/spiegel-lack.js", blob: "e9ba0e39b1c24c8773296cdefc57551d1b298d4c", muss: true },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.spiegel;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e) return { gruen: false, zahl: "keine Spiegel-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            if (e.ende !== "ok" || !e.ergebnis) return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
+            const st = e.stand || {};
+            const pose = st.sicht === "first" && st.uhr === 0.5 && st.wetter === "sunny";
+            const teile = [];
+            let gruen = false;
+            for (const n of ["lack", "glas"]) {
+                const m = e.ergebnis[n] || {};
+                const gueltig = m.ebene >= 2000 && m.bloecke >= 8 && m.einfallGrad >= 45 && m.einfallGrad <= 85 && !m.quer;
+                if (hw && pose && gueltig && m.spiegelTreue != null && m.spiegelTreue >= 0.5) gruen = true;
+                teile.push(
+                    n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
+                        " Blöcke, Einfall " + m.einfallGrad + "°, Normale " + JSON.stringify(m.normale)) + ")"
+                );
+            }
+            return {
+                gruen,
+                zahl: teile.join(" · ") + " · Soll ≥ 0,5 an Lack oder Scheibe · " + st.sicht + " Uhr " + st.uhr + " " + st.wetter + " · " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [
+            ...BILD,
+            "stamm/studio-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/bau-*.js",
+            "vehicle-core.js",
+            "foundry-bruecke.js",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät",
+    },
+    {
+        kriterium: "material.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // w3w-glanz (Rauheit und Metall aus der Stoff-Zeile, `_stoffOptik`): koordination `bericht/2910-w3w-glanz/kugel-glanz.js` über
+        // `werkbank eval` — je Klasse EINE Kugel im Welt-Stoff ihrer Zeile (Umgebung aus), das Auge bei θd 25°, die Belichtungs-Reihe
+        // C / A × 1, 1/32, 1/1024 → die BRDF je Pixel, ihr Profil über θh; Breite θ50 (Median der Spitzen-Energie über θh 0–20°) und
+        // Spitze ρ (Kappe θh ≤ 1° je Energie, 1/sr). DIE REFERENZ: MERL (Matusik et al. 2003) über die NBRDF-Netze von Sztrajman et al.
+        // 2021 (github asztr/Neural-BRDF data/merl_nbrdf.zip), bei θd 25° dieselben Maße je Exemplar; das Band der Klasse von ihrem
+        // kleinsten bis zum größten Exemplar, die Toleranz der Bühne Breite ± max(0,3°, 5 %), Spitze ×/÷ 1,3.
+        probe: { sek: 60, befehl: befehlDer({
+            name: "material.K5#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "kugel", probe: "@KOORD@/bericht/2910-w3w-glanz/kugel-glanz.js", blob: "d3d9eb61334d924027e700d582839c5a8c09a694", muss: true },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.kugel;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e) return { gruen: false, zahl: "keine Kugel-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            if (e.ende !== "ok") return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
+            // je Klasse [θ50 von, bis] in Grad und [ρ von, bis] in 1/sr — MERL über NBRDF bei θd 25°
+            const REF = {
+                eisen: [[11.09, 11.09], [8.2, 8.2], "black-oxidized-steel"],
+                bronze: [[1.31, 7.79], [51.4, 471.3], "alum-bronze 7,79°/51,4, brass 1,31°/471,3"],
+                quarz: [[0.63, 1.45], [437.3, 698.5], "black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3"],
+                stahl: [[0.45, 0.47], [716.5, 775.0], "steel, ss440, chrome-steel"],
+            };
+            const teile = [];
+            let im = 0;
+            for (const [n, [b, s, ex]] of Object.entries(REF)) {
+                const m = (e.klassen || {})[n];
+                if (!m || m.breite == null || m.spitze == null) {
+                    teile.push(n + " ungemessen");
+                    continue;
+                }
+                const tb = Math.max(0.3, 0.05 * b[1]);
+                const gueltig = m.thetaD != null && Math.abs(m.thetaD - 25) <= 3 && m.pixel >= 5000 && (m.luecken || []).length === 0;
+                const breit = m.breite >= b[0] - tb && m.breite <= b[1] + tb;
+                const spitz = m.spitze >= s[0] / 1.3 && m.spitze <= s[1] * 1.3;
+                if (gueltig && breit && spitz) im++;
+                teile.push(
+                    n + " θ50 " + m.breite + "° " + (breit ? "im" : "NEBEN dem") + " Band, ρ " + m.spitze + " " + (spitz ? "im" : "NEBEN dem") + " Band" +
+                        (gueltig ? "" : " UNGÜLTIG (θd " + m.thetaD + ", " + m.pixel + " px, Lücken " + JSON.stringify(m.luecken) + ")") + " — " + ex
+                );
+            }
+            const st = e.stand || {};
+            const gruen = hw && im >= 3 && st.uhr === 0.5 && st.wetter === "sunny";
+            return {
+                gruen,
+                zahl: im + " von 4 Klassen im Band (Soll ≥ 3): " + teile.join(" · ") + " · Sonne " + e.sonnenHoeheGrad + "°, Uhr " + st.uhr + " " + st.wetter + ", " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "stamm/bau-*.js", "stamm/siedlung-*.js", "stamm/vegetation-*.js", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = Glanz-Breite und -Spitze an der Kugel-Bühne für ≥ 3 Klassen im realen Band einer gemessenen BRDF-Referenz, an einem Gerät",
     },
 ];
 

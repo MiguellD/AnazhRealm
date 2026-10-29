@@ -1,0 +1,1187 @@
+{
+ "gestartet": true,
+ "wege": {},
+ "konsum": {
+  "Stoff → alphaTest": true
+ },
+ "verbenJe": {
+  "werkstatt": {
+   "Ego": {
+    "Haus": {
+     "fehler": "#workshop-search: nicht offen",
+     "steht": 0,
+     "eingaben": 1,
+     "unecht": 0,
+     "folge": "KeyB",
+     "ms": null,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "fehler": "#workshop-search: nicht offen",
+     "steht": 0,
+     "eingaben": 1,
+     "unecht": 0,
+     "folge": "KeyB",
+     "ms": null,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "ohne Tönung"
+      }
+     },
+     "fehler": "DER BAU STEHT NICHT: der Weg nach 697 Takten — die Welt hat nichts mehr offen",
+     "steht": 0,
+     "eingaben": 1,
+     "unecht": 0,
+     "folge": "Digit3",
+     "ms": null,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 1917,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 795,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyE",
+     "ms": 871,
+     "kalt": true,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 976,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 6,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyE · KeyW · KeyE",
+     "ms": 1228,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": true,
+     "farbe": "grün",
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 4,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 3,
+     "unecht": 0,
+     "folge": "Digit3 · KeyF · KeyE",
+     "ms": 280,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 601,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyW",
+     "ms": 749,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 4,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyE",
+     "ms": 785,
+     "kalt": false,
+     "zeile": "",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  },
+  "ki": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 66°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 677,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Alemannisch · steil, hell\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 33,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE · KeyW · KeyE",
+     "ms": 529,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „GT\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 945,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Drachentor\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 986,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok baut „Brücke\" an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 898,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Podestleiter · Holme, Stufen, Podest, Bügel\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 727,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Sitzbank · Latten, Lehne, Wangen\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 633,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Alemannisch · steil, hell\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 33,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE · KeyW · KeyE",
+     "ms": 735,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „GT\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 614,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Drachentor\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 450,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | KI-Vorschlag: Möchtest du eine neue Welt erschaffen? Beispiel: 'Erschaffe Welt forest' | Grok denkt nach… | (Welt verändert: Grok baut „Brücke\" an einer Stelle.)",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyW",
+     "ms": 469,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Podestleiter · Holme, Stufen, Podest, Bügel\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 31,
+     "unecht": 0,
+     "folge": "Enter · KeyI · KeyC · KeyH · Space · KeyW · KeyN · KeyS · KeyC · KeyH · KeyE · Space · KeyM · KeyI · KeyR · Space · KeyH · KeyI · KeyE · KeyR · Space · KeyE · KeyI · KeyN · Space · KeyW · KeyE · KeyR · KeyK · Enter · KeyE",
+     "ms": 492,
+     "kalt": false,
+     "zeile": "> ich wünsche mir hier ein werk | Grok denkt nach… | (Welt verändert: Grok lässt 1× „Sitzbank · Latten, Lehne, Wangen\" aus dem Studio wachsen an einer Stelle.)",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  },
+  "geteilt": {
+   "Ego": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 66°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 415,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyO · KeyY · KeyX · KeyV · KeyZ · KeyX · Digit2 · KeyF · KeyS · KeyZ · KeyW · Digit1 · KeyH · KeyB · KeyM · Digit5 · KeyP · KeyC · Digit2 · KeyN · KeyO · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyE · KeyX · KeyN · KeyZ · KeyM · KeyY · KeyM · KeyZ · KeyI · Digit5 · KeyN · KeyJ · KeyK · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyI · KeyY · KeyZ · KeyW · KeyQ · KeyY · KeyM · KeyZ · KeyV · KeyH · KeyM · KeyD · KeyY · KeyY · KeyM · KeyJ · KeyQ · KeyX · KeyZ · KeyT · KeyA · KeyY · KeyM · Digit2 · KeyQ · Digit2 · KeyZ · KeyT · KeyU · Digit1 · KeyO · KeyW · KeyE · Digit0 · KeyY · KeyJ · KeyU · KeyW · KeyN · Digit2 · KeyQ · Digit5 · KeyN · KeyD · KeyQ · Digit3 · KeyY · KeyJ · KeyE · KeyX · KeyM · KeyZ · KeyC · KeyY · KeyN · KeyW · KeyM · Digit0 · KeyZ · KeyM · KeyY · Digit1 · KeyN · KeyM · KeyU · Digit3 · KeyZ · KeyM · KeyE · Digit0 · KeyN · KeyJ · KeyC · KeyW · KeyN · KeyD · KeyH · KeyM · KeyZ · KeyD · KeyV · KeyH · KeyN · KeyM · KeyV · KeyL · KeyZ · KeyM · KeyY · Digit1 · KeyZ · KeyM · KeyM · KeyZ · KeyO · KeyW · KeyM · Digit1 · KeyO · KeyD · KeyR · KeyJ · KeyY · KeyT · KeyY · Digit4 · KeyN · KeyT · KeyL · KeyK · KeyO · KeyW · KeyF · KeyJ · KeyZ · KeyG · KeyE · Digit1 · KeyN · KeyD · KeyA · KeyZ · KeyO · KeyG · KeyU · KeyZ · KeyO · KeyT · KeyB · KeyI · KeyZ · KeyG · KeyQ · Digit3 · KeyN · KeyZ · KeyE · KeyX · KeyZ · KeyT · KeyC · Digit4 · KeyN · KeyG · KeyR · KeyL · KeyN · KeyJ · KeyB · KeyK · KeyZ · KeyM · KeyN · KeyK · KeyZ · KeyD · KeyR · KeyH · KeyO · KeyD · KeyF · KeyI · KeyM · KeyD · KeyY · KeyZ · KeyM · KeyJ · KeyC · KeyW · KeyM · KeyI · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · KeyW · KeyI · KeyZ · KeyZ · KeyD · KeyM · Digit4 · KeyY · KeyW · KeyI · Digit5 · KeyZ · KeyT · KeyU · Digit5 · KeyM · KeyW · KeyQ · KeyZ · KeyY · KeyJ · KeyK · KeyX · KeyM · KeyD · KeyH · KeyK · KeyN · KeyT · KeyA · KeyY · KeyM · KeyZ · KeyE · Digit2 · KeyZ · KeyD · KeyL · KeyL · KeyM · KeyG · KeyI · Digit1 · KeyY · KeyZ · KeyC · Digit1 · KeyM · KeyT · KeyU · KeyY · KeyN · KeyT · KeyM · KeyZ · KeyY · KeyJ · KeyM · KeyW · KeyN · KeyG · KeyU · KeyW · KeyZ · KeyG · KeyE · KeyW · KeyN · KeyJ · KeyE · KeyW · KeyN · KeyD · KeyK · Digit3 · KeyZ · KeyT · KeyQ · Digit2 · KeyZ · KeyD · KeyK · KeyW · KeyM · KeyC · KeyJ · Digit9 · Enter · KeyW",
+     "ms": 5051,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJoYXVzX2FsZW1hbm5pc2NoIixudWxsLDExNzMyMzI5NjksbnVsbCxudWxsLDBdLCJzaWciOiIyZWQyMzVhMDYyMjQxZTAyM2Q2ZTU1OWE0YjUwN2Q5NDQ3YjExMzcyNWM0ZmY1NmU3ZmE0NjcwNDhmZDVhNmVlZmY1ZmMzOWM1ODRjYTY4NTlkOWFjZGE1NDAzOGUzOTBiZGQ3NzExZTc4NGRlNjBkZmNkZDRhODFiMDYzMjcwMiIsImF1dG9yIjoiYWIzZDM4YWI5ZTU5MWQzYjkxMDhkNTAyMzE2ZDllMGI1Yzc1MTUyNTMzYjMwNGUwZGEwNjEwNDk3ZTQ2ZDkwMCJ9 | Geteiltes Werk steht: Alemannisch (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": false,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 408,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyM · KeyY · KeyW · KeyH · KeyY · KeyE · KeyM · KeyV · Digit1 · KeyZ · Digit1 · Digit9 · KeyN · KeyD · KeyC · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit1 · KeyN · KeyT · KeyK · KeyX · KeyO · KeyT · KeyA · Digit1 · KeyO · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyM · KeyM · Digit0 · KeyY · KeyM · KeyV · KeyH · KeyN · KeyT · KeyL · KeyM · KeyY · KeyZ · KeyU · KeyZ · KeyN · Digit2 · KeyI · Digit0 · KeyO · KeyG · KeyQ · Digit3 · KeyM · KeyD · KeyY · KeyY · KeyO · KeyD · KeyB · KeyK · KeyZ · KeyT · KeyZ · KeyM · KeyY · KeyT · KeyI · KeyX · KeyY · KeyM · KeyV · KeyL · KeyZ · KeyG · KeyI · Digit5 · KeyY · Digit2 · KeyV · KeyJ · KeyY · KeyJ · KeyI · Digit4 · KeyM · KeyJ · KeyU · Digit1 · KeyM · KeyZ · KeyK · Digit1 · KeyO · KeyT · KeyB · KeyL · KeyN · KeyT · KeyQ · Digit3 · KeyM · KeyZ · KeyC · KeyW · KeyY · KeyZ · KeyU · KeyZ · KeyN · KeyD · KeyQ · Digit2 · KeyZ · KeyT · KeyU · Digit3 · KeyZ · KeyM · KeyU · Digit2 · KeyM · KeyD · KeyJ · KeyK · KeyM · KeyG · KeyZ · KeyH · KeyN · KeyT · KeyB · KeyM · KeyN · KeyT · KeyM · KeyY · KeyY · KeyJ · KeyG · KeyZ · KeyN · KeyZ · KeyK · KeyW · KeyM · KeyJ · KeyM · Digit2 · KeyN · KeyT · KeyK · Digit1 · KeyY · KeyW · KeyV · KeyI · KeyM · Digit2 · KeyU · KeyZ · KeyY · Digit2 · KeyN · KeyK · KeyZ · KeyG · KeyV · KeyI · KeyO · KeyD · KeyI · Digit0 · KeyY · KeyZ · KeyQ · KeyZ · KeyZ · KeyG · KeyJ · KeyM · KeyZ · KeyM · KeyJ · KeyK · KeyZ · KeyT · KeyM · KeyZ · KeyN · KeyW · KeyE · Digit2 · KeyZ · KeyG · KeyZ · KeyH · KeyM · KeyD · KeyA · Digit4 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyE · KeyW · KeyE",
+     "ms": 4755,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJmYWhyemV1Z19ndCIsbnVsbCw1NTkxOTA1OCxudWxsLG51bGwsMF0sInNpZyI6ImM0YmVhNTlmYzUzN2I0OGQ3MDYyODBkZTZmYTIxYmVlZGI5Y2VjYjI4MjU1Mzk1OTBlNTQ3MzcwYzUzNDQ2ZTU3ZmU2MDJkMGZhNTBmNTMyYjgzNzkwMjM2NTk1YWViM2UzY2NkZGViODI0YzQzZGJmZmJkZTMzNWE2ZGZhMDA4IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: GT (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · Digit0 · KeyB · Digit3 · KeyJ · KeyF · KeyZ · KeyH · KeyJ · KeyH · KeyY · Digit2 · KeyH · KeyL · KeyB · KeyN · KeyR · KeyV · KeyC · KeyI · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit5 · KeyO · KeyT · KeyU · Digit2 · KeyM · KeyZ · KeyE · KeyW · KeyM · KeyT · KeyQ · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyI · KeyY · KeyZ · KeyG · KeyI · Digit2 · KeyZ · KeyW · KeyU · KeyY · KeyZ · KeyM · KeyI · Digit4 · KeyN · KeyJ · KeyI · Digit0 · KeyN · Digit2 · KeyZ · KeyJ · KeyM · KeyJ · KeyA · KeyY · KeyZ · KeyW · KeyM · Digit1 · KeyM · KeyZ · KeyM · Digit0 · KeyY · KeyJ · KeyE · KeyY · KeyZ · KeyG · KeyM · KeyW · KeyM · Digit2 · KeyE · KeyX · KeyM · KeyM · KeyZ · KeyJ · KeyM · KeyZ · KeyD · KeyK · KeyY · KeyZ · KeyU · KeyW · KeyM · KeyT · KeyE · KeyZ · KeyN · Digit2 · KeyR · KeyM · KeyO · KeyW · KeyQ · Digit5 · KeyO · KeyD · KeyG · Digit5 · KeyM · Digit2 · KeyU · KeyW · KeyY · KeyJ · KeyH · KeyI · KeyN · KeyT · KeyU · Digit2 · KeyM · KeyZ · KeyM · Digit2 · KeyM · KeyT · KeyI · KeyX · KeyY · Digit2 · KeyE · Digit2 · KeyZ · KeyT · KeyK · KeyX · KeyN · KeyW · KeyR · KeyL · KeyO · KeyD · KeyE · Digit4 · KeyO · KeyW · KeyV · KeyI · KeyN · KeyT · KeyI · Digit2 · KeyN · Digit2 · KeyV · KeyM · KeyY · KeyM · KeyE · KeyY · KeyZ · KeyJ · KeyD · KeyI · KeyY · KeyM · KeyQ · Digit0 · KeyO · KeyD · KeyE · KeyY · KeyN · KeyW · KeyZ · KeyJ · KeyN · KeyZ · KeyY · Digit3 · KeyM · KeyD · KeyG · KeyY · KeyZ · KeyJ · KeyC · Digit2 · KeyZ · KeyJ · KeyM · Digit5 · KeyM · Digit2 · KeyQ · KeyX · KeyZ · KeyD · KeyY · Digit2 · KeyY · KeyZ · KeyM · KeyW · KeyN · KeyY · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · KeyW · KeyI · KeyZ · KeyZ · KeyD · KeyM · Digit4 · KeyY · KeyW · KeyI · Digit5 · KeyZ · KeyT · KeyU · Digit5 · KeyM · KeyW · KeyQ · KeyZ · KeyY · KeyJ · KeyK · KeyX · KeyM · KeyD · KeyH · KeyK · KeyN · KeyT · KeyA · KeyY · KeyM · KeyZ · KeyE · Digit2 · KeyZ · KeyD · KeyL · KeyL · KeyM · KeyG · KeyI · Digit1 · KeyY · KeyZ · KeyC · Digit1 · KeyM · KeyT · KeyU · KeyY · KeyN · KeyT · KeyM · KeyZ · KeyY · KeyJ · KeyM · KeyW · KeyN · KeyG · KeyU · KeyW · KeyZ · KeyG · KeyE · KeyW · KeyN · KeyJ · KeyE · KeyW · KeyN · KeyD · KeyK · Digit3 · KeyZ · KeyT · KeyQ · Digit2 · KeyZ · KeyD · KeyK · KeyW · KeyM · KeyC · KeyJ · Digit9 · Enter · KeyE",
+     "ms": 4989,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJ0b3JfZHJhY2hlbnRvciIsbnVsbCw5OTU2MzEwMTQsbnVsbCxudWxsLDBdLCJzaWciOiIyZGI2ZWUyZmI4NjI0N2ZjMjAyZWM1MzM0YjEyZGMwM2ExMmZjMzdkYzUwMTEzN2RmOWQ5ODg5M2UwYjhiNTU2MzM2MTIxY2E2ZTkxNWRlODE4OWViNTI2N2VmYmEyZjdiYmQ0ODEyNWZjNzY3MDgyZjc2ZjM5M2QxZDY2YzMwNyIsImF1dG9yIjoiYWIzZDM4YWI5ZTU5MWQzYjkxMDhkNTAyMzE2ZDllMGI1Yzc1MTUyNTMzYjMwNGUwZGEwNjEwNDk3ZTQ2ZDkwMCJ9 | Geteiltes Werk steht: Drachentor (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": false,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 1318,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyJ · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · KeyS · KeyW · KeyY · KeyJ · KeyK · KeyZ · KeyW · KeyZ · KeyP · KeyB · KeyM · KeyV · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyW · Digit3 · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyI · Digit0 · KeyZ · KeyL · KeyC · KeyJ · Digit5 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyI · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyS · KeyW · KeyI · KeyC · KeyM · Digit9 · Digit0 · KeyY · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyE · KeyM · KeyU · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyS · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyI · Digit4 · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyV · Digit9 · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyE · KeyN · KeyO · KeyY · KeyW · KeyL · KeyU · KeyI · KeyJ · KeyP · KeyB · KeyE · KeyY · KeyJ · Digit0 · KeyB · Digit2 · Digit9 · KeyS · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyM · KeyO · KeyK · KeyB · KeyM · KeyR · KeyL · KeyI · KeyI · KeyW · KeyI · KeyB · Digit3 · KeyA · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyY · KeyW · Digit5 · KeyK · KeyX · Digit2 · KeyT · KeyU · KeyY · KeyX · KeyA · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyY · KeyX · KeyA · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyY · KeyX · KeyQ · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyX · KeyX · Digit0 · KeyS · KeyE · KeyY · KeyJ · KeyZ · KeyA · KeyG · KeyF · KeyW · KeyZ · KeyS · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyV · KeyE · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyV · KeyB · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · Digit4 · KeyM · KeyD · KeyI · Digit2 · KeyN · KeyZ · KeyQ · Digit2 · KeyL · KeyC · KeyJ · KeyT · KeyY · KeyX · KeyR · KeyL · KeyC · KeyM · KeyL · KeyH · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyN · KeyN · Digit0 · KeyZ · KeyW · KeyL · KeyU · KeyI · KeyI · KeyW · KeyI · KeyC · KeyG · Digit9 · KeyZ · KeyA · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyY · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyS · Digit4 · KeyY · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyE · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyS · Digit4 · Digit1 · KeyF · KeyS · KeyW · KeyI · KeyB · Digit3 · KeyB · KeyD · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · Digit6 · KeyW · Digit3 · KeyS · KeyI · KeyD · KeyG · Digit9 · KeyV · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyD · KeyP · KeyG · Digit5 · KeyK · KeyZ · KeyS · KeyI · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyG · KeyF · KeyU · KeyZ · KeyF · Digit9 · KeyR · KeyB · KeyM · KeyF · KeyW · KeyI · KeyI · KeyW · KeyI · KeyY · Digit2 · KeyF · KeyW · KeyI · KeyJ · KeyO · KeyW · KeyL · KeyJ · KeyQ · KeyS · KeyI · KeyM · KeyF · Digit0 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyV · Digit1 · Digit9 · KeyL · KeyH · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyY · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyG · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyN · Digit0 · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyQ · Digit2 · KeyH · KeyH · KeyA · KeyW · Digit4 · KeyI · KeyO · KeyL · KeyT · Digit7 · KeyI · KeyN · KeyR · KeyV · KeyB · Digit2 · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyW · Digit6 · KeyR · KeyU · KeyZ · KeyG · KeyU · KeyI · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyH · KeyH · KeyB · KeyM · KeyR · KeyF · KeyA · Digit2 · Digit5 · KeyH · KeyC · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyH · KeyC · KeyC · KeyI · Digit6 · KeyM · KeyC · Digit4 · Digit0 · KeyL · KeyC · KeyJ · KeyH · KeyD · KeyC · KeyI · Digit6 · KeyM · KeyH · Digit1 · KeyD · KeyF · KeyV · Digit1 · KeyD · KeyL · KeyF · KeyS · KeyI · KeyC · Digit3 · KeyB · KeyH · KeyD · Digit2 · Digit5 · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyZ · KeyO · KeyT · KeyE · KeyZ · KeyM · KeyJ · KeyQ · Digit2 · KeyO · KeyT · KeyU · Digit4 · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyW · KeyX · KeyV · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyH · KeyL · KeyO · KeyT · KeyG · Digit4 · KeyO · KeyT · KeyH · KeyH · KeyN · KeyZ · KeyD · KeyL · KeyM · KeyG · KeyN · KeyI · KeyN · KeyZ · KeyV · KeyI · KeyN · KeyM · KeyI · Digit1 · KeyM · KeyT · KeyM · Digit3 · KeyM · KeyM · KeyU · Digit2 · KeyZ · KeyG · KeyQ · Digit4 · KeyO · KeyT · KeyB · KeyM · KeyM · KeyD · KeyD · KeyK · KeyN · Digit2 · KeyU · Digit0 · KeyZ · KeyG · KeyM · Digit3 · KeyO · KeyD · KeyU · Digit2 · KeyN · KeyD · KeyH · KeyK · KeyO · KeyT · KeyE · Digit0 · KeyM · KeyD · KeyE · KeyX · KeyO · KeyW · KeyM · Digit3 · KeyZ · KeyM · KeyI · Digit1 · KeyN · KeyZ · KeyA · Digit1 · KeyY · Digit2 · KeyY · KeyW · KeyM · KeyZ · KeyK · KeyX · KeyY · Digit2 · KeyM · Digit1 · KeyY · KeyT · KeyA · Digit3 · KeyN · KeyZ · KeyD · KeyL · KeyN · KeyJ · KeyH · KeyL · KeyO · KeyG · KeyI · Digit2 · KeyZ · KeyG · KeyM · Digit5 · KeyY · KeyZ · KeyZ · KeyL · KeyY · KeyJ · KeyM · Digit2 · KeyY · KeyT · KeyV · KeyM · KeyZ · KeyM · KeyJ · KeyJ · KeyZ · KeyM · KeyU · Digit4 · KeyN · KeyJ · KeyG · Digit5 · KeyO · KeyT · KeyI · Digit0 · KeyM · KeyJ · KeyB · KeyH · KeyO · KeyD · KeyU · Digit2 · KeyN · KeyD · KeyJ · KeyL · KeyZ · KeyD · KeyC · KeyY · KeyY · KeyJ · KeyG · KeyY · KeyN · KeyD · KeyY · Digit2 · KeyO · KeyD · KeyA · Digit5 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 15880,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOi0zLCJ5IjoxLjI1LCJ6IjowfSwicm90YXRpb24iOnsieCI6MCwieSI6MCwieiI6MH0sInNpemUiOnsieCI6MSwieSI6Mi41LCJ6IjoxLjV9LCJvcENoYWluIjpbeyJ0b29sIjoiaMOkbmRlIiwib3AiOiJoYW5kX2tuYXAiLCJjYXAiOjAuNCwiYXQiOjB9XX0seyJzaGFwZSI6ImJveCIsImNvbG9yIjo4MDI2NzQ2LCJtYXRlcmlhbCI6InN0ZWluIiwicG9zaXRpb24iOnsieCI6MywieSI6MS4yNSwieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjEsInkiOjIuNSwieiI6MS41fSwib3BDaGFpbiI6W3sidG9vbCI6ImjDpG5kZSIsIm9wIjoiaGFuZF9rbmFwIiwiY2FwIjowLjQsImF0IjowfV19LHsic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOjAsInkiOjIuNywieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjgsInkiOjAuNCwieiI6Mn0sIm9wQ2hhaW4iOlt7InRvb2wiOiJow6RuZGUiLCJvcCI6ImhhbmRfa25hcCIsImNhcCI6MC40LCJhdCI6MH1dfV1dLFsic3Bhd25fYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsbnVsbCwzOTEzMjQ2OTU4LG51bGwsbnVsbCwwXV0sInNpZyI6IjhlOTg4OThhNzdlMGNiNzViNmI1MTM3MmU2ZGQ4OTBmMDdkN2U0ZGM3ODU2NDhkOTE0MDExOWM3ZmI1NzA1Y2YwMzkxY2M1YTA3NzdlNjhlOGI2ZGM5YzZlYjM2YTVmZmJjZmU4Njg5OTI0MjBhODU2NDJlZDcyYjgyNDY2ODA5IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: eigen_bruecke-geteilt (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 418,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyS · KeyZ · KeyW · KeyL · Digit0 · KeyZ · KeyX · KeyJ · KeyF · KeyC · KeyG · Digit9 · KeyK · KeyZ · KeyX · KeyN · Digit0 · KeyB · KeyG · KeyV · KeyP · KeyD · KeyG · KeyV · KeyY · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyI · Digit1 · KeyN · KeyT · KeyE · Digit2 · KeyO · KeyD · KeyU · Digit5 · KeyM · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyV · KeyJ · KeyM · Digit2 · KeyZ · KeyJ · KeyY · KeyZ · KeyC · Digit2 · KeyZ · KeyM · KeyI · Digit3 · KeyN · KeyW · KeyI · KeyZ · KeyN · KeyZ · KeyD · KeyJ · KeyN · KeyZ · KeyG · Digit5 · KeyZ · KeyJ · KeyF · KeyI · KeyN · KeyW · KeyQ · KeyX · KeyZ · KeyT · KeyJ · KeyM · KeyM · KeyW · KeyZ · KeyJ · KeyY · KeyT · KeyM · KeyZ · KeyO · KeyW · KeyU · KeyY · KeyN · KeyT · KeyN · KeyH · KeyZ · KeyJ · KeyR · KeyH · KeyN · KeyD · KeyA · KeyX · KeyM · KeyG · KeyM · Digit0 · KeyM · KeyT · KeyC · KeyZ · KeyO · KeyD · KeyL · KeyJ · KeyZ · KeyJ · KeyD · KeyJ · KeyZ · KeyW · KeyE · Digit1 · KeyZ · KeyJ · KeyJ · KeyJ · KeyN · KeyM · KeyM · Digit3 · KeyY · KeyW · KeyR · KeyI · KeyN · KeyJ · KeyL · KeyH · KeyZ · KeyW · KeyE · KeyX · KeyY · KeyT · KeyY · KeyX · KeyO · KeyT · KeyI · KeyX · KeyY · KeyZ · KeyY · Digit2 · KeyN · KeyJ · KeyD · KeyM · KeyZ · KeyD · KeyI · KeyZ · KeyN · KeyW · KeyY · KeyX · KeyZ · KeyW · KeyU · KeyY · KeyY · KeyT · KeyC · KeyZ · KeyM · KeyT · KeyN · KeyL · KeyM · KeyM · KeyR · KeyM · KeyZ · KeyD · KeyE · Digit5 · KeyZ · KeyM · KeyV · KeyH · KeyM · Digit2 · KeyV · KeyH · KeyM · Digit2 · KeyU · Digit5 · KeyM · KeyG · KeyQ · Digit1 · KeyN · KeyD · KeyC · KeyW · KeyY · KeyJ · KeyA · Digit3 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 6261,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJsZWl0ZXJfcG9kZXN0bGVpdGVyIixudWxsLDI1NTE2ODU5MixudWxsLG51bGwsMF0sInNpZyI6IjVjM2ZjYzc2ZmI3NWIzNzdjNzg5ZjFiNWQxZTJmMWZjYTMzOWUyNTNhZjRhNDAxMGM0MTczODljZjdjZWE1ZjJjNmM3YWRiNjlhZWExYTYxOTIxYzY2NjdmZDIzNWYxZWUyYTczMTNlMmRmZDE5ZmVhM2VhM2U5MGQ1NDcwYjA3IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: Podestleiter (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": false,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyX · Digit3 · KeyN · KeyP · KeyD · KeyH · KeyP · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyM · KeyY · KeyM · KeyD · KeyY · Digit3 · KeyM · KeyD · KeyY · Digit0 · KeyN · KeyY · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyV · KeyL · KeyM · KeyW · KeyR · KeyJ · KeyM · KeyT · KeyN · KeyI · KeyN · KeyG · KeyF · KeyM · KeyM · KeyJ · KeyG · Digit0 · KeyN · KeyT · KeyU · Digit3 · KeyM · KeyZ · KeyJ · KeyI · KeyM · KeyZ · KeyF · KeyK · KeyY · KeyT · KeyY · KeyX · KeyZ · KeyM · KeyN · KeyL · KeyN · KeyJ · KeyA · KeyX · KeyZ · KeyT · KeyK · KeyY · KeyM · Digit2 · KeyF · KeyK · KeyZ · KeyJ · KeyM · KeyZ · KeyZ · KeyJ · KeyH · KeyK · KeyZ · KeyJ · KeyQ · Digit5 · KeyM · KeyW · KeyQ · KeyW · KeyZ · KeyD · KeyA · Digit4 · KeyN · KeyJ · KeyV · KeyH · KeyZ · KeyD · KeyH · KeyH · KeyM · KeyZ · KeyE · Digit4 · KeyO · KeyT · KeyK · Digit1 · KeyO · KeyD · KeyY · KeyY · KeyN · KeyJ · KeyJ · KeyH · KeyM · KeyJ · KeyK · Digit5 · KeyY · KeyT · KeyF · KeyK · KeyM · Digit2 · KeyE · KeyW · KeyZ · KeyJ · KeyZ · KeyH · KeyM · KeyJ · KeyC · Digit3 · KeyM · Digit2 · KeyY · KeyZ · KeyM · KeyZ · KeyE · Digit4 · KeyM · KeyT · KeyH · KeyJ · KeyM · KeyT · KeyC · KeyW · KeyN · KeyM · KeyI · Digit2 · KeyM · KeyJ · KeyJ · KeyM · KeyZ · KeyG · KeyQ · KeyZ · KeyM · KeyJ · KeyM · KeyZ · KeyY · Digit2 · KeyE · Digit5 · KeyN · KeyZ · KeyN · KeyL · KeyN · KeyM · KeyU · Digit3 · KeyO · KeyG · KeyQ · Digit3 · KeyM · KeyW · KeyQ · Digit1 · KeyM · KeyD · KeyA · Digit1 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyE",
+     "ms": 7407,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJiYW5rX3NpdHpiYW5rIixudWxsLDMyMDY3MDY0NyxudWxsLG51bGwsMF0sInNpZyI6IjVlMWRjMTNiNGFmMjg0NTU3MzJiMzFkYTYxZmNlNjAxZTkyM2FkZjMzZjhkZjQ5MWQwZDA4NjVhZDhhMzE4OTk1ODYyNjJhMjk5YTFkM2EwZjZhMjc3M2YzMzE4MThjMTcwNmI2MjJmZGQzMjMzY2E5NzNlNmU3OGQ3MWQ1MDA1IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: Sitzbank (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   },
+   "Third": {
+    "Haus": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "die Tür dreht 0°, beim Eintritt offen",
+     "steht": 1,
+     "eingaben": 415,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyO · KeyY · KeyX · KeyV · KeyZ · KeyX · Digit2 · KeyF · KeyS · KeyZ · KeyW · Digit1 · KeyH · KeyB · KeyM · Digit5 · KeyP · KeyC · Digit2 · KeyN · KeyO · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyE · KeyX · KeyN · KeyZ · KeyM · KeyY · KeyM · KeyZ · KeyI · Digit5 · KeyN · KeyJ · KeyK · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyI · KeyY · KeyZ · KeyW · KeyQ · KeyY · KeyM · KeyZ · KeyV · KeyH · KeyM · KeyD · KeyY · KeyY · KeyM · KeyJ · KeyQ · KeyX · KeyZ · KeyT · KeyA · KeyY · KeyM · Digit2 · KeyQ · Digit2 · KeyZ · KeyT · KeyU · Digit1 · KeyO · KeyW · KeyE · Digit0 · KeyY · KeyJ · KeyU · KeyW · KeyN · Digit2 · KeyQ · Digit5 · KeyN · KeyD · KeyQ · Digit3 · KeyY · KeyJ · KeyE · KeyX · KeyM · KeyZ · KeyC · KeyY · KeyN · KeyW · KeyM · Digit0 · KeyZ · KeyM · KeyY · Digit1 · KeyN · KeyM · KeyU · Digit3 · KeyZ · KeyM · KeyE · Digit0 · KeyN · KeyJ · KeyC · KeyW · KeyN · KeyD · KeyH · KeyM · KeyZ · KeyD · KeyV · KeyH · KeyN · KeyM · KeyV · KeyL · KeyZ · KeyM · KeyY · Digit1 · KeyZ · KeyM · KeyM · KeyZ · KeyO · KeyW · KeyM · Digit1 · KeyO · KeyD · KeyR · KeyJ · KeyY · KeyT · KeyY · Digit4 · KeyN · KeyT · KeyL · KeyK · KeyO · KeyW · KeyF · KeyJ · KeyZ · KeyG · KeyE · Digit1 · KeyN · KeyD · KeyA · KeyZ · KeyO · KeyG · KeyU · KeyZ · KeyO · KeyT · KeyB · KeyI · KeyZ · KeyG · KeyQ · Digit3 · KeyN · KeyZ · KeyE · KeyX · KeyZ · KeyT · KeyC · Digit4 · KeyN · KeyG · KeyR · KeyL · KeyN · KeyJ · KeyB · KeyK · KeyZ · KeyM · KeyN · KeyK · KeyZ · KeyD · KeyR · KeyH · KeyO · KeyD · KeyF · KeyI · KeyM · KeyD · KeyY · KeyZ · KeyM · KeyJ · KeyC · KeyW · KeyM · KeyI · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · KeyW · KeyI · KeyZ · KeyZ · KeyD · KeyM · Digit4 · KeyY · KeyW · KeyI · Digit5 · KeyZ · KeyT · KeyU · Digit5 · KeyM · KeyW · KeyQ · KeyZ · KeyY · KeyJ · KeyK · KeyX · KeyM · KeyD · KeyH · KeyK · KeyN · KeyT · KeyA · KeyY · KeyM · KeyZ · KeyE · Digit2 · KeyZ · KeyD · KeyL · KeyL · KeyM · KeyG · KeyI · Digit1 · KeyY · KeyZ · KeyC · Digit1 · KeyM · KeyT · KeyU · KeyY · KeyN · KeyT · KeyM · KeyZ · KeyY · KeyJ · KeyM · KeyW · KeyN · KeyG · KeyU · KeyW · KeyZ · KeyG · KeyE · KeyW · KeyN · KeyJ · KeyE · KeyW · KeyN · KeyD · KeyK · Digit3 · KeyZ · KeyT · KeyQ · Digit2 · KeyZ · KeyD · KeyK · KeyW · KeyM · KeyC · KeyJ · Digit9 · Enter · KeyW",
+     "ms": 7098,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJoYXVzX2FsZW1hbm5pc2NoIixudWxsLDExNzMyMzI5NjksbnVsbCxudWxsLDBdLCJzaWciOiIyZWQyMzVhMDYyMjQxZTAyM2Q2ZTU1OWE0YjUwN2Q5NDQ3YjExMzcyNWM0ZmY1NmU3ZmE0NjcwNDhmZDVhNmVlZmY1ZmMzOWM1ODRjYTY4NTlkOWFjZGE1NDAzOGUzOTBiZGQ3NzExZTc4NGRlNjBkZmNkZDRhODFiMDYzMjcwMiIsImF1dG9yIjoiYWIzZDM4YWI5ZTU5MWQzYjkxMDhkNTAyMzE2ZDllMGI1Yzc1MTUyNTMzYjMwNGUwZGEwNjEwNDk3ZTQ2ZDkwMCJ9 | Geteiltes Werk steht: Alemannisch (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0,
+      "stein": 0
+     },
+     "kosten": {
+      "holz": 98,
+      "stein": 24
+     },
+     "imInventar": false
+    },
+    "Wagen": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Fahren",
+     "steht": 1,
+     "eingaben": 408,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyM · KeyY · KeyW · KeyH · KeyY · KeyE · KeyM · KeyV · Digit1 · KeyZ · Digit1 · Digit9 · KeyN · KeyD · KeyC · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit1 · KeyN · KeyT · KeyK · KeyX · KeyO · KeyT · KeyA · Digit1 · KeyO · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyM · KeyM · Digit0 · KeyY · KeyM · KeyV · KeyH · KeyN · KeyT · KeyL · KeyM · KeyY · KeyZ · KeyU · KeyZ · KeyN · Digit2 · KeyI · Digit0 · KeyO · KeyG · KeyQ · Digit3 · KeyM · KeyD · KeyY · KeyY · KeyO · KeyD · KeyB · KeyK · KeyZ · KeyT · KeyZ · KeyM · KeyY · KeyT · KeyI · KeyX · KeyY · KeyM · KeyV · KeyL · KeyZ · KeyG · KeyI · Digit5 · KeyY · Digit2 · KeyV · KeyJ · KeyY · KeyJ · KeyI · Digit4 · KeyM · KeyJ · KeyU · Digit1 · KeyM · KeyZ · KeyK · Digit1 · KeyO · KeyT · KeyB · KeyL · KeyN · KeyT · KeyQ · Digit3 · KeyM · KeyZ · KeyC · KeyW · KeyY · KeyZ · KeyU · KeyZ · KeyN · KeyD · KeyQ · Digit2 · KeyZ · KeyT · KeyU · Digit3 · KeyZ · KeyM · KeyU · Digit2 · KeyM · KeyD · KeyJ · KeyK · KeyM · KeyG · KeyZ · KeyH · KeyN · KeyT · KeyB · KeyM · KeyN · KeyT · KeyM · KeyY · KeyY · KeyJ · KeyG · KeyZ · KeyN · KeyZ · KeyK · KeyW · KeyM · KeyJ · KeyM · Digit2 · KeyN · KeyT · KeyK · Digit1 · KeyY · KeyW · KeyV · KeyI · KeyM · Digit2 · KeyU · KeyZ · KeyY · Digit2 · KeyN · KeyK · KeyZ · KeyG · KeyV · KeyI · KeyO · KeyD · KeyI · Digit0 · KeyY · KeyZ · KeyQ · KeyZ · KeyZ · KeyG · KeyJ · KeyM · KeyZ · KeyM · KeyJ · KeyK · KeyZ · KeyT · KeyM · KeyZ · KeyN · KeyW · KeyE · Digit2 · KeyZ · KeyG · KeyZ · KeyH · KeyM · KeyD · KeyA · Digit4 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyE · KeyW · KeyE",
+     "ms": 6058,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJmYWhyemV1Z19ndCIsbnVsbCw1NTkxOTA1OCxudWxsLG51bGwsMF0sInNpZyI6ImM0YmVhNTlmYzUzN2I0OGQ3MDYyODBkZTZmYTIxYmVlZGI5Y2VjYjI4MjU1Mzk1OTBlNTQ3MzcwYzUzNDQ2ZTU3ZmU2MDJkMGZhNTBmNTMyYjgzNzkwMjM2NTk1YWViM2UzY2NkZGViODI0YzQzZGJmZmJkZTMzNWE2ZGZhMDA4IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | KI-Vorschlag: Soll ich die Physik weiter optimieren? Sage 'Entwickle Physik' | Geteiltes Werk steht: GT (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0,
+      "eisen": 0
+     },
+     "kosten": {
+      "holz": 16,
+      "eisen": 4
+     },
+     "imInventar": false
+    },
+    "Tor": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "kein Portal",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · Digit0 · KeyB · Digit3 · KeyJ · KeyF · KeyZ · KeyH · KeyJ · KeyH · KeyY · Digit2 · KeyH · KeyL · KeyB · KeyN · KeyR · KeyV · KeyC · KeyI · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · Digit5 · KeyO · KeyT · KeyU · Digit2 · KeyM · KeyZ · KeyE · KeyW · KeyM · KeyT · KeyQ · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyB · KeyD · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyW · KeyC · KeyI · KeyO · KeyI · KeyI · KeyY · KeyZ · KeyG · KeyI · Digit2 · KeyZ · KeyW · KeyU · KeyY · KeyZ · KeyM · KeyI · Digit4 · KeyN · KeyJ · KeyI · Digit0 · KeyN · Digit2 · KeyZ · KeyJ · KeyM · KeyJ · KeyA · KeyY · KeyZ · KeyW · KeyM · Digit1 · KeyM · KeyZ · KeyM · Digit0 · KeyY · KeyJ · KeyE · KeyY · KeyZ · KeyG · KeyM · KeyW · KeyM · Digit2 · KeyE · KeyX · KeyM · KeyM · KeyZ · KeyJ · KeyM · KeyZ · KeyD · KeyK · KeyY · KeyZ · KeyU · KeyW · KeyM · KeyT · KeyE · KeyZ · KeyN · Digit2 · KeyR · KeyM · KeyO · KeyW · KeyQ · Digit5 · KeyO · KeyD · KeyG · Digit5 · KeyM · Digit2 · KeyU · KeyW · KeyY · KeyJ · KeyH · KeyI · KeyN · KeyT · KeyU · Digit2 · KeyM · KeyZ · KeyM · Digit2 · KeyM · KeyT · KeyI · KeyX · KeyY · Digit2 · KeyE · Digit2 · KeyZ · KeyT · KeyK · KeyX · KeyN · KeyW · KeyR · KeyL · KeyO · KeyD · KeyE · Digit4 · KeyO · KeyW · KeyV · KeyI · KeyN · KeyT · KeyI · Digit2 · KeyN · Digit2 · KeyV · KeyM · KeyY · KeyM · KeyE · KeyY · KeyZ · KeyJ · KeyD · KeyI · KeyY · KeyM · KeyQ · Digit0 · KeyO · KeyD · KeyE · KeyY · KeyN · KeyW · KeyZ · KeyJ · KeyN · KeyZ · KeyY · Digit3 · KeyM · KeyD · KeyG · KeyY · KeyZ · KeyJ · KeyC · Digit2 · KeyZ · KeyJ · KeyM · Digit5 · KeyM · Digit2 · KeyQ · KeyX · KeyZ · KeyD · KeyY · Digit2 · KeyY · KeyZ · KeyM · KeyW · KeyN · KeyY · KeyI · KeyS · KeyI · KeyM · KeyF · Digit1 · KeyD · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · KeyI · KeyY · KeyW · KeyI · KeyZ · KeyZ · KeyD · KeyM · Digit4 · KeyY · KeyW · KeyI · Digit5 · KeyZ · KeyT · KeyU · Digit5 · KeyM · KeyW · KeyQ · KeyZ · KeyY · KeyJ · KeyK · KeyX · KeyM · KeyD · KeyH · KeyK · KeyN · KeyT · KeyA · KeyY · KeyM · KeyZ · KeyE · Digit2 · KeyZ · KeyD · KeyL · KeyL · KeyM · KeyG · KeyI · Digit1 · KeyY · KeyZ · KeyC · Digit1 · KeyM · KeyT · KeyU · KeyY · KeyN · KeyT · KeyM · KeyZ · KeyY · KeyJ · KeyM · KeyW · KeyN · KeyG · KeyU · KeyW · KeyZ · KeyG · KeyE · KeyW · KeyN · KeyJ · KeyE · KeyW · KeyN · KeyD · KeyK · Digit3 · KeyZ · KeyT · KeyQ · Digit2 · KeyZ · KeyD · KeyK · KeyW · KeyM · KeyC · KeyJ · Digit9 · Enter · KeyE",
+     "ms": 4960,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJ0b3JfZHJhY2hlbnRvciIsbnVsbCw5OTU2MzEwMTQsbnVsbCxudWxsLDBdLCJzaWciOiIyZGI2ZWUyZmI4NjI0N2ZjMjAyZWM1MzM0YjEyZGMwM2ExMmZjMzdkYzUwMTEzN2RmOWQ5ODg5M2UwYjhiNTU2MzM2MTIxY2E2ZTkxNWRlODE4OWViNTI2N2VmYmEyZjdiYmQ0ODEyNWZjNzY3MDgyZjc2ZjM5M2QxZDY2YzMwNyIsImF1dG9yIjoiYWIzZDM4YWI5ZTU5MWQzYjkxMDhkNTAyMzE2ZDllMGI1Yzc1MTUyNTMzYjMwNGUwZGEwNjEwNDk3ZTQ2ZDkwMCJ9 | Geteiltes Werk steht: Drachentor (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 22
+     },
+     "imInventar": false
+    },
+    "Brücke": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": false,
+     "warum": "vom Deck",
+     "steht": 1,
+     "eingaben": 1318,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyJ · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · KeyS · KeyW · KeyY · KeyJ · KeyK · KeyZ · KeyW · KeyZ · KeyP · KeyB · KeyM · KeyV · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyW · Digit3 · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyI · Digit0 · KeyZ · KeyL · KeyC · KeyJ · Digit5 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyI · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyS · KeyW · KeyI · KeyC · KeyM · Digit9 · Digit0 · KeyY · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyE · KeyM · KeyU · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyS · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyI · Digit4 · Digit1 · KeyL · KeyC · KeyJ · Digit6 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyJ · KeyV · Digit9 · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyE · KeyN · KeyO · KeyY · KeyW · KeyL · KeyU · KeyI · KeyJ · KeyP · KeyB · KeyE · KeyY · KeyJ · Digit0 · KeyB · Digit2 · Digit9 · KeyS · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyM · KeyO · KeyK · KeyB · KeyM · KeyR · KeyL · KeyI · KeyI · KeyW · KeyI · KeyB · Digit3 · KeyA · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyY · KeyW · Digit5 · KeyK · KeyX · Digit2 · KeyT · KeyU · KeyY · KeyX · KeyA · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyY · KeyX · KeyA · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyY · KeyX · KeyQ · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyX · KeyX · Digit0 · KeyS · KeyE · KeyY · KeyJ · KeyZ · KeyA · KeyG · KeyF · KeyW · KeyZ · KeyS · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyV · KeyE · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyV · KeyB · KeyG · Digit9 · KeyY · KeyI · KeyJ · KeyO · Digit4 · KeyM · KeyD · KeyI · Digit2 · KeyN · KeyZ · KeyQ · Digit2 · KeyL · KeyC · KeyJ · KeyT · KeyY · KeyX · KeyR · KeyL · KeyC · KeyM · KeyL · KeyH · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyN · KeyN · Digit0 · KeyZ · KeyW · KeyL · KeyU · KeyI · KeyI · KeyW · KeyI · KeyC · KeyG · Digit9 · KeyZ · KeyA · KeyX · KeyR · KeyP · KeyB · Digit2 · Digit4 · KeyI · KeyO · KeyN · KeyS · KeyI · KeyE · KeyC · KeyI · Digit6 · KeyM · KeyY · KeyW · KeyI · KeyE · KeyS · KeyI · Digit6 · KeyM · KeyS · Digit4 · KeyY · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyE · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyS · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyS · Digit4 · Digit1 · KeyF · KeyS · KeyW · KeyI · KeyB · Digit3 · KeyB · KeyD · KeyA · KeyG · KeyF · KeyP · KeyB · KeyI · KeyI · Digit6 · KeyW · Digit3 · KeyS · KeyI · KeyD · KeyG · Digit9 · KeyV · KeyB · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyJ · KeyD · KeyP · KeyG · Digit5 · KeyK · KeyZ · KeyS · KeyI · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyI · KeyJ · KeyO · KeyI · KeyA · KeyG · KeyF · KeyU · KeyZ · KeyF · Digit9 · KeyR · KeyB · KeyM · KeyF · KeyW · KeyI · KeyI · KeyW · KeyI · KeyY · Digit2 · KeyF · KeyW · KeyI · KeyJ · KeyO · KeyW · KeyL · KeyJ · KeyQ · KeyS · KeyI · KeyM · KeyF · Digit0 · KeyI · KeyJ · KeyO · KeyW · KeyF · KeyV · Digit1 · Digit9 · KeyL · KeyH · KeyS · KeyI · KeyC · Digit2 · KeyH · KeyH · KeyC · KeyG · KeyU · KeyI · KeyO · KeyI · KeyJ · KeyI · KeyB · Digit3 · KeyG · KeyI · KeyL · KeyC · KeyJ · KeyJ · KeyB · Digit2 · KeyX · KeyV · KeyC · KeyI · KeyI · Digit6 · KeyO · KeyD · KeyA · KeyY · KeyN · KeyJ · KeyC · Digit0 · KeyN · KeyI · KeyW · KeyI · KeyB · KeyW · KeyF · Digit0 · KeyZ · KeyX · KeyJ · KeyP · KeyY · KeyW · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyZ · KeyD · KeyG · KeyV · KeyP · KeyB · KeyI · KeyI · KeyS · KeyI · KeyN · KeyB · KeyV · KeyC · Digit2 · KeyL · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyI · KeyU · KeyN · KeyY · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyH · Digit0 · KeyS · KeyI · KeyN · KeyJ · KeyV · KeyD · KeyG · KeyF · Digit0 · KeyA · KeyW · Digit9 · KeyU · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyS · KeyI · KeyN · KeyO · KeyI · KeyO · KeyJ · KeyB · Digit9 · KeyL · KeyC · KeyJ · KeyZ · KeyA · KeyX · KeyP · KeyL · KeyI · KeyJ · KeyP · Digit7 · KeyI · KeyN · KeyG · KeyI · KeyO · KeyJ · KeyG · KeyS · KeyI · KeyN · KeyK · KeyI · KeyO · KeyJ · KeyA · KeyU · KeyN · KeyC · KeyW · KeyI · KeyE · KeyI · KeyI · Digit6 · KeyM · KeyN · Digit0 · KeyS · KeyI · KeyM · Digit9 · KeyW · KeyQ · Digit2 · KeyH · KeyH · KeyA · KeyW · Digit4 · KeyI · KeyO · KeyL · KeyT · Digit7 · KeyI · KeyN · KeyR · KeyV · KeyB · Digit2 · KeyW · KeyI · KeyO · KeyI · KeyJ · KeyO · KeyW · Digit6 · KeyR · KeyU · KeyZ · KeyG · KeyU · KeyI · KeyL · KeyC · KeyJ · KeyV · KeyC · KeyC · KeyI · Digit6 · KeyI · KeyM · KeyH · KeyH · KeyB · KeyM · KeyR · KeyF · KeyA · Digit2 · Digit5 · KeyH · KeyC · KeyC · KeyI · KeyS · KeyI · KeyM · KeyN · KeyH · KeyC · KeyC · KeyI · Digit6 · KeyM · KeyC · Digit4 · Digit0 · KeyL · KeyC · KeyJ · KeyH · KeyD · KeyC · KeyI · Digit6 · KeyM · KeyH · Digit1 · KeyD · KeyF · KeyV · Digit1 · KeyD · KeyL · KeyF · KeyS · KeyI · KeyC · Digit3 · KeyB · KeyH · KeyD · Digit2 · Digit5 · KeyF · KeyY · KeyM · KeyX · Digit1 · KeyZ · KeyX · KeyB · KeyY · KeyA · KeyW · Digit5 · Digit0 · KeyI · KeyI · KeyW · KeyI · KeyZ · KeyW · KeyL · KeyN · KeyZ · KeyW · Digit5 · KeyF · KeyY · KeyN · KeyJ · Digit1 · KeyZ · KeyW · KeyN · KeyR · KeyZ · KeyS · KeyI · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyZ · KeyO · KeyT · KeyE · KeyZ · KeyM · KeyJ · KeyQ · Digit2 · KeyO · KeyT · KeyU · Digit4 · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyB · KeyN · KeyV · KeyS · KeyB · KeyC · KeyW · KeyW · KeyX · KeyV · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyH · KeyL · KeyO · KeyT · KeyG · Digit4 · KeyO · KeyT · KeyH · KeyH · KeyN · KeyZ · KeyD · KeyL · KeyM · KeyG · KeyN · KeyI · KeyN · KeyZ · KeyV · KeyI · KeyN · KeyM · KeyI · Digit1 · KeyM · KeyT · KeyM · Digit3 · KeyM · KeyM · KeyU · Digit2 · KeyZ · KeyG · KeyQ · Digit4 · KeyO · KeyT · KeyB · KeyM · KeyM · KeyD · KeyD · KeyK · KeyN · Digit2 · KeyU · Digit0 · KeyZ · KeyG · KeyM · Digit3 · KeyO · KeyD · KeyU · Digit2 · KeyN · KeyD · KeyH · KeyK · KeyO · KeyT · KeyE · Digit0 · KeyM · KeyD · KeyE · KeyX · KeyO · KeyW · KeyM · Digit3 · KeyZ · KeyM · KeyI · Digit1 · KeyN · KeyZ · KeyA · Digit1 · KeyY · Digit2 · KeyY · KeyW · KeyM · KeyZ · KeyK · KeyX · KeyY · Digit2 · KeyM · Digit1 · KeyY · KeyT · KeyA · Digit3 · KeyN · KeyZ · KeyD · KeyL · KeyN · KeyJ · KeyH · KeyL · KeyO · KeyG · KeyI · Digit2 · KeyZ · KeyG · KeyM · Digit5 · KeyY · KeyZ · KeyZ · KeyL · KeyY · KeyJ · KeyM · Digit2 · KeyY · KeyT · KeyV · KeyM · KeyZ · KeyM · KeyJ · KeyJ · KeyZ · KeyM · KeyU · Digit4 · KeyN · KeyJ · KeyG · Digit5 · KeyO · KeyT · KeyI · Digit0 · KeyM · KeyJ · KeyB · KeyH · KeyO · KeyD · KeyU · Digit2 · KeyN · KeyD · KeyJ · KeyL · KeyZ · KeyD · KeyC · KeyY · KeyY · KeyJ · KeyG · KeyY · KeyN · KeyD · KeyY · Digit2 · KeyO · KeyD · KeyA · Digit5 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 13988,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJjaGFpbiIsWyJkZWZpbmVfYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsW3sic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOi0zLCJ5IjoxLjI1LCJ6IjowfSwicm90YXRpb24iOnsieCI6MCwieSI6MCwieiI6MH0sInNpemUiOnsieCI6MSwieSI6Mi41LCJ6IjoxLjV9LCJvcENoYWluIjpbeyJ0b29sIjoiaMOkbmRlIiwib3AiOiJoYW5kX2tuYXAiLCJjYXAiOjAuNCwiYXQiOjB9XX0seyJzaGFwZSI6ImJveCIsImNvbG9yIjo4MDI2NzQ2LCJtYXRlcmlhbCI6InN0ZWluIiwicG9zaXRpb24iOnsieCI6MywieSI6MS4yNSwieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjEsInkiOjIuNSwieiI6MS41fSwib3BDaGFpbiI6W3sidG9vbCI6ImjDpG5kZSIsIm9wIjoiaGFuZF9rbmFwIiwiY2FwIjowLjQsImF0IjowfV19LHsic2hhcGUiOiJib3giLCJjb2xvciI6ODAyNjc0NiwibWF0ZXJpYWwiOiJzdGVpbiIsInBvc2l0aW9uIjp7IngiOjAsInkiOjIuNywieiI6MH0sInJvdGF0aW9uIjp7IngiOjAsInkiOjAsInoiOjB9LCJzaXplIjp7IngiOjgsInkiOjAuNCwieiI6Mn0sIm9wQ2hhaW4iOlt7InRvb2wiOiJow6RuZGUiLCJvcCI6ImhhbmRfa25hcCIsImNhcCI6MC40LCJhdCI6MH1dfV1dLFsic3Bhd25fYmx1ZXByaW50IiwiZWlnZW5fYnJ1ZWNrZSIsbnVsbCwzOTEzMjQ2OTU4LG51bGwsbnVsbCwwXV0sInNpZyI6IjhlOTg4OThhNzdlMGNiNzViNmI1MTM3MmU2ZGQ4OTBmMDdkN2U0ZGM3ODU2NDhkOTE0MDExOWM3ZmI1NzA1Y2YwMzkxY2M1YTA3NzdlNjhlOGI2ZGM5YzZlYjM2YTVmZmJjZmU4Njg5OTI0MjBhODU2NDJlZDcyYjgyNDY2ODA5IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: eigen_bruecke-geteilt2 (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "stein": 0
+     },
+     "kosten": {
+      "stein": 56
+     },
+     "imInventar": false
+    },
+    "Leiter": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": true,
+     "warum": "nicht auf dem Podest",
+     "steht": 1,
+     "eingaben": 418,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyS · KeyZ · KeyW · KeyL · Digit0 · KeyZ · KeyX · KeyJ · KeyF · KeyC · KeyG · Digit9 · KeyK · KeyZ · KeyX · KeyN · Digit0 · KeyB · KeyG · KeyV · KeyP · KeyD · KeyG · KeyV · KeyY · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyI · Digit1 · KeyN · KeyT · KeyE · Digit2 · KeyO · KeyD · KeyU · Digit5 · KeyM · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyV · KeyJ · KeyM · Digit2 · KeyZ · KeyJ · KeyY · KeyZ · KeyC · Digit2 · KeyZ · KeyM · KeyI · Digit3 · KeyN · KeyW · KeyI · KeyZ · KeyN · KeyZ · KeyD · KeyJ · KeyN · KeyZ · KeyG · Digit5 · KeyZ · KeyJ · KeyF · KeyI · KeyN · KeyW · KeyQ · KeyX · KeyZ · KeyT · KeyJ · KeyM · KeyM · KeyW · KeyZ · KeyJ · KeyY · KeyT · KeyM · KeyZ · KeyO · KeyW · KeyU · KeyY · KeyN · KeyT · KeyN · KeyH · KeyZ · KeyJ · KeyR · KeyH · KeyN · KeyD · KeyA · KeyX · KeyM · KeyG · KeyM · Digit0 · KeyM · KeyT · KeyC · KeyZ · KeyO · KeyD · KeyL · KeyJ · KeyZ · KeyJ · KeyD · KeyJ · KeyZ · KeyW · KeyE · Digit1 · KeyZ · KeyJ · KeyJ · KeyJ · KeyN · KeyM · KeyM · Digit3 · KeyY · KeyW · KeyR · KeyI · KeyN · KeyJ · KeyL · KeyH · KeyZ · KeyW · KeyE · KeyX · KeyY · KeyT · KeyY · KeyX · KeyO · KeyT · KeyI · KeyX · KeyY · KeyZ · KeyY · Digit2 · KeyN · KeyJ · KeyD · KeyM · KeyZ · KeyD · KeyI · KeyZ · KeyN · KeyW · KeyY · KeyX · KeyZ · KeyW · KeyU · KeyY · KeyY · KeyT · KeyC · KeyZ · KeyM · KeyT · KeyN · KeyL · KeyM · KeyM · KeyR · KeyM · KeyZ · KeyD · KeyE · Digit5 · KeyZ · KeyM · KeyV · KeyH · KeyM · Digit2 · KeyV · KeyH · KeyM · Digit2 · KeyU · Digit5 · KeyM · KeyG · KeyQ · Digit1 · KeyN · KeyD · KeyC · KeyW · KeyY · KeyJ · KeyA · Digit3 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyW",
+     "ms": 5197,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJsZWl0ZXJfcG9kZXN0bGVpdGVyIixudWxsLDI1NTE2ODU5MixudWxsLG51bGwsMF0sInNpZyI6IjVjM2ZjYzc2ZmI3NWIzNzdjNzg5ZjFiNWQxZTJmMWZjYTMzOWUyNTNhZjRhNDAxMGM0MTczODljZjdjZWE1ZjJjNmM3YWRiNjlhZWExYTYxOTIxYzY2NjdmZDIzNWYxZWUyYTczMTNlMmRmZDE5ZmVhM2VhM2U5MGQ1NDcwYjA3IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: Podestleiter (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 9
+     },
+     "imInventar": false
+    },
+    "Bank": {
+     "bauModus": false,
+     "farbe": null,
+     "lichtung": {
+      "wand": false,
+      "toenung": {
+       "stoffe": 0,
+       "lesen": 0,
+       "farbe": "grün"
+      }
+     },
+     "verb": false,
+     "warum": "sitzt nicht",
+     "steht": 1,
+     "eingaben": 410,
+     "unecht": 0,
+     "folge": "KeyB · Klick · Rad · Klick · KeyB · Enter · KeyA · KeyN · KeyA · KeyZ · KeyH · NumpadSubtract · KeyW · KeyE · KeyR · KeyK · Semicolon · KeyE · KeyY · KeyJ · Digit2 · KeyI · KeyJ · KeyO · KeyX · KeyL · KeyC · KeyJ · KeyW · KeyC · KeyM · Digit9 · KeyN · KeyC · KeyM · KeyF · KeyT · KeyB · KeyS · KeyI · Digit6 · KeyW · KeyY · KeyJ · KeyZ · KeyC · KeyG · KeyF · Digit3 · KeyB · KeyL · Digit9 · KeyI · KeyB · KeyH · KeyV · KeyL · KeyC · KeyH · KeyJ · KeyP · KeyB · KeyN · KeyQ · KeyI · KeyL · KeyC · KeyJ · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyX · Digit3 · KeyN · KeyP · KeyD · KeyH · KeyP · KeyI · KeyY · KeyW · Digit5 · KeyR · KeyI · KeyI · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyD · KeyM · KeyY · KeyM · KeyD · KeyY · Digit3 · KeyM · KeyD · KeyY · Digit0 · KeyN · KeyY · KeyX · KeyU · KeyD · KeyW · KeyX · KeyS · KeyL · KeyG · Digit5 · Digit1 · KeyB · KeyG · KeyW · KeyS · KeyM · KeyF · Digit0 · KeyS · KeyI · KeyN · KeyN · KeyP · KeyZ · KeyY · KeyI · Digit6 · KeyI · KeyJ · KeyV · KeyL · KeyM · KeyW · KeyR · KeyJ · KeyM · KeyT · KeyN · KeyI · KeyN · KeyG · KeyF · KeyM · KeyM · KeyJ · KeyG · Digit0 · KeyN · KeyT · KeyU · Digit3 · KeyM · KeyZ · KeyJ · KeyI · KeyM · KeyZ · KeyF · KeyK · KeyY · KeyT · KeyY · KeyX · KeyZ · KeyM · KeyN · KeyL · KeyN · KeyJ · KeyA · KeyX · KeyZ · KeyT · KeyK · KeyY · KeyM · Digit2 · KeyF · KeyK · KeyZ · KeyJ · KeyM · KeyZ · KeyZ · KeyJ · KeyH · KeyK · KeyZ · KeyJ · KeyQ · Digit5 · KeyM · KeyW · KeyQ · KeyW · KeyZ · KeyD · KeyA · Digit4 · KeyN · KeyJ · KeyV · KeyH · KeyZ · KeyD · KeyH · KeyH · KeyM · KeyZ · KeyE · Digit4 · KeyO · KeyT · KeyK · Digit1 · KeyO · KeyD · KeyY · KeyY · KeyN · KeyJ · KeyJ · KeyH · KeyM · KeyJ · KeyK · Digit5 · KeyY · KeyT · KeyF · KeyK · KeyM · Digit2 · KeyE · KeyW · KeyZ · KeyJ · KeyZ · KeyH · KeyM · KeyJ · KeyC · Digit3 · KeyM · Digit2 · KeyY · KeyZ · KeyM · KeyZ · KeyE · Digit4 · KeyM · KeyT · KeyH · KeyJ · KeyM · KeyT · KeyC · KeyW · KeyN · KeyM · KeyI · Digit2 · KeyM · KeyJ · KeyJ · KeyM · KeyZ · KeyG · KeyQ · KeyZ · KeyM · KeyJ · KeyM · KeyZ · KeyY · Digit2 · KeyE · Digit5 · KeyN · KeyZ · KeyN · KeyL · KeyN · KeyM · KeyU · Digit3 · KeyO · KeyG · KeyQ · Digit3 · KeyM · KeyW · KeyQ · Digit1 · KeyM · KeyD · KeyA · Digit1 · KeyI · KeyI · KeyW · KeyI · KeyY · KeyX · KeyV · Digit0 · KeyB · Digit3 · KeyI · KeyI · KeyO · KeyI · KeyJ · KeyH · KeyY · KeyJ · KeyN · KeyK · KeyM · KeyZ · KeyH · KeyH · KeyY · KeyJ · KeyL · KeyL · KeyN · KeyT · KeyK · KeyX · KeyZ · KeyD · KeyN · KeyI · KeyO · KeyT · KeyE · KeyW · KeyO · KeyG · KeyQ · Digit1 · KeyM · KeyD · KeyI · KeyZ · KeyM · KeyT · KeyZ · KeyK · KeyO · KeyW · KeyU · KeyW · KeyY · KeyJ · KeyV · KeyJ · KeyN · KeyZ · KeyU · KeyX · KeyN · KeyT · KeyI · Digit1 · KeyM · KeyZ · KeyN · KeyI · KeyM · KeyZ · KeyA · Digit0 · KeyZ · KeyT · KeyB · KeyK · KeyY · KeyT · KeyA · Digit2 · KeyM · KeyT · KeyA · Digit0 · KeyO · KeyT · KeyD · KeyL · KeyN · KeyD · KeyZ · KeyK · KeyO · KeyT · KeyA · KeyW · KeyI · KeyN · Digit0 · Enter · KeyE",
+     "ms": 5143,
+     "kalt": false,
+     "zeile": "> anazh-werk:eyJ2IjoxLCJwcm9ncmFtbSI6WyJzcGF3bl9ibHVlcHJpbnQiLCJiYW5rX3NpdHpiYW5rIixudWxsLDMyMDY3MDY0NyxudWxsLG51bGwsMF0sInNpZyI6IjVlMWRjMTNiNGFmMjg0NTU3MzJiMzFkYTYxZmNlNjAxZTkyM2FkZjMzZjhkZjQ5MWQwZDA4NjVhZDhhMzE4OTk1ODYyNjJhMjk5YTFkM2EwZjZhMjc3M2YzMzE4MThjMTcwNmI2MjJmZGQzMjMzY2E5NzNlNmU3OGQ3MWQ1MDA1IiwiYXV0b3IiOiJhYjNkMzhhYjllNTkxZDNiOTEwOGQ1MDIzMTZkOWUwYjVjNzUxNTI1MzNiMzA0ZTBkYTA2MTA0OTdlNDZkOTAwIn0 | Geteiltes Werk steht: Sitzbank (von ab3d 38ab 9e59 1d3b).",
+     "verbraucht": {
+      "holz": 0
+     },
+     "kosten": {
+      "holz": 6
+     },
+     "imInventar": false
+    }
+   }
+  }
+ },
+ "verben": {
+  "Haus": {
+   "fehler": "#workshop-search: nicht offen",
+   "steht": 0,
+   "eingaben": 1,
+   "unecht": 0,
+   "folge": "KeyB",
+   "ms": null,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "stein": 0
+   },
+   "kosten": {
+    "holz": 98,
+    "stein": 24
+   },
+   "imInventar": false
+  },
+  "Wagen": {
+   "fehler": "#workshop-search: nicht offen",
+   "steht": 0,
+   "eingaben": 1,
+   "unecht": 0,
+   "folge": "KeyB",
+   "ms": null,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0,
+    "eisen": 0
+   },
+   "kosten": {
+    "holz": 16,
+    "eisen": 4
+   },
+   "imInventar": false
+  },
+  "Tor": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "ohne Tönung"
+    }
+   },
+   "fehler": "DER BAU STEHT NICHT: der Weg nach 697 Takten — die Welt hat nichts mehr offen",
+   "steht": 0,
+   "eingaben": 1,
+   "unecht": 0,
+   "folge": "Digit3",
+   "ms": null,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 22
+   },
+   "imInventar": false
+  },
+  "Brücke": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "vom Deck",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 1917,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "stein": 0
+   },
+   "kosten": {
+    "stein": 56
+   },
+   "imInventar": false
+  },
+  "Leiter": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "nicht auf dem Podest",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyW",
+   "ms": 795,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 9
+   },
+   "imInventar": false
+  },
+  "Bank": {
+   "bauModus": false,
+   "farbe": null,
+   "lichtung": {
+    "wand": false,
+    "toenung": {
+     "stoffe": 0,
+     "lesen": 0,
+     "farbe": "grün"
+    }
+   },
+   "verb": true,
+   "warum": "sitzt nicht",
+   "steht": 1,
+   "eingaben": 4,
+   "unecht": 0,
+   "folge": "KeyB · Klick · Klick · KeyE",
+   "ms": 871,
+   "kalt": true,
+   "zeile": "",
+   "verbraucht": {
+    "holz": 0
+   },
+   "kosten": {
+    "holz": 6
+   },
+   "imInventar": false
+  }
+ }
+}

@@ -1,0 +1,65 @@
+{
+ "ms": 3,
+ "ergebnis": {
+  "gesamt": 6,
+  "arten": {
+   "deer": 5,
+   "fox": 1
+  },
+  "zustand": {
+   "-": 6
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 1,
+  "tiereInWuerfen": 5,
+  "gruppen": [
+   {
+    "wurf": "deer@479.3,237.7",
+    "n": 5,
+    "mitte": [
+     477.4,
+     239.9
+    ],
+    "spanneM": 2.7,
+    "spielerM": 222.3
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 1,
+  "verbaende": [
+   {
+    "vb": "c1",
+    "n": 5,
+    "art": {
+     "deer": 5
+    },
+    "leitLebt": true,
+    "mitte": [
+     477.4,
+     239.9
+    ],
+    "spanneM": 2.7,
+    "spielerM": 222.3
+   },
+   {
+    "vb": "c6",
+    "n": 1,
+    "art": {
+     "fox": 1
+    },
+    "leitLebt": true,
+    "mitte": [
+     289.3,
+     295
+    ],
+    "spanneM": 0,
+    "spielerM": 342.9
+   }
+  ],
+  "verbaendeMap": 2,
+  "spieler": [
+   609.1,
+   419
+  ]
+ }
+}

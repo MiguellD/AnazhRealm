@@ -1,0 +1,59 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] Seite #2: der Puls kehrt zurück nach 21.8 s — complete · renderer bereit · weltbild da · frames 729 · welt 729 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 256/1658, streuLod 160/1640 · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 33.3 s
+[stall-akte] Puls 20×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 729 · welt 729 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 256/1658, streuLod 160/1640 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2770 102 % · GPU 2665 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 29:49 gpu 2 [VizCompositorTh 2 %]/r 249 · 29:51 gpu 1/r 346 · 29:53 gpu 0/r 211 · 29:55 gpu 2 [VizCompositorTh 1 %]/r 232 · 29:57 gpu 1 [VizCompositorTh 2 %]/r 290 · 29:59 gpu 0/r 154 · 30:01 gpu 2 [VizCompositorTh 1 %]/r 117 · 30:03 gpu 1 [VizCompositorTh 1 %]/r 182 · 30:05 gpu 0/r 125 · 30:07 gpu 0/r 126 · 30:09 gpu 0/r 102 · 30:11 gpu 0/r 113 · 30:13 gpu 0/r 108 · 30:15 gpu 0/r 100 · 30:17 gpu 0/r 104 · 30:19 gpu 0/r 110 · 30:21 gpu 0/r 113 · 30:23 gpu 0/r 106 · 30:25 gpu 0/r 103 · 30:27 gpu 0/r 102
+[stall-akte] Stapel erdbauY :1772 < hoehe :2368 < dichteSpalte :5247 < _terrainColumnContextIn :1064 < _terrainColumnContext :1060 < _voxelSurfaceY :2330 < getTerrainHeightAt :2869 < boden :1838
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 22 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] Der Rundblick steht nach 120 Takten ohne: 135 Bäume und Bauten wachsen · 357 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 18 (zuvor ~53)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 27 (zuvor ~49)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 29 (zuvor ~47)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in erdbauY :1772
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 21.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 155.4 s
+[stall-akte] Puls 107×, zuletzt vor 21.0 s — complete · renderer bereit · weltbild da · frames 1298 · welt 1298 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 1280/3156, streuLod 800/2665 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2770 104 % · GPU 2665 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 31:31 gpu 0/r 113 · 31:33 gpu 0/r 95 · 31:35 gpu 0/r 100 · 31:37 gpu 0/r 126 · 31:39 gpu 0/r 92 · 31:41 gpu 0/r 103 · 31:43 gpu 0/r 130 · 31:45 gpu 0/r 89 · 31:47 gpu 0/r 103 · 31:49 gpu 0/r 104 · 31:51 gpu 0/r 99 · 31:53 gpu 0/r 108 · 31:55 gpu 0/r 99 · 31:57 gpu 1 [VizCompositorTh 2 %]/r 334 · 31:59 gpu 2 [VizCompositorTh 2 %]/r 269 · 32:01 gpu 1/r 221 · 32:03 gpu 1 [VizCompositorTh 1 %]/r 178 · 32:05 gpu 0/r 207 · 32:07 gpu 1 [VizCompositorTh 1 %]/r 173 · 32:09 gpu 0/r 110 · 32:11 gpu 0/r 102 · 32:13 gpu 0/r 103 · 32:15 gpu 0/r 101 · 32:17 gpu 0/r 101 · 32:19 gpu 0/r 100 · 32:21 gpu 0/r 100 · 32:23 gpu 0/r 101 · 32:25 gpu 0/r 100 · 32:27 gpu 0/r 103 · 32:29 gpu 0/r 103
+[stall-akte] Stapel (anonym) :2356 < messen :2356 < takt :2397 < stadtTag :2432
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 30 (zuvor ~48)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] A3: Hydro-Kachel 1,0 aus dem Faden (41 Fluesse, 0 Seen)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 30 (zuvor ~47)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 29 (zuvor ~45)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 22 (zuvor ~43)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [WARN] FPS-Einbruch: 23 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Siedlung „Alpstein" (markt, Seed 992387765): 17 Häuser platziert, 0 Slots übersprungen; Mitte 46 m Radius.
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Bauten n=2217 haus=17 ziegel=0 nah=haus_holzhuette @788/39/740 d=329m
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Siedlung „Steinheim" gewachsen (Zelle 2,0, 12 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] Siedlung „Westerhausen" gewachsen (Zelle 3,1, 21 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] A3: Hydro-Kachel 0,1 aus dem Faden (24 Fluesse, 0 Seen)
+[stall-akte] Konsole log: [AnazhRealm V18.546.121] [INFO] A3: Hydro-Kachel 1,1 aus dem Faden (27 Fluesse, 0 Seen)
+[stall-akte] Stderr [2628:2645:1028/213031.431780:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2628:2645:1028/213031.432056:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2628:2645:1028/213031.432282:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [2628:2645:1028/213055.798773:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2628:2645:1028/213139.299013:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in (anonym) :2356
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":28,"third":33},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.016,"wegLeib":1920.2},"blick":{"n":155,"quote":0.961,"sektorMax":0.132},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":274,"tuer":274,"falsch":[],"aufWeg":0.871,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":261,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.204,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.965,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (176 s) — Sekunden je Probe: bewohner: 166
+
+✅ GRÜN — bewohner

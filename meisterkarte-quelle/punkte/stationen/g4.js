@@ -195,6 +195,89 @@ function reglerLesen(lauf) {
     };
 }
 
+// studios.K1 aus demselben Lauf (REGLER_BEFEHL): je Teil die Zeilen-Zahl (`Regler-wirkt Teil N (…): Y PARAMS-Zeilen`), die
+// toten (`  TOT <name> — …`) und gebrochenen (`❌ BRICHT <name>`) beim Namen, die Bild-Schwelle des Selbsttests (das
+// Schlupfloch „0,1 mm am Hash": ein Hash allein zählt nie) und die Baum-Zeilen (die Art tree in der Reduktion der Stufen-Probe)
+function k1Lesen(lauf) {
+    const out = String(lauf.stdout || "");
+    const teile = [...out.matchAll(/^Regler-wirkt Teil (\d) \(.*?\): (\d+) PARAMS-Zeilen .*?· (\d+) Zeilen an ihrem Leser der Welt/gm)];
+    const tot = [...out.matchAll(/^ {2}TOT (\S+) — (.*)$/gm)].map((m) => [m[1], m[2]]);
+    const bricht = [...out.matchAll(/^❌ BRICHT (\S+) — /gm)].map((m) => m[1]);
+    const zeilen = teile.reduce((n, m) => n + Number(m[2]), 0);
+    const bild = /^✅ SELBST-TEST Bild-Schwelle: 0,1 mm .* → tot · 3 cm .* → wirkt/m.exec(out);
+    return {
+        teile: teile.length,
+        zeilen,
+        wirkt: zeilen - tot.length - bricht.length,
+        leser: teile.reduce((n, m) => n + Number(m[3]), 0),
+        tot,
+        bricht,
+        bild: bild ? bild[0].replace(/^✅ SELBST-TEST Bild-Schwelle: /, "") : null,
+        baum: /^STUFEN \(B2c, pipeline\.K3\): .*Reduktion je Art .*\btree L1\/L0/m.test(out),
+        exits: [...out.matchAll(/^TEIL (\d) EXIT (\d+)/gm)].map((m) => +m[2]),
+    };
+}
+const k1Zahl = (k) =>
+    k.wirkt + "/" + k.zeilen + " Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (" + (k.zeilen ? ((100 * k.wirkt) / k.zeilen).toFixed(1) : "–") +
+    " %, davon " + k.leser + " an ihrem Leser der Welt) · " + (k.bild ? "Bild-Schwelle " + k.bild : "OHNE Bild-Schwelle (der Hash allein zählt nie)") +
+    (k.tot.length ? " · tot " + k.tot.map(([n, g]) => n + " (" + (/(\d+(?:\.\d+)?) %/.exec(g) || ["", "0"])[1] + " %)").join(", ") : "") +
+    (k.bricht.length ? " · BRICHT " + k.bricht.join(", ") : "") + " · Baum-Zeilen " + (k.baum ? "gemessen" : "keine in PARAMS_BY_KIND") +
+    " · Exits " + k.exits.join("/");
+
+// DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord): das Skript im Koordinations-Baum (bericht/2910-w3w-studios/skripte/k4-bild.cjs)
+// fährt in der warmen Welt der Sitzung (Werkbank {PORT}+20000) je Mesh-Studio dasselbe Werk in Bühne und Welt — die Bühne nennt es
+// über ihren Knopf „In der Welt ansehen" (die Übergabe der Hülle), die Welt setzt es über den EINEN Übergabe-Kanal; Pose = die
+// Vorschau-Kamera der Welt (Gier 0,6 · Neigung 0,32 · fov 45, Rahmen-Gesetz `_workshopRahmen`), beide aus dem Ausgabe-Pfad;
+// Bild-Differenz über der Vereinigung der Masken (ΔLuma > 18 oder nur eine Seite), dazu die Albedo-Tafel beider Seiten je Studio.
+const K4_BEFEHL = [
+    "bash",
+    "-c",
+    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
+];
+const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
+const k4Zahl = (j) => {
+    const s = (j && j.studios) || {};
+    const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true);
+    return {
+        gruen,
+        zahl:
+            gruen.length + "/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (" + (j.geraet || "Gerät ungenannt") + ") · " +
+            K4_STUDIOS.map((id) => {
+                const z = s[id] || {};
+                return id + " " + (z.differenz && z.differenz.anteil != null ? (100 * z.differenz.anteil).toFixed(1) + " %" : "–") +
+                    "/" + (z.albedo && z.albedo.max != null ? z.albedo.max : "–") + (z.gruen ? "" : z.grund ? " [" + String(z.grund).slice(0, 90) + "]" : "");
+            }).join(" · ") + ((j.fehler || []).length ? " · " + j.fehler.join(" | ").slice(0, 200) : ""),
+    };
+};
+const K4_PFAD = [
+    "worlds/huelle/",
+    "worlds/garage/",
+    "worlds/portale/",
+    "worlds/schmiede/",
+    "worlds/fachwerk/",
+    "worlds/terrain/",
+    "worlds/koerperstudio/",
+    "worlds/tetrapoda/",
+    "*-core.js",
+    "foundry-bruecke.js",
+    "stamm/werkstatt-vorschau.js",
+    "stamm/werkstatt-bauen.js",
+    "stamm/netz-portal.js",
+    "stamm/studio-*.js",
+    "stamm/siedlung-*.js",
+    "stamm/stoff-*.js",
+    "stamm/bild-*.js",
+    "stamm/dirigent-*.js",
+    "spec/farbe/albedo-tafel.json",
+    "scripts/werkbank.cjs",
+    "scripts/diag-albedo-tafel.cjs",
+    "scripts/lib/albedo-tafel.cjs",
+    "scripts/lib/licht-linsen.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/welt-boot.cjs",
+    "scripts/lib/software-gpu.cjs",
+];
+
 // diag-werkstatt-weg (L-WERKSTATT, BRENNGLAS): die Rohdatei artifacts/werkstatt-weg/weg.json wandert nach {AUS}
 const WEG_BEFEHL = [
     "bash",
@@ -362,15 +445,74 @@ const alle = [
         ],
         quelle: "1 = Dreiecke ±5 % gegen renderer.info in ≥ 4/7 Mesh-Studios",
     },
+    // ── studios.K3#2 ── das Thermometer ganz (w3u-leiste): dieselbe Kosten-Zeile des Gangs trägt je Stufe die gezählten Befehle und
+    // das VRAM (r184 weitet 8/16-Bit-Felder samt Index auf 32 Bit) mit ihren Gegenzahlen — Befehle aus renderer.info, VRAM aus der
+    // Speicher-Karte des Renderers je Werk-Puffer (r184 info.memoryMap, r128 am GL-Kontext) —, die GPU-ms der Zeitstempel des
+    // Abschnitts und auf der Karte die Bank-Runde von gpu-bank (`?bank=12`, die EINE Bank der Hülle); beim Klang je Ort des
+    // Umwelt-Gesetzes die Audio-Graph-ms (offline, je Quantum). GPU-ms haben eine Gegenzahl nur gegen eine GPU-gebundene Bank
+    // (gpu-bank: über × 1,15) — der Zähl-Abschnitt (1×1, viele Befehle) kann CPU-gebunden sein, dann steht die Stufe ohne.
     {
         kriterium: "studios.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "die Leiste trägt gezeichnete Dreiecke und Befehle aus renderer.info (Zähl-Abschnitt, studios.K3#1), aber kein VRAM " +
-            "(info.memoryMap je Werk-Attribut), keine GPU-ms (Timer-Query gegen gpu-bank) und beim Klang keine Audio-Graph-ms; " +
-            "der Gang urteilt nur die Dreiecke",
+        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
+        env: { STUDIO_HUELLE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const je = {};
+            for (const l of zeilen(lauf.stdout)) {
+                const m = /^\s{2}(\S+)\s+\d+ Anfragen · .* · Kosten (\[.*\])\s*$/.exec(l);
+                if (m && SEITEN[m[1]]) je[m[1]] = JSON.parse(m[2]);
+            }
+            if (!Object.keys(je).length) return { gruen: false, zahl: "keine Kosten-Zeile des Gangs (Exit " + lauf.exit + ")" };
+            const ab = (a, b) => Math.abs(a / b - 1) <= 0.05;
+            // je Stufe der erste Täter (null: wahr) — Dreiecke, Befehle, VRAM gegen ihre Gegenzahl, GPU-ms gegen die Bank
+            const taeter = (k) =>
+                !ab(k.leiste, k.gezeichnet) ? "△ " + k.leiste + "↔" + k.gezeichnet
+                : !ab(k.befehle, k.befehleGezeichnet) ? "Befehle " + k.befehle + "↔" + k.befehleGezeichnet
+                : !ab(k.vram, k.vramGpu) ? "VRAM " + k.vram + "↔" + k.vramGpu
+                : !(+k.bank > 1.15 * k.bankCpu) ? "Bank " + k.bank + " ms nicht GPU-gebunden (CPU " + k.bankCpu + ")"
+                : !ab(k.ms, k.bank) ? "GPU " + (k.ms || k.zeitFehlt) + " ms↔Bank " + k.bank
+                : null;
+            const mesh = Object.keys(SEITEN).filter((s) => s !== "klang");
+            const ohne = [];
+            let stufen = 0;
+            for (const s of mesh) {
+                const t = (je[s] || []).map((k) => taeter(k) && "L" + k.stufe + " " + taeter(k)).filter(Boolean);
+                if (!(je[s] || []).length) ohne.push(s + " (keine Zeile)");
+                else if (t.length) ohne.push(s + " " + t[0] + (t.length > 1 ? " (+" + (t.length - 1) + ")" : ""));
+                else stufen += je[s].length;
+            }
+            const orte = je.klang || [];
+            const imQuantum = orte.filter((k) => +k.audio <= +k.audioDeckel);
+            const klang = orte.length > 0 && imQuantum.length === orte.length;
+            return {
+                gruen: !ohne.length && klang,
+                zahl:
+                    "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in " + (mesh.length - ohne.length) + "/" + mesh.length + " Mesh-Studios (" +
+                    stufen + " Stufen), Klang " + imQuantum.length + "/" + orte.length + " Orte im Quantum" +
+                    (imQuantum.length ? " (Audio-Graph höchstens " + Math.max(...imQuantum.map((k) => +k.audio)).toFixed(3) + " ms)" : "") +
+                    (ohne.length ? ", ohne " + ohne.join(", ") : ""),
+            };
+        },
+        pfad: [
+            "worlds/huelle/",
+            "worlds/garage/",
+            "worlds/schmiede/",
+            "worlds/portale/",
+            "worlds/klang/",
+            "worlds/fachwerk/",
+            "worlds/koerperstudio/",
+            "worlds/tetrapoda/",
+            "worlds/terrain/",
+            "*-core.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-studio-huelle.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
         quelle: "2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms",
     },
 
@@ -505,15 +647,52 @@ const alle = [
         ],
         quelle: "1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte",
     },
+    // die Art-Zeile und der Kern-Wechsel (Stufe 2, w3u-platte): der Erst-Boot füllt ein frisches Profil, der Zweit-Boot nimmt
+    // Blatt-Atlas, Dorf-Export und Karten je ganz von der Platte (die Liefer-Marke `_foundryLiefer` je Art: Bau-Ereignisse im
+    // Werk UND im Haupt-Faden — die Karte backt dort, ein Blatt-Atlas, den der Haupt-Faden malt, zählt neu), der dritte Boot
+    // serviert fachwerk-core mit einem Kommentar mehr (sein Gesetz-SHA springt): nur die Leser von fachwerk bauen neu, jeder
+    // fremde Neubau dessen, was die Platte trug, und jeder Leser, der noch von ihr kommt, ist ROT beim Namen (`wechselUrteil`
+    // in diag-boot-stage, die Schale `_foundrySchale` stempelt jede Lieferung mit dem Gesetz-SHA der Kerne, die sie liest).
     {
         kriterium: "pipeline.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Blatt-Atlas, Dorf-Export und Karten laufen jedes Boot live (nie auf der Platte), und kein Werkzeug zählt fremde Neubauten " +
-            "nach einem geänderten Kern-SHA",
-        quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %",
+        befehl: [
+            "bash",
+            "-c",
+            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; S() { node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" "$@"; }; S > /dev/null; S; S --kern-wechsel fachwerk; E=$?; rm -rf "$P"; exit $E`,
+        ],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: false,
+        minuten: 9,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const art = /^\s*(?:✅|❌) LIEFERUNG je Art: (.+)$/m.exec(out);
+            const kw = /^\s*(?:✅|❌) KERN-WECHSEL fachwerk: (\d+) Leser neu · fremd (\d+)(.*) · alt (\d+)(.*)$/m.exec(out);
+            if (!art || !kw) return { gruen: false, zahl: "keine Art-Zeile oder kein Kern-Wechsel (Exit " + lauf.exit + ")" };
+            const je = {};
+            for (const m of art[1].matchAll(/([\w-]+) (\d+)\/(\d+) (\d+) ms/g)) je[m[1]] = { platte: +m[2], n: +m[3] };
+            const ganz = ["blatt-atlas", "dorf-export", "karte"].every((k) => je[k] && je[k].n > 0 && je[k].platte === je[k].n);
+            const [leser, fremd, alt] = [+kw[1], +kw[2], +kw[4]];
+            return {
+                gruen: ganz && leser > 0 && fremd === 0 && alt === 0,
+                zahl:
+                    "Zweit-Boot von der Platte " + art[1] + " · Kern-Wechsel fachwerk: " + leser + " Leser neu, fremd " + fremd +
+                    kw[3] + ", alt " + alt + kw[5],
+            };
+        },
+        pfad: [
+            "stamm/studio-bruecke.js",
+            "stamm/stoff-instanz.js",
+            "stamm/vegetation-baum.js",
+            "stamm/siedlung-ort.js",
+            "foundry-bruecke.js",
+            "cores.manifest.json",
+            "scripts/diag-boot-stage.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
     },
 
     // ───────────────────────────── KI ─────────────────────────────
@@ -954,6 +1133,100 @@ const alle = [
         ],
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
+    // ── bauen.K2 ── W9 SLOT (gate:haus-welt, Phase grund; w3t-grund): ein Haus in der Gestalt eines Dorf-Hauses (Rezept, Stempel,
+    // Same und Gier des Dorf-Slots), gesetzt über die Werkstatt (Phantom, confirmBuild) auf dem ersten Ort mit Gefälle ≥ 15 % über
+    // ±4 m — sein Erdbau (`haus:`) byte-gleich dem Plan v2 (fachwerk `ortPlan`) des Dorf-Slots aus dem Gedächtnis des Orts an
+    // seinem Ort und Boden, Platte · Grund · Vorplatz, der Vorplatz ist Boden (Dichte ±0,3 m), über der Diele keine Erde. Der
+    // Null-Renderer misst Plan und Dichte, nie das Bild (Lehre 16); Bild und Gang des Leibs zählen Staffel 2 und siedlung.K1.
+    {
+        kriterium: "bauen.K2",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund"],
+        env: { ...SOFT, HAUS_WELT_JSON: "{AUS}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8, // lokal 61–83 s (eine Welt, Phase grund), die Farm ~3,5× langsamer
+        urteil: (j) => {
+            const w9 = (j && j.w9) || {};
+            const sl = w9.slot;
+            if (!sl || !sl.typ) return { gruen: false, zahl: "kein gesetztes Haus am Hang (W9 Slot " + JSON.stringify(sl || null) + ")" };
+            const h = (w9.haeuser || []).find((x) => x.id === "w9-slot");
+            const k = (h && h.koerper) || [];
+            const [dichte, proben] = ["dichte", "proben"].map((f) => k.reduce((a, b) => a + (b[f] || 0), 0));
+            // der Plan v2 eines Ein-Slot-Orts mit Tür: Platte, Grund, Vorplatz — byte-gleich dem Dorf-Slot trägt er alle drei
+            return {
+                gruen:
+                    sl.hang >= 0.15 && sl.byte === true && sl.boden === 1 && sl.splats === 3 && proben > 0 && dichte === 0,
+                zahl:
+                    `${sl.typ} am Hang ${Number(sl.hang).toFixed(3)} (Soll ≥ 0,15) · Erdbau ${sl.splats} Splats (Platte, Grund, ` +
+                    `Vorplatz) · byte-gleich dem Dorf-Slot ` +
+                    `${sl.byte} · Vorplatz-Boden ${sl.boden} (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele ${dichte}/${proben}`,
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/gelaende-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/siedlung-*.js",
+            "stamm/werkstatt-bauen.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "1 = Erdbau und Vorplatz wie ein Dorf-Slot derselben Gestalt (Byte-Vergleich der ortPlan-Ausgabe), am Hang mit Gefälle ≥ 15 %",
+    },
+    // Staffel 2 ── W11 FREMD-SLOT (gate:haus-welt, Phase fremd; w3u-fremdslot): ein Haus mit Keller in der Gestalt eines Dorf-
+    // Hauses, gesetzt über die Werkstatt (Phantom, confirmBuild) auf die Gasse des Drehbuch-Dorfs, 14 m von jedem Haus des Plans —
+    // sein Erdbau (`haus:`) byte-gleich dem Ein-Slot-Plan des Dorf-Slots, und der Plan v2 des Orts (fachwerk `ortPlan`, ctx.fest)
+    // legt Gasse und Feldweg um seine Platte: im Raster 5 × 5 des Grundrisses vorher Punkte auf einer Weg-Form der Wege-Karte des
+    // Orts, nachher 0, der Plan nennt den Fremd-Slot (`fest`); der Gang des Leibs (W10, Sim-Schritt, W-Taste: Tür, Kopf der
+    // Kellertreppe, Keller, zurück, beide Ränder des Laufs) erreicht den Keller ohne Hub > 0,3 m je Schritt. Der Null-Renderer
+    // misst Plan, Formen, Dichte und Gang, nie das Bild (Lehre 16).
+    {
+        kriterium: "bauen.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=fremd"],
+        env: { ...SOFT, HAUS_WELT_JSON: "{AUS}" },
+        gpu: false,
+        zeit: false,
+        minuten: 6, // lokal 18–37 s (eine Welt, Phase fremd)
+        urteil: (j) => {
+            const w = (j && j.w11) || {};
+            const h = ((j && j.haeuser) || []).find((x) => x.fremd);
+            const g = h && h.gang;
+            if (!w.typ || !g) return { gruen: false, zahl: "kein Haus auf der Gasse (W11 " + JSON.stringify(w) + ")" };
+            const keller = (g.fehlt || []).filter((x) => x.startsWith("keller"));
+            return {
+                gruen:
+                    w.vorher > 0 && w.nachher === 0 && w.byte === true && w.fest >= 1 && g.keller && g.hub <= 0.3 && !keller.length,
+                zahl:
+                    `${w.typ} auf der Gasse: Grundriss-Punkte auf der Gasse ${w.vorher} → ${w.nachher} (von 25) · Erdbau ` +
+                    `byte-gleich dem Ein-Slot-Plan ${w.byte} · Fremd-Slots im Plan ${w.fest} · Gang in den Keller ` +
+                    `${g.keller && !keller.length ? "erreicht" : "verfehlt"}, Hub ${Number(g.hub).toFixed(2)} m je Schritt ` +
+                    `(Soll ≤ 0,3)${keller.length ? " · " + keller.join(", ") : ""}`,
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/gelaende-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/siedlung-*.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/koerper-bewegung.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
+        quelle: "2 = im Ortsradius Slot des Plans mit umgelegter Gasse, Keller über die Treppe ohne Anti-Clip-Hub",
+    },
     {
         kriterium: "bauen.K3",
         staffel: 1,
@@ -1260,6 +1533,77 @@ const alle = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte",
+    },
+    // ── studios.K1 ── jeder Griff wirkt sichtbar oder hörbar (Zweig w3w-studios): gate:regler-wirkt urteilt am BILD des Werks
+    // (`bauBild`: die Vorschau-Pose unter dem Belichtungs-Gesetz der Welt, ≥ 1 % der Gestalt-Pixel mit ΔLuma > 18) bzw. an
+    // seinem Leser der Welt (Membran · Ritt · Ohr). Zwilling von pipeline.K3 (REGLER_BEFEHL): EIN Lauf, headless (die Brücke
+    // baut in JS, das Raster rechnet die CPU — geräteunabhängig)
+    {
+        kriterium: "studios.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: REGLER_BEFEHL,
+        env: { ...SOFT, REGLER_WIRKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const k = k1Lesen(lauf);
+            if (k.teile !== 3) return { gruen: false, zahl: k.teile + " von 3 Teilen mit Zeilen-Zahl (Exits " + k.exits.join("/") + ")" };
+            return { gruen: !!k.bild && k.zeilen > 0 && k.wirkt / k.zeilen >= 0.8, zahl: k1Zahl(k) };
+        },
+        pfad: REGLER_PFAD,
+        quelle: "1 = ≥ 80 % der Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr",
+    },
+    {
+        kriterium: "studios.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: REGLER_BEFEHL,
+        env: { ...SOFT, REGLER_WIRKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const k = k1Lesen(lauf);
+            if (k.teile !== 3) return { gruen: false, zahl: k.teile + " von 3 Teilen mit Zeilen-Zahl (Exits " + k.exits.join("/") + ")" };
+            return { gruen: !!k.bild && k.baum && k.zeilen > 0 && k.wirkt === k.zeilen, zahl: k1Zahl(k) };
+        },
+        pfad: REGLER_PFAD,
+        quelle: "2 = 100 % — der Nenner ist die Zeilen-Zahl bei der Messung (eine Ratsche, die nur wächst, mit den Baum-Zeilen)",
+    },
+    // ── studios.K4 ── Studio = Welt im Bild: die K4-Probe in der warmen Welt der Sitzung (K4_BEFEHL), Staffel 1 auf einer Karte
+    {
+        kriterium: "studios.K4",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 900, befehl: K4_BEFEHL },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + "): " + String(lauf.stdout || "").split(/\r?\n/).filter((l) => /^K4 /.test(l)).slice(-2).join(" | ").slice(0, 300) };
+            const k = k4Zahl(j);
+            return { gruen: k.gruen.length >= 3, zahl: k.zahl };
+        },
+        pfad: K4_PFAD,
+        quelle: "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10",
+    },
+    {
+        kriterium: "studios.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 900, befehl: K4_BEFEHL },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + ")" };
+            const k = k4Zahl(j);
+            return { gruen: k.gruen.length === 7, zahl: k.zahl };
+        },
+        pfad: K4_PFAD,
+        quelle: "2 = 7/7 auf beiden Geräten",
     },
     // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)
     {

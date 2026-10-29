@@ -1,0 +1,28 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-portal-konformanz.cjs
+[linse-gpu] nvidia/pascal
+Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht · K8 getragen
+  skeleton       ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ready 1 · enter 3 · Einzelwort wirkt · 5.0 s (Schleusen 5× 0.0 s)
+  fluid          ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ready 1 · enter 3 · Einzelwort wirkt · 5.8 s (Schleusen 5× 0.0 s) — Strom zeichnet: Engine steht, Bild bewegt
+  terrain        ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ready 1 · enter 3 · Einzelwort wirkt · 9.1 s (Schleusen 5× 0.3 s)
+  garage         ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 8.0 s (Schleusen 7× 1.1 s) — Probefahrt: HUD sichtbar, Tacho 1 nach 1901 ms W
+  portale        ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 6.8 s (Schleusen 5× 0.6 s)
+  schmiede       ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 5.9 s (Schleusen 5× 0.1 s)
+  fachwerk       ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 14.5 s (Schleusen 5× 5.3 s)
+  klang          ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 0.4 s (Schleusen 5× 0.0 s)
+  koerperstudio  ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 6.1 s (Schleusen 5× 0.0 s)
+  tetrapoda      ✓ ✓ ✓ ✓ ✓ ✓ · ✓ ready 1 · enter 3 · Einzelwort wirkt · 6.5 s (Schleusen 5× 2.3 s)
+  schwarm        ✓ ✓ ✓ ✓ ✓ ✓ · · ready 1 · enter 3 · Einzelwort wirkt · 0.3 s (Schleusen 5× 0.0 s)
+  begegnung      ✓ ✓ ✓ ✓ ✓ ✓ · · ready 1 · enter 3 · 0.3 s (Schleusen 4× 0.0 s)
+  translated     ✓ ✓ ✓ ✓ ✓ ✓ · · ready 1 · enter 3 · Einzelwort wirkt · 0.5 s (Schleusen 5× 0.0 s)
+K8 [["skeleton","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["fluid","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["terrain","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["garage","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["portale","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["schmiede","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["fachwerk","Apertur",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["klang","E",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["koerperstudio","E",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true],["tetrapoda","E",{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},{"leib":3607630134,"inventar":2070854066,"wield":842358347,"reittier":3096545268,"werk":1746091837},true]]
+  Ratsche dslEinzelwort: 12/12 Welten wirken auf ein Einzelwort · stumm 0 (—) · Soll 0
+  Ratsche readyEcho: 0 (—) · Soll 0
+✅ gate:portal-konformanz: 13 Welten K1–K8 grün · Ratschen gehalten
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  1240 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

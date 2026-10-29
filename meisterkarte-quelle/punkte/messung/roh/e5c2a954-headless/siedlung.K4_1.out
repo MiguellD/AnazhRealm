@@ -1,0 +1,7 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-settlement.cjs --nur-j
+=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===
+JAHRESRINGE {"min":0.915,"paare":[[0.972,0.972,0.979],[1,0.939,0.915],[1,0.972,0.938],[0.972,0.952,0.98],[1,0.972,0.97],[0.944,0.972,0.944],[1,0.956,0.966],[1,0.975,0.966]],"ohneErbe":0.274,"fehl":[]}
+  ✅ J1 JAHRESRINGE 0.915 (Soll ≥ 0,8; ohne Erbe 0.274)
+  ✅ J2 EPOCHE: 0 Brüche, die Mutante 9
+
+✅ GRÜN — DIE JAHRESRINGE STEHEN (Teil J).

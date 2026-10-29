@@ -1,0 +1,113 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe -e (async function albedoTafelEcht(plan) {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const [AUS] = process.argv.slice(1);
+    const DIR = AUS + ".d";
+    fs.mkdirSync(DIR, { recursive: true });
+    const P = String(process.env.WERKBANK_PORT);
+    const WB = path.join("scripts", "werkbank.cjs");
+    const aus = { plan: plan.name, adapter: null, welt: null, labor: null, zeilen: [], eichung: null, fehler: null };
+    const wb = (args, ms) =>
+        cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
+    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rest = (r) => String((r.stdout || "") + (r.stderr || "")).slice(-300);
+    const log = path.join(DIR, "werkbank.log");
+    const SP = String(Number(P) + 20000);
+    let t = null, Wm = null, Lm = null, w = null, sv = null;
+    try {
+        t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
+        for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        const slog = fs.openSync(path.join(DIR, "save.log"), "w");
+        sv = cp.spawn(process.execPath, ["save-server.js"], { env: { ...process.env, PORT: SP }, stdio: ["ignore", slog, slog] });
+        const lebt = () =>
+            new Promise((r) => require("http").get("http://localhost:" + SP + "/", (x) => (x.resume(), r(true))).on("error", () => r(false)));
+        for (let s = 0; !(await lebt()); s++) {
+            if (sv.exitCode != null || s > 60) throw new Error("der save-server auf " + SP + " steht nicht (Exit " + sv.exitCode + ")");
+            await warte(1000);
+        }
+        w = cp.spawn(process.execPath, [WB, "start", "--echt", "--port", P, "--seite", "http://localhost:" + SP], {
+            stdio: ["ignore", fs.openSync(log, "w"), fs.openSync(log, "a")],
+        });
+        for (let s = 0; !/WERKBANK bereit/.test(fs.readFileSync(log, "utf8")); s += 2) {
+            if (w.exitCode != null) throw new Error("die Werkbank startet nicht (Exit " + w.exitCode + "): " + fs.readFileSync(log, "utf8").slice(-300));
+            if (s > 900) throw new Error("die Werkbank steht nach 900 s nicht");
+            await warte(2000);
+        }
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(log, "utf8")) || [null])[0];
+        const gw = (t.gemessen && t.gemessen.welt) || {};
+        const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
+        if (um.status !== 0) throw new Error("umstellen: Exit " + um.status + " " + rest(um));
+        wb(["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"]);
+        const wd = path.join(DIR, "welt.json");
+        const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(DIR, "albw")]);
+        if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: Exit " + al.status + " " + rest(al));
+        Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
+        // die echte Welt nennt ihren Adapter in der Messung (werkbank geraetInfo), nicht als [linse-gpu]-Zeile
+        aus.adapter = aus.adapter || (Wm.geraet ? "[echt] " + (typeof Wm.geraet === "string" ? Wm.geraet : JSON.stringify(Wm.geraet)) : null);
+    } catch (e) {
+        aus.fehler = "Welt: " + String((e && e.message) || e);
+    } finally {
+        if (w) {
+            wb(["stop"], 60000);
+            await warte(2000);
+            if (w.exitCode == null) w.kill();
+        }
+        if (sv && sv.exitCode == null) sv.kill();
+    }
+    if (!aus.fehler) {
+        const ld = path.join(DIR, "labor.json");
+        const r = cp.spawnSync(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--datei", ld], {
+            encoding: "utf8",
+            timeout: 1500000,
+            maxBuffer: 1 << 28,
+            env: { ...process.env, ALBEDO_PORT: String(Number(P) + 2) },
+        });
+        if (fs.existsSync(ld)) Lm = JSON.parse(fs.readFileSync(ld, "utf8"));
+        else aus.fehler = "Labor ohne Messung: Exit " + r.status + " " + rest(r);
+    }
+    if (Wm && Lm) {
+        const W = Wm.welt || {}, L = Lm.labor || {};
+        aus.welt = { echt: Wm.echt === true, geraet: Wm.geraet || null, eichung: Wm.eichung };
+        aus.labor = { echt: Lm.echt === true, geraet: Lm.geraet || null, eichung: (Lm.eichung && Lm.eichung.labor) || {}, fehler: Lm.fehler || [] };
+        const k = t.karte || {};
+        const ok = (y) => typeof y === "number" && Math.abs(y - k.albedo) <= k.eichRand;
+        aus.eichung = {
+            soll: k.albedo,
+            rand: k.eichRand,
+            welt: Wm.eichung,
+            labor: aus.labor.eichung,
+            gruen: ok(Wm.eichung) && Object.keys(aus.labor.eichung).length > 0 && Object.values(aus.labor.eichung).every(ok),
+        };
+        for (const z of t.zeilen) {
+            const l = L[z.id] && L[z.id].Y, y = W[z.id] && W[z.id].Y;
+            const e = plan.baender[z.id] || null;
+            const b = e && e.slice(0, 2);
+            const bandOk = !!e;
+            aus.zeilen.push({
+                id: z.id,
+                L: l > 0 ? l : null,
+                W: y > 0 ? y : null,
+                v: l > 0 && y > 0 ? +(y / l).toFixed(4) : null,
+                band: b,
+                quelle: e && e[2],
+                bandOk,
+                inBand: bandOk && l > 0 && y > 0 && [l, y].every((x) => x >= b[0] && x <= b[1]),
+            });
+        }
+    }
+    fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
+    console.log(aus.adapter || "[linse-gpu] ungenannt");
+    console.log(aus.fehler ? "ALBEDO-TAFEL ROT: " + aus.fehler : "ALBEDO-TAFEL " + aus.zeilen.length + " Zeilen beider Seiten");
+    process.exit(aus.fehler ? 1 : 0);
+})({"name":"material.K1","baender":{"rinde":[0.07,0.12,"Karte material (aaaa): Rinde 0,07–0,12"],"laub":[0.15,0.26,"Karte material (aaaa): Laub/Gras 0,15–0,26"],"fels":[0.1,0.3,"Karte material (aaaa): Fels 0,10–0,30 (PSU EARTH 103, spec/abnahme/soll-tafel.json)"],"boden":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haus":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haus-l1":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haus-l2":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"lack":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"haut":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"fell":[0.0123,0.871,"Frostbite (Lagarde & de Rousiers 2014, §3.2.1): Dielektrika sRGB 30–240 = linear 0,0123–0,871"],"tor":[0.25,0.95,"Buntmetall (gegenstand-stoff BAND buntmetall; PBR-Tafeln: Messing/Bronze F0 ~0,8)"],"klinge":[0.3,0.95,"blankes Metall (gegenstand-stoff BAND blank; PBR-Tafeln: Eisen F0 0,56)"]}}) C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\ea07267e-radeon\material.K1_1.json
+[linse-gpu] amd/rdna-3
+ALBEDO-TAFEL 12 Zeilen beider Seiten
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 1 von 3) nach 76 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

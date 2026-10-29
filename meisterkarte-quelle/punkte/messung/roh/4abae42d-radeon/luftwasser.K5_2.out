@@ -1,0 +1,104 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe -e (async function schwarmLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, szene] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const erg = {};
+const tor = werkbankTor(W);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
+const a = await werkbankRuf(W, "/eval", {
+code: "return (" + szene + ")(r, T, " + JSON.stringify({ n: 100, abstand: 40, reihen: 60, je: 20 }) + ");",
+});
+const b = a && a.ergebnis;
+if (!b || b.fehler) throw new Error("Bühne: " + JSON.stringify(b || a).slice(0, 300));
+const z = await werkbankRuf(W, "/eval", {
+code: "const z = await window.__drawZensus({ alle: true }); const k = z.klassen.find((x) => x.klasse === 'vogel') || {}; return { cmd: k.cmd || 0, je: k.je || {}, inst: k.inst || 0, dMin: k.dMin, dMax: k.dMax, gesamt: z.gesamt };",
+});
+const q = b.ms.slice().sort((x, y) => x - y);
+const im = b.lagen.map((l) => (l.imBild === 1 && l.nah === 1 ? l.glieder : 0));
+Object.assign(erg, {
+msMedian: +q[q.length >> 1].toFixed(4),
+msP95: +q[Math.floor(0.95 * (q.length - 1))].toFixed(4),
+imBildMin: Math.min(...im),
+paare: b.lagen.reduce((x, l) => x + l.paare, 0),
+instanzen: b.instanzen,
+teileJe: b.je,
+pose: b.pose,
+vogel: z && z.ergebnis,
+});
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+} finally {
+tor.stop();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+console.log("SCHWARM " + JSON.stringify(erg));
+})() C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\4abae42d-radeon\luftwasser.K5_2.json 7754 function schwarmSzene(r, T, o) {
+const s = r.state;
+const A = r.constructor;
+const VG = A._vogelGesetz();
+const V = VG.V;
+const S = V.schwarm;
+const pm = s.playerMesh.position;
+const H = (x, z) => r.getTerrainHeightAt(x, z);
+s.renderer.setAnimationLoop(null);
+window.__buehne();
+r.setCameraMode("first");
+const sonne = r._sonnenRichtung().y;
+const regen = r._weatherFieldFor(s.weather).rain;
+r._schwarmKarte = null;
+r._vogelSchwarmTakt(sonne, regen);
+const sk = r._schwarmKarte;
+const Z = S.zelleM;
+const c = sk.zellen.get(Math.floor(s.camera.position.x / Z) * 1048576 + Math.floor(s.camera.position.z / Z));
+if (!c) return { fehler: "keine Schwarm-Zelle unter dem Auge" };
+c.revier = true;
+c.wurf[4] = (o.n - S.glieder[0]) / (S.glieder[1] - S.glieder[0]);
+const zt = {};
+let pose = null;
+const stelle = () => {
+if (!VG.schwarmZentrum(c.wurf, s.spielZeit + o.je / 120, sonne, regen, V, zt)) return null;
+const [x, z] = [c.x + zt.dx, c.z + zt.dz];
+const y = r._terrainMacroSurfaceY(x, z) + zt.h;
+const [ex, ez] = [x + Math.cos(zt.gier) * o.abstand, z - Math.sin(zt.gier) * o.abstand];
+pm.set(ex, H(ex, ez) + 0.5, ez);
+s.camera.position.set(ex, H(ex, ez) + A.EGO_AUGE_M, ez);
+s.camera.lookAt(x, y, z);
+s.camera.updateMatrixWorld(true);
+r._loopFrustumCulling();
+r._vogelSchwarmTakt(sonne, regen);
+for (const q of sk.zellen.values()) {
+q.revier = q === c;
+q.frisch = s.spielZeit; // das Revier frischt erst nach frischeS nach: die Reihe hält die Bühne
+}
+const e = s.camera.position;
+return (pose = { kamera: [e.x, e.y, e.z, x, y, z].map((v) => +v.toFixed(2)), abstand: +Math.hypot(x - e.x, y - e.y, z - e.z).toFixed(1) });
+};
+const ms = [];
+const lagen = [];
+for (let b = 0; b < o.reihen; b++) {
+if (!stelle()) return { fehler: "der Schwarm fliegt nicht (Sonne " + sonne.toFixed(2) + ", Regen " + regen + ")" };
+const t0 = performance.now();
+for (let k = 0; k < o.je; k++) {
+s.spielZeit += 1 / 60;
+r._vogelSchwarmTakt(sonne, regen);
+}
+ms.push((performance.now() - t0) / o.je);
+lagen.push(Object.assign({}, s.schwarm));
+}
+const P = s.vogelSchwarmPool;
+return { ms, lagen, pose, instanzen: P ? P.mesh.count : 0, je: V.leib.teile.length + 2 };
+}
+[linse-gpu] amd/rdna-3
+SCHWARM {"msMedian":0.135,"msP95":0.35,"imBildMin":100,"paare":673,"instanzen":500,"teileJe":5,"pose":{"kamera":[538.55,67.89,372.51,500.42,99.76,360.4],"abstand":51.1},"vogel":{"cmd":2,"je":{"haupt":2},"inst":565,"dMin":48,"dMax":730,"gesamt":{"cmd":26,"tris":17714}}}
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 10 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

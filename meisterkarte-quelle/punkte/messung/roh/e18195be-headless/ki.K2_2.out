@@ -1,0 +1,113 @@
+$ bash -c node scripts/diag-praegung-welt.cjs; node scripts/diag-v1-pfad.cjs --korpus --regler; e=$?; node -e "let r = {}; try { r = require('./spec/profiband/ratsche-ki-korpus-regler.json'); } catch (_e) {} console.log('MITSCHNITT ' + JSON.stringify({ modell: r.modell, anbieter: r.anbieter, datum: r.datum }))"; exit $e
+[stall-akte] Seite #5 ohne Puls: Protocol error (Runtime.enable): Target closed
+
+=== (S) SELBST-TEST — der alte Riss ist ERKENNBAR (nicht vakuös) ===
+  ✅ gestrippter Entry-Stempel ⇒ EXAKT der ungeprägte Fingerabdruck — 515787a7/12 vs 515787a7/12
+  ✅ gestrippter Hand-Stempel ⇒ EXAKT der ungeprägte Hand-Fingerabdruck — 439da209/18 vs 439da209/18
+
+=== (N) NAHT — die Prägung formt in der Hand ===
+  ✅ HAND-Guss: klinge_langschwert geprägt (Nihon) ≠ ungeprägt — 439da209/18 fc241ed2/17
+
+=== (G) GUSS-SEMANTIK — Stempel beim Guss, gefroren danach ===
+  ✅ wieldBlueprint (schöpfer, ungeschmiedet) stempelt bp.studioOv als TIEFE Kopie
+  ✅ nachträgliches präge ändert das bestehende Artefakt NICHT
+  ✅ Neu-Guss OHNE Prägung räumt den Alt-Stempel
+  ✅ auch der Schmiede-Guss stempelt (_forgeMaterialAndFreeze → _stampStudioOv)
+
+=== (R) ROUNDTRIP — Snapshot · Bauplan-Zwilling · Taille ===
+  ✅ spawnArchitecture stempelt den Entry (tiefe Kopie)
+  ✅ Snapshot trägt den Entry-Stempel + Restore bringt ihn zurück
+  ✅ Bauplan-Zwilling: _serializeBlueprint/_deserializeBlueprint tragen studioOv
+  ✅ Taille des eigenen Zweigs: ein kaputter Stempel fällt in Serialisierung und Laden
+  ✅ Taille-Wand: >8-KiB-Stempel fällt am Chokepoint
+
+=== (B) BYTE-IDENTITÄT + CACHE-REINHEIT des ungeprägten Pfads ===
+  ✅ der ungeprägte Bau legt NUR den alten Schlüssel (ohne |ov:) an, geprägte NUR |ov:-Schlüssel — plain=["gt|3|1","gt|3|0"] ov=4
+  ✅ der exakte Körper-Schlüssel (preset|gestalt|lod, ohne ov) lebt unverändert
+  ✅ kein JSON-Schlüssel im Welt-Cache (die Rezept-Linsen-Reinheit hält)
+  ✅ BYTE-IDENTITÄT: ungeprägter Flatten == direkter ov-loser _foundryRequest-Bau — 515787a7/12 vs 515787a7/12
+
+=== (K) KI-REGLER — spawn_studio prägt ===
+  ✅ SELBST-TEST: ein ov, das nicht ankommt (Stempel · Bau · Gesetz · Wesen · Prägung), ist ROT — {"Stempel":"unbewegt","Bau":"unbewegt","Gesetz":"unbewegt","Wesen":"unbewegt","Prägung":"unbewegt"}
+  ✅ ERREICHT: 118 von 118 Zeilen von PARAMS_BY_KIND (100.0 %) erreicht — je Art vehicle 15/15 · gate 26/26 · weapon 18/18 · haus 21/21 · ausstattung 3/3 · bank 3/3 · leiter 3/3 · klang 7/7 · koerper 8/8 · kreatur 5/5 · flower 5/5 · grass 4/4 (tot 0, ohne Wort 0)
+  ✅ KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk — {"st":"erreicht","ov":{"W":6,"pitchDeg":60,"annexN":2},"genannt":["W -3→6","pitchDeg 75→60","annexN 1.6→2"],"ok":true}
+  ✅ FAIL-CLOSED: fremder Regler · Text · Liste · Art ohne Zeilen · Wesen · Prägung setzen nichts, benannt — {"fremd":true,"text":true,"liste":true,"baum":true,"wesen":true,"praegung":true}
+  ✅ PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt) — fehlt:  · Mutation true
+  ✅ KORPUS-TEIL Regler-Wörter: 24 Sätze, jeder ein Programm-Ziel
+
+=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===
+  ✅ A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB — 530 Zeichen, eigener Bauplan 845
+  ✅ B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer) — --user-data-dir=/tmp/puppeteer_dev_chrome_profile-wNSiLD,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-iHT1qF,--user-data-dir=/tmp/puppeteer_dev_chrome_profile-wNSiLD 0
+  ✅ SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT
+  ✅ B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss) — p-l144-l8g3zxgt{"ok":true,"id":"w-fahrzeug_gt-xajf6","name":"fahrzeug_gt","autor":"e74fb1085d5eeaea93750d7948590eaf9dc19daf8436421d8d9e659a62e95277","fremd":[]}
+  ✅ B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild) — 12 m 0,-0.34442022097196984,0.9835316865019835
+  ✅ ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s — 430 ms (A 781)
+  ✅ B: Stempel und Same reisen tief gleich
+  ✅ BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt) — A=9c183437/12 B=9c183437/12 ohne=515787a7/12
+  ✅ der eigene Bauplan kommt byte-gleich (kanonische Substanz)
+  ✅ WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A — 514 Zeichen
+  ✅ WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss — bfd63fcd-418a-4fd0-874e-fde590c67c21 136 KB guest true
+  ✅ WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild — 1391 ms (A 276, B null)
+  ✅ WELT: der Leib geht unter W ≥ 1 m — 1390 ms
+
+=== (U) FUSION auf zwei Geräten ===
+  ✅ FUSION A+B byte-gleich — 1150 Bytes
+  ✅ GERICHTET: B+A ≠ A+B
+  ✅ TÄTER-PROBE: Date.now in der Geburt ist ROT
+
+=== (F) KORPUS fremder Codes ===
+  ✅ gross — gross · Geteiltes Werk abgewiesen: der Code ist größer als 4 KB (gross).
+  ✅ kaputt — kaputt · Geteiltes Werk abgewiesen: der Code ist beschädigt (kaputt).
+  ✅ version — version · Geteiltes Werk abgewiesen: der Code spricht eine fremde Version (version).
+  ✅ op:voxel_carve — op:voxel_carve · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:voxel_carve).
+  ✅ op:rule — op:rule · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:rule).
+  ✅ op:player_soul — op:player_soul · Geteiltes Werk abgewiesen: der Code trägt ein Verb, das ein geteiltes Werk nie trägt (op:player_soul).
+  ✅ form — form · Geteiltes Werk abgewiesen: das Programm hat nicht die Form eines Werks (form).
+  ✅ regler:segments — regler:segments · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:segments).
+  ✅ band:radstand — band:radstand · Geteiltes Werk abgewiesen: ein Regler liegt außerhalb seines Bands (band:radstand).
+  ✅ regler:cEdge — regler:cEdge · Geteiltes Werk abgewiesen: der Stempel trägt einen Regler, den das Studio nicht ausweist (regler:cEdge).
+  ✅ name — name · Geteiltes Werk abgewiesen: der Name ist kein Bauplan-Name (name).
+  ✅ teile:shape_not_allowed:evil — teile:shape_not_allowed:evil · Geteiltes Werk abgewiesen: ein Teil steht nicht im Bau-Vertrag (teile:shape_not_allowed:evil).
+  ✅ builtin:fahrzeug_gt — builtin:fahrzeug_gt · Geteiltes Werk abgewiesen: ein fremder Bauplan überschreibt keinen der Welt (builtin:fahrzeug_gt).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ unsigniert — unsigniert · Geteiltes Werk abgewiesen: der Code ist nicht signiert (unsigniert).
+  ✅ adresse — adresse · Geteiltes Werk abgewiesen: die Welt-Adresse ist ungültig (adresse).
+  ✅ signatur — signatur · Geteiltes Werk abgewiesen: die Signatur passt nicht zum Werk (signatur).
+  ✅ 0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert — true
+  ✅ P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)
+  ✅ P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)
+  ✅ must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt — {"ok":true,"id":"w-fahrzeug_gt-xajf6~2","name":"fahrzeug_gt","autor":"e74fb1085d5eeaea93750d7948590eaf9dc19daf8436421d8d9e659a62e95277","fremd":["zukunft"],"laut":"Geteiltes Werk steht: GT (von e74f b108 5d5e eaea)."}
+  ✅ ein Name aus fremder Hand erreicht die KI nie (Werk steht, System-Prompt ohne ihn)
+  ✅ TÄTER-PROBE: ohne die Vertrags-Wand käme der Täter durch — das Urteil wird ROT
+
+✅ GRÜN — die Prägung reist mit dem Artefakt, per Code zum anderen Gerät, jeder fremde Code fällt beim Namen
+  ✗ „ein schmales hohes haus“ 74 ms → Welt — · ["spawn_studio","haus",["at_player"],1,null,{"W":6,"storeys":3,"turm":0,"veranda":1,"vorkragung":0,"
+  ✗ „bau mir ein breites haus mit nur einem geschoss“ 30 ms → Welt — · ["spawn_studio","haus",["at_player"],1,null,{"W":10,"storeys":1,"terrAsym":0,"turm":0,"veranda":0,"v
+  ✓ „ein haus mit einem sehr steilen dach“ 28 ms → Welt 29 ms · ["spawn_studio","haus",["at_player"],1,null,{"pitchDeg":60,"storeys":2,"terrasse":1}]
+  ✓ „ein haus mit flachem dach“ 52 ms → Welt 53 ms · ["spawn_studio","haus",["at_player"],1,null,{"pitchDeg":10,"roofCurve":0.2,"terrasse":1}]
+  ✓ „ein haus mit turm und zinnen wie eine kleine burg“ 27 ms → Welt 27 ms · ["spawn_studio","haus",["at_player_forward",14],1,null,{"storeys":3,"turm":1,"zinnen":1}]
+  ✓ „ein haus mit balkon“ 29 ms → Welt 29 ms · ["spawn_studio","haus",["at_player"],1,null,{"balcony":1,"storeys":2,"turm":0,"veranda":0,"vorkragun
+  ✗ „ein tiefergelegter sportwagen“ 25 ms → Welt — · ["spawn_studio","wagen",["at_player"],1,null,{"fahrhoehe":0.15,"radstand":2.8,"spur":1.6,"ueberhangV
+  ✓ „ein auto mit langem radstand“ 17 ms → Welt 17 ms · ["spawn_studio","fahrzeug",["at_player"],1,null,{"radstand":3.4}]
+  ✓ „ein tor mit starkem sog“ 18 ms → Welt 18 ms · ["spawn_studio","tor",["at_player"],1,null,{"swirl":1,"wave":1,"weather":1}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] drachentor L3: [{"feld":"tris","ist":17868,"soll":12000}]
+  ✗ „ein verfallenes tor, halb ruine“ 15 ms → Welt — · ["spawn_studio","tor",["far_player",50],1,null,{"wMason":0.3,"wMono":0.4,"wave":0.2,"weather":0.6}]
+  ✓ „ein glühendes tor voller energie“ 16 ms → Welt 16 ms · ["spawn_studio","tor",["at_player"],1,null,{"energy":1,"glow":1,"wLace":1,"wave":1,"weather":1}]
+  ✓ „ein langes schwert“ 21 ms → Welt 22 ms · ["spawn_studio","schwert",["at_player"],1,null,{"klinge":1.2,"w0":0.06,"wTip":0.85}]
+  ✓ „eine große, stark verwitterte feuerstelle“ 13 ms → Welt 14 ms · ["spawn_studio","feuerstelle",["at_player"],1,null,{"groesse":1.2,"verwitterung":1}]
+  ✓ „pflanz eine hohe blume“ 14 ms → Welt 14 ms · ["spawn_studio","blume",["at_player"],1,null,{"height":2.4}]
+  ✓ „eine blume mit vielen blüten“ 13 ms → Welt 13 ms · ["spawn_studio","blume",["at_player"],1,null,{"bloomCount":12,"petalRich":1}]
+  ✓ „lass ein büschel hohes gras wachsen“ 14 ms → Welt 15 ms · ["spawn_studio","gras",["at_player"],1,null,{"bladeLen":1.8,"density":1,"droop":1.3}]
+  ✓ „dichtes gras vor mir“ 15 ms → Welt 16 ms · ["spawn_studio","gras",["at_player_forward",12],6,null,{"density":0.9,"droop":0.8}]
+  ✓ „ein riesiger wolf“ 800 ms → Welt 800 ms · ["spawn_studio","wolf",["at_player_forward",30],1,null,{"size":4}]
+  ✓ „ein hirsch mit langen beinen“ 612 ms → Welt 613 ms · ["spawn_studio","hirsch",["at_player_forward",14],1,null,{"leg":0.35,"size":3}]
+  ✓ „mach mich größer“ 1357 ms → Welt 1357 ms · ["spawn_studio","mensch",["at_player"],1,null,{"height":1.15}]
+  ✓ „ich will muskulöser aussehen“ 1263 ms → Welt 1263 ms · ["spawn_studio","mensch",["at_player"],1,null,{"tone":1}]
+  ✓ „spiel ruhige, langsame musik“ 18 ms → Welt 18 ms · ["spawn_studio","lofi",["at_player"],1,null,{"bpm":70}]
+  ✓ „eine düstere musik bitte“ 14 ms → Welt 14 ms · ["spawn_studio","blues",["at_player"],1,null,{"bpm":70,"darkness":1,"tension":1}]
+  ✓ „schneller techno“ 12 ms → Welt 12 ms · ["spawn_studio","techno",["at_player"],1,null,{"bpm":140,"swing":0.8,"tension":0.9}]
+  ✅ WORT der Korpus über den echten Chat-Pfad (Mitschnitt): das Soll, 0 Brüche, Negativ-Sätze ohne Tat — 24 Sätze · regler · qwen3:4b-instruct · gültig 1 · Absicht 0.833 · p95 1263 ms
+
+✅ GRÜN — der Korpus hält sein Soll.
+MITSCHNITT {"modell":"qwen3:4b-instruct","anbieter":"127.0.0.1:11434","datum":"2026-10-26"}

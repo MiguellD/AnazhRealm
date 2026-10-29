@@ -1,0 +1,107 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c set -u
+WP=7754; SP=$((7754 + 20000)); LP=$((7754 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=
+weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n "$SPID" ] && kill "$SPID" 2> /dev/null; SPID=; for p in $(netstat -ano 2> /dev/null | grep -aE ":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)" | awk '{print $5}' | sort -u); do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }
+trap weg EXIT
+boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; $W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf3.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN1 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ1 $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf1.json"
+teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN2 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ2 $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf2.json"
+teil SPIEL2 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN3 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ3 $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf3.json"
+teil SPIEL3 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\6262cefa-radeon\halten.K2_1.json.lauf3.json"
+@@PUNKTE@@ HAKEN1
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ1
+third/hieb {"n":30,"fehlt":0,"p50":23.2,"p95":36.1,"max":56,"eingabe":1,"hoerer":2.6,"kette":13.7,"kurve":0,"takte":3,"halt":9}
+ego/hieb {"n":30,"fehlt":0,"p50":19.5,"p95":27.6,"max":33.9,"eingabe":2.2,"hoerer":3.2,"kette":14.3,"kurve":0,"takte":2,"halt":10}
+LATENZ GRÜN (Bild 16.6 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL1
+{
+ "ms": 3,
+ "ergebnis": {
+  "gesetzt": 58,
+  "dauerMs": [
+   151,
+   170
+  ],
+  "haltTakte": 1034,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ HAKEN2
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ2
+third/hieb {"n":30,"fehlt":0,"p50":20.5,"p95":37,"max":55.1,"eingabe":3,"hoerer":2.2,"kette":13.1,"kurve":0,"takte":2,"halt":10}
+ego/hieb {"n":30,"fehlt":0,"p50":19.4,"p95":28.2,"max":28.7,"eingabe":0.5,"hoerer":3,"kette":13.4,"kurve":0,"takte":2,"halt":10}
+LATENZ GRÜN (Bild 16.5 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL2
+{
+ "ms": 2,
+ "ergebnis": {
+  "gesetzt": 59,
+  "dauerMs": [
+   150,
+   167
+  ],
+  "haltTakte": 1055,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ HAKEN3
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ3
+third/hieb {"n":30,"fehlt":0,"p50":23.6,"p95":32.5,"max":45.4,"eingabe":0.8,"hoerer":2.3,"kette":12.6,"kurve":0,"takte":3,"halt":10}
+ego/hieb {"n":30,"fehlt":0,"p50":20.3,"p95":28.7,"max":39.8,"eingabe":0.6,"hoerer":1.1,"kette":10.6,"kurve":0,"takte":3,"halt":11}
+LATENZ GRÜN (Bild 16.5 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL3
+{
+ "ms": 2,
+ "ergebnis": {
+  "gesetzt": 59,
+  "dauerMs": [
+   154,
+   174
+  ],
+  "haltTakte": 1053,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 77 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

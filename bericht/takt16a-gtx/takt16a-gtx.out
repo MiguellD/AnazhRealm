@@ -1,0 +1,100 @@
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~10 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  affekt.K1#2 · Gänge 4/4 (Exit 0: kein Baum nahe der Wiese) · Bahn 1/1 · Exit 0 · 0.24 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~10 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  bauen.K1#2 · Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) · keine Rohdatei des Bild-Wegs auf der Karte (Exit 0) · allein · Exit 0 · 4.01 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~15 min auf 1 Bahn(en) · erwartet ~15 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  bauen.K5#2 · 29/36 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (werkstatt Ego 3/6 · werkstatt Third 6/6 · ki Ego 6/6 · ki Third 6/6 · geteilt Ego 4/6 · geteilt Third 4/6) — offen: werkstatt · Ego · Haus (#workshop-search: nicht offen) · werkstatt · Ego · Wagen (#workshop-search: nicht offen) · werkstatt · Ego · Tor (DER BAU STEHT NICHT: der Weg nach 518 Takten — die Welt hat nichts mehr offen) · geteilt · Ego · Wagen (kein Fahren) · geteilt · Ego · Bank (sitzt nicht) · geteilt · Third · Wagen (kein Fahren) · Bahn 1/1 · Exit 1 · 4.12 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~8 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  OFFEN fahrzeug.K3#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen · Bahn 1/1 · ungemessen, `run --offen` misst neu
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~8 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  OFFEN fahrzeug.K3#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen · Bahn 1/1 · ungemessen, `run --offen` misst neu
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~8 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN fahrzeug.K4#1 · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.32 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4° · Bahn 1/1 · Exit 0 · 4.85 min
+  GRÜN fahrzeug.K4#2 · nach Ego → Third im Bild 3/3, Azimut 0.1/0.1/0.1°, Stufe ≤ 1.72 m · T4 Absteigen 0.32 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4° · Bahn 1/1 · Exit 0 · 4.85 min (Zwilling von fahrzeug.K4#1)
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 3 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~8 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN ferne.K1#1 · Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 3.14 min
+  GRÜN ferne.K2#1 · Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 3.14 min (Zwilling von ferne.K1#1)
+  ROT  ferne.K1#2 · K1-2 ROT (10 Befunde) · Farbton 8 km 0.4404–28.63° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.17/5.137 (≥ 1,2) · fernes Weiß R/B 2.594 (≥ 1,3) · [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 3.14 min (Zwilling von ferne.K1#1)
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~12 min auf 1 Bahn(en) · erwartet ~12 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN ferne.K2#2 · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 8 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~6 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  ferne.K5#1 · keine SICHT-Zeile (Exit 0): c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 34811 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done ) · Bahn 1/1 · Exit 0 · 3.18 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~6 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN gelaende.K2#1 · 8 von 10 Gräben über das Verb, in 2309 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–342.3 ms (1 m 3, 3 m 5) · allein · Exit 0 · 2.12 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~16 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~16 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  gelaende.K2#2 · (a) Third 8/10 Gräben (1 m 3, 3 m 5) · Ego 0/0 Gräben (1 m 0, 3 m 0) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · (d) Ring 5/5 Hub 3.33 m, Faden 5/21 · allein · Exit 1 · 4.02 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~6 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN gelaende.K3#1 · spiegelTreue 0.7726 (wasserSatz 36696 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.5 σ 51.5 schwarz 0.0 % weiß 0.1 % · Stand 18.546.115 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Bahn 1/1 · Exit 0 · 1.26 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~10 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN gelaende.K5#2 · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) · Bahn 1/1 · Exit 0 · 4.52 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~6 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  halten.K1#2 · keine Zeile Q15 halten.K1 Staffel 2 (Exit 1) · Bahn 1/1 · Exit 1 · 5.76 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~14 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~14 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN halten.K2#1 · schlechtester von 3 Läufen p95 ms third/hieb 38.6 · ego/hieb 24.2 · Bild 14.8/15.3/15.7 ms · Hit-Stop im schlechtesten Lauf 12 Bilder · im Spiel Halt gesetzt 60-mal (124–168 ms, gleitet bis 0 mm je Takt) / 60-mal (115–167 ms, gleitet bis 0 mm je Takt) / 60-mal (154–175 ms, gleitet bis 0 mm je Takt) · allein · Exit 0 · 5.76 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~4 min auf 1 Bahn(en) · erwartet ~4 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN halten.K5#1 · Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba · Bahn 1/1 · Exit 0 · 0.75 min
+  GRÜN halten.K5#2 · hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [["consume:_k5"],["consume:_k5"]] · Bahn 1/1 · Exit 0 · 0.75 min (Zwilling von halten.K5#1)
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~5 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN klang.K2#1 · r 0.83 bei Lag 0 (n 119), Spitze 0.85 bei -0.5 s, CV Bild 0.22 / Ohr 0.51, 120.7 fps, Klang an · allein · Exit 0 · 1.72 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~5 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN klang.K4#1 · gras 5679 Hz (n 25) · laub 5288 Hz (n 18) · quarz 3303 Hz (n 20) — kleinster Abstand 391 Hz · Bahn 1/1 · Exit 0 · 1.16 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~9 min auf 1 Bahn(en) · erwartet ~9 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN klang.K4#2 · ✅ Schritte gras 5725 Hz (n 35) · laub 5327 Hz (n 19) · quarz 3300 Hz (n 18), kleinster Abstand 398 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) · Bahn 1/1 · Exit 0 · 3.3 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~15 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~15 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  OFFEN klang.K5#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen · allein · ungemessen, `run --offen` misst neu
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~10 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  OFFEN leib.K1#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten — beendet, ungemessen · allein · ungemessen, `run --offen` misst neu
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~24 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~24 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN leib.K1#2 · schlechtester von 3 Läufen p95 ms ego/gehen 45 · third/gehen 45.1 · ego/springen 37.9 · third/springen 34.8 · ego/einsteigen 29.6 · third/einsteigen 20.2 · ego/hieb 27 · third/hieb 32 · Bild 14.7/14.7/14.2 ms · allein · Exit 0 · 15.89 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~10 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN leib.K2#1 · hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 · Bahn 1/1 · Exit 0 · 2.94 min
+  GRÜN leib.K2#2 · Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 · Bahn 1/1 · Exit 0 · 2.94 min (Zwilling von leib.K2#1)
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~6 min auf 1 Bahn(en) · erwartet ~6 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN leib.K4#1 · stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {"rückwärts: im Stamm baum_kiefer":19} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {"orbit fern: im Stamm baum_tanne":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0051 höchstens 2.700 m · Bahn 1/1 · Exit 0 · 2.68 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~8 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  leib.K4#2 · innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {"orbit: Bau":2,"orbit fern: Bau":1} · Ruck p95 0.0107 höchstens 2.491 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.87 m · im Haus true · Kugel {} · Nah-Pixel {"orbit fern: Bau":1} · Ruck p95 0.0490 höchstens 3.013 m | steil 25.9°: 1117 Bilder · heran 8 → 0.42 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0034 höchstens 0.135 m | steil-sprint 25.9°: 825 Bilder · heran 8 → 1.89 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0042 höchstens 0.151 m — ROT: Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.2 % · Bild 918 orbit: Bau 1.7 % · Bild 1278 orbit fern: Bau 12.5 % · Gang innen-sprint: Ruck p95 0.049 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 1 Proben — Bild 864 orbit fern: Bau 1.0 % · Wand-Pixel (Bau) im Nahbereich in 4 Proben · Bahn 1/1 · Exit 1 · 4.27 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~5 min auf 1 Bahn(en) · erwartet ~5 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN licht.K2#1 · Verhältnis 5.071 (5–12,5), Schatten-Anteil 0.1972 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 1.15 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~12 min auf 1 Bahn(en) · erwartet ~12 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  licht.K2#2 · Uhr 0.5 klar (Sonne 74.2°) 5.071, Schatten-Anteil 0.1972 · Uhr 0.27 klar (Sonne 7.2°) 0.9 UNGÜLTIG (A/B 0.805, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.822, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.638 · Uhr 0.27 Regen (Sonne 7.2°) null UNGÜLTIG (A/B ?, A/C 1.000, 1463 px) · Uhr 0.73 Regen (Sonne 6.7°) 1.045 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 1.66 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~8 min auf 1 Bahn(en) · erwartet ~8 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  licht.K5#1 · keine ZUG-Zeile (Exit 0): c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 45429 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done ) · Bahn 1/1 · Exit 0 · 3.21 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 1 Läufe ~4 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~4 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  GRÜN luftwasser.K5#1 · Schwarm-Takt 0.16 ms je Takt (Median, p95 0.22) bei 100 Gliedern im Blick in jeder Reihe, 673 Paare der Separation, Auge 51.1 m (Soll ≤ 0,3 ms, 100 im Bild) · allein · Exit 0 · 0.17 min
+  GRÜN luftwasser.K5#2 · Klasse vogel 1 Befehle {"haupt":1}, 500 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle) · allein · Exit 0 · 0.17 min (Zwilling von luftwasser.K5#1)
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json
+Punkte-Maschine: 1 Station(en) in 1 Läufen auf gtx am 4abae42d · Zeit 0 Läufe ~0 min allein · Bild 1 Läufe ~10 min auf 1 Bahn(en) · erwartet ~10 min (Soll-Minuten) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  ROT  material.K1#1 · Welt/Labor 0,9–1,1: 11/12 · im realen Band beidseits: 10/12 — birke 1.0082 ohne reales Band · fichte 0.7839 ohne reales Band · echt beide Seiten · [linse-gpu] nvidia/pascal · Bahn 1/1 · Exit 0 · 4.23 min
+→ meisterkarte-quelle\punkte\messung\4abae42d-gtx.json

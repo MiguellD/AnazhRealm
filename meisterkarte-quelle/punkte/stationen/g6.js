@@ -2,7 +2,8 @@
 //
 // Erfasst ist jedes g6-Kriterium mit Punkten (klang K2 K4 K5, speicher K4 K5), aus der Messschuld (speicher K1 K2 = M30 M35
 // M37 M38, profiband K4 = M34 M39, klang K2 K5 = M33 M15) und aus dem Stau (hydro-faden: streaming K4 K5; speicher-journal:
-// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2). Je Kriterium und Staffel steht hier der Befehl, mit dem
+// speicher K2 K3), dazu aus Karten (klang-k1-zensus: klang K1#1; klang-k1-nacht: klang K1#2; streaming-sprung: streaming K3#1;
+// ankunft-aussen: ankunft K2#1 K3#1). Je Kriterium und Staffel steht hier der Befehl, mit dem
 // der Beleg gemessen wurde.
 //
 // HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
@@ -125,7 +126,508 @@ const K4_FAHR =
     'setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); ' +
     "setTimeout(() => { z.ein = st.player.mountedArch; }, 500); }, 2000); }, 30000); }, 100); return 1;";
 
+// DIE ANKUNFT VON AUSSEN (Karte ankunft-aussen): die Kalt- und die Zweit-Zeile von diag-boot-stage — t(Kontrolle) ist die Prozess-Uhr
+// ab Navigation, als die von außen gehaltene Taste W den Leib um ≥ 0,1 m trug (nie `_weltbildDa`); was sie liest.
+const ANKUNFT_PFAD = [
+    "index.html",
+    "stamm/dirigent-*.js",
+    "stamm/studio-*.js",
+    "stamm/gelaende-*.js",
+    "stamm/bild-kosten.js",
+    "stamm/koerper-bewegung.js",
+    "foundry-bruecke.js",
+    "voxel-worker.js",
+    "scripts/diag-boot-stage.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+const HW = (t) => {
+    const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+    return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
+};
+
+// ─────────────────── DER MESS-GANG DES BANDS (profiband K1 · K2 · K3 · K5, Karte w3v-profiband) ───────────────────
+// K1 · K2 · K3 lesen EINEN Lauf je Gerät (derselbe Befehl: Zwillinge, die Maschine fährt ihn einmal): 4 frische Sitzungen (save-server +
+// Werkbank --echt, 1920×1080, Dorf-Zug aus wie K4), je Sitzung jede Zelle mit `werkbank lauf 30 --regler voll --tiere frei` — der Lauf
+// trägt die Frame-Zeit (rAF), den CPU-Takt, die GPU-Zeit je Bild (Pass-Stempel, gültig ohne Pool-Überlauf), Befehle und Dreiecke je
+// Bild (p95), den VRAM am Ende des Fensters und die BELEGUNG des Haupt-Fadens zwischen zwei Bildern aus der CDP-Spur
+// (`belegungAuswerten`, nie `_gameLoopTick`). Nach jedem Lauf liest die Probe in der Seite, was der Lauf nicht nennt: ob ein
+// Halte-Griff die Tiere je hielt (`__tiereGehalten` am Prototyp — er bleibt für die Sitzung), die Sicht, Geh- und Sprint-Tempo.
+// DIE ZELLEN — stehend (die Zellen von PFLICHT E): Wiese und Genesis, je Ego und Third; bewegt: Wiese Ego gehend (die Bahn, 4 m/s),
+// Sprint (Shift+W über die Tasten des Spielers, wer 1 s steckt, dreht ab wie im Gang), GT-Fahrt (`--wandern fahrt`, V alle 4 s:
+// Third ↔ Ego), Genesis Third gehend, die Stadt gehend durch die Hauptgasse (Messort `stadt`: „dorf 7 120", Dorf-Zug an) und der
+// Sturm mit 50 Tieren (`--tiere 50 --wetter stormy`; zuletzt, die Tiere der Bühne bleiben in der Welt). In Sitzung 1 vor der Stadt
+// `werkbank band` je Ort × Sicht (wiese, genesis, dorf × ego, third): Haushalt und Ratsche, VRAM nach dem Collector, gpu-bank.
+// JE ZELLE zählt der obere Median der 4 Sitzungen (≥ 3 von 4 halten das Soll), und nur, wenn jede Sitzung gilt (`pbFehl`): Regler
+// voll und ungedrosselt, Szenen-Skala ≥ 0,75, kein Tier gehalten, das Wetter gehalten, ≥ 300 Bilder, die Sicht und der Weg der Zelle.
+// Die Schlupflöcher der Soll-Tafel stehen als Mutanten in den `proben` (punkte.cjs selbsttest). Cloud: kein Bild-Lauf (Kartenkopf N7).
+const PB_STEHT = ["wiese-ego-steht", "wiese-third-steht", "genesis-ego-steht", "genesis-third-steht"];
+const PB_BEWEGT = ["wiese-ego-geht", "wiese-ego-sprint", "wiese-fahrt", "genesis-third-geht", "stadt-ego-geht", "wiese-ego-sturm"];
+const PB_BAND = ["wiese-ego", "wiese-third", "genesis-ego", "genesis-third", "dorf-ego", "dorf-third"];
+const PB_PFAD = [
+    "stamm/*.js",
+    "*-core.js",
+    "voxel-worker.js",
+    "foundry-bruecke.js",
+    "index.html",
+    "worlds/huelle/huelle.js",
+    "spec/profiband/haushalt.json",
+    "spec/profiband/ratsche-*.json",
+    "scripts/werkbank.cjs",
+    "scripts/lib/zerlege-linse.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/band-urteil.cjs",
+    "scripts/lib/draw-zaehler.cjs",
+    "scripts/lib/software-gpu.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
+// Seiten-Code (`werkbank eval`, ohne '): die Probe nach jedem Lauf · Sprint an (Shift+W je s, ein Steckender dreht ab) und aus ·
+// Tor und Bau (K5): ein Haus 12 m neben dem Spieler, bis es steht, 10 s durch das Welt-Portal (Skelett-Welt) und heim, das Haus
+// geräumt — der Spiel-Loop läuft dabei
+const PB_PROBE =
+    "const st = r.state; return { gehalten: !!Object.getPrototypeOf(r).__tiereGehalten, sicht: st.cameraMode, speed: st.speed, " +
+    "sprint: st.sprintSpeed, skala: r._szeneSkalaWirk() };";
+const PB_SPRINT =
+    'const st = r.state; clearInterval(window.__pbiv); let vor = null; const t = (c, k) => window.dispatchEvent(new KeyboardEvent("keydown", ' +
+    '{ bubbles: true, code: c, key: k })); window.__pbiv = setInterval(() => { t("ShiftLeft", "Shift"); t("KeyW", "w"); ' +
+    "const p = st.playerMesh.position; if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 1) st.yaw += 1.7; vor = [p.x, p.z]; }, 1000); return 1;";
+const PB_SPRINT_AUS =
+    'clearInterval(window.__pbiv); for (const [c, k] of [["KeyW", "w"], ["ShiftLeft", "Shift"]]) window.dispatchEvent(new KeyboardEvent("keyup", ' +
+    "{ bubbles: true, code: c, key: k })); return 1;";
+const PB_TORBAU =
+    "const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = { bau: false, tor: false, heim: false }; " +
+    "rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { const p = st.playerMesh.position, x = p.x + 12; " +
+    'const e = r.spawnArchitecture("haus_alemannisch", { x, y: r.getTerrainHeightAt(x, p.z) + 0.5, z: p.z }, { silent: true, precise: true }); ' +
+    "await __gebautNach(e, { bau: () => {}, takt: raf }); o.bau = r._archIsRendered(e); " +
+    'r.enterPortal({ type: "welt_portal", affordances: { isPortal: true } }); o.tor = !!r._portalOverlay; ' +
+    "for (let i = 0; i < 600; i++) await raf(); r.exitPortal(); o.heim = !r._portalOverlay; " +
+    "for (let i = 0; i < 120; i++) await raf(); r.removeArchitecture(e); } finally { rend.setAnimationLoop(null); } return o;";
+// node-Code der Zusammenfassung (bash '…', ohne '): E das Ergebnis eines eval · J der JSON-Block einer Ausgabe · SUM ein Lauf und
+// seine Probe · BSUM ein Band und seine Probe · GSUM der Gang (`puffer --gang`) · PSUM die Puffer-Linse am Start und am Ende
+const PB_E =
+    'let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => { let e = null; try { e = JSON.parse(s).ergebnis; } catch (x) {} ' +
+    "console.log(JSON.stringify(e === undefined ? null : e)); });";
+const PB_J =
+    'const fs = require("fs"); const J = (f) => { let z = []; try { z = fs.readFileSync(f, "utf8").split(String.fromCharCode(10)).map((l) => l.trimEnd()); ' +
+    'return JSON.parse(z.slice(z.indexOf("{"), z.lastIndexOf("}") + 1).join(" ")); } catch (e) { return { fehler: "kein JSON: " + z.slice(-2).join(" ").slice(0, 120) }; } }; ' +
+    "const q = (x) => x || {}; let p = null; try { p = JSON.parse(process.argv[2]); } catch (e) {} ";
+const PB_SUM =
+    PB_J +
+    "const o = J(process.argv[1]), b = q(o.belegung), s = q(o.stellgroessen); console.log(JSON.stringify({ " +
+    'fehler: typeof o.fehler === "string" ? o.fehler : undefined, regler: o.regler, sek: o.sekunden, frames: o.frames, frame: o.frameMs, ' +
+    "takt: q(o.cpuTaktMs).p95, belegung: q(b.belegungMs).p95, pflicht: q(b.pflichtMs).p95, gpu: q(o.gpuMs).p95, gpuN: q(o.gpuMs).n, " +
+    "stempel: q(o.stempel).gueltig, befehle: q(o.befehle).p95, dreiecke: q(o.dreiecke).p95, vram: q(o.vramMB).jetzt, last: s.loadScale, " +
+    "skala: s.szeneSkala, holz: s.holz, wache: q(o.wetterHalt).urteil, wetter: o.wetter, weg: o.bahnM, buehne: o.buehnenTiere, probe: p }));";
+const PB_BSUM =
+    PB_J +
+    "const u = J(process.argv[1]), g = {}, m = q(u.messung); for (const x of u.groessen || []) g[x.name] = x.ist; console.log(JSON.stringify({ " +
+    'fehler: u.fehler, urteil: u.urteil, befehle: g.Befehle, dreiecke: g.Dreiecke, vram: g["VRAM MB"], gpu: q(u.gpu).gpuJeFrameMs, ' +
+    "stempel: u.stempel ? u.stempel.urteil : null, eingeschwungen: m.eingeschwungen, last: q(m.stand).loadScale, amMessort: u.amMessort, " +
+    "gestellt: u.ortGestellt, geraet: q(u.geraet).schluessel, rot: (u.rot || []).slice(0, 3).map((x) => x.text), probe: p }));";
+const PB_GSUM =
+    PB_J +
+    'const o = J(process.argv[1]); console.log(JSON.stringify({ fehler: typeof o.fehler === "string" ? o.fehler : undefined, urteil: o.urteil, ' +
+    "heap: o.heapMB, vram: o.vramMB, min: o.min }));";
+const PB_PSUM =
+    PB_J +
+    "const a = J(process.argv[1]), b = J(process.argv[2]), h = q(q(b.puffer).halter); console.log(JSON.stringify({ fehler: a.fehler || b.fehler, " +
+    "zensus: !!b.puffer, vram: [q(a.vram).mb, q(b.vram).mb], heap: [a.heapMB, b.heapMB], ruhend: h.ruhend || 0, verwaist: h.verwaist || 0 }));";
+
+// Die Zeilen des Mess-Gangs beim Namen: ZELLE <sitzung> <zelle> EXIT=<e> {…} · BAND <ort>-<sicht> EXIT=<e> {…} · TORBAU {…} ·
+// GANG EXIT=<e> {…} · PUFFER {…}
+function pbZeilen(stdout) {
+    const o = { zellen: {}, band: {}, sonst: {} };
+    const json = (s) => {
+        try {
+            return JSON.parse(s) || {};
+        } catch (_e) {
+            return {};
+        }
+    };
+    for (const l of String(stdout || "").split(/\r?\n/)) {
+        let m;
+        if ((m = /^ZELLE (\d) (\S+) EXIT=(\d+) (\{.*\})$/.exec(l))) (o.zellen[m[2]] = o.zellen[m[2]] || []).push({ ...json(m[4]), n: +m[1], exit: +m[3] });
+        else if ((m = /^BAND (\S+) EXIT=(\d+) (\{.*\})$/.exec(l))) o.band[m[1]] = { ...json(m[3]), exit: +m[2] };
+        else if ((m = /^(TORBAU|GANG|PUFFER) (?:EXIT=(\d+) )?(\{.*\}|null)$/.exec(l))) o.sonst[m[1].toLowerCase()] = { ...json(m[3]), exit: m[2] == null ? null : +m[2] };
+    }
+    return o;
+}
+// Was eine Sitzung einer Zelle ungültig macht — die Schlupflöcher der Soll-Tafel beim Namen: der Lauf brach, blind, Regler nicht
+// voll oder gedrosselt, Skala unter 0,75, Tiere gehalten, das Wetter gedreht, die Sicht und der Weg der Zelle (steht ≤ 2 m · geht
+// ≥ 3 m/s · Sprint schneller als Gehen und ≥ halbes Sprint-Tempo · Fahrt ≥ 15 m/s · Sturm im Sturm mit 50 Tieren der Bühne)
+function pbFehl(name, z) {
+    const f = [], p = z.probe || {}, sek = z.sek || 0, weg = Number.isFinite(z.weg) ? z.weg : NaN;
+    if (z.fehler) f.push("Lauf brach (" + String(z.fehler).slice(0, 80) + ")");
+    if (!(z.frames >= 300)) f.push(z.frames + " Bilder");
+    if (z.regler !== "voll") f.push("Regler " + z.regler);
+    if (!(z.last >= 0.95)) f.push("gedrosselt (loadScale " + z.last + ")");
+    if (!(z.skala >= 0.75)) f.push("Skala " + z.skala + " < 0,75");
+    if (p.gehalten !== false) f.push(z.probe ? "Tiere angehalten" : "ohne Probe");
+    if (z.wache === "ROT") f.push("Wetter gedreht");
+    if (/-steht$/.test(name) && !(weg <= 2)) f.push("Weg " + weg + " m im Stand");
+    if (/-(geht|sturm)$/.test(name) && !(weg >= 3 * sek)) f.push("Weg " + weg + " m in " + sek + " s");
+    if (/-sprint$/.test(name) && !(p.sprint > p.speed && weg > p.speed * sek && weg >= 0.5 * p.sprint * sek))
+        f.push("Sprint-Weg " + weg + " m in " + sek + " s (Gehen " + p.speed + " · Sprint " + p.sprint + " m/s)");
+    if (/-fahrt$/.test(name) && !(weg >= 15 * sek)) f.push("Fahrt-Weg " + weg + " m in " + sek + " s");
+    if (/-sturm$/.test(name) && !(z.wetter === "stormy" && z.buehne >= 50)) f.push("Sturm: " + z.wetter + " mit " + z.buehne + " Tieren der Bühne");
+    const sicht = /-ego-/.test(name) ? "first" : /-third-/.test(name) ? "third" : null;
+    if (sicht && p.sicht !== sicht) f.push("Sicht " + p.sicht);
+    return f;
+}
+// DER RICHTER des Mess-Gangs: je Regel { zellen, wort, soll, feld } die Zahl jeder Zelle — der obere Median ihrer 4 Sitzungen —
+// gegen das Soll, jede Sitzung gültig; `band`: jede Stand-Zählung je Ort × Sicht im Band (Haushalt, Ratsche, Befehle, Dreiecke,
+// VRAM: der Exit des Bands), gpu-bank ≤ 12 ms, eingeschwungen, ungedrosselt, am Messort, Skala, Tiere und Sicht.
+function pbRichter(lauf, { regeln = [], band = false }) {
+    const t = String(lauf.stdout || "");
+    const { ad, hw } = HW(t);
+    const { zellen, band: baender } = pbZeilen(t);
+    const rot = [], teile = [];
+    for (const r of regeln) {
+        const werte = r.zellen.map((name) => {
+            const zs = zellen[name] || [];
+            if (zs.length !== 4) rot.push(name + ": " + zs.length + " von 4 Sitzungen");
+            for (const z of zs) {
+                const f = pbFehl(name, z);
+                if (f.length) rot.push(name + " s" + z.n + ": " + f.join(", "));
+            }
+            const w = zs.map((z) => r.feld(z)).map((x) => (Number.isFinite(x) ? x : Infinity)).sort((a, b) => a - b);
+            const v = w.length ? w[w.length >> 1] : Infinity;
+            if (!(v <= r.soll)) rot.push(name + " " + r.wort + " " + v + " > " + r.soll + " (" + w.join("/") + ")");
+            return name + " " + v;
+        });
+        teile.push(r.wort + " ≤ " + r.soll + ": " + werte.join(" · "));
+    }
+    if (band) {
+        const werte = PB_BAND.map((name) => {
+            const b = baender[name], p = (b && b.probe) || {}, f = [];
+            if (!b) f.push("ungemessen");
+            else {
+                if (b.exit !== 0 || b.urteil !== "GRUEN") f.push("Band " + (b.urteil || b.fehler) + " " + (b.rot || []).join(" · ").slice(0, 160));
+                if (!(b.gpu <= 12)) f.push("gpu-bank " + b.gpu + " ms > 12");
+                if (b.eingeschwungen !== true) f.push("nicht eingeschwungen");
+                if (!(b.last >= 0.95)) f.push("gedrosselt (loadScale " + b.last + ")");
+                if (b.amMessort !== true || (b.gestellt || []).length) f.push("nicht am Messort");
+                if (!(p.skala >= 0.75)) f.push("Skala " + p.skala + " < 0,75");
+                if (p.gehalten !== false) f.push("Tiere angehalten");
+                if (p.sicht !== (/-ego$/.test(name) ? "first" : "third")) f.push("Sicht " + p.sicht);
+            }
+            if (f.length) rot.push("Band " + name + ": " + f.join(", "));
+            return name + " " + (b ? b.befehle + " · " + Math.round(b.dreiecke / 1000) + "k · " + b.vram + " MB · " + b.gpu + " ms" : "?");
+        });
+        teile.push("Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): " + werte.join(" | "));
+    }
+    if (!hw) rot.push("Adapter: " + ad);
+    return { gruen: rot.length === 0, zahl: teile.join(" ‖ ") + " · " + ad + (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : "") };
+}
+// DER RICHTER DER AUSDAUER (K5): die ersten und die letzten 5 min an derselben Zelle (Wiese Ego gehend, eingeschwungen), dazwischen
+// 2,5 min GT-Fahrt, Bau und Tor, der Gang (`puffer --gang 3`: gehen, GT per Taste E, Mitternacht und Mittag per Spieler-Wort,
+// zurück am Start — sein Urteil: VRAM ≤ 2 MB zurück, Heap ≤ 5 MB/min, kein ruhender oder verwaister Puffer); am Ende die
+// Puffer-Linse am Start (buf:ruhend = buf:verwaist = 0). Pflicht-Weg ≥ 5 km aus den gemessenen Wegen. Takt und Drossel beim Namen.
+function pbAusdauer(lauf) {
+    const t = String(lauf.stdout || "");
+    const { ad, hw } = HW(t);
+    const { zellen, sonst } = pbZeilen(t);
+    const teil = ["erste-ego-geht", "lang-fahrt", "letzte-ego-geht"].map((n) => [n, (zellen[n] || [])[0]]);
+    const rot = [];
+    for (const [n, z] of teil) {
+        const f = z ? pbFehl(n, z) : ["fehlt"];
+        if (f.length) rot.push(n + ": " + f.join(", "));
+    }
+    const [a, fa, b] = teil.map(([, z]) => z || {});
+    const p95 = (z) => (z.frame ? z.frame.p95 : NaN);
+    const faktor = p95(b) / p95(a);
+    if (!(faktor <= 1.05)) rot.push("Frame p95 der letzten 5 min " + p95(b) + " > " + p95(a) + " × 1,05");
+    const weg = (a.weg || 0) + (fa.weg || 0) + (b.weg || 0);
+    if (!(weg >= 5000)) rot.push("Weg " + weg + " m < 5 km");
+    const tb = sonst.torbau || {}, g = sonst.gang || {}, pu = sonst.puffer || {};
+    if (!(tb.bau === true && tb.tor === true && tb.heim === true)) rot.push("Bau/Tor/heim " + tb.bau + "/" + tb.tor + "/" + tb.heim);
+    if (!(g.exit === 0 && Array.isArray(g.urteil) && g.urteil.length === 0)) rot.push("Gang: " + ((g.urteil || []).join(" · ") || g.fehler || "kein Urteil"));
+    if (!(pu.zensus === true && pu.ruhend === 0 && pu.verwaist === 0)) rot.push("Puffer am Ende ruhend " + pu.ruhend + " · verwaist " + pu.verwaist + " MB" + (pu.zensus ? "" : " (kein Zensus)"));
+    if (!hw) rot.push("Adapter: " + ad);
+    const paar = (x, y) => (x == null ? "?" : x) + " → " + (y == null ? "?" : y);
+    return {
+        gruen: rot.length === 0,
+        zahl:
+            "Frame p95 erste 5 min " + paar(p95(a), p95(b)) + " ms letzte (×" + faktor.toFixed(3) + ") · Takt p95 " + paar(a.takt, b.takt) +
+            " ms · Drossel loadScale " + paar(a.last, b.last) + " · Weg " + (weg / 1000).toFixed(1) + " km · Gang VRAM " + paar(...(g.vram || [])) +
+            " MB, Heap " + paar(...(g.heap || [])) + " MB in " + g.min + " min · 20 min VRAM " + paar(...(pu.vram || [])) + " MB · Puffer ruhend " +
+            pu.ruhend + " verwaist " + pu.verwaist + " MB · " + ad + (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : ""),
+    };
+}
+// Der Richter steht außerhalb der Urteile: sein Abdruck reist im Befehl mit (`: richter <sha1>`) — wer ihn oder die Zellen ändert,
+// macht die Messungen alt, wie es die Änderung eines Urteils täte (ohne CR: ein Windows-Klon mit autocrlf hasht dasselbe)
+const PB_MARKE =
+    ": richter " +
+    require("crypto")
+        .createHash("sha1")
+        .update([pbZeilen, pbFehl, pbRichter, pbAusdauer, PB_STEHT, PB_BEWEGT, PB_BAND].join("|").replace(/\r/g, ""))
+        .digest("hex")
+        .slice(0, 10) +
+    "; ";
+const PB_KOPF =
+    VOR +
+    "SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; " +
+    'raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk \'{print $5}\' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; ' +
+    'W() { node scripts/werkbank.cjs "$@"; }; ' +
+    "E() { W eval \"$1\" | node -e '" + PB_E + "'; }; " +
+    "P() { E '" + PB_PROBE + "'; }; " +
+    'U() { W umstellen --ort $1 --sicht $2 > "$D/b$N-u-$1-$2.txt" 2>&1; }; ' +
+    'Z() { local z=$1; shift; W lauf "$@" > "$D/b$N-$z.txt" 2>&1; local e=$?; ' +
+    "echo \"ZELLE $N $z EXIT=$e $(node -e '" + PB_SUM + "' \"$D/b$N-$z.txt\" \"$(P)\")\"; }; " +
+    "BOOT() { raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; " +
+    '(PORT=$SP node save-server.js > "$D/b$N-save.log" 2>&1 < /dev/null &); ' +
+    "for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; " +
+    '(node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP --ort wiese > "$D/b$N-werkbank.log" 2>&1 < /dev/null &); ' +
+    'for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/b$N-werkbank.log" 2>/dev/null && break; sleep 5; done; ' +
+    'grep -m1 "\\[linse-gpu\\]" "$D/b$N-werkbank.log"; ' +
+    'W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; }; ' +
+    "ENDE() { W stop > /dev/null 2>&1; sleep 3; raeum; }; " +
+    PB_MARKE;
+const PB_LAUF = [
+    "bash",
+    "-c",
+    PB_KOPF +
+        "for N in 1 2 3 4; do BOOT; " +
+        "U wiese ego; Z wiese-ego-steht 30 --ein 10 --ruhe 120 --regler voll --tiere frei; " +
+        "Z wiese-ego-geht 30 --ein 5 --regler voll --tiere frei --wandern bahn; " +
+        "E '" + PB_SPRINT + "' > /dev/null; Z wiese-ego-sprint 30 --ein 5 --regler voll --tiere frei; E '" + PB_SPRINT_AUS + "' > /dev/null; " +
+        "U wiese ego; Z wiese-fahrt 30 --ein 10 --regler voll --tiere frei --wandern fahrt; " +
+        "U wiese third; Z wiese-third-steht 30 --ein 5 --ruhe 60 --regler voll --tiere frei; " +
+        "U genesis ego; Z genesis-ego-steht 30 --ein 10 --ruhe 120 --regler voll --tiere frei; " +
+        "U genesis third; Z genesis-third-steht 30 --ein 5 --ruhe 60 --regler voll --tiere frei; " +
+        "Z genesis-third-geht 30 --ein 5 --regler voll --tiere frei --wandern bahn; " +
+        "if [ $N = 1 ]; then for o in wiese genesis dorf; do for s in ego third; do U $o $s; " +
+        'W band --ort $o --datei "$D/band-$o-$s.json" > "$D/band-$o-$s.txt" 2>&1; e=$?; ' +
+        "echo \"BAND $o-$s EXIT=$e $(node -e '" + PB_BSUM + "' \"$D/band-$o-$s.json\" \"$(P)\")\"; done; done; fi; " +
+        "U stadt ego; Z stadt-ego-geht 30 --ein 10 --ruhe 120 --regler voll --tiere frei --wandern bahn; " +
+        "U wiese ego; Z wiese-ego-sturm 30 --ein 10 --regler voll --tiere 50 --wetter stormy --wandern bahn; " +
+        "ENDE; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
+];
+const PB_AUSDAUER = [
+    "bash",
+    "-c",
+    PB_KOPF +
+        "N=1; BOOT; U wiese ego; Z erste-ego-geht 300 --ein 20 --ruhe 120 --regler voll --tiere frei --wandern bahn; " +
+        'W puffer --top 400 > "$D/p0.json" 2>&1; ' +
+        "Z lang-fahrt 150 --ein 10 --regler voll --tiere frei --wandern fahrt; " +
+        "U wiese ego; echo \"TORBAU $(E '" + PB_TORBAU + "')\"; " +
+        'U wiese ego; W puffer --gang 3 > "$D/gang.txt" 2>&1; e=$?; ' +
+        "echo \"GANG EXIT=$e $(node -e '" + PB_GSUM + "' \"$D/gang.txt\")\"; " +
+        "U wiese ego; Z letzte-ego-geht 300 --ein 20 --ruhe 120 --regler voll --tiere frei --wandern bahn; " +
+        'W puffer --top 400 > "$D/p1.json" 2>&1; ' +
+        "echo \"PUFFER $(node -e '" + PB_PSUM + "' \"$D/p0.json\" \"$D/p1.json\")\"; " +
+        "ENDE; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
+];
+
+// DIE PROBEN (punkte.cjs selbsttest): die Roh-Ausgabe des Mess-Gangs in der Form, die er druckt, mit Zahlen im Band (die Form
+// der Felder aus `lauf`, `band` und der Probe); `zelle(name, n, s)` und `band(name, s)` setzen eine Mutante, `adapter` und
+// `sitzungen` den Rahmen. Je Mutante die Stationen, die GRÜN bleiben.
+function pbRoh({ zelle = () => {}, band = () => {}, adapter = "[linse-gpu] nvidia/pascal (Probe)", sitzungen = 4 } = {}) {
+    const z = [adapter];
+    const probe = (sicht) => ({ gehalten: false, sicht, speed: 4.5, sprint: 7.2, skala: 0.75 });
+    for (let n = 1; n <= sitzungen; n++) {
+        for (const name of [...PB_STEHT, ...PB_BEWEGT]) {
+            const steht = PB_STEHT.includes(name);
+            const s = {
+                regler: "voll", sek: 30, frames: 1790, frame: { p50: 16.6, p95: 16.7, p99: 17.4, max: 33.4 }, takt: steht ? 3.1 : 4.6,
+                belegung: steht ? 5.2 : 7.3, pflicht: 0.4, gpu: 10.4, gpuN: 1786, stempel: true, befehle: 158, dreiecke: 512000, vram: 109.6,
+                last: 1, skala: 0.75, holz: "voll", wache: "GRUEN", wetter: /sturm/.test(name) ? "stormy" : "sunny",
+                weg: steht ? 0 : /fahrt/.test(name) ? 600 : /sprint/.test(name) ? 210 : 120, buehne: /sturm/.test(name) ? 50 : 0,
+                probe: probe(/-third-/.test(name) ? "third" : "first"),
+            };
+            zelle(name, n, s);
+            z.push("ZELLE " + n + " " + name + " EXIT=0 " + JSON.stringify(s));
+        }
+        if (n === 1)
+            for (const name of PB_BAND) {
+                const s = { exit: 0, urteil: "GRUEN", befehle: 151, dreiecke: 548000, vram: 111.2, gpu: 10.9, stempel: "GRUEN", eingeschwungen: true, last: 1,
+                    amMessort: true, gestellt: [], geraet: "gtx", rot: [], probe: probe(/-ego$/.test(name) ? "first" : "third") };
+                band(name, s);
+                const { exit, ...rest } = s;
+                z.push("BAND " + name + " EXIT=" + exit + " " + JSON.stringify(rest));
+            }
+    }
+    return z.join("\n");
+}
+const PB_MUTANTEN = [
+    ["Roh (die Form des Mess-Gangs, Zahlen im Band)", {}, "K1#1 K1#2 K2#1 K2#2 K3#1 K3#2"],
+    ["Mutante Regler herunter (Sitzung 2 frei und gedrosselt, das Band gedrosselt)",
+        { zelle: (z, n, s) => n === 2 && Object.assign(s, { regler: "frei", last: 0.62 }), band: (b, s) => (s.last = 0.62) }, ""],
+    ["Mutante Tiere angehalten (ab Sitzung 2, im Band)", { zelle: (z, n, s) => n > 1 && (s.probe.gehalten = true), band: (b, s) => (s.probe.gehalten = true) }, ""],
+    ["Mutante Skala unter 0,75", { zelle: (z, n, s) => ((s.skala = 0.5), (s.probe.skala = 0.5)), band: (b, s) => (s.probe.skala = 0.5) }, ""],
+    ["Mutante Stand statt Weg (der Sprint steht)", { zelle: (z, n, s) => z === "wiese-ego-sprint" && (s.weg = 2) }, "K2#1 K3#1"],
+    ["Mutante Fahrt Frame p95 34 ms in 3 von 4", { zelle: (z, n, s) => z === "wiese-fahrt" && n < 4 && (s.frame.p95 = 34) }, "K2#1 K2#2 K3#1 K3#2"],
+    ["Mutante bewegt Frame p95 25 ms", { zelle: (z, n, s) => PB_BEWEGT.includes(z) && (s.frame.p95 = 25) }, "K1#1 K2#1 K2#2 K3#1 K3#2"],
+    ["Mutante Genesis Third steht Belegung 6,3 ms in 3 von 4", { zelle: (z, n, s) => z === "genesis-third-steht" && n > 1 && (s.belegung = 6.3) }, "K1#1 K1#2 K3#1 K3#2"],
+    ["Mutante bewegt Belegung 8,6 ms", { zelle: (z, n, s) => PB_BEWEGT.includes(z) && (s.belegung = 8.6) }, "K1#1 K1#2 K2#1 K3#1 K3#2"],
+    ["Mutante VRAM in der Fahrt 118,8 MB", { zelle: (z, n, s) => z === "wiese-fahrt" && (s.vram = 118.8) }, "K1#1 K1#2 K2#1 K2#2 K3#1"],
+    ["Mutante gpu-bank Genesis Third 12,5 ms", { band: (b, s) => b === "genesis-third" && (s.gpu = 12.5) }, "K1#1 K1#2 K2#1 K2#2"],
+    ["Mutante Software-Adapter", { adapter: "[linse-gpu] google/swiftshader" }, ""],
+    ["Mutante Sitzung 4 fehlt", { sitzungen: 3 }, "K3#1"],
+];
+const pbProben = (id) => PB_MUTANTEN.map(([name, o, gruen]) => ({ name, stdout: pbRoh(o), gruen: gruen.split(" ").includes(id) }));
+// die Ausdauer: erste und letzte 5 min, Fahrt, Tor und Bau, Gang, Puffer am Ende
+function pbRohGang(m = () => {}, adapter = "[linse-gpu] nvidia/pascal (Probe)") {
+    const lauf = (sek, weg, p95) => ({ regler: "voll", sek, frames: sek * 59, frame: { p50: 16.6, p95, p99: 17.6, max: 41.2 }, takt: 4.4, belegung: 7.1,
+        pflicht: 0.4, gpu: 10.2, gpuN: sek * 59, stempel: true, befehle: 156, dreiecke: 505000, vram: 109.8, last: 1, skala: 0.75, holz: "voll",
+        wache: "GRUEN", wetter: "sunny", weg, buehne: 0, probe: { gehalten: false, sicht: "first", speed: 4.5, sprint: 7.2, skala: 0.75 } });
+    const t = {
+        "erste-ego-geht": lauf(300, 1200, 16.7), "lang-fahrt": lauf(150, 3000, 16.8), "letzte-ego-geht": lauf(300, 1200, 17.0),
+        torbau: { bau: true, tor: true, heim: true }, gang: { exit: 0, urteil: [], heap: [312.4, 318.9], vram: [109.8, 110.6], min: 4.1 },
+        puffer: { zensus: true, vram: [109.9, 110.4], heap: [305.2, 322.0], ruhend: 0, verwaist: 0 },
+    };
+    for (const [k, v] of Object.entries(t)) m(k, v);
+    const { exit, ...gang } = t.gang;
+    return [adapter, "ZELLE 1 erste-ego-geht EXIT=0 " + JSON.stringify(t["erste-ego-geht"]),
+        "ZELLE 1 lang-fahrt EXIT=0 " + JSON.stringify(t["lang-fahrt"]), "TORBAU " + JSON.stringify(t.torbau), "GANG EXIT=" + exit + " " + JSON.stringify(gang),
+        "ZELLE 1 letzte-ego-geht EXIT=0 " + JSON.stringify(t["letzte-ego-geht"]), "PUFFER " + JSON.stringify(t.puffer)].join("\n");
+}
+const PB_PROBEN_GANG = [
+    ["Roh (die Form des Ausdauer-Gangs)", () => {}, true],
+    ["Mutante Regler herunter (die letzten 5 min frei und gedrosselt)", (k, v) => k === "letzte-ego-geht" && Object.assign(v, { regler: "frei", last: 0.62 }), false],
+    ["Mutante Tiere angehalten", (k, v) => v.probe && (v.probe.gehalten = true), false],
+    ["Mutante Skala unter 0,75", (k, v) => v.probe && ((v.skala = 0.5), (v.probe.skala = 0.5)), false],
+    ["Mutante Drift: die letzten 5 min ×1,10", (k, v) => k === "letzte-ego-geht" && (v.frame.p95 = 18.4), false],
+    ["Mutante Weg 4,6 km (kürzere Fahrt)", (k, v) => k === "lang-fahrt" && (v.weg = 2250), false],
+    ["Mutante Gang VRAM +3,1 MB zurück am Start", (k, v) => k === "gang" && Object.assign(v, { exit: 1, urteil: ["vram: +3.1 MB zurück am Start — buf:szene:baum +3.1 MB"] }), false],
+    ["Mutante Puffer verwaist 0,4 MB am Ende", (k, v) => k === "puffer" && (v.verwaist = 0.4), false],
+    ["Mutante kein Tor", (k, v) => k === "torbau" && (v.tor = false), false],
+    ["Mutante Software-Adapter", () => {}, false, "[linse-gpu] google/swiftshader"],
+].map(([name, m, gruen, adapter]) => ({ name, stdout: pbRohGang(m, adapter), gruen }));
+
 module.exports = [
+    // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
+    {
+        kriterium: "ankunft.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Kalt-Zeile mit Bild (`--bild`): der Schuss aus dem Ausgabe-Pfad bei t(Kontrolle von außen) und derselbe in derselben
+        // Pose nach 60 s Ruhe (der Loop läuft, die Bühne hält Mittag · Sonne · Sommer); Lücke = Anteil der Pixel, die in einem
+        // Kanal um mehr als 32 abweichen, dazu der offene Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Mutanten:
+        // `--mutante bild` (der erste Schuss endet nach 20 m) ROT, `--mutante eigenmeldung` (`_weltbildDa` ab dem Erwachen) ohne Kontrolle ROT.
+        // Soll: ≤ 2 % und nichts offen an einem Gerät. swiftshader (Cloud, ankunft-aussen 202b23be): 7,80 % Lücke, 54 Bäume und
+        // Bauten offen im Bild, t(Kontrolle) 72,47 s gegen Eigenmeldung 63,65 s; ohne Ruhe 0,00 %, Mutante bild 6,51 %.
+        befehl: ["node", "scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", "{AUS}", "--bild", "{AUS}.png"],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const { ad, hw } = HW(String(lauf.stdout || ""));
+            if (!j || !j.tK || !j.bild) return { gruen: false, zahl: "kein Bild der Kontrolle (t(Kontrolle) " + (j ? j.tK : "?") + " ms, Exit " + lauf.exit + ") · " + ad };
+            const gruen = hw && j.bild.luecke <= 0.02 && j.offen.length === 0;
+            return {
+                gruen,
+                zahl:
+                    (100 * j.bild.luecke).toFixed(2) + " % Lücke nach 60 s · offen im Bild " + (j.offen.join(" · ") || "nichts") +
+                    " · t(Kontrolle) " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " + (j.weltbildDa / 1000).toFixed(2) + " s) · " + ad,
+            };
+        },
+        pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs"],
+        quelle: "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen",
+    },
+    {
+        kriterium: "ankunft.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Zweit-Zeile (`--profil`): ein Kalt-Boot füllt das Profil bis zur Ruhe der Foundry (Platte, HTTP-Cache), dann vier
+        // Wiederkehren, je ein frischer Browser-Prozess (ein node-Lauf, ein starteBrowser) — nur die Platte bleibt; je Boot
+        // t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Vor ankunft-aussen kannte die Zeile keine Außen-t: ROT.
+        // swiftshader (Cloud, 202b23be): warm 79,17 · 83,84 s (Eigenmeldung 69,59 · 74,31 s), die Platte trägt 208/208.
+        befehl: [
+            "bash",
+            "-c",
+            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; ` +
+                `for N in 1 2 3 4; do node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; done; rm -rf "$P"`,
+        ],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const { ad, hw } = HW(t);
+            const w = [...t.matchAll(/t\(Kontrolle\) warm ([\d.]+) s von außen/g)].map((m) => +m[1]).sort((a, b) => a - b);
+            if (w.length < 4) return { gruen: false, zahl: w.length + " von 4 Wiederkehren mit Kontrolle von außen (Exit " + lauf.exit + ") · " + ad };
+            const med = (w[(w.length - 1) >> 1] + w[w.length >> 1]) / 2;
+            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ") · " + ad };
+        },
+        pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js"],
+        quelle: "1 = warm ≤ 5 s an einem Gerät",
+    },
+    // ─────────────────────────────── Streaming K3 (streaming-sprung) ───────────────────────────────
+    {
+        kriterium: "streaming.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // Karte streaming-sprung: je frische Sitzung (save-server + Werkbank --echt, Wiese Ego, Regler des Spielers nach R8)
+        // `haenger --wandern sprung --schwelle 50`: mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
+        // Gesetzes, gemessen wird die Kadenz, bis die Welt dort steht (`_weltSteht` in Bau-Ereignissen über `__deckel`, nachdem
+        // sie einmal nicht stand) + 1 s — hängt sie, bricht der Lauf laut (kein JSON, ROT); jeder
+        // Frame > 50 ms steht mit Ursache in b<N>-sprung.out, die Bauten im Haupt-Faden zählt `_syncBauten`. Vor der Karte kennt
+        // der Lauf `sprung` nicht (kein Feld `sprung` im JSON): ROT. Soll: Median der Frame-p95 aus 3 Sitzungen ≤ 50 ms, jede mit
+        // stehender Welt, Profil und ≥ 30 Bildern, am Adapter einer echten GPU. Cloud headless swiftshader am Kopf cd8a4d2c des Zweigs
+        // streaming-sprung (Wiese, 5 Läufe): die Welt steht nach 18,4–22,3 s, CPU-Takt p95 34,5–61 ms, 0 Bauten außerhalb der
+        // Sync-Stellen, Frame p95 4,6–7,5 s (Software-GPU, 3–7 Bilder im Fenster) — ROT am Adapter.
+        befehl: [
+            "bash",
+            "-c",
+            VOR +
+                "SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; " +
+                'raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk \'{print $5}\' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; ' +
+                "W() { node scripts/werkbank.cjs \"$@\"; }; " +
+                "SUM() { node -e 'try{const j=require(process.argv[1]),s=j.sprung;console.log(JSON.stringify({m:s.m,stehtS:s.stehtS&&+((s.stehtS-s.t0)/1000).toFixed(1),bau:s.bau[1].sonst-s.bau[0].sonst,frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs,profil:j.profil,ursachen:j.jeUrsache.slice(0,3).map((e)=>e.ursache+\" x\"+e.n)}))}catch(e){console.log(\"{}\")}' \"$1\"; }; " +
+                "for N in 1 2 3; do raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; " +
+                '(PORT=$SP node save-server.js > "$D/b$N-save.log" 2>&1 < /dev/null &); ' +
+                "for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; " +
+                '(node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP --ort wiese > "$D/b$N-werkbank.log" 2>&1 < /dev/null &); ' +
+                'for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/b$N-werkbank.log" 2>/dev/null && break; sleep 5; done; ' +
+                'grep -m1 "\\[linse-gpu\\]" "$D/b$N-werkbank.log"; ' +
+                'W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; ' +
+                'W umstellen --ort wiese --sicht ego > "$D/b$N-umstellen.txt" 2>&1; ' +
+                'W haenger --regler frei --tiere frei --wandern sprung --schwelle 50 --json "$D/b$N-sprung.json" > "$D/b$N-sprung.out" 2>&1; E=$?; ' +
+                'echo "SPRUNG $N EXIT=$E $(SUM "$D/b$N-sprung.json")"; ' +
+                "W stop > /dev/null 2>&1; sleep 3; raeum; done; " +
+                "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
+        ],
+        gpu: true,
+        zeit: true,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const s = [];
+            for (const m of t.matchAll(/^SPRUNG (\d) EXIT=(\d+) (\{.*\})$/gm)) {
+                let b = {};
+                try { b = JSON.parse(m[3]); } catch (_e) { b = {}; }
+                s.push(b);
+            }
+            if (s.length !== 3) return { gruen: false, zahl: s.length + " von 3 Sitzungen gemessen (kennt der Lauf --wandern sprung?)" };
+            const ok = s.filter((b) => b.m === 1000 && Number.isFinite(b.stehtS) && b.profil === true && b.frames >= 30 && b.frameMs);
+            const p95 = s.map((b) => (b.frameMs ? b.frameMs.p95 : Infinity)).sort((x, y) => x - y)[1];
+            return {
+                gruen: hw && ok.length === 3 && p95 <= 50,
+                zahl:
+                    "Frame p95 Median " + p95 + " ms (" + s.map((b) => (b.frameMs ? b.frameMs.p95 : "?")).join(" · ") + ") · CPU-Takt p95 " +
+                    s.map((b) => (b.taktMs ? b.taktMs.p95 : "?")).join(" · ") + " ms · die Welt steht nach " +
+                    s.map((b) => (b.stehtS == null ? "nie" : b.stehtS)).join(" · ") + " s · Bauten sonst " + s.map((b) => b.bau).join("/") +
+                    " · " + ok.length + " von 3 gültig · " + (s[0].ursachen || []).join(" | ") + " · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [
+            "stamm/*.js",
+            "*-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "index.html",
+            "spec/profiband/haushalt.json",
+            "scripts/werkbank.cjs",
+            "scripts/lib/haenger-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = beim Teleport um 1 km Frame p95 ≤ 50 ms an einem Gerät",
+    },
+
     // ─────────────────────────────── Streaming K4 · K5 (hydro-faden) ───────────────────────────────
     {
         kriterium: "streaming.K4",
@@ -408,6 +910,145 @@ module.exports = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
+    },
+
+    // ─────────────────────────────── Profiband K1 · K2 · K3 · K5 (w3v-profiband) ───────────────────────────────
+    // K1 · K2 · K3 je Staffel: DER MESS-GANG DES BANDS (oben, `PB_LAUF`, ein Lauf je Gerät), geurteilt vom Richter `pbRichter`; K5 der
+    // Ausdauer-Gang (`PB_AUSDAUER`, `pbAusdauer`). Vor der Karte trug keines der vier Kriterien eine Station (0 von 8 Punkten).
+    {
+        kriterium: "profiband.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        // Frame p95 je Bewegungszelle. Vorher (GTX 23.10., `werkbank lauf` von Hand, Zug 1–3): Stadt gehend 58,3 und 49,8 ms, Fahrt
+        // 33,3 an der VSync-Kante, Sturm gehend 33,3, Wiese Ego gehend 25,1 — ROT erwartet an Stadt und Fahrt; die Radeon bewegt ungemessen.
+        befehl: PB_LAUF,
+        gpu: true,
+        zeit: true,
+        minuten: 80,
+        urteil: (j, lauf) => pbRichter(lauf, { regeln: [{ zellen: PB_BEWEGT, wort: "Frame p95", soll: 33, feld: (z) => z.frame && z.frame.p95 }] }),
+        pfad: PB_PFAD,
+        proben: pbProben("K1#1"),
+        quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten",
+    },
+    {
+        kriterium: "profiband.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // dieselbe Messung: ≤ 16,7 ms in jeder Zelle, stehend und bewegt
+        befehl: PB_LAUF,
+        gpu: true,
+        zeit: true,
+        minuten: 80,
+        urteil: (j, lauf) => pbRichter(lauf, { regeln: [{ zellen: [...PB_STEHT, ...PB_BEWEGT], wort: "Frame p95", soll: 16.7, feld: (z) => z.frame && z.frame.p95 }] }),
+        pfad: PB_PFAD,
+        proben: pbProben("K1#2"),
+        quelle: "2 = ≤ 16,7 ms in jeder Zelle",
+    },
+    {
+        kriterium: "profiband.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die Belegung des Haupt-Fadens je Bild (p95 aus der Spur des Laufs) in den vier Stand-Zellen. Vorher (GTX 23.10., Zug 3, Trace):
+        // Wiese Ego 5,95/5,93 ms, Genesis Third 7,34/7,29, Dorf 7,10/7,21 — ROT erwartet an Genesis Third
+        befehl: PB_LAUF,
+        gpu: true,
+        zeit: true,
+        minuten: 80,
+        urteil: (j, lauf) => pbRichter(lauf, { regeln: [{ zellen: PB_STEHT, wort: "Belegung p95", soll: 5.8, feld: (z) => z.belegung }] }),
+        pfad: PB_PFAD,
+        proben: pbProben("K2#1"),
+        quelle: "1 = stehend ≤ 5,8 ms an einem Gerät",
+    },
+    {
+        kriterium: "profiband.K2",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // dieselbe Messung: stehend ≤ 5,8 und in jeder Bewegungszelle ≤ 8 ms. Vorher (Radeon 21.10., M12): Wiese Ego stehend 10,43 ms
+        befehl: PB_LAUF,
+        gpu: true,
+        zeit: true,
+        minuten: 80,
+        urteil: (j, lauf) =>
+            pbRichter(lauf, {
+                regeln: [
+                    { zellen: PB_STEHT, wort: "Belegung p95", soll: 5.8, feld: (z) => z.belegung },
+                    { zellen: PB_BEWEGT, wort: "Belegung p95", soll: 8, feld: (z) => z.belegung },
+                ],
+            }),
+        pfad: PB_PFAD,
+        proben: pbProben("K2#2"),
+        quelle: "2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
+    },
+    {
+        kriterium: "profiband.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        // `werkbank band` je Ort × Sicht (Sitzung 1): der Exit des Bands (Haushalt, Ratsche, Befehle ≤ 208, Dreiecke ≤ 680k, VRAM nach
+        // dem Collector ≤ 118 MB, Stempel-Pool), dazu gpu-bank ≤ 12 ms (das Band selbst hält 16,7). Vorher (GTX 23.10., Zug 3): gpu-bank
+        // Wiese 12,99 · Dorf 12,45 · Genesis 11,52 ms — ROT erwartet an der GTX; die Radeon ungemessen
+        befehl: PB_LAUF,
+        gpu: true,
+        zeit: true,
+        minuten: 80,
+        urteil: (j, lauf) => pbRichter(lauf, { band: true }),
+        pfad: PB_PFAD,
+        proben: pbProben("K3#1"),
+        quelle: "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank)",
+    },
+    {
+        kriterium: "profiband.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // dazu jede Zelle des Laufs (stehend und bewegt): Befehle p95 ≤ 208, Dreiecke p95 ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms aus den
+        // Pass-Stempeln des Fensters (nur ohne Pool-Überlauf und mit ≥ 100 Stempeln). Vorher: VRAM in der Fahrt 118,8 MB (GTX 23.10.)
+        befehl: PB_LAUF,
+        gpu: true,
+        zeit: true,
+        minuten: 80,
+        urteil: (j, lauf) =>
+            pbRichter(lauf, {
+                band: true,
+                regeln: [
+                    { zellen: [...PB_STEHT, ...PB_BEWEGT], wort: "Befehle p95", soll: 208, feld: (z) => z.befehle },
+                    { zellen: [...PB_STEHT, ...PB_BEWEGT], wort: "Dreiecke p95", soll: 680000, feld: (z) => z.dreiecke },
+                    { zellen: [...PB_STEHT, ...PB_BEWEGT], wort: "VRAM MB", soll: 118, feld: (z) => z.vram },
+                    { zellen: [...PB_STEHT, ...PB_BEWEGT], wort: "GPU p95", soll: 12, feld: (z) => (z.stempel === true && z.gpuN >= 100 ? z.gpu : NaN) },
+                ],
+            }),
+        pfad: PB_PFAD,
+        proben: pbProben("K3#2"),
+        quelle: "2 = alle Zellen samt Bewegung",
+    },
+    {
+        kriterium: "profiband.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // der Ausdauer-Gang (oben, `pbAusdauer`): ~25 min am Stück in einer Sitzung — p95 der letzten 5 min ≤ der ersten × 1,05, Gang
+        // GRÜN (VRAM ≤ 2 MB zurück am Start, Heap ≤ 5 MB/min, buf:ruhend/verwaist 0), Puffer am Ende 0, Weg ≥ 5 km, Bau und Tor.
+        // Vorher (Radeon 21.10., M14, von Hand): VRAM 113,9 → 127,0 MB, Heap 186 → 1 118 MB, p95 16,2 → 42,3 ms unter Fremdlast — ROT
+        befehl: PB_AUSDAUER,
+        gpu: true,
+        zeit: true,
+        minuten: 35,
+        urteil: (j, lauf) => pbAusdauer(lauf),
+        pfad: PB_PFAD,
+        proben: PB_PROBEN_GANG,
+        quelle: "1 = an einem Gerät",
+    },
+    {
+        kriterium: "profiband.K5",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: PB_AUSDAUER,
+        gpu: true,
+        zeit: true,
+        minuten: 35,
+        urteil: (j, lauf) => pbAusdauer(lauf),
+        pfad: PB_PFAD,
+        proben: PB_PROBEN_GANG,
+        quelle: "2 = an beiden",
     },
 
     // ─────────────────────────────── Klang K1 · K2 · K4 · K5 ───────────────────────────────

@@ -1,0 +1,527 @@
+$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node scripts/diag-wasser-leben.cjs --nur koerper
+  Orte aus der Welt: {"mess":[-280.4,-1045.6],"see":{"x":1816,"z":-6168,"tiefe":3.4,"level":0.9304924564577954,"ufer":[1866,-6168],"mitte":[1816,-6168],"fenster":[1826,-6208,1906,-6128]},"fluss":{"x":-258.4,"z":-1132.8,"breite":4.2},"bach":{"x":-269.2,"z":-1127.4},"kueste":[1537,10609],"meer":[1896,8776]}
+{
+ "hashSin": null,
+ "orte": {
+  "mess": [
+   -280.4,
+   -1045.6
+  ],
+  "see": {
+   "x": 1816,
+   "z": -6168,
+   "tiefe": 3.4,
+   "level": 0.9304924564577954,
+   "ufer": [
+    1866,
+    -6168
+   ],
+   "mitte": [
+    1816,
+    -6168
+   ],
+   "fenster": [
+    1826,
+    -6208,
+    1906,
+    -6128
+   ]
+  },
+  "fluss": {
+   "x": -258.4,
+   "z": -1132.8,
+   "breite": 4.2
+  },
+  "bach": {
+   "x": -269.2,
+   "z": -1127.4
+  },
+  "kueste": [
+   1537,
+   10609
+  ],
+  "meer": [
+   1896,
+   8776
+  ]
+ },
+ "koerper": {
+  "see": {
+   "mitte": [
+    1816,
+    -6168
+   ],
+   "spiegel": 0.93,
+   "tiefeMitte": 3.43
+  },
+  "brust": 1.224,
+  "hinein": {
+   "frames": 1500,
+   "tiefGeerdet": 0,
+   "augenUnterGeerdet": 0,
+   "maxTiefeGeerdetM": 0,
+   "schwimmFrames": 1003,
+   "seeFrames": 1152,
+   "luft": 1003,
+   "maxM": 1.227,
+   "erreichtMitte": false
+  },
+  "lage": {
+   "fussUnterSpiegelP50": 1.224,
+   "sollFussUnterSpiegel": 1.224,
+   "augenUnter": 0,
+   "geerdet": false,
+   "schwimmt": true
+  },
+  "kraulen": {
+   "mps": 0.977,
+   "soll": 0.977,
+   "anteil": 1
+  },
+  "eintauchen": {
+   "landung": {
+    "schritt": 66,
+    "material": "wasser",
+    "fussUeberSpiegel": -0.05
+   },
+   "eintauchVy": -10.63,
+   "tiefsterFussUnterSpiegel": 0.99
+  },
+  "medium": {
+   "kameraUnten": true,
+   "kameraOben": false
+  },
+  "tier": [
+   {
+    "seele": "wesen",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.872,
+    "wasserlinie": 0.872,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "wolf",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.599,
+    "wasserlinie": 0.599,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "fuchs",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.371,
+    "wasserlinie": 0.371,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "baer",
+    "abstand": 8,
+    "sohleUnterSpiegel": 0.731,
+    "wasserlinie": 0.731,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "wesen",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.872,
+    "wasserlinie": 0.872,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "wolf",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.599,
+    "wasserlinie": 0.599,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "fuchs",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.371,
+    "wasserlinie": 0.371,
+    "schwimmt": true,
+    "amGrund": false
+   },
+   {
+    "seele": "baer",
+    "abstand": 120,
+    "sohleUnterSpiegel": 0.731,
+    "wasserlinie": 0.731,
+    "schwimmt": true,
+    "amGrund": false
+   }
+  ],
+  "baumlos": {
+   "sohleUnterSpiegel": 0.5,
+   "soll": 0.5
+  },
+  "peer": {
+   "lehne": 0.3,
+   "meshKind": "soul"
+  },
+  "eis": {
+   "winter": {
+    "frames": 1500,
+    "tiefGeerdet": 0,
+    "augenUnterGeerdet": 0,
+    "maxTiefeGeerdetM": 0,
+    "schwimmFrames": 0,
+    "seeFrames": 1151,
+    "luft": 0,
+    "maxM": 0,
+    "erreichtMitte": false,
+    "temperatur": -4.375
+   },
+   "tier": [
+    {
+     "seele": "wolf",
+     "abstand": 8,
+     "sohleUnterSpiegel": 0,
+     "wasserlinie": 0.599,
+     "schwimmt": false
+    },
+    {
+     "seele": "fuchs",
+     "abstand": 8,
+     "sohleUnterSpiegel": 0,
+     "wasserlinie": 0.371,
+     "schwimmt": false
+    },
+    {
+     "seele": "baer",
+     "abstand": 8,
+     "sohleUnterSpiegel": 0,
+     "wasserlinie": 0.731,
+     "schwimmt": false
+    }
+   ],
+   "uebergang": {
+    "erster": 19,
+    "traegt": 26,
+    "wechsel": 2,
+    "tagesgang": [
+     0,
+     0
+    ]
+   },
+   "meer": {
+    "tiefst": 1.338,
+    "gefrier": -1.89,
+    "traegt": 0,
+    "kalt": 45
+   },
+   "mutation": {
+    "frames": 1500,
+    "tiefGeerdet": 0,
+    "augenUnterGeerdet": 0,
+    "maxTiefeGeerdetM": 0,
+    "schwimmFrames": 1003,
+    "seeFrames": 1152,
+    "luft": 1003,
+    "maxM": 1.227,
+    "erreichtMitte": false,
+    "temperatur": 5.625
+   }
+  },
+  "schmelze": {
+   "pegel": 0.163,
+   "schmilzt": 3,
+   "gegen": 0,
+   "versatz": 178,
+   "weiss": 0.507,
+   "neuBau": 81,
+   "halt": 0
+  },
+  "pegel": {
+   "post": 35,
+   "neuBau": 258,
+   "hub": 0.2,
+   "wochen": 3,
+   "gegen": 0,
+   "fluss": 0.2,
+   "flut": [
+    0.2,
+    185,
+    0.2
+   ],
+   "ruhe": [
+    0,
+    182,
+    0
+   ],
+   "halt": 0
+  },
+  "erstarrung": [
+   {
+    "x": 1866,
+    "z": -6168,
+    "y": 1.6174013721144107,
+    "frei": 0.7761773171786086,
+    "reihe": [
+     {
+      "glut": 1,
+      "stoff": "glut",
+      "erstarrt": false,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "glut",
+      "erstarrt": false,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 1,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.92,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.87,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.83,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.8,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": true
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.78,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     }
+    ],
+    "ab": 2
+   },
+   {
+    "x": 1816,
+    "z": -6168,
+    "y": -2.5,
+    "frei": 0.8393577107750537,
+    "reihe": [
+     {
+      "glut": 1,
+      "stoff": "glut",
+      "erstarrt": false,
+      "dampf": true,
+      "licht": true
+     },
+     {
+      "glut": 0.91,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": true,
+      "licht": true
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": true,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": true,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     },
+     {
+      "glut": 0.84,
+      "stoff": "stein",
+      "erstarrt": true,
+      "dampf": false,
+      "licht": false
+     }
+    ],
+    "ab": 1
+   }
+  ],
+  "gluehen": {
+   "stoff": "stahl",
+   "feuer": {
+    "wechsel": 17,
+    "T": 1103.12,
+    "glut": 0.56,
+    "kelvin": 1376,
+    "luft": 21.05,
+    "esse": "esse"
+   },
+   "kalt": {
+    "wechsel": 123,
+    "T": 46.66,
+    "glut": 0,
+    "kelvin": null,
+    "luft": 21.05,
+    "esse": null
+   },
+   "feld": 9.8
+  }
+ }
+}
+
+WASSER-LEBEN GRÜN

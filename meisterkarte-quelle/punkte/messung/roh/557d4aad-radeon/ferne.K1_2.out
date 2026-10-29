@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --eigen --port 7774 --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\557d4aad-radeon\ferne.K1_2.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie und leere Messung beim Namen ROT
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 21.18° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 26.88° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 29.33° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.23° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 10.67° von der In-Streuung > 10°
+  OFFEN K1-2 HIMMEL Azimut 0°: Ton der In-Streuung nicht blau 0.3915,0.4472,0.3915 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 90°: Ton der In-Streuung nicht blau 0.345,0.4063,0.354 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 180°: Ton der In-Streuung nicht blau 0.3189,0.3867,0.3361 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 270°: Ton der In-Streuung nicht blau 0.345,0.4063,0.354 statt 222° ±15
+  OFFEN K1-2 SONNENSEITE Uhr 0.5: Y der In-Streuung zur Sonne / gegen sie 1.17 < 1.2
+LUFT GRUEN · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN · K2-2 GRUEN (offen: FARBTON, HIMMEL, SONNENSEITE Uhr 0.5)
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 1 von 3) nach 19 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

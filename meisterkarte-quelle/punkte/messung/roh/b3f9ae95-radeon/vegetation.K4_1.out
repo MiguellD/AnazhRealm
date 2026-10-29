@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-3 C:\Program Files\nodejs\node.exe scripts/diag-haus-welt.cjs --phasen=grund --bild
+[linse-gpu] amd/rdna-3
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[57343],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41177,1306,18657,39115],[23177,304,5489,39292]]],["fluss",0,0,[[28201,1291,28096,56628],[5856,602,5745,64275]]]],"innen":[0.835,0.109,null,null,0.436,0.445,0.486,0.245,0.241,0.578,0.204,0.275,0.23,0.415,0.511,0.484,0.614,0.741],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":95,"gesperrt":true,"ohne":33,"slots":36,"haeuser":3,"reload":3,"zugOffen":true,"ausstattung":{"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]},"verblasst":true,"ms":38935}}
+  ❌ W10 Innen-Bild: 3 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.022440736046240566/0.2066638394322911 · haus_alpenchalet 0.020731019780571583/undefined · haus_skandinavisch undefined/0.12659767981914147)
+  ❌ W9 Wasser: [["see",0,0,[[41177,1306,18657,39115],[23177,304,5489,39292]]],["fluss",0,0,[[28201,1291,28096,56628],[5856,602,5745,64275]]]]
+  ❌ W9 Waise: 33 von 95 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-362/-1358,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  ❌ W9 Ausstattung: {"brunnen":[0,4],"laternen":[23,23],"staende":[0,3]}
+  1 Welten, 1 zugleich, 349 s
+❌ gate:haus-welt ROT (5)
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-3 (bild, Platz 3 von 3) nach 167 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

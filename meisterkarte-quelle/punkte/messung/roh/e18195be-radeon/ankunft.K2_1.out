@@ -1,0 +1,29 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe scripts/diag-boot-stage.cjs --kalt --echt --json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\ankunft.K2_1.json --bild C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\ankunft.K2_1.json.png
+[linse-gpu] amd/rdna-3
+
+=== DIE KALT-ZEILE (leeres Profil) — echte GPU · amd rdna-3 · Holz voll · V18.546.117 ===
+    0 s  blockiert  468 ms · Foundry 0 wartend · 0 im Werk | die Welt entsteht
+    1 s  blockiert  173 ms (Buch 28) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt
+    2 s  blockiert  368 ms (Bauten 29 · Erst-Bau 133) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    3 s  blockiert  473 ms (Bauten 6 · Dorf 49 · Gruppen-Bau 17) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · 15 Häuser des Dorfs wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    4 s  blockiert  147 ms (Bauten 28 · Gestalt 6 · Gruppen-Bau 25 · Erst-Bau 227) · 7 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 18 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wird gemalt · das Licht des Orts wird gemessen · 50 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    5 s  blockiert  687 ms (Bauten 12 · Wald-Plan 6 · Streu 86 · Gruppen-Bau 17 · Boden 35 · Saat 73 · Erst-Bau 247) · 13 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Boden wächst (8 Stücke im Bild) · der Horizont wird gemalt · das Licht des Orts wird gemessen · 26 Bäume und Bauten wachsen · 10 Bäume werden gepflanzt, 9 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    6 s  blockiert  906 ms (Bauten 26 · Wald-Plan 159 · Streu 72 · Gestalt 12 · Gruppen-Bau 5 · Boden 13 · Saat 26 · Erst-Bau 308) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 19 Bäume und Bauten wachsen · 71 Bäume werden gepflanzt, 8 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    7 s  blockiert  886 ms (Bauten 42 · Streu 191 · Gestalt 18 · Gruppen-Bau 17 · Erst-Bau 375) · 7 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 25 Bäume und Bauten wachsen · 122 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 12 ferne Bäume werden gemalt
+    8 s  blockiert  960 ms (Bauten 23 · Streu 109 · Gestalt 50 · Gruppen-Bau 11 · Erst-Bau 124) · 6 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | 67 Bäume und Bauten wachsen · 67 Bäume werden gepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 14 ferne Bäume werden gemalt
+    9 s  blockiert  735 ms (Bauten 12 · Streu 262 · Gestalt 24 · Erst-Bau 379) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 2 wartend · 13 im Werk | 31 Bäume und Bauten wachsen · 2 Wald-Stücke warten auf ihre Gestalt · 7 ferne Bäume werden gemalt
+   10 s  blockiert   64 ms (Streu 61 · Gestalt 52) · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 12 im Werk | 1 Wald-Stücke warten auf ihre Gestalt
+   11 s  blockiert  857 ms (Gestalt 17 · Gruppen-Bau 9 · Boden 8 · Saat 60 · Erst-Bau 320) · 6 Pipelines offen · Vorrat bestellt · Foundry 0 wartend · 30 im Werk | — das Weltbild steht
+  1.6 s  das Buch der Studios ist da
+  das Bild der Ankunft: C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\e18195be-radeon\ankunft.K2_1.json.png (42 Befehle · 390572 Dreiecke)
+  die Klasse Pflanzen bis zum Weltbild: 1213 ms Haupt-Faden (Wald-Plan 165 · Streu 782 · Gestalt 167 · Saat 100)
+
+  t(Weltbild) = t(Kontrolle) 11.14 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 11.14 s
+  LIEFERUNG kalt: 0 von 208 von der Platte (0.0 %) · Werk 208 · Haupt-Faden 0 · leer 0 · verschluckt 0
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 10 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

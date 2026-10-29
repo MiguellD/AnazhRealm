@@ -1,0 +1,17 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx'); K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\4abae42d-gtx\klang.K4_2.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; : werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten; KLANG_ZENSUS_PORT=$(( 7754 + 1 )) node scripts/diag-klang-zensus.cjs --json "$A" > "$D/zensus.log" 2>&1; echo "zensus EXIT=$?"; grep -F "(F)" "$D/zensus.log"
+[linse-gpu] nvidia/pascal
+{"klang":{"weg":"cdp-klick","an":true,"ctx":"running"},"orte":{"gras":[-280.4,-1045.6],"laub":[-221.3,-1064.7],"quarz":[-225.4,-1071.6]},"fahrten":[{"hinweis":"stein","ort":[-240.4,-1045.6],"karte":true,"neu":["laub","quarz"]}],"stoffe":{"gras":{"wegM":11.7,"bursts":35,"medianHz":5725,"p10":5372,"p90":5969},"laub":{"wegM":11.5,"bursts":22,"medianHz":5198,"p10":3359,"p90":5448},"quarz":{"wegM":11.6,"bursts":17,"medianHz":3292,"p10":3160,"p90":3447}}}
+gras n 35 median 5725 p10 5372 p90 5969
+laub n 19 median 5327 p10 4839 p90 5510
+quarz n 18 median 3300 p10 3160 p90 3435
+stein n 2 median 2656 p10 2646 p90 2656
+zensus EXIT=0
+── (F) DER KÖRPER KLINGT: Motor 66.67903162478733 Hz je 1000 Upm · Landung 0.5092636152815709 dB je m/s (1 m 4.4145 m/s -52.768383219449134 dB · 2 m 6.213 m/s -51.550059609952996 dB · 4 m 8.829000000000004 m/s -50.05050826976971 dB · 8 m 12.589500000000024 m/s -48.286026407209576 dB · 12 m 15.369000000000039 m/s -47.189654945847145 dB) · Doppler -9 m 1.0403797386045908/1.0403708237229607 · -4.5 m 1.0289058229638919/1.028890847077198 · -2 m 1.0146811681516947/1.0146951602444558 · 2 m 0.9850093883707329/0.9849971956776167 · 4.5 m 0.9791921664626683/0.9791778709026026 · 9 m 0.9814144635956572/0.9814138810674393
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 38949 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

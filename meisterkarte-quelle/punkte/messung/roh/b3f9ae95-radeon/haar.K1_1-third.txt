@@ -1,0 +1,63 @@
+{
+ "ms": 826,
+ "kamera": [
+  -278.52,
+  29.48,
+  -1039.41
+ ],
+ "hell": 80,
+ "kontrast": 6.65,
+ "dc": 33,
+ "dreiecke": 299082,
+ "klasse": {
+  "ausdruck": "^tier:wolf$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:wolf=255/80/80"
+  ],
+  "klassen": {
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": -0.2382,
+    "spiegelEbene": 28.82,
+    "sp": [
+     322,
+     0,
+     0,
+     411692.95,
+     411692.95,
+     -98047.49
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 21.91,
+    "pixel": 34314,
+    "luma": 63.47,
+    "kante": 0.4979,
+    "kr": 2966,
+    "strich": 0.4999,
+    "si": 14202,
+    "bloecke": 365,
+    "glatt": 0.7096,
+    "nyquist": 0.1177,
+    "beta": 2.7316
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\b3f9ae95-radeon\\haar.K1_1-third.maske.png"
+ },
+ "zeit": null,
+ "ist": "fell → spec/abnahme/soll-tafel.json",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 5.2 m · Luma 82.4 σ 35.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\b3f9ae95-radeon\\haar.K1_1-third.png",
+ "gesamtMs": 8607
+}
