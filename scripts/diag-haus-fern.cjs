@@ -30,13 +30,9 @@
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
-const { wandEnde } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "fachwerk-core.js"));
-const FC = globalThis.__fachwerkCore;
+const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
 const LOD = FC.PORTAL_RENDER_CONFIG.lod;
 const ARG = process.argv;

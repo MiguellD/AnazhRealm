@@ -15,14 +15,11 @@
 //   node scripts/diag-membran-gesetz.cjs
 "use strict";
 const stammLib = require("./lib/stamm.cjs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "porta-core.js"));
-const PC = globalThis.__portaCore;
+const { studioKern, pruefer } = require("./lib/welt-boot.cjs");
+const PC = studioKern("porta-core.js", "__portaCore");
 
-const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { errs, check, wandEnde } = pruefer();
 function eq(a, b, tol) {
     if (Array.isArray(a) && Array.isArray(b))
         return a.length === b.length && a.every((v, i) => eq(v, b[i], tol));

@@ -436,6 +436,20 @@ function stationVerdict(s) {
                 `${name}: kein Stoß-Ereignis (${m.ereignisse} Ereignisse, Kamera-Ruck ${(m.ruck || 0).toFixed(2)}) — keine Rückmeldung`
             );
     }
+    // K3 (physik.K3) DER FREIE KÖRPER: die Kisten ruhen ≤ 2 s am Boden und jede auf der darunter (±2 cm), zittern danach und
+    // wach ≤ 1 cm; der Wagen kippt das Fass > 45°; die Mutanten (Schwere 0, ohne Stoß) fallen.
+    const fk = s.frei;
+    const ruht = (k) => k && k.ruheS <= 2 && [k.boden, ...k.fugen].every((d) => Math.abs(d) <= 0.02);
+    if (!fk || !fk.fass) out.push("frei keine Probe");
+    else
+        for (const [gut, t] of [
+            [ruht(fk.kisten), "frei-ruhe: die Kisten ruhen nicht am Boden"],
+            [fk.kisten.zittern <= 0.01 && fk.wachZittern <= 0.01, "frei-zittern über 1 cm"],
+            [fk.fass.kipp > 45, "frei-fass: der Wagen kippt das Fass nicht"],
+            [!ruht(fk.schwerelos), "frei-mutante: ohne Schwere ruhen die Kisten am Boden (vakuös)"],
+            [fk.fassOhneStoss && fk.fassOhneStoss.kipp < 45, "frei-mutante: ohne Stoß kippt das Fass (vakuös)"],
+        ])
+            if (!gut) out.push(t);
     // L6 SPIELER UND WAGEN: Impuls in beide Richtungen, keine Durchdringung.
     const sw = s.spielerWagen;
     if (!sw || !sw.a || !sw.b) out.push("spieler-wagen keine Probe");
@@ -1576,6 +1590,7 @@ hauptLauf(async () => {
             stossFels: { kontakt: 40, vVor: 6.5, vNach: -1.3, vMinNach: -1.3, ereignisse: 1, ruck: 3, zielWeg: 0 },
             stossWagen: { kontakt: 40, vVor: 6.5, vNach: 2.3, vMinNach: 2.3, ereignisse: 1, ruck: 3, zielWeg: 2.1 },
             stossBaer: { kontakt: 40, vVor: 6.5, vNach: 5.0, vMinNach: 5.0, ereignisse: 1, ruck: 2, zielWeg: 3.2 },
+            frei: { kisten: { ruheS: 0.8, zittern: 0, boden: 0, fugen: [0] }, wachZittern: 0, schwerelos: { boden: 0.1, fugen: [0.1] }, fass: { kipp: 172 }, fassOhneStoss: { kipp: 2 } },
             spielerWagen: {
                 a: {
                     minAbstand: 0,
@@ -1746,6 +1761,9 @@ hauptLauf(async () => {
                 { lockstep: { abw: 0, baerAbw: 1.39, ruhe: true, gleicherStart: true } },
                 "lockstep",
             ],
+            ["5 Kisten ruhen 2,4 s", { frei: { ...gutS.frei, kisten: { ...gutS.frei.kisten, ruheS: 2.4 } } }, "frei-ruhe"],
+            ["die Wagen-Kollision aus: das Fass steht", { frei: { ...gutS.frei, fass: { kipp: 2 } } }, "frei-fass"],
+            ["ohne Schwere ruhen die Kisten am Boden", { frei: { ...gutS.frei, schwerelos: gutS.frei.kisten } }, "frei-mutante"],
             [
                 "Stoß aus dem Stand (vakuös)",
                 { stossBaer: { kontakt: -1, vVor: 0, vNach: 0, vMinNach: 0, ereignisse: 0, ruck: 0, zielWeg: 0 } },
@@ -2247,6 +2265,11 @@ hauptLauf(async () => {
         "L5 Stoß an den Bären (Schau: 9,27 → 0,17): der Bär bekommt seinen Impuls (≥ 0,5 m), der schwerere Wagen behält Fahrt (≥ 50 %)",
         frei("stoss-baer"),
         sz(S.stossBaer)
+    );
+    check(
+        "K3#1 (physik.K3) DER FREIE KÖRPER: 5 Kisten fallen und ruhen (≤ 2 s, Zittern ≤ 1 cm), ein Wagen wirft ein Fass um (> 45°)",
+        frei("frei"),
+        JSON.stringify(S.frei || null)
     );
     const swz = S.spielerWagen || {};
     check(
