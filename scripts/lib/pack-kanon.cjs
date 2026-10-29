@@ -176,7 +176,6 @@ async function bootRealm(port) {
 // ein EIGENER Round-Trip nach ready — auf die WAHRHEIT warten, nicht den Timing-Zufall).
 async function waitFoundryReady(page) {
     return page.evaluate(async () => {
-        const r = window.anazhRealm;
         const out = { ready: false, recipeCount: 0, readyMs: -1 };
         const f = r._ensureAssetFoundry();
         if (!f) return out;
@@ -194,7 +193,6 @@ async function waitFoundryReady(page) {
 // Cache gefüllt. Liefert die Cache-Schlüssel (das Inventar der Gestalt-Reise).
 async function waitLibraryWarm(page) {
     return page.evaluate(async () => {
-        const r = window.anazhRealm;
         const f = r._foundry;
         await window.__weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
@@ -220,7 +218,6 @@ async function installPackSerializer(page) {
                 .join("");
         };
         window.__packSer = async (presetId, seed, lod) => {
-            const r = window.anazhRealm;
             const meshes = await r._foundryRequest(presetId, seed, lod);
             if (!meshes || !meshes.length) return null;
             const out = [];

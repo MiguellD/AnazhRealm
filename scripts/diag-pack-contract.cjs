@@ -192,7 +192,7 @@ async function main() {
         // Hook-Verhalten: false → null TROTZ ready-Worker (der Fallback ist übersprungen).
         const hooked = await realm.page.evaluate(async () => {
             window.__anazhLiveBake = false;
-            const m = await window.anazhRealm._foundryRequest("eiche", 5, 2);
+            const m = await r._foundryRequest("eiche", 5, 2);
             delete window.__anazhLiveBake; // Default wiederherstellen (die Gate-Hook-Lehre: sichern/restoren)
             return m === null;
         });

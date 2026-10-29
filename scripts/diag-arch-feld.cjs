@@ -79,7 +79,6 @@ hauptLauf(async () => {
     await server.zeige(page, 60000);
     const res = await page.evaluate(async () => {
         await window.__weltDa((r) => r.state);
-        const r = window.anazhRealm;
         if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
         await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort

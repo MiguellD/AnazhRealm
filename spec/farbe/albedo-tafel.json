@@ -539,6 +539,7 @@
                 "phyto-core.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
+                "stamm/vegetation-wiese.js",
                 "stamm/feld-leben.js"
             ],
             "ist": {
@@ -610,6 +611,7 @@
                 "stamm/studio-bruecke.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
+                "stamm/vegetation-wiese.js",
                 "stamm/feld-leben.js",
                 "stamm/werkstatt-bauen.js"
             ],

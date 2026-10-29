@@ -34,9 +34,9 @@ hauptLauf(async () => {
     page.on("console", (m) => consoleLines.push(m.text()));
     await server.zeige(page, 60000, "index.html?holz=voll");
     await page.evaluate(async () => {
-        await window.__weltDa(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady === true); // prettier-ignore
+        await window.__weltDa(() => r && r.state && r.state.rendererReady === true); // prettier-ignore
         // W5: ein Programm, das nicht linkt, steht beim Stoff-Namen im Fehler-Sammler — ab dem ersten Frame, den das Spiel zeichnet
-        const st = window.anazhRealm && window.anazhRealm.state, rend = st && st.renderer, be = rend && rend.backend; // prettier-ignore
+        const st = r && r.state, rend = st && st.renderer, be = rend && rend.backend; // prettier-ignore
         if (!be || !be.gl) return;
         window.__linktNicht = [];
         rend.debug.onShaderError = (gl, prog) => {
@@ -50,10 +50,8 @@ hauptLauf(async () => {
     // Die Welt einige Sekunden LEBEN lassen (der natürliche Loop läuft; swiftshader-GL ist zäh).
     await sleep(6000);
     const out = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const o = { err: null };
         try {
-            const st = r.state;
             const be = st.renderer && st.renderer.backend;
             o.rendererReady = st.rendererReady === true;
             o.backendWebGL = !!(be && be.isWebGPUBackend !== true && be.isWebGLBackend === true);

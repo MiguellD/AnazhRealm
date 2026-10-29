@@ -117,7 +117,7 @@ async function stromZeichnet(page, fr) {
 const MITGEBRACHT = { material: "<b>Konformanz-Glut</b>", farbe: 0x1fabcdef, randSoll: "rgb(171, 205, 239)", werkzeug: "Konformanz-Feile" };
 
 async function mitgebrachtPruefen(page, fr, art) {
-    const pl = await page.evaluate(() => window.anazhRealm._portalEnterPayload());
+    const pl = await page.evaluate(() => r._portalEnterPayload());
     const notiz = [];
     if (!pl.fingerprint) notiz.push("der enter-Payload trägt keinen Vibe-Pass");
     if (art === "pass") {
@@ -318,7 +318,6 @@ async function betreten(page, welt) {
     hinFrame = null;
     const b = await page.evaluate(
         async (welt, uebersetzt) => {
-            const r = window.anazhRealm;
             if (r._portalOverlay) r.exitPortal();
             let id = welt.id;
             if (id === "translated") {
@@ -418,7 +417,6 @@ const zaehler = (page) => page.evaluate(() => window.__konformanz.zaehler());
 
 async function zaehlerAus(page) {
     await page.evaluate(() => {
-        const r = window.anazhRealm;
         delete r._portalSendEnter, delete r._buildPortalOverlay; // die eigenen Hüllen, nie die des Prototyps
         if (window.__kSpy) window.removeEventListener("message", window.__kSpy, true);
         window.__kSpy = null;
@@ -440,7 +438,6 @@ let hinFrame = null;
 
 // Die Lesungen der Heimat leben EINMAL in ihr (nach dem Boot eingesetzt) — Schleuse, Zähler und Wirkung lesen sie.
 function seitenHelfer() {
-    const r = window.anazhRealm;
     window.__konformanz = {
         // Die Wirkung in der Heimat: die Journal-Ereignisse der Welt.
         journal() {
@@ -509,7 +506,6 @@ async function schleuse(page, weg, welt, tat) {
     const marke = `schleuse-${++schleuseNr}`;
     const s = await page.evaluate(
         async (m, weg, tat) => {
-            const r = window.anazhRealm;
             const K = window.__konformanz;
             const po = r._portalOverlay;
             const w = po && po.iframe && po.iframe.contentWindow;
@@ -659,7 +655,7 @@ async function pruefeWelt(page, welt, lies) {
     // K3: die fremde Seite schickt, was wirken würde (chain-Form bzw. peer-join) — nichts darf wirken.
     await fremdBereit(page, PORT);
     const programm = welt.wort
-        ? await page.evaluate((w) => window.anazhRealm._portalParseWorldCommand(w), welt.wort)
+        ? await page.evaluate((w) => r._portalParseWorldCommand(w), welt.wort)
         : null;
     if (welt.wort && !programm) {
         aus.notiz.push(`das Wort „${welt.wort}" steht nicht im Wörterbuch der Heimat für diese Welt`);
@@ -708,7 +704,7 @@ async function pruefeWelt(page, welt, lies) {
     aus.k.K5 = !!hinFrame && !offen;
     if (!aus.k.K5) {
         aus.notiz.push(hinFrame ? "Esc bringt nicht heim" : "Welt-Frame nicht gefunden");
-        await page.evaluate(() => window.anazhRealm._portalOverlay && window.anazhRealm.exitPortal());
+        await page.evaluate(() => r._portalOverlay && r.exitPortal());
     }
     // K8 nach der Heimkehr: jeder Teil trägt vor dem Tor, drüben und daheim dieselben Bytes
     if (b.weg) {
@@ -740,19 +736,17 @@ async function lauf(welten, taeter) {
         });
         await s.zeige(page, 60000);
         await page.waitForFunction(
-            () => window.anazhRealm?.state?.blueprints && anazhRealm._gameLoopTick,
+            () => r?.state?.blueprints && anazhRealm._gameLoopTick,
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
         await page.evaluate(() => window.__weltDa((r) => !!r.state.vibePass?.ready));
         await page.evaluate((M) => {
-            const st = window.anazhRealm.state;
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
             st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
             // K8: der Ring des Genesis-Orts (headless ruht sein Takt) und was der Spieler trägt — ein Kiesel in der Hand, eine
             // Laterne in der Neben-Hand, der Brustpanzer, drei Dinge im Inventar, ein Platz der Hotbar, die Gestalt des Körpers,
             // und er sitzt auf dem Pferd (der Spieler-Weg: aufsitzen, reiten, durchs Tor)
-            const r = window.anazhRealm;
             r._genesisPortalRing(r._genesisMitte());
             r.mountArchitecture(r.spawnArchitecture("reittier_holzross", st.playerMesh.position));
             r.equipHeld("kiesel");

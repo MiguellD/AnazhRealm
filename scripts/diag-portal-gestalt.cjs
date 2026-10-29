@@ -41,7 +41,7 @@ hauptLauf(async () => {
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {
         const res = { a: {}, b: {} };
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale);
         // DIE DYNAMISCHE WAHRHEIT aus dem lebenden Zustand: jeder handgeschriebene Portal-Bauplan mit studioGestalt (die
@@ -109,7 +109,6 @@ hauptLauf(async () => {
     // ===== EVAL 2: (C) End-to-End-Spawn + (D) Funktion =====
     const outCD = await page.evaluate(async () => {
         const res = { c: {}, d: {} };
-        const r = window.anazhRealm;
         const bp = r.state.blueprints.welt_terrain;
         res.d.metaBefore = JSON.stringify(bp.portalMeta);
         const pm = r.state.playerMesh.position;
@@ -211,7 +210,6 @@ hauptLauf(async () => {
 
     // ===== EVAL 3: (E) Groessen-Sanity — Alt-BBox (Parts) vs porta-Asset in Welt-Skala =====
     const outE = await page.evaluate(async (GESTALT) => {
-        const r = window.anazhRealm;
         const out = {};
         for (const [name, gestalt] of Object.entries(GESTALT)) {
             const bp = r.state.blueprints[name];
@@ -277,7 +275,6 @@ hauptLauf(async () => {
     // ===== EVAL 4: (F) Gate-Hook-Welt — Resolver null, Part-Pfad lebt, Substanz regime-frei =====
     const outF = await page.evaluate(async (blockersRelStudio) => {
         const res = {};
-        const r = window.anazhRealm;
         const prev = window.__anazhGateNoFoundry;
         window.__anazhGateNoFoundry = true;
         try {

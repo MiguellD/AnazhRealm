@@ -24,8 +24,6 @@
 // Die Seiten-Funktion (als Quelle injiziert): o = { radien: { Klasse: m }, gw, gh, ort, dyn, neu } — Täter ist eine Fläche
 // einer Klasse mit Radius, näher am Auge als ihr Radius.
 function nahDeckungInSeite(o) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const K = r.constructor;
     const cam = st.camera;

@@ -395,8 +395,7 @@ const { errs, check } = pruefer();
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
-            const r = window.anazhRealm,
-                s = r.state;
+            const s = r.state;
             const res = {};
             // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
             // austreiben.
@@ -1272,7 +1271,6 @@ const { errs, check } = pruefer();
         // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
         // (die Ring-Kette K51 morphte nur die Naht) springt.
         out.sprung = await page.evaluate(async () => {
-            const r = window.anazhRealm;
             const s = r.state;
             const S = r._voxelChunkConfig(0).span;
             const karte = (e, key) => {

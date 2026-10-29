@@ -46,8 +46,6 @@ const VENDOR = [
 // Textur des Renderers (`info.memoryMap`) und jede, die im Fenster einen Zugriff trug, mit ihren Ereignissen.
 function zielZensus(k) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         const be = rend && rend.backend;
         if (!be || be.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — der Zensus liest GPU-Befehle" };
@@ -334,7 +332,7 @@ function zielZensus(k) {
 function zielLesen(k) {
     return (async () => {
         const liste = window.__zielListe || [];
-        const dev = window.anazhRealm.state.renderer.backend.device;
+        const dev = r.state.renderer.backend.device;
         const FORM = {
             r8unorm: [1, 1, "u8"],
             rg8unorm: [2, 1, "u8"],
@@ -449,7 +447,6 @@ function zielLesen(k) {
 // die ein späterer Pass liest, während die Szenen-Tiefe ruht, und ein 32-bit-Float mit 16-bit-Inhalt. `an` = false baut alles
 // restlos ab.
 function zielSchmuggel(an) {
-    const r = window.anazhRealm;
     const rend = r.state.renderer;
     const T = window.THREE;
     const TSL = T.TSL;

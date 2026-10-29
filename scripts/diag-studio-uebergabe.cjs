@@ -53,8 +53,7 @@ function welt(buch, teile) {
 }
 
 // Der Bau, den die Welt aus ihrem Speicher bestellt — je Art ihr Leser bis an die Grenze zum Bäcker.
-function weltBau(w, kind, preset, weltSame) {
-    const { r, AnazhRealm } = w;
+function weltBau({ r, AnazhRealm }, kind, preset, weltSame) {
     if (kind === "koerper") {
         let fang = null;
         r._ofenMenschTemplate = (dials, skinColor, hairColor, lod) => (
@@ -293,7 +292,6 @@ async function weltPruefen() {
     const out = await page.evaluate(async () => {
         const res = {};
         await window.__weltDa();
-        const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
         const KC = window.__koerperCore;

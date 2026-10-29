@@ -102,10 +102,8 @@ const TAFEL_BLICKE = [
 function albedoSicht(opts) {
     return (async () => {
         opts = opts || {};
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state,
-            sc = st.scene,
+        const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
         const W = opts.w || 320,
@@ -672,7 +670,7 @@ function grauStoff(mehr) {
 // (`window.__bundlesNeu`, welt-boot)
 function linsenZiel(W, H) {
     const T = window.THREE,
-        { renderer: rend, scene: sc } = window.anazhRealm.state,
+        { renderer: rend, scene: sc } = r.state,
         rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     const zeichne = (cam) => {
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -696,19 +694,17 @@ function linsenZiel(W, H) {
         // Frame, bis nichts mehr baut — dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs). Die
         // Kaskaden zeichnen für DIESES Auge und diese Sonne neu (Lehre 17): ihre Karte vom letzten Frame des Spiels lag sonst über
         // der Linse (A7, Radeon: die Sonne auf derselben Birke 0 bis 0,06 je Lauf, Karte gegen Gestalt 0,93–1,32 je Lauf).
-        ruhe: (cam, wer) => window.__erstRuhe(() => (window.anazhRealm._schattenAlleNeu(), zeichne(cam)), {}, wer),
+        ruhe: (cam, wer) => window.__erstRuhe(() => (r._schattenAlleNeu(), zeichne(cam)), {}, wer),
         // die Linse misst ohne Luft (die Extinktion der Szene ruht während der Schüsse); zurück gibt der Rückgabe-Ruf
         kamera: (cam, p = cam.position.clone(), q = cam.quaternion.clone()) => () => (cam.position.copy(p), cam.quaternion.copy(q)),
-        ohneLuft: (U = ((window.anazhRealm.state.luft || {}).U || {}).beta, alt = U && U.value) => (U && (U.value = 0), () => U && (U.value = alt)),
+        ohneLuft: (U = ((r.state.luft || {}).U || {}).beta, alt = U && U.value) => (U && (U.value = 0), () => U && (U.value = alt)),
     };
 }
 
 function lichtBilanz() {
     return (async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state,
-            sc = st.scene,
+        const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
@@ -825,9 +821,7 @@ const TAG_UHREN = [0, 0.15, 0.5, 0.65].flatMap((a) =>
 const TAG_UHREN_KURZ = [0, 0.23, 0.25, 0.27, 0.5, 0.73, 0.75, 0.77];
 function tagKurve(o) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state,
-            rend = st.renderer;
+        const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
         const schreiber = {};
@@ -1002,10 +996,8 @@ function tagKurveSelbsttest() {
 function nahFernSicht(opts) {
     return (async () => {
         opts = opts || {};
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state,
-            sc = st.scene,
+        const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
         const H = opts.hoehe || 420,
@@ -1400,10 +1392,8 @@ function nahFernUrteil(messung, band) {
 function laubGegenlicht(opts) {
     return (async () => {
         opts = opts || {};
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state,
-            sc = st.scene,
+        const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
@@ -1864,7 +1854,7 @@ function lab(rgb) {
 // Normale so viele Grad neben dem Azimut der Sonne (0 zur Sonne); `feld` liegt waagrecht. Das Urteil ist absolut (`weg`): 0,9–1,1.
 function lichtWeg(opts) {
     return (async () => {
-        const r = window.anazhRealm, T = window.THREE, st = r.state, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
+        const T = window.THREE, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
         const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
@@ -2096,9 +2086,7 @@ function kantenLinie(Y, W, H, kante, schwelle, schritt) {
 // 0,4–1,5 km) und verlangt ≥ 12 Stufen zwischen L0 und S im grünen Kanal.
 function luftTiefe(o) {
     return (async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state;
         const cam = st.camera;
         const U = st.luft.U;
         const R = o.ref;
@@ -2366,8 +2354,6 @@ function luftTiefeUrteil(m, R) {
 // Leuchtdichte des Ausgabe-Bilds (linear, Rec. 709), das Wort und der Stand des Übergangs.
 function wetterZug(o) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const dt = r.constructor.TAKT_DECKEL_S;
         const [T0, tag, reihe] = [performance.now(), st.dayLengthMinutes, []];
         let k = 0;
@@ -2483,9 +2469,7 @@ function kartenEichung(kurve) {
 // 24 m prüfen den Dach-Pool an ihrer Mitte. `haus`: nur die Schwelle, an die der Spieler tritt (die Tür öffnet).
 function naesseSicht(o) {
     return (async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state;
         const cam = st.camera;
         const p = st.playerMesh.position;
         // DIE DACH-BAUTEN OHNE HÜLLE (`NAESSE.dachArten`): `dach: "ziel"` nennt den nächsten, `dach: "pruefen"` prüft jeden im

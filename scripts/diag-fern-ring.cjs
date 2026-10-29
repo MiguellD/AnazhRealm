@@ -54,12 +54,11 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        await window.__weltDa(() => !(!window.anazhRealm ||
-                !window.anazhRealm.state ||
-                !window.anazhRealm.state.scene ||
-                !window.anazhRealm.state.playerMesh ||
-                !window.anazhRealm.state.worldMeta));
-        const r = window.anazhRealm;
+        await window.__weltDa(() => !(!r ||
+                !r.state ||
+                !r.state.scene ||
+                !r.state.playerMesh ||
+                !r.state.worldMeta));
         if (!r || !r.state || !r.state.scene) return { fatal: "anazhRealm/scene kam nie" };
         const F = r.constructor.FERN_RING;
         // je Schale ihre volle Geometrie (der Träger: das ganze Index-Muster); vor der Teilung (K16 Runde 3) je Schale ein Mesh

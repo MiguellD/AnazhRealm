@@ -5,14 +5,12 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandW4LofiPad(ctx) {
-    const { page, check } = ctx;
+async function checkBandW4LofiPad({ page, check }) {
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
     // Pad-Layer (~60 BPM); die Akkordfolge wächst aus Tonleiter + funktionaler Markov-Kette (seed- +
     // emotion-getrieben), kein fester Akkord-Satz. Je Probe EINE Zeile der Seite: ihr Satz und ihr Urteil (dazu, wo nötig,
     // der Grund) — der Richter liest sie in ihrer Folge.
     const w4v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // W4 V3 — Harmonie-Markov-Kette definiert. ZWILLINGS-ABSCHIED 19.07.:
@@ -199,11 +197,9 @@ async function checkBandW4LofiPad(ctx) {
 // Stoff, Wasser am Fuß eingeschlossen, misst gate:gegenstand-stoff --tafel am Klang) · (E) die Stimme-aus-Wand; Selbsttest S1
 // (ω ≡ 0 ⇒ 0 Schritte). Die Landung (genau einmal, der Hopser stumm, lauter mit dem Aufprall-Tempo des Leib-Lösers) misst
 // gate:klang-zensus (F) am Bus über den echten Leib-Löser.
-async function checkBandSchrittKlang(ctx) {
-    const { page, check } = ctx;
+async function checkBandSchrittKlang({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const r = window.anazhRealm,
-            s = r.state,
+        const s = r.state,
             A = r.constructor;
         const o = { checks: {} };
         if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };

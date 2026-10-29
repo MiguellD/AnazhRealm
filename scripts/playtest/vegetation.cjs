@@ -7,14 +7,11 @@ const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
 // Radius (mit der gemessenen Render-Kapazität) zu ihnen wächst. Spawn leicht → wächst.
-async function checkBandV18275FoliageGrowth(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18275FoliageGrowth({ page, check }) {
     // das Urteil als Satz (wie das Klang-Band): die Seite schreibt je Prüfung `out[satz] = urteil` (mit Detail
     // `[urteil, detail]`), der Läufer prüft jeden Satz
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
-        const st = r.state;
         const pm = st.playerMesh;
         const SC = (window.AnazhRealm || r.constructor).SCATTER;
         // headless (Null-Renderer) fährt der Aktuator Radius und Dichte voll (gate-treu)
@@ -203,11 +200,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
 // bodenGewicht), gebaut über die Foundry (Studio-Teile mit leafKey "f:…"). Konsum statt Existenz: eine echte Kachel
 // am Spieler wird gesetzt (deterministisch), der Takt baut ihre Blöcke in die Senken (InstancedMesh je Art × Gestalt ×
 // Stufe × Teil), Entsorgen und Neubau halten die Block-Tabelle dicht. Headless ist pixel-blind — hier die Struktur.
-async function checkBandNahStreu(ctx) {
-    const { page, check } = ctx;
+async function checkBandNahStreu({ page, check }) {
     const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         if (!r || !st) return { error: "no realm" };
         const out = {};
         // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
@@ -410,10 +404,8 @@ async function checkBandNahStreu(ctx) {
 // S6-B ERNTBARE FLORA: Raycast auf die Senken der Nah-Streu (instanceId → Kachel-Block → Ernte-Identität der
 // Pflanze), Ertrag je Studio-kind (STREU_ERNTE: kraut · stein · holz), Session-Gedächtnis + Regrow (nicht
 // persistiert); gepflücktes kraut speist den Trank-Bauplan durchs Mach-Tor.
-async function checkBandV18133Forage(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18133Forage({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden): die erste Pflanze einer
         // erntbaren Senke pflücken.
         let pick = null;
@@ -480,10 +472,8 @@ async function checkBandV18133Forage(ctx) {
 
 // Γ-M STRATA: y-abhängige Material-Wahl im Boden — nahe der Oberfläche kann erde gewinnen, tief
 // dominiert stein. Alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
-async function checkBandV18197GammaMStrata(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18197GammaMStrata({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -532,10 +522,8 @@ async function checkBandV18197GammaMStrata(ctx) {
 // Γ-M IRON-BANDS (genese-plan §Γ-M Folge zu V18.197 STRATA +
 // V18.199 LICHEN). Vertikale Eisenadern in tiefen Bergregionen — vollendet
 // die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
-async function checkBandV18200GammaMIronBands(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18200GammaMIronBands({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -620,10 +608,8 @@ async function checkBandV18200GammaMIronBands(ctx) {
 // Γ7 BAUM-VARIANTEN-GRAMMATIK:
 // `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
 // Sprache. Tag-neutral via material-Konsistenz (holz+laub).
-async function checkBandV18205Gamma7Grammatik(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18205Gamma7Grammatik({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (G2) Determinismus: gleiche seed → gleiche parts
@@ -703,11 +689,8 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
 // Skeleton-Grammar: mehrstufige Grammatik (trunk + L1 + L2) mit Foliage an den TIPS; Routing-Gate
 // gen≥5 (alte Welten bit-identisch). grownBlueprints persistiert NUR Metadaten (parts re-wachsen
 // f(seed)) → bleibt unter dem 256-KB-pinCurrentWorld-Cap.
-async function checkBandV18211SkeletonGrammar(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18211SkeletonGrammar({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const out = {};
 
         // (S1) K24: jede Kern-Art wächst aus dem Gesetzbuch — `_phytoArt` löst den Welt-Namen auf die Rezept-Zeile der
@@ -777,10 +760,8 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
 // Gigant-Restsubschritte: Ω-K2 Baum-Füße · Ω-W vertieftes Wind · Ω-H Promotion-Provenienz ·
 // Ω-C Canopy-Shell (als ABWESENHEIT geprüft).
-async function checkBandV18212GigantRestsubschritte(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18212GigantRestsubschritte({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -856,10 +837,8 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 // Atemberaubender Wald: Palette dunkler + erdiger, per-Spezies distinkte Tag-Vektoren (Variations-
 // Wand), SAMPLES-Dichte (W7). Die Grammatik-Art baum_totholz fiel: sie hatte keinen
 // Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
-async function checkBandV18215AtemberaubenderWald(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18215AtemberaubenderWald({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -911,10 +890,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
 // KARST + Understory: KARST als 7. Baumart (slopeMax 1.6) + drei Busch-Baupläne (busch_hazel/
 // farn_busch/blume_gross); scheitert die Baum-Probe, wächst am selben Slot ein Busch. Die Wände
 // prüfen Substanz (Grammar + Params + Variation) + Pipeline (candidates + Sub-Spawn-Pfad).
-async function checkBandV18216KarstUndUnderstory(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18216KarstUndUnderstory({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -1004,11 +981,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
 // Varianten-Pool: N=VARIANTS_PER_SPECIES Varianten je Spezies, gefroren als Genese-Konstante in
 // worldMeta.variantSeed. Ein berührter Baum re-wächst BIT-GENAU aus variantSeed[index] (kein
 // Sprung); zwei Peers mit gleichem worldSeed bauen den IDENTISCHEN Pool.
-async function checkBandV18217VariantenPool(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18217VariantenPool({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const A = r.constructor;
         const out = {};
 
@@ -1144,10 +1118,8 @@ async function checkBandV18217VariantenPool(ctx) {
 
 // LOD-Stufen: 3 LODs pro Variante (Hero/Mittel/Far) — Geometrie-Beschneidung + Variant-LOD-Builder
 // + Distanz-Chooser mit Hysterese.
-async function checkBandV18218LODStufen(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18218LODStufen({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -1289,11 +1261,8 @@ async function checkBandV18218LODStufen(ctx) {
 // Gigant-Vollendung (eine Wand-Funktion): LOD-Activation per Frame · GPU-Feld-Bake-Region-Cache ·
 // Scatter-Bitmask + Cap + Lookup · Ω-H Promotion + Snapshot · Canopy-Chunk-Streaming — jeder
 // Helper mit echtem Konsumenten im Loop oder Spawn-Pfad.
-async function checkBandV18219bisVollendung(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18219bisVollendung({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const out = {};
 
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
@@ -1379,11 +1348,8 @@ async function checkBandV18219bisVollendung(ctx) {
 // Echter Scatter + echte Promotion: ferner Wald als InstancedMesh-Streu (Dichte-Band) + Touch→Real-
 // Kristallisation (Seelen-Band). KONSUM: Instanzen entstehen, Cells promovieren zu echten Einträgen,
 // identische Geometrie (kein Sprung), bit-genauer Determinismus.
-async function checkBandV18224ScatterPromotion(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18224ScatterPromotion({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const A = r.constructor;
         const SC = A.SCATTER;
         const out = {};
@@ -1527,10 +1493,8 @@ async function checkBandV18224ScatterPromotion(ctx) {
 // Fels-Welle: prozeduraler Fels (Box-Samen → noise-verschobener Ikosaeder) + Kiesel-Streu, wo Fels
 // durchbricht; Geologie nur auf Land, nicht auf wind-wiegender Vegetation. KONSUM: der Fels
 // emergiert, die Streu liest rockExposure, die Geologie ist gegated.
-async function checkBandWahrerAnblickFels(ctx) {
-    const { page, check } = ctx;
+async function checkBandWahrerAnblickFels({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (A) Ω-O15 prozedurale Fels-Geometrie
@@ -1597,11 +1561,8 @@ async function checkBandWahrerAnblickFels(ctx) {
 
 // Laub-Vertiefung: Rinden-Maserung (axiale Borke-Bänder + radialer Streifen) + blatt-geformte Card.
 // Proben: KONSUM in den Geometrie-Buildern + behavioral (Tube + Card aus dem gewachsenen Skelett).
-async function checkBandWahrerAnblickLaub(ctx) {
-    const { page, check } = ctx;
+async function checkBandWahrerAnblickLaub({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-
         // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card. Foundry-ON gäbe der
         // Chokepoint null (die Probe wäre vakuös grün) → der lokale Hook hält den Beweis am Leben.
         let tubeOk = false,
@@ -1648,11 +1609,8 @@ async function checkBandWahrerAnblickLaub(ctx) {
 // byte-gleich bei echten Scheiben, die HISM-Slot-Bilanz identisch (ein Doppel-Add wäre im cells-Vergleich unsichtbar), der
 // Kalt-Bake gescheibt + Float32-byte-gleich ohne halben Bake in der Map, das Dispose-Storno, der Wecker der aufgeschobenen
 // Region, und der Stoff des Walds (unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet auf den Voxel-Faden).
-async function checkBandScatterScheibe(ctx) {
-    const { page, check } = ctx;
+async function checkBandScatterScheibe({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            st = r.state;
         const A = window.AnazhRealm || r.constructor;
         const SC = A.SCATTER;
         const o = {};

@@ -215,9 +215,7 @@ const server = statikServer();
 // Szene, Zeit fest. Jeder Schuss ist ein echter Render in ein Ziel (160×120).
 function buehne() {
     return (async () => {
-        const r = window.anazhRealm,
-            st = r.state,
-            T = window.THREE,
+        const T = window.THREE,
             TSL = T.TSL;
         const rend = st.renderer;
         // (i) SCHLÜSSEL: jedes Hauptpass-Render-Objekt der Welt (Welt-Szene, Senken über ihren Zeichner) trägt nach der
@@ -766,7 +764,7 @@ function buehne() {
         // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            const r = await window.__weltDa((r) => {
+            await window.__weltDa((r) => {
                 return !!(r?.state?.rendererReady && r.state._weltbildDa && r.state.renderer?.backend);
             });
             r.state.renderer.setAnimationLoop(null);

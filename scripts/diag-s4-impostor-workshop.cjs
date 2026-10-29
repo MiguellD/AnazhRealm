@@ -27,7 +27,6 @@ hauptLauf(async () => {
     });
 
     const out = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const res = { probes: {}, behavior: {} };
         // ===== BEHAVIORAL — der Aufruf mit einem Baum @lod2 wirft nicht + liefert die Impostor-Geometrie =====
         try {

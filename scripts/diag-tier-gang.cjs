@@ -71,8 +71,7 @@ const SCHLUPF = (spur, leib, ab, bein, uhr) => {
 // Knochen-Puffer an Band, Phase und Gewicht × Instanz-Matrix, die Uhr ist die Phase der Instanz. Mit `g` geht es unter der
 // Schwere g der Welt (state.gravity; v̂ misst mit ihr — die DSL setzt sie, die Zeile des Tiers muss sie lesen).
 const LAUF = (k) => {
-    const r = window.anazhRealm,
-        s = r.state;
+    const s = r.state;
     const T = window.THREE;
     const core = window.__tetrapodaCore;
     const [echt, wahl, g0] = [core.gangSchritt, r.constructor._gangWahl, s.gravity];
@@ -205,8 +204,7 @@ const LAUF = (k) => {
 // Gang-Phase je Sekunde, Soll ≥ 1,5 beim Gehen) und die Schritt-Töne (state._schrittKlang.schritte) gegen 2·v·t/Λ, Λ der
 // Doppelschritt des Chokepoints (jeder Schritt klingt).
 const LEIB = (k) => {
-    const r = window.anazhRealm,
-        s = r.state,
+    const s = r.state,
         A = r.constructor;
     const T = window.THREE;
     const core = window.__tetrapodaCore;
@@ -275,7 +273,7 @@ const LEIB = (k) => {
             if (vor && !lock.on) {
                 zaehl.loeser++;
                 zaehl.wo.push(
-                    +(window.anazhRealm.state.player.walkPhase % (2 * Math.PI)).toFixed(2) + "@" + zaehl.takt
+                    +(r.state.player.walkPhase % (2 * Math.PI)).toFixed(2) + "@" + zaehl.takt
                 );
             }
         }
@@ -373,8 +371,7 @@ const LEIB = (k) => {
 // Takt-Quotient im Schritt, den der Bein-Winkel bei jeder Schwere gleich deckelt. --selftest: die Zeile ohne die Schwere der
 // Welt (der Vor-K07-Gang) → ROT.
 const SCHWERE = (k) => {
-    const r = window.anazhRealm,
-        s = r.state,
+    const s = r.state,
         A = r.constructor;
     const core = window.__tetrapodaCore;
     const G_MOND = 1.62;

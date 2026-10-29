@@ -7,10 +7,8 @@ const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-async function checkBandLambda4Streu(ctx) {
-    const { page, check } = ctx;
+async function checkBandLambda4Streu({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const arten = r._nahStreuArten() || [];
         const G = {};
         for (const a of arten) G[a.id] = r._foundryGestalten(a.id);
@@ -32,10 +30,8 @@ async function checkBandLambda4Streu(ctx) {
 // und Realm-Fenster des Tors) tragen DENSELBEN Programm-Schlüssel und ihre Werte als Stoff-Wert; verschiedene Signaturen
 // verschiedene. Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel — ohne den geteilten Graphen
 // baute jeder Stoff sein eigenes Programm (1310-17: 43 Foundry-Stoffe, 43 Bauten; 5 Membranen, 5 Bauten).
-async function checkBandStoffSignatur(ctx) {
-    const { page, check } = ctx;
+async function checkBandStoffSignatur({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
         const TSL = T.TSL;
         const k = (m) => m.customProgramCacheKey();
@@ -100,11 +96,9 @@ async function checkBandStoffSignatur(ctx) {
 // Auflöser · Op · Satz-Parser · near_water · Prompt (den KI-Pfad mit echten Antworten trägt der Korpus, diag-v1-pfad --korpus).
 // (checkBandV18331ReplayDeterminism unten: gleicher Start + gleiche Input-Folge ⇒ bit-identisch;
 // sonst Math.random/Zeit/Float-Drift im Schritt-Pfad.)
-async function checkBandV18493CoSchoepferStudio(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18493CoSchoepferStudio({ page, check }) {
     // je Prüfung ein Satz der Seite (`out[satz] = urteil`, mit Detail `[urteil, detail]`)
     const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const out = {};
         const archs = r.state.architectures;
         const vorherAll = archs.length;
@@ -251,16 +245,15 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
 async function waldWarm(n, ms) {
     await window.__weltDa();
     await window.__gebautNach("25 Chunks um den Spieler", {
-        fertig: () => (window.anazhRealm.state.voxelChunks ? window.anazhRealm.state.voxelChunks.size : 0) >= 25,
+        fertig: () => (r.state.voxelChunks ? r.state.voxelChunks.size : 0) >= 25,
         takt: async () => {
             try {
-                window.anazhRealm._gameLoopTick(performance.now());
+                r._gameLoopTick(performance.now());
             } catch {}
             await sleep(6);
         },
         max: 2000,
     });
-    const r = window.anazhRealm;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => !f || f.ready);
     for (let it = 0; it < n; it++) {
@@ -275,12 +268,10 @@ async function waldWarm(n, ms) {
 }
 
 // V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32) — eingefaltet aus gate:foundry-memory (D3b, die Welt des Läufers statt eines eigenen Boots): V4(B)-GATE — DER FOUNDRY-GEOMETRIE-SPEICHER IST FLACH (Null-Renderer, foundry-ON, JS-Bilanz-Zähler):
-async function checkBandFoundrySpeicherFlach(ctx) {
-    const { page, check } = ctx;
+async function checkBandFoundrySpeicherFlach({ page, check }) {
     const probe = async (wald) => {
         // dichten Wald streamen.
         const f = await wald(300, 6);
-        const r = window.anazhRealm;
         // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
         let maxRefsAtDispose = 0;
         const orig = r._disposeFoundryGroupGeom.bind(r);
@@ -353,10 +344,8 @@ async function checkBandFoundrySpeicherFlach(ctx) {
 // brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
 // ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
 // welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
-async function checkBandKristallKleid(ctx) {
-    const { page, check } = ctx;
+async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
@@ -441,12 +430,10 @@ async function checkBandKristallKleid(ctx) {
 // V3 kein zweiter Baum-Bäcker — eingefaltet aus gate:no-second-treebuilder: die P4-Invariante — bei lebender Foundry rendert
 // KEIN Baum die Grammatik-Geometrie (der „83 batched-174k-Bäume"-Nachbau ist weg); der Scatter trägt Bäume UND Fels/Kiesel als
 // Studio-Asset (fscatter:*, die Karten in der EINEN Atlas-Gruppe), die Grammatik erscheint nur für wirklich ungemappte Arten.
-async function checkBandKeinZweiterBaumbaecker(ctx) {
-    const { page, check } = ctx;
+async function checkBandKeinZweiterBaumbaecker({ page, check }) {
     const probe = async (wald) => {
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         const f = await wald(350, 10);
-        const r = window.anazhRealm;
         const o = { foundryReady: !!(f && f.ready) };
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
@@ -513,16 +500,13 @@ async function checkBandKeinZweiterBaumbaecker(ctx) {
 // Request-Ergebnisse resolven nie synchron, ≤ 3 je Frame in Ankunfts-Reihenfolge, über Budget 1, headless sofort) · V3 die Gruppen
 // klettern im Stand nicht · V4 der Trace trägt bundleDeckung + ingestTakt + gruppenChurn · V5 das Szene-Live-Set < 700 MB;
 // Selbsttest: ein absichtlicher Mint+Dispose im Fenster bewegt die Churn-Zähler.
-async function checkBandLeistungsVertrag(ctx) {
-    const { page, check } = ctx;
+async function checkBandLeistungsVertrag({ page, check }) {
     const { EINSCHWING_INSTALL } = require(path.join(SKRIPTE, "lib", "band-urteil.cjs"));
     await safeEvaluate(page, EINSCHWING_INSTALL); // die EINE Liste dessen, was die Welt noch baut (band-urteil `einschwingOffen`)
     const out = (await safeEvaluate(page, async () => {
         const o = { err: null };
         try {
             await window.__weltDa();
-            const r = window.anazhRealm,
-                st = r.state;
             // ein Takt des Loops (ein Wurf im Takt hält die Probe nicht an)
             const takt = () => {
                 try {

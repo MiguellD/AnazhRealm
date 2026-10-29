@@ -64,7 +64,6 @@ const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 async function probe(page, welt, mitAbdruck, zwilling = false) {
     return page.evaluate(
         async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling) => {
-            const r = window.anazhRealm;
             const s = r.state;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
             const out = {
@@ -477,7 +476,6 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
 const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0 · Reihe sofort";
 async function strom(page, urform) {
     return page.evaluate(async (urform) => {
-        const r = window.anazhRealm;
         const s = r.state;
         const [w, ack, gen, p] = [s.voxelWorker, s.voxelWorkerReady, s.voxelWorkerStateGen, s.lastPlayerVoxelChunk];
         s.voxelWorkerReady = false;
@@ -577,7 +575,6 @@ const KERN_HILFE = `self.__kern = {
 async function kernPlan(page, M, N) {
     return page.evaluate(
         async (MX, MZ, N) => {
-            const r = window.anazhRealm;
             const zufall = ((z) => (w) => (z() * 2 - 1) * w)(wasserZufall(0x2545f491));
             const { fluss: kanal, see } = await window.__wasserOrte({ mess: [MX, MZ] });
             const hoehle = ((h) => h && { x: h.x, y: h.grund + 1.5, z: h.z })(window.__weltOrt("hoehle", { mitte: [MX, MZ], schritt: 24 }));
@@ -1092,7 +1089,6 @@ async function weltMessen(page) {
     const R = Z.MESSUNG.raster;
     const w = await page.evaluate(
         async (punkte, R) => {
-            const r = window.anazhRealm;
             const G = window.__gelaendeCore;
             const hex = window.__sha;
             const H = new Array(R.n * R.n);
@@ -1136,7 +1132,6 @@ async function studioProbe(page) {
         if (!b0.ok) throw new Error("die Welt vor der fremden Welt erwachte nicht");
         const nav0 = page.waitForNavigation(LADEN);
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             const G = window.__gelaendeCore;
             const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
             snap.terrainBaseHeight = 7;
@@ -1325,7 +1320,6 @@ async function studioProbe(page) {
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
         const nav = page.waitForNavigation(LADEN);
         const tor = await page.evaluate((text) => {
-            const r = window.anazhRealm;
             r._openWeltTorDialog(JSON.parse(text), { name: "gelaende-plan.json" });
             const p = r.state.pendingImport;
             const ok = !!(p && p.parsed && p.parsed.worldMeta);
@@ -1355,7 +1349,6 @@ async function studioProbe(page) {
         // die Karte malt Schnee (≥ 0,6), die Welt nicht — oder die Welt trägt Schnee (Luminanz ≥ 0,6 des Paletten-Schnees),
         // die Karte nicht (< 0,4). Die Karte malt in der Farbe der Palette (`terrain:PORTAL_GROUND`.schnee).
         const schneeVergleich = (n, schritt, x0, karte) => {
-            const r = window.anazhRealm;
             const L = r._gelaende();
             const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
             const lS = lum(r.constructor.BODEN_FARBE.schnee);
@@ -1481,7 +1474,6 @@ async function gebaut(page) {
     }
     const { alle, stoerung } = await page.evaluate(
         async (saaten, selbst) => {
-            const r = window.anazhRealm;
             const s = r.state;
             await window
                 .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
@@ -1914,8 +1906,7 @@ async function faden(page, url) {
     // eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten mit den Bau-Klicks
     const takt = (n, dx = 960, dz = 0) =>
         page.evaluate(async (n, dx, dz) => {
-            await window.__weltDa(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function");
-            const r = window.anazhRealm;
+            await window.__weltDa(() => r && typeof r._gameLoopTick === "function");
             const p = r.state.playerMesh.position;
             if (!n)
                 for (const weiter = window.__deckel("die Welt steht", 4000); weiter(); ) {
@@ -1946,7 +1937,6 @@ async function faden(page, url) {
     if (SELBSTTEST) {
         await fenster("selbst");
         dauer.selbst = await page.evaluate(async () => {
-            const r = window.anazhRealm;
             const G = globalThis.__gelaendeCore;
             const t0 = performance.now();
             (function injizierteHydro() {
@@ -1988,7 +1978,7 @@ async function faden(page, url) {
         });
     }
     // K4 BAU: der Zähler des Spiels (`_fadenUmgangen`) — je Sync-Stelle `_syncBau`, sonst das Buch „FADEN-UMGANGEN"
-    const F = await page.evaluate(() => JSON.parse(JSON.stringify({ ...window.__faden, bau: window.anazhRealm._syncBauten() })));
+    const F = await page.evaluate(() => JSON.parse(JSON.stringify({ ...window.__faden, bau: r._syncBauten() })));
     const mb = (b) => (b / 1e6).toFixed(2);
     const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
     const proMin = {};
@@ -2114,7 +2104,6 @@ hauptLauf(async () => {
             // Zeiger, Sperre, Reload) — ein Speichern der alten Seite bis zu ihrem Tod setzte den Zeiger sonst zurück
             const nav = page.waitForNavigation(LADEN);
             const id = await page.evaluate((json) => {
-                const r = window.anazhRealm;
                 const res = r.importWorldBeside(json);
                 if (!res.ok) return null;
                 setTimeout(() => r._weltWechselNeuLaden(res.worldId));

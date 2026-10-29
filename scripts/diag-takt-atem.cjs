@@ -133,8 +133,6 @@ const server = statikServer();
 // DER ATEM (Seiten-Kontext): der Regler in festen Schritten, je Takt Aktuator · Spiegel · Takt-Planer · Sicht des Hauptbilds.
 function atem() {
     return (async () => {
-        const r = window.anazhRealm,
-            st = r.state;
         const P = Object.getPrototypeOf(r);
         const aus = { blind: null };
         const baeume = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
@@ -277,8 +275,7 @@ function atem() {
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
             for (const weiter = window.__deckel("Renderer, Buch, Sätze und Bäume", 1200); weiter(); ) {
-                const r = window.anazhRealm,
-                    st = r && r.state;
+                const st = r && r.state;
                 const n =
                     st && Array.isArray(st.architectures)
                         ? st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length
@@ -297,8 +294,7 @@ function atem() {
             }
             // dann ruht der Bestand: 5 s ohne neuen Eintrag und ohne offenen Chunk-Bau (eine Welt im Aufbau weckt die Fege-Takte
             // selbst — der Zähler sähe ihr Wachsen statt des Atems)
-            const r = window.anazhRealm,
-                st = r && r.state;
+            const st = r && r.state;
             if (!st || !st.rendererReady) return { ok: false };
             let n0 = -1,
                 seit = 0;

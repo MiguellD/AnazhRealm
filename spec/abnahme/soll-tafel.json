@@ -1334,6 +1334,7 @@
                             "stamm/siedlung-bauten.js": "c:0000000000000000",
                             "stamm/siedlung-satz.js": "c:0000000000000000",
                             "stamm/siedlung-bewohner.js": "c:0000000000000000",
+                            "stamm/vegetation-wiese.js": "c:0000000000000000",
                             "stamm/vegetation-baum.js": "c:0000000000000000",
                             "stamm/bild-kosten.js": "c:0000000000000000",
                             "stamm/bild-himmel.js": "c:0000000000000000",
@@ -1416,6 +1417,7 @@
                             "stamm/siedlung-bauten.js": "c:0000000000000000",
                             "stamm/siedlung-satz.js": "c:0000000000000000",
                             "stamm/siedlung-bewohner.js": "c:0000000000000000",
+                            "stamm/vegetation-wiese.js": "c:0000000000000000",
                             "stamm/vegetation-baum.js": "c:0000000000000000",
                             "stamm/bild-kosten.js": "c:0000000000000000",
                             "stamm/bild-himmel.js": "c:0000000000000000",
@@ -1659,6 +1661,7 @@
                             "stamm/siedlung-bauten.js": "c:0000000000000000",
                             "stamm/siedlung-satz.js": "c:0000000000000000",
                             "stamm/siedlung-bewohner.js": "c:0000000000000000",
+                            "stamm/vegetation-wiese.js": "c:0000000000000000",
                             "stamm/vegetation-baum.js": "c:0000000000000000",
                             "stamm/bild-kosten.js": "c:0000000000000000",
                             "stamm/bild-himmel.js": "c:0000000000000000",
@@ -1689,6 +1692,7 @@
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
                 "stamm/siedlung-bewohner.js",
+                "stamm/vegetation-wiese.js",
                 "stamm/vegetation-baum.js",
                 "stamm/bild-kosten.js",
                 "stamm/bild-himmel.js",
@@ -1772,6 +1776,7 @@
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
                 "stamm/siedlung-bewohner.js",
+                "stamm/vegetation-wiese.js",
                 "stamm/vegetation-baum.js",
                 "stamm/bild-kosten.js",
                 "stamm/bild-himmel.js",
@@ -1855,6 +1860,7 @@
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
                 "stamm/siedlung-bewohner.js",
+                "stamm/vegetation-wiese.js",
                 "stamm/vegetation-baum.js",
                 "stamm/bild-kosten.js",
                 "stamm/bild-himmel.js",
@@ -2580,7 +2586,7 @@
                 },
                 "werkzeug": "Station haar.K2#1 (werkbank bild --gesicht 0.7 und -4 --spieler --ist haar)"
             },
-            "quellen": ["koerper-core.js", "stamm/koerper-leib.js", "stamm/studio-bruecke.js"]
+            "quellen": ["koerper-core.js", "stamm/studio-bruecke.js", "stamm/koerper-leib.js"]
         }
     ]
 }

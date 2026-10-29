@@ -78,7 +78,6 @@ hauptLauf(async () => {
             const S = window.__settle;
             const t0 = performance.now();
             while (!S.done && performance.now() - t0 < 4000) {
-                const r = window.anazhRealm;
                 if (r && !S.stubbed && r.state?.renderer) {
                     window.__origRender = r.state.renderer.render.bind(r.state.renderer);
                     r.state.renderer.render = function () {};
@@ -117,13 +116,12 @@ hauptLauf(async () => {
         if (st.done || st.ms > 240000) { log(`Settle: ${st.sz} Chunks nach ${Math.round(st.ms / 1000)} s, Start-Dorf ${st.dorf ? "steht" : "wächst noch"}${st.done ? "" : " (Wand)"}`); break; }
     }
     await ruf("Settle-Drain", () => {
-        const r = window.anazhRealm;
         try { r._drainPendingWaterIso && r._drainPendingWaterIso(); r._drainPendingGrass && r._drainPendingGrass(); } catch {}
     });
 
     // PHASE 1 — Compiler auf Prototyp-Ebene wrappen + Warmup (alle Pipelines EINMAL kompilieren)
     const setup = await ruf("Setup", async () => {
-        const r = window.anazhRealm, s = r.state;
+        const s = r.state;
         if (!s.rendererReady || !window.__origRender) return { err: "renderer nicht bereit" };
         if (s.renderer._isHeadlessNull) return { err: "Null-Renderer — die Linse braucht den ECHTEN Renderer (sonst blind, das ist der ganze Punkt)" };
         // WIEDERHOLUNG vs. ERST-COMPILE: die streamende Welt bringt neue Objekte, deren ERST-Compiles kein Env-Churn sind.
@@ -147,7 +145,7 @@ hauptLauf(async () => {
                 // und das OBJEKT, dessen Zeichnung kompiliert (der Haken an renderObject unten): Art · Stoff · Pfad
                 const ob = window.__ccObjekt;
                 let lichter = 0;
-                try { window.anazhRealm.state.scene.traverseVisible((o) => { if (o.isLight) lichter++; }); } catch {}
+                try { r.state.scene.traverseVisible((o) => { if (o.isLight) lichter++; }); } catch {}
                 const wer = ob ? ` · Objekt ${window.__ccName ? window.__ccName(ob) : ob.type} · sichtbare Lichter ${lichter}` : "";
                 console.log("[Linse] Compile außerhalb des Schlüssel-Warmups (" + (wdh ? "Wiederholung" : "neu") + ", " + Math.round(fp.length / 1024) + " KB): " + [z[0]].concat(stamm.length ? stamm : z.slice(1, 6)).join(" < ") + wer);
             }
@@ -364,7 +362,7 @@ hauptLauf(async () => {
         laufenderRuf = `Pipelines abwarten (${wo})`;
         for (;;) {
             const offen = await page.evaluate(() => {
-                const E = window.anazhRealm._erstZeichnung;
+                const E = r._erstZeichnung;
                 return E ? E.offen.size : 0;
             });
             if (offen === 0) break;
@@ -396,17 +394,17 @@ hauptLauf(async () => {
     // Compile bezahlte den aufgestauten swiftshader-Rückstand aller Bilder davor. Der Warmup baut darum ohne Budget
     // (alles im ersten vollen Bild, wie der
     // Vendor); vor der Ruhe gilt wieder das Budget des Spiels — Ruhe und Leerlauf messen das Spiel.
-    if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => { const C = window.anazhRealm.constructor; window.__erstBudget = C.ERST_BAU_MS; C.ERST_BAU_MS = Infinity; });
+    if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => { const C = r.constructor; window.__erstBudget = C.ERST_BAU_MS; C.ERST_BAU_MS = Infinity; });
     if (!setup.err) {
         setup.scheiben = await warmNeu("Warmup");
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
         for (let i = 0; i < 10; i++) {
             // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
-            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; const s = window.anazhRealm.state; s.weatherEffectTime = 0; s.spielZeit += 120; });
-            if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { window.anazhRealm.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
+            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; const s = r.state; s.weatherEffectTime = 0; s.spielZeit += 120; });
+            if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { r.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
             await frame(`Warmup-Frame ${i}`);
         }
-        await ruf("Erst-Budget zurück", () => { window.anazhRealm.constructor.ERST_BAU_MS = window.__erstBudget; });
+        await ruf("Erst-Budget zurück", () => { r.constructor.ERST_BAU_MS = window.__erstBudget; });
         const nachStart = await ruf("Zähler", () => window.__cnt());
         // DIE RUHE vor dem Leerlauf: 8 Bilder in Folge ohne Compile UND ohne Arbeit der Erst-Zeichnung (sie baut je Render-
         // Aufruf einen Stoff und verschiebt den Rest; ein Bild ohne Compile kann ihr noch verschobene Bauten lassen, die erst
@@ -459,13 +457,13 @@ hauptLauf(async () => {
     // Env-Identität. Die Linse MUSS dann rot werden (sonst wäre sie blind).
     if (process.argv.includes("--selbsttest-churn")) await ruf("Selbsttest-Schalter", () => (window.__selbsttestChurn = true));
     const regen = { gesamt: 0, wdh: 0, spur: [] };
-    const hatUni = await ruf("Env-Probe", () => { const u = window.anazhRealm.state.skyboxUniforms; window.__ccSpur = []; return !!u?.himmelTint; });
+    const hatUni = await ruf("Env-Probe", () => { const u = r.state.skyboxUniforms; window.__ccSpur = []; return !!u?.himmelTint; });
     if (!hatUni) regen.err = "keine skyboxUniforms.himmelTint";
     else {
         const b0 = await stand();
         for (const c of [[0.85, 0.55, 0.30], [0.55, 0.75, 0.95], [0.30, 0.10, 0.15], [0.70, 0.80, 0.70]]) {
             await ruf(`Env-Regenerierung ${c.join(",")}`, (c) => {
-                const r = window.anazhRealm, s = r.state;
+                const s = r.state;
                 s.skyboxUniforms.himmelTint.value.setRGB(c[0], c[1], c[2]);
                 s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
                 try { r._ensureSkyEnvironment(true); } catch {}

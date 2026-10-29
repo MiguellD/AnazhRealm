@@ -45,12 +45,11 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
-            await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state || !window.anazhRealm.state.blueprints));
+            await window.__weltDa(() => !(!r || !r.state || !r.state.blueprints));
         });
 
         const result = await page.evaluate(
             async (GOLDEN_JWK, GOLDEN_TIME) => {
-                const r = window.anazhRealm;
                 const out = { matrix: {}, findings: [] };
                 // der EINE Teil der Mess-Baupläne (ein Würfel am Ursprung, eine Knapp-Kerbe), je Ruf frisch
                 const teil = (material = "stein", g = 1) => ({
@@ -206,7 +205,6 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                 manifest: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "world-manifest.json"), "utf8")),
             };
             const conf = await page.evaluate(async (g) => {
-                const r = window.anazhRealm;
                 const out = {};
                 const deser = r._deserializeBlueprint(g.blueprint);
                 out.blueprintReadable = !!deser;

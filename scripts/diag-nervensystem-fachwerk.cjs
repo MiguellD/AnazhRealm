@@ -87,7 +87,6 @@ hauptLauf(async () => {
     const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", anzahl: 32, teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
     const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, f: {} };
-        const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         const rez = f.recipes.alemannisch;
         res.b.stil = rez.fx ? rez.fx.stil : null;
