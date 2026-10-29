@@ -113,7 +113,9 @@ const K3_PFAD = [
 ];
 
 // DIE ANKUNFT VON AUSSEN (Karte ankunft-aussen): die Kalt- und die Zweit-Zeile von diag-boot-stage — t(Kontrolle) ist die Prozess-Uhr
-// ab Navigation, als die von außen gehaltene Taste W den Leib um ≥ 0,1 m trug (nie `_weltbildDa`); was sie liest.
+// ab Navigation, als die von außen gehaltene Taste W den Leib um ≥ 0,1 m trug (nie `_weltbildDa`); was sie liest. Seit 29.10. in der
+// Sitzung: die EINE Probe der Ankunft (stationen/sitzung-seite.js `probeAnkunft`, Zwilling von pipeline.K4#1/#2).
+const { ANKUNFT_PROBE, ANKUNFT_AUSNAHME } = require("./sitzung-seite.js");
 const ANKUNFT_PFAD = [
     "index.html",
     "stamm/dirigent-*.js",
@@ -787,58 +789,56 @@ module.exports = [
         kriterium: "ankunft.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // die Kalt-Zeile mit Bild (`--bild`): der Schuss aus dem Ausgabe-Pfad bei t(Kontrolle von außen) und derselbe in derselben
-        // Pose nach 60 s Ruhe (der Loop läuft, die Bühne hält Mittag · Sonne · Sommer); Lücke = Anteil der Pixel, die in einem
-        // Kanal um mehr als 32 abweichen, dazu der offene Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Mutanten:
-        // `--mutante bild` (der erste Schuss endet nach 20 m) ROT, `--mutante eigenmeldung` (`_weltbildDa` ab dem Erwachen) ohne Kontrolle ROT.
-        // Soll: ≤ 2 % und nichts offen an einem Gerät. swiftshader (Cloud, ankunft-aussen 202b23be): 7,80 % Lücke, 54 Bäume und
-        // Bauten offen im Bild, t(Kontrolle) 72,47 s gegen Eigenmeldung 63,65 s; ohne Ruhe 0,00 %, Mutante bild 6,51 %.
-        befehl: ["node", "scripts/diag-boot-stage.cjs", "--kalt", "--echt", "--json", "{AUS}", "--bild", "{AUS}.png"],
-        env: { BOOT_STAGE_PORT: "{PORT}" },
+        // IN DER SITZUNG (29.10., `probeAnkunft`, Zwilling von ankunft.K3#1 und pipeline.K4#1/#2): der Schuss aus dem Ausgabe-Pfad bei
+        // t(Kontrolle von außen) nach dem kalten Laden (die Herkunft leer im warmen Browser) und derselbe in derselben Pose, wenn die
+        // Foundry ruht (höchstens 40 s); Lücke = Anteil der Pixel, die in einem Kanal um mehr als 32 abweichen, dazu der offene
+        // Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Soll: ≤ 2 % und nichts offen an einem Gerät, die Ruhe erreicht
+        // (ohne sie verglich die Lücke gegen eine halbe Welt — ROT beim Namen der Frist). Bis 29.10. ein eigener Browser mit 60 s
+        // Uhr-Ruhe (8 min Soll). swiftshader (Cloud, ankunft-aussen 202b23be): 7,80 % Lücke, 54 Bäume und Bauten offen im Bild.
+        probe: ANKUNFT_PROBE,
+        mutiert: true,
+        ausnahme: ANKUNFT_AUSNAHME,
         gpu: true,
         zeit: true,
-        minuten: 8,
+        minuten: 1,
         urteil: (j, lauf) => {
             const { ad, hw } = HW(String(lauf.stdout || ""));
             if (!j || !j.tK || !j.bild) return { gruen: false, zahl: "kein Bild der Kontrolle (t(Kontrolle) " + (j ? j.tK : "?") + " ms, Exit " + lauf.exit + ") · " + ad };
-            const gruen = hw && j.bild.luecke <= 0.02 && j.offen.length === 0;
+            const gruen = hw && j.bild.ruhe === true && j.bild.luecke <= 0.02 && j.offen.length === 0;
             return {
                 gruen,
                 zahl:
-                    (100 * j.bild.luecke).toFixed(2) + " % Lücke nach 60 s · offen im Bild " + (j.offen.join(" · ") || "nichts") +
-                    " · t(Kontrolle) " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " + (j.weltbildDa / 1000).toFixed(2) + " s) · " + ad,
+                    (100 * j.bild.luecke).toFixed(2) + " % Lücke nach " + j.bild.ruheS + " s " + (j.bild.ruhe ? "bis zur Ruhe der Foundry" : "OHNE Ruhe der Foundry (Frist)") +
+                    " · offen im Bild " + (j.offen.join(" · ") || "nichts") + " · t(Kontrolle) kalt " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " +
+                    (j.weltbildDa / 1000).toFixed(2) + " s) · " + ad,
             };
         },
-        pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs"],
+        pfad: [...ANKUNFT_PFAD, "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/abnahme-urteil.cjs", "save-server.js"],
         quelle: "1 = das Ankunftsbild ist an einem Gerät ganz (≤ 2 % Lücke gegen dieselbe Pose nach 60 s), gemessen von außen",
     },
     {
         kriterium: "ankunft.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // die Zweit-Zeile (`--profil`): ein Kalt-Boot füllt das Profil bis zur Ruhe der Foundry (Platte, HTTP-Cache), dann vier
-        // Wiederkehren, je ein frischer Browser-Prozess (ein node-Lauf, ein starteBrowser) — nur die Platte bleibt; je Boot
-        // t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Vor ankunft-aussen kannte die Zeile keine Außen-t: ROT.
-        // swiftshader (Cloud, 202b23be): warm 79,17 · 83,84 s (Eigenmeldung 69,59 · 74,31 s), die Platte trägt 208/208.
-        befehl: [
-            "bash",
-            "-c",
-            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; ` +
-                `for N in 1 2 3 4; do node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; done; rm -rf "$P"`,
-        ],
-        env: { BOOT_STAGE_PORT: "{PORT}" },
+        // IN DER SITZUNG (29.10., `probeAnkunft`): nach dem kalten Laden bis zur Ruhe der Foundry (die Platte voll) zwei Zweit-Boots im
+        // warmen Browser (der Stand gesichert, die Seite neu), je t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Bis 29.10.
+        // ein Kalt-Boot und vier Wiederkehren, je ein frischer Browser-Prozess (12 min Soll) — die Wiederkehr ist jetzt die Seite neu
+        // im warmen Prozess (sein Shader- und HTTP-Cache bleiben; ein frischer Prozess ist die Kälte des Session-Starts).
+        probe: ANKUNFT_PROBE,
+        mutiert: true,
+        ausnahme: ANKUNFT_AUSNAHME,
         gpu: true,
         zeit: true,
-        minuten: 12,
+        minuten: 1,
         urteil: (j, lauf) => {
             const t = String(lauf.stdout || "");
             const { ad, hw } = HW(t);
             const w = [...t.matchAll(/t\(Kontrolle\) warm ([\d.]+) s von außen/g)].map((m) => +m[1]).sort((a, b) => a - b);
-            if (w.length < 4) return { gruen: false, zahl: w.length + " von 4 Wiederkehren mit Kontrolle von außen (Exit " + lauf.exit + ") · " + ad };
+            if (w.length < 2) return { gruen: false, zahl: w.length + " von 2 Zweit-Boots mit Kontrolle von außen (Exit " + lauf.exit + ") · " + ad };
             const med = (w[(w.length - 1) >> 1] + w[w.length >> 1]) / 2;
-            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ") · " + ad };
+            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ", Zweit-Boot im warmen Browser) · " + ad };
         },
-        pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js"],
+        pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js", "save-server.js"],
         quelle: "1 = warm ≤ 5 s an einem Gerät",
     },
     // ─────────────────────────────── Streaming K3 (streaming-sprung) ───────────────────────────────
