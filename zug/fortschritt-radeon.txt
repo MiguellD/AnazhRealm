@@ -1691,3 +1691,4 @@
 2026-10-30 00:04:45 takt22-radeon schatten.K1#1 GRÜN 0.8 · 27/65
 2026-10-30 00:11:49 takt22-radeon lod.K5#1 ROT 7.0 · 28/65
 2026-10-30 00:13:31 takt22-radeon lod.K2#1 ROT 1.7 · 29/65
+2026-10-30 00:13:41 takt22-radeon material.K4#1 ROT 0.1 · 30/65
