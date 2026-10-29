@@ -1509,6 +1509,15 @@ class AnazhRealm_bild_kosten {
             // nächsten Frame neu an wie ein Fenster-Wechsel (`_loopRender`), nie je Last.
             scenePass.setResolutionScale(this._szeneSkalaWirk());
             this._ausgabeFormat(scenePass); // das Szenen-Ziel in rg11b10ufloat (0910-1 B), vor dem ersten Render
+            // DER GLANZ DES BILDS (material.K4): ein zweites Ziel des Szenen-Passes (r8, MRT) trägt je Pixel, wie sehr seine
+            // Fläche spiegelt (`_glanzKnoten`) — daran erkennt der EINE Spiegel-Pass (`_spiegelPass`) Glas, Lack, Metall und
+            // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
+            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75.
+            scenePass.setMRT(TSL.mrt({ output: TSL.output, glanz: this._glanzKnoten() }));
+            const glanz = scenePass.getTexture("glanz");
+            glanz.type = THREE.UnsignedByteType;
+            glanz.format = THREE.RedFormat;
+            glanz.minFilter = glanz.magFilter = THREE.NearestFilter;
             this.state.scenePass = scenePass;
             // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
             // und Uniform-Updates zwischen den Pässen racen (Schwarz-Flackern); das Ferne trägt der Welt-March.
