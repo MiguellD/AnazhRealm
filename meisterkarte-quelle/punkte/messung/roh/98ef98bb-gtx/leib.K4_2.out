@@ -1,0 +1,35 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-kamera-laub.cjs --teile leib,gang,gang2 --bild
+[linse-gpu] nvidia/pascal
+=== K2 DER LEIB DER KAMERA (Kugel der Linse 0.25 m): Mess-Wiese -280.4/-1045.6 und Prüfbühne s2-hang30 ===
+  wiese: Anker je Art {"haus":2,"fels":8,"baum":43}
+  wiese: Werke in 45 m {"felsturm":4,"glutbrunnen":12,"felsbogen":4,"baum_tanne":17,"grown_busch_hazel_v2":10,"baum_kiefer":9,"grown_busch_hazel_v1":11,"baum_eiche":10,"baum_birke":7,"haus_alemannisch":1,"haus_griechisch":1}
+  wiese: gesetzte Häuser ["haus_alemannisch","haus_griechisch"]
+    wiese fuss 0/40 Posen mit Täter · {}
+    wiese ritt 0/40 Posen mit Täter · {}
+    hang fuss 0/10 Posen mit Täter · {}
+    hang ritt 0/10 Posen mit Täter · {}
+  Feld-Proben je 3rd-Bild (341 Bilder): Mittel 32.4 · Median 35 · p95 51 · höchstens 70 (Vor-Stand Mittel 35.4 · Median 34 · höchstens 50) · Kamera-Sprünge > 2 m im Rundgang 4 (haus_alemannisch)
+  ✅ K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von 50 zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand
+=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel 0.25 m): Mess-Wiese -280.4/-1045.6 ===
+  stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {"rückwärts: im Stamm baum_tanne":48} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m
+  fels  felsturm: 1144 Bilder · heran 8.56 → 0.43 m · Kugel {"orbit fern: im Stamm baum_tanne":15} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m
+  haus  haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0059 höchstens 1.984 m
+  innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.4 m · im Haus true · Kugel {} · Nah-Pixel {"orbit: Bau":2,"orbit fern: Bau":1} · Ruck p95 0.0099 höchstens 2.490 m
+  innen-sprint haus_alemannisch: 869 Bilder · heran 12.25 → 1.87 m · im Haus true · Kugel {} · Nah-Pixel {"orbit fern: Bau":2} · Ruck p95 0.0601 höchstens 2.430 m
+  steil 25.9°: 1119 Bilder · heran 8 → 0.41 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0034 höchstens 0.131 m
+  steil-sprint 25.9°: 825 Bilder · heran 8 → 1.92 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0036 höchstens 0.119 m
+  der Arm ohne Flügel-Leib: 5 Proben mit Bau
+  Steilhang {"art":"hang","x":-532.694803998486,"z":-852.0248676214696,"y":46.67513040350168,"abstand":318,"mitte":[-280.4,-1045.6],"neigung":25.9,"gier":-0.7209050814895401} (Weltbild fehlt 0) · die Kamera im Hang: 10 von 10 Bildern mit Täter
+  ✅ K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib
+  ❌ K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint — Täter: Gang innen (haus_alemannisch): Nah-Pixel in 3 Proben — Bild 912 orbit: Bau 4.2 % · Bild 918 orbit: Bau 1.4 % · Bild 1278 orbit fern: Bau 15.6 % · Gang innen-sprint: Ruck p95 0.060 m (Soll ≤ 0.02) · Gang innen-sprint (haus_alemannisch): Nah-Pixel in 2 Proben — Bild 852 orbit fern: Bau 10.4 % · Bild 864 orbit fern: Bau 1.7 %
+  Zeiten (ms): {"wiese":24216,"gang":209910,"hang":7508} · Lauf 246.2 s
+
+--- stderr ---
+
+❌ ROT — 1 Verletzung(en): K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 46938 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

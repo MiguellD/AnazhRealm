@@ -1,0 +1,13 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-kampf-gefuehl.cjs --k1
+[linse-gpu] nvidia/pascal
+  (Q15) {"welt":{"vor":{"lauf":"vor","traf":true,"zielFehl":0.015,"schaden":15.745,"kraft":19.961,"art":"SCHNITT","KE":74.43,"v":23.252,"p":5.955,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":1,"ort":"schlagpunkt","kg":1.383,"mEffWerk":0.256,"edgeWinkel":26.27,"schneideBild":0.998},"masse":{"lauf":"masse","traf":true,"zielFehl":0.017,"schaden":14.459,"kraft":20.339,"art":"SCHNITT","KE":67.082,"v":22.11,"p":6.236,"mEff":0.319,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":0.783,"ort":"spitze","kg":1.646,"mEffWerk":0.319,"edgeWinkel":26.27,"schneideBild":1},"schneide":{"lauf":"schneide","traf":true,"zielFehl":0.028,"schaden":12.534,"kraft":20.339,"art":"SCHNITT","KE":58.148,"v":23.479,"p":5.049,"mEff":0.256,"pen":null,"clean":true,"edgeQ":1,"verdict":"am Knoten, Schneide führt — sauber","zone":"bauch","zoneMul":1.2,"eff":0.705,"ort":"spitze","kg":1.383,"mEffWerk":0.256,"edgeWinkel":22.677,"schneideBild":1}},"labor":{"vor":{"kg":1.383,"edgeWinkel":26.27},"masse":{"kg":1.646,"edgeWinkel":26.27},"schneide":{"kg":1.383,"edgeWinkel":22.677}}}
+  ✅ Q15 halten.K1 Staffel 2: Masse × Schneide × Tempo im Bild und am Labor-Werk 
+  ✅ SELBST-TEST (S21): die Breitseite im Bild, ein Bild ohne Frame, ein Labor ohne Mutation
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 48415 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
