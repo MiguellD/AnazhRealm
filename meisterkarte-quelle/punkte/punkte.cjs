@@ -6,7 +6,9 @@
 //        fährt jede Station des Geräts im Spiel-Baum am SHA, schreibt messung/<sha8>-<geraet>.json
 //        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
 //        DIE SITZUNG zuerst (radeon|gtx, fahreSitzung): jede Station mit `probe` in EINER warmen Welt am SHA unter dem ganzen Schloss,
-//        die Einträge mit modus "session" und bahn "sitzung", der Kopf der Sitzung als m.sitzung; danach die befehl-Stationen
+//        die Einträge mit modus "session" und bahn "sitzung", der Kopf der Sitzung als m.sitzung (darin m.sitzung.strom: die Dauerlast
+//        jedes Bilds der Sitzung, stromSeite); die Reihe anfang · was die Welt lässt · ende · was sie ändert, die Grundstellung nur nach
+//        einer mutierenden Probe oder einem Abbruch; danach die befehl-Stationen
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
 //        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
 //        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
@@ -44,9 +46,12 @@
 //   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
 //   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe PROBE_SEK, höchstens PROBE_MAX_S) } —
 //   die Station misst als Probe in der EINEN warmen Welt der Sitzung (fahreSitzung), nie mit eigenem Boot; dazu {PORT} = der Port
-//   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank. Eine Station
-//   trägt GENAU EINES von befehl und probe; befehl bleibt nur, wo das Kriterium Kälte oder Dauer misst oder das Spiel-Skript
-//   selbst bootet.
+//   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank,
+//   PUNKTE_SITZUNG_STROM = der Strom der Sitzung (je Bild eine Zeile, stromSeite; Zapfen, Marke und Leser exportiert diese Maschine),
+//   PUNKTE_PROBE = ihr Name. Dazu optional: mutiert (true: sie ändert die Welt — baut, gräbt, Tab-Tod, Speichern/Laden —, nur nach
+//   ihr setzt die Sitzung die Welt zurück) · stellung ("anfang" | "ende": die Reihe der Sitzung, sitzungsReihe) · ausnahme (der Grund,
+//   warum sie über 45 s braucht; nie über PROBE_AUSNAHME_S). Eine Station trägt GENAU EINES von befehl und probe; befehl bleibt nur,
+//   wo das Kriterium Kälte oder Dauer misst oder das Spiel-Skript selbst bootet.
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
@@ -94,12 +99,17 @@ function hilfeText() {
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
 const PROBE_SEK = 90;
 const PROBE_MAX_S = 1200;
+// DAS BUDGET DER PROBE (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min"): Ziel ≤ 15 s, Deckel 45 s, nur
+// mit `ausnahme` (der Grund beim Namen) bis 90 s — eine Probe mit ausnahme über PROBE_AUSNAHME_S ist ROT
+const PROBE_AUSNAHME_S = 90;
+const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung"];
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
 const probeSek = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
 function abdruck(st, hilfe = hilfeText()) {
     const roh = JSON.stringify({
         k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {}, gpu: !!st.gpu,
-        u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe, ...(st.probe ? { pr: [st.probe.befehl, probeSek(st)] } : {}),
+        u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe,
+        ...(st.probe ? { pr: [st.probe.befehl, probeSek(st), ...(st.probe.mutiert ? ["mutiert"] : []), ...(st.probe.stellung ? [st.probe.stellung] : [])] } : {}),
     });
     return crypto.createHash("sha1").update(roh).digest("hex").slice(0, 12);
 }
@@ -151,7 +161,11 @@ function pruefeStationen(liste, karte) {
             else {
                 if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1 && p.sek <= PROBE_MAX_S))
                     f.push("probe.sek nicht 1.." + PROBE_MAX_S);
-                if (Object.keys(p).some((k) => !["befehl", "sek"].includes(k))) f.push("probe trägt nur befehl und sek");
+                if (Object.keys(p).some((k) => !PROBE_SCHLUESSEL.includes(k))) f.push("probe trägt nur " + PROBE_SCHLUESSEL.join(", "));
+                if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
+                if (p.stellung !== undefined && !["anfang", "ende"].includes(p.stellung)) f.push("probe.stellung nicht anfang|ende");
+                if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 12)) f.push("probe.ausnahme ohne Grund");
+                if (p.ausnahme !== undefined && probeSek(st) > PROBE_AUSNAHME_S) f.push("probe.sek über " + PROBE_AUSNAHME_S + " s auch mit ausnahme");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));
@@ -390,7 +404,8 @@ function fahreGruppe(sts, ctx) {
         if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
         // in der Sitzung: das Log der Welt (die Karte) und die Grundstellung als Befehl (`node "$PUNKTE_MASCHINE" grundstellung`:
         // eine Probe, die selbst mehrere frische Welten braucht — je nH, je Lauf —, holt sie so, nie mit eigenem Boot)
-        if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/") });
+        if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"),
+            ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
@@ -709,15 +724,192 @@ async function grundstellung(w, baum) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
 }
+// ───────────────────────────────── Der Strom ─────────────────────────────────
+// DER AUFNEHMER DER SITZUNG (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min, inbegriffen ist dann auch
+// die Dauerlast"): über die GANZE Sitzung je präsentiertem Bild der Welt EINE Zeile — die Bild-Zeit (rAF zu rAF unter derselben
+// Schleife, nur gerenderte Bilder: `_gpuLeine.gerendert`, wie `werkbank lauf`), der Takt (der ganze rAF-Rückruf: Spiel-Takt samt
+// Ort-Takt), VRAM (`__vram`, der Abgriff), die GPU-Summe des Bilds, wenn der Regler sie neu las (`_gpuTsLast`, dieselbe Quelle
+// wie `lauf`), Befehle und Dreiecke (`renderer.info` — das Spiel setzt es je Bild zurück, `_loopRender`), Ort, Sicht, Sattel,
+// Regler, Tier-Halt, Drossel, Wetter und die Zelle, die eine Probe gerade misst. Der Haken sitzt an `renderer.setAnimationLoop`
+// der Seite: er sieht jedes Bild, das eine Schleife zeigt (lauf, haenger, eval, der Loop der Werkbank), nie die Takte von Hand
+// (umstellen, band, gpu-bank — sie zeigen kein Bild). Gezapft wird alle STROM_TAKT_MS und an jeder Proben-Grenze (dann trägt der
+// Block die Probe); eine neue Seite (Grundstellung, Welt-Tor) zieht ihn beim nächsten Zapfen neu ein. Ein Fehler des Hakens
+// stört nie das Spiel und steht gezählt im Strom (`fehler`). Spalten: STROM_SPALTEN; der Leser: stromLesen.
+const STROM_SPALTEN = ["t", "dt", "takt", "vram", "gpu", "befehle", "dreiecke", "x", "z", "sicht", "sattel", "voll", "halt", "last", "wetter", "zelle"];
+const STROM_TAKT_MS = 1000;
+const STROM_FRIST_MS = 10000;
+// in der Seite (werkbank /eval, r = die Welt): zieht den Haken ein (einmal je Seite und Renderer), setzt mit a.zelle die Zelle
+// der folgenden Bilder (null: keine) und gibt die Zeilen seit dem letzten Zapfen zurück
+function stromSeite(r, a) {
+    const st = r && r.state, rend = st && st.renderer;
+    if (!rend || typeof rend.setAnimationLoop !== "function") return { bereit: false, grund: "kein Renderer" };
+    let S = window.__punkteStrom;
+    const neu = !S;
+    if (!S)
+        S = window.__punkteStrom = { seite: Math.random().toString(36).slice(2, 10), ursprung: Math.round(performance.timeOrigin), zeilen: [],
+            namen: { wetter: [], zelle: [] }, zelle: -1, tv: null, gpuAm: null, verloren: 0, fehler: 0, letzterFehler: null, rend: null };
+    const nr = (liste, x) => {
+        let i = liste.indexOf(x);
+        if (i < 0) (i = liste.length), liste.push(x);
+        return i;
+    };
+    if (S.rend !== rend) {
+        S.rend = rend;
+        const roh = rend.setAnimationLoop;
+        const bild = (t, c0, g0) => {
+            const L = r._gpuLeine;
+            if (!L || !(L.gerendert > g0)) return;
+            const c1 = performance.now(), dt = S.tv == null ? -1 : t - S.tv;
+            S.tv = t;
+            let gpu = -1;
+            if (r._gpuTsAtMs !== S.gpuAm) {
+                S.gpuAm = r._gpuTsAtMs;
+                if (Number.isFinite(r._gpuTsLast)) gpu = r._gpuTsLast;
+            }
+            const v = window.__vram, i = rend.info && rend.info.render, p = st.playerMesh && st.playerMesh.position, z = S.zeilen;
+            if (z.length >= 120000) (z.splice(0, 20000), (S.verloren += 20000));
+            z.push([+t.toFixed(1), dt < 0 ? -1 : +dt.toFixed(2), +(c1 - c0).toFixed(2), v ? +((v.puffer + v.texturen) / 1048576).toFixed(1) : -1,
+                gpu >= 0 ? +gpu.toFixed(2) : -1, i ? i.drawCalls : -1, i ? Math.round(i.triangles) : -1, p ? +p.x.toFixed(1) : 0, p ? +p.z.toFixed(1) : 0,
+                st.cameraMode === "first" ? 1 : st.cameraMode === "third" ? 2 : 0, st.player && st.player.mountedArch ? 1 : 0, st.perfTargetMs >= 1000 ? 1 : 0,
+                Object.getPrototypeOf(r).__tiereGehalten ? 1 : 0, st.perfSense ? +st.perfSense.loadScale.toFixed(2) : -1, nr(S.namen.wetter, String(st.weather)), S.zelle]);
+        };
+        const huelle = (cb) =>
+            function (t, x) {
+                const c0 = performance.now(), L = r._gpuLeine, g0 = L ? L.gerendert : 0;
+                try {
+                    return cb.call(this, t, x);
+                } finally {
+                    try {
+                        bild(t, c0, g0);
+                    } catch (e) {
+                        S.fehler++;
+                        S.letzterFehler = String((e && e.message) || e).slice(0, 160);
+                    }
+                }
+            };
+        rend.setAnimationLoop = function (cb) {
+            S.tv = null;
+            return roh.call(this, typeof cb === "function" ? huelle(cb) : cb);
+        };
+        // eine Schleife, die vor dem Haken lief, fährt ab jetzt durch ihn
+        const a0 = rend._animation && rend._animation._animationLoop;
+        if (typeof a0 === "function") rend.setAnimationLoop(a0);
+    }
+    if (a && "zelle" in a) S.zelle = a.zelle == null ? -1 : nr(S.namen.zelle, String(a.zelle));
+    const zeilen = S.zeilen;
+    S.zeilen = [];
+    const lies = (f) => {
+        try {
+            return f();
+        } catch (_e) {
+            return null;
+        }
+    };
+    const m = performance.memory;
+    return {
+        bereit: true, neu, seite: S.seite, ursprung: S.ursprung, zeilen, namen: S.namen, verloren: S.verloren, fehler: S.fehler, letzterFehler: S.letzterFehler,
+        heap: m ? +(m.usedJSHeapSize / 1048576).toFixed(1) : null, skala: lies(() => r._szeneSkalaWirk()),
+        buehne: lies(() => st.creatures.filter((c) => c.userData && c.userData.buehne).length),
+        stempel: lies(() => (window.__stempelWache ? window.__stempelWache().ueberlauf : null)),
+        uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null, chunks: st.voxelChunks ? st.voxelChunks.size : null,
+    };
+}
+const stromCode = (a) => "return (" + stromSeite.toString() + ")(r, " + JSON.stringify(a || {}) + ");";
+// EIN Zapfen: die Zeilen seit dem letzten an den Strom (eine JSON-Zeile je Block, mit der Probe); Rückgabe { ok, n?, grund? } —
+// wirft nie (ein Zapfen, der scheitert, ist eine Lücke im Strom, nie ein Bruch der Probe)
+async function stromZapfen(w, datei, probe, a = {}) {
+    let e;
+    try {
+        const x = await rufFrist(w, "/eval", { code: stromCode(a) }, STROM_FRIST_MS);
+        e = x && x.ergebnis;
+        if (!e) throw new Error((x && typeof x.fehler === "string" && x.fehler) || "kein Ergebnis");
+    } catch (x) {
+        return { ok: false, grund: String((x && x.message) || x).split("\n")[0].slice(0, 200) };
+    }
+    if (!e.bereit) return { ok: false, grund: e.grund || "nicht bereit" };
+    fs.appendFileSync(datei, JSON.stringify({ probe, zeit: new Date().toISOString(), ...e }) + "\n");
+    return { ok: true, n: e.zeilen.length, seite: e.seite, fehler: e.fehler };
+}
+// EINE Marke im Strom (eine Probe nennt einen Stand der Welt beim Namen, z. B. den GC-Stand am Anfang der Dauer)
+function stromMarke(datei, probe, marke, wert) {
+    fs.appendFileSync(datei, JSON.stringify({ probe, zeit: new Date().toISOString(), marke, wert }) + "\n");
+}
+// DER LESER des Stroms: { bilder: [{ probe, seite, block, wand, …STROM_SPALTEN, uhr, skala, buehne, heap, stempelOk }], marken: [{ probe,
+// zeit, marke, wert, bild }], bloecke, seiten, fehler, verloren } — wand = die Wanduhr des Bilds (ms seit 1970), stempelOk: im Block lief
+// der Stempel-Pool nicht über, bild = die Zahl der Bilder vor der Marke
+function stromLesen(datei) {
+    const o = { bilder: [], marken: [], bloecke: 0, seiten: [], fehler: 0, verloren: 0 };
+    if (!fs.existsSync(datei)) return o;
+    const stempelVor = new Map();
+    for (const zeile of fs.readFileSync(datei, "utf8").split(/\r?\n/)) {
+        if (!zeile.trim()) continue;
+        let b;
+        try {
+            b = JSON.parse(zeile);
+        } catch (_e) {
+            continue;
+        }
+        if (b.marke) {
+            o.marken.push({ probe: b.probe, zeit: b.zeit, marke: b.marke, wert: b.wert, bild: o.bilder.length });
+            continue;
+        }
+        const block = o.bloecke++;
+        if (!o.seiten.includes(b.seite)) o.seiten.push(b.seite);
+        o.fehler = Math.max(o.fehler, b.fehler || 0);
+        o.verloren = Math.max(o.verloren, b.verloren || 0);
+        const sv = stempelVor.get(b.seite);
+        const stempelOk = b.stempel == null || sv == null || b.stempel === sv;
+        if (b.stempel != null) stempelVor.set(b.seite, b.stempel);
+        for (const z of b.zeilen || []) {
+            const f = { probe: b.probe, seite: b.seite, block, wand: b.ursprung + z[0], uhr: b.uhr, skala: b.skala, buehne: b.buehne, heap: b.heap, stempelOk };
+            STROM_SPALTEN.forEach((k, i) => (f[k] = z[i]));
+            f.wetter = (b.namen && b.namen.wetter[f.wetter]) || null;
+            f.zelle = f.zelle >= 0 ? (b.namen && b.namen.zelle[f.zelle]) || null : null;
+            o.bilder.push(f);
+        }
+    }
+    return o;
+}
+// der Kopf des Stroms für die Mess-Datei (m.sitzung.strom): die Dauerlast der ganzen Sitzung — Bilder, Bild-p95, Takt-p95, VRAM
+const p95Von = (a) => {
+    const s = a.filter(Number.isFinite).sort((x, y) => x - y);
+    return s.length ? s[Math.min(s.length - 1, Math.floor(0.95 * s.length))] : null;
+};
+function stromKopf(datei, zaehler) {
+    const s = stromLesen(datei);
+    const dt = s.bilder.filter((b) => b.dt >= 0);
+    return { datei: path.basename(datei), bilder: dt.length, frameP95: p95Von(dt.map((b) => b.dt)), taktP95: p95Von(dt.map((b) => b.takt)),
+        vramMax: s.bilder.length ? s.bilder.reduce((m, b) => Math.max(m, b.vram), -Infinity) : null, seiten: s.seiten.length, marken: s.marken.length,
+        fehler: s.fehler, verloren: s.verloren, ...zaehler };
+}
+
+// DIE REIHE DER SITZUNG (29.10., EINE Fahrt durch jedes System ≤ 30 min samt Dauerlast): zuerst `stellung: "anfang"`, dann jede
+// Probe, die die Welt lässt, dann `stellung: "ende"`, dann jede mutierende (`mutiert: true`) — die Dauer von anfang bis ende lebt
+// in EINER Seite ohne Neuladen; je in der Gruppe die Reihe der Liste
+const stellungVon = (g) => (g[0].probe && g[0].probe.stellung) || null;
+const mutiertVon = (g) => g.some((st) => !!(st.probe && st.probe.mutiert));
+const sitzungsReihe = (gruppen) => [
+    ...gruppen.filter((g) => stellungVon(g) === "anfang"),
+    ...gruppen.filter((g) => !stellungVon(g) && !mutiertVon(g)),
+    ...gruppen.filter((g) => stellungVon(g) === "ende"),
+    ...gruppen.filter((g) => !stellungVon(g) && mutiertVon(g)),
+];
+// eine Probe, die abbrach (Deckel, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
+const brachAb = (es) => es.some((e) => /^(Deckel |Absturz|Start:)/.test(e.grund || ""));
+
 // FÄHRT DIE SITZUNG: gruppen (je Gruppe die Stationen EINER Probe, Zwillinge zusammen) der Reihe nach in EINER Welt;
-// ctx = { baum, koord, geraet, bash, gpuLauf, port, band, rohDir, welt?, stillS? }; melde(gruppe, ergebnisse, aus, zeit) je Gruppe.
-// Rückgabe der Kopf der Sitzung für die Mess-Datei: { start, port, warten, bootS, grundstellungS, proben, minuten, grund? }
-async function fahreSitzung(gruppen, ctx, melde) {
+// ctx = { baum, koord, geraet, bash, gpuLauf, port, band, rohDir, welt?, stillS?, stromTaktMs? }; melde(gruppe, ergebnisse, aus, zeit) je Gruppe.
+// Rückgabe der Kopf der Sitzung für die Mess-Datei: { start, port, warten, bootS, grundstellungS, proben, minuten, strom, grund? }
+// DIE REIHE (`sitzungsReihe`) und DAS ZURÜCKSETZEN (29.10.): die Grundstellung nur nach einer Probe mit `mutiert: true` oder nach einem
+// Abbruch (bis dahin vor JEDER Probe: die Dauer lebte nie länger als eine Probe); DER STROM (`stromSeite`): der Zapf-Takt über die
+// ganze Sitzung, ein Zapfen an jeder Proben-Grenze, die Probe kennt ihn als PUNKTE_SITZUNG_STROM (ihr Name PUNKTE_PROBE)
+async function fahreSitzung(gruppen0, ctx, melde) {
     const t0 = Date.now();
+    const gruppen = sitzungsReihe(gruppen0);
     const dir = path.join(ctx.rohDir, "sitzung");
     fs.mkdirSync(dir, { recursive: true });
-    const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop");
-    for (const f of [stop, zeuge]) fs.rmSync(f, { force: true });
+    const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop"), strom = path.join(dir, "strom.ndjson");
+    for (const f of [stop, zeuge, strom]) fs.rmSync(f, { force: true });
     const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0 };
     const s = await sitzungStarten({ ...ctx, log, zeuge, stop });
     Object.assign(kopf, { warten: s.warten, bootS: s.bootS });
@@ -731,12 +923,41 @@ async function fahreSitzung(gruppen, ctx, melde) {
         return kopf;
     }
     console.log("  SITZUNG " + ctx.geraet + " · die Welt steht nach " + s.bootS + " s (Schloss nach " + s.warten + " min) · " + gruppen.length + " Proben · Welt :" + (ctx.port + 20000));
-    for (const [i, g] of gruppen.entries()) {
-        if (!tot && i > 0) {
-            const gs = await grundstellung(ctx.port + 20000, ctx.baum);
+    // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
+    const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
+    let aktuell = "(sitzung)", laeuft = null, ruht = false;
+    const zapf = (probe) => {
+        laeuft = (laeuft || Promise.resolve()).then(() => stromZapfen(W, strom, probe)).then((z) => {
+            if (z.ok) zz.zapfen++;
+            else (zz.luecken++, (zz.letzteLuecke = z.grund));
+        });
+        return laeuft;
+    };
+    let frei = true;
+    const takt = setInterval(() => {
+        if (ruht || !frei || tot) return;
+        frei = false;
+        zapf(aktuell).finally(() => (frei = true));
+    }, ctx.stromTaktMs || STROM_TAKT_MS);
+    await zapf(aktuell);
+    let zuruecksetzen = false;
+    for (const g of gruppen) {
+        if (!tot && zuruecksetzen) {
+            ruht = true;
+            await zapf(aktuell);
+            const gs = await grundstellung(W, ctx.baum);
+            ruht = false;
             if (gs.ok) kopf.grundstellungS.push(gs.s);
             else {
                 tot = gs.grund;
+                kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
+                console.log("  SITZUNG " + kopf.grund);
+            }
+        } else if (!tot) {
+            // ohne Grundstellung: das Fenster wie beim Start (eine Probe davor stellte es vielleicht anders) — und das Lebenszeichen der Welt
+            const f = await rufFrist(W, "/fenster", {}, 30000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+            if (!f || !Array.isArray(f.fenster)) {
+                tot = "die Welt antwortet nicht (/fenster: " + JSON.stringify(f).slice(0, 200) + ")";
                 kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
                 console.log("  SITZUNG " + kopf.grund);
             }
@@ -748,10 +969,18 @@ async function fahreSitzung(gruppen, ctx, melde) {
         const name = schluessel(g[0]).replace("#", "_");
         const aus = { aus: path.join(ctx.rohDir, name + ".json"), roh: path.join(ctx.rohDir, name + ".out") };
         const zeit = new Date().toISOString();
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge } });
+        await zapf(aktuell);
+        aktuell = schluessel(g[0]);
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, probe: aktuell } });
+        await zapf(aktuell);
+        aktuell = "(sitzung)";
         kopf.proben++;
+        zuruecksetzen = mutiertVon(g) || brachAb(es);
         await melde(g, es, aus, zeit);
     }
+    clearInterval(takt);
+    await zapf(aktuell);
+    kopf.strom = stromKopf(strom, zz);
     await sitzungStoppen(s, stop);
     kopf.minuten = +((Date.now() - t0) / 60000).toFixed(2);
     return kopf;
@@ -2058,12 +2287,24 @@ async function selbsttest() {
         pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_MAX_S + " s · die Feinde der Welt beim Namen",
             /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /probe.sek nicht/.test(f[2]) &&
             /greift die Welt der Sitzung an: netstat \(räumt Ports\), werkbank start\|stop/.test(f[3]) && f[4] === "", f.join(" || "));
+        const pb = (p) => fe({ probe: { befehl: ["node", "-e", "0"], sek: 30, ...p } });
+        const f2 = [pb({ mutiert: "ja" }), pb({ stellung: "mitte" }), pb({ ausnahme: "weil" }), pb({ ausnahme: "der Grund beim Namen", sek: 91 }), pb({ wache: 1 }),
+            pb({ mutiert: true, stellung: "ende", ausnahme: "der Grund beim Namen", sek: 90 })];
+        pruef("SITZUNG-FORMAT die Schlüssel der Fahrt: mutiert boolesch · stellung anfang|ende · ausnahme mit Grund und nie über " + PROBE_AUSNAHME_S + " s · nichts sonst",
+            /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /ausnahme ohne Grund/.test(f2[2]) && /über 90 s auch mit ausnahme/.test(f2[3]) &&
+            /probe trägt nur befehl, sek, mutiert, ausnahme, stellung/.test(f2[4]) && f2[5] === "", f2.join(" || "));
         const h = "hilfe";
         const alt = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
             gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h })).digest("hex").slice(0, 12);
         pruef("SITZUNG-ABDRUCK eine befehl-Station Byte für Byte wie vor der Sitzung, eine Probe trägt Befehl und Deckel",
             abdruck(st0, h) === alt(st0) && abdruck(gp, h) !== abdruck({ ...gp, probe: { ...gp.probe, sek: 31 } }, h) &&
             abdruck(gp, h) !== abdruck({ ...gp, probe: { ...gp.probe, befehl: ["node", "-e", "1"] } }, h), abdruck(st0, h) + " " + alt(st0));
+        const altP = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
+            gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h, pr: [st.probe.befehl, probeSek(st)] })).digest("hex").slice(0, 12);
+        pruef("SITZUNG-ABDRUCK eine Probe ohne mutiert und stellung Byte für Byte wie am Sitzungs-Stand; mutiert und stellung ändern ihn, die ausnahme nie",
+            abdruck(gp, h) === altP(gp) && abdruck({ ...gp, probe: { ...gp.probe, mutiert: true } }, h) !== abdruck(gp, h) &&
+            abdruck({ ...gp, probe: { ...gp.probe, stellung: "ende" } }, h) !== abdruck(gp, h) && abdruck({ ...gp, probe: { ...gp.probe, ausnahme: "der Grund beim Namen" } }, h) === abdruck(gp, h),
+            abdruck(gp, h) + " " + altP(gp));
         e = await fahreStation({ ...gp, urteil: lies }, ctx("probe-allein"));
         pruef("SITZUNG eine Probe fährt nie außerhalb der Sitzung", e.gruen === false && /nur in der Sitzung/.test(e.grund), JSON.stringify(e));
         const P = 41004 + (process.pid % 400) * 10;
@@ -2072,10 +2313,17 @@ async function selbsttest() {
         fs.writeFileSync(stub, [
             'const http = require("http"), fs = require("fs"); const [W, z, art] = process.argv.slice(2); const n = (x) => fs.appendFileSync(z, x + "\\n");',
             'n("start"); if (art === "kaputt") { console.log("WERKBANK-FEHLER stub"); process.exit(4); }',
+            'let seite = null; const neu = () => { const R = { info: { render: { drawCalls: 7, triangles: 900 } }, _animation: { _animationLoop: null }, setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } };',
+            '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 } }, R, welt: { state: { renderer: R, playerMesh: { position: { x: 1, z: 2 } }, cameraMode: "first",',
+            '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } } }; }; neu();',
+            'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             '  if (q.url === "/eval") { if (/localStorage\\.clear/.test(b.code)) { n("grund"); return s({ ergebnis: { ls: 0, welten: 0 } }); }',
+            '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
+            '    if (b.code === "loop an") { seite.R.setAnimationLoop(() => seite.welt._gpuLeine.gerendert++); return s({ ergebnis: 1 }); }',
+            '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); } return s({ ergebnis: "warm" }); }',
-            '  if (q.url === "/reload") { n("reload"); return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
+            '  if (q.url === "/reload") { n("reload"); neu(); return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
         ].join("\n"));
@@ -2093,11 +2341,11 @@ async function selbsttest() {
         const lauf = async (gruppen, art, gpuLauf) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
-            const es = {};
+            const es = {}, reihe = [];
             const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
-                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20 },
-            (g, xs, aus, zeit) => g.forEach((st, i) => { es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
-            return { es, kopf, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
+                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200 },
+            (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
+            return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
         };
         const gl = findeBash() ? path.join(tmp, "sitzung-schloss.sh") : null;
         const glLog = path.join(tmp, "sitzung-schloss.log");
@@ -2112,13 +2360,32 @@ async function selbsttest() {
         pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
             r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /Deckel 2 s/.test(x["b.K1#1"].grund) && x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
-        pruef("SITZUNG die Grundstellung vor jeder Probe außer der ersten (Spielstand weg, die Seite neu) — nie ein zweiter Start; am Ende stop",
-            r1.z.join(",") === "start,grund,reload,grund,reload,grund,reload,stop" && r1.kopf.grundstellungS.length === 3 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
+        pruef("SITZUNG die Grundstellung (Spielstand weg, die Seite neu) nur nach einem Abbruch (b.K1 am Deckel) oder einer mutierenden Probe — nie vor jeder; nie ein zweiter Start; am Ende stop",
+            r1.z.join(",") === "start,grund,reload,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
             Object.values(x).every((e) => ["gruen", "zahl", "exit", "minuten", "zeit", "abdruck", "port", "bahn"].every((k) => k in e) && e.modus === "session" && e.bahn === "sitzung") &&
             Object.entries(x).every(([id, e]) => zeile.test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))), JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
+        // DIE REIHE und DER STROM: anfang, die Welt lassend, ende, mutierend — die Grundstellung nur nach der mutierenden; jede Probe kennt
+        // den Strom und ihren Namen, die Bilder ihres Loops stehen unter ihrem Namen, der Kopf trägt die Dauerlast
+        const umw = ["node", "-e", 'require("fs").writeFileSync(process.argv[1], JSON.stringify({ strom: process.env.PUNKTE_SITZUNG_STROM, probe: process.env.PUNKTE_PROBE }))', "{AUS}"];
+        const loop = ["node", "-e", 'const h = require("http"); const e = (c) => new Promise((f) => h.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: "/eval", method: "POST" }, ' +
+            '(r) => (r.resume(), r.on("end", f))).end(JSON.stringify({ code: c }))); (async () => { await e("loop an"); await new Promise((f) => setTimeout(f, 400)); await e("loop aus"); ' +
+            'require("fs").writeFileSync(process.argv[1], "{}"); })();', "{AUS}"];
+        const umwOk = (j) => ({ gruen: !!j && !!j.strom && fs.existsSync(j.strom) && !!j.probe, zahl: JSON.stringify(j) });
+        const da = (j) => ({ gruen: !!j, zahl: "da" });
+        const r5 = await lauf([[S("m.K1", 1, { befehl: loop, sek: 30, mutiert: true }, da)], [S("n.K1", 1, { befehl: umw, sek: 30 }, umwOk)],
+            [S("a.K1", 1, { befehl: loop, sek: 30, stellung: "anfang" }, da)], [S("e.K1", 1, { befehl: umw, sek: 30, stellung: "ende" }, umwOk)],
+            [S("o.K1", 1, { befehl: umw, sek: 30, mutiert: true }, umwOk)]], "reihe", null);
+        const sr = stromLesen(path.join(r5.rohDir, "sitzung", "strom.ndjson"));
+        const je = (p) => sr.bilder.filter((b) => b.probe === p).length;
+        pruef("SITZUNG die Reihe: anfang · was die Welt lässt · ende · was sie ändert; die Grundstellung nur nach der mutierenden (m vor o)",
+            r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,grund,reload,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
+        pruef("SITZUNG DER STROM: der Haken über /eval in der Seite, jede Probe kennt ihn (PUNKTE_SITZUNG_STROM, PUNKTE_PROBE), die Bilder ihres Loops unter ihrem Namen, nach dem Neuladen eine neue Seite, der Kopf trägt die Dauerlast",
+            je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 2 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
+            r5.kopf.strom && r5.kopf.strom.bilder >= 8 && r5.kopf.strom.luecken === 0 && r5.kopf.strom.zapfen >= 10 && r5.kopf.strom.fehler === 0,
+            JSON.stringify({ a: je("a.K1#1"), m: je("m.K1#1"), seiten: sr.seiten.length, kopf: r5.kopf.strom }));
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
@@ -2131,6 +2398,76 @@ async function selbsttest() {
             const r4 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "kein-start", bl);
             pruef("SITZUNG ein blockiertes Schloss ist UNGEMESSEN beim Namen, die Welt startet nie", r4.es["a.K1#1"].ungemessen === true && /blockiert.*ci-echt/.test(r4.es["a.K1#1"].grund) && !r4.z.length, JSON.stringify(r4));
         }
+    }
+    // (10) DER HAKEN DES STROMS in einer gestellten Seite (stromSeite, wie die Werkbank ihn per /eval zieht): nur gerenderte Bilder
+    // (die Leine gespannt: kein Bild), die Bild-Zeit nur innerhalb EINER Schleife, die Zelle ab dem Zapfen, der sie setzt, ein Wurf des
+    // Hakens gezählt und nie in das Spiel geworfen, eine Schleife von vor dem Haken fährt durch ihn, der Zapfen leert; der Leser
+    // nennt Zelle, Wetter, Wanduhr, Marke und den Überlauf des Stempel-Pools
+    {
+        const welt = () => {
+            const uhrMs = { t: 0 };
+            const R = { info: { render: { drawCalls: 50, triangles: 1e5 } }, _animation: { _animationLoop: null }, setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } };
+            const r = { state: { renderer: R, playerMesh: { position: { x: 3, z: 4 } }, cameraMode: "first", player: { mountedArch: null }, perfTargetMs: 1000,
+                perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 }, _gpuTsAtMs: 1, _gpuTsLast: 9.5,
+                _szeneSkalaWirk: () => 0.75 };
+            const win = { __vram: { puffer: 50 * 1048576, texturen: 60 * 1048576 }, __stempelWache: () => ({ ueberlauf: uhrMs.ueberlauf || 0 }) };
+            const perf = { now: () => uhrMs.t, timeOrigin: 1e12, memory: { usedJSHeapSize: 200 * 1048576 } };
+            const zapf = (a) => new Function("r", "window", "performance", stromCode(a))(r, win, perf);
+            const bild = (t, leine = false) => {
+                uhrMs.t = t;
+                const cb = R._animation._animationLoop;
+                if (cb) cb(t);
+            };
+            return { r, R, win, uhrMs, zapf, bild, spiel: (leine) => () => { if (!leine.an) r._gpuLeine.gerendert++; } };
+        };
+        const W1 = welt(), leine = { an: false };
+        const e0 = W1.zapf({});
+        W1.R.setAnimationLoop(W1.spiel(leine));
+        W1.bild(0);
+        W1.bild(16.7);
+        leine.an = true;
+        W1.bild(25);
+        leine.an = false;
+        W1.bild(33.4);
+        const e1 = W1.zapf({ zelle: "wiese-ego-steht" });
+        W1.bild(50.1);
+        W1.R.setAnimationLoop(null);
+        W1.R.setAnimationLoop(W1.spiel(leine));
+        W1.bild(1000);
+        W1.r._gpuTsAtMs = 2;
+        W1.bild(1016.7);
+        const e2 = W1.zapf({ zelle: null });
+        Object.defineProperty(W1.r.state, "playerMesh", { get() { throw new Error("kaputt"); }, configurable: true });
+        let warf = false;
+        try {
+            W1.bild(1033.4);
+        } catch (_e) {
+            warf = true;
+        }
+        const e3 = W1.zapf({});
+        const W2 = welt();
+        W2.R.setAnimationLoop(W2.spiel({ an: false }));
+        W2.zapf({});
+        W2.bild(5);
+        W2.bild(21.7);
+        const e4 = W2.zapf({});
+        const dt = (e) => e.zeilen.map((z) => z[1]).join(",");
+        pruef("STROM-HAKEN nur gerenderte Bilder, die Bild-Zeit je Schleife (neue Schleife: −1), die Zelle ab ihrem Zapfen, VRAM · Befehle · Dreiecke · Sicht · Regler je Bild",
+            e0.bereit && e0.neu && e0.zeilen.length === 0 && dt(e1) === "-1,16.7,16.7" && e1.zeilen.every((z) => z[15] === -1 && z[3] === 110 && z[5] === 50 && z[9] === 1 && z[11] === 1) &&
+            dt(e2) === "16.7,-1,16.7" && e2.zeilen.every((z) => e2.namen.zelle[z[15]] === "wiese-ego-steht") && e2.zeilen[0][4] === -1 && e2.zeilen[2][4] === 9.5 && !e2.neu,
+            JSON.stringify([e1.zeilen, e2.zeilen]));
+        pruef("STROM-HAKEN ein Wurf des Hakens stört das Spiel nie (gezählt im Strom), eine Schleife von vor dem Haken fährt durch ihn",
+            !warf && e3.fehler === 1 && /kaputt/.test(e3.letzterFehler) && e3.zeilen.length === 0 && W1.r._gpuLeine.gerendert === 7 && dt(e4) === "-1,16.7", JSON.stringify([warf, e3, e4.zeilen]));
+        const sd = path.join(tmp, "strom-lesen.ndjson");
+        const zeile = (probe, e, stempel) => fs.appendFileSync(sd, JSON.stringify({ probe, zeit: "z", ...e, stempel }) + "\n");
+        zeile("a.K1#1", e1, 0);
+        stromMarke(sd, "a.K1#1", "dauer-anfang", { heapMB: 1 });
+        zeile("b.K1#1", e2, 2);
+        const L = stromLesen(sd);
+        pruef("STROM-LESER je Bild Probe, Seite, Wanduhr, Zelle und Wetter beim Namen, die Marke an ihrer Stelle unter den Bildern, ein Block nach Pool-Überlauf ohne GPU-Gültigkeit",
+            L.bilder.length === 6 && L.bloecke === 2 && L.seiten.length === 1 && L.bilder[0].wand === 1e12 && L.bilder[3].zelle === "wiese-ego-steht" && L.bilder[0].zelle === null &&
+            L.bilder.every((b) => b.wetter === "sunny") && L.marken.length === 1 && L.marken[0].bild === 3 && L.bilder[0].stempelOk && !L.bilder[3].stempelOk,
+            JSON.stringify([L.bilder.map((b) => [b.probe, b.zelle, b.stempelOk]), L.marken]));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
@@ -2193,4 +2530,6 @@ if (require.main === module) {
 }
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
-    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText };
+    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
+    // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
+    stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };
