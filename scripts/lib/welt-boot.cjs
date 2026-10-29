@@ -24,7 +24,7 @@ const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // DIE EINE WELT JEDER SEITE (`r`, `st`): jede Seite trägt `r` (window.anazhRealm) und `st` (ihr Zustand, den nur der Konstruktor
 // setzt) als Getter (`WARTEN_SEITE`, vor jedem Skript) — eine Seiten-Funktion liest Welt und Zustand bei diesen Namen, ein eigenes
-// `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (796 Stellen in 120 Dateien bis w3u-nachfolge); wer einen
+// `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
 // der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
 const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true });`;
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
