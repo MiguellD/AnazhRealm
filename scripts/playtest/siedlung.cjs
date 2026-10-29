@@ -169,13 +169,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         const out = {};
 
         // Cleanup: alle bestehenden Architekturen entfernen.
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        __bautenLeer();
 
         // (a) Direkter Spawn jeder Sorte. AUSLÖSCHUNGS-WELLE — village/temple fielen als
         // Blueprints; die eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis/tor_basis)
@@ -322,13 +316,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         out.loadRebuildsSeeds = r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
 
         // Cleanup (inkl. Test-Blueprints — kein Katalog-Leck)
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        __bautenLeer();
         delete r.state.blueprints._t_r6_haus;
         delete r.state.blueprints._t_r6_tor;
         return out;
@@ -972,13 +960,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         const out = {};
 
         // Cleanup
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        __bautenLeer();
         r._clearBuildMode();
         // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); nach dem Warmup kann das
         // Flag stehen → nullen, gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
@@ -1014,13 +996,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // === B) spawn_fractal ===
         // Cleanup first
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        __bautenLeer();
         const before = r.state.architectures.length;
         const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
         // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
@@ -1050,13 +1026,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // === C) Counter ===
         // Cleanup, baue 3 nah, 5 weit
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        __bautenLeer();
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         r.state.playerMesh.position.set(0, 20, 0);
         for (let i = 0; i < 3; i++) r.spawnArchitecture("_t_r6v2_haus", { x: i * 10, y: 5, z: 0 }, { seed: i });
@@ -1103,13 +1073,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
 
         // Cleanup (inkl. Test-Blueprint)
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        __bautenLeer();
         delete r.state.blueprints._t_r6v2_haus;
         r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;

@@ -1448,6 +1448,19 @@ async function checkBandWasserWahrheit({ page, check }) {
             dimY = cfg0.dimY, // 232
             step = cfg0.step; // 1.8
         const K = 2;
+        // das Sheet des Schein-Chunks 0,0 aus `cells` (F1, F6): der Rechner auf einer Hülle des Realms ohne fremdes Wasser
+        const sheetAus = (computeFn, cells, getDach) => {
+            const shim = Object.create(r);
+            shim.state = { terrainBaseHeight: 0, waterLevel: 0 };
+            shim._atlasWaterLevelAt = () => -Infinity; // top = faceY exakt (pur)
+            shim._hydroRiverAt = () => null;
+            shim._hydrosphereLakeAt = () => false;
+            return computeFn.call(shim, 0, 0, {
+                smoothPasses: 4,
+                getCells: (ncx, ncz) => (ncx === 0 && ncz === 0 ? cells : null),
+                getDach,
+            });
+        };
         const runCliff = (computeFn) => {
             const SOLID = AR.CELL_STATE.SOLID;
             const WATER = AR.CELL_STATE.WATER;
@@ -1467,17 +1480,7 @@ async function checkBandWasserWahrheit({ page, check }) {
                     }
                 }
             }
-            const shim = Object.create(r);
-            shim.state = { terrainBaseHeight: 0, waterLevel: 0 };
-            shim._atlasWaterLevelAt = () => -Infinity; // top = faceY exakt (pur)
-            shim._hydroRiverAt = () => null;
-            shim._hydrosphereLakeAt = () => false;
-            const ctx = {
-                smoothPasses: 4,
-                getCells: (ncx, ncz) => (ncx === 0 && ncz === 0 ? cells : null),
-                getDach: () => undefined,
-            };
-            const data = computeFn.call(shim, 0, 0, ctx);
+            const data = sheetAus(computeFn, cells, () => undefined);
             if (!data) return { built: false };
             const oy = 0 - cfg0.floorDrop;
             const valleyFace = oy + 10 * step; // Flut-Dach des Tals (floodTopJ=9 → +10·step)
@@ -1735,17 +1738,7 @@ async function checkBandWasserWahrheit({ page, check }) {
             }
             const dach = new Float64Array(dimSq).fill(41);
             dach[12 + 12 * dim] = -1; // die geleerte Spalte
-            const shim = Object.create(r);
-            shim.state = { terrainBaseHeight: 0, waterLevel: 0 };
-            shim._atlasWaterLevelAt = () => -Infinity;
-            shim._hydroRiverAt = () => null;
-            shim._hydrosphereLakeAt = () => false;
-            const ctx = {
-                smoothPasses: 4,
-                getCells: (ncx, ncz) => (ncx === 0 && ncz === 0 ? cells : null),
-                getDach: (ncx, ncz) => (ncx === 0 && ncz === 0 ? dach : undefined),
-            };
-            const data = computeFn.call(shim, 0, 0, ctx);
+            const data = sheetAus(computeFn, cells, (ncx, ncz) => (ncx === 0 && ncz === 0 ? dach : undefined));
             const faceY = 0 - cfg0.floorDrop + 41 * step;
             let minY = Infinity;
             const pos = data ? data.positions : [];

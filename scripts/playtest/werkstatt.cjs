@@ -13,19 +13,7 @@ const SKRIPTE = path.join(__dirname, "..");
 async function checkBandOmegaWerkstattSpiegel({ page, check }) {
     const res = await page.evaluate(() => {
         const C = r.constructor;
-        const mats = r.state.materials || {};
-        let dense = mats.eisen ? "eisen" : null,
-            light = mats.holz ? "holz" : null;
-        if (!dense || !light) {
-            let dd = -1,
-                ld = 2;
-            for (const m in mats) {
-                const d = mats[m] && mats[m].tags && mats[m].tags.dichte;
-                if (typeof d !== "number") continue;
-                if (d > dd) ((dd = d), (dense = m));
-                if (d < ld) ((ld = d), (light = m));
-            }
-        }
+        const { dense, light } = __dichtLeicht();
         const pt = (x, y, z, sx, sy, sz, m) => ({
             position: { x, y, z },
             size: { x: sx, y: sy, z: sz },
@@ -629,8 +617,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
 
             // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
-            if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
-            r.cloneBlueprint("stein_block", "test_phase3");
+            __probeBauplan("test_phase3");
             r.selectBlueprintForEdit("test_phase3");
             r._workshopEnsurePreview();
             const partsBefore = r.state.blueprints.test_phase3.parts.length;
@@ -760,8 +747,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
-            r.cloneBlueprint("stein_block", "test_v803");
+            __probeBauplan("test_v803");
             r.selectBlueprintForEdit("test_v803");
             r._workshopEnsurePreview();
             const pre = r.state.workshop.preview;

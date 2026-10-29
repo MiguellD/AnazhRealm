@@ -201,13 +201,16 @@ if (require.main === module) hauptLauf(async () => {
                 x: h.originX + ((q % h.dim) + 0.5) * h.cell,
                 z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell,
             });
-            let ort = null;
-            if (art === "see") {
-                const step = 64;
-                const n = 375;
-                const kand = G.benannteSeen(L, -12000, -12000, step, n)
+            // die benannten Senken auf dem 64-m-Raster um den Ursprung, nächste zuerst (der See und die Höhle unter ihm)
+            const seeKand = () => {
+                const [step, n] = [64, 375];
+                return G.benannteSeen(L, -12000, -12000, step, n)
                     .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
                     .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+            };
+            let ort = null;
+            if (art === "see") {
+                const kand = seeKand();
                 for (const k of kand) {
                     await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
@@ -233,11 +236,7 @@ if (require.main === module) hauptLauf(async () => {
                             for (const ez of [-S / 2, S / 2]) d += r._terrainDensityAt(cx + ex, cy + ey, cz + ez);
                     return d > 0;
                 };
-                const step = 64;
-                const n = 375;
-                const kand = G.benannteSeen(L, -12000, -12000, step, n)
-                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
-                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+                const kand = seeKand();
                 const geprueft = new Set();
                 for (const k of kand.slice(0, 6)) {
                     if (ort) break;
@@ -378,6 +377,87 @@ if (require.main === module) hauptLauf(async () => {
             size: { x: sx, y: sy, z: sz },
             ...rest,
         });
+        // DER PROBE-BAUPLAN der Bänder: `name` frisch aus stein_block (ein alter seines Namens fällt vorher), mit `parts` danach
+        // dessen Teile; Rückgabe der Bauplan. Vorher schrieb jedes Band Löschen und Klonen selbst (30 in 4 Domänen).
+        window.__probeBauplan = (name, parts) => {
+            if (r.state.blueprints[name]) r.deleteBlueprint(name);
+            r.cloneBlueprint("stein_block", name);
+            if (parts) r.state.blueprints[name].parts = parts;
+            return r.state.blueprints[name];
+        };
+        // DIE LEERE SIEDLUNG: jedes Bauwerk aus der Szene genommen und entsorgt, die Liste leer (6 Räumungen der Siedlungs-Bänder).
+        window.__bautenLeer = () => {
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+        };
+        // DIE LEERE KREATUR-LISTE: Liste und Gefühle frisch (am vollen maxCreatures-Cap gäbe spawnCreatureAt null); Rückgabe die
+        // Rückkehr — die Kreaturen der Probe fallen, die alte Liste kehrt zurück (4 Proben der Kreatur-Stimme).
+        window.__kreaturenLeer = () => {
+            const [liste, gefuehle] = [r.state.creatures, r.state.creatureEmotions];
+            r.state.creatures = [];
+            r.state.creatureEmotions = [];
+            return () => {
+                for (const k of r.state.creatures.slice()) r.removeCreature(k);
+                r.state.creatures = liste;
+                r.state.creatureEmotions = gefuehle;
+            };
+        };
+        // DIE GEFLÜGELTE SEELE der Bänder (Rumpf + zwei Spiegel-Planes aus federn), je Ruf frisch (3 Proben: Animation, Netz, Rollen).
+        window.__fluegelTeile = () => [
+            { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
+            { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: 0.62, y: 0.55, z: 0 } },
+            { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: -0.62, y: 0.55, z: 0 } },
+        ];
+        // DER MENSCHEN-LEIB der Bänder aus fleisch (Rumpf, zwei Arme, zwei Beine), je Ruf frisch (2 Proben: Körper-Form, Avatar-Passung).
+        window.__leibTeile = () => [
+            __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
+            __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
+            __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
+        ];
+        // DAS STOFF-PAAR der Physik-Proben: { dense, light } = eisen und holz, fehlt einer, der dichteste und der leichteste Stoff
+        // der Tafel (Ω-Physis Säule I/II und der Werkstatt-Spiegel).
+        window.__dichtLeicht = () => {
+            const mats = r.state.materials || {};
+            let dense = mats.eisen ? "eisen" : null,
+                light = mats.holz ? "holz" : null;
+            if (!dense || !light) {
+                let dd = -1,
+                    ld = 2;
+                for (const m in mats) {
+                    const d = mats[m] && mats[m].tags && mats[m].tags.dichte;
+                    if (typeof d !== "number") continue;
+                    if (d > dd) ((dd = d), (dense = m));
+                    if (d < ld) ((ld = d), (light = m));
+                }
+            }
+            return { dense, light };
+        };
+        // DIE DACH-HÖHE eines Bauwerks-Eintrags: die Welt-Box seines Mesh, instanziert die Vereinigung der Blatt-Boxen × die
+        // Welt-Matrix des Eintrags; null ohne beides (die Erdung auf dem Dach, zwei Proben der Kollision).
+        window.__bauDachY = (entry) => {
+            if (entry && entry.mesh) return new THREE.Box3().setFromObject(entry.mesh).max.y;
+            if (!(entry && entry.instanced)) return null;
+            const flat = r._archFlattenBlueprint(entry.type);
+            const ew = r._archEntryWorldMatrix(entry);
+            const wbox = new THREE.Box3();
+            const lbox = new THREE.Box3();
+            const lw = new THREE.Matrix4();
+            wbox.makeEmpty();
+            for (const leaf of flat.leaves) {
+                if (!leaf.geom || !leaf.geom.boundingBox) continue;
+                lw.multiplyMatrices(ew, leaf.localMatrix);
+                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+                wbox.union(lbox);
+            }
+            return wbox.isEmpty() ? null : wbox.max.y;
+        };
         // DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE frozen Tabelle. Bänder proben
         // r[window.__anker.X] — zieht ein Symbol um, wandert EINE Zeile; diag-apparat.cjs hält jeden Eintrag
         // gegen den lebenden Stamm-Code.

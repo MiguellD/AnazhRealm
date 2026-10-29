@@ -32,12 +32,7 @@ function wasserTier(r, x, y, z, seele) {
 }
 // DER ZUFALL der Proben (mulberry32 aus der Saat `hs`): je Ruf eine Zahl in [0, 1)
 function wasserZufall(hs) {
-    return () => {
-        hs = (hs + 0x6d2b79f5) >>> 0;
-        let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    return __phytoCore.mulberry32(hs);
 }
 
 // ── Q7-Gestalt ──

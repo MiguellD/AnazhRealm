@@ -111,21 +111,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         const wRoles = (r.computeMotionRoles(r.state.blueprints.koerper_human.parts) || []).filter(Boolean);
         // Flat-Formel: Platte = mid/min (nicht max/min) → dünne Wächter-Seiten-Zylinder lesen als ARME.
         // Die fluegel-Emergenz prüft ein LITERAL-Paar Spiegel-Planes (computeMotionRoles ist pur).
-        const wingParts = [
-            { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: 0.62, y: 0.55, z: 0 },
-            },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: -0.62, y: 0.55, z: 0 },
-            },
-        ];
+        const wingParts = __fluegelTeile();
         out.motionRolesEmerge =
             wRoles.some((x) => x.role === "bein") &&
             wRoles.some((x) => x.role === "arm" || x.role === "fluegel") &&

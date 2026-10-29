@@ -259,19 +259,7 @@ async function checkBandOmegaPhi1CoM({ page, check }) {
 async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
     const res = await page.evaluate(() => {
         const C = r.constructor;
-        const mats = r.state.materials || {};
-        let dense = mats.eisen ? "eisen" : null,
-            light = mats.holz ? "holz" : null;
-        if (!dense || !light) {
-            let dd = -1,
-                ld = 2;
-            for (const m in mats) {
-                const d = mats[m] && mats[m].tags && mats[m].tags.dichte;
-                if (typeof d !== "number") continue;
-                if (d > dd) ((dd = d), (dense = m));
-                if (d < ld) ((ld = d), (light = m));
-            }
-        }
+        const { dense, light } = __dichtLeicht();
         const P = (parts, connections) => ({ parts, connections });
         const pt = (x, y, z, sx, sy, sz, m, shape, rot) => ({
             position: { x, y, z },
@@ -2243,8 +2231,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
 
             // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
-            if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
-            r.cloneBlueprint("stein_block", "test_9a_empty");
+            __probeBauplan("test_9a_empty");
             // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
             r.applyOpToPart("test_9a_empty", 0, "hände");
             out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
@@ -2264,8 +2251,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             if (!r.state.player.tools.includes("test_forge_hammer")) {
                 r.state.player.tools.push("test_forge_hammer");
             }
-            if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
-            r.cloneBlueprint("stein_block", "test_9a_forging");
+            __probeBauplan("test_9a_forging");
             // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
             // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
             r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
@@ -2291,8 +2277,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             if (!r.state.player.tools.includes("test_alchemy_mortar")) {
                 r.state.player.tools.push("test_alchemy_mortar");
             }
-            if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
-            r.cloneBlueprint("stein_block", "test_9a_alchemy");
+            __probeBauplan("test_9a_alchemy");
             r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
             r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
             out.alchemyRoleIsConsumable = r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
@@ -2311,14 +2296,12 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             if (!r.state.player.tools.includes("test_lathe")) {
                 r.state.player.tools.push("test_lathe");
             }
-            if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
-            r.cloneBlueprint("stein_block", "test_9a_mech");
+            __probeBauplan("test_9a_mech");
             r.applyOpToPart("test_9a_mech", 0, "test_lathe");
             out.mechanismRoleIsMachine = r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
 
             // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
-            if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
-            r.cloneBlueprint("stein_block", "test_9a_emergent");
+            __probeBauplan("test_9a_emergent");
             r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
             out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
 
@@ -2465,8 +2448,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             // UI: Werkstatt-Status zeigt Rolle live nach Edit
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
-            r.cloneBlueprint("stein_block", "test_9b");
+            __probeBauplan("test_9b");
             r.selectBlueprintForEdit("test_9b");
             r._renderWorkshopDOM();
             // die Rolle wird im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
@@ -2572,8 +2554,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             r.setGameMode("pfad");
 
             // Forging-Bauplan vorbereiten
-            if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
-            r.cloneBlueprint("stein_block", "test_9c_forging");
+            __probeBauplan("test_9c_forging");
             r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
 
@@ -2658,8 +2639,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         const out = {};
         try {
             // Maschinen-Bonus
-            if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
-            r.cloneBlueprint("stein_block", "test_9d_machine");
+            __probeBauplan("test_9d_machine");
             r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
             // setBlueprintToolMeta setzt role=tool; force machine:
             r.state.blueprints.test_9d_machine.role = "machine";
@@ -2675,8 +2655,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             }
 
             // Ohne machine: kein Bonus
-            if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
-            r.cloneBlueprint("stein_block", "test_9d_normaltool");
+            __probeBauplan("test_9d_normaltool");
             r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
             const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
             r.registerBlueprintAsTool("test_9d_normaltool");
@@ -2685,8 +2664,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             out.normalToolNotMachine = toolNoBonus && toolNoBonus.isMachine === false;
 
             // Seelen-Bauplan
-            if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
-            r.cloneBlueprint("stein_block", "test_9d_soul");
+            __probeBauplan("test_9d_soul");
             r.state.blueprints.test_9d_soul.role = "soul";
             r.state.blueprints.test_9d_soul.roleManual = true;
             const soulBefore = r.state.player.soul;
@@ -2789,10 +2767,8 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
             // Custom-Soul mit opChain auf bodyParts → Stats * soulMul
             // Synthese: Soul-Bauplan + opChain
-            if (r.state.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
-            r.cloneBlueprint("stein_block", "test_10a_soul");
             // Setze role:soul + opChain auf alle parts (simuliert "roh gebauter Soul")
-            const bp = r.state.blueprints.test_10a_soul;
+            const bp = __probeBauplan("test_10a_soul");
             bp.role = "soul";
             bp.roleManual = true;
             for (const p of bp.parts) {
@@ -2822,9 +2798,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             // Tool-Precision-Multiplier in computePlayerStats
             // Wir registrieren einen eigenen Bauplan als Tool und prüfen ob die
             // Tool-Tags mit Präzision multipliziert werden.
-            if (r.state.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
-            r.cloneBlueprint("stein_block", "test_10a_tool");
-            const toolBp = r.state.blueprints.test_10a_tool;
+            const toolBp = __probeBauplan("test_10a_tool");
             for (const p of toolBp.parts) {
                 p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
             }

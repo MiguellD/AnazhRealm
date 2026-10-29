@@ -932,13 +932,7 @@ async function checkBandV1784AvatarFormFit({ page, check }) {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const p = r.state.player;
         const out = {};
-        const bodyParts = [
-            __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
-            __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
-            __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
-            __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
-            __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
-        ];
+        const bodyParts = __leibTeile();
         const blobParts = [
             __teil("box", "fleisch", 0, 0, 0, 1.5, 1.5, 1.5),
         ];

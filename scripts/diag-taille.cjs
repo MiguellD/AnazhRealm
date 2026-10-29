@@ -57,6 +57,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
 
                 // ──────────────────────── MESSEN: die Matrix ────────────────────────
                 const M = out.matrix;
+                // das EINE Teil der Proben-Baupläne (ein Stein-Würfel mit einer Hand-Spur), `mehr` überschreibt
+                const teil = (mehr) => ({ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, rotation: { x: 0, y: 0, z: 0 }, opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }], ...mehr }); // prettier-ignore
 
                 // RT1 — Rezepte-Import: überlebt xZukunft auf Bauplan/Material/Tags?
                 {
@@ -67,14 +69,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                                 name: "rt1_bp",
                                 label: "RT1",
                                 parts: [
-                                    {
-                                        shape: "box",
-                                        material: "stein",
-                                        position: { x: 0, y: 0, z: 0 },
-                                        size: { x: 1, y: 1, z: 1 },
-                                        rotation: { x: 0, y: 0, z: 0 },
-                                        opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                                    },
+                                    teil(),
                                 ],
                                 connections: [],
                                 xZukunft: { a: 1 },
@@ -112,14 +107,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                         label: "RT2",
                         builtIn: false,
                         parts: [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                            },
+                            teil(),
                         ],
                         connections: [],
                         xZukunft: { c: 3 },
@@ -186,14 +174,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                         label: "Gott-Mauer",
                         builtIn: false,
                         parts: [
-                            {
-                                shape: "box",
-                                material: "rt_gott",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                            },
+                            teil({ material: "rt_gott", size: { x: 2, y: 2, z: 2 } }),
                         ],
                         connections: [],
                     };

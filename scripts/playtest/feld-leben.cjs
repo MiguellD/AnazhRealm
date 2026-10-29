@@ -613,24 +613,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         // temple ist jetzt instanced (kein entry.mesh). Die
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
-        let topY = null;
-        if (entry && entry.mesh) {
-            topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry && entry.instanced) {
-            const flat = r._archFlattenBlueprint(entry.type);
-            const ew = r._archEntryWorldMatrix(entry);
-            const wbox = new THREE.Box3();
-            const lbox = new THREE.Box3();
-            const lw = new THREE.Matrix4();
-            wbox.makeEmpty();
-            for (const leaf of flat.leaves) {
-                if (!leaf.geom || !leaf.geom.boundingBox) continue;
-                lw.multiplyMatrices(ew, leaf.localMatrix);
-                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
-                wbox.union(lbox);
-            }
-            topY = wbox.isEmpty() ? null : wbox.max.y;
-        }
+        const topY = __bauDachY(entry);
         if (entry && topY !== null) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
@@ -756,24 +739,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             : "null";
         let flatBlueprintNotSteep = false;
         // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
-        let topYA3 = null;
-        if (_entryA3 && _entryA3.mesh) {
-            topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3 && _entryA3.instanced) {
-            const flat = r._archFlattenBlueprint(_entryA3.type);
-            const ew = r._archEntryWorldMatrix(_entryA3);
-            const wbox = new THREE.Box3();
-            const lbox = new THREE.Box3();
-            const lw = new THREE.Matrix4();
-            wbox.makeEmpty();
-            for (const leaf of flat.leaves) {
-                if (!leaf.geom || !leaf.geom.boundingBox) continue;
-                lw.multiplyMatrices(ew, leaf.localMatrix);
-                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
-                wbox.union(lbox);
-            }
-            topYA3 = wbox.isEmpty() ? null : wbox.max.y;
-        }
+        const topYA3 = __bauDachY(_entryA3);
         if (_entryA3 && topYA3 !== null) {
             // Setze Spieler knapp über die Top-Fläche
             r.state.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);

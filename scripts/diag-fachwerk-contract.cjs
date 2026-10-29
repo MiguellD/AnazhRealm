@@ -313,9 +313,7 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
         let schlimm = 0;
         for (const a of t.lai) {
             if (a[1] < 0.02) continue; // das Lager auf dem Kämpfer ist keine Stoßfuge
-            const q = t.ruecken
-                .slice()
-                .sort((x, y) => Math.hypot(x[0] - a[0], x[1] - a[1]) - Math.hypot(y[0] - a[0], y[1] - a[1]))[0];
+            const q = fuge(t, a);
             if (!q) continue;
             const fx = q[0] - a[0];
             const fy = q[1] - a[1];

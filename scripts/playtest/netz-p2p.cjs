@@ -1999,21 +1999,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 
         // soul-Nachricht (geflügelte Compound-Seele) → echte Seele + Name-Schild. Peers reisen als
         // Compound-Seelen aus bodyParts; benannte Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
-        const WING_PARTS = [
-            { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: 0.62, y: 0.55, z: 0 },
-            },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: -0.62, y: 0.55, z: 0 },
-            },
-        ];
+        const WING_PARTS = __fluegelTeile();
         r.p2pHandleMessage(
             JSON.stringify({
                 type: "soul",

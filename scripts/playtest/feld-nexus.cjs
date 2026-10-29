@@ -443,15 +443,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = r.state.creatures;
-        const __savedE = r.state.creatureEmotions;
-        r.state.creatures = [];
-        r.state.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
-            r.state.creatures = __savedC;
-            r.state.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
         c.userData.name = "TestNira";
         out.findExact = r._findCreatureByName("TestNira") === c;
@@ -626,15 +618,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = r.state.creatures;
-        const __savedE = r.state.creatureEmotions;
-        r.state.creatures = [];
-        r.state.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
-            r.state.creatures = __savedC;
-            r.state.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "fuchs");
         cSprite.userData.name = "TestSpriteV11";
         const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
@@ -750,15 +734,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = r.state.creatures;
-        const __savedE = r.state.creatureEmotions;
-        r.state.creatures = [];
-        r.state.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
-            r.state.creatures = __savedC;
-            r.state.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "fuchs");
         cSprite.userData.name = "ProacSprite";
         cSprite.userData.lastProactiveSpeech = -Infinity;
@@ -971,15 +947,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = r.state.creatures;
-        const __savedE = r.state.creatureEmotions;
-        r.state.creatures = [];
-        r.state.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
-            r.state.creatures = __savedC;
-            r.state.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
         c.userData.name = "TestProgramKreatur";
         const prompt = r._buildCreaturePersonaPrompt(c);
@@ -1214,8 +1182,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             if (delBtn) out.delBtnInitiallyDisabled = delBtn.disabled === true;
 
             // Klone eigenen Bauplan + Part selektieren → Del-Btn enabled
-            if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
-            r.cloneBlueprint("stein_block", "test_v805");
+            __probeBauplan("test_v805");
             r.selectBlueprintForEdit("test_v805");
             r._workshopSetSelection(0);
             out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
@@ -1364,8 +1331,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             const moveBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode='translate']");
             out.modeBtnDisabledOnBuiltIn = moveBtn && moveBtn.disabled === true;
             // Bei eigenem Bauplan: alle wieder enabled
-            if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
-            r.cloneBlueprint("stein_block", "test_v807");
+            __probeBauplan("test_v807");
             r.selectBlueprintForEdit("test_v807");
             out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
 
