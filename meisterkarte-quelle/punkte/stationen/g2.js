@@ -1725,6 +1725,83 @@ const stationen = [
         quelle: "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät",
     },
     {
+        kriterium: "mensch.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // DIE STADT LEBT (Zweig w3u-stadt-leben): EINE Werkbank-Sitzung `--echt` (save-server und Werkbank wie M40) am Messort
+        // stadt-voll (spec/profiband/haushalt.json: „dorf 7 300" am Anker, die Metropole, der Spieler am Markt, Third). Darin die
+        // Linse `bewohner --ort stadt-voll` im Fenster (um 7 Uhr 600 Takte zu 1/60 s am echten Bewohner-Takt, dann Bewohner
+        // gesamt, im Nah-Ring der Feld-Grenze draußen und davon mit laufendem Gang), danach `haenger 20 --regler voll --tiere
+        // frei` im echten Loop: Frame p95 und CPU-Takt p95 gegen das Profi-Band (PFLICHT-OFFEN E: ≤ 33 ms, ≤ 5,8 ms — das ABAB an
+        // der GTX bleibt ein Lauf des Richter-Zugs, die Station hält das Band). Headless (Null-Renderer, 1920x1080, Laptop 29.10.,
+        // Zweig w3u-stadt-leben b361f456): 1 094 Bewohner, im Nah-Ring (19,8 m) 136–142 draußen, 40–50 mit laufendem Gang in 12
+        // Läufen (am Rand des Solls); vor dem Zweig 0 Bewohner (die Liste wartete auf die Hüllen der kalten Häuser). Mutanten ROT
+        // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
+        befehl: [
+            "bash",
+            "-c",
+            [
+                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
+                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
+                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
+                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
+                "trap ende EXIT; trap 'exit 143' INT TERM",
+                "raeum; stand",
+                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
+                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
+                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
+                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
+                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "grep -m1 '\\[linse-gpu\\]' \"$B-werkbank.log\"",
+                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
+                "node scripts/werkbank.cjs umstellen --ort stadt-voll --sicht third > \"$B-umstellen.txt\" 2>&1",
+                "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort stadt-voll",
+                "node scripts/werkbank.cjs haenger 20 --regler voll --tiere frei --json \"$B-haenger.json\" > \"$B-haenger.out\" 2>&1; echo \"HAENGER EXIT=$?\"",
+                "node -e 'try{const j=require(process.argv[1]);console.log(\"TAKT \"+JSON.stringify({frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs}))}catch(e){console.log(\"TAKT {}\")}' \"$B-haenger.json\"",
+            ].join("\n"),
+        ],
+        gpu: true,
+        zeit: true,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const z = probeZeile(t, "bewohner");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner im Fenster (kennt sie --ort stadt-voll? Exit " + lauf.exit + ")" };
+            const v = z.voll;
+            if (z.fehler || !v) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "keine volle Stadt") };
+            const k = jsonZeile(t, /^TAKT /) || {};
+            const [f95, c95] = [k.frameMs ? k.frameMs.p95 : null, k.taktMs ? k.taktMs.p95 : null];
+            const stadt = v.gesamt >= 200 && v.nahGang >= 40;
+            const band = k.frames >= 30 && f95 !== null && f95 <= 33 && c95 !== null && c95 <= 5.8;
+            return {
+                gruen: hw && stadt && band,
+                zahl:
+                    "Stadt " + v.gesamt + " Bewohner, im Nah-Ring (" + v.ring + " m) " + v.nah + " draußen, " + v.nahGang +
+                    " mit laufendem Gang (Soll ≥ 200, ≥ 40) · Frame p95 " + f95 + " ms (Soll ≤ 33), CPU-Takt p95 " + c95 +
+                    " ms (Soll ≤ 5,8) in " + k.frames + " Bildern · " + (ad || "Adapter ungenannt"),
+            };
+        },
+        pfad: [
+            "stamm/*.js",
+            "*-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "index.html",
+            "save-server.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/haenger-linse.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
+    },
+    {
         kriterium: "vegetation.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
@@ -3091,18 +3168,7 @@ const stationen = [
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
-const fehlt = [
-    {
-        kriterium: "mensch.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug und Welt fehlen: keine Stadt ≥ 200 Bewohner mit ≥ 40 nah animiert in einer Linse (die Probe bewohner " +
-            "kennt nur das Start-Dorf), das ABAB an der GTX ist ein Lauf des Richter-Zugs, keine Station",
-        quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
-    },
-];
+const fehlt = [];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)
 const sprungVon = (z) => (z.wege && z.wege.sprungN !== undefined ? z.wege.sprungN : z.sprungN);
 
