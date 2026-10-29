@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --verben; e=$?; cp artifacts/werkstatt-weg/weg.json "$PUNKTE_AUS" 2>/dev/null; exit $e
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)
+  ✅ W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)
+  ✅ W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)
+  ✅ W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · _workshopRecipeSpec · dslCompose · generateEvolution · confirmBuild)
+  ✅ W8 EIN Same-Hash (`_werkSame`)
+  ✅ W9 kein zweites LCG im Strom-Gesetz (`_streamRng`)
+[linse-gpu] nvidia/pascal
+=== L-VERBEN — JEDES WERK TRÄGT SEIN VERB, EGAL WER ES SETZTE (Bauen K5) ===
+  ❌ L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte — 32/36 Herkunft × Sicht × Werk — Täter: werkstatt · Ego · Haus: #workshop-search: nicht offen · werkstatt · Ego · Wagen: #workshop-search: nicht offen · geteilt · Ego · Wagen × drive: kein Fahren · geteilt · Third · Wagen × drive: kein Fahren
+
+--- stderr ---
+13:44:39 verwaistes Schloss 'omen-punkte-gtx-1' geloest - pid 16876 lebt nicht
+
+❌ ROT — 1 Verletzung(en): L-Verben jedes Werk trägt sein Verb über die Taste, egal wer es setzte
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 39901 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

@@ -39,3 +39,33 @@ Folge-Schnitt offen: der Session-Läufer hält das GPU-Schloss bis 55 min — Ru
 1. z76 landen (nur MIT w3v-lod). 2. dreissig-minuten vereinen → mess-session pushen → in koordination/punkte-maschine mergen.
 3. Session-Takt am neuen Kopf auf Radeon + GTX (OMEN: punkte-Zeile, alle Proben in EINER Zeile) + Farm headless → **buchen** (BUCHE_KOPF=<sha> bash artifacts/profiband/werkzeug/buche.sh) → Meisterkarte nachziehen.
 4. Session-Läufer: Runner.Worker-Vorrang zwischen Proben. 5. Bilder der Session ansehen und dem Schöpfer schicken (Auge).
+
+## Nachtrag 18:40
+**z77 GELANDET 18:35 → main 715754fc**: w3v-lod (mit der Heilung von (T) ECHT — die Falle ist für alle weiteren Züge zu), stadt-takt-bewohner,
+heil-schwarm-k3, heil-l8-lockstep, w3w-jahrhunderte. Noch nicht gemessen/gebucht. kette36 = z78 (gpu-wahl-bau, w3w-studios, w3v-brand-bild,
+w3w-glanz, w3w-wald, w3w-verkehr, spike-ci-konsum, w3v-licht; Paar-Probe; studios kollidiert in scripts/diag-ofen-contract.cjs und brand-bild in
+spec/stamm/modul-karte.json → je eine Heim-Karte nötig). Mess-Kopf für die nächste Buchung: 715754fc oder z78.
+**18:37 z78 leer:** gegen main 715754fc kollidieren ALLE Reste (gpu-wahl-bau, w3w-studios, w3v-brand-bild grün; w3w-glanz, w3w-wald,
+spike-ci-konsum rot + Konflikt; w3v-licht rot, frei) → erster Schritt nach dem Reset: je Zweig `git merge origin/main` (Heim), dann EIN Zug.
+
+## Nachtrag 18:50 — 30-Minuten-Umbau (Workflow dreissig-minuten) zurück
+mess-session@1536680d: die Wache beendet jede Fahrt nach 30 min (nennt offene Proben), Aufnehmer der Dauerlast im Strom (Bild-p95 67/84 ms,
+VRAM max 148 MB), Linse (a)(b)(c) in liste. Gegenlauf Radeon an b3f9ae95: 2 Fahrten à 1800 s, 69 Läufe, Gleichheit 25/36 (11 Abweichungen
+benannt: affekt.K1#2 altes Urteil falsch; 5 brauchen main statt b3f9ae95; halten.K1#2 CSP verbietet eval; klang.K4 3,5 s Gehen zu kurz;
+leib.K4#1 Deckel; klang.K2#1 Welt ohne Ruhe). **ROT: Σ Deckel 4 780 s > 1 680 s → liste 2 Fehler → auf 1536680d wird NICHT gemessen/gebucht.**
+**NIE 1536680d nach koordination/punkte-maschine mergen, bevor die Summe passt.** Wurzel der Dauer: jede Grundstellung lädt die Seite neu, die
+nächste Probe baut ihren Weltring neu (reißt 45 s). Der Schnitt: Grundstellung OHNE Neuladen (Zustand an Ort und Stelle zurück, Ringe warm),
+dann Proben ≤ 15 s → eine Fahrt ≤ 30 min. Danach Session-Takt am Kopf und buchen.
+
+## NOTBREMSE 19:03 bei 98 % (Woche, Reset 03.11. 09:00)
+Alle lokalen Workflows waren beendet; Wache gestoppt; notbremse.sh: WIP kern-karte @ 3a287c3d2, 122 Bäume sauber, main-Checkout sauber;
+aufraeumen.ps1: 0 Treffer, kein Runner.Worker; GPU-Schloss: .
+Die OMEN fährt takt21b am alten Kopf 98ef98bb weiter (wertlos für die Buchung, ohne Tokens). Der Messplatz-Blick läuft im Terminal-Tab „Messplatz“.
+**Gebucht 138/330. main 715754fc (z77). Erster Schritt nach dem Reset: siehe „Nächste Schritte“ + Nachträge oben.**
+
+## Nachtrag 23:00 (Konto bei 100 %, Übernahme durch das nächste Konto)
+Ohne Tokens laufen noch: **Farm headless am Mess-Kopf 715754fc** (run --offen, Lauf auf GitHub; die Messung pusht die Farm selbst nach
+koordination) und auf der OMEN **z77-abab** (98ef98bb gegen 715754fc, Zellen stadt + w-ego: der ruhige GTX-Beweis des Bewohner-Takts).
+zug/mess-kopf.txt = 715754fc. Sonst läuft nichts; alle Cloud-Karten haben abgegeben (w3w-verkehr fcfd85d7 + -koord 75a93a10 neu).
+Start des nächsten Kontos: (1) Heim der Reste auf 715754fc (Cloud) → EIN Zug; (2) Grundstellung ohne Neuladen (lokal, Beweis = Radeon-Fahrt
+am Mess-Kopf); (3) GTX-Fahrt + Farm-Ergebnis → buchen am 715754fc.

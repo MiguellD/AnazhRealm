@@ -1,0 +1,17 @@
+$ bash -c node scripts/diag-settlement.cjs --nur-j; J=$?; node scripts/diag-settlement.cjs --nur-ww; W=$?; exit $((J > W ? J : W))
+=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===
+JAHRESRINGE {"min":0.915,"paare":[[0.972,0.972,0.979],[1,0.939,0.915],[1,0.972,0.938],[0.972,0.952,0.98],[1,0.972,0.97],[0.944,0.972,0.944],[1,0.956,0.966],[1,0.975,0.966]],"ohneErbe":0.194,"fehl":[],"zahl":[0.958,0.298]}
+  ✅ J1 JAHRESRINGE 0.915, mit Zahl 0.958 (≥ 0,8; ohne Erbe 0.194 · 0.298)
+  ✅ J2 EPOCHE: 0 Brüche, die Mutante 10
+
+✅ GRÜN — DIE JAHRESRINGE STEHEN (Teil J).
+
+=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===
+=== TEIL WW: DAS JAHR UND DAS WACHSTUM IN DER WELT (siedlung.K4) ===
+WELTWACHSTUM {"uhr":1500,"satz":[{"verlangt":"human","seed":7,"nH":300,"jahr":1560},{"verlangt":"human","seed":7,"epoche":"hanse"}],"alt":{"groesse":"dorf","jahr":1412,"slots":12,"haeuser":12,"turm":false,"tracht":["poncho"]},"neu":{"groesse":"stadt","jahr":2007,"slots":37,"haeuser":35,"turm":true,"tracht":["tshirt"]},"takt":true,"nachbar":[1389,1759],"wuchs":{"jahr":1724,"slots":21,"haeuser":21,"erdbau":[313,432],"bleiben":0.917},"haus":[813.9985078522445,300],"ring":{"neu":26,"zumHaus":53.97555076120763,"zumOrt":99.76457577802566}}
+  ✅ WW1 DAS JAHR: Satz · 1320 · 1935 300,1560,,,,hanse · dorf,false,poncho,stadt,true,tshirt, Häuser 12/12 · 35/37
+  ✅ WW3 KERN EINES RINGS: 26 neue Häuser, Median 53.97555076120763 m vom Haus, 99.76457577802566 m vom Ort
+  ✅ WW4 JEDER NAHE ORT JE TAKT: der Nachbar 1389,1759
+  ✅ WW2 DAS WACHSTUM in 1500 s: 1412 → 1724, Häuser 12 → 21/21, die alten 0.917, Erdbau 313,432
+
+✅ GRÜN — DAS JAHR UND DAS WACHSTUM STEHEN IN DER WELT (Teil WW).

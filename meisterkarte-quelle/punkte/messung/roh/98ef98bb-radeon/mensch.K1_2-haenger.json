@@ -1,0 +1,233 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "serie": null,
+  "ladungen": 1
+ },
+ "schwelle": 100,
+ "sekunden": 20,
+ "takte": 445,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 0,
+  "shader": 0,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 0,
+  "ms": 0,
+  "maxMs": 0,
+  "ueber16": 0,
+  "jeAuftragMs": {}
+ },
+ "bildTaktMs": 44,
+ "frames": 436,
+ "frameMs": {
+  "p50": 41.9,
+  "p95": 67,
+  "p99": 92.1,
+  "max": 100.4
+ },
+ "taktMs": {
+  "p50": 42.6,
+  "p95": 57.1,
+  "p99": 91.9,
+  "max": 98.1
+ },
+ "haengerN": 3,
+ "jeKlasse": {
+  "TAKT": 3,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [
+  {
+   "ursache": "TAKT: verteilt",
+   "klasse": "TAKT",
+   "n": 2,
+   "summeMs": 201,
+   "maxMs": 100
+  },
+  {
+   "ursache": "TAKT: _gpuKehraus › traverse [three.core.min.js]",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 100,
+   "maxMs": 100
+  }
+ ],
+ "haenger": [
+  {
+   "t": 2,
+   "dt": 100.4,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 95,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_perfSenseFoldFrame",
+     "pct": 44
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 20
+    },
+    {
+     "name": "_loopWeatherAndGrowth",
+     "pct": 20
+    }
+   ],
+   "selbst": [
+    {
+     "name": "traverse [three.core.min.js]",
+     "pct": 31
+    },
+    {
+     "name": "(anonym) [stamm/dirigent-regler.js:1355]",
+     "pct": 10
+    },
+    {
+     "name": "_tickBewohner",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 16062,
+   "dt": 100.2,
+   "klasse": "TAKT",
+   "name": "_gpuKehraus › traverse [three.core.min.js]",
+   "ursache": "TAKT: _gpuKehraus › traverse [three.core.min.js]",
+   "zeiten": {
+    "TAKT": 93,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_loopRender",
+     "pct": 52
+    },
+    {
+     "name": "_gpuKehraus",
+     "pct": 51
+    },
+    {
+     "name": "traverse [three.core.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "traverse [three.core.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "_tickBewohner",
+     "pct": 6
+    },
+    {
+     "name": "erdbauY [gelaende-core.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 18088,
+   "dt": 100.4,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 98,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopRender",
+     "pct": 40
+    },
+    {
+     "name": "_loopWeatherAndGrowth",
+     "pct": 26
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 24
+    }
+   ],
+   "selbst": [
+    {
+     "name": "traverse [three.core.min.js]",
+     "pct": 38
+    },
+    {
+     "name": "_tickBewohner",
+     "pct": 11
+    },
+    {
+     "name": "_loopWeatherAndGrowth",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  }
+ ],
+ "marken": 445,
+ "profil": true,
+ "probe": [],
+ "lauf": {
+  "regler": "voll",
+  "tiere": "frei",
+  "wandern": "aus",
+  "kreaturen": 7,
+  "chunks": 81,
+  "loadScale": 1,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "verschoben": 0,
+  "pipeAsync": 0,
+  "neubauN": 0,
+  "offen": 0
+ },
+ "sprung": null,
+ "befunde": [],
+ "tabelle": "HÄNGER-LINSE: 3 Frames > 100 ms in 20 s (436 Frames, 445 Takte; Frame p50/p95/p99/max 41.9/67/92.1/100.4 ms) — TAKT 3 · NEBEN 0 · GC 0 · GPU 0\nLauf: Regler voll · Tiere frei (7) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Proben ja (445 Takt-Marken)\nPipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module\nErst-Zeichnung: 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)\nKnoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms\n\n   n    Σ ms   max ms  Ursache\n   2     201      100  TAKT: verteilt\n   1     100      100  TAKT: _gpuKehraus › traverse [three.core.min.js]\n\nJe Hänger (t = ms seit Mess-Beginn):\n  t=2 dt=100.4 ms (1 Takte, 0 ohne Bild) [TAKT 95 · NEBEN 3] TAKT: verteilt\n      Zweige: _perfSenseFoldFrame 44% · renderer._renderScene 20% · _loopWeatherAndGrowth 20%\n      Selbst: traverse [three.core.min.js] 31% · (anonym) [stamm/dirigent-regler.js:1355] 10% · _tickBewohner 6%\n      Gerät: texKB 512\n  t=16062 dt=100.2 ms (1 Takte, 0 ohne Bild) [TAKT 93 · NEBEN 2] TAKT: _gpuKehraus › traverse [three.core.min.js]\n      Pfad: _loopRender 52% › _gpuKehraus 51% › traverse [three.core.min.js] 51%\n      Selbst: traverse [three.core.min.js] 51% · _tickBewohner 6% · erdbauY [gelaende-core.js] 5%\n      Gerät: texKB 512\n  t=18088 dt=100.4 ms (1 Takte, 0 ohne Bild) [TAKT 98 · NEBEN 1] TAKT: verteilt\n      Zweige: _loopRender 40% · _loopWeatherAndGrowth 26% · renderer._renderScene 24%\n      Selbst: traverse [three.core.min.js] 38% · _tickBewohner 11% · _loopWeatherAndGrowth 4%\n      Gerät: texKB 512"
+}

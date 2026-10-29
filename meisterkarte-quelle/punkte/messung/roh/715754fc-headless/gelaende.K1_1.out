@@ -1,0 +1,40 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-worker-dichte.cjs --studio --selftest --json /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/715754fc-headless/gelaende.K1_1.json
+
+========= DIE STUDIO-PROBE — Gelände-Studio → EIN Plan → Welt-Tür → Welt, byte-gleich =========
+  Boot unter dem Studio: 5205 ms (Seed studio-probe-fremd)
+  Start über der fremden Welt: zeigt A · Abweichung „Die Welt trägt, was kein Plan trägt: rampe · Basis 7 m → 0 m — „Welt bauen" legt sie ohne es."
+  A über der fremden Welt (Basis 7 m, Meer -3 m, Terme wildnis+rampe): Makro e25f09b8dbc95bc0 = Welt e25f09b8dbc95bc0 · Statistik =
+  Start: Saat studio-probe-fremd · Raster fc0a35948a2c · Senken>1m 0.38/km² · θ 0.622 · Dorfplätze 59
+    ✓ kontinent land              0.35 → 0.55   382 ms · Senken 0.25/km² · θ 0.505 R² 0.837 · Hammond 78 · Plätze 51
+    ✓ kontinent kontinentLambda   9000 → 11000  348 ms · Senken 0.25/km² · θ 0.485 R² 0.805 · Hammond 78 · Plätze 52
+    ✓ kontinent hoehe                1 → 1.2    364 ms · Senken 0.31/km² · θ 0.471 R² 0.849 · Hammond 74 · Plätze 40
+    ✓ kontinent rauhLambda        3200 → 3600   355 ms · Senken 0.19/km² · θ 0.414 R² 0.91 · Hammond 74 · Plätze 42
+    ✓ taeler    netzDichte           1 → 1.2    542 ms · Senken 0.5/km² · θ 0.401 R² 0.827 · Hammond 67 · Plätze 54
+    ✓ taeler    talForm            1.3 → 1.5    394 ms · Senken 0.43/km² · θ 0.384 R² 0.811 · Hammond 73 · Plätze 55
+    ✓ taeler    trog               0.7 → 0.9    411 ms · Senken 0.43/km² · θ 0.4 R² 0.826 · Hammond 74 · Plätze 56
+    ✓ taeler    aue                  1 → 1.2    415 ms · Senken 0.68/km² · θ 0.401 R² 0.773 · Hammond 78 · Plätze 61
+    ✓ taeler    ks                   6 → 8      391 ms · Senken 0.8/km² · θ 0.294 R² 0.706 · Hammond 78 · Plätze 56
+    ✓ taeler    theta             0.45 → 0.49   399 ms · Senken 0.68/km² · θ 0.47 R² 0.828 · Hammond 80 · Plätze 64
+    ✓ kliffs    tafel              0.5 → 0.7    402 ms · Senken 0.31/km² · θ 0.478 R² 0.823 · Hammond 80 · Plätze 63
+    ✓ kliffs    kliffWinkel         74 → 78     405 ms · Senken 0.31/km² · θ 0.478 R² 0.823 · Hammond 80 · Plätze 63
+    ✓ kliffs    schuttWinkel        35 → 37     397 ms · Senken 0.31/km² · θ 0.478 R² 0.822 · Hammond 80 · Plätze 63
+    ✓ kliffs    pedimentWinkel     2.5 → 4.5    389 ms · Senken 0.31/km² · θ 0.455 R² 0.829 · Hammond 79 · Plätze 64
+    ✓ kliffs    schichtDicke        26 → 30     398 ms · Senken 0.31/km² · θ 0.455 R² 0.829 · Hammond 79 · Plätze 64
+    ✓ kliffs    hartAnteil        0.55 → 0.35   458 ms · Senken 0.31/km² · θ 0.455 R² 0.829 · Hammond 79 · Plätze 64
+    ✓ rauheit   rinnen               1 → 1.2    400 ms · Senken 0.31/km² · θ 0.453 R² 0.827 · Hammond 80 · Plätze 63
+    ✓ rauheit   detail             0.6 → 0.8    382 ms · Senken 0.31/km² · θ 0.458 R² 0.833 · Hammond 79 · Plätze 63
+  Export: 423 Bytes · Saat studio-probe-fremd · 18 Regler · Makro b91513103dff4c9c
+    Preset mittelgebirge  senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.31/km² · θ 0.396 R² 0.826 · Hammond 96 · Plätze 71)
+    Preset alpental       senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.06/km² · θ 0.342 R² 0.656 · Hammond 84 · Plätze 48)
+    Preset tafelland      senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht ✓ (Senken 0.56/km² · θ 0.503 R² 0.916 · Hammond 93 · Plätze 66 · K/S/P 0.036/0.137/0.389)
+    Preset kueste         senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.08/km² · θ 0.512 R² 0.967 · Hammond 81 · Plätze 50)
+  Import: Welt-Tor „Ersetzen" → Reload → Boot 4103 ms (Seed studio-probe-fremd)
+  Welt: Makro b91513103dff4c9c = Studio · Statistik = (Senken 0.31/km² · θ 0.458 · Dorfplätze 63)
+  Schnee: Welt 3843 Zellen · Karte ohne Welt 0 · Welt ohne Karte 0 · Farbe der Karte 235,237,255 = Palette 15461887
+  SELBSTTEST: die Schnee-Wand nennt eine Karte ohne Schnee (3843 Zellen Welt-Schnee ohne Karte)
+  SELBSTTEST: ein Schritt am Regler „hoehe" ändert den Abdruck (die Linse sieht ihn)
+  SELBSTTEST: die Start-Wand nennt den Täter (Start auf B, Rampe und Basis verschwiegen, nichts sichtbar)
+  SELBSTTEST: die Preset-Wand nennt den Täter (senken, kein Schicht-Gesetz)
+
+✅ STUDIO-PROBE GRÜN: 18/18 Regler gegriffen, tot 0 · Export 1 · Welt = Studio byte-gleich · 33 s
+

@@ -912,3 +912,9 @@
 2026-10-29 17:42:14 takt21b-gtx speicher.K2#1 GRÜN 3.5 · 48/50
 2026-10-29 17:46:03 takt21b-gtx speicher.K2#2 ROT 3.7 · 49/50
 2026-10-29 17:47:31 takt21b-gtx speicher.K4#2 ROT 1.4 · 50/50
+2026-10-29 22:58:00 z77-abab START 2 Zellen
+2026-10-29 23:17:14 z77-abab stadt VERLÄNGERN 19.2 · 1/2 (2+2)
+2026-10-29 23:31:07 z77-abab w-ego VERLÄNGERN 13.8 · 2/2 (2+2)
+2026-10-29 23:48:56 z77-abab stadt(4+4) nicht-langsamer 17.7 · verlängert (4+4)
+2026-10-30 00:02:54 z77-abab w-ego(4+4) nicht-langsamer 13.9 · verlängert (4+4)
+2026-10-30 00:03:10 takt22-gtx START 63 Stationen in 20 Läufen

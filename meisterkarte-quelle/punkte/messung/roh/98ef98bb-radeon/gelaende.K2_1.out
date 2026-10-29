@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon'); K=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination'); A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\98ef98bb-radeon\gelaende.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; node "$D/m2-graben.cjs"; E=$?; cp "$D/roh/m2-graben.json" "$A" 2>/dev/null; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E
+[linse-gpu] amd/rdna-3
+{"saat":11,"abstand":1,"sicht":"third","bild":"vor+2s","verb":"abbau","edits":0,"k":62,"krone":3.68,"nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":389}
+{"saat":11,"abstand":3,"sicht":"third","bild":"vor+2s","verb":"graben","edits":1,"k":62,"krone":3.68,"nassVor":55,"nassEnde":281,"gefuelltMs":354.3,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":299}
+{"saat":23,"abstand":1,"sicht":"third","bild":"","verb":"pfluecken","edits":1,"k":49,"krone":3.68,"nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":259}
+{"saat":23,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":2,"k":49,"krone":3.68,"nassVor":41,"nassEnde":263,"gefuelltMs":421.4,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":173}
+{"saat":37,"abstand":1,"sicht":"third","bild":"2s","verb":"graben","edits":3,"k":47,"krone":3.34,"nassVor":105,"nassEnde":306,"gefuelltMs":216.2,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":228}
+{"saat":37,"abstand":3,"sicht":"third","bild":"2s","verb":"graben","edits":4,"k":47,"krone":3.34,"nassVor":240,"nassEnde":273,"gefuelltMs":81.2,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":331}
+{"saat":51,"abstand":1,"sicht":"third","bild":"","verb":"graben","edits":5,"k":7,"krone":3.34,"nassVor":153,"nassEnde":337,"gefuelltMs":191.6,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":363}
+{"saat":51,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":6,"k":7,"krone":3.34,"nassVor":262,"nassEnde":282,"gefuelltMs":39.7,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":341}
+{"saat":73,"abstand":1,"sicht":"third","bild":"","verb":"graben","edits":7,"k":16,"krone":3.34,"nassVor":116,"nassEnde":291,"gefuelltMs":210.8,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":165}
+{"saat":73,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":8,"k":16,"krone":3.34,"nassVor":211,"nassEnde":247,"gefuelltMs":91.8,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":107}
+
+--- stderr ---
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf gpu-wahl-bau-a 2026-10-29T11:27:13+01:00 pid=5108
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf gpu-wahl-bau-a 2026-10-29T11:27:13+01:00 pid=5108
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf gpu-wahl-bau-a 2026-10-29T11:27:13+01:00 pid=5108
+gpu-lauf: punkte-radeon-1 (zeit) wartet auf ?
+gpu-lauf: Schloss punkte-radeon-1 (zeit) nach 315 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

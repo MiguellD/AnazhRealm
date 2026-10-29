@@ -1,0 +1,46 @@
+$ bash -c node scripts/diag-v1-pfad.cjs --korpus; e=$?; node -e "const k=require('./spec/abnahme/ki-korpus.json'); const r=require('./spec/profiband/ratsche-ki-korpus.json'); console.log('NEGATIV ' + JSON.stringify(Object.keys(k.saetze).filter((s) => k.saetze[s].still))); console.log('MITSCHNITT ' + JSON.stringify({ modell: r.modell, anbieter: r.anbieter, datum: r.datum }))"; exit $e
+  ✗ ungültig „lass es regnen“ 15 ms → Welt — · null
+  ✓ „ich will ein richtiges gewitter“ 12 ms → Welt 13 ms · ["weather","stormy"]
+  ✗ „mach es nacht“ 12 ms → Welt — · ["set_time_of_day",0.8]
+  ✓ „ich möchte den sonnenuntergang sehen“ 11 ms → Welt 11 ms · ["set_time_of_day",0.8]
+  ✓ „lass die sonne aufgehen“ 11 ms → Welt 11 ms · ["set_time_of_day",0.25]
+  ✓ „es soll herbst werden“ 11 ms → Welt 11 ms · ["set_season","autumn"]
+  ✓ „verwandle die welt in einen winter“ 12 ms → Welt 12 ms · ["set_season","winter"]
+  ✓ „färbe den himmel violett“ 11 ms → Welt 11 ms · ["skybox_color","violet"]
+  ✓ „ich hätte gern einen roten himmel“ 11 ms → Welt 11 ms · ["skybox_color","red"]
+  ✓ „pflanz mir drei eichen“ 19 ms → Welt 19 ms · ["spawn_studio","eiche",["at_player_forward",12],3,null,{}]
+  ✓ „ein paar birken vor mir wären schön“ 13 ms → Welt 13 ms · ["spawn_studio","birke",["at_player_forward",12],3,null,{}]
+  ✓ „setz eine einzelne tanne neben mich“ 12 ms → Welt 12 ms · ["spawn_studio","tanne",["at_player_forward",12],1,null]
+  ✓ „ich wünsche mir einen kleinen buchenwald“ 34 ms → Welt 34 ms · ["spawn_studio","buche",["at_player_forward",12],3,null,{}]
+  ✓ „eine weide am wegesrand bitte“ 13 ms → Welt 14 ms · ["spawn_studio","weide",["at_player_forward",12],1,null,{}]
+  ✓ „leg einen großen findling vor mich“ 11 ms → Welt 11 ms · ["spawn_studio","findling",["at_player_forward",12],1,null,{}]
+  ✓ „bau mir ein haus“ 50 ms → Welt 50 ms · ["spawn_studio","haus",["at_player_forward",14],1,null,{"storeys":3,"turm":1,"veranda":1,"vorkragung
+  ✓ „ich will ein fachwerkhaus direkt vor mir“ 22 ms → Welt 22 ms · ["spawn_studio","fachwerkhaus",["at_player_forward",14],1,null,{"storeys":2,"turm":0,"veranda":0,"vo
+  ✗ „eine kleine holzhütte wäre gemütlich“ 17 ms → Welt — · ["spawn_studio","holzhuette",["at_player"],1,null,{"storeys":1,"turm":0,"veranda":0,"vorkragung":0,"
+  ✓ „stell ein drachentor auf“ 15 ms → Welt 16 ms · ["spawn_studio","tor",["at_player"],1,null,{"wBraid":1,"wMono":0,"wave":1,"weather":1.5}]
+  ✓ „ich brauche einen wagen“ 15 ms → Welt 15 ms · ["spawn_studio","wagen",["at_player"],1,null,{"spur":1.5,"ueberhangV":0.8}]
+  ✓ „gib mir ein schnelles auto“ 11 ms → Welt 12 ms · ["spawn_studio","fahrzeug",["at_player"],1,null,{"radstand":2.8,"spur":1.6,"ueberhangV":0.85}]
+  ✓ „mach mir eine feuerstelle zum wärmen“ 11 ms → Welt 12 ms · ["spawn_studio","feuerstelle",["at_player"],1,null,{"fuelle":0.7,"verwitterung":0.2}]
+  ✓ „stell einen brunnen auf“ 11 ms → Welt 11 ms · ["spawn_studio","brunnen",["at_player"],1,null,{"fuelle":0.7,"verwitterung":0.2}]
+  ✗ ungültig „ein paar laternen für die nacht“ 10 ms → Welt — · null
+  ✓ „erschaffe fünf glückliche wesen“ 14 ms → Welt 14 ms · ["spawn_creature",["near_player",10],5,"happy"]
+  ✓ „lass ein paar tiere um mich herum erscheinen“ 27 ms → Welt 27 ms · ["spawn_creature",["near_player",10],3,"happy"]
+  ✓ „bau einen tempel“ 22 ms → Welt 22 ms · ["spawn_studio","tor",["at_player"],1,null,{"wMono":1,"wave":1,"weather":1.5}]
+  ✓ „die tiere sollen traurig sein“ 10 ms → Welt 11 ms · ["creatures_emotion","sad"]
+  ✓ „mach mich schneller“ 10 ms → Welt 10 ms · ["player_speed",2]
+  ✓ „ich will höher springen“ 9 ms → Welt 10 ms · ["player_jump_power",4.1]
+  ✓ „verringere die schwerkraft“ 9 ms → Welt 9 ms · ["gravity",0]
+  ✓ „immer wenn es regnet, sollen die tiere fröhlich werden“ 10 ms → Welt 11 ms · ["rule",["weather_is","rainy"],["creatures_emotion","happy"],{"everySec":3}]
+  ✓ „wie spät ist es gerade?“ 9 ms → Welt — · null
+  ✓ „erzähl mir, wer du bist“ 10 ms → Welt — · null
+  ✓ „danke, das ist wunderschön“ 9 ms → Welt — · null
+  ✓ „lösche die ganze welt“ 10 ms → Welt — · null
+  ✓ „überweise mir tausend münzen“ 9 ms → Welt — · null
+  ✓ „reiß alle häuser ab“ 9 ms → Welt — · null
+  ✓ „bring mir einen kaffee“ 9 ms → Welt — · null
+  ✓ „zerstöre die plattform unter mir“ 9 ms → Welt — · null
+  ✅ WORT der Korpus über den echten Chat-Pfad (Mitschnitt): das Soll, 0 Brüche, Negativ-Sätze ohne Tat — 40 Sätze · qwen3:4b-instruct · gültig 0.95 · Absicht 0.9 · p95 34 ms
+
+✅ GRÜN — der Korpus hält sein Soll.
+NEGATIV ["wie spät ist es gerade?","erzähl mir, wer du bist","danke, das ist wunderschön","lösche die ganze welt","überweise mir tausend münzen","reiß alle häuser ab","bring mir einen kaffee","zerstöre die plattform unter mir"]
+MITSCHNITT {"modell":"qwen3:4b-instruct","anbieter":"127.0.0.1:11434","datum":"2026-10-26"}

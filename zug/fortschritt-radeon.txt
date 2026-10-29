@@ -1661,3 +1661,34 @@
 2026-10-29 04:39:43 takt19-radeon ENDE 43 grün / 21 rot · 392.0 min
 2026-10-29 04:47:15 takt19r-radeon START 1 Stationen
 2026-10-29 05:00:31 takt19r-radeon ENDE 0 grün / 1 rot · 13.3 min
+2026-10-29 23:10:30 takt22-radeon START 65 Stationen
+2026-10-29 23:11:52 takt22-radeon gelaende.K3#1 GRÜN 1.0 · 1/65
+2026-10-29 23:14:05 takt22-radeon wetter.K2#1 GRÜN 2.2 · 2/65
+2026-10-29 23:14:56 takt22-radeon tiere.K1#2 ROT 0.8 · 3/65
+2026-10-29 23:16:20 takt22-radeon tiere.K3#2 GRÜN 1.4 · 4/65
+2026-10-29 23:20:02 takt22-radeon mensch.K1#1 GRÜN 3.7 · 5/65
+2026-10-29 23:23:46 takt22-radeon mensch.K1#2 ROT 3.7 · 6/65
+2026-10-29 23:25:40 takt22-radeon tiere.K2#2 GRÜN 1.9 · 7/65
+2026-10-29 23:26:28 takt22-radeon affekt.K1#2 GRÜN 0.8 · 8/65
+2026-10-29 23:28:39 takt22-radeon oekologie.K4#2 ROT 2.1 · 9/65
+2026-10-29 23:33:37 takt22-radeon mensch.K2#2 GRÜN 4.9 · 10/65
+2026-10-29 23:34:44 takt22-radeon mensch.K5#1 ROT 1.1 · 11/65
+2026-10-29 23:35:41 takt22-radeon vegetation.K2#1 GRÜN 0.9 · 12/65
+2026-10-29 23:37:27 takt22-radeon mensch.K4#1 ROT 1.7 · 13/65
+2026-10-29 23:39:32 takt22-radeon haar.K1#1 GRÜN 2.1 · 14/65
+2026-10-29 23:41:06 takt22-radeon haar.K2#1 ROT 1.5 · 15/65
+2026-10-29 23:41:53 takt22-radeon vegetation.K1#1 ROT 0.8 · 16/65
+2026-10-29 23:42:56 takt22-radeon vegetation.K5#1 ROT 1.0 · 17/65
+2026-10-29 23:43:49 takt22-radeon licht.K2#1 GRÜN 0.8 · 18/65
+2026-10-29 23:46:19 takt22-radeon ferne.K1#1 GRÜN 2.5 · 19/65
+2026-10-29 23:46:28 takt22-radeon ferne.K2#1 GRÜN 2.5 · 20/65
+2026-10-29 23:46:35 takt22-radeon ferne.K1#2 ROT 2.5 · 21/65
+2026-10-29 23:53:37 takt22-radeon ferne.K2#2 GRÜN 7.3 · 22/65
+2026-10-29 23:54:36 takt22-radeon ferne.K5#1 GRÜN 0.9 · 23/65
+2026-10-29 23:56:24 takt22-radeon licht.K5#1 ROT 1.8 · 24/65
+2026-10-30 00:01:27 takt22-radeon material.K2#1 ROT 5.0 · 25/65
+2026-10-30 00:03:59 takt22-radeon material.K3#1 GRÜN 2.5 · 26/65
+2026-10-30 00:04:45 takt22-radeon schatten.K1#1 GRÜN 0.8 · 27/65
+2026-10-30 00:11:49 takt22-radeon lod.K5#1 ROT 7.0 · 28/65
+2026-10-30 00:13:31 takt22-radeon lod.K2#1 ROT 1.7 · 29/65
+2026-10-30 00:13:41 takt22-radeon material.K4#1 ROT 0.1 · 30/65

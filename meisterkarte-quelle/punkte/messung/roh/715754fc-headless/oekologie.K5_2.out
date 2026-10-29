@@ -1,0 +1,121 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (async function bindungAnsteckung() {
+    const fs = require("fs");
+    const path = require("path");
+    const { statikServer, starteBrowser, warteAufWelt, nullRenderer } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port] = process.argv.slice(1);
+    const erg = { sek: 120, laeufe: [], fehler: [] };
+    const lauf = async (o) => {
+        // erst das Erwachen des Boots samt der Heimat aus dem Faden (die Warte von `__weltDa`): ein Lauf, der vorher setzt, setzt in
+        // eine halbe Welt (25.10. unter Last: die Heimat kam nach dem Setzen, der Fuchs stand 30,8 m entfernt)
+        while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+        await window.anazhRealm.erwacht;
+        const r = window.anazhRealm;
+        const s = r.state;
+        const p = s.player;
+        const pm = s.playerMesh.position;
+        s.renderer.setAnimationLoop(null);
+        if (typeof r._gliederBestellen === "function") await r._gliederBestellen("fuchs");
+        r.setGameMode("pfad");
+        r.clearCreatures();
+        const P = pm.clone();
+        const bau = (e) => Math.hypot(e.position.x - P.x, e.position.z - P.z) < 14;
+        for (let i = 0; i < 40 && (s.architectures.some(bau) || !r._landAt(P.x, P.z, 0.2)); i++) P.x += 24;
+        P.y = r.getTerrainHeightAt(P.x, P.z) + r.constructor.PLAYER_FOOT_OFFSET;
+        pm.copy(P);
+        s.playerVel.setValue(0, 0, 0);
+        if (o.bondNull) {
+            AnazhRealm.EMOTION_CONTAGION = Object.freeze({ ...AnazhRealm.EMOTION_CONTAGION, bondGrowPerSec: 0, bondFollowBump: 0 });
+            if (AnazhRealm.EMOTION_CONTAGION.bondGrowPerSec !== 0) throw new Error("die Mutation bond = 0 greift nicht");
+        }
+        let t = 1e4;
+        for (const k in p.emotions) p.emotions[k] = 0;
+        p.mood = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        p.emotionLastTick = t;
+        const f = r.spawnCreatureAt(P.x + 3, P.y, P.z, "happy", "fuchs", { bodySize: 1, precise: true });
+        if (!f) throw new Error("kein Fuchs");
+        f.position.y = r.getTerrainHeightAt(f.position.x, f.position.z);
+        f.userData.name = "K5-Bindung";
+        r.assignCreatureTask(f, "follow_player");
+        const bond0 = f.userData.bond || 0;
+        const ab = [];
+        const kurve = [];
+        for (let k = 1; k <= o.sek * 60; k++) {
+            t += 1 / 60;
+            s.spielZeit += 1 / 60;
+            if (o.bondNull) for (const c of s.creatures) c.userData.bond = 0;
+            r.updatePlayerEmotions(t);
+            r._loopFixedStep(1 / 60, t);
+            r._loopWeatherAndGrowth(1 / 60);
+            if (k % 60 === 0) ab.push(Math.hypot(f.position.x - pm.x, f.position.z - pm.z));
+            if (k % 1200 === 0)
+                kurve.push([r._moodValence(), p.emotions.joy || 0, p.emotions.peace || 0, f.userData.bond || 0].map((v) => +v.toFixed(4)));
+        }
+        ab.sort((x, y) => x - y);
+        const g = (o2) => Object.fromEntries(Object.entries(o2).map(([k, v]) => [k, +(+v).toFixed(4)]));
+        return {
+            valenz: +r._moodValence().toFixed(4),
+            stimmung: g(p.mood),
+            gefuehl: g(p.emotions),
+            bond: [+bond0.toFixed(3), +(f.userData.bond || 0).toFixed(3)],
+            auftrag: f.userData.task && f.userData.task.name,
+            lebt: s.creatures.includes(f),
+            abstand: { p50: +ab[ab.length >> 1].toFixed(2), max: +ab[ab.length - 1].toFixed(2) },
+            ort: [+P.x.toFixed(1), +P.z.toFixed(1)],
+            verschoben: +Math.hypot(pm.x - P.x, pm.z - P.z).toFixed(2),
+            kurve,
+        };
+    };
+    const abdruck = () => {
+        const f = window.anazhRealm.state.creatures.find((c) => c.userData.name === "K5-Bindung");
+        return f ? [Math.round(f.userData.bond * 100) / 100, f.userData.task && f.userData.task.name] : null;
+    };
+    const server = statikServer();
+    await new Promise((ok) => server.listen(Number(port), "127.0.0.1", ok));
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    try {
+        for (const art of ["A", "B", "A", "B"]) {
+            const kontext = await browser.createBrowserContext();
+            try {
+                const seite = await kontext.newPage();
+                seite.setDefaultTimeout(600000);
+                seite.on("pageerror", (e) => erg.fehler.push(art + ": " + String(e.message || e).split("\n")[0].slice(0, 200)));
+                await nullRenderer(seite);
+                await seite.goto("http://127.0.0.1:" + port + "/index.html", { waitUntil: "networkidle0", timeout: 180000 });
+                await warteAufWelt(seite, 300000);
+                const e = await seite.evaluate(lauf, { sek: erg.sek, bondNull: art === "B" });
+                erg.laeufe.push({ art, ...e });
+                console.log("  Lauf " + art + " Stimmung " + e.valenz + " · bond " + e.bond.join(" → ") + " · Abstand p50 " + e.abstand.p50 + " m");
+                if (art === "A" && erg.laeufe.length === 3) {
+                    const vor = await seite.evaluate(abdruck);
+                    await seite.evaluate(() => window.anazhRealm.saveState());
+                    await new Promise((ok) => setTimeout(ok, 1500));
+                    await seite.reload({ waitUntil: "networkidle0", timeout: 180000 });
+                    await warteAufWelt(seite, 300000);
+                    await seite.evaluate(async () => {
+                        while (!(window.anazhRealm && window.anazhRealm.erwacht)) await new Promise((ok) => setTimeout(ok, 50));
+                        await window.anazhRealm.erwacht;
+                    });
+                    const h = await seite.waitForFunction(abdruck, { timeout: 90000, polling: 500 }).catch(() => null);
+                    erg.reload = { vor, nach: h ? await h.jsonValue() : null };
+                    console.log("  Reload " + JSON.stringify(erg.reload));
+                }
+            } finally {
+                await kontext.close();
+            }
+        }
+    } catch (e) {
+        erg.fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 400));
+    } finally {
+        await browser.close();
+        server.close();
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("BINDUNG " + JSON.stringify({ laeufe: erg.laeufe.map((x) => [x.art, x.valenz, x.bond[1]]), reload: erg.reload || null, fehler: erg.fehler }));
+    process.exit(erg.fehler.length ? 1 : 0);
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/715754fc-headless/oekologie.K5_2.json 7704
+  Lauf A Stimmung 0.1426 · bond 0.12 → 1 · Abstand p50 3 m
+  Lauf B Stimmung 0.1099 · bond 0 → 0 · Abstand p50 3 m
+  Lauf A Stimmung 0.1426 · bond 0.12 → 1 · Abstand p50 3 m
+  Reload {"vor":[1,"follow_player"],"nach":[1,"follow_player"]}
+  Lauf B Stimmung 0.1099 · bond 0 → 0 · Abstand p50 3 m
+BINDUNG {"laeufe":[["A",0.1426,1],["B",0.1099,0],["A",0.1426,1],["B",0.1099,0]],"reload":{"vor":[1,"follow_player"],"nach":[1,"follow_player"]},"fehler":[]}
