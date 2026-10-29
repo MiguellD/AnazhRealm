@@ -1162,11 +1162,12 @@ const stationen = [
 
     // ───────── lod.K5 · lod.K2 — die Stufe folgt dem Schirm, nicht dem Regler (w3v-lod) ─────────
     // DAS GESETZ DES WECHSELS im Spiel-Baum (`AnazhRealm._wechselGesetz`, stamm/vegetation-streu.js): der Abstand, an dem der Fehler der
-    // Stufe (LOD_SCHIRM.fehler, am Bau gemessen) 1 px trägt, höchstens der Haushalt des Buchs — beide am Schirm; jeder Leser fragt es
-    // (die Schwellen der Bäume und der Streu, die Grenzen von Haus, Tor, Wagen, Ausstattung), der Laub- und der Bau-Rand stehen am
-    // Schirm (`_randSchirm`). K5#1 an der GPU: je Familie die schlechteste Vorlage im Wechsel-Abstand des Gesetzes, L0 erzwungen gegen
+    // Stufe (LOD_SCHIRM.fehler, am Bau gemessen) am Schirm 1 px trägt, höchstens der Haushalt des Buchs; jeder Leser fragt es (die
+    // Schwellen der Masken von Baum, Streu und Wagen, die Grenzen von Haus, Tor, Ausstattung), der Laub- und der Bau-Rand sind der Haushalt
+    // (`_randSchirm`), kein Regler. K5#1 an der GPU: je Familie die schlechteste Vorlage im Wechsel-Abstand des Gesetzes, L0 erzwungen gegen
     // die gewählte Stufe im Ausgabe-Bild, Chamfer der Masken-Kanten (bericht/2910-lod-k5/kanten.js); die Mechanik ohne Bild misst
-    // bericht/2910-lod-k5/fehler-am-bau.cjs am Bau (29.10.: Baum 11 px, Haus 3,6, Tor 8, Wagen ≤ 1 — ROT erwartet, der Haushalt hält).
+    // bericht/2910-lod-k5/fehler-am-bau.cjs am Bau (29.10.: Baum 12,06 px, Haus 2,95, Tor 7,85, Wagen 0,02, Ausstattung 0,72 — ROT
+    // erwartet an Baum, Haus und Tor: der Haushalt hält, die Stufe trägt das Soll dort nicht).
     // K5#2 headless: die Regler-Simulation des Playtests (S6, die echte Kette Fold → PID → Aktuator) bei 30/60/144 fps, Puls und Regler
     // ±10 %. K2#1 an der GPU: Gehen 4 m/s an der Mess-Wiese, je Schritt dieselbe Pose vor und nach dem Takt (bericht/2910-lod-k5/pop.js).
     {
@@ -1178,7 +1179,7 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "8358db5b4001a2eac2e45670fb7db660c37037df", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "c87ffc92ffac2801f75fc7eb5fdb7d956706f099", muss: true, ms: 1800000 },
             ],
         }),
         env: envDer,

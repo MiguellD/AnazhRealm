@@ -1,11 +1,12 @@
 // 2910 lod.K5 Staffel 1 headless — DER KANTEN-VERSATZ AM BAU (die Mechanik der GPU-Station ohne Bild: die Brücke baut, ein CPU-Raster
-// malt). Im Spiel-Baum: `node <koordination>/bericht/2910-lod-k5/fehler-am-bau.cjs [--alle]` (Port LOD_FEHLER_PORT, sonst frei).
+// malt). Im Spiel-Baum: `node <koordination>/bericht/2910-lod-k5/fehler-am-bau.cjs [--alle] [--art <kind>]` (Port LOD_FEHLER_PORT).
 // Je Familie und gezeigter Stufe die schlechteste Vorlage (mit --alle jede Vorlage der Art): L0 und Stufe gebaut, je Peilung
 // (8 Azimute × waagrecht und 20° von oben) ein gemeinsamer Rahmen, das Raster eine halbe Pixel-Kante des Abstands, je Bildpunkt die
 // Deckung ≥ 0,5 (die gefilterte Alpha mit erhaltener Deckung); die Karte des Baums als Mischung ihrer zwei nächsten gebackenen
 // L1-Ansichten (8 Peilungen, in Texeln der Zelle), die Tor-Flügel der L0 in der Fern-Pose (TUER_GESETZ.fern). Der Abstand ist das
 // Gesetz des Stamms (`AnazhRealm._wechselGesetz`, geladen über scripts/lib/stamm.cjs, das Buch nach dem Umschlag) am Schirm des
-// Solls 1920 × 1080 (KAM_FOV_GRAD). Druckt je Fall die Bildpunkte am gewählten Abstand und am Abstand des Pixel-Terms (die Tafel
+// Solls 1920 × 1080 (KAM_FOV_GRAD); der Wagen (eine Karten-Art ohne Zeile) an der Schwelle seiner Maske, der des Baums in rohen
+// Metern. Druckt je Fall die Bildpunkte am gewählten Abstand und am Abstand des Pixel-Terms (die Tafel
 // LOD_SCHIRM.fehler darf ihn nicht unterschätzen), dazu `K5#1 {…}` je Familie das Schlechteste.
 "use strict";
 const path = require("path");
@@ -137,7 +138,7 @@ function versatz(n0, ns, stufe, karte, d, F, atlas, K) {
 }
 // die schlechteste Vorlage je Art und Stufe (gemessen 29.10. über alle Vorlagen, `--alle`)
 const SCHLECHTESTE = { tree: ["weide"], haus: ["modern", "alemannisch"], gate: ["kathedrale", "geisttor"], vehicle: ["limousine"], ausstattung: ["brunnen"] };
-async function fehlerAmBau(alle) {
+async function fehlerAmBau(alle, nur) {
     const { runWithWorker, kanalImVm } = require(path.join(ROOT, "scripts/lib/asset-worker-harness.cjs"));
     const { dek } = require(path.join(ROOT, "scripts/lib/kronen-linse.cjs"));
     const { AnazhRealm: A, ctx } = require(path.join(ROOT, "scripts/lib/stamm.cjs")).ladeKlasse(ROOT);
@@ -170,19 +171,19 @@ async function fehlerAmBau(alle) {
                     }
                     return { stufe, pos, idx: dek(m.index, Uint32Array), uv: m.kind === "foliageTex" && m.attrs.uv ? dek(m.attrs.uv.b64, Float32Array) : null };
                 });
-        for (const kind of Object.keys(SCHLECHTESTE))
+        for (const kind of Object.keys(SCHLECHTESTE).filter((k) => !nur || k === nur))
             for (const id of vorlagen(kind)) {
                 const n0 = netze(await build({ presetId: id, seed: 1, lod: 0, season: "summer" }), 0);
                 let [hi, lo, ext] = [-Infinity, Infinity, 0];
                 for (const m of n0) for (let i = 0; i < m.pos.length; i += 3) [hi, lo, ext] = [Math.max(hi, m.pos[i + 1]), Math.min(lo, m.pos[i + 1]), Math.max(ext, Math.abs(m.pos[i]), Math.abs(m.pos[i + 2]))];
                 const hoehe = hi - Math.max(0, lo);
-                for (const stufe of Object.keys(S.fehler[kind]).map(Number)) {
+                for (const stufe of Object.keys(S.fehler[kind] || { 1: 0 }).map(Number)) {
                     const karte = kind === "tree" && stufe === 2;
                     const ns = netze(await build({ presetId: id, seed: 1, lod: karte ? 1 : stufe, season: "summer" }), stufe);
                     const bezug = kind === "tree" ? hoehe : 1;
                     const K = { views: KARTE.views, texel: Math.max(hoehe / KARTE.cellH, (2 * ext) / KARTE.cellW) };
-                    const gewaehlt = A._wechselGesetz(kind, stufe, bezug, ZEILEN);
-                    const pixel = (S.fehler[kind][stufe] * bezug * F) / S.px;
+                    const gewaehlt = S.fehler[kind] ? A._wechselGesetz(kind, stufe, bezug, ZEILEN) : A._wechselGesetz("tree", stufe, buch.renderConfig.lod.ref, ZEILEN);
+                    const pixel = S.fehler[kind] ? (S.fehler[kind][stufe] * bezug * F) / S.px : Infinity;
                     const z = { kind, id, stufe, gewaehlt, am: versatz(n0, ns, stufe, karte, gewaehlt, F, atlas, K) };
                     z.tafel = pixel > gewaehlt * 1.001 ? null : versatz(n0, ns, stufe, karte, pixel, F, atlas, K);
                     zeilen.push(z);
@@ -191,7 +192,7 @@ async function fehlerAmBau(alle) {
             }
     });
     const FAM = { tree: "Baum", haus: "Haus", gate: "Tor", vehicle: "Wagen", ausstattung: "Ausstattung" };
-    const je = Object.keys(FAM).map((k) => [FAM[k], Math.max(...zeilen.filter((z) => z.kind === k).map((z) => z.am))]);
+    const je = Object.keys(FAM).filter((k) => zeilen.some((z) => z.kind === k)).map((k) => [FAM[k], Math.max(...zeilen.filter((z) => z.kind === k).map((z) => z.am))]);
     const soll = S.px * 1.15; // der Rausch-Boden des Rasters (L0 gegen sich um ½ Pixel verschoben) liegt bei 0,4–0,65 px
     const unter = zeilen.filter((z) => z.tafel != null && z.tafel > soll);
     console.log(`K5#1 ${je.every(([, x]) => x <= soll) ? "GRÜN" : "ROT"}: ${je.map(([n, x]) => n + " " + nachKomma(x, 2) + " px").join(" · ")} (Soll ≤ ${S.px} px am gewählten Abstand, 1920 × 1080)`);
@@ -204,4 +205,5 @@ async function fehlerAmBau(alle) {
 }
 
 
-hauptLauf(() => fehlerAmBau(process.argv.includes("--alle")));
+const art = process.argv.indexOf("--art");
+hauptLauf(() => fehlerAmBau(process.argv.includes("--alle"), art > 0 ? process.argv[art + 1] : null));

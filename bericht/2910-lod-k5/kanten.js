@@ -1,7 +1,7 @@
 // 2910 lod.K5 Staffel 1 — DER KANTEN-VERSATZ AM WECHSEL IM ECHTEN BILD (Seiten-Code für `werkbank eval`, r = Welt, T = THREE).
 // Je Familie und gezeigter Stufe die schlechteste Vorlage (die Fehler-Tafel LOD_SCHIRM, 29.10.): ein Exemplar 40 m voraus im Blick des
 // Messorts, das Auge des Spielers (1,7 m über dem Boden, KAM_FOV_GRAD) im Wechsel-Abstand des Gesetzes (`_wechselAbstand` · die
-// Schwellen der Bäume · `_archStufenGrenzen`), Blick auf die halbe Höhe. Ohne Blende und ohne Band (lodMaskOn, foundryCrossfade aus,
+// Schwellen der Masken von Baum und Wagen · `_archStufenGrenzen`), Blick auf die halbe Höhe. Ohne Blende und ohne Band (lodMaskOn, foundryCrossfade aus,
 // der LOD-Takt ruht: jede Stufe zeichnet voll, allein): je Abstand ein Schuss OHNE das Exemplar, einer mit der L0, einer mit der
 // gewählten Stufe — Ausgabe-Pfad 1920 × 1080 (`__ausgabeAufnahme`, je dreimal, der letzte zählt). Die Maske einer Stufe = die Pixel,
 // deren Kanal sich gegen den Schuss ohne Exemplar um > 18 hebt; der Kanten-Versatz = Chamfer der Masken-Kanten (Euklid-Distanz-
@@ -124,10 +124,10 @@ try {
         for (let i = 0; i < 400 && (F.kind !== "tree" || r._lodTreeVisHeight(e) == null); i++) await warte(50);
         const hoehe = F.kind === "tree" ? r._lodTreeVisHeight(e) : null;
         const D = A.LOD_DISTANCES, ref = st.lodRef > 0 ? st.lodRef : D.lodRef;
-        const G = F.kind === "tree" ? null : r._archStufenGrenzen(e);
+        const G = r._archStufenGrenzen(e); // null: eine Karten-Art (Baum, Wagen) wechselt an den Schwellen ihrer Maske
         for (const s of F.stufen) {
             const sk = e.scale > 0 ? e.scale : 1;
-            const d = F.kind === "tree" ? [D.thresh01, D.thresh12][s - 1] * Math.max(hoehe, ref) / ref : G.grenzen.find((g) => g.stufe === s).ab * sk;
+            const d = G ? G.grenzen.find((g) => g.stufe === s).ab * sk : [D.thresh01, D.thresh12][s - 1] * Math.max(hoehe || ref, ref) / ref;
             const auge = m.clone().addScaledVector(fwd, -d);
             auge.y = boden(auge.x, auge.z) + 1.7;
             const hoch = hoehe || 4;
