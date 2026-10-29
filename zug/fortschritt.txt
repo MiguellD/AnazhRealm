@@ -924,3 +924,4 @@
 2026-10-30 00:46:45 takt22-gtx tiere.K5#1 OFFEN 10.2 · 43/63
 2026-10-30 00:50:53 takt22-gtx studios.K3#2 ROT 3.8 · 44/63
 2026-10-30 00:52:23 takt22-gtx pipeline.K4#2 GRÜN 1.4 · 45/63
+2026-10-30 00:57:57 takt22-gtx siedlung.K5#1,siedlung.K5#2 GRÜN/GRÜN 5.5 · 47/63
