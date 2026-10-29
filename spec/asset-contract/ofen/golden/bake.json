@@ -1880,77 +1880,11 @@
   "mensch-L1|beipack": {
    "sha256": "d3c187a9cef700b44179f21274fda2f7766caff8eebd0f283f6943fb9717fc61"
   },
-  "mensch-L2|skin|mensch": {
+  "mensch-L2|leib|mensch": {
    "meshes": 1,
-   "verts": 729,
-   "tris": 606,
-   "sha256": "c481608048d00a3c39014c5858d3bfac804e3ef6f259705a3dc2d2a39a935828"
-  },
-  "mensch-L2|socket|mensch": {
-   "meshes": 1,
-   "verts": 80,
-   "tris": 64,
-   "sha256": "d8411b027115f1248d65ac07a962c305b1d44b0feb28948d786776fc3c90158f"
-  },
-  "mensch-L2|eye|mensch": {
-   "meshes": 1,
-   "verts": 40,
-   "tris": 32,
-   "sha256": "8be5a44a3c6ea785663b8792379d9ee71c16bb51db526424d466e2990414a1de"
-  },
-  "mensch-L2|iris|mensch": {
-   "meshes": 1,
-   "verts": 40,
-   "tris": 32,
-   "sha256": "b5f3c773e4e31d18b5654371673edf22eac58aae21ae6d76b8e0f144a9c35bd2"
-  },
-  "mensch-L2|pupil|mensch": {
-   "meshes": 1,
-   "verts": 40,
-   "tris": 32,
-   "sha256": "4d69c7ec15c23b1516cddd285384577be881ddda56d98e4f10d5b915dc0e0b61"
-  },
-  "mensch-L2|lips|mensch": {
-   "meshes": 1,
-   "verts": 40,
-   "tris": 32,
-   "sha256": "4d68ce6a2421c9e0b5714d886f89acfc9b4193a8f451a9586f05807ff9039373"
-  },
-  "mensch-L2|shadow|mensch": {
-   "meshes": 1,
-   "verts": 20,
-   "tris": 16,
-   "sha256": "6c68df58f9fc9c6320c9d7e5a912a300cf312b052541b3302956ca52ce40802a"
-  },
-  "mensch-L2|hair|mensch": {
-   "meshes": 1,
-   "verts": 63,
-   "tris": 80,
-   "sha256": "401139cb2eb9713917e46171dc2cd335555755ad472a536861b4a3340dbc6a4d"
-  },
-  "mensch-L2|haut|mensch": {
-   "meshes": 1,
-   "verts": 114,
-   "tris": 109,
-   "sha256": "66da51c2efd689170100d266bc952bf8871493a17794e55f7a24fa76a17da09c"
-  },
-  "mensch-L2|stoff_233047|mensch": {
-   "meshes": 1,
-   "verts": 254,
-   "tris": 332,
-   "sha256": "cb9e694f85a1e1fc246dc3745444f09e2a2364d79b02a9bb3390f523ceab48e1"
-  },
-  "mensch-L2|stoff_2a2c30|mensch": {
-   "meshes": 1,
-   "verts": 180,
-   "tris": 300,
-   "sha256": "4d4176b9cd6487bdb9a9282096907bb8b79b285fd1cae18ece3842f75e0106eb"
-  },
-  "mensch-L2|stoff_e8e6e0|mensch": {
-   "meshes": 1,
-   "verts": 34,
-   "tris": 60,
-   "sha256": "2031b15d32e877b7cbbdff2ead4ca34c998cfa2de1a968610bc38a0485e0cabb"
+   "verts": 952,
+   "tris": 1700,
+   "sha256": "3f2c952248e01f7692701593eec69988210fe2580b8518a8c4a170cf6b41c7d5"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -2022,43 +1956,13 @@
    "sha256": "8aa0fa4838f6a5c36fd6d66780d5466901f9876efe2065e26f655a14f2543532"
   },
   "mensch-L2|beipack": {
-   "sha256": "d3c187a9cef700b44179f21274fda2f7766caff8eebd0f283f6943fb9717fc61"
+   "sha256": "65367bbc11eef70e3b21a3287ef7e34691608e794172602e435a933751e11ebb"
   },
-  "mensch-L3|skin|mensch": {
+  "mensch-L3|leib|mensch": {
    "meshes": 1,
-   "verts": 422,
-   "tris": 238,
-   "sha256": "b274a5d550368bf4ce3c26e71bbe9904dc7c08a2d8a07a3b985a1dec28a0eb7b"
-  },
-  "mensch-L3|hair|mensch": {
-   "meshes": 1,
-   "verts": 30,
-   "tris": 30,
-   "sha256": "897ba2a7f0601c59472fab0d465712a15eb89e173ef55be8409a221b8b02f081"
-  },
-  "mensch-L3|haut|mensch": {
-   "meshes": 1,
-   "verts": 91,
-   "tris": 85,
-   "sha256": "756cb45c4550235a6282455ab7f1f180f5a18244d293ee0954a04784fe8d00a1"
-  },
-  "mensch-L3|stoff_233047|mensch": {
-   "meshes": 1,
-   "verts": 176,
-   "tris": 216,
-   "sha256": "9d1841b8551dba8143900e868aadf62414e3e1507f8f3f11f299679d930d826e"
-  },
-  "mensch-L3|stoff_2a2c30|mensch": {
-   "meshes": 1,
-   "verts": 97,
-   "tris": 135,
-   "sha256": "7b59cc89f48c7b3929f39cdb49a9774e38193e62827a4730565e8979d4291755"
-  },
-  "mensch-L3|stoff_e8e6e0|mensch": {
-   "meshes": 1,
-   "verts": 20,
-   "tris": 32,
-   "sha256": "7333c643c624d3e51d4355a362b2070d9ca0635cc6ad694d697c3ece6a931e4d"
+   "verts": 226,
+   "tris": 360,
+   "sha256": "2fc268edf1f2be941c80fc0ac273d3a037f630fa2f7337c536c66e8079e847b2"
   },
   "mensch-L3|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -2106,10 +2010,10 @@
    "sha256": "5886d892229569ba53bdd4ddacfd2efb2d944a9e9878258faa3d60e13634fbba"
   },
   "mensch-L3|gelenk|irisL": {
-   "sha256": "e7dd3128dc6faa3b62cab644beb299997c03fc71d3bce46a03bd5da3bbc2ae36"
+   "sha256": "51c4ed6aeb97bcfadf5e72f9bc69fe38fd96695543018228b68f65d40f7ca7b7"
   },
   "mensch-L3|gelenk|irisR": {
-   "sha256": "beae61790adce533fb89ae539030f3278a347246fbafd2ea0be38054b62f6712"
+   "sha256": "cb9dbf1ed6a1589ed19fe03cf387eeef37054918ed140ca8e0af1730358423ca"
   },
   "mensch-L3|gelenk|lidTL": {
    "sha256": "3c554f83a3b2f496a1ad12056b7e2b26b4a9ebda484fdbcc492411af9a234ca3"
@@ -2130,7 +2034,7 @@
    "sha256": "8aa0fa4838f6a5c36fd6d66780d5466901f9876efe2065e26f655a14f2543532"
   },
   "mensch-L3|beipack": {
-   "sha256": "63d89afae0148c6bf5ce8271c76537f8feb82e9ed42bf6e107a17cbc92f67601"
+   "sha256": "65367bbc11eef70e3b21a3287ef7e34691608e794172602e435a933751e11ebb"
   }
  }
 }

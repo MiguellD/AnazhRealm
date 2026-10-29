@@ -2536,18 +2536,39 @@ async function kreaturProben(r, T, opts) {
         // der Takt mit der Uhr des Spiels (`tickDayNight`) und die Wege seiner Siedlung (`wegeMesser`)
         const takt = (dt, M) => {
             r._uhrSetzen((s.timeOfDay + dt / tagS) % 1, "uhr");
+            const t0 = performance.now();
             r._tickBewohner(dt);
-            M.messen(dt);
+            M.messen(dt, performance.now() - t0);
         };
         // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
         // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
         // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
-        const ringMesser = (liste, ph = new Map(), k = 0) => ({
-            messen: () => ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase)),
+        // DIE MENGE (mensch.K4 Staffel 2) im selben Messer, roh — das Urteil fällt in der Station: die 50 Nächsten draußen, je
+        // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah] (die Matrix seines Satzes), je Typ seine Dials, Farben, die Maße seiner
+        // Vorlage in m (in der Ruhe × die Skala seines Rigs) und die Dreiecke seiner Senken (leib, wurf), der Schirm (Bildpunkte
+        // je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
+        const ringMesser = (liste, ph = new Map(), k = 0, ms = []) => ({
+            messen: (dt, t) => (ms.push(t), ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase))),
             zahl: (N = r._bewohnerFeldGrenze().ein) => {
                 const nah = liste.filter((b) => !b.drinnen && ab(b.leib.position, pm) < N);
                 const gang = nah.filter((b) => Math.abs(wrap(b.walkPhase - ph.get(b))) > 0.2).length;
                 return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang };
+            },
+            menge: (S) => {
+                const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
+                const f = M[0].leib.userData._tierBaum.wrap.scale.x;
+                ms.sort((a, b) => a - b);
+                return {
+                    je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah]),
+                    typ: S.gestalten.map((G) => ({
+                        dials: G.dK,
+                        mass: new T.Box3().setFromObject(r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, 2).root).getSize(new T.Vector3()).multiplyScalar(f).toArray(), // prettier-ignore
+                        dreiecke: ["leib", "wurf"].map((k) => G.satz[k].geometry.index.count / 3),
+                    })),
+                    pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
+                    kaskaden: A.SCHATTEN_KASKADE.texelM.length,
+                    takt: [q3(ms.reduce((x, y) => x + y, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
+                };
             },
         });
         // ── DIE STADT AM MESSORT `ort` des Profi-Bands (spec/profiband/haushalt.json): das Wort des Spielers
@@ -2592,7 +2613,7 @@ async function kreaturProben(r, T, opts) {
                 if (ueber) decke(ueber, mit, ab);
                 for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
                 sicht[t] = {
-                    stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, [voll ? "ring" : "wege"]: M.zahl() },
+                    stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, [voll ? "ring" : "wege"]: M.zahl(), menge: voll ? M.menge(S) : undefined },
                 };
                 for (const f of ab) f();
             }

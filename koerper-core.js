@@ -47,16 +47,17 @@
                     // feinen (das alte Ziel 8 000 ließ den Wurf-Zwilling den Umriss nur noch zu 0,92 decken).
                     0: { tris: 40000, draws: 8, schatten: 1 },
                     1: { tris: 14000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
-                    // DIE MENGEN-STUFE (mensch.K1, rein additiv): die Bewohner einer Siedlung stehen jenseits der Armlänge als
-                    // Instanz-Satz (der Wirt backt ihren Stand einmal, `_bewohnerSatz`) — dieselbe Pipe, die Hüllen kollabieren
-                    // auf die Zeile; sie wirft über die NUR-WURF-Stufe 3 (der Wurf-Satz trägt sie).
-                    // Re-Mint mensch.K1 Staffel 2 (Lehre 19, die Kosten der Menge im Asset): 3 995 → 1 695 Dreiecke — die Glieder unter
-                    // FERN_KLEIN (Finger, Nasenflügel; ab 8 m unter zwei Pixeln) fallen wie im Wurf, das Auge bleibt (Haushalt bewohner).
-                    2: { tris: 1700, draws: 6, schatten: 2 },
-                    // DIE NUR-WURF-STUFE (mensch.K1 Staffel 2, rein additiv, Studio-Vertrag B2): nie gezeigt, sie IST der Wurf jedes
-                    // Bewohners im Nah-Kreis (der Wurf-Satz, `_bewohnerSatz`) — die Kosten der Menge in den Kaskaden; dieselbe Pipe,
-                    // die Hüllen kollabieren auf `band` (ihre Säume stehen fest: der Kollaps landet ~30 darüber), `tris` ist die Decke.
-                    3: { tris: 760, band: 700, draws: 6, schatten: 3, nurWurf: true },
+                    // DIE MENGEN-STUFE (mensch.K1): die Bewohner einer Siedlung stehen jenseits der Armlänge als Instanz-Satz (der
+                    // Wirt backt ihren Gang einmal, `_bewohnerSatz`). Re-Mint mensch.K4 (Lehre 19, Vertrags-Akt): DER LEIB DER MENGE
+                    // ist EINE Hülle (foundry-core `__mengenLeib`: der SDF-Guss des ganzen Leibs wie die Tier-Haut, die Farbe der
+                    // Kleider im Stoff geschnitten, mit der Naht kollabiert) — vorher Haut, Stoff und Kleid je für sich kollabiert,
+                    // der Kopf eine Kugel-Traube: die Poncho-Tracht trug 2 474 statt 1 700 Dreiecke; EIN Draw, sie wirft über Stufe 3.
+                    2: { tris: 1700, draws: 1, schatten: 3 },
+                    // DIE NUR-WURF-STUFE (mensch.K1 Staffel 2, Studio-Vertrag B2; Re-Mint mensch.K4): nie gezeigt, sie IST der Wurf jedes
+                    // Bewohners im Nah-Kreis (der Wurf-Satz seiner Gestalt) — derselbe Leib der Menge auf gröberem Raster. Der Wurf
+                    // zeichnet in jede Kaskade (drei): er ist der größte Teil der Menge — 760 → 360 Dreiecke (vorher 1 297 an der
+                    // Poncho-Tracht); 50 Bewohner tragen so ≤ 150k (Staffel mensch.K4).
+                    3: { tris: 360, draws: 1, schatten: 3, nurWurf: true },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
                     // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,
