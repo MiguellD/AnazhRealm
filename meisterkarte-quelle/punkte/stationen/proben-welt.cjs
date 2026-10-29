@@ -513,6 +513,41 @@ async function fahrWegenetz(tor) {
     if (v.length) process.exitCode = 1;
 }
 
+// ───────── PFLICHT-OFFEN C — der Verkehr der Stadt (gate:fahr-leben `--verkehr`) ─────────
+// Die Seiten-Probe des Gates (`probeLeben` mit `verkehr`): die Metropole des Messorts stadt-voll (nH 300; gegründet in der Welt
+// der Sitzung, wo sie nicht steht), um 10 und um 23 Uhr je `sek` Sekunden (das Argument, sonst 12) im Takt des Spiels — jeder
+// Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt einen Bewohner, einen Wagen oder einen Bau;
+// `verkehrVerdict` der Linse (der Weg je Wagen am Maß von `sek`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden.
+// Die Stadt erwacht, die Uhr springt: mutiert.
+async function fahrVerkehr(tor) {
+    const fs = require("fs");
+    const path = require("path");
+    const L = "scripts/diag-fahr-leben.cjs";
+    const P = "scripts/lib/fahr-proben.cjs";
+    if (!/expected\.verkehr/.test(fs.readFileSync(P, "utf8")) || !/verkehrVerdict/.test(fs.readFileSync(L, "utf8"))) {
+        console.log("keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)");
+        process.exitCode = 1;
+        return;
+    }
+    const d = new Function(tor.dekl(L, ["VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
+    const F = require(path.resolve(P));
+    const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
+    const page = await tor.seite();
+    tor.karte();
+    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
+    const t0 = Date.now();
+    const sek = Number(tor.arg[0]) || 12;
+    const o = await page.evaluate(F.probeLeben, { messort: mo, verkehr: { ...d.VERKEHR, sek } });
+    for (const h of d.VERKEHR.stunden) {
+        const m = o.verkehr && o.verkehr[h];
+        const v = m ? d.verkehrVerdict(m) : [String(o.err || "kein Verkehr").split("\n")[0]];
+        console.log(`  ${v.length ? "❌" : "✅"} VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr — ${v.join(" · ") || "jeder fährt"}`);
+        if (v.length) process.exitCode = 1;
+    }
+    console.log(`  (${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung, ${sek} s je Stunde)`);
+    console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
+}
+
 // ───────── gelaende.K2#1 und #2 — das Wasser folgt jedem Edit: Graben (Third, Ego), Damm, Ferne ─────────
 // EINE Probe für beide Staffeln (Zwillinge: derselbe Befehl, die Sitzung fährt ihn einmal). (a) der Graben über die ECHTE Eingabe
 // wie die Mess-Bahn m2-graben (koordination bericht/2210-messschuld-6cfce/skripte): am Fluss nächst Genesis, der Spieler 2,2 m
@@ -720,4 +755,4 @@ async function wasserGraben(tor) {
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, wasserGraben };
+module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben };
