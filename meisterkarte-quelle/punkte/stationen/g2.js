@@ -6,9 +6,44 @@
 "use strict";
 const { jsonZeile } = require("../hilfe.cjs");
 const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (tiere.K5#1)
+const { seiteProbe } = require("./seite.cjs");
 
 // die Zeile „  ✅|❌ <probe> {…}" der Kreatur-Linse (diag-kreatur-takt.cjs, padEnd 9)
 const probeZeile = (stdout, probe) => jsonZeile(stdout, new RegExp("^\\s*(✅|❌) " + probe + "\\s"));
+
+// vegetation.K4 #1 + #2 (Zwillinge, EIN Lauf; Zweig proben-leib, stationen/seite.cjs): W9 von gate:haus-welt `--phasen=grund
+// --bild` in der Welt der Sitzung — `proben`, die Seiten-Funktion der Linse, mit ihren Phasen grund · bild · start (das Start-Dorf
+// erwacht im Takt der Welt, je Box des Körper-Satzes zwei Blicke aus dem Ausgabe-Pfad, je Haus Third, das Haus des Spielers über
+// die Werkstatt, See und Fluss der Mess-Wiese je Ego und Third), die Bilder neben {AUS} (<AUS>-grund-<i>-<j>-<art>-<v>.png), das
+// JSON nach {AUS} wie die Linse (HAUS_WELT_JSON). Bis 29.10. der eigene Boot der Linse (6–8 Soll-Minuten).
+async function vegetationK4Seite(H) {
+    const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
+    const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
+    await H.ruf("/fenster", { w: 640, h: 360 });
+    await H.frist();
+    await H.seite("await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} });\n" + WA + "\nreturn 1;");
+    H.schritt("welt");
+    const o = await H.seite("return await (" + D.proben + ")([\"grund\", \"bild\", \"start\"]);");
+    H.schritt("grund");
+    const bild = (x, name) => {
+        for (const [v, png] of [].concat(x.png || []).entries()) H.WB.pngDatei(H.aus + "-" + name + "-" + v + ".png", png);
+        if (x.png) x.png = name;
+    };
+    const w = (o && o.w9) || {};
+    (w.haeuser || []).forEach((h, i) => {
+        if (h.png) bild(h, "grund-" + i + "-aussen");
+        (h.koerper || []).forEach((b, j) => bild(b, "grund-" + i + "-" + j + "-" + b.art));
+        if (h.third) bild(h.third, "grund-" + i + "-third");
+    });
+    for (const x of w.wasser || []) for (const z of x.blicke || []) bild(z, "wasser-" + x.ort + "-" + z.sicht);
+    fs.writeFileSync(H.aus, JSON.stringify(o, null, 1));
+    console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · Werkstatt " + (o && o.werkstatt) + (o && o.fehler ? " · " + o.fehler : ""));
+    return 0;
+}
+const VEGETATION_K4 = seiteProbe(90, vegetationK4Seite, {
+    mutiert: true,
+    ausnahme: "das Start-Dorf erwacht im Takt (≥ 10 Häuser), je Box zwei Blicke, je Haus Third, Wasser je Ego und Third, das Haus der Werkstatt",
+});
 
 // R6 der Tier-Gesetze (Zweig tier-gesetz-k5): Kern, Kreatur-Stamm, Leben-Feld, Leib und die Kreatur-Linse
 const KREATUR = [
@@ -1779,12 +1814,12 @@ const stationen = [
         // (wie M24: 26/27 gesehen, die blinde Box offen benannt); gesehen sein müssen ≥ 90 %. Halm- UND Boden-Pixel zählen wie
         // in M24 und im W9 der Linse: der Boden-Pixel ist der Grund IN der Box (grün = die Halm-Schicht des Boden-Stoffs; trägt
         // die Box eine Diele, jeder Grund durch sie) — 23.10. an 7c6f4b49 der Turm des haus_gotisch, Bild grund-41-0-turm-*.png.
-        // Jede Box heißt beim Namen wie das Bild der Linse: Haus-Index/Box-Index (artifacts/haus-welt/grund-<i>-<j>-<art>-<v>.png).
-        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund", "--bild"],
-        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1", HAUS_WELT_JSON: "{AUS}" },
+        // Jede Box heißt beim Namen wie das Bild der Linse: Haus-Index/Box-Index (seit 29.10. <AUS>-grund-<i>-<j>-<art>-<v>.png).
+        // Seit 29.10. die Probe VEGETATION_K4 in der Welt der Sitzung (oben; vorher der eigene Boot, 6 Soll-Minuten).
+        probe: VEGETATION_K4,
         gpu: true,
         zeit: false,
-        minuten: 6,
+        minuten: 2,
         urteil: (j) => {
             const w = j && j.w9;
             if (!w || !Array.isArray(w.haeuser)) return { gruen: false, zahl: "kein W9 im JSON der Linse (HAUS_WELT_JSON)" };
@@ -1827,6 +1862,8 @@ const stationen = [
             "phyto-core.js",
             "gelaende-core.js",
             "scripts/diag-haus-welt.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/wasser-linse.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/software-gpu.cjs",
             "scripts/lib/welt-boot.cjs",
@@ -1845,12 +1882,11 @@ const stationen = [
         // (Nah-Wiese und Nah-Streu, ohne Schattenwurf) das Bild ohne Wasser-Klasse nicht, der Grund trägt dort keine Halm-Schicht,
         // und am Gesetz steht keine Pflanze im gezeichneten Wasser (`__wasserFlora`). Je Wasser-Blick 20 px Saum (die Kante des
         // Spiegels, wie die Bild-Schwelle der Linse), sonst 0. Blind (ROT): ein Wasser ohne Spiegel im Bild (< 500 px) oder ohne
-        // Gegenprobe vor dem Spiegel, ein Haus ohne Third, das Haus des Spielers fehlt.
-        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=grund", "--bild"],
-        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1", HAUS_WELT_JSON: "{AUS}" },
+        // Gegenprobe vor dem Spiegel, ein Haus ohne Third, das Haus des Spielers fehlt. Seit 29.10. dieselbe Probe (Zwilling von #1).
+        probe: VEGETATION_K4,
         gpu: true,
         zeit: false,
-        minuten: 8,
+        minuten: 2,
         urteil: (j) => {
             const w = j && j.w9;
             if (!w || !Array.isArray(w.haeuser)) return { gruen: false, zahl: "kein W9 im JSON der Linse (HAUS_WELT_JSON)" };
@@ -1900,6 +1936,7 @@ const stationen = [
             "phyto-core.js",
             "gelaende-core.js",
             "scripts/diag-haus-welt.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/wasser-linse.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
