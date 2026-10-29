@@ -1096,14 +1096,52 @@ const alle = [
         ],
         quelle: "1 = Erdbau und Vorplatz wie ein Dorf-Slot derselben Gestalt (Byte-Vergleich der ortPlan-Ausgabe), am Hang mit Gefälle ≥ 15 %",
     },
+    // Staffel 2 ── W11 FREMD-SLOT (gate:haus-welt, Phase fremd; w3u-fremdslot): ein Haus mit Keller in der Gestalt eines Dorf-
+    // Hauses, gesetzt über die Werkstatt (Phantom, confirmBuild) auf die Gasse des Drehbuch-Dorfs, 14 m von jedem Haus des Plans —
+    // sein Erdbau (`haus:`) byte-gleich dem Ein-Slot-Plan des Dorf-Slots, und der Plan v2 des Orts (fachwerk `ortPlan`, ctx.fest)
+    // legt Gasse und Feldweg um seine Platte: im Raster 5 × 5 des Grundrisses vorher Punkte auf einer Weg-Form der Wege-Karte des
+    // Orts, nachher 0, der Plan nennt den Fremd-Slot (`fest`); der Gang des Leibs (W10, Sim-Schritt, W-Taste: Tür, Kopf der
+    // Kellertreppe, Keller, zurück, beide Ränder des Laufs) erreicht den Keller ohne Hub > 0,3 m je Schritt. Der Null-Renderer
+    // misst Plan, Formen, Dichte und Gang, nie das Bild (Lehre 16).
     {
         kriterium: "bauen.K2",
         staffel: 2,
         geraet: "headless",
-        befehl: null,
-        grund:
-            "Kein Werkzeug im Spiel-Baum: ortPlan kennt keinen festen Fremd-Slot (die Gasse wird im Ortsradius nicht um das " +
-            "gesetzte Haus umgelegt), und der Keller ist ohne Anti-Clip-Hub nicht erreichbar — die Linse dafür fehlt mit dem Gesetz.",
+        befehl: ["node", "scripts/diag-haus-welt.cjs", "--phasen=fremd"],
+        env: { ...SOFT, HAUS_WELT_JSON: "{AUS}" },
+        gpu: false,
+        zeit: false,
+        minuten: 6, // lokal 18–37 s (eine Welt, Phase fremd)
+        urteil: (j) => {
+            const w = (j && j.w11) || {};
+            const h = ((j && j.haeuser) || []).find((x) => x.fremd);
+            const g = h && h.gang;
+            if (!w.typ || !g) return { gruen: false, zahl: "kein Haus auf der Gasse (W11 " + JSON.stringify(w) + ")" };
+            const keller = (g.fehlt || []).filter((x) => x.startsWith("keller"));
+            return {
+                gruen:
+                    w.vorher > 0 && w.nachher === 0 && w.byte === true && w.fest >= 1 && g.keller && g.hub <= 0.3 && !keller.length,
+                zahl:
+                    `${w.typ} auf der Gasse: Grundriss-Punkte auf der Gasse ${w.vorher} → ${w.nachher} (von 25) · Erdbau ` +
+                    `byte-gleich dem Ein-Slot-Plan ${w.byte} · Fremd-Slots im Plan ${w.fest} · Gang in den Keller ` +
+                    `${g.keller && !keller.length ? "erreicht" : "verfehlt"}, Hub ${Number(g.hub).toFixed(2)} m je Schritt ` +
+                    `(Soll ≤ 0,3)${keller.length ? " · " + keller.join(", ") : ""}`,
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/gelaende-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/siedlung-*.js",
+            "stamm/werkstatt-bauen.js",
+            "stamm/koerper-bewegung.js",
+            "scripts/diag-haus-welt.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/stamm.cjs",
+        ],
         quelle: "2 = im Ortsradius Slot des Plans mit umgelegter Gasse, Keller über die Treppe ohne Anti-Clip-Hub",
     },
     {
