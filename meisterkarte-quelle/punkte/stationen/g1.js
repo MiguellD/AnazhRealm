@@ -373,11 +373,12 @@ module.exports = [
     // ── gelaende.K3 ── M1: spiegelTreue an der Ego-Pose des Spiels am See (Ufer 1866,6/−6193,9, Gier −1,309, Neigung 0),
     // die Kamera aus dem Spiel (state.camera nach `_loopCamera`), geschossen mit `bild --wahl 0` in 1920×1080 aus dem
     // Ausgabe-Pfad (werkbank start --echt gegen den eigenen save-server auf {PORT}, die Werkbank auf {PORT} + 20000)
+    // DAS BUDGET DER SITZUNG (29.10., ≤ 30 min je Gerät): EIN Teleport an den See, EIN Schuss — Ziel 20 s, Deckel 45 s
     {
         kriterium: "gelaende.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 240, befehl: [
+        probe: { sek: 45, befehl: [
             "bash",
             "-c",
             `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
@@ -708,11 +709,16 @@ module.exports = [
     },
 
     // ── wetter.K2 ── gate:naesse:echt: klar gegen 10 min Regen als Spieler-Wort aus dem Ausgabe-Pfad (echter Renderer)
+    // IN DER SITZUNG (29.10.): nur der Ort, den das Urteil liest — das Dorf (porös draußen, innen unter dem Dach, Regen innen);
+    // die Wiese fuhr bis dahin mit (ein Teleport und fünf Schüsse, die keine Zeile trug). Der Messort dorf fährt den Dorf-Zug: das
+    // Dorf wächst, bis ein Haus mit Hülle und Tür steht — die Welt danach trägt ein Dorf mehr (mutiert)
     {
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 240, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--datei", "{AUS}"] },
+        ausnahme: "der Messort dorf fährt den Dorf-Zug: das Dorf wächst am echten Takt, bis ein Haus mit Hülle und Tür steht, dann vier Teleports am Haus",
+        mutiert: true,
+        probe: { sek: 90, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "dorf", "--datei", "{AUS}"] },
         gpu: true,
         zeit: false,
         minuten: 4,

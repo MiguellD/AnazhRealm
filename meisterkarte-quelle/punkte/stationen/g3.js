@@ -65,8 +65,8 @@ async function folge(plan) {
                 args = ["eval", roh.toString("utf8")];
             }
             const r = wb(args, s.ms);
-            const e = { exit: r.status, json: duenn(json(r.stdout)) };
-            if (!e.json) e.rest = String((r.stdout || "") + (r.stderr || "")).slice(-1500);
+            // der Rest der Ausgabe steht IMMER (29.10.: die Urteils-Zeile eines Werkzeugs, das daneben JSON druckt, fiel sonst weg)
+            const e = { exit: r.status, json: duenn(json(r.stdout)), rest: String((r.stdout || "") + (r.stderr || "")).slice(-1500) };
             aus.schritte[s.name] = e;
             if (s.datei) {
                 const f = ers(s.datei);
@@ -151,6 +151,11 @@ st.pitch = Math.atan2(best.y - (gy + 1.6), D);
 return [+best.h.toFixed(2), +best.x.toFixed(2), +best.y.toFixed(2), +best.z.toFixed(2), +sx.toFixed(2), +sz.toFixed(2)];`;
 
 const ARM = ["0.5", "1", "2"];
+// DAS EINSCHWINGEN NACH EINEM ORTSWECHSEL in der Sitzung (material.K2#1): 30 echte Takte mit der Bühne, dann das EINE „die Welt
+// steht" (`__weltStehtNach`, wie `umstellen`) — in Bau-Ereignissen, nie an der Wanduhr
+const EIN_TAKT =
+    "const takt = async () => { try { window.__buehne(); r._gameLoopTick(performance.now()); } catch (_e) {} await new Promise((x) => setTimeout(x, 16)); }; " +
+    "for (let i = 0; i < 30; i++) await takt(); await window.__weltStehtNach(takt); return 1;";
 
 // DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1) als Probe der Sitzung: die Welt-Seite wie diag-albedo-tafel neuMessen in der
 // EINEN warmen Welt der Sitzung auf der echten GPU (WERKBANK_PORT, am Ort der gespeicherten Messung, die Welt steht —
@@ -480,6 +485,53 @@ const befehlMitHimmel = (plan) => [
     HIMMEL,
 ];
 
+// DIE LUFT IN DER SITZUNG (29.10.): ferne.K1#1, ferne.K2#1, ferne.K1#2 und ferne.K2#2 lesen EINEN Lauf (Zwillinge) — die Luft-Linse
+// vom Hügel (Genesis + 120 m, Uhr 0,5 und 0,27 × 4 Azimute, das ferne Weiß) und vom Gipfel (Uhr 0,5 × 4 Azimute), danach am Messort
+// Genesis die Band-Linse (Klasse boden im Haushalt). Bis dahin fuhren die drei ersten `licht --luft` je für sich (als Zwillinge EIN
+// Lauf) und ferne.K2#2 dieselbe Luft ein zweites Mal vor ihrem Band. Das Urteil je Station liest die LUFT-Zeile im Rest des Schritts
+// luft, die Messung in dateien.luft, den Adapter der Sitzung.
+const FERNE_SITZUNG = {
+    sek: 90,
+    befehl: befehlDer({
+        name: "ferne",
+        schritte: [
+            { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
+            { name: "genesis", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
+            { name: "band", args: ["band", "--ort", "genesis", "--datei", "@DIR@/band.json"], datei: "@DIR@/band.json" },
+        ],
+    }),
+};
+const FERNE_AUSNAHME =
+    "EINE Luft-Messung für vier Stationen: vom Hügel 2 Uhren × 4 Azimute je drei Schüsse und das ferne Weiß, vom Gipfel (ein Teleport) 4 Azimute, dazu das Boden-Band an Genesis";
+// DIE ALBEDO-TAFEL IN DER SITZUNG (29.10.): material.K3#1 und material.K3#2 lesen EINEN Lauf (Zwillinge) — `albedo --tafel` misst
+// jede Zeile der Tafel (Haus L0/L1/L2, Birke, Fichte, Fels, …) zu jeder ihrer Uhren (0,5 und 0,27), je Stufen-Zeile ein eigener Gang;
+// dazu die Stufen der Art rock. Bis dahin fuhr jede Staffel dieselbe Tafel für sich, nach 10 s Ruhe an der Wanduhr.
+const MATERIAL_K3_SITZUNG = {
+    sek: 90,
+    befehl: befehlDer({
+        name: "material.K3",
+        schritte: [
+            { name: "ort", args: ["umstellen", "0", "0"], muss: true },
+            { name: "welt", args: ["albedo", "--tafel", "--datei", "@DIR@/welt.json", "--ordner", "@DIR@/albw"], datei: "@DIR@/welt.json" },
+            {
+                name: "fels",
+                args: [
+                    "eval",
+                    "const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === \"rock\") o[k] = r._foundryKindStages(k); return o;",
+                ],
+            },
+        ],
+    }),
+};
+const MATERIAL_K3_AUSNAHME =
+    "die Welt-Seite der Albedo-Tafel des Spiels: jede Zeile zu jeder Uhr der Tafel (0,5 und 0,27), je Stufen-Zeile ein eigener Gang mit ihrem Exemplar — ein Lauf für zwei Stationen";
+// die Luft des Laufs: die LUFT-Zeile (Rest des Schritts luft), die Messung, der Adapter der Sitzung
+const luftDer = (j) => {
+    const l = (j && j.schritte && j.schritte.luft) || {};
+    const ad = (j && j.adapter) || null;
+    return { rest: String(l.rest || ""), exit: l.exit, m: (j && j.dateien && j.dateien.luft) || null, ad, hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad), fehler: j ? j.fehler : "keine Messung in {AUS}" };
+};
+
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -488,7 +540,8 @@ const stationen = [
         // Die Kugel-Bilanz aus bericht/2110-messschuld2 (licht.K2 S1, GTX, n = 3, 5,0132 / 0,1995): koordination
         // `bericht/2110-messschuld2/kugel.js` über `werkbank eval` am Messort wiese, drei Schüsse aus dem Ausgabe-Pfad bei
         // 1920×1080: A ist die Welt, B die Kugeln ohne Schatten-Empfang, C die Sonne aus.
-        probe: { sek: 120, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die Kugel-Bilanz (9 Schüsse) — Ziel 15 s
+        probe: { sek: 45, befehl: befehlDer({
             name: "licht.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -539,7 +592,8 @@ const stationen = [
         // Himmel zur Sonne ≥ 1,2; die tiefe Sonne (Uhr 0,27 und 0,73, klar) ≥ 2,5; bedeckt (Regen, jede Uhr) ≤ 1,5. Gültig ist eine
         // Spalte wie Staffel 1 nur mit A = B an der Sonnen-Kugel und A = C an der Schatten-Kugel (±2 %), ≥ 100 px, und wenn ihr
         // `stand` die Uhr und das Wetter der Spalte trägt.
-        probe: { sek: 180, befehl: befehlMitHimmel({
+        ausnahme: "jede der 6 Spalten Uhr × Wetter ist eine eigene Kugel-Bilanz (9 Schüsse 1920×1080), dazu der Himmel zur Sonne (6 Schüsse) — am EINEN Ort, die Uhr gestellt",
+        probe: { sek: 90, befehl: befehlMitHimmel({
             name: "licht.K2#2",
             texte: SPALTE_TEXTE,
             schritte: [
@@ -620,16 +674,18 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:luft-tiefe:echt mit Messung (ferne-luft e9f79deb, Beleg an d3a626ee): luftTiefe vom Hügel Genesis + 120 m,
         // 4 Azimute, Uhr 0,5 und 0,27, Urteil luftTiefeUrteil gegen spec/farbe/luft-referenz.json (Bucholtz 1995)
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
-        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        ausnahme: FERNE_AUSNAHME,
+        probe: FERNE_SITZUNG,
+        env: envDer,
         gpu: true,
         zeit: false,
         minuten: 8,
-        urteil: (j, lauf) => {
-            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
-            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
-            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(lauf.stdout);
-            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+        urteil: (j0) => {
+            const L = luftDer(j0);
+            const { ad, hw } = L;
+            const j = L.m;
+            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(L.rest);
+            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + L.exit + (L.fehler ? ", " + L.fehler : "") + "): " + L.rest.trim().slice(-200) };
             const s = /K1-1 (GRUEN|ROT)/.exec(z[2]);
             const q = ((j && j.zeilen) || [])
                 .filter((x) => x.uhr === 0.5)
@@ -653,16 +709,18 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // derselbe Lauf wie ferne.K1#1 (gate:luft-tiefe:echt): der Restkontrast am Rand der letzten Fern-Schale, 4 Azimute, klar, Uhr 0,5
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
-        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        ausnahme: FERNE_AUSNAHME,
+        probe: FERNE_SITZUNG,
+        env: envDer,
         gpu: true,
         zeit: false,
         minuten: 8,
-        urteil: (j, lauf) => {
-            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
-            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
-            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(lauf.stdout);
-            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+        urteil: (j0) => {
+            const L = luftDer(j0);
+            const { ad, hw } = L;
+            const j = L.m;
+            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(L.rest);
+            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + L.exit + (L.fehler ? ", " + L.fehler : "") + "): " + L.rest.trim().slice(-200) };
             const s = /K2-1 (GRUEN|ROT)/.exec(z[2]);
             const r = ((j && j.zeilen) || []).filter((x) => x.uhr === 0.5 && x.rand && x.rand.C != null);
             const C = r.map((x) => x.rand.C);
@@ -687,16 +745,18 @@ const stationen = [
         // 0,27 je Kanal (Δβ blau−rot), den Farbton bei 8 km (≤ 10° von der In-Streuung), die Sonnenseite (Y der In-Streuung zur Sonne /
         // gegen sie ≥ 1,2), das ferne Weiß bei Sonne 5° (weiße Lambert-Tafel 5 km, R/B ≥ 1,3) und den Ton des Himmels (Hillaire). Ein
         // OFFEN der Referenz hält nur den Exit des Gates, die Staffel K1-2 bleibt ROT, solange ein K1-2-Befund steht.
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
-        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        ausnahme: FERNE_AUSNAHME,
+        probe: FERNE_SITZUNG,
+        env: envDer,
         gpu: true,
         zeit: false,
         minuten: 10,
-        urteil: (j, lauf) => {
-            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
-            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
-            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(lauf.stdout);
-            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+        urteil: (j0) => {
+            const L = luftDer(j0);
+            const { ad, hw } = L;
+            const j = L.m;
+            const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(L.rest);
+            if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + L.exit + (L.fehler ? ", " + L.fehler : "") + "): " + L.rest.trim().slice(-200) };
             const s = /K1-2 (GRUEN|ROT)/.exec(z[2]);
             const zl = (j && j.zeilen) || [];
             const Y = (c) => (c ? 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] : null);
@@ -707,7 +767,7 @@ const stationen = [
             });
             const dh = zl.flatMap((x) => (x.baender || []).filter((b) => b.d === 8000 && b.n >= 10).map((b) => b.dh)).filter((x) => x != null);
             const rb = j && j.weiss ? j.weiss.RB : null;
-            const n = (lauf.stdout.match(/^\s+(ROT|OFFEN) K1-2 /gm) || []).length;
+            const n = (L.rest.match(/^\s+(ROT|OFFEN) K1-2 /gm) || []).length;
             const gruen = hw && !!s && s[1] === "GRUEN" && seite.every((x) => x != null) && dh.length > 0 && rb != null;
             return {
                 gruen,
@@ -727,14 +787,9 @@ const stationen = [
         // binnen 3 km, Auge 40 m) — K2-2 je Rand-Spalte der Struktur-Tensor von ln Y, keine waagrechte Linie ab 1° (luft-referenz
         // `band.linie`), 4 Azimute je Ort, Uhr 0,5 —, danach am Messort Genesis die Band-Linse: die Klasse boden (Boden-Satz · Wasser-Satz ·
         // Fern-Ring · Fern-Wasser) über Haupt + k0 + k1 im Haushalt (12 Befehle / 120k Dreiecke, spec/profiband/haushalt.json).
-        probe: { sek: 900, befehl: befehlDer({
-            name: "ferne.K2#2",
-            schritte: [
-                { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
-                { name: "genesis", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
-                { name: "band", args: ["band", "--ort", "genesis", "--datei", "@DIR@/band.json"], datei: "@DIR@/band.json" },
-            ],
-        }) },
+        // IN DER SITZUNG (29.10.): derselbe Lauf wie ferne.K1#1, K2#1, K1#2 (FERNE_SITZUNG, Zwillinge)
+        ausnahme: FERNE_AUSNAHME,
+        probe: FERNE_SITZUNG,
         env: envDer,
         gpu: true,
         zeit: false,
@@ -772,7 +827,8 @@ const stationen = [
         // EINEN Wetter-Schreiber), Uhr 0,5, 4 Azimute ab der Sonne; je Sicht die Sichtweite am Bezugsniveau aus dem Kontrast-Abfall
         // im Bild, −ln 0,02 · g·d / −ln T_grün je Pixel der Szene (T 0,02…0,95, T = (L − S)/(L0 − S) aus drei Schüssen), der Median;
         // das Urteil der Median der Azimute (≥ 10 Pixel, ≥ 3 Azimute) gegen 1 500 m ±15 %
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--datei", "{AUS}"] },
+        // IN DER SITZUNG (29.10.): EIN Teleport (Genesis), EINE Uhr × 4 Azimute je drei Schüsse 480×270, kein Gipfel — Ziel 20 s
+        probe: { sek: 45, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -801,7 +857,10 @@ const stationen = [
         // --zug`), je Wort ≥ 60 s der Welt-Uhr im echten Takt (`_gameLoopTick`, 0,1 s) über die Transition des Spiels (45 s, das Gemüt
         // moduliert sie), bis das Wort steht; die Uhr steht auf Mittag; je Sekunde die Leuchtdichte des Ausgabe-Bilds (linear). Das Urteil: der größte Sprung |log2 Y_k/Y_k−1| je
         // Sekunde ≤ 0,1 EV/s, und beide Wörter standen am Ende ihrer Phase (sonst misst die Reihe keinen Übergang)
-        probe: { sek: 420, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--datei", "{AUS}"] },
+        // IN DER SITZUNG (29.10.): die Welt-Uhr läuft im echten Takt ohne Wanduhr (10 Takte je Spiel-Sekunde, je Sekunde ein Bild
+        // 160×90) — der Zug selbst trägt ~125 Spiel-s (klar 5 s, je Wort ≥ 60 s); das Wort setzt die Phase am Ende zurück auf klar
+        ausnahme: "der Wetter-Zug des Spiels: klar 5 s, Regen und wieder klar je ≥ 60 Spiel-s über die Transition (45 s), 10 echte Takte und ein Bild je Spiel-Sekunde",
+        probe: { sek: 90, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -835,23 +894,26 @@ const stationen = [
         // Kamera <m> vor die Fläche, die der Ego-Blick trifft; klassenMasse liefert glatt (8×8-Blöcke mit σ Luma < 4) und nyquist.
         // Die Schüsse: Boden (bodenSatz) an der Mess-Wiese, Fels (formationenSatz) am höchsten Punkt einer Genesis-Formation.
         // An origin/main gibt es `--arm` noch nicht; die Station ist dort ROT („arm fehlt“).
-        probe: { sek: 300, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): nach jedem Ortswechsel EIN_TAKT (30 echte Takte, dann „die Welt steht“ wie `umstellen`) statt
+        // `lauf <n> --ein <m>` — 156 s Einschwingen an der Wanduhr fielen (8+20, 10+30, 10+30, 3 × 4+12)
+        ausnahme: "zwei Orte (Wiese, der höchste Fels in Genesis) × drei Armlängen je ein Schuss 1920×1080 — drei Teleports und 17 Werkbank-Rufe",
+        probe: { sek: 90, befehl: befehlDer({
             name: "material.K2#1",
-            texte: { FELS_ZIEL },
+            texte: { FELS_ZIEL, EIN: EIN_TAKT },
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "wiese", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
-                { name: "ein-wiese", args: ["lauf", "8", "--ein", "20"] },
+                { name: "ein-wiese", args: ["eval", "@T:EIN@"] },
                 { name: "blick", args: ["eval", "r.state.pitch = -0.75; return [r.state.cameraMode, r.state.yaw, r.state.pitch]"] },
                 ...ARM.map((d) => ({ name: "boden-" + d, args: ["bild", "0", "0", "0", "0", "0", "0", "--arm", d, "--wahl", "0", "--klasse", "^bodenSatz$", "--datei", "@DIR@/boden-" + d + ".png"] })),
                 { name: "genesis", args: ["umstellen", "--ort", "genesis", "--sicht", "ego"], muss: true },
-                { name: "ein-genesis", args: ["lauf", "10", "--ein", "30"] },
+                { name: "ein-genesis", args: ["eval", "@T:EIN@"] },
                 { name: "fels-weit", args: ["eval", "globalThis.__felsR = 400; globalThis.__felsOben = 1; globalThis.__felsD = 1.5; @T:FELS_ZIEL@"], muss: true },
                 { name: "fels-ort", args: ["umstellen", "@fels-weit.4@", "@fels-weit.5@", "--sicht", "ego"], muss: true },
-                { name: "ein-fels", args: ["lauf", "10", "--ein", "30"] },
+                { name: "ein-fels", args: ["eval", "@T:EIN@"] },
                 ...ARM.flatMap((d) => [
                     { name: "fels-stand-" + d, args: ["eval", "globalThis.__felsR = 8; @T:FELS_ZIEL@"] },
-                    { name: "ein-fels-" + d, args: ["lauf", "4", "--ein", "12"] },
+                    { name: "ein-fels-" + d, args: ["eval", "@T:EIN@"] },
                     { name: "fels-" + d, args: ["bild", "0", "0", "0", "0", "0", "0", "--arm", d, "--wahl", "0", "--klasse", "^formationenSatz$", "--datei", "@DIR@/fels-" + d + ".png"] },
                 ]),
             ],
@@ -909,21 +971,10 @@ const stationen = [
         // Umgebungslicht π, nicht das belichtete Bild. Für das Haus wird der Ton jeder Stufe gegen L0 gerechnet (`stufeVon`); für den Fels
         // werden die Stufen der Art rock abgefragt (`_foundryKindStages`): ist es nur [0], zeigt die Welt den Fels nur in L0, und die
         // Fels-Hälfte ist erfüllt (M43).
-        probe: { sek: 300, befehl: befehlDer({
-            name: "material.K3#1",
-            schritte: [
-                { name: "ort", args: ["umstellen", "0", "0"], muss: true },
-                { name: "ruhe", args: ["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"] },
-                { name: "welt", args: ["albedo", "--tafel", "--datei", "@DIR@/welt.json", "--ordner", "@DIR@/albw"], datei: "@DIR@/welt.json" },
-                {
-                    name: "fels",
-                    args: [
-                        "eval",
-                        "const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === \"rock\") o[k] = r._foundryKindStages(k); return o;",
-                    ],
-                },
-            ],
-        }) },
+        // IN DER SITZUNG (29.10.): EIN Lauf für beide Staffeln (MATERIAL_K3_SITZUNG, Zwillinge) — `albedo --tafel` misst ohnehin jede
+        // Zeile der Tafel zu jeder ihrer Uhren; die 10 s Ruhe an der Wanduhr fielen (`umstellen` endet, wenn die Welt steht)
+        ausnahme: MATERIAL_K3_AUSNAHME,
+        probe: MATERIAL_K3_SITZUNG,
         env: envDer,
         gpu: true,
         zeit: false,
@@ -977,21 +1028,9 @@ const stationen = [
         // in ihrer Stufe; der Fels zeigt nur L0 (wie #1). Die Haus-Stufen des Glas-Stils (hochhaus, volle_moderne) hält offline
         // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
         // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
-        probe: { sek: 300, befehl: befehlDer({
-            name: "material.K3#2",
-            schritte: [
-                { name: "ort", args: ["umstellen", "0", "0"], muss: true },
-                { name: "ruhe", args: ["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"] },
-                { name: "welt", args: ["albedo", "--tafel", "--datei", "@DIR@/welt.json", "--ordner", "@DIR@/albw"], datei: "@DIR@/welt.json", ms: 3600000 },
-                {
-                    name: "fels",
-                    args: [
-                        "eval",
-                        "const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === \"rock\") o[k] = r._foundryKindStages(k); return o;",
-                    ],
-                },
-            ],
-        }) },
+        // IN DER SITZUNG (29.10.): derselbe Lauf wie material.K3#1 (MATERIAL_K3_SITZUNG, Zwillinge)
+        ausnahme: MATERIAL_K3_AUSNAHME,
+        probe: MATERIAL_K3_SITZUNG,
         env: envDer,
         gpu: true,
         zeit: false,
@@ -1112,7 +1151,10 @@ const stationen = [
         // schatten-k1-kontakt: werkbank licht --kontakt (scripts/lib/licht-linsen.cjs `kontaktSicht` + `kontaktUrteil`): Pfosten
         // 0,5 × 0,5 × 3 m auf der Prüfbühne, A Welt / B ohne Pfosten / C ohne Sonne aus dem Ausgabe-Pfad, Halbschatten 10–90 % am
         // Fuß je Pose bei Uhr 0,5; am Kopf vor dem Zweig kennt licht kein --kontakt (ROT beim Namen)
-        probe: { sek: 240, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): EINE Uhr (0,5), zwei Posen je drei Schüsse — Ziel 25 s; der Messort buehne importiert die Welt der
+        // Prüfbühne und lädt die Seite in ihr: danach steht die Sitzung in einer fremden Welt (mutiert)
+        mutiert: true,
+        probe: { sek: 45, befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1154,7 +1196,10 @@ const stationen = [
         kriterium: "lod.K5",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 900, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): EIN Ort (Wiese), 7 Fälle Familie × Stufe je drei Schüsse (leer, L0, Stufe) zu je drei Aufnahmen;
+        // die Exemplare fallen am Ende, die Schalter kehren zurück
+        ausnahme: "7 Fälle Familie × Stufe (Baum L1/L2, Haus L1/L2, Tor L1/L2, Wagen L1) je drei Schüsse 1920×1080, je Stufe bäckt die Karte, bis sie dient",
+        probe: { sek: 90, befehl: befehlDer({
             name: "lod.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1226,7 +1271,8 @@ const stationen = [
         kriterium: "lod.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 600, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): EINE Sekunde Gehen (4 m in 8 Schritten) je Schritt zwei Schüsse — Ziel 25 s
+        probe: { sek: 45, befehl: befehlDer({
             name: "lod.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
