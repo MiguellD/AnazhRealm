@@ -1464,7 +1464,9 @@ async function checkBandTierSeparation({ page, check }) {
         o.checks.b2MutConsumed =
             Number.isFinite(o.b2LeashWolf) && Number.isFinite(o.b2LeashDeer) && o.b2LeashWolf - o.b2LeashDeer >= 2;
         cleanup([wolfProbe, deerProbe]);
-        tick(1, 0.05); // ein Tick → der Anker (Geburtsort) initialisiert lazy
+        // der Anker (Geburtsort) initialisiert lazy im KI-Takt des Leibs — gestaffelt am Index der Liste (unter dem Bestand
+        // stehen bis zur Kappe Leiber der Welt davor, oekologie.K2#2): höchstens 8 Takte, bis beide ihn tragen
+        for (let k = 0; k < 8 && !(shy.userData.wanderAnchor && bold.userData.wanderAnchor); k++) tick(1, 0.05);
         const anchShy = shy.userData.wanderAnchor;
         const anchBold = bold.userData.wanderAnchor;
         if (!anchShy || !anchBold) return { error: "Anker nicht initialisiert" };
