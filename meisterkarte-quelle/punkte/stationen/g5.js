@@ -5,13 +5,27 @@
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
 
-// EINE echte Werkbank-Sitzung je Boot (das Muster von bericht/2210-radeon-beweise/skripte/werkbank-lauf.sh und
-// 2210-messschuld-gtx-6cfce/m36.sh): eigener save-server auf {PORT}+20000, Werkbank auf {PORT} (Seite {PORT}−1), eine Linse
-// neben ihr auf {PORT}+20001; jeder Boot frisch, der Spielstand des Baums fällt vor und nach jedem Boot. Die Schritte
-// schreiben ihre Ausgabe unter „@@PUNKTE@@ NAME" (nie „=== " — damit beginnen die Überschriften der Linsen); das Urteil liest die Abschnitte.
-// Läuft nur unter gpu-lauf.sh (gpu: true).
-// Die Ports räumt das Skript selbst (netstat LISTEN | ABHÖREN — die Radeon spricht deutsch).
+// DIE PROBE IN DER SITZUNG (punkte.cjs fahreSitzung, 29.10.): die Welt steht schon — save-server {PORT}, `werkbank start --echt`
+// auf {PORT}+20000 (WERKBANK_PORT), eine Linse neben ihr auf {PORT}+20001. `boot` holt eine FRISCHE Welt: die erste ist es schon
+// (die Sitzung stellt vor jeder Probe den Grund: Spielstand weg, die Seite neu im warmen Browser), jede weitere über
+// `punkte.cjs grundstellung` (dieselbe Grundstellung) — nie ein eigener Boot; `boot --ort X` stellt danach um. Die Schritte
+// schreiben ihre Ausgabe unter „@@PUNKTE@@ NAME" (nie „=== " — damit beginnen die Überschriften der Linsen); das Urteil liest die
+// Abschnitte. Bis 29.10. bootete jede Station hier ihre eigene Welt (weg/boot: save-server, werkbank start, netstat je Boot).
 const KOPF = [
+    "set -u",
+    "WP=$(({PORT} + 20000)); LP=$(({PORT} + 20001)); export WERKBANK_PORT=$WP",
+    'L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1',
+    'boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; ' +
+        'if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }',
+    'teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }',
+];
+// die Probe einer Station: Deckel sek, die Schritte nach dem KOPF
+const sitzung = (sek, ...zeilen) => ({ sek, befehl: ["bash", "-c", [...KOPF, ...zeilen].join("\n")] });
+// DER EIGENE BOOT — nur wo das Kriterium Kälte misst (siedlung.K5: das erste Haus nach dem Erwachen der Zelle in einem kalten Profil,
+// je nH ein frischer Boot; die warme Welt der Sitzung trüge Asset- und Chunk-Cache der Proben davor): eigener save-server auf
+// {PORT}+20000, Werkbank auf {PORT} (Seite {PORT}−1), eine Linse neben ihr auf {PORT}+20001; der Spielstand des Baums fällt vor und
+// nach jedem Boot; die Ports räumt das Skript selbst (netstat LISTEN | ABHÖREN — die Radeon spricht deutsch). Nur unter gpu-lauf.sh.
+const KOPF_BOOT = [
     "set -u",
     "WP={PORT}; SP=$(({PORT} + 20000)); LP=$(({PORT} + 20001)); export WERKBANK_PORT=$WP",
     'L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=',
@@ -26,7 +40,7 @@ const KOPF = [
         'grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }',
     'teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }',
 ];
-const sitzung = (...zeilen) => ["bash", "-c", [...KOPF, ...zeilen].join("\n")];
+const bootSitzung = (...zeilen) => ["bash", "-c", [...KOPF_BOOT, ...zeilen].join("\n")];
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
 
 // Pfade (R6): die Dateien, die die Messung liest
@@ -200,7 +214,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // Garage: gate:garage-labor mit dem Mess-Patch bei vmax (bericht/2110-mk-kopf/garage-mk.diff, Zeile MK2110); Welt: der GT
         // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/2110-gtx-messschuld/tempo3.js über werkbank eval, M27)
-        befehl: sitzung(
+        probe: sitzung(600,
             'echo "@@PUNKTE@@ GARAGE"',
             'git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 600 node scripts/diag-garage-mk.cjs',
             'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs',
@@ -237,7 +251,7 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // die Zusätze der 2: Drift, Rückkehr (tempo3.js in der Welt), Ruck (gate:fahr-leben T4) und EIN FOV-Schreiber (T5)
-        befehl: sitzung(
+        probe: sitzung(480,
             'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
             "boot",
             'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"'
@@ -278,7 +292,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:fahr-leben T4 (Absteigen in Fahrt, Azimut nach 10 Bildern) + der Blick im Bild am Steilhang bergab, Third → Ego →
         // Third (bericht/2010-buendel-abab/blick.js über werkbank eval, M8): der GT in den Bildern 1–3 nach dem Wechsel
-        befehl: sitzung(
+        probe: sitzung(480,
             'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
             "boot",
             'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"'
@@ -320,7 +334,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: sitzung(
+        probe: sitzung(720,
             "A=$(cygpath -m '{AUS}')",
             "teil Z node scripts/diag-settlement.cjs --nur-z",
             ...STADT_HUEGEL,
@@ -382,7 +396,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: sitzung(
+        probe: sitzung(720,
             "A=$(cygpath -m '{AUS}')",
             "teil ZIPF node scripts/diag-settlement.cjs --nur-z --zipf",
             ...STADT_HUEGEL,
@@ -564,7 +578,7 @@ const stationen = [
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        befehl: sitzung(
+        befehl: bootSitzung(
             ...[12, 300].flatMap((nh) => [
                 "boot --ort dorf",
                 "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
@@ -742,7 +756,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
-        befehl: sitzung(
+        probe: sitzung(600,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -765,7 +779,7 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
-        befehl: sitzung(
+        probe: sitzung(1080,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -1079,7 +1093,7 @@ const stationen = [
         // werkbank latenz --verb hieb (halten-latenz): Klick per CDP bis zur Marke getCurrentTexture, an der die rechte Hand ≥ 1 cm
         // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
         // schlechteste urteilt (bildraten-fest, wie leib.K1)
-        befehl: sitzung(
+        probe: sitzung(600,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -1821,7 +1835,7 @@ const stationen = [
         // rechnet, zählt nicht doppelt). Am Grund a03b7b06 fehlt das Verb
         // (ROT „keine Bedienung"); swiftshader in der Cloud: Deckung 12,51 % ohne → 3,18 % mit dem Spiel-Zustand (zwei Läufe gleich, HUD 50 · Menü 21 Interaktionen), INP Sekunden
         // (CPU-Raster, kein Urteil).
-        befehl: sitzung(
+        probe: sitzung(180,
             "boot",
             "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
             "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
