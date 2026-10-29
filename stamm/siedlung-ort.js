@@ -1550,6 +1550,19 @@ class AnazhRealm_siedlung_ort {
         if (!plan || !origin) return;
         this._bewohnerMelden(plan, origin, so && so.key ? so.key : null); // die Bewohner des Plans (`_tickBewohner`)
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        // DIE BRÜCKEN DER GASSEN (fahrzeug.K2): das Brücken-Etikett des Plans v2 (fachwerk `ortPlan`: je Gasse über Welt-Wasser
+        // die Widerlager [wa, wb] und die Höhen `ys` ihres Wegs) trägt eine Jochbrücke (`_brueckenLegen`)
+        const spannen = [];
+        for (const rd of plan.roads || [])
+            for (const [wa, wb] of rd.bruecken || []) {
+                const [A, B, ys] = [rd.pts[wa], rd.pts[wb], rd.ys || []];
+                if (A && B && Number.isFinite(ys[wa]) && Number.isFinite(ys[wb]))
+                    spannen.push({
+                        a: { x: origin.x + A.x, z: origin.z + A.z, y: ys[wa] },
+                        b: { x: origin.x + B.x, z: origin.z + B.z, y: ys[wb] },
+                    });
+            }
+        if (spannen.length && so && so.key) this._brueckenLegen(spannen, "dorf:" + so.key);
         this._wegenetzAnschluss(so && so.key); // die Feldwege zu den Nachbarn, deren Plan steht (fahrzeug.K2)
         yield;
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
@@ -3168,7 +3181,18 @@ class AnazhRealm_siedlung_ort {
                     return null;
                 }
                 this._stlWegeBuild({ feldwege: [{ pts: lok, w: W.breiteM }] }, { x: mx, z: mz }, "netz:" + paar);
-                kante.pts = lok.map((q) => ({ x: q.x + mx, z: q.z + mz }));
+                const welt = lok.map((q) => ({ x: q.x + mx, z: q.z + mz }));
+                // wo er Wasser quert, trägt ihn die Brücke (fachwerk `brueckenAmWeg`: je Punkt das Wasser und die Höhe aus dem
+                // Faden), und über dem Wasser läuft er auf ihrer Achse (`wegUeberBruecken`) — die Kante des Netzes, die der Fahrer fährt
+                const sp =
+                    antwort.nass && antwort.ys
+                        ? AnazhRealm.Gesetz("fachwerk:brueckenAmWeg")(welt, antwort.nass, antwort.ys)
+                        : [];
+                kante.pts = AnazhRealm.Gesetz("fachwerk:wegUeberBruecken")(
+                    welt,
+                    sp.map((s) => [s.wa, s.wb])
+                );
+                if (sp.length) this._brueckenLegen(sp, "netz:" + paar);
                 return kante;
             },
             (e) => {
@@ -3179,6 +3203,40 @@ class AnazhRealm_siedlung_ort {
         );
         K.set(paar, kante);
         return kante.fertig;
+    }
+
+    // DIE BRÜCKE LIEGT (fahrzeug.K2): je Spanne {a, b} ({x, z, y} der Widerlager in der Welt) die Jochfelder des Gesetzes (fachwerk
+    // `brueckenFelder`) als Werke der Welt — der Bauplan der Wirts-Zeile B7 des Buchs (`bruecke_jochfeld`: Trittfläche, Geländer,
+    // Joch, Durchlass), aus dem Gesetz (`ausGesetz`: der Stand trägt sie nie, jeder Boot legt sie neu), der Same je Spanne und
+    // Feld aus dem Schlüssel (die Gasse eines Orts „dorf:…“, der Feldweg eines Paars „netz:…“), je Schlüssel einmal je Sitzung.
+    // Bis hier querte jeder Weg das Wasser als Furt: das Brücken-Etikett des Plans reiste unkonsumiert, der Feldweg kannte keins.
+    // Rückgabe: die Zahl der gelegten Felder.
+    _brueckenLegen(spannen, schluessel) {
+        const typ = "bruecke_jochfeld";
+        if (!spannen || !spannen.length || !this.state.blueprints || !this.state.blueprints[typ]) return 0;
+        const K = this._brueckenSchluessel || (this._brueckenSchluessel = new Set());
+        if (K.has(schluessel)) return 0;
+        K.add(schluessel);
+        const felder = AnazhRealm.Gesetz("fachwerk:brueckenFelder");
+        const same = this._rollGenome(schluessel, "bruecke");
+        let n = 0;
+        spannen.forEach((sp, si) =>
+            felder(sp.a, sp.b).forEach((f, fi) => {
+                const e = this.spawnArchitecture(
+                    typ,
+                    { x: f.x, y: f.y + 0.5, z: f.z },
+                    {
+                        seed: Math.floor(same.axis(si + ":" + fi) * 4294967296) >>> 0,
+                        rotationY: f.phi,
+                        silent: true,
+                        precise: true,
+                        ausGesetz: true,
+                    }
+                );
+                if (e) n++;
+            })
+        );
+        return n;
     }
 
     // DIE ROUTE ÜBER DAS NETZ: vom Knoten, der dem ersten Punkt von `ueber` (Welt x/z) am nächsten liegt, durch die übrigen der

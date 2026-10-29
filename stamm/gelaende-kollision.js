@@ -222,12 +222,17 @@ class AnazhRealm_gelaende_kollision {
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
         const pflanze = this._istNatur(entry);
+        // DIE BRÜCKE (fahrzeug.K2): ein Werk mit `durchlass` (die Wirts-Zeile des Gesetzbuchs: das Jochfeld) staut kein Wasser — unter
+        // ihm fließt es, seine Pfähle stehen im Bach —, und ein Teil mit `tritt` ist Trittfläche: Rad und Fuß stehen auf seiner
+        // Oberkante (`_werkBoden`, `_bewohnerTritt`), kein Gehender stößt an sie (`_bewohnerWand`)
+        const durchlass = !!(bp && bp.durchlass);
         for (const part of teile) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
             if (pflanze) aabb.pflanze = true;
-            if (pflanze || gefaehrt) aabb.stempelfrei = true; // keine Wasser-Zelle (`_stempelSpanne`)
+            if (part.tritt === true) aabb.tritt = this._trittDa = true;
+            if (pflanze || gefaehrt || durchlass) aabb.stempelfrei = true; // keine Wasser-Zelle (`_stempelSpanne`)
             // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
             // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
             if (part.shape === "cylinder" && part.size)

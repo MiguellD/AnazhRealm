@@ -1839,20 +1839,21 @@ class AnazhRealm_siedlung_bewohner {
             : [AnazhRealm.PLAYER_STEP_UP, AnazhRealm.BEWOHNER.kopfM];
         let st = null;
         let memo = null;
+        // der Boden der Strecke: das Gesetz und darüber die Trittfläche eines Werks (die Bahn der Brücke, `_trittUeber`) — die
+        // Trittfläche selbst ist nie Wand, ihr Geländer und ihr Joch schon
+        const boden0 = (x, z) => this._trittUeber(x, z, this.getTerrainHeightAt(x, z), Infinity);
         for (const ent of kand) {
             const boxen = ent.blockerAABBs;
             if (!boxen) continue;
             for (const box of boxen) {
-                if (this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
+                if (box.tritt || this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
                 if (st === null) {
                     this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
                     st = this._editGenZaehler | 0;
                     memo = new Map();
                 }
                 const grund = (q) =>
-                    q._grundStand === st
-                        ? q._grundY
-                        : ((q._grundStand = st), (q._grundY = this.getTerrainHeightAt(q.x, q.z)));
+                    q._grundStand === st ? q._grundY : ((q._grundStand = st), (q._grundY = boden0(q.x, q.z)));
                 // der Boden unter der Box: längs der Strecke, so weit die Box (samt Kapsel) sie begleitet, je halben Meter
                 let [t0, t1] = [0, 1];
                 if (L > 1e-6) {
@@ -1867,7 +1868,7 @@ class AnazhRealm_siedlung_bewohner {
                 const boden = (k) => {
                     const t = Math.max(t0, Math.min(t1, (k * 0.5) / (L || 1)));
                     let g = t <= 0 ? grund(a) : t >= 1 ? grund(e) : memo.get(k);
-                    if (g === undefined) memo.set(k, (g = this.getTerrainHeightAt(a.x + dx * t, a.z + dz * t)));
+                    if (g === undefined) memo.set(k, (g = boden0(a.x + dx * t, a.z + dz * t)));
                     return g;
                 };
                 // ohne Boden ist jede Box Wand; die Sohle steht bis `sohleM` unter dem Gesetz (der Feld-Scan des Schritts,

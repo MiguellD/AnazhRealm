@@ -84,7 +84,7 @@
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3] },
+            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3], bank: [0, 1, 3], leiter: [0, 1, 3], bruecke: [0, 1, 3] },
             budget: {
                 // DAS EINE WURF-GESETZ (S3, E1): jede gezeigte Stufe wirft die Stufe 3 — der grundriss-treue Fernkörper,
                 // nurWurf (nie gezeigt, ≤ 96 Dreiecke in EINEM Draw, gate:haus-fern); vorher warf die L0 sich selbst
@@ -127,6 +127,16 @@
                     0: { tris: 900, draws: 1, schatten: 0 },
                     1: { tris: 180, draws: 1, schatten: 3 },
                     3: { tris: 30, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
+                },
+                // DIE BRÜCKE (fahrzeug.K2, das Jochfeld unten): nah die Bohlen mit Fuge, gefaste Träger, Joch mit Kreuz und
+                // Geländer mit Leisten und Nägeln (der Nagel faltet ins Holz: ein Draw), die L1 die Bahn als Platte ohne Fase und
+                // Leisten, die Stufe 3 wirft für die L1 (18 Dreiecke); gemessen am Rand jedes Reglers: L0 1 416–1 724 (Bohle
+                // 0,32–0,20 m), L1 144.
+                bruecke: {
+                    0: { tris: 1750, draws: 1, schatten: 0 },
+                    1: { tris: 150, draws: 1, schatten: 3 },
+                    3: { tris: 18, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                 },
                 gestalten: {},
@@ -3604,6 +3614,89 @@
     // Rückgabe: die Punkte (geglättet, `glaetten`) oder null (kein Lauf). Leser: der Ort-Faden (voxel-worker `ort-weg`, Lehre 14)
     // für den Wirt (`_wegenetzLegen`).
     const WEG_ZWISCHEN = { steilMax: 0.3, hang: 4, glaett: 16, furt: 20 };
+    // DIE BRÜCKE DES WEGS (fahrzeug.K2): wo ein Weg Welt-Wasser quert, trägt ihn eine hölzerne Jochbrücke (das Werk `jochfeld`)
+    // von Widerlager zu Widerlager — den trockenen Punkten vor und nach dem nassen Lauf (`nasseLaeufe`, dieselbe Regel wie das
+    // Brücken-Etikett der Gasse im Plan v2). Bis hier reiste das Etikett unkonsumiert, und der Feldweg kannte keins: der Wagen
+    // fuhr durch die Furt (0,6 m Wasser, 2,3 m/s — die drei schwersten Täter der Fahrt auf dem Wegenetz). feldM = das Feld
+    // zwischen zwei Jochen · lichtM = die Breite zwischen den Radabweisern (ein Wagen 1,9 m, ein Feldweg 3,4 m) · gelaenderM =
+    // der Handlauf über der Bahn · pfahlM = so tief reichen die Pfähle unter die Bahn · einbindM = so weit liegt die Bahn am
+    // Widerlager unter dem Grund (sie bindet in das Ufer ein: Rad und Fuß treten vom Grund auf die Bohlen, nie gegen sie).
+    var BRUECKE_GESETZ = { feldM: 4, lichtM: 4, gelaenderM: 1.05, pfahlM: 3.5, einbindM: 0.05 };
+    // DIE NASSEN LÄUFE eines Wegs: je zusammenhängendem Lauf nasser Punkte {k, e} (erster und letzter nasser Punkt) und seine
+    // Widerlager {wa, wb} (der trockene Punkt davor und danach; am Ende des Wegs der Lauf selbst). Leser: das Brücken-Etikett
+    // der Gasse (`ortPlan`) und der Feldweg (`brueckenAmWeg`).
+    function nasseLaeufe(nass) {
+        var aus = [],
+            n = nass.length;
+        for (var k = 0; k < n; k++) {
+            if (!nass[k] || (k > 0 && nass[k - 1])) continue;
+            var e = k;
+            while (e + 1 < n && nass[e + 1]) e++;
+            aus.push({ k: k, e: e, wa: k > 0 ? k - 1 : k, wb: e + 1 < n ? e + 1 : e });
+            k = e;
+        }
+        return aus;
+    }
+    // DIE BRÜCKEN EINES WEGS: je nassem Lauf die Spanne zwischen den Widerlagern {a, b} = {x, z, y} (y die Höhe des Wegs dort,
+    // `ys`) — für die Punkte `pts` [{x, z}], ihr Wasser `nass` und ihre Höhen `ys`. Ein Lauf ohne trockenes Widerlager (der
+    // Weg beginnt oder endet im Wasser) trägt keine Brücke.
+    function brueckenAmWeg(pts, nass, ys) {
+        var aus = [];
+        var L = nasseLaeufe(nass);
+        for (var i = 0; i < L.length; i++) {
+            var wa = L[i].wa,
+                wb = L[i].wb;
+            if (nass[wa] || nass[wb] || !isFinite(ys[wa]) || !isFinite(ys[wb])) continue;
+            aus.push({ a: { x: pts[wa].x, z: pts[wa].z, y: ys[wa] }, b: { x: pts[wb].x, z: pts[wb].z, y: ys[wb] }, wa: wa, wb: wb });
+        }
+        return aus;
+    }
+    // DER WEG ÜBER DIE BRÜCKE: über dem Wasser IST die Brücke der Weg — die Punkte zwischen den Widerlagern [wa, wb] je Spanne
+    // (`bruecken`: die Paare des Brücken-Etiketts) liegen auf ihrer Achse, nach dem Anteil ihres Laufs (der Feldweg über einen
+    // 30-m-Bach bog 5 m neben die Sehne: der Fahrer folgte dem Bogen und stand am Geländer). Rückgabe die Punkte (eine Kopie,
+    // ohne Spanne dieselbe Liste). Leser: das Wege-Netz eines Plans (`wegeNetz`) und der Feldweg zwischen zwei Orten (der Wirt).
+    function wegUeberBruecken(pts, bruecken) {
+        if (!bruecken || !bruecken.length) return pts;
+        var P = pts.slice();
+        for (var i = 0; i < bruecken.length; i++) {
+            var wa = bruecken[i][0],
+                wb = bruecken[i][1],
+                A = pts[wa],
+                B = pts[wb];
+            if (!A || !B || !(wb - wa > 1)) continue;
+            var lauf = [0];
+            for (var k = wa + 1; k <= wb; k++) lauf.push(lauf[lauf.length - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z));
+            var L = lauf[lauf.length - 1] || 1;
+            for (k = wa + 1; k < wb; k++) {
+                var t = lauf[k - wa] / L;
+                P[k] = Object.assign({}, pts[k], { x: A.x + (B.x - A.x) * t, z: A.z + (B.z - A.z) * t });
+            }
+        }
+        return P;
+    }
+    // DIE FELDER EINER SPANNE a → b ({x, z, y}): so viele Jochfelder, wie die Spanne verlangt (feldM je Feld, die Reihe mittig
+    // über ihr — sie reicht an beiden Enden gleich weit auf das Ufer), je Feld seine Mitte, die Oberkante seiner Bahn (linear
+    // zwischen den Widerlagern, um einbindM unter ihnen; jenseits die Höhe des Widerlagers) und seine Gier (das Feld liegt längs
+    // +x: R_y(phi) trägt +x auf die Spanne). Rückgabe [{x, z, y, phi}].
+    function brueckenFelder(a, b) {
+        var BG = BRUECKE_GESETZ,
+            dx = b.x - a.x,
+            dz = b.z - a.z,
+            L = Math.sqrt(dx * dx + dz * dz);
+        if (!(L > 1e-6)) return [];
+        var n = Math.max(1, Math.ceil(L / BG.feldM)),
+            ux = dx / L,
+            uz = dz / L,
+            s0 = (L - n * BG.feldM) / 2,
+            phi = Math.atan2(-dz, dx),
+            aus = [];
+        for (var i = 0; i < n; i++) {
+            var s = s0 + (i + 0.5) * BG.feldM,
+                t = Math.max(0, Math.min(1, s / L));
+            aus.push({ x: a.x + ux * s, z: a.z + uz * s, y: a.y + (b.y - a.y) * t - BG.einbindM, phi: phi });
+        }
+        return aus;
+    }
     function wegZwischen(r, A, B, sperren, nass){
       const n=r.n, d=r.d, h=r.h, lim=ORT_GESETZ.trasse, W=WEG_ZWISCHEN;
       const zu=new Uint8Array(n*n), feucht=new Int8Array(n*n).fill(-1); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
@@ -3674,7 +3767,7 @@
       const kante=(i,j)=>{ const w=Math.hypot(kn[i].x-kn[j].x,kn[i].z-kn[j].z); kan[i].push(j,w); kan[j].push(i,w); };
       let wi=0;
       for(const rd of (plan.roads||[]).concat(plan.feldwege||[])){ let vor=-1;
-        for(const q of rd.pts||[]){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue;
+        for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue;   /*über dem Wasser die Achse der Brücke (`wegUeberBruecken`)*/
           kn.push({x:q.x,z:q.z}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
         wi++; }
       for(let i=0;i<kn.length;i++) for(let j=i+1;j<kn.length;j++)
@@ -5693,6 +5786,11 @@
     var WERKE = {
         sitzbank: { kind: "bank", art: "Bank", lab: "Sitzbank · Latten, Lehne, Wangen", gestalten: 2, siteTag: "platz", salz: 0x6fb3 },
         podestleiter: { kind: "leiter", art: "Leiter", lab: "Podestleiter · Holme, Stufen, Podest, Bügel", gestalten: 1, siteTag: "wand", salz: 0x71c5 },
+        // DAS JOCHFELD (fahrzeug.K2, rein additiv): ein Feld der hölzernen Jochbrücke, die den Weg über das Wasser trägt — die
+        // Gasse über den Bach (das Brücken-Etikett des Plans v2) und den Feldweg zwischen zwei Orten (`brueckenAmWeg`); die
+        // Welt legt so viele Felder, wie die Spanne verlangt (`brueckenFelder`). Sein Verb trägt die Form: die Bohlen sind
+        // Trittfläche für Rad und Fuß, das Geländer hält den Wagen auf der Bahn, unter ihm fließt das Wasser (`durchlass`).
+        jochfeld: { kind: "bruecke", art: "Brücke", lab: "Jochbrücke · Bohlen, Träger, Geländer, Joch", gestalten: 2, siteTag: "weg", salz: 0x83d9 },
     };
     // B4 — die Regler der Werke: nur, was die Norm nicht verschiebt (Sitzhöhe, Steigmaß und Podest bleiben stehen).
     var BANK_PARAMS = [
@@ -5707,7 +5805,12 @@
         { id: "fase", lab: "Fase", min: 0.002, max: 0.012, step: 0.001, def: 0.008, law: "das Zimmermanns-Gesetz: keine Kante bleibt scharf (2 mm die gebrochene Kante), die Fase fängt das Licht", grp: "FORM" },
         { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
     ];
-    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS };
+    // Die Regler der Brücke: die Bohle und das Alter — Feld-Länge, lichte Breite und Geländer-Höhe sind Norm (sie tragen den Wagen).
+    var BRUECKE_PARAMS = [
+        { id: "bohle", lab: "Bohle", min: 0.2, max: 0.32, step: 0.02, def: 0.26, law: "die Breite einer Bohle — schmale Bohlen tragen mehr Fugen über das Feld", grp: "FORM" },
+        { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche auf den Bohlen, das Nasse an Joch und Pfahl", grp: "MATERIAL" },
+    ];
+    var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS };
     for (var _wk in WERKE)
         PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: { mode: "site", siteTag: WERKE[_wk].siteTag } } };
     // ── DIE SITZBANK (Front +z: der Sitzende blickt längs +z): zwei Wangen — Vorderbein, Hinterbein, der Lehnen-Pfosten um
@@ -5793,6 +5896,71 @@
         for (k = 0; k < (fein ? 2 : 1); k++) holz(ausSetze(ausKiste(2 * m.hx - m.dx, 0.06, 0.025, fa * 0.5), 0, 0.5 + 0.55 * k, m.schenkelZ(0.5 + 0.55 * k) + 0.03), ausTon(zH, 0.05, 0.02));
     }
 
+    // ── DAS JOCHFELD (längs +x, die Oberkante der Bohlen auf y = 0, quer z): die Bohlen quer zur Bahn mit Fuge, vier Längsträger
+    //    darunter, am Anfang des Felds das Joch — der Holm quer unter den Trägern, drei Pfähle bis `pfahlM` unter die Bahn, nah das
+    //    Andreaskreuz zwischen ihnen —, das Geländer je Seite (zwei Pfosten je Feld, der Handlauf durchgehend, nah die Knieleiste und
+    //    der Radabweiser an der Bahnkante, die Pfosten mit Holznägeln am Handlauf). Die L1 ohne Fase: die Bahn EINE Platte, zwei
+    //    Träger, das Joch ohne Kreuz, das Geländer ohne Leisten; Pfähle als Vierkant. ──
+    function ausJochfeld(g, p, seed, stufe) {
+        var m = AUS_MASS.jochfeld(0, p),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? 0.008 : 0,
+            zB = ausZufall(seed, 0xb1),
+            zT = ausZufall(seed, 0xb2),
+            zNg = ausZufall(seed, 0xb3);
+        var holz = function (geo, ton) {
+            ausFaerbe(geo, "holz", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "holz");
+        };
+        // das Nasse an Joch und Pfahl: dunkler und kühler, je tiefer (die Bahn bleicht, der Pfahl steht im Wasser)
+        var nass = function (geo, ton) {
+            ausFaerbe(geo, "holz", W, function (_x, y) {
+                var t = Math.max(0, Math.min(1, -(y - m.yJ) / 1.2)) * (0.25 + 0.35 * W);
+                return { ton: [ton[0] * (1 - t * 0.55), ton[1] * (1 - t * 0.5), ton[2] * (1 - t * 0.42)] };
+            });
+            ausTeil(g, geo, "holz");
+        };
+        var i, s;
+        // die Bahn: nah die Bohlen mit Fuge (die Fugen gleich verteilt über das Feld), fern EINE Platte
+        if (fein) {
+            var n = Math.max(1, Math.floor((m.L + m.fuge) / (p.bohle + m.fuge))),
+                w = (m.L - (n - 1) * m.fuge) / n;
+            for (i = 0; i < n; i++) holz(ausSetze(ausKiste(w, m.d, m.Bd, fa * 0.6), -m.L / 2 + w / 2 + i * (w + m.fuge), -m.d / 2, 0), ausTon(zB, 0.08, 0.03));
+        } else holz(ausSetze(ausKiste(m.L, m.d, m.Bd, 0), 0, -m.d / 2, 0), ausTon(zB, 0.08, 0.03));
+        // die Längsträger (nah vier, fern die beiden äußeren)
+        for (i = 0; i < m.zT.length; i++) {
+            if (!fein && i % 3 !== 0) continue;
+            holz(ausSetze(ausKiste(m.L, m.tH, m.tB, fa), 0, -m.d - m.tH / 2, m.zT[i]), ausTon(zT, 0.05, 0.02));
+        }
+        // das Joch: der Holm quer unter den Trägern, die Pfähle (nah acht Seiten, fern vier), nah das Andreaskreuz
+        nass(ausSetze(ausKiste(m.hB, m.hH, m.Bd + 0.2, fa), m.xJ, m.yJ + m.hH / 2, 0), ausTon(zT, 0.05, 0.02));
+        for (i = 0; i < m.zP.length; i++) nass(ausSetze(ausDreh([[m.pr, m.yP], [m.pr, m.yJ]], fein ? 8 : 4, false, false), m.xJ, 0, m.zP[i]), ausTon(zT, 0.05, 0.02));
+        if (fein)
+            for (i = 0; i + 1 < m.zP.length; i++)
+                for (s = 0; s < 2; s++) {
+                    var za = m.zP[i + s],
+                        zb = m.zP[i + 1 - s],
+                        lK = Math.hypot(m.yJ - 0.15 - m.yK, zb - za);
+                    nass(ausStrecke(ausSetze(ausKiste(0.1, lK, 0.1, fa), 0, lK / 2, 0), [m.xJ, m.yJ - 0.15, za], [m.xJ, m.yK, zb]), ausTon(zT, 0.05, 0.02));
+                }
+        // das Geländer je Seite: zwei Pfosten (über dem Joch und in der Mitte des Felds), der Handlauf durch das ganze Feld; nah
+        // die Knieleiste, der Radabweiser an der Bahnkante und je Pfosten ein Holznagel quer durch den Handlauf
+        for (s = -1; s <= 1; s += 2) {
+            var z = s * m.zG;
+            var hP = m.gH - m.hlH - m.yG;
+            for (i = 0; i < m.xG.length; i++) holz(ausSetze(ausKiste(m.gB, hP, m.gB, fa), m.xG[i], m.yG + hP / 2, z), ausTon(zT, 0.05, 0.02));
+            holz(ausSetze(ausKiste(m.L, m.hlH, m.hlB, fa), 0, m.gH - m.hlH / 2, z), ausTon(zT, 0.06, 0.02));
+            if (fein) {
+                holz(ausSetze(ausKiste(m.L, 0.08, 0.05, fa * 0.6), 0, m.gH / 2, z - s * (m.gB / 2 + 0.025)), ausTon(zT, 0.06, 0.02));
+                holz(ausSetze(ausKiste(m.L, m.rH, m.rB, fa), 0, m.rH / 2, s * (m.B / 2 + m.rB / 2)), ausTon(zT, 0.05, 0.02));
+                for (i = 0; i < m.xG.length; i++) ausNagel(g, [m.xG[i], m.gH - m.hlH / 2, z - m.hlB / 2 - 0.003], [m.xG[i], m.gH - m.hlH / 2, z + m.hlB / 2 + 0.003], W, zNg);
+            }
+        }
+    }
+
     // DER HOLZNAGEL (die Rolle `nagel` des Fachwerks, 14 mm vierkant über Eck): quer durch das Holz von a nach b, 3 mm über
     //    beide Flächen — er sichert den Zapfen; seine Seh-Klasse ist die des Holzes, die Faltung trägt ihn in dessen Draw.
     function ausNagel(g, a, b, W, z) {
@@ -5803,7 +5971,7 @@
         });
         ausTeil(g, geo, "nagel");
     }
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, sitzbank: ausSitzbank, podestleiter: ausPodestleiter };
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -5894,6 +6062,27 @@
                 },
             };
         },
+        // DAS JOCHFELD (BRUECKE_GESETZ): das Feld L zwischen zwei Jochen, die lichte Breite B zwischen den Radabweisern, das
+        // Geländer gH über der Bahn (DIN EN 1317 der Feldweg-Brücke: 1,0–1,1 m); die Bohle 7 cm, die Träger 0,2 × 0,3 m im Abstand
+        // 1,1 m, der Holm 0,3 × 0,3 m quer unter ihnen 0,2 m hinter dem Anfang des Felds, drei Pfähle Ø 0,28 m bis `pfahlM` unter
+        // die Bahn, das Kreuz zwischen ihnen bis 2 m unter den Holm; die Pfosten 0,14 m im Viertel des Felds, der Handlauf
+        // 0,14 × 0,1 m, der Radabweiser 0,12 × 0,12 m an der Kante der lichten Breite.
+        jochfeld: function (_G, p) {
+            var BG = BRUECKE_GESETZ,
+                L = BG.feldM,
+                B = BG.lichtM,
+                d = 0.07,
+                tH = 0.3,
+                hH = 0.3,
+                gB = 0.14,
+                zG = B / 2 + 0.12 + gB / 2,
+                yJ = -d - tH - hH;
+            return {
+                L: L, B: B, d: d, Bd: 2 * zG + gB + 0.1, fuge: 0.015, bohle: p.bohle, tH: tH, tB: 0.2, zT: [-1.65, -0.55, 0.55, 1.65],
+                hB: 0.3, hH: hH, xJ: -L / 2 + 0.2, yJ: yJ, zP: [-1.75, 0, 1.75], pr: 0.14, yP: -BG.pfahlM, yK: yJ - 2,
+                zG: zG, xG: [-L / 2 + 0.2, 0.2], gB: gB, gH: BG.gelaenderM, yG: -d - 0.15, hlH: 0.1, hlB: 0.14, rH: 0.12, rB: 0.12,
+            };
+        },
     };
     // ── B7: DIE WIRTS-ZEILEN DER WERKE (docs/studio-vertrag.md B7) — je Art der Bauplan-Namensraum (`bank_`, `leiter_`) und die
     //    unsichtbare Substanz in der Teile-Form des Wirts, aus DERSELBEN Maß-Funktion wie die Gestalt (die Regler auf ihrem Grund):
@@ -5920,6 +6109,17 @@
             parts.push(teil(0, m.H - m.dL / 2, 0, m.L, m.dL, m.T));
             for (a = -1; a <= 1; a += 2) for (k = -1; k <= 1; k += 2) parts.push(teil(a * m.wx, m.hZ / 2, k < 0 ? m.zH : m.zV, m.b, m.hZ, m.b));
             parts.push(teil(0, m.pA[0] + tm * c + m.o * s, m.pA[1] - tm * s + m.o * c, m.L - 0.04, m.lehneT[1] - m.lehneT[0] + 0.09, 0.03, -m.phi));
+        } else if (id === "jochfeld") {
+            // DIE BRÜCKE: die Bahn samt Trägern ist TRITTFLÄCHE (`tritt`: Rad und Fuß stehen auf ihrer Oberkante, kein Gehender
+            // stößt an sie), das Geländer je Seite vom Radabweiser bis zum Handlauf ist Wand, das Joch steht als Holm und Pfähle
+            // unter ihr; sie staut kein Wasser (`durchlass` der Zeile unten)
+            var yT = -m.d - m.tH;
+            var bahn = teil(0, yT / 2, 0, m.L, -yT, m.Bd);
+            bahn.tritt = true;
+            parts.push(bahn);
+            for (a = -1; a <= 1; a += 2) parts.push(teil(0, (m.gH + yT) / 2, a * (m.B / 2 + (m.rB + m.gB) / 2), m.L, m.gH - yT, m.rB + m.gB));
+            parts.push(teil(m.xJ, m.yJ + m.hH / 2, 0, m.hB, m.hH, m.Bd + 0.2));
+            for (k = 0; k < m.zP.length; k++) parts.push(teil(m.xJ, (m.yP + m.yJ) / 2, m.zP[k], 2 * m.pr, m.yJ - m.yP, 2 * m.pr));
         } else {
             var lS = Math.sqrt((m.zS - m.zP) * (m.zS - m.zP) + (m.P - m.dP) * (m.P - m.dP));
             for (k = 1; k <= m.n; k++) parts.push(teil(0, k * m.r - m.dS / 2, m.stufeZ(k), m.wI, m.dS, m.tS));
@@ -5927,7 +6127,7 @@
             for (a = -1; a <= 1; a += 2) parts.push(teil(a * m.hx, (m.P - m.dP) / 2, (m.zP + m.zS) / 2, m.dx, lS, m.h * 0.85, -Math.atan2(m.zS - m.zP, m.P - m.dP)));
             parts.push(teil(0, m.yB - 0.025, m.zB, 2 * m.hx + m.dx, 0.05, 0.05));
         }
-        return { label: WERKE[id].art, parts: parts };
+        return id === "jochfeld" ? { label: WERKE[id].art, durchlass: true, parts: parts } : { label: WERKE[id].art, parts: parts };
     }
     var KIND_POLICY = {};
     for (var _wp in WERKE) KIND_POLICY[WERKE[_wp].kind] = { prefix: WERKE[_wp].kind + "_", substanz: werkSubstanz(_wp) };
@@ -6038,6 +6238,13 @@
                 flaeche([[[-h, k0, -h], [h, k0, -h], [h, k1, -h], [-h, k1, -h]], [[-h, k0, h], [h, k0, h], [h, k1, h], [-h, k1, h]], [[-h, k0, -h], [-h, k0, h], [-h, k1, h], [-h, k1, -h]], [[h, k0, -h], [h, k0, h], [h, k1, h], [h, k1, -h]]]);
                 teil(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
             }
+        } else if (rezeptId === "jochfeld") {
+            // DIE BRÜCKE (18 Dreiecke): die Bahn als Platte auf der Oberkante der Bohlen, je Seite das Geländer als EINE Fläche vom
+            // Radabweiser bis zum Handlauf, die drei Pfähle des Jochs als Kreuze vom Holm bis an ihren Fuß
+            platte(-m.L / 2, m.L / 2, 0, -m.Bd / 2, m.Bd / 2);
+            for (var gs = -1; gs <= 1; gs += 2)
+                flaeche([[[-m.L / 2, 0, gs * m.zG], [m.L / 2, 0, gs * m.zG], [m.L / 2, m.gH, gs * m.zG], [-m.L / 2, m.gH, gs * m.zG]]]);
+            for (var pk = 0; pk < m.zP.length; pk++) pfosten(m.xJ, m.zP[pk], m.yP, m.yJ, m.pr);
         } else if (rezeptId === "sitzbank") {
             // DIE BANK (20 Dreiecke): das Sitzbrett, die Lehne als EIN Viereck im Winkel der Pfosten, die vier Beine als Kreuze
             var c = Math.cos(m.phi),
@@ -6112,6 +6319,11 @@
         } else if (rezeptId === "sitzbank") {
             dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.H, -m.T / 2, m.T / 2, F("holz")));
             dazu(huelleTeil("box", -m.L / 2 + 0.02, m.L / 2 - 0.02, m.H, m.pB[0], m.pB[1] - 0.04, m.zH + 0.04, F("holz")));
+        } else if (rezeptId === "jochfeld") {
+            // die Bahn samt Trägern, je Seite das Geländer, je Pfahl sein Stamm unter dem Holm
+            dazu(huelleTeil("box", -m.L / 2, m.L / 2, -m.d - m.tH, 0, -m.Bd / 2, m.Bd / 2, F("holz")));
+            for (var hs = -1; hs <= 1; hs += 2) dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.gH, hs * m.zG - m.gB / 2, hs * m.zG + m.gB / 2, F("holz")));
+            for (var hk = 0; hk < m.zP.length; hk++) dazu(huelleTeil("box", m.xJ - m.pr, m.xJ + m.pr, m.yP, m.yJ, m.zP[hk] - m.pr, m.zP[hk] + m.pr, F("holz")));
         } else if (rezeptId === "podestleiter") {
             dazu(huelleTeil("keil", -m.hx, m.hx, 0, m.P, m.zF, -m.zP, F("holz"), { first: "+z" }));
             dazu(huelleTeil("box", -m.wP / 2, m.wP / 2, m.P - m.dP, m.P, -m.zP, m.zP, F("holz")));
@@ -7160,12 +7372,12 @@
             // von Widerlager zu Widerlager (den trockenen Punkten davor und danach), unter ihr legt der Erdbau keine Trasse, und
             // ein FREI-Splat hält den Grund unter der Spanne samt brueckeM je Seite unberührt (der Weg staut das Wasser nicht).
             var bruecken = [];
-            for (k = 0; k < n; k++) {
-                if (!nass[k] || (k > 0 && nass[k - 1])) continue;
-                var e = k;
-                while (e + 1 < n && nass[e + 1]) e++;
-                var wa = k > 0 ? k - 1 : k;
-                var wb = e + 1 < n ? e + 1 : e;
+            var laeufe = nasseLaeufe(nass);
+            for (var li = 0; li < laeufe.length; li++) {
+                k = laeufe[li].k;
+                var e = laeufe[li].e;
+                var wa = laeufe[li].wa;
+                var wb = laeufe[li].wb;
                 var ya = nass[wa] ? ys[wb] : ys[wa];
                 var yb = nass[wb] ? ya : ys[wb];
                 for (var m2 = k; m2 <= e; m2++) ys[m2] = sw[wb] > sw[wa] ? ya + ((yb - ya) * (sw[m2] - sw[wa])) / (sw[wb] - sw[wa]) : ya;
@@ -7546,7 +7758,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS },
+        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS },
         buildInstance: buildInstance,
         // B7 — die Wirts-Zeilen der Werke (Bank, Leiter): Bauplan-Namensraum und Substanz in den Maßen der Gestalt
         KIND_POLICY: KIND_POLICY,
@@ -7605,6 +7817,11 @@
         wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
         wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen
         planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
+        BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
+        nasseLaeufe: nasseLaeufe, // fahrzeug.K2 — die nassen Läufe eines Wegs und ihre Widerlager (Gasse und Feldweg)
+        brueckenAmWeg: brueckenAmWeg, // fahrzeug.K2 — die Spannen der Brücken eines Wegs (der Feldweg zwischen zwei Orten)
+        brueckenFelder: brueckenFelder, // fahrzeug.K2 — die Jochfelder einer Spanne (der Wirt legt sie als Werke)
+        wegUeberBruecken: wegUeberBruecken, // fahrzeug.K2 — der Weg über dem Wasser auf der Achse seiner Brücke (Netz und Feldweg)
         siedlungsGroesse: siedlungsGroesse,
         siedlungsReich: siedlungsReich,
         siedlungsEpoche: siedlungsEpoche,
