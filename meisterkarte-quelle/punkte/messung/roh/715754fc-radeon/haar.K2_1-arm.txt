@@ -1,0 +1,10 @@
+{
+ "ms": 1922,
+ "fehler": "ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0,0])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 0.7 m · Luma 81 σ 46 schwarz 0.0 % weiß 0.2 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nichts",
+ "stapel": [
+  "abnahme (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-radeon%5Cscripts%5Cwerkbank.cjs%3A862%3A24):1341:32)",
+  "at abnahme (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:862:24), <anonymous>:1340:31)",
+  "at evaluate (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:862:24), <anonymous>:1424:76)",
+  "at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
+ ]
+}

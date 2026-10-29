@@ -1,0 +1,125 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.129",
+  "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.49999999999999545,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.5,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 1,
+  "gestalt": [
+   "felsturm 2532"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -80.588,
+   87.652,
+   -92.623
+  ],
+  "blick": [
+   0.9252,
+   -0.24767,
+   -0.28752
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 103.1,
+  "sigma": 44.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1 m · Luma 103.1 σ 44.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^formationenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "formationenSatz=255/80/80"
+  ],
+  "klassen": {
+   "formationenSatz": {
+    "objekte": 17,
+    "spiegelTreue": -0.124,
+    "spiegelEbene": 87.302,
+    "sp": [
+     2370,
+     0,
+     0,
+     1735653.28,
+     1735653.28,
+     -215256.13
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 17.81,
+    "pixel": 319468,
+    "luma": 172.19,
+    "kante": 0.773,
+    "kr": 7969,
+    "strich": 0.4176,
+    "si": 247060,
+    "bloecke": 4478,
+    "glatt": 0.0002,
+    "nyquist": 0.1223,
+    "beta": 1.9184
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 1,
+   "ist": 0.996
+  },
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\715754fc-radeon\\material.K2_1.json.d\\fels-1.maske.png",
+  "urteil": [
+   "MIKRO formationenSatz: nyquist 0.1223 glatt 0.0002"
+  ]
+ }
+}

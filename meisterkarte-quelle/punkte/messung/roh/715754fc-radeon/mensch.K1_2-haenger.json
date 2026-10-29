@@ -1,0 +1,70 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "zweit",
+  "serie": null,
+  "ladungen": 6
+ },
+ "schwelle": 100,
+ "sekunden": 20,
+ "takte": 836,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 0,
+  "shader": 0,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 0,
+  "ms": 0,
+  "maxMs": 0,
+  "ueber16": 0,
+  "jeAuftragMs": {}
+ },
+ "bildTaktMs": 22.9,
+ "frames": 827,
+ "frameMs": {
+  "p50": 25.1,
+  "p95": 33.6,
+  "p99": 50.1,
+  "max": 66.9
+ },
+ "taktMs": {
+  "p50": 21.8,
+  "p95": 31.7,
+  "p99": 43.1,
+  "max": 59.7
+ },
+ "haengerN": 0,
+ "jeKlasse": {
+  "TAKT": 0,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [],
+ "haenger": [],
+ "marken": 836,
+ "profil": true,
+ "probe": [],
+ "lauf": {
+  "regler": "voll",
+  "tiere": "frei",
+  "wandern": "aus",
+  "kreaturen": 0,
+  "chunks": 81,
+  "loadScale": 1,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "verschoben": 0,
+  "pipeAsync": 0,
+  "neubauN": 0,
+  "offen": 0
+ },
+ "sprung": null,
+ "befunde": [],
+ "tabelle": "HÄNGER-LINSE: 0 Frames > 100 ms in 20 s (827 Frames, 836 Takte; Frame p50/p95/p99/max 25.1/33.6/50.1/66.9 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0\nLauf: Regler voll · Tiere frei (0) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Proben ja (836 Takt-Marken)\nPipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module\nErst-Zeichnung: 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)\nKnoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms"
+}

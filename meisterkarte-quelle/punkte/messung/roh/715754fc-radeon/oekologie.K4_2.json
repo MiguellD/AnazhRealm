@@ -1,0 +1,105 @@
+{
+ "art": "rudel",
+ "laeufe": [
+  {
+   "woelfe": 1,
+   "gegen": false,
+   "sicht": "first",
+   "dauer": 600,
+   "umstelltS": null,
+   "umstellt": 0,
+   "furcht": {
+    "chaos": 0,
+    "sorrow": 0,
+    "joy": 0.979,
+    "hope": 0.981
+   },
+   "opfer": 0,
+   "situation": [
+    0.904,
+    0.86,
+    0.904
+   ],
+   "triumph": {
+    "joy": 0,
+    "hope": 0
+   },
+   "chaosNach": 0
+  },
+  {
+   "woelfe": 1,
+   "gegen": true,
+   "sicht": "first",
+   "dauer": 600,
+   "umstelltS": null,
+   "umstellt": 0,
+   "furcht": {
+    "chaos": 0,
+    "sorrow": 0,
+    "joy": 0,
+    "hope": 0.102
+   },
+   "opfer": 0,
+   "situation": [
+    0.839,
+    0.839,
+    0.839
+   ],
+   "triumph": {
+    "joy": 0,
+    "hope": 0
+   },
+   "chaosNach": 0
+  },
+  {
+   "woelfe": 1,
+   "gegen": false,
+   "sicht": "third",
+   "dauer": 600,
+   "umstelltS": null,
+   "umstellt": 0,
+   "furcht": {
+    "chaos": 0,
+    "sorrow": 0,
+    "joy": 0.979,
+    "hope": 0.981
+   },
+   "opfer": 0,
+   "situation": [
+    0.904,
+    0.86,
+    0.904
+   ],
+   "triumph": {
+    "joy": 0,
+    "hope": 0
+   },
+   "chaosNach": 0
+  },
+  {
+   "woelfe": 1,
+   "gegen": true,
+   "sicht": "third",
+   "dauer": 600,
+   "umstelltS": null,
+   "umstellt": 0,
+   "furcht": {
+    "chaos": 0,
+    "sorrow": 0,
+    "joy": 0,
+    "hope": 0.102
+   },
+   "opfer": 0,
+   "situation": [
+    0.839,
+    0.839,
+    0.839
+   ],
+   "triumph": {
+    "joy": 0,
+    "hope": 0
+   },
+   "chaosNach": 0
+  }
+ ]
+}

@@ -1,0 +1,335 @@
+{
+ "plan": "studios.K4",
+ "pose": {
+  "gier": 0.6,
+  "neigung": 0.32,
+  "fov": 45
+ },
+ "soll": {
+  "differenz": 0.021,
+  "albedo": 0.1
+ },
+ "leinwand": [
+  1920,
+  1080
+ ],
+ "geraet": "WebGPU rdna-3",
+ "studios": {
+  "garage": {
+   "werk": {
+    "kind": "vehicle",
+    "preset": "gt",
+    "seed": 1,
+    "ov": {
+     "radstand": 2.9,
+     "spur": 1.62,
+     "ueberhangV": 0.78,
+     "ueberhangH": 0.92,
+     "taille": 0.1,
+     "radR": 0.34,
+     "fahrhoehe": 0.13,
+     "guertel": 0.72,
+     "dach": 1.2,
+     "kabineMitte": -0.28,
+     "kabineLaenge": 1.7,
+     "tumblehome": 0.13,
+     "springRate": 100,
+     "damping": 12,
+     "grip": 1
+    }
+   },
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ROT: das Werk fahrzeug_gt steht nach 30 s nicht in der Welt (keine Instanz der Familie f:)",
+   "sek": 33.1
+  },
+  "portale": {
+   "werk": {
+    "kind": "gate",
+    "preset": "kathedrale",
+    "seed": 1,
+    "ov": {
+     "wMason": 0.95,
+     "wBraid": 0,
+     "wMono": 0.15,
+     "wLace": 0.8,
+     "orders": 4,
+     "depth": 0.75,
+     "wave": 0.3,
+     "tunnel": 0.5,
+     "fractal": 0.4,
+     "twist": 0.2,
+     "realm": 0.7,
+     "swirl": 0.2,
+     "reflect": 0.35,
+     "k": 2.6,
+     "rise": 1,
+     "ogee": 0,
+     "horse": 0,
+     "aspect": 2.45,
+     "mass": 0.8,
+     "metal": 0.1,
+     "glow": 0.15,
+     "hue": 0.1,
+     "weather": 0.3,
+     "ruin": 0,
+     "temp": 0.85,
+     "energy": 0.3
+    }
+   },
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ROT: das Werk tor_kathedrale steht nach 30 s nicht in der Welt (keine Instanz der Familie f:)",
+   "sek": 32.9
+  },
+  "schmiede": {
+   "werk": {
+    "kind": "weapon",
+    "preset": "langschwert",
+    "seed": 1,
+    "ov": {
+     "__tradition": "Frank",
+     "klinge": 0.95,
+     "w0": 0.036199999999999996,
+     "wTip": 0.28,
+     "th0": 0.00687,
+     "thTip": 0.44,
+     "fuller": 0.31,
+     "fullerW": 0.6,
+     "kruemmung": 0,
+     "griff": 0.24,
+     "knaufR": 0.021,
+     "parier": 0.11,
+     "schaft": 0.58,
+     "schaftR": 0.016,
+     "kopfLen": 0.12,
+     "socketR": 0.022,
+     "beta": 30,
+     "reach": 0.052,
+     "edgeLen": 0.1
+    }
+   },
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ROT: das Werk klinge_langschwert steht nach 30 s nicht in der Welt (keine Instanz der Familie f:)",
+   "sek": 32.6
+  },
+  "fachwerk": {
+   "werk": {
+    "kind": "haus",
+    "preset": "viktorianisch",
+    "seed": 1,
+    "ov": {
+     "W": 9,
+     "D": 7,
+     "storeys": 2,
+     "bend": 0,
+     "terrAsym": 0,
+     "doppel": 0,
+     "pitchDeg": 50,
+     "hip": 0,
+     "roofCurve": 0,
+     "treppgiebel": 0,
+     "kuppel": 0,
+     "annexN": 0,
+     "balcony": 0,
+     "portikus": 0,
+     "arkade": 0,
+     "turm": 0,
+     "zinnen": 0,
+     "veranda": 0,
+     "vorkragung": 0,
+     "pilotis": 0,
+     "terrasse": 0
+    }
+   },
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ROT: das Werk haus_viktorianisch steht nach 30 s nicht in der Welt (keine Instanz der Familie f:)",
+   "sek": 35
+  },
+  "terrain": {
+   "werk": null,
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ROT: die Bühne nennt kein Werk (der Knopf postet keine Übergabe)",
+   "sek": 2.2
+  },
+  "koerperstudio": {
+   "werk": {
+    "kind": "koerper",
+    "preset": "mensch",
+    "seed": 0,
+    "ov": {
+     "skinTone": "karamell",
+     "height": 1,
+     "mass": 0.35,
+     "tone": 0.5,
+     "age": 0.15,
+     "gender": 1,
+     "hairLen": 1,
+     "hairVol": 1,
+     "arms": 0,
+     "hairStyle": "mittel",
+     "hairColor": "darkbrown",
+     "top": "tshirt",
+     "topColor": "navy",
+     "bottom": "pants",
+     "bottomColor": "charcoal",
+     "shoes": "sneaker",
+     "shoeColor": "white"
+    }
+   },
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau",
+   "sek": 5.4
+  },
+  "tetrapoda": {
+   "werk": {
+    "kind": "kreatur",
+    "preset": "wolf",
+    "seed": 0,
+    "ov": {
+     "size": 2.4,
+     "neck": 0.263,
+     "leg": 0.22,
+     "diet": 1,
+     "build": 0.42
+    }
+   },
+   "welt": null,
+   "buehne": null,
+   "differenz": null,
+   "albedo": null,
+   "gruen": false,
+   "grund": "ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau",
+   "sek": 2
+  }
+ },
+ "albedo": {
+  "welt": {
+   "echt": true,
+   "eichung": 0.1799
+  },
+  "labor": {
+   "echt": true,
+   "eichung": {
+    "terrain": 0.1799,
+    "garage": 0.1799,
+    "portale": 0.1799,
+    "schmiede": 0.1799,
+    "fachwerk": 0.1799,
+    "koerperstudio": 0.1799,
+    "tetrapoda": 0.1799
+   }
+  },
+  "zeilen": [
+   {
+    "id": "rinde",
+    "studio": "terrain",
+    "labor": 0.0893,
+    "welt": 0.0872,
+    "v": 1.0241
+   },
+   {
+    "id": "laub",
+    "studio": "terrain",
+    "labor": 0.1784,
+    "welt": 0.1653,
+    "v": 1.0792
+   },
+   {
+    "id": "birke",
+    "studio": "terrain",
+    "labor": 0.2929,
+    "welt": 0.2942,
+    "v": 0.9956
+   },
+   {
+    "id": "fichte",
+    "studio": "terrain",
+    "labor": 0.1055,
+    "welt": 0.0998,
+    "v": 1.0571
+   },
+   {
+    "id": "fels",
+    "studio": "terrain",
+    "labor": 0.2444,
+    "welt": 0.2389,
+    "v": 1.023
+   },
+   {
+    "id": "boden",
+    "studio": "terrain",
+    "labor": 0.0832,
+    "welt": 0.0856,
+    "v": 0.972
+   },
+   {
+    "id": "haus",
+    "studio": "fachwerk",
+    "labor": 0.1491,
+    "welt": 0.1592,
+    "v": 0.9366
+   },
+   {
+    "id": "lack",
+    "studio": "garage",
+    "labor": 0.0166,
+    "welt": 0.0164,
+    "v": 1.0122
+   },
+   {
+    "id": "tor",
+    "studio": "portale",
+    "labor": 0.6496,
+    "welt": 0.6493,
+    "v": 1.0005
+   },
+   {
+    "id": "haut",
+    "studio": "koerperstudio",
+    "labor": 0.0607,
+    "welt": 0.0609,
+    "v": 0.9967
+   },
+   {
+    "id": "fell",
+    "studio": "tetrapoda",
+    "labor": 0.1635,
+    "welt": 0.1847,
+    "v": 0.8852
+   },
+   {
+    "id": "klinge",
+    "studio": "schmiede",
+    "labor": 0.3518,
+    "welt": 0.3493,
+    "v": 1.0072
+   }
+  ]
+ },
+ "fehler": [],
+ "sek": 354.2,
+ "gruen": []
+}

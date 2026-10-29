@@ -1,0 +1,144 @@
+{
+ "plan": "lod.K5#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 2,
+    "fenster": [
+     1920,
+     1080
+    ]
+   }
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 40251,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.108,
+      "baeume": 8,
+      "kranz": 0.204,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 535,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": "Plan 0/18 (Zelle start)"
+   }
+  },
+  "kanten": {
+   "exit": 0,
+   "json": {
+    "ms": 380555,
+    "ergebnis": {
+     "schirm": [
+      1920,
+      1080
+     ],
+     "fov": 75,
+     "faelle": [
+      {
+       "kind": "tree",
+       "preset": "weide",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": 9.355001831054688,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      },
+      {
+       "kind": "tree",
+       "preset": "weide",
+       "stufe": 2,
+       "d": 26,
+       "hoehe": 9.355001831054688,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      },
+      {
+       "kind": "haus",
+       "preset": "modern",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": null,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      },
+      {
+       "kind": "haus",
+       "preset": "alemannisch",
+       "stufe": 2,
+       "d": 26,
+       "hoehe": null,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      },
+      {
+       "kind": "gate",
+       "preset": "kathedrale",
+       "stufe": 1,
+       "d": 9.5,
+       "hoehe": null,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      },
+      {
+       "kind": "gate",
+       "preset": "geisttor",
+       "stufe": 2,
+       "d": 12,
+       "hoehe": null,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      },
+      {
+       "kind": "vehicle",
+       "preset": "limousine",
+       "stufe": 1,
+       "d": 12,
+       "hoehe": null,
+       "px": null,
+       "pixel": 0,
+       "ok": false
+      }
+     ]
+    }
+   }
+  }
+ },
+ "dateien": {}
+}

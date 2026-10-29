@@ -1,0 +1,129 @@
+{
+ "plan": "lod.K2#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "fenster": [
+     1920,
+     1080
+    ]
+   }
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 41425,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.108,
+      "baeume": 8,
+      "kranz": 0.204,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 532,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": "Plan 0/18 (Zelle start)"
+   }
+  },
+  "pop": {
+   "exit": 0,
+   "json": {
+    "ms": 54974,
+    "ergebnis": {
+     "schirm": [
+      1920,
+      1080
+     ],
+     "weg": 4,
+     "schritte": [
+      {
+       "pop": 32374,
+       "stufen": true
+      },
+      {
+       "pop": 31794,
+       "stufen": true
+      },
+      {
+       "pop": 35471,
+       "stufen": true
+      },
+      {
+       "pop": 34706,
+       "stufen": false
+      },
+      {
+       "pop": 40675,
+       "stufen": true
+      },
+      {
+       "pop": 31983,
+       "stufen": true
+      },
+      {
+       "pop": 33814,
+       "stufen": false
+      },
+      {
+       "pop": 37397,
+       "stufen": false
+      }
+     ],
+     "perfTargetMs": 17,
+     "laub": [
+      216,
+      216,
+      216,
+      216,
+      216,
+      216,
+      216,
+      216
+     ],
+     "bau": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      150,
+      150,
+      150
+     ],
+     "popPixel": 278214,
+     "anteilJeSekunde": 13.417
+    }
+   }
+  }
+ },
+ "dateien": {}
+}

@@ -1,0 +1,79 @@
+{
+ "plan": "material.K4#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "fenster": [
+     1920,
+     1080
+    ]
+   }
+  },
+  "spiegel": {
+   "exit": 0,
+   "json": {
+    "ms": 5939,
+    "ergebnis": {
+     "ende": "ok",
+     "stand": {
+      "version": "18.546.129",
+      "uhr": 0.5013589166666668,
+      "wetter": "sunny",
+      "saison": "summer",
+      "sicht": "first"
+     },
+     "auge": [
+      0,
+      93.43,
+      0
+     ],
+     "blick": [
+      0,
+      -0.149,
+      0.989
+     ],
+     "wagen": [
+      -2.25,
+      93.8,
+      3.8
+     ],
+     "ergebnis": {
+      "lack": {
+       "name": "lack",
+       "pixel": 0,
+       "fehler": "zu wenig Pixel"
+      },
+      "glas": {
+       "name": "glas",
+       "pixel": 0,
+       "fehler": "zu wenig Pixel"
+      }
+     },
+     "versuche": [
+      {
+       "dreh": 0,
+       "lack": {
+        "name": "lack",
+        "pixel": 0,
+        "fehler": "zu wenig Pixel"
+       },
+       "glas": {
+        "name": "glas",
+        "pixel": 0,
+        "fehler": "zu wenig Pixel"
+       },
+       "stoffe": {
+        "lack": 0,
+        "glas": 0
+       }
+      }
+     ]
+    }
+   }
+  }
+ },
+ "dateien": {}
+}

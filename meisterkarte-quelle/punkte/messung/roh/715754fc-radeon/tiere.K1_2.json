@@ -1,0 +1,115 @@
+{
+ "serie": [
+  {
+   "schuss": 1,
+   "abstand": 43.1,
+   "spieler": 43.2,
+   "glieder": 5,
+   "fliehen": 5,
+   "takte": 1857,
+   "kamera": [
+    120.43,
+    88.93,
+    68.76,
+    83.24,
+    85.32,
+    47.18
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.7 σ 42 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\715754fc-radeon\\tiere.K1_2-herde-1.png"
+  },
+  {
+   "schuss": 2,
+   "abstand": 164.6,
+   "spieler": 164.6,
+   "glieder": 0,
+   "fliehen": 0,
+   "takte": 1887,
+   "kamera": [
+    120.43,
+    89.24,
+    68.76,
+    0,
+    0.6,
+    0
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.8 σ 35.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\715754fc-radeon\\tiere.K1_2-herde-2.png"
+  },
+  {
+   "schuss": 3,
+   "abstand": 164.6,
+   "spieler": 164.6,
+   "glieder": 0,
+   "fliehen": 0,
+   "takte": 1917,
+   "kamera": [
+    120.43,
+    89.24,
+    68.76,
+    0,
+    0.6,
+    0
+   ],
+   "abnahme": null,
+   "fehler": "ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.8 σ 36.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "klassen": null,
+   "pulk": null,
+   "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\715754fc-radeon\\tiere.K1_2-herde-3.png"
+  }
+ ],
+ "szene": {
+  "kamera": [
+   120.43,
+   88.93,
+   68.76,
+   83.24,
+   85.32,
+   47.18
+  ],
+  "abstand": 43.2,
+  "punkte": [
+   [
+    82.4,
+    85.45,
+    47.57
+   ],
+   [
+    83.15,
+    86.06,
+    45.23
+   ],
+   [
+    84.3,
+    84.77,
+    49.51
+   ],
+   [
+    79.74,
+    85.09,
+    47.19
+   ],
+   [
+    86.61,
+    86.89,
+    46.37
+   ]
+  ],
+  "glieder": 5,
+  "fliehen": 5,
+  "takte": 1857,
+  "hang": {
+   "x": 83.1,
+   "z": 48,
+   "neigung": 19
+  },
+  "wurf": 5,
+  "fluchtBei": 17.4
+ }
+}

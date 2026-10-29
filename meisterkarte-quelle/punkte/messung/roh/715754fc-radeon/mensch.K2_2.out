@@ -1,0 +1,18 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\715754fc-radeon\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
+
+  ❌ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"haeuser":18,"sollSumme":81,"leiber":108,"quote":1.333,"leer":[],"leerN":0,"imBlick":{"ego":30,"third":34},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.039,"wegLeib":464.2},"blick":{"n":155,"quote":0.961,"sektorMax":0.132},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":274,"tuer":274,"falsch":[],"aufWeg":0.869,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":264,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.261,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.964,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":165,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+       ↳ Bewohner-Quote 1.333 (108 Leiber, Σ leute 81)
+
+  (266 s)
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

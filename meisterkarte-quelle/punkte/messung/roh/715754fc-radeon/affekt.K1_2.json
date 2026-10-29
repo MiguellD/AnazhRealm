@@ -1,0 +1,189 @@
+{
+ "art": "wert",
+ "laeufe": [
+  {
+   "uhr": 0.5,
+   "sicht": "first",
+   "sonne": 0.96,
+   "baum": [
+    -279.3,
+    -1053.5
+   ],
+   "faellen": {
+    "hiebe": 8,
+    "op": "faellen",
+    "delta": -0.12,
+    "ertrag": -0.12,
+    "stimme": "vogel",
+    "db": -4.79,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "toeten": {
+    "op": "toeten",
+    "delta": -0.03,
+    "ertrag": -0.03,
+    "stimme": "vogel",
+    "db": -1.2,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "pflegen": {
+    "op": "deposit_life",
+    "delta": 0.25,
+    "ertrag": 0.25,
+    "stimme": "vogel",
+    "db": 9,
+    "s": 0.067,
+    "nachbar": 0
+   },
+   "ruhe": {
+    "op": "deposit_life",
+    "delta": 0.2463,
+    "ertrag": 0.25,
+    "stimme": "vogel",
+    "db": 9,
+    "s": 0.05,
+    "nachbar": 0
+   }
+  },
+  {
+   "uhr": 0.5,
+   "sicht": "third",
+   "sonne": 0.96,
+   "baum": [
+    -282.8,
+    -1034
+   ],
+   "faellen": {
+    "hiebe": 8,
+    "op": "faellen",
+    "delta": -0.12,
+    "ertrag": -0.12,
+    "stimme": "vogel",
+    "db": -4.79,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "toeten": {
+    "op": "toeten",
+    "delta": -0.03,
+    "ertrag": -0.03,
+    "stimme": "vogel",
+    "db": -1.2,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "pflegen": {
+    "op": "deposit_life",
+    "delta": 0.25,
+    "ertrag": 0.25,
+    "stimme": "vogel",
+    "db": 9,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "ruhe": {
+    "op": "deposit_life",
+    "delta": 0.2463,
+    "ertrag": 0.25,
+    "stimme": "vogel",
+    "db": 9,
+    "s": 0.1,
+    "nachbar": 0
+   }
+  },
+  {
+   "uhr": 0.92,
+   "sicht": "first",
+   "sonne": -0.83,
+   "baum": [
+    -269.4,
+    -1035.9
+   ],
+   "faellen": {
+    "hiebe": 8,
+    "op": "faellen",
+    "delta": -0.12,
+    "ertrag": -0.12,
+    "stimme": "grille",
+    "db": -4.77,
+    "s": 0.083,
+    "nachbar": 0
+   },
+   "toeten": {
+    "op": "toeten",
+    "delta": -0.03,
+    "ertrag": -0.03,
+    "stimme": "grille",
+    "db": -1.2,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "pflegen": {
+    "op": "deposit_life",
+    "delta": 0.25,
+    "ertrag": 0.25,
+    "stimme": "grille",
+    "db": 9,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "ruhe": {
+    "op": "deposit_life",
+    "delta": 0.2463,
+    "ertrag": 0.25,
+    "stimme": "grille",
+    "db": 9,
+    "s": 0.1,
+    "nachbar": 0
+   }
+  },
+  {
+   "uhr": 0.92,
+   "sicht": "third",
+   "sonne": -0.83,
+   "baum": [
+    -260.2,
+    -1046.2
+   ],
+   "faellen": {
+    "hiebe": 8,
+    "op": "faellen",
+    "delta": -0.12,
+    "ertrag": -0.12,
+    "stimme": "grille",
+    "db": -4.76,
+    "s": 0.1,
+    "nachbar": 0
+   },
+   "toeten": {
+    "op": "toeten",
+    "delta": -0.03,
+    "ertrag": -0.03,
+    "stimme": "grille",
+    "db": -1.2,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "pflegen": {
+    "op": "deposit_life",
+    "delta": 0.25,
+    "ertrag": 0.25,
+    "stimme": "grille",
+    "db": 9,
+    "s": 0.05,
+    "nachbar": 0
+   },
+   "ruhe": {
+    "op": "deposit_life",
+    "delta": 0.2463,
+    "ertrag": 0.25,
+    "stimme": "grille",
+    "db": 9,
+    "s": 0.1,
+    "nachbar": 0
+   }
+  }
+ ]
+}
