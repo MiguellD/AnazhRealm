@@ -223,10 +223,9 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         const gBefore = st.gravity;
         const L = A.PERF_LEVERS;
 
-        // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität; der Rand der Mesh-Zone steht am
-        // Schirm (lod.K5, `_randSchirm`) — er ist ein Wechsel-Abstand, kein Stellglied.
+        // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität (der Rand der Mesh-Zone ist ein
+        // Wechsel-Abstand am Schirm, kein Stellglied — Regler-Sim S6).
         for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(15); // frameMs≈67 >> Soll
-        out.radiusAmSchirmLast = st.architectureCullingRadius === r._randSchirm("bau");
         out.tightenedBudget = st.architectureBuildBudgetPerFrame < 4;
         out.tightenedStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1];
         out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
@@ -235,7 +234,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         // (2) FPS-LUFT (frameMs≈7 ≪ growMs) → relax zum MAXIMUM aller Stellgrößen. Viele Ticks: mit dem
         // Atem-Totband braucht der Integral-Term lange, bis loadScale auf 1.0 clampt (Gleichgewicht, err<0).
         for (let i = 0; i < 240; i++) r._nexusAdaptiveQuality(140);
-        out.radiusAmSchirmLuft = st.architectureCullingRadius === r._randSchirm("bau");
         out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
         out.relaxedStream = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
         out.gravityUntouchedHigh = st.gravity === gBefore;
@@ -389,10 +387,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         res.tightenedBudget && res.tightenedStream
     );
     check("anhaltender Druck bounded (Budget ≥ 1)", res.budgetFloor);
-    check(
-        "lod.K5: der Rand der Mesh-Zone steht unter Druck UND in der Luft am Schirm (`_randSchirm`), nie am Regler",
-        res.radiusAmSchirmLast && res.radiusAmSchirmLuft
-    );
     check(
         "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
         res.gravityUntouchedLow && res.gravityUntouchedHigh
@@ -1452,7 +1446,8 @@ async function checkBandSzeneSkala(ctx) {
 // → `_nexusPerfRegulate` → `_nexusPerfActuate` über tausende synthetische Frames, der headless-Zweig gelüftet, die zwei
 // GPU-Anwender gestubbt, alles gesichert und wiederhergestellt. S1 schwache GPU drosselt und konvergiert (Studio-Regime ohne
 // Rebuild-Schleife) · S2 Streaming ist heilig · S3 starke GPU erholt · S4 Session-Zeit-Invarianz · S5 der Geräte-Seed (Klassen,
-// Konsum, headless byte-alt) · S6 der Grenzzyklus-Schnitt (Laub- und Architektur-Radius) · S7 der Ladeschirm misst nichts.
+// Konsum, headless byte-alt) · S6 die Stufe und der Rand am Schirm (lod.K5: Abstände, Grenzen, Wahl, Laub- und Bau-Radius bei
+// 30/60/144 fps und Regler ±10 % gleich, die Mutante wandert) · S7 der Ladeschirm misst nichts.
 async function checkBandReglerSim(ctx) {
     const { page, check } = ctx;
     const out = await safeEvaluate(page, async () => {
@@ -1612,30 +1607,58 @@ async function checkBandReglerSim(ctx) {
                 r._geraeteProfilMemo = null;
                 st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
             }
-            // ── S6: DER RAND AM SCHIRM (lod.K5; vorher der Grenzzyklus-Schnitt: der Radius atmete 58↔130 m und baute dieselben
-            // Rand-Zellen im Kreis) — unter Last (30 ms), gepulstem Kopfraum und anhaltender Ruhe (7 ms) steht der Laub-Radius an
-            // DERSELBEN Kante (der Rand am Schirm, gekappt am gebauten Ring) und der Architektur-Radius am Schirm (`_randSchirm`). ──
+            // ── S6: DIE STUFE UND DER RAND AM SCHIRM (lod.K5 Staffel 2; vorher der Grenzzyklus-Schnitt: der Radius atmete 58↔130 m und
+            // baute dieselben Rand-Zellen im Kreis) — bei 30, 60 und 144 Bildern, gepulstem Kopfraum (7/30 ms) und dem Regler des
+            // Spielers ±10 % (perfTargetMs) stehen die Abstände des Gesetzes (`_wechselAbstand`), die Schwellen der Bäume, die Grenzen
+            // von Haus, Tor und Wagen (`_archStufenGrenzen`), die Stufen-Wahl, die Wahrnehmungs-Distanz der Maske, der Laub-Radius an
+            // der Kante (der Rand am Schirm, gekappt am gebauten Ring) und der Bau-Radius am Schirm (`_randSchirm`) GLEICH, während
+            // der Regler wandert (loadScale-Spanne ≥ 0,3). Die Gegenprobe im selben Lauf: das Gesetz mit einem Regler-Term wandert. ──
             {
-                st.perfSense = null;
-                for (let i = 0; i < 600; i++) feed(30, Object.assign({}, HONEST)); // auf den Boden
-                const s6Start = st.foliageRadius;
-                const s6ArchStart = st.architectureCullingRadius;
-                for (let w = 0; w < 6; w++) {
-                    for (let i = 0; i < 80; i++) feed(7, Object.assign({}, HONEST)); // kurzes Ruhe-Fenster
-                    for (let i = 0; i < 20; i++) feed(30, Object.assign({}, HONEST)); // die Welle bricht
-                }
-                const s6NachPuls = st.foliageRadius;
-                const s6ArchNachPuls = st.architectureCullingRadius;
-                for (let i = 0; i < 1200; i++) feed(7, Object.assign({}, HONEST)); // anhaltende Ruhe
+                const ARTEN = [["tree", 1], ["tree", 2], ["haus", 1], ["haus", 2], ["gate", 1], ["gate", 2], ["vehicle", 1], ["ausstattung", 1]];
                 const { span } = r._voxelChunkConfig();
                 const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-                const kante = Math.min(r._randSchirm("laub"), (ring + 1) * span);
-                const laub = [s1b.foliageR, s3.foliageR, s6Start, s6NachPuls, st.foliageRadius];
-                const bau = [s6ArchStart, s6ArchNachPuls, st.architectureCullingRadius];
-                o.s6LaubDelta = +Math.max(...laub.map((x) => Math.abs(x - kante))).toFixed(3);
-                o.s6ArchDelta = +Math.max(...bau.map((x) => Math.abs(x - r._randSchirm("bau")))).toFixed(3);
-                o.s6RandAmSchirm = o.s6LaubDelta < 1e-6 && o.s6ArchDelta < 1e-6;
-                o.s6 = { kante, laub, bau };
+                const schirm = () => {
+                    r._stufenSchirm();
+                    return JSON.stringify({
+                        d: ARTEN.map(([k, s]) => r._wechselAbstand(k, s, 1)),
+                        t: [A.LOD_DISTANCES.thresh01, A.LOD_DISTANCES.thresh12],
+                        g: ["haus_alemannisch", "tor_drachentor", "fahrzeug_gt"].map((type) => r._archStufenGrenzen({ type })),
+                        wahl: [[6, 0, 8], [14, 1, 12], [24, 1, 20], [30, 1, 12], [60, 2, 30]].map((x) => r._chooseLODForDistance(...x)),
+                        wahrnehmung: r._lodPerceptionDistance(100, 12),
+                        laub: st.foliageRadius === Math.min(r._randSchirm("laub"), (ring + 1) * span),
+                        bau: st.architectureCullingRadius === r._randSchirm("bau"),
+                    });
+                };
+                const zielVor = st.perfTargetMs;
+                const ziel = Number.isFinite(zielVor) ? zielVor : A.PERF_TARGET_MS;
+                const lauf = (ms, n, z = ziel) => {
+                    st.perfTargetMs = z;
+                    for (let i = 0; i < n; i++) feed(ms, Object.assign({}, HONEST));
+                    return { ls: st.perfSense.loadScale, s: schirm() };
+                };
+                const laeufe = () => {
+                    st.perfSense = null;
+                    const l = [lauf(1000 / 30, 600), lauf(1000 / 60, 600), lauf(1000 / 144, 1200)];
+                    for (let w = 0; w < 6; w++) l.push(lauf(7, 80), lauf(30, 20));
+                    l.push(lauf(1000 / 60, 600, ziel * 0.9), lauf(1000 / 60, 600, ziel * 1.1));
+                    st.perfTargetMs = zielVor;
+                    return l;
+                };
+                const l = laeufe();
+                const gesetz = A._wechselGesetz;
+                A._wechselGesetz = (...a) => gesetz(...a) * (0.7 + 0.3 * st.perfSense.loadScale);
+                let mut = [];
+                try {
+                    mut = laeufe();
+                } finally {
+                    A._wechselGesetz = gesetz;
+                }
+                const ls = l.map((x) => x.ls);
+                const anders = l.find((x) => x.s !== l[0].s);
+                const s0 = JSON.parse(l[0].s);
+                o.s6Spanne = +(Math.max(...ls) - Math.min(...ls)).toFixed(2);
+                o.s6AmSchirm = !anders && s0.laub && s0.bau && o.s6Spanne >= 0.3 && mut.some((x) => x.s !== mut[0].s);
+                o.s6 = { laeufe: l.length, loadScale: [Math.min(...ls), Math.max(...ls)].map((x) => +x.toFixed(2)), anders: anders ? anders.s : null, schirm: s0 };
             }
             // ── S7: DER LADESCHIRM MISST NICHTS (K60-3, Prüfung Runde 2: Radeon kalt stand das erste Weltbild am Kopf mit dem
             // Laub-Radius 65 statt 129,6 m — 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume). Unter dem Lade-Takt zeigt kein
@@ -1706,9 +1729,9 @@ async function checkBandReglerSim(ctx) {
         `Seed-Start ${o.s5SeedStart} · headless ${o.s5HeadlessAlt}`
     );
     check(
-        "Regler-Sim S6 der Rand am Schirm (lod.K5): unter Last, gepulstem Kopfraum und Ruhe stehen Laub- und Architektur-Radius an derselben Kante",
-        o.s6RandAmSchirm === true,
-        `Laub Δ ${o.s6LaubDelta} · Bauten Δ ${o.s6ArchDelta} · ${JSON.stringify(o.s6)}`
+        "Regler-Sim S6 die Stufe und der Rand am Schirm (lod.K5 Staffel 2): bei 30/60/144 fps, Puls und Regler ±10 % stehen Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante wandert",
+        o.s6AmSchirm === true,
+        `K5#2 Spanne ${o.s6Spanne} · ${JSON.stringify(o.s6)}`
     );
     check("Regler-Sim S7 der Ladeschirm misst nichts: der PID hält den Seed, Laub und Bauten stehen nach zwei Lade-Bildern am Ziel", o.s7LoadHaelt === true && o.s7LaubAmZiel === true && o.s7ArchAmZiel === true, JSON.stringify(o.s7));
     check("Regler-Sim: die Sim fuhr die ECHTEN Nicht-Headless-Zweige und stellte headless-Zustand + Dichte 1 wieder her", o.gpuAppliersDrove === true && o.restored === true);

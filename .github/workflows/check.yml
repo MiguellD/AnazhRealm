@@ -770,13 +770,6 @@ jobs:
               # Konsum belegt. Der Selbsttest macht einen injizierten Boden-Streifen und eine harte Kante rot.
               run: npm run gate:weg-boden
 
-            - name: LOD am Schirm (lod.K5 — die Stufe folgt dem Schirm, nie dem Regler; die Vegetation waechst mit dem Boden)
-              if: matrix.gruppe == 13
-              # Das EINE Gesetz des Wechsel-Abstands (Pixelgroesse x Haushalt): Abstaende, Schwellen, Grenzen von Haus, Tor,
-              # Wagen und die Raender (Laub, Bau) stehen bei 30/60/144 fps und Regler +-10 % gleich, die Mutante (Regler-Term
-              # im Gesetz) faellt rot; der Laub-Radius steht an der gebauten Ring-Kante (vorher gate:boot-foliage-ring).
-              run: npm run gate:lod-schirm
-
             - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
               if: matrix.gruppe == 14
               # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
