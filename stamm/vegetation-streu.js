@@ -1577,10 +1577,10 @@ class AnazhRealm_vegetation_streu {
     }
 
     // Die EINE Wahrnehmungs-Distanz (Screen-Space-Error-LOD, phytogenesis
-    // `vLodD = camDist·min(uLodRef/(aH0·instScale),1)`): (a) min(lodRef/visHeight, 1) — ein größerer
-    // Baum schaltet später, ein kleiner nie früher als nominal; (b) der EINE Perf-Regler
-    // _foliageDensityScale dehnt die Distanz bis perfDistMulMax× (Maximum bei
-    // fd == PERF_FOLIAGE_DENSITY_MIN, 1 bei fd == 1) → unter Last schalten alle früher.
+    // `vLodD = camDist·min(uLodRef/(aH0·instScale),1)`): min(lodRef/visHeight, 1) — ein größerer Baum schaltet später, ein
+    // kleiner nie früher als nominal; die Schwellen, gegen die sie misst, legt das Gesetz des Schirms (`_stufenSchirm`). Kein
+    // Regler-Term (lod.K5): bis w3v-lod dehnte die Laub-Dichte des Reglers sie bis ×1,3 — unter Last schalteten alle früher,
+    // die Stufe folgte der Bildrate. Allein die Ankunft aus der Ferne (`_ankunftsFerne`, B2) streckt sie bis zum ersten Bild.
     _lodPerceptionDistance(rawDist, visHeight) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return rawDist;
@@ -1597,23 +1597,30 @@ class AnazhRealm_vegetation_streu {
         const stretchMax = cfg.visStretchMax;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
-        return rawDist * heightFactor * this._lodPerfMul();
+        return rawDist * heightFactor * this._ankunftsFerne();
     }
 
-    // Der Perf-Multiplikator der Wahrnehmungs-Distanz aus der EINEN Regler-Quelle (_foliageDensityScale): unter Last
-    // schalten alle Stufen früher. ZWEI Leser, EINE Zahl: die CPU-Stufenwahl (_lodPerceptionDistance) UND die
-    // Shader-Masken (uLodPerf, je Frame in _loopRender gespiegelt) — liest nur die CPU ihn, legt sie die Stufe um,
-    // deren Fragmente die Maske noch verwirft (gemessen 04.10. unter Last, fd 0,22 → ×1,3: die Birke auf 15,7 m
-    // stand als L1 allein, ihre Rinde zu 66 % gezeichnet — ein Geist).
-    _lodPerfMul() {
-        const cfg = AnazhRealm.LOD_DISTANCES;
-        const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
-        const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
-        const mulMax = cfg.perfDistMulMax;
-        const ankunft = this._ankunftsFerne(); // bis zum ersten Weltbild steht jede Karten-Art als Karte (B2)
-        if (!(fd < 1 && fdMin < 1)) return ankunft;
-        const frac = Math.max(0, Math.min(1, (1 - fd) / (1 - fdMin)));
-        return (1 + (mulMax - 1) * frac) * ankunft;
+    // DAS GESETZ DES WECHSELS (lod.K5, `AnazhRealm._wechselGesetz`): eine Stufe gilt ab dem Abstand, an dem ihr Kanten-Versatz
+    // zur L0 — der Fehler ihres Baus (LOD_SCHIRM.fehler, je Familie einmal gemessen am Bau) mal die
+    // Brennweite des Schirms — das Soll von LOD_SCHIRM.px Bildpunkten trägt, höchstens am Haushalt des Buchs. Jeder Leser fragt
+    // es: die Schwellen der Bäume, der Streu und jeder Karten-Art (`_stufenSchirm`, ihre Maske), die Grenzen von Haus, Tor und
+    // Ausstattung (`_archStufenGrenzen`). Kein Regler, keine Bildrate. `groesse` ist der Bezug der Zeile (Baum: die Sichthöhe; sonst die
+    // Welt-Skala des Eintrags, der Fehler in Metern); null = die Art trägt die Stufe nicht.
+    _wechselAbstand(kind, stufe, groesse) {
+        return AnazhRealm._wechselGesetz(kind, stufe, groesse, this._schirm().hoehe);
+    }
+
+    // DIE SCHWELLEN DER BAUM-STUFEN aus dem Gesetz: die Wahrnehmungs-Distanz misst in Bäumen der Referenz-Höhe lodRef, die Schwelle
+    // der Stufe k ist ihr Abstand für einen solchen Baum. Geschrieben je Takt nach dem Schirm (`_schirmMessen`), nur wenn er
+    // wechselt (Kosten an Änderung); die CPU-Wahl, ihr Band, der Stand-Stempel und die Masken (uLodD0/uLodD1) lesen sie.
+    _stufenSchirm() {
+        const D = AnazhRealm.LOD_DISTANCES;
+        const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
+        const h = this._schirm().hoehe;
+        if (h === this._stufenSchirmH && ref === this._stufenSchirmRef) return;
+        [this._stufenSchirmH, this._stufenSchirmRef] = [h, ref];
+        D.thresh01 = this._wechselAbstand("tree", 1, ref);
+        D.thresh12 = this._wechselAbstand("tree", 2, ref);
     }
 
     // Sichthöhe eines Baum-Eintrags = y-Ausdehnung des LOD0-Bauplans × entry.scale. Gecacht je
@@ -1732,6 +1739,7 @@ class AnazhRealm_vegetation_streu {
     _chooseLODForDistance(distance, currentLOD, visHeight) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return 0;
+        this._stufenSchirm();
         // V18.387 — MIT visHeight läuft die rohe Distanz durch die Wahrnehmungs-
         // Distanz (Screen-Space-Error + Perf-Regler); OHNE (nicht-Baum-Architektur)
         // bleibt der rohe Pfad BYTE-IDENTISCH.
@@ -2431,27 +2439,77 @@ class AnazhRealm_vegetation_streu {
 _stammZonen(AnazhRealm, [AnazhRealm_vegetation_streu]);
 
 // ===== ATLAS · Vegetation/streu — Außen-Konstanten =====
-// Die Stufen-Grenzen, Bänder, Hysterese, Referenz-Höhe und Blatt-Kappe SIND das Gesetz des Kerns (foundry-core
-// PORTAL_RENDER_CONFIG.lod: d0 · d1 · fade · fade0 · hyst · ref · blattKappe, die Blatt-Kappe ist die Welt-Sichthöhe des
-// Laubs, die das Labor in Template-Einheiten rechnet) — gelesen beim Laden, fail-closed, kein Zahlen-Zwilling (K2);
-// `_foundryIngestRenderConfig` zieht einen Live-Edit des Buchs nach. Welt-eigen: perfDistMulMax (der Perf-Hebel) und
-// visStretchMax (vorlage-treu ungedeckelt: das Studio deckelt die SSE-Sichthöhe nicht, nur der CPU-LOD-Chooser liest ihn).
+// Die Bänder, Hysterese, Referenz-Höhe und Blatt-Kappe SIND das Gesetz des Kerns (foundry-core PORTAL_RENDER_CONFIG.lod:
+// fade · fade0 · hyst · ref · blattKappe, die Blatt-Kappe ist die Welt-Sichthöhe des Laubs, die das Labor in Template-Einheiten
+// rechnet) — gelesen beim Laden, fail-closed, kein Zahlen-Zwilling (K2); `_foundryIngestRenderConfig` zieht einen Live-Edit des
+// Buchs nach. Die Schwellen thresh01/thresh12 legt das Gesetz des Schirms (`_stufenSchirm` aus LOD_SCHIRM, beim ersten Ruf und
+// je Takt) — die Distanzen d0/d1 des Buchs sind die des Labors. Welt-eigen: visStretchMax (vorlage-treu ungedeckelt: das Studio
+// deckelt die SSE-Sichthöhe nicht, nur der CPU-LOD-Chooser liest ihn).
 AnazhRealm.LOD_DISTANCES = (() => {
     const L = AnazhRealm.Gesetz("terrain:PORTAL_RENDER_CONFIG.lod");
-    if (!L || ![L.d0, L.d1, L.fade, L.fade0, L.hyst, L.ref, L.blattKappe].every(Number.isFinite))
+    if (!L || ![L.fade, L.fade0, L.hyst, L.ref, L.blattKappe].every(Number.isFinite))
         return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.lod");
     return {
-        thresh01: L.d0,
-        thresh12: L.d1,
+        thresh01: null,
+        thresh12: null,
         hysteresis: L.hyst,
         lodRef: L.ref,
-        perfDistMulMax: 1.3,
         visStretchMax: Infinity,
         fade: L.fade,
         fade0: L.fade0,
         leafVisCap: L.blattKappe,
     };
 })();
+
+// DER SCHIRM DES WECHSELS (lod.K5, `_wechselAbstand`): `fehler` je Art (rec.kind) und gezeigter Stufe der Kanten-Versatz zur L0,
+// gemessen am Bau (29.10., die Messung der Station lod.K5 headless: L0 und Stufe über die Brücke gebaut, ihre Silhouetten je
+// Peilung in den Bildpunkten des Abstands gerastert, Chamfer der Kanten, an jeder Vorlage, die schlechteste der Art zählt; die
+// Karte des Baums als Mischung ihrer zwei nächsten gebackenen L1-Ansichten, die Tor-Flügel der L0 in der Fern-Pose) — der Fehler
+// ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms: der Baum relativ zu seiner Sichthöhe, jede gebaute Art
+// in Metern bei Welt-Skala 1; der Wagen trägt keine Zeile, er wechselt an der Maske des Baums (die Limousine trägt dort
+// 0,02 px). `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
+// < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
+// (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d).
+AnazhRealm.LOD_SCHIRM = Object.freeze({
+    px: 1,
+    zeilen: 1080,
+    hyst: 0.1,
+    fehler: Object.freeze({
+        tree: Object.freeze({ 1: 0.0376, 2: 0.0578 }), // die Weide (ihre Krone doppelt so breit wie hoch), L1 und Karte
+        haus: Object.freeze({ 1: 0.0238, 2: 0.1152 }), // modern · alemannisch
+        gate: Object.freeze({ 1: 0.0156, 2: 0.34 }), // kathedrale · geisttor (bis r = 32 Größen nie ≤ 1 px: untere Schranke)
+        ausstattung: Object.freeze({ 1: 0.0117 }), // brunnen
+    }),
+});
+// DAS GESETZ DES WECHSELS als reine Funktion (der Wirt ruft es über `_wechselAbstand` mit der Höhe des EINEN Schirms) —
+// Pixelgröße × Haushalt: der Abstand, an dem der Fehler der Stufe LOD_SCHIRM.px Bildpunkte trägt (Fehler × Größe × Brennweite / px,
+// die Brennweite aus der Höhe des Zeichenpuffers `zeilen` im Ruhe-Sichtfeld KAM_FOV_GRAD — Tempo und Fernglas legen keine Stufe
+// um), höchstens der Haushalt des Buchs (`_wechselHaushalt`) — ganz, nie nach dem Schirm gestaucht: seine Bänder (fade, fade0)
+// stehen in Metern des Buchs, eine gestauchte Schwelle schöbe das L0/L1- über das L1/Karte-Band. Wo die Stufe das Soll trägt,
+// wechselt sie dort (näher, billiger; ein kleinerer Schirm zieht den Pixel-Term heran); wo nicht, hält der Haushalt, und der
+// Fehler am Wechsel steht über dem Soll (die Station nennt ihn). `zeilen` 0 = noch kein Zeichenpuffer: der Schirm des Solls.
+// null = die Art trägt die Stufe nicht.
+AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen) {
+    const S = AnazhRealm.LOD_SCHIRM;
+    const e = S.fehler[kind] ? S.fehler[kind][stufe] : undefined;
+    const h = AnazhRealm._wechselHaushalt(kind, stufe);
+    if (!(e > 0) || !(h > 0)) return null;
+    const z = zeilen > 0 ? zeilen : S.zeilen;
+    const f = z / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360));
+    return Math.min((e * f) / S.px, h) * groesse;
+};
+// DER HAUSHALT DES WECHSELS aus dem Buch (live `_studioRenderConfig`, vor dem Umschlag foundry-core): die Grenze `ab` der
+// Budget-Zeile, wo die Art sie nennt (das Tor, B2c), sonst die Distanzen d0 (Stufe 1) und d1 (Stufe 2) des Labors — der Baum
+// relativ zur Referenz-Höhe ref wie sein Fehler, jede gebaute Art in Metern bei Welt-Skala 1.
+AnazhRealm._wechselHaushalt = function (kind, stufe) {
+    const L =
+        (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod) ||
+        AnazhRealm.Gesetz("terrain:PORTAL_RENDER_CONFIG.lod");
+    const z = L.budget && L.budget[kind] ? L.budget[kind][stufe] : null;
+    if (z && Number.isFinite(z.ab)) return z.ab;
+    const d = stufe === 1 ? L.d0 : stufe === 2 ? L.d1 : NaN;
+    return kind === "tree" ? d / L.ref : d;
+};
 
 // STAMM_RIPPEN — die Rippen-Zahl des Wurzelanlaufs der Werkstatt-Röhre (sin(Winkel·Rippen)·P.flare, phyto-core
 // buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der

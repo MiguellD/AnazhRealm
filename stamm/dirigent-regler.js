@@ -262,6 +262,14 @@ class AnazhRealm_dirigent_regler {
         this._nexusPerfActuate(sense);
     }
 
+    // DER RAND AM SCHIRM (lod.K5, Pixelgröße × Haushalt): `laub` die Reichweite der Vegetation (PERF_FOLIAGE_RADIUS_MAX), `bau`
+    // die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX) — der Haushalt, ganz: sein Pixel-Term bindet an keinem Schirm (ein Körper
+    // von 1 m trägt am Rand des Laubs bei 1080 Zeilen 2,9 px, bei 600 noch 1,6 px), ein gestauchter Rand nähme Sichtbares. Kein
+    // Regler, keine Bildrate, kein Schirm legt die Existenz um (Lehre 13).
+    _randSchirm(art) {
+        return art === "laub" ? AnazhRealm.PERF_FOLIAGE_RADIUS_MAX : AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
+    }
+
     // AKTUIEREN — die EINE Stelle für ALLE Qualitäts-Stellgrößen: loadScale × Kosten-Anteil je
     // Subsystem. Das TEUERSTE regelbare Subsystem (Architektur/Streaming/Wasser, aus dem gemessenen
     // Sense) gibt ZUERST nach. loadScale=1 → alle Stellgrößen auf Maximum.
@@ -301,23 +309,22 @@ class AnazhRealm_dirigent_regler {
             !this._ladeTakt() &&
             st._nachlauf == null &&
             sense.frameMs > (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS);
-        // Architektur (vormals der Bang-Bang-Governor — jetzt EINE Quelle): das Ziel; der Radius selbst geht
-        // durch dieselbe Grenzzyklus-Wand wie das Laub (unten).
-        const archZiel = lerp(AnazhRealm.ARCH_QUALITY_RADIUS_MIN, AnazhRealm.ARCH_QUALITY_RADIUS_MAX, effArch);
+        // DER RAND AM SCHIRM (lod.K5): Laub- und Architektur-Radius sind Wechsel-Abstände — die Karte des Walds an das Fern-Feld,
+        // die Mesh-Zone der Bauten an ihre Fernform — und folgen dem Schirm und dem Haushalt (`_randSchirm`), nie der Bildrate:
+        // bis w3v-lod lagen sie bei lerp(MIN, MAX, effArch), der Wald-Rand wanderte unter Last zwischen 70 und 240 m (Pop und
+        // Regler zugleich). Der PID regelt die Qualität — Dichte, Bau-Durchsatz, Schatten, Strahlen —, nie den Rand.
+        const archZiel = this._randSchirm("bau");
         st.architectureBuildBudgetPerFrame = Math.round(
             lerp(AnazhRealm.ARCH_QUALITY_BUDGET_MIN, AnazhRealm.ARCH_QUALITY_BUDGET_MAX, effArch)
         );
-        // Kapazitäts-gewachsene Welt: `foliageRadius` startet KLEIN und rampt zum perf-geregelten Ziel
-        // (`effArch`, dieselbe loadScale-PID-Quelle); steigt die Last, sinkt das Ziel, der Radius schrumpft.
-        // Headless (Null-Renderer) → sofort MAX, damit das Gate die volle Welt sieht.
+        // Headless (Null-Renderer): der Rand sofort am Schirm, die Dichte voll.
         if (st.renderer && st.renderer._isHeadlessNull) {
-            st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+            st.foliageRadius = this._randSchirm("laub");
             st.architectureCullingRadius = archZiel;
             st._foliageDensityScale = 1;
         } else {
-            // Der Radius wächst Chunk für Chunk nach Kapazität (die Dichte lebt PRO Chunk);
-            // nie den Sicht-Radius erzwingen.
-            let frTarget = lerp(AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, effArch);
+            // Der Laub-Radius startet klein (PERF_FOLIAGE_RADIUS_MIN) und wächst Chunk für Chunk zum Rand am Schirm.
+            let frTarget = this._randSchirm("laub");
             // Die Vegetation wächst MIT dem Boden, nie voraus: das Ziel auf die gebaute Ring-Kante kappen
             // (`_activeRingRadius`) — sonst rast der Radius in leeren Boot-Frames auf MAX und bepflanzt
             // einen fernen Billboard-Ring vor dem Terrain.
@@ -330,11 +337,9 @@ class AnazhRealm_dirigent_regler {
             frTarget = Math.min(frTarget, _ringReach);
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
             const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
-            // Grenzzyklus-Wand: ein atmender Radius baut dieselben Rand-Zellen immer neu (Worker-Flut).
-            // (1) WACHSEN nur nach PERF_FOLIAGE_GROW_RUHE_S Sim-Sekunden ohne Über-Budget (Sim-Zeit via
-            // sense.frameMs, nie Wanduhr — gate:regler-sim bleibt deterministisch); auch echtes gpuMs über
-            // der Decke setzt die Ruhe-Uhr zurück (nur Quelle "echt" — der Proxy lügt bei Stalls).
-            // (2) SCHRUMPFEN erst ab dem Totband (PERF_FOLIAGE_SHRINK_TOTBAND) — kleine Dips flattern nicht.
+            // Die Wand der Dichte: sie wächst nur nach PERF_FOLIAGE_GROW_RUHE_S Sim-Sekunden ohne Über-Budget (Sim-Zeit via
+            // sense.frameMs, nie Wanduhr — gate:regler-sim bleibt deterministisch); auch echtes gpuMs über der Decke setzt die
+            // Ruhe-Uhr zurück (nur Quelle "echt" — der Proxy lügt bei Stalls); sie schrumpft erst ab dem Totband.
             const _gpuVoll =
                 sense.gpuQuelle === "echt" &&
                 sense.phase &&
@@ -343,16 +348,12 @@ class AnazhRealm_dirigent_regler {
             if (st._frameOverBudget || _gpuVoll) this._folRuheSec = 0;
             else this._folRuheSec = (this._folRuheSec || 0) + Math.min(0.3, (sense.frameMs || 17) / 1000);
             const _frRuhig = (this._folRuheSec || 0) >= AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S;
-            // DIE EINE Wand für JEDE Stellgröße, die ein Fege-Takt liest: die beiden Cull-Radien (Laub + Architektur) und
-            // die Laub-Dichte. Ohne sie folgte der Architektur-Radius dem PID Frame für Frame (gemessen 04.10., echte GPU,
-            // Mess-Wiese: 100↔150 m, 30 Wechsel in 94 Frames): Bauten am Rand wurden gecullt und vom Foundry-Rewarm sofort
-            // neu gebaut, je Runde nahmen die großen Region-Bundles in allen drei Pässen neu auf — die CPU trieb den Regler,
-            // der Regler den Radius. Die Dichte lief bis 0910-7 ohne sie: wo der Regler mitten in seiner Spanne steht,
-            // pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte; OMEN, V18.538, Regler frei: Wechsel in 0,52 der
-            // Frames). Jeder Wechsel weckte über den Stand-Stempel jeden Fege-Takt zu einer vollen Runde über den Bestand
+            // DIE WAND der Laub-Dichte (die Ränder folgen dem Schirm, sie atmen nicht mehr): wo der Regler mitten in seiner
+            // Spanne steht, pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte; OMEN, V18.538, Regler frei: Wechsel in 0,52
+            // der Frames). Jeder Wechsel weckte über den Stand-Stempel jeden Fege-Takt zu einer vollen Runde über den Bestand
             // (Stufen-Wahl 299 Einheiten je Frame statt 34) und über `uLodPerf` die Lage jedes Passes (die Satz-Wahl und
-            // die Höhlen-Sicht rechneten je Pass neu) — CPU-Takt p95 4,8 → 11,7 ms. Das Totband ist für jede Größe derselbe
-            // Anteil ihrer Spanne (SHRINK_TOTBAND über die Spanne des Laub-Radius).
+            // die Höhlen-Sicht rechneten je Pass neu) — CPU-Takt p95 4,8 → 11,7 ms. Das Totband ist derselbe Anteil ihrer
+            // Spanne wie SHRINK_TOTBAND über die Spanne des Laub-Radius.
             const wand = (cur, ziel, schritt, totband, darfWachsen) =>
                 cur < ziel
                     ? _frRuhig && darfWachsen
@@ -362,17 +363,12 @@ class AnazhRealm_dirigent_regler {
                       ? Math.max(ziel, cur - schritt * 2)
                       : cur;
             const TOT = AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND;
-            // DIE REICHWEITE DES ERSTEN WELTBILDS (K60-3): die Wand schützt den Takt, den der Spieler sieht — unter dem Lade-Takt
-            // sieht keiner den Radius atmen, und sie hielt das Weltbild klein. Laub- und Architektur-Radius stehen dort an ihrem
-            // Ziel (das Laub an der Kante des gebauten Rings), `_weltbildLuecken` urteilt an der ganzen Reichweite. Prüfung K60-3
-            // Runde 2 (Radeon kalt): das Bild stand mit 65 statt 129,6 m Laub, 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume —
-            // der Radius wuchs nur in ruhigen Takten, und unter dem Ladeschirm (ein Bild je LADE_BILD_MS) kam keiner.
-            const reichweite = (cur, ziel) => (this._ladeTakt() ? ziel : wand(cur, ziel, step, TOT, true));
-            st.foliageRadius = reichweite(frCur, frTarget);
-            st.architectureCullingRadius = reichweite(
-                Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : archZiel,
-                archZiel
-            );
+            // DER LAUB-RADIUS wächst Schritt für Schritt (PERF_FOLIAGE_GROW_STEP je Takt) zum Rand am Schirm, ohne Ruhe-Wand: sein
+            // Ziel ändert sich nur mit dem Schirm und dem gebauten Ring, nie mit der Last — bei 30, 60 und 144 Bildern steht
+            // er an derselben Kante. Unter dem Lade-Takt steht er sofort am Ziel (K60-3: das erste Weltbild an seiner ganzen
+            // Reichweite, `_weltbildLuecken`); der Architektur-Radius steht immer am Rand.
+            st.foliageRadius = this._ladeTakt() || frCur > frTarget ? frTarget : Math.min(frTarget, frCur + step);
+            st.architectureCullingRadius = archZiel;
             // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle (die Last-Dichte der
             // Nah-Streu, `_nahStreuKachel`) → unter Last weniger Dreiecke. Kaltstart-Wand: das Laub ist ~90 % der GPU-Last,
             // die leere Start-Welt hat aber Luft — wüchse die Dichte da, buken die ersten Chunks DICHT (Freeze). Solange die
@@ -1926,24 +1922,21 @@ class AnazhRealm_dirigent_regler {
 _stammZonen(AnazhRealm, [AnazhRealm_dirigent_regler]);
 
 // ===== ATLAS · Dirigent/regler — Außen-Konstanten =====
-// Adaptiver Qualitäts-Governor: Render-Radius + Build-Budget pendeln zwischen MIN/MAX je FPS-Druck
-// (nie Gravitation). RMAX = Default-Render-Radius; RMIN bleibt > max. Test-Spawn-Distanz (~65 m),
-// sonst brechen headless die Spawn-Render-Tests.
+// DER HAUSHALT DER RÄNDER (`_randSchirm`): die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX) und die Reichweite der Vegetation
+// (PERF_FOLIAGE_RADIUS_MAX), an jedem Schirm ganz. Das Build-Budget je Frame pendelt mit dem Regler zwischen MIN und MAX.
 AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
-AnazhRealm.ARCH_QUALITY_RADIUS_MIN = 100;
 AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
 AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.INP_FENSTER = 2000; // so viele Interaktionen hält das Bedienungs-Ohr (spielgang.K3), die älteste weicht
-// Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb `foliageRadius` — der
-// startet klein (kein Spawn-Freeze) und rampt zum perf-geregelten Ziel (`effArch` aus dem EINEN
-// loadScale-PID); steigt die Render-Last, sinkt das Ziel. RMIN > max. Test-Spawn (~65 m).
+// Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb `foliageRadius` — der startet klein (kein
+// Spawn-Freeze) und wächst mit dem gebauten Ring zum Rand am Schirm (`_randSchirm`), nie mit der Last. RMIN > max. Test-Spawn
+// (~65 m).
 AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
-AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
+AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite, der Rand des Laubs
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
-// Die zwei Radius-Wände gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne
-// Über-Budget-Frame (kein Jagen kurzlebigen Kopfraums); Schrumpfen erst ab diesem Ziel-Abstand in
-// Metern (Kanten-Zellen flattern nicht; ein echter Überlast-Sturz schrumpft voll).
+// Die Wand der Laub-Dichte gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne Über-Budget-Frame (kein Jagen
+// kurzlebigen Kopfraums); Schrumpfen erst ab diesem Anteil der Spanne (SHRINK_TOTBAND über die Spanne des Laub-Radius).
 AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S = 4;
 AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND = 8;
 // Der EINE forceWebGL-Hook: die Boot-Probe (gate:webgl-probe) erzwingt den r184-WebGL2-Rückfall;

@@ -213,43 +213,39 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         const gBefore = st.gravity;
         const L = A.PERF_LEVERS;
 
-        // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen.
+        // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität (der Rand der Mesh-Zone ist ein
+        // Wechsel-Abstand am Schirm, kein Stellglied — Regler-Sim S6).
         for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(15); // frameMs≈67 >> Soll
-        out.tightenedRadius = st.architectureCullingRadius < 130;
         out.tightenedBudget = st.architectureBuildBudgetPerFrame < 4;
         out.tightenedStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1];
-        out.radiusFloor =
-            st.architectureCullingRadius >= A.ARCH_QUALITY_RADIUS_MIN && st.architectureCullingRadius < 130;
         out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
         out.gravityUntouchedLow = st.gravity === gBefore;
 
         // (2) FPS-LUFT (frameMs≈7 ≪ growMs) → relax zum MAXIMUM aller Stellgrößen. Viele Ticks: mit dem
         // Atem-Totband braucht der Integral-Term lange, bis loadScale auf 1.0 clampt (Gleichgewicht, err<0).
         for (let i = 0; i < 240; i++) r._nexusAdaptiveQuality(140);
-        out.relaxedRadius = st.architectureCullingRadius === A.ARCH_QUALITY_RADIUS_MAX;
         out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
         out.relaxedStream = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
         out.gravityUntouchedHigh = st.gravity === gBefore;
 
         // (3) SYNERGIE (der Kern der Schöpfer-Forderung „optimal nutzen"): bei
         // streaming-dominanter Last drosselt der EINE Regler das Stream-Budget
-        // STÄRKER (näher an min) als den Architektur-Radius — das teuerste zuerst.
+        // STÄRKER (näher an min) als das Bau-Budget je Frame — das teuerste zuerst.
         r._nexusPerfActuate({
             loadScale: 0.5,
             phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
         });
         const streamPos = (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
-        const radiusPos =
-            (st.architectureCullingRadius - A.ARCH_QUALITY_RADIUS_MIN) /
-            (A.ARCH_QUALITY_RADIUS_MAX - A.ARCH_QUALITY_RADIUS_MIN);
-        out.synergyStreamThrottledMore = streamPos < radiusPos - 0.1;
+        const budgetPos = (b) => (b - A.ARCH_QUALITY_BUDGET_MIN) / (A.ARCH_QUALITY_BUDGET_MAX - A.ARCH_QUALITY_BUDGET_MIN);
+        const archPos = budgetPos(st.architectureBuildBudgetPerFrame);
+        out.synergyStreamThrottledMore = streamPos < archPos - 0.1;
         out.synergyStreamPos = +streamPos.toFixed(2);
-        out.synergyRadiusPos = +radiusPos.toFixed(2);
+        out.synergyArchPos = +archPos.toFixed(2);
 
         // (4) ungültige FPS ändert nichts.
-        const rBefore = st.architectureCullingRadius;
+        const rBefore = st.architectureBuildBudgetPerFrame;
         r._nexusAdaptiveQuality(0);
-        out.zeroFpsNoChange = st.architectureCullingRadius === rBefore;
+        out.zeroFpsNoChange = st.architectureBuildBudgetPerFrame === rBefore;
 
         // (5) Kosten-Schätzung liest den Sense (der Produktions-Ökonomie-Keim).
         st.perfSense.perCreatureMs = 0.05;
@@ -272,16 +268,14 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
 
         // (a) MODERATE Render-Last (Draw-Calls unter dem Responsiv-Schwellwert): die Architektur-Domäne
-        // (Schatten/Cull = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
+        // (Schatten/Bau-Durchsatz = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
         // lädt weiter, während die Render-Qualität schrumpft.
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 600,
             phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
         });
-        const archPosR =
-            (st.architectureCullingRadius - A.ARCH_QUALITY_RADIUS_MIN) /
-            (A.ARCH_QUALITY_RADIUS_MAX - A.ARCH_QUALITY_RADIUS_MIN);
+        const archPosR = budgetPos(st.architectureBuildBudgetPerFrame);
         const streamPosR =
             (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
         const shadowLoaded = st._shadowMinInterval;
@@ -379,20 +373,17 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         res.noParallelGovernor
     );
     check(
-        "FPS-Druck strafft ALLE Stellgrößen (Radius + Budget + Stream-Budget)",
-        res.tightenedRadius && res.tightenedBudget && res.tightenedStream
+        "FPS-Druck strafft ALLE Stellgrößen der Qualität (Bau-Budget + Stream-Budget)",
+        res.tightenedBudget && res.tightenedStream
     );
-    check("anhaltender Druck bounded (Radius ≥ MIN, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
+    check("anhaltender Druck bounded (Budget ≥ 1)", res.budgetFloor);
     check(
         "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
         res.gravityUntouchedLow && res.gravityUntouchedHigh
     );
+    check("FPS-Luft relaxt ALLE Stellgrößen zum Maximum", res.relaxedBudget && res.relaxedStream);
     check(
-        "FPS-Luft relaxt ALLE Stellgrößen zum Maximum",
-        res.relaxedRadius && res.relaxedBudget && res.relaxedStream
-    );
-    check(
-        `SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < radiusPos ${res.synergyRadiusPos})`,
+        `SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < archPos ${res.synergyArchPos})`,
         res.synergyStreamThrottledMore
     );
     check("ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
@@ -1420,7 +1411,8 @@ async function checkBandSzeneSkala({ page, check }) {
 // → `_nexusPerfRegulate` → `_nexusPerfActuate` über tausende synthetische Frames, der headless-Zweig gelüftet, die zwei
 // GPU-Anwender gestubbt, alles gesichert und wiederhergestellt. S1 schwache GPU drosselt und konvergiert (Studio-Regime ohne
 // Rebuild-Schleife) · S2 Streaming ist heilig · S3 starke GPU erholt · S4 Session-Zeit-Invarianz · S5 der Geräte-Seed (Klassen,
-// Konsum, headless byte-alt) · S6 der Grenzzyklus-Schnitt (Laub- und Architektur-Radius) · S7 der Ladeschirm misst nichts.
+// Konsum, headless byte-alt) · S6 die Stufe und der Rand am Schirm (lod.K5: Abstände, Grenzen, Wahl, Laub- und Bau-Radius bei
+// 30/60/144 fps und Regler ±10 % gleich, die Mutante wandert) · S7 der Ladeschirm misst nichts.
 async function checkBandReglerSim({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         const A = window.AnazhRealm || r.constructor;
@@ -1577,38 +1569,65 @@ async function checkBandReglerSim({ page, check }) {
                 r._geraeteProfilMemo = null;
                 st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
             }
-            // ── S6: DER GRENZZYKLUS-SCHNITT (vierter Schöpfer-Trace: Radius
-            // atmete 58↔130 m und baute dieselben Rand-Zellen im Kreis) — GEPULSTER
-            // Kopfraum (kurze Ruhe-Fenster zwischen Über-Budget-Wellen) bewegt den
-            // Radius NICHT mehr; ANHALTENDER Kopfraum wächst weiter (S3 bleibt). ──
+            // ── S6: DIE STUFE UND DER RAND AM SCHIRM (lod.K5 Staffel 2; vorher der Grenzzyklus-Schnitt: der Radius atmete 58↔130 m und
+            // baute dieselben Rand-Zellen im Kreis) — bei 30, 60 und 144 Bildern, gepulstem Kopfraum (7/30 ms) und dem Regler des
+            // Spielers ±10 % (perfTargetMs) stehen die Abstände des Gesetzes (`_wechselAbstand`), die Schwellen der Bäume und Karten-
+            // Arten, die Grenzen von Haus und Tor (`_archStufenGrenzen`), die Stufen-Wahl, die Wahrnehmungs-Distanz der Maske, der Laub-Radius an
+            // der Kante (der Rand am Schirm, gekappt am gebauten Ring) und der Bau-Radius am Schirm (`_randSchirm`) GLEICH, während
+            // der Regler wandert (loadScale-Spanne ≥ 0,3). Die Gegenprobe im selben Lauf: das Gesetz mit einem Regler-Term wandert. ──
             {
-                st.perfSense = null;
-                for (let i = 0; i < 600; i++) feed(30, Object.assign({}, HONEST)); // auf den Boden
-                const s6Start = st.foliageRadius;
-                const s6ArchStart = st.architectureCullingRadius;
-                for (let w = 0; w < 6; w++) {
-                    for (let i = 0; i < 80; i++) feed(7, Object.assign({}, HONEST)); // kurzes Ruhe-Fenster
-                    for (let i = 0; i < 20; i++) feed(30, Object.assign({}, HONEST)); // die Welle bricht
+                const ARTEN = [["tree", 1], ["tree", 2], ["haus", 1], ["haus", 2], ["gate", 1], ["gate", 2], ["ausstattung", 1]];
+                const { span } = r._voxelChunkConfig();
+                const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+                const schirm = () => {
+                    r._stufenSchirm();
+                    return JSON.stringify({
+                        d: ARTEN.map(([k, s]) => r._wechselAbstand(k, s, 1)),
+                        t: [A.LOD_DISTANCES.thresh01, A.LOD_DISTANCES.thresh12],
+                        g: ["haus_alemannisch", "tor_drachentor"].map((type) => r._archStufenGrenzen({ type })),
+                        wahl: [[6, 0, 8], [14, 1, 12], [24, 1, 20], [30, 1, 12], [60, 2, 30]].map((x) => r._chooseLODForDistance(...x)),
+                        wahrnehmung: r._lodPerceptionDistance(100, 12),
+                        laub: st.foliageRadius === Math.min(r._randSchirm("laub"), (ring + 1) * span),
+                        bau: st.architectureCullingRadius === r._randSchirm("bau"),
+                    });
+                };
+                const zielVor = st.perfTargetMs;
+                const ziel = Number.isFinite(zielVor) ? zielVor : A.PERF_TARGET_MS;
+                const lauf = (ms, n, z = ziel) => {
+                    st.perfTargetMs = z;
+                    for (let i = 0; i < n; i++) feed(ms, Object.assign({}, HONEST));
+                    return { ls: st.perfSense.loadScale, s: schirm() };
+                };
+                const laeufe = () => {
+                    st.perfSense = null;
+                    const l = [lauf(1000 / 30, 600), lauf(1000 / 60, 600), lauf(1000 / 144, 1200)];
+                    for (let w = 0; w < 6; w++) l.push(lauf(7, 80), lauf(30, 20));
+                    l.push(lauf(1000 / 60, 600, ziel * 0.9), lauf(1000 / 60, 600, ziel * 1.1));
+                    st.perfTargetMs = zielVor;
+                    return l;
+                };
+                const l = laeufe();
+                const gesetz = A._wechselGesetz;
+                A._wechselGesetz = (...a) => gesetz(...a) * (0.7 + 0.3 * st.perfSense.loadScale);
+                let mut = [];
+                try {
+                    mut = laeufe();
+                } finally {
+                    A._wechselGesetz = gesetz;
                 }
-                const s6NachPuls = st.foliageRadius;
-                o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
-                o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
-                // DIESELBE Wand trägt den Architektur-Radius (er folgt dem PID nie Frame für Frame).
-                const s6ArchNachPuls = st.architectureCullingRadius;
-                o.s6ArchPulsDelta = +Math.abs(s6ArchNachPuls - s6ArchStart).toFixed(2);
-                o.s6ArchPulsStill = o.s6ArchPulsDelta < 1e-6;
-                for (let i = 0; i < 1200; i++) feed(7, Object.assign({}, HONEST)); // anhaltende Ruhe
-                o.s6RuheWaechst = st.foliageRadius > s6NachPuls + 1;
-                o.s6ArchRuheWaechst = st.architectureCullingRadius > s6ArchNachPuls + 1;
-                o.s6Arch = { start: s6ArchStart, nachPuls: s6ArchNachPuls, nachRuhe: st.architectureCullingRadius };
-                o.s6 = { start: s6Start, nachPuls: s6NachPuls, nachRuhe: st.foliageRadius };
+                const ls = l.map((x) => x.ls);
+                const anders = l.find((x) => x.s !== l[0].s);
+                const s0 = JSON.parse(l[0].s);
+                o.s6Spanne = +(Math.max(...ls) - Math.min(...ls)).toFixed(2);
+                o.s6AmSchirm = !anders && s0.laub && s0.bau && o.s6Spanne >= 0.3 && mut.some((x) => x.s !== mut[0].s);
+                o.s6 = { laeufe: l.length, loadScale: [Math.min(...ls), Math.max(...ls)].map((x) => +x.toFixed(2)), anders: anders ? anders.s : null, schirm: s0 };
             }
             // ── S7: DER LADESCHIRM MISST NICHTS (K60-3, Prüfung Runde 2: Radeon kalt stand das erste Weltbild am Kopf mit dem
             // Laub-Radius 65 statt 129,6 m — 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume). Unter dem Lade-Takt zeigt kein
             // Frame die Welt: sein Abstand ist die Kadenz des Lade-Bilds (LADE_BILD_MS), seine Last die Erst-Zeichnung. Der
             // PID misst ihn nie (loadScale hält den Seed), und die Reichweite des Weltbilds — Laub- und Architektur-Radius —
-            // steht nach zwei Lade-Bildern an ihrem Ziel (das Laub an der Kante des gebauten Rings), nie an der Wand des
-            // sichtbaren Takts (Ruhe + Schritt, S6). ──
+            // steht nach zwei Lade-Bildern an ihrem Ziel (dem Rand am Schirm, das Laub gekappt an der Kante des gebauten Rings),
+            // nie am Schritt des sichtbaren Takts. ──
             {
                 const merk = {
                     lade: r._ladeTakt,
@@ -1621,19 +1640,15 @@ async function checkBandReglerSim({ page, check }) {
                     r._ladeTakt = () => true;
                     st._activeRingRadius = 2;
                     st.foliageRadius = A.PERF_FOLIAGE_RADIUS_MIN - 5; // der Boot-Stand am Kopf (65 m)
-                    st.architectureCullingRadius = A.ARCH_QUALITY_RADIUS_MIN;
+                    st.architectureCullingRadius = 0;
                     const LADE = Object.assign({}, HONEST, { render: 300, streaming: 1, waterIso: 0 });
                     feed(A.LADE_BILD_MS, Object.assign({}, LADE));
                     feed(A.LADE_BILD_MS, Object.assign({}, LADE));
                     const seed = st.perfSense.seedStart;
                     const { span } = r._voxelChunkConfig();
                     const kante = (st._activeRingRadius + 1) * span;
-                    const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
-                    const laubZiel = Math.min(
-                        lerp(A.PERF_FOLIAGE_RADIUS_MIN, A.PERF_FOLIAGE_RADIUS_MAX, seed),
-                        kante
-                    );
-                    const archZiel = lerp(A.ARCH_QUALITY_RADIUS_MIN, A.ARCH_QUALITY_RADIUS_MAX, seed);
+                    const laubZiel = Math.min(r._randSchirm("laub"), kante);
+                    const archZiel = r._randSchirm("bau");
                     o.s7 = {
                         seed,
                         loadScale: +st.perfSense.loadScale.toFixed(4),
@@ -1676,9 +1691,9 @@ async function checkBandReglerSim({ page, check }) {
         `Seed-Start ${o.s5SeedStart} · headless ${o.s5HeadlessAlt}`
     );
     check(
-        "Regler-Sim S6 Grenzzyklus-Schnitt: gepulster Kopfraum bewegt Laub- und Architektur-Radius NICHT, anhaltende Ruhe wächst",
-        o.s6PulsStill === true && o.s6RuheWaechst === true && o.s6ArchPulsStill === true && o.s6ArchRuheWaechst === true,
-        `Laub Δ ${o.s6PulsDelta} ${o.s6 ? o.s6.nachPuls + "→" + o.s6.nachRuhe : ""} · Bauten Δ ${o.s6ArchPulsDelta}`
+        "Regler-Sim S6 die Stufe und der Rand am Schirm (lod.K5 Staffel 2): bei 30/60/144 fps, Puls und Regler ±10 % stehen Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante wandert",
+        o.s6AmSchirm === true,
+        `K5#2 Spanne ${o.s6Spanne} · ${JSON.stringify(o.s6)}`
     );
     check("Regler-Sim S7 der Ladeschirm misst nichts: der PID hält den Seed, Laub und Bauten stehen nach zwei Lade-Bildern am Ziel", o.s7LoadHaelt === true && o.s7LaubAmZiel === true && o.s7ArchAmZiel === true, JSON.stringify(o.s7));
     check("Regler-Sim: die Sim fuhr die ECHTEN Nicht-Headless-Zweige und stellte headless-Zustand + Dichte 1 wieder her", o.gpuAppliersDrove === true && o.restored === true);

@@ -106,8 +106,7 @@ class AnazhRealm_siedlung_bauten {
     }
 
     // Sichtlinie Kamera→Baum durchs Kronen-Dichte-Gitter: kumulierte Dichte über der Schwelle → verdeckt
-    // → LOD2. Hysterese (thrLo für schon Verdeckte) gegen Flattern. Die Schwelle skaliert mit
-    // _foliageDensityScale (EIN Regler) — unter Last werden mehr Bäume LOD2.
+    // → LOD2. Hysterese (thrLo für schon Verdeckte) gegen Flattern; kein Regler in der Schwelle (lod.K5).
     _occlusionOccludes(camX, camZ, tx, tz, dr, wasOccluded) {
         const grid = this._occlGrid;
         if (!grid || grid.size === 0 || !(dr > 0)) return false;
@@ -116,9 +115,7 @@ class AnazhRealm_siedlung_bauten {
         const ix = (tx - camX) / dr;
         const iz = (tz - camZ) / dr;
         const tEnd = dr - O.endMargin;
-        let thr = wasOccluded ? O.thrLo : O.thrHi;
-        const fd = this.state._foliageDensityScale;
-        if (Number.isFinite(fd) && fd < 1) thr *= O.perfThrMin + (1 - O.perfThrMin) * fd;
+        const thr = wasOccluded ? O.thrLo : O.thrHi;
         let s = 0;
         for (let t = O.startM; t < tEnd; t += O.stepM) {
             const gx = Math.floor((camX + ix * t) / cellM);
@@ -358,6 +355,7 @@ class AnazhRealm_siedlung_bauten {
     _lodBandPartnerFor(dist, visH, cur, s) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return null;
+        this._stufenSchirm();
         const M = cfg.hysteresis;
         const D0 = cfg.thresh01,
             D1 = cfg.thresh12,
@@ -2647,8 +2645,8 @@ AnazhRealm.VARIANTS_PER_SPECIES = 3;
 // Kronen-Dichte-Gitter (Occlusion-Demotion): die Sichtlinie Kamera→ferner Baum marschiert durchs
 // Gitter; übersteigt die kumulierte Dichte die Schwelle, fällt der Baum auf LOD2 (`grown_*_lod2`) —
 // die Silhouette bleibt, Pop-in ist konstruktiv unmöglich. Bäume streamen → periodischer Neubau
-// (`_rebuildOcclusionGrid`). Kein zweiter LOD-Regler: die Demotion hebt nur die gewählte Stufe an,
-// die Schwelle skaliert mit `_foliageDensityScale` (unter Last aggressiver).
+// (`_rebuildOcclusionGrid`). Kein LOD-Regler: die Demotion hebt nur die gewählte Stufe an, ihre Schwelle ist fest (lod.K5 —
+// bis w3v-lod sank sie mit `_foliageDensityScale` unter Last auf 60 %, die Stufe folgte der Bildrate).
 AnazhRealm.OCCLUSION = Object.freeze({
     cellM: 3, // Kronen-Dichte-Gitter (3m-Zelle, wie phytogenesis _occG)
     occDist: 30, // erst JENSEITS dieser Distanz occlusion-marschieren (nahe Bäume bleiben voll-3D)
@@ -2657,7 +2655,6 @@ AnazhRealm.OCCLUSION = Object.freeze({
     stepM: 3, // Schrittweite = Zellgröße
     thrHi: 3.6, // Demotions-Schwelle (Hysterese OBEN: klarer Baum → LOD2 erst hier)
     thrLo: 2.8, // Re-Promotions-Schwelle (Hysterese UNTEN: demotierter Baum bleibt es länger → kein Flattern)
-    perfThrMin: 0.6, // unter voller Last (fdScale=MIN) sinkt die Schwelle auf 60 % → mehr Bäume werden LOD2
     weightMin: 0.35, // Kronen-Gewicht-Klammer (phytogenesis clamp)
     weightMax: 1.6,
     nominalH: 14, // nominale Baum-Sichthöhe (m) für das skalen-basierte Kronen-Gewicht

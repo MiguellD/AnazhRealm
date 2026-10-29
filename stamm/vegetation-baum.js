@@ -2700,14 +2700,11 @@ AnazhRealm.LANDMARK_TALL_FORMS = Object.freeze({
 });
 AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt der Scatter aufragende Formen
 
-// LOD_DISTANCES (unten) — gelesen von `_chooseLODForDistance`/`_tickArchitectureLOD`: <thresh01 = L0
-// volle Geometrie · bis thresh12 = L1 · darüber L2 Studio-Billboard; `hysteresis` gegen Flackern.
-// Die Defaults matchen PORTAL_RENDER_CONFIG.lod (headless == live); bewusst NICHT frozen —
-// `_foundryIngestRenderConfig` schreibt die live gelesenen Studio-Werte hinein (reines Render,
-// determinismus-sicher). Screen-Space-Error: `lodRef` (die EINE uLodRef-Quelle) skaliert die Distanz
-// mit min(lodRef/visHeight, 1) — ein großer Baum schaltet später, ein kleiner nie früher;
-// `perfDistMulMax` = max. Distanz-Multiplikator unter Last (der EINE Regler `_foliageDensityScale`);
-// beides via `_lodPerceptionDistance`.
+// LOD_DISTANCES (stamm/vegetation-streu.js) — gelesen von `_chooseLODForDistance`/`_tickArchitectureLOD`: <thresh01 = L0
+// volle Geometrie · bis thresh12 = L1 · darüber L2 Studio-Billboard; `hysteresis` gegen Flackern. Die Schwellen legt das
+// Gesetz des Schirms (`_stufenSchirm`, lod.K5), die Bänder `_foundryIngestRenderConfig` aus dem Buch; bewusst NICHT frozen.
+// Screen-Space-Error: `lodRef` (die EINE uLodRef-Quelle) skaliert die Distanz mit min(lodRef/visHeight, 1) — ein großer Baum
+// schaltet später, ein kleiner nie früher (`_lodPerceptionDistance`).
 // Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
 // Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
 AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
