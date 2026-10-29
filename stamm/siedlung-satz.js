@@ -1441,8 +1441,8 @@ class AnazhRealm_siedlung_satz {
             const fluss = { daten: fluesse.schicht(si), tex: fluesse.tex, hydroN: -1 };
             return { S, N, schicht: si, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
-        // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
-        // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
+        // `kronen` ist das Register (Schlüssel → [x, z, Radius, Scheitel, Baum]), `kronenZellen` sein Raum-Index (Zellen
+        // `LAUB_STREU.zelleM` → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
         // `raeumen`: die neuen Flächen, deren schon gewachsene Natur der Takt räumt (`_wegeRaeumen`, K52).
         st.wegeKarte = {
             stufen,
@@ -1476,14 +1476,15 @@ class AnazhRealm_siedlung_satz {
     // vergaß der Umzug der fernen Stufe alles jenseits ihres Fensters, auch die Eintrags-Kronen, die nur beim Entstehen
     // eintragen; wer > 1 km lief und zurückkam, fand unter jedem Eintrags-Baum (Mess-Wiese: 722 von 789 Kronen) bis zum
     // Reload keine Streu. Der Raum-Index (`kronenZellen`) bindet die Kosten des Umzugs an den Streifen, nie an den Bestand.
-    _kronenStreuNeu(schluessel, x, z, radius) {
+    // DER SCHEITEL (der Schwarm landet auf ihm): `oben` (Streu: Fuß + Sichthöhe) oder der Eintrag `baum` — `_kronenOben`.
+    _kronenStreuNeu(schluessel, x, z, radius, oben = NaN, baum = null) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
         // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt; eine GEÄNDERTE fällt erst heraus.
         const alt = wk.kronen.get(schluessel);
-        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return void ([alt[3], alt[4]] = [oben, baum]);
         if (alt) this._kronenStreuWeg(schluessel);
-        const c = [x, z, radius];
+        const c = [x, z, radius, oben, baum];
         wk.kronen.set(schluessel, c);
         const zk = AnazhRealm._kronenZelle(x, z);
         let zelle = wk.kronenZellen.get(zk);
@@ -2458,7 +2459,16 @@ class AnazhRealm_siedlung_satz {
         const P = this._stlMauerEnsurePool();
         const wk = this._wegeKarteEnsure();
         const FUSS = AnazhRealm.STADTMAUER_FUSS_M;
-        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [] };
+        // die Mauer merkt ihren Plan und ihre Streifen im Pool (`_stlMauerNeu`: sie wächst mit dem Ort)
+        const box = {
+            x0: Infinity,
+            z0: Infinity,
+            x1: -Infinity,
+            z1: -Infinity,
+            formen: [],
+            mauerVon: plan,
+            streifen: [P ? P.top : 0],
+        };
         const form = (f) => {
             box.formen.push(f);
             const r = AnazhRealm._wegeFormRadius(f);
@@ -2542,6 +2552,7 @@ class AnazhRealm_siedlung_satz {
             form({ typ: "kasten", kanal: -1, ax: x, az: z, bx: x, bz: z, ex: tb, ez: tb, phi: 0, halb: 0 });
             n++;
         }
+        box.streifen.push(P ? P.top : 0);
         if (box.formen.length) {
             wk.siedlungen.push(box); // die Natur-Wand liest die Linie (`_aufWeg`); einen Boden-Kanal malt sie nicht
             wk.raeumen.push(box); // was schon in der Linie der Mauer wuchs, räumt der Takt (`_wegeRaeumen`)
@@ -3411,7 +3422,7 @@ class AnazhRealm_siedlung_satz {
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
-        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone);
+        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone, NaN, entry);
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);

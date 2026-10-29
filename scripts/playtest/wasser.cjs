@@ -4,7 +4,7 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Band-Funktion der Hydrosphäre (Erosion, Chunk-Wasser, Ufer-Schaum).
@@ -400,13 +400,7 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!voxelV943e || voxelV943e.error) {
-        check(
-            "Welle 5 Klang: Wasser-Klang-Snapshot erreichbar",
-            false,
-            (voxelV943e && voxelV943e.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 Klang: Wasser-Klang-Snapshot erreichbar", voxelV943e)) {
         const e = voxelV943e;
         const zahl = (v) => (v > -900 ? v.toFixed(1) : "−∞");
         check("Welle 5 Klang: Symphonie + Klang-Welt aktiv (initSymphony headless)", e.symphonyOn);

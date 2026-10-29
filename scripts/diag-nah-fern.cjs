@@ -7,9 +7,8 @@
 //
 //   node scripts/diag-nah-fern.cjs [--port 4596]
 "use strict";
-const argv = process.argv.slice(2);
-const i = argv.indexOf("--port");
-const PORT = Number(i >= 0 ? argv[i + 1] : process.env.NAH_FERN_PORT || 4596);
+const { argOpt, werkbankTor } = require("./lib/welt-boot.cjs");
+const PORT = Number(argOpt("--port", process.env.NAH_FERN_PORT || 4596));
 
 const self = require("child_process").spawnSync(
     process.execPath,
@@ -25,7 +24,7 @@ if (self.status !== 0) {
 
 (async () => {
     const t0 = Date.now();
-    const tor = require("./lib/welt-boot.cjs").werkbankTor(PORT);
+    const tor = werkbankTor(PORT);
     const rufe = tor.rufe;
     let code = 1;
     try {

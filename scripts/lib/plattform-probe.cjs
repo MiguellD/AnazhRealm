@@ -322,36 +322,41 @@ function fingerabdruck(group, nurGeometrie, mitFern) {
         if (!geo || !geo.attributes || !geo.attributes.position) return;
         objects++;
         vertices += geo.attributes.position.count;
-        h.update(String(o.type));
-        h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
-        const m = nurGeometrie ? null : o.material;
-        if (m) {
-            h.update(
-                JSON.stringify({
-                    c: m.color ? m.color.getHex() : null,
-                    e: m.emissive ? m.emissive.getHex() : null,
-                    r: typeof m.roughness === "number" ? m.roughness : null,
-                    mt: typeof m.metalness === "number" ? m.metalness : null,
-                    o: typeof m.opacity === "number" ? m.opacity : null,
-                    t: !!m.transparent,
-                })
-            );
-        }
-        for (const name of Object.keys(geo.attributes).sort()) {
-            const a = geo.attributes[name];
-            const arr = a.array;
-            h.update(name);
-            h.update(String(a.itemSize));
-            h.update(Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength));
-        }
-        if (geo.index) {
-            const ia = geo.index.array;
-            h.update("index");
-            h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
-        }
+        objektAbdruck(h, o, nurGeometrie ? null : o.material);
     });
     if (mitFern && group.userData && group.userData.__fern) h.update("__fern" + JSON.stringify(group.userData.__fern));
     return { objects, vertices, sha256: h.digest("hex") };
+}
+// DER ABDRUCK EINES OBJEKTS im Hash h: Typ, Welt-Matrix, die Stoff-Signatur von m (ohne m keine; `mehr` trägt eine Linse dazu —
+// der Ofen die userData des Stoffs), je Attribut Name, Größe und Bytes, der Index. Leser: `fingerabdruck` und gate:ofen-contract
+// (bis w3w trug der Ofen einen Zwilling dieser Zeilen).
+function objektAbdruck(h, o, m, mehr) {
+    const geo = o.geometry;
+    h.update(String(o.type));
+    h.update(Buffer.from(new Float64Array(o.matrixWorld.elements).buffer));
+    if (m)
+        h.update(
+            JSON.stringify({
+                c: m.color ? m.color.getHex() : null,
+                e: m.emissive ? m.emissive.getHex() : null,
+                r: typeof m.roughness === "number" ? m.roughness : null,
+                mt: typeof m.metalness === "number" ? m.metalness : null,
+                o: typeof m.opacity === "number" ? m.opacity : null,
+                t: !!m.transparent,
+                ...mehr,
+            })
+        );
+    for (const name of Object.keys(geo.attributes).sort()) {
+        const a = geo.attributes[name];
+        h.update(name);
+        h.update(String(a.itemSize));
+        h.update(Buffer.from(a.array.buffer, a.array.byteOffset, a.array.byteLength));
+    }
+    if (geo.index) {
+        const ia = geo.index.array;
+        h.update("index");
+        h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
+    }
 }
 
 // DER SCHLÜSSEL EINES FALLS der Vertrags-Linsen (fachwerk · porta · schmiede): Rezept, Saat, Stufe und die Schlüssel der
@@ -448,6 +453,7 @@ module.exports = {
     FUNKTIONEN,
     probeWand,
     fingerabdruck,
+    objektAbdruck,
     goldenSelbsttest,
     fallSchluessel,
 };

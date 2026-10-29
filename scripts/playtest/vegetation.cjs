@@ -5,8 +5,8 @@
 
 const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
-// perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
-// Radius (mit der gemessenen Render-Kapazität) zu ihnen wächst. Spawn leicht → wächst.
+// `foliageRadius` (der Rand am Schirm, lod.K5); ferne warten in `pendingFoliageChunks`, bis der
+// Radius (mit dem gebauten Ring) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth({ page, check }) {
     // das Urteil als Satz (wie das Klang-Band): die Seite schreibt je Prüfung `out[satz] = urteil` (mit Detail
     // `[urteil, detail]`), der Läufer prüft jeden Satz
@@ -19,14 +19,14 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         const out = {};
         // der Fehler einer Teil-Probe als Satz (rot, mit dem Wurf)
         const wurf = (satz, e) => (out[satz] = [false, String((e && e.message) || e)]);
-        // Headless (Null-Renderer): der Aktuator setzt foliageRadius = MAX (gate-treu).
-        out["headless (Null-Renderer) → foliageRadius = MAX (gate-treu)"] =
-            voll || st.foliageRadius === r.constructor.PERF_FOLIAGE_RADIUS_MAX;
+        // Headless (Null-Renderer): der Aktuator setzt foliageRadius sofort auf den Rand am Schirm (lod.K5, `_randSchirm`).
+        out["headless (Null-Renderer) → foliageRadius = der Rand am Schirm (lod.K5)"] =
+            voll || st.foliageRadius === r._randSchirm("laub");
         const span = r._voxelChunkConfig().span;
         const pcx = Math.floor(pm.position.x / span),
             pcz = Math.floor(pm.position.z / span);
-        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der kleinste Radius,
-        // den der Regler fährt (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
+        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der Start-Radius des
+        // Boots (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
         // Chunk-Eck (die Genesis-Plattform steht seit K16 auf dem Ursprung) fiel der eigene Chunk heraus.
         st.foliageRadius = r.constructor.PERF_FOLIAGE_RADIUS_MIN;
         out["kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt"] =

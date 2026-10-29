@@ -106,13 +106,20 @@ hauptLauf(async () => {
         const [pageA, pageB, peerIdA] = [...mesh.seiten, ...mesh.peerIds];
         check("Seite A: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
         check("Seite B: WebRTC-Mesh aktiv (alle Kanäle offen)", true);
+        // DIE HELFER DES LAUFS: dasselbe auf beiden Seiten (`beide`), ein ws-send des Harness (`sende`; harness-getrieben —
+        // robust gegen die Tab-Drosselung des Hintergrund-iframes; `_portalNetReceive` macht daraus einen subworld-net-Broadcast
+        // übers Mesh), das Journal einer Seite trägt den Text (`journal`), der Shim-WebSocket einer Seite steht offen (`kanal`)
+        const beide = (fn, ...a) => Promise.all([pageA, pageB].map((p) => p.evaluate(fn, ...a)));
+        const sende = (p, data) =>
+            p.evaluate((data) => window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data }), data); // prettier-ignore
+        const journal = (p, text, was) =>
+            waitFor(p, (t) => (window.anazhRealm.state.worldJournal.entries || []).some((e) => String(e.text || "").includes(t)), was, text); // prettier-ignore
+        const kanal = (p, wer) =>
+            waitFor(p, () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1, wer + " öffnete den Shim-WebSocket"); // prettier-ignore
+        const portalWeg = () => beide(() => window.anazhRealm._disposePortalOverlay());
 
         // Beide Seiten haben genau einen RTC-Peer mit offenem Kanal.
-        const rtcA = await pageA.evaluate(() => {
-            const rp = window.anazhRealm.state.p2p.rtcPeers;
-            return { size: rp.size, open: Array.from(rp.values()).filter((x) => x.open).length };
-        });
-        const rtcB = await pageB.evaluate(() => {
+        const [rtcA, rtcB] = await beide(() => {
             const rp = window.anazhRealm.state.p2p.rtcPeers;
             return { size: rp.size, open: Array.from(rp.values()).filter((x) => x.open).length };
         });
@@ -451,64 +458,22 @@ hauptLauf(async () => {
                 trust: "sandboxed",
             });
         };
-        await pageA.evaluate(buildSubPortal, SUBWORLD_PATH);
-        await pageB.evaluate(buildSubPortal, SUBWORLD_PATH);
+        await beide(buildSubPortal, SUBWORLD_PATH);
         // Warten, bis beide Sub-Welt-iframes ihren WebSocket geöffnet haben
         // (der Shim meldet ws-open → _portalOverlay verfolgt den Kanal).
-        await waitFor(
-            pageA,
-            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            "A's Sub-Welt-iframe öffnete den Shim-WebSocket"
-        );
-        await waitFor(
-            pageB,
-            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            "B's Sub-Welt-iframe öffnete den Shim-WebSocket"
-        );
+        await kanal(pageA, "A's Sub-Welt-iframe");
+        await kanal(pageB, "B's Sub-Welt-iframe");
         check("W17 B-Relay: beide Sub-Welt-iframes haben einen Shim-WebSocket geöffnet", true);
-        // A treibt ein ws-send (harness-getrieben — robust gegen die Tab-
-        // Drosselung des Hintergrund-iframes; den Shim-Sende-Pfad selbst
-        // beweist die Sonde smoke-shim, git-Archiv). _portalNetReceive macht daraus einen
-        // subworld-net-Broadcast übers Mesh.
-        await pageA.evaluate(() => {
-            window.anazhRealm._portalNetReceive({
-                __anazhNet: true,
-                kind: "ws-send",
-                channel: 1,
-                data: "subnet-from-A",
-            });
-        });
-        // B's Sub-Welt-iframe empfängt es als ws-recv → der `event`-Rückkanal
-        // schreibt einen Journal-Eintrag.
-        await waitFor(
-            pageB,
-            () =>
-                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
-                    String(e.text || "").includes("subnet-recv:subnet-from-A")
-                ),
-            "B's Sub-Welt empfängt A's ws-send über das Mesh"
-        );
+        // A treibt ein ws-send (den Shim-Sende-Pfad selbst beweist die Sonde smoke-shim, git-Archiv); B's Sub-Welt-iframe
+        // empfängt es als ws-recv → der `event`-Rückkanal schreibt einen Journal-Eintrag.
+        await sende(pageA, "subnet-from-A");
+        await journal(pageB, "subnet-recv:subnet-from-A", "B's Sub-Welt empfängt A's ws-send über das Mesh");
         check("W17 B-Relay: A's Sub-Welt-Verkehr floss peer-to-peer zu B", true);
         // Gegenrichtung: B sendet, A's Sub-Welt empfängt.
-        await pageB.evaluate(() => {
-            window.anazhRealm._portalNetReceive({
-                __anazhNet: true,
-                kind: "ws-send",
-                channel: 1,
-                data: "subnet-from-B",
-            });
-        });
-        await waitFor(
-            pageA,
-            () =>
-                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
-                    String(e.text || "").includes("subnet-recv:subnet-from-B")
-                ),
-            "A's Sub-Welt empfängt B's ws-send über das Mesh"
-        );
+        await sende(pageB, "subnet-from-B");
+        await journal(pageA, "subnet-recv:subnet-from-B", "A's Sub-Welt empfängt B's ws-send über das Mesh");
         check("W17 B-Relay: das Mesh trägt Sub-Welt-Verkehr in beide Richtungen", true);
-        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
-        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await portalWeg();
 
         // das Gruppen-Portal. A betritt ein Multiplayer-Portal
         // und lädt die Mesh-Gruppe ein; B bekommt die Einladung + folgt ihr
@@ -545,8 +510,7 @@ hauptLauf(async () => {
             w17cJoin.ok === true && w17cJoin.world === w17cWorldA && w17cJoin.multiplayer === true,
             JSON.stringify(w17cJoin)
         );
-        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
-        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await portalWeg();
 
         // eine JS-Compute-Welt: ein Peer wird
         // Compute-Host, sein Tab führt die autoritative Server-JS in einem
@@ -560,35 +524,11 @@ hauptLauf(async () => {
         // A's peerId — B routet seinen Verkehr gezielt an den Compute-Host.
         const aPeerId = await pageA.evaluate(() => window.anazhRealm.state.p2p.peerId);
         // A: Compute-Host. _buildPortalOverlay baut ein zweites, verborgenes
-        // iframe (den Server-Kontext) mit `?anazh-server=1`.
-        await pageA.evaluate((world) => {
-            window.anazhRealm._buildPortalOverlay(
-                {
-                    world,
-                    label: "W17 JS-Compute",
-                    multiplayer: true,
-                    serverMode: "js-compute",
-                    trust: "sandboxed",
-                },
-                { computeRole: "host" }
-            );
-        }, JSCOMPUTE_PATH);
-        // B: Gast — sein Compute-Host ist A.
-        await pageB.evaluate(
-            (args) => {
-                window.anazhRealm._buildPortalOverlay(
-                    {
-                        world: args.world,
-                        label: "W17 JS-Compute",
-                        multiplayer: true,
-                        serverMode: "js-compute",
-                        trust: "sandboxed",
-                    },
-                    { computeRole: "guest", hostPeerId: args.host }
-                );
-            },
-            { world: JSCOMPUTE_PATH, host: aPeerId }
-        );
+        // iframe (den Server-Kontext) mit `?anazh-server=1`. B: Gast — sein Compute-Host ist A.
+        const rechner = ([world, rolle]) =>
+            window.anazhRealm._buildPortalOverlay({ world, label: "W17 JS-Compute", multiplayer: true, serverMode: "js-compute", trust: "sandboxed" }, rolle); // prettier-ignore
+        await pageA.evaluate(rechner, [JSCOMPUTE_PATH, { computeRole: "host" }]);
+        await pageB.evaluate(rechner, [JSCOMPUTE_PATH, { computeRole: "guest", hostPeerId: aPeerId }]);
         check(
             "W17 JS-Compute: A ist Compute-Host (Server-Kontext-iframe gebaut)",
             await pageA.evaluate(() => {
@@ -610,45 +550,19 @@ hauptLauf(async () => {
             () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.serverReady === true,
             "A's Server-Kontext-iframe geladen"
         );
-        await waitFor(
-            pageA,
-            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            "A's Client-iframe öffnete den Shim-WebSocket"
-        );
-        await waitFor(
-            pageB,
-            () => window.anazhRealm._portalOverlay && window.anazhRealm._portalOverlay.netChannels.size >= 1,
-            "B's Client-iframe öffnete den Shim-WebSocket"
-        );
+        await kanal(pageA, "A's Client-iframe");
+        await kanal(pageB, "B's Client-iframe");
         check("W17 JS-Compute: Server-Kontext + beide Client-iframes bereit", true);
         // A's Client sendet "7" → A's Server-Kontext rechnet (total=7) → die
         // Antwort kommt lokal zurück in A's Client-iframe.
-        await pageA.evaluate(() => {
-            window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "7" });
-        });
-        await waitFor(
-            pageA,
-            () =>
-                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
-                    String(e.text || "").includes("jscompute-client-recv:7")
-                ),
-            "A's Client empfängt die Server-Antwort auf 7"
-        );
+        await sende(pageA, "7");
+        await journal(pageA, "jscompute-client-recv:7", "A's Client empfängt die Server-Antwort auf 7");
         check("W17 JS-Compute: A's Verkehr lief durch A's eigenen Server-Kontext", true);
         // B's Client sendet "5" → peer-to-peer übers Mesh an A → A's Server
         // rechnet (total = 7+5 = 12) → gezielt zurück an B. Die 12 beweist die
         // autoritative Rechnung: ein Relay hätte nur "5" zurückgespielt.
-        await pageB.evaluate(() => {
-            window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "5" });
-        });
-        await waitFor(
-            pageB,
-            () =>
-                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
-                    String(e.text || "").includes("jscompute-client-recv:12")
-                ),
-            "B's Client empfängt die laufende Summe 12"
-        );
+        await sende(pageB, "5");
+        await journal(pageB, "jscompute-client-recv:12", "B's Client empfängt die laufende Summe 12");
         check(
             "W17 JS-Compute: B's Verkehr lief peer-to-peer durch A's Server — die Summe 12 = 7+5 ist autoritativ berechnet",
             true
@@ -693,20 +607,10 @@ hauptLauf(async () => {
         // Envelopes. Der funktionale Beweis ist die Summe: 21 = 12+9.)
         // B's Client sendet "9" → B's restaurierter Server rechnet
         // (total = 12+9 = 21, NICHT 0+9) → der Zustand ÜBERLEBTE die Migration.
-        await pageB.evaluate(() => {
-            window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "9" });
-        });
-        await waitFor(
-            pageB,
-            () =>
-                (window.anazhRealm.state.worldJournal.entries || []).some((e) =>
-                    String(e.text || "").includes("jscompute-client-recv:21")
-                ),
-            "B's Verkehr lief durch B's restaurierten Server-Kontext (21 = 12+9)"
-        );
+        await sende(pageB, "9");
+        await journal(pageB, "jscompute-client-recv:21", "B's Verkehr lief durch B's restaurierten Server-Kontext (21 = 12+9)");
         check("F2: Host-Migration MIT Zustand — die Summe überlebte den Host-Wechsel (21 = 12+9, nicht 9)", true);
-        await pageA.evaluate(() => window.anazhRealm._disposePortalOverlay());
-        await pageB.evaluate(() => window.anazhRealm._disposePortalOverlay());
+        await portalWeg();
     } catch (err) {
         check(`Test-Ablauf ohne Fehler`, false, err.stack || err.message);
     } finally {

@@ -1042,14 +1042,24 @@ class AnazhRealm_feld_leben {
                 run: (m) => void this.empfangeWerk(m[0]),
             },
             {
-                // N5.7 (W-A5b) — der deliberate Siedlungs-Akt: „dorf" / „dorf 7" / „dorf 7 24".
+                // N5.7 (W-A5b) — der deliberate Siedlungs-Akt: „dorf" / „dorf 7" / „dorf 7 24" — und sein Jahr (siedlung.K4):
+                // „dorf 7 300 jahr 1560" oder die Epoche beim Namen („dorf 7 300 hanse"); die Zahl ist die Größe der Gegenwart.
                 // Async (Worker-Roundtrip) — spawnSettlement meldet ins Log, hier sofortiges Echo.
-                example: "dorf [seed] [häuser]",
-                re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?$/i,
+                example: "dorf [seed] [häuser] [jahr 1560]",
+                re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?(?:\s+(?:jahr\s+(\d{1,4})|([a-zäöü]+)))?$/i,
                 run: (m, append) => {
                     const opts = { verlangt: "human" };
                     if (m[1] !== undefined) opts.seed = Number(m[1]);
                     if (m[2] !== undefined) opts.nH = Number(m[2]);
+                    if (m[3] !== undefined) opts.jahr = Number(m[3]);
+                    const EP = globalThis.__fachwerkCore && globalThis.__fachwerkCore.EPOCHEN;
+                    if (m[4] !== undefined && !(EP && Object.hasOwn(EP, m[4].toLowerCase()))) {
+                        append(
+                            `Keine Epoche „${m[4]}" — es gibt ${EP ? Object.keys(EP).join(", ") : "keine (Kern fehlt)"}.`
+                        );
+                        return;
+                    }
+                    if (m[4] !== undefined) opts.epoche = m[4].toLowerCase();
                     this.spawnSettlement(opts);
                     append("Siedlung wird gegründet (Settlement-Export läuft) …");
                 },

@@ -116,7 +116,7 @@ hauptLauf(async () => {
                 d.fehlt.join() === "1" &&
                 d.pipeline === "probe_zwei_puffer" &&
                 d.pass === "probe_pass_luecke",
-            JSON.stringify(d)
+            d
         );
         check("der Draw mit beiden Slots bleibt still", out.nachVoll === 1, `Einträge ${out.nachVoll}`);
         check(
