@@ -3356,59 +3356,6 @@ class AnazhRealm_bild_kosten {
         return nMax;
     }
 
-    // DIE HÜLLE DES GANGS (die Kugel der Wahl einer Gestalt im Satz, `_gangSatz`): die Kugel jeder Senke maß der Stand — jede
-    // gebackene Zeile des Knochen-Puffers (`_gangSatzPose`) weitet sie um das Bild der Kugel jedes Knochen-Platzes (`kugeln`:
-    // die Ecken, die er trägt, im Raum ihrer Bindung; ihr Bild liegt höchstens die größte Streckung der Zeile mal den Radius
-    // neben dem Bild der Mitte). Jede Ecke einer Zeile mischt solche Bilder, der Knoten mischt die Zeilen: die Kugel deckt jede
-    // Pose des Gangs, nicht nur den Stand.
-    static _gangSatzKugeln(satz) {
-        const K = new Float64Array(satz.J * 4),
-            B = new Float64Array(satz.J * 6).fill(Infinity),
-            v = [0, 0, 0];
-        for (let gang = 0; gang < 2; gang++)
-            for (const q of satz.quellen) {
-                const a = q.m.geometry.attributes;
-                for (let i = 0; i < a.position.count; i++) {
-                    v[0] = a.position.getX(i);
-                    v[1] = a.position.getY(i);
-                    v[2] = a.position.getZ(i);
-                    for (let c = 0; c < 4; c++) {
-                        if (!(a.skinWeight.getComponent(i, c) > 0)) continue;
-                        const p = q.platz[a.skinIndex.getComponent(i, c)] * 4;
-                        if (gang)
-                            K[p + 3] = Math.max(K[p + 3], Math.hypot(v[0] - K[p], v[1] - K[p + 1], v[2] - K[p + 2]));
-                        else
-                            for (let k = 0; k < 3; k++) {
-                                B[p * 1.5 + k] = Math.min(B[p * 1.5 + k], v[k]);
-                                B[p * 1.5 + 3 + k] = Math.min(B[p * 1.5 + 3 + k], -v[k]);
-                                K[p + k] = (B[p * 1.5 + k] - B[p * 1.5 + 3 + k]) / 2;
-                            }
-                    }
-                }
-            }
-        return K;
-    }
-    static _gangSatzHuelle(satz, zeile) {
-        const D = satz.tex.image.data,
-            K = satz.kugeln;
-        for (const geo of satz.geos) {
-            const s = geo.boundingSphere,
-                c = [s.center.x, s.center.y, s.center.z];
-            for (let p = 0; p < satz.J; p++) {
-                const o = (zeile * satz.J + p) * 12;
-                let d2 = 0,
-                    st = 0;
-                for (let r = 0; r < 3; r++) {
-                    const b = o + r * 4,
-                        w = D[b] * K[p * 4] + D[b + 1] * K[p * 4 + 1] + D[b + 2] * K[p * 4 + 2] + D[b + 3] - c[r];
-                    d2 += w * w;
-                    st = Math.max(st, D[o + r] ** 2 + D[o + 4 + r] ** 2 + D[o + 8 + r] ** 2); // die Spalte r der Zeile
-                }
-                s.radius = Math.max(s.radius, Math.sqrt(d2) + Math.sqrt(st) * K[p * 4 + 3]);
-            }
-        }
-    }
-
     // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
     // Blende und jeder Maske): je Rampe die Distanz, an der sie 0 verlässt bzw. 1 erreicht — per Bisektion AM GESETZ (seine
     // f0 · f1 · f1o steigen monoton mit der Distanz), auf 1 mm, je Kante die äußere Grenze: das Fenster behält eher zu viel
