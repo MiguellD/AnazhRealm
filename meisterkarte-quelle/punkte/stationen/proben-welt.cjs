@@ -518,7 +518,10 @@ async function fahrWegenetz(tor) {
 // der Sitzung, wo sie nicht steht), um 10 und um 23 Uhr je `sek` Sekunden (das Argument, sonst 12) im Takt des Spiels — jeder
 // Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt einen Bewohner, einen Wagen oder einen Bau;
 // `verkehrVerdict` der Linse (der Weg je Wagen am Maß von `sek`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden.
-// Die Stadt erwacht, die Uhr springt: mutiert.
+// Die Stadt erwacht, die Uhr springt: mutiert. Headless an w3w-verkehr fcfd85d7 (gate:fahr-leben --verkehr, 2 × 40 s, 122 s
+// Wanduhr samt Boot und Stadt): 10 Uhr 20/20 Wagen, Weg min 93 m, Sim-Takt 0,924 ms; 23 Uhr 20/20, min 110 m, 0,765 ms; 0
+// Berührungen. C trägt kein Kriterium der Karte (die Karte setzt keinen Pflicht-Eintrag): die Probe steht, registriert wird sie
+// am Kriterium, das der Schöpfer C gibt.
 async function fahrVerkehr(tor) {
     const fs = require("fs");
     const path = require("path");
