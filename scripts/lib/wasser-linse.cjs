@@ -42,8 +42,6 @@ function wasserZufall(hs) {
 
 // ── Q7-Gestalt ──
 function wasserFluss() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
     // Der Spiegel des Gesetzes, den Sheet, Körper und Augen lesen (`_atlasWaterLevelAt`, Boden unbekannt → der Kanal-KERN).
@@ -154,8 +152,6 @@ function wasserFluss() {
 
 // ── Q6-Körper ──
 async function wasserKoerper(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const A = r.constructor;
     const DT = A.FIXED_DT;
     const ziel = o.see || (await window.__wasserOrte({})).see.mitte;
@@ -629,8 +625,6 @@ function __wasserSeeAm(r, ziel) {
 // der CPU (`_himmelFrisch`): der Null-Renderer malt keinen Himmel (Lehre 16). Die Probe fährt darum im Bild-Lauf (B), am See
 // nächst der Mess-Wiese, die Kamera 10 m über und 3 m unter seinem Spiegel.
 async function wasserLicht(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     if (!st.renderer || st.renderer._isHeadlessNull) return { fehler: "kein echter Renderer (der Himmel lebt auf der GPU)" };
     const ziel = o.see || (await window.__wasserOrte({})).see.mitte;
     const seeAm = window.__wasserSeeAm(r, ziel);
@@ -726,8 +720,6 @@ function __wasserKroneVon(r, p) {
 // Ufer TROCKEN nennt (sein Spiegel unter dem Boden), darf auch der Körper kein Wasser lesen (`_koerperWasser` > Boden +
 // 0,1 m = geflutet).
 async function wasserUfer(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const h = st.hydrosphere;
     if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
     const ziel = o.ort || (({ fluss }) => [fluss.x, fluss.z])(await window.__wasserOrte({}));
@@ -797,8 +789,6 @@ function __wasserFlussNah(r, x, z) {
 // DER STROM AN EINEN ORT (Seite, EIN Weg für jede Probe der Wand): der Spieler `hoehe` über dem Boden an `ort`, die Welt
 // streamt synchron um ihn (Worker ausgehängt — wie der Playtest), bis die Chunk-Zahl steht. Der Bild-Renderer ruht dabei.
 async function wasserStrom(ort, hoehe) {
-    const r = window.anazhRealm;
-    const st = r.state;
     if (st.renderer) {
         st.renderer.render = function () {};
         if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
@@ -832,8 +822,6 @@ async function wasserStrom(ort, hoehe) {
 // Hiebs (die Säule r 3,5 und eine Zelle über ihre Wand, dort trägt die Ecke ihren Abstand, gelaende-core `editForm`; zwei
 // Zellen des Sheets, eine Zelle seines Netzes: r + 4 Zellen; Fälle, Büschel je Takt); der Takt berichtet, nie geurteilt.
 async function wasserGraben(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const span = r._voxelChunkConfig(0).span;
     const K = r.constructor.NAH_WIESE.kachel;
     const HIEB = 3.5; // das Maß des Grabe-Hiebs
@@ -938,8 +926,6 @@ function wasserFlaechen(r, x, z) {
 // auf ihn (byte-Diff), und der Fern-Faden, der jeden späteren Ring rechnet (die Bestellung des Rings), an denselben Punkten
 // auf der Krone.
 async function wasserDamm(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const f2 = wasserRund(2);
     const S = (q) => r._hydroSpiegelQuer(q.x, q.z);
     const { p, fluesse } = __wasserFlussNah(r, o.fluss.x, o.fluss.z);
@@ -1016,8 +1002,6 @@ async function wasserDamm(o = {}) {
 // Luma-Stufe > 0,02 zwischen zwei Nachbar-Proben (stetig ändert sich die Farbe dort < 0,008 je 2 cm), Boden-Stufen über
 // 0,15 m (Überhang, Kante) zählen nicht. Dazu die Parität: die Worker-Farbe eines Ufer-Chunks gegen den Main.
 async function wasserUferFarbe(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const h = st.hydrosphere;
     if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
     const L = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
@@ -1171,8 +1155,6 @@ async function wasserUferFarbe(o = {}) {
 
 // ── Q7-Bild ──
 async function wasserBild(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const renderer = st.renderer;
     if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
@@ -1402,8 +1384,6 @@ async function wasserBild(o = {}) {
 // Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
 // = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
 async function wasserRegen(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const renderer = st.renderer;
     if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
@@ -1491,8 +1471,6 @@ async function wasserRegen(o = {}) {
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
 // (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert).
 async function wasserHoehle(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const A = r.constructor;
     const cfg = r._voxelChunkConfig(0);
     const { dim, dimY, step, span, floorDrop } = cfg;
@@ -1626,8 +1604,6 @@ async function wasserHoehle(o = {}) {
 // treibt das Boot; (d) treibend
 // nickt das Boot nicht mit dem Seegrund (F-D5 „25° Bug-ab": das Nick-Ziel las die Ebene des Grunds).
 async function wasserWagen(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const ziel = o.see || (await window.__wasserOrte({})).see.mitte;
     const h = r._hydroFor(ziel[0], ziel[1]);
     if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
@@ -1753,8 +1729,6 @@ async function wasserWagen(o = {}) {
 // sichtbar ist das Mesh, nie das Gesetz). Die Chunks baut die Probe dort, wo sie misst (`sichere`). `at(x, z)`: { boden,
 // wasser, sichtbar } (sichtbar = das Sheet liegt dort mehr als 2 cm über dem gezeichneten Boden) oder null (kein Chunk).
 function wasserSichtNetz() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const cfg = r._voxelChunkConfig(0);
     const span = cfg.span;
     const B = 0.9; // Kante der Dreiecks-Fächer (m)
@@ -2045,8 +2019,6 @@ function wasserSichtNetz() {
 // Ursprung: die Quelle bricht aus dem Nichts). Eine Quelle ohne Körper-Wasser auf ihren ersten 16 m ist TROCKEN (nie grün).
 // Unsichtbar/Phantom je PUNKT (`quer`: Breite des Bilds gegen Breite des Körpers), summiert über alle Quell-Läufe.
 async function wasserQuelle(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
     const HC = r.constructor.HYDROSPHERE;
     const R = wasserRund(2);
@@ -2420,7 +2392,6 @@ function quellTeileVereinen(teile) {
 // `WASSER_INSTALL`
 const BACH_PROBE_M = 200;
 async function wasserBach(o = {}) {
-    const r = window.anazhRealm;
     const R = wasserRund(2);
     const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : (await window.__wasserOrte({})).bach;
     const ZX = bachOrt ? bachOrt.x : o.x,
@@ -2529,7 +2500,6 @@ function wasserPflanzen(sicht, kaesten, je) {
 // Im Wasser steht eine Pflanze, über deren Fuß (der gerenderte Boden, auf dem sie steht) die Welt mehr als 5 cm Wasser
 // zeichnet — über dem gezeichneten Boden an ihrem Ort, sichtbar (ein Sheet unter dem Gelände trägt keine Pflanze). Arten mit Ufer-Band (Schilf) stehen dort nach ihrem Gesetz — gezählt, nicht geurteilt.
 function wasserFlora(o = {}) {
-    const r = window.anazhRealm;
     const sicht = o.sicht || window.__wasserSichtNetz();
     const arten = r._nahStreuArten();
     if (!arten) return { fehler: "die Nah-Streu hat keine Arten (das Buch fehlt)" };
@@ -2590,8 +2560,6 @@ function wasserFlora(o = {}) {
 // des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
 // der Geometrie-Normale.
 async function wasserBank(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const h = st.hydrosphere;
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
     const G = r.constructor.TERRAIN_GEOLOGY;
@@ -2751,8 +2719,6 @@ async function wasserBank(o = {}) {
 //             ihr Spiegel über dem Boden) und der Atlas Land sagt, trägt der Körper es — er las dort nichts.
 // Ob Ufer-Scheu und Trink-Ziel der Wahrheit folgen, prüft die Mutation (K12 M) am Verhalten.
 async function wasserLeser(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
     const { dim, dimY, step, span, floorDrop } = r._voxelChunkConfig(0);
     const oy = (st.terrainBaseHeight || 0) - floorDrop;
@@ -2840,8 +2806,6 @@ function wasserLeib() {
 // neu gebaut) tragen in den Scheiben vorher Pflanzen, danach keine. Wer nicht folgt, liest eine eigene Fläche — die Kontrolle
 // (das Gesetz allein) nie, sonst ist die Probe blind.
 async function wasserMutation(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const A = r.constructor;
     const [RHO, TIEF] = [3, 3];
     const ort = o.ort || (await window.__wasserOrte({})).see.ufer;
@@ -2957,7 +2921,6 @@ async function wasserMutation(o = {}) {
 // ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── `n` Würfe über die Karte (±6 km, je ≥ 1,5 km auseinander): trockenes Land (`_landAt`) oder
 // der Fluss-Punkt nächst dem Wurf mit Strömung und ≥ 1,2 m Wasser (`fluss`); an jedem die Mutation oder die Strömung.
 async function wasserKarte(o) {
-    const r = window.anazhRealm;
     const [orte, zufall] = [[], wasserZufall(0x51ed270b)];
     for (let v = 0; v < 400 && orte.length < o.n; v++) {
         const [x, z] = [zufall() * 12000 - 6000, zufall() * 12000 - 6000];
@@ -2977,7 +2940,6 @@ async function wasserKarte(o) {
 // Fenster-Rand und die Mündung (der Lauf der Ebene darunter, dessen Bahn sie trägt); jede Senke (auch jede `benannteSeen`) ist
 // nass (`_nassAt`, dort oder daneben); stromab fällt die Sohle jedes Flusses der Regionen streng, sein Spiegel steigt nie.
 async function wasserLaeufe() {
-    const r = window.anazhRealm;
     const [G, L] = [window.__gelaendeCore, r._gelaende()];
     const start = G.flussLaeufe(L, -3072, -3072, 3072, 3072, 16);
     const aus = { laeufe: start.length, ende: {}, nass: 0, trocken: [], schritte: 0, steigt: 0 };
@@ -3073,8 +3035,6 @@ async function wasserTreibt(o) {
 // mit ≥ 11 Punkten — die Bach-Probe misst seine ersten Segmente) und die Küste (die nächste Ozean-Zelle des Atlas neben
 // Land, dort die Land-Seite).
 async function wasserOrte(o = {}) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const G = window.__gelaendeCore;
     const mitte = o.mess || window.__messWiese; // der Messort aus spec/profiband/haushalt.json (welt-orte.cjs)
     if (!mitte) throw new Error("__wasserOrte: keine Mitte (weder opts.mess noch __messWiese)");

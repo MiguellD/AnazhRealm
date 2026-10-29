@@ -142,7 +142,6 @@ function seitenPruefer() {
         // BEVOR A ihr Zeichen trägt.
         // `form`: "voll" · "ohne-id" (worldMeta ohne worldId: ein Minimal-Snapshot) · "ohne-meta" (ein Legacy-Save vor Ring 8).
         bauB(slug, form) {
-            const r = window.anazhRealm;
             const b = JSON.parse(JSON.stringify(r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta(slug), false)));
             b.knowledgeBase = ["MARKER-B"];
             if (form === "ohne-id") delete b.worldMeta.worldId;
@@ -151,14 +150,13 @@ function seitenPruefer() {
         },
         // B lebt: MARKER-B steht im Zustand der erwachten Seite.
         markerB() {
-            return JSON.stringify(window.anazhRealm.buildStateSnapshot()).includes("MARKER-B");
+            return JSON.stringify(r.buildStateSnapshot()).includes("MARKER-B");
         },
         // A BLEIBT unter seiner Id: sein Stand trägt A (nicht B), der Index kennt A; mit `spaet` auch A's Fortschritt seit
         // dem letzten Autosave (die Tür sichert A vor der Sperre). Gelesen wird, was der nächste Boot lädt: die EINE
         // Rettungs-Kette über IndexedDB und den Platz, nachdem der Speicher-Faden alles Gesendete fest hat (die lebende Welt
         // liegt seit speicher-faden nur in IndexedDB, ihr Platz entsteht beim Verlassen).
         async befundeA(aId, spaet) {
-            const r = window.anazhRealm;
             await r._speicherStill();
             const s = r._weltRettungsKette(aId, await r._idbStand(aId)).state;
             if (!s) return [`A: unter ${aId} liegt keine Welt mehr`];
@@ -177,10 +175,9 @@ function seitenPruefer() {
         // DAS RELOAD-FENSTER des Spiels: vor der Tür steht ein Edit-Save an (Edit direkt vor dem Ersetzen), nach ihr ein
         // saveState (Loop-Autosave) und ein Edit-Save (Dorf-Rückruf, Settlement-Export).
         fensterVor() {
-            window.anazhRealm._scheduleEditSave();
+            r._scheduleEditSave();
         },
         fensterNach() {
-            const r = window.anazhRealm;
             setTimeout(() => {
                 try {
                     r.saveState();
@@ -192,7 +189,6 @@ function seitenPruefer() {
         },
         // Welt A trägt ihr Zeichen: jedes welt-eigene Feld, die Gedächtnisse der Seite und ein Tier.
         pflanzeA(buehneErbgut) {
-            const r = window.anazhRealm;
             const wm = r.state.worldMeta;
             Object.assign(wm, A_STUFEN, {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
@@ -251,7 +247,6 @@ function seitenPruefer() {
         // Die lebende Seite in Welt B: jedes Feld von A beim Namen. `ganz` = auch der volle Snapshot der Seite (nach einem
         // Reload; in der Seite trägt das Leben der alten Welt nur der Reload fort, die Türen laden neu).
         befundeLive(erlaubt, ganz) {
-            const r = window.anazhRealm;
             const ok = new Set(erlaubt || []);
             const out = [];
             const wm = r.state.worldMeta || {};
@@ -287,7 +282,6 @@ function seitenPruefer() {
         },
         // Der Speicher-Eintrag von B (die Wahrheit des nächsten Boots).
         befundeSpeicher(weltId, erlaubt) {
-            const r = window.anazhRealm;
             const ok = new Set(erlaubt || []);
             const roh = localStorage.getItem(r.worldStorageKey(weltId));
             if (!roh) return [`Speicher: kein Eintrag für ${weltId}`];
@@ -310,7 +304,7 @@ function seitenPruefer() {
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
-        const r = await window.__weltDa((w) => w.state && w.state.worldMeta);
+        await window.__weltDa((w) => w.state && w.state.worldMeta);
         const welt = r.state.worldMeta.worldId;
         return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
     }, weltId || null);
@@ -361,7 +355,6 @@ async function fahreWeg(browser, weg, schein) {
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
         // A ist gespeichert (sein Platz besteht), bevor sie ihr Zeichen trägt
         const aId = await page.evaluate(() => {
-            const r = window.anazhRealm;
             r.saveState();
             return r.state.worldMeta.worldId;
         });
@@ -372,13 +365,11 @@ async function fahreWeg(browser, weg, schein) {
             rep.befunde.push(`die Pflanzung ist blind: this.${k} trägt das Zeichen von A nicht`);
         // A's Fortschritt nach dem letzten Autosave: er muss die Tür überleben (auf A's Platz)
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             r.state.knowledgeBase = (r.state.knowledgeBase || []).concat(["MARKER-A-SPAET"]);
         });
         if (schein === "spread") {
             // DER ALTE SPREAD ZUM SCHEIN: nach jedem Laden mischt sich das worldMeta der alten Welt darunter.
             await page.evaluate(() => {
-                const r = window.anazhRealm;
                 const roh = r.loadState.bind(r);
                 r.loadState = (s) => {
                     const alt = r.state.worldMeta;
@@ -392,7 +383,6 @@ async function fahreWeg(browser, weg, schein) {
         if (schein === "sperre") {
             // SAVESTATE OHNE DIE SPERRE ZUM SCHEIN: im Reload-Fenster schreibt die Seite wieder.
             await page.evaluate(() => {
-                const r = window.anazhRealm;
                 const roh = r.saveState.bind(r);
                 r.saveState = () => {
                     const s = r._weltWechselSperre;
@@ -420,7 +410,6 @@ async function fahreWeg(browser, weg, schein) {
         const lauf = await page
             .evaluate(
                 async (weg, basis, B, aId) => {
-                    const r = window.anazhRealm;
                     const g = window.__grenze;
                     const ablage = (id) => ({
                         ziel: id,
@@ -544,8 +533,8 @@ async function fahreWeg(browser, weg, schein) {
             if (rep.navigiert) rep.befunde.push("Reload ohne gelungene Ablage — der alte Stand lädt still");
             else {
                 const z = await page.evaluate(() => ({
-                    zeiger: window.anazhRealm.activeWorldGet(),
-                    welt: window.anazhRealm.state.worldMeta.worldId,
+                    zeiger: r.activeWorldGet(),
+                    welt: r.state.worldMeta.worldId,
                 }));
                 if (z.zeiger !== aId)
                     rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
@@ -566,7 +555,7 @@ async function fahreWeg(browser, weg, schein) {
         if (!rep.navigiert) {
             if (tuer && basis !== "portal" && basis !== "einladung") {
                 // in der Seite geblieben: der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
-                await page.evaluate(() => window.anazhRealm.saveState()).catch(() => {});
+                await page.evaluate(() => r.saveState()).catch(() => {});
                 rep.befunde.push(
                     ...(await lege((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, rep.erlaubt)).map(
                         (f) => `nach dem Autosave: ${f}`

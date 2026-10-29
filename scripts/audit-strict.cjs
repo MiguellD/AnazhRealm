@@ -152,7 +152,6 @@ async function auditStateAndMethods() {
 
         // (a) State-Pfade live sammeln
         const liveState = await page.evaluate(() => {
-            const r = window.anazhRealm;
             if (!r) return null;
             const visited = new Set();
             const paths = [];

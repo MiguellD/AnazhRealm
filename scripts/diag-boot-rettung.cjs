@@ -82,7 +82,7 @@ async function bereit(page) {
     return page.evaluate(async () => {
         const t0 = performance.now();
         {
-            const r = await window.__weltDa((w) => w.state && w.state.worldMeta);
+            await window.__weltDa((w) => w.state && w.state.worldMeta);
             {
                 const snap = JSON.stringify(r.buildStateSnapshot());
                 const chat = document.getElementById("chat-output");
@@ -237,7 +237,7 @@ async function fahreForm(browser, form, schein) {
                 .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 })
                 .then(() => true)
                 .catch(() => false);
-            await page.evaluate(() => window.anazhRealm.switchToWorld("welt-w1", { reload: true })).catch(() => {});
+            await page.evaluate(() => r.switchToWorld("welt-w1", { reload: true })).catch(() => {});
             await nav;
             const b2 = await bereit(page);
             rep.boots.push(b2);
@@ -249,7 +249,7 @@ async function fahreForm(browser, form, schein) {
             if (!w2) befund("nach dem Wechsel trägt der Platz von welt-w2 seine Marke nicht mehr");
         } else if (!v.leer) {
             // Boot 2: die Seite speichert (wie das Spiel) und lädt neu — die Form bleibt stabil
-            await page.evaluate(() => window.anazhRealm.saveState());
+            await page.evaluate(() => r.saveState());
             await sleep(800);
             await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
             const b2 = await bereit(page);

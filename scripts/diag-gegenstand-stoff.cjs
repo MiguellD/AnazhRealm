@@ -200,8 +200,6 @@ function selbstTest() {
 const STOFFE = ["holz", "stein", "eisen", "gras", "erde", "laub", "wasser"];
 const WIRKUNGEN = ["rho", "mu", "albedo", "klang", "tZuend", "tSchmelz", "c"];
 async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const M = st.materials;
     const pm = st.playerMesh;
     const { see } = await window.__wasserOrte({});

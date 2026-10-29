@@ -101,7 +101,6 @@ hauptLauf(async () => {
     const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
     const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
-        const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         const weapon = Object.values(f.recipes).filter((x) => x && x.kind === "weapon");

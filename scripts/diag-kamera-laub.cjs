@@ -244,8 +244,6 @@ function urteilNinja(N) {
 
 // ── DIE PROBE DES LEIBS IN DER SEITE (installiert je Boot) ──
 function leibInstall(cfg) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const R = cfg.R;
     const L = (window.__kamLeib = {});
     let T = 5000;
@@ -455,8 +453,6 @@ function leibInstall(cfg) {
 // DIE MESS-WIESE: Häuser (zwei gesetzt, der Dorf-Zug ruht), Fels und Bäume in 45 m — 40 Posen zu Fuß und im Ritt + der Rundgang
 async function leibWiese(arg) {
     const L = window.__kamLeib;
-    const r = window.anazhRealm;
-    const st = r.state;
     const out = { fuss: { posen: [] }, ritt: { posen: [] } };
     try {
         await r._foundryAwaitBook(45000);
@@ -593,7 +589,6 @@ async function leibWiese(arg) {
 // DER 30°-HANG DER PRÜFBÜHNE (s2-hang30): 10 Posen auf der Rampe, der Blick hangab (die Kamera hangauf hinter dem Spieler)
 async function leibHang(arg) {
     const L = window.__kamLeib;
-    const r = window.anazhRealm;
     const out = { fuss: { posen: [] }, ritt: { posen: [] } };
     try {
         await r._foundryAwaitBook(45000);
@@ -623,8 +618,6 @@ async function leibHang(arg) {
 // je zu Fuß und im Sprint, zuletzt die Kamera, die in den Hang sinkt (`senk`, 10 Bilder).
 async function leibGang(G) {
     const L = window.__kamLeib;
-    const r = window.anazhRealm;
-    const st = r.state;
     const R = G.R;
     const out = { gaenge: [] };
     try {
@@ -835,8 +828,6 @@ const server = statikServer({
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
 async function probe(arg) {
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const nahDeckung = window.__nahDeckung;
     // der Takt, das Warten auf das Weltbild, die ruhige Kamera und der Ritt: die EINEN Helfer des Leibs (`leibInstall`)
     const { tick, steht, ruhig, ritt, hin, gtHolen } = window.__kamLeib;
@@ -1270,7 +1261,6 @@ hauptLauf(async () => {
         const tH = Date.now();
         const pb = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
         const id = await page.evaluate((j) => {
-            const r = window.anazhRealm;
             const res = r.importWorldBeside(j);
             if (!res || !res.ok) return null;
             r.activeWorldSet(res.worldId);

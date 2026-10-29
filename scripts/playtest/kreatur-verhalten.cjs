@@ -5,15 +5,13 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandWelle6HCreatures(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Kreaturen-Aufträge (follow_player / wait / wander) ###
     // Default-Task „wander“ hält das Emotion-Verhalten (Aura stumm); follow_player + wait tragen ein
     // Aura-Sprite (grün/bernstein). Multi-User: Tasks stehen in NON_BROADCASTABLE_OPS.
     const wave6hResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
         // Statische Konstanten
@@ -183,7 +181,6 @@ async function checkBandWelle6HCreatures(ctx) {
     // Audio-Antwort bei Task-Wechsel, Journal-Eintrag bei Geste, Leerschlag-Feedback, Status-Bar-
     // Zähler, Texture-Cache, describeProgram-Distanz.
     const wave6hV2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
 
@@ -343,7 +340,6 @@ async function checkBandWelle6HCreatures(ctx) {
     // Multi-Mesh-Groups aus bodyParts × Material (dieselbe Sprache wie Spieler-Seele + Architektur);
     // drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
     const wave6hP2aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
@@ -643,7 +639,6 @@ async function checkBandWelle6HCreatures(ctx) {
     // gather-Task mit args.material findet die nächste Architektur mit diesem Material, läuft hin und
     // erntet bei haltDist = 1.5 m (Architektur entfernt, memory geschrieben).
     const wave6hP2bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
         const out = {};
         out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
@@ -866,7 +861,6 @@ async function checkBandWelle6HCreatures(ctx) {
     // EINE Funktion für Spieler-LMB UND Kreatur-gather: Architekturen lösen sich volumen-basiert in eine
     // Material-Map auf; Inventar dual-typed {kind:'material'} | {kind:'blueprint'}; carrying → Spieler.
     const wave6hP2b5Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
         const out = {};
 
@@ -1044,7 +1038,6 @@ async function checkBandWelle6HCreatures(ctx) {
     // pfad konsumiert, frieden + schöpfer kostenlos (Symmetrie zu damagePlayer/applyOpToPart-Stamina).
     // computeBuildCost ≡ harvestArchitecture (Wertneutralität: eine Box kostet, was harvest liefert).
     const wave6hP2cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -1170,9 +1163,8 @@ async function checkBandWelle6HCreatures(ctx) {
 // Beweis dass der drink-Task als
 // 6. Task registriert ist, dass die Sprache (Aura+Ping+Chat) ihn trägt,
 // und dass _tickCreatureDrink den 3-Phasen-Zyklus durchläuft.
-async function checkBandWelleV11D3DrinkTask(ctx) {
-    const { page, check } = ctx;
-    const p = await page.evaluate(() => window.anazhRealm.parseChatToDsl("trinke"));
+async function checkBandWelleV11D3DrinkTask({ page, check }) {
+    const p = await page.evaluate(() => r.parseChatToDsl("trinke"));
     check(
         "Chat-Pattern trinke → creature_task_nearest drink",
         !!p && !!p.program && p.program[0] === "creature_task_nearest" && p.program[1] === "drink"
@@ -1182,10 +1174,8 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
 // BEDROHUNG: ein WILDES Wesen (Temperament aus glühender Substanz, kein hostile-Flag) jagt nur im
 // pfad, Furcht schlägt Jagd; das Rudel kommt ambient (G4a, gate:kreatur-takt „geburt"). Der Biss
 // läuft durchs damagePlayer-Tor → FURCHT bei niedriger HP · TRIUMPH beim Fall eines Jägers.
-async function checkBandPhaseEThreat(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhaseEThreat({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
@@ -1304,8 +1294,7 @@ async function checkBandPhaseEThreat(ctx) {
 // (A) zwei identische Wesen auf DEMSELBEN Punkt sind nach 200 Ticks > Körperradius getrennt, beschränkt · (B) verschiedene Stats →
 // messbar verschiedene Bewegung (speedMul, Leine aus Mut × Größe) · (C) Selbsttest · (D–F, 0710-4) Leib an Leib: keine Durchdringung,
 // Impuls nach Masse, der Spieler bekommt seinen Stoß, Lockstep; Selbsttests C2 (ohne Leib-Kontakt) und D (der alte Befund).
-async function checkBandTierSeparation(ctx) {
-    const { page, check } = ctx;
+async function checkBandTierSeparation({ page, check }) {
     const LEIB_SOLL = { tiefM: -0.05, dvMin: 0.05, verhaeltnis: 0.3, flugFaktor: 3 };
     const leibVerdict = function leibVerdict(L) {
         if (!L || !L.fuchsBaer || !L.baerFuchs) return ["leib keine Probe"];
@@ -1338,8 +1327,7 @@ async function checkBandTierSeparation(ctx) {
         return v;
     };
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            s = r.state,
+        const s = r.state,
             A = r.constructor;
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
@@ -1691,11 +1679,9 @@ async function checkBandTierSeparation(ctx) {
 // (voll · 1/2 · 1/4 · jenseits der Grenze gar nicht) · (B) jenseits der Grenze friert der Baum in der Kern-STAND_POSE · (C) die
 // gelenkige Grobstufe des Menschen, der EINE Stufen-Schalter, der echte Peer-Tick · (R) Starr-Bindung + Körper-Kugel · (F) Mensch
 // und Kopie ruhen · (G) die Ruhe der Leiber (Leser, Erwachen, Nah-Gestalt, Feld, Bild, KI) · (T)(W) · Selbsttests S1–S11.
-async function checkBandKreaturKosten(ctx) {
-    const { page, check } = ctx;
+async function checkBandKreaturKosten({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            s = r.state,
+        const s = r.state,
             A = r.constructor;
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;

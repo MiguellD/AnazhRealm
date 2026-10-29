@@ -5,15 +5,13 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandRing2Extended(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+async function checkBandRing2Extended({ page, check, logs, errors, finalState }) {
     void errors;
     void finalState;
     // ### Ring 2 Phase 3 – Chat → DSL ###
     // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
     // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
     const phase3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -221,7 +219,6 @@ async function checkBandRing2Extended(ctx) {
     // (a) Selektion bevorzugt statistisch high-fitness, (b) Mutation behält strukturelle Invarianten,
     // (c) dslCompose mit historyProbability=1 nutzt tatsächlich die History.
     const phase7Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -318,7 +315,6 @@ async function checkBandRing2Extended(ctx) {
 
     // ### Schicht 1 — IQ-Schicht (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory) ###
     const iqResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Keyword-Extraktion
@@ -416,10 +412,8 @@ async function checkBandRing2Extended(ctx) {
 // Nexus-Augen: dslComposeAtomic LIEST auraAt am Spieler und komponiert resonant zum lokalen Feld
 // (docs/das-lebendige-feld.md §2/§3.1). Beweis: feld-resonante Farbwahl (kontrollierte rng →
 // deterministisch) + weiter valide DSL.
-async function checkBandV1722NexusEyes(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1722NexusEyes({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const lo = () => 0.0; // kontrollierte rng (< jede Achsen-Stärke → resoniert)
         out.magieColor = r.dslComposeFieldColor(lo, { magieleitung: 1, glut: 0, lebendig: 0 }) === "#d4a3ff";
@@ -439,15 +433,13 @@ async function checkBandV1722NexusEyes(ctx) {
     check("Nexus-Augen: komponiert weiter valide DSL", res.composesValid);
 }
 
-async function checkBandWelle6HCreatureLlm(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
     // Der Spieler spricht mit EINER Kreatur; der Persona-Prompt versammelt ihre volle Identität
     // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). Kein echter LLM-Call: geprüft: Builder + Routing.
     const wave6hP2eV1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -612,7 +604,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     // @Name ist die primäre Kreatur-Adresse (ohne Trenner fiele "Bran wie gehts" an die Welt-KI);
     // Soul-Farben tragen Identität (Sprite=cyan / Wesen=brass / Geist=grün).
     const wave6hP2eV11Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -745,7 +736,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     // Phrasen-Pool. Hooks: _onCreatureLevelUp · applyCreatureBoost · no_material_found (gather-tick) ·
     // no_inventory_for_build (build-tick).
     const wave6hP2eV2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -946,7 +936,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     // (schöpfer = auto-execute, pfad/frieden = Inline-Buttons); LLM-Augmentation bei seltenen Events mit
     // eigenem 10-Min-Throttle. Geprüft: Whitelist, Modus-Diskrimination, Memory-Einträge, Sandbox-Defense.
     const wave6hP2eV3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -1172,13 +1161,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 }
 
-async function checkBandWorkshopPolishAndLlm(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1298,7 +1285,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1373,7 +1359,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1467,7 +1452,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
     const llmResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // den Ollama-Weg (Endpunkt, Body, Antwort, Parser) und die Tür jedes Anbieters durch die CSP fährt der KI-Korpus am Verhalten (diag-v1-pfad --korpus)
@@ -1536,7 +1520,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     // Lokales Ollama braucht keinen Key, gehostete Setups einen Bearer-Token: buildHeaders schickt
     // Authorization NUR bei gesetztem Key.
     const ollamaKeyResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
@@ -1561,7 +1544,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
@@ -1664,7 +1646,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.llm) return null;
         const out = {};
 
@@ -1697,7 +1678,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     // 404-Hint-Test
     const v797ErrorResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.llm) return null;
         const out = {};
         const origFetch = window.fetch;
@@ -1749,7 +1729,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 

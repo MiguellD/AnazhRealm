@@ -6,8 +6,6 @@
 async function probeLeben(expected) {
     const res = {};
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
@@ -2342,8 +2340,6 @@ function kernTempo(VC) {
 // ── K1 (physik K1, `--koerper`): Masse und Eintauchtiefe am Spieler-Weg (Takt, `_fahrBoden`), dann jede Zeile ρ ×2.
 async function probeKoerper(opt) {
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const A = Object.getPrototypeOf(r).constructor;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);

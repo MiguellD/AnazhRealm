@@ -939,6 +939,17 @@ class AnazhRealm_siedlung_ort {
                 });
             }
         }
+        // DER BRAND RAUCHT (stoffe.K2#2) aus demselben Zustand, aus dem er leuchtet und knistert: jede glühende Zelle des Felds
+        // (`brandFeld`) im Umkreis des Spielers ist eine Quelle über ihrer Mitte — sie verlischt mit ihrer Glut.
+        const pm = st.playerMesh;
+        if (pm) {
+            const R = AnazhRealm.BRAND.rauchM;
+            const [px, pz] = [pm.position.x, pm.position.z];
+            this._brandGlutUm(px, pz, R, (b) => {
+                const o = b.ort || this._brandOrt(b);
+                if ((o.x - px) * (o.x - px) + (o.z - pz) * (o.z - pz) <= R * R) quellen.push(o);
+            });
+        }
         dr.quellen = quellen;
         if (quellen.length && !this._dorfRauchLogged) {
             this._dorfRauchLogged = true;

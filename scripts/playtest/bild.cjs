@@ -11,10 +11,8 @@ const SKRIPTE = path.join(__dirname, "..");
 // Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), geprüft als KONSUM: der Welt-Tint liest
 // `aura.emotion` (die auraAt-Achse hat einen echten Leser), der Wasser-`uEmotion`-Haken wird
 // gefüttert — beide waren sonst tote Passagiere.
-async function checkBandV1731EmotionDrivesWorld(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1731EmotionDrivesWorld({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
@@ -43,15 +41,13 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
     );
 }
 
-async function checkBandWelle6G3Lebendigkeit(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
     const wave6g3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
@@ -201,7 +197,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität auf die Soul-Wahl? Folgen Frequenzen den
     // Tags? Modulieren Emotionen den Tint? Ist die Wetter-Dauer emotion-abhängig?
     const wave6g3v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
@@ -411,15 +406,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     }
 }
 
-async function checkBandWelle6G4Atmosphere(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
     const v827Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // 1. HemisphereLight im Scene + state-cached
@@ -538,7 +531,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
     // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
     const v828Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- Phase D: Wind + Wolken + Wasser ---
@@ -778,7 +770,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
     // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
     const v829Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- Avatar-Hide im 1st-Person ---
@@ -944,7 +935,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
     // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
     const v833Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
@@ -1063,8 +1053,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     }
 }
 
-async function checkBandV8LatePolishAnd6XContinued(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
@@ -1096,14 +1085,13 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
     const v847 = await safeEvaluate(page, () => {
-        const sh = window.anazhRealm.state.directionalLight && window.anazhRealm.state.directionalLight.shadow;
+        const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         return { shadowAntiAcne: !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048 };
     });
     check("Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
 
     // ### Terrain-Schatten + Tag-Nacht-Glättung ###
     const v848Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
         out.targetInScene =
@@ -1174,7 +1162,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
     const v849Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // Die Herde (Kern verbandZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
@@ -1224,7 +1211,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
     const wave6x4bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- B3: Stats-HUD DOM-Existenz
@@ -1303,7 +1289,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
     const wave6x4cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
@@ -1421,10 +1406,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 }
 
-async function checkBandV18164WarumLicht(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18164WarumLicht({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const P = (shape, material, x, y, z, sx, sy, sz) => ({
             shape,
@@ -1534,10 +1517,8 @@ async function checkBandV18164WarumLicht(ctx) {
 
 // Verifikation + Atmosphäre: Büsche/Understory sind echte gewachsene Bauten (kein Kugel-Bug); die
 // Atmosphäre koppelt ans Wetter — hazeNear: ferne Berge verblassen STÄRKER bei Feuchte.
-async function checkBandWahrerAnblickAtmoBusch(ctx) {
-    const { page, check } = ctx;
+async function checkBandWahrerAnblickAtmoBusch({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
@@ -1583,10 +1564,9 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
 }
 
 // V6 Wetter-5-Kanal-Feld — eingefaltet aus gate:weather-vector (D3b, die Welt des Läufers statt eines eigenen Boots): V6-GATE (Look-Finale) — DAS WETTER-5-KANAL-FELD (Null-Renderer, GPU-frei): beweist, dass
-async function checkBandWetterVektor(ctx) {
-    const { page, check } = ctx;
+async function checkBandWetterVektor({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = await window.__weltDa();
+        await window.__weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
         r.state.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");
@@ -1641,11 +1621,9 @@ async function checkBandWetterVektor(ctx) {
 // von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
 // grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
 // Eichung (Lehre 21, F1) und lineares Farb-Management.
-async function checkBandLookPhysik(ctx) {
-    const { page, check } = ctx;
+async function checkBandLookPhysik({ page, check }) {
     const { kartenEichung } = require(path.join(SKRIPTE, "lib", "licht-linsen.cjs"));
     const boot = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const T = window.THREE || {};
         const rend = r.state && r.state.renderer;
@@ -1702,11 +1680,8 @@ async function checkBandLookPhysik(ctx) {
 // `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
 // blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
 // Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
-async function checkBandHimmelTag(ctx) {
-    const { page, check } = ctx;
+async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const T = window.THREE;
         let kugel = null;
         if (stoerung === "kugel") {
@@ -1824,11 +1799,8 @@ async function checkBandHimmelTag(ctx) {
 // (1410-3), nur die bewegte Kamera lässt die nahe jeden Frame folgen. Der ECHTE `_loopShadowUpdate` gegen Schein-Kaskaden:
 // T1 autoUpdate aus · T2/T3 der Takt je Regler-Intervall · T4 Sonnen-Sprung · T5 ohne CSM · T6 `_schattenAlleNeu` · T7 Gang;
 // S1/S2 der alte Schreiber und das Gesetz vor 1410-3 fallen.
-async function checkBandSchattenTakt(ctx) {
-    const { page, check } = ctx;
+async function checkBandSchattenTakt({ page, check }) {
     const a = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const T = r.constructor.SCHATTEN_TAKT;
         const echt = {
             csm: st.csmNode,
