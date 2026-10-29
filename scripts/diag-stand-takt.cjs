@@ -24,11 +24,12 @@
 // ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
 // Gehen, verhungernder Strom, eine Sim, die in Ruhe zählt oder nach ihrem Ereignis nicht schläft, ein Automat, der am
 // Fixpunkt wach bleibt, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
-//   node scripts/diag-stand-takt.cjs [--selftest | --tat]   (npm run gate:stand-takt; Port STAND_TAKT_PORT; --tat: (K4) unten)
+//   node scripts/diag-stand-takt.cjs [--selftest | --tat | --nachwuchs]   (npm run gate:stand-takt; Port STAND_TAKT_PORT; --tat: (K4),
+//   --nachwuchs: (K5) unten)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, taeterFaelle, selbsttestEnde, wandEnde, urteilEnde } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
 
 // (N) DIE SONDE LIEST DEN BESTAND (satz-pass): nach dem Haupt-Pass nennt die Linie der Strahl-Sonde (scripts/lib/kamera-nah.cjs)
@@ -555,6 +556,48 @@ async function tatSeite(MESS, vorher) {
         for (const a of st.nahStreu.senken.values()) for (const [k, b] of a.bloecke) for (const id of b.ids) if (wahl(a, k + "#" + id)) s.add(k + "#" + id);
         return s.size;
     };
+    // (K5) der Nachwuchs, s. u.: die Pflanzen der Nah-Streu im Ring (`ernten`: jede gepflückt) mit Feuchte und Licht ihres Orts
+    const F0 = r._feuchteAt.bind(r);
+    const ring = (ernten, ps = []) => {
+        const ns = st.nahStreu;
+        for (const [senke, a] of ns.senken)
+            for (const [key, b] of a.ernte && a.preset !== "stumpf" ? a.bloecke : [])
+                for (const { id, x, z } of ns.kacheln.get(key).items)
+                    if (b.ids.includes(id) && (!ernten || r._harvestScatterPick({ senke, key, id })))
+                        ps.push({ key, id, w: [key, F0(x, z), r._bodenLichtFeld(x, z, x, z)(x, z), 0] });
+        return ps;
+    };
+    const jahr = async (U, mutante) => {
+        await stehen(U);
+        const h0 = r._weltStunde();
+        if (mutante) r._feuchteAt = () => 0.5;
+        const ps = ring(true);
+        delete r._feuchteAt;
+        const schritt = (dh) => {
+            r.setTimeOfDay((st.timeOfDay + dh / 24) % 1, "regler");
+            takt();
+            for (const p of ps) p.w[3] ||= !r._geerntetIn(p.key).has(p.id) && r._weltStunde() - h0;
+        };
+        while (ps.some((p) => !p.w[3]) && r._weltStunde() - h0 < 48) schritt(0.05);
+        while (r._weltStunde() - h0 < 8760) schritt(11);
+        await stehen(U);
+        return { jahr: r._weltStunde() - h0, da: zeichnet((a, k) => ps.some((p) => p.key + "#" + p.id === k)), p: ps.map((p) => p.w) };
+    };
+    if (vorher && vorher.ufer) {
+        r._setWeather("sunny", "human"), r.setSeason("sommer");
+        for (let d = 20, n = 0; d <= 900 && n < 8; d += 10)
+            for (let k = 0; k < 36; k++) {
+                const U = { x: MESS.x + d * Math.cos(k * 0.1745), z: MESS.z + d * Math.sin(k * 0.1745) };
+                if (Math.abs(F0(U.x, U.z) - 0.5) > 0.1 || !r._landAt(U.x, U.z, 1) || r._canopyLightAt(U.x, U.z) < 0.6) continue;
+                n++, await stehen(U);
+                const o = ring(false).filter((q) => q.w[2] >= 0.995);
+                if (o.filter((q) => q.w[1] >= 0.6).length >= 6 && o.filter((q) => q.w[1] <= 0.2).length >= 6)
+                    return { ufer: U, echt: await jahr(U, false), mutante: await jahr(U, true) };
+                d += 50; // ein Versuch je 60 m Abstand
+                break;
+            }
+        return { fehler: "kein offenes Ufer mit nassen und trockenen Pflanzen binnen 900 m" };
+    }
     const mess = (T) => {
         const d = T.staemme.map((p) => r.auraAt(p.x, p.z).lebendig - r.worldFieldAt(p.x, p.z).lebendig);
         return {
@@ -636,13 +679,49 @@ async function tatLauf(page) {
     return Object.assign(T, await page.evaluate(tatSeite, MESS, T));
 }
 
+// (K5) DER NACHWUCHS (stoffe.K5, `--nachwuchs`, die Seite der Tat mit `vorher.ufer`): am offenen Ufer nächst der Mess-Wiese
+// (aus der Welt: der erste Ort mit Feuchte um ½, dessen Ring je ≥ 6 Pflanzen in vollem Licht im Nassen und im Trockenen trägt
+// — heute −348/−662, 390 m nördlich, vom nassen Ufer bis ins Trockene, im Licht und unter Kronen) pflückt der Spieler mit dem
+// Verb der Ernte (`_harvestScatterPick`) jede Pflanze; die Uhr springt als Spieler-Wort ein Spieljahr (`setTimeOfDay` „regler":
+// 0,05 h, bis jede zurück ist, dann 11 h), je Pflanze zählt die Stunde, ab der ihre Kachel sie wieder trägt (`_geerntetIn`), am
+// Ende, ob die Senken sie zeichnen. Danach dasselbe mit der Mutante: die Feuchte gleich an ihrer Naht (`_feuchteAt` ½). Feuchte
+// und Licht liest die Linse am Gesetz (`_feuchteAt` des Prototyps, `_bodenLichtFeld`). Urteil je 4-m-Kachel (Tempo =
+// 1/Stunde): r(Tempo, Feuchte × Licht) ≥ 0,5 über alle; im Offenen (Licht ≥ 0,995, wo das Kronendach schweigt) r ≥ 0,5 und die
+// nassen (F ≥ 0,6) ≥ 1,15 × so schnell wie die trockenen (F ≤ 0,2) — die Mutante zieht dort r unter 0,2 und sie unter 1,05.
+function nachwuchsMass({ p, jahr, da }) {
+    const m = (a, f) => a.reduce((s, x) => s + f(x), 0) / a.length;
+    const kor = (Z, a = m(Z, (z) => z.fl), b = m(Z, (z) => z.t)) => {
+        const [ab, aa, bb] = [(z) => (z.fl - a) * (z.t - b), (z) => (z.fl - a) ** 2, (z) => (z.t - b) ** 2].map((f) => m(Z, f));
+        return aa * bb > 1e-12 ? +(ab / Math.sqrt(aa * bb)).toFixed(3) : 0;
+    };
+    const je = {};
+    for (const [k, F, L, h] of p) (je[k] = je[k] || []).push({ F, L, fl: F * L, t: h && 1 / h });
+    const Z = Object.values(je).map((a) => ({ fl: m(a, (q) => q.fl), t: m(a, (q) => q.t), F: m(a, (q) => q.F), L: Math.min(...a.map((q) => q.L)) }));
+    const O = Z.filter((z) => z.L >= 0.995);
+    const tempo = (f) => m(O.filter(f), (z) => z.t);
+    return { n: p.length, da, jahr: Math.round(jahr), r: kor(Z), offen: O.length, rOffen: kor(O), quote: +(tempo((z) => z.F >= 0.6) / tempo((z) => z.F <= 0.2)).toFixed(3) };
+}
+
+function nachwuchsUrteil({ echt: e, mutante: m } = {}) {
+    if (!(e && m && e.n >= 30 && e.offen >= 6)) return ["LEER: " + JSON.stringify(e)];
+    return [
+        e.jahr >= 8760 && e.da === e.n ? "" : `JAHR: nach ${e.jahr} h ${e.da} von ${e.n} gezeichnet`,
+        e.r >= 0.5 && e.rOffen >= 0.5 ? "" : `KORRELATION: r ${e.r}, offen ${e.rOffen}`,
+        e.quote >= 1.15 ? "" : `FEUCHTE: nass ${e.quote} × trocken`,
+        m.rOffen < 0.2 && m.quote < 1.05 ? "" : `MUTANTE: bei gleicher Feuchte offen r ${m.rOffen}, nass ${m.quote} × trocken`,
+    ].filter(Boolean);
+}
+
 if (process.argv.includes("--selftest")) {
     console.log("=== STAND-TAKT — Selbsttest (ohne Browser) ===");
     selbsttest();
-    // die Tat-Linse: grün am Soll, je Täter rot beim Namen
+    // die Tat-Linse und die Nachwuchs-Linse: grün am Soll, je Täter rot beim Namen
     const T = (h, n = 10) => ({ gefaellt: n, gepflueckt: 30, baeumeVorher: 12, stunde: Object.assign({ baeume: 2, pflanzen: 0, stuempfe: 10, narbe: -0.2 }, h) });
     const roh = [[T({}), ""], [T({ narbe: 0 }), "NARBE"], [T({ stuempfe: 0 }), "STUMPF"], [T({ pflanzen: 9 }), "ERNTE"], [T({ baeume: 12 }), "BAUM"], [T({}, 3), "LEER"], [{}, "LEER"]];
-    selbsttestEnde(roh.filter(([b, n]) => (tatUrteil(b).join() + "|").split(":")[0] !== (n || "|")).map(([, n]) => n || "GRÜN"), "die Tat-Linse nennt jeden Täter.");
+    const J = (e, m) => ({ echt: { n: 40, da: 40, jahr: 8760, r: 1, offen: 9, rOffen: 1, quote: 2, ...e }, mutante: { rOffen: 0, quote: 1, ...m } });
+    const nw = [[J(), ""], [J({ da: 9 }), "JAHR"], [J({ r: 0 }), "KORRELATION"], [J({ quote: 1 }), "FEUCHTE"], [J({}, { quote: 2 }), "MUTANTE"], [{}, "LEER"]];
+    const falsch = (U, L) => L.filter(([b, n]) => (U(b).join() + "|").split(":")[0] !== (n || "|")).map(([, n]) => n || "GRÜN");
+    selbsttestEnde([...falsch(tatUrteil, roh), ...falsch(nachwuchsUrteil, nw)], "die Tat- und die Nachwuchs-Linse nennen jeden Täter.");
     process.exit(0);
 }
 
@@ -651,6 +730,7 @@ const { messort } = require("./lib/welt-orte.cjs");
 const MESS = messort("wiese");
 const server = statikServer();
 const TAT = process.argv.includes("--tat");
+const NACHWUCHS = process.argv.includes("--nachwuchs");
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
@@ -669,6 +749,7 @@ const TAT = process.argv.includes("--tat");
         await warteAufWelt(page, 120000);
         await page.evaluate(STAND.STAND_INSTALL + require("./lib/kamera-nah.cjs").KAMERA_NAH_INSTALL);
         if (TAT) befund = await tatLauf(page);
+        else if (NACHWUCHS) befund = await page.evaluate(tatSeite, MESS, { ufer: true });
         else befund = await page.evaluate(
             async (MESS, TAKTE) => {
                 const r = window.anazhRealm,
@@ -1793,12 +1874,11 @@ const TAT = process.argv.includes("--tat");
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    if (TAT) {
-        const v = tatUrteil(befund);
-        const { staemme, ernte, ...zeile } = befund;
-        console.log("TAT " + JSON.stringify(zeile));
-        console.log(v.length ? "❌ TAT ROT — " + v.join(" | ") : "✅ TAT GRÜN — die Spur hält bis zum Reload");
-        process.exit(v.length ? 1 : 0);
+    if (TAT || NACHWUCHS) {
+        const { staemme, ernte, ...zeile } = TAT ? befund : { ufer: befund.ufer, echt: nachwuchsMass(befund.echt), mutante: nachwuchsMass(befund.mutante) };
+        const [name, v] = TAT ? ["TAT", tatUrteil(zeile)] : ["NACHWUCHS", nachwuchsUrteil(zeile)];
+        console.log(name + " " + JSON.stringify(zeile));
+        urteilEnde(v.length, `❌ ${name} ROT — ${v.join(" | ")}`, `✅ ${name} GRÜN — ` + (TAT ? "die Spur hält bis zum Reload" : "der Nachwuchs folgt Feuchte × Licht"));
     }
     befund.pageErrors = befund.taktFehler || [];
     const namen = Object.keys(STAND.TAKTE);

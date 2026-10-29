@@ -19,12 +19,8 @@
 // (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const vm = require("vm");
-const path = require("path");
+const { urteilEnde, fadenScope } = require("./lib/welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const ARTEN = ["wolf", "fox", "bear", "deer"];
 const WOLLE_SCHWELLE = 0.05; // aSchale.y, ab der die inneren Schalen decken (Welt-Material fellSchale)
 const KAHL_MAX = 0.02; // höchster kahler Anteil je Region
@@ -83,16 +79,7 @@ function kahlAnteile(g) {
     return out;
 }
 
-function ladeWelt() {
-    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
-    sb.self = sb;
-    sb.globalThis = sb;
-    sb.window = sb;
-    vm.createContext(sb);
-    for (const f of ["worlds/terrain/lib/three-r128.min.js", "phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"])
-        vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
-    return sb;
-}
+const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"]);
 
 // DIE KOPF-SCHALEN: jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
 // Schalen im EINEN Stapel: Ecken mit Gewicht 1 an ihrem Gelenk, auf kopfSchalen − 1 Höhen (t = s / kopfSchalen), im Raster
