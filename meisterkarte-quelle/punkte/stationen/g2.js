@@ -2661,16 +2661,17 @@ const stationen = [
         pfad: [...KREATUR],
         quelle: "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt)",
     },
-    // Staffel 2 (Zweig oeko-k2-bestand): der Teil bestand der Probe kaskade (Familie der Station #1, derselbe Lauf, Null-
+    // Staffel 2 (Zweig oeko-k2-bestand-neu, neu gesetzt auf main 715754fc): der Teil bestand der Probe kaskade (Familie der Station #1, derselbe Lauf, Null-
     // Renderer) — der Bestand ist das Verzeichnis je Region (Kachel der Revier-Fläche, `state.faunaBestand`), ein Leib nur
     // seine Zeichnung. Je Saat 8 Spielstunden am echten Lebenszyklus, der Spieler an der Ecke von vier Regionen: Grundlauf mit
     // der Kappe des Spiels (20), Mutante „Kappe halbiert“ (der Eingriff ohne Wolf bei Kappe 10 gegen denselben Eingriff bei 20 —
     // Soll: je Takt und naher Region dieselben Tiere, Leiber ≤ Kappe, der Bestand über der Kappe), Mutante „Nahrung halbiert“
     // (Soll: in jeder Region, nah UND fern, Effekt ≤ −15 % mit 95-%-Intervall < 0); vier ferne Regionen als Zahl gelesen (ohne
     // Leib), kein Leib aus einer fernen Region; der Takt des Lebenszyklus p95 ≤ 5,8 ms (der CPU-Takt des Profi-Bands). An main
-    // fehlt der Teil (ROT „ohne Bestand“). Am Zweig oeko-k2-bestand d9928c7e (headless, trocken am Lauf der Linse): 0 von
-    // 17280 Takten andere Tiere, Leiber 20/10 bei Bestand 34,5, halbe Nahrung senkt 8 von 8 Regionen (−0,345 … −0,416),
-    // Takt p95 5,1 ms.
+    // fehlt der Teil (ROT „ohne Bestand“). Am Zweig oeko-k2-bestand-neu (headless, trocken am Lauf der Linse): 0 von 17280
+    // Takten andere Tiere, Leiber 20/10 bei Bestand 34,5, halbe Nahrung senkt 8 von 8 Regionen (−0,345 … −0,416); der Takt p95
+    // 6,7 ms auf der geteilten Cloud-VM (der alte Zweig d9928c7e am selben Ort 8,0, an seiner eigenen 5,1) — das Urteil der
+    // Kosten fällt an der Farm.
     {
         kriterium: "oekologie.K2",
         staffel: 2,
