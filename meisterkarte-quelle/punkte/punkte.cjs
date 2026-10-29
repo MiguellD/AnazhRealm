@@ -34,7 +34,10 @@
 //   Sekunden bis sichtbar —, die Station fährt allein; false: Bild oder Funktion, sie verträgt parallele Bahnen; je Station
 //   Pflicht) · minuten (Deckel = 2 × minuten, mindestens 2 min) · urteil (j, lauf) →
 //   { gruen, zahl } mit j = JSON aus {AUS} oder null, lauf = { exit, stdout, stderr } · pfad: Globs des gemessenen Pfads
-//   (R6) · quelle: der Staffel-Text wörtlich (Teil der Staffel in src/gN.js).
+//   (R6) · quelle: der Staffel-Text wörtlich (Teil der Staffel in src/gN.js) · beide (optional, nur true an Staffel 1 auf
+//   radeon und gtx: die Staffel nennt beide Geräte, die 1 zählt erst, wenn JEDES grün ist — Pflicht, wo die quelle sie nennt) ·
+//   proben (optional): [{ name, stdout, gruen }] Roh-Ausgaben des Befehls mit dem Urteil, das die Station über sie spricht
+//   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
@@ -106,6 +109,12 @@ function pruefeStationen(liste, karte) {
         if (!ge.includes("headless") && !st.gpu) f.push("ein Gerät radeon|gtx verlangt gpu: true");
         if (st.staffel === 2 && st.gpu && !(ge.includes("radeon") && ge.includes("gtx")))
             f.push("Staffel 2 einer GPU-Station verlangt beide Geräte (R2)");
+        if (st.beide !== undefined && !(st.beide === true && st.staffel === 1 && ge.includes("radeon") && ge.includes("gtx")))
+            f.push("beide nur als true an Staffel 1 auf radeon und gtx");
+        if (st.staffel === 1 && st.beide !== true && /an beiden Geräten|beide Geräte|beider Geräte/.test(st.quelle || ""))
+            f.push("die Staffel 1 nennt beide Geräte — beide: true (sonst bucht EIN Gerät die 1)");
+        if (st.proben !== undefined && !(Array.isArray(st.proben) && st.proben.every((p) => p && typeof p.name === "string" && typeof p.stdout === "string" && typeof p.gruen === "boolean")))
+            f.push("proben ist keine Liste von { name, stdout, gruen }");
         if (!Array.isArray(st.befehl) || !st.befehl.length || st.befehl.some((a) => typeof a !== "string"))
             f.push("befehl ist kein argv");
         else if (!["node", "bash"].includes(st.befehl[0])) f.push("befehl[0] nicht node|bash");
@@ -161,6 +170,22 @@ function pruefeFehlt(fehlt, karte, stationen) {
         if (f.length) fehler.push("fehlt " + wer + ": " + f.join(" · "));
     }
     return fehler;
+}
+// DIE PROBEN (`proben`): jede Station urteilt ihre Roh-Ausgaben, wie sie es sagt — Rückgabe die Abweichungen beim Namen
+function probenUrteil(stationen) {
+    const falsch = [];
+    for (const st of stationen)
+        for (const p of st.proben || []) {
+            let u;
+            try {
+                u = st.urteil(null, { exit: 0, stdout: p.stdout, stderr: "" });
+            } catch (e) {
+                u = { gruen: null, zahl: "Urteil warf: " + e.message };
+            }
+            if (!u || u.gruen !== p.gruen)
+                falsch.push(schluessel(st) + " " + p.name + ": " + (u && u.gruen ? "GRÜN" : "ROT") + " statt " + (p.gruen ? "GRÜN" : "ROT") + " (" + (u ? u.zahl : "kein Urteil") + ")");
+        }
+    return falsch;
 }
 function ladeGeprueft() {
     const karte = kriterienDerKarte();
@@ -903,13 +928,13 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
 }
 
 // DIE PUNKTE-REGEL (R2) eines Kriteriums — die EINE für die Buchung und für gtx-nutzen: sts die Stationen des Kriteriums,
-// urteil(st, g) → { gruen } je Station und Gerät. 1 = jede Staffel-1-Station auf mindestens einem Gerät grün · 2 = dazu jede
-// Staffel-2-Station auf JEDEM Gerät grün · sonst 0
+// urteil(st, g) → { gruen } je Station und Gerät. 1 = jede Staffel-1-Station auf mindestens einem Gerät grün (`beide`: auf
+// jedem) · 2 = dazu jede Staffel-2-Station auf JEDEM Gerät grün · sonst 0
 function stufen(sts, urteil) {
     const stufe = (n, alle) => {
         const xs = sts.filter((s) => s.staffel === n);
         const r = xs.map((s) => ({ s, je: geraeteVon(s).map((g) => ({ g, e: urteil(s, g) })) }));
-        const ok = xs.length > 0 && r.every((x) => (alle ? x.je.every((y) => y.e.gruen) : x.je.some((y) => y.e.gruen)));
+        const ok = xs.length > 0 && r.every((x) => (alle || x.s.beide ? x.je.every((y) => y.e.gruen) : x.je.some((y) => y.e.gruen)));
         return { ok, r };
     };
     const s1 = stufe(1, false), s2 = stufe(2, true);
@@ -938,7 +963,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
             // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
             stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
-                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}) })))),
+                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(x.s.beide ? { beide: true } : {}) })))),
         };
     }
     return { kopf, je };
@@ -1077,7 +1102,8 @@ function gtxNutzen(s) {
     const wo = (id, g) => id + "|" + g;
     for (const [k, e] of Object.entries(s.je)) {
         const ids = [...new Set(e.stationen.map((x) => x.id))];
-        const sts = ids.map((id) => ({ kriterium: k, staffel: Number(id.slice(id.lastIndexOf("#") + 1)), geraet: e.stationen.filter((x) => x.id === id).map((x) => x.geraet) }));
+        const sts = ids.map((id) => ({ kriterium: k, staffel: Number(id.slice(id.lastIndexOf("#") + 1)), geraet: e.stationen.filter((x) => x.id === id).map((x) => x.geraet),
+            ...(e.stationen.some((x) => x.id === id && x.beide) ? { beide: true } : {}) }));
         const ist = new Map(e.stationen.map((x) => [wo(x.id, x.geraet), x]));
         const offen = e.stationen.filter((x) => x.ungemessen && !x.tot).map((x) => wo(x.id, x.geraet));
         for (const id of ids.filter((i) => ist.has(wo(i, "gtx")))) {
@@ -1110,6 +1136,12 @@ function messPlan(stationen, da, genannt, zeit) {
         const id = schluessel(st), k = st.kriterium;
         const neu = ge.some((g) => !da(id, g));
         const heil = genannt.has(k) || neu;
+        // `beide`: die 1 hält nur auf jedem Gerät — gemessen wird wie eine Staffel 2 (ganz grün hält, ein Heil-Versuch misst)
+        if (st.staffel === 1 && st.beide) {
+            if (ge.every((g) => da(id, g) && da(id, g).gruen) || heil) for (const g of ge) plan[g].push(id);
+            else plan.uebersprungen.push(id);
+            continue;
+        }
         if (st.staffel === 1) {
             const gruen = ge.filter((g) => da(id, g) && da(id, g).gruen);
             if (gruen.length) plan[zeit(id) && gruen.includes("gtx") ? "gtx" : gruen.includes("radeon") ? "radeon" : "gtx"].push(id);
@@ -1216,6 +1248,15 @@ async function selbsttest() {
     const echt = ladeGeprueft();
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
+    // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
+    {
+        const n = echt.stationen.reduce((s, st) => s + (st.proben || []).length, 0);
+        const falsch = probenUrteil(echt.stationen);
+        pruef("PROBEN jede Station urteilt ihre Roh-Ausgaben wie erwartet (" + n + " Proben)", n > 0 && falsch.length === 0, falsch.join(" | "));
+        const luegt = probenUrteil([{ kriterium: "a.K1", staffel: 1, urteil: (j, l) => ({ gruen: /GRÜN/.test(l.stdout), zahl: "z" }),
+            proben: [{ name: "Roh", stdout: "GRÜN", gruen: true }, { name: "Mutante", stdout: "ROT", gruen: true }] }]);
+        pruef("PROBEN eine Probe, deren Urteil nicht stimmt, beim Namen", luegt.join() === "a.K1#1 Mutante: ROT statt GRÜN (z)", luegt.join());
+    }
     // (1b) R6 liest Bytes ohne Stempel: Versions-Stempel fallen, Code, Binär und Werkzeug bleiben (welches Werkzeug zählt, urteilt
     // frischUrteil an der Linse der Station)
     {
@@ -1257,6 +1298,12 @@ async function selbsttest() {
         pruef("FORMAT-ROT befehl null in der fahrbaren Liste", n.fehler.some((f) => /gehört in module.exports.fehlt/.test(f)) && n.stationen.length === 1, n.fehler.join(" | "));
         const fl = pruefeFehlt([{ kriterium: "gelaende.K4", staffel: 2, befehl: null }, { kriterium: "gelaende.K4", staffel: 1, befehl: null, grund: "kein Werkzeug" }], karte, [st0]);
         pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
+        // `beide`: eine Staffel 1, deren Text beide Geräte nennt, trägt es; nie an Staffel 2 oder an einem Gerät
+        const pb = { ...st0, kriterium: "profiband.K1", geraet: ["radeon", "gtx"], gpu: true, zeit: true, quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten" };
+        const bf = [pb, { ...pb, beide: true, geraet: "radeon" }, { ...st0, staffel: 2, beide: true, geraet: ["radeon", "gtx"], gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }]
+            .map((s) => pruefeStationen([s, ...(s.staffel === 2 ? [st0] : [])], karte).fehler.join(" | "));
+        pruef("FORMAT-ROT die Staffel 1 nennt beide Geräte ohne beide · beide an einem Gerät · beide an Staffel 2",
+            /nennt beide Geräte — beide: true/.test(bf[0]) && /beide nur als true/.test(bf[1]) && /beide nur als true/.test(bf[2]) && pruefeStationen([{ ...pb, beide: true }], karte).fehler.length === 0, bf.join(" || "));
     }
     // (3) Läufer: grün / rot / Absturz / Deckel / Urteil ungültig / GPU ohne Schloss / GPU über das Schloss
     const ctx = (n) => ({ baum: tmp, koord: KOORD, port: null, aus: path.join(tmp, n + ".json"), roh: path.join(tmp, n + ".out"), geraet: "radeon", bash: findeBash(), gpuLauf: null, deckelMinS: 0 });
@@ -1576,6 +1623,15 @@ async function selbsttest() {
     pruef("BUCHUNG ungemessen → 0 (R10)", b.je["gelaende.K4"].punkte === 0 && /R10/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], [M("a1", "radeon", "gelaende.K4#2", s2, true), M("b2", "gtx", "gelaende.K4#2", s2, true)], keine, h);
     pruef("BUCHUNG Staffel 2 grün ohne Staffel 1 → 0", b.je["gelaende.K4"].punkte === 0, b.je["gelaende.K4"].beleg);
+    {
+        const sb = { ...s1, beide: true };
+        const nur = buchen("kopf", [sb], [M("a1", "radeon", "gelaende.K4#1", sb, true)], keine, h);
+        const zwei = buchen("kopf", [sb], [M("a1", "radeon", "gelaende.K4#1", sb, true), M("b2", "gtx", "gelaende.K4#1", sb, true)], keine, h);
+        pruef("BUCHUNG Staffel 1 mit beide: ein grünes Gerät → 0, beide grün → 1", nur.je["gelaende.K4"].punkte === 0 && /gelaende.K4#1 gtx/.test(nur.je["gelaende.K4"].beleg) && zwei.je["gelaende.K4"].punkte === 1,
+            nur.je["gelaende.K4"].beleg + " / " + zwei.je["gelaende.K4"].beleg);
+        const gn = gtxNutzen(nur);
+        pruef("GTX-NUTZEN Staffel 1 mit beide hinter grüner Radeon bleibt in der Liste", gn.ja.join() === "gelaende.K4#1", JSON.stringify(gn));
+    }
     // (5b) DIE LINSE an der Buchung (R6 über das Werkzeug): ein Umbau der Linse — im Befehl genannt oder per require geladen —
     // macht die Messung alt; fremdes Werkzeug nie. Der require-Gang ist rufe der Stamm-Bibliothek am Kopf des Spiel-Klons
     {
@@ -1637,6 +1693,13 @@ async function selbsttest() {
         (id, g) => vor.find((x) => x.id === id && x.geraet === g) || null, new Set(["c.K1"]), (id) => id === "d.K1#1");
     pruef("MESS-PLAN Staffel 1 auf EINEM Gerät (Zeit auf der GTX), rot ohne Heil-Versuch fällt, genannt fährt beide, Staffel 2 nur ganz grün oder geheilt",
         mp.radeon.join() === "a.K1#1,a.K1#2,c.K1#1" && mp.gtx.join() === "a.K1#2,c.K1#1,d.K1#1" && mp.uebersprungen.join() === "b.K1#1,d.K1#2", JSON.stringify(mp));
+    {
+        const bv = [V("e.K1#1", "radeon", true), V("e.K1#1", "gtx", true), V("f.K1#1", "radeon", true), V("f.K1#1", "gtx", false)];
+        const bp = messPlan([{ ...P("e.K1", 1, ["radeon", "gtx"]), beide: true }, { ...P("f.K1", 1, ["radeon", "gtx"]), beide: true }],
+            (id, g) => bv.find((x) => x.id === id && x.geraet === g) || null, new Set(), () => true);
+        pruef("MESS-PLAN Staffel 1 mit beide: ganz grün hält auf beiden Geräten, halb rot ohne Heil-Versuch fällt",
+            bp.radeon.join() === "e.K1#1" && bp.gtx.join() === "e.K1#1" && bp.uebersprungen.join() === "f.K1#1", JSON.stringify(bp));
+    }
     pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
     // (7) DIE FARM: Scheiben (LPT, Zwillinge zusammen, Gewicht aus der jüngsten Messung), der Anbieter je Scheibe, die Vereinigung
     // der Teile (ersetzt, ungemessen, fehlende Scheibe beim Namen, fremder SHA wirft) und kein Schloss nur für headless

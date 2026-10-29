@@ -63,3 +63,6 @@ takt18c-gtx gemessen punkte 557d4aad gtx: 13 grün / 3 rot
 takt18d-gtx gemessen punkte 557d4aad gtx: 26 grün / 6 rot
 takt19a-gtx gemessen punkte b3f9ae95 gtx: 26 grün / 8 rot
 takt19b-gtx gemessen punkte b3f9ae95 gtx: 46 grün / 21 rot
+z67-abab LANGSAMER abab 29a5f696 gegen b3f9ae95: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 4+4 LANGSAMER
+takt19-abab nicht-langsamer abab b3f9ae95 gegen 9e92be45: w-ego 4+4 nicht-langsamer · d-ego 2+2 nicht-langsamer · stadt 2+2 nicht-langsamer
+spike-pixel-gtx Exit1 station spike-pixel-gtx.sh an f653389d

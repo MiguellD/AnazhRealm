@@ -821,3 +821,15 @@
 2026-10-29 07:10:12 z67-abab w-ego VERLÄNGERN 14.1 · 1/3 (2+2)
 2026-10-29 07:11:14 MELDEN takt19-abab: Dienst hing 03:36-06:54 im Boot stadt-A1 (werkbank lauf --wandern bahn ohne Frist, sonst ~47 s) und hielt das GPU-Schloss omen-mp; echt-Job 40809054698 /1 und /2 warteten im job-start-Hook je 25 min auf das Schloss -> ROT (kein Runner-Fehler, keine Runner-Version). Behoben: serie.sh Frist je lauf 600/900 s + HÄNGER-Zeile, Neustart 06:55, z67-abab läuft, takt19-abab setzt an stadt fort. echt darf zurück auf die OMEN: ein Boot hält das Schloss jetzt höchstens ~25 min, normal 3-5 min
 2026-10-29 07:21:09 z67-abab d-ego nicht-langsamer 10.9 · 2/3 (2+2)
+2026-10-29 07:38:55 z67-abab stadt VERLÄNGERN 17.7 · 3/3 (2+2)
+2026-10-29 07:52:53 z67-abab w-ego(4+4) nicht-langsamer 13.9 · verlängert (4+4)
+2026-10-29 08:10:42 z67-abab stadt(4+4) LANGSAMER 17.8 · verlängert (4+4)
+2026-10-29 08:10:57 takt19-abab START 3 Zellen
+2026-10-29 08:11:04 takt19-abab w-ego VERLÄNGERN 0.1 · 1/3 (2+2)
+2026-10-29 08:11:12 takt19-abab d-ego nicht-langsamer 0.1 · 2/3 (2+2)
+2026-10-29 08:24:43 takt19-abab stadt nicht-langsamer 13.4 · 3/3 (2+2)
+2026-10-29 08:39:21 takt19-abab w-ego(4+4) nicht-langsamer 14.5 · verlängert (4+4)
+2026-10-29 08:39:44 spike-pixel-gtx START 1 Stationen
+2026-10-29 08:39:53 spike-pixel-gtx spike-pixel-gtx.sh Exit1 0.1 · 1/1
+2026-10-29 08:56:37 z67-bisekt START 1 Zellen
+2026-10-29 09:14:30 z67-bisekt stadt VERLÄNGERN 17.8 · 1/1 (2+2)
