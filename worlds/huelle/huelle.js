@@ -12,12 +12,15 @@
  *   sitzung(opt)               Seed + Sperre je Achse + Undo/Redo über Werte-Diffs (Strg+Z · Strg+Umschalt+Z · Strg+Y);
  *                              `schritt(fn)` macht aus jeder Tat (Preset, Kultur, Würfel) EINEN Rückgängig-Schritt;
  *                              ein offener Regler-Zug wird sein Schritt, bevor der Verlauf geht (`abschliessen`).
- *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Stoffe · Schatten gegen die Budget-Zeile des
- *                              Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` = buildInstance
- *                              des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
+ *   kosten(ziel, opt)          die Kosten-Leiste je LOD-Stufe: Dreiecke · Befehle · VRAM · Stoffe · Schatten gegen die
+ *                              Budget-Zeile des Kerns, der Faktor zum Band; gemessen an der Welt-Gestalt (`bauen(stufe)` =
+ *                              buildInstance des Kerns) oder an der Labor-Gestalt (`messen(obj, stufe)`), meshfrei benannt; die
  *                              Welt-Werkstatt setzt die am Foundry-Werk gezählten Kosten (`setzen(stufe, kosten)`). Reicht das
  *                              Studio seinen Renderer (`opt.renderer`, wie panorama()), steht neben jeder gezählten Zahl die
- *                              GEZEICHNETE: das Werk allein in einem eigenen Render-Abschnitt, renderer.info (studios.K3).
+ *                              GEZEICHNETE: das Werk allein in einem eigenen Render-Abschnitt — renderer.info, die
+ *                              Speicher-Karte je Werk-Puffer und die Zeitstempel des Abschnitts (studios.K3); VRAM und GPU-ms
+ *                              gegen ihren Anteil am Profi-Band. Ein meshfreies Klang-Studio reicht seinen Kern (`opt.klang`):
+ *                              die Audio-Graph-ms seines Umwelt-Graphen je Ort.
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
@@ -37,6 +40,8 @@
     "use strict";
     if (wurzel.AnazhHuelle) return;
     var doc = wurzel.document;
+    // der Ort dieses Skripts (Studio-Shell wie Welt-Werkstatt): von ihm aus liegt das Profi-Band (`band`, die Kosten-Leiste)
+    var HIER = doc && doc.currentScript ? doc.currentScript.src : null;
 
     function el(tag, klasse, text) {
         var e = doc.createElement(tag);
@@ -665,7 +670,8 @@
     // ── DIE KOSTEN-LEISTE je LOD-Stufe ──
     // opt: budget (lod.budget[kind] des Kerns) · stufen (kindStages[kind]) · bauen(stufe) → Object3D der Welt-Gestalt
     //      (buildInstance des Kerns) · titel · quelle (Text: woran gemessen) · meshfrei (Text: keine Gestalt, Vertrag §8) ·
-    //      renderer (der Renderer des Studios oder eine Funktion, die ihn reicht — die Gegenzahl `zeichne`)
+    //      renderer (der Renderer des Studios oder eine Funktion, die ihn reicht — die Gegenzahl `zeichne`) · klang (der Kern
+    //      eines meshfreien Klang-Studios — `klangKosten`)
     // Was eine Stufe zählt, ist das EINE Budget-Gesetz des Kerns (phyto-core budgetSippen/budgetWurf): ein Wurf-Teil (sein Stoff
     // zeichnet nicht, `visible: false` — er zeichnet nur in den Kaskaden) zählt nie zur Bild-Stufe; eine NUR-WURF-Stufe (`wurf`)
     // zählt ihre Werfer.
@@ -675,24 +681,61 @@
             return m && m.visible !== false;
         });
     }
-    function zaehle(obj, wurf) {
+    // DIE PUFFER, die ein Mesh zur GPU trägt (je(attribut, puffer)): jedes Attribut (verschränkt: sein Puffer), die
+    // Morph-Attribute, der Index, die Instanz-Attribute; ihre Bytes nach der Regel der r184-Speicher-Karte (Info
+    // `_getAttributeMemorySize`: das Feld, sonst count × itemSize × 4). `breit` (r184 WebGPU): das Gerät weitet jedes nicht
+    // normierte 8/16-Bit-Feld, den Index eingeschlossen, auf 32 Bit (WebGPUAttributeUtils.createAttribute, `r.array = o`) —
+    // die Leiste zählt, was die GPU hält, nicht was der Kern backt.
+    function puffer(o, je) {
+        var g = o.geometry,
+            a = [g.index, o.instanceMatrix, o.instanceColor];
+        for (var k in g.attributes) a.push(g.attributes[k]);
+        for (var m in g.morphAttributes) a = a.concat(g.morphAttributes[m]);
+        a.forEach(function (x) {
+            if (x) je(x, x.isInterleavedBufferAttribute ? x.data : x);
+        });
+    }
+    var SCHMAL = [Int8Array, Int16Array, Uint8Array, Uint16Array];
+    function bytes(p, x, breit) {
+        var a = p.array;
+        if (breit && a && !x.normalized && SCHMAL.indexOf(a.constructor) >= 0) return a.length * 4;
+        return a ? a.byteLength : p.count && p.itemSize ? p.count * p.itemSize * 4 : 0;
+    }
+    // was die Stufe zeichnet: ein sichtbares Mesh (jeder Ahne sichtbar) mit einem Stoff der Stufe — Zählung und Speicher lesen dasselbe
+    function zurStufeGezeigt(o, wurf) {
+        for (var p = o; p; p = p.parent) if (p.visible === false) return false;
+        return o.isMesh && !!o.geometry && zurStufe(o, wurf);
+    }
+    function zaehle(obj, wurf, breit) {
         var tris = 0;
         var stoffe = {};
         var nStoffe = 0;
         var meshes = 0;
         var werfer = 0;
-        if (!obj || !obj.traverse) return { tris: 0, stoffe: 0, meshes: 0, werfer: 0 };
+        var befehle = 0;
+        var vram = 0;
+        var gesehen = new Set();
+        if (!obj || !obj.traverse) return { tris: 0, stoffe: 0, meshes: 0, werfer: 0, befehle: 0, vram: 0 };
         obj.traverse(function (o) {
-            if (!o.isMesh || !o.geometry || !zurStufe(o, wurf)) return;
-            var vis = true;
-            for (var p = o; p; p = p.parent) if (p.visible === false) vis = false;
-            if (!vis) return;
+            if (!zurStufeGezeigt(o, wurf)) return;
             var g = o.geometry;
             var n = g.index ? g.index.count / 3 : g.attributes && g.attributes.position ? g.attributes.position.count / 3 : 0;
             if (o.isInstancedMesh) n *= o.count;
             tris += n;
             meshes++;
             if (o.castShadow) werfer++;
+            // die Befehle wie projectObject sie stellt: ein Stoff-Feld zeichnet je Gruppe mit sichtbarem Stoff (die Wurf-Stufe
+            // zeichnet jeden), sonst EIN Befehl
+            befehle += Array.isArray(o.material)
+                ? (g.groups || []).filter(function (gr) {
+                      var m = o.material[gr.materialIndex];
+                      return m && (wurf || m.visible !== false);
+                  }).length
+                : 1;
+            puffer(o, function (x, b) {
+                if (!gesehen.has(b)) vram += bytes(b, x, breit);
+                gesehen.add(b);
+            });
             (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
                 if (m && !stoffe[m.uuid]) {
                     stoffe[m.uuid] = 1;
@@ -700,7 +743,7 @@
                 }
             });
         });
-        return { tris: Math.round(tris), stoffe: nStoffe, meshes: meshes, werfer: werfer };
+        return { tris: Math.round(tris), stoffe: nStoffe, meshes: meshes, werfer: werfer, befehle: befehle, vram: vram };
     }
     // DIE GEGENZAHL (studios.K3): das Werk ALLEIN in EINEM eigenen Render des Studio-Renderers — nur seine Meshes in einer
     // eigenen Szene (die Kamera sieht Ebene 30, Lichter bleiben draußen, also kein Schatten-Pass), ungekappt (frustumCulled
@@ -710,8 +753,174 @@
     // Geometrie frei, sonst hielte der Renderer jede Mess-Gestalt (Lehre 27). Eine NUR-WURF-Stufe (`wurf`) zeichnet wie ihre
     // Kaskade: nur die Werfer, ihr Stoff im Abschnitt sichtbar (der Kaskaden-Stoff des Wirts zeichnet ihn). null = kein
     // Renderer, (r184) noch nicht bereit oder gestört.
+    // DER SPEICHER (`vram`): je Werk-Puffer, was der Renderer nach dem Abschnitt für ihn hält — r184 seine Speicher-Karte
+    // (`info.memoryMap`, je Attribut). r184 lädt nur, was das Programm liest (`RenderObject.getAttributes`): der Zähl-Stoff liest
+    // dort jedes Attribut der Geometrie (× 0), das Werk reist ganz, wie unter r128 (WebGLGeometries.update lädt jedes
+    // Attribut). r128 führt keine Karte — die Hülle führt sie am GL-Kontext (`glKarte`). DIE GPU-ZEIT (`zeit`, ein Versprechen):
+    // die Zeitstempel des Abschnitts (`gpuUhr`); auf `?bank=n` dazu die Bank-Runde von `werkbank gpu-bank`
+    // (scripts/lib/zerlege-linse.cjs `bankRunde`: n Render hintereinander, dann auf die GPU warten — Gesamtzeit / n gegen die CPU
+    // je Render), 3 warme, 3 Runden, je Größe der Median; die GPU-ms sind dann der Median der Stempel derselben Render.
     var ZAEHL_EBENE = 30,
-        zaehlMittel = null;
+        zaehlMittel = null,
+        glKarten = new WeakMap(),
+        BANK = +((wurzel.location && /[?&]bank=(\d+)/.exec(wurzel.location.search)) || [])[1] || 0;
+    // der Zähl-Stoff: r128 lädt ohnehin jedes Attribut; unter r184 liest er jedes Attribut der Geometrie (TSL, je Signatur ein Programm)
+    function zaehlStoff(T, gpu) {
+        if (!gpu) return new T.MeshBasicMaterial();
+        var L = T.TSL,
+            m = new T.MeshBasicNodeMaterial();
+        m.positionNode = L.Fn(function (b) {
+            return Object.keys(b.geometry.attributes).reduce(function (p, n) {
+                return n === "position" ? p : p.add(L.attribute(n, "float").mul(0));
+            }, L.positionLocal);
+        })();
+        return m;
+    }
+    // DIE SPEICHER-KARTE des r128-Kontexts (Feld → Bytes): jedes bufferData trägt das Feld des Attributs (WebGLAttributes
+    // createBuffer), ein neues bufferData auf denselben Puffer und deleteBuffer nehmen es — einmal je Kontext gesetzt.
+    function glKarte(R) {
+        var gl = R.getContext && R.getContext();
+        if (!gl || !gl.bufferData) return null;
+        if (glKarten.has(gl)) return glKarten.get(gl);
+        var K = new WeakMap(),
+            gebunden = {},
+            feldVon = new WeakMap(),
+            bind = gl.bindBuffer,
+            daten = gl.bufferData,
+            weg = gl.deleteBuffer;
+        gl.bindBuffer = function (ziel, b) {
+            gebunden[ziel] = b;
+            return bind.apply(this, arguments);
+        };
+        gl.bufferData = function (ziel, f) {
+            var b = gebunden[ziel];
+            if (b && feldVon.has(b)) K.delete(feldVon.get(b));
+            if (b && f && typeof f === "object" && f.byteLength != null) K.set(f, f.byteLength), feldVon.set(b, f);
+            return daten.apply(this, arguments);
+        };
+        gl.deleteBuffer = function (b) {
+            if (b && feldVon.has(b)) K.delete(feldVon.get(b));
+            return weg.apply(this, arguments);
+        };
+        glKarten.set(gl, K);
+        return K;
+    }
+    // DIE UHR des Abschnitts: an() vor, ab() nach einem Render des Abschnitts (→ seine Marke), lesen(marken) → je Marke die ms
+    // (null = verloren). r184: der EINE Zeitstempel-Pool des Renderers (WebGPUTimestampQueryPool), nur für die Render des
+    // Abschnitts eingeschaltet (`backend.trackTimestamp`, das Gerät trägt timestamp-query) — die Marke sind die Schlüssel, die
+    // sie in den Pool legen; r184 löst den Pool je Auflösen ganz und hält jeden Stempel in `timestamps` (die Hülle nimmt ihre
+    // heraus), ein Auflösen, das vor dem Render lief, deckt sie nicht: höchstens sechs Züge. r128: EXT_disjoint_timer_query_webgl2
+    // (TIME_ELAPSED), das Ergebnis frühestens nach der Rückkehr in die Ereignis-Schleife, ein Bruch (GPU_DISJOINT) verwirft es.
+    // Ohne Uhr: der Grund als Text.
+    function gpuUhr(R, gpu) {
+        var vor = null,
+            war = false,
+            be = R.backend,
+            pool = function () {
+                return be.timestampQueryPool && be.timestampQueryPool.render;
+            };
+        if (gpu)
+            return !be || !R.hasFeature("timestamp-query")
+                ? "keine Zeitstempel (das Gerät trägt kein timestamp-query)"
+                : {
+                      an: function () {
+                          vor = new Set(pool() ? pool().queryOffsets.keys() : []);
+                          war = be.trackTimestamp;
+                          be.trackTimestamp = true;
+                      },
+                      ab: function () {
+                          be.trackTimestamp = war;
+                          return pool() ? Array.from(pool().queryOffsets.keys()).filter((k) => !vor.has(k)) : [];
+                      },
+                      lesen: function (marken) {
+                          var p = pool(),
+                              alle = [].concat.apply([], marken);
+                          var zug = function (i) {
+                              be.trackTimestamp = true;
+                              var w = R.resolveTimestampsAsync("render");
+                              be.trackTimestamp = war;
+                              // ein Auflösen im Flug (eines anderen Lesers) trägt die Stempel vielleicht schon: auch auf es warten
+                              return Promise.all([w, p.pendingResolve]).then(function () {
+                                  var fehlt = (u) => !p.timestamps.has(u);
+                                  if (i < 5 && alle.some(fehlt)) return zug(i + 1);
+                                  var ms = marken.map((m) => (m.length && !m.some(fehlt) ? m.reduce((s, u) => s + p.timestamps.get(u), 0) : null));
+                                  alle.forEach((u) => p.timestamps.delete(u));
+                                  return ms;
+                              });
+                          };
+                          return p ? zug(0) : Promise.resolve(marken.map(() => null));
+                      },
+                  };
+        var gl = R.getContext && R.getContext(),
+            ext = gl && typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext && gl.getExtension("EXT_disjoint_timer_query_webgl2");
+        if (!ext) return "keine Zeitstempel (der Kontext trägt kein EXT_disjoint_timer_query_webgl2)";
+        return {
+            an: function () {
+                vor = gl.createQuery();
+                gl.beginQuery(ext.TIME_ELAPSED_EXT, vor);
+            },
+            ab: function () {
+                gl.endQuery(ext.TIME_ELAPSED_EXT);
+                return vor;
+            },
+            lesen: function (marken) {
+                return Promise.all(
+                    marken.map(function (q) {
+                        return new Promise(function (fertig) {
+                            var n = 0;
+                            (function frage() {
+                                if (!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE) && n++ < 500) return setTimeout(frage, 4);
+                                fertig(n <= 500 && !gl.getParameter(ext.GPU_DISJOINT_EXT) ? gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6 : null);
+                                gl.deleteQuery(q);
+                            })();
+                        });
+                    })
+                );
+            },
+        };
+    }
+    // DIE BANK-RUNDE — die EINE Messung von `werkbank gpu-bank`, `zerlegen` (scripts/lib/zerlege-linse.cjs) und der Bank der
+    // Kosten-Leiste: n Bilder (`bild()`, im Rahmen `um`) direkt hintereinander, ohne rAF und VSync, dann auf die GPU warten
+    // (`warte`, sonst die Schlange des r184-Geräts). Liegt die GPU je Bild über der CPU, ist Gesamtzeit / n die reine GPU-Zeit je
+    // Bild (alle n in EINER Aufgabe: die Leinwand präsentiert erst danach — das Präsentieren steht nicht in der Bank). DIE STEMPEL:
+    // wer den Zeitstempel-Pool je Bild auflöst (der Spiel-Loop, `_perfGpuResolveKick`), löst ihn in der Bank nicht — sie leert ihn
+    // vor und nach den Bildern, außerhalb der Spanne (r184 setzt ihn nur beim Auflösen zurück, `__stempelWache`); ein Auflösen, das
+    // schon läuft, deckt die Abfragen danach nicht: höchstens drei Züge.
+    function bankRunde(R, n, bild, warte, um) {
+        var t0 = 0,
+            tAb = 0,
+            cpu = 0,
+            stempelAuf = function (i) {
+                var be = R.backend,
+                    pool = be && be.trackTimestamp === true && be.timestampQueryPool.render;
+                if (pool && i < 3 && pool.currentQueryIndex > 0) return R.resolveTimestampsAsync("render").then(() => stempelAuf(i + 1));
+            },
+            leer = function () {
+                return Promise.resolve(warte ? warte() : R.backend.device.queue.onSubmittedWorkDone());
+            };
+        return leer()
+            .then(() => stempelAuf(0))
+            .then(function () {
+                (um || ((f) => f()))(function () {
+                    t0 = performance.now();
+                    for (var i = 0; i < n; i++) {
+                        var c0 = performance.now();
+                        bild();
+                        cpu += performance.now() - c0;
+                    }
+                    tAb = performance.now();
+                });
+                return leer();
+            })
+            .then(function () {
+                var t1 = performance.now();
+                return Promise.resolve(stempelAuf(0)).then(() => ({ jeFrame: (t1 - t0) / n, cpuJeFrame: cpu / n, nachlauf: t1 - tAb }));
+            });
+    }
+    var median = function (a) {
+        a = a.slice().sort((x, y) => x - y);
+        return a[Math.floor(a.length / 2)];
+    };
     function zeichne(R, obj, wegwerf, wurf) {
         var T = wurzel.THREE;
         if (!R || !R.info || !T || !obj || !obj.traverse || R.initialized === false) return null;
@@ -719,8 +928,9 @@
         if (!zaehlMittel || zaehlMittel.R !== R) {
             var kam = new T.PerspectiveCamera();
             kam.layers.set(ZAEHL_EBENE);
-            zaehlMittel = { R: R, ziel: new (gpu ? T.RenderTarget : T.WebGLRenderTarget)(1, 1), kamera: kam, stoff: new T.MeshBasicMaterial() };
+            zaehlMittel = { R: R, ziel: new (gpu ? T.RenderTarget : T.WebGLRenderTarget)(1, 1), kamera: kam, stoff: zaehlStoff(T, gpu), uhr: gpuUhr(R, gpu) };
         }
+        var karte = gpu ? R.info.memoryMap : glKarte(R);
         // das Werk ist die Gestalt ABSEITS der Szene (frisch gebaut oder gezählt, bevor sie die Bühne betritt): was unter einer
         // Scene hängt, ist Bühne und zeichnet hier nicht — eine Leiste, die die Bühne mitzählt, steht ohne Gegenzahl
         var alle = [],
@@ -742,63 +952,236 @@
                     if (m && stoffe.indexOf(m) < 0) stoffe.push(m);
                 });
             });
-        var stoffSicht = stoffe.map(function (m) {
-            var v = m.visible;
-            m.visible = true;
-            return v;
-        });
-        var alt = werk.map(function (o) {
-            var a = [o.layers.mask, o.frustumCulled];
-            o.layers.enable(ZAEHL_EBENE);
-            o.frustumCulled = false;
-            return a;
-        });
         var info = R.info,
             r = info.render,
-            auto = info.autoReset,
-            vorZiel = R.getRenderTarget(),
             draws = gpu ? "drawCalls" : "calls",
             stempel = function () {
                 return gpu ? info.calls : r.frame;
-            };
-        var c = { tris: 0, befehle: 0 },
-            gueltig = true;
-        info.autoReset = false;
-        R.setRenderTarget(zaehlMittel.ziel);
-        try {
-            wurzeln.forEach(function (w) {
-                var szene = new T.Scene();
-                szene.overrideMaterial = zaehlMittel.stoff;
-                szene.add(w);
-                var s0 = stempel(),
-                    t0 = r.triangles,
-                    d0 = r[draws];
-                try {
-                    R.render(szene, zaehlMittel.kamera);
-                } finally {
-                    szene.remove(w);
-                }
-                c.tris += r.triangles - t0;
-                c.befehle += r[draws] - d0;
-                if (stempel() !== s0 + (gpu ? 1 : 0)) gueltig = false;
+            },
+            uhr = werk.length && typeof zaehlMittel.uhr === "object" ? zaehlMittel.uhr : null,
+            marken = [],
+            szenen = wurzeln.map(function () {
+                var s = new T.Scene();
+                s.overrideMaterial = zaehlMittel.stoff;
+                return s;
             });
-        } finally {
-            R.setRenderTarget(vorZiel);
-            info.autoReset = auto;
-            werk.forEach(function (o, i) {
-                o.layers.mask = alt[i][0];
-                o.frustumCulled = alt[i][1];
+        // der Abschnitt (fn darin): das Werk auf der Zähl-Ebene, ungekappt, (Wurf) seine Stoffe sichtbar, ins 1×1-Ziel — danach
+        // steht alles wie davor; rund(): je Wurzel EIN Render, mit Uhr (jeder Render des Abschnitts zieht seine eigenen Stempel)
+        function abschnitt(fn) {
+            var stoffSicht = stoffe.map(function (m) {
+                var v = m.visible;
+                m.visible = true;
+                return v;
             });
-            stoffe.forEach(function (m, i) {
-                m.visible = stoffSicht[i];
+            var alt = werk.map(function (o) {
+                var a = [o.layers.mask, o.frustumCulled];
+                o.layers.enable(ZAEHL_EBENE);
+                o.frustumCulled = false;
+                return a;
             });
+            var auto = info.autoReset,
+                vorZiel = R.getRenderTarget();
+            info.autoReset = false;
+            R.setRenderTarget(zaehlMittel.ziel);
+            try {
+                return fn();
+            } finally {
+                R.setRenderTarget(vorZiel);
+                info.autoReset = auto;
+                werk.forEach(function (o, i) {
+                    o.layers.mask = alt[i][0];
+                    o.frustumCulled = alt[i][1];
+                });
+                stoffe.forEach(function (m, i) {
+                    m.visible = stoffSicht[i];
+                });
+            }
         }
-        if (wegwerf)
-            alle.forEach(function (o) {
-                if (o.geometry) o.geometry.dispose();
+        function rund() {
+            var c = { tris: 0, befehle: 0, gueltig: true };
+            if (uhr) uhr.an();
+            try {
+                wurzeln.forEach(function (w, i) {
+                    var s0 = stempel(),
+                        t0 = r.triangles,
+                        d0 = r[draws];
+                    szenen[i].add(w);
+                    try {
+                        R.render(szenen[i], zaehlMittel.kamera);
+                    } finally {
+                        szenen[i].remove(w);
+                    }
+                    c.tris += r.triangles - t0;
+                    c.befehle += r[draws] - d0;
+                    if (stempel() !== s0 + (gpu ? 1 : 0)) c.gueltig = false;
+                });
+            } finally {
+                if (uhr) marken.push(uhr.ab());
+            }
+            return c;
+        }
+        var c = abschnitt(rund),
+            gesehen = new Set();
+        c.vram = 0;
+        werk.forEach(function (o) {
+            if (!zurStufeGezeigt(o, wurf)) return;
+            puffer(o, function (x, b) {
+                var k = gpu ? x : b.array;
+                if (k && !gesehen.has(k)) c.vram += (gpu ? (karte.get(x) || {}).size : karte && karte.get(k)) || 0;
+                gesehen.add(k);
             });
+        });
+        var los = function () {
+            if (wegwerf)
+                alle.forEach(function (o) {
+                    if (o.geometry) o.geometry.dispose();
+                });
+        };
         c.tris = Math.round(c.tris);
-        return gueltig ? c : null;
+        var gueltig = c.gueltig;
+        delete c.gueltig;
+        if (!gueltig || !uhr) {
+            if (gueltig) c.zeitFehlt = werk.length ? zaehlMittel.uhr : "kein Werk abseits der Szene";
+            return los(), gueltig ? c : null;
+        }
+        // die Bank (auf `?bank=n`): die EINE Bank-Runde über den Abschnitt, k < 0 die warme (3 Render), dann 3 Runden; r128 wartet
+        // am Lesen eines Pixels des Zähl-Ziels
+        var warte = gpu
+                ? null
+                : function () {
+                      R.readRenderTargetPixels(zaehlMittel.ziel, 0, 0, 1, 1, new Uint8Array(4));
+                  },
+            runden = [];
+        var runde = function (k) {
+            return bankRunde(R, k < 0 ? 3 : BANK, rund, warte, abschnitt).then(function (b) {
+                if (k >= 0) runden.push(b);
+                return k < 2 ? runde(k + 1) : null;
+            });
+        };
+        c.zeit = (BANK ? runde(-1) : Promise.resolve())
+            .then(function () {
+                return uhr.lesen(marken);
+            })
+            .then(function (ms) {
+                var z = {};
+                if (BANK) {
+                    ms = ms.slice(ms.length - 3 * BANK);
+                    z.bank = median(runden.map((x) => x.jeFrame));
+                    z.bankCpu = median(runden.map((x) => x.cpuJeFrame));
+                }
+                if (ms.indexOf(null) >= 0) z.zeitFehlt = "Zeitstempel verloren (" + ms.filter((x) => x == null).length + " von " + ms.length + ")";
+                else z.ms = median(ms);
+                return z;
+            })
+            .finally(los);
+        return c;
+    }
+    // DER DECKEL je Größe (studios.K3#2): das Profi-Band (spec/profiband/haushalt.json `band`, seine EINE Quelle) teilt seine
+    // Kosten nach dem Anteil der Welt-Zeile — das VRAM nach den Dreiecken (tris/dreiecke × vramMB, MB = 2^20 Bytes wie der
+    // VRAM-Abgriff), die GPU-Zeit nach dem größeren Anteil an Dreiecken und Befehlen (jeder Befehl kostet die GPU, auch ohne
+    // Fläche: eine Stufe mit 2 Dreiecken trägt 1 von 208 Befehlen).
+    var band = null;
+    function bandDeckel(tris, befehle) {
+        if (!band)
+            band = fetch(new URL("../../spec/profiband/haushalt.json", HIER))
+                .then(function (a) {
+                    return a.json();
+                })
+                .then(function (h) {
+                    if (!(h.band && h.band.dreiecke > 0)) throw new Error("haushalt.json ohne band");
+                    return h.band;
+                });
+        return band.then(function (b) {
+            return { vram: Math.round((tris / b.dreiecke) * b.vramMB * 1048576), ms: Math.max(tris / b.dreiecke, (befehle || 0) / b.befehle) * b.gpuMs };
+        });
+    }
+    // DAS URTEIL einer Zeile (die Leiste färbt und benennt nach ihm, gate:studio-huelle H8 liest dasselbe): je Größe [Name,
+    // gezählt, Gegenzahl, Deckel] (null: ohne) — die Gegenzahl ±5 %, der Deckel; mit `gpu` die GPU-ms gegen ihren Deckel und, wo die
+    // Bank stand oder gefordert ist (`bank`), gegen die Bank: eine Gegenzahl nur GPU-gebunden (gpu-bank: über × 1,15); der Klang je
+    // Ort gegen das Quantum. Rückgabe: die Täter beim Namen („L0 VRAM 900000 ↔ 300000“).
+    var abw = function (a, b) {
+        return !(Math.abs(a / b - 1) <= 0.05);
+    };
+    function zeileUrteil(k, gpu, bank) {
+        var rot = [],
+            gebunden = +k.bank > 1.15 * k.bankCpu ? k.bank : "Bank " + k.bank + " CPU-gebunden",
+            reihe = k.audio
+                ? [["Audio-ms", k.audio, null, k.audioDeckel]]
+                : [["△", k.leiste, k.gezeichnet, k.deckel], ["Befehle", k.befehle, k.befehleGezeichnet, null], ["VRAM", k.vram, k.vramGpu, k.vramDeckel]];
+        if (gpu && !k.audio) reihe.push(["GPU-ms", k.ms, bank || k.bank != null ? gebunden : null, k.msDeckel]);
+        reihe.forEach(function (r) {
+            var wo = (k.audio ? "" : "L") + k.stufe + " " + r[0] + " " + r[1];
+            if (r[2] !== null && abw(r[1], r[2])) rot.push(wo + " ↔ " + r[2]);
+            if (r[3] !== null && !(+r[1] <= +r[3])) rot.push(wo + " über dem Deckel " + r[3]);
+        });
+        return rot;
+    }
+    var MB = function (b) {
+        return (b / 1048576).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " MB";
+    };
+    var MS = function (v) {
+        return v.toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " ms";
+    };
+    // DER KLANG (meshfrei): der EINE Umwelt-Graph des Kerns (umweltGraph — Lab, Welt und Linse bauen ihn gleich) je Ort des
+    // Gesetzes (UMWELT.orte) offline gerechnet, 2 s bei 48 kHz: die Audio-Graph-ms je Quantum (128 Proben) = die Wanduhr des
+    // Renderns / die Quanten, gegen den Echtzeit-Deckel des Quantums (128 / 48 000 s — mehr, und der Graph reißt). Jede hörbare
+    // Stimme liegt vor dem Rendern bereit (ihre Texturen rechnet der Kern einmal je Seite, umweltPaket, außerhalb der Uhr) —
+    // der Graph trägt, was das Gesetz am Ort klingen lässt (Stimmen-Deckel).
+    var QUANT = 128,
+        KLANG_SR = 48000,
+        KLANG_S = 2;
+    function klangKosten(box, K) {
+        var U = K.UMWELT,
+            pakete = {},
+            deckel = (QUANT / KLANG_SR) * 1000;
+        var zeilen = Object.keys(U.orte).map(function (ort) {
+            var z = el("div", "h-kosten-zeile"),
+                kopf = el("div", "h-kosten-kopf"),
+                txt = el("span", "h-kosten-text", "…");
+            kopf.appendChild(el("span", "h-kosten-stufe", ort));
+            kopf.appendChild(txt);
+            z.appendChild(kopf);
+            box.appendChild(z);
+            return { z: z, txt: txt, ort: ort };
+        });
+        var i = 0;
+        (function naechster() {
+            var zz = zeilen[i++];
+            if (!zz) return;
+            var weiter = function () {
+                if (wurzel.requestIdleCallback) wurzel.requestIdleCallback(naechster, { timeout: 800 });
+                else setTimeout(naechster, 30);
+            };
+            try {
+                var ctx = new wurzel.OfflineAudioContext(2, KLANG_SR * KLANG_S, KLANG_SR),
+                    aus = ctx.createGain(),
+                    mix = K.umweltMischung(U.orte[zz.ort]),
+                    graph = K.umweltGraph(ctx, aus);
+                aus.connect(ctx.destination);
+                for (var n in mix) if (mix[n] && mix[n].db >= U.hoerschwelleDb) graph.aufnehmen(pakete[n] || (pakete[n] = K.umweltPaket(n)));
+                graph.anwenden(mix, 0);
+                var stimmen = graph.zensus().filter((v) => v.an).length,
+                    t0 = performance.now();
+                ctx.startRendering()
+                    .then(function () {
+                        var ms = (performance.now() - t0) / ((KLANG_SR * KLANG_S) / QUANT);
+                        Object.assign(zz.z.dataset, { stufe: zz.ort, audio: ms.toFixed(4), audioDeckel: deckel.toFixed(4), stimmen: stimmen, fertig: 1 });
+                        zz.z.className = "h-kosten-zeile " + (ms > deckel ? "fail" : "pass");
+                        zz.txt.textContent = "Audio-Graph " + MS(ms) + " / " + MS(deckel) + " je Quantum · " + stimmen + " Stimmen";
+                    })
+                    .catch(function (e) {
+                        zz.z.dataset.audioFehlt = zz.txt.textContent = "Klang-Fehler: " + ((e && e.message) || e);
+                        zz.z.dataset.fertig = 1;
+                        zz.z.className = "h-kosten-zeile fail";
+                    })
+                    .then(weiter);
+            } catch (e) {
+                zz.z.dataset.audioFehlt = zz.txt.textContent = "Klang-Fehler: " + ((e && e.message) || e);
+                zz.z.dataset.fertig = 1;
+                zz.z.className = "h-kosten-zeile fail";
+                weiter();
+            }
+        })();
     }
     function kosten(ziel, opt) {
         opt = opt || {};
@@ -814,7 +1197,8 @@
         var zeilen = {};
         var quelle = el("div", "h-kosten-quelle", opt.meshfrei || opt.quelle || "");
         if (opt.meshfrei) {
-            box.appendChild(el("div", "h-kosten-zeile pass", "meshfrei · 0 Dreiecke"));
+            box.appendChild(el("div", "h-kosten-kopf", "meshfrei · 0 Dreiecke"));
+            if (opt.klang) klangKosten(box, opt.klang);
             box.appendChild(quelle);
             if (ziel) ziel.appendChild(box);
             return { el: box, neu: function () {}, messen: function () {}, stand: function () {
@@ -835,7 +1219,7 @@
             z.appendChild(kopf);
             z.appendChild(bahn);
             box.appendChild(z);
-            zeilen[s] = { z: z, txt: txt, balken: balken, band: bandMarke, gemessen: null };
+            zeilen[s] = { z: z, txt: txt, balken: balken, band: bandMarke, gemessen: null, lauf: 0 };
         });
         box.appendChild(quelle);
         if (ziel) ziel.appendChild(box);
@@ -843,35 +1227,95 @@
         var R = function () {
             return typeof opt.renderer === "function" ? opt.renderer() : opt.renderer;
         };
+        // die Speicher-Karte des r128-Kontexts steht, bevor das erste Werk hochlädt
+        if (R() && !R().isWebGPURenderer) glKarte(R());
+        var breit = function () {
+            return !!(R() && R().isWebGPURenderer);
+        };
         var wurfStufe = function (s) {
             return !!(budget[s] && budget[s].nurWurf);
         };
-        // g: die Gegenzahl aus dem Zähl-Abschnitt ({ tris, befehle }) — ohne sie bleibt die Befehls-Spalte die Budget-Zeile
-        function zeigen(s, c, g) {
-            var zz = zeilen[s];
-            var b = budget[s];
-            if (!zz || !b) return;
-            if (g) c.gezeichnet = g;
-            stand[s] = c;
-            // die Zahlen der Zeile für ihre Leser (gate:studio-huelle H4, H7): Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet
-            Object.assign(zz.z.dataset, { stufe: s, leiste: c.tris, deckel: b.tris || 0 }, g ? { gezeichnet: g.tris } : {});
+        // die Zeile aus dem, was steht: c gezählt, c.gezeichnet die Gegenzahl aus dem Zähl-Abschnitt (ohne sie bleibt die
+        // Befehls-Spalte die Budget-Zeile), zz.deckel die Band-Deckel — für ihre Leser (gate:studio-huelle H4, H7, H8) im dataset
+        function schreibe(s) {
+            var zz = zeilen[s],
+                b = budget[s],
+                c = zz.c,
+                g = c.gezeichnet,
+                d = zz.deckel || {};
             var deckel = b.tris || 1;
             var anteil = Math.min(1, c.tris / deckel);
+            g = g || {};
+            var daten = { stufe: s, leiste: c.tris, deckel: b.tris || 0, befehle: c.befehle, vram: c.vram, gezeichnet: g.tris, befehleGezeichnet: g.befehle };
+            Object.assign(daten, { vramGpu: g.vram, vramDeckel: d.vram, msDeckel: d.ms, deckelFehlt: d.fehlt, ms: g.ms, zeitFehlt: g.zeitFehlt, bank: g.bank, bankCpu: g.bankCpu });
+            // fertig: die Gegenzahl, die Zeit (oder ihr Grund) und die Deckel (oder ihr Grund) stehen — der Gang liest erst dann
+            daten.fertig = g.tris != null && (g.ms != null || g.zeitFehlt) && (d.vram != null || d.fehlt) ? 1 : null;
+            Object.keys(daten).forEach(function (k) {
+                var v = daten[k];
+                if (v != null) zz.z.dataset[k] = typeof v === "number" ? +v.toFixed(4) : v;
+                else delete zz.z.dataset[k];
+            });
+            g = c.gezeichnet;
             zz.balken.style.width = (anteil * 100).toFixed(1) + "%";
             if (b.band) {
                 zz.band.style.left = ((b.band / deckel) * 100).toFixed(1) + "%";
                 zz.band.style.display = "";
             } else zz.band.style.display = "none";
-            var klasse = c.tris > deckel ? "fail" : b.band && c.tris > b.band ? "warn" : "pass";
+            // die fertige Zeile urteilt ganz (dasselbe Urteil wie der Gang), die werdende (und die Werkstatt ohne Gegenzahl) am Deckel
+            var urteil = daten.fertig ? zeileUrteil(daten, daten.ms != null) : c.tris > deckel ? ["L" + s + " △ " + c.tris + " über dem Deckel " + deckel] : [];
+            var klasse = urteil.length ? "fail" : b.band && c.tris > b.band ? "warn" : "pass";
             zz.z.className = "h-kosten-zeile " + klasse;
             var t = c.tris.toLocaleString("de-DE") + " / " + deckel.toLocaleString("de-DE") + " △";
             if (b.band) t += " · Band ×" + (c.tris / b.band).toFixed(2);
-            if (g) t += " · gezeichnet " + g.tris.toLocaleString("de-DE") + " △ in " + g.befehle + " Befehlen (Zeile " + (b.draws || "–") + ") · " + c.stoffe + " Stoffe";
-            else t += " · " + c.stoffe + " Stoffe / " + (b.draws || "–") + " Befehle";
+            var gezaehlt = c.befehle != null ? "gezählt " + c.befehle + ", " : "";
+            if (g) t += " · gezeichnet " + g.tris.toLocaleString("de-DE") + " △ in " + g.befehle + " Befehlen (" + gezaehlt + "Zeile " + (b.draws || "–") + ")";
+            else t += " · " + gezaehlt + (b.draws || "–") + " Befehle der Zeile";
+            if (c.vram != null) t += " · VRAM " + MB(c.vram) + (g ? " (GPU " + MB(g.vram) + ")" : "") + (d.vram != null ? " / " + MB(d.vram) : "");
+            if (g && (g.ms != null || g.zeitFehlt))
+                t += " · GPU " + (g.ms != null ? MS(g.ms) + (d.ms != null ? " / " + MS(d.ms) : "") : "–: " + g.zeitFehlt) + (g.bank != null ? " (Bank " + MS(g.bank) + ", CPU " + MS(g.bankCpu) + ")" : "");
+            if (d.fehlt) t += " · Deckel: " + d.fehlt;
+            t += " · " + c.stoffe + " Stoffe";
+            if (urteil.length) t += " · ROT " + urteil.join(" · ");
             if (typeof b.schatten === "number") t += " · Wurf L" + b.schatten;
             zz.txt.textContent = t;
             zz.z.title =
                 "Stufe " + s + ": " + c.meshes + " Meshes (" + c.werfer + " werfen im Labor) · Budget-Zeile tris " + deckel + (b.band ? " · band " + b.band : "") + " · draws " + b.draws + " · Schatten-Stufe " + b.schatten;
+        }
+        function zeigen(s, c, g) {
+            var zz = zeilen[s];
+            var b = budget[s];
+            if (!zz || !b) return;
+            var zeit = g && g.zeit,
+                lauf = ++zz.lauf;
+            if (g) delete g.zeit;
+            if (g) c.gezeichnet = g;
+            stand[s] = zz.c = c;
+            schreibe(s);
+            var spaeter = function (fn) {
+                return function (x) {
+                    if (lauf !== zz.lauf) return;
+                    fn(x);
+                    schreibe(s);
+                };
+            };
+            if (zeit)
+                zeit.then(
+                    spaeter(function (z) {
+                        Object.assign(g, z);
+                    }),
+                    spaeter(function (e) {
+                        g.zeitFehlt = "Zeitstempel-Fehler: " + ((e && e.message) || e);
+                    })
+                );
+            if (!zz.deckel && b.tris)
+                bandDeckel(b.tris, b.draws).then(
+                    spaeter(function (d) {
+                        zz.deckel = d;
+                    }),
+                    spaeter(function (e) {
+                        zz.deckel = { fehlt: "Profi-Band nicht geladen (" + ((e && e.message) || e) + ")" };
+                    })
+                );
         }
         var uhr = null;
         var lauf = 0;
@@ -883,9 +1327,9 @@
             // die Labor-Gestalt der Stufe s direkt zählen (was der Schirm zeigt; wegwerf: eine Mess-Gestalt, die niemand zeigt)
             messen: function (obj, s, wegwerf) {
                 if (s == null) s = stufen[0];
-                zeigen(s, zaehle(obj, wurfStufe(s)), zeichne(R(), obj, !!wegwerf, wurfStufe(s)));
+                zeigen(s, zaehle(obj, wurfStufe(s), breit()), zeichne(R(), obj, !!wegwerf, wurfStufe(s)));
             },
-            // gezählte Kosten der Stufe s setzen ({ tris, stoffe, meshes, werfer }) — die Welt-Werkstatt zählt das Werk der Foundry
+            // gezählte Kosten der Stufe s setzen ({ tris, stoffe, meshes, werfer, befehle, vram }) — die Welt-Werkstatt zählt das Werk der Foundry
             setzen: function (s, c) {
                 zeigen(s, c);
             },
@@ -903,7 +1347,7 @@
                         var s = stufen[i++];
                         try {
                             var obj = opt.bauen(s);
-                            zeigen(s, zaehle(obj, wurfStufe(s)), zeichne(R(), obj, true, wurfStufe(s)));
+                            zeigen(s, zaehle(obj, wurfStufe(s), breit()), zeichne(R(), obj, true, wurfStufe(s)));
                         } catch (e) {
                             zeilen[s].txt.textContent = "Bau-Fehler: " + ((e && e.message) || e);
                             zeilen[s].z.className = "h-kosten-zeile fail";
@@ -1303,6 +1747,8 @@
         sitzung: sitzung,
         kosten: kosten,
         zaehle: zaehle,
+        zeileUrteil: zeileUrteil,
+        bankRunde: bankRunde,
         bruecke: bruecke,
         gang: function () {
             return gang;

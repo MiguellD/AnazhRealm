@@ -4448,8 +4448,9 @@ buildDnaUI();
 buildKeyboard();
 buildMixerUI();
 buildSessionUI();
-// Die Kosten-Leiste der Hülle: klang trägt keine Gestalt (MESHFREI, Studio-Vertrag §8) — sie steht und sagt es.
-AnazhHuelle.kosten(document.getElementById('kosten'), { meshfrei: 'klang ist meshfrei (Studio-Vertrag §8): keine Gestalt, kein Dreieck im Profi-Band — die Musik kostet Stimmen und Takt' });
+// Die Kosten-Leiste der Hülle: klang trägt keine Gestalt (MESHFREI, Studio-Vertrag §8) — sie sagt es und misst den Kern:
+// die Audio-Graph-ms seines Umwelt-Graphen je Ort (studios.K3#2).
+AnazhHuelle.kosten(document.getElementById('kosten'), { meshfrei: 'klang ist meshfrei (Studio-Vertrag §8): keine Gestalt, kein Dreieck im Profi-Band — der Klang kostet Audio-Graph-ms je Quantum', klang: KC });
 syncLawUI();
 syncDnaUI();
 document.querySelector('.presetBtn').classList.add('active');   // Blues als Default markieren
