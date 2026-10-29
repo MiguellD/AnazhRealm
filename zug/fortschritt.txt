@@ -915,3 +915,4 @@
 2026-10-29 22:58:00 z77-abab START 2 Zellen
 2026-10-29 23:17:14 z77-abab stadt VERLÄNGERN 19.2 · 1/2 (2+2)
 2026-10-29 23:31:07 z77-abab w-ego VERLÄNGERN 13.8 · 2/2 (2+2)
+2026-10-29 23:48:56 z77-abab stadt(4+4) nicht-langsamer 17.7 · verlängert (4+4)
