@@ -181,6 +181,26 @@ const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
+// DER STUDIO-KERN in Node: three-r128 (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
+// der Wurzel) → `globalThis[name]`; `frisch` lädt ihn neu (die Stoffe rechnen ihre Farbe beim ersten Bau). Bis zur Decke
+// w3s-sukzession lud jede Linse three und Kern in eigenen Zeilen (fünfzehn Mal).
+function studioKern(datei, name, frisch) {
+    global.THREE ||= require(path.join(ROOT, "worlds/terrain/lib/three-r128.min.js"));
+    if (frisch) delete require.cache[require.resolve(path.join(ROOT, datei))];
+    require(path.join(ROOT, datei));
+    return globalThis[name];
+}
+// DER SCOPE EINES FADENS in Node: ein frischer vm-Kontext wie im Foundry-Worker — `self` · `globalThis` · `window` sind das
+// globale Objekt, Math das des Gates (die Plattform-Probe erreicht so den Guss) — darin die `quellen` (Pfade ab der Wurzel, je
+// Prozess einmal gelesen) der Reihe nach. Bis zur Decke w3s-sukzession baute jede Linse ihn selbst (vier Mal).
+const QUELL_TEXT = {};
+function fadenScope(quellen) {
+    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
+    sb.self = sb.globalThis = sb.window = sb;
+    require("vm").createContext(sb);
+    for (const f of quellen) require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
+    return sb;
+}
 
 const MIME = {
     ".html": "text/html",
@@ -1105,6 +1125,72 @@ async function waitFor(page, fn, label, ...args) {
     return Date.now() - t0;
 }
 
+// DER BOOT, BIS DIE WELT STEHT (diag-pruefbuehne · diag-worker-dichte; der Null-Renderer: die Probe braucht Main und Worker,
+// kein Bild): nach dem Erwachen (`__weltDa`) Takte des Spiels, bis mehr als 4 Chunks stehen und der Worker den Worldgen-
+// Stand trägt — {ok, ms, seed}; am Deckel `name` (7,5 s) {ok: false}
+function booteWelt(page, name = "der Boot der Welt") {
+    return page.evaluate(async (name) => {
+        const start = performance.now();
+        await window.__weltDa();
+        for (const weiter = window.__deckel(name, 7500); weiter();) {
+            const r = window.anazhRealm;
+            if (r && typeof r._gameLoopTick === "function") {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch {
+                    /* der Boot reift */
+                }
+                const s = r.state;
+                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
+                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
+            }
+            await sleep(16);
+        }
+        return { ok: false };
+    }, name);
+}
+
+// ZWEI SEITEN IM MESH (smoke-webrtc · smoke-copresence): save- und signaling-server auf den eigenen Ports (`eigenePorte` der
+// Variablen portEnv, signalEnv), im Browser des Aufrufers (sein Rezept) die Seiten A und B (1024×640); beide laden das Spiel, bis init
+// durchlief (`_gameLoopTick`: init wartet auf den IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft —
+// ein Raum-Beitritt davor fiele in init hinein), `vor(seite, i)` läuft vor dem Beitritt (die Namen der Ko-Präsenz), dann
+// tritt jede demselben Raum bei (der roomOverride zwingt Seiten verschiedener worldId zusammen), bis beide `meshActive`
+// melden (alle Peer-Kanäle offen). Liefert {seiten, peerIds, ende}; `ende` schließt Browser und Server.
+async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {}) {
+    const [port, signal] = await eigenePorte(portEnv, signalEnv);
+    const env = { PORT: String(port), ANAZH_SIGNALING_PORT: String(signal) };
+    const server = [
+        await startProc("save-server.js", /läuft/, env),
+        await startProc("signaling-server.js", /lauscht/, env),
+    ];
+    const ende = async () => (await browser.close().catch(() => {}), server.forEach((p) => p.kill()));
+    try {
+        const [seiten, peerIds] = [[await browser.newPage(), await browser.newPage()], []];
+        for (const p of seiten) {
+            await p.setViewport({ width: 1024, height: 640 });
+            await p.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        }
+        for (const [i, p] of seiten.entries()) {
+            const r = () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function";
+            await waitFor(p, r, `Seite ${"AB"[i]} initialisiert`);
+            await vor(p, i);
+            const beitritt = (url, roomOverride) => {
+                const r = window.anazhRealm;
+                Object.assign(r.state.p2p, { url, roomOverride });
+                r.initP2PSync(null);
+                return r.state.p2p.peerId;
+            };
+            peerIds.push(await p.evaluate(beitritt, `ws://127.0.0.1:${signal}`, raum));
+        }
+        for (const [i, p] of seiten.entries())
+            await waitFor(p, () => window.anazhRealm.state.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
+        return { seiten, peerIds, ende };
+    } catch (e) {
+        await ende();
+        throw e;
+    }
+}
+
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
 // (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`; der REST
 // (spec/ci/frist-rest.json) schrumpft nur.
@@ -1199,6 +1285,8 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
 }
 
 module.exports = {
+    studioKern,
+    fadenScope,
     scanWarteWand,
     ROOT,
     MIME,
@@ -1227,6 +1315,8 @@ module.exports = {
     urteilEnde,
     argOpt,
     waitFor,
+    zweiImMesh,
+    booteWelt,
     werkbankTor,
     werkbankRuf,
     teilAus,

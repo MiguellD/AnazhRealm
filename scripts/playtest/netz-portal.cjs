@@ -1652,7 +1652,7 @@ async function checkBandW12WorldPortal(ctx) {
             name: "test_mark_ring",
             label: "TestMarkRing",
             builtIn: false,
-            parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
         };
         const ws = r._ensureWorkshopState();
         const savedSel = ws.selectedBlueprint;

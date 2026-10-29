@@ -3,7 +3,7 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { safeEvaluate } = require("../playtest.cjs");
 
 // die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
@@ -219,14 +219,11 @@ async function checkBandV1776WorkshopPrecision(ctx) {
 
         // (1) Substanz-Präzision: die dichte+harte Esse hält feinere Toleranzen als eine weiche Werkstatt
         const esseP = r._workshopStationPrecision(r.state.blueprints["esse"]);
-        // ein Ein-Würfel-Bauplan aus `material` (1 m, im Ursprung)
-        const wuerfel = (name, label, material) =>
-            (r.state.blueprints[name] = {
-                name,
-                label,
-                parts: [{ shape: "box", material, position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
-            });
-        wuerfel("wp_soft", "soft", "leder");
+        r.state.blueprints["wp_soft"] = {
+            name: "wp_soft",
+            label: "soft",
+            parts: [__teil("box", "leder", 0, 0, 0, 1, 1, 1)],
+        };
         const softP = r._workshopStationPrecision(r.state.blueprints["wp_soft"]);
         out.esseP = esseP;
         out.softP = softP;
@@ -243,7 +240,11 @@ async function checkBandV1776WorkshopPrecision(ctx) {
 
         // (3) KONSUM — applyOpToPart: ein forging-Werkzeug (schmiede-hammer, cap 0.75) NAH der Esse hebt
         //     den gepushten opChain-Cap über den Werkzeug-Cap (auf die Esse-Substanz, >0.8).
-        wuerfel("wp_work", "work", "eisen");
+        r.state.blueprints["wp_work"] = {
+            name: "wp_work",
+            label: "work",
+            parts: [__teil("box", "eisen", 0, 0, 0, 1, 1, 1)],
+        };
         if (!Array.isArray(p.tools)) p.tools = [];
         if (!p.tools.includes("schmiede-hammer")) p.tools.push("schmiede-hammer");
         const savedMode = r.getGameMode();
@@ -338,18 +339,24 @@ async function checkBandV1789WorkshopReadout(ctx) {
         const out = {};
         const prevMode = r.getGameMode();
         const blu = r.state.blueprints;
-        // ein Teil-Literal (Maß vor Lage): Form, Stoff, Maß x/y/z, Lage z — je Ruf ein frisches Objekt
-        const teilSL = (shape, material, sx, sy, sz, z) => ({
-            shape,
-            material,
-            size: { x: sx, y: sy, z: sz },
-            position: { x: 0, y: 0, z },
-        });
         const mkBlade = (name, mat) => {
             delete blu[name];
             blu[name] = {
                 name,
-                parts: [teilSL("octahedron", mat, 0.3, 0.3, 0.3, 0), teilSL("cone", mat, 0.2, 0.12, 1.4, 1.0)],
+                parts: [
+                    {
+                        shape: "octahedron",
+                        material: mat,
+                        size: { x: 0.3, y: 0.3, z: 0.3 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                    {
+                        shape: "cone",
+                        material: mat,
+                        size: { x: 0.2, y: 0.12, z: 1.4 },
+                        position: { x: 0, y: 0, z: 1.0 },
+                    },
+                ],
             };
             return blu[name];
         };
@@ -364,7 +371,12 @@ async function checkBandV1789WorkshopReadout(ctx) {
         // (2) FORM bewegt die Eignung: ein stumpfer Zylinder an der Klinge senkt die Waffen-Eignung
         const bladeFit = eisenAb ? eisenAb.fit : 0;
         const longer = mkBlade("_ab_long", "eisen");
-        longer.parts.push(teilSL("cylinder", "eisen", 0.3, 0.3, 1.2, -1.0));
+        longer.parts.push({
+            shape: "cylinder",
+            material: "eisen",
+            size: { x: 0.3, y: 0.3, z: 1.2 },
+            position: { x: 0, y: 0, z: -1.0 },
+        });
         const longAb = r._blueprintAbilityStats(longer);
         out.formMovesValues = !!longAb && Math.abs(longAb.fit - bladeFit) > 0.001;
         out.formVals = `klinge-Eignung=${bladeFit.toFixed(3)} +zylinder=${longAb ? longAb.fit.toFixed(3) : "?"}`;
@@ -374,7 +386,9 @@ async function checkBandV1789WorkshopReadout(ctx) {
             name: "_ab_armor",
             role: "armor",
             roleManual: true,
-            parts: [teilSL("box", "eisen", 1.2, 1.4, 0.4, 0)],
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } },
+            ],
         };
         const armorAb = r._blueprintAbilityStats(blu["_ab_armor"]);
         out.armorHasDefense = !!armorAb && armorAb.stats.some((s) => s[0] === "Verteidigung");
@@ -506,20 +520,17 @@ async function checkBandV1790Recalibration(ctx) {
 
         // (5) die platzierte Drehbank erscheint in 32 m im Prozess-Menü (frieden/pfad).
         r.setGameMode("frieden");
-        // die gesetzten Drehbänke fallen aus der Welt
-        const ohneDrehbank = () =>
-            (r.state.architectures = (r.state.architectures || []).filter((a) => a && a.type !== "drehbank"));
-        ohneDrehbank();
+        r.state.architectures = (r.state.architectures || []).filter((a) => a && a.type !== "drehbank");
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         let near = [],
             far = [];
         if (pm) {
             r.spawnArchitecture("drehbank", { x: pm.x + 20, y: pm.y, z: pm.z }); // 20 m — in der neuen Reichweite
             near = r._workshopProcessesForMenu();
-            ohneDrehbank();
+            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
             r.spawnArchitecture("drehbank", { x: pm.x + 45, y: pm.y, z: pm.z }); // 45 m — zu weit
             far = r._workshopProcessesForMenu();
-            ohneDrehbank();
+            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
         }
         out.drehbankNearAppears = near.some((p) => p.stationName === "drehbank");
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
@@ -587,7 +598,9 @@ async function checkBandV1790Recalibration(ctx) {
 }
 
 async function checkBandWelle6Keybindings(ctx) {
-    const { page, check } = ctx;
+    const { page, check, errors, finalState } = ctx;
+    void errors;
+    void finalState;
     // ### Maus-Aktionen (abbauen + platzieren) ###
     // LMB abbauen / RMB platzieren über Keybinding. Architektur-Hit → removeArchitecture; kein Hit →
     // Voxel-carve. Stamina-Gate via getGameMode wie applyOpToPart.
@@ -1178,7 +1191,9 @@ async function checkBandWellePerfCArchInstancing(ctx) {
 }
 
 async function checkBandWelle6XAudit(ctx) {
-    const { page, check } = ctx;
+    const { page, check, errors, finalState } = ctx;
+    void errors;
+    void finalState;
     // ### Audit-Fixes ###
     // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
     // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
@@ -1285,7 +1300,7 @@ async function checkBandWelle6XAudit(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 6.X.1: Audit-Fix-Tests laufen", wave6x1Results, "no result")) {
+    if (wave6x1Results && !wave6x1Results.error) {
         check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
         check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
         check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
@@ -1300,6 +1315,8 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x1Results.statsShowsArmorRow,
             `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
         );
+    } else {
+        check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
     }
 
     // ### UI-Politur ###
@@ -1359,7 +1376,7 @@ async function checkBandWelle6XAudit(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 6.X.2: UI-Politur-Tests laufen", wave6x2Results, "no result")) {
+    if (wave6x2Results && !wave6x2Results.error) {
         check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
         check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
         check(
@@ -1378,6 +1395,8 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
         check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
         check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
+    } else {
+        check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
     }
 
     // ### Vision-Quick-Wins ###
@@ -1386,11 +1405,6 @@ async function checkBandWelle6XAudit(ctx) {
     const wave6x3Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // die Seelen-Tags des Spielers als Zeile (lebendig · dichte)
-        const tagZeile = () => {
-            const t = r.state.player.statTags;
-            return t ? `lebendig=${t.lebendig?.toFixed(2)} dichte=${t.dichte?.toFixed(2)}` : "no tags";
-        };
 
         // --- C1: at_player_forward DSL-Resolver
         if (r.dslPositions.at_player_forward) {
@@ -1492,13 +1506,17 @@ async function checkBandWelle6XAudit(ctx) {
         r.applyPlayerSoul("leichtprobe");
         r.recomputePlayerStats();
         out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
-        out._phoenixTags = tagZeile();
+        out._phoenixTags = r.state.player.statTags
+            ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+            : "no tags";
 
         // --- C3: Slope + pfad + Wolf-Körper → kann NICHT springen (dichte hoch)
         r.applyPlayerSoul("wolf");
         r.recomputePlayerStats();
         out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
-        out._dragonTags = tagZeile();
+        out._dragonTags = r.state.player.statTags
+            ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+            : "no tags";
 
         // Cleanup
         delete r.state.customSouls.leichtprobe;
@@ -1510,7 +1528,7 @@ async function checkBandWelle6XAudit(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 6.X.3: Vision-Quick-Win-Tests laufen", wave6x3Results, "no result")) {
+    if (wave6x3Results && !wave6x3Results.error) {
         check(
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
@@ -1541,6 +1559,8 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x3Results.dragonCannotJumpFromSlope,
             wave6x3Results._dragonTags
         );
+    } else {
+        check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
     }
 
     // ### Identity ###
@@ -1548,11 +1568,6 @@ async function checkBandWelle6XAudit(ctx) {
     const wave6x45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // das Feld nimmt den Wert wie eine Eingabe (input-Ereignis)
-        const tippe = (el, v) => {
-            el.value = v;
-            el.dispatchEvent(new Event("input"));
-        };
 
         // --- F1: state-Felder existieren mit Defaults
         out.companionNameDefault = r.state.grok.companionName === "Grok";
@@ -1561,20 +1576,24 @@ async function checkBandWelle6XAudit(ctx) {
         // --- F1: Input-Change setzt state + localStorage
         const ci = document.getElementById("companion-name-input");
         if (ci) {
-            tippe(ci, "Lyra");
+            ci.value = "Lyra";
+            ci.dispatchEvent(new Event("input"));
             out.companionNameUpdated = r.state.grok.companionName === "Lyra";
             out.companionNamePersisted =
                 typeof localStorage !== "undefined" && localStorage.getItem("anazh.companion.name") === "Lyra";
             // Reset auf Default
-            tippe(ci, "Grok");
+            ci.value = "Grok";
+            ci.dispatchEvent(new Event("input"));
         }
         const pi = document.getElementById("player-name-input");
         if (pi) {
-            tippe(pi, "Aelyn");
+            pi.value = "Aelyn";
+            pi.dispatchEvent(new Event("input"));
             out.playerNameUpdated = r.state.player.name === "Aelyn";
             out.playerNamePersisted =
                 typeof localStorage !== "undefined" && localStorage.getItem("anazh.player.name") === "Aelyn";
-            tippe(pi, "Schöpfer");
+            pi.value = "Schöpfer";
+            pi.dispatchEvent(new Event("input"));
         }
 
         // --- F1: System-Prompt enthält die zwei Namen
@@ -1590,7 +1609,7 @@ async function checkBandWelle6XAudit(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 6.X.4: Identity-Tests laufen", wave6x45Results, "no result")) {
+    if (wave6x45Results && !wave6x45Results.error) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
         check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
         check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
@@ -1599,6 +1618,8 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
         check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
         check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
+    } else {
+        check("Welle 6.X.4: Identity-Tests laufen", false, wave6x45Results ? wave6x45Results.error : "no result");
     }
 }
 
@@ -1615,8 +1636,8 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
             name: "__m1band",
             builtIn: false,
             parts: [
-                { shape: "box", material: mat, position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                { shape: "box", material: mat, position: { x: 1.0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("box", mat, 0, 0.5, 0, 1, 1, 1),
+                __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1),
             ],
         });
         try {
@@ -1740,12 +1761,7 @@ async function checkBandNutzerBlickNachbau(ctx) {
             if (blu.__nb_wagen) delete blu.__nb_wagen;
             blu.__nb_wagen = { name: "__nb_wagen", label: "NB-Wagen", builtIn: false, parts: [], connections: [] };
             const add = (part) => r.addPartToBlueprint("__nb_wagen", part);
-            add({
-                shape: "box",
-                material: "holz",
-                position: { x: 0, y: 0.85, z: 0 },
-                size: { x: 1.3, y: 0.35, z: 2.1 },
-            });
+            add(__teil("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1));
             const rad = (x, z) =>
                 add({
                     shape: "cylinder",

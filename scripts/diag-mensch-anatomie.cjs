@@ -12,23 +12,9 @@
 //   doppelt → augenAbstand rot. Die Linse feuert, sonst ist sie vakuös.
 //   node scripts/diag-mensch-anatomie.cjs [--selftest] [--json]
 "use strict";
-const { urteilEnde } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const vm = require("vm");
-const path = require("path");
+const { urteilEnde, fadenScope } = require("./lib/welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
-
-function ladeWelt() {
-    const sb = { console, Math };
-    sb.self = sb;
-    sb.globalThis = sb;
-    sb.window = sb;
-    vm.createContext(sb);
-    for (const f of ["worlds/terrain/lib/three-r128.min.js", "koerper-core.js"])
-        vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
-    return sb;
-}
+const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "koerper-core.js"]);
 
 // Der Mensch aus dem Gesetz (THREE-Fabrik wie der Bäcker; die Hornhaut ist im Bäcker keine Fläche).
 function baue(sb, verzerre) {
@@ -163,15 +149,7 @@ const OFEN_QUELLEN = [
     "tetrapoda-core.js",
     "foundry-core.js",
 ];
-function ladeOfen() {
-    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
-    sb.self = sb;
-    sb.globalThis = sb;
-    sb.window = sb;
-    vm.createContext(sb);
-    for (const f of OFEN_QUELLEN) vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
-    return sb;
-}
+const ladeOfen = () => fadenScope(OFEN_QUELLEN);
 const lab = (r, g, b) => {
     const X = 0.4124 * r + 0.3576 * g + 0.1805 * b,
         Y = 0.2126 * r + 0.7152 * g + 0.0722 * b,

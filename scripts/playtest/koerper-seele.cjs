@@ -3,7 +3,7 @@
 // 15 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
+const { safeEvaluate } = require("../playtest.cjs");
 
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
@@ -118,14 +118,6 @@ async function checkBandV1761ForgeImplement(ctx) {
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
-        // ein Ein-Teil-Bauplan `name`: das Teil im Ursprung, Maß sx/sy/sz (`extra` hängt Teil-Felder wie opChain an)
-        const werk = (name, shape, material, sx, sy, sz, extra) =>
-            (blu[name] = {
-                name,
-                parts: [{ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: 0, y: 0, z: 0 }, ...extra }],
-            });
-        // das Inventar leer (27 freie Plätze)
-        const leer = () => (p.inventory = new Array(27).fill(null));
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
@@ -133,23 +125,50 @@ async function checkBandV1761ForgeImplement(ctx) {
         // F2 — die Präzision moduliert die Welt-Kraft: gleiche Form/Materie, aber ein hoch-präziser
         // opChain ergibt ein stärkeres Gerät als ein grob-präziser (die Rekursion: besseres Crafting
         // → besseres Abbauen).
-        werk("__f2_fine", "box", "stein", 0.8, 0.8, 0.8, { opChain: [{ cap: 0.95, op: "polish", tool: "x" }] });
-        werk("__f2_rough", "box", "stein", 0.8, 0.8, 0.8, { opChain: [{ cap: 0.4, op: "knap", tool: "x" }] });
+        blu.__f2_fine = {
+            name: "__f2_fine",
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    size: { x: 0.8, y: 0.8, z: 0.8 },
+                    position: { x: 0, y: 0, z: 0 },
+                    opChain: [{ cap: 0.95, op: "polish", tool: "x" }],
+                },
+            ],
+        };
+        blu.__f2_rough = {
+            name: "__f2_rough",
+            parts: [
+                {
+                    shape: "box",
+                    material: "stein",
+                    size: { x: 0.8, y: 0.8, z: 0.8 },
+                    position: { x: 0, y: 0, z: 0 },
+                    opChain: [{ cap: 0.4, op: "knap", tool: "x" }],
+                },
+            ],
+        };
         const fineProf = r._implementProfileForBlueprint(blu.__f2_fine);
         const roughProf = r._implementProfileForBlueprint(blu.__f2_rough);
         out.precisionModulatesMine = fineProf.minePower > roughProf.minePower;
 
         // F3 — das Schmieden ZIEHT Material (pfad), schlägt ohne fehl
-        werk("__forge_tool", "box", "stein", 0.9, 0.9, 0.9);
+        blu.__forge_tool = {
+            name: "__forge_tool",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
         r.setGameMode("pfad");
-        leer();
+        p.inventory = new Array(27).fill(null);
         p.equipped.held = null;
         const forgeNoMat = r.forgeBlueprint("__forge_tool");
         out.pfadForgeRejectsWithoutMaterial = forgeNoMat.ok === false && forgeNoMat.reason === "not_enough_material";
         out.notEquippedAfterFail = p.equipped.held === null;
 
         // F3 — mit Material: schmiedet + KONSUMIERT + rüstet aus + friert die Präzision ein
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
         const steinBefore = p.inventory[0].count;
         const forgeOk = r.forgeBlueprint("__forge_tool");
@@ -161,7 +180,7 @@ async function checkBandV1761ForgeImplement(ctx) {
 
         // F3 — schöpfer schmiedet frei (ohne Material)
         r.setGameMode("schöpfer");
-        leer();
+        p.inventory = new Array(27).fill(null);
         p.equipped.held = null;
         const forgeFree = r.forgeBlueprint("__forge_tool");
         out.schoepferForgesFree =
@@ -172,7 +191,7 @@ async function checkBandV1761ForgeImplement(ctx) {
         delete blu.__f2_rough;
         delete blu.__forge_tool;
         p.equipped.held = savedHeld;
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
         return out;
     });
@@ -202,8 +221,6 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
-        // das Inventar leer (27 freie Plätze)
-        const leer = () => (p.inventory = new Array(27).fill(null));
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
@@ -228,14 +245,14 @@ async function checkBandV1762ForgeMeaningful(ctx) {
             ],
         };
         r.setGameMode("pfad");
-        leer();
+        p.inventory = new Array(27).fill(null);
         p.equipped.held = null;
         const wieldNoMat = r.wieldBlueprint("__wield_tool");
         out.pfadWieldRejectsUnforged =
             wieldNoMat.ok === false && wieldNoMat.reason === "not_enough_material" && p.equipped.held === null;
 
         // (4) wield UNgeschmiedet in pfad MIT Material → SCHMIEDET (zahlt + rüstet aus + friert ein)
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
         const steinBefore = p.inventory[0].count;
         const wieldForges = r.wieldBlueprint("__wield_tool");
@@ -248,7 +265,7 @@ async function checkBandV1762ForgeMeaningful(ctx) {
 
         // (5) wield GESCHMIEDET in pfad mit LEEREM Inventar → FREI (Gebrauch, kein Neu-Zahlen)
         p.equipped.held = null;
-        leer();
+        p.inventory = new Array(27).fill(null);
         const wieldForged = r.wieldBlueprint("__wield_tool");
         out.pfadWieldForgedIsFree = wieldForged.ok === true && p.equipped.held === "__wield_tool";
 
@@ -256,7 +273,7 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         delete blu.__wield_tool.forgedPrecision;
         r.setGameMode("schöpfer");
         p.equipped.held = null;
-        leer();
+        p.inventory = new Array(27).fill(null);
         const wieldSchoepfer = r.wieldBlueprint("__wield_tool");
         out.schoepferWieldsFree =
             wieldSchoepfer.ok === true &&
@@ -267,7 +284,7 @@ async function checkBandV1762ForgeMeaningful(ctx) {
         delete blu.__wield_persist;
         delete blu.__wield_tool;
         p.equipped.held = savedHeld;
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
         return out;
     });
@@ -303,21 +320,18 @@ async function checkBandV1763ForgeArmor(ctx) {
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
-        // ein Ein-Teil-Bauplan `name`: das Teil im Ursprung, Maß sx/sy/sz (`extra` hängt Teil-Felder wie opChain an)
-        const werk = (name, shape, material, sx, sy, sz, extra) =>
-            (blu[name] = {
-                name,
-                parts: [{ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: 0, y: 0, z: 0 }, ...extra }],
-            });
-        // das Inventar leer (27 freie Plätze)
-        const leer = () => (p.inventory = new Array(27).fill(null));
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
         const savedArmor = p.equipped.armor;
 
         // ein dichtes Rüstungs-Compound (stein → dichte+härte = Schutz)
-        werk("__arm", "box", "stein", 1.2, 1.4, 0.4);
+        blu.__arm = {
+            name: "__arm",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 1.2, y: 1.4, z: 0.4 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
 
         // (2) forgeArmor verlangt role="armor"
         r.setGameMode("schöpfer");
@@ -328,14 +342,14 @@ async function checkBandV1763ForgeArmor(ctx) {
 
         // (3) forgeArmor in pfad OHNE Material → abgelehnt + nicht getragen
         r.setGameMode("pfad");
-        leer();
+        p.inventory = new Array(27).fill(null);
         p.equipped.armor = null;
         const armNoMat = r.forgeArmor("__arm");
         out.pfadArmorRejectsWithoutMaterial =
             armNoMat.ok === false && armNoMat.reason === "not_enough_material" && p.equipped.armor === null;
 
         // (4) forgeArmor in pfad MIT Material → webt (zahlt + trägt + friert ein)
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
         const steinBefore = p.inventory[0].count;
         const armForge = r.forgeArmor("__arm");
@@ -348,7 +362,7 @@ async function checkBandV1763ForgeArmor(ctx) {
 
         // (5) wearArmor: eine gemachte Rüstung → frei tragen (leeres Inventar)
         p.equipped.armor = null;
-        leer();
+        p.inventory = new Array(27).fill(null);
         const armWearMade = r.wearArmor("__arm");
         out.wearMadeArmorFree = armWearMade.ok === true && p.equipped.armor === "__arm";
 
@@ -360,13 +374,18 @@ async function checkBandV1763ForgeArmor(ctx) {
         const fertArmor = r.fertigeBlueprint("__arm");
         out.fertigeArmorToArmorSlot =
             fertArmor.ok === true && p.equipped.armor === "__arm" && p.equipped.held !== "__arm";
-        werk("__geraet", "box", "stein", 0.15, 1.2, 0.15);
+        blu.__geraet = {
+            name: "__geraet",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.15, y: 1.2, z: 0.15 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
         const fertHeld = r.fertigeBlueprint("__geraet");
         out.fertigeGeraetToHeldSlot = fertHeld.ok === true && p.equipped.held === "__geraet";
 
         // (7) forgeBlueprint funktioniert nach dem Refactor noch (zahlt + held)
         r.setGameMode("pfad");
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
         p.equipped.held = null;
         delete blu.__geraet.forgedPrecision;
@@ -381,7 +400,7 @@ async function checkBandV1763ForgeArmor(ctx) {
         delete blu.__geraet;
         p.equipped.held = savedHeld;
         p.equipped.armor = savedArmor;
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
         return out;
     });
@@ -421,20 +440,27 @@ async function checkBandV1765BrewConsumable(ctx) {
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
-        // ein Ein-Teil-Bauplan `name`: das Teil im Ursprung, Maß sx/sy/sz (`extra` hängt Teil-Felder wie opChain an)
-        const werk = (name, shape, material, sx, sy, sz, extra) =>
-            (blu[name] = {
-                name,
-                parts: [{ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: 0, y: 0, z: 0 }, ...extra }],
-            });
-        // das Inventar leer (27 freie Plätze)
-        const leer = () => (p.inventory = new Array(27).fill(null));
         const savedMode = r.getGameMode();
 
-        werk("__trank", "sphere", "stein", 0.5, 0.5, 0.5);
+        blu.__trank = {
+            name: "__trank",
+            parts: [
+                {
+                    shape: "sphere",
+                    material: "stein",
+                    size: { x: 0.5, y: 0.5, z: 0.5 },
+                    position: { x: 0, y: 0, z: 0 },
+                },
+            ],
+        };
         r.setBlueprintAsConsumable("__trank", 30, "Test-Trank", 0.2);
         out.markedConsumable = blu.__trank.role === "consumable";
-        werk("__nottrank", "box", "stein", 0.5, 0.5, 0.5);
+        blu.__nottrank = {
+            name: "__nottrank",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.5, y: 0.5, z: 0.5 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
 
         // (2) brewConsumable verlangt role="consumable"
         r.setGameMode("schöpfer");
@@ -443,12 +469,12 @@ async function checkBandV1765BrewConsumable(ctx) {
 
         // (3) brewConsumable in pfad OHNE Zutaten → abgelehnt
         r.setGameMode("pfad");
-        leer();
+        p.inventory = new Array(27).fill(null);
         const brewNoMat = r.brewConsumable("__trank");
         out.pfadBrewRejectsWithoutMaterial = brewNoMat.ok === false && brewNoMat.reason === "not_enough_material";
 
         // (4) brewConsumable in pfad MIT Zutaten → braut (zieht Material + der Trank wirkt)
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
         const steinBefore = p.inventory[0].count;
         const brewOk = r.brewConsumable("__trank");
@@ -456,26 +482,26 @@ async function checkBandV1765BrewConsumable(ctx) {
         out.pfadBrewConsumesAndWorks = brewOk.ok === true && steinBefore > steinAfter;
 
         // (5) activateConsumable bleibt FREI (Low-Level): wirkt mit leerem Inventar (zieht kein Material)
-        leer();
+        p.inventory = new Array(27).fill(null);
         const actDirect = r.activateConsumable("__trank");
         out.activateStillFree = actDirect.ok === true;
 
         // (6) brewConsumable frei in schöpfer
         r.setGameMode("schöpfer");
-        leer();
+        p.inventory = new Array(27).fill(null);
         const brewSchoepfer = r.brewConsumable("__trank");
         out.schoepferBrewsFree = brewSchoepfer.ok === true && brewSchoepfer.free === true;
 
         // (7) fertigeBlueprint routet consumable → brewConsumable (Brau-Ablehnung, nicht Gerät-Schmieden)
         r.setGameMode("pfad");
-        leer();
+        p.inventory = new Array(27).fill(null);
         const fertNoMat = r.fertigeBlueprint("__trank");
         out.fertigeRoutesConsumable = fertNoMat.ok === false && fertNoMat.reason === "not_enough_material";
 
         // cleanup
         delete blu.__trank;
         delete blu.__nottrank;
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
         return out;
     });
@@ -509,14 +535,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
-        // ein Ein-Teil-Bauplan `name`: das Teil im Ursprung, Maß sx/sy/sz (`extra` hängt Teil-Felder wie opChain an)
-        const werk = (name, shape, material, sx, sy, sz, extra) =>
-            (blu[name] = {
-                name,
-                parts: [{ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: 0, y: 0, z: 0 }, ...extra }],
-            });
-        // das Inventar leer (27 freie Plätze)
-        const leer = () => (p.inventory = new Array(27).fill(null));
         const savedMode = r.getGameMode();
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         const savedArch = r.state.architectures.slice();
@@ -530,7 +548,12 @@ async function checkBandV1766FertigenFlow(ctx) {
         // (forging-Domain). ===
         r.setGameMode("schöpfer");
         if (blu.__s7_forge) delete blu.__s7_forge;
-        werk("__s7_forge", "box", "eisen", 0.2, 1.6, 0.2);
+        blu.__s7_forge = {
+            name: "__s7_forge",
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
         // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
         // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
@@ -540,7 +563,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         // === (b) DAS MASCHINE-GATE — pfad + forging-domain + KEINE Esse → no_workshop_station ===
         r.setGameMode("pfad");
         r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("eisen", 400);
         const eisenStart = p.inventory[0].count;
         const noStation = r.fertigeBlueprint("__s7_forge");
@@ -558,9 +581,14 @@ async function checkBandV1766FertigenFlow(ctx) {
 
         // === ein DOMAIN-LOSES Geraet braucht KEINE Station (das Gate ist transparent) ===
         delete blu.__s7_plain;
-        werk("__s7_plain", "box", "stein", 0.2, 1.8, 0.2);
+        blu.__s7_plain = {
+            name: "__s7_plain",
+            parts: [
+                { shape: "box", material: "stein", size: { x: 0.2, y: 1.8, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
         r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
-        leer();
+        p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 400);
         const plainOk = r.fertigeBlueprint("__s7_plain");
         out.domainlessNeedsNoStation = plainOk.ok === true;
@@ -582,7 +610,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         delete blu.__s7_forge;
         delete blu.__s7_plain;
         r.state.architectures = savedArch;
-        leer();
+        p.inventory = new Array(27).fill(null);
         p.equipped = savedEquipped;
         r.recomputePlayerStats();
         r.setGameMode(savedMode);
@@ -617,19 +645,16 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
-        // ein Ein-Teil-Bauplan `name`: das Teil im Ursprung, Maß sx/sy/sz (`extra` hängt Teil-Felder wie opChain an)
-        const werk = (name, shape, material, sx, sy, sz, extra) =>
-            (blu[name] = {
-                name,
-                parts: [{ shape, material, size: { x: sx, y: sy, z: sz }, position: { x: 0, y: 0, z: 0 }, ...extra }],
-            });
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         const savedArch = r.state.architectures.slice();
         const savedMode = r.getGameMode();
 
         // ein eigener Apparat: ein Quarz-Gefäß (durchsichtig → alchemy-Domäne, R1)
         if (blu.__ws_vessel) delete blu.__ws_vessel;
-        werk("__ws_vessel", "sphere", "quarz", 1, 1, 1);
+        blu.__ws_vessel = {
+            name: "__ws_vessel",
+            parts: [{ shape: "sphere", material: "quarz", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
         // VOR der Markierung: die Rolle ist NICHT workshop-station (emergiert nicht als Werkstatt)
         out.notStationBeforeMark = r.computeBlueprintRole(blu.__ws_vessel) !== "workshop-station";
 
@@ -647,11 +672,19 @@ async function checkBandV1770WorkshopStationMark(ctx) {
         // Gate: ein forging-Werk passt zu ihm. (Forging, weil eisen+schmiede-hammer eine saubere Material-Op-
         // Kompatibilität hat — der Punkt ist „Spieler-Station bedient das Gate via emergenter Domäne", domain-agnostisch.)
         if (blu.__ws_forge) delete blu.__ws_forge;
-        werk("__ws_forge", "box", "eisen", 1, 1, 1);
+        blu.__ws_forge = {
+            name: "__ws_forge",
+            parts: [{ shape: "box", material: "eisen", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
         r.setBlueprintAsWorkshopStation("__ws_forge");
         out.forgeStationDomain = r._computeWorkshopDomain(blu.__ws_forge) === "forging"; // eisen-Masse → forging (emergent)
         if (blu.__ws_work) delete blu.__ws_work;
-        werk("__ws_work", "box", "eisen", 0.8, 0.8, 0.8);
+        blu.__ws_work = {
+            name: "__ws_work",
+            parts: [
+                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+            ],
+        };
         r.setGameMode("schöpfer");
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__ws_work", 0, "schmiede-hammer"); // forging-Domäne (opChain)
@@ -664,7 +697,10 @@ async function checkBandV1770WorkshopStationMark(ctx) {
 
         // der DSL-Op (Spiegel von set_armor_role)
         if (blu.__ws_dsl) delete blu.__ws_dsl;
-        werk("__ws_dsl", "box", "stein", 1, 1, 1);
+        blu.__ws_dsl = {
+            name: "__ws_dsl",
+            parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }],
+        };
         r.dslRun(["set_workshop_station", "__ws_dsl"], { source: "test" });
         out.dslMarks = blu.__ws_dsl.role === "workshop-station";
 
@@ -913,24 +949,19 @@ async function checkBandV1784AvatarFormFit(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const p = r.state.player;
         const out = {};
         const bodyParts = [
-            teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
-            teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
-            teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
-            teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
-            teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
+            __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
+            __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
+            __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
         ];
-        const blobParts = [teil("box", "fleisch", 0, 0, 0, 1.5, 1.5, 1.5)];
+        const blobParts = [
+            __teil("box", "fleisch", 0, 0, 0, 1.5, 1.5, 1.5),
+        ];
         // (1) der Gate: Built-in-Seele → neutral (in playerSoulDefs), ein Custom-Name nicht
         out.builtinGate = !!r.playerSoulDefs["human"] && !r.playerSoulDefs["_av_body"];
         // (2) die soul-Passung diskriminiert über die FORM (gleiches Material fleisch)
@@ -1128,13 +1159,6 @@ async function checkBandWelle6DSoul(ctx) {
     // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const out = {};
 
@@ -1217,7 +1241,9 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Test",
             builtIn: false,
             // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
-            parts: [teil("box", "eisen", 0, 0, 0, 1, 1, 1)],
+            parts: [
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
+            ],
         };
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
         const staBefore = r.state.player.stamina;
@@ -1242,8 +1268,8 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Magie-Trank",
             builtIn: false,
             parts: [
-                teil("helix", "quarz", 0, 0, 0, 0.3, 0.5, 2),
-                teil("sphere", "glut", 0, 0.5, 0, 0.2, 0.2, 0.2),
+                __teil("helix", "quarz", 0, 0, 0, 0.3, 0.5, 2),
+                __teil("sphere", "glut", 0, 0.5, 0, 0.2, 0.2, 0.2),
             ],
         };
         const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
@@ -1267,7 +1293,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Reflex-Tests Block lief ohne Exception", reflexResults, true)) {
+    if (reflexResults && !reflexResults.error) {
         // (2) Chat
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
@@ -1322,18 +1348,13 @@ async function checkBandWelle6DSoul(ctx) {
             reflexResults.boostTagBonusFromCompound
         );
         check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
+    } else if (reflexResults && reflexResults.error) {
+        check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
     }
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
     const wave6d3bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1362,8 +1383,8 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Eisen-Plate",
             builtIn: false,
             parts: [
-                teil("box", "eisen", 0, 0, 0, 1, 1, 1),
-                teil("box", "eisen", 0, 1, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 1, 0, 1, 1, 1),
             ],
         };
         // Markieren als Rüstung
@@ -1389,7 +1410,9 @@ async function checkBandWelle6DSoul(ctx) {
             name: "test_plain",
             label: "Unmarked",
             builtIn: false,
-            parts: [teil("box", "stein", 0, 0, 0, 1, 1, 1)],
+            parts: [
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+            ],
         };
         const equipUnmarkedResult = r.equipArmor("test_plain");
         out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
@@ -1433,7 +1456,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 3b: Test-Block lief ohne Exception", wave6d3bResults, true)) {
+    if (wave6d3bResults && !wave6d3bResults.error) {
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1481,6 +1504,8 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
         );
+    } else if (wave6d3bResults && wave6d3bResults.error) {
+        check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
     }
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
@@ -1590,7 +1615,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 3a: Test-Block lief ohne Exception", wave6d3aResults, true)) {
+    if (wave6d3aResults && !wave6d3aResults.error) {
         // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
@@ -1626,6 +1651,8 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3aResults.applyBoostNonBroadcast
         );
         check("Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables", wave6d3aResults.snapHasConsumables);
+    } else if (wave6d3aResults && wave6d3aResults.error) {
+        check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
     }
 
     // ### Boosts (temporäre Tag-Deltas) ###
@@ -1633,13 +1660,6 @@ async function checkBandWelle6DSoul(ctx) {
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1715,10 +1735,10 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Resonator",
             builtIn: false,
             parts: [
-                teil("helix", "quarz", 1, 0, 0, 0.5, 1, 3),
-                teil("helix", "quarz", 0, 0, 1, 0.5, 1, 3),
-                teil("helix", "quarz", -1, 0, 0, 0.5, 1, 3),
-                teil("helix", "quarz", 0, 0, -1, 0.5, 1, 3),
+                __teil("helix", "quarz", 1, 0, 0, 0.5, 1, 3),
+                __teil("helix", "quarz", 0, 0, 1, 0.5, 1, 3),
+                __teil("helix", "quarz", -1, 0, 0, 0.5, 1, 3),
+                __teil("helix", "quarz", 0, 0, -1, 0.5, 1, 3),
             ],
         };
         r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
@@ -1754,7 +1774,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 2: Test-Block lief ohne Exception", wave6d2Results, true)) {
+    if (wave6d2Results && !wave6d2Results.error) {
         check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
         check(
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
@@ -1796,6 +1816,8 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
             wave6d2Results.resonanceNotTriggeredFar
         );
+    } else if (wave6d2Results && wave6d2Results.error) {
+        check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
     }
 
     // ### Custom-Seelen via DSL ###
@@ -1803,13 +1825,6 @@ async function checkBandWelle6DSoul(ctx) {
     // Hylomorphismus-Pipe wie Bauwerke.
     const wave6d16Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const out = {};
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
@@ -1817,9 +1832,9 @@ async function checkBandWelle6DSoul(ctx) {
         // define_soul über dslRun
         const beforeCount = Object.keys(r.state.customSouls || {}).length;
         const testParts = [
-            teil("box", "knochen", 0, 0, 0, 0.5, 1.0, 0.4),
-            teil("helix", "quarz", 0, 0.6, 0, 0.3, 0.6, 2),
-            teil("sphere", "glut", 0, 0.3, 0, 0.25, 0.25, 0.25),
+            __teil("box", "knochen", 0, 0, 0, 0.5, 1.0, 0.4),
+            __teil("helix", "quarz", 0, 0.6, 0, 0.3, 0.6, 2),
+            __teil("sphere", "glut", 0, 0.3, 0, 0.25, 0.25, 0.25),
         ];
         r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
         const afterCount = Object.keys(r.state.customSouls || {}).length;
@@ -1939,12 +1954,7 @@ async function checkBandWelle6DSoul(ctx) {
 
         // Add part
         const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
-        const addResult = r.addPartToCustomSoul("test_clone_a", {
-            shape: "torus",
-            material: "quarz",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 0.5, y: 0.2, z: 0.5 },
-        });
+        const addResult = r.addPartToCustomSoul("test_clone_a", __teil("torus", "quarz", 0, 1, 0, 0.5, 0.2, 0.5));
         out.addReturnsOk = addResult && addResult.ok;
         out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
 
@@ -1986,7 +1996,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", wave6d17Results, true)) {
+    if (wave6d17Results && !wave6d17Results.error) {
         check(
             "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
@@ -2026,6 +2036,8 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
             wave6d17Results.fallbackToHuman
         );
+    } else if (wave6d17Results && wave6d17Results.error) {
+        check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
     }
 
     if (wave6d16Results) {
@@ -2789,23 +2801,20 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
 
         // (W4) _wearPerStrike: ein harter Bauplan (eisen) zehrt LANGSAMER als
         // ein weicher (holz). Die Härte-Skalierung lebt.
-        // derselbe Stiel (Zylinder 0,3 × 1 × 0,3) aus zwei Stoffen — je Ruf ein frischer Bauplan
-        const stiel = (name, material) => ({
-            name,
+        const eisenBp = {
+            name: "test_eisen",
             parts: [
-                {
-                    shape: "cylinder",
-                    material,
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [],
-                },
+                __teil("cylinder", "eisen", 0, 1, 0, 0.3, 1, 0.3, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
             ],
             connections: [],
-        });
-        const eisenBp = stiel("test_eisen", "eisen");
-        const holzBp = stiel("test_holz", "holz");
+        };
+        const holzBp = {
+            name: "test_holz",
+            parts: [
+                __teil("cylinder", "holz", 0, 1, 0, 0.3, 1, 0.3, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
+            ],
+            connections: [],
+        };
         const wEisen = r._wearPerStrike(eisenBp);
         const wHolz = r._wearPerStrike(holzBp);
         out.eisenSlower = wEisen > 0 && wHolz > 0 && wEisen < wHolz;

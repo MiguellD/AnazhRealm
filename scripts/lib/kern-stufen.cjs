@@ -161,4 +161,22 @@ function selbsttest() {
     );
 }
 
-module.exports = { kernRaeume, seitenStufen, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };
+// DER LEBENDE DRAHT einer ε-Linse (fachwerk · porta · schmiede · vehicle): die Null-Seite am Server (`port`), die Seite der
+// Domäne `W` (`epsilonSeite`), die eigene Probe der Linse (`probe`, in derselben Seite), die Stufen der Kerne dort (dieselben
+// Dateien wie der Worker, nie eine Abschrift) und ihr Urteil → [eps, out, kern]. Bis zur Decke w3s-sukzession trug jede
+// ε-Linse diesen Gang selbst.
+async function epsilonDraht(server, port, W, check, probe) {
+    console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
+    await server.lausche(port);
+    const { browser, page } = await require("./welt-boot.cjs").nullSeite({ frist: 180000 });
+    await server.zeige(page, 30000);
+    const eps = await page.evaluate(epsilonSeite, W);
+    const out = probe && (await page.evaluate(probe));
+    const kern = await page.evaluate(seitenStufen, kernRaeume());
+    await browser.close();
+    server.close();
+    epsilonUrteil(check, eps, W, kern);
+    return [eps, out, kern];
+}
+
+module.exports = { epsilonDraht, kernRaeume, seitenStufen, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };

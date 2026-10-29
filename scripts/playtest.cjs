@@ -373,6 +373,15 @@ if (require.main === module) hauptLauf(async () => {
                 return false;
             }
         };
+        // DAS EINE TEIL der Bänder (ein Bauplan-Part): Form, Stoff, Lage, Maß, danach der Rest des Teils (Drehung, Farbe …) in seiner
+        // Reihe. Vorher schrieb jedes Band jedes Teil als eigenes Literal (201 in 13 Domänen, je 45 Atome).
+        window.__teil = (shape, material, x, y, z, sx, sy, sz, rest) => ({
+            shape,
+            material,
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+            ...rest,
+        });
         // DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE frozen Tabelle. Bänder proben
         // r[window.__anker.X] — zieht ein Symbol um, wandert EINE Zeile; diag-apparat.cjs hält jeden Eintrag
         // gegen den lebenden Stamm-Code.

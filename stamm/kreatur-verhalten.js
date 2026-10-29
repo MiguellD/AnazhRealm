@@ -976,10 +976,10 @@ class AnazhRealm_kreatur_verhalten {
         return { J, dv: J / mZ };
     }
 
-    // DIE TEILNEHMER DES IMPULS-GESETZES (0710-4): ein Tier (sein Leib), der Spieler (`state.playerMesh`) oder ein Wagen
-    // (ein Eintrag mit Fahr-Satz) — je Masse (`_leibMasse` / `_fahrMasse`), Geschwindigkeit (Steuer + getragener Stoß /
-    // `playerVel` / Fahr-Zustand) und der Kanal, der einen Stoß trägt (`_kreaturStoss` / `_spielerStoss` /
-    // `_fahrWagenStoss`). `out` wird überschrieben; null = kein Teilnehmer.
+    // DIE TEILNEHMER DES IMPULS-GESETZES (0710-4): ein Tier (sein Leib), der Spieler (`state.playerMesh`), ein freier Körper
+    // (physik.K3, `_frei`) oder ein Wagen (ein Eintrag mit Fahr-Satz) — je Masse (`_leibMasse` / Löser / `_fahrMasse`),
+    // Geschwindigkeit (Steuer + getragener Stoß / `playerVel` / Löser / Fahr-Zustand) und der Kanal, der einen Stoß trägt
+    // (`_kreaturStoss` / `_spielerStoss` / `_freiStoss` / `_fahrWagenStoss`). `out` wird überschrieben; null = kein Teilnehmer.
     _stossKoerper(q, out) {
         const o = out || {};
         const st = this.state;
@@ -994,6 +994,10 @@ class AnazhRealm_kreatur_verhalten {
             o.m = this._leibMasse(q);
             o.vx = v.x;
             o.vz = v.z;
+        } else if (q && q._frei) {
+            // der freie Körper (physik.K3): die wirksame Masse und das Tempo des Punkts, den der Stoß trifft (`_freiTreffer`)
+            this._freiTreffer(q, o);
+            o.art = "frei";
         } else {
             const G = q ? this._fahrStossSatz(q) : null;
             if (!G) return null;
@@ -1011,6 +1015,7 @@ class AnazhRealm_kreatur_verhalten {
         if (!(dv > 0)) return;
         if (K.art === "spieler") this._spielerStoss(nx, nz, dv);
         else if (K.art === "tier") this._kreaturStoss(K.q, nx, nz, dv);
+        else if (K.art === "frei") this._freiStoss(K.q, nx, nz, dv);
         else this._fahrWagenStoss(K.q, K.G, nx * dv, nz * dv);
     }
     // DAS PAAR: n (Einheit) zeigt von A nach B. Nähern sie sich längs n (v_rel = (vA − vB) · n > 0), tauschen sie Impuls

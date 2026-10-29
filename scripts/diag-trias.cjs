@@ -25,8 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -77,9 +76,7 @@ hauptLauf(async () => {
         // Die ZAHLEN-Linse ist nicht vakuoes: die Nahstufe L0 (gemessen ~93k) liegt allein
         // ueber dem Fern-Deckel — klebte sie fern, risse der Deckel (L1 ist seit V18.500 die
         // leichte Flaechen-Stufe ~20k; ein fern klebendes L1 faengt B4 am Stufen-Schluessel).
-        global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-        require(path.join(root, "fachwerk-core.js"));
-        const FCst = globalThis.__fachwerkCore;
+        const FCst = studioKern("fachwerk-core.js", "__fachwerkCore");
         const g0 = FCst.buildInstance("alemannisch", 7, 0);
         let t0 = 0;
         g0.traverse((o) => {
@@ -115,9 +112,7 @@ hauptLauf(async () => {
 
     // ===== Teil N: die fachwerk-Stufen-Wahrheit als Zahl =====
     console.log("=== TEIL N: die Stufen-Wahrheit (fachwerk-core, Node-direkt) ===");
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-    require(path.join(root, "fachwerk-core.js"));
-    const FC = globalThis.__fachwerkCore;
+    const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
     const trisOf = (g) => {
         let t = 0;
         g.traverse((o) => {

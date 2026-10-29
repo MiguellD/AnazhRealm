@@ -3,7 +3,7 @@
 // 17 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
+const { safeEvaluate } = require("../playtest.cjs");
 
 // Rollen-Resonanz: computeBlueprintRole = ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕
 // bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES; „architecture“ ist positive Signatur (dicht +
@@ -12,13 +12,6 @@ async function checkBandV1769RoleResonance(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        // ein Teil-Literal (Maß vor Lage): Form, Stoff, Maß x/y/z, Lage x/y/z — je Ruf ein frisches Objekt
-        const teilSL = (shape, material, sx, sy, sz, x, y, z) => ({
-            shape,
-            material,
-            size: { x: sx, y: sy, z: sz },
-            position: { x, y, z },
-        });
         const out = {};
         const blu = r.state.blueprints;
         const part = (mat, x, y, z) => ({
@@ -85,13 +78,19 @@ async function checkBandV1769RoleResonance(ctx) {
         };
         const tower = { parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)] };
         const food = {
-            parts: [teilSL("sphere", "fleisch", 1, 1, 1, 0, 0, 0)],
+            parts: [
+                { shape: "sphere", material: "fleisch", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
+            ],
         };
         const magicRing = {
-            parts: [teilSL("torus", "quarz", 3, 0.4, 3, 0, 1, 0)],
+            parts: [
+                { shape: "torus", material: "quarz", size: { x: 3, y: 0.4, z: 3 }, position: { x: 0, y: 1, z: 0 } },
+            ],
         };
         const stoneRing = {
-            parts: [teilSL("torus", "stein", 3, 0.4, 3, 0, 1, 0)],
+            parts: [
+                { shape: "torus", material: "stein", size: { x: 3, y: 0.4, z: 3 }, position: { x: 0, y: 1, z: 0 } },
+            ],
         };
         out.bodySoul = r.computeBlueprintRole(body) === "soul";
         out.towerArch = r.computeBlueprintRole(tower) === "architecture";
@@ -378,26 +377,21 @@ async function checkBandV1779RoleFitQuality(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         const out = {};
         const cfg = r.constructor.QUALITY_ROLE_FIT;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const blade = {
             name: "_rf_blade",
             parts: [
-                teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.6),
-                teil("cone", "eisen", 0, 0, 1.2, 0.2, 0.1, 0.6),
+                __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.6),
+                __teil("cone", "eisen", 0, 0, 1.2, 0.2, 0.1, 0.6),
             ],
         };
         const blob = {
             name: "_rf_blob",
-            parts: [teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2)],
+            parts: [
+                __teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2),
+            ],
         };
         // (1) die Passung diskriminiert über die FORM (gleiches Material eisen, andere Form)
         const fitBlade = r._blueprintRoleFit(blade, "held");
@@ -410,17 +404,23 @@ async function checkBandV1779RoleFitQuality(ctx) {
         // (3) armor: dichte Platte > weiches Leder-Ding
         const plate = {
             name: "_rf_plate",
-            parts: [teil("box", "eisen", 0, 0, 0, 1.5, 0.3, 1.0)],
+            parts: [
+                __teil("box", "eisen", 0, 0, 0, 1.5, 0.3, 1.0),
+            ],
         };
         const soft = {
             name: "_rf_soft",
-            parts: [teil("box", "leder", 0, 0, 0, 1.5, 0.3, 1.0)],
+            parts: [
+                __teil("box", "leder", 0, 0, 0, 1.5, 0.3, 1.0),
+            ],
         };
         out.armorDiscriminates = r._blueprintRoleFit(plate, "armor") > r._blueprintRoleFit(soft, "armor");
         // (4) consumable: der lebendige Trank > ein toter Stein-Klumpen
         const deadC = {
             name: "_rf_dead",
-            parts: [teil("sphere", "stein", 0, 0, 0, 0.5, 0.5, 0.5)],
+            parts: [
+                __teil("sphere", "stein", 0, 0, 0, 0.5, 0.5, 0.5),
+            ],
         };
         out.consumableDiscriminates =
             r._blueprintRoleFit(r.state.blueprints["trank_lebenssaft"], "consumable") >
@@ -468,47 +468,44 @@ async function checkBandV1780FormAxes(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const mk = (parts) => ({ name: "_u1", parts });
         const blade = mk([
-            teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.8),
-            teil("cone", "eisen", 0, 0, 1.4, 0.2, 0.1, 0.6),
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.8),
+            __teil("cone", "eisen", 0, 0, 1.4, 0.2, 0.1, 0.6),
         ]);
-        const cube = mk([teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2)]);
+        const cube = mk([
+            __teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2),
+        ]);
         const column = mk([
-            teil("box", "stein", 0, 0, 0, 0.6, 1, 0.6),
-            teil("box", "stein", 0, 1, 0, 0.6, 1, 0.6),
-            teil("box", "stein", 0, 2, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 0, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 1, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 2, 0, 0.6, 1, 0.6),
         ]);
         const wideBase = mk([
-            teil("box", "stein", -1.5, 0, -1.5, 0.4, 0.6, 0.4),
-            teil("box", "stein", 1.5, 0, -1.5, 0.4, 0.6, 0.4),
-            teil("box", "stein", -1.5, 0, 1.5, 0.4, 0.6, 0.4),
-            teil("box", "stein", 1.5, 0, 1.5, 0.4, 0.6, 0.4),
-            teil("box", "stein", 0, 1.5, 0, 2, 0.6, 2),
+            __teil("box", "stein", -1.5, 0, -1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 1.5, 0, -1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", -1.5, 0, 1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 1.5, 0, 1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 0, 1.5, 0, 2, 0.6, 2),
         ]);
         const body = mk([
-            teil("box", "stein", 0, 1, 0, 0.8, 1.6, 0.5),
-            teil("cylinder", "stein", -0.7, 1, 0, 0.3, 1.2, 0.3),
-            teil("cylinder", "stein", 0.7, 1, 0, 0.3, 1.2, 0.3),
+            __teil("box", "stein", 0, 1, 0, 0.8, 1.6, 0.5),
+            __teil("cylinder", "stein", -0.7, 1, 0, 0.3, 1.2, 0.3),
+            __teil("cylinder", "stein", 0.7, 1, 0, 0.3, 1.2, 0.3),
         ]);
         const lump = mk([
-            teil("box", "stein", 0, 0, 0, 1, 1, 1),
-            teil("box", "stein", 1.4, 1.2, 1.0, 0.6, 0.6, 0.6),
+            __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+            __teil("box", "stein", 1.4, 1.2, 1.0, 0.6, 0.6, 0.6),
         ]);
         const container = mk([
-            teil("box", "quarz", -1, 1, 0, 0.2, 2, 2),
-            teil("box", "quarz", 1, 1, 0, 0.2, 2, 2),
-            teil("box", "quarz", 0, 0, 0, 2, 0.2, 2),
+            __teil("box", "quarz", -1, 1, 0, 0.2, 2, 2),
+            __teil("box", "quarz", 1, 1, 0, 0.2, 2, 2),
+            __teil("box", "quarz", 0, 0, 0, 2, 0.2, 2),
         ]);
-        const solid = mk([teil("box", "stein", 0, 0, 0, 2, 2, 2)]);
+        const solid = mk([
+            __teil("box", "stein", 0, 0, 0, 2, 2, 2),
+        ]);
         const V = (b) => r._blueprintProductVector(b);
         const out = {};
         const vb = V(blade);
@@ -548,13 +545,6 @@ async function checkBandV1781RoleRegister(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const REG = r.constructor.ROLE_SIGNATURES;
         const cfg = r.constructor.QUALITY_ROLE_FIT;
@@ -579,10 +569,12 @@ async function checkBandV1781RoleRegister(ctx) {
         );
         const mk = (parts) => ({ name: "_u2", parts });
         const blade = mk([
-            teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
-            teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
+            __teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
         ]);
-        const block = mk([teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4)]);
+        const block = mk([
+            __teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4),
+        ]);
         // TIEFE: das volle Profil — die Klinge ist eine bessere WAFFE, der Block ein besseres BAUWERK
         const bladeWeapon = r._blueprintRoleFit(blade, "weapon");
         const blockWeapon = r._blueprintRoleFit(block, "weapon");
@@ -596,15 +588,15 @@ async function checkBandV1781RoleRegister(ctx) {
         out.inRange = bladeWeapon <= cfg.max + 1e-9 && blockWeapon >= cfg.min - 1e-9;
         // vehicle — die neuen Form-Achsen (spread) tragen die neue Rolle
         const vehicleForm = mk([
-            teil("box", "eisen", -1.5, 0, -1, 0.5, 0.5, 0.5),
-            teil("box", "eisen", 1.5, 0, -1, 0.5, 0.5, 0.5),
-            teil("box", "eisen", -1.5, 0, 1, 0.5, 0.5, 0.5),
-            teil("box", "eisen", 1.5, 0, 1, 0.5, 0.5, 0.5),
-            teil("box", "eisen", 0, 1, 0, 3, 0.5, 2),
+            __teil("box", "eisen", -1.5, 0, -1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 1.5, 0, -1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", -1.5, 0, 1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 1.5, 0, 1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 0, 1, 0, 3, 0.5, 2),
         ]);
         const mast = mk([
-            teil("box", "eisen", 0, 0, 0, 0.4, 1, 0.4),
-            teil("box", "eisen", 0, 1, 0, 0.4, 1, 0.4),
+            __teil("box", "eisen", 0, 0, 0, 0.4, 1, 0.4),
+            __teil("box", "eisen", 0, 1, 0, 0.4, 1, 0.4),
         ]);
         out.vehicleDiscriminates = r._blueprintRoleFit(vehicleForm, "vehicle") > r._blueprintRoleFit(mast, "vehicle");
         out.vehVals = `Basis=${round(r._blueprintRoleFit(vehicleForm, "vehicle"))} Mast=${round(r._blueprintRoleFit(mast, "vehicle"))}`;
@@ -642,21 +634,18 @@ async function checkBandV1782CatalystReadout(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         const round = (x) => Math.round((x || 0) * 100) / 100;
         const mk = (parts) => ({ name: "_u3", parts });
         const blade = mk([
-            teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
-            teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
+            __teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
         ]);
-        const ball = mk([teil("sphere", "leder", 0, 0, 0, 1, 1, 1)]);
-        const block = mk([teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4)]);
+        const ball = mk([
+            __teil("sphere", "leder", 0, 0, 0, 1, 1, 1),
+        ]);
+        const block = mk([
+            __teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4),
+        ]);
         const out = {};
         const spec = r._blueprintRoleSpectrum(blade);
         const getW = (s) => (s.find((x) => x.role === "weapon") || { score: 0 }).score;
@@ -742,12 +731,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         delete r.state.blueprints["_v1785_undo"];
         r.createBlueprint("_v1785_undo", "Undo-Test");
         // ein stumpfer, dichter eisen-Block → der Form nach „architecture" (kein Pointed-Blade-Gate)
-        r.addPartToBlueprint("_v1785_undo", {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        });
+        r.addPartToBlueprint("_v1785_undo", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         const ub = r.state.blueprints["_v1785_undo"];
         out.roleBeforeApply = r.computeBlueprintRole(ub); // erwartet: architecture
         // (#1a) removePartOp auf der Grund-Kette → nichts zu entfernen
@@ -901,12 +885,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         // ein eigener eisen-Bauplan
         delete r.state.blueprints["_wp88"];
         r.createBlueprint("_wp88", "WP88");
-        r.addPartToBlueprint("_wp88", {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        });
+        r.addPartToBlueprint("_wp88", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
         r.setGameMode("schöpfer");
         const menuS = r._workshopProcessesForMenu();
@@ -1062,7 +1041,13 @@ async function checkBandWave4(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 4 P1: Snapshot erreichbar", wave4p1Results)) {
+    if (!wave4p1Results || wave4p1Results.error) {
+        check(
+            "Welle 4 P1: Snapshot erreichbar",
+            false,
+            (wave4p1Results && wave4p1Results.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
@@ -1208,7 +1193,13 @@ async function checkBandWave4(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 4 P2: Snapshot erreichbar", wave4p2Results)) {
+    if (!wave4p2Results || wave4p2Results.error) {
+        check(
+            "Welle 4 P2: Snapshot erreichbar",
+            false,
+            (wave4p2Results && wave4p2Results.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check("Welle 4 P2: FORM_TAG_ACTIVATION frozen", wave4p2Results.matrixFrozen);
         check("Welle 4 P2: Matrix deckt 9 Formen (inkl. helix)", wave4p2Results.matrixHasNineForms);
         check("Welle 4 P2: Matrix vollständig (keine undefined-Zelle)", wave4p2Results.matrixComplete);
@@ -1273,16 +1264,23 @@ async function checkBandWave4(ctx) {
         for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) {
             if (!r.state.player.tools.includes(dt)) r.state.player.tools.push(dt);
         }
-        // ein eigener Ein-Teil-Bauplan (nicht builtIn): das Teil trägt Form, Stoff und seine opChain
-        const bauplan = (name, label, shape, material, opChain) =>
-            (r.state.blueprints[name] = { name, label, builtIn: false, parts: [{ shape, material, opChain }] });
         // applyOpToPart — Tool-Gating
-        bauplan("test-precision", "Test", "cone", "eisen", r._defaultPartOpChain());
+        r.state.blueprints["test-precision"] = {
+            name: "test-precision",
+            label: "Test",
+            builtIn: false,
+            parts: [{ shape: "cone", material: "eisen", opChain: r._defaultPartOpChain() }],
+        };
         // drehbank-meißel (subtractive) auf eisen-cone: OK (subtractive matches eisen)
         const ap1 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
         // Schmiede-Hammer (plastic) auf stein (subtractive only): FAIL
-        bauplan("test-precision-stein", "Stein-Test", "box", "stein", r._defaultPartOpChain());
+        r.state.blueprints["test-precision-stein"] = {
+            name: "test-precision-stein",
+            label: "Stein-Test",
+            builtIn: false,
+            parts: [{ shape: "box", material: "stein", opChain: r._defaultPartOpChain() }],
+        };
         const ap2 = r.applyOpToPart("test-precision-stein", 0, "schmiede-hammer");
         out.materialOpIncompat = !ap2.ok && ap2.reason === "material_op_incompatible";
         // Tool not owned (drehbank-meißel ist subtractive + Starter)
@@ -1296,8 +1294,24 @@ async function checkBandWave4(ctx) {
 
         // Diskrimination: hand-roh (precision 0.4) vs. poliert (cap 0.97) — die Welt-Effekt-Schwelle
         // precision_high=0.8 liegt dazwischen: der polierte triggert, der rohe nicht.
-        bauplan("raw-orb", "Rau-Orb", "sphere", "quarz", r._defaultPartOpChain());
-        bauplan("polished-orb", "Polier-Orb", "sphere", "quarz", [{ tool: "polierscheibe", op: "polish", cap: 0.97 }]);
+        r.state.blueprints["raw-orb"] = {
+            name: "raw-orb",
+            label: "Rau-Orb",
+            builtIn: false,
+            parts: [{ shape: "sphere", material: "quarz", opChain: r._defaultPartOpChain() }],
+        };
+        r.state.blueprints["polished-orb"] = {
+            name: "polished-orb",
+            label: "Polier-Orb",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "sphere",
+                    material: "quarz",
+                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                },
+            ],
+        };
         const rawPrec = r._compoundAvgPrecision(r.state.blueprints["raw-orb"]);
         const polPrec = r._compoundAvgPrecision(r.state.blueprints["polished-orb"]);
         out.precisionDiscriminates =
@@ -1321,9 +1335,18 @@ async function checkBandWave4(ctx) {
         out.rawDoesNotTrigger = r.state.worldJournal.entries.length === beforeRaw;
 
         // Magie-Effekt: pyramid+quarz (magieleitung hoch)
-        bauplan("mage-pyramid", "Magier-Pyramide", "pyramid", "quarz", [
-            { tool: "polierscheibe", op: "polish", cap: 0.97 },
-        ]);
+        r.state.blueprints["mage-pyramid"] = {
+            name: "mage-pyramid",
+            label: "Magier-Pyramide",
+            builtIn: false,
+            parts: [
+                {
+                    shape: "pyramid",
+                    material: "quarz",
+                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                },
+            ],
+        };
         // awe auf 0: hat der Warmup awe schon an die Decke (1.0) gehoben, kann der Magie-Compound nicht
         // weiter heben → falsch-rot. Geprüft wird die Absicht (Magie hebt awe), deterministisch ab 0.
         r.state.player.emotions.awe = 0;
@@ -1384,7 +1407,13 @@ async function checkBandWave4(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 4 P3: Snapshot erreichbar", wave4p3Results)) {
+    if (!wave4p3Results || wave4p3Results.error) {
+        check(
+            "Welle 4 P3: Snapshot erreichbar",
+            false,
+            (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check(
             "hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek",
             wave4p3Results.fiveStarterTools
@@ -1431,13 +1460,6 @@ async function checkBandWave5(ctx) {
     // ### räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
     const wave5bResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const out = {};
         // Konstanten
@@ -1450,9 +1472,9 @@ async function checkBandWave5(ctx) {
         // Bounding-Box-Mathematik: Compound mit drei Parts
         const testBp = {
             parts: [
-                teil("box", "stein", 0, 0, 0, 2, 2, 2),
-                teil("cone", "eisen", 0, 3, 0, 1, 2, 1),
-                teil("cylinder", "bronze", 4, 0, 0, 1, 2, 1),
+                __teil("box", "stein", 0, 0, 0, 2, 2, 2),
+                __teil("cone", "eisen", 0, 3, 0, 1, 2, 1),
+                __teil("cylinder", "bronze", 4, 0, 0, 1, 2, 1),
             ],
         };
         const bb = r._compoundBoundingBox(testBp);
@@ -1466,9 +1488,9 @@ async function checkBandWave5(ctx) {
         out.cylAtOutside = labelsCyl.has("at_outside");
 
         // Kontakt-Check: zwei berührende Boxen
-        const pA = teil("box", "stein", 0, 0, 0, 1, 1, 1);
-        const pB = teil("box", "eisen", 0.9, 0, 0, 1, 1, 1);
-        const pC = teil("box", "eisen", 5, 0, 0, 1, 1, 1);
+        const pA = __teil("box", "stein", 0, 0, 0, 1, 1, 1);
+        const pB = __teil("box", "eisen", 0.9, 0, 0, 1, 1, 1);
+        const pC = __teil("box", "eisen", 5, 0, 0, 1, 1, 1);
         out.contactsTouching = r._partsAreInContact(pA, pB);
         out.contactsRespectsGap = !r._partsAreInContact(pA, pC);
 
@@ -1476,8 +1498,8 @@ async function checkBandWave5(ctx) {
         // → magieleitung sollte räumlich höher sein als atomar.
         const tipBp = {
             parts: [
-                teil("cylinder", "holz", 0, 0, 0, 0.3, 3, 0.3),
-                teil("pyramid", "quarz", 0, 2, 0, 0.5, 1, 0.5),
+                __teil("cylinder", "holz", 0, 0, 0, 0.3, 3, 0.3),
+                __teil("pyramid", "quarz", 0, 2, 0, 0.5, 1, 0.5),
             ],
         };
         const atomar = r.computeCompoundTags(tipBp);
@@ -1487,8 +1509,8 @@ async function checkBandWave5(ctx) {
         // geprüft wird nur: pointed-at-bottom trägt kein at_top (kein Spitze-Bonus).
         const noTipBp = {
             parts: [
-                teil("cylinder", "holz", 0, 2, 0, 0.3, 3, 0.3),
-                teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("cylinder", "holz", 0, 2, 0, 0.3, 3, 0.3),
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
             ],
         };
         const labelsBottomPyr = r._classifyPartPosition(noTipBp.parts[1], r._compoundBoundingBox(noTipBp));
@@ -1499,9 +1521,9 @@ async function checkBandWave5(ctx) {
         // at_outside (xz-Distanz vom Compound-Zentrum), der mittlere nicht.
         const outsideBp = {
             parts: [
-                teil("box", "stein", -3, 0, 0, 1, 1, 1),
-                teil("box", "stein", 0, 0, 0, 1, 1, 1),
-                teil("box", "stein", 3, 0, 0, 1, 1, 1),
+                __teil("box", "stein", -3, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 3, 0, 0, 1, 1, 1),
             ],
         };
         const outsideBB = r._compoundBoundingBox(outsideBp);
@@ -1510,10 +1532,13 @@ async function checkBandWave5(ctx) {
             r._classifyPartPosition(outsideBp.parts[2], outsideBB).has("at_outside") &&
             !r._classifyPartPosition(outsideBp.parts[1], outsideBB).has("at_outside");
 
-        // ein eigener Bauplan (nicht builtIn) mit diesen Teilen
-        const bauplan = (name, label, parts) => (r.state.blueprints[name] = { name, label, builtIn: false, parts });
         // UI: räumliche Reihe erscheint bei pointed-am-Rand
-        bauplan("wave5b-test", "Welle-5B-Test", tipBp.parts.map((p) => ({ ...p, opChain: r._defaultPartOpChain() })));
+        r.state.blueprints["wave5b-test"] = {
+            name: "wave5b-test",
+            label: "Welle-5B-Test",
+            builtIn: false,
+            parts: tipBp.parts.map((p) => ({ ...p, opChain: r._defaultPartOpChain() })),
+        };
         // die räumlichen Tags lebten in der entfernten Editor-Tags-Sektion; die DATEN-Schicht
         // (computeSpatialTags) bleibt das Subjekt + ihre Wirkung ist im neuen UI in der Resonanz-/Fähigkeit-
         // Zeile reflektiert. Wir prüfen, dass die räumliche Emergenz die FORM diskriminiert.
@@ -1522,9 +1547,14 @@ async function checkBandWave5(ctx) {
         out.uiSpatialRow = Object.keys(spatPointed).length > 0;
 
         // Reiner atomarer Bauplan: Hinweis sollte nicht "Spitze richtet" benennen
-        bauplan("wave5b-atomar", "Atomar-Test", [
-            { ...teil("box", "stein", 0, 0, 0, 1, 1, 1), opChain: r._defaultPartOpChain() },
-        ]);
+        r.state.blueprints["wave5b-atomar"] = {
+            name: "wave5b-atomar",
+            label: "Atomar-Test",
+            builtIn: false,
+            parts: [
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1, { opChain: r._defaultPartOpChain() }),
+            ],
+        };
         r.selectBlueprintForEdit("wave5b-atomar");
         const spatAtomar = r.computeSpatialTags(r.state.blueprints["wave5b-atomar"]) || {};
         // der pointed-am-Rand-Bauplan trägt ANDERE räumliche Tags als der reine Box-Bauplan (die Form zählt)
@@ -1541,12 +1571,18 @@ async function checkBandWave5(ctx) {
         // die räumlich verstärkte Magieleitung über die Schwelle.
         const polished = r._defaultPartOpChain();
         polished.push({ tool: "polierscheibe", op: "polish", cap: 0.97 });
-        bauplan("wave5b-tip-polished", "Tip-Polished", tipBp.parts.map((p) => ({ ...p, opChain: [...polished] })));
-        bauplan(
-            "wave5b-bottom-polished",
-            "Bottom-Polished",
-            noTipBp.parts.map((p) => ({ ...p, opChain: [...polished] }))
-        );
+        r.state.blueprints["wave5b-tip-polished"] = {
+            name: "wave5b-tip-polished",
+            label: "Tip-Polished",
+            builtIn: false,
+            parts: tipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
+        };
+        r.state.blueprints["wave5b-bottom-polished"] = {
+            name: "wave5b-bottom-polished",
+            label: "Bottom-Polished",
+            builtIn: false,
+            parts: noTipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
+        };
         // awe auf BASIS 0 — sonst confoundiert
         // (Warmup-awe an der Decke → der Tip-Magie-Effekt kann nicht weiter heben).
         r.state.player.emotions.awe = 0;
@@ -1569,7 +1605,13 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 5 B: Snapshot erreichbar", wave5bResults)) {
+    if (!wave5bResults || wave5bResults.error) {
+        check(
+            "Welle 5 B: Snapshot erreichbar",
+            false,
+            (wave5bResults && wave5bResults.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check("Welle 5 B: SPATIAL_POINTED_SHAPES frozen", wave5bResults.pointedShapesFrozen);
         check("Welle 5 B: SPATIAL_TRANSFERABLE_TAGS frozen", wave5bResults.transferableTagsFrozen);
         check("Welle 5 B: cone ist pointed-Shape", wave5bResults.pointedHasCone);
@@ -1597,16 +1639,6 @@ async function checkBandWave5(ctx) {
     // ### Hohlraum + Symmetrieachse + Resonanz-Array ###
     const wave5bp2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
-        // die Quarz-Pyramide (0,5 × 1 × 0,5) am Boden bei x/z · das Holz-Stabglied (0,3 × 1 × 0,3) bei x/y
-        const pyramide = (x, z) => teil("pyramid", "quarz", x, 0, z, 0.5, 1, 0.5);
-        const stab = (x, y) => teil("cylinder", "holz", x, y, 0, 0.3, 1, 0.3);
         if (!r) return null;
         const out = {};
         out.hollowShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_HOLLOW_SHAPES);
@@ -1618,9 +1650,9 @@ async function checkBandWave5(ctx) {
         const bellBp = {
             parts: [
                 // große Quarz-Glocke
-                teil("sphere", "quarz", 0, 1, 0, 3, 3, 3),
+                __teil("sphere", "quarz", 0, 1, 0, 3, 3, 3),
                 // kleiner Bronze-Klöppel im Inneren
-                teil("sphere", "bronze", 0, 1, 0, 0.4, 0.4, 0.4),
+                __teil("sphere", "bronze", 0, 1, 0, 0.4, 0.4, 0.4),
             ],
         };
         const pairs = r._findHollowPairs(bellBp);
@@ -1632,8 +1664,8 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: zwei sphere nebeneinander, KEIN Hohlraum
         const sideBySideBp = {
             parts: [
-                teil("sphere", "quarz", -2, 0, 0, 1, 1, 1),
-                teil("sphere", "bronze", 2, 0, 0, 1, 1, 1),
+                __teil("sphere", "quarz", -2, 0, 0, 1, 1, 1),
+                __teil("sphere", "bronze", 2, 0, 0, 1, 1, 1),
             ],
         };
         out.noHollowWhenSeparate = r._findHollowPairs(sideBySideBp).length === 0;
@@ -1641,9 +1673,9 @@ async function checkBandWave5(ctx) {
         // Prinzip 3: Y-Achsen-Symmetrie. Stab aus 3 Zylindern entlang Y.
         const staffBp = {
             parts: [
-                stab(0, 0),
-                stab(0, 1),
-                stab(0, 2),
+                __teil("cylinder", "holz", 0, 0, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 0, 1, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 0, 2, 0, 0.3, 1, 0.3),
             ],
         };
         out.staffHasSymmetry = r._hasYAxisSymmetry(staffBp);
@@ -1653,8 +1685,8 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: zwei Zylinder weit auseinander → keine Symmetrie
         const wideBp = {
             parts: [
-                stab(-5, 0),
-                stab(5, 0),
+                __teil("cylinder", "holz", -5, 0, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 5, 0, 0, 0.3, 1, 0.3),
             ],
         };
         out.wideNoSymmetry = !r._hasYAxisSymmetry(wideBp);
@@ -1662,10 +1694,10 @@ async function checkBandWave5(ctx) {
         // Prinzip 5: Resonanz-Array — 4 Pyramiden auf einem Kreis um die Mitte
         const arrayBp = {
             parts: [
-                pyramide(2, 0),
-                pyramide(-2, 0),
-                pyramide(0, 2),
-                pyramide(0, -2),
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, 2, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, -2, 0.5, 1, 0.5),
             ],
         };
         out.arrayDetected = r._hasResonantArray(arrayBp);
@@ -1676,17 +1708,17 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: nur 2 Pyramiden → kein Array
         const twoBp = {
             parts: [
-                pyramide(2, 0),
-                pyramide(-2, 0),
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -2, 0, 0, 0.5, 1, 0.5),
             ],
         };
         out.twoNoArray = !r._hasResonantArray(twoBp);
         // Negativ-Test: 3 Pyramiden auf unterschiedlichen Radien
         const unevenBp = {
             parts: [
-                pyramide(2, 0),
-                pyramide(-5, 0),
-                pyramide(0, 8),
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -5, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, 8, 0.5, 1, 0.5),
             ],
         };
         out.unevenNoArray = !r._hasResonantArray(unevenBp);
@@ -1703,8 +1735,8 @@ async function checkBandWave5(ctx) {
             [0, 2],
             [0, -2],
         ]) {
-            glockenspielBp.parts.push(teil("sphere", "quarz", cx, 1, cz, 1.2, 1.2, 1.2));
-            glockenspielBp.parts.push(teil("sphere", "bronze", cx, 1, cz, 0.3, 0.3, 0.3));
+            glockenspielBp.parts.push(__teil("sphere", "quarz", cx, 1, cz, 1.2, 1.2, 1.2));
+            glockenspielBp.parts.push(__teil("sphere", "bronze", cx, 1, cz, 0.3, 0.3, 0.3));
         }
         const glockAtomar = r.computeCompoundTags(glockenspielBp);
         const glockSpatial = r.computeSpatialTags(glockenspielBp);
@@ -1713,7 +1745,13 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 5 B P2: Snapshot erreichbar", wave5bp2Results)) {
+    if (!wave5bp2Results || wave5bp2Results.error) {
+        check(
+            "Welle 5 B P2: Snapshot erreichbar",
+            false,
+            (wave5bp2Results && wave5bp2Results.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check("Welle 5 B P2: SPATIAL_HOLLOW_SHAPES frozen", wave5bp2Results.hollowShapesFrozen);
         check("Welle 5 B P2: sphere ist hollow-Shape", wave5bp2Results.hollowHasSphere);
         check("Welle 5 B P2: torus ist hollow-Shape", wave5bp2Results.hollowHasTorus);
@@ -1738,13 +1776,6 @@ async function checkBandWave5(ctx) {
     // ### Verbindungstypen mit Lastformel ###
     const wave5aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const out = {};
         // Konstanten
@@ -1759,26 +1790,26 @@ async function checkBandWave5(ctx) {
             (t) => typeof types[t].typeStrength === "number" && types[t].typeStrength > 0 && types[t].typeStrength <= 1
         );
 
-        // _partsContactArea: zwei berührende 1×1×1-Würfel (stofflos, auf der x-Achse bei `x`)
-        const wuerfel = (x) => ({ shape: "box", position: { x, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } });
-        const a = wuerfel(0);
-        const b = wuerfel(1);
+        // _partsContactArea: zwei berührende 1×1×1-Würfel
+        const a = { shape: "box", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
+        const b = { shape: "box", position: { x: 1, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
         const area = r._partsContactArea(a, b);
         out.contactAreaNonZero = area > 0.5;
         // Weit weg: keine Fläche
-        const c = wuerfel(10);
+        const c = { shape: "box", position: { x: 10, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } };
         out.farContactZero = r._partsContactArea(a, c) === 0;
 
-        // ein eigener Bauplan (nicht builtIn) mit diesen Teilen und Verbindungen
-        const bauplan = (name, label, parts, connections) =>
-            (r.state.blueprints[name] = { name, label, builtIn: false, parts, connections });
         // computeConnectionStrength: hafting zwischen zwei harten Materialien
-        bauplan(
-            "w5a-test",
-            "W5A Test",
-            [teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1), teil("box", "eisen", 0.95, 0, 0, 1, 1, 1)],
-            []
-        );
+        r.state.blueprints["w5a-test"] = {
+            name: "w5a-test",
+            label: "W5A Test",
+            builtIn: false,
+            parts: [
+                __teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0.95, 0, 0, 1, 1, 1),
+            ],
+            connections: [],
+        };
         const haftStrength = r.computeConnectionStrength(
             { type: "hafting", partA: 0, partB: 1 },
             r.state.blueprints["w5a-test"]
@@ -1786,12 +1817,16 @@ async function checkBandWave5(ctx) {
         out.haftingStrengthOk = haftStrength > 1.0 && haftStrength < 3.0;
 
         // Weichere Materialien → schwächere hafting
-        bauplan(
-            "w5a-soft",
-            "W5A Soft",
-            [teil("cylinder", "leder", 0, 0, 0, 1, 1, 1), teil("box", "leder", 0.95, 0, 0, 1, 1, 1)],
-            []
-        );
+        r.state.blueprints["w5a-soft"] = {
+            name: "w5a-soft",
+            label: "W5A Soft",
+            builtIn: false,
+            parts: [
+                __teil("cylinder", "leder", 0, 0, 0, 1, 1, 1),
+                __teil("box", "leder", 0.95, 0, 0, 1, 1, 1),
+            ],
+            connections: [],
+        };
         const softStrength = r.computeConnectionStrength(
             { type: "hafting", partA: 0, partB: 1 },
             r.state.blueprints["w5a-soft"]
@@ -1812,8 +1847,8 @@ async function checkBandWave5(ctx) {
         const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
         const touchingBp = {
             parts: [
-                teil("box", "eisen", 0, 0, 0, 1, 1, 1),
-                teil("box", "eisen", 0, 1, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 1, 0, 1, 1, 1),
             ],
         };
         out.validRejectsUnknownType =
@@ -1869,12 +1904,16 @@ async function checkBandWave5(ctx) {
         r._workshopCloseConnectPopover();
 
         // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
-        bauplan(
-            "w5a-weak",
-            "W5A Weak",
-            [teil("cylinder", "holz", 0, 0, 0, 0.2, 0.2, 0.2), teil("box", "holz", 0.18, 0, 0, 0.2, 0.2, 0.2)],
-            [{ type: "sewing", partA: 0, partB: 1 }]
-        );
+        r.state.blueprints["w5a-weak"] = {
+            name: "w5a-weak",
+            label: "W5A Weak",
+            builtIn: false,
+            parts: [
+                __teil("cylinder", "holz", 0, 0, 0, 0.2, 0.2, 0.2),
+                __teil("box", "holz", 0.18, 0, 0, 0.2, 0.2, 0.2),
+            ],
+            connections: [{ type: "sewing", partA: 0, partB: 1 }],
+        };
         // die „schwache Verbindung"-Markierung ist eine DATEN-Eigenschaft (computeConnectionStrength
         // unter der Solid-Schwelle); die alte Editor-Listen-Klasse entfiel. Eine sewing-Verbindung zwischen
         // kleinen Holz-Parts liegt unter der Schwelle (Brech-Risiko).
@@ -1892,7 +1931,13 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 5 A: Snapshot erreichbar", wave5aResults)) {
+    if (!wave5aResults || wave5aResults.error) {
+        check(
+            "Welle 5 A: Snapshot erreichbar",
+            false,
+            (wave5aResults && wave5aResults.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check("Welle 5 A: CONNECTION_TYPES frozen", wave5aResults.connectionTypesFrozen);
         check("Welle 5 A: Acht Verbindungstypen definiert", wave5aResults.eightTypes);
         check("Welle 5 A: Jeder Typ hat strongTags", wave5aResults.eachTypeHasStrongTags);
@@ -1934,22 +1979,26 @@ async function checkBandWave5(ctx) {
         // computeBlueprintPrecisionCap: min der Part-Praezisionen
         const polishedChain = [{ tool: "polierscheibe", op: "polish", cap: 0.97 }];
         const roughChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
-        // ein Eisen-Teil dieser Form; seine opChain IST die übergebene Kette (geteilt wie im Literal)
-        const eisen = (shape, opChain) => ({ shape, material: "eisen", opChain });
-        // ein eigener Bauplan (nicht builtIn, ohne Verbindungen); `mitte` trägt Rolle + toolMeta vor den Teilen
-        const bauplan = (name, label, parts, mitte) =>
-            (r.state.blueprints[name] = { name, label, builtIn: false, ...mitte, parts, connections: [] });
         const mixedBp = {
             parts: [
-                eisen("box", polishedChain),
-                eisen("box", roughChain),
-                eisen("box", polishedChain),
+                { shape: "box", material: "eisen", opChain: polishedChain },
+                { shape: "box", material: "eisen", opChain: roughChain },
+                { shape: "box", material: "eisen", opChain: polishedChain },
             ],
         };
         out.precisionCapIsMin = Math.abs(r.computeBlueprintPrecisionCap(mixedBp) - 0.4) < 0.001;
 
         // setBlueprintToolMeta + Validierung
-        bauplan("w5c-lathe", "Drehbank", [eisen("box", polishedChain), eisen("cylinder", polishedChain)]);
+        r.state.blueprints["w5c-lathe"] = {
+            name: "w5c-lathe",
+            label: "Drehbank",
+            builtIn: false,
+            parts: [
+                { shape: "box", material: "eisen", opChain: polishedChain },
+                { shape: "cylinder", material: "eisen", opChain: polishedChain },
+            ],
+            connections: [],
+        };
         const metaOk = r.setBlueprintToolMeta("w5c-lathe", "lathe", "subtractive");
         out.setMetaOk = metaOk.ok && r.state.blueprints["w5c-lathe"].role === "tool";
         // Bad opClass
@@ -1971,21 +2020,38 @@ async function checkBandWave5(ctx) {
         out.toolNotBuiltin = r.state.tools["w5c-lathe"].builtIn === false;
 
         // Cannot register a non-tool blueprint
-        bauplan("w5c-not-a-tool", "Just-a-Box", [eisen("box", polishedChain)]);
+        r.state.blueprints["w5c-not-a-tool"] = {
+            name: "w5c-not-a-tool",
+            label: "Just-a-Box",
+            builtIn: false,
+            parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+            connections: [],
+        };
         const regNotMarked = r.registerBlueprintAsTool("w5c-not-a-tool");
         out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
 
         // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter)
-        bauplan("schmiede-hammer", "Mein Schmiede-Hammer", [eisen("box", polishedChain)], {
+        r.state.blueprints["schmiede-hammer"] = {
+            name: "schmiede-hammer",
+            label: "Mein Schmiede-Hammer",
+            builtIn: false,
             role: "tool",
             toolMeta: { opName: "forge", opClass: "plastic" },
-        });
+            parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+            connections: [],
+        };
         const regHammerOverride = r.registerBlueprintAsTool("schmiede-hammer");
         out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
         delete r.state.blueprints["schmiede-hammer"];
 
         // Recursive: das neue Werkzeug funktioniert in applyOpToPart
-        bauplan("w5c-target", "Ziel", [eisen("cylinder", r._defaultPartOpChain())]);
+        r.state.blueprints["w5c-target"] = {
+            name: "w5c-target",
+            label: "Ziel",
+            builtIn: false,
+            parts: [{ shape: "cylinder", material: "eisen", opChain: r._defaultPartOpChain() }],
+            connections: [],
+        };
         const applyR = r.applyOpToPart("w5c-target", 0, "w5c-lathe");
         const partAfter = r.state.blueprints["w5c-target"].parts[0];
         const lastOp = partAfter.opChain && partAfter.opChain[partAfter.opChain.length - 1];
@@ -1996,18 +2062,39 @@ async function checkBandWave5(ctx) {
         out.opChainGrew = Array.isArray(partAfter.opChain) && partAfter.opChain.length === 2;
 
         // Schief gebaute Drehbank → schlechter Cap
-        bauplan("w5c-bad-lathe", "Schlechte Drehbank", [eisen("box", roughChain), eisen("cylinder", polishedChain)]);
+        r.state.blueprints["w5c-bad-lathe"] = {
+            name: "w5c-bad-lathe",
+            label: "Schlechte Drehbank",
+            builtIn: false,
+            parts: [
+                { shape: "box", material: "eisen", opChain: roughChain },
+                { shape: "cylinder", material: "eisen", opChain: polishedChain },
+            ],
+            connections: [],
+        };
         r.setBlueprintToolMeta("w5c-bad-lathe", "bad-lathe", "subtractive");
         r.registerBlueprintAsTool("w5c-bad-lathe");
         out.badLatheLowerCap = r.state.tools["w5c-bad-lathe"].precisionCap === 0.4;
         // Recursive Konzept-Test: eine Box mit dem schlechten Tool
         // erreicht keine bessere Praezision als 0.4.
-        bauplan("w5c-target2", "Ziel 2", [eisen("cylinder", r._defaultPartOpChain())]);
+        r.state.blueprints["w5c-target2"] = {
+            name: "w5c-target2",
+            label: "Ziel 2",
+            builtIn: false,
+            parts: [{ shape: "cylinder", material: "eisen", opChain: r._defaultPartOpChain() }],
+            connections: [],
+        };
         r.applyOpToPart("w5c-target2", 0, "w5c-bad-lathe");
         out.recursivePrecisionCascade = r.computePartPrecision(r.state.blueprints["w5c-target2"].parts[0]) === 0.4;
 
         // DSL-Ops
-        bauplan("w5c-dsl-test", "DSL Test", [eisen("box", polishedChain)]);
+        r.state.blueprints["w5c-dsl-test"] = {
+            name: "w5c-dsl-test",
+            label: "DSL Test",
+            builtIn: false,
+            parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
+            connections: [],
+        };
         r.dslRun(["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"], {
             source: "test",
         });
@@ -2038,7 +2125,13 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Welle 5 C: Snapshot erreichbar", wave5cResults)) {
+    if (!wave5cResults || wave5cResults.error) {
+        check(
+            "Welle 5 C: Snapshot erreichbar",
+            false,
+            (wave5cResults && wave5cResults.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check("Welle 5 C: TOOL_OP_CLASSES frozen", wave5cResults.opClassesFrozen);
         check("Welle 5 C: TOOL_OP_CLASSES hat 4 Klassen", wave5cResults.opClassesCount);
         check("Welle 5 C: computeBlueprintPrecisionCap = min(parts)", wave5cResults.precisionCapIsMin);
@@ -2068,41 +2161,25 @@ async function checkBandWave5(ctx) {
     // ### Bugfixes nach Welle-5-Reflexion ###
     const bugfixResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const out = {};
-        // ein eigener Bauplan (nicht builtIn); `mitte` trägt Rolle + toolMeta vor den Teilen
-        const bauplan = (name, label, parts, connections, mitte) =>
-            (r.state.blueprints[name] = { name, label, builtIn: false, ...mitte, parts, connections });
-        // drei Stein-Würfel in einer Reihe auf der x-Achse (0, 1, 2) — je Ruf frisch
-        const steinReihe = () => [0, 1, 2].map((x) => teil("box", "stein", x, 0, 0, 1, 1, 1));
-        // ein registrierbares Werkzeug: ein polierter Eisen-Würfel, Rolle tool, subtraktive Op `opName`
-        const polierWerkzeug = (name, label, opName) =>
-            bauplan(
-                name,
-                label,
-                [
-                    {
-                        ...teil("box", "eisen", 0, 0, 0, 1, 1, 1),
-                        opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
-                    },
-                ],
-                [],
-                { role: "tool", toolMeta: { opName, opClass: "subtractive" } }
-            );
 
         // Bug 1: Part-Loesch raeumt connections auf
-        bauplan("bug1-test", "Bug1 Test", steinReihe(), [
-            { type: "hafting", partA: 0, partB: 1 },
-            { type: "hafting", partA: 1, partB: 2 },
-            { type: "hafting", partA: 0, partB: 2 },
-        ]);
+        r.state.blueprints["bug1-test"] = {
+            name: "bug1-test",
+            label: "Bug1 Test",
+            builtIn: false,
+            parts: [
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 1, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 2, 0, 0, 1, 1, 1),
+            ],
+            connections: [
+                { type: "hafting", partA: 0, partB: 1 },
+                { type: "hafting", partA: 1, partB: 2 },
+                { type: "hafting", partA: 0, partB: 2 },
+            ],
+        };
         // Part 1 loeschen: connection 0-1 + 1-2 weg, 0-2 bleibt
         // und wird zu 0-1 (Index 2 → 1).
         r.removePartFromBlueprint("bug1-test", 1);
@@ -2111,13 +2188,33 @@ async function checkBandWave5(ctx) {
         out.connectionIndicesShifted = remaining[0] && remaining[0].partA === 0 && remaining[0].partB === 1;
 
         // Bug 1 edge case: delete part 0, connection 1-2 wird zu 0-1
-        bauplan("bug1-shift", "Shift Test", steinReihe(), [{ type: "hafting", partA: 1, partB: 2 }]);
+        r.state.blueprints["bug1-shift"] = {
+            name: "bug1-shift",
+            label: "Shift Test",
+            builtIn: false,
+            parts: [
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 1, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 2, 0, 0, 1, 1, 1),
+            ],
+            connections: [{ type: "hafting", partA: 1, partB: 2 }],
+        };
         r.removePartFromBlueprint("bug1-shift", 0);
         const shifted = r.state.blueprints["bug1-shift"].connections;
         out.shiftedToZeroOne = shifted.length === 1 && shifted[0].partA === 0 && shifted[0].partB === 1;
 
         // Bug 2: Bauplan-Loesch raeumt eigene Werkzeuge auf
-        polierWerkzeug("bug2-lathe", "Test Lathe", "bug2-op");
+        r.state.blueprints["bug2-lathe"] = {
+            name: "bug2-lathe",
+            label: "Test Lathe",
+            builtIn: false,
+            role: "tool",
+            toolMeta: { opName: "bug2-op", opClass: "subtractive" },
+            parts: [
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
+            ],
+            connections: [],
+        };
         r.registerBlueprintAsTool("bug2-lathe");
         out.toolWasRegistered = !!r.state.tools["bug2-lathe"];
         out.playerOwnedToolBefore = (r.state.player.tools || []).includes("bug2-lathe");
@@ -2131,9 +2228,27 @@ async function checkBandWave5(ctx) {
 
         // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
         // andere Tools komplett unberuehrt.
-        polierWerkzeug("bug2-noisy-tool", "Noisy Tool", "noisy-op");
+        r.state.blueprints["bug2-noisy-tool"] = {
+            name: "bug2-noisy-tool",
+            label: "Noisy Tool",
+            builtIn: false,
+            role: "tool",
+            toolMeta: { opName: "noisy-op", opClass: "subtractive" },
+            parts: [
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
+            ],
+            connections: [],
+        };
         r.registerBlueprintAsTool("bug2-noisy-tool");
-        bauplan("bug2-plain", "Plain Blueprint", [teil("box", "stein", 0, 0, 0, 1, 1, 1)], []);
+        r.state.blueprints["bug2-plain"] = {
+            name: "bug2-plain",
+            label: "Plain Blueprint",
+            builtIn: false,
+            parts: [
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+            ],
+            connections: [],
+        };
         r.deleteBlueprint("bug2-plain");
         out.unrelatedToolUntouched = !!r.state.tools["bug2-noisy-tool"];
 
@@ -2148,7 +2263,13 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (erreichbar(check, "Bugfix Snapshot erreichbar", bugfixResults)) {
+    if (!bugfixResults || bugfixResults.error) {
+        check(
+            "Bugfix Snapshot erreichbar",
+            false,
+            (bugfixResults && bugfixResults.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
         check(
             "Bugfix: removePartFromBlueprint filtert betroffene Connections",
             bugfixResults.connectionsFilteredOnPartDelete
@@ -2312,7 +2433,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 9a", wave9aResults)) {
+    if (wave9aResults && !wave9aResults.error) {
         check(
             "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
             wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
@@ -2367,6 +2488,8 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
             wave9aResults.manualOverrideStaysAfterApply
         );
+    } else if (wave9aResults && wave9aResults.error) {
+        check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
     }
 
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
@@ -2470,7 +2593,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 9b", wave9bResults)) {
+    if (wave9bResults && !wave9bResults.error) {
         check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
         check(
             "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
@@ -2509,6 +2632,8 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
             wave9bResults.toolChipHasDomainDot
         );
+    } else if (wave9bResults && wave9bResults.error) {
+        check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
     }
 
     // ### Welt-Werkstatt-Architekturen + Distance-Gate ###
@@ -2580,7 +2705,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 9c", wave9cResults)) {
+    if (wave9cResults && !wave9cResults.error) {
         check(
             "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
             wave9cResults.allStationsExist
@@ -2613,6 +2738,8 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9c: architecture-Bauplan (stein_block) überspringt Werkstatt-Check (keine Domain → kein Gate)",
             wave9cResults.archNoCheck
         );
+    } else if (wave9cResults && wave9cResults.error) {
+        check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
     }
 
     // ### Maschinen-Bonus + Seelen-Bauplane ###
@@ -2689,7 +2816,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 9d", wave9dResults)) {
+    if (wave9dResults && !wave9dResults.error) {
         check(
             "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
             wave9dResults.regOk && wave9dResults.toolHasBonus
@@ -2719,18 +2846,13 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9d UI (S7 V17.66): die EINE FERTIGEN-Zeile rendert bei role=soul im Werkstatt-DOM (statt des alten Soul-Knopfs)",
             wave9dResults.soulFertigenRendered && wave9dResults.oldSoulButtonGone
         );
+    } else if (wave9dResults && wave9dResults.error) {
+        check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
     }
 
     // ### Präzision als Stat-Multiplikator ###
     const wave10aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — dieselbe Feld-Folge, je Ruf ein frisches Objekt
-        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
-            shape,
-            material,
-            position: { x, y, z },
-            size: { x: sx, y: sy, z: sz },
-        });
         if (!r) return null;
         const out = {};
         try {
@@ -2743,14 +2865,14 @@ async function checkBandWaves9And10a(ctx) {
 
             // Parts ohne opChain → 1.0 ("geboren")
             const partsBornless = [
-                teil("box", "stein", 0, 1, 0, 1, 1, 1),
-                teil("sphere", "knochen", 0, 1, 0, 1, 1, 1),
+                __teil("box", "stein", 0, 1, 0, 1, 1, 1),
+                __teil("sphere", "knochen", 0, 1, 0, 1, 1, 1),
             ];
             out.partsNoChainIs1 = r._compoundAvgPrecisionFromParts(partsBornless) === 1.0;
 
             // Parts mit Hand-opChain (cap 0.4) → 0.4
             const partsHand = [
-                { ...teil("box", "stein", 0, 1, 0, 1, 1, 1), opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }] },
+                __teil("box", "stein", 0, 1, 0, 1, 1, 1, { opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }] }),
             ];
             out.partsHandIs04 = Math.abs(r._compoundAvgPrecisionFromParts(partsHand) - 0.4) < 0.001;
 
@@ -2831,7 +2953,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 10a", wave10aResults)) {
+    if (wave10aResults && !wave10aResults.error) {
         check(
             "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
             wave10aResults.emptyIs1 && wave10aResults.nullIs1
@@ -2850,6 +2972,8 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 10a: Tool-Präzision moduliert seinen Stat-Beitrag in computePlayerStats",
             wave10aResults.toolPrecModulates
         );
+    } else if (wave10aResults && wave10aResults.error) {
+        check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
     }
 }
 
@@ -2906,8 +3030,8 @@ async function checkBandM2RollenWahrheit(ctx) {
         // (Σ-Substanz-Volumen statt Hüll-Volumen).
         const mk = (d) => ({
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
-                { shape: "box", material: "eisen", position: { x: d, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                __teil("box", "eisen", 0, 0, 0, 0.4, 0.4, 0.4),
+                __teil("box", "eisen", d, 0, 0, 0.4, 0.4, 0.4),
             ],
         });
         out.exploitTot = Math.abs(r._compoundSizeFactor(mk(0.5)) - r._compoundSizeFactor(mk(10))) < 1e-9;

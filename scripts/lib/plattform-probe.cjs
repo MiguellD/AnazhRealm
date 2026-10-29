@@ -420,18 +420,29 @@ function goldenWand(datei, cv, ist, check, n, minted = "buildInstance(rezeptId, 
     for (const d of diffs.slice(1)) console.log(`      ↳ ${d}`);
 }
 
-// DER FRISCHE KERN der Plattform-Probe: je Lauf neu geladen (die Stoffe rechnen ihre Farbe beim ersten Bau) — danach legt
-// die Linse ihren eigenen Kern wieder unter `globalThis[name]`.
-const frischerKern = (kern, name) => () => {
-    delete require.cache[require.resolve(kern)];
-    require(kern);
-    return globalThis[name];
-};
+// DIE PROBE EINES STUDIO-KERNS (fachwerk · porta · schmiede · vehicle): die Wand `probeWand` über den je Lauf frisch geladenen
+// Kern (`studioKern` frisch) — je Fall `bau(K, c)` gefingert (`finger`, `schluessel`), danach `weg(g)`; am Ende trägt `name` wieder den Kern der
+// Linse. Bis zur Decke w3s-sukzession lud, baute und legte jede Linse selbst (fünf Mal).
+async function kernProbe(satz, datei, name, faelle, check, o = {}) {
+    const { bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov), finger = fingerabdruck, schluessel = fallSchluessel, weg = () => {} } = o;
+    const eigen = globalThis[name];
+    const bauen = (K) => {
+        const r = {};
+        for (const c of faelle) {
+            const g = bau(K, c);
+            r[schluessel(c)] = finger(g).sha256;
+            weg(g);
+        }
+        return r;
+    };
+    await probeWand(satz, { laden: () => require("./welt-boot.cjs").studioKern(datei, name, true), bauen }, check);
+    globalThis[name] = eigen;
+}
 
 module.exports = {
+    kernProbe,
     vertragIst,
     goldenWand,
-    frischerKern,
     plattformProbe,
     installiereDrift,
     FUNKTIONEN,

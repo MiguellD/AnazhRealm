@@ -446,6 +446,21 @@ async function probe(A) {
     const fehlerZeile = (e) => String(e?.stack || e).split("\n")[0]; // der Wurf einer Probe, seine erste Zeile
     const chatSeit = (t0, ab = 0) => // was der Chat seit dem Zeichen `t0` sagte, ab `ab`, gestaucht
         ((el) => (el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(ab, ab + 300) : ""))(document.getElementById("chat-output"));
+    // DER WAGEN AM ANLAUF: der Spieler ruht an (sx, sz), der GT steht dort längs der Fahrt (`fahrt`, Gier), alle Tasten los
+    const gtAn = (sx, sz, fahrt) => {
+        const h = r.getTerrainHeightAt(sx, sz);
+        st.playerMesh.position.set(sx, h + 1.2, sz);
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        const gt = r.spawnArchitecture(
+            "fahrzeug_gt",
+            { x: sx, y: h + 0.5, z: sz },
+            { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
+        );
+        if (!gt) throw new Error("kein GT");
+        for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
+        return gt;
+    };
     // DAS AUFSITZEN (EIN Ruf je Probe): der Spieler steigt in den Wagen, `n` Bilder stellen den Ritt auf
     const aufsitzen = (gt, n = 12) => {
         const m = r.mountArchitecture(gt);
@@ -900,16 +915,7 @@ async function probe(A) {
                 };
                 bahnFrei();
                 const fahrt = Math.atan2(rampe.ux, rampe.uz);
-                st.playerMesh.position.set(sx, hh(sx, sz) + 1.2, sz);
-                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-                st._fieldVy = 0;
-                const gt = r.spawnArchitecture(
-                    "fahrzeug_gt",
-                    { x: sx, y: hh(sx, sz) + 0.5, z: sz },
-                    { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
-                );
-                if (!gt) throw new Error("kein GT");
-                for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
+                const gt = gtAn(sx, sz, fahrt);
                 // Aussteigen an Land (der Anlauf ist trocken): wo steht der Spieler, gemessen am Boden unter ihm?
                 aufsitzen(gt);
                 r.dismountArchitecture();
@@ -1093,16 +1099,7 @@ async function probe(A) {
                     if (l > -6 && l < 40 && Math.abs(dx * furt.uz - dz * furt.ux) < 5) c.position.y -= 500;
                 }
                 const fahrt = Math.atan2(furt.ux, furt.uz); // Fahrt-Richtung (sin, cos)
-                st.playerMesh.position.set(sx, hh(sx, sz) + 1.2, sz);
-                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-                st._fieldVy = 0;
-                const gt = r.spawnArchitecture(
-                    "fahrzeug_gt",
-                    { x: sx, y: hh(sx, sz) + 0.5, z: sz },
-                    { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
-                );
-                if (!gt) throw new Error("kein GT");
-                for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
+                const gt = gtAn(sx, sz, fahrt);
                 aufsitzen(gt);
                 st.keys.w = true;
                 const spur = [];
