@@ -56,3 +56,9 @@ leib.K4#1 Deckel; klang.K2#1 Welt ohne Ruhe). **ROT: Σ Deckel 4 780 s > 1 680 s
 **NIE 1536680d nach koordination/punkte-maschine mergen, bevor die Summe passt.** Wurzel der Dauer: jede Grundstellung lädt die Seite neu, die
 nächste Probe baut ihren Weltring neu (reißt 45 s). Der Schnitt: Grundstellung OHNE Neuladen (Zustand an Ort und Stelle zurück, Ringe warm),
 dann Proben ≤ 15 s → eine Fahrt ≤ 30 min. Danach Session-Takt am Kopf und buchen.
+
+## NOTBREMSE 19:03 bei 98 % (Woche, Reset 03.11. 09:00)
+Alle lokalen Workflows waren beendet; Wache gestoppt; notbremse.sh: WIP kern-karte @ 3a287c3d2, 122 Bäume sauber, main-Checkout sauber;
+aufraeumen.ps1: 0 Treffer, kein Runner.Worker; GPU-Schloss: .
+Die OMEN fährt takt21b am alten Kopf 98ef98bb weiter (wertlos für die Buchung, ohne Tokens). Der Messplatz-Blick läuft im Terminal-Tab „Messplatz“.
+**Gebucht 138/330. main 715754fc (z77). Erster Schritt nach dem Reset: siehe „Nächste Schritte“ + Nachträge oben.**
