@@ -324,7 +324,7 @@ async function gegenprobe(befehl, ordner) {
     };
 }
 
-module.exports = { imBaum, sammle, gegenprobe, blindVon, befehleIn, ZEUGE, ARTEN };
+module.exports = { sammle, blindVon, befehleIn, ZEUGE };
 
 // als Befehl (auch unter dem eigenen NODE_OPTIONS: dann läuft die Datei nur als --require) nie als Zeuge
 const alsBefehl = path.resolve(process.argv[1] || ".") === ZEUGE;

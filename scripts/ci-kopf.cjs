@@ -270,7 +270,7 @@ async function waehle({ api, wf, kopf, git, lade }) {
     };
 }
 
-module.exports = { kopfUrteil, alleLaeufe, apiMit, auswahl, planAus, vollSchritte, teileVon, waehle };
+module.exports = { kopfUrteil, alleLaeufe, apiMit, auswahl, planAus };
 
 if (require.main === module) {
     const env = process.env;
