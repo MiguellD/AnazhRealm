@@ -5,8 +5,8 @@
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
 async function WELLE_L(ort) {
-    const s = r.state,
-        A = r.constructor,
+    const s = st,
+        A = AnazhRealm,
         p = s.player,
         pm = s.playerMesh;
     const w = { z: {}, c: {}, fehler: [] };
@@ -3114,7 +3114,7 @@ async function WELLE_L(ort) {
 // Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
 // Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
-    const s = r.state,
+    const s = st,
         p = s.player,
         pm = s.playerMesh;
     const K = { sturz: [], lage: [] };
@@ -3125,7 +3125,7 @@ async function K5_VOR(abdruck) {
     const P = pm.position.clone();
     const bau = (e) => Math.hypot(e.position.x - P.x, e.position.z - P.z) < 14;
     while (s.architectures.some(bau) || !r._landAt(P.x, P.z, 0.2)) P.x += 24;
-    P.y = r.getTerrainHeightAt(P.x, P.z) + r.constructor.PLAYER_FOOT_OFFSET;
+    P.y = r.getTerrainHeightAt(P.x, P.z) + AnazhRealm.PLAYER_FOOT_OFFSET;
     let t = 1e4,
         quelle;
     const takt = (dt) => (r._loopFixedStep(dt, (t += dt)), r.updateCreatures(dt), (s.spielZeit += dt));
@@ -3197,7 +3197,7 @@ async function K5_VOR(abdruck) {
     };
     r.removeCreature(wolf);
     ruhe(0.6, pm.position.clone());
-    for (let k = 0; k < 60 * r.constructor._bestandGesetz().B.taktS; k++) takt(1 / 60);
+    for (let k = 0; k < 60 * AnazhRealm._bestandGesetz().B.taktS; k++) takt(1 / 60);
     // (Q14) halten.K5 Staffel 2 — DIE LEBENSWERTE LESEN WERK UND NAHRUNG: je Mutation die Werte des Leibs aus
     // `recomputePlayerStats` (hpMax · staminaMax · manaMax · defense) — das getragene Werk (der Brustpanzer, seine Teile aus
     // Eisen · Bronze · Holz), die Nahrung (der Lebenssaft, sein Inhalt aus Kraut · Fleisch, `activateConsumable`); dann trägt der
@@ -3263,7 +3263,7 @@ function K5_ABDRUCK() {
 // (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
 // den letzten Lauf zurück (Halt, Kern, Schwung).
 async function K1_BILD(lauf) {
-    const s = r.state,
+    const s = st,
         p = s.player,
         pm = s.playerMesh,
         sc = globalThis.__schmiedeCore,

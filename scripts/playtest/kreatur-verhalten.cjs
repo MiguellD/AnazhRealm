@@ -12,20 +12,20 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // Default-Task „wander“ hält das Emotion-Verhalten (Aura stumm); follow_player + wait tragen ein
     // Aura-Sprite (grün/bernstein). Multi-User: Tasks stehen in NON_BROADCASTABLE_OPS.
     const wave6hResults = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+        if (!r || !st || !st.creatures || st.creatures.length < 3) return null;
         const out = {};
         // Statische Konstanten
         out.hasTasks =
-            Array.isArray(r.constructor.CREATURE_TASKS) &&
-            r.constructor.CREATURE_TASKS.length >= 3 &&
-            r.constructor.CREATURE_TASKS.includes("wander") &&
-            r.constructor.CREATURE_TASKS.includes("follow_player") &&
-            r.constructor.CREATURE_TASKS.includes("wait");
+            Array.isArray(AnazhRealm.CREATURE_TASKS) &&
+            AnazhRealm.CREATURE_TASKS.length >= 3 &&
+            AnazhRealm.CREATURE_TASKS.includes("wander") &&
+            AnazhRealm.CREATURE_TASKS.includes("follow_player") &&
+            AnazhRealm.CREATURE_TASKS.includes("wait");
         out.hasAuraHueMap =
-            r.constructor.CREATURE_TASK_AURA_HUE && r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
+            AnazhRealm.CREATURE_TASK_AURA_HUE && AnazhRealm.CREATURE_TASK_AURA_HUE.wander === null;
 
         // Default-Task für initial-gespawnte Kreaturen ist wander
-        const c0 = r.state.creatures[0];
+        const c0 = st.creatures[0];
         out.initialTaskWander = r._getCreatureTask(c0).name === "wander";
         out.initialNoAura = !c0.userData.taskAura;
 
@@ -48,13 +48,13 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.unknownRejected = r.assignCreatureTask(c0, "fictional") === false;
 
         // tickCreatureTaskDirection
-        const c1 = r.state.creatures[1];
+        const c1 = st.creatures[1];
         r.assignCreatureTask(c1, "wait");
         const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
         out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
 
         // (das Folgen misst gate:kreatur-takt folgen)
-        const p = r.state.playerMesh.position;
+        const p = st.playerMesh.position;
         // wander → null (Caller fällt auf Emotion-Logik)
         r.assignCreatureTask(c1, "wander");
         const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
@@ -65,30 +65,30 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.distanceArgKept = r._getCreatureTask(c1).args.distance === 1.5;
 
         // findNearestCreature
-        for (let i = 0; i < r.state.creatures.length; i++) {
-            r.state.creatures[i].position.set(p.x + 100 + i * 5, p.y, p.z + 100 + i * 5);
+        for (let i = 0; i < st.creatures.length; i++) {
+            st.creatures[i].position.set(p.x + 100 + i * 5, p.y, p.z + 100 + i * 5);
         }
-        r.state.creatures[2].position.set(p.x + 2, p.y, p.z + 2);
+        st.creatures[2].position.set(p.x + 2, p.y, p.z + 2);
         const nearest = r.findNearestCreature(p);
-        out.nearestIsCorrect = nearest === r.state.creatures[2];
+        out.nearestIsCorrect = nearest === st.creatures[2];
 
         // assignTaskToNearestCreature
-        r.assignCreatureTask(r.state.creatures[2], "wander");
+        r.assignCreatureTask(st.creatures[2], "wander");
         const target = r.assignTaskToNearestCreature(p, "follow_player");
-        out.assignNearestWorks = target === r.state.creatures[2] && r._getCreatureTask(target).name === "follow_player";
+        out.assignNearestWorks = target === st.creatures[2] && r._getCreatureTask(target).name === "follow_player";
 
         // assignTaskToAllCreatures
         const count = r.assignTaskToAllCreatures("wait");
         out.assignAllWorks =
-            count === r.state.creatures.length && r.state.creatures.every((c) => r._getCreatureTask(c).name === "wait");
+            count === st.creatures.length && st.creatures.every((c) => r._getCreatureTask(c).name === "wait");
         r.assignTaskToAllCreatures("wander");
 
         // DSL-Ops
         r.dslRun(["creature_task_all", "wander"], { source: "test" });
-        out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
+        out.dslAllWorks = st.creatures.every((c) => r._getCreatureTask(c).name === "wander");
 
         // NON_BROADCASTABLE_OPS Mitgliedschaft
-        const nbs = r.constructor.NON_BROADCASTABLE_OPS;
+        const nbs = AnazhRealm.NON_BROADCASTABLE_OPS;
         out.nbCreatureTask = nbs.has("creature_task");
         out.nbCreatureTaskNearest = nbs.has("creature_task_nearest");
         out.nbCreatureTaskAll = nbs.has("creature_task_all");
@@ -117,13 +117,13 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
 
         // removeCreature räumt Aura mit
-        const cToRemove = r.state.creatures[r.state.creatures.length - 1];
+        const cToRemove = st.creatures[st.creatures.length - 1];
         r.assignCreatureTask(cToRemove, "wait");
         const auraToCheck = cToRemove.userData.taskAura;
-        out.preRemoveAuraInScene = r.state.scene.children.includes(auraToCheck);
+        out.preRemoveAuraInScene = st.scene.children.includes(auraToCheck);
         r.removeCreature(cToRemove);
-        r.state.creatures.pop(); // sync state mit removeCreature-Pfad
-        out.postRemoveAuraGone = !r.state.scene.children.includes(auraToCheck);
+        st.creatures.pop(); // sync state mit removeCreature-Pfad
+        out.postRemoveAuraGone = !st.scene.children.includes(auraToCheck);
 
         return out;
     });
@@ -181,18 +181,18 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // Audio-Antwort bei Task-Wechsel, Journal-Eintrag bei Geste, Leerschlag-Feedback, Status-Bar-
     // Zähler, Texture-Cache, describeProgram-Distanz.
     const wave6hV2Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+        if (!r || !st || !st.creatures || st.creatures.length < 3) return null;
         const out = {};
 
         // === Audio-Antwort bei Task-Wechsel (Vision §1.2) — Welle 5 Klang: die Antwort ist die STIMME des Tiers
         // (`_tierRuf`, klang:UMWELT.tier); jeder Ruf zählt in state.symphony.tierRufe (auch ohne Audiogerät messbar).
         r.initSymphony();
-        const sym = r.state.symphony;
+        const sym = st.symphony;
         const symReady = sym && sym.enabled && sym.ctx;
         out.symphonyReady = !!symReady;
 
         if (symReady) {
-            const c = r.state.creatures[0];
+            const c = st.creatures[0];
             const rufe = () => sym.tierRufe || 0;
             // Wechsel wander → follow_player → das Tier ruft (genau einmal)
             r.assignCreatureTask(c, "wander", {}, { silent: true });
@@ -209,48 +209,48 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         }
 
         // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
-        const c1 = r.state.creatures[1];
+        const c1 = st.creatures[1];
         r.assignCreatureTask(c1, "wander", {}, { silent: true });
-        const jBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const jBefore = (st.worldJournal && st.worldJournal.entries.length) || 0;
         r.assignCreatureTask(c1, "follow_player");
-        const jAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const jAfter = (st.worldJournal && st.worldJournal.entries.length) || 0;
         out.journalGrows = jAfter > jBefore;
         // Eintrag trägt type=relationship
-        const lastEntry = r.state.worldJournal && r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1];
+        const lastEntry = st.worldJournal && st.worldJournal.entries[st.worldJournal.entries.length - 1];
         out.journalTypeIsRelationship = lastEntry && lastEntry.type === "relationship";
 
         // === silent-Option unterdrückt Audio + Journal ===
-        const c2 = r.state.creatures[2];
+        const c2 = st.creatures[2];
         r.assignCreatureTask(c2, "wander", {}, { silent: true });
-        const jPre = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const jPre = (st.worldJournal && st.worldJournal.entries.length) || 0;
         const rufPre = (sym && sym.tierRufe) || 0;
         r.assignCreatureTask(c2, "wait", {}, { silent: true });
-        const jPost = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const jPost = (st.worldJournal && st.worldJournal.entries.length) || 0;
         out.silentSuppressesJournal = jPost === jPre && ((sym && sym.tierRufe) || 0) === rufPre;
 
         // === Leerschlag-Feedback (UX + Vision §1.1) ===
         // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60
-        const pPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-        for (const c of r.state.creatures) c.position.set(pPos.x + 500, pPos.y, pPos.z + 500);
+        const pPos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        for (const c of st.creatures) c.position.set(pPos.x + 500, pPos.y, pPos.z + 500);
         const chatOutput = document.getElementById("chat-output");
         const chatBefore = chatOutput ? chatOutput.children.length : 0;
-        const journalBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const journalBefore = (st.worldJournal && st.worldJournal.entries.length) || 0;
         const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
         const chatAfter = chatOutput ? chatOutput.children.length : 0;
-        const journalAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+        const journalAfter = (st.worldJournal && st.worldJournal.entries.length) || 0;
         const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
         out.leerschlagReturnsNull = result === null;
         out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
         out.leerschlagWritesJournal = journalAfter > journalBefore;
         out.leerschlagJournalTypeReach =
-            r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1].type === "reach";
+            st.worldJournal.entries[st.worldJournal.entries.length - 1].type === "reach";
 
         // === Texture-Cache (Performance) ===
         const firstTexture = r._getCreatureTaskAuraTexture();
         const secondTexture = r._getCreatureTaskAuraTexture();
         out.textureCacheReusesInstance = firstTexture === secondTexture;
         // 10 Task-Wechsel sollten dieselbe Map nutzen
-        const c3 = r.state.creatures[0];
+        const c3 = st.creatures[0];
         c3.position.set(pPos.x + 1, pPos.y, pPos.z + 1); // wieder nah
         const uniqueMaps = new Set();
         for (let i = 0; i < 10; i++) {
@@ -265,9 +265,9 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         // === Status-Bar Task-Zähler (UX) ===
         out.statusTasksInDom = !!document.getElementById("status-tasks");
         r.assignTaskToAllCreatures("wander");
-        r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
-        r.assignCreatureTask(r.state.creatures[1], "follow_player", {}, { silent: true });
-        r.assignCreatureTask(r.state.creatures[2], "wait", {}, { silent: true });
+        r.assignCreatureTask(st.creatures[0], "follow_player", {}, { silent: true });
+        r.assignCreatureTask(st.creatures[1], "follow_player", {}, { silent: true });
+        r.assignCreatureTask(st.creatures[2], "wait", {}, { silent: true });
         r._renderTaskStatusUI();
         const taskEl = document.getElementById("status-tasks");
         const taskText = taskEl ? taskEl.textContent : "";
@@ -340,9 +340,9 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // Multi-Mesh-Groups aus bodyParts × Material (dieselbe Sprache wie Spieler-Seele + Architektur);
     // drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
     const wave6hP2aResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
-        const souls = r.constructor.CREATURE_SOULS;
+        const souls = AnazhRealm.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
         // ALTLASTEN-NULL: die Seelen-Menge sind die VIER ehrlichen
         // Tiere (Hirsch·Wolf·Fuchs·Bär) — sprite/geist/glutwesen sind gefallen.
@@ -357,19 +357,19 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
             !souls.geist &&
             !souls.glutwesen;
         out.hasSoulNames =
-            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 4;
+            Array.isArray(AnazhRealm.CREATURE_SOUL_NAMES) && AnazhRealm.CREATURE_SOUL_NAMES.length === 4;
         out.hasNamePool =
-            Array.isArray(r.constructor.CREATURE_NAME_POOL) && r.constructor.CREATURE_NAME_POOL.length >= 20;
+            Array.isArray(AnazhRealm.CREATURE_NAME_POOL) && AnazhRealm.CREATURE_NAME_POOL.length >= 20;
         const wesenPart = souls && souls.wesen && souls.wesen.bodyParts[0];
         out.bodyPartsHaveSchema =
             wesenPart && typeof wesenPart.shape === "string" && typeof wesenPart.material === "string";
         out.spriteAuraY = souls && souls.wolf && souls.wolf.auraY === 0.75;
         out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
-        if (r.state.creatures.length > 0) {
-            const c0 = r.state.creatures[0];
+        if (st.creatures.length > 0) {
+            const c0 = st.creatures[0];
             out.initialIsGroup = c0 && c0.isGroup === true;
             out.initialHasSoul =
-                typeof c0.userData.soul === "string" && r.constructor.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
+                typeof c0.userData.soul === "string" && AnazhRealm.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
             out.initialHasName = typeof c0.userData.name === "string" && c0.userData.name.length > 0;
             out.initialHasTask = c0.userData.task && c0.userData.task.name === "wander";
             // KONVERGENZ III — die Gestalt ist der Studio-Baum in EINEM Wrap:
@@ -381,7 +381,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
             out.initialHasChildren = c0Meshes >= 2;
         }
         r.clearCreatures();
-        const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+        const p = st.playerMesh ? st.playerMesh.position : { x: 0, y: 5, z: 0 };
         const sprite = r.spawnCreatureAt(p.x + 1, p.y, p.z + 1, "happy", "wolf");
         const wesen = r.spawnCreatureAt(p.x + 2, p.y, p.z + 2, "happy", "wesen");
         const geist = r.spawnCreatureAt(p.x + 3, p.y, p.z + 3, "happy", "fuchs");
@@ -396,10 +396,10 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.geistHasLebendig = (r.computeCreatureCompoundTags(geist).lebendig || 0) > 0;
         // ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
         // Ersatz (`spawnCreatureAt(…, "hirsch")` ergab einen Bären) — und der Schild einer Seele findet sie.
-        const nVorAbsage = r.state.creatures.length;
+        const nVorAbsage = st.creatures.length;
         const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
-        out.unknownSoulAbsage = fb === null && r.state.creatures.length === nVorAbsage;
-        out.soulLabelFindet = r._pickCreatureSoulName(r.constructor.CREATURE_SOULS.wesen.label) === "wesen";
+        out.unknownSoulAbsage = fb === null && st.creatures.length === nVorAbsage;
+        out.soulLabelFindet = r._pickCreatureSoulName(AnazhRealm.CREATURE_SOULS.wesen.label) === "wesen";
         out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.75) < 0.01;
         out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
         out.spawnSpriteWorks = sprite && sprite.userData.soul === "wolf";
@@ -413,7 +413,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
         r._renderCreatureListUI();
         const list = document.getElementById("creature-list");
-        out.listRendersRows = list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
+        out.listRendersRows = list && list.querySelectorAll(".creature-row").length === st.creatures.length;
         // Hof-A — die Befehle leben INLINE am Wesen (.creature-action-btn[data-task]); die globale
         // „Aufträge"-Knopfreihe ist aufgelöst (Omnibox `k:` + inline tragen sie, kein Duplikat mehr).
         out.hasTaskActions = !!(list && list.querySelector(".creature-actions-inline"));
@@ -463,16 +463,16 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.stageHasBody2Col = !!(stageSpec && stageSpec.querySelectorAll(".spec-body .spec-col").length === 2);
         out.stageHasDismiss = !!(stageSpec && stageSpec.querySelector(".spec-footer .spec-dismiss"));
         // Fokus-Toggle: ein Klick auf ein Wesen fokussiert es (genau EINE Zeile .focused) → es tritt auf die Bühne.
-        const firstProf = r._creatureProfile(r.state.creatures[0]);
+        const firstProf = r._creatureProfile(st.creatures[0]);
         r._toggleHofFocus(firstProf.id);
         const listAfter = document.getElementById("creature-list");
         out.focusMarksOneRow =
             !!listAfter &&
             listAfter.querySelectorAll(".creature-row.focused").length === 1 &&
-            r.state.hofFocusId === firstProf.id;
+            st.hofFocusId === firstProf.id;
         out.focusUpdatesStage = !!stageSpec && stageSpec.querySelectorAll(".spec-sheet").length === 1;
         r._toggleHofFocus(firstProf.id); // wieder zu → Fokus zurück auf das erste Wesen (kein Leck)
-        out.focusToggleClears = r.state.hofFocusId === null;
+        out.focusToggleClears = st.hofFocusId === null;
         // Hof-E — die zwei Zonen ORCHESTER | PARTITUR + der integrierte Spawn-Fuß.
         out.hasOrchesterZone = !!document.querySelector(".hof-orchester");
         out.hasPartiturZone = !!document.querySelector(".hof-partitur");
@@ -492,18 +492,18 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         const cmdBar = document.getElementById("hof-section-cmd");
         out.sectionSelectShowsCmd = !!(cmdBar && !cmdBar.hidden && cmdBar.querySelector(".creature-action-btn"));
         out.sectionFiltersList = !!(
-            r.state.hofSection &&
-            r.state.hofSection !== "alle" &&
-            document.querySelectorAll("#creature-list .creature-row").length <= r.state.creatures.length
+            st.hofSection &&
+            st.hofSection !== "alle" &&
+            document.querySelectorAll("#creature-list .creature-row").length <= st.creatures.length
         );
         // Der Sektions-Befehl ruft DENSELBEN Pfad (assignTaskToAllCreatures, gefiltert) — ein echter Konsument.
         const cmdBtn = cmdBar && cmdBar.querySelector(".creature-action-btn");
-        const secBefore = r.state.hofSection;
+        const secBefore = st.hofSection;
         if (cmdBtn) cmdBtn.click();
-        out.sectionCmdAssignsTask = r.state.creatures
+        out.sectionCmdAssignsTask = st.creatures
             .filter((c) => r._creatureProfile(c).section === secBefore)
             .every((c) => r._getCreatureTask(c).name === "follow_player");
-        r.state.hofSection = "alle"; // zurücksetzen — kein Filter-Leck in die Folge-Tests
+        st.hofSection = "alle"; // zurücksetzen — kein Filter-Leck in die Folge-Tests
         r._renderCreatureListUI();
         r.assignCreatureTask(sprite, "follow_player");
         const firstRow2 = list && list.querySelector(".creature-row");
@@ -512,8 +512,8 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
             taskCell && (taskCell.textContent === "folgt" || taskCell.classList.contains("follow_player"));
         out.preDisposeChildren = sprite.children.length >= 2;
         r.removeCreature(sprite);
-        r.state.creatures = r.state.creatures.filter((c) => c !== sprite);
-        out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
+        st.creatures = st.creatures.filter((c) => c !== sprite);
+        out.sceneAfterRemove = !st.scene.children.includes(sprite);
         r.clearCreatures();
         r._renderCreatureListUI();
         // Hof-E/§G.9 — der leere Hof zeigt den einladenden Onboarding-Zustand (kein kahles „—").
@@ -639,15 +639,15 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // gather-Task mit args.material findet die nächste Architektur mit diesem Material, läuft hin und
     // erntet bei haltDist = 1.5 m (Architektur entfernt, memory geschrieben).
     const wave6hP2bResults = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+        if (!r || !st || !st.creatures || st.creatures.length < 3) return null;
         const out = {};
-        out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
-        out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
-        out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
-        out.speed = r.constructor.CREATURE_GATHER_SPEED;
+        out.tasksHasGather = AnazhRealm.CREATURE_TASKS.includes("gather");
+        out.auraHueGather = AnazhRealm.CREATURE_TASK_AURA_HUE.gather === 200;
+        out.haltDist = AnazhRealm.CREATURE_GATHER_HALT_DIST;
+        out.speed = AnazhRealm.CREATURE_GATHER_SPEED;
 
         // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
-        const c0 = r.state.creatures[0];
+        const c0 = st.creatures[0];
         c0.userData.memory = [];
         for (let i = 0; i < 205; i++) r._creatureRemember(c0, "found", { idx: i });
         out.memCapEnforced = c0.userData.memory.length === 200;
@@ -655,14 +655,14 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
 
         // _findNearestArchitectureWithMaterial
-        const p = r.state.playerMesh.position;
+        const p = st.playerMesh.position;
         const woodTarget = r._findNearestArchitectureWithMaterial(p, "holz");
         out.findsHolz = !!woodTarget;
         if (woodTarget) {
             out.holzPartConfirmed =
                 woodTarget.type &&
-                r.state.blueprints[woodTarget.type] &&
-                r.state.blueprints[woodTarget.type].parts.some((part) => part && part.material === "holz");
+                st.blueprints[woodTarget.type] &&
+                st.blueprints[woodTarget.type].parts.some((part) => part && part.material === "holz");
         }
         out.findsFictionalNull = r._findNearestArchitectureWithMaterial(p, "fictional_xyz") === null;
 
@@ -696,12 +696,12 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
             const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
             c0.position.set(p.x + 50.5, p.y, p.z + 50);
             c0.userData.carrying = null;
-            r.state.player.inventory = new Array(27).fill(null);
+            st.player.inventory = new Array(27).fill(null);
             r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
-            const archCountBefore = r.state.architectures.length;
+            const archCountBefore = st.architectures.length;
             const t2 = r._getCreatureTask(c0);
             r._tickCreatureTaskDirection(c0, t2, "happy");
-            out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
+            out.archRemovedOnHarvest = st.architectures.length === archCountBefore - 1;
             // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
             // erst bei Übergabe gefüllt. carrying-State prüfen.
             out.inventoryHasHarvested =
@@ -721,7 +721,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         // sonst greift Bring-Phase statt Sucher-Phase).
         c0.userData.carrying = null;
         if (c0.userData.carryingSprite) {
-            r.state.scene.remove(c0.userData.carryingSprite);
+            st.scene.remove(c0.userData.carryingSprite);
             c0.userData.carryingSprite = null;
         }
         r.assignCreatureTask(c0, "wander", {}, { silent: true });
@@ -735,10 +735,10 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         );
 
         // DSL-Op + Chat
-        r.assignCreatureTask(r.state.creatures[1], "wander", {}, { silent: true });
-        r.state.creatures[1].position.set(p.x + 1, p.y, p.z + 1);
+        r.assignCreatureTask(st.creatures[1], "wander", {}, { silent: true });
+        st.creatures[1].position.set(p.x + 1, p.y, p.z + 1);
         r.dslRun(["creature_task", 1, "gather", "holz"], { source: "test" });
-        const dt = r._getCreatureTask(r.state.creatures[1]);
+        const dt = r._getCreatureTask(st.creatures[1]);
         out.dslGatherWorks = dt && dt.name === "gather" && dt.args.material === "holz";
 
         const cases = [
@@ -752,15 +752,15 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         });
 
         // NON_BROADCASTABLE_OPS bleibt
-        const set = r.constructor.NON_BROADCASTABLE_OPS;
+        const set = AnazhRealm.NON_BROADCASTABLE_OPS;
         out.nonBroadcastable =
             set.has("creature_task") && set.has("creature_task_nearest") && set.has("creature_task_all");
 
         // Status-Bar
         r.assignTaskToAllCreatures("wander");
-        r.assignCreatureTask(r.state.creatures[0], "gather", { material: "holz" }, { silent: true });
-        r.assignCreatureTask(r.state.creatures[1], "gather", { material: "holz" }, { silent: true });
-        r.assignCreatureTask(r.state.creatures[2], "follow_player", {}, { silent: true });
+        r.assignCreatureTask(st.creatures[0], "gather", { material: "holz" }, { silent: true });
+        r.assignCreatureTask(st.creatures[1], "gather", { material: "holz" }, { silent: true });
+        r.assignCreatureTask(st.creatures[2], "follow_player", {}, { silent: true });
         r._renderTaskStatusUI();
         const stext = document.getElementById("status-tasks").textContent;
         out.statusShowsGather = /2 sammeln/.test(stext);
@@ -861,10 +861,10 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // EINE Funktion für Spieler-LMB UND Kreatur-gather: Architekturen lösen sich volumen-basiert in eine
     // Material-Map auf; Inventar dual-typed {kind:'material'} | {kind:'blueprint'}; carrying → Spieler.
     const wave6hP2b5Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
+        if (!r || !st || !st.creatures || st.creatures.length < 2) return null;
         const out = {};
 
-        const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+        const p = st.playerMesh ? st.playerMesh.position : { x: 0, y: 5, z: 0 };
 
         // Material-Map aus parts × Volumen
         const stoneBlock = r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z + 30 });
@@ -878,13 +878,13 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.oakHasNoStein = h2 && (!h2.materials.stein || h2.materials.stein === 0);
 
         // Diskrimination: größerer Bauplan = mehr Material
-        r.state.blueprints._test_small = {
+        st.blueprints._test_small = {
             name: "_test_small",
             label: "Small",
             builtIn: false,
             parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
         };
-        r.state.blueprints._test_big = {
+        st.blueprints._test_big = {
             name: "_test_big",
             label: "Big",
             builtIn: false,
@@ -895,27 +895,27 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         const hs = r.harvestArchitecture(s);
         const hb = r.harvestArchitecture(b);
         out.volumeDiscrimination = hb.materials.stein > hs.materials.stein;
-        delete r.state.blueprints._test_small;
-        delete r.state.blueprints._test_big;
+        delete st.blueprints._test_small;
+        delete st.blueprints._test_big;
 
         // addMaterialToInventory + Schema
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         const ok1 = r.addMaterialToInventory("holz", 5);
         const ok2 = r.addMaterialToInventory("holz", 3);
         const ok3 = r.addMaterialToInventory("stein", 4);
         const okBad = r.addMaterialToInventory("fictional_xyz", 1);
         out.matAddOk = ok1 && ok2 && ok3;
         out.matStacks =
-            r.state.player.inventory[0] &&
-            r.state.player.inventory[0].count === 8 &&
-            r.state.player.inventory[0].kind === "material";
-        out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
+            st.player.inventory[0] &&
+            st.player.inventory[0].count === 8 &&
+            st.player.inventory[0].kind === "material";
+        out.matNewSlot = st.player.inventory[1] && st.player.inventory[1].material === "stein";
         out.matRejectsUnknown = okBad === false;
 
         // Spieler-LMB nutzt harvestArchitecture (EINE Funktion). Deterministisch: Kamera EXPLIZIT setzen
         // (nicht die variable Render-Loop-Kamera) + Test-Block fern anderer Architekturen, damit der
         // Raycast NUR das Target trifft.
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         const tcx = p.x + 6;
         const tcz = p.z + 6;
         const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
@@ -925,57 +925,57 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         // Welt-Matrizen aktualisieren wie ein Render-Frame: `_pickArchitectureAtCrosshair` liest
         // `mesh.matrixWorld` AS-IS, ein frisch gespawntes Mesh steht bis updateMatrixWorld auf Identität
         // (im Band gibt es keinen Render zwischen Spawn und Pick).
-        if (r.state.scene) r.state.scene.updateMatrixWorld(true);
-        if (r.state.camera) {
+        if (st.scene) st.scene.updateMatrixWorld(true);
+        if (st.camera) {
             // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
-            r.state.camera.position.set(tcx, p.y + 1.5, tcz - 6);
-            r.state.camera.lookAt(tcx, p.y, tcz);
-            r.state.camera.updateMatrixWorld(true);
+            st.camera.position.set(tcx, p.y + 1.5, tcz - 6);
+            st.camera.lookAt(tcx, p.y, tcz);
+            st.camera.updateMatrixWorld(true);
         }
         // Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
         // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
         // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
-        r.state.player.equipped = r.state.player.equipped || {};
-        r.state.player.equipped.held = "stein_block";
-        r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
+        st.player.equipped = st.player.equipped || {};
+        st.player.equipped.held = "stein_block";
+        st.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
         // Der Crosshair-Raycast ist unter kumulativer Last fragil (Target budget-verzögert, oder ein Nachbar
         // wird getroffen). Die Vision „Spieler-LMB → Material-Slot“ IST `_strikeArchitecture` (die EINE
         // Funktion, die tryMouseBreak beim Architektur-Treffer ruft) → das Target direkt darüber schlagen.
-        const archBeforeLmb = r.state.architectures.length;
-        for (let s = 0; s < 40 && r.state.architectures.indexOf(target) >= 0; s++) r._strikeArchitecture(target);
-        r.state.player.equipped.held = null;
-        out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
-        out.lmbFilledInventory = r.state.player.inventory.some(
+        const archBeforeLmb = st.architectures.length;
+        for (let s = 0; s < 40 && st.architectures.indexOf(target) >= 0; s++) r._strikeArchitecture(target);
+        st.player.equipped.held = null;
+        out.lmbShrunkArch = st.architectures.length < archBeforeLmb;
+        out.lmbFilledInventory = st.player.inventory.some(
             (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
         );
 
         // Kreatur-gather: zwei Phasen mit carrying. UNIT-RICHTER: foundry-ON macht einen kalt gespawnten
         // stein_block für `_findNearestArchitectureWithMaterial` (filtert `_archIsRendered`) unauffindbar
         // → deterministische Grammatik-Fixtur unter lokalem Hook.
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         window.__withNoFoundry(() => {
             r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
-            const c = r.state.creatures[0];
+            const c = st.creatures[0];
             c.position.set(p.x + 29.5, p.y, p.z);
             c.userData.carrying = null;
             r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
             r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
             out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
-            out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
+            out.inventoryStillEmptyAfterHarvest = st.player.inventory.every((sl) => !sl);
             out.carryingSpriteCreated = !!c.userData.carryingSprite;
 
             // Kreatur zum Spieler bewegen → Übergabe
             c.position.set(p.x + 1.5, p.y, p.z);
             r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
             out.carryingClearedAfterDelivery = c.userData.carrying === null;
-            out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
+            out.playerHasMaterialAfterDelivery = st.player.inventory.some(
                 (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
             );
             out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
         });
 
         // Inventar-UI rendert Material-Slot mit Klasse
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("holz", 7);
         r.renderInventoryUI();
         const slot = document.querySelector('[data-inv-slot="0"]');
@@ -1038,11 +1038,11 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // pfad konsumiert, frieden + schöpfer kostenlos (Symmetrie zu damagePlayer/applyOpToPart-Stamina).
     // computeBuildCost ≡ harvestArchitecture (Wertneutralität: eine Box kostet, was harvest liefert).
     const wave6hP2cResults = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.playerMesh) return null;
+        if (!r || !st || !st.playerMesh) return null;
         const out = {};
 
         // Wertneutralität: build-cost ≡ harvest-return.
-        const p = r.state.playerMesh.position;
+        const p = st.playerMesh.position;
         const cost = r.computeBuildCost("stein_block");
         const arch = r.spawnArchitecture("stein_block", {
             x: p.x + 120,
@@ -1061,7 +1061,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         // checkBuildCost ok/missing
         const origMode = r.getGameMode();
         r.setGameMode("pfad");
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         const c1 = r.checkBuildCost("stein_block");
         out.checkEmptyInventoryRejected = !c1.ok && c1.missing.stein > 0;
         r.addMaterialToInventory("stein", 200);
@@ -1069,18 +1069,18 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         out.checkSufficientOk = c2.ok && Object.keys(c2.missing).length === 0;
 
         // Atomarer Konsum + Atomarität bei Mangel
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 100);
-        const beforeConsume = r.state.player.inventory[0].count;
+        const beforeConsume = st.player.inventory[0].count;
         const consumed = r.tryConsumeBuildCost("stein_block");
-        const afterConsume = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+        const afterConsume = st.player.inventory[0] ? st.player.inventory[0].count : 0;
         out.consumesExactly = consumed.ok && beforeConsume - afterConsume === consumed.cost.stein;
 
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("holz", 100);
-        const beforeAtomic = r.state.player.inventory[0].count;
+        const beforeAtomic = st.player.inventory[0].count;
         const atomicResult = r.tryConsumeBuildCost("baum_eiche");
-        const afterAtomic = r.state.player.inventory[0].count;
+        const afterAtomic = st.player.inventory[0].count;
         out.atomicAtomicityOnFail = !atomicResult.ok && beforeAtomic === afterAtomic;
         out.atomicReportsMissing = atomicResult.missing && atomicResult.missing.laub > 0;
 
@@ -1088,20 +1088,20 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         // lehnt ab und spricht) misst diag-werkstatt-weg L-WERKSTATT mit echten Eingaben; hier bleibt pfad ohne Material.
         // confirmBuild pfad ohne Material → ablehnung (das Phantom steht auf dem Grund: headless zielt kein tickBuildMode, die
         // Absage gilt dem Material, nie dem Standort)
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
-        r.state.buildMode.phantomOnGround = true;
-        const archBeforeNoMat = r.state.architectures.length;
+        st.buildMode.phantomOnGround = true;
+        const archBeforeNoMat = st.architectures.length;
         const builtNoMat = r.confirmBuild();
         out.pfadRejectsWithoutMaterial = builtNoMat === false;
-        out.pfadNoArchOnReject = r.state.architectures.length === archBeforeNoMat;
+        out.pfadNoArchOnReject = st.architectures.length === archBeforeNoMat;
 
         // HUD-Reflexion
         r.setGameMode("pfad");
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 30);
         r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
@@ -1177,12 +1177,12 @@ async function checkBandWelleV11D3DrinkTask({ page, check }) {
 async function checkBandPhaseEThreat({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh.position;
+        const p = st.player;
+        const pm = st.playerMesh.position;
         const savedMode = r.getGameMode();
         const savedHp = p.hp;
         const savedPhoenix = p.respawnGraceUntil;
-        const savedMax = r.state.maxCreatures;
+        const savedMax = st.maxCreatures;
         const savedEmo = {};
         for (const k of Object.keys(p.emotions)) savedEmo[k] = p.emotions[k];
         const savedOrt = { x: pm.x, y: pm.y, z: pm.z };
@@ -1190,9 +1190,9 @@ async function checkBandPhaseEThreat({ page, check }) {
         try {
             r.setGameMode("pfad");
             p.respawnGraceUntil = -Infinity;
-            r.state.maxCreatures = r.state.creatures.length + 4;
+            st.maxCreatures = st.creatures.length + 4;
             // der Spieler steht auf dem Boden: der Biss braucht den Kopf am Leib, auch in der Höhe (Welle LF kampf)
-            pm.y = r.getTerrainHeightAt(pm.x, pm.z) + r.constructor.PLAYER_FOOT_OFFSET;
+            pm.y = r.getTerrainHeightAt(pm.x, pm.z) + AnazhRealm.PLAYER_FOOT_OFFSET;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "wolf");
             spawned.push(wolf);
             // W-D/M-F1 — die Spieler-Klemme schiebt frische Spawns auf
@@ -1232,7 +1232,7 @@ async function checkBandPhaseEThreat({ page, check }) {
             // (2) die Witterung: Furcht schlägt Jagd, eine sanfte Seele jagt nie (die Pirsch auf den Spieler im pfad, keine
             // im Frieden: gate:kreatur-takt rudel).
             out.fearBeatsHunt =
-                r._creatureScentHuntDir(wolf, r.constructor._verhaltenGesetz().furcht.fleeThreshold) === null;
+                r._creatureScentHuntDir(wolf, AnazhRealm._verhaltenGesetz().furcht.fleeThreshold) === null;
             const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "wesen");
             spawned.push(lamm);
             out.gentleNoHunt = r._creatureScentHuntDir(lamm, 0) === null;
@@ -1274,7 +1274,7 @@ async function checkBandPhaseEThreat({ page, check }) {
             }
             p.hp = savedHp;
             p.respawnGraceUntil = savedPhoenix;
-            r.state.maxCreatures = savedMax;
+            st.maxCreatures = savedMax;
             for (const k of Object.keys(p.emotions)) p.emotions[k] = savedEmo[k] || 0;
             r.setGameMode(savedMode);
             pm.set(savedOrt.x, savedOrt.y, savedOrt.z);
@@ -1327,8 +1327,8 @@ async function checkBandTierSeparation({ page, check }) {
         return v;
     };
     const out = await safeEvaluate(page, async () => {
-        const s = r.state,
-            A = r.constructor;
+        const s = st,
+            A = AnazhRealm;
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
@@ -1681,8 +1681,8 @@ async function checkBandTierSeparation({ page, check }) {
 // und Kopie ruhen · (G) die Ruhe der Leiber (Leser, Erwachen, Nah-Gestalt, Feld, Bild, KI) · (T)(W) · Selbsttests S1–S11.
 async function checkBandKreaturKosten({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const s = r.state,
-            A = r.constructor;
+        const s = st,
+            A = AnazhRealm;
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
