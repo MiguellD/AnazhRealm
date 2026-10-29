@@ -83,8 +83,6 @@ function installiere(ordner) {
         if (typeof o !== "function") return;
         const neu = function (p, ...rest) {
             if (wann(rest)) notiere(art, p);
-            if (name === "copyFile" || name === "copyFileSync" || name === "cpSync" || name === "cp")
-                notiere("lies", p);
             return o.call(this, p, ...rest);
         };
         Object.defineProperties(neu, Object.getOwnPropertyDescriptors(o));

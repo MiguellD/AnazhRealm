@@ -288,14 +288,14 @@ function verteile(jetzt, out) {
     const voll = yml
         .slice(von, bis)
         .replace(/(name: voll \$\{\{ matrix\.gruppe \}\}\/)\d+/, (m, x) => x + best.g.length)
-        .replace(/^( +gruppe: )\[[\d, ]*\]/m, (m, x) => `${x}[${best.g.map((g, k) => k + 1).join(", ")}]`)
-        .replace(/^( +)- gruppe: \d+\n(?: +klasse: \w+\n| +- gruppe: \d+\n)*/m, (m, x) =>
-            best.g.map((g, k) => `${x}- gruppe: ${k + 1}\n${x}  klasse: ${g.klasse}\n`).join("")
-        )
         .replace(/^( +if: matrix\.gruppe == )(\d+)$/gm, (m, x, alt) => x + (neu[zeile++] || alt));
     if (von < 0 || zeile !== neu.length)
         throw new Error(`${WORKFLOW}: ${zeile} Gruppen-Zeilen im Job voll, ${neu.length} Schritte mit Gruppe`);
+    // die Tafel der Gruppen (Workflow-env VOLL_GRUPPEN): der Kopf-Richter reicht sie als Matrix an voll
+    const tafel = `"${best.g.map((g, k) => `${k + 1}:${g.klasse}`).join(" ")}"`;
     yml = yml.slice(0, von) + voll + yml.slice(bis);
+    if (!/^ {4}VOLL_GRUPPEN: ".*"$/m.test(yml)) throw new Error(`${WORKFLOW}: keine Tafel VOLL_GRUPPEN in der Workflow-env`);
+    yml = yml.replace(/^( {4}VOLL_GRUPPEN: )".*"$/m, (m, x) => x + tafel);
     // die Frist je gemessenem echt-Schritt (ein ungemessener behält seine)
     [von, bis] = block("echt");
     let fristen = 0;

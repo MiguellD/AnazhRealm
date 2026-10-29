@@ -30,6 +30,14 @@ concurrency:
     group: check-${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 
+# DIE GRUPPEN DER VOLLEN BATTERIE und ihre Klasse (K61): gpu braucht einen Echt-Renderer (Rezept linse · webgl · echt an der Weiche
+# scripts/lib/welt-boot.cjs), cpu nie — die Weiche meldet ein Echt-Rezept in einer CPU-Gruppe ROT (CI_KLASSE), gate:ci-deckung (K)
+# hält die Trennung statisch (scripts/ci-zeiten.cjs). `node scripts/ci-zeiten.cjs` schreibt die Tafel; der Kopf-Richter reicht sie an
+# voll — ganz auf integ-probe, main, nachts, auf Abruf und am PR, auf einem Zweig nur die Gruppen, deren Schritte nach Konsum fahren.
+# Vorbereitet für einen eigenen GPU-Läufer (die GPU-Gruppen), noch nicht eingeschaltet: alle Gruppen laufen auf ubuntu-latest.
+env:
+    VOLL_GRUPPEN: "1:cpu 2:cpu 3:cpu 4:cpu 5:cpu 6:cpu 7:cpu 8:cpu 9:cpu 10:cpu 11:cpu 12:cpu 13:cpu 14:gpu 15:gpu 16:gpu 17:gpu 18:gpu"
+
 jobs:
     puls:
         # DER PULS — je Push auf jedem Zweig, die Wanduhr ≤ 2 min (vorher lief jeder Push die ganze Batterie: ~25 min, die
@@ -242,11 +250,31 @@ jobs:
         outputs:
             voll: ${{ steps.kopf.outputs.voll }}
             echt: ${{ steps.kopf.outputs.echt }}
+            matrix: ${{ steps.kopf.outputs.matrix }}
         steps:
+            # DIE AUSWAHL NACH KONSUM braucht die Geschichte (Ahnen, Wechsel seit dem Grund — ohne Blobs, die holt git je Datei
+            # nach) und js-yaml (die Schritte am Kopf und am Grund)
             - uses: actions/checkout@v4
               with:
-                  sparse-checkout: scripts/ci-kopf.cjs
-                  sparse-checkout-cone-mode: false
+                  fetch-depth: 0
+                  filter: blob:none
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Cache-Schlüssel
+              id: schluessel
+              run: node scripts/ci-schluessel.cjs
+
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}
+                  restore-keys: npm-${{ runner.os }}-
+
+            - name: Dependencies installieren (ohne Chrome)
+              run: npm ci --ignore-scripts --no-audit --no-fund
 
             - name: Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)
               id: kopf
@@ -275,49 +303,8 @@ jobs:
         if: needs.kopf.outputs.voll == 'ja'
         strategy:
             fail-fast: false
-            matrix:
-                gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
-                # K61 — DIE KLASSE je Gruppe: gpu braucht einen Echt-Renderer (Rezept linse · webgl · echt an der Weiche
-                # scripts/lib/welt-boot.cjs), cpu nie — die Weiche meldet ein Echt-Rezept in einer CPU-Gruppe ROT (CI_KLASSE),
-                # gate:ci-deckung (K) hält die Trennung statisch (scripts/ci-zeiten.cjs). Vorbereitet für einen eigenen
-                # GPU-Läufer (die GPU-Gruppen), noch nicht eingeschaltet: alle Gruppen laufen auf ubuntu-latest.
-                include:
-                    - gruppe: 1
-                      klasse: cpu
-                    - gruppe: 2
-                      klasse: cpu
-                    - gruppe: 3
-                      klasse: cpu
-                    - gruppe: 4
-                      klasse: cpu
-                    - gruppe: 5
-                      klasse: cpu
-                    - gruppe: 6
-                      klasse: cpu
-                    - gruppe: 7
-                      klasse: cpu
-                    - gruppe: 8
-                      klasse: cpu
-                    - gruppe: 9
-                      klasse: cpu
-                    - gruppe: 10
-                      klasse: cpu
-                    - gruppe: 11
-                      klasse: cpu
-                    - gruppe: 12
-                      klasse: cpu
-                    - gruppe: 13
-                      klasse: cpu
-                    - gruppe: 14
-                      klasse: gpu
-                    - gruppe: 15
-                      klasse: gpu
-                    - gruppe: 16
-                      klasse: gpu
-                    - gruppe: 17
-                      klasse: gpu
-                    - gruppe: 18
-                      klasse: gpu
+            # die Gruppen aus der Tafel VOLL_GRUPPEN (oben): der Kopf-Richter reicht sie ganz oder nach Konsum gewählt
+            matrix: ${{ fromJSON(needs.kopf.outputs.matrix) }}
         runs-on: ubuntu-latest
         # die Klasse der Gruppe reist an jeden Schritt: die Weiche (scripts/lib/welt-boot.cjs) urteilt mit ihr
         env:

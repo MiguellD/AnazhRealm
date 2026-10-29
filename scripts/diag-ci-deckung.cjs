@@ -1,6 +1,6 @@
 // diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI: jede Art, einen Schritt zu verlieren, zu vervielfachen oder stumm zu
 // schalten, steht beim Namen — (G) GRUPPE · (V) FORM, KOPF, SCHLÜSSEL · (D) DOPPELT · (W)/(A)/(R)/(F) die Gegenrichtung ·
-// (S) STUMM · (K) KLASSE · (E) ECHT · (T) WAAGE · (P) PLAYTEST, je Regel an ihrer Funktion erklärt. check.yml trägt die Jobs
+// (S) STUMM · (K) KLASSE · (E) ECHT · (T) WAAGE · (P) PLAYTEST · (Z) ZEUGE, je Regel an ihrer Funktion erklärt. check.yml trägt die Jobs
 // puls (je Push), kopf und voll (unter VOLL_WENN) und echt; ein weiterer Job ist ROT.
 //   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
@@ -9,7 +9,8 @@ const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { schluessel } = require("./ci-schluessel.cjs");
-const { kopfUrteil } = require("./ci-kopf.cjs");
+const { kopfUrteil, planAus, auswahl } = require("./ci-kopf.cjs");
+const { sammle, ZEUGE: ZEUGE_DATEI } = require("./lib/konsum-zeuge.cjs");
 const { messe, klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./ci-zeiten.cjs");
 const { taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 
@@ -33,6 +34,14 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat((J && J.needs) || []);
+// DIE MATRIX eines Gruppen-Jobs: puls trägt sie selbst, voll fährt die Matrix des Kopf-Richters aus der EINEN Tafel VOLL_GRUPPEN der
+// Workflow-env (scripts/ci-kopf.cjs `planAus`; ganz, oder auf einem Zweig nach Konsum gewählt) — gewogen wird immer die ganze Tafel
+const VOLL_MATRIX = "${{ fromJSON(needs.kopf.outputs.matrix) }}";
+function matrixVon(doc, job) {
+    if (job !== VOLL_JOB) return (doc && doc.jobs && doc.jobs[job] && doc.jobs[job].strategy && doc.jobs[job].strategy.matrix) || {};
+    const plan = planAus(((doc && doc.env) || {}).VOLL_GRUPPEN);
+    return plan.length ? { gruppe: plan.map((e) => e.gruppe), include: plan } : {};
+}
 // (E) DIE ECHT-GRUPPE: GPU-Schritte von `voll` und die Wände der Karte (gate:…:echt) auf dem eigenen Läufer, hinter dem
 // Kopf-Richter (`echt`), nie pull_request; je Schritt eine Frist, der Job ≤ ECHT_DECKEL_MIN, sein Plan ≤ ECHT_PLAN_S (T).
 const ECHT_JOB = "echt";
@@ -43,10 +52,7 @@ const [ECHT_DECKEL_MIN, ECHT_PLAN_S] = [45, 20 * 60];
 function echtForm(doc) {
     const E = doc && doc.jobs && doc.jobs[ECHT_JOB];
     if (!E) return [];
-    const V = doc.jobs[VOLL_JOB] || {};
-    const gpu = new Set(
-        ((V.strategy && V.strategy.matrix.include) || []).filter((e) => e.klasse === "gpu").map((e) => e.gruppe)
-    );
+    const gpu = new Set((matrixVon(doc, VOLL_JOB).include || []).filter((e) => e.klasse === "gpu").map((e) => e.gruppe));
     const soll = new Set(
         gateSchritte(doc)
             .filter((s) => s.job === VOLL_JOB && gpu.has(s.gruppe))
@@ -278,7 +284,7 @@ function schrittStumm(datei, doc, job, j, s) {
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
         const m = GRUPPE_RE.exec(String(s.if));
-        const M = j.strategy && j.strategy.matrix && j.strategy.matrix.gruppe;
+        const M = matrixVon(doc, job).gruppe;
         if (!m) return `läuft nur unter „${s.if}"`;
         if (!Array.isArray(M) || !M.includes(Number(m[1]))) return `Gruppe ${m[1]} steht in keiner Matrix (läuft nie)`;
     }
@@ -471,9 +477,9 @@ function urteil(doc) {
             v.push(
                 `(V) BEDINGUNG: „${job}" läuft unter „${J.if}"${needsVon(J).includes(KOPF_JOB) ? "" : " ohne needs: " + KOPF_JOB} statt hinter dem Kopf-Richter (needs: ${KOPF_JOB}, if: ${VOLL_NACH_KOPF})`
             );
-        v.push(...gruppenUrteil(job, J));
+        v.push(...gruppenUrteil(job, J, matrixVon(doc, job).gruppe));
     }
-    v.push(...kopfForm(doc), ...echtForm(doc));
+    v.push(...kopfForm(doc), ...echtForm(doc), ...zeugeForm(doc));
     // (D) über ALLE Jobs: ein Befehl, ein Name (die Echt-Gruppe wiederholt Schritte der GPU-Klasse mit Absicht, (E))
     const alle = gateSchritte(doc).filter((s) => s.job !== ECHT_JOB);
     const zaehle = (key) => {
@@ -491,13 +497,14 @@ function urteil(doc) {
 }
 
 // (V)/(G) eines Gruppen-Jobs: Matrix, fail-fast, Deckel, Vorbereitung, jeder Schritt genau eine Gruppe, keine leere Gruppe
-function gruppenUrteil(job, J) {
+function gruppenUrteil(job, J, M) {
     const v = [];
-    const M = J.strategy && J.strategy.matrix && J.strategy.matrix.gruppe;
     if (!Array.isArray(M) || !M.length || !M.every((g) => Number.isInteger(g) && g > 0) || new Set(M).size !== M.length)
         v.push(
-            `(V) MATRIX: „${job}" strategy.matrix.gruppe ist keine Liste verschiedener Gruppen-Nummern (${JSON.stringify(M)})`
+            `(V) MATRIX: „${job}" ${job === VOLL_JOB ? "die Tafel VOLL_GRUPPEN" : "strategy.matrix.gruppe"} ist keine Liste verschiedener Gruppen-Nummern (${JSON.stringify(M)})`
         );
+    if (job === VOLL_JOB && normWenn(J.strategy && J.strategy.matrix) !== VOLL_MATRIX)
+        v.push(`(V) MATRIX: „${job}" fährt die Matrix ${JSON.stringify(J.strategy && J.strategy.matrix)} statt der des Kopf-Richters (${VOLL_MATRIX})`);
     if (!J.strategy || J.strategy["fail-fast"] !== false)
         v.push(`(V) FAIL-FAST: „${job}" strategy.fail-fast ist nicht false — eine rote Gruppe bräche die anderen ab`);
     if (!(Number(J["timeout-minutes"]) > 0 && Number(J["timeout-minutes"]) <= DECKEL_MIN))
@@ -546,6 +553,24 @@ function gruppenUrteil(job, J) {
     return v;
 }
 
+// (Z) DER ZEUGE UND DIE AUSWAHL (Spike „Die CI wählt nach Konsum"): voll trägt den Konsum-Zeugen in jedem run-Schritt (die
+// Standard-Shell mit NODE_OPTIONS --require und KONSUM_ZEUGE; kein Schritt mit eigener Shell, die ihn abwürfe) und legt die Spur je
+// Gruppe ab (Sammeln und Artefakt konsum-voll-N, auch nach Rot) — die Auswahl des Kopf-Richters liest sie am Grund
+const ZEUGE_SHELL = /^env NODE_OPTIONS=--require=\$\{\{github\.workspace\}\}\/scripts\/lib\/konsum-zeuge\.cjs bash /;
+function zeugeForm(doc) {
+    const V = doc && doc.jobs && doc.jobs[VOLL_JOB];
+    if (!V) return [];
+    const v = [];
+    if (!ZEUGE_SHELL.test(String(((V.defaults || {}).run || {}).shell)) || !(V.env || {}).KONSUM_ZEUGE)
+        v.push(`(Z) ZEUGE: „${VOLL_JOB}" trägt den Konsum-Zeugen nicht in seiner Shell (defaults.run.shell env NODE_OPTIONS=--require=…/konsum-zeuge.cjs bash, env KONSUM_ZEUGE) — die Auswahl läse eine leere Spur`);
+    for (const s of (V.steps || []).filter((x) => x.run && x.shell))
+        v.push(`(Z) ZEUGE: „${name(s)}" trägt eine eigene Shell (${s.shell}) — sie wirft den Zeugen ab`);
+    const nachRot = (f) => (V.steps || []).some((x) => f(x) && normWenn(x.if) === "${{ !cancelled() }}");
+    if (!nachRot((x) => /^node scripts\/lib\/konsum-zeuge\.cjs --sammle /.test(lauf(x))) || !nachRot((x) => ZEUGE(x) && (x.with || {}).name === "konsum-voll-${{ matrix.gruppe }}"))
+        v.push(`(Z) SPUR: „${VOLL_JOB}" legt die Spur nicht unter \${{ !cancelled() }} als Artefakt konsum-voll-\${{ matrix.gruppe }} ab — der nächste Kopf fände keinen Grund`);
+    return v;
+}
+
 // (V) KOPF: der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
 // checkout (scripts/ci-kopf.cjs mit id), dessen Ausgaben `voll` und `echt` der Job weiterreicht
 function kopfForm(doc) {
@@ -557,19 +582,23 @@ function kopfForm(doc) {
     if (K.strategy) v.push(`(V) KOPF: „${KOPF_JOB}" trägt eine Matrix — er richtet einmal je Lauf`);
     if (K["continue-on-error"] !== undefined && K["continue-on-error"] !== false)
         v.push(`(V) KOPF: „${KOPF_JOB}" trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
-    const eigen = (K.steps || []).filter((s) => !(typeof s.uses === "string" && s.uses.startsWith("actions/checkout@")));
+    // neben der Vorbereitung EIN Schritt; die Auswahl nach Konsum braucht die Geschichte (checkout fetch-depth 0) und js-yaml (npm ci)
+    const eigen = (K.steps || []).filter((s) => !IST_VORBEREITUNG(s));
     const r = eigen.find((s) => KOPF_LAUF.test(lauf(s)));
     if (eigen.length !== 1 || !r)
         v.push(
-            `(V) KOPF: „${KOPF_JOB}" trägt ${eigen.length} Schritte neben checkout (${eigen.map(name).join(" · ") || "keinen"}) statt EINEM: node scripts/ci-kopf.cjs`
+            `(V) KOPF: „${KOPF_JOB}" trägt ${eigen.length} Schritte neben der Vorbereitung (${eigen.map(name).join(" · ") || "keinen"}) statt EINEM: node scripts/ci-kopf.cjs`
         );
+    const co = (K.steps || []).find(VORBEREITUNG[0][1]);
+    if (!co || String((co.with || {})["fetch-depth"]) !== "0" || !(K.steps || []).some(VORBEREITUNG[3][1]))
+        v.push(`(V) KOPF: „${KOPF_JOB}" holt ${co ? "keine ganze Geschichte (fetch-depth 0)" : "keinen Baum"} oder kein npm ci — die Auswahl nach Konsum sähe weder Grund noch Schritte`);
     if (r) {
         if (r["continue-on-error"] !== undefined && r["continue-on-error"] !== false)
             v.push(
                 `(V) KOPF: der Richter-Schritt trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`
             );
         if (r.if !== undefined) v.push(`(V) KOPF: der Richter-Schritt trägt die Bedingung „${r.if}"`);
-        for (const aus of ["voll", "echt"]) {
+        for (const aus of ["voll", "echt", "matrix"]) {
             const soll = r.id ? `\${{ steps.${r.id}.outputs.${aus} }}` : null;
             if (!soll || normWenn((K.outputs || {})[aus]) !== soll)
                 v.push(
@@ -615,12 +644,12 @@ function klassenUrteil(doc, skripte, lies) {
     const v = [];
     const J = doc && doc.jobs && doc.jobs[VOLL_JOB];
     if (!J) return v;
-    const M = (J.strategy && J.strategy.matrix) || {};
+    const M = matrixVon(doc, VOLL_JOB);
     const gruppen = Array.isArray(M.gruppe) ? M.gruppe : [];
     const klasse = new Map();
     for (const e of Array.isArray(M.include) ? M.include : []) {
-        if (!e || !gruppen.includes(e.gruppe)) v.push(`(K) KLASSE: matrix.include ${JSON.stringify(e)} nennt keine Gruppe der Matrix`);
-        else if (!KLASSEN_CI.includes(e.klasse))
+        if (!e.klasse) continue;
+        if (!KLASSEN_CI.includes(e.klasse))
             v.push(`(K) KLASSE: Gruppe ${e.gruppe} trägt die Klasse „${e.klasse}" (Soll ${KLASSEN_CI.join(" oder ")})`);
         else if (klasse.has(e.gruppe)) v.push(`(K) KLASSE: Gruppe ${e.gruppe} trägt zwei Klassen`);
         else klasse.set(e.gruppe, e.klasse);
@@ -663,20 +692,12 @@ function selbsttestKlasse() {
         "gate:s": "node scripts/s.cjs --selftest && node scripts/s.cjs",
     };
     const doc = () => ({
+        env: { VOLL_GRUPPEN: "1:cpu 2:gpu" },
         jobs: {
             voll: {
                 if: VOLL_WENN,
                 env: { CI_KLASSE: CI_KLASSE_ENV },
-                strategy: {
-                    "fail-fast": false,
-                    matrix: {
-                        gruppe: [1, 2],
-                        include: [
-                            { gruppe: 1, klasse: "cpu" },
-                            { gruppe: 2, klasse: "gpu" },
-                        ],
-                    },
-                },
+                strategy: { "fail-fast": false, matrix: VOLL_MATRIX },
                 steps: [
                     { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
                     { name: "B", if: "matrix.gruppe == 1", run: "npm run gate:b" },
@@ -694,8 +715,8 @@ function selbsttestKlasse() {
         ["der Schalter --bild macht den Zweig echt", (d) => (V(d).steps[3].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „B-Bild" \(Gruppe 1\)/],
         ["ohne --selftest zeichnet der Zweig echt", (d) => (V(d).steps[4].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „S" \(Gruppe 1\)/],
         ["ein CPU-Schritt in der GPU-Gruppe", (d) => (V(d).steps[1].if = "matrix.gruppe == 2"), /\(K\) GPU-GRUPPE: „B" \(Gruppe 2\) braucht keinen Echt-Renderer/],
-        ["eine Gruppe ohne Klasse", (d) => V(d).strategy.matrix.include.pop(), /\(K\) KLASSE: Gruppe 2 von „voll" trägt keine Klasse/],
-        ["eine fremde Klasse", (d) => (V(d).strategy.matrix.include[0].klasse = "tpu"), /\(K\) KLASSE: Gruppe 1 trägt die Klasse „tpu"/],
+        ["eine Gruppe ohne Klasse", (d) => (d.env.VOLL_GRUPPEN = "1:cpu 2"), /\(K\) KLASSE: Gruppe 2 von „voll" trägt keine Klasse/],
+        ["eine fremde Klasse", (d) => (d.env.VOLL_GRUPPEN = "1:tpu 2:gpu"), /\(K\) KLASSE: Gruppe 1 trägt die Klasse „tpu"/],
         ["die Klasse reist nicht an die Schritte", (d) => delete V(d).env, /\(K\) KLASSE: „voll" reicht die Klasse nicht als CI_KLASSE/],
     ];
     const f = [];
@@ -740,7 +761,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     for (const [job, J] of Object.entries((doc && doc.jobs) || {})) {
         const art = J.if === undefined && !needsVon(J).length ? "push" : imVollenLauf(doc, job) ? "voll" : null;
         if (!art) continue; // eine andere Bedingung urteilt (V)/(S)
-        const M = (J.strategy && J.strategy.matrix) || {};
+        const M = matrixVon(doc, job);
         const gs = Array.isArray(M.gruppe) ? M.gruppe : [null];
         imLauf.push([job, J, gs.length]);
         const steps = (J.steps || []).filter((s) => s.run && !IST_VORBEREITUNG(s));
@@ -830,10 +851,23 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
 }
 
 // Fixture-Bausteine: der Kopf-Richter in seiner Form, ein Cache-Schritt
+// der Konsum-Zeuge in einem voll-Fixture: Shell, Ordner, Sammeln und Artefakt (die Form von check.yml)
+const zeugeIn = () => ({
+    env: { KONSUM_ZEUGE: "k" },
+    defaults: { run: { shell: "env NODE_OPTIONS=--require=${{github.workspace}}/scripts/lib/konsum-zeuge.cjs bash -e {0}" } },
+    steps: [
+        { name: "Sammeln", if: "${{ !cancelled() }}", run: "node scripts/lib/konsum-zeuge.cjs --sammle k --aus k.json" },
+        { uses: "actions/upload-artifact@v4", if: "${{ !cancelled() }}", with: { name: "konsum-voll-${{ matrix.gruppe }}" } },
+    ],
+});
 const kopfJob = () => ({
     if: VOLL_WENN,
-    outputs: { voll: "${{ steps.kopf.outputs.voll }}", echt: "${{ steps.kopf.outputs.echt }}" },
-    steps: [{ uses: "actions/checkout@v4" }, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
+    outputs: Object.fromEntries(["voll", "echt", "matrix"].map((a) => [a, `\${{ steps.kopf.outputs.${a} }}`])),
+    steps: [
+        { uses: "actions/checkout@v4", with: { "fetch-depth": 0 } },
+        { name: "npm", run: "npm ci --ignore-scripts" },
+        { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" },
+    ],
 });
 const cacheSchritt = (p, key, restore = p.replace(/\W+/g, "") + "-") => ({
     uses: "actions/cache@v4",
@@ -913,6 +947,85 @@ function selbsttestSchluessel() {
     return f;
 }
 
+// (Z) gegen Fälle: die Form des Zeugen in voll, die Auswahl (scripts/ci-kopf.cjs `auswahl`) und der Zeuge selbst an einer Probe —
+// eine Mutante, die eine gelesene Datei verschweigt, fällt beim Namen der Datei
+function selbsttestZeuge() {
+    const f = [];
+    const form = () => {
+        const z = zeugeIn();
+        return { jobs: { voll: { ...z, steps: [{ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, ...z.steps] } } };
+    };
+    const S = (d) => d.jobs.voll.steps;
+    taeterFaelle(
+        [
+            ["der Zeuge in der Shell (grün)", () => {}, null],
+            ["die Standard-Shell ohne Zeugen", (d) => (d.jobs.voll.defaults.run.shell = "bash -e {0}"), /\(Z\) ZEUGE: „voll" trägt den Konsum-Zeugen nicht/],
+            ["ein Schritt mit eigener Shell", (d) => (S(d)[0].shell = "bash"), /\(Z\) ZEUGE: „A" trägt eine eigene Shell/],
+            ["die Spur nur nach Grün", (d) => delete S(d)[2].if, /\(Z\) SPUR: „voll" legt die Spur nicht/],
+        ],
+        zeugeForm,
+        { fehler: f, klon: form }
+    );
+    const spur = (lies, mehr = {}) => ({ lies, liste: [], frage: [], teil: [], ruft: [], ...mehr });
+    const lage = () => ({
+        schritte: [{ name: "A", run: "npm run gate:a", gruppe: 1, form: "a" }],
+        grund: new Map([["A", { form: "a", gruen: true }]]),
+        spuren: {
+            "npm run gate:a": spur(["a.js"], { liste: ["lib"], teil: ["package.json#scripts.gate:a"], ruft: ["sh -c node a.js"] }),
+            "npm ci": spur(["package-lock.json"]),
+        },
+        wechsel: [],
+        teile: [],
+        baum: new Set(["a.js"]),
+        verz: [new Set(["."]), new Set(["."])],
+    });
+    const W = (z, datei, art = "M") => z.wechsel.push({ datei, art });
+    taeterFaelle(
+        [
+            ["nichts Gelesenes gewechselt (grün: nichts fährt)", (z) => W(z, "b.js"), null],
+            ["eine gelesene Datei gewechselt", (z) => W(z, "a.js"), /fährt „A" — a\.js/],
+            ["am Grund rot", (z) => (z.grund.get("A").gruen = false), /fährt „A" — am Grund nicht grün/],
+            ["ein Schritt ruft git (blind)", (z) => z.spuren["npm run gate:a"].ruft.push("git rev-parse HEAD"), /fährt „A" — blind: git/],
+            ["ein neuer Schritt", (z) => z.schritte.push({ name: "N", run: "npm run gate:n", gruppe: 2, form: "n" }), /fährt „N" — am Grund nie gelaufen/],
+            ["die Zeile eines fremden Skripts (grün)", (z) => W(z, "package.json") && z.teile.push("scripts.gate:b"), null],
+            ["die eigene Zeile von package.json", (z) => W(z, "package.json") && z.teile.push("scripts.gate:a"), /fährt „A" — package\.json#scripts\.gate:a/],
+            ["ein Eintrag kommt, wo er listet", (z) => W(z, "lib/neu.js", "A"), /fährt „A" — lib\/ \(A lib\/neu\.js\)/],
+            ["die Vorbereitung las die Datei", (z) => W(z, "package-lock.json"), /fährt „A" — Vorbereitung: package-lock\.json/],
+        ],
+        (z) => auswahl(z).je.filter((x) => x.warum).map((x) => `fährt „${x.name}" — ${x.warum}`),
+        { fehler: f, klon: lage }
+    );
+    // die Probe liest über jede Art (auch ein Kind mit eigener env); die Mutante ohne den readFile-Haken verschweigt, was sie las
+    const probe = (zeuge) => {
+        const ordner = fs.mkdtempSync(path.join(require("os").tmpdir(), "zeuge-"));
+        const kind = JSON.stringify(`require("fs").readFileSync("scripts/ci-schluessel.cjs")`);
+        const code = `const fs = require("fs"); fs.readFileSync("scripts/ci-kopf.cjs"); fs.readdirSync("spec/ci"); fs.statSync("scripts/ci-zeiten.cjs"); require("child_process").execFileSync(process.execPath, ["-e", ${kind}], { env: { PATH: process.env.PATH } }); fs.promises.readFile(".gitattributes");`;
+        const env = { ...process.env, NODE_OPTIONS: `--require=${zeuge}`, KONSUM_ZEUGE: ordner, KONSUM_WURZEL: "" };
+        require("child_process").execFileSync(process.execPath, ["-e", code], { cwd: root, env });
+        const s = Object.values(sammle(ordner).schritte)[0] || {};
+        const soll = { lies: ["scripts/ci-kopf.cjs", "scripts/ci-schluessel.cjs", ".gitattributes"], liste: ["spec/ci"], frage: ["scripts/ci-zeiten.cjs"] };
+        return Object.entries(soll).flatMap(([a, ds]) => ds.filter((d) => !(s[a] || []).includes(d)).map((d) => `(Z) ZEUGE: die Probe ${a} ${d}, die Spur verschweigt es`));
+    };
+    // zwei Mutanten, die je eine gelesene Datei verschweigen: ohne readFile-Haken (fs.promises.readFile) und ohne das Erbe der env
+    const mutante = (alt, neu) => {
+        const m = path.join(fs.mkdtempSync(path.join(require("os").tmpdir(), "zeuge-mutante-")), "konsum-zeuge.cjs");
+        const text = fs.readFileSync(ZEUGE_DATEI, "utf8").replace('path.resolve(__dirname, "..", "..")', JSON.stringify(root));
+        if (!text.includes(alt)) throw new Error(`Selbsttest (Z): die Mutante findet „${alt}" im Zeugen nicht`);
+        fs.writeFileSync(m, text.replace(alt, neu));
+        return m;
+    };
+    taeterFaelle(
+        [
+            { name: "der Zeuge an der Probe (grün)", z: ZEUGE_DATEI, muss: null },
+            { name: "die Mutante ohne readFile-Haken", z: mutante('["readFile", ', "["), muss: /die Probe lies \.gitattributes, die Spur verschweigt es/ },
+            { name: "die Mutante ohne das Erbe der env", z: mutante("o2.env = mitZeuge(o2.env)", "o2.env"), muss: /die Probe lies scripts\/ci-schluessel\.cjs/ },
+        ],
+        probe,
+        { fehler: f }
+    );
+    return f;
+}
+
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
 function selbsttestKopf(urteile = kopfUrteil) {
     const gruen = (id, event = "push", voll = ["success", "success"], echt = []) => ({
@@ -985,6 +1098,7 @@ const prep = (...schritte) => [
 ];
 function selbsttest() {
     const gut = () => ({
+        env: { VOLL_GRUPPEN: "1:cpu 2:cpu" },
         jobs: {
             puls: {
                 strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
@@ -995,23 +1109,21 @@ function selbsttest() {
             voll: {
                 needs: KOPF_JOB,
                 if: VOLL_NACH_KOPF,
-                strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
+                strategy: { "fail-fast": false, matrix: VOLL_MATRIX },
                 "timeout-minutes": 30,
+                ...zeugeIn(),
                 steps: prep(
                     { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
                     { name: "B", if: "matrix.gruppe == 2", run: "npm run gate:b" },
                     { name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" },
-                ),
+                ).concat(zeugeIn().steps),
             },
         },
     });
     const V = (d) => d.jobs.voll;
     // (E) die Echt-Gruppe in ihrer Form: B (GPU-Klasse) auf der Karte, mit Frist
     const echtDazu = (d, schritt = { name: "B auf der Karte", run: "npm run gate:b", "timeout-minutes": 5 }) => {
-        V(d).strategy.matrix.include = [
-            { gruppe: 1, klasse: "cpu" },
-            { gruppe: 2, klasse: "gpu" },
-        ];
+        d.env.VOLL_GRUPPEN = "1:cpu 2:gpu";
         const env = { CI_KLASSE: "gpu", LINSE_GPU: "karte" };
         return (d.jobs.echt = {
             needs: KOPF_JOB,
@@ -1074,6 +1186,9 @@ function selbsttest() {
             /\(V\) VORBEREITUNG: „puls" „System-Libs" trägt eine Bedingung/,
         ],
         ["keine Matrix", (d) => delete V(d).strategy.matrix, /\(V\) MATRIX: „voll"/],
+        ["voll mit fester Matrix statt der des Kopf-Richters", (d) => (V(d).strategy.matrix = { gruppe: [1, 2] }), /\(V\) MATRIX: „voll" fährt die Matrix \{"gruppe":\[1,2\]\}/],
+        ["der Kopf ohne Geschichte", (d) => delete d.jobs.kopf.steps[0].with, /\(V\) KOPF: „kopf" holt keine ganze Geschichte/],
+        ["voll ohne den Zeugen", (d) => delete V(d).defaults, /\(Z\) ZEUGE: „voll" trägt den Konsum-Zeugen nicht/],
         // die zwei Stufen: genau puls und voll, der Puls ohne Bedingung, voll unter der EINEN Bedingung
         [
             "ein dritter Job neben puls und voll",
@@ -1108,13 +1223,13 @@ function selbsttest() {
         ],
         [
             "der Kopf-Richter stumm",
-            (d) => (d.jobs.kopf.steps[1]["continue-on-error"] = true),
+            (d) => (d.jobs.kopf.steps[2]["continue-on-error"] = true),
             /\(V\) KOPF: der Richter-Schritt trägt continue-on-error/,
         ],
         [
             "ein Gate im Kopf-Richter",
             (d) => d.jobs.kopf.steps.push({ name: "X", run: "npm run gate:x" }),
-            /\(V\) KOPF: „kopf" trägt 2 Schritte neben checkout/,
+            /\(V\) KOPF: „kopf" trägt 2 Schritte neben der Vorbereitung/,
         ],
         ["die Ausgabe nicht weitergereicht", (d) => delete d.jobs.kopf.outputs, /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
         ["der Puls wartet auf den Kopf", (d) => (d.jobs.puls.needs = KOPF_JOB), /\(V\) PULS: „puls" .*wartet auf kopf/],
@@ -1153,7 +1268,8 @@ function selbsttest() {
         selbsttestPlaytest(),
         selbsttestKlasse(),
         selbsttestSchluessel(),
-        selbsttestKopf()
+        selbsttestKopf(),
+        selbsttestZeuge()
     );
 }
 
@@ -1161,11 +1277,12 @@ function selbsttest() {
 function selbsttestWaage() {
     const schritt = (name, g) => ({ name, if: `matrix.gruppe == ${g}`, run: `npm run gate:${name}` });
     const doc = () => ({
+        env: { VOLL_GRUPPEN: "1 2" },
         jobs: {
             puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep(schritt("Lint", 1)) },
             voll: {
                 if: VOLL_WENN,
-                strategy: { matrix: { gruppe: [1, 2] } },
+                strategy: { matrix: VOLL_MATRIX },
                 steps: prep(schritt("A", 1), schritt("B", 2), schritt("C", 1)),
             },
         },
@@ -1176,7 +1293,7 @@ function selbsttestWaage() {
         d.jobs.kopf = kopfJob();
         z.schritte.Kopf = { s };
     };
-    const gruppen = (d, n) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: n }, (_, i) => i + 1));
+    const gruppen = (d, n) => (d.env.VOLL_GRUPPEN = Array.from({ length: n }, (_, i) => i + 1).join(" "));
     const mitEcht = (d, z, s) => {
         d.jobs.echt = {
             needs: KOPF_JOB,
@@ -1193,7 +1310,7 @@ function selbsttestWaage() {
         // (T) FRIST: G18 trug die Kamera-Leib-Linse (p90 898 s) neben 287 s, der Deckel 20 min brach 7 Läufe ab
         ["ein Deckel, der den langsamen Läufer nicht hält", (d, z) => Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) && Object.assign(z.schritte, { A: { s: 898 }, C: { s: 287 } }), /\(T\) FRIST: „voll 1\/2" trägt im langsamen Lauf 20,1 min, timeout-minutes 20 hält nicht 1,2 × davon/],
         ["eine Voll-Gruppe über dem Mittel ihrer Klasse", B100, /\(T\) WAAGE: „voll 1\/2" trägt 6,2 min \(Deckel 4,6 min = Mittel der Klasse 4,1 \+ Rand 0,5\) — der größte Schritt „A" 3,3 min — die Verteilung senkt sie/],
-        ["dieselbe Last, je Klasse eine Gruppe (die Verteilung senkt nichts: grün)", (d, z) => B100(d, z) && (d.jobs.voll.strategy.matrix.include = [{ gruppe: 1, klasse: "cpu" }, { gruppe: 2, klasse: "gpu" }]), null],
+        ["dieselbe Last, je Klasse eine Gruppe (die Verteilung senkt nichts: grün)", (d, z) => B100(d, z) && (d.env.VOLL_GRUPPEN = "1:cpu 2:gpu"), null],
         ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min$/],
         ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
         ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
@@ -1406,6 +1523,7 @@ function selbsttestPlaytest() {
     const docs = () => ({
         "check.yml": {
             on: { push: {} },
+            env: { VOLL_GRUPPEN: "1:cpu 2:cpu" },
             jobs: {
                 puls: {
                     strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
@@ -1414,7 +1532,7 @@ function selbsttestPlaytest() {
                 },
                 voll: {
                     if: VOLL_WENN,
-                    strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
+                    strategy: { "fail-fast": false, matrix: VOLL_MATRIX },
                     "timeout-minutes": 30,
                     steps: prep({ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, traeger()),
                 },
@@ -1429,7 +1547,7 @@ function selbsttestPlaytest() {
     const T = (d) => V(d).steps[V(d).steps.length - 1];
     const ohne = (d) => {
         V(d).steps.pop();
-        V(d).strategy.matrix.gruppe = [1];
+        d["check.yml"].env.VOLL_GRUPPEN = "1:cpu";
     };
     const faelle = [
         ["der gute Stand", () => {}, null],
@@ -1534,7 +1652,7 @@ function hauptlauf() {
         );
     wandEnde(
         v,
-        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel, voll trägt den Konsum-Zeugen`
     );
 }
 if (process.argv.includes("--selftest")) selbsttestLauf();
