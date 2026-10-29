@@ -26,6 +26,9 @@
 //       des Spielers setzt die Werkstatt; am See und am Fluss der Mess-Wiese je Ego und Third kein Halm unter dem Spiegel.
 //       ABBAU · PLAN · WAISE · ZUG · AUSSTATTUNG: der Grund fällt mit dem Bau, liegt vor seiner Hülle, trägt stets einen Bau;
 //       der Zug des Start-Dorfs überlebt Sperre und Reload, Brunnen, Laternen und Stände stehen am Ort des Plans.
+//   W11 DER FREMD-SLOT (bauen.K2 Staffel 2, Phase fremd): ein Haus mit Keller, über die Werkstatt auf die Gasse des Dorfs gesetzt —
+//       der Plan des Orts legt Gasse und Feldweg um seine Platte (Plan und Wege-Karte vorher im Grundriss, nachher nicht), sein
+//       Erdbau ist byte-gleich seinem Ein-Slot-Plan und im Plan `fest`, der Gang (W10) führt in den Keller ohne Hub.
 //   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
@@ -53,149 +56,52 @@ const PHASEN = (process.argv.find((a) => a.startsWith("--phasen=")) || "--phasen
 // --bild: W9 aus dem Ausgabe-Bild, echter Renderer (lokal unter dem GPU-Schloss); der Lauf fährt nur die Phase grund
 const BILD = process.argv.includes("--bild");
 
-// DIE BASIS-ZEILEN je Defekt: [geheilte Form im Stamm, Basis-Form].
-const BASIS = {
-    // ohne die Hülle des Gesetzbuchs: nur die vier EG-Wände der Tür-Zeile, keine Böden, Tritte, Innenwände
-    huelle: [["if (fest && fest.length) {", "if (false) {"]],
-    // die gedrehte Box als achsparallele Welt-AABB gelesen
-    obb: [["        const ob = box.obb;\n        if (ob) {", "        const ob = null;\n        if (ob) {"]],
-    // die Natur wirft in den Grundriss, und das Dorf räumt nicht
-    grundriss: [
-        // die Wand des Orts (`_ortWand`) trägt den Grundriss für die Natur-Wand und den Solitär
-        [
-            "        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));",
-            "        return false;",
-        ],
-        // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
-        ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
-        [
-            "this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
-            "this.state.architectures.includes(entry)) void 0;",
-        ],
-    ],
-    // die Streu der Region räumt nicht, wenn das Dorf kommt
-    streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
-    // die Streu-Zelle läuft an der Wand vorbei (der Neubau der Region)
-    streuwand: [
-        [
-            "const rec = this._naturSetzen(species, tf, tf, () =>",
-            "const rec = ((_a, _b, _c, f) => f())(species, tf, tf, () =>",
-        ],
-    ],
-    // die Promotion läuft an der Wand vorbei (und Region wie Neubau lassen die Zellen stehen — sonst erreicht keine den Ring)
-    promotion: [
-        ["this._streuZelleRaeumen(cell);", "void 0;"],
-        [
-            "const rec = this._naturSetzen(species, tf, tf, () =>",
-            "const rec = ((_a, _b, _c, f) => f())(species, tf, tf, () =>",
-        ],
-        [
-            "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this._naturSetzen(",
-            "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this.spawnArchitecture(",
-        ],
-    ],
-    // die Nah-Streu läuft an der Wand vorbei
-    nahstreu: [["this._naturSetzen(null, it, null, () => items.push(it));", "items.push(it);"]],
-    // DIE LICHTUNG (W8): die Wand kennt die Genesis-Plattform nicht (ihr Bauplan trägt keine Lichtung)
-    lichtung: [["                lichtung: true,\n", ""]],
-    // DIE SCHEIBE SCHWEBT: die Plattform steht 5 m über dem Grund
-    schwebe: [
-        [
-            'this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 0.5, z: spot.z }, { silent: true });',
-            'this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 5.5, z: spot.z }, { silent: true });',
-        ],
-    ],
-    // DER PLATZ IST NUR DIE SCHEIBE: die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
-    platz: [
-        [
-            "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);",
-            "const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;",
-        ],
-    ],
-    // W9: der Erdbau kennt keinen Keller
-    grundkeller: [["/gelaende-core.js", "        if (!E || !E.hohl) return d;", "        if (E || !E) return d;"]],
-    // W9: der Kreis des Büschels ohne die Matrix der Vorlage
-    grundbueschel: [["            reich: 0.72,", "            reich: 0.17,"]],
-    // W9: der Abbau lässt den Grund liegen
-    abbau: [["        this._erdbauGrundFaellt(entry);", "        "]],
-    // W9 SLOT: das gesetzte Haus legt seinen Plan ohne Vorplatz
-    vorplatz: [["return this._erdbauSetzen(key, v2.erdbau)", "return this._erdbauSetzen(key, v2.erdbau.slice(0, 2))"]],
-    // W9: der Grund wartet auf die Hülle
-    grundplan: [["        this._hausGrundSetzen(entry);\n        // DIE EINE RÄUMUNG", "        // DIE EINE RÄUMUNG"]],
-    // W9: der geschlossene Slot lässt seinen Grund liegen
-    waise: [
-        [
-            "        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);",
-            "        const zu = () => false;",
-        ],
-    ],
-    // W9: das Verblassen nimmt nur den Eintrag
-    verblassen: [
-        [
-            "        if (entry) this.removeArchitecture(entry, { still: true });",
-            "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);",
-        ],
-    ],
-    // W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
-    ausstattung: [["/fachwerk-core.js", "        lay.brunnen = neu;\n        return aus;", "        return aus;"]],
-    // W9: die Wiederkehr nach dem Reload reiht die offenen Slots nicht ein
-    zugreload: [
-        [
-            "this._dorfZug(this._dorfZugOffen(v2, anker), anker, k, gang)",
-            "this._dorfZug({ ...v2, slots: [] }, anker, k, gang)",
-        ],
-    ],
-    // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS: Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
-    baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
-    // DIE WAND KENNT DEN WEG NICHT: Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
-    weg: [['return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;', "return false;"]],
-    // DAS WERK IM STEIN: der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
-    dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : y;", "? sy + 0.5 : y;"]],
-    // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
-    lichtungwald: [
-        [
-            "            this._naturSetzen(task.name, task.position, task.opts);",
-            "            this.spawnArchitecture(task.name, task.position, task.opts);",
-        ],
-    ],
-    // eine Quelle geht an der Wand vorbei: der Hain der KI (`spawn_studio`) setzt seine Natur direkt — an der Plattform UND im Haus
-    kihain: [["? this._naturSetzen(name, ort, opts, null, absage)", "? this.spawnArchitecture(name, ort, opts)"]],
-    // die Wand nimmt still: der Hain fällt ohne Absage — der Chat sagte „gewachsen" bei 0 Bäumen
-    stumm: [["            if (absage) absage(wo);\n", ""]],
-    // die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den Worker)
-    fernstufe: [
-        [
-            "/fachwerk-core.js",
-            "var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;",
-            "var hb = new THREE.Box3().setFromObject(g); var huelle = stufe === 0 ? { stufe: 0, boxen: gm.__solids } : { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };",
-        ],
-    ],
-    // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die Ort-Wahl
-    // (`_ortTraegtWirt`) lesen dieselbe Wand — der Defekt nimmt sie beiden
-    bauwand: [
-        ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
-        ["if (!this._bauFrei(wx, wz, sl.phi || 0,", "if (false && !this._bauFrei(wx, wz, sl.phi || 0,"],
-        ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
-    ],
-    // W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
-    kletter: [["-Math.SQRT1_2 &&", "Infinity &&"]],
-    // W10: jeder Slot des Start-Dorfs östlich seiner Mitte fällt geschlossen — das Dorf steht nicht ganz
-    startslot: [["        if (!name) return zu(); // fail-closed", "        if (!name || slot.x > 0) return zu();"]],
-    // W10: der Bau räumt den Wurf des Felds nicht, am Deckel der Tiere
-    tierbau: [
-        ['if (wo && wo !== "weg") fallen.push(c);', "if (false) fallen.push(c);"],
-        ["            maxCreatures: 20,", "            maxCreatures: 6,"],
-    ],
-    wand: [["-Math.SQRT1_2 &&", "-2 &&"]],
-    stab: [
-        [
-            "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
-            "false;",
-        ],
-    ],
-    // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
-    kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
-};
+// DIE DEFEKTE (spec/haus-welt/defekte.json, die Folge der Selbsttests): je Defekt [[die Phase seiner Welt, die Proben, die er
+// rot macht], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]]. Was jeder bricht:
+//   huelle: ohne die Hülle des Gesetzbuchs: nur die vier EG-Wände der Tür-Zeile, keine Böden, Tritte, Innenwände
+//   obb: die gedrehte Box als achsparallele Welt-AABB gelesen
+//   grundriss: die Natur wirft in den Grundriss, und das Dorf räumt nicht · die Wand des Orts (`_ortWand`) trägt den
+//       Grundriss für die Natur-Wand und den Solitär · die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der
+//       Ankunft der Hülle (`_hausHuelleSetzen`)
+//   streu: die Streu der Region räumt nicht, wenn das Dorf kommt
+//   streuwand: die Streu-Zelle läuft an der Wand vorbei (der Neubau der Region)
+//   promotion: die Promotion läuft an der Wand vorbei (und Region wie Neubau lassen die Zellen stehen — sonst erreicht
+//       keine den Ring)
+//   nahstreu: die Nah-Streu läuft an der Wand vorbei
+//   lichtung: DIE LICHTUNG (W8): die Wand kennt die Genesis-Plattform nicht (ihr Bauplan trägt keine Lichtung)
+//   schwebe: DIE SCHEIBE SCHWEBT: die Plattform steht 5 m über dem Grund
+//   platz: DER PLATZ IST NUR DIE SCHEIBE: die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
+//   baugrund: EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS: Tor, Esse, Brunnen, Damm — die Natur wirft in ihn,
+//       nichts räumt
+//   weg: DIE WAND KENNT DEN WEG NICHT: Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
+//   dach: DAS WERK IM STEIN: der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
+//   lichtungwald: eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
+//   kihain: eine Quelle geht an der Wand vorbei: der Hain der KI (`spawn_studio`) setzt seine Natur direkt — an der
+//       Plattform UND im Haus
+//   stumm: die Wand nimmt still: der Hain fällt ohne Absage — der Chat sagte „gewachsen" bei 0 Bäumen
+//   fernstufe: die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den
+//       Worker)
+//   kern: vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
+//   bauwand: die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die
+//       Ort-Wahl (`_ortTraegtWirt`) lesen dieselbe Wand — der Defekt nimmt sie beiden
+//   stab:
+//   kletter: W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
+//   startslot: W10: jeder Slot des Start-Dorfs östlich seiner Mitte fällt geschlossen — das Dorf steht nicht ganz
+//   tierbau: W10: der Bau räumt den Wurf des Felds nicht, am Deckel der Tiere
+//   wand:
+//   grundkeller: W9: der Erdbau kennt keinen Keller
+//   grundbueschel: W9: der Kreis des Büschels ohne die Matrix der Vorlage
+//   abbau: W9: der Abbau lässt den Grund liegen
+//   grundplan: W9: der Grund wartet auf die Hülle
+//   vorplatz: W9 SLOT: das gesetzte Haus legt seinen Plan ohne Vorplatz
+//   fremdslot: W11: der Plan kennt keinen Fremd-Slot (die Gasse läuft durch das gesetzte Haus) · das Haus auf dem
+//       Erdbau eines Orts legt keinen Grund (sein Keller ist Erde)
+//   fremdkeller:
+//   waise: W9: der geschlossene Slot lässt seinen Grund liegen
+//   ausstattung: W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
+//   zugreload: W9: die Wiederkehr nach dem Reload reiht die offenen Slots nicht ein
+//   verblassen: W9: das Verblassen nimmt nur den Eintrag
+const DEFEKTE = require("../spec/haus-welt/defekte.json").defekte;
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
@@ -350,13 +256,14 @@ async function proben(phasen) {
         dorfMitte.x = H.reduce((a, e) => a + e.position.x, 0) / H.length;
         dorfMitte.z = H.reduce((a, e) => a + e.position.z, 0) / H.length;
     }
-    // die Probe des Gesetzbuchs je Haus (Rezept + Stempel + Same → HAUS): Diele und Flights
+    // die Probe des Gesetzbuchs je Haus (Rezept + Stempel + Same → HAUS, die Merge-Ordnung von `buildInstance`: der Same des
+    // Stempels vor dem des Eintrags): Diele und Flights
     const gesetz = (e) => {
         const kultur = e.type.slice(5);
         const pre = FC.PRESETS && FC.PRESETS[kultur];
         if (!pre) return null;
         const P = FC.hausParams(pre, e.studioOv || null);
-        P.seed = e.seed;
+        if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
         const Hh = FC.HAUS(window.THREE, FC.mat, P);
         Hh.build({ gelaende: false });
         return Hh;
@@ -403,10 +310,11 @@ async function proben(phasen) {
         );
     // ein Haus des Rezepts `vor` auf dem ersten der Orte mit Land, frei im 14-m-Kreis, an dem `gut(x, z)` nach dem Bau der
     // Boden-Karten gilt, samt Hülle; null: keiner. Gesetzt wie vom Spieler: die Werkstatt prägt das Rezept (`ws.studioOv`,
-    // ein eigener Körper über den Steuer-Passagier `__w9`), das Phantom steht am Ort, `confirmBuild` setzt (schöpfer)
-    const setze = async (vor, id, orte, gut = () => true, phi = 0.6) => {
+    // ein eigener Körper über den Steuer-Passagier `__w9`), das Phantom steht am Ort, `confirmBuild` setzt (schöpfer);
+    // `frei` false: auch auf dem Erdbau eines Orts (W11)
+    const setze = async (vor, id, orte, gut = () => true, phi = 0.6, frei = true) => {
         for (const [x, z] of vor ? orte : []) {
-            if (!r._landAt(x, z, 0.5) || !r._ortFrei(x, z, 14)) continue;
+            if (!r._landAt(x, z, 0.5) || (frei && !r._ortFrei(x, z, 14))) continue;
             stell(x, hh(x, z) + 2, z);
             await warteBis(() => !!r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8), 5, 200);
             if (!gut(x, z)) continue;
@@ -443,6 +351,58 @@ async function proben(phasen) {
         return null;
     };
     const FUSS = A.PLAYER_FOOT_OFFSET;
+    // DER SLOT DES DORF-HAUSES vor (sein Plan v2 im Gedächtnis des Orts) und, mit dem gesetzten Haus e derselben Gestalt, dessen
+    // Erdbau (`haus:`) und ob er byte-gleich dem Ein-Slot-Plan des Slots an seinem Ort und Boden ist (W9 SLOT, W11)
+    const slotVon = (vor, e) => {
+        for (const v of vor ? r._ortPlaene.values() : [])
+            for (const d of v.slots)
+                if (Math.hypot(v.ort.x + d.x - vor.position.x, v.ort.z + d.z - vor.position.z) < 0.05) {
+                    if (!e) return { v };
+                    const { x, y, z } = e.position;
+                    const welt = s.worldMeta.erdbau[`haus:${Math.round(x * 100)},${Math.round(z * 100)}`] || [];
+                    const ctx = window.__gelaendeCore.ortCtx(r._gelaende());
+                    const soll = FC.ortPlan({ slots: [{ ...d, y: y - 0.5 }] }, { x: x - d.x, z: z - d.z }, ctx);
+                    return { welt, byte: JSON.stringify(welt) === JSON.stringify(soll.erdbau) };
+                }
+        return {};
+    };
+    // W11 DER FREMD-SLOT (bauen.K2 Staffel 2): ein Haus mit Keller in der Gestalt eines Dorf-Hauses, gesetzt wie vom Spieler auf
+    // die Gasse des Drehbuch-Dorfs (der erste Punkt seiner Wege 14 m von jedem Haus des Plans): im Raster 5 × 5 seines Grundrisses
+    // liegen vorher Punkte auf einer Weg-Form der Wege-Karte des Orts, nachher keiner; sein Erdbau ist byte-gleich dem
+    // Ein-Slot-Plan des Dorf-Slots derselben Gestalt, der Plan nennt seine Platte (`fest`); der Gang (W10) führt in den Keller
+    // ohne Hub
+    let fe = null;
+    if (P.has("fremd")) {
+        const kv = H.find((e) => gesetz(e).cellar);
+        const { v } = slotVon(kv);
+        const w = (o.w11 = {});
+        const fuss = (x, z) => raster5({ position: { x, z }, rotationY: kv.rotationY }, r._grundrissVon(kv));
+        const aufWeg = (q) =>
+            s.wegeKarte.siedlungen.some(
+                (b) => b.plan === v && b.formen.some((f) => f.typ === "segment" && A._wegeFormAbstand(f, q.x, q.z) < 0)
+            );
+        const karte = (x, z) => fuss(x, z).filter(aufWeg).length;
+        // die Punkte der Gassen des Plans, 14 m von jedem Haus des Plans
+        const orte = (v ? v.roads : []).flatMap((rd) => rd.pts.map((q) => [v.ort.x + q.x, v.ort.z + q.z]));
+        const frei = ([x, z]) => v.slots.every((d) => Math.hypot(v.ort.x + d.x - x, v.ort.z + d.z - z) > 14);
+        fe = await setze(
+            kv,
+            "w11-fremd",
+            orte.filter(frei),
+            (x, z) => (w.vorher = karte(x, z)) > 0,
+            kv && kv.rotationY,
+            false
+        );
+        await warteBis(() => !(r._grundOffen || []).size && !(r._ortNeuOffen || []).size, 4, 200);
+        const sl = fe && slotVon(kv, fe);
+        if (sl)
+            Object.assign(w, {
+                typ: fe.type,
+                nachher: karte(fe.position.x, fe.position.z),
+                byte: sl.byte,
+                fest: (v.fest || []).length,
+            });
+    }
     // W10 DAS START-DORF (siedlung.K1 Staffel 2): der Takt der Welt hebt es am Genesis-Ort (der Hook führt), gegangen wird JEDES
     // Haus seines Plans — der Plan v2 im Gedächtnis des Orts (`_ortPlaene` unter `settlementCells.start.ort`), je Haus-Slot
     // (`_slotBauplan`) das Haus an seinem Ort; ein Slot ohne Haus ist ROT. Dazu die ersten 8 des Drehbuch-Dorfs am Hang.
@@ -465,11 +425,12 @@ async function proben(phasen) {
             else o.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
         }
     }
-    for (const e of P.has("haus") ? [...SD, ...H.slice(0, 8)] : []) {
+    for (const e of (P.has("haus") ? [...SD, ...H.slice(0, 8)] : []).concat(fe || [])) {
         const h = {
             typ: e.type,
             gierGrad: gierVon(e),
             start: SD.includes(e),
+            fremd: e === fe,
         };
         o.haeuser.push(h);
         // die Stufe 0 holen: der Spieler steht am Haus, bis die Foundry die Hülle der Stufe 0 liefert
@@ -837,26 +798,13 @@ async function proben(phasen) {
         // die EINE Steilheit über ±4 m
         const hang = (x, z) => (sw.hang = r._slopeAt(x, z, hh, 4)) >= 0.15;
         const se = vs && (await setze(vs, "w9-slot", ring(dorfMitte, [60, 90, 120, 160]), hang, vs.rotationY));
-        for (const v of se ? r._ortPlaene.values() : [])
-            for (const d of v.slots)
-                if (Math.hypot(v.ort.x + d.x - vs.position.x, v.ort.z + d.z - vs.position.z) < 0.05) {
-                    const { x, y, z } = se.position;
-                    const welt = s.worldMeta.erdbau[`haus:${Math.round(x * 100)},${Math.round(z * 100)}`] || [];
-                    const soll = FC.ortPlan(
-                        { slots: [{ ...d, y: y - 0.5 }] },
-                        { x: x - d.x, z: z - d.z },
-                        window.__gelaendeCore.ortCtx(r._gelaende())
-                    );
-                    const vp = welt.find((q) => q.vorplatz >= 0) || {};
-                    const erde = (dy) => +(r._terrainDensityAt(vp.cx, vp.y + dy, vp.cz) > 0);
-                    Object.assign(sw, {
-                        typ: se.type,
-                        splats: welt.length,
-                        byte: JSON.stringify(welt) === JSON.stringify(soll.erdbau),
-                        boden: erde(-0.3) - erde(0.3),
-                    });
-                    HS.push(se);
-                }
+        const { welt: eb, byte } = (se && slotVon(vs, se)) || {};
+        if (eb) {
+            const vp = eb.find((q) => q.vorplatz >= 0) || {};
+            const erde = (dy) => +(r._terrainDensityAt(vp.cx, vp.y + dy, vp.cz) > 0);
+            Object.assign(sw, { typ: se.type, splats: eb.length, byte, boden: erde(-0.3) - erde(0.3) });
+            HS.push(se);
+        }
         for (const e of HS) {
             const { Hh, sc, base, kasten: boxen } = grundDes(e);
             const h = {
@@ -2192,6 +2140,12 @@ function urteil(o) {
     }
     // W9 DAS GRUND-DATUM
     // jedes Haus des Plans steht, mit der Phase haus ist jedes gegangen, mit `--bild` jedes Innen-Bild lesbar
+    if (P.has("fremd")) {
+        const [w, g] = [o.w11 || {}, (o.haeuser.find((h) => h.fremd) || {}).gang];
+        if (!(w.vorher > 0 && w.nachher === 0 && w.byte && w.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w)}`);
+        if (!(g && g.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
+            f.push(`W10 Anti-Clip-Hub im Fremd-Slot: ${JSON.stringify(g)}`);
+    }
     if (P.has("start")) {
         const sd = o.startDorf || { slots: 0, fehlt: [] };
         const gang = o.haeuser.filter((h) => h.start && h.gang).length;
@@ -2310,6 +2264,7 @@ function zeile(o) {
                 bau: o.bau,
                 W7: o.w7,
                 W6: o.w6,
+                W11: o.w11,
             },
             (k, v) => (/^(taeter|je|kiFehler)$/.test(k) ? undefined : v)
         ) +
@@ -2325,7 +2280,7 @@ hauptLauf(async () => {
     let welten = 0;
     try {
         const lauf = async (inj, phasen, platz) => {
-            const z = { patch: inj && BASIS[inj] ? BASIS[inj] : null, fehler: [], angewandt: new Set() };
+            const z = { patch: inj ? DEFEKTE[inj][1] : null, fehler: [], angewandt: new Set() };
             platz.z = z;
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
@@ -2378,44 +2333,9 @@ hauptLauf(async () => {
         if (SELBST) {
             // je Täter: die Phase seiner Welt (sie fährt nur, was ihr Selbsttest rot machen soll — der Hauptlauf fährt alle),
             // dann die Proben, die er rot macht
-            const soll = {
-                huelle: ["haus", "W10 Spielgang", "W5 Kollision"],
-                obb: ["haus", "W5 Kollision"],
-                grundriss: ["w4", "W4 Grundriss"],
-                streu: ["w4b", "W4b Fern-Streu"],
-                streuwand: ["w4b", "W4b Neubau"],
-                promotion: ["w4b", "W4b Promotion"],
-                nahstreu: ["w4b", "W4b Nah-Streu"],
-                lichtung: ["lichtung", "W8 Lichtung"],
-                schwebe: ["sohle", "W8 Sohle"],
-                platz: ["lichtung", "W8 Lichtung"],
-                baugrund: ["bau", "W8 Bau"],
-                weg: ["w4", "W4 Weg"],
-                dach: ["sohle", "W8 Sohle"],
-                lichtungwald: ["lichtung", "W8 Lichtung"],
-                kihain: ["lichtung", "W8 Lichtung", "W8 Hain im Haus"],
-                stumm: ["lichtung", "W8 Absage"],
-                fernstufe: ["w6", "W6 Fernstufe"],
-                kern: ["w6", "W6 Kern-Hülle"],
-                bauwand: ["haus", "W7 Bau im Bau"],
-                stab: ["haus", "W10 Anti-Clip-Hub"],
-                kletter: ["haus", "W10 Spielgang"],
-                startslot: ["start", "W10 Start-Dorf"],
-                tierbau: ["haus", "W10 Tier im Haus"],
-                wand: ["haus", "W10 Wand"],
-                grundkeller: ["grund", "W9 Dichte"],
-                grundbueschel: ["grund", "W9 Büschel"],
-                abbau: ["grund", "W9 Abbau"],
-                grundplan: ["grund", "W9 Plan"],
-                vorplatz: ["grund", "W9 Slot"],
-                waise: ["grund", "W9 Waise"],
-                ausstattung: ["grund", "W9 Zug|W9 Ausstattung"],
-                zugreload: ["grund", "W9 Waise", "W9 Zug"],
-                verblassen: ["grund", "W9 Waise"],
-            };
-            selbst = Object.keys(soll)
+            selbst = Object.keys(DEFEKTE)
                 .filter((k) => !NUR.length || NUR.includes(k))
-                .map((inj) => ({ inj, soll: soll[inj].slice(1), phasen: soll[inj].slice(0, 1) }));
+                .map((inj) => ({ inj, soll: DEFEKTE[inj][0].slice(1), phasen: DEFEKTE[inj][0].slice(0, 1) }));
         }
         // der Hauptlauf zuerst (die längsten Welten), dann die Selbsttests — alle im Pool; der Hauptlauf in zwei Welten: das
         // Start-Dorf wächst in der Phase start, in der anderen lässt W9 Waise es wachsen
@@ -2425,7 +2345,7 @@ hauptLauf(async () => {
                 : PHASEN.length
                   ? [PHASEN]
                   : [
-                        ["haus", "start"],
+                        ["haus", "start", "fremd"],
                         ["sohle", "lichtung", "bau", "w4", "w4b", "w6", "grund"],
                     ]
         ).map((ph) => (platz) => lauf(null, ph, platz));
@@ -2438,18 +2358,17 @@ hauptLauf(async () => {
         if (selbst.length) {
             for (let i = 0; i < selbst.length; i++) {
                 if (!selbstErg[i]) continue; // die Welt eines anderen Teils
-                const { inj } = selbst[i];
-                const soll = { [inj]: selbst[i].soll };
+                const { inj, soll } = selbst[i];
                 const { o, pf } = selbstErg[i];
                 const f = urteil(o);
                 const trifft = (x) => f.find((y) => x.split("|").some((a) => y.startsWith(a)));
-                const fehlt = soll[inj].filter((x) => !trifft(x));
+                const fehlt = soll.filter((x) => !trifft(x));
                 const ok = pf.length === 0 && fehlt.length === 0;
-                const beleg = soll[inj]
+                const beleg = soll
                     .map((x) => trifft(x) || `${x}: grün (blind! ${f.join(" | ") || "kein Urteil"})`)
                     .join(" | ");
                 console.log(
-                    `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
+                    `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll.join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
                 );
                 if (!ok) rot++;
             }

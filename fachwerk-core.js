@@ -6532,6 +6532,7 @@
         hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
         brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
+        umM: 0.25, // so weit über den Saum seiner Gasse läuft der Umweg um einen Fremd-Slot (`ortPlan`, ctx.fest)
     };
     // DER EINGANG eines Slots (K10-6 · K66, plan-lokal), den der Gang von der Gasse betritt: z haus-lokal, y seine Schwelle über dem
     // Boden des Hauses — die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9),
@@ -6618,6 +6619,45 @@
             for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
         return -1;
     }
+    // Liang–Barsky: das Stück [t0, t1] der Strecke a → b (im Rahmen eines Rechtecks) in |u| ≤ A, |v| ≤ B, null ohne
+    function clipRechteck(a, b, A, B) {
+        var t0 = 0;
+        var t1 = 1;
+        var p = [a[0] - b[0], b[0] - a[0], a[1] - b[1], b[1] - a[1]];
+        var q = [a[0] + A, A - a[0], a[1] + B, B - a[1]];
+        for (var i = 0; i < 4; i++) {
+            if (p[i] === 0) {
+                if (q[i] < 0) return null;
+            } else if (p[i] < 0) t0 = Math.max(t0, q[i] / p[i]);
+            else t1 = Math.min(t1, q[i] / p[i]);
+        }
+        return t0 <= t1 ? [t0, t1] : null;
+    }
+    // DER LAUF IM FREMD-SLOT (bauen.K2 Staffel 2): betritt der Lauf `pts` die Platte `f` {cx, cz, phi, ex, ez} (beide im Rahmen
+    // des Plans) samt der halben Wegbreite `hw` und dem Saum der Gasse? {lok: der Lauf im Rahmen der Platte, ke/kx: die erste und
+    // die letzte Strecke darin} oder null. Leser: `ortPlan` (der Umweg) und `festWeg`.
+    function festLauf(pts, f, hw) {
+        var c = Math.cos(f.phi || 0);
+        var s = Math.sin(f.phi || 0);
+        var lok = pts.map(function (p) {
+            return [(p.x - f.cx) * c - (p.z - f.cz) * s, (p.x - f.cx) * s + (p.z - f.cz) * c];
+        });
+        var ke = -1;
+        var kx = -1;
+        for (var k = 1; k < lok.length; k++) {
+            var tt = clipRechteck(lok[k - 1], lok[k], f.ex + hw + ORT_GESETZ.saumM, f.ez + hw + ORT_GESETZ.saumM);
+            if (tt && tt[1] - tt[0] > 1e-9) kx = ke < 0 ? (ke = k) : k;
+        }
+        return ke < 0 ? null : { lok: lok, ke: ke, kx: kx };
+    }
+    // BETRITT EIN WEG DES PLANS v2 DEN FREMD-SLOT f (absolut, eine Platte wie ctx.fest)? Leser: der Wirt (`_ortFremdPruefen`: nur
+    // der Ort, dessen Gasse oder Feldweg ein gesetztes Haus betritt, rechnet neu — nie jeder Ort, in dessen Radius es steht).
+    function festWeg(v2, f) {
+        var g = { cx: f.cx - v2.ort.x, cz: f.cz - v2.ort.z, phi: f.phi, ex: f.ex, ez: f.ez };
+        return (v2.roads || []).concat(v2.feldwege || []).some(function (rd) {
+            return !!festLauf(rd.pts || [], g, (isFinite(rd.w) ? rd.w : 3) / 2);
+        });
+    }
     function ortPlan(plan, origin, ctx) {
         if (
             !plan ||
@@ -6677,6 +6717,102 @@
             var dz = z - pz.cz;
             return Math.abs(dx * c - dz * s) <= pz.ex + 1 && Math.abs(dx * s + dz * c) <= pz.ez + 1;
         };
+        // 1b) DIE FREMD-SLOTS (bauen.K2 Staffel 2): ctx.fest nennt die Häuser, die ohne diesen Plan stehen — gesetzt vom Spieler,
+        //    der KI, der Vorschau —, je die Platte ihres Grundrisses samt Saum aus ihrem EIGENEN Erdbau ({cx, cz, phi, ex, ez},
+        //    absolut; der Wirt `_ortFest`, EIN Grund-Datum). Sie sind feste Slots des Plans: jede Gasse und jeder Feldweg, deren
+        //    Lauf die Platte samt halber Breite und Saum betritt, weicht ihrem Rand um `umM` weiter, den Weg um die Ecken mit
+        //    weniger Häusern des Plans, sonst den kürzeren; endet der Lauf darin, endet er an ihrem Rand — dieselben Wege, dasselbe
+        //    Profil danach, kein zweiter Gassen-Bauer. Der Lauf des Exports bleibt am Weg (`lauf`): ein späterer Plan rechnet von
+        //    ihm (fällt das Haus, liegt die Gasse wie vorher). Ohne ctx.fest ist der Plan byte-derselbe. Bis bauen.K2-2 lief die Gasse
+        //    des Orts durch das gesetzte Haus — gemalt, getreten, das Netz der Bewohner führte hindurch.
+        var fest = (Array.isArray(ctx.fest) ? ctx.fest : []).map(function (f) {
+            return { cx: f.cx - ox, cz: f.cz - oz, phi: f.phi || 0, ex: f.ex, ez: f.ez, f: f };
+        });
+        var festGetroffen = [];
+        var clip = clipRechteck;
+        var umlegen = function (pts, hw) {
+            for (var fi = 0; fi < fest.length; fi++) {
+                var f = fest[fi];
+                var im = festLauf(pts, f, hw);
+                if (!im) continue;
+                if (festGetroffen.indexOf(f.f) < 0) festGetroffen.push(f.f);
+                var lok = im.lok;
+                var ke = im.ke;
+                var kx = im.kx;
+                var c = Math.cos(f.phi);
+                var s = Math.sin(f.phi);
+                var welt = function (u, v) {
+                    return { x: r6(f.cx + u * c + v * s), z: r6(f.cz - u * s + v * c) };
+                };
+                // Ein- und Austritt am um `umM` weiteren Rand (der Umweg läuft auf ihm, der Rand der Platte bleibt frei)
+                var A = f.ex + hw + O.saumM + O.umM;
+                var B = f.ez + hw + O.saumM + O.umM;
+                var an = function (j, t) {
+                    return [lok[j - 1][0] + (lok[j][0] - lok[j - 1][0]) * t, lok[j - 1][1] + (lok[j][1] - lok[j - 1][1]) * t];
+                };
+                var te = clip(lok[ke - 1], lok[ke], A, B);
+                while (te[0] === 0 && ke > 1) te = clip(lok[--ke - 1], lok[ke], A, B);
+                var tx = clip(lok[kx - 1], lok[kx], A, B);
+                while (tx[1] === 1 && kx < lok.length - 1) tx = clip(lok[kx], lok[++kx], A, B);
+                var ein = te[0] > 0 ? an(ke, te[0]) : null;
+                var aus = tx[1] < 1 ? an(kx, tx[1]) : null;
+                var vorn = ein ? pts.slice(0, ke).concat([welt(ein[0], ein[1])]) : [];
+                var hinten = aus ? [welt(aus[0], aus[1])].concat(pts.slice(kx)) : [];
+                if (!ein || !aus) {
+                    pts = vorn.concat(hinten);
+                    continue;
+                }
+                // die Stelle eines Rand-Punkts auf dem Umfang (gegen den Uhrzeiger ab der Ecke −A, −B), die Seite mit dem
+                // kleinsten Abstand
+                var P = 4 * (A + B);
+                var um = function (q) {
+                    var d = [Math.abs(q[1] + B), Math.abs(q[0] - A), Math.abs(q[1] - B), Math.abs(q[0] + A)];
+                    var m = d.indexOf(Math.min.apply(null, d));
+                    return [q[0] + A, 2 * A + q[1] + B, 3 * A + 2 * B - q[0], 4 * A + 3 * B - q[1]][m];
+                };
+                var ta = um(ein);
+                var tb = um(aus);
+                var ecken = [[-A, -B, 0], [A, -B, 2 * A], [A, B, 2 * A + 2 * B], [-A, B, 4 * A + 2 * B]];
+                var wahl = [1, -1]
+                    .map(function (dir) {
+                        var mod = function (t) {
+                            return (((t - ta) * dir) % P + P) % P;
+                        };
+                        var ecke = ecken
+                            .filter(function (e) {
+                                return mod(e[2]) > 0 && mod(e[2]) < mod(tb);
+                            })
+                            .sort(function (e, g) {
+                                return mod(e[2]) - mod(g[2]);
+                            });
+                        var lauf = [ein].concat(ecke, [aus]);
+                        var haeuser = 0;
+                        for (var j = 1; j < lauf.length; j++)
+                            for (var t = 0; t <= 1; t += 0.125) {
+                                var w = welt(lauf[j - 1][0] + (lauf[j][0] - lauf[j - 1][0]) * t, lauf[j - 1][1] + (lauf[j][1] - lauf[j - 1][1]) * t);
+                                for (var si = 0; si < plan.slots.length; si++)
+                                    if (plan.slots[si].obb && distPunktOBB(w.x, w.z, plan.slots[si].obb) < hw) haeuser++;
+                            }
+                        return { ecke: ecke, haeuser: haeuser, lang: mod(tb) };
+                    })
+                    .sort(function (a, b) {
+                        return a.haeuser - b.haeuser || a.lang - b.lang;
+                    })[0];
+                pts = vorn.concat(
+                    wahl.ecke.map(function (e) {
+                        return welt(e[0], e[1]);
+                    }),
+                    hinten
+                );
+            }
+            return pts;
+        };
+        // je Weg der Lauf des Exports (`lauf`, sonst `pts`) um die Fremd-Slots gelegt: { pts, lauf? } — `lauf` nur, wo er weicht
+        var gelegt = function (rd, hw) {
+            var lauf = Array.isArray(rd.lauf) ? rd.lauf : Array.isArray(rd.pts) ? rd.pts : [];
+            var pts = fest.length ? umlegen(lauf, hw) : lauf;
+            return pts === lauf ? { pts: lauf } : { pts: pts, lauf: lauf };
+        };
         // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
         var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
         // DAS NETZ DES PROFILS (siedlung.K5): ein Weg-Punkt sucht seinen gepinnten Nachbarn nur in den Zellen, die seine größte
@@ -6714,8 +6850,9 @@
         var k;
         for (var ri = 0; ri < roads.length; ri++) {
             var rd = roads[ri];
-            var pts = rd && Array.isArray(rd.pts) ? rd.pts : [];
             var hw = (isFinite(rd.w) ? rd.w : 3) / 2;
+            var lage = gelegt(rd, hw);
+            var pts = lage.pts;
             var n = pts.length;
             var sw = [];
             var roh = [];
@@ -6828,7 +6965,9 @@
                         w: r6(2 * (hw + (tier ? 0 : O.saumM))),
                         weg: 2 * ri + tier, // die Strecken EINES Wegs: unter ihnen trägt die nächste Mitte (gelaende-core erdbauY)
                     });
-            wege.push(bruecken.length ? Object.assign({}, rd, { ys: ys, bruecken: bruecken }) : Object.assign({}, rd, { ys: ys }));
+            var weg = Object.assign({}, rd, lage, bruecken.length ? { ys: ys, bruecken: bruecken } : { ys: ys });
+            if (!lage.lauf) delete weg.lauf;
+            wege.push(weg);
         }
         if (platzY !== null)
             erdbau.push({
@@ -7047,6 +7186,15 @@
         });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
+        // die Feldwege weichen den Fremd-Slots wie die Gassen (sie tragen kein Profil); `fest`: die Fremd-Slots, denen ein Weg wich
+        var fw0 = Array.isArray(plan.feldwege) ? plan.feldwege : [];
+        if (fest.length || fw0.some(function (fw) { return fw.lauf; }))
+            v2.feldwege = fw0.map(function (fw) {
+                var weg = Object.assign({}, fw, gelegt(fw, (isFinite(fw.w) ? fw.w : 3) / 2));
+                if (!weg.lauf || weg.pts === weg.lauf) delete weg.lauf;
+                return weg;
+            });
+        if (festGetroffen.length) v2.fest = festGetroffen;
         return v2;
     }
 
@@ -7172,6 +7320,7 @@
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
+        festWeg: festWeg, // bauen.K2 — betritt ein Weg des Plans v2 die Platte eines gesetzten Hauses? (der Wirt rechnet dann neu)
         ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,

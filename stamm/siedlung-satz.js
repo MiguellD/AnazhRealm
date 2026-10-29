@@ -2281,8 +2281,9 @@ class AnazhRealm_siedlung_satz {
     }
     // Die Boden-Schichten EINES Settlement-Exports (Straßen · Feldwege · Platz · Äcker) in die Wege-Karte und die
     // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
-    // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot).
-    _stlWegeBuild(plan, origin, key) {
+    // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot). `nurWege`:
+    // ein neuer Plan desselben Orts (`_ortNeuRechnen`) — Zaun und Mauer stehen schon. Die Formen merken ihren Plan (`plan`).
+    _stlWegeBuild(plan, origin, key, nurWege) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         if (key && this._stlWegeKeys.has(key)) return 0;
@@ -2291,7 +2292,7 @@ class AnazhRealm_siedlung_satz {
         let n = 0;
         const MAX = 900; // Kappe je Siedlung
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
-        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [] };
+        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {
             box.formen.push(f);
             for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeKarteMale(stufe, f);
@@ -2428,6 +2429,7 @@ class AnazhRealm_siedlung_satz {
         const pm = this.state.playerMesh;
         if (pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
         if (box.x0 < box.x1) this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+        if (nurWege) return n;
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
         for (const fz of plan.fences || []) {
