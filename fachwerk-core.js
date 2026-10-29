@@ -3406,18 +3406,36 @@
         }
         return A[A.length - 1][0];
     }
+    // DIE GESTALT EINER ZAHL (siedlung.K4): die kleinste Gegenwart nE (bis GROESSE_WAND), deren Schnitt am Jahr t mindestens nH
+    // Häuser trägt (die Häuser i mit chronikJahr(A, i) ≤ t) — die Anker wachsen mit nE, die Suche halbiert
+    function gestaltFuer(nH, vor, d, gr0, tEnde, klasse, t) {
+        var zaehl = function (nE) {
+            var A = chronikAnker(vor, d, gr0, tEnde, nE, klasse);
+            for (var k = 0; k < nE && chronikJahr(A, k) <= t; ) k++;
+            return k;
+        };
+        var a = nH,
+            b = GROESSE_WAND;
+        if (zaehl(b) < nH) return b;
+        while (a < b) {
+            var m = (a + b) >> 1;
+            if (zaehl(m) >= nH) b = m;
+            else a = m + 1;
+        }
+        return a;
+    }
     // ── DAS WACHSTUM (siedlung.K4 Staffel 2): der Ort wächst in Spielzeit aus seinen Bewohnern. Je Sekunde der Welt-Uhr gründet
-    // jeder Bewohner eines stehenden Loses `kraftJeS` × den Wohlstand seines Hauses (`wohl` des Plans) × das Wohl des Orts an
-    // Kraft — das Wohl ist 1 − Furcht ÷ deckel, die Furcht die Erinnerung seiner Akten (die Gewalt, die seine Bewohner sahen: das
-    // EINE Furcht-Gesetz, tetrapoda `furchtErinnert`, der Wirt reicht es als `furcht`). Das nächste Los der Chronik (die Lose
-    // seines Gründungsjahrs) steht, wenn die Kraft seine Leute trägt: der Ort springt in sein Jahr, nach dem letzten in die
-    // Gegenwart (bis zu ihr die Ersatzbauten). Ohne Bewohner, ohne Wohlstand oder in Furcht (wohl → 0) wächst nichts — ein
-    // Zeitplan, der Häuser setzt, wäre kein Wachstum. Die Größe wächst so mit den Leuten (Verdopplung ≈ ln 2 ÷ (kraftJeS ×
-    // Leute je Haus ÷ Leute des Loses) ≈ 21 min Welt-Uhr bei Wohlstand 1).
+    // jeder Bewohner eines stehenden Loses `kraftJeS` × den Wohlstand seines Hauses (`wohl` des Plans) an Kraft, geteilt durch
+    // die Furcht des Orts: die Erinnerung seiner Akten (die Gewalt, die seine Bewohner sahen) nach dem EINEN Furcht-Gesetz
+    // (tetrapoda `furchtErinnert`, der Wirt reicht es als `furcht`), um `jeFurcht` je Einheit — derselbe Faktor, um den sie
+    // den Raum vor dem Spieler weitet (`fluchtJeFurcht`). Das nächste Los der Chronik (die Lose seines Gründungsjahrs) steht,
+    // wenn die Kraft seine Leute trägt: der Ort springt in sein Jahr, nach dem letzten in die Gegenwart (bis zu ihr die
+    // Ersatzbauten). Ohne Bewohner oder ohne Wohlstand (wohl → 0) wächst nichts, in Furcht langsamer — ein Zeitplan, der
+    // Häuser setzt, wäre kein Wachstum. Die Größe wächst mit den Leuten (Verdopplung ≈ 21 min Welt-Uhr bei Wohlstand 1).
     // C = die Chronik des Exports (`chronik`: gr0, ende, je Los jahre · leute · wohl), Z = {jahr, kraft, uhr} (uhr: die Welt-Uhr
     // `spielZeit` in s), akten = [{t, type}] nach t, t = jetzt. Rein und deterministisch: dieselben Akten, dieselbe Uhr, derselbe Ort.
     var WACHSTUM = { kraftJeS: 1 / 1800, aktenMax: 16 };
-    function wachstum(C, Z, akten, t, furcht, deckel) {
+    function wachstum(C, Z, akten, t, furcht, jeFurcht) {
         var jahr = Z.jahr,
             kraft = Z.kraft || 0,
             a0 = Z.uhr;
@@ -3444,7 +3462,7 @@
                     return a.t <= a0;
                 })
             );
-            var w = 1 - Math.min(deckel, Math.max(0, f)) / deckel;
+            var w = 1 / (1 + Math.max(0, f) * jeFurcht);
             while (m < n) {
                 var R = rate * WACHSTUM.kraftJeS * w;
                 if (!(R > 0)) break; // ohne Kraft gründet niemand, auch kein Los ohne Leute (die Scheune folgt ihrem Hof)
@@ -3471,22 +3489,24 @@
   const leg0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null, achse=leg0?zeitachse(leg0.region):[];
   const chronik=!!leg0&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): die Epoche lebt in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr schneidet ihn (unten). Die ZAHL ist die Groesse der Gegenwart (die Gestalt); bis w3w schaltete sie die Chronik ab: jede Zelle der Welt (Rang-Gesetz), der Satz „dorf 7 300" und der Akt des DSL trugen eine Zahl und rechneten je Epoche einen eigenen Plan — die Mutante ohne Erbe (Teil J 0,222)*/
   const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
-  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
   let region,jahr,spanne,d=0;
   if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
   else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
-  const n=nZiel;
-  const groesse=groesseVon(n), staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole');
+  const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
+  const staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole'), kr=rnd(), vor=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr);
+  const ringe=(staedtischVon(groesseVon(nZiel))&&jahr>1700)||chronik;                                  /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
+  const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
+  /*DIE ZAHL STEHT IM JAHR IHRER EPOCHE (siedlung.K4): mit Chronik traegt der Schnitt der verlangten Epoche die Zahl, die Gestalt ist die kleinste Gegenwart, deren Schnitt sie traegt (`gestaltFuer`) — die Zelle des Rang-Gesetzes zeigt ihre Groesse, „dorf 7 18 gruenderzeit" steht mit 18 Haeusern*/
+  const n=chronik&&DP.nH&&leg0!==leg?gestaltFuer(nZiel, vor, d, gr0, jahr+spanne, leg.groesse, leg0.jahr+d+leg0.spanne):nZiel;
+  const groesse=groesseVon(n);
   const staedtisch=staedtischVon(groesse);
-  const kr=rnd(); const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
+  const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
   const poolAt=(y,hist)=>{ if(!hist&&leg&&leg.pool)return leg.pool; const H=REGION_HIST[region]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
   const geb=[];
-  const ringe=(staedtisch&&jahr>1700)||chronik;                                                        /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
-  const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
-  const anker=ringe? chronikAnker(achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr), d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
+  const anker=ringe? chronikAnker(vor, d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
   const gr=[], fr=[];                                                                         /*je Los: das Gruendungsjahr und die frueheren Bauten [{ab, v}] (der Schnitt der Chronik liest sie)*/
   for(let i=0;i<n;i++){
     const t9r=i/Math.max(1,n-1);

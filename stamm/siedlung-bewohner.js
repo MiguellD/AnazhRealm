@@ -1091,13 +1091,24 @@ class AnazhRealm_siedlung_bewohner {
 
     // DIE ZEUGEN (mensch.K5): jeder Bewohner draußen auf `zeugeM` um den Ort o, an dem der Spieler ein Wesen schlägt
     // (`damageCreature`), erinnert die Gewalt — das EINE Gedächtnis (`_creatureRemember` auf seinem Leib), das Furcht-Gesetz wiegt
-    // sie (`gewalt`); bei der nächsten Begegnung lässt er dem Spieler mehr Raum (`_bewohnerSpielerAbstand`).
+    // sie (`gewalt`); bei der nächsten Begegnung lässt er dem Spieler mehr Raum (`_bewohnerSpielerAbstand`). DER ORT ERINNERT
+    // (siedlung.K4 Staffel 2): sah ein Bewohner die Tat, trägt das Gedächtnis seines Orts sie als Akte (`settlementCells[k].akten`,
+    // die Uhr der Welt, die letzten `WACHSTUM.aktenMax`) — ihre Furcht bremst sein Wachstum (fachwerk `wachstum`).
     _bewohnerZeuge(o) {
         const R2 = AnazhRealm.BEWOHNER.zeugeM ** 2;
-        for (const S of (this._bewohnerSiedlungen || new Map()).values())
+        const cells = (this.state.worldMeta || {}).settlementCells || {};
+        for (const S of (this._bewohnerSiedlungen || new Map()).values()) {
+            let sah = false;
             for (const b of S.liste || [])
-                if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2)
+                if (b.leib && !b.drinnen && (b.leib.position.x - o.x) ** 2 + (b.leib.position.z - o.z) ** 2 < R2) {
                     this._creatureRemember(b.leib, "gewalt", { von: "spieler" });
+                    sah = true;
+                }
+            const c = sah && cells[S.key];
+            if (!c || !c.wachs) continue;
+            c.akten = (c.akten || []).concat([{ t: this.state.spielZeit, type: "gewalt" }]);
+            c.akten.splice(0, c.akten.length - globalThis.__fachwerkCore.WACHSTUM.aktenMax);
+        }
     }
 
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
