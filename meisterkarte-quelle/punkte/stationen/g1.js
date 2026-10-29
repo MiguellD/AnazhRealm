@@ -369,11 +369,11 @@ module.exports = [
         kriterium: "gelaende.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 240, befehl: [
             "bash",
             "-c",
-            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; W() { node scripts/werkbank.cjs "$@"; }; raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=$SP node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; (node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP > "$D/werkbank.log" 2>&1 < /dev/null &); for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/werkbank.log" 2>/dev/null && break; sleep 5; done; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; W stop > /dev/null 2>&1; sleep 3; raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E`,
-        ],
+            `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
+        ] },
         gpu: true,
         zeit: false,
         minuten: 6,
@@ -703,7 +703,7 @@ module.exports = [
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        probe: { sek: 240, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--datei", "{AUS}"] },
         gpu: true,
         zeit: false,
         minuten: 4,

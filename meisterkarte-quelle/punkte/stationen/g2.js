@@ -235,7 +235,7 @@ async function herdeHang() {
     const fs = require("fs");
     const path = require("path");
     const cp = require("child_process");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const [aus, port, szene, pulk] = process.argv.slice(1);
     const W = Number(port) + 20000;
     const B = aus.replace(/\.json$/, "");
@@ -245,7 +245,8 @@ async function herdeHang() {
         if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
         return a.ergebnis;
     };
-    const tor = werkbankTor(W);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: Promise.resolve(), stop: () => {} };
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -366,11 +367,12 @@ function schwarmSzene(r, T, o) {
 async function schwarmLauf() {
     const fs = require("fs");
     const path = require("path");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const [aus, port, szene] = process.argv.slice(1);
     const W = Number(port) + 20000;
     const erg = {};
-    const tor = werkbankTor(W);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: Promise.resolve(), stop: () => {} };
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -729,7 +731,7 @@ function rudelGefuehl(r, T, o) {
 async function wertLauf() {
     const fs = require("fs");
     const path = require("path");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
     const [aus, port, art, szene] = process.argv.slice(1);
     const W = Number(port) + 20000;
@@ -741,7 +743,8 @@ async function wertLauf() {
         erg.laeufe.push(a.ergebnis);
         return a.ergebnis;
     };
-    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: werkbankRuf(W, "/umstellen", { ort: "wiese" }).then((a) => { if (!a || a.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(a).slice(0, 200)); }), stop: () => {} };
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
@@ -958,11 +961,12 @@ async function affektLauf() {
 async function boeLauf() {
     const fs = require("fs");
     const path = require("path");
-    const { werkbankTor, werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
     const [aus, port, mutante] = process.argv.slice(1);
     const W = Number(port) + 20000;
-    const tor = werkbankTor(W, ["--ort", "wiese"]);
+    // die Welt der Sitzung (punkte.cjs fahreSitzung): ihr Log nennt die Karte; sie startet und endet nie hier
+    const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: werkbankRuf(W, "/umstellen", { ort: "wiese" }).then((a) => { if (!a || a.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(a).slice(0, 200)); }), stop: () => {} };
     let erg;
     try {
         await tor.bereit;
@@ -1188,22 +1192,13 @@ function sollKlasseStation(o) {
         kriterium: o.kriterium,
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; git checkout spec/abnahme/soll-tafel.json; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit|linse-gpu' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
+                "trap 'git checkout spec/abnahme/soll-tafel.json' EXIT",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
                 ...o.vorher,
@@ -1212,7 +1207,7 @@ function sollKlasseStation(o) {
                     sollUrteil(o.id, n.toUpperCase()),
                 ]),
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1433,7 +1428,7 @@ const stationen = [
         kriterium: "tiere.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
@@ -1441,7 +1436,7 @@ const stationen = [
             "{PORT}",
             knapp(herdeSzene),
             knapp(herdePulk),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1566,24 +1561,14 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
                 "TIER_GANG_PORT=$(( {PORT} + 10000 )) node scripts/diag-tier-gang.cjs; echo \"TIER-GANG EXIT=$?\"",
                 "KREATUR_TAKT_PORT=$(( {PORT} + 30000 )) node scripts/diag-kreatur-takt.cjs --proben querhang; echo \"QUERHANG EXIT=$?\"",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
                 "G=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position, h = (x, z) => r.getTerrainHeightAt(x, z), V = () => new window.THREE.Vector3(); r.setGameMode(\"pfad\"); for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); s.renderer.setAnimationLoop(null); s.faunaLifecycle.lastTick = 1e12; const z0 = pm.z + 24; const tiere = [\"wolf\", \"fuchs\", \"baer\", \"wesen\"].map((seele, n) => { const x0 = pm.x - 5 + n * 3.4; s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4); const c = r.spawnCreatureAt(x0, h(x0, z0) + 0.3, z0, \"happy\", seele, { precise: true, bodySize: 1 }); c.userData.task = { name: \"wait\", args: {}, since: 0 }; c.userData.emotions = null; c.rotation.set(0, Math.PI / 2, 0); c.userData._animFade = 1; const tb = c.userData._tierBaum, T = tb.teile, P = [T.flP, T.frP, T.hlP, T.hrP]; r._tierBaumNeutralStance(c); c.updateMatrixWorld(true); const lokal = P.map((p) => { const w = V().setFromMatrixPosition(p.matrixWorld); w.y = c.position.y; return p.worldToLocal(w); }); const hl = V().setFromMatrixPosition(T.legHL.matrixWorld).y - c.position.y; const v = 0.5 * Math.sqrt(-s.gravity * tb.beinL * (c.scale.x || 1)); c.position.x = x0 - v * 4.3; for (let i = 0, t = 0; i < 258 + n * 7; i++) { c.position.x += v / 60; const y = h(c.position.x, c.position.z); c.position.y = y; c.userData._traegerY = y; c.userData._traegerStruktur = false; r._animateCompoundMotion(c, r._motionRolesForSoul(c.userData.soul), (t += 1 / 60), 0, true, null); } c.updateMatrixWorld(true); const amBoden = P.filter((p, j) => { const w = p.localToWorld(lokal[j].clone()); return w.y - h(w.x, w.z) <= 0.05 * hl; }).length; return { seele, x: +c.position.x.toFixed(1), art: tb._gang.art, amBoden }; }); const xc = tiere.reduce((a, t) => a + t.x, 0) / 4; return { tiere, kamera: [xc, h(xc, z0 - 10) + 2, z0 - 10, xc, h(xc, z0) + 0.5, z0].map((v) => +v.toFixed(2)) };' | erg); echo \"BUEHNE $G\"",
@@ -1591,7 +1576,7 @@ const stationen = [
                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
                 "cp \"$B-gang.abnahme.json\" \"$A\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 14,
@@ -1654,27 +1639,17 @@ const stationen = [
         // Spieler-Wort, Loop 12 s, gezählt im Frustum der Spiel-Kamera, gezeichnet, Sichtlinie frei) mit dem Bild aus dem
         // Ausgabe-Pfad (`b64png.cjs` → <aus>-platz-8uhr-third.png). Ports: save-server {PORT}, Werkbank {PORT}+20000 (Seite −1).
         // platz-8.js und b64png.cjs leben im Koord-Baum (R6 sieht sie nicht; ihr Text steht hier per Pfad im Abdruck).
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"; SK=\"$(printf %s '{KOORD}' | tr '\\\\' /)/bericht/2210-messschuld-6cfce/skripte\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
                 "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner",
                 "node scripts/werkbank.cjs eval \"$(cat \"$SK/platz-8.js\")\" > \"$B-platz.txt\"",
                 "node \"$SK/b64png.cjs\" \"$B-platz.txt\" \"$B-platz-8uhr-third.png\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1737,30 +1712,20 @@ const stationen = [
         // Zweig w3u-stadt-leben b361f456): 1 094 Bewohner, im Nah-Ring (19,8 m) 136–142 draußen, 40–50 mit laufendem Gang in 12
         // Läufen (am Rand des Solls); vor dem Zweig 0 Bewohner (die Liste wartete auf die Hüllen der kalten Häuser). Mutanten ROT
         // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-        befehl: [
+        probe: { sek: 600, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
-                "grep -m1 '\\[linse-gpu\\]' \"$B-werkbank.log\"",
+                "grep -m1 '\\[linse-gpu\\]' \"$PUNKTE_SITZUNG_LOG\"",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "node scripts/werkbank.cjs umstellen --ort stadt-voll --sicht third > \"$B-umstellen.txt\" 2>&1",
                 "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort stadt-voll",
                 "node scripts/werkbank.cjs haenger 20 --regler voll --tiere frei --json \"$B-haenger.json\" > \"$B-haenger.out\" 2>&1; echo \"HAENGER EXIT=$?\"",
                 "node -e 'try{const j=require(process.argv[1]);console.log(\"TAKT \"+JSON.stringify({frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs}))}catch(e){console.log(\"TAKT {}\")}' \"$B-haenger.json\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: true,
         minuten: 20,
@@ -2124,23 +2089,13 @@ const stationen = [
         kriterium: "tiere.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
+        probe: { sek: 300, befehl: [
             "bash",
             "-c",
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
                 "KREATUR_TAKT_PORT=$(( {PORT} + 10000 )) node scripts/diag-kreatur-takt.cjs --proben jagdkreis",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
                 "O=$(node scripts/werkbank.cjs eval 'const pm = r.state.playerMesh.position; let O = null; for (let ring = 2; ring <= 16 && !O; ring++) for (let q = 0, n = ring * 6; q < n && !O; q++) { const a = (q / n) * 2 * Math.PI, x = pm.x + Math.cos(a) * ring * 25, z = pm.z + Math.sin(a) * ring * 25; if (r._landAt(x, z) && r._bodenKlasseAt(x, z) === \"wald\" && r._bodenKlasseAt(x + 30, z) !== \"fluss\" && r._kreaturGrundFrei(x, z) && r._kreaturGrundFrei(x + 30, z)) O = [+x.toFixed(1), +z.toFixed(1)]; } return O;' | erg); echo \"ORT $O\"",
@@ -2150,7 +2105,7 @@ const stationen = [
                 "echo \"BILD $(grep -o '\"abnahme\": \"[^\"]*\"' \"$B-bild.txt\")\"",
                 "cp \"$B-wolfsrevier.abnahme.json\" \"$A\"",
             ].join("\n"),
-        ],
+        ] },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -2335,7 +2290,7 @@ const stationen = [
         kriterium: "affekt.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)],
+        probe: { sek: 300, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2690,7 +2645,7 @@ const stationen = [
         kriterium: "oekologie.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)],
+        probe: { sek: 300, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2721,25 +2676,15 @@ const stationen = [
     // über 24 Spielstunden je ≥ 0,9 ihrer Soll-Orte (unterN 0), 4–10 Wege je Bewohner und Tag, und je 1,5 h die Lage, die sah,
     // wer blieb, gegen die, die findet, wer 1 h fort war (16 Prüf-Stunden, die Liste neu, die Uhr gesprungen): jeder ±2 m.
     // Das Schlupfloch Teleport fällt an sprungN, der Plan bit-gleich je Same. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-    befehl: [
+    probe: { sek: 360, befehl: [
         "bash",
         "-c",
         [
             "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-            "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-            "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-            "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-            "trap ende EXIT; trap 'exit 143' INT TERM",
-            "raeum; stand",
-            "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-            "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-            "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-            "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-            "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner",
         ].join("\n"),
-    ],
+    ] },
     gpu: true,
     zeit: false,
     minuten: 10,
@@ -2980,7 +2925,7 @@ const stationen = [
         kriterium: "luftwasser.K5",
         staffel: 1,
         geraet: "gtx",
-        befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)],
+        probe: { sek: 180, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)] },
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3002,7 +2947,7 @@ const stationen = [
         kriterium: "luftwasser.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)],
+        probe: { sek: 180, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)] },
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3035,25 +2980,15 @@ const stationen = [
     // kein Bewohner draußen näher als zwei Kapseln (0,7 m) zum Spieler; die Erinnerung (Furcht > 0) weitet den kleinsten
     // Abstand des vierten Gangs um ≥ 0,3 m gegen den zweiten, die Gegenprobe ohne Erinnerung (der dritte) bleibt auf 0,15 m bei
     // ihm. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-    befehl: [
+    probe: { sek: 180, befehl: [
         "bash",
         "-c",
         [
             "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-            "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-            "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-            "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-            "trap ende EXIT; trap 'exit 143' INT TERM",
-            "raeum; stand",
-            "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-            "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-            "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S > \"$B-werkbank.log\" 2>&1 &)",
-            "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-            "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung",
         ].join("\n"),
-    ],
+    ] },
     gpu: true,
     zeit: false,
     minuten: 8,
@@ -3110,7 +3045,7 @@ const stationen = [
         kriterium: "vegetation.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"],
+        probe: { sek: 240, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
         gpu: true,
         zeit: false,
         minuten: 10,
