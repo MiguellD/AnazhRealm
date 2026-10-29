@@ -1714,7 +1714,21 @@ class AnazhRealm_koerper_bewegung {
             // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
             // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
             // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
-            player.rotation.y = this.state.yaw;
+            // DER LEIB IM STAND (mensch.K4 Staffel 1, Messschuld M7): in Third umkreist die Kamera den stehenden Leib frei — er
+            // dreht auf die Gier, sobald er geht, springt, sprintet, reitet oder eine Aktion hält (die Klinge trifft, worauf das
+            // Fadenkreuz zeigt). Bis mensch.K4 drehte ihn jedes Bild: die Kamera stand immer hinter dem Kopf, das Gesicht des
+            // Spielers war an der Kamera des Spiels nie im Bild.
+            const T = this.state.verbTafel;
+            const p0 = this.state.player;
+            const steht =
+                this.state.cameraMode === "third" &&
+                !(p0 && p0.mountedArch != null) &&
+                !T.vor &&
+                !T.quer &&
+                !T.sprung &&
+                !T.sprint &&
+                !Object.values(T.gehalten || {}).some(Boolean);
+            if (!steht) player.rotation.y = this.state.yaw;
             // Fahrer sitzt in der Kabine: die Studio-Karosserien (huelle) sind geschlossen, der Gesetz-Sitz
             // (0.475 m) liegt unter dem Dach → beim Gesetz-Fahrzeug-Ritt ist der Avatar unsichtbar
             // (render-only; Physik/Sitz-Anker unberührt). Die Chase-Cam gilt JEDEM gesetz-gelenkten Ritt, die
