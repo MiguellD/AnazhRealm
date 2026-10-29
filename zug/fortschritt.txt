@@ -879,3 +879,4 @@
 2026-10-29 13:51:12 takt21b-gtx fahrzeug.K3#1 GRÜN 1.8 · 3/50
 2026-10-29 13:56:13 takt21b-gtx fahrzeug.K3#2 GRÜN 4.9 · 4/50
 2026-10-29 14:00:17 takt21b-gtx fahrzeug.K4#1,fahrzeug.K4#2 GRÜN/GRÜN 4.0 · 6/50
+2026-10-29 14:02:16 takt21b-gtx siedlung.K2#1 GRÜN 1.9 · 7/50
