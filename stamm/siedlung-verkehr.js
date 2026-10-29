@@ -153,8 +153,18 @@ class AnazhRealm_siedlung_verkehr {
         for (const ki of [...VK.wenden.keys()]) if (!fahrbarAn(ki).length) VK.wenden.delete(ki);
         if (!VK.wenden.size) return VK;
         // DIE WENDE IST BODEN DER STADT (der Hebel der Dörfer, `_stlWegeBuild`): ihr Ring und ihre Plätze tragen Weg — die Natur
-        // weicht ihnen (die Natur-Wand, `_aufWeg`), was schon dort wuchs, räumt der Takt
-        const flaechen = { roads: [] };
+        // weicht ihnen (die Natur-Wand, `_aufWeg`), was schon dort wuchs, räumt der Takt. DER GEHWEG gehört zur Straße: jede
+        // Trasse (ab `breiteM`) trägt ihn beidseits, so weit die Menge auf ihr geht (`_bewohnerStrecke`: `gehwegM` samt Streuung
+        // und Kapsel) — bis hier ging sie neben der gemalten Straße, die Gangzeit auf Wegen fiel von 0,87 auf 0,51
+        const BW = AnazhRealm.BEWOHNER;
+        const flaechen = {
+            roads: S.plan.roads
+                .filter((r) => r.w >= VG.breiteM)
+                .map((r) => ({
+                    pts: r.pts.map((q) => ({ x: S.ox + q.x, z: S.oz + q.z })),
+                    w: 2 * (BW.gehwegM + BW.gehwegBreiteM + AnazhRealm.PLAYER_WALL_RADIUS),
+                })),
+        };
         for (const w of VK.wenden.values()) {
             const ring = [];
             for (let a = 0; a <= 2 * Math.PI + 1e-9; a += 1 / w.r)
@@ -460,6 +470,9 @@ class AnazhRealm_siedlung_verkehr {
                 const sicht = nah.includes(W);
                 if (sicht !== g.visible) g.visible = sicht;
                 if (!sicht) {
+                    // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die
+                    // Ankunft), findet ihn im Wagen — bis hier blieb er am Platz, an dem er einstieg
+                    g.position.set(e.position.x, e.position.y, e.position.z);
                     W.sitzt = false;
                     continue;
                 }
@@ -809,6 +822,15 @@ class AnazhRealm_siedlung_verkehr {
         const F = this._fahrerLinie(pts, AnazhRealm.VERKEHR.kurveM);
         if (!F) return;
         W.F = F;
+        // die Ausscherung je Punkt (`_verkehrFolge`, `rundAn`): l²·κ/2, κ die schärfste Krümmung binnen seiner halben Länge um ihn
+        // (höchstens die des Wendekreises) — einmal je Linie, nie je Ecke und Leib
+        const kR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
+        F.rund = F.k.map((_, i) => {
+            let k = 0;
+            for (let j = i; j >= 0 && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) k = F.k[j];
+            for (let j = i + 1; j < F.k.length && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
+            return (W.hl * W.hl * Math.min(2 * k, 1 / kR)) / 2;
+        });
         const vorher = W.zonen;
         W.zonen = [];
         for (const { Z: z, dir, wort, von, bis } of Z) {
@@ -999,12 +1021,7 @@ class AnazhRealm_siedlung_verkehr {
         }
         const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
         const rund = (W.hl * W.hl * Math.min(2 * kMax, 1 / kurveR)) / 2;
-        const rundAn = (i) => {
-            let k = 0;
-            for (let j = i; j >= F.i && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) k = F.k[j];
-            for (let j = i + 1; j <= j1 && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
-            return (W.hl * W.hl * Math.min(2 * k, 1 / kurveR)) / 2;
-        };
+        const rundAn = (i) => F.rund[i];
         const rand = W.hw + V.seitM + 3;
         for (const O of S.verkehr.wagen) {
             if (O === W || !O.entry) continue;

@@ -1484,7 +1484,7 @@ class AnazhRealm_siedlung_bewohner {
         // hier ging die Menge ±`spurM` um die Mitte der Trasse, und jeder Wagen hielt vor ihr (10 Uhr: die Kreuzung der
         // Metropole stand, ihr Halter wartete auf einen Gehenden zwischen den Wagen).
         const BW = AnazhRealm.BEWOHNER;
-        const breit = S.verkehr ? globalThis.__fachwerkCore.VERKEHR_GESETZ.breiteM : Infinity;
+        const breit = S.verkehr && S.verkehr.wagen.length ? globalThis.__fachwerkCore.VERKEHR_GESETZ.breiteM : Infinity;
         const geh = Math.sign(spur) * BW.gehwegM + (spur / BW.spurM) * BW.gehwegBreiteM;
         const alt = [];
         const pts = kette.map((k, i) => {
