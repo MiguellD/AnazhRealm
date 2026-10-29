@@ -277,57 +277,169 @@ class AnazhRealm_gelaende_kollision {
             this._grundrissRaeumen(entry);
     }
 
-    // DER GRUND DES GESETZTEN HAUSES (S4) IST PLAN-DATUM: ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau am Tor,
-    // einer Probe) fragt beim Setzen (`spawnArchitecture`) den Plan seines Gesetzbuchs (Kanal "grund-plan", fachwerk
-    // `grundPlan`: der Körper-Satz und der Keller mit der Gestalt und dem Stempel, aus denen der Worker es baut) und legt daraus
-    // seinen Erdbau — derselbe Erdbau `grund` wie ein Haus im Ort (`ortPlan`), × die Welt-Skala der Hülle, auf der Höhe seines
-    // Fußes (Position − 0,5, wie `_erdbauAltOrte`); ein Haus auf dem Erdbau eines Orts trägt ihn schon. Der Plan rechnet im
-    // Faden als Kopf (die Bahn ohne Arbeit), nie im Haupt-Faden: dort malte sein erster Ruf die Karten des Studios (1,18 s).
-    // Bis S4-N2 las er die Hülle des GEBAUTEN Hauses: das Vorschau-Haus am Tor (gesetzt bei 2,1 s, Radeon kalt) legte ihn bei
-    // 8,2 s und warf 6 schon gebaute Chunks am Spawn neu — der erste entsteht bei 4,5 s. Ein Haus, das vor dem Buch gesetzt
-    // wurde (der Reload mit kaltem Buch), fragt, sobald das Buch steht (`_foundryIngestBook`); ein gelegter Grund reist im Save.
+    // DAS GESETZTE HAUS IST EIN SLOT SEINES PLANS (S4 · bauen.K2): ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau
+    // am Tor, einer Probe) fragt beim Setzen (`spawnArchitecture`) sein Gesetzbuch nach seinem Slot (Kanal "slot-plan", fachwerk
+    // `slotPlan`: Mass-Bau, Tür, Grundfläche und Grund-Datum mit der Gestalt und dem Stempel, aus denen der Worker es baut —
+    // dieselbe Slot-Zeile wie der Export des Dorfs) und legt als Ein-Slot-Ort den Erdbau seines Plans v2 (fachwerk `ortPlan` im
+    // Ort-Faden, `_ortWahlImFaden` an genau seinem Ort): die Platte der Grundfläche, den Grund samt Keller und den Vorplatz vor
+    // der Tür — byte-derselbe Erdbau wie der Dorf-Slot derselben Gestalt, auf dem Boden seines Fußes (Position − 0,5, `sl.y`;
+    // die Gasse eines Dorfs fehlt ihm). Ein Haus auf dem Erdbau eines Orts trägt ihn schon. Bis bauen.K2 legte er nur den Grund
+    // (`grundPlan`): der Vorplatz entstand nur im Dorf, am Hang endete die Türtreppe im Gefälle. Der Slot rechnet im Faden als
+    // Kopf (die Bahn ohne Arbeit), nie im Haupt-Faden: dort malte sein erster Ruf die Karten des Studios (1,18 s). Bis S4-N2
+    // las er die Hülle des GEBAUTEN Hauses: das Vorschau-Haus am Tor (gesetzt bei 2,1 s, Radeon kalt) legte ihn bei 8,2 s und
+    // warf 6 schon gebaute Chunks am Spawn neu. Ein Haus, das vor dem Buch gesetzt wurde (der Reload mit kaltem Buch), fragt,
+    // sobald das Buch steht (`_foundryIngestBook`); ein gelegter Erdbau reist im Save. Ein Haus in Welt-Skala ≠ 1 fällt laut:
+    // der Plan rechnet in den Metern des Gesetzbuchs.
+    // EIN GRUND-DATUM (bauen.K2 Staffel 2): nur ein Haus, dessen Grund sein Ort schon trägt (der Slot eines Dorfs, ein Grund mit
+    // der Mitte auf dem Haus), legt keinen — jedes andere legt seinen, auch auf der Gasse, dem Platz oder dem Vorplatz eines
+    // Orts. Bis hier legte ein Haus auf irgendeinem Erdbau keinen (`_ortFrei`): auf der Gasse blieb sein Keller Erde, der Gang
+    // die Treppe hinab endete auf der Diele (gate:haus-welt W11, Fuß −0,01 m statt −2,28 m im Keller).
     _hausGrundSetzen(entry) {
         const pos = entry && entry.position;
         const art = pos ? this._grundrissGesetz(entry.type) : null;
         const offen = this._grundOffen || (this._grundOffen = new Set());
-        if (!art || art.rec.kind !== "haus" || offen.has(entry) || !this._ortFrei(pos.x, pos.z, 0.01)) return false;
+        if (!art || art.rec.kind !== "haus" || offen.has(entry)) return false;
+        const E = this._erdbauLage();
+        const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+        const da = E && E.grundZellen.get((Math.floor(pos.x / Z) + 32768) * 65536 + (Math.floor(pos.z / Z) + 32768));
+        if (da && da.some((i) => Math.abs(E.gruende[i].cx - pos.x) < 0.05 && Math.abs(E.gruende[i].cz - pos.z) < 0.05))
+            return false;
         const key = `haus:${Math.round(pos.x * 100)},${Math.round(pos.z * 100)}`;
         const wm = this.state.worldMeta;
         const gestalt = this._foundryGestaltFor(entry, art.preset);
         const f = this._foundry;
         if ((wm && wm.erdbau && wm.erdbau[key]) || gestalt == null || !f || !f.ready || !f.worker) return false;
-        const msg = { type: "grund-plan", presetId: art.preset, seed: gestalt };
+        if (this._foundryWorldScaleMatrix(art.preset).elements[0] !== 1) {
+            this.log(
+                `HAUS: „${entry.type}" steht in Welt-Skala ≠ 1 — sein Slot rechnet in Gesetzbuch-Metern (fail-closed)`,
+                "ERROR"
+            );
+            return false;
+        }
+        const phi = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const msg = { type: "slot-plan", presetId: art.preset, seed: gestalt, phi };
         const ov = this._artifactStudioOv(entry);
         if (ov) msg.ov = ov;
         offen.add(entry);
-        const wort = "FOUNDRY TIMEOUT: grund-plan(" + art.preset + ") nach 45 s Arbeit ohne Reply → null";
-        return this._foundryAuftrag(f, "grd-", msg, this._foundryRang(0, true), 45000, wort).then((gd) => {
-            offen.delete(entry);
-            if (!gd || !gd.boxen.length || !this.state.architectures.includes(entry)) return false;
-            const ws = this._foundryWorldScaleMatrix(art.preset);
-            const k = (ws && ws.elements && ws.elements[0]) || 1;
-            const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
-            const boxen = gd.boxen.map((b) => [b[0] * k, b[1] * k, b[2] * k, b[3] * k, b[4]]);
-            let ex = 0;
-            let ez = 0;
-            for (const b of boxen) {
-                ex = Math.max(ex, Math.abs(b[0]), Math.abs(b[1]));
-                ez = Math.max(ez, Math.abs(b[2]), Math.abs(b[3]));
+        const wort = "FOUNDRY TIMEOUT: slot-plan(" + art.preset + ") nach 45 s Arbeit ohne Reply → null";
+        const steht = () => this.state.architectures.includes(entry);
+        return this._foundryAuftrag(f, "grd-", msg, this._foundryRang(0, true), 45000, wort)
+            .then((sl) => {
+                if (!sl || !steht()) return null;
+                const plan = { seed: gestalt, name: entry.type, slots: [Object.assign(sl, { y: pos.y - 0.5 })] };
+                return this._ortWahlImFaden(plan, { x: pos.x, z: pos.z }, null, true);
+            })
+            .then((v2) => {
+                offen.delete(entry);
+                if (!v2 || !steht()) return false;
+                if (v2.wasserSlots)
+                    this.log(
+                        `HAUS: das Wasser nimmt den Slot von „${entry.type}" — sein Plan legt keinen Grund`,
+                        "WARN"
+                    );
+                return this._erdbauSetzen(key, v2.erdbau);
+            })
+            .catch((e) => {
+                offen.delete(entry);
+                this.log(`HAUS: der Plan von „${entry.type}" fiel im Ort-Faden — ${e && e.message}`, "ERROR");
+                return false;
+            });
+    }
+
+    // DIE FREMD-SLOTS UM DEN ORT o (bauen.K2 Staffel 2): je gesetztem Haus, dessen Platte bis R an o reicht, die Platte seines
+    // Grundrisses samt Saum aus seinem EIGENEN Erdbau (`haus:`, `_hausGrundSetzen` — EIN Grund-Datum, es reist im Save und
+    // zum Gast), in der Reihe des Erdbaus. Leser: die Ort-Wahl (`_ortWahlImFaden` → fachwerk `ortPlan` ctx.fest).
+    _ortFest(o, R) {
+        const E = (this.state.worldMeta && this.state.worldMeta.erdbau) || {};
+        const out = [];
+        for (const k of Object.keys(E)) {
+            const p =
+                k.startsWith("haus:") &&
+                Array.isArray(E[k]) &&
+                E[k].find((q) => q.art === "platte" && q.vorplatz == null);
+            if (p && Math.hypot(p.cx - o.x, p.cz - o.z) <= R + p.ex + p.ez)
+                out.push({ cx: p.cx, cz: p.cz, phi: p.phi, ex: p.ex, ez: p.ez });
+        }
+        return out;
+    }
+    // DER FREMD-SLOT WIRKT (bauen.K2 Staffel 2): legt oder nimmt die Welt den Erdbau eines gesetzten Hauses (`haus:`), plant jeder
+    // Ort neu, der Welt ist und dessen Weg seine Platte betritt (fachwerk `festWeg`) oder um sie lief (`fest` seines Plans) — nie
+    // jeder Ort, in dessen Radius es steht (Gebot 7: die Kosten an der Änderung). Legt sie einen Ort, plant er neu, wenn ein Weg
+    // seines Plans ein Haus seines Ortsradius betritt (seine Wahl rechnete vor ihm: der Vorrat) oder der gelegte Erdbau nicht
+    // der seines Plans ist (die Wiederkehr nach dem Reload). Ortsradius: die Slots + 16 m wie die Ort-Wahl. Leser:
+    // `_erdbauSetzen`, `_erdbauGrundFaellt`, `_ortWahl`.
+    _ortFremdPruefen(key, splats) {
+        const [P, E, FC] = [
+            this._ortPlaene,
+            this.state.worldMeta && this.state.worldMeta.erdbau,
+            globalThis.__fachwerkCore,
+        ];
+        const reich = (v) => Math.max(0, ...v.slots.map((s) => Math.hypot(s.x || 0, s.z || 0) + 16));
+        const p = key.startsWith("haus:") && splats && splats.find((q) => q.art === "platte" && q.vorplatz == null);
+        for (const [k, v] of P && E ? P : [])
+            if (E[k] && (p ? k : key) === k) {
+                const um = (f) => FC.festWeg(v, f) || (v.fest || []).some((g) => g.cx === f.cx && g.cz === f.cz);
+                const alt = v.fest && E[k] !== v.erdbau && JSON.stringify(E[k]) !== JSON.stringify(v.erdbau);
+                if (p ? um(p) : alt || this._ortFest(v.ort, reich(v)).some((f) => FC.festWeg(v, f)))
+                    this._ortNeuPlanen(k);
             }
-            const splat = {
-                art: "grund",
-                cx: pos.x,
-                cz: pos.z,
-                phi: Number.isFinite(entry.rotationY) ? entry.rotationY : 0,
-                ex: ex + saum,
-                ez: ez + saum,
-                saum,
-                y: pos.y - 0.5,
-                boxen,
-                keller: gd.keller ? gd.keller.map((v) => v * k) : null,
-            };
-            return this._erdbauSetzen(key, [splat]);
-        });
+    }
+    // DIE GASSE WEICHT DEM GESETZTEN HAUS (bauen.K2 Staffel 2): der Ort `key`, der Welt ist (sein Erdbau liegt), rechnet seinen
+    // Plan v2 neu — derselbe Plan (seine Slots tragen ihren Boden `y`, seine Wege den Lauf des Exports `lauf`), dieselbe Wahl
+    // im Ort-Faden an genau seinem Ort mit den Fremd-Slots seines Umkreises, die Höhe ohne seinen eigenen Erdbau (`ohne`: wie
+    // bei seiner Wahl, bevor er lag). Weicht ein Weg, wird der neue Plan an derselben Stelle Welt: sein Erdbau an seinem Platz
+    // in der Reihe (es wirken die Splats, die gingen und kamen, `_erdbauWirkt`), das Objekt des Plans selbst (Erlebnis, Zug,
+    // Vorrat und Bewohner halten es), die Formen der Wege-Karte (`_stlWegeBuild` an der Stelle der alten) und das Netz der
+    // Bewohner. Je Ort ein Lauf zur Zeit (`_ortNeuOffen`, die Linse wartet auf ihn), ein weiterer Wunsch rechnet danach.
+    _ortNeuPlanen(key) {
+        const q = this._ortNeuOffen || (this._ortNeuOffen = new Map());
+        const lauf = (q.get(key) || Promise.resolve())
+            .then(() => this._ortNeuRechnen(key))
+            .catch((e) => this.log(`ORT: ${key} rechnet nicht neu — ${e && e.message}`, "ERROR"));
+        q.set(key, lauf);
+        lauf.then(() => q.get(key) === lauf && q.delete(key));
+        return lauf;
+    }
+    async _ortNeuRechnen(key) {
+        const [alt, wm] = [this._ortPlaene.get(key), this.state.worldMeta];
+        const liegt = alt && wm.erdbau[key];
+        if (!liegt) return false;
+        // der Plan ohne seine Ausgabe: ohne Erdbau und Fremd-Slots, die Wege ohne Profil (die Wahl rechnet sie neu)
+        const ohne = (o, weg) => (weg.forEach((k) => delete o[k]), o);
+        const plan = ohne(Object.assign({}, alt), ["version", "erdbau", "fest", "wasserSlots"]);
+        plan.roads = alt.roads.map((rd) => ohne(Object.assign({}, rd), ["ys", "bruecken"]));
+        let ab = 0; // die Stelle seines Erdbaus in der Reihe (`_erdbauRoh`)
+        for (const k of Object.keys(wm.erdbau)) {
+            if (k === key) break;
+            if (Array.isArray(wm.erdbau[k])) ab += wm.erdbau[k].length;
+        }
+        const neu = await this._ortWahlImFaden(plan, { x: alt.ort.x, z: alt.ort.z }, null, true, [
+            ab,
+            ab + liegt.length,
+        ]);
+        if (!neu || this._ortPlaene.get(key) !== alt || wm.erdbau[key] !== liegt) return false;
+        const sig = (l) => new Set(l.map((p) => JSON.stringify(p)));
+        const [a, b] = [sig(liegt), sig(neu.erdbau)];
+        const wirkt = liegt
+            .filter((p) => !b.has(JSON.stringify(p)))
+            .concat(neu.erdbau.filter((p) => !a.has(JSON.stringify(p))));
+        for (const k of Object.keys(alt)) if (!(k in neu)) delete alt[k];
+        Object.assign(alt, neu);
+        wm.erdbau[key] = neu.erdbau; // an seinem Platz in der Reihe der Orte
+        if (!wirkt.length) return false;
+        this._erdbauWirkt(wirkt, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(wirkt)));
+        const wk = this.state.wegeKarte;
+        const statt = wk ? wk.siedlungen.findIndex((x) => x.plan === alt) : -1;
+        if (statt >= 0) {
+            const [b0] = wk.siedlungen.splice(statt, 1);
+            this._grundrissFaellt(b0.x0, b0.z0, b0.x1, b0.z1); // die alte Fläche fällt aus der Natur-Wand
+            this._stlWegeBuild(alt, alt.ort, null, true);
+            for (const st of wk.stufen) if (st.zentriert) this._wegeStufeMalen(st); // der EINE Neu-Maler
+            this._nahWieseNeuIn(b0.x0, b0.z0, b0.x1, b0.z1);
+        }
+        for (const S of (this._bewohnerSiedlungen || new Map()).values())
+            if (S.plan === alt) S.netz = S.netzGrund = null;
+        return true;
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
