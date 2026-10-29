@@ -2480,13 +2480,15 @@ async function kreaturProben(r, T, opts) {
         };
         // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
         // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
-        // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
+        // lief in den letzten 10 Takten über 0,2 rad), dazu die Wachen des Takts (bewohner-takt: wer nicht ruht,
+        // `_bewohnerRuhig`) — gezählt unter der Decke des Täters
         const ringMesser = (liste, ph = new Map(), k = 0) => ({
             messen: () => ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase)),
             zahl: (N = r._bewohnerFeldGrenze().ein) => {
                 const nah = liste.filter((b) => !b.drinnen && ab(b.leib.position, pm) < N);
                 const gang = nah.filter((b) => Math.abs(wrap(b.walkPhase - ph.get(b))) > 0.2).length;
-                return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang };
+                const wach = liste.filter((b) => !b.ruht).length;
+                return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang, wach };
             },
         });
         // ── DIE STADT AM MESSORT `ort` des Profi-Bands (spec/profiband/haushalt.json): das Wort des Spielers
@@ -2499,7 +2501,7 @@ async function kreaturProben(r, T, opts) {
         // · stadt-voll (mensch.K1 Staffel 2, `--ort stadt-voll`): „dorf 7 300" (die Metropole), der Spieler an ihrem
         //   Ursprung am Markt im Gedränge (am Rand des Platzes stehen 81 statt 136 im Nah-Ring), 7 Uhr (der Morgengang über
         //   den Platz), 600 Takte zu 1/60 s, der Nah-Ring. Täter: der Gang steht (`_gaitTick` ohne Tempo und Zeit) · der
-        //   Nah-Ring ist leer (die Feld-Grenze 0)
+        //   Nah-Ring ist leer (die Feld-Grenze 0) · der Takt geht über jeden Kopf (keiner ruht, bis bewohner-takt)
         const stadtTag = async (ort = "stadt") => {
             const voll = ort !== "stadt";
             const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
@@ -2520,6 +2522,7 @@ async function kreaturProben(r, T, opts) {
                 ? [
                       ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
                       ["bewohner-voll-leer", "_bewohnerFeldGrenze", () => () => ({ ein: 0, aus: 0 })],
+                      ["bewohner-voll-jeder", "_bewohnerRuhig", () => () => false],
                   ]
                 : [
                       ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
@@ -3177,13 +3180,16 @@ function urteil(name, z) {
     // Tag, keine Berührung
     const st = name === "bewohner" ? z.stadt : null;
     if (st) soll(!st.fehler && st.haeuser >= 27, `Stadt: ${st.fehler || st.haeuser + " Häuser (Soll nH ≥ 27)"}`);
-    // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang
+    // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang; der Takt geht
+    // über die Wachen, nie über die Kopfzahl (bewohner-takt, Gebot 7): wach ist höchstens die Hälfte
     const ri = st && st.ring;
-    if (ri)
+    if (ri) {
         soll(
             ri.gesamt >= 200 && ri.nahGang >= 40,
             `Stadt: ${ri.gesamt} Bewohner, im Nah-Ring ${ri.nah} draußen, ${ri.nahGang} mit laufendem Gang (Soll ≥ 200, ≥ 40)`
         );
+        soll(ri.wach <= ri.gesamt / 2, `Stadt: ${ri.wach} von ${ri.gesamt} wach je Takt (Soll ≤ die Hälfte)`);
+    }
     for (const [v, wo] of [
         [name === "bewohner" && z.wege, ""],
         [st && st.wege, "Stadt: "],
@@ -3685,6 +3691,7 @@ const TAETER = {
     "bewohner@stadt-voll": [
         ["bewohner-voll-starr", /[1-9]\d* draußen, 0 mit laufendem Gang/],
         ["bewohner-voll-leer", /im Nah-Ring 0 draußen/],
+        ["bewohner-voll-jeder", /von \d+ wach je Takt/],
     ],
     begegnung: [
         ["begegnung-starr", /Kopf-Zuwendung/],
