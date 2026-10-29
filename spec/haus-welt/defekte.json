@@ -1,0 +1,460 @@
+{
+ "quelle": "Die Defekte von gate:haus-welt (scripts/diag-haus-welt.cjs --selftest, dort je Defekt sein Grund): je Defekt [[die Phase seiner Welt, die Proben, die er rot macht („a|b“: eine von beiden)], die Basis-Zeilen [geheilte Form im Stamm, Basis-Form] bzw. [Datei, geheilt, Basis]] — der Server liefert statt der geheilten die Basis, GENAU die Probe des Defekts wird rot.",
+ "defekte": {
+  "huelle": [
+   [
+    "haus",
+    "W10 Spielgang",
+    "W5 Kollision"
+   ],
+   [
+    [
+     "if (fest && fest.length) {",
+     "if (false) {"
+    ]
+   ]
+  ],
+  "obb": [
+   [
+    "haus",
+    "W5 Kollision"
+   ],
+   [
+    [
+     "        const ob = box.obb;\n        if (ob) {",
+     "        const ob = null;\n        if (ob) {"
+    ]
+   ]
+  ],
+  "grundriss": [
+   [
+    "w4",
+    "W4 Grundriss"
+   ],
+   [
+    [
+     "        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));",
+     "        return false;"
+    ],
+    [
+     "if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);",
+     ""
+    ],
+    [
+     "this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
+     "this.state.architectures.includes(entry)) void 0;"
+    ]
+   ]
+  ],
+  "streu": [
+   [
+    "w4b",
+    "W4b Fern-Streu"
+   ],
+   [
+    [
+     "this._streuZelleRaeumen(cell);",
+     "void 0;"
+    ]
+   ]
+  ],
+  "streuwand": [
+   [
+    "w4b",
+    "W4b Neubau"
+   ],
+   [
+    [
+     "const rec = this._naturSetzen(species, tf, tf, () =>",
+     "const rec = ((_a, _b, _c, f) => f())(species, tf, tf, () =>"
+    ]
+   ]
+  ],
+  "promotion": [
+   [
+    "w4b",
+    "W4b Promotion"
+   ],
+   [
+    [
+     "this._streuZelleRaeumen(cell);",
+     "void 0;"
+    ],
+    [
+     "const rec = this._naturSetzen(species, tf, tf, () =>",
+     "const rec = ((_a, _b, _c, f) => f())(species, tf, tf, () =>"
+    ],
+    [
+     "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this._naturSetzen(",
+     "im Grundriss eines Hauses fällt er mit seiner Streu-Instanz.\n        const entry = this.spawnArchitecture("
+    ]
+   ]
+  ],
+  "nahstreu": [
+   [
+    "w4b",
+    "W4b Nah-Streu"
+   ],
+   [
+    [
+     "this._naturSetzen(null, it, null, () => items.push(it));",
+     "items.push(it);"
+    ]
+   ]
+  ],
+  "lichtung": [
+   [
+    "lichtung",
+    "W8 Lichtung"
+   ],
+   [
+    [
+     "                lichtung: true,\n",
+     ""
+    ]
+   ]
+  ],
+  "schwebe": [
+   [
+    "sohle",
+    "W8 Sohle"
+   ],
+   [
+    [
+     "this.spawnArchitecture(\"start_plattform\", { x: spot.x, y: sohle + 0.5, z: spot.z }, { silent: true });",
+     "this.spawnArchitecture(\"start_plattform\", { x: spot.x, y: sohle + 5.5, z: spot.z }, { silent: true });"
+    ]
+   ]
+  ],
+  "platz": [
+   [
+    "lichtung",
+    "W8 Lichtung"
+   ],
+   [
+    [
+     "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);",
+     "const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;"
+    ]
+   ]
+  ],
+  "baugrund": [
+   [
+    "bau",
+    "W8 Bau"
+   ],
+   [
+    [
+     "if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {",
+     "if (false) {"
+    ]
+   ]
+  ],
+  "weg": [
+   [
+    "w4",
+    "W4 Weg"
+   ],
+   [
+    [
+     "return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? \"weg\" : false;",
+     "return false;"
+    ]
+   ]
+  ],
+  "dach": [
+   [
+    "sohle",
+    "W8 Sohle"
+   ],
+   [
+    [
+     "? this._bauDachUnter(x, z, sy) + 0.5 : y;",
+     "? sy + 0.5 : y;"
+    ]
+   ]
+  ],
+  "lichtungwald": [
+   [
+    "lichtung",
+    "W8 Lichtung"
+   ],
+   [
+    [
+     "            this._naturSetzen(task.name, task.position, task.opts);",
+     "            this.spawnArchitecture(task.name, task.position, task.opts);"
+    ]
+   ]
+  ],
+  "kihain": [
+   [
+    "lichtung",
+    "W8 Lichtung",
+    "W8 Hain im Haus"
+   ],
+   [
+    [
+     "? this._naturSetzen(name, ort, opts, null, absage)",
+     "? this.spawnArchitecture(name, ort, opts)"
+    ]
+   ]
+  ],
+  "stumm": [
+   [
+    "lichtung",
+    "W8 Absage"
+   ],
+   [
+    [
+     "            if (absage) absage(wo);\n",
+     ""
+    ]
+   ]
+  ],
+  "fernstufe": [
+   [
+    "w6",
+    "W6 Fernstufe"
+   ],
+   [
+    [
+     "/fachwerk-core.js",
+     "var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;",
+     "var hb = new THREE.Box3().setFromObject(g); var huelle = stufe === 0 ? { stufe: 0, boxen: gm.__solids } : { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };"
+    ]
+   ]
+  ],
+  "kern": [
+   [
+    "w6",
+    "W6 Kern-Hülle"
+   ],
+   [
+    [
+     "boxen = this._hausKernHuelle(t);",
+     "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"
+    ]
+   ]
+  ],
+  "bauwand": [
+   [
+    "haus",
+    "W7 Bau im Bau"
+   ],
+   [
+    [
+     "if (!this._bauFrei(wx, wz, ry,",
+     "if (false && !this._bauFrei(wx, wz, ry,"
+    ],
+    [
+     "if (!this._bauFrei(wx, wz, sl.phi || 0,",
+     "if (false && !this._bauFrei(wx, wz, sl.phi || 0,"
+    ],
+    [
+     "const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);",
+     "return true;"
+    ]
+   ]
+  ],
+  "stab": [
+   [
+    "haus",
+    "W10 Anti-Clip-Hub"
+   ],
+   [
+    [
+     "(ob ? 2 * Math.min(ob.hx, ob.hz) : Math.min(a.maxX - a.minX, a.maxZ - a.minZ)) < AnazhRealm.PLAYER_STAB;",
+     "false;"
+    ]
+   ]
+  ],
+  "kletter": [
+   [
+    "haus",
+    "W10 Spielgang"
+   ],
+   [
+    [
+     "-Math.SQRT1_2 &&",
+     "Infinity &&"
+    ]
+   ]
+  ],
+  "startslot": [
+   [
+    "start",
+    "W10 Start-Dorf"
+   ],
+   [
+    [
+     "        if (!name) return zu(); // fail-closed",
+     "        if (!name || slot.x > 0) return zu();"
+    ]
+   ]
+  ],
+  "tierbau": [
+   [
+    "haus",
+    "W10 Tier im Haus"
+   ],
+   [
+    [
+     "if (wo && wo !== \"weg\") fallen.push(c);",
+     "if (false) fallen.push(c);"
+    ],
+    [
+     "            maxCreatures: 20,",
+     "            maxCreatures: 6,"
+    ]
+   ]
+  ],
+  "wand": [
+   [
+    "haus",
+    "W10 Wand"
+   ],
+   [
+    [
+     "-Math.SQRT1_2 &&",
+     "-2 &&"
+    ]
+   ]
+  ],
+  "grundkeller": [
+   [
+    "grund",
+    "W9 Dichte"
+   ],
+   [
+    [
+     "/gelaende-core.js",
+     "        if (!E || !E.hohl) return d;",
+     "        if (E || !E) return d;"
+    ]
+   ]
+  ],
+  "grundbueschel": [
+   [
+    "grund",
+    "W9 Büschel"
+   ],
+   [
+    [
+     "            reich: 0.72,",
+     "            reich: 0.17,"
+    ]
+   ]
+  ],
+  "abbau": [
+   [
+    "grund",
+    "W9 Abbau"
+   ],
+   [
+    [
+     "        this._erdbauGrundFaellt(entry);",
+     "        "
+    ]
+   ]
+  ],
+  "grundplan": [
+   [
+    "grund",
+    "W9 Plan"
+   ],
+   [
+    [
+     "        this._hausGrundSetzen(entry);\n        // DIE EINE RÄUMUNG",
+     "        // DIE EINE RÄUMUNG"
+    ]
+   ]
+  ],
+  "vorplatz": [
+   [
+    "grund",
+    "W9 Slot"
+   ],
+   [
+    [
+     "return this._erdbauSetzen(key, v2.erdbau)",
+     "return this._erdbauSetzen(key, v2.erdbau.slice(0, 2))"
+    ]
+   ]
+  ],
+  "fremdslot": [
+   [
+    "fremd",
+    "W11 Fremd-Slot"
+   ],
+   [
+    [
+     "/fachwerk-core.js",
+     "var fest = (",
+     "var fest = [] || ("
+    ]
+   ]
+  ],
+  "fremdkeller": [
+   [
+    "fremd",
+    "W10 Anti-Clip-Hub im Fremd-Slot"
+   ],
+   [
+    [
+     "offen.has(entry)) return",
+     "offen.has(entry) || !this._ortFrei(pos.x, pos.z, 0.01)) return"
+    ]
+   ]
+  ],
+  "waise": [
+   [
+    "grund",
+    "W9 Waise"
+   ],
+   [
+    [
+     "        const zu = () => (this._erdbauGrundFaellt({ position: { x: wx, z: wz } }), false);",
+     "        const zu = () => false;"
+    ]
+   ]
+  ],
+  "ausstattung": [
+   [
+    "grund",
+    "W9 Zug|W9 Ausstattung"
+   ],
+   [
+    [
+     "/fachwerk-core.js",
+     "        lay.brunnen = neu;\n        return aus;",
+     "        return aus;"
+    ]
+   ]
+  ],
+  "zugreload": [
+   [
+    "grund",
+    "W9 Waise",
+    "W9 Zug"
+   ],
+   [
+    [
+     "this._dorfZug(this._dorfZugOffen(v2, anker), anker, k, gang)",
+     "this._dorfZug({ ...v2, slots: [] }, anker, k, gang)"
+    ]
+   ]
+  ],
+  "verblassen": [
+   [
+    "grund",
+    "W9 Waise"
+   ],
+   [
+    [
+     "        if (entry) this.removeArchitecture(entry, { still: true });",
+     "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);"
+    ]
+   ]
+  ]
+ }
+}

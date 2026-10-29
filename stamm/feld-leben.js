@@ -1924,28 +1924,41 @@ class AnazhRealm_feld_leben {
     // räumt er die fälligen Eimer und besucht dabei nur Zellen, deren Tod fällig ist (eine neu geschriebene zieht in ihren neuen
     // Eimer um). In Ruhe schreibt niemand, und nichts wird besucht. Bis feld.K3#2 ging die Räumung
     // über der doppelten Zahl der Lebenden JEDE Zelle der Karte durch (Mess-Wiese, vier Wellen zu 60 Taten: bis 1 110 Zellen
-    // bei 573 lebenden).
+    // bei 573 lebenden). DIE EIMER LIEGEN IN EINER HALDE (`karte.todHalde`, binärer Min-Heap der Eimer-Nummern): oben der
+    // früheste Tod, die Räumung nimmt nur die fälligen Eimer, ein neuer Eimer kostet log(Eimer). Bis w3u-nachfolge ging jede
+    // fällige Räumung JEDEN Eimer des Rads durch, um den nächsten zu finden: ein Tod in der Ruhe (10 Zellen) kostete 46
+    // Eimer-Schritte (gate:stand-takt RUHE-TAT, CI 0192f468 und f653389d: 57 Einheiten für 10 geschriebene).
     _feldTod(karte, key, zelle, tod, jetzt) {
         const E = AnazhRealm.FELD_TOD_EIMER_S;
         const rad = karte.tod || (karte.tod = new Map());
+        const H = karte.todHalde || (karte.todHalde = []);
         const b = Math.floor(tod / E);
         if (zelle.tod !== b) {
             if (rad.has(zelle.tod)) rad.get(zelle.tod).delete(key); // neu beschrieben: der alte Eimer kennt sie nicht mehr
             if (rad.has(b)) rad.get(b).add(key);
-            else rad.set(b, new Set([key]));
+            else {
+                rad.set(b, new Set([key]));
+                let i = H.push(b) - 1;
+                for (let p; i > 0 && H[(p = (i - 1) >> 1)] > b; i = p) H[i] = H[p];
+                H[i] = b;
+            }
             zelle.tod = b;
         }
-        if (!(karte.todAb <= b)) karte.todAb = b;
         const faellig = Math.floor(jetzt / E);
-        if (!(karte.todAb < faellig)) return;
-        let ab = Infinity;
-        for (const [e, keys] of rad)
-            if (e >= faellig) ab = Math.min(ab, e);
-            else {
-                rad.delete(e);
-                for (const k of keys) if ((karte.get(k) || AnazhRealm.FELD_LEER).tod === e) karte.delete(k);
+        while (H.length && H[0] < faellig) {
+            const e = H[0];
+            const letzt = H.pop();
+            let i = 0;
+            for (let c = 1; c < H.length; i = c, c = 2 * i + 1) {
+                if (c + 1 < H.length && H[c + 1] < H[c]) c++;
+                if (H[c] >= letzt) break;
+                H[i] = H[c];
             }
-        karte.todAb = ab;
+            if (H.length) H[i] = letzt;
+            const keys = rad.get(e);
+            rad.delete(e);
+            if (keys) for (const k of keys) if ((karte.get(k) || AnazhRealm.FELD_LEER).tod === e) karte.delete(k);
+        }
     }
 
     // === Das lebendige Feld — die SCHREIB-Seite ===

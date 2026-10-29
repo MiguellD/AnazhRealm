@@ -493,7 +493,12 @@ function selbsttest() {
         [
             "die Räumung geht jede Zelle durch (die Basis)",
             ["simWecken.feld.welle", { akt: 1680, aktAlle: { "·lifeField": 1670 } }],
-            /FELD-BESUCH: .*1680.*2160.*lifeField/,
+            /FELD-BESUCH: .*1680.*2160.*lifeField 1670/,
+        ],
+        [
+            "die Räumung geht jeden Eimer des Rads durch (bis w3u-nachfolge)",
+            ["simWecken.feld.welle", { akt: 2211, aktAlle: { _feldTod: 2160, "·lifeField.tod": 51 } }],
+            /FELD-BESUCH: .*2211.*2160.*lifeField.tod 51/,
         ],
         ["kein Brand fängt (die Basis: kein Takt im Stamm)", ["simWecken.brand.start=", false], /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],

@@ -446,7 +446,8 @@ function simUrteil(b, v) {
     }
     if (W.nachwuchs && !W.nachwuchs.nachgewachsen) v.push("NACHWUCHS: die Ernte wuchs zu ihrer Zeit nicht nach");
     // (feld.K3#2) das Feld: vier Wellen Taten, die vorige tot — danach keine Tote in der Karte, die Räumung ging nie über eine
-    // ganze Karte (`·lifeField` …) und kostete höchstens zwei Einheiten je geschriebener Zelle
+    // ganze Karte (`·lifeField` …) noch über ihr Todes-Rad (`·lifeField.tod` …: sie nimmt die fälligen Eimer aus ihrer Halde) und
+    // kostete höchstens zwei Einheiten je geschriebener Zelle
     const F = W.feld;
     if (!F || !F.wellen || F.wellen.length < 4 || !(F.geschrieben > 0)) v.push("LEER: die Feld-Probe schrieb keine vier Wellen");
     else {
@@ -454,10 +455,10 @@ function simUrteil(b, v) {
         if (!(arbeit > 0)) v.push("STUMPF: die Taten im Feld zeigen der Sim-Linse keine Räumung");
         if (F.wellen.some((w) => w.tote > 0))
             v.push(`FELD-TOTE: nach den Wellen trägt die Karte ${F.wellen.map((w) => w.tote + " von " + w.groesse).join(" · ")} tote Zellen — sie räumt nach einer Schwelle, nicht am Tod`);
-        const karte = Object.entries(F.welle.aktAlle || {}).filter(([m]) => /^·[A-Za-z]+$/.test(m));
+        const karte = Object.entries(F.welle.aktAlle || {}).filter(([m]) => /^·[A-Za-z]+(.tod)?$/.test(m));
         if (karte.length || arbeit > 2 * F.geschrieben)
             v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
-                (karte.length ? `, die Räumung ging über die ganze Karte (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
+                (karte.length ? `, die Räumung ging über die ganze Karte oder ihr Rad (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
     }
     // (stoffe.K2 · feld.K3#2) der Brand arbeitet nur in seinen Zellen (≤ BRAND_JE je Zelle und Schritt), seine Front läuft mit
     // dem Wind 0,5–2 m/s, gegen ihn ≤ 0,2 m/s und ohne ihn nirgends ≥ 0,5 m/s (die Mutante), er erlischt im Regen, hinterlässt
