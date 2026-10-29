@@ -73,7 +73,10 @@ const gewaehlt = (() => {
 async function headless(laeufe) {
     const server = statikServer();
     await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 900000, viewport: ORT ? { width: 1920, height: 1080 } : undefined });
+    const { browser, page } = await nullSeite({
+        frist: 900000,
+        viewport: ORT ? { width: 1920, height: 1080 } : undefined,
+    });
     page.setDefaultTimeout(880000);
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
