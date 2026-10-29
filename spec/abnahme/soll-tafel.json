@@ -395,10 +395,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-26T05:57:14.065Z",
+                    "datum": "2026-10-26T03:59:24.316Z",
                     "stand": {
                         "version": "18.546.94",
-                        "sha": "9c3d569ed0f330ffdf5636292d8e7186a3a9cf17"
+                        "sha": "248eb8285efa2d650a9f7a49d4fc3ff40c7611f9"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -413,19 +413,19 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 187921,
+                    "misch": 183285,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.7289,"spiegelEbene":42.533,"sp":[8,0,0,1082.41,1082.41,789.01],"zweiton":0.0002,"zt":51,"weiss":0.0129,"wt":3603,"wtZiel":null,"bunt":23.81,"pixel":278414,"luma":73.24,"kante":0.1779,"kr":19945,"bloecke":1638,"glatt":0.2961,"nyquist":0.1272,"beta":2.5192},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"spiegelEbene":46.327,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1613,"wt":11460,"wtZiel":null,"bunt":13.63,"pixel":71038,"luma":91.98,"kante":0.1759,"kr":8546,"bloecke":466,"glatt":0.5515,"nyquist":0.1384,"beta":2.2607},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":-0.0566,"spiegelEbene":38.543,"sp":[23,0,0,1846.75,1846.75,-104.48],"zweiton":0,"zt":0,"weiss":0.0197,"wt":5771,"wtZiel":null,"bunt":23.87,"pixel":293127,"luma":74.44,"kante":0.1587,"kr":23286,"bloecke":2313,"glatt":0.2464,"nyquist":0.1371,"beta":2.3892},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":0.0823,"spiegelEbene":33.949,"sp":[1587,0,0,105721.73,105721.73,8695.8],"zweiton":0,"zt":0,"weiss":0.0011,"wt":590,"wtZiel":null,"bunt":28.43,"pixel":513111,"luma":70.5,"kante":0.2485,"kr":19001,"bloecke":5456,"glatt":0.3974,"nyquist":0.1033,"beta":2.8955}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":-0.3791,"spiegelEbene":42.591,"sp":[16,0,0,3748.35,3748.35,-1421.01],"zweiton":0,"zt":0,"weiss":0.0132,"wt":3514,"wtZiel":null,"bunt":23.9,"pixel":265858,"luma":72.73,"kante":0.1897,"kr":20825,"bloecke":1482,"glatt":0.2922,"nyquist":0.1269,"beta":2.5213},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"spiegelEbene":46.326,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.1608,"wt":11436,"wtZiel":null,"bunt":13.64,"pixel":71125,"luma":91.97,"kante":0.1775,"kr":8559,"bloecke":466,"glatt":0.5515,"nyquist":0.1384,"beta":2.2607},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.0742,"spiegelEbene":38.504,"sp":[22,0,0,949.98,949.98,70.47],"zweiton":0,"zt":0,"weiss":0.0187,"wt":5418,"wtZiel":null,"bunt":23.86,"pixel":290363,"luma":74.21,"kante":0.1598,"kr":23361,"bloecke":2280,"glatt":0.2474,"nyquist":0.1393,"beta":2.3875},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":0.1301,"spiegelEbene":34.038,"sp":[1601,0,0,92305.47,92305.47,12006.29],"zweiton":0,"zt":0,"weiss":0.0014,"wt":756,"wtZiel":null,"bunt":28.39,"pixel":532920,"luma":70.4,"kante":0.2632,"kr":18620,"bloecke":5713,"glatt":0.4049,"nyquist":0.1019,"beta":2.8913}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub-kante.png",
                     "quellen": {
                         "phyto-core.js": "c:d4ac1f962cdfca7a",
-                        "foundry-core.js": "c:b7aaf85c80a3804d",
+                        "foundry-core.js": "c:6775c096fe7680eb",
                         "stamm/dirigent-kern.js": "c:fb81db17d790cd9b",
                         "stamm/dienst.js": "c:756a12f63a780b19",
                         "stamm/gelaende-boden.js": "c:829ba826672f4b94",
