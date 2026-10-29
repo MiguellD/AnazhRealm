@@ -3,7 +3,7 @@
 // 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
 // gate:kreatur-takt kaskade).
@@ -118,12 +118,14 @@ async function checkBandV1753CreatureCombat(ctx) {
         const pm = r.state.playerMesh.position;
         const matUnits = (inv) =>
             inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
+        // ein Wesen am Spieler, d m schräg versetzt
+        const wesen = (d) => r.spawnCreatureAt(pm.x + d, pm.y, pm.z + d, "happy", "wesen");
 
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
         // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
-        const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
+        const c1 = wesen(260);
         const stats1 = r.computeCreatureStats(c1).stats;
         out.hpInit =
             c1.userData.hp === c1.userData.hpMax &&
@@ -176,7 +178,7 @@ async function checkBandV1753CreatureCombat(ctx) {
 
         // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null;
-        const c2 = r.spawnCreatureAt(pm.x + 280, pm.y, pm.z + 280, "happy", "wesen");
+        const c2 = wesen(280);
         r.damageCreature(c2, 99999, { source: "world" });
         out.noLootForWorldKill = matUnits(p.inventory) === 0;
         // KAMPF-GEFÜHL — auch der Welt-Tod kippt erst; den Körper synthetisch räumen.
@@ -186,7 +188,7 @@ async function checkBandV1753CreatureCombat(ctx) {
         }
 
         // (8) der DSL-Op damage_creature schädigt eine Kreatur per Index (der Konsument)
-        const c3 = r.spawnCreatureAt(pm.x + 300, pm.y, pm.z + 300, "happy", "wesen");
+        const c3 = wesen(300);
         const idx3 = r.state.creatures.indexOf(c3);
         const hp3Before = c3.userData.hp;
         r.dslEffects.damage_creature([idx3, 5], { source: "test", log: [] });
@@ -230,6 +232,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         const setEmo = (o) => {
             for (const k of Object.keys(e)) e[k] = o[k] || 0;
         };
+        // ein Wesen am Spieler, d m schräg versetzt
+        const wesen = (d) => r.spawnCreatureAt(pm.x + d, pm.y, pm.z + d, "happy", "wesen");
         const savedEmo = { ...e };
         const savedLastAtk = p.lastAttackAt;
         const savedInv = JSON.parse(JSON.stringify(p.inventory));
@@ -242,7 +246,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         // Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
-        const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
+        const c1 = wesen(320);
         // Der Klick LÖST nur den 3-Phasen-Schwung aus, das Treffen macht der Klingen-Sweep der Strike-Phase
         // → Ziel VOR den Spieler (Sweep-Reichweite), Schwung synthetisch über die Anzeige-Uhr treiben.
         const savedYaw = r.state.yaw;
@@ -286,7 +290,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
         // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
         setEmo({});
-        const c2 = r.spawnCreatureAt(pm.x + 340, pm.y, pm.z + 340, "happy", "wesen");
+        const c2 = wesen(340);
         c2.userData.bond = 1; // Bindung hebt die Schuld (wenn lebendig)
         const leb2 = r.computeCreatureCompoundTags(c2).lebendig || 0;
         r.damageCreature(c2, 99999, { source: "player" });
@@ -301,7 +305,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         // Angreifer weg — der Schlag ein Keulen-Hieb des Schmiede-Urteils (p 26,85 · m 1,71, gate:kampf-gefuehl T13). Die
         // Gegenprobe: das tote Feld knockback (es liest niemand) stößt nicht — der Check übergab bis 0710-5 nur dieses Feld
         // und prüfte allein den Schaden, er war leer.
-        const c4 = r.spawnCreatureAt(pm.x + 380, pm.y, pm.z + 380, "happy", "wesen");
+        const c4 = wesen(380);
         const von = { x: c4.position.x - 2, y: c4.position.y, z: c4.position.z };
         let kbOk = true;
         let totFeld = null;
@@ -352,9 +356,7 @@ async function checkBandV1754PlayerAttack(ctx) {
 }
 
 async function checkBandWelle6HBuildAndPersist(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
     // Umkehrung von gather: Phasen take (zum Spieler) → walk (weg) → spawn (Architektur am Kreatur-Ort);
     // _buildMaterialGate ist EINE Funktion für Spieler-confirmBuild und die Kreatur-take-Phase.
@@ -389,23 +391,38 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "happy",
             "wesen"
         );
+        // der Takt der Aufgabe (die Richtung, die er liefert) · fiel das Wesen auf wander zurück · erinnert es ein
+        // Ereignis dieser Art
+        const takt = () => r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+        const wandert = () => r._getCreatureTask(c0).name === "wander";
+        const erinnert = (typ) => (c0.userData.memory || []).some((m) => m.type === typ);
+        // das Inventar leer (27 freie Plätze) · ein Journal-Eintrag dieser Art, dessen Text `re` trifft
+        const leer = () => (r.state.player.inventory = new Array(27).fill(null));
+        const journal = (typ, re) =>
+            (r.state.worldJournal.entries || []).some((e) => e.type === typ && re.test(e.text));
         r.assignCreatureTask(c0, "build", {});
-        const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-        out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
+        const dirEmpty = takt();
+        out.buildEmptyFallsToWander = dirEmpty === null && wandert();
 
         // 5. Tick: unknown blueprint → memory + journal + wander
         r.assignCreatureTask(c0, "build", { blueprint: "fictional_bp_xyz" });
-        const dirUnk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-        out.unknownBpFallsToWander = dirUnk === null && r._getCreatureTask(c0).name === "wander";
-        const memHasUnk = (c0.userData.memory || []).some((m) => m.type === "no_blueprint");
-        out.memHasNoBlueprint = memHasUnk;
+        const dirUnk = takt();
+        out.unknownBpFallsToWander = dirUnk === null && wandert();
+        out.memHasNoBlueprint = erinnert("no_blueprint");
 
         // 6. Take-Phase: Distanz zum Spieler → Vektor zu Spieler hin, Geschwindigkeit BUILD_SPEED
         const player = r.state.playerMesh.position;
-        c0.position.set(player.x + 10, player.y, player.z);
-        c0.userData.carrying = null;
-        r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-        const dirTake = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+        // das Wesen dx m vor dem Spieler (auf Höhe y), mit der Traglast des Baus (8 Stein für stein_block) oder ohne,
+        // und sein Auftrag: baue stein_block
+        const stelle = (dx, last, y = player.y) => {
+            c0.position.set(player.x + dx, y, player.z);
+            c0.userData.carrying = last
+                ? { kind: "build", materials: { stein: 8 }, blueprint: "stein_block", since: 0 }
+                : null;
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+        };
+        stelle(10);
+        const dirTake = takt();
         out.takePhaseTowardsPlayer = dirTake && dirTake.x < 0; // sollte negativ sein (Richtung -x = zum Spieler)
         const sp = Math.hypot(dirTake.x, dirTake.z);
         // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
@@ -417,37 +434,29 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
         const origMode = r.getGameMode();
         r.setGameMode("pfad");
-        r.state.player.inventory = new Array(27).fill(null);
-        c0.position.set(player.x + 1.0, player.y, player.z); // innerhalb handover (2.0)
-        c0.userData.carrying = null;
-        r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-        const dirNoMat = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-        out.takeNoMatRejects = dirNoMat === null && r._getCreatureTask(c0).name === "wander";
-        const memHasNoInv = (c0.userData.memory || []).some((m) => m.type === "no_inventory_for_build");
-        out.memHasNoInv = memHasNoInv;
+        leer();
+        stelle(1.0); // innerhalb handover (2.0)
+        const dirNoMat = takt();
+        out.takeNoMatRejects = dirNoMat === null && wandert();
+        out.memHasNoInv = erinnert("no_inventory_for_build");
 
         // 8. Take-Phase at handover, pfad mit Material → carrying gesetzt + Material verbraucht
-        r.state.player.inventory = new Array(27).fill(null);
+        leer();
         r.addMaterialToInventory("stein", 200);
         const stoneBefore = r.state.player.inventory[0].count;
-        c0.position.set(player.x + 1.0, player.y, player.z);
-        c0.userData.carrying = null;
-        r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-        r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+        stelle(1.0);
+        takt();
         out.takeSetsCarrying = !!c0.userData.carrying && c0.userData.carrying.kind === "build";
         out.takeCarryingHasBp = c0.userData.carrying && c0.userData.carrying.blueprint === "stein_block";
         const stoneAfter = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
         out.takeConsumesPfad = stoneAfter < stoneBefore;
-        const memHasTook = (c0.userData.memory || []).some((m) => m.type === "took_materials");
-        out.memHasTook = memHasTook;
+        out.memHasTook = erinnert("took_materials");
 
         // 9. Schöpfer/frieden: carrying wird mit symbolic cost gesetzt, Inventar bleibt leer
         r.setGameMode("schöpfer");
-        r.state.player.inventory = new Array(27).fill(null);
-        c0.position.set(player.x + 1.0, player.y, player.z);
-        c0.userData.carrying = null;
-        r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-        r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+        leer();
+        stelle(1.0);
+        takt();
         out.schoepferCarrying = !!c0.userData.carrying;
         out.schoepferCarryingHasMaterials =
             c0.userData.carrying && c0.userData.carrying.materials && c0.userData.carrying.materials.stein > 0;
@@ -456,15 +465,8 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
 
         // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
         r.setGameMode("schöpfer");
-        c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
-        c0.userData.carrying = {
-            kind: "build",
-            materials: { stein: 8 },
-            blueprint: "stein_block",
-            since: 0,
-        };
-        r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-        const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+        stelle(2.5, true); // 2.5m, weniger als placement (4.0)
+        const dirWalk = takt();
         out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
         const ws = Math.hypot(dirWalk.x, dirWalk.z);
         // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
@@ -472,25 +474,14 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
 
         // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
-        c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
-        c0.userData.carrying = {
-            kind: "build",
-            materials: { stein: 8 },
-            blueprint: "stein_block",
-            since: 0,
-        };
-        r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+        stelle(5.0, true, player.y + 1.0); // > placement (4.0)
         const archBefore = r.state.architectures.length;
-        r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+        takt();
         out.spawnPhaseGrowsWorld = r.state.architectures.length > archBefore;
         out.spawnPhaseClearsCarrying = c0.userData.carrying === null;
-        out.spawnPhaseFallsToWander = r._getCreatureTask(c0).name === "wander";
-        const memHasBuilt = (c0.userData.memory || []).some((m) => m.type === "built");
-        out.memHasBuilt = memHasBuilt;
-        const journalHasBuilt = (r.state.worldJournal.entries || []).some(
-            (e) => e.type === "growth" && /erschuf/.test(e.text)
-        );
-        out.journalHasBuilt = journalHasBuilt;
+        out.spawnPhaseFallsToWander = wandert();
+        out.memHasBuilt = erinnert("built");
+        out.journalHasBuilt = journal("growth", /erschuf/);
 
         // 12. DSL-Op routing
         r.dslRun(["creature_task_nearest", "build", "stein_block"], { source: "test" });
@@ -508,20 +499,19 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             r.constructor.NON_BROADCASTABLE_OPS.has("creature_task");
 
         // 14. Chat-Patterns
-        const p1 = r.parseChatToDsl("baue stein_block");
-        out.chatBauePattern =
-            p1 &&
-            Array.isArray(p1.program) &&
-            p1.program[0] === "creature_task_nearest" &&
-            p1.program[1] === "build" &&
-            p1.program[2] === "stein_block";
-        const p2 = r.parseChatToDsl("alle bauen stein_block");
-        out.chatAlleBauenPattern =
-            p2 &&
-            Array.isArray(p2.program) &&
-            p2.program[0] === "creature_task_all" &&
-            p2.program[1] === "build" &&
-            p2.program[2] === "stein_block";
+        // der Satz wird das Programm [op, build, stein_block]
+        const baut = (satz, op) => {
+            const q = r.parseChatToDsl(satz);
+            return (
+                q &&
+                Array.isArray(q.program) &&
+                q.program[0] === op &&
+                q.program[1] === "build" &&
+                q.program[2] === "stein_block"
+            );
+        };
+        out.chatBauePattern = baut("baue stein_block", "creature_task_nearest");
+        out.chatAlleBauenPattern = baut("alle bauen stein_block", "creature_task_all");
 
         // 15. describeProgram
         const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
@@ -554,14 +544,11 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
 
         // 19. Journal-Label "wird zur Schöpferin" beim build-Wechsel
         // (assignCreatureTask hat schon ein Journal geschrieben in #16, prüfen)
-        const journalHasRel = (r.state.worldJournal.entries || []).some(
-            (e) => e.type === "relationship" && /Schöpferin/.test(e.text)
-        );
-        out.journalHasSchoepferin = journalHasRel;
+        out.journalHasSchoepferin = journal("relationship", /Schöpferin/);
 
         // 20. Symbolic cost: free build hat trotzdem materials map (für Journal/Visual)
         r.setGameMode("schöpfer");
-        r.state.player.inventory = new Array(27).fill(null);
+        leer();
         const cFree = r.spawnCreatureAt(player.x + 30, player.y, player.z + 30, "happy", "wesen");
         cFree.position.set(player.x + 1.0, player.y, player.z);
         cFree.userData.carrying = null;
@@ -578,7 +565,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         return out;
     });
 
-    if (wave6hP2b2Results && !wave6hP2b2Results.error) {
+    if (ohneWurf(check, "Welle 6.H P2B.2", wave6hP2b2Results)) {
         check("CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
         check("AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
         check(
@@ -679,8 +666,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
             wave6hP2b2Results.symbolicCostHasMultiple
         );
-    } else if (wave6hP2b2Results && wave6hP2b2Results.error) {
-        check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
     }
 
     // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
@@ -697,14 +682,19 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.skillKeyGather = sk1 && sk1.kind === "gather" && sk1.key === "holz";
         const sk2 = r._creatureSkillKeyForMemory("built", { blueprint: "stein_block" });
         out.skillKeyBuild = sk2 && sk2.kind === "build" && sk2.key === "stein_block";
-        const sk3 = r._creatureSkillKeyForMemory("no_material", { material: "holz" });
-        out.skillKeyFailureNull = sk3 === null;
-        const sk4 = r._creatureSkillKeyForMemory("delivered", { material: "holz" });
-        out.skillKeyDeliveredNull = sk4 === null;
+        out.skillKeyFailureNull = r._creatureSkillKeyForMemory("no_material", { material: "holz" }) === null;
+        out.skillKeyDeliveredNull = r._creatureSkillKeyForMemory("delivered", { material: "holz" }) === null;
 
         // 4. Frische Kreatur → leere Specs
         const player = r.state.playerMesh.position;
-        const c = r.spawnCreatureAt(player.x + 80, player.y, player.z + 80, "happy", "wesen");
+        // ein Wesen am Spieler, d m schräg versetzt · ein Gedächtnis-Eintrag: Holz gesammelt bzw. stein_block gebaut
+        // (zur Zeit at)
+        const wesen = (d) => r.spawnCreatureAt(player.x + d, player.y, player.z + d, "happy", "wesen");
+        const sammelt = (at) => ({ type: "gathered", content: { material: "holz" }, at });
+        const gebaut = (at) => ({ type: "built", content: { blueprint: "stein_block" }, at });
+        const c = wesen(80);
+        // die Sammler-Stufe von c für Holz
+        const holzStufe = () => r._creatureSpecializationLevel(c, "gather", "holz");
         c.userData.memory = []; // sicherstellen
         const s0 = r._computeCreatureSpecializations(c);
         out.emptyMemoryEmptySpecs = s0 && Object.keys(s0.gather).length === 0 && Object.keys(s0.build).length === 0;
@@ -714,7 +704,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 1 },
             { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 2 },
             { type: "gathered", content: { material: "stein", blueprint: "stein_block" }, at: 3 },
-            { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+            gebaut(4),
             { type: "no_material", content: { material: "holz" }, at: 5 },
             { type: "no_blueprint", content: { blueprint: "fictional" }, at: 6 },
         ];
@@ -726,43 +716,40 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
 
         // 6. _creatureSpecializationLevel
         out.level0Empty = r._creatureSpecializationLevel(c, "gather", "lederX") === 0;
-        out.level0Sub = r._creatureSpecializationLevel(c, "gather", "holz") === 0; // 2 < 3
+        out.level0Sub = holzStufe() === 0; // 2 < 3
 
         // Push einen dritten gather-holz, sollte L1 erreichen
-        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 7 });
-        out.level1At3 = r._creatureSpecializationLevel(c, "gather", "holz") === 1;
+        c.userData.memory.push(sammelt(7));
+        out.level1At3 = holzStufe() === 1;
         // Auf 6 — L2
-        for (let i = 0; i < 3; i++)
-            c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 8 + i });
-        out.level2At6 = r._creatureSpecializationLevel(c, "gather", "holz") === 2;
+        for (let i = 0; i < 3; i++) c.userData.memory.push(sammelt(8 + i));
+        out.level2At6 = holzStufe() === 2;
         // Auf 100 — gedeckelt bei L5
-        for (let i = 0; i < 100; i++)
-            c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 100 + i });
-        out.levelCappedAt5 = r._creatureSpecializationLevel(c, "gather", "holz") === 5;
+        for (let i = 0; i < 100; i++) c.userData.memory.push(sammelt(100 + i));
+        out.levelCappedAt5 = holzStufe() === 5;
 
         // 7. _creatureTopSpecializations
-        const c2 = r.spawnCreatureAt(player.x + 90, player.y, player.z + 90, "happy", "wesen");
+        const c2 = wesen(90);
         c2.userData.memory = [
-            { type: "gathered", content: { material: "holz" }, at: 1 },
-            { type: "gathered", content: { material: "holz" }, at: 2 },
-            { type: "gathered", content: { material: "holz" }, at: 3 }, // L1 holz
-            { type: "built", content: { blueprint: "stein_block" }, at: 4 },
-            { type: "built", content: { blueprint: "stein_block" }, at: 5 },
-            { type: "built", content: { blueprint: "stein_block" }, at: 6 },
-            { type: "built", content: { blueprint: "stein_block" }, at: 7 },
-            { type: "built", content: { blueprint: "stein_block" }, at: 8 },
-            { type: "built", content: { blueprint: "stein_block" }, at: 9 }, // L2 stein_block
+            sammelt(1),
+            sammelt(2),
+            sammelt(3), // L1 holz
+            gebaut(4),
+            gebaut(5),
+            gebaut(6),
+            gebaut(7),
+            gebaut(8),
+            gebaut(9), // L2 stein_block
         ];
         const top = r._creatureTopSpecializations(c2, 2);
         out.topReturnsArray = Array.isArray(top) && top.length === 2;
         out.topSortedByLevel = top[0].level >= top[1].level;
         out.topHasBuildAtTop = top[0].kind === "build" && top[0].level === 2;
         out.topHasGatherSecond = top[1].kind === "gather" && top[1].level === 1;
-        const topLimit1 = r._creatureTopSpecializations(c2, 1);
-        out.topLimit1 = topLimit1.length === 1;
+        out.topLimit1 = r._creatureTopSpecializations(c2, 1).length === 1;
 
         // Keine Skills → leeres Array
-        const cFresh = r.spawnCreatureAt(player.x + 95, player.y, player.z + 95, "happy", "wesen");
+        const cFresh = wesen(95);
         cFresh.userData.memory = [];
         out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
 
@@ -779,19 +766,17 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.mulNullArgs = r._creatureTaskSpeedMultiplier(c, "gather", null) === 1;
 
         // 9. Level-Up triggert über _creatureRemember
-        const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
+        const cFollow = wesen(100);
         cFollow.userData.memory = [];
         // Die EINTRAGS-IDENTITÄT messen, nicht entries.length: worldJournal.entries ist FIFO-gedeckelt (200),
         // am Cap bleibt die Länge gleich und journalAppends id (`entries.length + 1`) ist nicht eindeutig.
         const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
         // 3 gathered → L1, sollte LevelUp triggern — und das Tier ruft dazu (seine Stimme, genau einmal)
         const rufVor = r.state.symphony.tierRufe || 0;
-        r._creatureRemember(cFollow, "gathered", { material: "quarz" });
-        r._creatureRemember(cFollow, "gathered", { material: "quarz" });
-        r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
+        // der dritte bringt den Level-Up
+        for (let i = 0; i < 3; i++) r._creatureRemember(cFollow, "gathered", { material: "quarz" });
         out.levelUpRuft = (r.state.symphony.tierRufe || 0) - rufVor === 1;
-        const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
-        out.rememberTriggersLevel = lvlAfter === 1;
+        out.rememberTriggersLevel = r._creatureSpecializationLevel(cFollow, "gather", "quarz") === 1;
         // Ein NEUER growth-Eintrag (nicht im Vorher-Set) mit Sammler / "quarz" / "Stufe 1" beweist, dass
         // DIESER Level-Up ihn schrieb (kein Autonom-Lauf-Echo).
         const journalAfter = r.state.worldJournal.entries || [];
@@ -808,16 +793,13 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.journalGrew = newLvlUpEntry;
 
         // 10. Bei Failure-Push KEIN LevelUp
-        const cFailure = r.spawnCreatureAt(player.x + 110, player.y, player.z + 110, "happy", "wesen");
+        const cFailure = wesen(110);
         cFailure.userData.memory = [];
         const beforeFailureJournal = (r.state.worldJournal.entries || []).length;
-        r._creatureRemember(cFailure, "no_material", { material: "holz" });
-        r._creatureRemember(cFailure, "no_material", { material: "holz" });
-        r._creatureRemember(cFailure, "no_material", { material: "holz" });
+        for (let i = 0; i < 3; i++) r._creatureRemember(cFailure, "no_material", { material: "holz" });
         out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
         // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
-        const failureJournalDiff = (r.state.worldJournal.entries || []).length - beforeFailureJournal;
-        out.failureJournalUntouched = failureJournalDiff === 0;
+        out.failureJournalUntouched = (r.state.worldJournal.entries || []).length - beforeFailureJournal === 0;
 
         // 11. UI: .creature-specs span existiert nach Render
         r._renderCreatureListUI();
@@ -838,7 +820,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         out.uiBuildPillTextOk = buildPill && /Bauer/.test(buildPill.textContent) && /L\d/.test(buildPill.textContent);
 
         // 13. Fresh creature OHNE specs hat KEINE .creature-specs span in ihrer Row
-        const cNoSpecsList = r.spawnCreatureAt(player.x + 120, player.y, player.z + 120, "happy", "wesen");
+        const cNoSpecsList = wesen(120);
         cNoSpecsList.userData.memory = []; // explizit leer
         r._renderCreatureListUI();
         // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
@@ -860,7 +842,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         return out;
     });
 
-    if (wave6hP2dResults && !wave6hP2dResults.error) {
+    if (ohneWurf(check, "Welle 6.H P2D", wave6hP2dResults)) {
         check("skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
         check(
             "der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)",
@@ -939,8 +921,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
             wave6hP2dResults.noSpecDslOp
         );
-    } else if (wave6hP2dResults && wave6hP2dResults.error) {
-        check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
     }
 
     // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
@@ -1081,7 +1061,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         return out;
     });
 
-    if (wave6hP2d1Results && !wave6hP2d1Results.error) {
+    if (ohneWurf(check, "Welle 6.H P2D.1", wave6hP2d1Results)) {
         check("spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
         check(
             "Snapshot enthält name + soul + memory + position + bornAt + alterS",
@@ -1128,15 +1108,11 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
             "Restore mit übergroßem memory wird auf 200 gekappt",
             wave6hP2d1Results.oversizedRestoredCappedAt200
         );
-    } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
-        check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
     }
 }
 
 async function checkBandWelle6HCreatureStats(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
     // Kreatur, Spieler und Architektur sind Compound aus parts × Material × Form; Stats kommen aus
     // derselben STAT_FROM_TAGS-Pipeline; Body-Speed-Mul (stats.speed/7) wirkt im Tick neben Spec-Mul.
@@ -1147,25 +1123,23 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
         const player = r.state.playerMesh.position;
-        const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen", { bodySize: 1 });
+        // ein Leib der Seele `seele` (Körpergröße 1) am Spieler, d m schräg versetzt
+        const leib = (d, seele) =>
+            r.spawnCreatureAt(player.x + d, player.y, player.z + d, "happy", seele, { bodySize: 1 });
+        const cw = leib(200, "wesen");
         const csW = r.computeCreatureStats(cw);
         out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
         out.statsHasAll8 =
             csW.stats &&
-            Number.isFinite(csW.stats.hpMax) &&
-            Number.isFinite(csW.stats.damage) &&
-            Number.isFinite(csW.stats.speed) &&
-            Number.isFinite(csW.stats.jumpPower) &&
-            Number.isFinite(csW.stats.staminaMax) &&
-            Number.isFinite(csW.stats.precision) &&
-            Number.isFinite(csW.stats.magicResist) &&
-            Number.isFinite(csW.stats.heatResist);
+            ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
+                (k) => Number.isFinite(csW.stats[k])
+            );
 
         // Test-Wesen mit bodySize:1: die per-Kreatur-Körpergröße ist eine orthogonale Achse und überlagerte
         // sonst die Soul-Speed-Relation.
         // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
-        const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "fuchs", { bodySize: 1 });
-        const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "baer", { bodySize: 1 });
+        const cs = leib(210, "fuchs");
+        const cg = leib(220, "baer");
         const sW = csW.stats;
         const sS = r.computeCreatureStats(cs).stats;
         const sG = r.computeCreatureStats(cg).stats;
@@ -1181,8 +1155,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out._statsS = sS;
 
         // 4. Tags geclamp auf [0, 1] für die Pipe
-        const cTagsClamped = Object.values(csW.tags).every((v) => v >= 0 && v <= 2); // toleriere spec-bonus bis ~2
-        out.tagsInBounds = cTagsClamped;
+        out.tagsInBounds = Object.values(csW.tags).every((v) => v >= 0 && v <= 2); // toleriere spec-bonus bis ~2
 
         // 5. _refreshCreatureStatsCache schreibt userData.stats
         r._refreshCreatureStatsCache(cw);
@@ -1222,14 +1195,10 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 8. Spec-Bonus auf magieleitung emergiert in stats
         // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
-        const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen", { bodySize: 1 });
+        const cFresh = leib(230, "wesen");
         cFresh.userData.memory = [];
         const baseTags = r.computeCreatureStats(cFresh).tags;
-        cFresh.userData.memory = [
-            { type: "gathered", content: { material: "holz" }, at: 1 },
-            { type: "gathered", content: { material: "holz" }, at: 2 },
-            { type: "gathered", content: { material: "holz" }, at: 3 },
-        ];
+        cFresh.userData.memory = [1, 2, 3].map((at) => ({ type: "gathered", content: { material: "holz" }, at }));
         const grownTags = r.computeCreatureStats(cFresh).tags;
         // L1 Sammler = +0.01 magieleitung; minimal aber positiv
         out.specBonusMagieleitung = grownTags.magieleitung > baseTags.magieleitung;
@@ -1257,7 +1226,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         return out;
     });
 
-    if (wave6hP2f1Results && !wave6hP2f1Results.error) {
+    if (ohneWurf(check, "Welle 6.H P2F.1", wave6hP2f1Results)) {
         check(
             "computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
             wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
@@ -1298,8 +1267,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
             wave6hP2f1Results.sameStatKeysAsPlayer
         );
-    } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
-        check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
     }
 
     // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
@@ -1313,7 +1280,9 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
         const player = r.state.playerMesh.position;
-        const c = r.spawnCreatureAt(player.x + 300, player.y, player.z + 300, "happy", "wesen");
+        // ein Wesen am Spieler, d m schräg versetzt
+        const wesen = (d) => r.spawnCreatureAt(player.x + d, player.y, player.z + d, "happy", "wesen");
+        const c = wesen(300);
         out.initialToolNull = c.userData.equipped && c.userData.equipped.tool === null;
         out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
 
@@ -1351,7 +1320,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 7. Stats-Stacking via equipped: eigener "magie-leitender" Werkzeug-Bauplan, Stats VOR/NACH equip
         // vergleichen (dieselbe computeCreatureStats-Pipeline).
-        const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
+        const c2 = wesen(310);
         const baseStats = r.computeCreatureStats(c2).stats;
         // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
         // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
@@ -1383,7 +1352,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         }
 
         // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
-        const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
+        const cDsl = wesen(320);
         const idx = r.state.creatures.indexOf(cDsl);
         r.dslRun(["creature_equip_tool", idx, "schmiede-hammer"], { source: "test" });
         out.dslEquipToolOk = cDsl.userData.equipped.tool === "schmiede-hammer";
@@ -1435,7 +1404,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         return out;
     });
 
-    if (wave6hP2f2Results && !wave6hP2f2Results.error) {
+    if (ohneWurf(check, "Welle 6.H P2F.2", wave6hP2f2Results)) {
         check(
             "spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
             wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
@@ -1495,8 +1464,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "UI — .creature-equipped Wraps + .creature-equip-tool Pills",
             wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
         );
-    } else if (wave6hP2f2Results && wave6hP2f2Results.error) {
-        check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
     }
 
     // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
@@ -1510,7 +1477,9 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 2. Neu gespawnte Kreatur hat boosts = []
         const player = r.state.playerMesh.position;
-        const c = r.spawnCreatureAt(player.x + 400, player.y, player.z + 400, "happy", "wesen");
+        // ein Wesen am Spieler, d m schräg versetzt
+        const wesen = (d) => r.spawnCreatureAt(player.x + d, player.y, player.z + d, "happy", "wesen");
+        const c = wesen(400);
         out.initialBoostsEmpty = Array.isArray(c.userData.boosts) && c.userData.boosts.length === 0;
 
         // 3. applyCreatureBoost mit gültigem tagDelta
@@ -1539,7 +1508,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.deltaUpdated = c.userData.boosts[0].tagDelta.magieleitung === 0.5;
 
         // 6. Stats-Stacking: Boost erhöht computeCreatureStats
-        const c2 = r.spawnCreatureAt(player.x + 410, player.y, player.z + 410, "happy", "wesen");
+        const c2 = wesen(410);
         const baseStats = r.computeCreatureStats(c2).stats;
         r.applyCreatureBoost(c2, {
             source: "test:hp",
@@ -1562,7 +1531,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
             out.tonicHasDichte = (tonicTags.dichte || 0) > 0.1;
 
             // Frische Kreatur, base stats messen, dann Trank aktivieren
-            const c3 = r.spawnCreatureAt(player.x + 420, player.y, player.z + 420, "happy", "wesen");
+            const c3 = wesen(420);
             const before = r.computeCreatureStats(c3).stats;
             const result = r.activateCreatureConsumable(c3, tonicName);
             out.activateOk = result.ok === true;
@@ -1583,7 +1552,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.nonConsumableRejected = notConsumable.ok === false && notConsumable.reason === "not_marked_as_consumable";
 
         // 9. tickCreatureBoosts entfernt abgelaufene Boosts
-        const c4 = r.spawnCreatureAt(player.x + 430, player.y, player.z + 430, "happy", "wesen");
+        const c4 = wesen(430);
         // Manuell abgelaufenen Boost setzen (expiresAt in der Vergangenheit)
         c4.userData.boosts = [
             {
@@ -1598,7 +1567,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         out.expiredCleaned = c4.userData.boosts.length === 0;
 
         // 10. DSL-Op creature_apply_boost
-        const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
+        const cDsl = wesen(440);
         const dslIdx = r.state.creatures.indexOf(cDsl);
         r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
         out.dslAppliedBoost = Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
@@ -1661,7 +1630,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
         return out;
     });
 
-    if (wave6hP2f3Results && !wave6hP2f3Results.error) {
+    if (ohneWurf(check, "Welle 6.H P2F.3", wave6hP2f3Results)) {
         check("spawnCreatureAt initialisiert boosts = []", wave6hP2f3Results.initialBoostsEmpty);
         check(
             "applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
@@ -1716,8 +1685,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
             "UI — .creature-boost Pills in der Liste bei aktiven Boosts",
             wave6hP2f3Results.uiHasBoostPills
         );
-    } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
-        check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
     }
 }
 

@@ -3,20 +3,7 @@
 // 17 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
-// die Probe kam an (kein null, kein Wurf) — sonst ist die Zeile `name` rot mit dem Wurf und die Prüfungen entfallen
-function erreichbar(check, name, res) {
-    if (res && !res.error) return true;
-    check(name, false, (res && res.error) || "page.evaluate fehlgeschlagen");
-    return false;
-}
-
-// die Probe lief ohne Wurf (und kam an) — ein Wurf macht die Zeile von `name` rot, die Prüfungen entfallen
-function ohneWurf(check, name, res) {
-    if (res && res.error) check(`${name}: evaluate-Fehler — ${res.error}`, false);
-    return !!(res && !res.error);
-}
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
 // Rollen-Resonanz: computeBlueprintRole = ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕
 // bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES; „architecture“ ist positive Signatur (dicht +

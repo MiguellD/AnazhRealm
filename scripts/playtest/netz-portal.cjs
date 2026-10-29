@@ -3,12 +3,10 @@
 // 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandW17Multiplayer(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### das Mesh-als-Server ###
     // Ein `ws-send` der fremden Welt wird ein subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
     // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
@@ -69,6 +67,9 @@ async function checkBandW17Multiplayer(ctx) {
             netWindowCount: 0,
             iframe: { contentWindow: { postMessage: (m, o) => posted.push({ m, o }) } },
         });
+        // ein ws-send der fremden Welt auf Kanal 1 · ein subworld-net des Peers px an die Sub-Welt `worldId`
+        const sende = (data) => r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data });
+        const zustellen = (worldId, data) => r._portalNetDeliver({ type: "subworld-net", peerId: "px", worldId, data });
         r._portalOverlay = makeOverlay();
 
         // B1 — ws-open verfolgt den Kanal, ws-close entfernt ihn.
@@ -80,7 +81,7 @@ async function checkBandW17Multiplayer(ctx) {
         // B1 — ws-send wird ein subworld-net-Broadcast (kein Echo
         // mehr): er trägt den Welt-Pfad als worldId + die Daten.
         sent.length = 0;
-        const r1 = r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "hallo" });
+        const r1 = sende("hallo");
         out.wsSendBroadcasts =
             r1 === true &&
             sent.length === 1 &&
@@ -92,18 +93,8 @@ async function checkBandW17Multiplayer(ctx) {
 
         // B3 — Größen-Deckel: Übergröße + Nicht-String verworfen.
         sent.length = 0;
-        const rBig = r._portalNetReceive({
-            __anazhNet: true,
-            kind: "ws-send",
-            channel: 1,
-            data: "x".repeat(MAXB + 1),
-        });
-        const rObj = r._portalNetReceive({
-            __anazhNet: true,
-            kind: "ws-send",
-            channel: 1,
-            data: { not: "string" },
-        });
+        const rBig = sende("x".repeat(MAXB + 1));
+        const rObj = sende({ not: "string" });
         out.wsSendCapsSize = rBig === false && rObj === false && sent.length === 0;
 
         // B3 — Rate-Limit: nach SUBWORLD_NET_RATE_MAX Nachrichten
@@ -112,22 +103,17 @@ async function checkBandW17Multiplayer(ctx) {
         sent.length = 0;
         let allOk = true;
         for (let i = 0; i < CAP; i++) {
-            if (r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "m" + i }) !== true)
+            if (sende("m" + i) !== true)
                 allOk = false;
         }
-        const overflow = r._portalNetReceive({
-            __anazhNet: true,
-            kind: "ws-send",
-            channel: 1,
-            data: "over",
-        });
+        const overflow = sende("over");
         out.wsSendRateLimited = allOk && overflow === false && sent.length === CAP;
 
         // Ein Nicht-Multiplayer-Portal broadcastet nicht.
         r._portalOverlay = makeOverlay();
         r._portalOverlay.multiplayer = false;
         sent.length = 0;
-        r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data: "y" });
+        sende("y");
         out.gatedOnMultiplayer = sent.length === 0;
 
         // _portalNetDeliver — B2: ein subworld-net für GENAU diese
@@ -135,12 +121,7 @@ async function checkBandW17Multiplayer(ctx) {
         r._portalOverlay = makeOverlay();
         r._portalOverlay.netChannels = new Set([5, 8]);
         posted.length = 0;
-        const d1 = r._portalNetDeliver({
-            type: "subworld-net",
-            peerId: "px",
-            worldId: SUBW,
-            data: "eingang",
-        });
+        const d1 = zustellen(SUBW, "eingang");
         out.deliverPostsToChannels =
             d1 === true &&
             posted.length === 2 &&
@@ -151,22 +132,12 @@ async function checkBandW17Multiplayer(ctx) {
 
         // B2 — Verkehr einer ANDEREN Sub-Welt wird verworfen.
         posted.length = 0;
-        const dOther = r._portalNetDeliver({
-            type: "subworld-net",
-            peerId: "px",
-            worldId: "worlds/fluid/index.html",
-            data: "fremd",
-        });
+        const dOther = zustellen("worlds/fluid/index.html", "fremd");
         out.deliverDropsOtherRoom = dOther === false && posted.length === 0;
 
         // B3 — der Empfangs-Pfad verwirft Übergröße ebenso.
         posted.length = 0;
-        const dBig = r._portalNetDeliver({
-            type: "subworld-net",
-            peerId: "px",
-            worldId: SUBW,
-            data: "x".repeat(MAXB + 1),
-        });
+        const dBig = zustellen(SUBW, "x".repeat(MAXB + 1));
         out.deliverCapsSize = dBig === false && posted.length === 0;
 
         // subworld-net ist kanal-zustellbar: _p2pHandleChannelMessage reicht es (ALLOWED-Whitelist) an
@@ -207,13 +178,7 @@ async function checkBandW17Multiplayer(ctx) {
 
         return out;
     });
-    if (!w17bResults || w17bResults.error) {
-        check(
-            "W17 Phase B-Relay: das Mesh-als-Server erreichbar",
-            false,
-            (w17bResults && w17bResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase B-Relay: das Mesh-als-Server erreichbar", w17bResults)) {
         check("W17 B: _sanitizePortalMeta — multiplayer Default false", w17bResults.sanitizeDefaultsFalse);
         check("W17 B: _sanitizePortalMeta bewahrt multiplayer:true", w17bResults.sanitizeKeepsTrue);
         check(
@@ -481,13 +446,7 @@ async function checkBandW17Multiplayer(ctx) {
 
         return out;
     });
-    if (!w17jsResults || w17jsResults.error) {
-        check(
-            "W17 Phase B-JS-Compute: der Compute-Host erreichbar",
-            false,
-            (w17jsResults && w17jsResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase B-JS-Compute: der Compute-Host erreichbar", w17jsResults)) {
         check("W17 JS: _sanitizePortalMeta — serverMode Default 'relay'", w17jsResults.sanitizeDefaultRelay);
         check("W17 JS: serverMode 'js-compute' bleibt + erzwingt multiplayer", w17jsResults.sanitizeJsComputeForcesMp);
         check("W17 JS: aimBlueprintAtWorld trägt serverMode aus dem Eintrag", w17jsResults.aimCarriesServerMode);
@@ -677,13 +636,7 @@ async function checkBandW17Multiplayer(ctx) {
         r._p2pSendChannelTo = origChan;
         return out;
     });
-    if (!w17mResults || w17mResults.error) {
-        check(
-            "W17 Phase B-JS-Compute Phase 2: Host-Migration erreichbar",
-            false,
-            (w17mResults && w17mResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase B-JS-Compute Phase 2: Host-Migration erreichbar", w17mResults)) {
         check(
             "W17 JS P2: _portalSpawnServerContext baut ein Server-Kontext-iframe",
             w17mResults.spawnBuildsServerFrame
@@ -858,13 +811,7 @@ async function checkBandW17Multiplayer(ctx) {
 
         return out;
     });
-    if (!w17cResults || w17cResults.error) {
-        check(
-            "W17 Phase C: das Gruppen-Portal erreichbar",
-            false,
-            (w17cResults && w17cResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Phase C: das Gruppen-Portal erreichbar", w17cResults)) {
         check("W17 C: state.p2p.pendingInvite initial null", w17cResults.pendingInviteInit);
         check("W17 C: #portal-invite-banner im DOM", w17cResults.bannerInDom);
         check("W17 C: _resolvePortalWorldId löst eine Welt per Pfad auf", w17cResults.resolveByPath);
@@ -985,13 +932,7 @@ async function checkBandW17Multiplayer(ctx) {
 
         return out;
     });
-    if (!w17mpResults || w17mpResults.error) {
-        check(
-            "W17 Multiplayer-Welt-Deklaration erreichbar",
-            false,
-            (w17mpResults && w17mpResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W17 Multiplayer-Welt-Deklaration erreichbar", w17mpResults)) {
         check("W17 MP: _sanitizeImportedManifest trägt multiplayer", w17mpResults.sanitizeCarriesMp);
         check("W17 MP: _sanitizeImportedManifest — Default ohne Marke", w17mpResults.sanitizeDefaultsNoMp);
         check("W17 MP: multiplayer überlebt den localStorage-Rundlauf", w17mpResults.sanitizeSurvivesRoundtrip);
@@ -1089,9 +1030,7 @@ async function checkBandW17Multiplayer(ctx) {
 
         return out;
     });
-    if (!w17svResults || w17svResults.error) {
-        check("W17 P-Vendor erreichbar", false, (w17svResults && w17svResults.error) || "page.evaluate fehlgeschlagen");
-    } else {
+    if (erreichbar(check, "W17 P-Vendor erreichbar", w17svResults)) {
         check(
             "W17 P-Vendor: _sanitizeImportedManifest trägt serverMode js-compute + erzwingt multiplayer",
             w17svResults.sanitizeCarriesJsCompute
@@ -1117,9 +1056,7 @@ async function checkBandW17Multiplayer(ctx) {
 }
 
 async function checkBandW12WorldPortal(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### Welt-Portal: Rolle + Built-in welt_portal ###
     const w12c1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
@@ -1179,46 +1116,23 @@ async function checkBandW12WorldPortal(ctx) {
         // W12-Korrektur — die Portal-NATUR emergiert aus der Substanz:
         // ein magie-leitender Ring wird zum Tor (das Ziel bleibt autoriert).
 
+        // die Teile eines Rings: ein Torus aus `material`, Maß s je Achse, im Ursprung (je Ruf frisch)
+        const ring = (material, s) => [
+            { shape: "torus", material, size: { x: s, y: s, z: s }, position: { x: 0, y: 0, z: 0 } },
+        ];
         // Magie-Ring (Quarz-Torus, begehbar groß) → Portal.
-        const magicRing = {
-            parts: [
-                {
-                    shape: "torus",
-                    material: "quarz",
-                    size: { x: 3.4, y: 3.4, z: 3.4 },
-                    position: { x: 0, y: 0, z: 0 },
-                },
-            ],
-        };
+        const magicRing = { parts: ring("quarz", 3.4) };
         out.magicRingIsPortalShaped = r._isPortalShaped(magicRing) === true;
         out.magicRingRolePortal = r.computeBlueprintRole(magicRing) === "portal";
 
         // Stein-Ring (kein Magie-Material) → KEIN Portal. Die
         // "aus-Magie"-Diskrimination: ein schlichter Ring bleibt Bauwerk.
-        const stoneRing = {
-            parts: [
-                {
-                    shape: "torus",
-                    material: "stein",
-                    size: { x: 3.4, y: 3.4, z: 3.4 },
-                    position: { x: 0, y: 0, z: 0 },
-                },
-            ],
-        };
+        const stoneRing = { parts: ring("stein", 3.4) };
         out.stoneRingNotPortal =
             r._isPortalShaped(stoneRing) === false && r.computeBlueprintRole(stoneRing) !== "portal";
 
         // Winziger Deko-Torus aus Quarz → KEIN Portal (nicht begehbar groß).
-        const tinyRing = {
-            parts: [
-                {
-                    shape: "torus",
-                    material: "quarz",
-                    size: { x: 0.8, y: 0.8, z: 0.8 },
-                    position: { x: 0, y: 0, z: 0 },
-                },
-            ],
-        };
+        const tinyRing = { parts: ring("quarz", 0.8) };
         out.tinyRingNotPortal = r._isPortalShaped(tinyRing) === false;
 
         // kristall_geode (magisch, aber massiv, kein Ring) → KEIN Portal.
@@ -1232,14 +1146,7 @@ async function checkBandW12WorldPortal(ctx) {
         // _refreshBlueprintRoleEmergent zum Portal — OHNE setBlueprintAsPortal.
         if (r.state.blueprints["_w12e"]) delete r.state.blueprints["_w12e"];
         r.createBlueprint("_w12e", "W12E");
-        r.state.blueprints["_w12e"].parts = [
-            {
-                shape: "torus",
-                material: "quarz",
-                size: { x: 3.4, y: 3.4, z: 3.4 },
-                position: { x: 0, y: 0, z: 0 },
-            },
-        ];
+        r.state.blueprints["_w12e"].parts = ring("quarz", 3.4);
         r._refreshBlueprintRoleEmergent("_w12e");
         out.emergentRefreshPortal = r.state.blueprints["_w12e"].role === "portal";
         delete r.state.blueprints["_w12e"];
@@ -1248,7 +1155,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12c1Results && !w12c1Results.error) {
+    if (erreichbar(check, "W12 P1: Welt-Portal Commit 1 Tests laufen", w12c1Results, "no result")) {
         check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
         check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
         check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
@@ -1279,8 +1186,6 @@ async function checkBandW12WorldPortal(ctx) {
             "W12 P1: Magie-Ring emergiert via _refreshBlueprintRoleEmergent zu 'portal'",
             w12c1Results.emergentRefreshPortal
         );
-    } else {
-        check("W12 P1: Welt-Portal Commit 1 Tests laufen", false, w12c1Results ? w12c1Results.error : "no result");
     }
 
     // ### Skelett-Welt + iframe-Overlay + CSP ###
@@ -1319,7 +1224,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12c2Results && !w12c2Results.error) {
+    if (erreichbar(check, "W12 P1 C2: Skelett-Welt Commit 2 Tests laufen", w12c2Results, "no result")) {
         check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
         check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
         check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
@@ -1330,8 +1235,6 @@ async function checkBandW12WorldPortal(ctx) {
             "W12 P1 C2: Overlay-Builder säubert fremdes Origin (Defense-in-Depth)",
             w12c2Results.overlaySanitizesForeign
         );
-    } else {
-        check("W12 P1 C2: Skelett-Welt Commit 2 Tests laufen", false, w12c2Results ? w12c2Results.error : "no result");
     }
 
     // ### Betreten / Pause / Rückkehr ###
@@ -1465,15 +1368,13 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12p2Results && !w12p2Results.error) {
+    if (erreichbar(check, "W12 P2 C1: Strom-Welt Tests laufen", w12p2Results, "no result")) {
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
         check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
         check("W12 P2 C1: welt_strom ist _isPortalShaped (Quarz-Ring emergiert)", w12p2Results.stromPortalShaped);
         check("W12 P2 C1: _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad", w12p2Results.sanitizeFluidWorld);
         check("W12 P2 C1: enterPortal(welt_strom) lädt die Fluid-Welt ins iframe", w12p2Results.enterFluidWorld);
-    } else {
-        check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
     }
 
     // ### DSL-Brücke (das Protokoll) ###
@@ -1545,7 +1446,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12bridgeResults && !w12bridgeResults.error) {
+    if (erreichbar(check, "W12 P2 C2: DSL-Brücke Tests laufen", w12bridgeResults, "no result")) {
         check("W12 P2 C2: _sanitizePortalMeta säubert das dsl-Manifest", w12bridgeResults.sanitizeDsl);
         check("W12 P2 C2: _sanitizePortalMeta — kein dsl → null (Stufe 0)", w12bridgeResults.sanitizeNoDsl);
         check("W12 P2 C2: welt_strom trägt ein DSL-Manifest", w12bridgeResults.stromManifest);
@@ -1561,8 +1462,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
         check("W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt", w12bridgeResults.homeWeatherUntouched);
         check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
-    } else {
-        check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
     }
 
     // ### zweite fremde Welt (dritte Gestalt: Phytogenesis & Lithos) ###
@@ -1683,7 +1582,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12registryResults && !w12registryResults.error) {
+    if (erreichbar(check, "W12 P2: Welt-Registry Tests laufen", w12registryResults, "no result")) {
         check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
         check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
         check("W12 P2: Built-in-Portale beziehen portalMeta aus der Registry", w12registryResults.builtinsFromRegistry);
@@ -1694,8 +1593,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2: aimBlueprintAtWorld verwirft Built-in-Bauplan", w12registryResults.aimBuiltinRejected);
         check("W12 P2: DSL-Op set_portal richtet den Bauplan", w12registryResults.dslSetPortal);
         check("W12 P2: Chat-Pattern 'richte portal X auf Y'", w12registryResults.chatPattern);
-    } else {
-        check("W12 P2: Welt-Registry Tests laufen", false, w12registryResults ? w12registryResults.error : "no result");
     }
 
     // ### Portal-Größe emergiert aus der Avatar-Größe ###
@@ -1787,7 +1684,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12markResults && !w12markResults.error) {
+    if (erreichbar(check, "W12 P2: Markier-Sektion Tests laufen", w12markResults, "no result")) {
         check(
             "W12 P2/M5: die Umwidmen-Reihe (+ Portal-Auswahl) lebt in der WERKSTATT-Mach-Zone",
             w12markResults.markRowRendered
@@ -1801,8 +1698,6 @@ async function checkBandW12WorldPortal(ctx) {
             "M5: ✨ Emergent löst roleManual (der Chip-Tooltip-Verweis ist wahr) + das ICH trägt keine Doublette",
             w12markResults.resetWorks && w12markResults.ichClean
         );
-    } else {
-        check("W12 P2: Markier-Sektion Tests laufen", false, w12markResults ? w12markResults.error : "no result");
     }
 
     // ### Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
@@ -1889,7 +1784,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12p3aResults && !w12p3aResults.error) {
+    if (erreichbar(check, "W12 P3a: Teil-A-Tests laufen", w12p3aResults, "no result")) {
         check("W12 P3a: Welt-Ereignis wird ins Journal geschrieben", w12p3aResults.eventJournaled);
         check("W12 P3a: Journal-Eintrag trägt den Typ 'portal'", w12p3aResults.eventTypeIsPortal);
         check("W12 P3a: Eintrag merkt sich die Welt (ctx.world)", w12p3aResults.eventCtxWorld);
@@ -1906,8 +1801,6 @@ async function checkBandW12WorldPortal(ctx) {
             w12p3aResults.rateLimitNoJournalOverflow
         );
         check("W12 P3-Härtung: das Portal-Overlay trägt das Rate-Limit-Fenster", w12p3aResults.overlayHasEventWindow);
-    } else {
-        check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
 
     // ### Teil B: die native Manifest-Stufe ###
@@ -1971,7 +1864,7 @@ async function checkBandW12WorldPortal(ctx) {
         return out;
     });
 
-    if (w12p3bResults && !w12p3bResults.error) {
+    if (erreichbar(check, "W12 P3b: Teil-B-Tests laufen", w12p3bResults, "no result")) {
         check("W12 P3b: Sanitizer filtert Nicht-Ops raus", w12p3bResults.sanitizeFilters);
         check("W12 P3b: Sanitizer liefert null bei leer/Nicht-Array", w12p3bResults.sanitizeNullOnEmpty);
         check("W12 P3b: Sanitizer deckelt auf 64 Ops", w12p3bResults.sanitizeCaps);
@@ -1986,8 +1879,6 @@ async function checkBandW12WorldPortal(ctx) {
         );
         check("W12 P3b: der ready-Handler wendet das native Manifest an", w12p3bResults.readyAppliesManifest);
         check("W12 P3b: das Registry-Literal kennt 'flut' nicht", w12p3bResults.registryLacksFlut);
-    } else {
-        check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
     }
 
 }
@@ -2358,6 +2249,8 @@ async function checkBandR6Capability(ctx) {
         const savedProps = r.state.capabilityProposals;
         const savedCaps = r.state.grantedCapabilities;
         const savedWeather = r.state.weather;
+        // die Welt bietet eine Fähigkeit an: Name und DSL-Programm
+        const angebot = (name, dsl) => r._portalReceiveCapability({ type: "capability", name, dsl });
         try {
             r.state.capabilityProposals = new Map();
             r.state.grantedCapabilities = {};
@@ -2376,16 +2269,16 @@ async function checkBandR6Capability(ctx) {
                     dsl: ["weather", "rainy"],
                 }) === true && r.state.capabilityProposals.has("regen-tanz");
             out.rejectsWorldgen =
-                r._portalReceiveCapability({ type: "capability", name: "graben", dsl: ["voxel_carve", 0, 0, 0, 3] }) ===
+                angebot("graben", ["voxel_carve", 0, 0, 0, 3]) ===
                 false;
             out.rejectsPrivate =
-                r._portalReceiveCapability({ type: "capability", name: "zeit", dsl: ["set_time_of_day", 0.5] }) ===
+                angebot("zeit", ["set_time_of_day", 0.5]) ===
                 false;
             out.rejectsSovereign =
-                r._portalReceiveCapability({ type: "capability", name: "klau", dsl: ["wallet_transfer", "x"] }) ===
+                angebot("klau", ["wallet_transfer", "x"]) ===
                 false;
             out.rejectsGarbage =
-                r._portalReceiveCapability({ type: "capability", name: "ÜBEL!", dsl: ["weather", "rainy"] }) === false;
+                angebot("ÜBEL!", ["weather", "rainy"]) === false;
             out.notExecuted = r.state.weather === savedWeather;
             out.grantNoProposal = r.grantCapability("gibtsnicht").reason === "no_proposal";
             // die souveräne Geste: ohne Ja landet nichts, der Vorschlag bleibt in der Quarantäne
@@ -2417,7 +2310,7 @@ async function checkBandR6Capability(ctx) {
             // else und meldete grün, ohne dass ein revozierter Schlüssel die Wand traf).
             r.state.revokedKeys.set(pub, { at: Date.now() });
             out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
-            r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
+            angebot("zweite", ["weather", "sunny"]);
             const p2 = r.state.capabilityProposals.get("zweite");
             if (p2) p2.authorPubKey = pub;
             out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";

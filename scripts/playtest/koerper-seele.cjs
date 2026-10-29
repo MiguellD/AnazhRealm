@@ -3,13 +3,7 @@
 // 15 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
-// die Probe lief ohne Wurf (und kam an) — ein Wurf macht die Zeile von `name` rot, die Prüfungen entfallen
-function ohneWurf(check, name, res) {
-    if (res && res.error) check(name, false, res.error);
-    return !!(res && !res.error);
-}
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
@@ -1273,7 +1267,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Reflex-Tests Block lief ohne Exception", reflexResults)) {
+    if (ohneWurf(check, "Reflex-Tests Block lief ohne Exception", reflexResults, true)) {
         // (2) Chat
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
@@ -1439,7 +1433,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 3b: Test-Block lief ohne Exception", wave6d3bResults)) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3b: Test-Block lief ohne Exception", wave6d3bResults, true)) {
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1596,7 +1590,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 3a: Test-Block lief ohne Exception", wave6d3aResults)) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3a: Test-Block lief ohne Exception", wave6d3aResults, true)) {
         // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
@@ -1760,7 +1754,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 2: Test-Block lief ohne Exception", wave6d2Results)) {
+    if (ohneWurf(check, "Welle 6.D Etappe 2: Test-Block lief ohne Exception", wave6d2Results, true)) {
         check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
         check(
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
@@ -1992,7 +1986,7 @@ async function checkBandWelle6DSoul(ctx) {
         return out;
     });
 
-    if (ohneWurf(check, "Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", wave6d17Results)) {
+    if (ohneWurf(check, "Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", wave6d17Results, true)) {
         check(
             "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone

@@ -3,14 +3,7 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
-
-// die Probe kam an (kein null, kein Wurf) — sonst ist die Zeile `name` rot mit dem Wurf und die Prüfungen entfallen
-function erreichbar(check, name, res) {
-    if (res && !res.error) return true;
-    check(name, false, (res && res.error) || "page.evaluate fehlgeschlagen");
-    return false;
-}
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandWaves1to3(ctx) {
     const { page, check, errors, finalState } = ctx;

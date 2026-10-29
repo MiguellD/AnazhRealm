@@ -110,9 +110,7 @@ async function checkBandV1749Adventure(ctx) {
 
 // Der Voxel-Boden (P1 + P2b) und die Abwesenheit des Heightfields.
 async function checkBandVoxelTerrainCore(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
     // Beweist echte Höhlen/Überhänge aus 3D-Dichte-Feld + Surface-Nets-Mesher. Vorab alle
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
@@ -1798,6 +1796,16 @@ async function checkBandTodZensus(ctx) {
                 else delete r[name];
             });
         };
+        // die Naht `name` hört vor jedem Ruf mit: `fn(c)` sieht den Leib, dann läuft die Methode unverändert
+        const hoereVor = (name, fn) =>
+            decke(
+                name,
+                (alt) =>
+                    function (c, ...rest) {
+                        fn(c);
+                        return alt.call(this, c, ...rest);
+                    }
+            );
         s.creatures = [];
         s.creatureEmotions = [];
         s.leichname = [];
@@ -1925,24 +1933,14 @@ async function checkBandTodZensus(ctx) {
                 "_kreaturLaufTakt",
                 "_animateCompoundMotion",
             ]) {
-                decke(
-                    name,
-                    (alt) =>
-                        function (c, ...rest) {
-                            if (istTot(c)) wesenTakt[name] = (wesenTakt[name] || 0) + 1;
-                            return alt.call(this, c, ...rest);
-                        }
-                );
+                hoereVor(name, (c) => {
+                    if (istTot(c)) wesenTakt[name] = (wesenTakt[name] || 0) + 1;
+                });
             }
             let rufe = 0;
-            decke(
-                "_tierRuf",
-                (alt) =>
-                    function (c, ...rest) {
-                        if (istTot(c)) rufe++;
-                        return alt.call(this, c, ...rest);
-                    }
-            );
+            hoereVor("_tierRuf", (c) => {
+                if (istTot(c)) rufe++;
+            });
 
             // DIE TÄTER (Selbst-Test): der alte Defekt, eingespielt an der Naht, die ihn heute trägt
             if (taeter === "sicht")
@@ -1967,14 +1965,9 @@ async function checkBandTodZensus(ctx) {
                 );
             if (taeter === "last")
                 // der Fall, in dem die Last verfällt
-                decke(
-                    "_kreaturFaellt",
-                    (alt) =>
-                        function (c, ...rest) {
-                            if (c && c.userData) c.userData.carrying = null;
-                            return alt.call(this, c, ...rest);
-                        }
-                );
+                hoereVor("_kreaturFaellt", (c) => {
+                    if (c && c.userData) c.userData.carrying = null;
+                });
             if (taeter === "raeumen")
                 // die Aura räumt wieder in ihrer eigenen Kopie
                 decke(
@@ -2031,15 +2024,10 @@ async function checkBandTodZensus(ctx) {
                 );
             if (taeter === "sprung")
                 // der Fall nimmt die Höhe des Hüpfers mit
-                decke(
-                    "_kreaturFaellt",
-                    (alt) =>
-                        function (c, ...rest) {
-                            c.userData._hopH = 0; // der Fall sieht den Sprung nicht: die Lage des Sprungs bleibt die Wurzel
-                            c.userData._hopV = 0;
-                            return alt.call(this, c, ...rest);
-                        }
-                );
+                hoereVor("_kreaturFaellt", (c) => {
+                    c.userData._hopH = 0; // der Fall sieht den Sprung nicht: die Lage des Sprungs bleibt die Wurzel
+                    c.userData._hopV = 0;
+                });
             if (taeter === "wesen")
                 // der Leichnam bleibt unter den Wesen
                 decke(

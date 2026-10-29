@@ -258,31 +258,17 @@ async function checkBandV1759CapabilityReadout(ctx) {
         const out = {};
         const blu = r.state.blueprints;
         // greifbare Klinge (octahedron) vs greifbarer Brecher (box), DIESELBE Materie stein, eine Position (span 0)
-        blu.__cap_blade = {
-            name: "__cap_blade",
-            parts: [
-                {
-                    shape: "octahedron",
-                    material: "stein",
-                    size: { x: 0.3, y: 1.4, z: 0.3 },
-                    position: { x: 0, y: 0, z: 0 },
-                },
-            ],
-        };
-        blu.__cap_maul = {
-            name: "__cap_maul",
-            parts: [
-                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
-            ],
-        };
+        // ein Stein-Teil (Maß vor Lage): Form, Maß x/y/z, Lage x — je Ruf ein frisches Objekt
+        const stein = (shape, sx, sy, sz, x) => ({
+            shape,
+            material: "stein",
+            size: { x: sx, y: sy, z: sz },
+            position: { x, y: 0, z: 0 },
+        });
+        blu.__cap_blade = { name: "__cap_blade", parts: [stein("octahedron", 0.3, 1.4, 0.3, 0)] };
+        blu.__cap_maul = { name: "__cap_maul", parts: [stein("box", 0.9, 0.9, 0.9, 0)] };
         // ein großes Bauwerk: Parts über >6 m gespreizt → KEINE in-der-Hand-Lesart
-        blu.__cap_struct = {
-            name: "__cap_struct",
-            parts: [
-                { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
-                { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 10, y: 0, z: 0 } },
-            ],
-        };
+        blu.__cap_struct = { name: "__cap_struct", parts: [stein("box", 1, 1, 1, 0), stein("box", 1, 1, 1, 10)] };
 
         const bladeHints = r._blueprintCapabilityHints(blu.__cap_blade);
         const maulHints = r._blueprintCapabilityHints(blu.__cap_maul);
@@ -432,38 +418,22 @@ async function checkBandV1783ImplementClassification(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
+        // ein Teil-Literal: Form, Stoff, Lage x/y/z, Maß x/y/z — je Ruf ein frisches Objekt
+        const teil = (shape, material, x, y, z, sx, sy, sz) => ({
+            shape,
+            material,
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+        });
         const mk = (parts) => ({ name: "_u4", parts });
-        const spike = mk([
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } },
-        ]);
-        const handle = mk([
-            {
-                shape: "cylinder",
-                material: "eisen",
-                position: { x: 0, y: 0, z: 0 },
-                size: { x: 0.25, y: 1.6, z: 0.25 },
-            },
-        ]);
-        const largeBlock = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } },
-        ]);
-        const smallCube = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-        ]);
+        const spike = mk([teil("cone", "eisen", 0, 0, 0, 0.3, 0.3, 1.8)]);
+        const handle = mk([teil("cylinder", "eisen", 0, 0, 0, 0.25, 1.6, 0.25)]);
+        const largeBlock = mk([teil("box", "stein", 0, 0, 0, 8, 8, 8)]);
+        const smallCube = mk([teil("box", "stein", 0, 0, 0, 1, 1, 1)]);
         const body = mk([
-            { shape: "box", material: "fleisch", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
+            teil("box", "fleisch", 0, 1, 0, 0.8, 1.6, 0.5),
+            teil("cylinder", "fleisch", -0.7, 1, 0, 0.3, 1.2, 0.3),
+            teil("cylinder", "fleisch", 0.7, 1, 0, 0.3, 1.2, 0.3),
         ]);
         const out = {};
         out.spikeRole = r.computeBlueprintRole(spike);
@@ -616,14 +586,11 @@ async function checkBandM6ErnteSpawn(ctx) {
             for (let i = 0; i < 40 && (r.state.architectures || []).some((e) => e === baum); i++) {
                 r._strikeArchitecture(baum);
             }
-            const holz = (r.state.player.inventory || []).reduce(
-                (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
-                0
-            );
-            const holzVorher = savedInv.reduce(
-                (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
-                0
-            );
+            // das Holz eines Inventars
+            const holzIn = (inv) =>
+                inv.reduce((n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0), 0);
+            const holz = holzIn(r.state.player.inventory || []);
+            const holzVorher = holzIn(savedInv);
             out.faustErntet = fitBaum.yieldMult > 0 && holz > holzVorher;
             baum = null;
 
@@ -675,14 +642,17 @@ async function checkBandM6ErnteSpawn(ctx) {
                 name: "_t_m6_haus",
                 parts: JSON.parse(JSON.stringify(KSm6.haus_basis.parts)),
             };
-            clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7 });
+            // das Haus auf dem Spieler (Saat 7, `opt` dazu)
+            const aufSpieler = (opt) =>
+                (clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, ...opt }));
+            aufSpieler();
             const d = clampSpawn ? Math.hypot(clampSpawn.position.x - pm.x, clampSpawn.position.z - pm.z) : 0;
             out.wurzelKlemmt = !!clampSpawn && d > 2.9;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
-            clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, precise: true });
+            aufSpieler({ precise: true });
             out.preciseExakt = !!clampSpawn && clampSpawn.position.x === pm.x && clampSpawn.position.z === pm.z;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
-            clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, id: "mu-sync-1" });
+            aufSpieler({ id: "mu-sync-1" });
             out.idExakt = !!clampSpawn && clampSpawn.position.x === pm.x;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
             clampSpawn = null;

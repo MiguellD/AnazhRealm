@@ -3,7 +3,7 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // GROSSE Strukturen (Dorf/Tempel/Wasserfall) spawnen nicht AUF dem Spieler (Chunk-Remesh →
 // Durchfall), kleine Platzierungen unberührt; ein Void-Boden holt aus jedem Durchfall zurück.
@@ -163,9 +163,7 @@ async function checkBandWellePerfDBudget(ctx) {
 }
 
 async function checkBandRing6Workshop(ctx) {
-    const { page, check, errors, finalState } = ctx;
-    void errors;
-    void finalState;
+    const { page, check } = ctx;
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
@@ -173,30 +171,31 @@ async function checkBandRing6Workshop(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
+        // jede Architektur fällt: ihr Mesh aus der Szene und freigegeben, die Liste leer
+        const raeume = () => {
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+        };
 
         // Cleanup: alle bestehenden Architekturen entfernen.
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        raeume();
 
         // (a) Direkter Spawn jeder Sorte. AUSLÖSCHUNGS-WELLE — village/temple fielen als
         // Blueprints; die eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis/tor_basis)
         // tragen die Spawn-/Save-/Cull-Mechanik als Test-Blueprints (am Band-Ende geräumt).
         const KSr6 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_r6_haus) delete r.state.blueprints._t_r6_haus;
-        r.state.blueprints._t_r6_haus = {
-            name: "_t_r6_haus",
-            parts: JSON.parse(JSON.stringify(KSr6.haus_basis.parts)),
+        // der Test-Bauplan `name` aus den Teilen der Substanz-Zeile `art` (ein alter gleichen Namens fällt)
+        const probe = (name, art) => {
+            if (r.state.blueprints[name]) delete r.state.blueprints[name];
+            r.state.blueprints[name] = { name, parts: JSON.parse(JSON.stringify(KSr6[art].parts)) };
         };
-        if (r.state.blueprints._t_r6_tor) delete r.state.blueprints._t_r6_tor;
-        r.state.blueprints._t_r6_tor = {
-            name: "_t_r6_tor",
-            parts: JSON.parse(JSON.stringify(KSr6.tor_basis.parts)),
-        };
+        probe("_t_r6_haus", "haus_basis");
+        probe("_t_r6_tor", "tor_basis");
         const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
         // der Render-Merge fasst die Teile per Material zu wenigen Meshes
@@ -328,25 +327,13 @@ async function checkBandRing6Workshop(ctx) {
         out.loadRebuildsSeeds = r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
 
         // Cleanup (inkl. Test-Blueprints — kein Katalog-Leck)
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        raeume();
         delete r.state.blueprints._t_r6_haus;
         delete r.state.blueprints._t_r6_tor;
         return out;
     });
 
-    if (!ring6Results || ring6Results.error) {
-        check(
-            "Ring 6: Architecture-Snapshot erreichbar",
-            false,
-            ring6Results && ring6Results.error ? ring6Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6: Architecture-Snapshot erreichbar", ring6Results)) {
         check("Ring 6: spawnArchitecture(haus_basis-Substanz) liefert Group", ring6Results.villageBuilt);
         check(
             "Ring 6: Haus ist vollständig (≥5 Substanz-Teile: Wände + Dach; Render gemergt)",
@@ -468,13 +455,7 @@ async function checkBandRing6Workshop(ctx) {
         return out;
     });
 
-    if (!ring63Results || ring63Results.error) {
-        check(
-            "Ring 6.3: Kollisions-Snapshot erreichbar",
-            false,
-            ring63Results && ring63Results.error ? ring63Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.3: Kollisions-Snapshot erreichbar", ring63Results)) {
         check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
         check("Ring 6.3: Architektur hat feld-native Kollision via blockerAABBs", ring63Results.entryHasCollision);
         check(
@@ -567,6 +548,13 @@ async function checkBandRing6Workshop(ctx) {
     const ring64Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
+        // jede Architektur fällt: ihr Mesh gecullt, die Liste leer
+        const leere = () => {
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+        };
 
         // 8 Primitive renderbar — wir bauen einen Test-Bauplan
         // mit allen 8 Shapes und prüfen, dass jede einen Mesh
@@ -605,18 +593,12 @@ async function checkBandRing6Workshop(ctx) {
                 },
             ],
         };
-        for (const a of r.state.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        r.state.architectures = [];
+        leere();
         const userEntry = r.spawnArchitecture("test_hut", { x: 0, y: 5, z: 5 }, { seed: 1 });
         out.userBlueprintBuilds = !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
 
         // DSL-Op spawn_blueprint funktioniert
-        for (const a of r.state.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        r.state.architectures = [];
+        leere();
         const dslRes = r.dslRun(["spawn_blueprint", "test_hut", ["at_origin"]]);
         out.dslSpawnBlueprintOk =
             dslRes.ok === true &&
@@ -663,22 +645,13 @@ async function checkBandRing6Workshop(ctx) {
         out.loadRestoresUserBlueprint = !!r.state.blueprints["test_hut_2"];
 
         // Cleanup
-        for (const a of r.state.architectures.slice()) {
-            if (a.mesh) r._cullArchitectureMesh(a);
-        }
-        r.state.architectures = [];
+        leere();
         delete r.state.blueprints["test_hut"];
         delete r.state.blueprints["test_hut_2"];
         return out;
     });
 
-    if (!ring64Results || ring64Results.error) {
-        check(
-            "Ring 6.4: Bauplan-Snapshot erreichbar",
-            false,
-            ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.4: Bauplan-Snapshot erreichbar", ring64Results)) {
         check(
             "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
             ring64Results.allShapesRender
@@ -796,13 +769,7 @@ async function checkBandRing6Workshop(ctx) {
         return out;
     });
 
-    if (!ring65Results || ring65Results.error) {
-        check(
-            "Ring 6.5: Hotbar-Snapshot erreichbar",
-            false,
-            ring65Results && ring65Results.error ? ring65Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.5: Hotbar-Snapshot erreichbar", ring65Results)) {
         check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
         check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
         check("Ring 6.5: Default-Hotbar = der Start-Gurt aus dem Katalog (_startGurt)", ring65Results.defaultHotbar);
@@ -944,13 +911,7 @@ async function checkBandRing6Workshop(ctx) {
         return out;
     });
 
-    if (!ring66Results || ring66Results.error) {
-        check(
-            "Ring 6.6: Werkstatt-Snapshot erreichbar",
-            false,
-            ring66Results && ring66Results.error ? ring66Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.6: Werkstatt-Snapshot erreichbar", ring66Results)) {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
         check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
@@ -983,15 +944,19 @@ async function checkBandRing6Workshop(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
+        // jede Architektur fällt: ihr Mesh aus der Szene und freigegeben, die Liste leer
+        const raeume = () => {
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+        };
 
         // Cleanup
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        raeume();
         r._clearBuildMode();
         // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); nach dem Warmup kann das
         // Flag stehen → nullen, gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
@@ -1027,13 +992,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // === B) spawn_fractal ===
         // Cleanup first
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        raeume();
         const before = r.state.architectures.length;
         const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
         // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
@@ -1063,13 +1022,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // === C) Counter ===
         // Cleanup, baue 3 nah, 5 weit
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        raeume();
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         r.state.playerMesh.position.set(0, 20, 0);
         for (let i = 0; i < 3; i++) r.spawnArchitecture("_t_r6v2_haus", { x: i * 10, y: 5, z: 0 }, { seed: i });
@@ -1116,25 +1069,13 @@ async function checkBandRing6Workshop(ctx) {
         out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
 
         // Cleanup (inkl. Test-Blueprint)
-        for (const a of r.state.architectures) {
-            if (a.mesh) {
-                r.state.scene.remove(a.mesh);
-                r._disposeSoulGroup(a.mesh);
-            }
-        }
-        r.state.architectures = [];
+        raeume();
         delete r.state.blueprints._t_r6v2_haus;
         r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;
     });
 
-    if (!ring6v2Results || ring6v2Results.error) {
-        check(
-            "Ring 6 V2: Snapshot erreichbar",
-            false,
-            ring6v2Results && ring6v2Results.error ? ring6v2Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6 V2: Snapshot erreichbar", ring6v2Results)) {
         // Culling
         check("Ring 6 V2: Nahe Struktur hat Mesh", ring6v2Results.nearHasMesh);
         check("Ring 6 V2: Weite Struktur startet 'cold'", ring6v2Results.farIsCold);
@@ -1191,6 +1132,8 @@ async function checkBandArchetypBank(ctx) {
         ];
         const wheelConns = [1, 2, 3, 4].map((i) => ({ type: "lashing", partA: 0, partB: i, auto: 1 }));
         const sitz = { type: "sitz", partA: 0, partB: -1 };
+        // der Holz-Wagen: Korpus und vier Räder (je Ruf frische Teile)
+        const wagen = () => [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")];
         const humanoid = (mat) => [
             P("box", mat, 0, 1.1, 0, 0.5, 0.7, 0.3),
             P("sphere", mat, 0, 1.7, 0, 0.3, 0.3, 0.3),
@@ -1202,7 +1145,7 @@ async function checkBandArchetypBank(ctx) {
         const BANK = [
             {
                 n: "wagen holz+sitz",
-                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")],
+                p: wagen(),
                 c: [...wheelConns, sitz],
                 e: "vehicle",
             },
@@ -1226,13 +1169,13 @@ async function checkBandArchetypBank(ctx) {
             },
             {
                 n: "GEGEN wagen ohne sitz ≠ trank",
-                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")],
+                p: wagen(),
                 c: wheelConns,
                 ne: "consumable",
             },
             {
                 n: "GEGEN wagen ohne sitz ≠ seele",
-                p: [P("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1), ...wheelQuad("holz")],
+                p: wagen(),
                 c: wheelConns,
                 ne: "soul",
             },
@@ -1438,18 +1381,13 @@ async function checkBandLambda2HismSynthese(ctx) {
     // Der Instanz-Tint ist bewusst NEUTRAL-NAH: ±8 % Luminanz-Jitter, uniform [0.92, 1.08] → σ =
     // 0.16/√12 ≈ 0.046. Vertrag: Varianz EXISTIERT (σ > 0.02, kein Klon-Flat) und bleibt GEBUNDEN
     // (σ < 0.06 — stärkerer Farbwurf verfälscht die Studio-Blattfarbe multiplikativ).
-    check(
-        `Λ.2 HISM: tintH-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
-        Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.02 && res.tintHSpread < 0.06
-    );
-    check(
-        `Λ.2 HISM: tintS-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintSSpread && res.tintSSpread.toFixed(3)})`,
-        Number.isFinite(res.tintSSpread) && res.tintSSpread > 0.02 && res.tintSSpread < 0.06
-    );
-    check(
-        `Λ.2 HISM: tintV-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintVSpread && res.tintVSpread.toFixed(3)})`,
-        Number.isFinite(res.tintVSpread) && res.tintVSpread > 0.02 && res.tintVSpread < 0.06
-    );
+    for (const k of ["H", "S", "V"]) {
+        const sigma = res[`tint${k}Spread`];
+        check(
+            `Λ.2 HISM: tint${k}-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${sigma && sigma.toFixed(3)})`,
+            Number.isFinite(sigma) && sigma > 0.02 && sigma < 0.06
+        );
+    }
     check("Λ.2 HISM: tintH/S/V reist bit-treu im Snapshot (V8.59-Klasse)", res.snapshotCarriesTint === true);
 }
 
@@ -1695,12 +1633,8 @@ async function checkBandV18213MeshMerge(ctx) {
                     const elems = l.localMatrix.elements;
                     // Identity check: diag 1, off-diag 0 (mit kleinem Float-Tolerance).
                     return (
-                        Math.abs(elems[0] - 1) < 1e-6 &&
-                        Math.abs(elems[5] - 1) < 1e-6 &&
-                        Math.abs(elems[10] - 1) < 1e-6 &&
-                        Math.abs(elems[12]) < 1e-6 &&
-                        Math.abs(elems[13]) < 1e-6 &&
-                        Math.abs(elems[14]) < 1e-6
+                        [0, 5, 10].every((i) => Math.abs(elems[i] - 1) < 1e-6) &&
+                        [12, 13, 14].every((i) => Math.abs(elems[i]) < 1e-6)
                     );
                 });
                 // M-Color: jede ANZEIGE-geom trägt das vertexColors-Attribut. Der Schatten-Zwilling (`l.shadowTwin`,
