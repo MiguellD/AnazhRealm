@@ -402,7 +402,7 @@ function kanalImVm(quellen = {}) {
     return (msg) => {
         ctx.__frage = Object.assign({ reqId: "vm" + posts.length }, msg);
         vm.runInContext("foundryKanal(__frage)", ctx, { timeout: 60000 });
-        return posts.find((p) => p && p.reqId === ctx.__frage.reqId && p.type !== "blatt-atlas") || null;
+        return posts.find((p) => p && p.reqId === ctx.__frage.reqId) || null;
     };
 }
 

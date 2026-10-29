@@ -25,9 +25,13 @@
 //                     Engine-Kopie im Studio-Baum (worlds/*/lib/) oder das r160-UMD (vendor/three.min.js) ist ROT beim
 //                     Namen, wer three lädt, lädt die der Welt (vendor/three.webgpu, r184); lädt die Seite die Welt
 //                     (index.html, stamm/), ist die isolierte Bühne aufgelöst — ROT. Wer noch fremd lädt, steht in der Ratsche.
-//   H8 Kosten-Wahrheit (studios.K3, --engine) je Mesh-Studio und Stufe die gezählte Zahl der Kosten-Leiste gegen die
-//                     GEZEICHNETE (das Werk allein im Zähl-Abschnitt der Hülle, renderer.info): über ±5 % oder ohne
-//                     gezeichnete Zahl ist ROT — eine Leisten-Zahl ohne Gegenzahl zählt nicht.
+//   H8 Kosten-Wahrheit (studios.K3, --engine) je Mesh-Studio und Stufe die gezählten Zahlen der Kosten-Leiste gegen die
+//                     GEZEICHNETEN (das Werk allein im Zähl-Abschnitt der Hülle): Dreiecke und Befehle gegen renderer.info,
+//                     VRAM gegen die Speicher-Karte des Renderers je Werk-Puffer — über ±5 % oder ohne Gegenzahl ist ROT
+//                     (eine Leisten-Zahl ohne Gegenzahl zählt nicht); Dreiecke, VRAM und GPU-ms über dem Deckel der Stufe
+//                     (VRAM und GPU-ms: ihr Anteil am Profi-Band) ROT beim Namen. Auf der Karte die GPU-ms der Zeitstempel
+//                     gegen die Bank-Runde von gpu-bank (`?bank=12`, nur GPU-gebunden eine Gegenzahl); beim Klang die
+//                     Audio-Graph-ms je Ort gegen den Echtzeit-Deckel des Quantums.
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -81,6 +85,9 @@ function sitzungZahl({ griffe = [], bleibt = [0, 0] }) {
     return { mit: griffe.filter((g) => g.ms != null).length, true: p(true), false: p(false), bleibt };
 }
 const sitzungText = (z) => `Griff → Bild p95 Gesetz-Wert ${z.true ?? "–"} ms · Neubau ${z.false ?? "–"} ms · ${z.mit} Griffe mit Bild · Neuladen ${z.bleibt.join("/")}`;
+// H8 — das Urteil der Hülle je Zeile (AnazhHuelle.zeileUrteil: die Leiste färbt und benennt nach demselben), auf der Karte mit
+// GPU-ms und Bank; die Hülle lädt als UI-Modul auch in Node (ihr Wurzel-Objekt ist dann globalThis)
+require("../worlds/huelle/huelle.js");
 function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
     const rot = [];
     for (const [id, pfade] of Object.entries(netz)) {
@@ -97,10 +104,9 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
             rot.push(`H6 ${id}: three aus vendor/ ohne ${ENGINE_EINE} — die Welt rendert WebGPU r184`);
     }
     for (const [id, { folge: f, kosten }] of Object.entries(seiten)) {
-        // eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
-        // H8 je gelesene Leiste (der Gang liest sie je Mesh-Studio; klang ist meshfrei, Studio-Vertrag §8)
-        const w = kosten && (kosten.find((k) => !(Math.abs(k.leiste / k.gezeichnet - 1) <= 0.05)) || (!kosten.length && {}));
-        if (w) rot.push(`H8 ${id}: L${w.stufe} gezählt ${w.leiste} △ ↔ gezeichnet ${w.gezeichnet} △`);
+        // H8 je gelesene Leiste: eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
+        if (kosten && !kosten.some((k) => !k.audio === (id !== "klang"))) rot.push(`H8 ${id}: die Leiste ohne Zeile`);
+        for (const k of kosten || []) rot.push(...AnazhHuelle.zeileUrteil(k, zeit, zeit).map((x) => `H8 ${id}: ${x}`));
         const fehl = f && (f[0] === f[1] ? 1 : VERLAUF.concat(0, 0).findIndex((_, i) => f[i] !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
@@ -259,85 +265,19 @@ function pruefe(karte) {
 // ── SELBSTTEST: die Täter in die Karte gespielt (Fundstelle fehlt → rot, die Linse wandert mit dem Code) ──
 function selbsttest() {
     const echt = baum();
+    // je Fall [Name, Datei, Fundstelle (Text oder RegExp am Namen), Täter, Soll-Rot] bzw. [..., null, Nicht-Rot]
     const faelle = [
-        {
-            name: "H1 ein Hand-Regler in der garage (index.html)",
-            rel: "worlds/garage/index.html",
-            vor: '<div id="sliders"></div>',
-            nach: '<div id="sliders"><input type="range" id="sTaeter" min="0" max="1"></div>',
-            soll: /^H1 worlds\/garage\/index\.html:\d+ .*: ein Hand-Regler/,
-        },
-        {
-            name: "H1 ein Werkstatt-Schieber von Hand im Stamm (das Werkstatt-Modul)",
-            rel: stammLib.dateiVon(ROOT, REGLER_GLIED),
-            vor: /(_workshopRenderStudioParams\([^)]*\) \{)/,
-            nach: '$1\n        const _t = document.createElement("input");\n        _t.type = "range";',
-            soll: new RegExp(`^H1 ${stammLib.dateiVon(ROOT, REGLER_GLIED)}:\\d+ .*: ein Hand-Regler`),
-        },
-        {
-            name: "H2 eine eigene ready in der schmiede",
-            rel: "worlds/schmiede/schmiede.js",
-            vor: "AnazhHuelle.bruecke(",
-            nach: 'window.parent.postMessage({ type: "ready", world: "schmiede" }, "*");\nAnazhHuelle.bruecke(',
-            soll: /^H2 worlds\/schmiede\/schmiede\.js:\d+ .*: eine eigene ready/,
-        },
-        {
-            name: "H2 der Element-Adapter in der klang (op[0] je Element)",
-            rel: "worlds/klang/klang.js",
-            vor: "AnazhHuelle.bruecke(",
-            nach: 'var __t = function (op) { return String((op && op[0]) || op || ""); };\nAnazhHuelle.bruecke(',
-            soll: /^H2 worlds\/klang\/klang\.js:\d+ .*: Element-Adapter/,
-        },
-        {
-            name: "H1 ein Hand-Regler im Gelände-Studio",
-            rel: GELAENDE,
-            vor: "AnazhHuelle.regler(",
-            nach: 'd.innerHTML = `<input type="range">`;\nAnazhHuelle.regler(',
-            soll: /^H1 worlds\/gelaende\/studio\.js:\d+ .*: ein Hand-Regler/,
-        },
-        {
-            name: "H2 eine eigene ready im terrain-Labor",
-            rel: "worlds/terrain/phytogenesis.js",
-            vor: "AnazhHuelle.bruecke(",
-            nach: 'foundryPost({ type: "ready", world: "terrain" });\nAnazhHuelle.bruecke(',
-            soll: /^H2 worlds\/terrain\/phytogenesis\.js:\d+ .*: eine eigene ready/,
-        },
-        {
-            name: "H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)",
-            rel: "worlds/garage/garage.js",
-            vor: /$/, // ankerfrei: ein Kommentar am Ende der Quelle
-            nach: "\n/* ein neuer Look */",
-            soll: /^H5 garage: das Panorama ist veraltet/,
-        },
-        {
-            name: "H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet",
-            rel: "worlds/huelle/huelle.js",
-            vor: "function panorama(",
-            nach: "function panoramaNeu() {}\n    function panorama(",
-            soll: /^H5 skeleton: das Panorama ist veraltet/,
-        },
-        {
-            name: "H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün",
-            rel: "worlds/fachwerk/index.html",
-            vor: /\?v=[0-9.]+/g,
-            nach: "?v=99.999.9",
-            soll: null,
-            nichtRot: /^H5 fachwerk/,
-        },
-        {
-            name: "H5 der Export ohne die fachwerk",
-            rel: TOR_ZIELE,
-            vor: '"worlds/fachwerk/index.html": {',
-            nach: '"worlds/fachwerk-fort/index.html": {',
-            soll: /^H5 fachwerk: kein Panorama im Export/,
-        },
-        {
-            name: "H5 eine ausgenommene Welt nicht benannt (begegnung fehlt unter ohne)",
-            rel: TOR_ZIELE,
-            vor: '"worlds/begegnung/index.html":',
-            nach: '"worlds/begegnung-fort/index.html":',
-            soll: /^H5 begegnung: steht nicht benannt unter ohne/,
-        },
+        ["H1 ein Hand-Regler in der garage (index.html)", "worlds/garage/index.html", '<div id="sliders"></div>', '<div id="sliders"><input type="range" id="sTaeter" min="0" max="1"></div>', /^H1 worlds\/garage\/index\.html:\d+ .*: ein Hand-Regler/],
+        ["H1 ein Werkstatt-Schieber von Hand im Stamm (das Werkstatt-Modul)", stammLib.dateiVon(ROOT, REGLER_GLIED), /(_workshopRenderStudioParams\([^)]*\) \{)/, '$1\n        const _t = document.createElement("input");\n        _t.type = "range";', new RegExp(`^H1 ${stammLib.dateiVon(ROOT, REGLER_GLIED)}:\\d+ .*: ein Hand-Regler`)],
+        ["H2 eine eigene ready in der schmiede", "worlds/schmiede/schmiede.js", "AnazhHuelle.bruecke(", 'window.parent.postMessage({ type: "ready", world: "schmiede" }, "*");\nAnazhHuelle.bruecke(', /^H2 worlds\/schmiede\/schmiede\.js:\d+ .*: eine eigene ready/],
+        ["H2 der Element-Adapter in der klang (op[0] je Element)", "worlds/klang/klang.js", "AnazhHuelle.bruecke(", 'var __t = function (op) { return String((op && op[0]) || op || ""); };\nAnazhHuelle.bruecke(', /^H2 worlds\/klang\/klang\.js:\d+ .*: Element-Adapter/],
+        ["H1 ein Hand-Regler im Gelände-Studio", GELAENDE, "AnazhHuelle.regler(", 'd.innerHTML = `<input type="range">`;\nAnazhHuelle.regler(', /^H1 worlds\/gelaende\/studio\.js:\d+ .*: ein Hand-Regler/],
+        ["H2 eine eigene ready im terrain-Labor", "worlds/terrain/phytogenesis.js", "AnazhHuelle.bruecke(", 'foundryPost({ type: "ready", world: "terrain" });\nAnazhHuelle.bruecke(', /^H2 worlds\/terrain\/phytogenesis\.js:\d+ .*: eine eigene ready/],
+        ["H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)", "worlds/garage/garage.js", /$/, "\n/* ein neuer Look */", /^H5 garage: das Panorama ist veraltet/], // ankerfrei: ein Kommentar am Ende der Quelle
+        ["H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet", "worlds/huelle/huelle.js", "function panorama(", "function panoramaNeu() {}\n    function panorama(", /^H5 skeleton: das Panorama ist veraltet/],
+        ["H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün", "worlds/fachwerk/index.html", /\?v=[0-9.]+/g, "?v=99.999.9", null, /^H5 fachwerk/],
+        ["H5 der Export ohne die fachwerk", TOR_ZIELE, '"worlds/fachwerk/index.html": {', '"worlds/fachwerk-fort/index.html": {', /^H5 fachwerk: kein Panorama im Export/],
+        ["H5 eine ausgenommene Welt nicht benannt (begegnung fehlt unter ohne)", TOR_ZIELE, '"worlds/begegnung/index.html":', '"worlds/begegnung-fort/index.html":', /^H5 begegnung: steht nicht benannt unter ohne/],
     ];
     let ok = true;
     const basis = pruefe(echt);
@@ -345,34 +285,36 @@ function selbsttest() {
         console.log("❌ SELBST-TEST Ausgangslage: der echte Baum ist schon rot — " + basis.rot[0]);
         ok = false;
     }
-    for (const f of faelle) {
-        const t = f.rel && echt[f.rel];
-        const am = f.vor instanceof RegExp; // ein Methoden-Kopf am NAMEN (gate:apparat Klinge 3)
-        if (!t || !(am ? f.vor.test(t) : t.includes(f.vor))) {
-            console.log(`❌ SELBST-TEST ${f.name} — Fundstelle fehlt (${f.rel}: ${String(f.vor).slice(0, 40)})`);
+    for (const [name, rel, vor, nach, soll, nichtRot] of faelle) {
+        const t = rel && echt[rel];
+        const am = vor instanceof RegExp; // ein Methoden-Kopf am NAMEN (gate:apparat Klinge 3)
+        if (!t || !(am ? vor.test(t) : t.includes(vor))) {
+            console.log(`❌ SELBST-TEST ${name} — Fundstelle fehlt (${rel}: ${String(vor).slice(0, 40)})`);
             ok = false;
             continue;
         }
-        const karte = { ...echt, [f.rel]: am ? t.replace(f.vor, f.nach) : t.split(f.vor).join(f.nach) };
+        const karte = { ...echt, [rel]: am ? t.replace(vor, nach) : t.split(vor).join(nach) };
         const r = pruefe(karte);
-        if (f.nichtRot) {
-            const falsch = r.rot.find((x) => f.nichtRot.test(x));
-            console.log(`${falsch ? "❌" : "✅"} SELBST-TEST ${f.name}${falsch ? " — rot: " + falsch : ""}`);
+        if (nichtRot) {
+            const falsch = r.rot.find((x) => nichtRot.test(x));
+            console.log(`${falsch ? "❌" : "✅"} SELBST-TEST ${name}${falsch ? " — rot: " + falsch : ""}`);
             if (falsch) ok = false;
             continue;
         }
-        const treffer = [...r.rot, ...r.veraltet].find((x) => f.soll.test(x));
-        console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${f.name}${treffer ? " — " + treffer : " — nicht rot (" + (r.rot[0] || "grün") + ")"}`);
+        const treffer = [...r.rot, ...r.veraltet].find((x) => soll.test(x));
+        console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${name}${treffer ? " — " + treffer : " — nicht rot (" + (r.rot[0] || "grün") + ")"}`);
         if (!treffer) ok = false;
     }
     // H3/H4/H6 — der Spruch des Gangs (dieselbe pure Funktion): die Ratsche fremd, die garage auf der EINEN Engine
     const eine = ["/vendor/three-bootstrap.js", "/vendor/three.module.min.js", ENGINE_EINE];
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
-    // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihrer Welt-Zeile und mit ihrer gezeichneten Zahl (H4, H8)
-    const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000) => ({ kosten: [{ stufe, leiste, gezeichnet, deckel }] });
+    // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihren Deckeln und mit ihren Gegenzahlen (H4, H8), der Klang je Ort
+    const zeile = { befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
+    const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
+    const ort = (audio) => ({ kosten: audio ? [{ stufe: "sturm", audio, audioDeckel: 2.6667 }] : [] });
     const sitz = { folge: [..."12121212"], griffe: Array.from({ length: GRIFFE }, (_, i) => ({ ms: 40 + i, u: i < 4 })), bleibt: [12, 12] };
-    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...wahr(9000, 9120) }]));
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120)) }]));
     const mit = (id, o) => ({ [id]: { ...seiten[id], ...o } });
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
@@ -386,9 +328,19 @@ function selbsttest() {
         ["H3 die schmiede verliert ihre Sitzung ganz (nie still)", {}, /^H3 schmiede: das Studio trägt keine Sitzung/, { schmiede: {} }],
         ["H4 das tetrapoda-Labor zeigt 1 299 852 △ (K45)", {}, /^H4 tetrapoda: Labor L0/, mit("tetrapoda", wahr(1299852, 1299852))],
         ["H4 die Kosten-Leiste des koerperstudio nennt keine L0 (nie grün auf der leeren Zeile)", {}, /^H4 koerperstudio: Labor L0 undefined/, { koerperstudio: {} }],
-        ["H8 die Leiste zählt die Bühne mit", {}, /^H8 fachwerk: L0 gezählt 12800/, mit("fachwerk", wahr(12800, 8000))],
-        ["H8 die Wurf-Stufe ohne Werfer", {}, /^H8 koerperstudio: L3 gezählt 0/, mit("koerperstudio", wahr(0, 0, 3))],
-        ["H8 die Leiste ohne Renderer", {}, /^H8 garage: L0 gezählt 9000 △ ↔ gezeichnet undefined/, mit("garage", wahr(9000))],
+        // H8 (das Urteil der Hülle): die Leiste zählt die Bühne mit, die Wurf-Stufe ohne Werfer, die Leiste ohne Renderer (studios.K3#1);
+        // die Leiste ohne VRAM, die GPU-ms über dem Band-Deckel, eine CPU-gebundene Bank (keine Gegenzahl), der Klang ohne
+        // Audio-Graph-ms und über dem Quantum (studios.K3#2)
+        ...[
+            ["fachwerk", { leiste: 12800, gezeichnet: 8000 }, /^H8 fachwerk: L0 △ 12800 ↔ 8000/],
+            ["koerperstudio", { stufe: 3, leiste: 0, gezeichnet: 0 }, /^H8 koerperstudio: L3 △ 0 ↔ 0/],
+            ["garage", { gezeichnet: undefined }, /^H8 garage: L0 △ 9000 ↔ undefined/],
+            ["garage", { vram: undefined, vramGpu: undefined }, /^H8 garage: L0 VRAM undefined ↔ undefined/],
+            ["portale", { ms: 2.1, bank: 2.1 }, /^H8 portale: L0 GPU-ms 2.1 über dem Deckel 1.5/, true],
+            ["fachwerk", { bank: 4.1, bankCpu: 4 }, /^H8 fachwerk: L0 GPU-ms 0.4 ↔ Bank 4.1 CPU-gebunden/, true],
+            ["klang", 0, /^H8 klang: die Leiste ohne Zeile/],
+            ["klang", 3.1, /^H8 klang: sturm Audio-ms 3.1 über dem Deckel/],
+        ].map(([id, m, soll, zeit]) => [soll.source, {}, soll, mit(id, id === "klang" ? ort(m) : wahr(9000, 9000, 0, 62000, m)), { zeit }]),
         ["H7 ein Griff der garage zeigt nie einen neuen Bau-Hash", {}, /^H7 garage: 19 von 20 Griffen/, mit("garage", { griffe: [...sitz.griffe.slice(1), {}] }), { zeit: true }],
         ["H7 der Gesetz-Wert der portale wartet die Ruhe ab (290 ms, auf der Karte)", {}, /^H7 portale: p95 Gesetz-Wert 290 ms > 200/, mit("portale", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 290 : 9 })) }), { zeit: true }],
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
@@ -426,7 +378,7 @@ async function gang() {
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
             page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
-            await s.zeige(page, 90000, seite(id), "load");
+            await s.zeige(page, 90000, seite(id) + (zeit ? "?bank=12" : ""), "load"); // auf der Karte die Bank der Leiste (H8)
             await sleep(1500);
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
@@ -446,12 +398,12 @@ async function gang() {
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
-            // H4 + H8: die Kosten-Leiste je Stufe (Stufe, gezählt, Deckel der Welt-Zeile, gezeichnet) — gelesen, sobald jede Zeile
-            // ihre gezeichnete Zahl trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot `waitFor`): ein Hänger
-            // endet an der Frist des Browsers, die Stall-Akte nennt die Seite
+            // H4 + H8: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen, sobald jede
+            // Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot
+            // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
             const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
-            if (STUDIOS.includes(id) && id !== "klang") {
-                await waitFor(page, `(${zeilen})().every((k) => k.gezeichnet)`, `${id}: jede Zeile der Kosten-Leiste mit ihrer gezeichneten Zahl`);
+            if (STUDIOS.includes(id)) {
+                await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`);
                 z.kosten = await page.evaluate(zeilen);
             }
             if (STUDIOS.includes(id)) {
@@ -539,7 +491,7 @@ async function panoramaBacken(nur) {
         for (const id of [...STUDIOS, ...NEBENWELTEN]) {
             if (OHNE_PANORAMA[id] || (nur && !nur.includes(id))) continue;
             const t0 = Date.now();
-            const reift = id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 4000;
+            const reift = ["koerperstudio", "fachwerk", "terrain"].includes(id) ? 9000 : 4000;
             try {
                 const P = await page.evaluate(
                     (url, reift, frist) =>
