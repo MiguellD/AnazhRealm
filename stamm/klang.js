@@ -265,20 +265,16 @@ class AnazhRealm_klang {
         }
         // DER BRAND (stoffe.K2#2) knistert aus demselben Zustand, aus dem er leuchtet: die nächste glühende Zelle des Felds (der
         // Abstand zu ihrer Fläche, 0 in ihr), ihre Brenn-Fläche die Zelle × Glut (`brandFeld`, `_tickBrand`)
-        const bf = this.state.brandFeld;
-        if (bf && bf.size) {
-            const cs = AnazhRealm.LIFE_FIELD.cell;
-            for (const b of bf.values()) {
-                if (!(b.glut > 0)) continue;
-                const [x0, z0] = [b.cx * cs, b.cz * cs];
-                const d = Math.hypot(Math.max(x0 - px, 0, px - x0 - cs), Math.max(z0 - pz, 0, pz - z0 - cs));
-                if (d < glut.d) {
-                    glut.d = d;
-                    glut.flaeche = cs * cs * b.glut;
-                    glut.pan = pan(x0 + cs / 2 - px, z0 + cs / 2 - pz);
-                }
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        this._brandGlutUm(px, pz, AnazhRealm.BRAND.hoerM, (b) => {
+            const [x0, z0] = [b.cx * cs, b.cz * cs];
+            const d = Math.hypot(Math.max(x0 - px, 0, px - x0 - cs), Math.max(z0 - pz, 0, pz - z0 - cs));
+            if (d < glut.d) {
+                glut.d = d;
+                glut.flaeche = cs * cs * b.glut;
+                glut.pan = pan(x0 + cs / 2 - px, z0 + cs / 2 - pz);
             }
-        }
+        });
         return glut;
     }
 

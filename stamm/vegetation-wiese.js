@@ -1219,9 +1219,10 @@ class AnazhRealm_vegetation_wiese {
     // Unterschied der Orte; was Orte trennt, ist das Kronendach. Bis stoffe.K5 heilte jede Narbe nach dem gefrorenen Rauschen
     // `lebendig` (`worldFieldAt`) — ein Zeitgeber mit Ort-Gewicht ohne Wasser und Licht (Mess-Wiese: an den Bäumen F 0, L 0,43).
     // DER NÄHRSTOFF (stoffe.K5#2) ist der dritte Faktor: Monod — f(N) = N·(1 + K) / (N + K), 1 auf dem eigenen Grund.
-    _wuchsAt(x, z) {
+    // `feuchte` (optional): die Feuchte des Orts, wo der Rufer sie schon trägt (die Asche: das Bett des Brands).
+    _wuchsAt(x, z, feuchte) {
         const W = AnazhRealm.WUCHS;
-        const wasser = W.wasserBasis + (1 - W.wasserBasis) * this._feuchteAt(x, z);
+        const wasser = W.wasserBasis + (1 - W.wasserBasis) * (Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z));
         const N = this._naehrstoffAt(x, z);
         return ((wasser * N * (1 + W.naehrK)) / (N + W.naehrK)) * this._bodenLichtFeld(x, z, x, z)(x, z);
     }

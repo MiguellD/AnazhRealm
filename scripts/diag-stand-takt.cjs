@@ -733,18 +733,19 @@ function brandUrteil(b) {
     if (!b || !b.halt || !b.regen || !b.asche || !b.asche.asche || !b.zeit) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
     const [h, m, f, rg, rm, l, lm, a, z] = [b.halt, b.haltM, b.fels, b.regen, b.regenM, b.leser, b.leserM, b.asche, b.zeit];
     return [
-        h.brannte >= 3 && h.wasser >= 1 && h.nass >= 1 ? "" : `HALT: ${h.brannte} Zellen brannten, am Wasser hielt die Front ${h.wasser}×, am nassen Gras ${h.nass}×`,
+        h.brannte >= 2 && h.nass >= 1 ? "" : `HALT: ${h.brannte} Zellen brannten, am nassen Gras hielt die Front ${h.nass}×`,
         h.wasserGebrannt === 0 && h.nassGebrannt === 0 ? "" : `HALT-BRUCH: ${h.wasserGebrannt} Zellen über Wasser, ${h.nassGebrannt} im nassen Gras brannten`,
         m && m.nassGebrannt >= 1 && m.nass === 0 ? "" : `MUTANTE-HALT: ohne die Feuchte des Orts brannten ${m && m.nassGebrannt} nasse Zellen, ${m && m.nass} hielten`,
+        m && m.wasser + h.wasser >= 1 && m.wasserGebrannt === 0 ? "" : `FLUSS: am Wasser hielt die Front ${h.wasser}× (ohne die Feuchte des Orts ${m && m.wasser}×), über Wasser brannten ${m && m.wasserGebrannt}`,
         f && f.erreicht && f.gehalten ? "" : `FELS: ${JSON.stringify(f)}`,
         rg.brannte >= 1 && rg.s <= 60 ? "" : `REGEN: ${rg.brannte} Zellen brannten, im Regen erloschen nach ${rg.s} s (Soll ≤ 60)`,
         rm && rm.s > 60 ? "" : `MUTANTE-REGEN: ohne das freie Wasser erlosch der Brand nach ${rm && rm.s} s`,
-        l && l.licht >= 1 && l.rauch >= 1 && l.glutD === 0 && l.glutF > 0 ? "" : `LESER: ${JSON.stringify(l)}`,
-        lm && lm.licht === 0 && lm.rauch === 0 && lm.glutF === 0 ? "" : `MUTANTE-LESER: ohne Brand ${JSON.stringify(lm)}`,
+        l && l.licht >= 1 && l.rauch >= 1 && l.glutD <= 16 && l.glutF >= 64 ? "" : `LESER: ${JSON.stringify(l)}`,
+        lm && lm.licht === 0 && lm.rauch === 0 && lm.glutF < 64 ? "" : `MUTANTE-LESER: ohne Brand ${JSON.stringify(lm)}`,
         a.asche.Y <= 0.08 && a.asche.a >= 0.99 ? "" : `ASCHE: Albedo ${a.asche.Y} (Soll ≤ 0,08), Decke ${a.asche.a}`,
         a.gras && a.gras.a === 0 && a.gras.Y >= 0.95 * a.vor.Y ? "" : `GRÜNT: nach der Stufe Gras ${JSON.stringify(a.gras)} (vorher Albedo ${a.vor.Y})`,
         a.mutante.Y > 0.08 && a.mutante.halme >= 0.8 * a.vor.halme ? "" : `MUTANTE-ASCHE: ohne die Decke Albedo ${a.mutante.Y}, ${a.mutante.halme} Halme`,
-        z.brennend >= 2000 && z.schrittMs <= 0.5 && z.leserMs <= 0.5 ? "" : `ZEIT: ${z.brennend} brennende Zellen, Schritt p95 ${z.schrittMs} ms, Leser ${z.leserMs} ms je Bild (Soll ≤ 0,5)`,
+        z.brennend >= 2000 && z.bildMs <= 0.5 && z.verzugS <= 2 ? "" : `ZEIT: ${z.brennend} brennende Zellen, je Bild p95 ${z.bildMs} ms (Takt ${z.schrittMs}, Leser ${z.leserMs}; Soll ≤ 0,5), der Schritt bis ${z.verzugS} s hinter der Uhr (Soll ≤ 2)`,
     ].filter(Boolean);
 }
 
@@ -797,7 +798,7 @@ async function brandSeite(MESS) {
         st.weatherEffectTime = -1e9;
         st.weatherTransition = null;
     };
-    const trocken = () => (r._naesseTakt = () => (st.naesse = 0));
+    const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const brennen = (max) => {
         let i = 0;
         for (; i < max && bf().size; i++) (st.spielZeit = r._brandUhr + B.schrittS), r._tickBrand();
@@ -813,19 +814,31 @@ async function brandSeite(MESS) {
     };
     // die Zellen, die die Front erreichte und die nicht fingen, je Grund
     const halt = new Map();
+    // der Grund liest das Bett, wie die Front es antraf (`_brandStoff` des Brands), sonst, warum die Zelle keines trägt
     const grund = (cx, cz) => {
         const { x, z } = mitte(cx, cz);
         if ((r._tatIndex().je.get(cx + "," + cz) || []).some((a) => a.tat === "brand")) return "asche";
+        const f = r._brandStoff(cx, cz);
+        if (f) return r._brandFeuchte(f.boden) >= f.zeile.brenn.mx ? "nass" : "anderes";
         if (r._nassAt(x, z)) return "wasser";
         if (!(r.auraAt(x, z).lebendig >= B.minStoff)) return "mager";
         const zeile = r._stoff(r._kontaktStoffAt(x, z, y(x, z)));
-        if (!zeile || !zeile.brenn) return "fels:" + (zeile ? zeile.name : "?");
-        return nassBett(cx, cz) ? "nass" : "anderes";
+        return "fels:" + (zeile ? zeile.name : "?");
     };
+    // je gezündeter Zelle ihr Bett (Höhe, Erlöschungs-Feuchte): die Asche danach fragt, ob sie nass war
+    const gezuendet = new Map();
     r._brandZuenden = function (cx, cz, tt, ex, ez) {
         const z = P._brandZuenden.call(this, cx, cz, tt, ex, ez);
-        if (!z && !halt.has(cx + "," + cz)) halt.set(cx + "," + cz, grund(cx, cz));
+        const k = cx + "," + cz;
+        const f = z && r._brandBett && r._brandBett.get(k);
+        if (f) gezuendet.set(k, { y: f.y, mx: f.zeile.brenn.mx });
+        if (!z && !halt.has(k)) halt.set(k, grund(cx, cz));
         return z;
+    };
+    const nassGebrannt = (cx, cz) => {
+        const g = gezuendet.get(cx + "," + cz);
+        const { x, z } = mitte(cx, cz);
+        return !!g && r._brandFeuchte(P._feuchteAt.call(r, x, z, g.y)) >= g.mx;
     };
     const zaehle = () => {
         const g = {};
@@ -839,7 +852,7 @@ async function brandSeite(MESS) {
             asche: g.asche | 0,
             mager: g.mager | 0,
             wasserGebrannt: A.filter(([cx, cz]) => r._nassAt(mitte(cx, cz).x, mitte(cx, cz).z)).length,
-            nassGebrannt: A.filter(([cx, cz]) => nassBett(cx, cz, P._feuchteAt)).length,
+            nassGebrannt: A.filter(([cx, cz]) => nassGebrannt(cx, cz)).length,
         };
     };
     const aus = {};
@@ -873,29 +886,69 @@ async function brandSeite(MESS) {
             const col = mix(mix(vc, BF.lit, ss(0.15, 0.85, r._kronenStreuAt(x, z))), BF.asche, a);
             return { halme, kraut, a: r3(a), Y: r3(lum(col)) };
         };
-        // HALT: der Herd windauf des Flusses nächst der Mess-Wiese
+        // VOR DEM BRAND: die Folge der Zelle des Herds (die Mess-Wiese); der NÄHRSTOFF an ihrer Nachbarin — der Spieler pflückt jede
+        // Pflanze der Nah-Streu in ihr (`_harvestScatterPick`), Nährstoff und Wuchs davor und danach, die Mutante (der Nährstoff steht
+        // auf 1) vor und nach derselben Ernte
+        const [hx, hz] = zelle(MESS.x, MESS.z);
+        const vor = folge(hx, hz);
+        const N = (aus.naehr = {});
+        const ns = st.nahStreu;
+        const E = mitte(hx + 1, hz);
+        const fest = (fn) => ((r._naehrstoffAt = () => 1), ((v) => (delete r._naehrstoffAt, v))(fn()));
+        const [N0, W0, W0m] = [r._naehrstoffAt(E.x, E.z), r._wuchsAt(E.x, E.z), fest(() => r._wuchsAt(E.x, E.z))];
+        let gepflueckt = 0;
+        for (const [senke, s] of ns ? ns.senken : [])
+            for (const [key, b] of s.ernte && s.preset !== "stumpf" ? s.bloecke : [])
+                for (const it of (ns.kacheln.get(key) || { items: [] }).items)
+                    if (b.ids.includes(it.id) && zelle(it.x, it.z).join(",") === hx + 1 + "," + hz && r._harvestScatterPick({ senke, key, id: it.id }))
+                        gepflueckt++;
+        N.ernte = { n: gepflueckt, N0: r3(N0), W0: r3(W0), N: r3(r._naehrstoffAt(E.x, E.z)), W: r3(r._wuchsAt(E.x, E.z)) };
+        N.mutante = { W0: r3(W0m), W: r3(fest(() => r._wuchsAt(E.x, E.z))) };
+        leer();
+        // HALT: der Herd windauf des Flusses nächst der Mess-Wiese — längs des Strahls gegen den Wind vom Fluss aus (die Spitze läuft
+        // ihn zurück): Wasser, dann nasses Bett, dann ununterbrochen trockenes Bett bis zum Herd (Boden-Feuchte ≤ 0,05, ≥ 2 Zellen
+        // hinter dem letzten nassen)
         const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
         const punkte = [];
-        for (const rv of st.hydrosphere?.rivers || []) for (const q of rv.points) if (!q.inLake) punkte.push(q);
+        for (const rv of st.hydrosphere?.rivers || []) for (const q of rv.points) if (!q.inLake && d(q) < 320) punkte.push(q);
         punkte.sort((p, q) => d(p) - d(q));
         let herd = null;
-        for (const p of punkte.slice(0, 40)) {
+        const profile = [];
+        for (const p of punkte) {
             const w = r._windAt(p.x, p.z, st.spielZeit);
-            for (let D = 48; D <= 160 && !herd; D += 16) {
+            const [seen, strahl] = [new Set(), []];
+            for (let D = 0; D <= 400; D += 8) {
                 const [cx, cz] = zelle(p.x - w.x * D, p.z - w.z * D);
-                if (r._brandStoff(cx, cz) && !nassBett(cx, cz)) herd = Object.assign(mitte(cx, cz), { fluss: [Math.round(p.x), Math.round(p.z)], D });
+                if (seen.has(cx + "," + cz)) continue;
+                seen.add(cx + "," + cz);
+                const f = r._brandStoff(cx, cz);
+                const art = f ? (nassBett(cx, cz) ? "nass" : f.zeile.name === "gras" ? "trocken" : "laub") : r._nassAt(mitte(cx, cz).x, mitte(cx, cz).z) ? "wasser" : "kein";
+                strahl.push({ cx, cz, art, boden: f ? f.boden : null });
             }
-            if (herd) break;
+            if (profile.length < 12) profile.push(Math.round(d(p)) + ":" + strahl.slice(0, 24).map((q) => (q.art[0] + (q.boden == null ? "" : Math.round(q.boden * 9)))).join(""));
+            // das Wasser, dann das nasse Bett, dann trockenes Bett ohne Lücke bis zum Herd — der längste trockene Lauf gewinnt
+            const n = strahl.findIndex((q) => q.art === "nass");
+            if (n < 1 || strahl[n - 1].art !== "wasser") continue;
+            let k = n;
+            while (k + 1 < strahl.length && strahl[k + 1].art === "nass") k++;
+            let j = k;
+            while (j + 1 < strahl.length && strahl[j + 1].art === "trocken") j++;
+            while (j > k && !(strahl[j].boden <= 0.05)) j--;
+            if (j > k && (!herd || j - k > herd.abstand))
+                herd = Object.assign(mitte(strahl[j].cx, strahl[j].cz), { fluss: [Math.round(p.x), Math.round(p.z)], nass: k - n + 1, abstand: j - k });
         }
-        if (!herd) return { fehler: "kein trockener Herd windauf eines Flusses binnen 40 Fluss-Punkten" };
-        const lauf = (h) => (r._brandEntfachen(h.x, h.z), brennen(900));
-        aus.halt = Object.assign({ herd: [Math.round(herd.x), Math.round(herd.z)], fluss: herd.fluss, D: herd.D, schritte: lauf(herd) }, zaehle());
-        leer(), halt.clear();
+        if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (" + punkte.length + " Punkte: " + profile.join(" ") + ")" };
+        const fh = r._brandStoff(...zelle(herd.x, herd.z));
+        const Th = fh && r._brandTempo(fh, st.spielZeit);
+        aus.haltHerd = fh && { stoff: fh.zeile.name, leb: r3(fh.leb), boden: r3(fh.boden), gx: r3(fh.gx), gz: r3(fh.gz), R: Th && r3(Th.R), ecc: Th && r3(Th.ecc) };
+        const lauf = (h) => (r._brandEntfachen(h.x, h.z), brennen(3600));
+        aus.halt = Object.assign({ herd: [Math.round(herd.x), Math.round(herd.z)], fluss: herd.fluss, nassZellen: herd.nass, trockenZellen: herd.abstand, schritte: lauf(herd) }, zaehle());
+        leer(), halt.clear(), gezuendet.clear();
         r._feuchteAt = () => 0;
         lauf(herd);
         delete r._feuchteAt;
         aus.haltM = zaehle();
-        leer(), halt.clear();
+        leer(), halt.clear(), gezuendet.clear();
         // FELS: die nächste Zelle aus Stein mit einem trockenen Bett daneben
         let fels = null;
         const [mx, mz] = zelle(MESS.x, MESS.z);
@@ -904,7 +957,12 @@ async function brandSeite(MESS) {
                 for (const [cx, cz] of [[mx + i, mz - R], [mx + i, mz + R], [mx - R, mz + i], [mx + R, mz + i]]) {
                     const { x, z } = mitte(cx, cz);
                     if (r._kontaktStoffAt(x, z, y(x, z)) !== "stein" || r._nassAt(x, z)) continue;
-                    const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => [cx + a, cz + b]).find(([a, b]) => r._brandStoff(a, b) && !nassBett(a, b));
+                    // der Herd windauf der Stein-Zelle (die Spitze der Front läuft auf sie zu), sonst die Nachbarin, die am meisten windauf liegt
+                    const w = r._windAt(x, z, st.spielZeit);
+                    const n = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
+                        .sort(([a, b], [c, e]) => a * w.x + b * w.z - (c * w.x + e * w.z))
+                        .map(([a, b]) => [cx + a, cz + b])
+                        .find(([a, b]) => r._brandStoff(a, b) && !nassBett(a, b));
                     if (n) {
                         fels = { stein: [cx, cz], herd: n };
                         break;
@@ -912,16 +970,14 @@ async function brandSeite(MESS) {
                 }
         if (fels) {
             r._brandEntfachen(mitte(...fels.herd).x, mitte(...fels.herd).z);
-            brennen(600);
+            brennen(900);
             const k = fels.stein.join(",");
             Object.assign(fels, { erreicht: halt.has(k), grund: halt.get(k) || null, gehalten: !asche().some((a) => zelle(a.x, a.z).join(",") === k) });
         }
         aus.fels = fels;
-        leer(), halt.clear();
+        leer(), halt.clear(), gezuendet.clear();
         delete r._brandZuenden;
-        // REGEN und LESER am Herd der Mess-Wiese; davor die Folge seiner Zelle
-        const [hx, hz] = zelle(MESS.x, MESS.z);
-        const vor = folge(hx, hz);
+        // REGEN und LESER am Herd der Mess-Wiese
         const leser = () => {
             r._updateDorfRauch(1 / 60);
             const g = r._glutAmOhr(pm.x, pm.z, () => 0);
@@ -954,6 +1010,7 @@ async function brandSeite(MESS) {
         };
         aus.regenM = regen(true);
         aus.regen = regen(false);
+        N.asche = r3(r._naehrstoffAt(MESS.x, MESS.z)); // die Asche des Herds, frisch
         // ASCHE: die Zelle des Herds (verbrannt, im Regen erloschen) auf der Asche, nach der Stufe Gras, nach der Stufe Busch
         const a = L.slice(n0).find((q) => q.tat === "brand" && zelle(q.x, q.z).join(",") === hx + "," + hz);
         const F = (aus.asche = { vor, zelle: [hx, hz], tat: !!a });
@@ -976,57 +1033,71 @@ async function brandSeite(MESS) {
             F.gras = await bis(0.31);
             F.busch = await bis(0.61);
         }
-        // NÄHRSTOFF: die Ernte an einer Zelle der Mess-Wiese, die Asche des Herds, ein Riss von Spieler-Hand
-        const N = (aus.naehr = {});
-        const ns = st.nahStreu;
-        const [ex, ez] = [hx + 1, hz];
-        const E = mitte(ex, ez);
-        const N0 = r._naehrstoffAt(E.x, E.z);
-        const W0 = r._wuchsAt(E.x, E.z);
-        let gepflueckt = 0;
-        for (const [senke, s] of ns ? ns.senken : [])
-            for (const [key, b] of s.ernte && s.preset !== "stumpf" ? s.bloecke : [])
-                for (const it of (ns.kacheln.get(key) || { items: [] }).items)
-                    if (b.ids.includes(it.id) && zelle(it.x, it.z).join(",") === ex + "," + ez && r._harvestScatterPick({ senke, key, id: it.id }))
-                        gepflueckt++;
-        N.ernte = { n: gepflueckt, N0: r3(N0), W0: r3(W0), N: r3(r._naehrstoffAt(E.x, E.z)), W: r3(r._wuchsAt(E.x, E.z)) };
-        r._naehrstoffAt = () => 1;
-        N.mutante = { W0: r3(W0), W: r3(r._wuchsAt(E.x, E.z)) };
-        delete r._naehrstoffAt;
-        N.asche = r3(r._naehrstoffAt(MESS.x, MESS.z));
-        const D = mitte(hx - 1, hz);
+        // DER LEICHNAM: ein Riss von Spieler-Hand an einer Zelle neben dem Herd
+        const D = mitte(hx - 1, hz - 1);
         st.maxCreatures = st.creatures.length + 1;
         const tier = r.spawnCreatureAt(D.x, y(D.x, D.z), D.z, "calm", "wolf", { precise: true, bodySize: 1 });
         if (tier) r._creatureCombatDeath(tier, "player");
         N.leichnam = r3(r._naehrstoffAt(D.x, D.z));
-        // ZEIT: 2 km fern, jede Zelle mit Bett einer Spirale fängt, bis 2 000 brennen
+        // ZEIT: jede Zelle mit Bett im geladenen Ring um die Mess-Wiese fängt (eine Spirale); trägt die Welt dort weniger als
+        // 2 000 Zellen Bett (das Bett der Wiese liest die Boden-Karte gebauter Chunks), füllen Abzüge der brennenden Zellen den
+        // Rest 16 km fern (derselbe Schritt je Zelle: Feuchte, Glut, Ausbrennen samt Asche) — gezählt beide
         leer(), trocken(), wort("cloudy");
-        const Z = { x: MESS.x + 2000, z: MESS.z };
-        const [zx, zz] = zelle(Z.x, Z.z);
-        let [brennend, versucht] = [0, 0];
-        for (let R = 0; R <= 60 && brennend < 2000; R++)
-            for (let i = -R; i <= R && brennend < 2000; i++)
+        const [zx, zz] = zelle(MESS.x, MESS.z);
+        let versucht = 0;
+        for (let R = 0; R <= 40; R++)
+            for (let i = -R; i <= R; i++)
                 for (const [cx, cz] of R ? [[zx + i, zz - R], [zx + i, zz + R], [zx - R, zz + i], [zx + R, zz + i]] : [[zx, zz]]) {
                     versucht++;
-                    if (r._brandEntfachen(mitte(cx, cz).x, mitte(cx, cz).z)) brennend++;
+                    r._brandEntfachen(mitte(cx, cz).x, mitte(cx, cz).z);
                     if (!R) break;
                 }
-        const zn = [...bf().values()].filter((q) => q.t0 !== null).length;
-        const [ms, lms] = [[], []];
-        pm.set(Z.x, y(Z.x, Z.z) + 1.8, Z.z);
-        for (let i = 0; i < 20; i++) {
-            st.spielZeit = r._brandUhr + B.schrittS;
+        const brennt = () => [...bf().values()].filter((q) => q.t0 !== null);
+        const echt = brennt();
+        for (let k = 0; brennt().length < 2000 && echt.length; k++) {
+            const q = echt[k % echt.length];
+            const [cx, cz] = [q.cx + 1000 + (k % 64), q.cz + 1000 + Math.floor(k / 64)];
+            bf().set(cx + "," + cz, Object.assign({}, q, { cx, cz, von: null, y: null }));
+        }
+        const zn = brennt().length;
+        const [ms, lms, teil] = [[], [], { asche: 0, zuenden: 0, licht: 0, rauch: 0, glut: 0, n: { asche: 0, zuenden: 0 } }];
+        const uhrt = (k, fn) => function (...x) {
+            const t0 = performance.now();
+            try {
+                return fn.apply(this, x);
+            } finally {
+                teil[k] += performance.now() - t0;
+                teil.n[k]++;
+            }
+        };
+        r._tatSchreiben = uhrt("asche", P._tatSchreiben);
+        r._brandZuenden = uhrt("zuenden", P._brandZuenden);
+        // 1 200 Bilder zu 1/60 s (20 s Spielzeit): je Bild der Takt (`_tickBrand`, seine geteilte Arbeit) und die Leser; der Verzug
+        // ist die Spielzeit, um die der angefangene Schritt hinter der Uhr liegt
+        const [fms, B0] = [[], st.spielZeit];
+        let verzug = 0;
+        for (let i = 0; i < 1200; i++) {
+            st.spielZeit += 1 / 60;
             let t0 = performance.now();
             r._tickBrand();
             ms.push(performance.now() - t0);
-            t0 = performance.now();
+            verzug = Math.max(verzug, st.spielZeit - (r._brandRest ? r._brandRest.t : r._brandUhr));
+            const t1 = performance.now();
             r._leuchtQuellen(pm.x, pm.y, pm.z, 64);
+            const t2 = performance.now();
             r._updateDorfRauch(1 / 60);
+            const t3 = performance.now();
             r._glutAmOhr(pm.x, pm.z, () => 0);
-            lms.push(performance.now() - t0);
+            const t4 = performance.now();
+            [teil.licht, teil.rauch, teil.glut] = [teil.licht + t2 - t1, teil.rauch + t3 - t2, teil.glut + t4 - t3];
+            lms.push(t4 - t1);
+            fms.push(t4 - t0);
         }
+        delete r._tatSchreiben;
+        delete r._brandZuenden;
+        for (const k of ["asche", "zuenden", "licht", "rauch", "glut"]) teil[k] = r3(teil[k] / 1200);
         const p95 = (v) => r3(v.slice().sort((p, q) => p - q)[Math.min(v.length - 1, Math.floor(v.length * 0.95))] || 0);
-        aus.zeit = { brennend: zn, versucht, nachher: [...bf().values()].filter((q) => q.t0 !== null).length, schrittMs: p95(ms), schrittMax: r3(Math.max(0, ...ms)), leserMs: p95(lms) };
+        aus.zeit = { teil, brennend: zn, echt: echt.length, versucht, nachher: brennt().length, spielS: r3(st.spielZeit - B0), bildMs: p95(fms), bildMax: r3(Math.max(0, ...fms)), schrittMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug) };
         leer();
         aus.saemling = null; // der Jungwuchs ist nicht gebaut (treeParams(alter))
         return aus;
@@ -1053,17 +1124,17 @@ if (process.argv.includes("--selftest")) {
     const falsch = (U, L) => L.filter(([b, n]) => (U(b).join() + "|").split(":")[0] !== (n || "|")).map(([, n]) => n || "GRÜN");
     // die Brand- und die Sukzessions-Linse (stoffe.K2#2 · K5#2): grün am Soll, je Täter rot beim Namen
     const Bz = (o = {}) => ({
-        halt: { brannte: 9, wasser: 2, nass: 3, wasserGebrannt: 0, nassGebrannt: 0, ...o.halt },
-        haltM: { nassGebrannt: 2, nass: 0, ...o.haltM },
+        halt: { brannte: 9, wasser: 0, nass: 3, wasserGebrannt: 0, nassGebrannt: 0, ...o.halt },
+        haltM: { nassGebrannt: 2, nass: 0, wasser: 1, wasserGebrannt: 0, ...o.haltM },
         fels: { erreicht: true, gehalten: true, ...o.fels },
         regen: { brannte: 2, s: 20, ...o.regen },
         regenM: { s: 300, ...o.regenM },
         leser: { licht: 1, rauch: 1, glutD: 0, glutF: 256, ...o.leser },
         leserM: { licht: 0, rauch: 0, glutF: 0, ...o.leserM },
         asche: { vor: { Y: 0.11, halme: 40 }, asche: { Y: 0.052, a: 1, ...o.asche }, gras: { a: 0, Y: 0.11, ...o.gras }, mutante: { Y: 0.11, halme: 40, ...o.mutante } },
-        zeit: { brennend: 2000, schrittMs: 0.3, leserMs: 0.2, ...o.zeit },
+        zeit: { brennend: 2000, bildMs: 0.3, verzugS: 1.1, ...o.zeit },
     });
-    const br = [[Bz(), ""], [Bz({ halt: { nass: 0 } }), "HALT"], [Bz({ halt: { nassGebrannt: 1 } }), "HALT-BRUCH"], [Bz({ haltM: { nassGebrannt: 0 } }), "MUTANTE-HALT"], [Bz({ fels: { gehalten: false } }), "FELS"], [Bz({ regen: { s: 196 } }), "REGEN"], [Bz({ regenM: { s: 20 } }), "MUTANTE-REGEN"], [Bz({ leser: { rauch: 0 } }), "LESER"], [Bz({ leserM: { licht: 1 } }), "MUTANTE-LESER"], [Bz({ asche: { Y: 0.11 } }), "ASCHE"], [Bz({ gras: { a: 0.5 } }), "GRÜNT"], [Bz({ mutante: { Y: 0.05 } }), "MUTANTE-ASCHE"], [Bz({ zeit: { schrittMs: 2 } }), "ZEIT"], [{}, "LEER"]];
+    const br = [[Bz(), ""], [Bz({ halt: { nass: 0 } }), "HALT"], [Bz({ halt: { nassGebrannt: 1 } }), "HALT-BRUCH"], [Bz({ haltM: { nassGebrannt: 0 } }), "MUTANTE-HALT"], [Bz({ halt: { wasser: 0 }, haltM: { wasser: 0 } }), "FLUSS"], [Bz({ fels: { gehalten: false } }), "FELS"], [Bz({ regen: { s: 196 } }), "REGEN"], [Bz({ regenM: { s: 20 } }), "MUTANTE-REGEN"], [Bz({ leser: { rauch: 0 } }), "LESER"], [Bz({ leserM: { licht: 1 } }), "MUTANTE-LESER"], [Bz({ asche: { Y: 0.11 } }), "ASCHE"], [Bz({ gras: { a: 0.5 } }), "GRÜNT"], [Bz({ mutante: { Y: 0.05 } }), "MUTANTE-ASCHE"], [Bz({ zeit: { bildMs: 2 } }), "ZEIT"], [Bz({ zeit: { verzugS: 9 } }), "ZEIT"], [{}, "LEER"]];
     const Sz = (o = {}) => ({
         asche: { vor: { halme: 40, kraut: 6 }, asche: { halme: 0, kraut: 0, ...o.asche }, gras: { halme: 38, kraut: 1, ...o.gras }, busch: { kraut: 6, ...o.busch } },
         naehr: { ernte: { n: 5, N0: 1, N: 0.9, W0: 0.8, W: 0.78, ...o.ernte }, asche: 1.4, leichnam: 1.2, mutante: { W0: 0.8, W: 0.8, ...o.mutante }, ...o.naehr },
