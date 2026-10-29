@@ -137,7 +137,7 @@ function atem() {
         const aus = { blind: null };
         const baeume = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
         const lu = st.lodUniforms;
-        const spiegel = /uLodPerf\.value\s*=\s*this\._lodPerfMul\(\)/.test(
+        const spiegel = /uLodPerf\.value\s*=\s*this\._ankunftsFerne\(\)/.test(
             Function.prototype.toString.call(P._loopRender)
         );
         if (!baeume) aus.blind = "kein Baum der Stufen-Wahl in der Welt";
@@ -146,7 +146,7 @@ function atem() {
             aus.blind = "keine Blende (uLodMaskOn)";
         else if (!spiegel)
             aus.blind =
-                "`_loopRender` spiegelt `uLodPerf` nicht mehr aus `_lodPerfMul()` — die Linse ahmte einen toten Weg nach";
+                "`_loopRender` spiegelt `uLodPerf` nicht mehr aus `_ankunftsFerne()` — die Linse ahmte einen toten Weg nach";
         if (aus.blind) return aus;
         // die Zähler (Hüllen auf dem Prototyp, nach dem Lauf zurück)
         const Z = { f: {} };
@@ -214,7 +214,7 @@ function atem() {
                     if (stoss)
                         st._foliageDensityScale = Math.max(0.22, Math.min(1, st._foliageDensityScale + 0.012 * schub));
                     const wechsel = !Object.is(st._foliageDensityScale, fd0);
-                    lu.uLodPerf.value = r._lodPerfMul(); // wie `_loopRender` (der Spiegel ist oben geprüft)
+                    lu.uLodPerf.value = r._ankunftsFerne(); // wie `_loopRender` (der Spiegel ist oben geprüft)
                     r._runFrameScheduler(pm);
                     kam.updateMatrixWorld(true);
                     const g0 = lageGen();
