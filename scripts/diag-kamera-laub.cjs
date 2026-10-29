@@ -283,19 +283,23 @@ function leibInstall(cfg) {
             await sleep(ms || 30);
         }
     };
-    L.steht = async (ms) => {
+    // das Weltbild steht — mit `ankunft` auch die Bilder der Ankunft (`_weltOffen().ankunft`, B2): die Linse taktet ohne
+    // Animations-Schleife unter der GPU-Leine, ihre Welt zeichnet nur hier; ohne die Ankunft maß sie jeden Bau in seiner
+    // Grobstufe (seit lod.K5 wählt das Haus nach `_ankunftsFerne` wie das Tor; swiftshader 29.10.: nach 4 400 Takten Ferne 43,5,
+    // das Haus des Gangs auf L2 ohne Flügel, der Schmuggel blind)
+    L.steht = async (ms, ankunft) => {
         let n = 0;
         for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
             await L.tick(5, 40);
             n++;
-            if (n >= 4 && !r._weltbildFehlt(true).length) break;
+            if (n >= 4 && !r._weltbildFehlt(true).length && !(ankunft && r._weltOffen().ankunft)) break;
         }
         return r._weltbildFehlt(true);
     };
     // der Spieler an (x, z), bis das Weltbild dort steht; zurück, was noch fehlt
-    L.hin = (x, z, ms) => {
+    L.hin = (x, z, ms, ankunft) => {
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-        return L.steht(ms);
+        return L.steht(ms, ankunft);
     };
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
     L.sichtbar = (x, z) => {
@@ -456,7 +460,7 @@ async function leibWiese(arg) {
     const out = { fuss: { posen: [] }, ritt: { posen: [] } };
     try {
         await r._foundryAwaitBook(45000);
-        out.fehlt = await L.hin(arg.x, arg.z, 60000);
+        out.fehlt = await L.hin(arg.x, arg.z, 60000, true); // die Häuser der Wiese und der Gang (K4) messen die angekommene Welt
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],
