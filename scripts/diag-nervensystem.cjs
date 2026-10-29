@@ -22,6 +22,7 @@ const { statikServer,
     hauptLauf,
     sleep,
     wandEnde,
+    klickInRuhe,
 } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 const fs = require("fs");
@@ -173,21 +174,18 @@ hauptLauf(async () => {
         };
         return [c.map((v) => +v.toFixed(4)), e];
     });
-    // der Weg des Spielers: B, die Suche, der Meilenstein, „Fertigen", F
-    const klick = async (sel) => {
-        await (await page.waitForSelector(sel, { visible: true })).click();
-    };
+    // der Weg des Spielers: B, die Suche, der Meilenstein, „Fertigen", F — jeder Klick am Pixel, wenn die Schublade ruht
     try {
         await page.keyboard.press("KeyB");
-        await klick("#workshop-search");
-        await klick('#workshop-list .workshop-list-row[data-blueprint="stele_meilenstein"]');
+        await klickInRuhe(page, "#workshop-search");
+        await klickInRuhe(page, '#workshop-list .workshop-list-row[data-blueprint="stele_meilenstein"]');
         const leiste = () => {
             const z = [...document.querySelectorAll("#workshop-recipe-panel .h-kosten-zeile")];
             const t = z.map((x) => ({ klasse: x.className.split(" ").pop(), ...x.dataset }));
             return t.length && t.every((x) => x.leiste) && t;
         };
         e.kosten = await (await page.waitForFunction(leiste, { timeout: 60000 })).jsonValue();
-        await klick("#workshop-action-zone .workshop-fertigen");
+        await klickInRuhe(page, "#workshop-action-zone .workshop-fertigen");
         await page.keyboard.press("KeyF");
         // steht er vor dem Spieler, tritt der Spieler 4 · 25 · 50 m zurück: L0 · L1 · L2
         Object.assign(

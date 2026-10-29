@@ -7,7 +7,7 @@
 // (Welt, Regel, Bauplan) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork mit Kette
 // (`--bibliothek` endet nach (L), ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, klickInRuhe } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -387,10 +387,9 @@ hauptLauf(async () => {
     const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
     await welt(pageB, B_ART);
     page.on("dialog", (d) => d.accept()); // die souveräne Geste des Senders (window.confirm)
-    // die Geste in echten Klicks, bis der Code in der Zeile steht
+    // die Geste in echten Klicks, bis der Code in der Zeile steht — jeder am Pixel, wenn die Schublade ruht
     let uhr = Date.now();
-    for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', 'button[data-teilen="werk"]'])
-        await (await page.waitForSelector(s, { visible: true })).click();
+    for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', 'button[data-teilen="werk"]']) await klickInRuhe(page, s);
     await page.waitForFunction(() => document.querySelector('code[data-teilen="werk"]').textContent);
     const msA = Date.now() - uhr;
     const a = await page.evaluate(async () => {
@@ -464,8 +463,7 @@ hauptLauf(async () => {
     // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
     await page.waitForFunction(() => anazhRealm.state.p2p.connected);
     uhr = Date.now();
-    await (await page.waitForSelector('[data-tab="bibliothek"]')).click();
-    await page.$eval('button[data-teilen="welt"]', (k) => k.click()); // die Lade gleitet noch: der Knopf am DOM, nie am Pixel
+    for (const s of ['[data-tab="bibliothek"]', 'button[data-teilen="welt"]']) await klickInRuhe(page, s);
     await page.waitForFunction(() => document.querySelector('code[data-teilen="welt"]').textContent);
     const msW = Date.now() - uhr;
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)

@@ -173,11 +173,25 @@ function png(u8, W, H) {
     cv.getContext("2d").putImageData(new ImageData(d, W, H), 0, 0);
     return cv.toDataURL("image/png");
 }
+// DIE UI RUHT (`await window.__ruht()`): jede endliche Animation, die läuft (die Schublade gleitet 0,32 s), meldet ihr Ende
+// (`finished`) — ohne Frist und ohne Pause, das Ereignis urteilt, nie die Uhr.
+async function ruht(l) {
+    while ((l = document.getAnimations().filter((a) => a.playState === "running" && a.effect.getComputedTiming().iterations !== Infinity)).length)
+        await Promise.allSettled(l.map((a) => a.finished));
+}
+// DER EINE KLICK AM PIXEL (`await klickInRuhe(page, sel)`): das Ziel sichtbar, die UI ruht, dann die Maus. Puppeteer rechnet den
+// Punkt, ehe die Seite trifft — gleitet die Schublade dazwischen ein Bild weiter, trifft er den Nachbarn (29.10.: der GT-Klick der
+// Prägungs-Probe traf in der Werkstatt-Liste das Tor daneben, CI-Lauf 40850577623).
+async function klickInRuhe(page, sel) {
+    const el = await page.waitForSelector(sel, { visible: true });
+    await page.evaluate(() => window.__ruht());
+    await el.click();
+}
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__ruht = ${ruht}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1199,7 +1213,8 @@ async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {
 }
 
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
-// (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`; der REST
+// (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`, ein Klick am Pixel
+// direkt aus `waitForSelector` (die Schublade gleitet noch — das EINE Klicken ist `klickInRuhe`); der REST
 // (spec/ci/frist-rest.json) schrumpft nur.
 const BAU = /^(instanced|mesh|instSlots|_hausHuelle)$/;
 const hat = (x, f) => {
@@ -1250,6 +1265,15 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
             ) {
                 const s = schleifen.filter((l) => l.body.start <= n.start && n.end <= l.body.end).pop();
                 if (s) fristen.add(s);
+            } else if (
+                n.type === "CallExpression" &&
+                n.callee.property &&
+                n.callee.property.name === "click" &&
+                hat(n.callee.object, (c) => c.property && c.property.name === "waitForSelector")
+            ) {
+                errs.push(
+                    `Warte-Wand: ${name}:${zeileVon(src, n.start)} klickt am Pixel, ehe die UI ruht — das EINE Klicken ist \`klickInRuhe\``
+                );
             } else if (n.type === "CallExpression" && n.callee.property && n.callee.property.name === "catch") {
                 const w = n.callee.object;
                 const o =
@@ -1307,6 +1331,7 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
+    klickInRuhe,
     halteBis,
     buehne,
     uferStellen,

@@ -1193,14 +1193,10 @@ function wegHelfer(arg) {
 // ── L-WERKSTATT, der Spieler (Node): jeder Schritt ein echtes Ereignis (page.keyboard / page.mouse); ein Ziel außerhalb der
 // Liste erreicht das Mausrad über ihr, je Raste 100 px und eine Eingabe. ──
 const bauWeg = (page, fn, ...a) => page.evaluate((f, ...x) => window.__bauWeg[f](...x), fn, ...a);
-// nach der Taste urteilt das Ereignis, nie die Uhr: jede endliche Animation, die sie auslöste (die Schublade gleitet 0,32 s),
-// meldet ihr Ende (`finished`) — ohne Frist und ohne Pause (der Hörer der Taste lief, wenn `press` zurückkehrt). Bis 25.10.
-// pollte sie am Bild-Takt mit 30 s Frist: stand der Compositor, riss sie (Lauf 40146641739).
-const ruht = async (l) => {
-    while ((l = document.getAnimations().filter((a) => a.playState === "running" && a.effect.getComputedTiming().iterations !== Infinity)).length)
-        await Promise.allSettled(l.map((a) => a.finished));
-};
-const taste = async (page, code) => (await page.keyboard.press(code), page.evaluate(ruht));
+// nach der Taste urteilt das Ereignis, nie die Uhr: jede endliche Animation, die sie auslöste, meldet ihr Ende (`__ruht`, welt-boot;
+// der Hörer der Taste lief, wenn `press` zurückkehrt). Bis 25.10. pollte sie am Bild-Takt mit 30 s Frist: stand der Compositor,
+// riss sie (Lauf 40146641739).
+const taste = async (page, code) => (await page.keyboard.press(code), page.evaluate(() => window.__ruht()));
 // eine Raste des Rads (präzise Pixel, ohne Gleiten) ist gelandet, wenn der Schnitt-Beobachter das Ziel im nächsten Bild misst
 // (`isIntersectingViewport`); ein Klick hat gewirkt, wenn `click` zurückkehrt (seine Hörer liefen)
 async function klicke(page, el, liste) {
