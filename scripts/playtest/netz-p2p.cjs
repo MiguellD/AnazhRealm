@@ -141,20 +141,13 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.state.p2p.enabled = false;
         r.p2pPersist();
 
-        // Handle-Message Pfade
+        // Handle-Message Pfade — welcome, peer-join, der Leib und der Knopf urteilt gate:mp-sync an zwei echten Seiten
+        // („beide kennen einander mit Gestalt über die Leitung", „Knopf aus/an"); ihre Mock-Zwillinge fielen mit ultiversum.K4
         r.state.p2p.peerId = "self-test";
         r.p2pHandleMessage(JSON.stringify({ type: "welcome", peers: ["peerA", "peerB"] }));
-        out.welcomeAddsPeers = r.state.p2p.peers.has("peerA") && r.state.p2p.peers.has("peerB");
-
-        r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "peerC" }));
-        out.peerJoinAddsPeer = r.state.p2p.peers.has("peerC");
-
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerA", x: 10, y: 5, z: 3, yaw: 1.5 }));
         const peerA = r.state.p2p.peers.get("peerA");
         out.posUpdatesPeer = peerA && peerA.x === 10 && peerA.y === 5 && peerA.z === 3 && peerA.yaw === 1.5;
-
-        // Mesh wird angelegt (THREE.Group als Avatar)
-        out.peerMeshSpawned = peerA && peerA.mesh && peerA.mesh.children && peerA.mesh.children.length === 2;
 
         // peer-leave entfernt peer + mesh aus scene
         const sceneSizeBefore = r.state.scene.children.length;
@@ -229,17 +222,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.uiUrlInputExists = !!document.getElementById("p2p-url");
         out.uiStatusExists = !!document.getElementById("p2p-status");
 
-        // Status-UI verkabelt: nach Toggle reagiert aria-pressed
-        const toggle = document.getElementById("p2p-toggle");
-        const before = toggle.getAttribute("aria-pressed");
-        toggle.click();
-        const after = toggle.getAttribute("aria-pressed");
-        out.toggleFlipsAriaPressed = before === "false" && after === "true";
-        // wieder ausschalten, damit kein WebSocket übrig bleibt
-        toggle.click();
-        r.state.p2p.enabled = false;
-        r.shutdownP2PSync();
-
         // Cleanup
         for (const pid of Array.from(r.state.p2p.peers.keys())) r._p2pRemovePeer(pid);
 
@@ -257,10 +239,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
         check("Ring 11 V1: zwei Generator-Aufrufe liefern unterschiedliche IDs", ring11Results.peerIdUnique);
         check("Ring 11 V1: persist + load liefert dieselbe url + enabled", ring11Results.persistRoundTrip);
-        check("Ring 11 V1: welcome-Nachricht legt alle Peers an", ring11Results.welcomeAddsPeers);
-        check("Ring 11 V1: peer-join Nachricht legt einzelnen Peer an", ring11Results.peerJoinAddsPeer);
         check("Ring 11 V1: pos-Nachricht aktualisiert peer-Position", ring11Results.posUpdatesPeer);
-        check("Ring 11 V1: neuer Peer bekommt Avatar-Mesh in der Szene", ring11Results.peerMeshSpawned);
         check("Ring 11 V1: peer-leave entfernt peer aus state.p2p.peers", ring11Results.peerLeaveRemoves);
         check("Ring 11 V1: peer-leave entfernt mesh aus der Szene", ring11Results.peerLeaveDisposesMesh);
         check("Ring 11 V1: eigene peerId wird in pos-Nachrichten ignoriert", ring11Results.ownPeerIgnored);
@@ -280,7 +259,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: CSP bleibt strict (default-src 'self')", ring11Results.cspKeepsSelf);
         check("Ring 11 V1: UI-URL-Input im DOM", ring11Results.uiUrlInputExists);
         check("Ring 11 V1: UI-Status-Anzeige im DOM", ring11Results.uiStatusExists);
-        check("Ring 11 V1: Toggle-Klick wechselt aria-pressed", ring11Results.toggleFlipsAriaPressed);
     }
 
     // ### WebRTC-Mesh (Compute-Sharing) ###
@@ -1591,7 +1569,6 @@ async function checkBandLateMultiUser(ctx) {
         const p2p = r.state.p2p;
         const grok = r.state.grok;
 
-
         // p2pSend mocken.
         const sent = [];
         const origSend = r.p2pSend;
@@ -1733,101 +1710,35 @@ async function checkBandLateMultiUser(ctx) {
     }
 
     // ### DSL-AST-Broadcast (Welt-Sync) ###
-    // human-dslRun broadcastet via p2pSend (enabled+connected); remote-dslRun (source="remote:*") läuft
-    // durch dslRun OHNE Re-Broadcast (sonst Endlos-Echo). So wirken voxel_carve/voxel_fill auf beiden
-    // Welten.
+    // Was zwischen ZWEI echten Seiten am echten Broker reist, urteilt gate:mp-sync: A's Spieler-Programm (Graben, Bau, Gesetz)
+    // erreicht B und wirkt dort byte-gleich, ein Echo (B sendet zurück, A wendet zweimal an) bricht den Abdruck (c)(e)(h) — die
+    // Mock-Zwillinge davon (human sendet, remote wirkt, kein Echo, Diskrimination, remote voxel_carve) fielen mit ultiversum.K4.
+    // Hier bleibt, was keine echte Seite zeigt: das Modell und der getrennte Client senden nie, die eigene peerId und ein
+    // kaputtes Programm fallen still.
     const ring11V2Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-
-        // p2pSend mocken, um zu prüfen WAS gesendet würde
         const sent = [];
         const origSend = r.p2pSend;
-        r.p2pSend = function (obj) {
-            sent.push(obj);
-            return true;
-        };
-
-        // p2p in "verbunden"-Zustand simulieren
-        r.state.p2p.enabled = true;
-        r.state.p2p.connected = true;
-        r.state.p2p.peerId = "self-test";
-
-        // 1) human-DSL → wird gebroadcastet
-        r.dslRun(["weather", "rainy"], { source: "human" });
-        out.humanBroadcasts = sent.some(
-            (m) => m.type === "dsl" && Array.isArray(m.program) && m.program[0] === "weather"
-        );
-
-        // 2) remote-DSL → wird NICHT re-gebroadcastet (Loop-Schutz)
-        const sentLenBefore = sent.length;
-        r.dslRun(["weather", "sunny"], { source: "remote:peerX" });
-        out.remoteDoesNotEcho = sent.length === sentLenBefore;
-
-        // 3) llm-DSL → wird NICHT gebroadcastet (V2-Scope: nur explizite human-Geste)
-        const sentLenBefore2 = sent.length;
+        r.p2pSend = (obj) => sent.push(obj);
+        Object.assign(r.state.p2p, { enabled: true, connected: true, peerId: "self-test" });
         r.dslRun(["weather", "rainy"], { source: "llm:grok" });
-        out.llmDoesNotBroadcast = sent.length === sentLenBefore2;
-
-        // 4) nicht-verbunden → kein Broadcast trotz human
+        out.llmDoesNotBroadcast = sent.length === 0;
         r.state.p2p.connected = false;
-        const sentLenBefore3 = sent.length;
         r.dslRun(["weather", "sunny"], { source: "human" });
-        out.disconnectedSkipsBroadcast = sent.length === sentLenBefore3;
-        r.state.p2p.connected = true;
-
-        // 5) eingehende dsl-Nachricht → läuft durch dslRun mit source="remote:*"
-        // Wir verifizieren via Welt-Effekt: weather wechselt
-        r.state.weather = "sunny";
-        r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerRemote", program: ["weather", "rainy"] }));
-        out.remoteDslAppliedLocally = r.state.weather === "rainy";
-
-        // 6) eingehende dsl mit eigener peerId wird ignoriert
+        out.disconnectedSkipsBroadcast = sent.length === 0;
         r.state.weather = "sunny";
         r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "self-test", program: ["weather", "rainy"] }));
         out.ownPeerDslIgnored = r.state.weather === "sunny";
-
-        // 7) eingehende dsl mit non-array program wird verworfen
-        let crashed = false;
         try {
             r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" }));
-        } catch (e) {
-            crashed = e.message;
+            out.nonArrayDslNoCrash = true;
+        } catch {
+            out.nonArrayDslNoCrash = false;
         }
-        out.nonArrayDslNoCrash = crashed === false;
-
-        // 8) Discrimination: zwei minimal verschiedene Programme produzieren
-        // unterschiedliche Welt-Zustände (echtes Sync, keine Stille)
-        r.state.weather = "sunny";
-        r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "rainy"] }));
-        const afterRainy = r.state.weather;
-        r.state.weather = "sunny";
-        r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: ["weather", "sunny"] }));
-        const afterSunny = r.state.weather;
-        out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
-
-        // 9) Remote voxel_carve → voxelEdits wachsen lokal: die Mod eines Mitspielers wirkt auf MEIN Feld.
-        if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
-        const editsBefore = r.state.worldMeta.voxelEdits.length;
-        const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-        r.p2pHandleMessage(
-            JSON.stringify({
-                type: "dsl",
-                peerId: "peerX",
-                program: ["voxel_carve", playerPos.x, playerPos.y - 1.5, playerPos.z, 3],
-            })
-        );
-        const editsAfter = r.state.worldMeta.voxelEdits.length;
-        out.remoteVoxelCarveGrowsEdits = editsAfter > editsBefore;
-
-        // Cleanup
         r.p2pSend = origSend;
-        r.state.p2p.enabled = false;
-        r.state.p2p.connected = false;
-        r.state.p2p.peerId = null;
-        r.state.worldMeta.voxelEdits = [];
-
+        Object.assign(r.state.p2p, { enabled: false, connected: false, peerId: null });
         return out;
     });
     if (!ring11V2Results || ring11V2Results.error) {
@@ -1837,27 +1748,13 @@ async function checkBandLateMultiUser(ctx) {
             (ring11V2Results && ring11V2Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 11 V2: human-DSL wird gebroadcastet", ring11V2Results.humanBroadcasts);
-        check("Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)", ring11V2Results.remoteDoesNotEcho);
         check(
             "Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)",
             ring11V2Results.llmDoesNotBroadcast
         );
         check("Ring 11 V2: nicht-verbundener Client broadcastet nicht", ring11V2Results.disconnectedSkipsBroadcast);
-        check(
-            "Ring 11 V2: eingehende dsl-Nachricht wird lokal ausgeführt (weather wechselt)",
-            ring11V2Results.remoteDslAppliedLocally
-        );
         check("Ring 11 V2: dsl mit eigener peerId wird ignoriert", ring11V2Results.ownPeerDslIgnored);
         check("Ring 11 V2: dsl mit non-array program crasht nicht", ring11V2Results.nonArrayDslNoCrash);
-        check(
-            "Ring 11 V2: Diskrimination — zwei verschiedene Programme → zwei verschiedene Welt-Zustände",
-            ring11V2Results.discriminationHolds
-        );
-        check(
-            "Ring 11 V2 + V9.36: Remote voxel_carve wächst lokale voxelEdits (Vision-Punkt — Welt-Mod synchron)",
-            ring11V2Results.remoteVoxelCarveGrowsEdits
-        );
     }
 
     // ### LAN-Fähigkeit + Sync-Korrektheit ###
@@ -2343,10 +2240,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("(NULL): Peer-Seele reist als Compound (meshKind 'soul-custom', YXZ)", v834Results.builtinMeshKind);
         check("Peer-Seele hat animierbare Parts (Flügel-Anker)", v834Results.builtinHasParts);
         check("Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
-        check(
-            "Soul-Wechsel baut den Peer-Avatar neu (→ Vierläufer + Schwanz-Rolle)",
-            v834Results.soulChangeRebuilt
-        );
+        check("Soul-Wechsel baut den Peer-Avatar neu (→ Vierläufer + Schwanz-Rolle)", v834Results.soulChangeRebuilt);
         check("Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
         check("Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
         check("(SYNERGIE): aura-Nachricht ist must-ignore (kein Aura-State)", v834Results.auraReceived);
@@ -2484,14 +2378,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
         check("Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
         check("Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
-        check(
-            "Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung",
-            v835Results.priorityBodyBeatsFood
-        );
-        check(
-            "_refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)",
-            v835Results.refreshEmergesSoul
-        );
+        check("Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung", v835Results.priorityBodyBeatsFood);
+        check("_refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)", v835Results.refreshEmergesSoul);
         check(
             "_refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)",
             v835Results.refreshEmergesFood
@@ -2794,10 +2682,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
         check("Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
         check("Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
-        check(
-            "Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
-            v838Results.connNotCountedAsPart
-        );
+        check("Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)", v838Results.connNotCountedAsPart);
         check("Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
     } else {
         check("Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
@@ -3060,6 +2945,10 @@ async function checkBandM8MakroFenster(ctx) {
 }
 
 module.exports = {
-    checkBandRing11AndW7Mesh, checkBandW16Distribution, checkBandLateMultiUser, checkBandV8SoulRoleAndWorkshop,
-    checkBandG8R1DampedChannel, checkBandM8MakroFenster,
+    checkBandRing11AndW7Mesh,
+    checkBandW16Distribution,
+    checkBandLateMultiUser,
+    checkBandV8SoulRoleAndWorkshop,
+    checkBandG8R1DampedChannel,
+    checkBandM8MakroFenster,
 };

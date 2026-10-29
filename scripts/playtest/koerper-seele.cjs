@@ -953,34 +953,14 @@ async function checkBandV1784AvatarFormFit(ctx) {
         const p = r.state.player;
         const out = {};
         const bodyParts = [
-            { shape: "box", material: "fleisch", position: { x: 0, y: 1.2, z: 0 }, size: { x: 0.9, y: 1.6, z: 0.5 } },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.95, y: 1.1, z: 0 },
-                size: { x: 0.3, y: 1.3, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.95, y: 1.1, z: 0 },
-                size: { x: 0.3, y: 1.3, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.4, y: 0, z: 0 },
-                size: { x: 0.35, y: 1.2, z: 0.35 },
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.4, y: 0, z: 0 },
-                size: { x: 0.35, y: 1.2, z: 0.35 },
-            },
+            __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
+            __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
+            __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
+            __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
         ];
         const blobParts = [
-            { shape: "box", material: "fleisch", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 1.5, z: 1.5 } },
+            __teil("box", "fleisch", 0, 0, 0, 1.5, 1.5, 1.5),
         ];
         // (1) der Gate: Built-in-Seele → neutral (in playerSoulDefs), ein Custom-Name nicht
         out.builtinGate = !!r.playerSoulDefs["human"] && !r.playerSoulDefs["_av_body"];
@@ -1262,12 +1242,7 @@ async function checkBandWelle6DSoul(ctx) {
             builtIn: false,
             // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
             parts: [
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
             ],
         };
         if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
@@ -1293,18 +1268,8 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Magie-Trank",
             builtIn: false,
             parts: [
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.3, y: 0.5, z: 2 },
-                },
-                {
-                    shape: "sphere",
-                    material: "glut",
-                    position: { x: 0, y: 0.5, z: 0 },
-                    size: { x: 0.2, y: 0.2, z: 0.2 },
-                },
+                __teil("helix", "quarz", 0, 0, 0, 0.3, 0.5, 2),
+                __teil("sphere", "glut", 0, 0.5, 0, 0.2, 0.2, 0.2),
             ],
         };
         const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
@@ -1418,18 +1383,8 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Eisen-Plate",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 1, 0, 1, 1, 1),
             ],
         };
         // Markieren als Rüstung
@@ -1456,12 +1411,7 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Unmarked",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
             ],
         };
         const equipUnmarkedResult = r.equipArmor("test_plain");
@@ -1785,30 +1735,10 @@ async function checkBandWelle6DSoul(ctx) {
             label: "Resonator",
             builtIn: false,
             parts: [
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: 1, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 3 },
-                },
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: 1 },
-                    size: { x: 0.5, y: 1, z: 3 },
-                },
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: -1, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 3 },
-                },
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: -1 },
-                    size: { x: 0.5, y: 1, z: 3 },
-                },
+                __teil("helix", "quarz", 1, 0, 0, 0.5, 1, 3),
+                __teil("helix", "quarz", 0, 0, 1, 0.5, 1, 3),
+                __teil("helix", "quarz", -1, 0, 0, 0.5, 1, 3),
+                __teil("helix", "quarz", 0, 0, -1, 0.5, 1, 3),
             ],
         };
         r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
@@ -1902,24 +1832,9 @@ async function checkBandWelle6DSoul(ctx) {
         // define_soul über dslRun
         const beforeCount = Object.keys(r.state.customSouls || {}).length;
         const testParts = [
-            {
-                shape: "box",
-                material: "knochen",
-                position: { x: 0, y: 0, z: 0 },
-                size: { x: 0.5, y: 1.0, z: 0.4 },
-            },
-            {
-                shape: "helix",
-                material: "quarz",
-                position: { x: 0, y: 0.6, z: 0 },
-                size: { x: 0.3, y: 0.6, z: 2 },
-            },
-            {
-                shape: "sphere",
-                material: "glut",
-                position: { x: 0, y: 0.3, z: 0 },
-                size: { x: 0.25, y: 0.25, z: 0.25 },
-            },
+            __teil("box", "knochen", 0, 0, 0, 0.5, 1.0, 0.4),
+            __teil("helix", "quarz", 0, 0.6, 0, 0.3, 0.6, 2),
+            __teil("sphere", "glut", 0, 0.3, 0, 0.25, 0.25, 0.25),
         ];
         r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
         const afterCount = Object.keys(r.state.customSouls || {}).length;
@@ -2039,12 +1954,7 @@ async function checkBandWelle6DSoul(ctx) {
 
         // Add part
         const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
-        const addResult = r.addPartToCustomSoul("test_clone_a", {
-            shape: "torus",
-            material: "quarz",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 0.5, y: 0.2, z: 0.5 },
-        });
+        const addResult = r.addPartToCustomSoul("test_clone_a", __teil("torus", "quarz", 0, 1, 0, 0.5, 0.2, 0.5));
         out.addReturnsOk = addResult && addResult.ok;
         out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
 
@@ -2894,28 +2804,14 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         const eisenBp = {
             name: "test_eisen",
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [],
-                },
+                __teil("cylinder", "eisen", 0, 1, 0, 0.3, 1, 0.3, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
             ],
             connections: [],
         };
         const holzBp = {
             name: "test_holz",
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [],
-                },
+                __teil("cylinder", "holz", 0, 1, 0, 0.3, 1, 0.3, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
             ],
             connections: [],
         };

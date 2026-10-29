@@ -181,6 +181,26 @@ const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
+// DER STUDIO-KERN in Node: three-r128 (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
+// der Wurzel) → `globalThis[name]`; `frisch` lädt ihn neu (die Stoffe rechnen ihre Farbe beim ersten Bau). Bis zur Decke
+// w3s-sukzession lud jede Linse three und Kern in eigenen Zeilen (fünfzehn Mal).
+function studioKern(datei, name, frisch) {
+    global.THREE ||= require(path.join(ROOT, "worlds/terrain/lib/three-r128.min.js"));
+    if (frisch) delete require.cache[require.resolve(path.join(ROOT, datei))];
+    require(path.join(ROOT, datei));
+    return globalThis[name];
+}
+// DER SCOPE EINES FADENS in Node: ein frischer vm-Kontext wie im Foundry-Worker — `self` · `globalThis` · `window` sind das
+// globale Objekt, Math das des Gates (die Plattform-Probe erreicht so den Guss) — darin die `quellen` (Pfade ab der Wurzel, je
+// Prozess einmal gelesen) der Reihe nach. Bis zur Decke w3s-sukzession baute jede Linse ihn selbst (vier Mal).
+const QUELL_TEXT = {};
+function fadenScope(quellen) {
+    const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
+    sb.self = sb.globalThis = sb.window = sb;
+    require("vm").createContext(sb);
+    for (const f of quellen) require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, { filename: f });
+    return sb;
+}
 
 const MIME = {
     ".html": "text/html",
@@ -1265,6 +1285,8 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
 }
 
 module.exports = {
+    studioKern,
+    fadenScope,
     scanWarteWand,
     ROOT,
     MIME,

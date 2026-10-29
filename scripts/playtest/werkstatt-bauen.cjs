@@ -222,7 +222,7 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         r.state.blueprints["wp_soft"] = {
             name: "wp_soft",
             label: "soft",
-            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            parts: [__teil("box", "leder", 0, 0, 0, 1, 1, 1)],
         };
         const softP = r._workshopStationPrecision(r.state.blueprints["wp_soft"]);
         out.esseP = esseP;
@@ -243,7 +243,7 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         r.state.blueprints["wp_work"] = {
             name: "wp_work",
             label: "work",
-            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            parts: [__teil("box", "eisen", 0, 0, 0, 1, 1, 1)],
         };
         if (!Array.isArray(p.tools)) p.tools = [];
         if (!p.tools.includes("schmiede-hammer")) p.tools.push("schmiede-hammer");
@@ -1636,8 +1636,8 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
             name: "__m1band",
             builtIn: false,
             parts: [
-                { shape: "box", material: mat, position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                { shape: "box", material: mat, position: { x: 1.0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("box", mat, 0, 0.5, 0, 1, 1, 1),
+                __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1),
             ],
         });
         try {
@@ -1761,12 +1761,7 @@ async function checkBandNutzerBlickNachbau(ctx) {
             if (blu.__nb_wagen) delete blu.__nb_wagen;
             blu.__nb_wagen = { name: "__nb_wagen", label: "NB-Wagen", builtIn: false, parts: [], connections: [] };
             const add = (part) => r.addPartToBlueprint("__nb_wagen", part);
-            add({
-                shape: "box",
-                material: "holz",
-                position: { x: 0, y: 0.85, z: 0 },
-                size: { x: 1.3, y: 0.35, z: 2.1 },
-            });
+            add(__teil("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1));
             const rad = (x, z) =>
                 add({
                     shape: "cylinder",

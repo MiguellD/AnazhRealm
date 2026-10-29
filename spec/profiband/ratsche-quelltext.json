@@ -50,9 +50,9 @@
             "zweck": "Messung: führt den save-server aus (der Selbsttest wandelt seine Schreib-Art)",
             "datei": 1
         },
-        "scripts/diag-phyto-core-parity.cjs": {
-            "zweck": "Messung: führt foundry-core und three im vm aus (Parität Studio = Welt)",
-            "datei": 4
+        "scripts/diag-phyto-tree.cjs": {
+            "zweck": "Messung: führt phyto-core, foundry-core und three im vm aus (Parität Main = Worker, Studio = Welt)",
+            "datei": 1
         },
         "scripts/diag-profiband.cjs": {
             "zweck": "Struktur: der Selbsttest lädt den gewandelten Stamm als Klasse (Bündel-Reihe am Verhalten)",

@@ -30,16 +30,11 @@
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const path = require("path");
-const { probeWand, fingerabdruck: fingerprint, goldenSelbsttest, fallSchluessel: caseKey, vertragIst, goldenWand, frischerKern } = require("./lib/plattform-probe.cjs");
+const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const root = path.resolve(__dirname, "..");
-
-global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-const KERN = path.join(root, "schmiede-core.js");
-require(KERN);
-const SC = globalThis.__schmiedeCore;
-
-const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
+const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { errs, check, wandEnde } = pruefer();
+const SC = studioKern("schmiede-core.js", "__schmiedeCore");
 
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const GATTUNGEN = Object.keys(SC.REZEPT_ZU_GATTUNG); // alle 22 (Waffen UND Werkzeuge)
@@ -54,7 +49,6 @@ CASES.push({ rezeptId: "spitzhacke", seed: 7, lod: 0, ov: { schaft: 0.9 } });
 function buildCase(c) {
     return SC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
 }
-
 
 (async function main() {
     console.log("=== ASSET-VERTRAG v5 — Klingen & Werkzeuge (schmiede-core.js buildInstance) ===");
@@ -141,20 +135,7 @@ function buildCase(c) {
     // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne
     //     Seed-Dopplung (seed-invariant, s. Kopf).
-    await probeWand(
-        "v5",
-        {
-            laden: frischerKern(KERN, "__schmiedeCore"),
-            bauen: (K) => {
-                const r = {};
-                for (const c of CASES)
-                    if (c.seed === 7) r[caseKey(c)] = fingerprint(K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov)).sha256;
-                return r;
-            },
-        },
-        check
-    );
-    globalThis.__schmiedeCore = SC;
+    await kernProbe("v5", "schmiede-core.js", "__schmiedeCore", CASES.filter((c) => c.seed === 7), check);
 
     // 7) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst

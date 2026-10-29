@@ -21,7 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -80,20 +80,12 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws(undefined, manifestSrc)) check(name, ok, detail);
 
     // Die Kern-Wahrheit fuer die Dial-Drift-Wand (Buch == Kern): PRESETS in Node ableiten.
-    global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-    require(path.join(root, "fachwerk-core.js"));
-    const FCn = globalThis.__fachwerkCore;
+    const FCn = studioKern("fachwerk-core.js", "__fachwerkCore");
     const kernAlemannischW = FCn.PRESETS.alemannisch.s.W;
     const kernParamsRows = FCn.PARAMS_BY_KIND.haus.length;
 
-    console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
-
     const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", anzahl: 32, teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
-    const eps = await page.evaluate(kernStufen.epsilonSeite, W);
-    const out = await page.evaluate(async () => {
+    const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, f: {} };
         const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
@@ -127,13 +119,6 @@ hauptLauf(async () => {
         }
         return res;
     });
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
-
-    await browser.close();
-    server.close();
-
-    kernStufen.epsilonUrteil(check, eps, W, kern);
     check(`B: die Dial-Drift-Wand haelt (Buch s.W == Kern-PRESETS ${kernAlemannischW})`, eps.b.s.W === kernAlemannischW, String(eps.b.s.W));
     check('B: die fx-Strings reisen (alemannisch.fx.stil == "alt")', out.b.stil === "alt", String(out.b.stil));
     check(`B: die B4-Regler-Tabelle reist (paramsByKind.haus == ${kernParamsRows} Dials, W-A1-Generik)`, out.b.paramsHaus === kernParamsRows, String(out.b.paramsHaus));
