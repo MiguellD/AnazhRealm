@@ -64,7 +64,7 @@
     "Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)": {"s": 12, "n": 7, "gruppe": "voll 4"},
     "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)": {"s": 47, "n": 7, "gruppe": "voll 9"},
     "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {"s": 7, "n": 7, "gruppe": "voll 12"},
-    "Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)": {"s": 14, "n": 7, "gruppe": "voll 8"},
+    "LOD am Schirm (lod.K5 — die Stufe folgt dem Schirm, nie dem Regler; die Vegetation waechst mit dem Boden)": {"s": 16, "n": 1, "gruppe": "voll 8"},
     "Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)": {"s": 24, "n": 7, "gruppe": "voll 18"},
     "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)": {"s": 15, "n": 7, "gruppe": "voll 13"},
     "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass": {"s": 37, "n": 7, "gruppe": "voll 13"},

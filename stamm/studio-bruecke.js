@@ -499,8 +499,8 @@ class AnazhRealm_studio_bruecke {
         if (typeof sk.sun === "number") sky.sun = sk.sun;
         AnazhRealm._studioSky = Object.keys(sky).length ? sky : null;
     }
-    // Wahrnehmungs-Kanal: Studio-PORTAL_RENDER_CONFIG ist die EINE Quelle für Sichtweite/LOD/Fades/Dichte.
-    // LOD-Distanzen/Fades → mutables LOD_DISTANCES (CPU-/Shader-Leser ziehen live nach) + state.lodRef;
+    // Wahrnehmungs-Kanal: Studio-PORTAL_RENDER_CONFIG ist die EINE Quelle für Sichtweite/LOD-Bänder/Dichte.
+    // LOD-Fades/Hysterese → mutables LOD_DISTANCES (CPU-/Shader-Leser ziehen live nach) + state.lodRef;
     // Sichtweite/Dichte/Understory → statisches `AnazhRealm._studioRenderConfig` (Fallback = alter Wert).
     _foundryIngestRenderConfig(config) {
         if (!config || typeof config !== "object") return;
@@ -511,10 +511,8 @@ class AnazhRealm_studio_bruecke {
         const L = config.lod;
         const D = AnazhRealm.LOD_DISTANCES;
         if (L && typeof L === "object") {
-            // Die Welt liest die Studio-Distanzen (W5, Lehre 19): die Kosten einer Stufe wohnen im Asset (Studio-
-            // Budget lod.budget, gate:asset-contract), nie in einem Host-Umweg, der d0/d1 umrechnet.
-            if (Number.isFinite(L.d0)) D.thresh01 = L.d0;
-            if (Number.isFinite(L.d1)) D.thresh12 = L.d1;
+            // Die Schwellen der Stufen legt das Gesetz des Schirms (`_stufenSchirm`, lod.K5) aus dem Fehler des Baus; d0/d1 des
+            // Buchs sind die Distanzen des Labors. Bänder, Hysterese und Referenz-Höhe liest die Welt aus dem Buch.
             if (Number.isFinite(L.fade)) D.fade = L.fade;
             if (Number.isFinite(L.fade0)) D.fade0 = L.fade0;
             if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
@@ -1812,12 +1810,15 @@ class AnazhRealm_studio_bruecke {
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
-    // DIE STUFEN-GRENZEN DES GESETZBUCHS (K43, B2c `ab` + `hyst`): trägt die Art einer gesetzten Studio-Architektur an ihren
-    // gezeigten Stufen `ab` (Meter × Welt-Skala des Eintrags), wählt der LOD-Takt nach IHNEN statt nach den Wirts-Distanzen
-    // (LOD_DISTANCES) — das Tor beginnt seine Stufe 1 dort, wo sein Kern es sagt. → { erste, grenzen: [{ stufe, ab }], h } oder
-    // null (die Art nennt keine Grenze). Am Eintrag gemerkt (die Art eines Eintrags wechselt nie).
+    // DIE STUFEN-GRENZEN EINER GEBAUTEN ART aus dem Gesetz des Schirms (lod.K5, `_wechselAbstand`): je gezeigter Stufe der
+    // Abstand (Meter × Welt-Skala des Eintrags), an dem ihr Kanten-Versatz zur L0 das Soll trägt, höchstens ihr Haushalt; die
+    // Hysterese des Buchs (B2c `hyst`, sonst LOD_SCHIRM.hyst) — der LOD-Takt wählt nach IHNEN (`_stufeNachGrenzen`), Haus, Tor,
+    // Wagen und Ausstattung am selben Gesetz (bis w3v-lod: das Tor nach `ab` seines Buchs, Haus und Wagen nach den rohen
+    // Baum-Distanzen). → { erste, grenzen: [{ stufe, ab }], h } oder null (die Art trägt keine Zeile — der Baum misst in seiner
+    // Wahrnehmungs-Distanz). Am Eintrag gemerkt, je Schirm (die Art eines Eintrags wechselt nie).
     _archStufenGrenzen(entry) {
-        if (entry._stufenGrenzen !== undefined) return entry._stufenGrenzen;
+        const zeilen = this._schirm().hoehe;
+        if (entry._stufenGrenzen !== undefined && entry._stufenGrenzenZeilen === zeilen) return entry._stufenGrenzen;
         const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
         const f = this._foundry;
         const rec = preset && f && f.recipes ? f.recipes[preset] : null;
@@ -1826,18 +1827,14 @@ class AnazhRealm_studio_bruecke {
         const art = L && L.budget ? L.budget[rec.kind] : null;
         const st = this._foundryKindStages(preset) || [];
         const grenzen = [];
-        for (const s of st)
-            if (art && art[s] && Number.isFinite(art[s].ab) && art[s].nurWurf !== true)
-                grenzen.push({ stufe: s, ab: art[s].ab });
-        entry._stufenGrenzen = grenzen.length
-            ? {
-                  erste: st[0],
-                  grenzen,
-                  h: Number.isFinite(art.hyst)
-                      ? art.hyst
-                      : AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + ".hyst"),
-              }
-            : null;
+        for (const s of rec.kind === "tree" ? [] : st.slice(1)) {
+            if (art && art[s] && art[s].nurWurf === true) continue;
+            const ab = this._wechselAbstand(rec.kind, s, 1);
+            if (ab != null) grenzen.push({ stufe: s, ab });
+        }
+        entry._stufenGrenzenZeilen = zeilen;
+        const h = art && Number.isFinite(art.hyst) ? art.hyst : AnazhRealm.LOD_SCHIRM.hyst;
+        entry._stufenGrenzen = grenzen.length ? { erste: st[0], grenzen, h } : null;
         return entry._stufenGrenzen;
     }
     // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1)? Dann wirft sie über die

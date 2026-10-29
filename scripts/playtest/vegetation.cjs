@@ -5,8 +5,8 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
-// Radius (mit der gemessenen Render-Kapazität) zu ihnen wächst. Spawn leicht → wächst.
+// `foliageRadius` (der Rand am Schirm, lod.K5); ferne warten in `pendingFoliageChunks`, bis der
+// Radius (mit dem gebauten Ring) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -14,9 +14,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const st = r.state;
         const out = {};
-        // Headless (Null-Renderer): der Aktuator setzt foliageRadius = MAX (gate-treu).
-        out.headlessFull =
-            !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r.constructor.PERF_FOLIAGE_RADIUS_MAX;
+        // Headless (Null-Renderer): der Aktuator setzt foliageRadius sofort auf den Rand am Schirm (lod.K5, `_randSchirm`).
+        out.headlessFull = !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r._randSchirm("laub");
         const pm = st.playerMesh;
         if (!pm) {
             out.skip = true;
@@ -25,8 +24,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         const span = r._voxelChunkConfig().span;
         const pcx = Math.floor(pm.position.x / span),
             pcz = Math.floor(pm.position.z / span);
-        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der kleinste Radius,
-        // den der Regler fährt (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
+        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der Start-Radius des
+        // Boots (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
         // Chunk-Eck (die Genesis-Plattform steht seit K16 auf dem Ursprung) fiel der eigene Chunk heraus.
         st.foliageRadius = r.constructor.PERF_FOLIAGE_RADIUS_MIN;
         out.farDeferred = r._foliageChunkInRadius(pcx + 6, pcz + 6) === false;
@@ -204,7 +203,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         check("Foliage-Growth-Band (realm)", false, res.error);
         return;
     }
-    check("headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
+    check("headless (Null-Renderer) → foliageRadius = der Rand am Schirm (lod.K5)", res.headlessFull);
     if (!res.skip) {
         check("kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt", res.farDeferred && res.nearIncluded);
         check("der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);

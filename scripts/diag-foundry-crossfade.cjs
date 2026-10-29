@@ -22,7 +22,7 @@
 //   Kanten 1 m nach innen, die Weite der Gestalt als Rand im Fenster — die Linse MUSS jede nennen.
 // Teil (b), headless (Null-Renderer, foundry-ON): die CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System — ein Foundry-Baum wird
 // über die Schwellen geschoben: im Band hält er Slots in BEIDEN Stufen-Gruppen, außerhalb in EXAKT einer, nie 0, die
-// Slot-Bilanz dicht; dazu die Stufen-Wahrheit (Stempel = CPU-Sichthöhe, kein Loch voll und unter Last), der Strauch, die
+// Slot-Bilanz dicht; dazu die Stufen-Wahrheit (Stempel = CPU-Sichthöhe, kein Loch; kein Regler streckt sie, lod.K5), der Strauch, die
 // Kette des Gesetzbuchs (Wagen, Tor), der Geister-Baum (Auge, Halt, Schatten-Zwilling, die Streu im Sprung), der Kehraus
 // des Wurfs, die Attribut-Wand, die Gnadenfrist, der Spiegel der Blende (die Masken-Uniformen tragen je Bild das CPU-Band)
 // und die laute Blende (ohne uLodD0 bricht der Stoff beim Namen).
@@ -318,8 +318,10 @@ async function runPartB() {
         const st = r.state;
         const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
-        const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (der Stamm liest das Kern-Gesetz)
+        const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (Bänder aus dem Kern, Schwellen aus dem Gesetz)
         res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
+        const lodRef0 = st.lodRef > 0 ? st.lodRef : D.lodRef;
+        res.lodGesetz = [r._wechselAbstand("tree", 1, lodRef0), r._wechselAbstand("tree", 2, lodRef0)];
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
         // ── der Proben-Baum (gewachsener Bauplan, ferner Fix-Spot) ──
@@ -559,7 +561,7 @@ async function runPartB() {
             }
             // ════ DIE STUFEN-WAHRHEIT: die CPU legt die Stufen nach DERSELBEN Distanz, die die Masken lesen.
             // Je Probe: die residenten Stufen (Primär + Band) mit IHREN Fassaden-Stempeln (aH0/aH0L je Slot), die
-            // Masken-Distanz roh × Perf-Streck × min(lodRef/Stempel, 1), die Maske __phytoCore.lodCrossfadeMask über
+            // Masken-Distanz roh × Streck der Ankunft × min(lodRef/Stempel, 1), die Maske __phytoCore.lodCrossfadeMask über
             // 64 Dither-Werte je Rinde/Laub — ein Wert, den KEINE residente Stufe behält, ist ein LOCH (der Spieler
             // sieht durch den Baum: der gerasterte Geist). Gegenprobe im selben Lauf: der alte Leser (Sichthöhe 0)
             // MUSS Löcher zeigen, sonst ist die Probe blind.
@@ -585,11 +587,10 @@ async function runPartB() {
                 return { h: a.aH0.array[ref.slot], hL: a.aH0L.array[ref.slot], modus };
             };
             const MODUS_LOD = { l0: 0, l1: 1, l1e: 1, fin: 2 };
-            const lochSweep = (fd, E) => {
+            const lochSweep = (E) => {
                 const e0 = E || { entry, px, py, pz };
-                st._foliageDensityScale = fd;
-                const k = r._lodPerfMul();
-                const o = { perf: +k.toFixed(3), proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
+                const k = r._ankunftsFerne(); // der Streck der Wahrnehmung (kein Regler, lod.K5)
+                const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
                     st.playerMesh.position.set(e0.px - raw, e0.py, e0.pz);
                     r._archLODCursor = 0;
@@ -634,17 +635,15 @@ async function runPartB() {
                 }
                 return o;
             };
-            const fdVor = st._foliageDensityScale;
             if (core && typeof core.lodCrossfadeMask === "function") {
-                const fdMin = A.PERF_FOLIAGE_DENSITY_MIN;
-                res.stufenWahrheit = { voll: lochSweep(1), last: lochSweep(fdMin) };
+                res.stufenWahrheit = { voll: lochSweep() };
                 const s2 = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
                 if (s2) {
-                    // Der Strauch im selben Gesetz: sein Sweep, voll und unter Last (eigene Architektur-Liste).
+                    // Der Strauch im selben Gesetz: sein Sweep (eigene Architektur-Liste).
                     if (!s2.instanced) r._rebuildArchitectureMesh(s2);
                     st.architectures = [s2];
                     const E = { entry: s2, px: sx, py: sy, pz: sz };
-                    res.stufenWahrheit.strauch = { voll: lochSweep(1, E), last: lochSweep(fdMin, E) };
+                    res.stufenWahrheit.strauch = { voll: lochSweep(E) };
                     r.removeArchitecture(s2); // räumt aus der Sweep-Liste (removeArchitecture sucht dort)
                     st.architectures = [entry];
                 }
@@ -652,8 +651,9 @@ async function runPartB() {
                 // ihren Instanz-Stempeln, ein Bereich des Bau-Satzes mit den Stempeln JE ECKE seiner Zelle (die Satz-Gruppe
                 // zeichnet nie: sie ist Slot-Wahrheit, gezeichnet wird ihr Bereich im Satz ihres Stoffs, `_bauSatzArt`). Eine
                 // Zelle, die der Satz nicht trägt (Satz verborgen, Bereich oder Zelle fehlt, die Zelle liegt nicht an ihrer
-                // Instanz), zeichnet nichts; eine Probe ohne gezeichnete Stufe ist ein Loch (die Gestalt fort — 4–55 m liegen vor
-                // jeder Fernform). Der alte Leser (nur die Gruppen-Stempel) rechnet daneben: die Gegenprobe, die er nicht sah.
+                // Instanz), zeichnet nichts; eine Probe ohne gezeichnete Stufe ist ein Loch (die Gestalt fort — 1,5–55 m liegen vor
+                // jeder Fernform; ab 1,5 m, weil der Wagen am Gesetz des Schirms schon ab 2,7 m seine L1 trägt, lod.K5). Der alte
+                // Leser (nur die Gruppen-Stempel) rechnet daneben: die Gegenprobe, die er nicht sah.
                 const satzStempel = (g, ref, o) => {
                     const S = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
                     const b = S ? S.bloecke.get(g.key) : null;
@@ -726,11 +726,9 @@ async function runPartB() {
                         }
                     return n;
                 };
-                const kettenSweep = (fd, E) => {
-                    st._foliageDensityScale = fd;
-                    const k = r._lodPerfMul();
+                const kettenSweep = (E) => {
+                    const k = r._ankunftsFerne();
                     const o = {
-                        perf: +k.toFixed(3),
                         proben: 0,
                         loecher: 0,
                         leer: 0,
@@ -751,7 +749,7 @@ async function runPartB() {
                         e.halt = e.halt || sp.hL < 0;
                         M.set(sp.modus, e);
                     };
-                    for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
+                    for (const raw of [1.5, 4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4, 1.5]) {
                         st.playerMesh.position.set(E.px - raw, E.py, E.pz);
                         r._archLODCursor = 0;
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
@@ -806,7 +804,7 @@ async function runPartB() {
                         if (!o2.instanced) r._rebuildArchitectureMesh(o2);
                         st.architectures = [o2];
                         const E = { entry: o2, px: op.ort.x, py: op.ort.y, pz: op.ort.z };
-                        return gegen ? kettenSweep(1, E) : { voll: kettenSweep(1, E), last: kettenSweep(fdMin, E) };
+                        return gegen ? kettenSweep(E) : { voll: kettenSweep(E) };
                     } finally {
                         delete r._bauSatzMarke;
                         delete r._foundryFlattenFor;
@@ -823,28 +821,16 @@ async function runPartB() {
                 for (const op of res.kette || []) {
                     if (!op.alleWarm) continue;
                     const lauf = kettenLauf(op, null);
-                    if (lauf) {
-                        op.voll = lauf.voll;
-                        op.last = lauf.last;
-                    }
+                    if (lauf) op.voll = lauf.voll;
                     op.gegenPartner = kettenLauf(op, "partner");
                     if (op.satzArt) op.gegenSatz = kettenLauf(op, "satz");
                 }
                 const echt = r._lodTreeVisHeight;
                 r._lodTreeVisHeight = () => 0; // die Gegenprobe: der alte Leser
-                // voll UND unter Last: der Perf-Streck verdeckt den rohen Leser teilweise (er rückt die Masken näher)
-                const g1 = lochSweep(1);
-                const g2 = lochSweep(fdMin);
-                res.stufenWahrheit.gegenprobe = {
-                    perf: g1.perf + "/" + g2.perf,
-                    proben: g1.proben + g2.proben,
-                    loecher: g1.loecher + g2.loecher,
-                    stempelUngleich: g1.stempelUngleich + g2.stempelUngleich,
-                    beispiel: g1.beispiel || g2.beispiel,
-                };
+                res.stufenWahrheit.gegenprobe = lochSweep();
                 delete r._lodTreeVisHeight;
                 if (r._lodTreeVisHeight !== echt) res.stufenWahrheit.err = "Leser nicht zurückgesetzt";
-                lochSweep(1); // die Stufen auf den echten Leser zurück
+                lochSweep(); // die Stufen auf den echten Leser zurück
                 // ════ (10) DER GEISTER-BAUM: keine Instanz steht halb maskiert. Die DECKUNG je Klasse (Rinde, Laub;
                 // die Karte deckt beide) = der Anteil der Dither-Werte, den eine gezeichnete Stufe behält — gelesen aus
                 // den Stempeln wie die Maske (|aH0L|, sein Vorzeichen = der HALT; aKarte.w, negativ = voll), gemessen vom
@@ -862,7 +848,7 @@ async function runPartB() {
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
                     const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
-                    const k = r._lodPerfMul();
+                    const k = r._ankunftsFerne();
                     const teile = [];
                     for (const list of [e0.instSlots, e0.instSlotsBand]) {
                         if (!Array.isArray(list)) continue;
@@ -1114,8 +1100,7 @@ async function runPartB() {
                 res.geisterBaum.sprungStreu = streuLauf(false);
                 res.geisterBaum.gegenStreu = streuLauf(true);
                 res.geisterBaum.ms = Math.round(performance.now() - tGeist);
-            } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask oder _lodPerfMul fehlt" };
-            st._foliageDensityScale = fdVor;
+            } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask fehlt" };
         } finally {
             st.architectures = savedArchs;
             r._archLODCursor = savedCursor;
@@ -1130,8 +1115,6 @@ async function runPartB() {
         };
         // Distanzen meiden EXAKTE Schwellen-Treffer (160·12/48 = 40.0 — Host-Hysterese
         // und Studio-`<` urteilen die Kante verschieden; die Kante ist kein Zensus-Fall).
-        const fdPrev = st._foliageDensityScale;
-        st._foliageDensityScale = 1; // perfMul neutral — der Zensus misst die METRIK, nicht den Regler
         for (const bh of [8, 12, 24, 36, 48]) {
             for (const dr of [10, 18, 30, 45, 70, 110, 165]) {
                 const host = r._chooseLODForDistance(dr, undefined, bh);
@@ -1155,7 +1138,6 @@ async function runPartB() {
         }
         // visStretchMax UNGEDECKELT: dn(100, 36) = 100·12/36 = 33.33 (der alte Deckel gab 80).
         res.stretchProbe = +r._lodPerceptionDistance(100, 36).toFixed(2);
-        st._foliageDensityScale = fdPrev;
         r.removeArchitecture(entry); // Default-Remove räumt Primär + Band
         const after = balance();
         res.balance = {
@@ -1472,11 +1454,11 @@ async function main() {
     if (out.err) check("Teil (b) lief", false, out.err);
     else {
         check("W5.4: foundryCrossfade ist DEFAULT AN", out.flagDefault === true);
-        // Die Config-Heimat (W5, Lehre 19, K2): die Welt LIEST die Studio-lod-Zahlen (Gesetz terrain:PORTAL_RENDER_CONFIG.lod),
-        // keine Zahl im Stamm — live gemessen statt am Rumpf-Text (thresh01 = d0 · thresh12 = d1 · fade · fade0).
-        const lodKern = [CFG.d0, CFG.d1, CFG.fade, CFG.fade0];
+        // Die Config-Heimat (W5, Lehre 19, K2): die Welt LIEST die Bänder des Kerns (Gesetz terrain:PORTAL_RENDER_CONFIG.lod), die
+        // Schwellen legt das Gesetz des Schirms (lod.K5) — keine Zahl im Stamm, live gemessen statt am Rumpf-Text.
+        const lodKern = out.lodGesetz ? [...out.lodGesetz, CFG.fade, CFG.fade0] : null;
         check(
-            "LOD_DISTANCES live == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0)",
+            "LOD_DISTANCES live == das Gesetz des Schirms (thresh01 · thresh12) und die Bänder des Kerns (fade/fade0)",
             JSON.stringify(out.lodLive) === JSON.stringify(lodKern),
             `live ${JSON.stringify(out.lodLive)} · Kern ${JSON.stringify(lodKern)}`
         );
@@ -1555,14 +1537,13 @@ async function main() {
     }
     const SW = out && out.stufenWahrheit;
     if (SW && !SW.err) {
-        const z = (o) => `${o.proben} Proben · Löcher ${o.loecher} · Stempel≠CPU ${o.stempelUngleich} · Perf ×${o.perf}${o.beispiel ? " · z. B. " + JSON.stringify(o.beispiel) : ""}`;
+        const z = (o) => `${o.proben} Proben · Löcher ${o.loecher} · Stempel≠CPU ${o.stempelUngleich}${o.beispiel ? " · z. B. " + JSON.stringify(o.beispiel) : ""}`;
         check(
             "STUFEN-WAHRHEIT: die CPU-Sichthöhe IST der Fassaden-Stempel jeder residenten Stufe (L0 = L1 = Höhen-Stufe)",
-            SW.voll.proben >= 8 && SW.voll.stempelUngleich === 0 && SW.last.stempelUngleich === 0,
+            SW.voll.proben >= 8 && SW.voll.stempelUngleich === 0,
             z(SW.voll)
         );
         check("STUFEN-WAHRHEIT: kein Loch über den Sweep (volle Leistung)", SW.voll.loecher === 0, z(SW.voll));
-        check("STUFEN-WAHRHEIT: kein Loch unter Last (Perf-Streck in CPU UND Maske)", SW.last.proben >= 8 && SW.last.loecher === 0, z(SW.last));
         check(
             "STUFEN-WAHRHEIT Gegenprobe: der alte Leser (Sichthöhe 0) zeigt Löcher — die Probe sieht den Geist",
             SW.gegenprobe.loecher > 0,
@@ -1570,8 +1551,8 @@ async function main() {
         );
         check(
             "STUFEN-WAHRHEIT: das Billboard stand im Sweep mit SEINEM Stempel (= die Höhe der L1, kein Rahmen-Modell)",
-            (SW.voll.modi.fin || 0) > 0 && (SW.last.modi.fin || 0) > 0,
-            JSON.stringify({ voll: SW.voll.modi, last: SW.last.modi })
+            (SW.voll.modi.fin || 0) > 0,
+            JSON.stringify(SW.voll.modi)
         );
         const ST = SW.strauch;
         check(
@@ -1594,14 +1575,13 @@ async function main() {
                 JSON.stringify(ST.voll.modi)
             );
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
-            check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
         } else check("STRAUCH-Sweep lief", false, "fehlt");
         // DIE KETTE DES GESETZBUCHS: Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
-        // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last. Eine
+        // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep reißt kein Loch. Eine
         // Satz-Art (das Tor, `BAU_SATZ`) wird an ihren Satz-Zellen geprobt — die Stempel je Ecke, die der Satz zeichnet.
         const zk = (o) =>
             o
-                ? `${o.proben} Proben · Löcher ${o.loecher} (leer ${o.leer}) · Satz-Zellen ${o.satzZellen} (fehlt ${o.zelleFehlt}, Ecke≠ ${o.eckeUngleich}) · Stempel≠CPU ${o.stempelUngleich} · Stufen ${JSON.stringify(o.stufen)} · Perf ×${o.perf} · alter Leser ${o.altLoecher} Löcher${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}${o.fehltBeispiel ? " — Zelle fehlt z. B. " + JSON.stringify(o.fehltBeispiel) : ""}`
+                ? `${o.proben} Proben · Löcher ${o.loecher} (leer ${o.leer}) · Satz-Zellen ${o.satzZellen} (fehlt ${o.zelleFehlt}, Ecke≠ ${o.eckeUngleich}) · Stempel≠CPU ${o.stempelUngleich} · Stufen ${JSON.stringify(o.stufen)} · alter Leser ${o.altLoecher} Löcher${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}${o.fehltBeispiel ? " — Zelle fehlt z. B. " + JSON.stringify(o.fehltBeispiel) : ""}`
                 : "fehlt";
         for (const op of out.kette || []) {
             // gezählt werden die GEZEIGTEN Stufen (eine NUR-WURF-Stufe ist kein Partner, `_foundryDeclaredStage`)
@@ -1612,27 +1592,27 @@ async function main() {
                 !!op.preset && mitPartner && op.alleWarm === true,
                 JSON.stringify({ preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm })
             );
-            if (!op.voll || !op.last) {
+            if (!op.voll) {
                 check(`KETTE DES GESETZBUCHS (${op.typ}): Sweep lief`, false, "fehlt");
                 continue;
             }
             const ganz = (o) =>
                 o.proben >= 8 && o.loecher === 0 && o.leer === 0 && o.zelleFehlt === 0 && o.eckeUngleich === 0 && o.stempelUngleich === 0;
             check(
-                `KETTE DES GESETZBUCHS (${op.typ}): kein Loch über den Sweep 4–55 m, voll und unter Last`,
-                ganz(op.voll) && ganz(op.last),
-                `voll ${zk(op.voll)} — last ${zk(op.last)}`
+                `KETTE DES GESETZBUCHS (${op.typ}): kein Loch über den Sweep`,
+                ganz(op.voll),
+                zk(op.voll)
             );
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): der Partner steht im Bild — jede gezeigte Stufe zeichnet im Sweep`,
-                g.length > 0 && g.every((s) => (op.voll.stufen[s] || 0) > 0 && (op.last.stufen[s] || 0) > 0),
-                JSON.stringify({ voll: op.voll.stufen, last: op.last.stufen, modi: op.voll.modi })
+                g.length > 0 && g.every((s) => (op.voll.stufen[s] || 0) > 0),
+                JSON.stringify({ stufen: op.voll.stufen, modi: op.voll.modi })
             );
             if (op.satzArt)
                 check(
                     `KETTE DES GESETZBUCHS (${op.typ}): der Bau-Satz zeichnet — jede Probe liest die Stempel je Ecke ihrer Satz-Zellen`,
-                    op.voll.satzZellen >= op.voll.proben && op.last.satzZellen >= op.last.proben,
-                    `voll ${op.voll.satzZellen} Zellen in ${op.voll.proben} Proben — last ${op.last.satzZellen} in ${op.last.proben}`
+                    op.voll.satzZellen >= op.voll.proben,
+                    `${op.voll.satzZellen} Zellen in ${op.voll.proben} Proben`
                 );
             // Selbsttest im selben Lauf: die Linse MUSS den Täter beim Namen zählen.
             const GP = op.gegenPartner;
