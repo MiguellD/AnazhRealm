@@ -1236,6 +1236,58 @@ const stationen = [
         quelle: "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten",
     },
 
+    // ───────── ultiversum.K3 — Die Bibliothek (w3s-bibliothek) ─────────
+    // gate:praegung-welt (L) --bibliothek (Null-Renderer, ein Gerät, ~20 s): je Art (Welt, Regel, Bauplan) legt bibliothekLege einen
+    // Eintrag an — die EINE Hülle des Teilens (_werkCode), signiert, Code = SHA-256 der Bytes; bibliothekFinde(code) findet ihn
+    // durch den EINEN Eingang (Größe, Signatur, Rückruf) wieder. Mutanten: ein Byte (everySec 30 → 31) auf der Platte → „signatur",
+    // ein Eintrag unter fremdem Code → „code", ein Mesh (2400 Zahlen) im Welt-Gesetz → „gross" (> 8192 B). Am Kopf vor w3s-bibliothek
+    // ROT (bibliothekLege fehlt: ABSTURZ, Exit 2); an w3s-bibliothek 24b9ccaa GRÜN: Welt 1041 B (Akten 1, Regeln 7), Regel 335 B,
+    // Bauplan 428 B, Mesh 17850 B ROT, Exit 0.
+    {
+        kriterium: "ultiversum.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-praegung-welt.cjs", "--bibliothek"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = ["BIBLIOTHEK welt:", "BIBLIOTHEK regel:", "BIBLIOTHEK bauplan:", "MUTANTE Byte:", "MUTANTE Code:", "MUTANTE Mesh:"];
+            const je = soll.map((k) => l.find((x) => x.includes(k) && /^\s*(✅|❌) /.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt: " + soll.filter((_, i) => !je[i]).join(" ") + " (Exit " + lauf.exit + ")" };
+            const bytes = je.slice(0, 3).map((x) => (x.match(/— (\d+) B/) || [])[1]);
+            return {
+                gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)) && bytes.every((b) => b && +b <= 8192),
+                zahl: "Welt " + bytes[0] + " B · Regel " + bytes[1] + " B · Bauplan " + bytes[2] + " B · " + je.slice(3).map((x) => x.split(" — ")[1]).join(" · "),
+            };
+        },
+        pfad: ["stamm/netz-identitaet.js", "stamm/speicher-welten.js", "stamm/feld-dsl.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = Welten, Regeln und Baupläne liegen signiert vor, je Gesetz ≤ 8 KB, auffindbar über einen Code",
+    },
+    {
+        kriterium: "ultiversum.K3",
+        staffel: 2,
+        geraet: "headless",
+        // derselbe Lauf: bibliothekForke(Welt) verändert das Gesetz (wetter storm) und signiert mit dem eigenen Pass, ein zweiter Fork
+        // darauf; die Kette des Enkels nennt je Vorgänger Autor und Code ([Welt-Code, Fork-Code]), der Eintrag ist offenes JSON —
+        // sein Gesetz byte-gleich das Gesetz der Welt (Stand-Tafel). Offen bleibt der Pull eines Codes über das Mesh (ein Gerät).
+        befehl: ["node", "scripts/diag-praegung-welt.cjs", "--bibliothek"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const je = ["FORK: Herkunfts-Kette", "BIBLIOTHEK offen lesbar:"].map((k) => l.find((x) => x.includes(k) && /^\s*(✅|❌) /.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt (Exit " + lauf.exit + ")" };
+            return { gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)), zahl: je.map((x) => x.trim().slice(0, 90)).join(" | ") };
+        },
+        pfad: ["stamm/netz-identitaet.js", "stamm/speicher-welten.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = forkbar mit Herkunfts-Kette, offen lesbar",
+    },
+
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
     {
         kriterium: "ultiversum.K5",
