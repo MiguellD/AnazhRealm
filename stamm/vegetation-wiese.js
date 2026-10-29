@@ -1414,8 +1414,20 @@ class AnazhRealm_vegetation_wiese {
             this._tatListe = L;
             this._nachwuchsFaellig = -Infinity;
             this._sukzStand = null; // eine andere Welt: jede Asche malt ihre Stufe neu
+            this._sukzessionNeu = null;
             const wk = this.state.wegeKarte;
             if (wk) for (const stufe of wk.stufen) if (stufe.zentriert) this._ascheStufeMalen(stufe);
+        }
+        // DIE FRISCHE TAT (die Asche, der Stubben): ihre erste Stufe malt der Nachwuchs, nie der Takt, der sie schrieb (der Brand
+        // kostet seine Zellen, die Sukzession ihre Fläche: Narbe, Wiese, Streu und Wald) — bis `malMs` je Bild, mindestens eine;
+        // bis w3v-brand-bild malte sie der Schritt des Brands (gate:stand-takt BRAND-ZELLEN 127 Einheiten je Zelle, je Asche 6 ms)
+        const Q = this._sukzessionNeu;
+        if (Q && Q.length) {
+            const [J, frist] = [this._tatIndex(), performance.now() + AnazhRealm.SUKZESSION.malMs];
+            let k = 0;
+            for (; k < Q.length && (!k || performance.now() < frist); k++)
+                if (J.dauer.has(Q[k]) && this._sukzessionMalen(Q[k])) this._weltRegt();
+            Q.splice(0, k);
         }
         if (!(stunde >= this._nachwuchsFaellig)) return;
         const I = this._tatIndex();
@@ -2245,7 +2257,9 @@ AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6
 // Heilung (sein Jungwuchs, `_baumAlter`); der Stumpf eines gefällten Baums treibt ab `stubben[0]` seinen Sämling. Gezählt in
 // `stufen` Schritten je Rampe, der Jungwuchs in den Stufen seiner Gestalt: `jugend` sind die Alter, in denen er wächst
 // (phyto-core `treeParams(…, alter)`, je Alter EIN Körper und EINE Karte je Art und Gestalt), gewachsen ist er bei der Heilung.
+// Die erste Stufe einer frischen Tat malt der Nachwuchs bis `malMs` je Bild (mindestens eine Tat).
 AnazhRealm.SUKZESSION = Object.freeze({
+    malMs: 1,
     asche: Object.freeze([0.08, 0.3]),
     busch: Object.freeze([0.3, 0.6]),
     wald: Object.freeze([0.6, 1]),

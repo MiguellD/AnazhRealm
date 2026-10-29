@@ -1103,11 +1103,13 @@ class AnazhRealm_vegetation_baum {
             ]);
             return 0;
         }
-        // die Bäume, die im Kasten stehen oder in der Pflanz-Schlange warten (ihr Wurf), je Dart-Ort (binnen 5 cm)
+        // die Bäume, die im Kasten stehen (die Nachbarschaft des Bestands, `_blockerUmPlatz`: der Kasten kostet seine Plätze,
+        // nie den Bestand der Welt) oder in der Pflanz-Schlange warten (ihr Wurf), je Dart-Ort (binnen 5 cm)
         const imKasten = (p) => p && p.x >= x0 - 1 && p.x < x1 + 1 && p.z >= z0 - 1 && p.z < z1 + 1;
         const Q = st.pendingVegSpawns || [];
+        const nah = this._blockerUmPlatz((x0 + x1) / 2, (z0 + z1) / 2, Math.max(x1 - x0, z1 - z0) / 2 + 1, []);
         const steht = [
-            ...st.architectures.filter((e) => e && e._lodSpecies && imKasten(e.position)),
+            ...nah.filter((e) => e && e._lodSpecies && imKasten(e.position)),
             ...Q.filter((q) => q.opts && q.opts._lodSpecies && imKasten(q.position)),
         ];
         const am = (d) => steht.find((e) => Math.hypot(e.position.x - d.x, e.position.z - d.z) < 0.05);

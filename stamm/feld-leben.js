@@ -13,36 +13,49 @@ class AnazhRealm_feld_leben {
     // Brand-Rand; das EINE Rauschen (gelaende-core `rauschRaum`, die Schicht aus der Saat der Welt) verschiebt ihn in den Oktaven
     // von `BRAND.narbe`, und die Grenze fällt über `band`: `m` ∈ [0, 1], wie sehr der Ort verbrannte. `asche`, `busch`, `wald`
     // sind die Sukzession der verbrannten Zellen um ihn (ihr gewichtetes Mittel, `_brandZelle`). `zelle(cx, cz)` → null oder die
-    // Sukzession der Zelle — der Maler reicht seinen Speicher (`_brandZellen`). Bis w3v-brand-bild malte jede Zelle ihr Quadrat:
-    // die Asche lag als Platte mit geraden Kanten im 16-m-Raster, die Halme endeten an der Zellkante.
+    // Sukzession der Zelle — der Maler reicht seinen Speicher (`_brandZellen`). `_brandNarbeFn(zelle)` ist dieselbe Narbe als
+    // reine Funktion (x, z) für EINEN Gang (der Maler je Texel: die Saat einmal, die Zellen aus dem Speicher — der Schritt des
+    // Brands kostet seine Zellen, nie ihre Texel). Bis w3v-brand-bild malte jede Zelle ihr Quadrat: die Asche lag als Platte mit
+    // geraden Kanten im 16-m-Raster, die Halme endeten an der Zellkante.
     _brandNarbe(x, z, zelle = this._brandZellen()) {
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const [u, v] = [x / cs - 0.5, z / cs - 0.5];
-        const [i, j] = [Math.floor(u), Math.floor(v)];
+        return this._brandNarbeFn(zelle)(x, z);
+    }
+    _brandNarbeFn(zelle) {
+        const [cs, N, R, L] = [
+            AnazhRealm.LIFE_FIELD.cell,
+            AnazhRealm.BRAND.narbe,
+            globalThis.__gelaendeCore.rauschRaum,
+            this._forestSeedInt() % 251,
+        ];
         const S = (t) => t * t * (3 - 2 * t);
-        const [a, b] = [S(u - i), S(v - j)];
-        const n = { o: 0, asche: 0, busch: 0, wald: 0 };
-        for (const [di, dj, w] of [
-            [0, 0, (1 - a) * (1 - b)],
-            [1, 0, a * (1 - b)],
-            [0, 1, (1 - a) * b],
-            [1, 1, a * b],
-        ]) {
-            const c = w > 0 ? zelle(i + di, j + dj) : null;
-            if (c) for (const k of ["asche", "busch", "wald"]) n[k] += w * c[k];
-            if (c) n.o += w;
-        }
-        if (!(n.o > 0)) return null;
-        const N = AnazhRealm.BRAND.narbe;
-        const [R, L] = [globalThis.__gelaendeCore.rauschRaum, this._forestSeedInt() % 251];
-        let r = 0;
-        for (let k = 0; k < N.lambda.length; k++) r += N.amp[k] * R(x / N.lambda[k], z / N.lambda[k], L + 7 * k);
-        // das Rauschen wirkt am Rand (4·o·(1 − o)): im Innern einer Brandfläche bleibt sie ganz, fern von ihr ganz frei
-        return {
-            m: Math.min(1, Math.max(0, (n.o - 0.5 + r * 4 * n.o * (1 - n.o)) / N.band + 0.5)),
-            asche: n.asche / n.o,
-            busch: n.busch / n.o,
-            wald: n.wald / n.o,
+        const amp = N.amp.reduce((s, a) => s + a, 0);
+        return (x, z) => {
+            const u = x / cs - 0.5;
+            const v = z / cs - 0.5;
+            const i = Math.floor(u);
+            const j = Math.floor(v);
+            const a = S(u - i);
+            const b = S(v - j);
+            let [o, as, bu, wa] = [0, 0, 0, 0];
+            for (let k = 0; k < 4; k++) {
+                const w = (k & 1 ? a : 1 - a) * (k & 2 ? b : 1 - b);
+                const c = w > 0 ? zelle(i + (k & 1), j + (k >> 1)) : null;
+                if (c) ((o += w), (as += w * c.asche), (bu += w * c.busch), (wa += w * c.wald));
+            }
+            if (!(o > 0)) return null;
+            // das Rauschen wirkt am Rand (4·o·(1 − o)): im Innern einer Brandfläche bleibt sie ganz, fern von ihr ganz frei —
+            // gerechnet nur, wo es die Grenze verschieben kann (|Rauschen| ≤ 1, gelaende-core `RAUSCH.skala`)
+            const rand = 4 * o * (1 - o);
+            let r = 0;
+            if (Math.abs(o - 0.5) < N.band / 2 + amp * rand)
+                for (let k = 0; k < N.lambda.length; k++)
+                    r += N.amp[k] * R(x / N.lambda[k], z / N.lambda[k], L + 7 * k);
+            return {
+                m: Math.min(1, Math.max(0, (o - 0.5 + r * rand) / N.band + 0.5)),
+                asche: as / o,
+                busch: bu / o,
+                wald: wa / o,
+            };
         };
     }
 
@@ -67,9 +80,10 @@ class AnazhRealm_feld_leben {
     _brandZellen() {
         const M = new Map();
         return (cx, cz) => {
-            const k = cx + "," + cz;
-            if (!M.has(k)) M.set(k, this._brandZelle(cx, cz));
-            return M.get(k);
+            const k = (cx + 32768) * 65536 + cz + 32768;
+            let c = M.get(k);
+            if (c === undefined) M.set(k, (c = this._brandZelle(cx, cz)));
+            return c;
         };
     }
 
@@ -103,11 +117,11 @@ class AnazhRealm_feld_leben {
         const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
         const j1 = Math.min(N - 1, Math.ceil((z1 - z0w) / t - 0.5) - 1);
         if (i1 < i0 || j1 < j0) return false;
-        const A = kr.asche;
+        const [A, narbe] = [kr.asche, this._brandNarbeFn(zelle)];
         let neu = false;
         for (let j = j0; j <= j1; j++)
             for (let i = i0; i <= i1; i++) {
-                const n = this._brandNarbe(x0w + (i + 0.5) * t, z0w + (j + 0.5) * t, zelle);
+                const n = narbe(x0w + (i + 0.5) * t, z0w + (j + 0.5) * t);
                 const v = n ? Math.round(n.m * n.asche * 255) : 0;
                 if (v !== A[j * N + i]) ((A[j * N + i] = v), (neu = true));
             }
@@ -2324,65 +2338,116 @@ class AnazhRealm_feld_leben {
     _brandBild(dt) {
         const st = this.state;
         const auge = st.camera ? st.camera.position : st.playerMesh && st.playerMesh.position;
-        const fl = (this._brandFlammen = []);
+        // die Flammen des Bilds aus dem Vorrat der Instanz (je Bild keine neuen Objekte: der Müll trüge die Spitzen)
+        const [fl, vorrat] = [
+            this._brandFlammen || (this._brandFlammen = []),
+            this._flammenVorrat || (this._flammenVorrat = []),
+        ];
+        fl.length = 0;
         const qu = [];
         const [B, K, t] = [AnazhRealm.BRAND.bild, AnazhRealm.LIFE_FIELD.cell, st.spielZeit];
         const FW = globalThis.__fachwerkCore;
         const L = FW.LICHT_GESETZ.feuer;
+        // das Flackern des Licht-Gesetzes in `flackerPhasen` Phasen je Bild (jede Flamme trägt eine), die Winkel der Front je
+        // Abtastung N EINMAL (cos, sin, gemerkt an der Instanz)
+        const P = B.flackerPhasen;
+        const fla = Array.from(
+            { length: P },
+            (_, k) => 1 + L.flacker.amp * FW.lichtFlackern(L, this._bildZeit, (2 * Math.PI * k) / P)
+        );
+        const tafeln = this._brandWinkel || (this._brandWinkel = new Map());
+        const tafel = (N) => {
+            if (!tafeln.has(N))
+                tafeln.set(
+                    N,
+                    Array.from({ length: 2 * N + 2 }, (_, i) =>
+                        Math[i % 2 ? "sin" : "cos"](Math.PI * ((2 * (i >> 1)) / N - 1))
+                    )
+                );
+            return tafeln.get(N);
+        };
+        // der Wind je Zelle des Felds EINMAL je Bild und Uhr (seine Form hängt an der Zelle, die Böe wandert über 100 m) — die
+        // Flammen lesen ihn zur Uhr des Brands, die Fahne zur Bild-Uhr
+        const WM = new Map();
+        const wind = (x, z, uhr) => {
+            const M = WM.get(uhr) || WM.set(uhr, new Map()).get(uhr);
+            const k = (Math.floor(x / 16) + 32768) * 65536 + Math.floor(z / 16) + 32768;
+            let w = M.get(k);
+            if (!w) M.set(k, (w = this._windAt(x, z, uhr)));
+            return w;
+        };
+        // die brennenden Zellen im Bild, die nächste zuerst: die Deckel der Flammen und der Fahne fallen fern, nie nah
+        const [Z, paare] = [[], this._brandUmVorrat || (this._brandUmVorrat = [])];
         if (auge)
             this._brandGlutUm(auge.x, auge.z, B.weiteM, (b) => {
-                if (b.t0 === null || !(b.R > 0 && t > b.t0) || fl.length >= B.flammenMax) return;
-                const [x0, z0, xc, zc] = [b.cx * K, b.cz * K, (b.cx + 0.5) * K, (b.cz + 0.5) * K];
-                const [px, pz] = b.kopf;
-                const w = this._windAt(xc, zc, t);
-                const u = w.ms * B.flammenWind;
-                const n0 = fl.length;
-                // die Front fern gröber abgetastet (die Kosten tragen der Schirm und die Nähe, Gebot 7)
-                const N = Math.max(
-                    B.winkelMin,
-                    Math.min(B.winkel, Math.round((B.winkel * B.nahM) / Math.hypot(xc - auge.x, zc - auge.z)))
-                );
-                let [s, naechste, vx, vz] = [0, 0, null, null];
-                for (let i = 0; i <= N; i++) {
-                    const th = Math.PI * ((2 * i) / N - 1);
-                    const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * Math.cos(th));
-                    const [c, sn, r] = [Math.cos(th), Math.sin(th), (t - b.t0) * Rt];
-                    const [x, z] = [b.ex + r * (px * c - pz * sn), b.ez + r * (pz * c + px * sn)];
-                    if (vx !== null) s += Math.hypot(x - vx, z - vz);
-                    [vx, vz] = [x, z];
-                    if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
-                    const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
-                    naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
-                    const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
-                    fl.push({
-                        x,
-                        y: b.y + b.gx * (x - xc) + b.gz * (z - zc),
-                        z,
-                        lang: lang * (1 + L.flacker.amp * FW.lichtFlackern(L, this._bildZeit, phase)),
-                        kipp: Math.atan(u / Math.sqrt(9.81 * lang)),
-                        wx: w.x,
-                        wz: w.z,
-                        dreh: phase,
-                        I: b.iw * Rt,
-                    });
-                }
-                if (fl.length > n0) qu.push({ b, von: n0, bis: fl.length });
+                const d = Math.hypot((b.cx + 0.5) * K - auge.x, (b.cz + 0.5) * K - auge.z);
+                if (!(b.t0 !== null && b.R > 0 && t > b.t0 && d <= B.weiteM)) return;
+                const e = paare[Z.length] || (paare[Z.length] = [0, null]);
+                e[0] = d;
+                e[1] = b;
+                Z.push(e);
             });
+        Z.sort((u, v) => u[0] - v[0]);
+        for (const [d, b] of Z) {
+            if (fl.length >= B.flammenMax || qu.length >= B.zellenMax) break;
+            const [x0, z0, xc, zc] = [b.cx * K, b.cz * K, (b.cx + 0.5) * K, (b.cz + 0.5) * K];
+            const [px, pz] = b.kopf;
+            const w = wind(xc, zc, t);
+            const u = w.ms * B.flammenWind;
+            const n0 = fl.length;
+            // die Front fern gröber abgetastet (die Kosten tragen der Schirm und die Nähe, Gebot 7), eine junge nach ihrem Umfang
+            // (höchstens 2π·R·Alter, je Flamme mindestens `abstandMinM`)
+            const umfang = Math.ceil((2 * Math.PI * b.R * (t - b.t0)) / B.abstandMinM);
+            const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
+            const wt = tafel(N);
+            let [s, naechste, vx, vz] = [0, 0, null, null];
+            for (let i = 0; i <= N; i++) {
+                const [c, sn] = [wt[2 * i], wt[2 * i + 1]];
+                const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
+                const r = (t - b.t0) * Rt;
+                const [x, z] = [b.ex + r * (px * c - pz * sn), b.ez + r * (pz * c + px * sn)];
+                if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
+                [vx, vz] = [x, z];
+                if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
+                const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
+                naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
+                const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
+                const f = vorrat[fl.length] || (vorrat[fl.length] = {});
+                f.x = x;
+                f.y = b.y + b.gx * (x - xc) + b.gz * (z - zc);
+                f.z = z;
+                f.lang = lang * fla[Math.floor((phase / 6.2832) * P) % P];
+                f.kipp = Math.atan(u / Math.sqrt(9.81 * lang));
+                f.wx = w.x;
+                f.wz = w.z;
+                f.dreh = phase;
+                f.I = b.iw * Rt;
+                fl.push(f);
+            }
+            if (fl.length > n0) qu.push({ b, von: n0, bis: fl.length });
+        }
         this._brandFlammenZeichnen(fl);
-        this._brandRauch(dt, qu);
+        this._brandRauch(dt, qu, wind);
     }
 
     // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild. Je Zelle und Sekunde
     // `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens
     // `rauch.max` im Himmel (der älteste weicht dem neuen); jeder steigt, wächst, verdünnt und zieht (`_windAt` am Ballen).
-    _brandRauch(dt, qu) {
+    _brandRauch(dt, qu, wind = (x, z, uhr) => this._windAt(x, z, uhr)) {
         const st = this.state;
         const R = AnazhRealm.BRAND.bild.rauch;
         const T = st.brandRauch.teilchen;
         const s = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0;
         const fl = this._brandFlammen;
+        // das Budget der Fahne: `max` Ballen über alle Zellen ihres Lebens lang — trägt ein großer Brand mehr Zellen, als es
+        // fasst, steigt je Zelle seltener ein größerer Ballen (bis `kMax`: dieselbe Deckung der Fläche); bis w3v-brand-bild schob
+        // jeder neue den ältesten aus dem Himmel, und die Fahne eines großen Brands stieg nie
+        const anteil = R.max / (Math.max(1, qu.length) * R.lebenS);
         for (const q of qu) {
-            q.b.rauchSchuld = (q.b.rauchSchuld || 0) + R.jeS * q.b.glut * s;
+            const voll = R.jeS * q.b.glut;
+            const rate = Math.min(voll, anteil);
+            const k = rate > 0 ? Math.min(R.kMax, Math.sqrt(voll / rate)) : 1;
+            q.b.rauchSchuld = (q.b.rauchSchuld || 0) + rate * s;
             for (; q.b.rauchSchuld >= 1; q.b.rauchSchuld--) {
                 if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
                 const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
@@ -2392,8 +2457,8 @@ class AnazhRealm_feld_leben {
                     y: f.y + f.lang,
                     z: f.z,
                     y0: f.y + f.lang,
-                    b0: R.b0 * f.lang,
-                    s: R.b0 * f.lang,
+                    b0: R.b0 * f.lang * k,
+                    s: R.b0 * f.lang * k,
                     w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
                     a: R.a0,
                     alt: 0,
@@ -2402,7 +2467,7 @@ class AnazhRealm_feld_leben {
         }
         for (let k = T.length - 1; k >= 0; k--) {
             const p = T[k];
-            const w = this._windAt(p.x, p.z, this._bildZeit);
+            const w = wind(p.x, p.z, this._bildZeit);
             p.y += p.w * s;
             p.x += w.x * w.ms * s;
             p.z += w.z * w.ms * s;
@@ -2453,18 +2518,35 @@ class AnazhRealm_feld_leben {
             mesh.frustumCulled = false;
             AnazhRealm._instanzZahl(mesh, 0);
             st.scene.add(mesh);
-            const [Q, V] = [() => new THREE.Quaternion(), () => new THREE.Vector3()];
-            S = st.brandFlammenSatz = { mesh, m: new THREE.Matrix4(), q: Q(), dreh: Q(), p: V(), sk: V(), achse: V() };
-            S.hoch = V().set(0, 1, 0);
+            S = st.brandFlammenSatz = { mesh };
         }
         const n = Math.min(fl.length, B.flammenMax);
+        const M = S.mesh.instanceMatrix.array;
         for (let k = 0; k < n; k++) {
             const f = fl[k];
-            // die eigene Drehung der Zunge, dann die Neigung um die Achse quer zum Wind (hoch × Wind)
-            S.dreh.setFromAxisAngle(S.hoch, f.dreh);
-            S.q.setFromAxisAngle(S.achse.set(f.wz, 0, -f.wx).normalize(), f.kipp).multiply(S.dreh);
-            S.m.compose(S.p.set(f.x, f.y, f.z), S.q, S.sk.set(B.breite * f.lang, f.lang, B.breite * f.lang));
-            S.mesh.setMatrixAt(k, S.m);
+            // die Matrix der Flamme, gerechnet statt komponiert: R = Neigung um die Achse quer zum Wind (Rodrigues, a = hoch ×
+            // Wind) · die eigene Drehung der Zunge um die Hochachse, die Spalten × Breite, Länge, Breite, dann der Ort
+            const wl = Math.hypot(f.wx, f.wz) || 1;
+            const [ax, az, cp, sp, cd, sd] = [f.wz / wl, -f.wx / wl, Math.cos(f.kipp), Math.sin(f.kipp), Math.cos(f.dreh), Math.sin(f.dreh)]; // prettier-ignore
+            const v = 1 - cp;
+            const T = [
+                cp + v * ax * ax,
+                -sp * az,
+                v * ax * az,
+                sp * az,
+                cp,
+                -sp * ax,
+                v * ax * az,
+                sp * ax,
+                cp + v * az * az,
+            ];
+            const [b, l, o] = [B.breite * f.lang, f.lang, 16 * k];
+            for (let r = 0; r < 3; r++) {
+                M[o + r] = (T[3 * r] * cd - T[3 * r + 2] * sd) * b;
+                M[o + 4 + r] = T[3 * r + 1] * l;
+                M[o + 8 + r] = (T[3 * r] * sd + T[3 * r + 2] * cd) * b;
+            }
+            [M[o + 3], M[o + 7], M[o + 11], M[o + 12], M[o + 13], M[o + 14], M[o + 15]] = [0, 0, 0, f.x, f.y, f.z, 1];
         }
         AnazhRealm._instanzZahl(S.mesh, n);
         if (n > 0) S.mesh.instanceMatrix.needsUpdate = true;
@@ -2628,8 +2710,9 @@ class AnazhRealm_feld_leben {
         const ende = folge ? this._sukzessionNaechste(a) : a.h + this._tatIndex().dauer.get(a);
         if (!(this._nachwuchsFaellig <= ende)) this._nachwuchsFaellig = ende;
         if (tat === "faellen") this._nahStreuTat(a);
-        // die Asche liegt (stoffe.K2#2): Boden-Decke, Wiese und Streu der Narbe, und der Brand nimmt die Bäume in ihr
-        if (folge) this._sukzessionMalen(a);
+        // die Asche liegt (stoffe.K2#2): Boden-Decke, Wiese und Streu der Narbe, und der Brand nimmt die Bäume in ihr — ihre erste
+        // Stufe malt der Nachwuchs (`_tickScatterRegrow`, die Schlange der frischen Taten)
+        if (folge) (this._sukzessionNeu || (this._sukzessionNeu = [])).push(a);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return a;
     }
@@ -3102,19 +3185,22 @@ AnazhRealm.BRAND = Object.freeze({
     hoerM: 256, // so weit hört das Ohr den Brand knistern (`_glutAmOhr`)
     // das Bild (`_brandBild`): bis `weiteM` um das Auge, die Front in `winkel` Schritten abgetastet (jenseits von `nahM` je
     // Abstand gröber, nie unter `winkelMin`), je Flamme ein Abstand von
-    // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax`; `flammenWind` der Wind auf Flammenhöhe je Wind
+    // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax` je Bild aus höchstens `zellenMax` Zellen, die
+    // nächsten zuerst (ein Brand von 2 000 Zellen kostet das Bild, nie die Welt); das Flackern in `flackerPhasen`; `flammenWind` der Wind auf Flammenhöhe je Wind
     // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge in `zungeSegmente` Kanten, `breite` × Länge breit, ihre Deckung
-    // fällt zur Spitze mit (1 − h)^spitze. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max`, die
-    // Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
+    // fällt zur Spitze mit (1 − h)^spitze. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max` (ein
+    // großer Brand je Zelle seltener, bis `kMax` × größer), die Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
     // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Kante `size`, Gestalt `form`)
     bild: Object.freeze({
         weiteM: 160,
         winkel: 96,
-        winkelMin: 16,
-        nahM: 40,
+        winkelMin: 4,
+        nahM: 12,
         abstand: 0.45,
         abstandMinM: 0.5,
-        flammenMax: 1600,
+        flammenMax: 384,
+        zellenMax: 32,
+        flackerPhasen: 8,
         flammenWind: 0.4,
         zungeSegmente: 6,
         breite: 0.42,
@@ -3127,6 +3213,7 @@ AnazhRealm.BRAND = Object.freeze({
             a0: 0.82,
             aKill: 0.08,
             lebenS: 25,
+            kMax: 3,
             wMax: 7,
             color: 0x8d8881,
             size: 1,

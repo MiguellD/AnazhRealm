@@ -458,7 +458,10 @@ class AnazhRealm_dirigent_takt {
             this._bruchMelden(
                 "HORIZONT: der Fern-Ring zählt eine Bestellung im Flug, die der Fern-Faden nicht trägt — ein Neubestellen neben `_fernRingNeuBestellen` vergaß sie"
             );
+        // die Schlange des Walds, seine Pflanz- und Saat-Wartenden, und die frischen Taten, deren erste Stufe der Nachwuchs
+        // noch malt (`_sukzessionNeu`: Narbe, Wiese, Streu und Wald der Asche)
         o.wald =
+            (this._sukzessionNeu ? this._sukzessionNeu.length : 0) +
             (this._waldPlanSchlange ? this._waldPlanSchlange.size : 0) +
             (this._waldPflanzWarten ? this._waldPflanzWarten.size : 0) +
             (this._saatOffen ? this._saatOffen.size : 0) +
