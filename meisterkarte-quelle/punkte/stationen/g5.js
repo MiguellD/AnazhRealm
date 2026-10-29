@@ -156,6 +156,44 @@ const STADT_HUEGEL = [
     "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
 ];
 
+// DER RING VOM HÜGEL (siedlung.K4 Staffel 2, w3w-jahrhunderte): ein Ort von 1320 (der Akt `spawnSettlement` mit Jahr, Same 7) auf
+// dem ebensten Land 500–800 m vor dem Genesis-Ort; der Hügel ist der höchste Land-Punkt 140–240 m vor ihm. Am Ort: ein gesetztes
+// Haus 6 m vor seinem Rand zum Hügel hin (Werk, `haus_alemannisch`), die Welt-Uhr 1500 s vor — jedes `umstellen` tickt die Welt,
+// bis sie steht (der Ort im Wachstum zählt in `_dorfOffen`). Der Code trägt kein einfaches Hochkomma (bash '…').
+const K4_ORT =
+    "const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = null; " +
+    "for (const R of [500, 650, 800]) for (let k = 0; k < 24; k++) { const a = (k / 24) * 2 * Math.PI, x = g.x + Math.cos(a) * R, z = g.z + Math.sin(a) * R; " +
+    "const ys = [0, 1, 2, 3, 4, 5, 6, 7].map((j) => [x + Math.cos(j * 0.785) * 80, z + Math.sin(j * 0.785) * 80]); " +
+    "if (!land(x, z) || !ys.every(([u, v]) => land(u, v))) continue; const h = ys.map(([u, v]) => hoch(u, v)), hang = Math.max(...h) - Math.min(...h); " +
+    "if (!S || hang < S.hang) S = { x, z, hang }; } if (!S) return { fehler: \"kein ebenes Land 500–800 m vor dem Genesis-Ort\" }; " +
+    "const huegel = (c) => { let b = null; for (const R of [140, 190, 240]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R, y = hoch(x, z); " +
+    "if (Number.isFinite(y) && land(x, z) && (!b || y > b.y)) b = { x, y, z }; } return b; }; " +
+    "window.__k4 = { S, huegel, land, hoch, hill: huegel(S) }; r.spawnSettlement({ seed: 7, jahr: 1320, position: { x: S.x, y: 0, z: S.z } }); " +
+    "return { S, hill: window.__k4.hill };";
+const K4_VOR =
+    "const K = window.__k4, Z = r.state.worldMeta.settlementCells; " +
+    "const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\") && Math.hypot(Z[q].x - K.S.x, Z[q].z - K.S.z) < 250); if (!k) return { fehler: \"der Ort von 1320 steht nicht\" }; " +
+    "const c = Z[k], S = r._bewohnerSiedlungen.get(k), P = S && S.plan; if (!P) return { fehler: \"der Ort trägt keinen Plan\" }; " +
+    "K.haeuser = () => S.plan.slots.map((s) => r._dorfHaus(S.ox + s.x, S.oz + s.z, s.seed >>> 0)).filter(Boolean); " +
+    "Object.assign(K, { k, c, E0: K.haeuser(), hill: K.huegel(c) }); const R = 6 + Math.max(...P.slots.map((s) => Math.hypot(s.obb.cx, s.obb.cz) + Math.hypot(s.obb.ex, s.obb.ez))); " +
+    "const a0 = Math.atan2(K.hill.z - c.z, K.hill.x - c.x); for (let i = 0; i < 16 && !K.haus; i++) { const a = a0 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.39, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R; " +
+    "if (K.land(x, z) && r.spawnArchitecture(\"haus_alemannisch\", { x, y: K.hoch(x, z) + 0.5, z }, { seed: 4711, werk: true })) K.haus = [x, z]; } " +
+    "return { k, groesse: P.groesse, jahr: P.jahr + P.spanne, slots: P.slots.length, haeuser: K.E0.length, haus: K.haus || null, hill: K.haus ? K.hill : null };";
+const K4_UHR =
+    "const K = window.__k4; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; " +
+    "return { kern: !!K.c.kern, jahr: K.j0, haeuser: K.E1.length, uhr: r.state.spielZeit };";
+const K4_STAND =
+    "const K = window.__k4, c = K.c, E = K.haeuser(), ring = E.filter((e) => !K.E1.includes(e)).map((e) => [e.position.x, e.position.z]); " +
+    "const med = (q) => (ring.length ? Math.round(ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[ring.length >> 1]) : null); " +
+    "return { jahr: [K.j0, c.wachs && c.wachs.jahr], haeuser: [K.E1.length, E.length], slots: r._bewohnerSiedlungen.get(K.k).plan.slots.length, " +
+    "bleiben: +(K.E1.filter((e) => E.includes(e)).length / K.E1.length).toFixed(3), ring: { neu: ring.length, zumHaus: med(K.haus), zumOrt: med([c.x, c.z]) }, offen: r._dorfOffen() };";
+const K4_KAMERA =
+    "const K = window.__k4, h = K.hill, mx = (K.c.x + K.haus[0]) / 2, mz = (K.c.z + K.haus[1]) / 2, my = K.hoch(mx, mz); " +
+    "return { pose: [h.x, h.y + 1.7, h.z, mx, my + 4, mz].map((v) => +v.toFixed(2)), d: Math.round(Math.hypot(h.x - mx, h.z - mz)), hoeher: Math.round((h.y - my) * 10) / 10 };";
+const K4_SCHRITT = (name, code, sek) =>
+    "timeout " + sek + " $W eval '" + code + "' > \"$L/k4-" + name + ".json\" 2>&1; echo '@@PUNKTE@@ " + name.toUpperCase() + "'; cat \"$L/k4-" + name + ".json\"; echo";
+const K4_HUEGEL = (datei) => "HILL=$(" + LIES("console.log(e.hill ? e.hill.x.toFixed(1) + \" \" + e.hill.z.toFixed(1) : \"\")") + " \"$L/k4-" + datei + ".json\" 2> /dev/null)";
+
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
 // die Hand im gesetzten Halt je Takt noch gleitet. So heißt ein ROT beim Namen: kein Treffer am Ziel (gesetzt 0) ist das
@@ -713,40 +751,141 @@ const stationen = [
         quelle: "2 = dazu Hangdörfer über slopeMax 0,35 hinaus, Erdbau-Median je Haus als Kosten, EIN Grundriss-Leser statt drei",
     },
 
-    // ───────── siedlung.K4 — durch die Jahrhunderte (Zweig w3s-jahrhunderte: die Chronik im fachwerk-core) ─────────
-    // gate:settlement Teil J (`--nur-j`, Node, kein Browser): je Saat (8) dieselbe Zelle unter 1320 · 1560 · 1860 · 1935 (die
-    // Epochen ohne Zahl — die Chronik ihrer Region, `chronikJahr`); je Paar die Überdeckung je Slot (3 × 3 Punkte des
-    // Grundrisses im Grundriss des jüngeren), die kleinste ≥ 0,8; die Mutante ohne Erbe (jede Epoche ihr eigener Plan) bricht
-    // sie (< 0,8). J2: moderne ergibt stadt mit Turm, vier Epochen vier Kirchen, jedes Baujahr bis zum Schnitt, kein Turm vor
-    // 1905, keine Halle vor 1850, die Kultur aus REGION_HIST ihres Baujahrs, die Kleidung die Tracht der Epoche; die Mutante
-    // (Turm von 1455, keine Tracht) fällt beim Namen. Am Kopf vor w3s-jahrhunderte: 0,222 und 162 Brüche (ROT); am Zweig
-    // 0,915, ohne Erbe 0,274, 0 Brüche.
+    // ───────── siedlung.K4 — durch die Jahrhunderte (w3s-jahrhunderte: die Chronik im fachwerk-core; w3w-jahrhunderte: die Zahl der Welt) ─────────
+    // gate:settlement Teil J (`--nur-j`, Node): je Saat (8) dieselbe Zelle unter 1320 · 1560 · 1860 · 1935 (die Epochen ohne Zahl
+    // — die Chronik ihrer Region, `chronikJahr`); je Paar die Überdeckung je Slot (3 × 3 Punkte des Grundrisses im Grundriss des
+    // jüngeren), die kleinste ≥ 0,8 — und die Zelle der Welt MIT ihrer Zahl (nH 24, Legende mittelalter, 4 Saaten: die Zahl
+    // zählt die Häuser ihres Schnitts, `gestaltFuer`), geschnitten am Ende jeder Epoche; bis w3w schaltete die Zahl die Chronik
+    // ab, jede Welt-Handlung rechnete je Epoche einen eigenen Plan. Die Mutante ohne Erbe (je Epoche ein eigener Plan) bricht
+    // beide (< 0,8). J2: moderne ergibt stadt mit Turm, vier Epochen vier Kirchen, jedes Baujahr bis zum Schnitt, kein Turm vor
+    // 1905, keine Halle vor 1850, die Kultur aus REGION_HIST ihres Baujahrs, die Kleidung die Tracht der Epoche, die Mauer genau
+    // am städtischen Schnitt vor 1750 und durch kein Haus; die Mutante (Turm von 1455, keine Tracht, keine Mauer) fällt beim
+    // Namen. Teil WW (`--nur-ww`, Null-Renderer-Welt, kein Bild): der Satz „dorf 7 300 jahr 1560" trägt Same, Zahl und Jahr,
+    // „dorf 7 hanse" die Epoche; die Akte mit Jahr 1320 und 1935 stehen in der Welt als dorf in Poncho und als stadt mit Turm in
+    // T-Shirt (die Tracht liest der Wirt aus dem Export, `_bewohnerGestalten`). Rot-Grund der Buchung (b3f9ae95): „keine Zeile
+    // JAHRESRINGE" — Teil J landete erst mit V18.546.122; an 98ef98bb grün 0,915, aber nur am Weg ohne Zahl, den keine Handlung
+    // der Welt geht. Am Zweig w3w: Teil J 0,915, mit Zahl 0,958 (ohne Erbe 0,194 · 0,298), 0 Brüche, Mutante 10; WW1 grün. Der
+    // Exit von `--nur-ww` trägt auch die Welt-Proben der Staffel 2 (WW2 Wachstum, WW3 Ring-Kern, WW4 jeder nahe Ort je Takt).
     {
         kriterium: "siedlung.K4",
         staffel: 1,
         geraet: "headless",
-        befehl: ["node", "scripts/diag-settlement.cjs", "--nur-j"],
+        befehl: ["bash", "-c", "node scripts/diag-settlement.cjs --nur-j; J=$?; node scripts/diag-settlement.cjs --nur-ww; W=$?; exit $((J > W ? J : W))"],
         gpu: false,
         zeit: false,
-        minuten: 2,
+        minuten: 3,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
             const z = jsonZeile(out, /^JAHRESRINGE /);
-            const j1 = /^\s*(✅|❌) J1 JAHRESRINGE/m.exec(out);
-            const j2 = /^\s*(✅|❌) J2 EPOCHE: (\d+) Brüche, die Mutante (\d+)/m.exec(out);
+            const w = jsonZeile(out, /^WELTWACHSTUM /);
+            const [j1, j2, ww1] = [
+                /^\s*(✅|❌) J1 JAHRESRINGE/m,
+                /^\s*(✅|❌) J2 EPOCHE: (\d+) Brüche, die Mutante (\d+)/m,
+                /^\s*(✅|❌) WW1 DAS JAHR/m,
+            ].map((re) => re.exec(out));
+            const zz = (z && z.zahl) || [];
             const gruen =
-                !!z && z.min >= 0.8 && z.ohneErbe < 0.8 && Array.isArray(z.fehl) && !z.fehl.length &&
-                !!j1 && j1[1] === "✅" && !!j2 && j2[1] === "✅" && +j2[3] > 0 && lauf.exit === 0;
+                !!z && z.min >= 0.8 && zz[0] >= 0.8 && z.ohneErbe < 0.8 && zz[1] < 0.8 && Array.isArray(z.fehl) && !z.fehl.length &&
+                !!j1 && j1[1] === "✅" && !!j2 && j2[1] === "✅" && +j2[3] > 0 && !!ww1 && ww1[1] === "✅" && !!w && !w.bruch && lauf.exit === 0;
+            const welt = w && w.alt && w.neu
+                ? "1320 " + w.alt.groesse + " " + w.alt.tracht + " · 1935 " + w.neu.groesse + (w.neu.turm ? " mit Turm " : " ohne Turm ") + w.neu.tracht
+                : "keine Zeile WELTWACHSTUM" + (w && w.bruch ? " (" + String(w.bruch).slice(0, 160) + ")" : "");
             return {
                 gruen,
                 zahl: z
-                    ? "Überdeckung je Slot " + z.min + " über " + (z.paare || []).length + " Saaten × 3 Paare (ohne Erbe " + z.ohneErbe +
-                      "), Rolle/Bauart/Kleidung " + (z.fehl || []).length + " Brüche" + (j2 ? ", Mutante " + j2[3] : "") + ", Exit " + lauf.exit
+                    ? "Überdeckung je Slot " + z.min + ", mit der Zahl der Welt " + zz[0] + " (ohne Erbe " + z.ohneErbe + " · " + zz[1] +
+                      "), Rolle/Bauart/Kleidung/Mauer " + (z.fehl || []).length + " Brüche" + (j2 ? ", Mutante " + j2[3] : "") + "; in der Welt " + welt + ", Exit " + lauf.exit
                     : "keine Zeile JAHRESRINGE (Exit " + lauf.exit + ")",
             };
         },
-        pfad: ["fachwerk-core.js", "scripts/diag-settlement.cjs", "scripts/lib/welt-boot.cjs"],
+        pfad: [
+            "fachwerk-core.js",
+            "stamm/siedlung-*.js",
+            "stamm/feld-leben.js",
+            "stamm/gelaende-kollision.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
         quelle: "1 = dieselbe Zelle unter 1320/1560/1860/1935: der ältere Kern liegt zu ≥ 80 % im jüngeren (Jahresringe), die Epoche moderne ergibt stadt, die Epoche bestimmt Rolle, Bauart und Kleidung im Export",
+    },
+
+    // siedlung.K4 Staffel 2 (w3w-jahrhunderte): das Gesetz des Wachstums (gate:settlement Teil W, Node: 6 Orte in 3 h Welt-Uhr bis
+    // zur Gegenwart, die Jahresringe je Sprung; wohl 0 und ohne Leute halten, Gewalt bremst, ein Zeitplan fällt — fachwerk
+    // `wachstum`: Kraft = Leute × Wohlstand ÷ (1 + Furcht × fluchtJeFurcht) je s, die Akten gesehener Gewalt im Gedächtnis des Orts)
+    // und in der warmen Welt der Ring vom Hügel (K4_ORT … K4_KAMERA): der Ort von 1320 steht, ein gesetztes Haus an seinem Rand wird
+    // Kern (`_ortKernAkt`), nach 1500 s Welt-Uhr ist er gewachsen (`_ortWachstumTakt` → `_ortWaechst`, der Zug hebt die neuen
+    // Häuser), die alten stehen (≥ 0,9), der Median der neuen liegt näher am Haus als am Kern des Orts, und das Beweisbild vom
+    // Hügel mittags urteilt grün. Headless am Zweig (Teil WW, Null-Renderer): 1412 → 1724, 12 → 21 Häuser, die alten 0,917;
+    // der Ring 26 neue, Median 54 m vom Haus gegen 100 m vom Ort; der Nachbar wächst im selben Takt (WW4). Die Schritte dieser
+    // Probe headless am Zweig (Null-Renderer, `umstellen` nachgestellt bis Dorf und Foundry ruhen): Ort 400/693 dorf 12/12, Kern
+    // ja, 1412 → 1724, 12 → 19/20 Häuser, die alten 0,917, Ring 8 neu, Median 22 m vom Haus / 59 m vom Ort, Hügel 210 m, 11,9 m
+    // höher. Das Bild und die Dauer der Probe an der GPU: ungemessen.
+    {
+        kriterium: "siedlung.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: sitzung(600,
+            "A=$(cygpath -m '{AUS}')",
+            "teil W node scripts/diag-settlement.cjs --nur-w",
+            "boot",
+            "timeout 60 $W fenster 1600 900 > /dev/null 2>&1",
+            K4_SCHRITT("ort", K4_ORT, 120),
+            K4_HUEGEL("ort"),
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN ORT'; exit 4; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("vor", K4_VOR, 60),
+            K4_HUEGEL("vor"),
+            "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEIN HAUS AM RAND'; exit 5; }",
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("uhr", K4_UHR, 60),
+            "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
+            K4_SCHRITT("stand", K4_STAND, 60),
+            K4_SCHRITT("kamera", K4_KAMERA, 60),
+            "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/k4-kamera.json\" 2> /dev/null)",
+            "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 6; }",
+            "rm -f \"$L/ring.abnahme.json\"",
+            "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
+            "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
+        ),
+        gpu: true,
+        zeit: false,
+        minuten: 12,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const teil = (n) => out.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+            const erg = (n) => ((b) => (b && b.ergebnis) || {})(jsonBlock(teil(n)));
+            const [w1, w2] = [/^\s*(✅|❌) W1 WACHSTUM in \d+ s: (.*)$/m, /^\s*(✅|❌) W2 AUS BEWOHNERN/m].map((re) => re.exec(out));
+            const [o, v, u, s, k] = ["ORT", "VOR", "UHR", "STAND", "KAMERA"].map(erg);
+            const ring = s.ring || {};
+            const steht = v.slots > 0 && v.haeuser >= 0.9 * v.slots && v.groesse === "dorf" && !!v.haus;
+            const waechst = Array.isArray(s.jahr) && s.jahr[1] > s.jahr[0] && s.haeuser[1] > s.haeuser[0] && s.bleiben >= 0.9 && s.offen === 0;
+            const kern = u.kern === true && ring.neu > 0 && ring.zumHaus < ring.zumOrt;
+            const bild = !!j && j.ok === true;
+            const gruen = !!w1 && w1[1] === "✅" && !!w2 && w2[1] === "✅" && steht && waechst && kern && !k.fehler && k.hoeher > 0 && bild;
+            return {
+                gruen,
+                zahl:
+                    "W1 " + (w1 ? w1[1] + " " + w1[2].slice(0, 70) : "keine Zeile") + " · W2 " + (w2 ? w2[1] : "keine Zeile") + " · Ort " +
+                    (o.fehler || v.fehler || v.groesse + " " + v.jahr + " " + v.haeuser + "/" + v.slots) + ", Haus " + (v.haus ? "gesetzt" : "fehlt") +
+                    ", Kern " + (u.kern ? "ja" : "nein") + " · 1500 s: " +
+                    (Array.isArray(s.jahr) ? s.jahr.join(" → ") + ", Häuser " + s.haeuser.join(" → ") + "/" + s.slots + ", die alten " + s.bleiben + (s.offen ? ", offen " + s.offen : "") : "kein Stand") +
+                    " · Ring " + ring.neu + " neu, Median " + ring.zumHaus + " m vom Haus / " + ring.zumOrt + " m vom Ort · Schuss vom Hügel " + k.d + " m, " +
+                    k.hoeher + " m höher · " + (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+            };
+        },
+        pfad: [
+            "fachwerk-core.js",
+            "tetrapoda-core.js",
+            "stamm/siedlung-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/gelaende-boden.js",
+            "stamm/dirigent-takt.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+        ],
+        quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
     },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
