@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
 // Waffen-Schaden-Pfad) UND treibt das Abbauen (_heldImplementBlueprint) — eine Pipeline.
-async function checkBandV1757HeldSlot(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1757HeldSlot({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const savedHeld = p.equipped ? p.equipped.held : null;
@@ -111,10 +109,8 @@ async function checkBandV1757HeldSlot(ctx) {
 // das Gerät SCHMIEDEN: F2 die Präzision moduliert das Abbauen
 // (die §4.3-Rekursion schließt), F3 der Werk-Akt forgeBlueprint (Material ziehen + Präzision einfrieren +
 // ausrüsten — der Spiegel von bauen). KONSUM (nicht Existenz).
-async function checkBandV1761ForgeImplement(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1761ForgeImplement({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -214,10 +210,8 @@ async function checkBandV1761ForgeImplement(ctx) {
 // der Schmiede-Akt wird BEDEUTSAM: der Spieler-Equip-Pfad (wieldBlueprint)
 // geht durch das Schmieden — ein ungeschmiedetes Geraet in pfad/frieden kostet (schmieden), ein
 // geschmiedetes (forgedPrecision, persistiert) ist frei in die Hand zu nehmen. Heilt den Gratis-Bypass.
-async function checkBandV1762ForgeMeaningful(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1762ForgeMeaningful({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -313,10 +307,8 @@ async function checkBandV1762ForgeMeaningful(ctx) {
 // Rüstung schmieden/weben: derselbe WERK-Kern (_forgeMaterialAndFreeze) wie
 // das Gerät, in den armor-Slot; wearArmor ist der Spieler-Pfad (forge-wenn-ungemacht), fertigeBlueprint
 // routet nach Rolle. KONSUM (nicht Existenz).
-async function checkBandV1763ForgeArmor(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1763ForgeArmor({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -433,10 +425,8 @@ async function checkBandV1763ForgeArmor(ctx) {
 // Trank brauen: der Werk-Akt zieht die Zutaten (die
 // Material-Kosten des Konsumable-Bauplans) durchs Mach-Tor, dann wirkt der Trank. Heilt den ∞-Gratis-Boost.
 // activateConsumable bleibt das freie Low-Level-Primitiv. KONSUM (nicht Existenz).
-async function checkBandV1765BrewConsumable(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1765BrewConsumable({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -528,10 +518,8 @@ async function checkBandV1765BrewConsumable(ctx) {
 // Der EINE Fluss: FERTIGEN ist die Abschluss-Zeile der Stats-Tabelle (kein paralleler ⚒-Knopf),
 // _workshopStationGate hängt end-to-end am Mach-Akt (nicht nur confirmBuild). Geprüft: das Gate
 // lehnt ab/lässt durch, die FERTIGEN-Zeile rendert, die alten Knöpfe sind weg.
-async function checkBandV1766FertigenFlow(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1766FertigenFlow({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -639,10 +627,8 @@ async function checkBandV1766FertigenFlow(ctx) {
 // Werkstatt-Designation: ob etwas eine Werkstatt IST, emergiert nicht sauber (Esse ≈ dichtes
 // Bauwerk) → Hand-Flag als Override (Intent); die bediente Domäne EMERGIERT. Ein eigener Apparat
 // wird markiert und bedient seine emergente Domäne, das Gate findet ihn.
-async function checkBandV1770WorkshopStationMark(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1770WorkshopStationMark({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
@@ -732,10 +718,8 @@ async function checkBandV1770WorkshopStationMark(ctx) {
     check("der DSL-Op set_workshop_station markiert (Spiegel von set_armor_role)", res.dslMarks);
 }
 
-async function checkBandV1772Library(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1772Library({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -836,10 +820,8 @@ async function checkBandV1772Library(ctx) {
 // Gehaltenes Gerät SICHTBAR in der Hand — headless: Mesh erscheint beim Equip, skaliert, am Avatar
 // geparentet, wechselt ohne Leak, verschwindet beim Ablegen, formloses builtIn-Tool abgelehnt,
 // re-attached beim Körper-Wechsel (Optik/Pose headless blind). Player-State: Snapshot + Restore.
-async function checkBandV1773HeldMesh(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1773HeldMesh({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh;
@@ -945,10 +927,8 @@ async function checkBandV1773HeldMesh(ctx) {
 // die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
 // Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
 // Form). NUR Custom-Avatare — die Built-in-Seele (human) bleibt neutral (kein Balance-Bruch).
-async function checkBandV1784AvatarFormFit(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1784AvatarFormFit({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const p = r.state.player;
         const out = {};
@@ -1004,8 +984,7 @@ async function checkBandV1784AvatarFormFit(ctx) {
     );
 }
 
-async function checkBandWelle6DSoul(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
@@ -1013,7 +992,6 @@ async function checkBandWelle6DSoul(ctx) {
     // MATERIAL_TAG_KEYS sind die EINE Achsen-Sprache für Soul- und Material-Tags. STAT_FROM_TAGS sind
     // reine Funktionen → Diskriminations-Tests prüfen Verhältnisse (Fuchs schneller, Bär mehr HP).
     const wave6dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
         // sieht sie direkt (kein window-Prefix nötig).
@@ -1158,7 +1136,6 @@ async function checkBandWelle6DSoul(ctx) {
     // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod und Wunde: gate:kampf-gefuehl Q13
     // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1354,7 +1331,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
     const wave6d3bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1510,7 +1486,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
     const wave6d3aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1659,7 +1634,6 @@ async function checkBandWelle6DSoul(ctx) {
     // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
@@ -1824,7 +1798,6 @@ async function checkBandWelle6DSoul(ctx) {
     // define_soul(name, bodyParts) komponiert eigene Charaktere — Form × Material über dieselbe
     // Hylomorphismus-Pipe wie Bauwerke.
     const wave6d16Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
@@ -1914,7 +1887,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
     const wave6d17Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
@@ -2154,10 +2126,8 @@ async function checkBandWelle6DSoul(ctx) {
 }
 
 // PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
-async function checkBandPhasenBF(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhasenBF({ page, check }) {
     const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // C1 — Gelenke: ein synthetischer 2-Part-Bauplan mit Verbindung → Joint-Rolle mit Anker.
@@ -2779,10 +2749,8 @@ async function checkBandPhasenBF(ctx) {
 // W5 Werkzeug-Abnutzung (Ω5-Perpetuum-Verbot am Werkzeug): ein gehaltenes Gerät trägt wear (0..1),
 // jeder Hieb zehrt, an der Schwelle → kaputt + Repair; Repair zahlt Material (forge × REPAIR_FRACTION
 // × Schaden) → wear=1. Migration-tolerant: ein Bauplan ohne wear-Feld liest 1.
-async function checkBandW5Werkzeugabnutzung(ctx) {
-    const { page, check } = ctx;
+async function checkBandW5Werkzeugabnutzung({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (W2) MIGRATION: ein Bauplan ohne wear-Feld liest 1 (alte Welten
@@ -2949,10 +2917,8 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
 
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme, sein Wind der EINE Wind am Ort (`_windAt`, gate:kopplung F3); ihr Konsum
 // (Jagd, Kadaver) lebt in gate:kreatur-takt jagdkreis — hier das Gesetz von Wind und Abstand.
-async function checkBandV18202GeruchFeld(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18202GeruchFeld({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (N3) Geruch: einzelne Quelle, Distanz-Decay

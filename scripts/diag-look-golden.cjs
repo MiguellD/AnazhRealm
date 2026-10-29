@@ -152,12 +152,11 @@ async function renderLuma() {
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await page.waitForFunction(
-            () => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state.rendererReady,
+            () => r && r.state && r.state.rendererReady,
             { timeout: 120000 }
         );
         // deterministisch settlen + auf einen Land-Augenhöhen-Spot stellen, ein paar Frames.
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             for (let i = 0; i < 80; i++) r._gameLoopTick && r._gameLoopTick();
         });
         await sleep(2500);

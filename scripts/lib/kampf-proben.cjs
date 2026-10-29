@@ -5,8 +5,7 @@
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem alten Stand rot und benennt den Defekt) ──
 async function WELLE_L(ort) {
-    const r = window.anazhRealm,
-        s = r.state,
+    const s = r.state,
         A = r.constructor,
         p = s.player,
         pm = s.playerMesh;
@@ -3110,8 +3109,7 @@ async function WELLE_L(ort) {
 // Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
 // Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
-    const r = window.anazhRealm,
-        s = r.state,
+    const s = r.state,
         p = s.player,
         pm = s.playerMesh;
     const K = { sturz: [], lage: [] };
@@ -3230,8 +3228,7 @@ async function K5_VOR(abdruck) {
 // (world:resonance am Genesis-Anker, resoniert +0,15). Die Probe fährt den Takt von Hand, vor dem Speichern tickt er nie, nach
 // dem Reload schon — an a03b7b06 hob das manaMax 92,87 → 97,37 (Q14 stand-werte ROT, der Abdruck 1566c4d6e4ba → cc66cb3569cd).
 function K5_ABDRUCK() {
-    const r = window.anazhRealm,
-        s = r.state,
+    const s = r.state,
         p = s.player,
         f = s.creatures.find((c) => c.userData.name === "K5-Fuchs"),
         nahrung = p.boosts.filter((b) => b.source.startsWith("consume:")),
@@ -3261,8 +3258,7 @@ function K5_ABDRUCK() {
 // (`__schmiedeCore`): vor · masse (MAT.*.rho × 1,25) · schneide (die Stoff-Zeile des Werks, sigY × 1,5); jeder Ruf nimmt zuerst
 // den letzten Lauf zurück (Halt, Kern, Schwung).
 async function K1_BILD(lauf) {
-    const r = window.anazhRealm,
-        s = r.state,
+    const s = r.state,
         p = s.player,
         pm = s.playerMesh,
         sc = globalThis.__schmiedeCore,

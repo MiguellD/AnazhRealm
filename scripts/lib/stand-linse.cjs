@@ -66,7 +66,6 @@ const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl", "_brandEnt
 // Die Sim-Linse (Seite): hüllt jede Methode des Prototyps und die Zellen jeder Sim (an der Instanz, je Frame neu gelegt).
 //   const S = window.__simLinseAn(); je Frame S.frame() → { wasser: n, …, akt: n, je: { wasser: { methode: n } } }; S.aus()
 function simLinseAn(sims, akte) {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     const namen = Object.keys(sims);
     const rolle = Object.fromEntries(akte.map((m) => [m, "akt"]));
@@ -177,7 +176,6 @@ function simRuheZeilen(R, wo) {
 }
 
 function standLinseAn(takte, blaetter, eigeneUhr) {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     const namen = Object.keys(takte);
     const orig = {};
@@ -316,8 +314,6 @@ function standPhase(frames) {
 // der Welle) · A · B. Gezählt je Phase: Einheiten je Takt, Zeit je Takt, Matrizen je Frame, CPU des Takts.
 function standLauf(k) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         const P = Object.getPrototypeOf(r);
         window.__buehne();

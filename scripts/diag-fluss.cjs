@@ -484,7 +484,6 @@ const WELT_HAKEN = () => {
 const WELT_MESSEN = async () => {
     await window.__weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
     for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
-        const r = window.anazhRealm;
         if (r && typeof r._gameLoopTick === "function") {
             try {
                 r._gameLoopTick(performance.now());
@@ -493,7 +492,6 @@ const WELT_MESSEN = async () => {
         }
         await sleep(6);
     }
-    const r = window.anazhRealm;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => !!(!(f && !f.ready)));
     const pump = async (n) => {

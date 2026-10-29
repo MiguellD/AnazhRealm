@@ -41,7 +41,7 @@ const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = 
 const server = statikServer();
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
-    const p = () => window.anazhRealm?.state.playerMesh?.position;
+    const p = () => r?.state.playerMesh?.position;
     const a = p() && p().clone();
     await window.sleep(200);
     return !!a && Math.hypot(p().x - a.x, p().z - a.z) >= m;
@@ -148,14 +148,13 @@ function KALT_PROBE() {
                         const [t1, z, sek] = [performance.now(), (A.kosten[k] = A.kosten[k] || {}), Math.floor(t0 / 1000)];
                         pTief -= pf;
                         if (aussen) z[sek] = (z[sek] || 0) + t1 - t0;
-                        if (pf && aussen && !window.anazhRealm.state._weltbildDa) A.vorBild[k] = (A.vorBild[k] || 0) + t1 - t0;
+                        if (pf && aussen && !r.state._weltbildDa) A.vorBild[k] = (A.vorBild[k] || 0) + t1 - t0;
                         if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
                     }
                 };
         }
     };
     setInterval(() => {
-        const r = window.anazhRealm;
         const o = { t: Math.round(performance.now()) };
         if (r && r.state) {
             if (!gewickelt) {
@@ -221,7 +220,7 @@ async function kaltLauf() {
     // DAS BILD DER KONTROLLE (`--bild datei.png`, ankunft K2): der Schuss bei t(Kontrolle) aus dem Ausgabe-Pfad
     // (scripts/lib/ausgabe-aufnahme.cjs) und derselbe nach RUHE_MS Ruhe (der Loop läuft), daneben `<datei>-ruhe.png`; dazu der
     // offene Bedarf im Bild in dem Moment (`_weltbildLuecken`, im Blick)
-    const offen = tK ? await page.evaluate(() => window.anazhRealm._weltbildFehlt()) : [];
+    const offen = tK ? await page.evaluate(() => r._weltbildFehlt()) : [];
     const bildDatei = OPT("--bild");
     let bild = null;
     if (tK && bildDatei) {

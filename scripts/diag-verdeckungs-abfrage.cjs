@@ -237,9 +237,7 @@ function sammlerInstall() {
 // Pipeline), unsichtbar (ohne Farbe, ohne Tiefe) und ohne Abfrage in die Szene gehängt, damit ihre Pipelines bauen, während
 // der Ablauf fährt. B und G opak am Anfang der Liste, L durchsichtig am Ende.
 function stationenVorbau() {
-    const r = window.anazhRealm;
     const T = window.THREE;
-    const st = r.state;
     const stoff = (k, durchsichtig) => {
         const m = new T.MeshBasicNodeMaterial({ transparent: durchsichtig });
         m.colorNode = T.TSL.vec4(T.TSL.float(k), 0, 0, 1);
@@ -274,9 +272,7 @@ function stationenVorbau() {
 
 // Seite: die Phasen der Linse. `opts.phase` = ablauf | bruch | gift | letzter, `opts.roh` = die drei Hüllen abnehmen.
 async function verdeckungPhase(opts) {
-    const r = window.anazhRealm;
     const T = window.THREE;
-    const st = r.state;
     const rend = st.renderer;
     const be = rend.backend;
     const S = window.__verdeckung;
@@ -582,7 +578,7 @@ async function verdeckungPhase(opts) {
         for (const k in eigen) be[k] = eigen[k];
     }
     // die Nachläufer der Phase (asynchron) noch in ihr buchen; ohne Hülle bis zum Wort der Validierung (solange eine Pipeline baut, mindestens 8 Bilder: r184s Fehler-Bereich hält es bis zum Ende eines offenen Pipeline-Baus)
-    for (let n = 0; await render(1), await sleep(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || window.anazhRealm._erstZeichnungStand().offen.size); );
+    for (let n = 0; await render(1), await sleep(200), opts.roh && W.n === wacheVor && !Object.keys(S.gpu[marke] || {}).length && (n++ < 8 || r._erstZeichnungStand().offen.size); );
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
@@ -609,7 +605,7 @@ async function verdeckungPhase(opts) {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async (karte) => {
             const t0 = performance.now();
-            const r = await window.__weltDa((r) => {
+            await window.__weltDa((r) => {
                 const st = r.state;
                 return !!(st?.rendererReady &&
                     st.renderer?.backend &&
@@ -625,7 +621,6 @@ async function verdeckungPhase(opts) {
         // der Loop gehört der Linse (der echte Spiel-Takt läuft durch `_gameLoopTick`); die Stoffe der Stationen bauen mit
         out.phasen.boot = await page.evaluate(stationenVorbau).then(() =>
             page.evaluate(() => {
-                const r = window.anazhRealm;
                 r.state.renderer.setAnimationLoop(null);
                 const S = window.__verdeckung;
                 S.phase = "zwischen";

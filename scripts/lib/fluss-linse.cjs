@@ -10,7 +10,6 @@
 //   Werkbank:  node scripts/werkbank.cjs fluss          (der Bericht)
 
 function flussLinse() {
-    const r = window.anazhRealm;
     const f = r && r._foundry;
     if (!f || !f.worker) return { fehler: "kein Foundry-Worker" };
     if (window.__fluss) return { schon: true };
@@ -85,7 +84,6 @@ function flussLinse() {
 function flussBericht() {
     const L = window.__fluss;
     if (!L) return { fehler: "Linse nicht installiert" };
-    const r = window.anazhRealm;
     const pct = (a, q) => {
         if (!a.length) return 0;
         const s = [...a].sort((x, y) => x - y);
@@ -176,7 +174,6 @@ function flussBericht() {
 // EINEM synchronen Block zu, die erste Anfrage folgt erst nach dessen `ready`) und stempelt die stehende Bibliothek.
 function flussAuto() {
     const t = setInterval(() => {
-        const r = window.anazhRealm;
         const f = r && r._foundry;
         if (f && f.worker && !window.__fluss) window.__flussLinse();
         if (f && f._warmCritical && !window.__flussBibliothekS) {

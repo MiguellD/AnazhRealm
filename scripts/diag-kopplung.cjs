@@ -24,7 +24,6 @@ hauptLauf(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const AR = r.constructor;
             const o = { fails: [], zahlen: {} };
             const fail = (msg) => o.fails.push(msg);

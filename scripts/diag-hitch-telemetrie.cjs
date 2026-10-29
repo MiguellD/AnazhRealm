@@ -92,7 +92,6 @@ function bauUhrInstall() {
 // Aufruf aus Node. Keine Probe trägt eine Sekunden-Frist: jede wartet auf ihr EREIGNIS (`bisEreignis`) und gibt nur auf,
 // wenn die Erst-Zeichnung still steht — dann kann nichts mehr kommen.
 function erstWandInstall(BUNDLE_FRAMES) {
-    const r = window.anazhRealm;
     const rend = r.state.renderer;
     const U = window.__bauUhr || null;
     // (4b) DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
@@ -695,7 +694,7 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
-        const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
+        await window.__weltDa(() => !(!r || !r.state));
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
         let stable = 0,
             last = -1;

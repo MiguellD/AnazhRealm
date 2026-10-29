@@ -386,8 +386,6 @@ const server = statikServer();
 async function probe(arg) {
     const out = {};
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const tick = async (n, ms) => {
         for (let i = 0; i < n; i++) {
             try {

@@ -7,10 +7,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // GROSSE Strukturen (Dorf/Tempel/Wasserfall) spawnen nicht AUF dem Spieler (Chunk-Remesh →
 // Durchfall), kleine Platzierungen unberührt; ein Void-Boden holt aus jedem Durchfall zurück.
-async function checkBandV1728SpawnClearance(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1728SpawnClearance({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const MIN = r.constructor.STRUCTURE_CLEAR_MIN_FOOTPRINT;
         const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
@@ -81,10 +79,8 @@ async function checkBandV1728SpawnClearance(ctx) {
 // Budgetierter Culling-Build: `tickArchitectureCulling` baut höchstens
 // `architectureBuildBudgetPerFrame` teure Builds pro Frame, statt beim Eintritt in eine dichte
 // Region alle cold-Einträge auf einmal (FPS-Sturm).
-async function checkBandWellePerfDBudget(ctx) {
-    const { page, check } = ctx;
+async function checkBandWellePerfDBudget({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
         const out = {};
         out.hasBudgetField = Number.isFinite(r.state.architectureBuildBudgetPerFrame);
@@ -162,15 +158,13 @@ async function checkBandWellePerfDBudget(ctx) {
     );
 }
 
-async function checkBandRing6Workshop(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
     const ring6Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
 
@@ -395,7 +389,6 @@ async function checkBandRing6Workshop(ctx) {
     // Jede Architektur mit soliden Parts (dichte ≥ 0.3) trägt ab Spawn `entry.blockerAABBs` (Daten,
     // render-/distanz-unabhängig); `_stepCharacterStructures` löst die Spieler-Kapsel dagegen.
     const ring63Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Cleanup
@@ -503,7 +496,6 @@ async function checkBandRing6Workshop(ctx) {
     // entry.blockerAABBs) muss ihn aufhalten — gedrückte W-Taste (yaw=0 → forward=+Z), synchrone
     // _gameLoopTick-Pumps (Headless-rAF ~1 Hz).
     const collisionLive = await page.evaluate(() => {
-        const r = window.anazhRealm;
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
@@ -554,7 +546,6 @@ async function checkBandRing6Workshop(ctx) {
     );
     // Cleanup (inkl. Test-Blueprint)
     await page.evaluate(() => {
-        const r = window.anazhRealm;
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
@@ -565,7 +556,6 @@ async function checkBandRing6Workshop(ctx) {
     // ### Ring 6.4 — Bauplan-Datenschicht ###
     // _buildFromBlueprint rendert Baupläne, 8 Primitive werden erkannt; User-Baupläne sind hinzufügbar + persistierbar.
     const ring64Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // 8 Primitive renderbar — wir bauen einen Test-Bauplan
@@ -696,7 +686,6 @@ async function checkBandRing6Workshop(ctx) {
 
     // ### Ring 6.5 — Hotbar mit 9 Slots ###
     const ring65Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         // DOM-Hotbar
         const bar = document.getElementById("hotbar");
@@ -825,7 +814,6 @@ async function checkBandRing6Workshop(ctx) {
 
     // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
     const ring66Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // UI vorhanden
@@ -980,7 +968,6 @@ async function checkBandRing6Workshop(ctx) {
 
     // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
     const ring6v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1171,10 +1158,8 @@ async function checkBandRing6Workshop(ctx) {
 // ARCHETYPEN-BANK: ~46 synthetische Positiv- + GEGEN-Beispiele je Rolle als stehende Invariante —
 // jeder Signatur-Edit läuft gegen die Bank, nicht nur gegen die Built-ins. Kalibriert via
 // diag-archetypbank (dieselbe Tabelle).
-async function checkBandArchetypBank(ctx) {
-    const { page, check } = ctx;
+async function checkBandArchetypBank({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
             shape,
             material,
@@ -1357,10 +1342,8 @@ async function checkBandArchetypBank(ctx) {
     );
 }
 
-async function checkBandLambda2HismSynthese(ctx) {
-    const { page, check } = ctx;
+async function checkBandLambda2HismSynthese({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const A = r.constructor;
         out.instanceTintFrozen = Object.isFrozen(A.INSTANCE_TINT);
@@ -1453,15 +1436,13 @@ async function checkBandLambda2HismSynthese(ctx) {
     check("Λ.2 HISM: tintH/S/V reist bit-treu im Snapshot (V8.59-Klasse)", res.snapshotCarriesTint === true);
 }
 
-async function checkBandLambda5MischwaldSynthese(ctx) {
-    const { page, check } = ctx;
+async function checkBandLambda5MischwaldSynthese({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
-        const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
+        const ref = r.constructor.SPECIES_TAG_REFERENCE || {};
         out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
         // die Liste der Würfe des Felds (`FELD_WURF`, K10-6: die EINE, die _vegetationSampleSpawn liest) trägt die 4 NEUEN,
         // aber NICHT die Varianten — gelesen an der Liste, nie am Rumpf-Text (Lehre 6)
@@ -1496,20 +1477,18 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
 // W-H Wald: die Gestalt-Variante je Art wird NACH dem Affinitäts-Sieg gewählt → die Verteilung bleibt
 // bit-identisch und tag-neutral (gleiche Materialien + Formen). Headless: Tag-Neutralität,
 // Spawn-Verdrahtung, Pro-Instanz-Rotation + ihre Persistenz.
-async function checkBandWHWald(ctx) {
-    const { page, check } = ctx;
+async function checkBandWHWald({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
         // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
-        const refTbl = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
+        const refTbl = r.constructor.SPECIES_TAG_REFERENCE || {};
         out.refTableHat = !!(refTbl.baum_eiche && refTbl.baum_kiefer);
         // (2) die Bäume treten im Affinitäts-Wettstreit (candidates) NUR als kanonische Art an — keine
         // statische _jung/_alt/_breit-Variante im Pool; die Gestalt entsteht NACH dem Sieg.
         // (die Liste der Würfe des Felds, `FELD_WURF` — K10-6: gelesen an der Liste, nie am Rumpf-Text)
-        const feldWurf = window.anazhRealm.constructor.FELD_WURF || [];
+        const feldWurf = r.constructor.FELD_WURF || [];
         out.notInCandidates =
             feldWurf.includes("baum_eiche") &&
             feldWurf.includes("baum_kiefer") &&
@@ -1560,10 +1539,8 @@ async function checkBandWHWald(ctx) {
 // Γ2 TOTHOLZ: ein gefallener Stamm im Wald.
 // Built-in Bauplan `stamm_gefallen` + Sub-Spawn nach Baum (~10 % Chance,
 // seed-deterministisch, KEIN Affinitäts-Wettstreit — Disziplin).
-async function checkBandV18198Gamma2Totholz(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18198Gamma2Totholz({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
 
@@ -1592,8 +1569,8 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const __treeRef =
-            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
-                window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            (r.constructor.SPECIES_TAG_REFERENCE &&
+                r.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
             null;
         if (bp && __treeRef) {
             const totTags = r.computeCompoundTags(bp);
@@ -1643,10 +1620,8 @@ async function checkBandV18198Gamma2Totholz(ctx) {
 // Mesh-Merge pro Variante: statt ~75–80 InstancedMesh je Variante ~2 (bark merged + foliage merged).
 // Reine RENDER-Optimierung — bp.parts bleibt unverändert (tag-neutral); gen<6 bleibt Per-Part
 // (alte Welten bit-identisch).
-async function checkBandV18213MeshMerge(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18213MeshMerge({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // ─── (M1) Source-Probes: die zwei neuen Helper + Routing ─────
@@ -1814,11 +1789,8 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
-async function checkBandV18265ShadowDistance(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18265ShadowDistance({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const out = {};
         // UNIT: L0 UND L1 werfen Schatten (sonst verlöre jeder Baum ab thresh01 seinen Schatten mitten im
         // Sichtfeld); NUR die Fernstufe L2 wirft nie. Bauten (kein _lodN) werfen weiter.

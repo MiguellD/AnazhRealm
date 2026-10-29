@@ -9,10 +9,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // toter Knopf) · (2) Kachel-Erosion ohne flowTo-Ballast · (3) die Bestbewertet-Rail liest die
 // aggregierte Wertung · (4) die Nah-Streu würfelt je (Zelle, Art) aus Zelle + Welt-Seed (Γ5).
 // Gegenprobe: die CSM-Haupt-Map rendert NICHT (mainMap=false).
-async function checkBandV18136Audit(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18136Audit({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). Der
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
@@ -48,10 +46,8 @@ async function checkBandV18136Audit(ctx) {
 
 // M7 Licht-Feinschliff: die Mikro-Struktur als LEBENDIGER Regler (eine Konstante im Tree wäre ein toter Slider-Knopf);
 // der Nacht-Boden fiel mit F6 (das Licht ist die EINE Licht-Kette).
-async function checkBandM7LichtFeinschliff(ctx) {
-    const { page, check } = ctx;
+async function checkBandM7LichtFeinschliff({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const au = r._ensureAtmoUniforms();
         // (1) der Hebel ist eine UNIFORM (lebendig, nicht eingebacken).
@@ -87,10 +83,8 @@ async function checkBandM7LichtFeinschliff(ctx) {
     );
 }
 
-async function checkBandLambda3Wind(ctx) {
-    const { page, check } = ctx;
+async function checkBandLambda3Wind({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // K19: den Wind trägt kein Substanz-Tag — die Achse `wiegen` ist fort, Holz und Stein stehen.
         const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
@@ -100,10 +94,8 @@ async function checkBandLambda3Wind(ctx) {
     check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
 }
 
-async function checkBandWEFrequenzband(ctx) {
-    const { page, check } = ctx;
+async function checkBandWEFrequenzband({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const mats = r.state.materials;
         // (1) die ANTENNE emergiert aus der Substanz (Ordnung der Achsen).
@@ -155,10 +147,8 @@ async function checkBandWEFrequenzband(ctx) {
 
 // PBR-Pfad: roughness + metalness werden aus Material-Tags HERGELEITET (Physik, keine Gefühls-
 // Patches). Proben: Builder existiert, Dispatch wirkt, Roughness/Metalness folgen den Tags.
-async function checkBandV18223PbrKohaerenz(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18223PbrKohaerenz({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
 
@@ -265,10 +255,8 @@ async function checkBandV18223PbrKohaerenz(ctx) {
 // Wahrer Anblick I — der LAWFUL Boden: per-Fragment Multi-Klassen-Geologie als geteilter Auslesewert
 // (Toon + PBR). Fels/Geröll EMERGIEREN aus der Steile, Moos aus flach + feucht. Der Helfer bricht laut; jede Signatur des
 // Spiels baut ihren Stoff mit colorNode (G1) — ein Bruch im Bau wirft dort beim Namen.
-async function checkBandWahrerAnblickSaeule1(ctx) {
-    const { page, check } = ctx;
+async function checkBandWahrerAnblickSaeule1({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const THREE = window.THREE;
         const out = {};
 
@@ -346,10 +334,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
 
 // Gras-Band: die Wiese liest den BODEN darunter (lush-grün ↔ dry-oliv aus lebendig + feuchte).
 // Proben messen KONSUM an den Nähten (Material, Boden-Albedo, Feld-Bake).
-async function checkBandWahrerAnblickGras(ctx) {
-    const { page, check } = ctx;
+async function checkBandWahrerAnblickGras({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (A) CONSUM Source-Probes

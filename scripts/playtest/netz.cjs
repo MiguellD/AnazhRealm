@@ -8,13 +8,11 @@ const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-async function checkBandW13W14VibePassLibrary(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Vibe-Pass: die souveräne Avatar-Identität ###
     const w13p1Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         // Identität ist nach init bereit.
         const vp = r.state.vibePass;
@@ -109,7 +107,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 
     // ### Bauplan-Signaturen ###
     const w13p2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         // Einen eigenen Bauplan mit einem Part anlegen.
         if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
@@ -216,7 +213,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 
     // ### Vibe-Pass-Identität im Multi-User ###
     const w13p3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const p2p = r.state.p2p;
         // Peer-Entry trägt die Vibe-Pass-Felder.
@@ -344,7 +340,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 
     // ### Bibliothek: browsbare Welt-Registry ###
     const w14Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
@@ -679,7 +674,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 
     // ### Welt-Manifest-Signatur ###
     const w14p2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
         // _canonicalManifest deterministisch + ignoriert world/desc.
@@ -796,7 +790,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 
     // ### das Schaffen reist mit ###
     const w13v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const baseP = r._portalEnterPayload();
         out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
@@ -844,7 +837,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 
     // ### fremde Welten empfangen ###
     const w14p3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
         // Vorzustand säubern.
@@ -1040,10 +1032,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
 // G8 R0 — der INNERSTE RING ist BENANNT + ABWESEND aus jedem geteilten Kanal.
 // Die Wand: der private Schlüssel / die Identität lecken NIE in einen
 // Welt-Snapshot oder Portal-Payload (GEMESSEN-schon-wahr, jetzt eingefroren).
-async function checkBandG8R0Sovereign(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R0Sovereign({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         // (1) SOVEREIGN_STATE benannt + eingefroren + die kanonischen Schlüssel.
@@ -1105,10 +1095,8 @@ async function checkBandG8R0Sovereign(ctx) {
 // G8 R4 — Netz-Immunität: Herkunfts-KETTE (4a) · RÜCKRUF (4b: ein revozierter Schlüssel stößt jedes
 // Artefakt mit ihm in der Kette aus) · Quarantäne (4c: der welt-exponierte LLM formuliert keinen
 // souveränen Akt).
-async function checkBandG8R4Immunity(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R4Immunity({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
@@ -1209,10 +1197,8 @@ async function checkBandG8R4Immunity(ctx) {
 // G8 R5 — das LEBENDE Immunsystem (M5): die vier Angriffs-Korpora SIND das
 // Antikörper-Archiv. Kein neuer Apparat — eine neue ROLLE für die Invarianten-
 // Maschinerie: jeder Erreger impft bei jedem Push, ein Regress ist sofort rot.
-async function checkBandG8R5LivingImmune(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R5LivingImmune({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const corpus = r._robustnessCorpus();
         out.fourClasses = Array.isArray(corpus) && corpus.length === 4;
@@ -1241,10 +1227,8 @@ async function checkBandG8R5LivingImmune(ctx) {
 // Ω3 Re-Derive-Wand, Antikörper „der lügende Bauplan": ein fremdes Artefakt behauptet role=workshop-
 // station + roleManual, schmuggelt ein portalMeta-Origin, trägt ein Gott-Material (härte=10⁶) und
 // ein revoziertes Ketten-Glied → Rolle lokal emergiert, Portal sanitisiert, Klemme am Leser, Sieb.
-async function checkBandTailleOmega3(ctx) {
-    const { page, check } = ctx;
+async function checkBandTailleOmega3({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const C = r.constructor;
         const out = {};
         const KEVIL = "ef".repeat(32);
@@ -1395,8 +1379,7 @@ async function checkBandTailleOmega3(ctx) {
 // Ω4 Konformanz-Korpus: die eingefrorenen goldenen Dateien (spec/golden/v1/ — NIE regeneriert) muss
 // der heutige Code lesen; beide Signaturen verifizieren "valid", der Snapshot-Kopf trägt ⊇ das
 // goldene Schema, jeder goldene p2p-Typ hat Handler + pv-Stempel. Bricht das: Taille verletzt.
-async function checkBandTailleGolden(ctx) {
-    const { page, check } = ctx;
+async function checkBandTailleGolden({ page, check }) {
     // Leuchtturm: jeder im signaling-server gelesene `msg.type === "X"`-Typ MUSS in §7 der Taille-Spec
     // dokumentiert sein (ein Broker-Typ ohne Andock-Vertrag ist der Riss von morgen); plus der
     // Ein-Befehl-Self-Host existiert.
@@ -1437,7 +1420,6 @@ async function checkBandTailleGolden(ctx) {
     const res = await safeEvaluate(
         page,
         async (g) => {
-            const r = window.anazhRealm;
             const out = {};
             // (1) der goldene Bauplan: lesbar + Signatur EWIG "valid" + die
             // Kette lebt + der Admit-Pfad (Re-Derive) bricht die Echtheit nicht.
@@ -1515,10 +1497,8 @@ async function checkBandTailleGolden(ctx) {
 // Φ Welten-Netz: Φ1 Welt-Adressen + tragendes Portal · Φ2 Sichtbarkeit + Hausrecht (Welt verlinkt
 // Welt, Portal = Hyperlink, Adresse = URL). Taille-konform additiv (alte Builds ignorieren neue
 // worldMeta-Felder); Bann/Kick/Adress-Setter sind R2 — KEIN DSL-Op trägt sie (die Wand).
-async function checkBandPhiArchipel(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhiArchipel({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const AR = window.AnazhRealm || r.constructor;
 
@@ -1724,10 +1704,8 @@ async function checkBandPhiArchipel(ctx) {
 // Φ3 Regions-Archipel (Regions-Bubbles, opt-in via regionsActive) · Φ4 Anwesenheit (regional
 // aufgelöste Köpfe: Broker-Antwort, Client-Cache) · Φ5 Mittragen (Welten pinnen, mittragend
 // antworten).
-async function checkBandPhiArchipelV2(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhiArchipelV2({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const AR = window.AnazhRealm || r.constructor;
         const out = {};
 
@@ -1959,10 +1937,8 @@ async function checkBandPhiArchipelV2(ctx) {
 // Φ7 Portal-Hallen: kuratierte Welt-Verzeichnisse als signierte Artefakte (N Welt-Adressen + Label +
 // Signatur + Provenance). Materialisiert wird jeder Slot ein eigenes Portal mit entry-level
 // portalMeta (_enterPortal: entry → bauplan-portalMeta-Coalesce).
-async function checkBandPhi7PortalHalls(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhi7PortalHalls({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (H1) state.portalHalls ist eine Map (initial leer im Boot).
@@ -2168,10 +2144,8 @@ async function checkBandPhi7PortalHalls(ctx) {
 // Φ6 Compute-Spende (Geschenk-Schicht, KEINE Rechen-Währung): (a) Chunk-Beiträge signiert + Hash +
 // Stichproben-Verify gegen die LOKAL nachgerechnete Wahrheit (verifizieren ist O(Build), schummeln
 // gegen den Hash unmöglich); (b) Playtest-Lauf-Beiträge signiert + Commit + Resultat.
-async function checkBandPhi6ComputeSpende(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhi6ComputeSpende({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (K1) Daten-Modelle existieren (Map + Array, initial leer).

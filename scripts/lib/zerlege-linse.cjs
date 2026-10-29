@@ -78,7 +78,6 @@ function haken(o, key, fn) {
 // und die Pässe wechseln (die nahe Kaskade rendert jeden zweiten Frame, die ferne seltener) — ein Perzentil über die
 // Takte spränge zwischen den Moden.
 function passUhr() {
-    const r = window.anazhRealm;
     const rend = r.state.renderer;
     const be = rend.backend;
     const uhr = { messen: false, aus: new Set(), stapel: [], idStapel: [], lauf: 0, baum: null, zaehl: {},
@@ -346,7 +345,6 @@ function belegungSelbsttest() {
 // schon läuft, deckt die Abfragen danach nicht: höchstens drei Züge, bis der Pool leer ist.
 function bankRunde(n) {
     return (async () => {
-        const r = window.anazhRealm;
         const rend = r.state.renderer;
         const q = rend.backend.device.queue;
         const stempelAuf = async () => {
@@ -381,7 +379,7 @@ function bankRunde(n) {
 // Je verweigerter Abfrage der Täter: der Render, der sie wollte (r184 setzt Kamera und Ziel des Render-Kontexts vor
 // `beginRender`) — der Pass (`__passName`) und das Ziel beim Namen.
 function stempelWache() {
-    const rend = window.anazhRealm && window.anazhRealm.state.renderer;
+    const rend = r && r.state.renderer;
     const be = rend && rend.backend;
     const w =
         window.__stempelWacheStand || (window.__stempelWacheStand = { ueberlauf: 0, spitze: 0, an: false, taeter: {} });
@@ -476,7 +474,7 @@ function frameAnatomie(uhr, n) {
         // `device.queue.writeBuffer` für seine Upload-Telemetrie mit dem GEBUNDENEN Original — am Prototyp zählte
         // sonst kein Upload). Ein Aufruf zählt einmal, auch wenn eine Hülle die nächste ruft.
         const tief = {};
-        const be = window.anazhRealm.state.renderer.backend;
+        const be = r.state.renderer.backend;
         const exemplare = [be.device, be.device && be.device.queue, be.context].filter(Boolean);
         const zaehle = (proto, key, fn) => {
             if (!proto || typeof proto[key] !== "function") return;
@@ -670,7 +668,6 @@ function knotenKinder(n) {
 // Uniform ist die Stufe. null, wenn die Kette die Uniform nicht (mehr) über eine Summe trägt (der Schalter fehlt dann,
 // laut in der Inventur).
 function ketteKante(uName) {
-    const st = window.anazhRealm.state;
     const pp = st.postProcessing;
     const U = st.postProcessingUniforms && st.postProcessingUniforms[uName];
     if (!pp || !U || !pp.outputNode) return null;
@@ -709,7 +706,7 @@ function ketteKante(uName) {
 // Die Abtastungen der Ausgabe: die Textur-Knoten im Graphen des Fragment-Knotens, den die RenderPipeline gerade zeichnet
 // (je `.sample(uv)` ein eigener Knoten) — der Beleg einer Ketten-Stufe: ohne Bloom fallen 9, ohne Godrays 20.
 function ketteAbtastungen() {
-    const pp = window.anazhRealm.state.postProcessing;
+    const pp = r.state.postProcessing;
     const f = pp && pp._quadMesh ? pp._quadMesh.material.fragmentNode : null;
     if (!f) return null;
     const gesehen = new Set();
@@ -727,7 +724,7 @@ function ketteAbtastungen() {
 
 // Der Fingerabdruck des Ketten-Graphen (jede Kante: Eltern-id · Schlüssel · Kind-id, in Eigenschafts-Reihenfolge).
 function ketteHash() {
-    const pp = window.anazhRealm.state.postProcessing;
+    const pp = r.state.postProcessing;
     if (!pp || !pp.outputNode) return null;
     let h = 2166136261;
     const mische = (s) => {
@@ -749,8 +746,6 @@ function ketteHash() {
 
 // DER ZUSTAND, den die Linse anfasst — vorher/nachher verglichen (`__zerlegeVergleich`).
 function zerlegeZustand() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const rend = st.renderer;
     const be = rend.backend;
     let n = 0,
@@ -855,8 +850,6 @@ function zerlegeVergleich(a, b) {
 // welchem rendert), die Knoten und Stufen der Post-Kette, der Schatten-Takt, die Frame-Anatomie.
 function zerlegeInventur(k) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -923,8 +916,6 @@ function zerlegeInventur(k) {
 // optional ein Bild aus dem Ausgabe-Pfad.
 function zerlegeMessen(k) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -1248,7 +1239,6 @@ function zerlegeMessen(k) {
 // legt sie an und misst sie ALLEIN (Bank-Runden nur aus ihr), `ab` nimmt sie restlos weg.
 function zerlegeLast(k) {
     return (async () => {
-        const r = window.anazhRealm;
         const rend = r.state.renderer;
         const T = window.THREE;
         const TSL = T.TSL;

@@ -62,7 +62,6 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {}, w: {} };
         await window.__weltDa();
-        const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====

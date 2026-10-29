@@ -59,7 +59,6 @@ hauptLauf(async () => {
 
     // ===== (L) DIE BIBLIOTHEK (ultiversum.K3): je Art ein Eintrag — signiert, ≤ 8 KB, über den Code wieder; Fork mit Herkunft =====
     const L = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const o = { skipConfirm: true };
         for (const weiter = window.__deckel("der Vibe-Pass", 300); !r.state.vibePass?.ready && weiter(); ) await sleep(50);
         r._addVoxelEdit(8, r.state.terrainBaseHeight || 0, 8, 3, "carve"); // eine Akte der Welt
@@ -102,7 +101,7 @@ hauptLauf(async () => {
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
 
         // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat (__weltDa wartet, bis alles steht) =====
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         const bps = () => r.state.blueprints || {};
         await window.__weltDa(() => f.ready && f.recipes?.langschwert && f.recipes.gt && bps().klinge_langschwert && bps().fahrzeug_gt && !f._vorrat);
@@ -396,7 +395,6 @@ hauptLauf(async () => {
     const msA = Date.now() - uhr;
     const a = await page.evaluate(async () => {
         try {
-            const r = window.anazhRealm;
             const ws = r._ensureWorkshopState();
             const code = document.querySelector('code[data-teilen="werk"]').textContent;
             const seed = r._werkSame(r.state.blueprints.fahrzeug_gt, "fahrzeug_gt", null);
@@ -462,7 +460,7 @@ hauptLauf(async () => {
     });
     // DER ECHTE ANSCHLUSS: beide Geräte treten durch die Tür des Spiels (initP2PSync) in denselben Raum des signaling-servers
     const url = `ws://127.0.0.1:${SIGNAL}`;
-    await page.evaluate((url) => window.anazhRealm.initP2PSync(null, { url }), url);
+    await page.evaluate((url) => r.initP2PSync(null, { url }), url);
     // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
     await page.waitForFunction(() => anazhRealm.state.p2p.connected);
     uhr = Date.now();
@@ -473,7 +471,7 @@ hauptLauf(async () => {
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)
     const [wCode, wId, wSame, raum, kb] = await page.evaluate(({ state: { worldMeta: m, p2p } } = anazhRealm) => [document.querySelector('code[data-teilen="welt"]').textContent, m.worldId, m.seed, p2p.room, JSON.stringify(anazhRealm.buildStateSnapshot()).length >> 10]);
     const b = await pageB.evaluate(async (a, url, raum) => {
-        const r = await window.__weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
+        await window.__weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
         const res = { faelle: [] };
         const zustand = ({ state: s } = r) =>
             JSON.stringify([Object.keys(s.blueprints).sort(), s.architectures.length, s.worldRules.length, s.worldMeta.seed, s.worldMeta.voxelEdits, s.worldJournal.entries.length]);
@@ -505,7 +503,6 @@ hauptLauf(async () => {
     await pageB.keyboard.sendCharacter(a.code);
     await pageB.keyboard.press("Enter");
     Object.assign(b, await pageB.evaluate(async (a) => {
-        const r = window.anazhRealm;
         const lauf = window.__lauf;
         const res = { gut: window.__spur ? await window.__spur : { grund: "der Chat rief empfangeWerk nie" } };
         delete r.empfangeWerk;
@@ -541,7 +538,7 @@ hauptLauf(async () => {
     await pageB.keyboard.press("Enter");
     await neu;
     const w = await pageB.evaluate(async (autor) => {
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const da = performance.timeOrigin + (await r._weltbildKommt());
         const [p, p0] = [r.state.playerMesh.position, r.state.playerMesh.position.clone()];
         window.__weg = () => Math.hypot(p.x - p0.x, p.z - p0.z);
@@ -552,7 +549,6 @@ hauptLauf(async () => {
     const [uA, uB] = await Promise.all(
         [page, pageB].map((seite) =>
             seite.evaluate(() => {
-                const r = window.anazhRealm;
                 for (const x of "ab") {
                     const dslHistory = [..."123456"].map((n) => x + n);
                     localStorage.setItem(r.worldStorageKey(x + "-eltern"), JSON.stringify({ worldMeta: { bornAt: 9 }, dslHistory }));

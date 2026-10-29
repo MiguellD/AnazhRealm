@@ -39,8 +39,6 @@ hauptLauf(async () => {
     let aus;
     try {
         aus = await realm.page.evaluate(async (selbst) => {
-            const r = window.anazhRealm;
-            const st = r.state;
             if (!r._buehneSteht()) return { fehler: "Bühne steht nicht" };
             // T3/T4 — der Feld-Bake-Takt: Fenster 1 verbrauchen ferne Fits das Budget, ein naher wird abgewiesen; im
             // Fenster 2 bekommt zuerst der nahe (T3), und was in der zweiten Fenster-Hälfte übrig ist, auch der ferne (T4).

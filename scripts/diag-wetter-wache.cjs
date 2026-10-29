@@ -85,8 +85,6 @@ const server = statikServer();
 
 // Die Probe im Seiten-Kontext: jeder Schreiber-Weg des Spiels unter der Bühne, der rohe Schmuggel, die freie Welt.
 function probe(o) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const t = () => performance.now() / 1000;
     const fenster = (tat) => {
         const vor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
@@ -286,8 +284,6 @@ function uhrRot(U) {
 
 // Die Himmels-Probe (eine FRISCHE Welt): das Spiel läuft getaktet (`_gameLoopTick` in Schritten von `o.schrittSek`).
 function himmelProbe(o) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const aus = {};
     // (T) die Tag-Länge einer frischen Welt, und was ein alter Spielstand (8-min-Tag) über den echten Restore-Weg aus ihr macht
     const tagMin = st.dayLengthMinutes;
