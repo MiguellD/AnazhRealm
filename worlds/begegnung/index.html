@@ -101,6 +101,10 @@
                     return h;
                 }
 
+                // Vor dem ersten enter sagt die Welt nur ready: Pose und Zustand
+                // reisen erst, wenn die Heimat sie betrat (der Reisende und sein
+                // Persistenz-Slot stehen dann) — nie die Pose 0,0 vor dem Slot.
+                var betreten = false;
                 function post(msg) {
                     try {
                         parent.postMessage(msg, "*");
@@ -116,6 +120,7 @@
                     if (event.source !== window.parent) return;
                     var msg = event.data;
                     if (!msg || typeof msg !== "object") return;
+                    if (msg.type === "enter") betreten = true;
                     if (msg.type === "enter" && msg.avatar && typeof msg.avatar.name === "string") {
                         me.name = msg.avatar.name.slice(0, 24);
                         // W18-D — der Persistenz-Slot kehrt zurück: die eigene
@@ -189,6 +194,7 @@
                     lastStateSent = { x: NaN, y: NaN };
                 setInterval(function () {
                     integrate();
+                    if (!betreten) return;
                     var moved = lastSent.x !== me.x || lastSent.y !== me.y;
                     var now = Date.now();
                     if (!moved && now - lastBeat < 1000) return;
@@ -202,7 +208,7 @@
                 // gemächlich (2 s) + nur bei Änderung — die Position überlebt
                 // den Besuch.
                 setInterval(function () {
-                    if (lastStateSent.x === me.x && lastStateSent.y === me.y) return;
+                    if (!betreten || (lastStateSent.x === me.x && lastStateSent.y === me.y)) return;
                     lastStateSent.x = me.x;
                     lastStateSent.y = me.y;
                     post({ type: "state", data: JSON.stringify({ x: me.x, y: me.y }) });

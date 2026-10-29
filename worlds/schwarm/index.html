@@ -240,18 +240,18 @@
                     ctx.globalCompositeOperation = "source-over";
                 }
 
+                // Der Takt zeichnet nur — er spricht nie: das Erwachen meldet die
+                // Welt als Antwort auf das ERSTE enter der Heimat (der Handshake
+                // unten), nie aus ihrem Bild. Ein Ereignis aus dem ersten Bild
+                // kam unter Last nach dem Handshake an, mitten in der Lesung
+                // einer fremden Nachricht (gate:portal-konformanz K3).
                 let lastT = performance.now();
-                let firstFrameDone = false;
                 function frame(now) {
                     if (now - lastT > 8) {
                         step(now);
                         render();
                         if (ripple > 0) ripple -= 0.03;
                         lastT = now;
-                    }
-                    if (!firstFrameDone) {
-                        firstFrameDone = true;
-                        sendEvent("Die Schwarm-Welt erwachte — " + flock.length + " Wesen schwärmen, gerendert von ihrer eigenen Engine.");
                     }
                     requestAnimationFrame(frame);
                 }
@@ -303,6 +303,9 @@
                 }
 
                 // --- postMessage-Handshake mit der Heimat-Welt ---
+                // Vor dem ersten enter sagt die Welt nur ready; jedes Ereignis ist
+                // die Antwort auf eine Nachricht der Heimat.
+                let erwacht = false;
                 window.addEventListener("message", (event) => {
                     if (event.source !== window.parent) return;
                     const msg = event.data;
@@ -313,6 +316,10 @@
                         const el = document.getElementById("avatar-name");
                         if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
                         show("Schwarm-Welt — " + flock.length + " Wesen, eine fremde Engine hinter dem Tor.");
+                        if (!erwacht) {
+                            erwacht = true;
+                            sendEvent("Die Schwarm-Welt erwachte — " + flock.length + " Wesen schwärmen, gerendert von ihrer eigenen Engine.");
+                        }
                         // Der Sandbox-Selbsttest: die Welt meldet der Heimat,
                         // dass die Wand zwischen ihnen hält.
                         reportIsolation();
