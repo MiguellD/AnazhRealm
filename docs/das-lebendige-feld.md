@@ -250,7 +250,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 - **Die anderen Feld-Achsen schreibbar — und der Spieler als Pfleger.** Heute schreiben
   Geburt, Tod, Nexus-Regel und Kreatur-Trickle ins lebendig-Overlay (§4.2); der Vektor: **DU trägst Leben** (Spieler-Pflege
   als zweiter Schreib-Pfad = echte Co-Schöpfung). dichte/magieleitung bleiben frozen,
-  bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad); glut schreibt der Brand (`_brandFangen`).
+  bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad); glut schreibt der Brand (`_brandZuenden`).
 - **Die KI als vollwertige Co-Schöpferin.** Das LLM schreibt schon Regeln (`source:"llm"`),
   aber opt-in. Der Vektor: die KI tiefer in den Kreis weben (sie liest das gewertete Feld,
   schlägt Regeln vor, lernt aus dem δ) — die Symbiose-Hälfte von Pfeiler 1 vollenden.
