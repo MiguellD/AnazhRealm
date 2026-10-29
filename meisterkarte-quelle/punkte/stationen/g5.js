@@ -1902,7 +1902,7 @@ const stationen = [
     // DIESELBE Probe wie #1 (gate:praegung-welt), B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte. Nach dem Bauplan (≤ 4 KB,
     // Bau-Hash A = B) teilt A seine Welt in EINER Geste (Bibliothek → Teilen: dieselbe Hülle `anazh-werk:`, signiert wie jede
     // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten` tauscht die Welt AM ORT, `_weltWechsel`:
-    // Renderer, Programme, Buch und Fäden bleiben warm — tore-k5-tuer); die Kontrolle ist das Ereignis `_weltbildKommt` in
+    // Renderer, Programme, Buch und Fäden bleiben warm — tore-k5-tuer-neu); die Kontrolle ist das Ereignis `_weltbildKommt` in
     // A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m; die Seite von B lädt dabei nie neu (Zeile
     // „Am Ort": jede Navigation ist ROT). Das Urteil verlangt jede Zeile von #1, die fünf WELT-Zeilen und „B echt" (ein Lauf mit
     // Null-Renderer zählt nie). Headless (B null)
@@ -1910,7 +1910,9 @@ const stationen = [
     // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
     // der signaling-server las nur den ersten (Join-Timeout 10 s). Am 27.10. ROT an Radeon und GTX an der Kontrolle (der
     // Beitritt lud die Seite neu, Zweit-Boot GTX 12,0 s); tore-k5-tuer (ABAB): Kontrolle headless 2110/1932 → 943/1064 ms,
-    // B auf swiftshader-WebGPU 73,4/73,5 → 40,1/44,8 s, Bau-Hash 9c183437/12 = 9c183437/12, 0 Navigationen.
+    // B auf swiftshader-WebGPU 73,4/73,5 → 40,1/44,8 s, Bau-Hash 9c183437/12 = 9c183437/12, 0 Navigationen. Neu gesetzt auf
+    // main 715754fc (tore-k5-tuer-neu, 29.10.): Kontrolle headless main 2 422 → 868 ms (B null), 0 Navigationen, Bau-Hash
+    // 9c183437/12 = 9c183437/12; GPU: an der Station.
     {
         kriterium: "tore.K5",
         staffel: 2,
@@ -1958,6 +1960,8 @@ const stationen = [
             "stamm/werkstatt-*.js",
             "stamm/speicher-laden.js",
             "stamm/speicher-welten.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-kern.js",
             "stamm/dirigent-ankunft.js",
             "stamm/dirigent-takt.js",
             "index.html",
