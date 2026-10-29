@@ -888,3 +888,4 @@
 2026-10-29 14:37:12 takt21b-gtx leib.K2#1,leib.K2#2 GRÜN/GRÜN 3.0 · 15/50
 2026-10-29 14:40:03 takt21b-gtx leib.K4#1 GRÜN 2.8 · 16/50
 2026-10-29 14:44:22 takt21b-gtx leib.K4#2 ROT 4.2 · 17/50
+2026-10-29 14:50:15 takt21b-gtx halten.K2#1 ROT 5.8 · 18/50
