@@ -127,32 +127,21 @@ async function headless(laeufe) {
             if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
             await einschwingen();
         };
-        const mit = (probe) => laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(probe));
-        if (mit("querhang").length) {
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
-            await zeit("querhang", () => fremdeWelt(json));
-            for (const [l, li] of mit("querhang")) {
-                const z = await zeit("querhang", () =>
-                    lauf({ proben: ["querhang"], taeter: l.taeter, hangOrt: RAMPE })
-                );
-                if (aus[li].querhang) aus[li].querhang.rampe = z.querhang || { fehler: "die Rampe lief nicht" };
-            }
-        }
-        // die Gegenprobe des Lebensraums (Tiere K4): die Wildnis anderer Saat
-        if (mit("lebensraum").length) {
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            delete json.worldMeta.erbgut;
-            Object.assign(json.worldMeta, {
-                worldId: "lebensraum-gegen",
-                slug: "lebensraum-gegen",
-                seed: "lebensraum-gegen",
-            });
-            Object.assign(json, { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } });
-            await zeit("lebensraum", () => fremdeWelt(json));
-            for (const [l, li] of mit("lebensraum")) {
-                const z = await zeit("lebensraum", () => lauf({ proben: ["lebensraum"], taeter: l.taeter }));
-                if (aus[li].lebensraum) aus[li].lebensraum.gegen = z.lebensraum;
+        // je fremde Welt (die Bühne, umgeschrieben) der zweite Lauf ihrer Probe: die Rampe des Querhangs und die Gegenprobe des
+        // Lebensraums (Tiere K4: die Wildnis anderer Saat, `g` = "lebensraum-gegen")
+        const g = "lebensraum-gegen";
+        for (const [p, feld, um, mehr] of [
+            ["querhang", "rampe", { playerPosition: { x: RAMPE.x, y: 40, z: RAMPE.z - 8 } }, { hangOrt: RAMPE }],
+            ["lebensraum", "gegen", { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } }],
+        ]) {
+            const mit = laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(p));
+            if (!mit.length) continue;
+            const json = Object.assign(JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")), um);
+            if (p === "lebensraum") json.worldMeta = { ...json.worldMeta, erbgut: undefined, worldId: g, slug: g, seed: g };
+            await zeit(p, () => fremdeWelt(json));
+            for (const [l, li] of mit) {
+                const z = await zeit(p, () => lauf({ proben: [p], taeter: l.taeter, ...mehr }));
+                if (aus[li][p]) aus[li][p][feld] = z[p] || (mehr && { fehler: "die Rampe lief nicht" });
             }
         }
     } finally {
