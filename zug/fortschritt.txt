@@ -877,3 +877,4 @@
 2026-10-29 13:44:30 takt21b-gtx bauen.K1#2 OFFEN 10.1 · 1/50
 2026-10-29 13:49:19 takt21b-gtx bauen.K5#2 ROT 4.7 · 2/50
 2026-10-29 13:51:12 takt21b-gtx fahrzeug.K3#1 GRÜN 1.8 · 3/50
+2026-10-29 13:56:13 takt21b-gtx fahrzeug.K3#2 GRÜN 4.9 · 4/50
