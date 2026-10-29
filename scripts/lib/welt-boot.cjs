@@ -1125,6 +1125,72 @@ async function waitFor(page, fn, label, ...args) {
     return Date.now() - t0;
 }
 
+// DER BOOT, BIS DIE WELT STEHT (diag-pruefbuehne · diag-worker-dichte; der Null-Renderer: die Probe braucht Main und Worker,
+// kein Bild): nach dem Erwachen (`__weltDa`) Takte des Spiels, bis mehr als 4 Chunks stehen und der Worker den Worldgen-
+// Stand trägt — {ok, ms, seed}; am Deckel `name` (7,5 s) {ok: false}
+function booteWelt(page, name = "der Boot der Welt") {
+    return page.evaluate(async (name) => {
+        const start = performance.now();
+        await window.__weltDa();
+        for (const weiter = window.__deckel(name, 7500); weiter();) {
+            const r = window.anazhRealm;
+            if (r && typeof r._gameLoopTick === "function") {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch {
+                    /* der Boot reift */
+                }
+                const s = r.state;
+                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
+                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
+            }
+            await sleep(16);
+        }
+        return { ok: false };
+    }, name);
+}
+
+// ZWEI SEITEN IM MESH (smoke-webrtc · smoke-copresence): save- und signaling-server auf den eigenen Ports (`eigenePorte` der
+// Variablen portEnv, signalEnv), im Browser des Aufrufers (sein Rezept) die Seiten A und B (1024×640); beide laden das Spiel, bis init
+// durchlief (`_gameLoopTick`: init wartet auf den IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft —
+// ein Raum-Beitritt davor fiele in init hinein), `vor(seite, i)` läuft vor dem Beitritt (die Namen der Ko-Präsenz), dann
+// tritt jede demselben Raum bei (der roomOverride zwingt Seiten verschiedener worldId zusammen), bis beide `meshActive`
+// melden (alle Peer-Kanäle offen). Liefert {seiten, peerIds, ende}; `ende` schließt Browser und Server.
+async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {}) {
+    const [port, signal] = await eigenePorte(portEnv, signalEnv);
+    const env = { PORT: String(port), ANAZH_SIGNALING_PORT: String(signal) };
+    const server = [
+        await startProc("save-server.js", /läuft/, env),
+        await startProc("signaling-server.js", /lauscht/, env),
+    ];
+    const ende = async () => (await browser.close().catch(() => {}), server.forEach((p) => p.kill()));
+    try {
+        const [seiten, peerIds] = [[await browser.newPage(), await browser.newPage()], []];
+        for (const p of seiten) {
+            await p.setViewport({ width: 1024, height: 640 });
+            await p.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        }
+        for (const [i, p] of seiten.entries()) {
+            const r = () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function";
+            await waitFor(p, r, `Seite ${"AB"[i]} initialisiert`);
+            await vor(p, i);
+            const beitritt = (url, roomOverride) => {
+                const r = window.anazhRealm;
+                Object.assign(r.state.p2p, { url, roomOverride });
+                r.initP2PSync(null);
+                return r.state.p2p.peerId;
+            };
+            peerIds.push(await p.evaluate(beitritt, `ws://127.0.0.1:${signal}`, raum));
+        }
+        for (const [i, p] of seiten.entries())
+            await waitFor(p, () => window.anazhRealm.state.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
+        return { seiten, peerIds, ende };
+    } catch (e) {
+        await ende();
+        throw e;
+    }
+}
+
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
 // (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`; der REST
 // (spec/ci/frist-rest.json) schrumpft nur.
@@ -1249,6 +1315,8 @@ module.exports = {
     urteilEnde,
     argOpt,
     waitFor,
+    zweiImMesh,
+    booteWelt,
     werkbankTor,
     werkbankRuf,
     teilAus,

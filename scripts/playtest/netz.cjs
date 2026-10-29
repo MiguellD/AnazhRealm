@@ -1614,14 +1614,7 @@ async function checkBandPhiArchipel(ctx) {
             label: "Φ-Test-Portal",
             builtIn: false,
             parts: [
-                {
-                    shape: "torus",
-                    material: "stein",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 2, y: 2, z: 0.4 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [],
-                },
+                __teil("torus", "stein", 0, 1, 0, 2, 2, 0.4, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
             ],
             connections: [],
         };
@@ -2069,14 +2062,7 @@ async function checkBandPhi7PortalHalls(ctx) {
                 label: "Test-Portal-Torus",
                 builtIn: false,
                 parts: [
-                    {
-                        shape: "torus",
-                        material: "stein",
-                        position: { x: 0, y: 1.5, z: 0 },
-                        size: { x: 2, y: 2, z: 0.4 },
-                        rotation: { x: 0, y: 0, z: 0 },
-                        opChain: [],
-                    },
+                    __teil("torus", "stein", 0, 1.5, 0, 2, 2, 0.4, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
                 ],
                 connections: [],
                 portalMeta: {},

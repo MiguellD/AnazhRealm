@@ -2111,7 +2111,7 @@ async function checkBandM4SuchKern(ctx) {
                 label: "Probe-Block",
                 builtIn: false,
                 parts: [
-                    { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                    __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
                 ],
             };
             const hay = r._blueprintSearchText(blu.__m4probe);

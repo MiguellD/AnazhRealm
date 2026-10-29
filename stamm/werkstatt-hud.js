@@ -1526,15 +1526,16 @@ class AnazhRealm_werkstatt_hud {
     // V18.52 Hof-Partitur — EINE Regel-Karte (wiederverwendet in beiden Gruppen). Der gelernte WERT
     // (`rule.value`, V17.43) wird endlich GELESEN: ein Chip an ephemeren Nexus-Regeln (Konsum V17.31).
     _buildWorldRuleRow(rule, now) {
-        const src =
-            rule.source === "human"
-                ? "human"
-                : rule.source === "nexus"
-                  ? "nexus"
-                  : rule.source && rule.source.startsWith("llm")
-                    ? "llm"
-                    : "unknown";
-        const permanent = rule.ttlSec == null; // Mensch-Regel ODER adoptierte (gepinnte) Nexus-Regel
+        // der Geber eines Spieler-Gesetzes (`_gesetzGeber`: du oder der Mitspieler, dessen Satz reiste)
+        const geber = this._gesetzGeber(rule);
+        const src = geber
+            ? "human"
+            : rule.source === "nexus"
+              ? "nexus"
+              : rule.source && rule.source.startsWith("llm")
+                ? "llm"
+                : "unknown";
+        const permanent = rule.ttlSec == null; // Spieler-Gesetz ODER adoptierte (gepinnte) Nexus-Regel
         const mkBtn = (label, attr, aria) => {
             const b = document.createElement("button");
             b.type = "button";
@@ -1554,8 +1555,7 @@ class AnazhRealm_werkstatt_hud {
         const source = document.createElement("span");
         source.className = "source";
         source.textContent =
-            (src === "human" ? "du" : src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source) +
-            (rule.pinned ? " ★" : "");
+            (geber || (src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source)) + (rule.pinned ? " ★" : "");
         const status = document.createElement("span");
         status.className = "rule-status" + (permanent ? " perma" : "");
         status.textContent = this._worldRuleStatusLabel(rule, now);
@@ -1617,10 +1617,10 @@ class AnazhRealm_werkstatt_hud {
         // Zwei Gruppen: DEINE Gesetze (Mensch + adoptiert, stabil, oben) ↔ DER NEXUS ERPROBT (ephemer,
         // nach gelerntem WERT sortiert, nur Top-N) — die Experimente begraben nicht die eigenen Regeln.
         const yours = all
-            .filter((x) => x.source === "human" || x.pinned)
+            .filter((x) => this._gesetzGeber(x) || x.pinned)
             .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id);
         const nexus = all
-            .filter((x) => !(x.source === "human" || x.pinned))
+            .filter((x) => !(this._gesetzGeber(x) || x.pinned))
             .sort((a, b) => (b.value || 0) - (a.value || 0) || (b.fires || 0) - (a.fires || 0) || a.id - b.id);
         const NEXUS_SHOWN = 5;
         const expanded = !!this.state.hofNexusExpanded;
@@ -1638,7 +1638,7 @@ class AnazhRealm_werkstatt_hud {
         if (all.length === 0) {
             const empty = document.createElement("div");
             empty.className = "ability-empty";
-            empty.textContent = 'Noch keine Gesetze. Sag z. B. „wann immer es regnet, dann setze wetter sunny".';
+            empty.textContent = `Noch keine Gesetze. Sag z. B. „${AnazhRealm.GESETZ_VORLAGEN[0]}".`;
             container.appendChild(empty);
             return;
         }

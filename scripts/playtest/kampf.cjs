@@ -434,36 +434,21 @@ async function checkBandV1783ImplementClassification(ctx) {
         const r = window.anazhRealm;
         const mk = (parts) => ({ name: "_u4", parts });
         const spike = mk([
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } },
+            __teil("cone", "eisen", 0, 0, 0, 0.3, 0.3, 1.8),
         ]);
         const handle = mk([
-            {
-                shape: "cylinder",
-                material: "eisen",
-                position: { x: 0, y: 0, z: 0 },
-                size: { x: 0.25, y: 1.6, z: 0.25 },
-            },
+            __teil("cylinder", "eisen", 0, 0, 0, 0.25, 1.6, 0.25),
         ]);
         const largeBlock = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } },
+            __teil("box", "stein", 0, 0, 0, 8, 8, 8),
         ]);
         const smallCube = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            __teil("box", "stein", 0, 0, 0, 1, 1, 1),
         ]);
         const body = mk([
-            { shape: "box", material: "fleisch", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
+            __teil("box", "fleisch", 0, 1, 0, 0.8, 1.6, 0.5),
+            __teil("cylinder", "fleisch", -0.7, 1, 0, 0.3, 1.2, 0.3),
+            __teil("cylinder", "fleisch", 0.7, 1, 0, 0.3, 1.2, 0.3),
         ]);
         const out = {};
         out.spikeRole = r.computeBlueprintRole(spike);

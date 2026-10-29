@@ -1487,6 +1487,7 @@ async function probeLeben(expected) {
                     if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
                 }
                 m.gasseTiere = Math.max(m.gasseTiere, n);
+                if (h.je) h.je(ziel);
                 vPrev = v;
                 m.schritte++;
             }, () => {
@@ -1551,6 +1552,46 @@ async function probeLeben(expected) {
                 r.removeCreature(c);
             },
         });
+        // K3 (physik.K3) DER FREIE KÖRPER (`_freiSchritt`), gemessen am Zustand des Lösers: (1) 5 Kisten fallen gestapelt in der
+        // Gasse (10 cm Spalt, Gier und Versatz fest): bis alle schlafen, ihr Weg 3 s danach; wach (ohne Schlaf) ihr Weg von 2 bis
+        // 4 s; die untere am Boden, jede auf der darunter (Höhen-Abstand der Schwerpunkte weniger beider halber Höhe). (2) das Fass
+        // ist ein Hindernis der Stoß-Probe: der größte Winkel seiner Achse zur Lotrechten. Mutanten: Schwere 0, ohne Stoß.
+        if (gasse) {
+            const stapel = (wach) => {
+                const [x, zz] = [gasse.x + gasse.ux * 12, gasse.z + gasse.uz * 12];
+                const K = [0, 1, 2, 3, 4].map((k) => r.spawnArchitecture("kiste", { x: x + 0.03 * Math.sin(k), y: hh(x, zz) + 0.6 + 0.7 * k, z: zz }, { silent: true, precise: true, rotationY: k * 1.3 })._frei);
+                const lage = () => K.map((k) => k.p.slice());
+                const o = { m: K[0].m, ruheS: null, zittern: 0 };
+                let [a, t0] = [null, tMs];
+                bilder(wach ? 120 : 240, () => (o.ruheS === null && K.every((k) => k.schlaf) && ([o.ruheS, a] = [(tMs - t0) / 1000, lage()]), true));
+                bilder(a || wach ? 180 : 0, () => (a = a || lage(), (o.zittern = Math.max(o.zittern, ...K.map((k, j) => Math.hypot(...k.p.map((v, d) => v - a[j][d]))))), true));
+                o.boden = K[0].p[1] - K[0].hy - r._koerperBodenUnter(K[0].p[0], K[0].p[1], K[0].p[2]);
+                o.fugen = K.slice(1).map((k, j) => k.p[1] - K[j].p[1] - k.hy - K[j].hy);
+                for (const k of K) r.removeArchitecture(k.e, { still: true });
+                return o;
+            };
+            const [FREI, schwere] = [A.FREI, st.gravity];
+            S.frei = { kisten: stapel(false) };
+            A.FREI = Object.freeze({ ...FREI, ruheS: Infinity });
+            S.frei.wachZittern = stapel(true).zittern;
+            [A.FREI, st.gravity] = [FREI, 0];
+            S.frei.schwerelos = stapel(false);
+            st.gravity = schwere;
+            const fass = async () => {
+                let kipp = 0;
+                const m = await stossProbe({
+                    setzen: (x, zz) => r.spawnArchitecture("fass", { x, y: hh(x, zz) + 0.5, z: zz }, { silent: true, precise: true }),
+                    lage: (e) => ({ x: e.position.x, z: e.position.z }),
+                    weg: (e) => r.removeArchitecture(e),
+                    je: (e) => (kipp = Math.max(kipp, (Math.acos(Math.min(1, e._frei.R[4])) * 180) / Math.PI)),
+                });
+                return m && { kipp, vVor: m.vVor, vNach: m.vNach, weg: m.zielWeg };
+            };
+            S.frei.fass = await fass();
+            r._freiStoss = () => {}; // die Mutante: der Wagen stößt den freien Körper nicht
+            S.frei.fassOhneStoss = await fass();
+            delete r._freiStoss;
+        }
         // L6 SPIELER UND WAGEN: (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
         // die Fahrt in den Wagen (er prallt ab, statt in die Box zu drücken), die Handbremse hält den Wagen (sie nimmt den
         // Stoß eines Menschen auf), der Spieler steckt nicht in ihm; (b) ein GT, angestoßen mit 5 m/s, rutscht auf den
@@ -1854,19 +1895,11 @@ async function probeLeben(expected) {
                     const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
                     const x = mitte[0] + Math.cos(w) * ring * 4;
                     const zz = mitte[1] + Math.sin(w) * ring * 4;
-                    const boden = hh(x, zz);
-                    const sp = Number.isFinite(boden) ? r._koerperWasser(x, zz, boden) : -Infinity;
-                    if (Number.isFinite(sp) && Number.isFinite(boden) && sp - boden > 1.2) {
-                        // 4 m Fahrt in +x bleiben im tiefen, stillen Wasser
-                        let tief = true;
-                        for (let d = 0; d <= 4 && tief; d++)
-                            if (
-                                !(r._koerperWasser(x + d, zz, hh(x + d, zz)) - hh(x + d, zz) > 1) ||
-                                r._waterFlowAt(x + d, zz)
-                            )
-                                tief = false;
-                        if (tief) ort = { x, z: zz, spiegel: sp };
-                    }
+                    const tief = (d) => r._koerperWasser(x + d, zz, hh(x + d, zz)) - hh(x + d, zz); // `hh` ist endlich (der Sockel)
+                    // über 1,2 m am Ort, und 4 m Fahrt in +x bleiben im tiefen (> 1 m), stillen Wasser; der Spiegel ist der JETZT
+                    // (der Pegel lebt, wetter.K3), nie der des Funds
+                    if (tief(0) > 1.2 && [0, 1, 2, 3, 4].every((d) => tief(d) > 1 && !r._waterFlowAt(x + d, zz)))
+                        ort = { x, z: zz, get spiegel() { return r._koerperWasser(x, zz, hh(x, zz)); } };
                 }
             if (ort) {
                 r.dismountArchitecture();
@@ -2326,7 +2359,9 @@ async function probeKoerper(opt) {
                 const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
                 const [x, z] = [see.x + Math.cos(w) * ring * 3, see.z + Math.sin(w) * ring * 3];
                 if ([0, 2, 4, 6].every((d) => tief(x + d, z) > 2 && !r._waterFlowAt(x + d, z)))
-                    ort = { x, z, spiegel: r._koerperWasser(x, z, hh(x, z)) };
+                    // der Spiegel am Ort JETZT über die EINE Wasser-Wahrheit, nie der Fund-Moment: der Pegel ist eine Funktion des
+                    // Wetter-Felds (wetter.K3), die 300 Takte der Messung heben ihn im Regen bis zur Krone (+0,2 m)
+                    ort = { x, z, get spiegel() { return r._koerperWasser(x, z, hh(x, z)); } };
             }
         if (!(res.ort = ort)) throw new Error("kein See");
         const steuerRoh = A._steuerGesetz;

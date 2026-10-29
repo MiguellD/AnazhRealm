@@ -561,19 +561,22 @@ class AnazhRealm_koerper_bewegung {
             if (!(d > 1e-9)) continue;
             const nx = g.x / d; // vom Gegner zum Wagen
             const nz = g.z / d;
-            // der Gegner in der Sprache des Gesetzes (`_stossKoerper`: Tier · Spieler zu Fuß · Wagen); keiner davon = starr
+            // der Gegner in der Sprache des Gesetzes (`_stossKoerper`: Tier · Spieler zu Fuß · freier Körper · Wagen); keiner davon
+            // = starr. Ein freier Körper (physik.K3) wird in der Mitte des Bands getroffen, in dem Hülle und seine Box sich überlappen.
+            if (q && q._frei) this._freiStossHoehe(q, k.unten, k.oben);
             const G =
                 q && q !== entry
                     ? this._stossKoerper(q, this._fahrStossGegnerK || (this._fahrStossGegnerK = {}))
                     : null;
-            const leib = !!(G && G.art !== "wagen");
+            const leib = !!(G && G.art !== "wagen" && G.art !== "frei");
+            const wagen = !!(G && G.art === "wagen");
             // die RELATIVE Geschwindigkeit längs der Normalen: gleitet der Gegner schon schneller fort, als der Wagen
             // nachkommt, stößt nichts (Befund gate:fahr-leben L5: der Bär rutschte nach dem ersten Stoß fort, die Hülle
             // berührte ihn weiter, und jeder Schritt stieß ihn erneut mit der vollen Fahrt — 7,92 → 1,71 m/s)
             const hinein = -((vx - (G ? G.vx : 0)) * nx + (vz - (G ? G.vz : 0)) * nz);
             if (!(hinein > 0)) continue;
             const mG = G ? G.m : Infinity;
-            const e = leib ? ST.stossZahl.leib : G ? ST.stossZahl.wagen : ST.stossZahl.starr;
+            const e = leib ? ST.stossZahl.leib : wagen ? ST.stossZahl.wagen : ST.stossZahl.starr;
             // ohne Masse des eigenen Wagens (ein Werk ohne Fahr-Satz) nimmt die Berührung nur die Komponente
             const J = mW > 0 ? AnazhRealm._stossImpuls(mW, mG, hinein, e) : 0;
             const dv = mW > 0 ? J / mW : hinein;
@@ -587,7 +590,7 @@ class AnazhRealm_koerper_bewegung {
                 // Starre ohne Eintrag (Insel, Fels) der Stoff des Felds am Stoß
                 gegnerStoff = leib
                     ? this._leibStoff(G.art !== "tier")
-                    : G
+                    : wagen
                       ? this._wagenStoff(q)
                       : q && q.type
                         ? this._werkStoff(q)
@@ -857,9 +860,12 @@ class AnazhRealm_koerper_bewegung {
         // Schub-Richtung (vom Wagen zum Spieler) — der Wagen bekommt seinen Impuls (er rutscht im Nachlauf), der Spieler
         // seinen (er prallt ab). Vorher hielt die Box den Spieler ohne Folge für den Wagen.
         // Die Geschwindigkeit dieses Schritts ist die lokale (vx, vz): das Paar liest und schreibt sie über playerVel.
+        // Ein freier Körper (physik.K3) stößt wie ein Wagen: die Kiste, gegen die der Spieler läuft, bekommt ihren Impuls.
         for (let w = 0; w < schubWagen.length; w += 3) {
             const sd = Math.hypot(schubWagen[w + 1], schubWagen[w + 2]);
-            if (!(sd > 1e-9) || !this._fahrStossSatz(schubWagen[w])) continue;
+            const frei = !!schubWagen[w]._frei;
+            if (!(sd > 1e-9) || !(frei || this._fahrStossSatz(schubWagen[w]))) continue;
+            if (frei) this._freiStossHoehe(schubWagen[w], feetY, headY);
             vBody.setValue(vx, vBody.y(), vz);
             this._stossPaar(schubWagen[w], mesh, schubWagen[w + 1] / sd, schubWagen[w + 2] / sd);
             vx = vBody.x();
@@ -2375,6 +2381,866 @@ class AnazhRealm_koerper_bewegung {
             this._bruchMelden(`Rumble: das Pad lehnt dual-rumble ab (${err})`)
         );
     }
+
+    // ═══ DER FREIE KÖRPER (physik.K3): EIN Löser für Starrkörper im festen Sim-Schritt ═══
+    // Ein Werk, dessen Bauplan `frei` trägt (EIN Teil: Box oder Zylinder — Kiste, Fass), ist ein freier Starrkörper: Lage des
+    // Schwerpunkts, Drehung (Quaternion), Geschwindigkeit und Drall, Masse und Trägheit aus der Gestalt mal ρ seiner Zeile
+    // (`_stoffRho`). Gesetzt über die EINE Wurzel jedes Werks (`spawnArchitecture`), gezeichnet über die Pose des Werks
+    // (`_werkPoseZeigen`, die Instanz-Matrix `_archEntryWorldMatrix`), gestoßen über das EINE Impuls-Gesetz. Der Wagen-Kern und
+    // der Leib-Löser tragen keinen Starrkörper, den man verallgemeinern könnte: der Fahr-Schritt (vehicle-core `fahrStand`) ist
+    // eine Ebene der vier Räder ohne Drall, der Leib-Löser (`_leibKontakte`) löst Strecken in der Ebene. Vorher gab es in der
+    // Welt keinen freien Körper: was fiel, fiel als ½ g t² ohne Boden-Kontakt, was kippte, kippte als Pendel um eine Kante
+    // (`_werkSturzSchritt`), nichts stapelte, nichts warf ein Wagen um.
+    _freiKoerperSetzen(entry, bp) {
+        const teil = bp && bp.frei === true && Array.isArray(bp.parts) && bp.parts.length === 1 ? bp.parts[0] : null;
+        const kiste = !!teil && teil.shape === "box";
+        if (!teil || !(kiste || teil.shape === "cylinder")) return null;
+        const F = AnazhRealm.FREI;
+        const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const sz = teil.size || {};
+        const tp0 = teil.position || {};
+        const hx = ((sz.x || 1) / 2) * s;
+        const hy = ((sz.y || sz.x || 1) / 2) * s;
+        const hz = ((sz.z || sz.x || 1) / 2) * s;
+        const r = hx; // der Zylinder: size.x = ⌀ (`_makePartGeometry`), seine Achse die Hoch-Achse des Teils
+        if (tp0.x || tp0.z) return null; // der Schwerpunkt über dem Ursprung des Plans
+        // MASSE UND TRÄGHEIT der Gestalt (um den Schwerpunkt, Hauptachsen = Achsen des Teils): der volle Körper minus seinen
+        // Hohlraum (`wand`: die Stärke der Wand in m, ohne sie voll) — je mal ρ der Stoff-Zeile
+        const rho = this._stoffRho(teil.material);
+        const w = Number.isFinite(teil.wand) && teil.wand > 0 ? teil.wand * s : 0;
+        const koerper = (ax, ay, az) => {
+            if (!(ax > 0 && ay > 0 && az > 0)) return [0, 0, 0, 0];
+            const mk = (kiste ? 8 * ax * ay * az : 2 * Math.PI * ax * ax * ay) * rho;
+            const quer = (mk * (3 * ax * ax + 4 * ay * ay)) / 12;
+            return kiste
+                ? [mk, (mk * (ay * ay + az * az)) / 3, (mk * (ax * ax + az * az)) / 3, (mk * (ax * ax + ay * ay)) / 3]
+                : [mk, quer, (mk * ax * ax) / 2, quer];
+        };
+        const voll = koerper(hx, hy, hz);
+        const hohl = w ? koerper(hx - w, hy - w, hz - w) : [0, 0, 0, 0];
+        const [m, ...I] = voll.map((x, i) => x - hohl[i]);
+        if (!(m > 0)) return null;
+        // DIE PUNKTE DER GESTALT (im Rahmen des Schwerpunkts): die Kiste ihre 8 Ecken und 12 Kanten-Mitten, das Fass je Rand
+        // FREI.rundPunkte Punkte — sie berühren Boden, Bau und den anderen Körper
+        const pk = [];
+        if (kiste)
+            for (let i = 0; i < 27; i++) {
+                const a = [(i % 3) - 1, (((i / 3) | 0) % 3) - 1, ((i / 9) | 0) - 1];
+                if (Math.abs(a[0]) + Math.abs(a[1]) + Math.abs(a[2]) >= 2) pk.push(a[0] * hx, a[1] * hy, a[2] * hz);
+            }
+        else
+            for (let i = 0; i < F.rundPunkte; i++) {
+                const a = (2 * Math.PI * i) / F.rundPunkte;
+                pk.push(r * Math.cos(a), hy, r * Math.sin(a), r * Math.cos(a), -hy, r * Math.sin(a));
+            }
+        const um = { x: 0, y: tp0.y || 0, z: 0 };
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        // die Gier des Eintrags wandert in die Drehung des Körpers (die Pose dreht um den Schwerpunkt im Rahmen des Plans)
+        entry.rotationY = 0;
+        this._werkGesetzAus(entry); // die Statik des Werks (Sturz, Rollen) trägt ihn nicht: er gehorcht dem Löser
+        entry._gesetz = { pose: { q: new THREE.Quaternion(), um, sinken: 0 } };
+        const K = (entry._frei = {
+            e: entry,
+            kiste,
+            hx,
+            hy,
+            hz,
+            r,
+            s,
+            stoff: teil.material,
+            m,
+            invM: 1 / m,
+            invI: I.map((x) => 1 / x),
+            pk: Float64Array.from(pk),
+            pw: new Float64Array(pk.length),
+            ebene: new Float64Array((pk.length / 3) * 4), // je Punkt die Ebene des Bodens dieses Schritts (y, n)
+            rad: kiste ? Math.hypot(hx, hy, hz) : Math.hypot(r, hy),
+            p: [entry.position.x, entry.position.y - 0.5 + um.y * s, entry.position.z],
+            q: [Math.cos(ry / 2), 0, Math.sin(ry / 2), 0],
+            v: [0, 0, 0],
+            w: [0, 0, 0],
+            pv: [0, 0, 0],
+            pwv: [0, 0, 0],
+            R: new Float64Array(9),
+            Iw: new Float64Array(9),
+            bauten: [],
+            nachbarn: [],
+            boden: 0,
+            welt: false,
+            schlaf: false,
+            ruhe: 0,
+            stempel: null,
+        });
+        (this._freiImTakt || (this._freiImTakt = new Set())).add(entry);
+        this._freiLage(K);
+        this._freiZeigen(K);
+        K.stempel = null; // die Wurzel stempelt die Teile des Plans danach: der erste Schritt stempelt die Hülle neu
+        return K;
+    }
+
+    // Die Lage im Takt: die Dreh-Matrix aus der Quaternion, die Welt-Trägheit (R · I⁻¹ · Rᵀ) und die Punkte der Gestalt in der Welt.
+    _freiLage(K) {
+        const [w, x, y, z] = K.q;
+        const R = K.R;
+        R[0] = 1 - 2 * (y * y + z * z);
+        R[1] = 2 * (x * y - w * z);
+        R[2] = 2 * (x * z + w * y);
+        R[3] = 2 * (x * y + w * z);
+        R[4] = 1 - 2 * (x * x + z * z);
+        R[5] = 2 * (y * z - w * x);
+        R[6] = 2 * (x * z - w * y);
+        R[7] = 2 * (y * z + w * x);
+        R[8] = 1 - 2 * (x * x + y * y);
+        const [a, b, c] = K.invI;
+        for (let i = 0; i < 3; i++)
+            for (let j = 0; j < 3; j++)
+                K.Iw[i * 3 + j] =
+                    R[i * 3] * a * R[j * 3] + R[i * 3 + 1] * b * R[j * 3 + 1] + R[i * 3 + 2] * c * R[j * 3 + 2];
+        const [pk, pw, p] = [K.pk, K.pw, K.p];
+        for (let i = 0; i < pk.length; i += 3)
+            for (let k = 0; k < 3; k++)
+                pw[i + k] = p[k] + R[k * 3] * pk[i] + R[k * 3 + 1] * pk[i + 1] + R[k * 3 + 2] * pk[i + 2];
+    }
+
+    // DER PUNKT IM KÖRPER: ragt (x, y, z) in die Gestalt (oder liegt er näher als `rand` vor genau einer ihrer Flächen), die
+    // Tiefe (negativ: der Spalt) und die Außen-Normale der nächsten Fläche nach `out`; sonst false.
+    _freiInnen(K, x, y, z, rand, out) {
+        const R = K.R;
+        const dx = x - K.p[0];
+        const dy = y - K.p[1];
+        const dz = z - K.p[2];
+        const lx = R[0] * dx + R[3] * dy + R[6] * dz;
+        const ly = R[1] * dx + R[4] * dy + R[7] * dz;
+        const lz = R[2] * dx + R[5] * dy + R[8] * dz;
+        let n0 = 0;
+        let n1 = 0;
+        let n2 = 0;
+        if (K.kiste) {
+            const k = this._freiFlaeche(K.hx - Math.abs(lx), K.hy - Math.abs(ly), K.hz - Math.abs(lz), rand, out);
+            if (k < 0) return false;
+            if (k === 0) n0 = lx < 0 ? -1 : 1;
+            else if (k === 1) n1 = ly < 0 ? -1 : 1;
+            else n2 = lz < 0 ? -1 : 1;
+        } else {
+            const rho = Math.sqrt(lx * lx + lz * lz);
+            const dr = K.r - rho;
+            const da = K.hy - Math.abs(ly);
+            if (dr < 0 && da < 0) return false;
+            const rund = da >= 0 && (dr < 0 || dr < da);
+            out.tiefe = rund ? dr : da;
+            if (!(out.tiefe > -rand)) return false;
+            if (!rund) n1 = ly < 0 ? -1 : 1;
+            else if (rho > 1e-9) {
+                n0 = lx / rho;
+                n2 = lz / rho;
+            } else n0 = 1;
+        }
+        out.nx = R[0] * n0 + R[1] * n1 + R[2] * n2;
+        out.ny = R[3] * n0 + R[4] * n1 + R[5] * n2;
+        out.nz = R[6] * n0 + R[7] * n1 + R[8] * n2;
+        return true;
+    }
+    // die nächste Fläche einer Box aus den Abständen zu ihren drei Flächen-Paaren: innen die kleinste, genau eine negativ ihr
+    // Spalt (≤ rand), sonst −1; die Tiefe nach `out`
+    _freiFlaeche(d0, d1, d2, rand, out) {
+        const neg = (d0 < 0) + (d1 < 0) + (d2 < 0);
+        if (neg > 1) return -1;
+        const k = neg ? (d0 < 0 ? 0 : d1 < 0 ? 1 : 2) : d0 <= d1 && d0 <= d2 ? 0 : d1 <= d2 ? 1 : 2;
+        out.tiefe = k === 0 ? d0 : k === 1 ? d1 : d2;
+        return out.tiefe > -rand ? k : -1;
+    }
+
+    // DIE UMWELT DES KÖRPERS je Sim-Schritt — derselbe Boden und dieselben Bauten wie Leib und Wagen: je Punkt nahe dem Grund
+    // die Höhe des Gesetzes unter ihm (`_koerperBodenUnter` ab seiner Höhe; ein Hang steiler als 45° über dem Grund der Mitte
+    // fragt nicht), darunter EINE Ebene je Körper — die kleinsten Quadrate durch diese Höhen (ohne drei Punkte in der Fläche die
+    // Normale `_fieldGradient` am Grund unter der Mitte): je Punkt eine eigene Normale, verrauscht vom Feld, schob den wachen
+    // Stapel 8 cm in 2 s, eine Normale gegen die Höhen der Ecken noch 1,2 cm —, die Boxen der Bauten in Reichweite (`_blockerNahe`) außer den freien Körpern
+    // (sie stoßen als Körper) und dem gerittenen Wagen (er stößt über seine Hülle, `_fahrHuelleKontakt`), und der Stoff unter
+    // ihm (`_kontaktStoffAt`, seine Reibung).
+    _freiUmwelt(K, dt) {
+        const F = AnazhRealm.FREI;
+        const [p, pw, eb] = [K.p, K.pw, K.ebene];
+        const weg = Math.hypot(K.v[0], K.v[1], K.v[2]) * dt + F.spalt;
+        K.boden = this._koerperBodenUnter(p[0], p[1], p[2]);
+        const n = this._fieldGradient(p[0], K.boden, p[2], this._freiN || (this._freiN = {}));
+        const Q = this._freiEbeneQ || (this._freiEbeneQ = new Float64Array(9));
+        Q.fill(0); // Σ 1, x, z, xx, xz, zz, g, xg, zg (um die Mitte)
+        for (let i = 0, j = 0; i < pw.length; i += 3, j += 4) {
+            eb[j] = NaN;
+            const quer = Math.hypot(pw[i] - p[0], pw[i + 2] - p[2]);
+            if (!(pw[i + 1] - weg <= K.boden + quer + F.spalt)) continue;
+            const g = this._koerperBodenUnter(pw[i], pw[i + 1], pw[i + 2]);
+            if (!Number.isFinite(g) || pw[i + 1] - g > weg) continue;
+            [eb[j], eb[j + 1], eb[j + 2], eb[j + 3]] = [g, n.x, n.y, n.z];
+            const [x, z] = [pw[i] - p[0], pw[i + 2] - p[2]];
+            for (const [k, v] of [
+                [0, 1],
+                [1, x],
+                [2, z],
+                [3, x * x],
+                [4, x * z],
+                [5, z * z],
+                [6, g],
+                [7, x * g],
+                [8, z * g],
+            ])
+                Q[k] += v;
+        }
+        // die Ebene g = a + b·x + c·z (Cramer), trägt sie: jeder Punkt liest sie
+        const [s0, sx, sz, xx, xz, zz, sg, xg, zg] = Q;
+        const det = s0 * (xx * zz - xz * xz) - sx * (sx * zz - xz * sz) + sz * (sx * xz - xx * sz);
+        if (s0 >= 3 && Math.abs(det) > 1e-6 * s0 * s0 * s0) {
+            const a = (sg * (xx * zz - xz * xz) - sx * (xg * zz - xz * zg) + sz * (xg * xz - xx * zg)) / det;
+            const b = (s0 * (xg * zz - xz * zg) - sg * (sx * zz - xz * sz) + sz * (sx * zg - xg * sz)) / det;
+            const c = (s0 * (xx * zg - xg * xz) - sx * (sx * zg - xg * sz) + sg * (sx * xz - xx * sz)) / det;
+            const l = Math.hypot(b, 1, c);
+            for (let i = 0, j = 0; i < pw.length; i += 3, j += 4)
+                if (eb[j] === eb[j])
+                    [eb[j], eb[j + 1], eb[j + 2], eb[j + 3]] = [
+                        a + b * (pw[i] - p[0]) + c * (pw[i + 2] - p[2]),
+                        -b / l,
+                        1 / l,
+                        -c / l,
+                    ];
+        }
+        const nah = this._blockerNahe(p[0], p[2], K.rad + weg, -Infinity, this._freiNah || (this._freiNah = []));
+        const reitet = this.state.player && this.state.player.mountedArch;
+        K.bauten.length = 0;
+        for (const e of nah)
+            if (!e._frei && !(reitet != null && e.id === reitet))
+                for (const b of e.blockerAABBs || [])
+                    if (b.topY > p[1] - K.rad - weg && b.botY < p[1] + K.rad + weg) K.bauten.push(b, e);
+        nah.length = 0;
+        const st = this._stoff(
+            this._kontaktStoffAt(p[0], p[2], K.boden),
+            "der Boden unter dem freien Körper reibt nicht"
+        );
+        K.muBoden = st && st.mu > 0 ? st.mu : 0;
+        const z = this._stoff(K.stoff, "der freie Körper aus „" + K.stoff + "“ reibt nicht");
+        K.mu = z && z.mu > 0 ? z.mu : 0;
+    }
+
+    // DER PUNKT IN DER BOX eines Baus (auch gedreht, `obb`): Tiefe und Außen-Normale wie `_freiInnen`.
+    _freiInBox(b, x, y, z, rand, out) {
+        const ob = b.obb;
+        const c = ob ? ob.c : 1;
+        const s = ob ? ob.s : 0;
+        const dx = x - (ob ? ob.cx : (b.minX + b.maxX) / 2);
+        const dz = z - (ob ? ob.cz : (b.minZ + b.maxZ) / 2);
+        const lx = dx * c - dz * s;
+        const lz = dx * s + dz * c;
+        const ly = y - (b.topY + b.botY) / 2;
+        const k = this._freiFlaeche(
+            (ob ? ob.hx : (b.maxX - b.minX) / 2) - Math.abs(lx),
+            (b.topY - b.botY) / 2 - Math.abs(ly),
+            (ob ? ob.hz : (b.maxZ - b.minZ) / 2) - Math.abs(lz),
+            rand,
+            out
+        );
+        if (k < 0) return false;
+        const sg = (k === 0 ? lx : k === 1 ? ly : lz) < 0 ? -1 : 1;
+        // die Achsen der Box in der Welt: lokal x → (c, −s), lokal z → (s, c) (`_hausObb`)
+        out.nx = k === 0 ? c * sg : k === 2 ? s * sg : 0;
+        out.ny = k === 1 ? sg : 0;
+        out.nz = k === 0 ? -s * sg : k === 2 ? c * sg : 0;
+        return true;
+    }
+
+    // DER SCHRITT DES LÖSERS (aus `_stepFixedSim`, dt = FIXED_DT): Sequentielle Impulse mit Warmstart in FREI.teile Teil-Schritten,
+    // je Teil-Schritt die Schwere der Welt (`state.gravity`, ein Wort des Spielers ändert sie), die Kontakte aus der Lage seines
+    // Beginns (Boden-Ebenen und Bauten aus `_freiUmwelt`, Körper an Körper Punkt in Gestalt), FREI.gaenge Gänge über Normale und
+    // Reibung (Coulomb, μ = √(μ₁ μ₂) der Stoff-Zeilen), die Stoß-Zahl des starren Paars (STOSS.stossZahl.starr) erst über
+    // FREI.prallMs, die Durchdringung über einen getrennten Lage-Impuls (split impulse: er verschiebt, beschleunigt nie), der
+    // Rollwiderstand des Fahr-Gesetzes (vehicle:FAHR.rollDecel) am Boden. Ein Körper, der FREI.ruheS ruhig liegt und dessen
+    // Nachbarn ruhen, schläft (kostet nichts), bis ein Stoß oder ein bewegter Nachbar ihn weckt.
+    _freiSchritt(dt) {
+        const B = this._freiImTakt;
+        if (!B || !B.size || !(dt > 0)) return;
+        const F = AnazhRealm.FREI;
+        const L = this._freiListe || (this._freiListe = []);
+        L.length = 0;
+        for (const e of B) L.push(e._frei);
+        for (const K of L)
+            K.tempo = Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad);
+        // die Paare: Hüllkugeln in Reichweite (Sweep-and-Prune längs x), einer wach; ein bewegter weckt den schlafenden
+        const P = this._freiPaare || (this._freiPaare = []);
+        const S = this._freiSweep || (this._freiSweep = []);
+        P.length = S.length = 0;
+        for (let i = 0; i < L.length; i++) S.push(i);
+        S.sort((i, j) => L[i].p[0] - L[i].rad - (L[j].p[0] - L[j].rad));
+        for (let si = 0; si < S.length; si++) {
+            const A = L[S[si]];
+            const bisX = A.p[0] + A.rad + A.tempo * dt + F.spalt;
+            for (let sj = si + 1; sj < S.length; sj++) {
+                const C = L[S[sj]];
+                if (C.p[0] - C.rad - C.tempo * dt > bisX) break;
+                if (A.schlaf && C.schlaf) continue;
+                const reich = A.rad + C.rad + (A.tempo + C.tempo) * dt + F.spalt;
+                if (Math.hypot(A.p[0] - C.p[0], A.p[1] - C.p[1], A.p[2] - C.p[2]) > reich) continue;
+                if (A.schlaf && C.tempo > F.ruheMs) this._freiWecken(A);
+                if (C.schlaf && A.tempo > F.ruheMs) this._freiWecken(C);
+                P.push(Math.min(S[si], S[sj]), Math.max(S[si], S[sj]));
+            }
+        }
+        const W = this._freiWach || (this._freiWach = []);
+        W.length = 0;
+        for (const K of L)
+            if (!K.schlaf) {
+                W.push(K);
+                K.nachbarn.length = 0;
+                this._freiLage(K);
+                this._freiUmwelt(K, dt);
+            }
+        if (!W.length) return;
+        const h = dt / F.teile;
+        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
+        const roll = AnazhRealm._fahrSchrittGesetz().vc.FAHR.rollDecel;
+        const C = this._freiKontakte || (this._freiKontakte = []);
+        let alt = this._freiWarm || (this._freiWarm = new Map());
+        let neu = this._freiWarmNeu || (this._freiWarmNeu = new Map());
+        for (let t = 0; t < F.teile; t++) {
+            for (const K of L)
+                if (!K.schlaf) {
+                    K.v[1] += g * h;
+                    K.pv[0] = K.pv[1] = K.pv[2] = K.pwv[0] = K.pwv[1] = K.pwv[2] = 0;
+                    K.welt = false;
+                    if (t) this._freiLage(K);
+                }
+            let n = 0;
+            const o = this._freiInnenAus || (this._freiInnenAus = {});
+            for (let ia = 0; ia < L.length; ia++) {
+                const K = L[ia];
+                if (K.schlaf) continue;
+                const pw = K.pw;
+                const eb = K.ebene;
+                // der Boden: der Abstand jedes Punkts zur Ebene des Gesetzes unter ihm
+                const muB = Math.sqrt(K.muBoden * K.mu);
+                let n0 = n;
+                for (let i = 0, j = 0; i < pw.length; i += 3, j += 4)
+                    if (eb[j] === eb[j]) {
+                        const tiefe = (eb[j] - pw[i + 1]) * eb[j + 2];
+                        if (tiefe > -F.spalt)
+                            n = this._freiKontakt(
+                                C,
+                                n,
+                                K,
+                                null,
+                                pw[i],
+                                pw[i + 1],
+                                pw[i + 2],
+                                eb[j + 1],
+                                eb[j + 2],
+                                eb[j + 3],
+                                tiefe,
+                                muB,
+                                (ia * 1024 + 1023) * 64 + i / 3
+                            );
+                    }
+                n = this._freiVier(C, n0, n);
+                // die Boxen der Bauten
+                for (let b = 0; b < K.bauten.length; b += 2) {
+                    const box = K.bauten[b];
+                    const bs = this._stoff(box.stoff || this._werkStoff(K.bauten[b + 1]), "die Box reibt nicht");
+                    const muK = Math.sqrt((bs && bs.mu > 0 ? bs.mu : 0) * K.mu);
+                    n0 = n;
+                    for (let i = 0; i < pw.length; i += 3)
+                        if (this._freiInBox(box, pw[i], pw[i + 1], pw[i + 2], F.spalt, o))
+                            n = this._freiKontakt(
+                                C,
+                                n,
+                                K,
+                                null,
+                                pw[i],
+                                pw[i + 1],
+                                pw[i + 2],
+                                o.nx,
+                                o.ny,
+                                o.nz,
+                                o.tiefe,
+                                muK,
+                                (ia * 1024 + 1000 + ((b >> 1) % 22)) * 64 + i / 3
+                            );
+                    n = this._freiVier(C, n0, n);
+                }
+            }
+            for (let k = 0; k < P.length; k += 2) {
+                const n0 = n;
+                if (L[P[k]].kiste && L[P[k + 1]].kiste)
+                    n = this._freiVier(C, n0, this._freiPaarKisten(C, n, L, P[k], P[k + 1]));
+                else {
+                    n = this._freiVier(C, n0, this._freiPaar(C, n, L, P[k], P[k + 1], o));
+                    n = this._freiVier(C, n, this._freiPaar(C, n, L, P[k + 1], P[k], o));
+                }
+            }
+            // vorbereiten (Hebel, Tangenten, wirksame Massen, Ziel der Normalen an der Geschwindigkeit VOR jedem Stoß dieses
+            // Teil-Schritts), danach der Warmstart aus dem vorigen
+            for (let k = 0; k < n; k++) this._freiKontaktBereit(C[k], h, F);
+            for (let k = 0; k < n; k++) {
+                const c = C[k];
+                const w = alt.get(c.key);
+                if (w && c.tiefe >= 0 && !(c.ziel > 0)) {
+                    c.ln = w[0];
+                    c.lt1 = w[1];
+                    c.lt2 = w[2];
+                    this._freiImpuls(c, 0, c.ln, false);
+                    this._freiImpuls(c, 15, c.lt1, false);
+                    this._freiImpuls(c, 30, c.lt2, false);
+                }
+            }
+            for (let it = 0; it < F.gaenge; it++) for (let k = 0; k < n; k++) this._freiGeschw(C[k]);
+            for (let it = 0; it < F.gaenge; it++) for (let k = 0; k < n; k++) this._freiVersatz(C[k]);
+            neu.clear();
+            for (let k = 0; k < n; k++) {
+                const c = C[k];
+                if (!(c.ln > 0)) continue;
+                const w = alt.get(c.key) || new Float64Array(3); // die Zelle des vorigen Teil-Schritts wandert mit (kein Müll)
+                w[0] = c.ln;
+                w[1] = c.lt1;
+                w[2] = c.lt2;
+                neu.set(c.key, w);
+            }
+            [alt, neu] = [neu, alt];
+            [this._freiWarm, this._freiWarmNeu] = [alt, neu];
+            // die Lage: x += (v + v_Lage)·h, die Drehung q += ½ (ω + ω_Lage) ⊗ q · h; der Rollwiderstand am Boden
+            for (const K of L) {
+                if (K.schlaf) continue;
+                for (let k = 0; k < 3; k++) K.p[k] += (K.v[k] + K.pv[k]) * h;
+                const wx = K.w[0] + K.pwv[0];
+                const wy = K.w[1] + K.pwv[1];
+                const wz = K.w[2] + K.pwv[2];
+                const q = K.q;
+                const qw = q[0];
+                const qx = q[1];
+                const qy = q[2];
+                const qz = q[3];
+                q[0] = qw + 0.5 * h * (-wx * qx - wy * qy - wz * qz);
+                q[1] = qx + 0.5 * h * (wx * qw + wy * qz - wz * qy);
+                q[2] = qy + 0.5 * h * (wy * qw + wz * qx - wx * qz);
+                q[3] = qz + 0.5 * h * (wz * qw + wx * qy - wy * qx);
+                const ql = Math.hypot(q[0], q[1], q[2], q[3]);
+                for (let k = 0; k < 4; k++) q[k] /= ql;
+                const wm = Math.hypot(K.w[0], K.w[1], K.w[2]);
+                if (K.welt && wm > 0) {
+                    const f = Math.max(0, wm - (roll / K.rad) * h) / wm;
+                    for (let k = 0; k < 3; k++) K.w[k] *= f;
+                }
+            }
+        }
+        // die Ruhe: ruhig ist, wessen Punkte langsamer als FREI.ruheMs gehen; er schläft nach FREI.ruheS, ruhen seine Nachbarn
+        for (const K of L)
+            if (!K.schlaf) {
+                const tempo = Math.max(Math.hypot(K.v[0], K.v[1], K.v[2]), Math.hypot(K.w[0], K.w[1], K.w[2]) * K.rad);
+                K.ruhe = tempo < F.ruheMs ? K.ruhe + dt : 0;
+            }
+        for (const K of L)
+            if (!K.schlaf && K.ruhe >= F.ruheS && K.nachbarn.every((N) => N.schlaf || N.ruhe >= F.ruheS)) {
+                K.schlaf = true;
+                K.v[0] = K.v[1] = K.v[2] = K.w[0] = K.w[1] = K.w[2] = 0;
+            }
+        for (const K of W) {
+            this._freiLage(K);
+            this._freiZeigen(K);
+        }
+    }
+
+    // KÖRPER AN KÖRPER: die Punkte von L[ia] in der Gestalt von L[ib]; die Normale zeigt aus ib heraus. Schläft der Besitzer der
+    // Punkte, trägt der wache Partner den Kontakt (dieselbe Berührung, die Normale umgekehrt) — sonst verlöre die wache Kiste
+    // auf der schlafenden die Hälfte ihrer Stütze.
+    _freiPaar(C, n, L, ia, ib, o) {
+        const [A, B] = [L[ia], L[ib]];
+        const F = AnazhRealm.FREI;
+        if (Math.hypot(A.p[0] - B.p[0], A.p[1] - B.p[1], A.p[2] - B.p[2]) > A.rad + B.rad + F.spaltKoerper) return n;
+        const mu = Math.sqrt(A.mu * B.mu);
+        const pw = A.pw;
+        for (let i = 0; i < pw.length; i += 3) {
+            if (!this._freiInnen(B, pw[i], pw[i + 1], pw[i + 2], F.spaltKoerper, o)) continue;
+            const key = (ia * 1024 + ib) * 64 + i / 3;
+            if (A.schlaf)
+                n = this._freiKontakt(C, n, B, A, pw[i], pw[i + 1], pw[i + 2], -o.nx, -o.ny, -o.nz, o.tiefe, mu, key);
+            else n = this._freiKontakt(C, n, A, B, pw[i], pw[i + 1], pw[i + 2], o.nx, o.ny, o.nz, o.tiefe, mu, key);
+            if (!A.nachbarn.includes(B)) A.nachbarn.push(B);
+            if (!B.nachbarn.includes(A)) B.nachbarn.push(A);
+        }
+        return n;
+    }
+
+    // KISTE AN KISTE: EINE Normale je Paar — die Fläche kleinster Überlappung unter den sechs Flächen-Normalen beider (SAT) ist
+    // die Referenz (ihre Kiste Y), die Fläche der anderen (X), die ihr am meisten entgegensieht, die Gegen-Fläche. Kontakte: die
+    // Punkte von X quer in den Grenzen der Referenz, ihre Tiefe unter deren Ebene; die Punkte von Y quer in den Grenzen der
+    // Gegen-Fläche, ihre Tiefe längs der Normalen bis zu deren Ebene. Vorher nahm jeder Punkt seine nächste Fläche (an der Kante
+    // die Seite: die fallende Kiste wurde waagerecht weggestoßen, der Stapel fiel), danach je Seite ihre eigene Fläche (zwei
+    // Normalen: 0,1° Neigung aus dem slop schoben die obere Kiste 1 mm/s seitwärts, der Stapel wanderte).
+    _freiPaarKisten(C, n, L, ia, ib) {
+        const F = AnazhRealm.FREI;
+        const halb = (K) => K._halb || (K._halb = [K.hx, K.hy, K.hz]);
+        const proj = (K, u0, u1, u2) =>
+            K.hx * Math.abs(K.R[0] * u0 + K.R[3] * u1 + K.R[6] * u2) +
+            K.hy * Math.abs(K.R[1] * u0 + K.R[4] * u1 + K.R[7] * u2) +
+            K.hz * Math.abs(K.R[2] * u0 + K.R[5] * u1 + K.R[8] * u2);
+        const [A, B] = [L[ia], L[ib]];
+        const d0 = A.p[0] - B.p[0];
+        const d1 = A.p[1] - B.p[1];
+        const d2 = A.p[2] - B.p[2];
+        let best = Infinity;
+        let ref = 0;
+        for (let a = 0; a < 6; a++) {
+            const R = a < 3 ? A.R : B.R;
+            const [u0, u1, u2] = [R[a % 3], R[3 + (a % 3)], R[6 + (a % 3)]];
+            const ov = proj(A, u0, u1, u2) + proj(B, u0, u1, u2) - Math.abs(d0 * u0 + d1 * u1 + d2 * u2);
+            if (ov < best - 1e-9) [best, ref] = [ov, a];
+        }
+        if (!(best > -F.spaltKoerper)) return n;
+        // Y trägt die Referenz, n zeigt aus ihr heraus zu X
+        const [Y, X, iy, ix, sd] = ref < 3 ? [A, B, ia, ib, -1] : [B, A, ib, ia, 1];
+        const k = ref % 3;
+        const RY = Y.R;
+        const RX = X.R;
+        const sg = sd * (d0 * RY[k] + d1 * RY[3 + k] + d2 * RY[6 + k]) < 0 ? -1 : 1;
+        const [n0, n1, n2] = [sg * RY[k], sg * RY[3 + k], sg * RY[6 + k]];
+        const ebeneY = Y.p[0] * n0 + Y.p[1] * n1 + Y.p[2] * n2 + halb(Y)[k];
+        // die Gegen-Fläche: die Achse von X, die n am nächsten liegt; ihre Außen-Normale m sieht n entgegen
+        let j = 0;
+        let jd = 0;
+        for (let a = 0; a < 3; a++) {
+            const da = RX[a] * n0 + RX[3 + a] * n1 + RX[6 + a] * n2;
+            if (Math.abs(da) > Math.abs(jd)) [j, jd] = [a, da];
+        }
+        const ms = jd > 0 ? -1 : 1;
+        const [m0, m1, m2] = [ms * RX[j], ms * RX[3 + j], ms * RX[6 + j]];
+        const ebeneX = X.p[0] * m0 + X.p[1] * m1 + X.p[2] * m2 + halb(X)[j];
+        const nm = n0 * m0 + n1 * m1 + n2 * m2; // < 0
+        const mu = Math.sqrt(A.mu * B.mu);
+        for (let seite = 0; seite < 2; seite++) {
+            // seite 0: die Punkte von X in den Grenzen der Referenz (Y, ohne Achse k); seite 1: die von Y in denen der Gegen-Fläche
+            const [Q, G, ohne, iq, ig] = seite ? [Y, X, j, iy, ix] : [X, Y, k, ix, iy];
+            const RG = G.R;
+            const hG = halb(G);
+            const pw = Q.pw;
+            for (let i = 0; i < pw.length; i += 3) {
+                const x = pw[i];
+                const y = pw[i + 1];
+                const z = pw[i + 2];
+                const tiefe = seite ? (ebeneX - (x * m0 + y * m1 + z * m2)) / -nm : ebeneY - (x * n0 + y * n1 + z * n2);
+                if (!(tiefe > -F.spaltKoerper)) continue;
+                const e0 = x - G.p[0];
+                const e1 = y - G.p[1];
+                const e2 = z - G.p[2];
+                let quer = true;
+                for (let a = 0; a < 3 && quer; a++)
+                    if (a !== ohne && Math.abs(RG[a] * e0 + RG[3 + a] * e1 + RG[6 + a] * e2) > hG[a]) quer = false;
+                if (!quer) continue;
+                const key = (iq * 1024 + ig) * 64 + i / 3;
+                if (X.schlaf) n = this._freiKontakt(C, n, Y, X, x, y, z, -n0, -n1, -n2, tiefe, mu, key);
+                else n = this._freiKontakt(C, n, X, Y, x, y, z, n0, n1, n2, tiefe, mu, key);
+            }
+        }
+        if (!X.nachbarn.includes(Y)) X.nachbarn.push(Y);
+        if (!Y.nachbarn.includes(X)) Y.nachbarn.push(X);
+        return n;
+    }
+
+    // DIE VIER (die Mannigfaltigkeit einer Berührung): von ihren Kontakten C[n0 … n) bleiben höchstens vier — der tiefste, der
+    // weiteste von ihm, der mit ihnen das größte Dreieck spannt, und der jenseits ihrer Kante am weitesten; die Fläche trägt wie
+    // mit allen, die Gänge kosten ein Viertel (das stehende Fass trug 16 Rand-Punkte am Boden).
+    _freiVier(C, n0, n) {
+        if (n - n0 <= 4) return n;
+        const tausch = (i, j) => {
+            const t = C[i];
+            C[i] = C[j];
+            C[j] = t;
+        };
+        let b = n0;
+        for (let k = n0 + 1; k < n; k++) if (C[k].tiefe > C[b].tiefe) b = k;
+        tausch(n0, b);
+        const p = C[n0].ra;
+        let best = -1;
+        for (let k = n0 + 1; k < n; k++) {
+            const r = C[k].ra;
+            const d = (r[0] - p[0]) ** 2 + (r[1] - p[1]) ** 2 + (r[2] - p[2]) ** 2;
+            if (d > best) [best, b] = [d, k];
+        }
+        tausch(n0 + 1, b);
+        const q = C[n0 + 1].ra;
+        const u0 = q[0] - p[0];
+        const u1 = q[1] - p[1];
+        const u2 = q[2] - p[2];
+        // die Normale des Dreiecks p, q, r (unnormiert): ihr Betrag ist die doppelte Fläche, ihr Vorzeichen längs N die Seite
+        const N = this._freiVierN || (this._freiVierN = new Float64Array(3));
+        const kreuz = (r) => {
+            const v0 = r[0] - p[0];
+            const v1 = r[1] - p[1];
+            const v2 = r[2] - p[2];
+            N[0] = u1 * v2 - u2 * v1;
+            N[1] = u2 * v0 - u0 * v2;
+            N[2] = u0 * v1 - u1 * v0;
+        };
+        best = -1;
+        for (let k = n0 + 2; k < n; k++) {
+            kreuz(C[k].ra);
+            const a = N[0] * N[0] + N[1] * N[1] + N[2] * N[2];
+            if (a > best) [best, b] = [a, k];
+        }
+        tausch(n0 + 2, b);
+        const r3 = C[n0 + 2].ra;
+        kreuz(r3);
+        const [m0, m1, m2] = [N[0], N[1], N[2]];
+        best = Infinity;
+        for (let k = n0 + 3; k < n; k++) {
+            kreuz(C[k].ra);
+            const a = N[0] * m0 + N[1] * m1 + N[2] * m2;
+            if (a < best) [best, b] = [a, k];
+        }
+        if (!(best < 0)) {
+            best = -1;
+            for (let k = n0 + 3; k < n; k++) {
+                const r = C[k].ra;
+                const d = (r[0] - r3[0]) ** 2 + (r[1] - r3[1]) ** 2 + (r[2] - r3[2]) ** 2;
+                if (d > best) [best, b] = [d, k];
+            }
+        }
+        tausch(n0 + 3, b);
+        return n0 + 4;
+    }
+
+    _freiWecken(K) {
+        K.schlaf = false;
+        K.ruhe = 0;
+    }
+
+    // EIN KONTAKT in die Liste (die Objekte leben weiter, kein Müll je Schritt): Körper a, Gegner b (null: Welt; ein
+    // schlafender Gegner hält still wie die Welt), Punkt, Normale (aus b heraus zu a hin), Tiefe, μ, Schlüssel des Warmstarts.
+    _freiKontakt(C, n, a, b, x, y, z, nx, ny, nz, tiefe, mu, key) {
+        const c =
+            C[n] ||
+            (C[n] = {
+                ra: new Float64Array(3),
+                rb: new Float64Array(3),
+                J: new Float64Array(45),
+                m: new Float64Array(3),
+            });
+        c.a = a;
+        c.b = b && !b.schlaf ? b : null;
+        c.ra[0] = x - a.p[0];
+        c.ra[1] = y - a.p[1];
+        c.ra[2] = z - a.p[2];
+        if (b) {
+            c.rb[0] = x - b.p[0];
+            c.rb[1] = y - b.p[1];
+            c.rb[2] = z - b.p[2];
+        }
+        c.J[0] = nx;
+        c.J[1] = ny;
+        c.J[2] = nz;
+        c.tiefe = tiefe;
+        c.mu = mu;
+        c.key = key;
+        if (!b) a.welt = true;
+        return n + 1;
+    }
+
+    // DIE JACOBI-ZEILE einer Richtung d (ab J[o]): r×d und I⁻¹(r×d) beider Seiten; zurück die wirksame Masse⁻¹
+    // 1/m_a + (r_a×d)·I_a⁻¹(r_a×d) + dasselbe für b.
+    _freiRichtung(c, o) {
+        const J = c.J;
+        let k = 0;
+        for (let seite = 0; seite < 2; seite++) {
+            const K = seite ? c.b : c.a;
+            const q = o + 3 + seite * 6;
+            if (!K) {
+                J[q] = J[q + 1] = J[q + 2] = J[q + 3] = J[q + 4] = J[q + 5] = 0;
+                continue;
+            }
+            const r = seite ? c.rb : c.ra;
+            const x = r[1] * J[o + 2] - r[2] * J[o + 1];
+            const y = r[2] * J[o] - r[0] * J[o + 2];
+            const z = r[0] * J[o + 1] - r[1] * J[o];
+            const I = K.Iw;
+            J[q] = x;
+            J[q + 1] = y;
+            J[q + 2] = z;
+            J[q + 3] = I[0] * x + I[1] * y + I[2] * z;
+            J[q + 4] = I[3] * x + I[4] * y + I[5] * z;
+            J[q + 5] = I[6] * x + I[7] * y + I[8] * z;
+            k += K.invM + x * J[q + 3] + y * J[q + 4] + z * J[q + 5];
+        }
+        return k;
+    }
+
+    // DER KONTAKT BEREIT: Tangenten zur Normalen, die Jacobi-Zeilen und wirksamen Massen je Richtung, das Ziel der Normal-
+    // Geschwindigkeit (ein Spalt darf sich in diesem Teil-Schritt schließen, ein harter Aufprall prallt mit e zurück) und das
+    // Ziel des Lage-Impulses (die Tiefe über FREI.slop in FREI.beta je Teil-Schritt heraus).
+    _freiKontaktBereit(c, h, F) {
+        const J = c.J;
+        const n0 = J[0];
+        const n1 = J[1];
+        const n2 = J[2];
+        const quer = Math.abs(n0) > 0.57;
+        const tl = Math.sqrt(quer ? n0 * n0 + n1 * n1 : n1 * n1 + n2 * n2);
+        const t0 = quer ? n1 / tl : 0;
+        const t1 = quer ? -n0 / tl : n2 / tl;
+        const t2 = quer ? 0 : -n1 / tl;
+        J[15] = t0;
+        J[16] = t1;
+        J[17] = t2;
+        J[30] = n1 * t2 - n2 * t1;
+        J[31] = n2 * t0 - n0 * t2;
+        J[32] = n0 * t1 - n1 * t0;
+        for (let d = 0; d < 3; d++) c.m[d] = 1 / this._freiRichtung(c, d * 15);
+        const vn = this._freiRel(c, 0, false);
+        c.ziel = c.tiefe < 0 ? c.tiefe / h : -vn > F.prallMs ? -AnazhRealm.STOSS.stossZahl.starr * vn : 0;
+        c.lage = c.tiefe > F.slop ? (F.beta * (c.tiefe - F.slop)) / h : 0;
+        c.ln = c.lt1 = c.lt2 = c.lp = 0;
+    }
+    // die relative Geschwindigkeit des Punkts längs der Richtung ab J[o] (a gegen b), `lage`: die des Lage-Impulses
+    _freiRel(c, o, lage) {
+        const J = c.J;
+        const a = c.a;
+        let v = lage ? a.pv : a.v;
+        let w = lage ? a.pwv : a.w;
+        let u = v[0] * J[o] + v[1] * J[o + 1] + v[2] * J[o + 2] + w[0] * J[o + 3] + w[1] * J[o + 4] + w[2] * J[o + 5];
+        const b = c.b;
+        if (b) {
+            v = lage ? b.pv : b.v;
+            w = lage ? b.pwv : b.w;
+            u -=
+                v[0] * J[o] + v[1] * J[o + 1] + v[2] * J[o + 2] + w[0] * J[o + 9] + w[1] * J[o + 10] + w[2] * J[o + 11];
+        }
+        return u;
+    }
+    // der Impuls l längs der Richtung ab J[o]: +l an a, −l an b
+    _freiImpuls(c, o, l, lage) {
+        const J = c.J;
+        const a = c.a;
+        let v = lage ? a.pv : a.v;
+        let w = lage ? a.pwv : a.w;
+        let im = l * a.invM;
+        v[0] += J[o] * im;
+        v[1] += J[o + 1] * im;
+        v[2] += J[o + 2] * im;
+        w[0] += J[o + 6] * l;
+        w[1] += J[o + 7] * l;
+        w[2] += J[o + 8] * l;
+        const b = c.b;
+        if (!b) return;
+        v = lage ? b.pv : b.v;
+        w = lage ? b.pwv : b.w;
+        im = l * b.invM;
+        v[0] -= J[o] * im;
+        v[1] -= J[o + 1] * im;
+        v[2] -= J[o + 2] * im;
+        w[0] -= J[o + 12] * l;
+        w[1] -= J[o + 13] * l;
+        w[2] -= J[o + 14] * l;
+    }
+    // EIN GANG am Kontakt: die Normale (λ ≥ 0, akkumuliert), dann die Reibung im Kegel |λt| ≤ μ λn
+    _freiGeschw(c) {
+        const ln = Math.max(0, c.ln + (c.ziel - this._freiRel(c, 0, false)) * c.m[0]);
+        if (ln !== c.ln) this._freiImpuls(c, 0, ln - c.ln, false);
+        c.ln = ln;
+        const max = c.mu * ln;
+        const l1 = Math.max(-max, Math.min(max, c.lt1 - this._freiRel(c, 15, false) * c.m[1]));
+        if (l1 !== c.lt1) this._freiImpuls(c, 15, l1 - c.lt1, false);
+        c.lt1 = l1;
+        const l2 = Math.max(-max, Math.min(max, c.lt2 - this._freiRel(c, 30, false) * c.m[2]));
+        if (l2 !== c.lt2) this._freiImpuls(c, 30, l2 - c.lt2, false);
+        c.lt2 = l2;
+    }
+    _freiVersatz(c) {
+        if (!(c.lage > 0)) return;
+        const lp = Math.max(0, c.lp + (c.lage - this._freiRel(c, 0, true)) * c.m[0]);
+        if (lp !== c.lp) this._freiImpuls(c, 0, lp - c.lp, true);
+        c.lp = lp;
+    }
+
+    // DAS BILD UND DIE HÜLLE: der Eintrag steht, wo der Löser den Körper hält (Schwerpunkt minus Plan-Lage), die Pose des Werks
+    // trägt die Drehung (`_werkPoseZeigen`); seine Blocker-Box ist die Hülle der Punkte in der Welt (Kapsel, Tier und Strahl
+    // lösen gegen sie), neu gestempelt, sobald er FREI.stempelM gewandert ist oder einschläft.
+    _freiZeigen(K) {
+        const e = K.e;
+        const um = e._gesetz.pose.um;
+        e.position.x = K.p[0] - um.x * K.s;
+        e.position.y = K.p[1] + 0.5 - um.y * K.s;
+        e.position.z = K.p[2] - um.z * K.s;
+        e._gesetz.pose.q.set(K.q[1], K.q[2], K.q[3], K.q[0]);
+        this._werkPoseZeigen(e);
+        const sp = K.stempel;
+        if (sp && !K.schlaf && Math.hypot(sp[0] - K.p[0], sp[1] - K.p[1], sp[2] - K.p[2]) < AnazhRealm.FREI.stempelM)
+            return;
+        const box = {
+            minX: Infinity,
+            maxX: -Infinity,
+            minZ: Infinity,
+            maxZ: -Infinity,
+            topY: -Infinity,
+            botY: Infinity,
+        };
+        for (let i = 0; i < K.pw.length; i += 3) {
+            box.minX = Math.min(box.minX, K.pw[i]);
+            box.maxX = Math.max(box.maxX, K.pw[i]);
+            box.botY = Math.min(box.botY, K.pw[i + 1]);
+            box.topY = Math.max(box.topY, K.pw[i + 1]);
+            box.minZ = Math.min(box.minZ, K.pw[i + 2]);
+            box.maxZ = Math.max(box.maxZ, K.pw[i + 2]);
+        }
+        // die stehende Kiste ist eine gedrehte Box (`obb`, die Form der Haus-Hülle): Kapsel, Tier und Wagen lösen in ihrem Rahmen
+        const R = K.R;
+        const auf = K.kiste ? [0, 1, 2].find((k) => Math.abs(R[3 + k]) > 0.9998) : undefined;
+        if (auf !== undefined) {
+            const [a, b] = [(auf + 1) % 3, (auf + 2) % 3];
+            const halb = [K.hx, K.hy, K.hz];
+            box.obb = { cx: K.p[0], cz: K.p[2], c: R[a], s: -R[6 + a], hx: halb[a], hz: halb[b] };
+        }
+        box.stoff = K.stoff;
+        box.stempelfrei = true; // er wandert: er staut kein Wasser
+        e.blockerAABBs = [box];
+        K.stempel = K.p.slice();
+        this._blockerBewegt(e);
+        this._blockerStampReach(e);
+    }
+
+    // DIE HÖHE DES STOSSES: die Mitte des Bands [unten, oben] (die Hülle des Wagens, die Kapsel des Spielers), soweit es die Box
+    // des Körpers überlappt — dort greift der nächste Stoß (`_freiStoss`).
+    _freiStossHoehe(e, unten, oben) {
+        const b = e.blockerAABBs && e.blockerAABBs[0];
+        e._freiStossY = b ? (Math.max(unten, b.botY) + Math.min(oben, b.topY)) / 2 : NaN;
+    }
+
+    // DER TREFFER als Teilnehmer des Impuls-Gesetzes (`_stossKoerper`): die wirksame Masse des Körpers am Punkt in der Höhe des
+    // Stoßes (`_freiStossHoehe`) quer zur Lotrechten, 1 / (1/m + h²·(I⁻¹ₓₓ + I⁻¹zz)/2), und das Tempo dieses Punkts (v + ω × h·ŷ) —
+    // so stößt das Gesetz den Punkt, den es trifft, genau einmal: maß es den Schwerpunkt, der über ihm getroffen langsamer geht,
+    // stieß die Hülle Schritt um Schritt nach (ein Fass flog mit 14,9 m/s vor einem Wagen mit 6 m/s).
+    _freiTreffer(e, o) {
+        const K = e._frei;
+        const h = (Number.isFinite(e._freiStossY) ? e._freiStossY : K.p[1]) - K.p[1];
+        this._freiLage(K);
+        o.m = 1 / (K.invM + (h * h * (K.Iw[0] + K.Iw[8])) / 2);
+        o.vx = K.v[0] - K.w[2] * h;
+        o.vz = K.v[2] + K.w[0] * h;
+        return o;
+    }
+
+    // DER STOSS DES IMPULS-GESETZES am freien Körper (`_stossAuf`, Art „frei"): das Gesetz gibt dem Punkt, an dem die Hülle des
+    // Wagens den Körper berührt, die Geschwindigkeit dv längs (nx, nz) — die Mitte des Bands, in dem Hülle und Körper sich
+    // überlappen (`e._freiStossY`, `_fahrHuelleKontakt`; ohne Hülle seine Mitte), auf der dem Wagen zugewandten Seite. Der Impuls trägt Masse UND Trägheit des Körpers
+    // (j = dv / (1/m + (r×n)·I⁻¹(r×n))): über dem Schwerpunkt getroffen, kippt er.
+    _freiStoss(e, nx, nz, dv) {
+        const K = e._frei;
+        if (!K || !(dv > 0)) return;
+        this._freiWecken(K);
+        this._freiLage(K);
+        let best = -Infinity;
+        let px = K.p[0];
+        let pz = K.p[2];
+        for (let i = 0; i < K.pw.length; i += 3) {
+            const d = -(K.pw[i] - K.p[0]) * nx - (K.pw[i + 2] - K.p[2]) * nz;
+            if (d > best) [best, px, pz] = [d, K.pw[i], K.pw[i + 2]];
+        }
+        const y = Number.isFinite(e._freiStossY) ? e._freiStossY : K.p[1];
+        e._freiStossY = NaN;
+        const C = this._freiStossK || (this._freiStossK = []);
+        this._freiKontakt(C, 0, K, null, px, y, pz, nx, 0, nz, 0, 0, 0);
+        this._freiImpuls(C[0], 0, dv / this._freiRichtung(C[0], 0), false);
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_bewegung]);
 
@@ -2470,6 +3336,27 @@ AnazhRealm.STOSS = Object.freeze({
     ruheMs: 0.05, // m/s: darunter ruht der Stoß
     ereignisMs: 1, // m/s Aufprall-Geschwindigkeit, ab der ein Stoß Kamera und Klang erreicht
     ruckRefMs: 8, // m/s Sprung der eigenen Fahrt, bei dem der Kamera-Ruck (der Landungs-Dip) voll ist
+});
+// DER LÖSER DER FREIEN KÖRPER (physik.K3, `_freiSchritt`): Teil-Schritte je Sim-Schritt (240 Hz) und Gänge je Teil-Schritt; der Spalt
+// (m), ab dem ein Punkt vor einer Fläche schon ein Kontakt ist (Boden und Bau; Körper an Körper enger — ein weiter Spalt hielt die
+// Kiste über der Seite der unteren); die erlaubte Durchdringung slop und der Anteil beta, mit dem der Lage-Impuls den Rest je
+// Teil-Schritt heraushebt; ab prallMs Aufprall prallt der Körper mit der Stoß-Zahl des Starren; ruhig unter ruheMs (jeder Punkt),
+// nach ruheS schläft er; ein Fass trägt je Rand rundPunkte Punkte; die Hülle stempelt neu nach stempelM Weg. Gemessen am Stapel
+// aus 5 Kisten (Node, flacher Boden, 30 Saaten Gier und Versatz): 10 cm Spalt stehen 30 von 30 und ruhen nach ≤ 1,07 s, 30 cm Spalt
+// stehen 29 von 30, Median 1,35 s (ein 2,4 m hoher Turm schaukelt danach bis 4 s aus); wach (ohne Schlaf) zittert er 0,001 cm.
+// Die Kosten: ein wacher Körper 90 µs je Sim-Schritt (100 wach 9 ms, Node, flacher Boden), ein schlafender nur seine Paar-Suche.
+AnazhRealm.FREI = Object.freeze({
+    teile: 4,
+    gaenge: 8,
+    spalt: 0.02,
+    spaltKoerper: 0.005,
+    slop: 0.001,
+    beta: 0.2,
+    prallMs: 0.5,
+    ruheMs: 0.05,
+    ruheS: 0.3,
+    rundPunkte: 16,
+    stempelM: 0.02,
 });
 AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 // V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
