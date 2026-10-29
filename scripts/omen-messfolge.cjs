@@ -42,10 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt, ausDatei } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
+const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt, ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
 const { spawn, execSync } = require("child_process");
 const BAND = require("./lib/band-urteil.cjs");
 const { wetterUrteil, weltaktUrteil } = require("./lib/ausgabe-aufnahme.cjs");

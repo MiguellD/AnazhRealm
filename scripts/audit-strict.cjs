@@ -25,10 +25,7 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
-const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt, hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { starteBrowser, nullRenderer, ROOT, startProc, eigenePorte, warteAufWelt, hauptLauf, ausDatei, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 const INDEX_HTML = path.join(ROOT, "index.html");
 

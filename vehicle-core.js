@@ -3394,7 +3394,7 @@
             step: 0.02,
             grp: "DYNAMIK · FAHRWERK",
             dyn: true,
-            uniform: true, // ein Gesetz-Wert (Vertrag §3 B4): kein Bau-Byte, das Fahr-Gesetz liest ihn (reglerTot vehicle:grip)
+            uniform: true, // ein Gesetz-Wert (Vertrag §3 B4): kein Bau-Byte, das Fahr-Gesetz liest ihn (reglerGesetz vehicle:grip)
             law: "Reibkreis μ · weniger = früher Drift/Übersteuern",
         },
     ];

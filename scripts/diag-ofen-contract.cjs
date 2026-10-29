@@ -28,11 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const crypto = require("crypto");
-const fs = require("fs");
-const vm = require("vm");
-const path = require("path");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST, path, fs, crypto, vm } = require("./lib/welt-boot.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..");

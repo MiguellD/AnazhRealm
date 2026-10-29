@@ -32,10 +32,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);

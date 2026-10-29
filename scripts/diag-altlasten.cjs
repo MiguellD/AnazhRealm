@@ -12,10 +12,7 @@
 // beweist, dass die Linse feuert (kein vakuöses Grün).
 // ============================================================================
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
-const { scanWarteWand, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { scanWarteWand, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).

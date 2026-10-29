@@ -30,8 +30,7 @@
 //
 //   node scripts/diag-render-diaet.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 // Der nur-sinkende ANKER: die 6-Farben-Fixture darf höchstens SO viele Material-Familien

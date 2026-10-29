@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 // scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung).
 //
@@ -19,9 +19,6 @@ const { ausDatei } = require("./lib/welt-boot.cjs");
 //        in stamm-rehome.konflikt.js (unversioniert) — von Hand lösen, dann
 //   node scripts/stamm-rehome.cjs --weiter
 //   node scripts/stamm-rehome.cjs --selftest
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 const { execFileSync } = require("child_process");
 const stamm = require("./lib/stamm.cjs");
 

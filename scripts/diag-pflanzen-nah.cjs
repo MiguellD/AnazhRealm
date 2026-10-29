@@ -52,10 +52,8 @@
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
 "use strict";
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, path, stammLib } = require("./lib/welt-boot.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");

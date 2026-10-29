@@ -4,15 +4,13 @@
 // puls (je Push), kopf und voll (unter VOLL_WENN) und echt; ein weiterer Job ist ROT.
 //   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
-const fs = require("fs");
-const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
-const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST, path, fs } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";

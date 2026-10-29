@@ -5,13 +5,11 @@
 //   node scripts/ci-zeiten.cjs                          misst und verteilt
 //   node scripts/ci-zeiten.cjs --tafel                  die Kennzahlen des Richters über 7 Tage (druckt, schreibt nichts)
 "use strict";
-const fs = require("fs");
-const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
-const { hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";

@@ -24,10 +24,8 @@
 // Exit-Codes: 0 = grün · 1 = Divergenz/stale/fehlend · 2 = Harness-Fehler.
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");

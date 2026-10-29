@@ -4,9 +4,7 @@
 // (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Der Richter
 // ist die Laufzeit: die Weiche nennt ein Echt-Rezept in einer CPU-Gruppe ROT und eines, das nie zeichnet.
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const { GPU_REZEPTE, ausDatei } = require("./welt-boot.cjs");
+const { GPU_REZEPTE, ausDatei, path, fs } = require("./welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const ART = /\bart:\s*([^\n,}]+)/g;

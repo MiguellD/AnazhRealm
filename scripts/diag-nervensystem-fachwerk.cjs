@@ -21,8 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern, ausDatei, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_FACHWERK_PORT || 4434);

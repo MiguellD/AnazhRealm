@@ -44,9 +44,12 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST, path, stammLib } = require("./lib/welt-boot.cjs");
+const { runWithWorker, bauBild, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
+// DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
+// (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
+const BILD_SCHWELLE = 0.01;
+const prozent = (x) => (100 * (x || 0)).toFixed(2) + " %";
 const PORT = Number(process.env.REGLER_WIRKT_PORT || 4561);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 const SEED = 1;
@@ -69,12 +72,14 @@ function vergleichTeil(jetzt, ratsche, ids, teil = TEIL) {
 // Der Kern je Art, wie die Brücke die Tabellen sammelt (`__mergeParamsMap`: die Zweit-Kerne in Manifest-Reihenfolge,
 // first-wins, danach der Primär-Kern): jeder Zweit-Kern mit Namensraum wird THREE-frei im vm gelesen (nur seine
 // PARAMS_BY_KIND), was keiner trägt, gehört dem Primär-Kern (phyto). Dazu `gesetz`: je Art die Zeilen, die der Kern zum
-// GESETZ-WERT erklärt (B4 `uniform: true`, die Brücke reicht das Feld nicht durch) — ihr Kanal ist der Leser der Welt.
+// GESETZ-WERT erklärt (B4 `uniform: true`, die Brücke reicht das Feld nicht durch) — ihr Kanal ist der Leser der Welt;
+// `ids`: je Art jede Zeile (eine Art mit Leser misst sie alle dort: ein Wert kann Bau UND Leser speisen, porta realm).
 function kernVonArt() {
     const vm = require("vm");
     const aus = {};
-    const gesetz = {};
+    const [gesetz, ids] = [{}, {}];
     Object.defineProperty(aus, "gesetz", { value: gesetz });
+    Object.defineProperty(aus, "ids", { value: ids });
     const manifest = ausDatei("cores.manifest.json", true);
     for (const c of manifest) {
         if (!c || typeof c.ns !== "string" || !c.ns) continue;
@@ -84,7 +89,7 @@ function kernVonArt() {
         vm.createContext(ctx);
         for (const s of c.scripts) vm.runInContext(ausDatei(s), ctx, { filename: s });
         const pbk = (ctx[c.ns] && ctx[c.ns].PARAMS_BY_KIND) || {};
-        for (const art of Object.keys(pbk)) if (!(art in aus)) aus[art] = c.id;
+        for (const art of Object.keys(pbk)) if (!(art in aus)) [aus[art], ids[art]] = [c.id, pbk[art].map((d) => d.id)];
         for (const art of Object.keys(pbk)) for (const d of pbk[art]) if (d.uniform === true) (gesetz[art] ||= []).push(d.id);
     }
     return aus;
@@ -141,69 +146,30 @@ function ofenMessen(page, opts) {
             for (let i = 0; i < s.length; i++) n = (Math.imul(n, 131) + s.charCodeAt(i)) >>> 0;
             return n;
         };
-        const f64 = new Float64Array(1);
-        const u64 = new Uint8Array(f64.buffer);
-        const gussHash = (g) => {
-            const aus = { hash: "", teile: 0, bytes: 0, nichtEndlich: 0, platzhalter: 0, kein: null };
-            if (!g || typeof g !== "object" || typeof g.traverse !== "function") {
-                aus.kein = String(g);
-                return aus;
-            }
-            let a = 0x811c9dc5 | 0,
-                b = 0x2f0a1c3d | 0;
-            const ein = (x) => {
-                a = Math.imul(a ^ x, 16777619);
-                b = Math.imul(b ^ (x + 0x9e), 16777619);
-            };
-            const text = (s) => {
-                s = String(s);
-                for (let i = 0; i < s.length; i++) ein(s.charCodeAt(i) & 255);
-                ein(0);
-            };
-            const zahl = (x) => {
-                f64[0] = x;
-                for (let i = 0; i < 8; i++) ein(u64[i]);
-                if (!Number.isFinite(x)) aus.nichtEndlich++;
-            };
-            const puffer = (arr) => {
-                const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-                for (let i = 0; i < u.length; i++) ein(u[i]);
-                aus.bytes += u.length;
-                if (arr instanceof Float32Array || arr instanceof Float64Array)
-                    for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) aus.nichtEndlich++;
-            };
+        // Die Teile des Gusses für das Bild (`bauBild`, dieselbe Quelle wie an der Brücke): jedes sichtbare Mesh in der Welt-Lage
+        // seiner Matrix, die Haut in der Lage ihrer Knochen (`applyBoneTransform`: der Guss trägt Statur in den Knochen), Vertex-
+        // oder Stoff-Farbe (linear), Glut und Leucht-Gesetz.
+        const [bauBild, bauAbdruck] = [o.bildQuelle, o.abdruckQuelle].map((q) => (0, eval)("(" + q + ")"));
+        const gussTeile = (g) => {
+            const teile = [], v = new THREE.Vector3();
             g.updateMatrixWorld(true);
-            g.traverse((x) => {
-                text(x.type);
-                text(x.visible ? 1 : 0);
-                for (const e of x.matrixWorld.elements) zahl(e);
-                if (x.userData?.__kaltPlatzhalter) aus.platzhalter++;
-                if (!x.isMesh || !x.geometry) return;
-                aus.teile++;
-                const at = x.geometry.attributes;
-                for (const k of Object.keys(at).sort()) {
-                    const v = at[k];
-                    text(k);
-                    text(v.itemSize);
-                    if (v.isInterleavedBufferAttribute) {
-                        text(v.offset);
-                        puffer(v.data.array);
-                    } else puffer(v.array);
-                }
-                if (x.geometry.index) puffer(x.geometry.index.array);
-                for (const m of Array.isArray(x.material) ? x.material : [x.material]) {
-                    if (m?.color && typeof m.color.getHexString === "function") text(m.color.getHexString());
-                    if (m?.userData?.__klasse) text(m.userData.__klasse);
-                }
+            g.traverseVisible((x) => {
+                const at = x.isMesh && x.geometry.attributes, m = x.isMesh && [x.material].flat()[0];
+                if (!at || !at.position) return;
+                const pos = new Float32Array(at.position.count * 3), lies = (a) => Float32Array.from({ length: a.count * a.itemSize }, (_, i) => a.getComponent((i / a.itemSize) | 0, i % a.itemSize));
+                for (let i = 0; i < at.position.count; i++)
+                    (x.isSkinnedMesh ? x.applyBoneTransform(i, v.fromBufferAttribute(at.position, i)) : v.fromBufferAttribute(at.position, i)).applyMatrix4(x.matrixWorld).toArray(pos, i * 3);
+                const glut = m.emissive && [m.emissive.r, m.emissive.g, m.emissive.b].map((c) => c * (m.emissiveIntensity ?? 1));
+                teile.push({ pos, index: x.geometry.index && x.geometry.index.array, farbe: at.color && lies(at.color), fs: at.color ? at.color.itemSize : 3, grund: m.color ? [m.color.r, m.color.g, m.color.b] : [0.7, 0.7, 0.7], leucht: glut, glutK: (m.userData && m.userData.__leucht) || 0 });
             });
-            const hex = (x) => ("0000000" + (x >>> 0).toString(16)).slice(-8);
-            aus.hash = hex(a) + hex(b);
-            return aus;
+            return teile;
         };
         // EIN Guss über die echte Vorschau-Quelle, mit dem Wert im Speicher der Werkstatt (`ws.studioOv[preset]`,
         // gelesen von `_workshopStudioOvFor` — die Form, die der Regler-Panel schreibt). Das Vorschau-Memo fällt je Guss
-        // (jeder Hash ist ein frischer Guss); ERROR-Meldungen des Stamms während des Gusses werden mitgeschrieben.
-        const guss = (preset, lod, ov) => {
+        // (jeder Hash ist ein frischer Guss); ERROR-Meldungen des Stamms während des Gusses werden mitgeschrieben. Sein Hash ist
+        // der EINE Bau-Fingerabdruck (`bauAbdruck`, wie an der Brücke) über die Teile seines Bilds — bis studios.K1 trug der Ofen
+        // einen eigenen FNV-Hasher über jeden Knoten (zwei Wahrheiten über „derselbe Bau").
+        const guss = async (preset, lod, ov) => {
             const fehler = [];
             const budget = [];
             r.log = function (m, lvl) {
@@ -229,11 +195,13 @@ function ofenMessen(page, opts) {
                 else delete ws.studioOv[preset];
                 delete r.log;
             }
-            const h = gussHash(g);
-            h.fehler = fehler;
-            h.budget = budget;
-            h.wurf = wurf;
-            return h;
+            const teile = g && typeof g.traverseVisible === "function" ? gussTeile(g) : null;
+            const h = teile
+                ? await bauAbdruck(teile.map((t) => ({ position: { array: t.pos, itemSize: 3 }, index: t.index, color: t.farbe && { array: t.farbe, itemSize: t.fs }, grund: t.grund, leucht: t.leucht, glutK: t.glutK })))
+                : { teile: 0, kein: String(g) };
+            h.platzhalter = 0;
+            if (teile) g.traverse((x) => x.userData?.__kaltPlatzhalter && h.platzhalter++);
+            return Object.assign(h, { fehler, budget, wurf, bildTeile: teile || [] });
         };
         const bruch = (h) =>
             h.wurf
@@ -275,19 +243,20 @@ function ofenMessen(page, opts) {
                 aus.arten[art] = { lod, baecker: typeof B[art] === "function", rezepte: rezepte.length };
                 // eine Ofen-Art ohne Gestalt-Bäcker (Vertrag §8.4: der Klang) gießt nichts — ihre Zeilen urteilt ihr Leser (`leserMessen`)
                 if (!aus.arten[art].baecker) continue;
-                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], gusse: 0 }));
+                const zeilen = f.paramsByKind[art].map((d) => ({ art, id: d.id, min: d.min, max: d.max, rezepte, lod, wirkt: false, an: null, bricht: [], budget: [], gusse: 0, bild: 0, byte: false }));
                 for (const p of rezepte) {
                     const offen = zeilen.filter((z) => !z.wirkt);
                     if (!offen.length) break;
-                    const b0 = guss(p, lod, null);
+                    const b0 = await guss(p, lod, null);
                     const bB = bruch(b0);
                     if (bB) {
                         offen.forEach((z) => z.bricht.push(`Grund-Guss ${p}: ${bB}`));
                         continue;
                     }
+                    const B0 = bauBild(b0.bildTeile);
                     for (const z of offen)
                         for (const wert of [z.min, z.max]) {
-                            const h = guss(p, lod, { [z.id]: wert });
+                            const h = await guss(p, lod, { [z.id]: wert });
                             z.gusse++;
                             const bb = bruch(h);
                             if (bb) {
@@ -295,12 +264,15 @@ function ofenMessen(page, opts) {
                                 continue;
                             }
                             for (const t of h.budget) z.budget.push(`${z.id}=${wert} an ${p}: ${t}`);
-                            if (h.hash !== b0.hash && !z.wirkt) {
+                            if (h.hash !== b0.hash) z.byte = true;
+                            const anteil = h.hash !== b0.hash && B0.rahmen ? B0.abstand(B0.bilder, bauBild(h.bildTeile, B0.rahmen).bilder) : 0;
+                            z.bild = Math.max(z.bild, anteil);
+                            if (anteil >= o.schwelle && !z.wirkt) {
                                 z.wirkt = true;
                                 z.an = p;
                             }
                         }
-                    const b1 = guss(p, lod, null);
+                    const b1 = await guss(p, lod, null);
                     if (b1.hash !== b0.hash) offen.forEach((z) => z.bricht.push(`Grund-Guss ${p} rauscht (${b0.hash} · ${b1.hash})`));
                 }
                 aus.zeilen.push(...zeilen);
@@ -310,7 +282,7 @@ function ofenMessen(page, opts) {
             B.koerper = altBaecker;
         }
         return aus;
-    }, opts || {});
+    }, { bildQuelle: bauBild.toString(), abdruckQuelle: bauAbdruck.toString(), schwelle: BILD_SCHWELLE, ...opts });
     }
 // ── DIE LESER DER GESETZ-WERTE (studios.K1 „jeder Griff wirkt sichtbar oder hörbar"). Eine Zeile `uniform: true` bewegt kein
 // Bau-Byte (Vertrag B4): sie wirkt, wo die Welt sie liest — die Linse misst DORT, im echten Stamm, mit dem Stempel am Eintrag
@@ -508,6 +480,8 @@ function wirkenAus(st) {
                 grund: "",
                 an: null,
                 bricht: [],
+                bild: 0,
+                byte: false,
             };
             for (const p of A.rezepte) {
                 const b = st.je.get(p + "|null|" + A.lod).bau;
@@ -519,22 +493,22 @@ function wirkenAus(st) {
                 for (const wert of [d.min, d.max]) {
                     const k = st.je.get(p + "|" + [d.id, wert] + "|" + A.lod);
                     if (k && bauBruch(k.bau)) z.bricht.push(`${d.id}=${wert} an ${p}: ${bauBruch(k.bau)}`);
-                    else if (k && k.bau.hash !== b.hash && !z.wirkt) [z.wirkt, z.an] = [true, p];
+                    else if (k && k.bau.hash !== b.hash) {
+                        z.byte = true;
+                        z.bild = Math.max(z.bild, k.bild || 0);
+                        if (!z.wirkt && k.bild >= BILD_SCHWELLE) [z.wirkt, z.an] = [true, p];
+                    }
                 }
             }
             z.grund = z.bricht.length
                 ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
                 : z.wirkt
-                  ? "wirkt an " + z.an
+                  ? "wirkt an " + z.an + " (Bild bis " + prozent(z.bild) + ")"
                   : !z.rezepte.length
                     ? "kein Rezept der Art im Buch"
-                    : "bewegt den Bau an keinem der " +
-                      z.rezepte.length +
-                      " Rezepte (min " +
-                      d.min +
-                      " · max " +
-                      d.max +
-                      ")";
+                    : z.bild > 0
+                      ? `bewegt Bytes, nicht das Bild (höchstens ${prozent(z.bild)} der Gestalt-Pixel, Schwelle ${prozent(BILD_SCHWELLE)})`
+                      : "bewegt das Bild an keinem der " + z.rezepte.length + " Rezepte (min " + d.min + " · max " + d.max + ")";
             zeilen.push(z);
         }
     return zeilen;
@@ -598,14 +572,17 @@ async function stufenMessen(h, opts) {
         if (o.leereStufe === pl.s) m.presetId = "__taeter_unbekannt__";
         return m;
     };
-    // der Bau-Abdruck (die Wirkung) an der ersten Stufe, die Teile (der Wurf) an jeder
-    const erste = new Set();
+    // der Bau-Abdruck und das Bild (die Wirkung) an der ersten Stufe, die Teile (der Wurf) an jeder; die Basis-Bilder zuerst
+    const erste = new Map();
     const liste = plan.map((pl) => {
         const m = msg(pl);
-        if (pl.s === arten[pl.art].lod) erste.add(m);
+        if (pl.s === arten[pl.art].lod) erste.set(m, pl.r ? { gegen: pl.p } : { basis: pl.p });
         return m;
     });
-    const res = await h.kostenListe(liste, (c) => erste.has(c), true);
+    const zuerst = liste.filter((m) => erste.get(m)?.basis);
+    const fahren = (l) => h.kostenListe(l, (c) => erste.has(c), true, (c) => erste.get(c));
+    const [r1, r2] = [await fahren(zuerst), await fahren(liste.filter((m) => !erste.get(m)?.basis))];
+    const res = liste.map((m) => (erste.get(m)?.basis ? r1 : r2).shift());
     const [bruch, leer] = [{}, []];
     const je = new Map();
     plan.forEach((pl, i) => {
@@ -649,7 +626,6 @@ const quoteUeber = (st) =>
 // das Paar aus den Bauten der Stufen-Probe (erste Stufe, NUR-WURF-Stufe; die volle Regler-Hülle jeder Art): die Regel wirft
 // nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am Regler-Rand
 // richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
-const stammLib = require("./lib/stamm.cjs");
 // Die Methode am NAMEN (gate:apparat Klinge 3), ihre Parameter liest die Probe aus dem Kopf — nie eine eigene Liste.
 function statischeMethode(src, name) {
     const i = stammLib.kopf(src, name);
@@ -739,12 +715,14 @@ function wurfBericht(w) {
 function ofenZeilen(ofen) {
     const kerne = kernVonArt();
     return ofen.zeilen.map((z) => {
-        const n = { kern: kerne[z.art] || "phyto", art: z.art, id: z.id, d: { min: z.min, max: z.max }, rezepte: z.rezepte, lod: z.lod, kanal: "Ofen", wirkt: z.wirkt, an: z.an, bricht: z.bricht, budget: z.budget, grund: "" };
+        const n = { kern: kerne[z.art] || "phyto", art: z.art, id: z.id, d: { min: z.min, max: z.max }, rezepte: z.rezepte, lod: z.lod, kanal: "Ofen", wirkt: z.wirkt, an: z.an, bricht: z.bricht, budget: z.budget, byte: z.byte, bild: z.bild, grund: "" };
         n.grund = z.bricht.length
             ? "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "")
             : z.wirkt
-              ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt)"
-              : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
+              ? "wirkt an " + z.an + " (Ofen-Guss der Werkstatt, Bild bis " + prozent(z.bild) + ")"
+              : z.bild > 0
+                ? `bewegt den Ofen-Guss, nicht sein Bild (höchstens ${prozent(z.bild)} der Gestalt-Pixel, Schwelle ${prozent(BILD_SCHWELLE)})`
+                : "bewegt den Ofen-Guss an keinem der " + z.rezepte.length + " Rezepte (min " + z.min + " · max " + z.max + ")";
         return n;
     });
     }
@@ -752,11 +730,13 @@ function ofenZeilen(ofen) {
 // Die Gesetz-Werte (B4 `uniform`) urteilt ihr Leser der Welt (`leserMessen`): ihr Bau- bzw. Guss-Abdruck bewegt sich nie.
 async function messenAlle() {
     const kerne = kernVonArt();
+    const lesen = Object.fromEntries(Object.keys(LESER).map((art) => [art, kerne.ids[art] || []]));
     const [ofen, leser] =
         TEIL === 1
-            ? await imStamm(async (page) => [await ofenMessen(page, {}), await leserMessen(page, { gesetz: kerne.gesetz })])
+            ? await imStamm(async (page) => [await ofenMessen(page, {}), await leserMessen(page, { gesetz: lesen })])
             : [{ zeilen: [], arten: {} }, { zeilen: [] }];
     const lz = leserZeilen(leser, kerne);
+    const gesetzWert = (z) => (kerne.gesetz[z.art] || []).includes(z.id);
     let stufen = null;
     await runWithWorker(PORT, async (h) => {
         const imTeil = { regler: (art, id, ids) => teilDer(art, id, ids) === TEIL, grund: (art, ids) => teilDer(art, null, ids) === TEIL };
@@ -764,12 +744,15 @@ async function messenAlle() {
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
     const roh = [...wirkenAus(stufen), ...ofenZeilen(ofen)];
+    // je Zeile EIN Urteil: der Gesetz-Wert an seinem Leser; jede andere am Bild des Werks, sonst an ihrem Leser, wo er sie sieht
+    const amLeser = (z, l) => l && (gesetzWert(z) || (!z.wirkt && !bricht(z) && (l.wirkt || bricht(l))));
+    const lies = (z) => lz.find((l) => name(l) === name(z));
     return {
-        zeilen: roh.filter((z) => !lz.some((l) => name(l) === name(z))).concat(lz),
-        ohneByte: lz.filter((l) => !roh.some((z) => name(z) === name(l) && (z.wirkt || bricht(z)))).map(name),
+        zeilen: [...roh.map((z) => (amLeser(z, lies(z)) ? lies(z) : z)), ...lz.filter((l) => !roh.some((z) => name(z) === name(l)))],
+        ohneByte: lz.filter((l) => gesetzWert(l) && !roh.some((z) => name(z) === name(l) && (z.byte || bricht(z)))).map(name),
         builds: stufen.builds,
         gusse,
-        leser: lz.length,
+        leser: lz.filter((l) => gesetzWert(l) || amLeser(roh.find((z) => name(z) === name(l)) || l, l)).length,
         ofenArten: ofen.arten,
         wurf: wurfAus(stufen, stammRegel()),
         stufen,
@@ -835,6 +818,18 @@ async function selbsttest() {
     console.log(
         `${rein && teile ? "✅" : "❌"} SELBST-TEST Urteil: gleich grün · neu tot rot (${v2.neu}) · geheilt rot bis die Zeile fällt (${v3.geheilt}) · je Teil nur seine Zeilen (${t.map((x) => (x ? "✓" : "✗")).join("")}: Teil 1 · 2 · 3 grün, der Zeuge fällt in Teil 3 rot, ungefiltert rot)`
     );
+    // (a2) DIE BILD-SCHWELLE (das Schlupfloch der Karte „0,1 mm am Hash"): ein Würfel um 0,1 mm verschoben bewegt jedes Byte,
+    // nicht das Bild → tot; um 3 cm verschoben → wirkt (dieselbe Rechnung `bauBild` wie an Brücke und Ofen).
+    const wuerfel = (dx) => {
+        const [P, F, index] = [[], [0, 1, 3, 2, 4, 5, 7, 6, 0, 1, 5, 4, 2, 3, 7, 6, 0, 2, 6, 4, 1, 3, 7, 5], []];
+        for (let i = 0; i < 8; i++) P.push((i & 1 ? 0.5 : -0.5) + dx, i & 2 ? 0.5 : -0.5, i & 4 ? 0.5 : -0.5);
+        for (let f = 0; f < 24; f += 4) index.push(F[f], F[f + 1], F[f + 2], F[f], F[f + 2], F[f + 3]);
+        return [{ pos: Float32Array.from(P), index: Uint32Array.from(index), farbe: null, fs: 3, grund: [0.5, 0.5, 0.5] }];
+    };
+    const W0 = bauBild(wuerfel(0));
+    const [fein, grob] = [0.0001, 0.03].map((dx) => W0.abstand(W0.bilder, bauBild(wuerfel(dx), W0.rahmen).bilder));
+    const bildOk = fein < BILD_SCHWELLE && grob >= BILD_SCHWELLE;
+    console.log(`${bildOk ? "✅" : "❌"} SELBST-TEST Bild-Schwelle: 0,1 mm ${prozent(fein)} → tot · 3 cm ${prozent(grob)} → wirkt (Schwelle ${prozent(BILD_SCHWELLE)} der Gestalt-Pixel, ΔLuma > 18)`);
     // (b) der Täter am echten Kanal: die Brücke bekommt den Regler-Wert nicht (der W-A1-Defekt) — jede Zeile der Art
     // vehicle wird tot und beim Namen genannt; ohne Täter wirkt dieselbe Art.
     let taeter = null,
@@ -888,10 +883,12 @@ async function selbsttest() {
     const zB2 = ofenZeilen(oBruch);
     const imOfen = !!oHeil.arten.koerper;
     const heilWirkt = zH.filter((z) => z.wirkt && !bricht(z)).length;
+    const amBildTot = zH.filter((z) => tot(z) && z.byte && name(z) in ratsche.tot).length;
     const vO = vergleich(zO.filter(tot).map(name), ratsche);
-    const ofenKanal = imOfen && zH.length > 0 && heilWirkt === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === zO.length;
+    const neuO = zO.filter((z) => !(name(z) in ratsche.tot));
+    const ofenKanal = imOfen && zH.length > 0 && heilWirkt + amBildTot === zH.length && zO.filter(tot).length === zO.length && vO.neu.length === neuO.length && neuO.length > 0;
     console.log(
-        `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
+        `${ofenKanal ? "✅" : "❌"} SELBST-TEST Ofen-Kanal (koerper ${imOfen ? "im Host-Ofen" : "NICHT im Ofen"}): heil ${heilWirkt}/${zH.length} wirken (${amBildTot} bewegen den Guss, nicht sein Bild — Ratsche) · Täter (der Ofen verliert den Wert) ${zO.filter(tot).length}/${zO.length} tot → rot (neu tot: ${vO.neu.slice(0, 3).join(", ")}${vO.neu.length > 3 ? " …" : ""})`
     );
     const hB = zB2.find((z) => z.id === "height");
     const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
@@ -929,7 +926,7 @@ async function selbsttest() {
     console.log(
         `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${rotTaeter.length} rot (${rotTaeter.slice(0, 2).join(" · ")})`
     );
-    return rein && teile && kanal && bruchOk && ofenKanal && ofenBruch && leserOk && wurfOk && stufenOk;
+    return rein && teile && bildOk && kanal && bruchOk && ofenKanal && ofenBruch && leserOk && wurfOk && stufenOk;
     }
 hauptLauf(async () => {
     // Der Selbsttest läuft EINMAL: vor Teil 1 (alle Teile ein Befehl bis auf --teil) oder allein (--selftest).
@@ -943,7 +940,7 @@ hauptLauf(async () => {
     const brechend = m.zeilen.filter(bricht);
     const oa = Object.keys(m.ofenArten).sort();
     console.log(
-        `Regler-wirkt Teil ${TEIL} (${TEIL === 1 ? "ohne " + HAUS : HAUS + " Regler " + m.zeilen.map((z) => z.id).join(",")}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")}) · ${m.leser} Gesetz-Werte an ihrem Leser der Welt (${Object.values(LESER).join(" · ")})`
+        `Regler-wirkt Teil ${TEIL} (${TEIL === 1 ? "ohne " + HAUS : HAUS + " Regler " + m.zeilen.map((z) => z.id).join(",")}): ${m.zeilen.length} PARAMS-Zeilen · ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, jede Stufe — die Wirkung an der ersten) · ${m.gusse} Güsse im Host-Ofen der Werkstatt (${oa.map((a) => a + (m.ofenArten[a].baecker ? "" : " ohne Bäcker")).join(", ")}) · ${m.leser} Zeilen an ihrem Leser der Welt (${Object.values(LESER).join(" · ")})`
     );
     bericht(m.zeilen);
     for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);

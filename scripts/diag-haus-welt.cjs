@@ -41,10 +41,7 @@ const {
     teilAus,
     ROOT,
     hauptLauf,
-    pngDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+    pngDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const SELBST = SELBSTTEST;

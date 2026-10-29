@@ -17,7 +17,8 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
-const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
+const stammLib = require("./stamm.cjs");
+const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
@@ -1300,6 +1301,12 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
 }
 
 module.exports = {
+    fs,
+    path,
+    stammLib,
+    crypto: require("crypto"),
+    os: require("os"),
+    vm: require("vm"),
     studioKern,
     fadenScope,
     scanWarteWand,

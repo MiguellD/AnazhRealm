@@ -10,11 +10,9 @@
 //   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
-const { selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { selbsttestEnde, wandEnde, SELBSTTEST, path, stammLib } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
-const stammLib = require("./lib/stamm.cjs");
 const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(root);
 // die Absenzen über den EINEN Helfer (stammLib.fehlt, kommentarfrei); `o.shell` die Wandlung der Shell im Selbsttest
 const SHELL = "worlds/terrain/phytogenesis.js";

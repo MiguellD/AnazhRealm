@@ -36,12 +36,8 @@ const {
     nullRenderer,
     halteBis,
     argOpt,
-    ROOT: root,
-} = require("./lib/welt-boot.cjs");
+    ROOT: root, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);

@@ -25,10 +25,7 @@
 //     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen.
 // ============================================================================
 "use strict";
-const { urteilEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { urteilEnde, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;

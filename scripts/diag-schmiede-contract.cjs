@@ -29,10 +29,9 @@
 // byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Seit S1 Wände driften alle Transzendenten: pow
 // bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
-const path = require("path");
 const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const SC = studioKern("schmiede-core.js", "__schmiedeCore");
 

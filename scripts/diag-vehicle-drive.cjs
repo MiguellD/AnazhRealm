@@ -2,8 +2,7 @@
 // Wahrheits-Satz und ohne zweiten Fahr-Pfad; A statisch und numerisch (Node), B im lebenden Draht (Browser, Foundry an,
 // Null-Renderer). Jede Zeile trägt ihr Soll im Namen ihres Checks, der Selbst-Test je Verdikt einen Täter.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.DRIVE_PORT || 4411);

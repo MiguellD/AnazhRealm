@@ -14,10 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite, ausDatei } = require("./welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const { statikServer, nullSeite, ausDatei, path, fs, crypto } = require("./welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 

@@ -30,8 +30,7 @@
 // Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
 "use strict";
-const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 const PORT = Number(process.env.FREIE_SLOTS_PORT || 4527);

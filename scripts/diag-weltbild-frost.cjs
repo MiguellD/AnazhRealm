@@ -37,9 +37,7 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt, path, fs } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.WELTBILD_FROST_PORT || 4426);
 const ECHT = process.argv.includes("--echt");

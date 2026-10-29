@@ -1,4 +1,4 @@
-const { ausDatei } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 // diag-studio-vertrag.cjs — DER MANIFEST-VALIDATOR (docs/studio-vertrag.md).
 // Die USD-/Schema-Lehre: ein Kern, der den Vertrag verletzt, wird ROT beim
 // Andocken — nicht stumm kaputt in der Welt. Statisch + vm (kein Browser, im
@@ -20,10 +20,6 @@ const { ausDatei } = require("./lib/welt-boot.cjs");
 // Eine neue Domäne (vehicle-core/porta-core) trägt sich in CORES ein und wird
 // automatisch mitvalidiert (§5 Andock-Sequenz Schritt 5).
 //   node scripts/diag-studio-vertrag.cjs
-const vm = require("vm");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");

@@ -28,9 +28,7 @@
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
 //   node scripts/diag-look-golden.cjs --mint      → mintet das Golden aus dem aktuellen Render
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, ausDatei } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, sleep, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 
 const GOLDEN_DIR = path.resolve(__dirname, "..", "spec", "golden", "render");
 const SPOT = "settled-eye"; // der eine kanonische, deterministische Augenhöhen-Spot

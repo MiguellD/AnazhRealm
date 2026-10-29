@@ -16,10 +16,7 @@
 //      (spec/asset-contract/v7/golden/daten.json — gemintet NUR wenn es fehlt).
 //   --selftest: Schema-Verletzungen (klang, motion) und ein Kern, der beim Laden eine Transzendente ruft, werden erkannt.
 //   node scripts/diag-daten-contract.cjs [--selftest]
-const crypto = require("crypto");
-const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -32,7 +29,7 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, crypto, vm } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 

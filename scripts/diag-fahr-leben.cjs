@@ -4,8 +4,7 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest | --kette | --kern | --koerper | --rueckmeldung]   Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const { statikServer, nullRenderer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { statikServer, nullRenderer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, starteBrowser, path } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const schalter = (f) => process.argv.includes(f);

@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, fs } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -457,7 +457,6 @@ if (process.argv.includes("--selftest")) {
 }
 
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
 
 const PORT = Number(process.env.POST_KETTE_PORT) || 4583;
 const server = statikServer();

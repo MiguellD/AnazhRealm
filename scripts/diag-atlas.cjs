@@ -23,13 +23,9 @@
 //              Karte und ein Karten-Name ohne Glied; der Weg: `node scripts/stamm-umzug.cjs --nach-karte`.
 //   Dazu SYNTAX je Datei (V8, wie `node --check`).
 "use strict";
-const { ausDatei } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
-const fs = require("fs");
-const path = require("path");
-const vm = require("vm");
 const acorn = require("acorn");
-const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const RATSCHE = "spec/stamm/ratsche.json";

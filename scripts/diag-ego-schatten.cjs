@@ -149,10 +149,8 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, path, fs } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
-const path = require("path");
 
 const PORT = Number(process.env.EGO_SCHATTEN_PORT) || 4398;
 const BILDER = (() => {

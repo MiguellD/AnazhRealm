@@ -19,9 +19,8 @@
 // "sicht" in K; eine Liste ohne ihre wurf-Teile in W (drachentor, maurentor); aufgeblähte Kapseln (+0,15 m) in I (geisttor).
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
-const stammLib = require("./lib/stamm.cjs");
 
-const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, stammLib } = require("./lib/welt-boot.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");

@@ -14,9 +14,8 @@
 //
 //   node scripts/diag-membran-gesetz.cjs
 "use strict";
-const stammLib = require("./lib/stamm.cjs");
 
-const { studioKern, pruefer } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, stammLib } = require("./lib/welt-boot.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 
 const { errs, check, wandEnde } = pruefer();

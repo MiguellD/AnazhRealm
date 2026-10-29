@@ -63,8 +63,7 @@
 //       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
-const { statikServer, warteAufWelt, nullSeite, pruefer } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer, stammLib } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
 const SELBSTTEST = process.argv.includes("--selftest");

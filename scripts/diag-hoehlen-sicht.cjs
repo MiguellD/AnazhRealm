@@ -622,8 +622,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
-const path = require("path");
+const { statikServer, warteAufWelt, nullSeite, wandEnde, path } = require("./lib/welt-boot.cjs");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;

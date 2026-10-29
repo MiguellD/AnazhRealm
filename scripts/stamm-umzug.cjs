@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 // scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
@@ -18,8 +18,6 @@ const { ausDatei } = require("./lib/welt-boot.cjs");
 //        prettier --write bzw. eslint NUR auf den Stamm-Dateien, die gegen die Merge-Basis geändert sind (samt Arbeitsbaum
 //        und neuen Dateien) — npm run stamm:fmt / stamm:lint
 //   --selftest
-const fs = require("fs");
-const path = require("path");
 const { execFileSync } = require("child_process");
 const stamm = require("./lib/stamm.cjs");
 

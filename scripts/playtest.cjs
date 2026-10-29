@@ -2,9 +2,7 @@
 // Console-Logs und prüft harte Invarianten — eine verletzte setzt exit=1 (CI bricht ab).
 // Env: PLAYTEST_SECONDS (Mindest-Warmup) · PLAYTEST_STRICT=0 (nur reporten) · braucht puppeteer.
 
-const fs = require("fs");
-const path = require("path");
-const { starteBrowser, startProc, eigenePorte, hauptLauf } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, hauptLauf, path, fs } = require("./lib/welt-boot.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).

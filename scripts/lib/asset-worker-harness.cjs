@@ -7,9 +7,7 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, ausDatei } = require("./welt-boot.cjs");
-const path = require("path");
-const crypto = require("crypto");
+const { statikServer, starteBrowser, ausDatei, path, crypto } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -77,6 +75,74 @@ async function bauAbdruck(meshes) {
   for (const t of stuecke) { alles.set(t, o); o += t.length; }
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
   return { hash: Array.from(h, (b) => b.toString(16).padStart(2, "0")).join(""), teile, bytes, nichtEndlich };
+}
+// DAS BILD DES BAUS (studios.K1, das Schlupfloch der Karte: „ein Regler verschiebt Bytes, aber nicht das Bild (0,1 mm), und
+// zählte am Hash") — die EINE Quelle für Brücke und Ofen (die Seite per toString). Ein Raster des gebauten Werks aus der
+// Vorschau-Pose der Bühne (Gier 0,6 und ihr Gegenblick, Neigung 0,32), ortho im Rahmen des GRUND-Baus (`rahmen` des Grunds an
+// jeden Rand: eine Größe wirkt), je Dreieck die Albedo (Vertex-Farbe linear, sonst Stoff-Farbe) unter EINEM festen Licht plus
+// Glut (emissive) und Leucht-Gesetz (Farbe × leucht), belichtet nach dem Gesetz der Welt (BELICHTUNG: die 18-%-Karte im vollen
+// Licht trifft die Tonkurve mit zielKarte 0,44) durch ihre Kurve (Khronos PBR Neutral), sRGB-Luma in 8 Bit (0 = leer). `abstand(a, b)`: je Ansicht der Anteil der Gestalt-Pixel (Vereinigung beider
+// Bilder), deren Luma um mehr als 18 springt oder die nur in einem stehen; das Maximum der Ansichten.
+function bauBild(teile, rahmen) {
+  const N = 160, K = 0.44 / 0.18, L = [0.42, 0.8, 0.43].map((x, _, l) => x / Math.hypot(...l));
+  const neutral = (c) => {
+    const x = Math.min(...c), v = c.map((y) => y - (x < 0.08 ? x - 6.25 * x * x : 0.04)), pk = Math.max(...v);
+    if (pk < 0.76) return v;
+    const np = 1 - 0.0576 / (pk - 0.52), g = 1 - 1 / (0.15 * (pk - np) + 1);
+    return v.map((y) => ((y * np) / pk) * (1 - g) + np * g);
+  };
+  if (!rahmen) {
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const t of teile) t.pos.forEach((v, i) => ((lo[i % 3] = Math.min(lo[i % 3], v)), (hi[i % 3] = Math.max(hi[i % 3], v))));
+    if (!(hi[0] >= lo[0])) return { rahmen: null, bilder: [] };
+    rahmen = { c: lo.map((v, k) => (v + hi[k]) / 2), r: Math.max(1e-3, Math.hypot(...hi.map((v, k) => v - lo[k])) / 2) };
+  }
+  const bilder = [0.6, 0.6 + Math.PI].map((gier) => {
+    // die Achsen der Ansicht (rechts, oben, zum Auge), das Licht in ihnen
+    const [cp, sp, cg, sg] = [Math.cos(0.32), Math.sin(0.32), Math.cos(gier), Math.sin(gier)];
+    const A = [[cg, 0, -sg], [-sp * sg, cp, -sp * cg], [sg * cp, sp, cg * cp]], Lv = A.map((a) => a[0] * L[0] + a[1] * L[1] + a[2] * L[2]);
+    const bild = new Uint8Array(N * N), tiefe = new Float32Array(N * N).fill(-Infinity);
+    for (const t of teile) {
+      const n = t.pos.length / 3, q = new Float32Array(n * 3), I = t.index || Uint32Array.from({ length: n }, (_, i) => i);
+      for (let v = 0; v < n; v++)
+        for (let a = 0; a < 3; a++) q[v * 3 + a] = (((t.pos[v * 3] - rahmen.c[0]) * A[a][0] + (t.pos[v * 3 + 1] - rahmen.c[1]) * A[a][1] + (t.pos[v * 3 + 2] - rahmen.c[2]) * A[a][2]) * 0.475 * N) / rahmen.r + (a < 2 ? N / 2 : 0);
+      for (let f = 0; f + 2 < I.length; f += 3) {
+        const [X, Y, Z] = [0, 1, 2].map((k) => [I[f], I[f + 1], I[f + 2]].map((v) => q[v * 3 + k]));
+        const nv = [(Y[1] - Y[0]) * (Z[2] - Z[0]) - (Z[1] - Z[0]) * (Y[2] - Y[0]), (Z[1] - Z[0]) * (X[2] - X[0]) - (X[1] - X[0]) * (Z[2] - Z[0]), (X[1] - X[0]) * (Y[2] - Y[0]) - (Y[1] - Y[0]) * (X[2] - X[0])];
+        if (!nv[2]) continue;
+        const licht = 0.25 + 0.75 * Math.abs((nv[0] * Lv[0] + nv[1] * Lv[1] + nv[2] * Lv[2]) / Math.hypot(...nv));
+        const alb = [0, 1, 2].map((k) => (t.farbe ? [I[f], I[f + 1], I[f + 2]].reduce((s, v) => s + t.farbe[v * t.fs + k], 0) / 3 : t.grund[k]));
+        const lin = neutral(alb.map((x, k) => K * (x * (licht + (t.glutK || 0)) + (t.leucht ? t.leucht[k] : 0))));
+        const Yl = Math.min(1, Math.max(0, 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]));
+        const wert = 1 + Math.round(254 * (Yl <= 0.0031308 ? 12.92 * Yl : 1.055 * Math.pow(Yl, 1 / 2.4) - 0.055));
+        for (let py = Math.max(0, Math.floor(Math.min(...Y))); py <= Math.min(N - 1, Math.max(...Y)); py++)
+          for (let px = Math.max(0, Math.floor(Math.min(...X))); px <= Math.min(N - 1, Math.max(...X)); px++) {
+            const [u, w] = [px + 0.5, py + 0.5];
+            const l0 = ((X[1] - u) * (Y[2] - w) - (Y[1] - w) * (X[2] - u)) / nv[2], l1 = ((X[2] - u) * (Y[0] - w) - (Y[2] - w) * (X[0] - u)) / nv[2];
+            const z = l0 * Z[0] + l1 * Z[1] + (1 - l0 - l1) * Z[2], i = py * N + px;
+            if (l0 >= 0 && l1 >= 0 && l0 + l1 <= 1 && z > tiefe[i]) [tiefe[i], bild[i]] = [z, wert];
+          }
+      }
+    }
+    return bild;
+  });
+  const abstand = (A, B) =>
+    Math.max(0, ...A.map((a, k) => {
+      let [u, s] = [0, 0];
+      a.forEach((x, i) => (x || B[k][i]) && (u++, (s += !x || !B[k][i] || Math.abs(x - B[k][i]) > 18)));
+      return u ? s / u : 0;
+    }));
+  return { rahmen, bilder, abstand };
+}
+// Die Teile eines Brücken-Baus für das Bild: was das Auge sieht (der Wurf-Teil „schatten" und der Beipack nicht).
+function bauTeile(meshes) {
+  return (meshes || [])
+    .filter((m) => m && m.position && m.position.array && m.teil !== "schatten")
+    .map((m) => {
+      const mat = m.mat || {}, grund = mat.color || [0.7, 0.7, 0.7];
+      const glut = mat.emissive ? mat.emissive.map((x) => x * (mat.emissiveIntensity || 1)) : null;
+      return { pos: m.position.array, index: m.index || null, farbe: m.color ? m.color.array : null, fs: m.color ? m.color.itemSize : 3, grund, leucht: glut, glutK: mat.leucht || 0 };
+    });
 }
 
 function pageHtml() {
@@ -194,6 +260,8 @@ function pageHtml() {
     return fertigP.then(() => a);
   };
   const bauAbdruck = ${bauAbdruck.toString()};
+  const bauBild = ${bauBild.toString()};
+  const bauTeile = ${bauTeile.toString()};
   window.__probeLauf = async (liste, d, welche, bis, fangen) => {
     if (!probeAsk) probeAsk = probeBoot();
     const a = await probeAsk;
@@ -222,7 +290,10 @@ function pageHtml() {
   // (\`bauAbdruck\`) — die Gestalten-Wand liest so jede Gestalt der Zweit-Kerne aus dem Bau, den der Kosten-Zug ohnehin
   // fährt (kein Zweitbau). \`mitTeilen\` (DARF): je Stufe die Teile, wie der Wurf des Wirts sie liest — Art, Seh-Klasse,
   // Deckkraft (das Wurf-Recht \`_teilWirft\` des Stamms) und Dreiecke (budgetSippen je Teil); gate:regler-wirkt WURF.
-  window.__kostenListe = async (liste, mitAbdruck, mitTeilen) => {
+  // \`bild\` (DARF, je Eintrag null | { basis: Schlüssel } | { gegen: Schlüssel }): das Bild des Baus (\`bauBild\`) — die Basis
+  // legt Rahmen und Bild unter ihrem Schlüssel ab (eine eigene, frühere Liste), der Rand misst seinen Abstand im Rahmen der Basis.
+  const bilder = new Map();
+  window.__kostenListe = async (liste, mitAbdruck, mitTeilen, bild) => {
     poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
@@ -242,6 +313,12 @@ function pageHtml() {
           const a = await bauAbdruck(r.meshes || []);
           out[i].abdruck = a.teile > 0 ? a.hash : null;
           out[i].bau = a;
+        }
+        const bi = bild && bild[i];
+        if (bi && bi.basis) bilder.set(bi.basis, bauBild(bauTeile(r.meshes)));
+        else if (bi && bilder.get(bi.gegen) && bilder.get(bi.gegen).rahmen) {
+          const B = bilder.get(bi.gegen);
+          out[i].bild = B.abstand(B.bilder, bauBild(bauTeile(r.meshes), B.rahmen).bilder);
         }
       }
     }));
@@ -289,16 +366,19 @@ async function runWithWorker(port, cb) {
         // Zweit-Kern-Stufen in EINEM Ruf rissen ihn unter Last).
         // `abdruck` (DARF): (Eintrag) => true, wenn die Stufe auch ihren Bau-Fingerabdruck tragen soll.
         // `mitTeilen` (DARF): je Stufe die Teile für den Wurf (Art, Seh-Klasse, Deckkraft, Dreiecke).
-        const kostenListe = async (liste, abdruck, mitTeilen) => {
+        // `bild` (DARF): (Eintrag) => null | { basis } | { gegen } — das Bild des Baus (eine Basis vor ihren Rändern bauen).
+        const kostenListe = async (liste, abdruck, mitTeilen, bild) => {
             const out = [];
             const flags = abdruck ? liste.map((c) => !!abdruck(c)) : null;
+            const bi = bild ? liste.map((c) => bild(c) || null) : null;
             for (let i = 0; i < liste.length; i += 120)
                 out.push(
                     ...(await page.evaluate(
-                        (l, f, t) => window.__kostenListe(l, f, t),
+                        (l, f, t, b) => window.__kostenListe(l, f, t, b),
                         liste.slice(i, i + 120),
                         flags ? flags.slice(i, i + 120) : null,
-                        !!mitTeilen
+                        !!mitTeilen,
+                        bi ? bi.slice(i, i + 120) : null
                     ))
                 );
             return out;
@@ -434,5 +514,6 @@ module.exports = {
     DATEN_KANAELE,
     kanalImVm,
     bauAbdruck,
+    bauBild,
     ersteAbweichung,
 };

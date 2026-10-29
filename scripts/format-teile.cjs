@@ -20,11 +20,8 @@
 //
 //   node scripts/format-teile.cjs [--selftest] <datei …>       (npm run format:check)
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const os = require("os");
 const { Worker, isMainThread, parentPort } = require("worker_threads");
-const { hauptLauf, selbsttestEnde, ausDatei } = require("./lib/welt-boot.cjs");
+const { hauptLauf, selbsttestEnde, ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
 
 const TEIL_BYTES = 160 * 1024;
 

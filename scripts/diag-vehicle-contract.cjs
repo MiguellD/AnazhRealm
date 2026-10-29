@@ -22,10 +22,9 @@
 // kippt kein Byte — die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; sin/cos/atan2/hypot
 // erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
-const path = require("path");
 const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 

@@ -25,9 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const crypto = require("crypto");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib, crypto } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 

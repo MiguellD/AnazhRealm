@@ -20,8 +20,7 @@
 //       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt. K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
-const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer, stammLib } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.FENSTER_PORT || 4574);

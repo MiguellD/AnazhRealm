@@ -9,11 +9,9 @@
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
 //
 //   npm run gate:asset-contract
-const fs = require("fs");
-const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { hauptLauf, wandEnde, ausDatei } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 const {
     dek,
     bildDeckung,

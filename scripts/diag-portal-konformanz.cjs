@@ -38,10 +38,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);

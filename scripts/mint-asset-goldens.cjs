@@ -5,11 +5,8 @@
 //
 //   node scripts/mint-asset-goldens.cjs           # mintet, wenn leer
 //   MINT_FORCE=1 node scripts/mint-asset-goldens.cjs   # bewusster Re-Mint (nur mit Absicht)
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf, ausDatei } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei, path, fs, crypto } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");

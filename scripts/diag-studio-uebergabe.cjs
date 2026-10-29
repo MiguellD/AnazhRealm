@@ -8,13 +8,9 @@
 //       fallen, der Kern klemmt. SELBSTTEST: ein Empfänger mit Sonderweg und ein Studio, das selbst postet, sind ROT.
 //   --welt (Browser): der lebende Avatar gießt neu, ein Kreatur-Spawn trägt die Größe, der Snapshot trägt den Speicher.
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const vm = require("vm");
-const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT, argOpt, ausDatei } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite, ROOT, argOpt, ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 

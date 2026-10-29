@@ -46,12 +46,9 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
-const { selbsttestEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { selbsttestEnde, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 

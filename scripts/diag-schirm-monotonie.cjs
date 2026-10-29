@@ -22,8 +22,7 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite, stammLib } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 

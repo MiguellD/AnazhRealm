@@ -26,9 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, fs } = require("./lib/welt-boot.cjs");
 
 const argv = process.argv.slice(2);
 const SELBSTTEST = argv.includes("--selftest");

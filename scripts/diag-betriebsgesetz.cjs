@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-const { wandEnde, argOpt, ausDatei } = require("./lib/welt-boot.cjs");
+const { wandEnde, argOpt, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
@@ -13,8 +13,6 @@ const { wandEnde, argOpt, ausDatei } = require("./lib/welt-boot.cjs");
 //   6) WACHSTUMS-WAND + DECKE: scripts/ sinkt nur, in Code-Atomen ohne Kommentare (PFLICHT-OFFEN D); 7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
-const fs = require("fs");
-const path = require("path");
 const { execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");

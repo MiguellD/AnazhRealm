@@ -19,13 +19,10 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 
 // Port über PERSISTENCE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4326.
 const PORT = Number(process.env.PERSISTENCE_PORT || 4326);

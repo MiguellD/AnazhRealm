@@ -25,11 +25,8 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, ausDatei } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, ausDatei, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const liesText = (datei) => ausDatei(datei);
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 

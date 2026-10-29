@@ -37,9 +37,8 @@
 // PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
 // (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
-const path = require("path");
 const { fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
-const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 // die Goldens der Häuser und der AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens)

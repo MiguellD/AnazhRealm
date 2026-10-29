@@ -21,10 +21,9 @@
 // Wände, scripts/lib/plattform-probe.cjs): die Transzendenten von Math ±1 ULP kippen kein Byte — die Goldens tragen
 // unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe Funktion und Aufrufstelle.
 //   node scripts/diag-porta-contract.cjs
-const path = require("path");
 const { fingerabdruck: fingerprint, goldenSelbsttest, vertragIst, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
 
-const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, ROOT: root, path } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const PC = studioKern("porta-core.js", "__portaCore");
 

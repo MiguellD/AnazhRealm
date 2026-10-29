@@ -14,10 +14,17 @@
         "welten": []
     },
     "reglerTot": {
-        "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert den Bau an KEINEM Rezept seiner Art bewegt (erste Stufe der Art, min und max) — gemessen am Kanal, den die Werkstatt-Vorschau nimmt: die Mesh-Arten über build-asset (ov {id: wert}, Seed 1), die MESHFREI-Arten (Vertrag §8) über den Host-Ofen (_workshopStudioPreviewFrom → _workshopOvenPreview, der Wert aus ws.studioOv). Schlüssel kern:art:id, Wert = der Befund.",
+        "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert an KEINEM Rezept seiner Art (erste Stufe, min und max) das Bild des Werks bewegt (bauBild: ab 1 % der Gestalt-Pixel mit ΔLuma > 18, nie der Hash allein) und den kein Leser der Welt sieht (Membran · Ritt · Ohr) — gemessen am Kanal der Werkstatt-Vorschau (build-asset mit ov, Seed 1; MESHFREI über den Host-Ofen). Schlüssel kern:art:id, Wert = der Befund.",
         "soll": 0,
         "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
-        "tot": {}
+        "tot": {
+            "fachwerk:ausstattung:verwitterung": "Bild höchstens 0,90 %: das Gesetz (ausFaerbe) trägt den Erdsaum nur unter 0,25 m, die Sonnenbleiche × 1,05",
+            "fachwerk:bank:verwitterung": "Bild 0 % (wie ausstattung)",
+            "fachwerk:leiter:verwitterung": "Bild 0 % (wie ausstattung)",
+            "porta:gate:weather": "Bild höchstens 0,98 %: das Alter ist allein ein Stein-Versatz ± 1 cm (quadBlock), kein Stoff altert",
+            "koerper:koerper:mass": "Bild höchstens 0,65 % (Haut in Knochen-Lage): die Haut folgt fatScale 1 → 1,7 nicht, ihre Rahmen wandern ≤ 7 mm",
+            "koerper:koerper:hairVol": "Bild höchstens 0,61 %: die Strähnen-Dicke 0,5 → 2 verschiebt die Haar-Hülle kaum"
+        }
     },
     "reglerGesetz": {
         "zweck": "DIE GESETZ-WERTE (Vertrag B4 `uniform: true`, studios.K1): die Zeile bewegt an keinem Rezept ihrer Art ein Bau- bzw. Guss-Byte (der Byte-Beweis, gemessen von gate:regler-wirkt; gate:studio-vertrag liest ihn) und wirkt an ihrem Leser der Welt — die Membran des Tors (die Stoff-Werte, die der Graph liest), der Ritt des Wagens (der Fahr-Satz im Fahr-Schritt), das Ohr des Klangs (das Spektrogramm der Lofi-Kette). Schlüssel kern:art:id, Wert = der Leser. Eine uniform-Zeile ohne Eintrag ist rot, ein Eintrag, dessen Bau sich bewegt, ebenso.",

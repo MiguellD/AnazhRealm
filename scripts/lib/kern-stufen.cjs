@@ -2,8 +2,7 @@
 // Merge ist treu, wenn jede Art des Live-Buchs die Liste trägt, die ihr Kern deklariert: die Erwartung liest die Kerne in
 // der Seite (dieselben Dateien, die der Foundry-Worker lädt; die Namensräume aus cores.manifest.json), nie eine Abschrift.
 "use strict";
-const { ausDatei } = require("./welt-boot.cjs");
-const path = require("path");
+const { ausDatei, path } = require("./welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 

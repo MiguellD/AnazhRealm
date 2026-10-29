@@ -21,10 +21,7 @@
 // Selbst-Test: --selftest beweist, dass ein manipulierter Anker feuert.
 // ============================================================================
 "use strict";
-const { wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { wandEnde, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const root = path.resolve(__dirname, "..");
 
 // FNV-1a (dieselbe Hash-Familie wie der Warm-Start-Byte-Beweis).

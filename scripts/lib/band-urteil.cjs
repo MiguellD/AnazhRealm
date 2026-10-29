@@ -32,9 +32,7 @@
 //              Sicht aus der Hülle einer Serie; `--neu` der Re-Mint, K26)
 //   Wand:      node scripts/diag-profiband.cjs              (Schema, Summe <= Band, Selbsttests gegen injizierte Fälle)
 "use strict";
-const { ausDatei } = require("./welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { ausDatei, path, fs } = require("./welt-boot.cjs");
 const { vramFalte } = require("./draw-zaehler.cjs");
 
 const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");

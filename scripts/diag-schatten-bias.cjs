@@ -28,10 +28,7 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde, argOpt } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde, argOpt, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const ECHT = process.argv.includes("--echt");

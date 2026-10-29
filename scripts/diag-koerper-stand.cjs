@@ -39,8 +39,7 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, SELBSTTEST, fs } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);

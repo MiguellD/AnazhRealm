@@ -26,8 +26,7 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const server = statikServer();

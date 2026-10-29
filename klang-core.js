@@ -184,7 +184,7 @@
     //  Blues-Boot-Genre des Labs (der Startzustand).
     // ═══════════════════════════════════════════════════════════════════════
     // `uniform: true` (Vertrag §3 B4, studios.K2): jede Klang-Zeile ist ein Gesetz-Wert — kein Guss, der Sequenzer liest sie
-    // im nächsten Schritt (die Bau-Bytes bewegt keine, gate:regler-wirkt reglerTot).
+    // im nächsten Schritt (die Bau-Bytes bewegt keine, gate:regler-wirkt reglerGesetz).
     var PARAMS = [
         { id: "bpm", lab: "Tempo", min: 40, max: 200, step: 1, def: 96, law: "Schläge pro Minute", grp: "PULS", uniform: true },
         {

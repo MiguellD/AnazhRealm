@@ -14,12 +14,8 @@
 //   node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs
 "use strict";
 
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, urteilEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
-const stammLib = require("./lib/stamm.cjs");
+const { hauptLauf, urteilEnde, ausDatei, SELBSTTEST, path, fs, stammLib, os } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
 const CONTRACT = path.join(PK.ROOT, "spec", "pack", "v0", "CONTRACT.md");
