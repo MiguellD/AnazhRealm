@@ -43,14 +43,13 @@ function installiere(ordner) {
           : null;
     const befehl = (npm ? [npm, ...a.slice(1)] : ["node", ...process.execArgv, ...a]).join(" ");
     const wurzel = (process.env.KONSUM_WURZEL ||= befehl);
-    // npm run <x> liest package.json als Ganzes, verbraucht aber nur seine Zeilen (npm ci das Ganze)
+    // npm liest package.json als Ganzes, verbraucht aber nur Zeilen: npm run <x> name · version · config und scripts.<x> samt
+    // pre/post, npm ci alles außer den Skripten (`~scripts`) und die Lifecycle-Skripte der Wurzel
     const npmLauf = /^npm (?:run|run-script)(?: -\S+)* ([^\s-]\S*)/.exec(befehl);
-    const teile = npmLauf && [
-        "name",
-        "version",
-        "config",
-        ...["", "pre", "post"].map((v) => `scripts.${v}${npmLauf[1]}`),
-    ];
+    const LEBEN = ["preinstall", "install", "postinstall", "prepublish", "preprepare", "prepare", "postprepare"];
+    const teile = npmLauf
+        ? ["name", "version", "config", ...["", "pre", "post"].map((v) => `scripts.${v}${npmLauf[1]}`)]
+        : /^npm (ci|install|i)( |$)/.test(befehl) && ["~scripts", ...LEBEN.map((x) => `scripts.${x}`)];
     const datei = path.join(
         ordner,
         `spur-${process.pid}-${require("worker_threads").threadId}-${Date.now().toString(36)}.tsv`
@@ -68,10 +67,20 @@ function installiere(ordner) {
         roh.writeSync(fd, `${art}\t${wert}\n`);
     };
     nimm("lies", imBaum(ZEUGE)); // der Zeuge selbst: --require lädt ihn vor jedem Haken
+    // puppeteers Konfig-Suche (getConfiguration → cosmiconfig) nimmt aus package.json nur den Schlüssel `puppeteer`
+    const konfig = () => {
+        const [g, e] = [Error.stackTraceLimit, (Error.stackTraceLimit = 60) && new Error().stack];
+        Error.stackTraceLimit = g;
+        return (
+            /node_modules[\\/]cosmiconfig[\\/][\s\S]*node_modules[\\/]puppeteer[\\/].*getConfiguration/.test(e) && [
+                "puppeteer",
+            ]
+        );
+    };
     const notiere = (art, p) => {
         const r = imBaum(p);
-        if (r === "package.json" && teile && art !== "liste")
-            return teile.forEach((t) => nimm("teil", `package.json#${t}`));
+        const t = r === "package.json" && art !== "liste" && (teile || konfig());
+        if (t) return t.forEach((x) => nimm("teil", `package.json#${x}`));
         if (art === "lies" && /\.js$/.test(r || "")) nimm("teil", "package.json#type"); // ein .js lädt Node nach "type"
         nimm(art, r);
     };

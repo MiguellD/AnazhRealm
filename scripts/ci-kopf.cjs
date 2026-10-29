@@ -44,7 +44,11 @@ function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
 
 // die Läufe, neueste zuerst, OHNE Filter der API: `nimm` wählt, `seit` endet; eine kurze Seite
 // wird bis 3× neu gefragt — sonst ROT, nie leer.
-async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}) {
+async function alleLaeufe(
+    api,
+    pfad,
+    { nimm = () => true, seit = 0, hoechstens = Infinity, traegt = (rs) => rs.length > 0, pause = 2000 } = {}
+) {
     // 30 je Seite: die Läufe-Liste mit 100 je Seite riss bei GitHub wiederholt mit 502 (26.10.: z40 zweimal, bewohner-gesetz einmal)
     const [out, je, neu] = [[], 30, (x) => new Date(x.created_at) >= seit];
     let [gesamt, gelesen] = [0, 0];
@@ -53,13 +57,18 @@ async function alleLaeufe(api, pfad, { nimm = () => true, seit = 0, hoechstens =
         for (let v = 1; ; v++) {
             r = await api(`${pfad}?per_page=${je}&page=${seite}`);
             gesamt = Math.max(gesamt, r.total_count);
-            if (r.workflow_runs.length >= Math.min(je, gesamt - gelesen) && (seite > 1 || traegt(r.workflow_runs))) break;
-            if (v === 3) throw new Error(`ROT: ${pfad} Seite ${seite} trägt ${r.workflow_runs.length} Läufe von ${gesamt} nach 3 Versuchen`);
+            if (r.workflow_runs.length >= Math.min(je, gesamt - gelesen) && (seite > 1 || traegt(r.workflow_runs)))
+                break;
+            if (v === 3)
+                throw new Error(
+                    `ROT: ${pfad} Seite ${seite} trägt ${r.workflow_runs.length} Läufe von ${gesamt} nach 3 Versuchen`
+                );
             await new Promise((ok) => setTimeout(ok, pause * v));
         }
         gelesen += r.workflow_runs.length;
         out.push(...r.workflow_runs.filter((x) => nimm(x) && neu(x)));
-        if (!r.workflow_runs.every(neu) || out.length >= hoechstens || r.workflow_runs.length < je) return out.slice(0, hoechstens);
+        if (!r.workflow_runs.every(neu) || out.length >= hoechstens || r.workflow_runs.length < je)
+            return out.slice(0, hoechstens);
     }
 }
 
@@ -68,7 +77,8 @@ function apiMit(basis, token) {
     const api = async (p, v = 1) => {
         const kopf = { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } };
         const r = await fetch(basis + p, kopf).catch((e) => (v < 3 ? null : Promise.reject(e)));
-        if ((!r || r.status >= 500) && v < 5) return new Promise((ok) => setTimeout(ok, 3000 * v)).then(() => api(p, v + 1));
+        if ((!r || r.status >= 500) && v < 5)
+            return new Promise((ok) => setTimeout(ok, 3000 * v)).then(() => api(p, v + 1));
         if (!r.ok) throw new Error(`${p}: ${r.status} ${await r.text()}`);
         return r.json();
     };
@@ -83,7 +93,9 @@ function apiMit(basis, token) {
 function betroffen(s, wechsel, teile, verz) {
     for (const w of wechsel) {
         if (w.datei === "package.json" && !s.lies.has(w.datei) && !s.frage.has(w.datei)) {
-            const t = teile.find((x) => s.teil.has(`package.json#${x}`));
+            const t = teile.find(
+                (x) => s.teil.has(`package.json#${x}`) || (!/^scripts\./.test(x) && s.teil.has("package.json#~scripts"))
+            );
             if (t) return `package.json#${t}`;
             continue;
         }
@@ -102,12 +114,26 @@ function betroffen(s, wechsel, teile, verz) {
 // Grund, am Kopf] → { gruppen, je: [{ name, gruppe, warum }] } (warum null: das Urteil des Grunds steht)
 function auswahl({ schritte, grund, spuren, wechsel, teile, baum, verz }) {
     const { blindVon, befehleIn } = require("./lib/konsum-zeuge.cjs");
-    const menge = (ws) => Object.fromEntries(["lies", "liste", "frage", "teil", "ruft"].map((a) => [a, new Set(ws.flatMap((w) => w[a]))]));
+    const menge = (ws) =>
+        Object.fromEntries(
+            ["lies", "liste", "frage", "teil", "ruft"].map((a) => [a, new Set(ws.flatMap((w) => w[a]))])
+        );
     const alle = new Set(schritte.flatMap((k) => befehleIn(k.run)));
-    const vor = betroffen(menge(Object.keys(spuren).filter((w) => !alle.has(w)).map((w) => spuren[w])), wechsel, teile, verz);
+    const vor = betroffen(
+        menge(
+            Object.keys(spuren)
+                .filter((w) => !alle.has(w))
+                .map((w) => spuren[w])
+        ),
+        wechsel,
+        teile,
+        verz
+    );
     const je = schritte.map((k) => {
         const g = grund.get(k.name);
-        const ws = befehleIn(k.run).filter((b) => spuren[b]).map((b) => spuren[b]);
+        const ws = befehleIn(k.run)
+            .filter((b) => spuren[b])
+            .map((b) => spuren[b]);
         const s = menge(ws);
         const blind = [...befehleIn(k.run), ...s.ruft].map((b) => blindVon(b, baum)).find(Boolean);
         const warum = !g
@@ -147,15 +173,25 @@ function vollSchritte(text) {
         const [name, run, gruppe] = [String(s.name || "").replace(/\s+/g, " "), s.run.trim(), Number(m[1])];
         schritte.push({ name, run, gruppe, form: JSON.stringify([name, run, s.env, s.shell, klasse.get(gruppe)]) });
     }
-    const rahmen = JSON.stringify({ ...V, strategy: null, steps: V.steps.filter((s) => !/matrix\.gruppe/.test(s.if || "")) });
+    const rahmen = JSON.stringify({
+        ...V,
+        strategy: null,
+        steps: V.steps.filter((s) => !/matrix\.gruppe/.test(s.if || "")),
+    });
     return { schritte, rahmen };
 }
 // die gewechselten Zeilen von package.json: Schlüssel oben, je Skript `scripts.<name>`
 function teileVon(alt, neu) {
     const [p, q] = [JSON.parse(alt), JSON.parse(neu)];
-    const zeilen = (o) => ({ ...o, scripts: undefined, ...Object.fromEntries(Object.entries(o.scripts || {}).map(([k, v]) => [`scripts.${k}`, v])) });
+    const zeilen = (o) => ({
+        ...o,
+        scripts: undefined,
+        ...Object.fromEntries(Object.entries(o.scripts || {}).map(([k, v]) => [`scripts.${k}`, v])),
+    });
     const [a, b] = [zeilen(p), zeilen(q)];
-    return [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+    return [...new Set([...Object.keys(a), ...Object.keys(b)])].filter(
+        (k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])
+    );
 }
 // DER GRUND eines Zweig-Kopfs: der jüngste fertige Lauf eines Ahns (push · schedule · workflow_dispatch), an dem jede voll-Gruppe ein
 // Urteil trug und ihre Spur hinterließ (Artefakt konsum-voll-N), höchstens 12 Ahnen weit; dann die Auswahl gegen ihn — ohne Grund
@@ -171,39 +207,74 @@ async function waehle({ api, wf, kopf, git, lade }) {
         if (n >= 12 || G) break;
         if (git(["merge-base", "--is-ancestor", r.head_sha, kopf]) === null) continue;
         n++;
-        const jobs = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs.filter((j) => VOLL_JOB.test(j.name));
+        const jobs = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs.filter((j) =>
+            VOLL_JOB.test(j.name)
+        );
         if (!jobs.length || jobs.some((j) => j.conclusion !== "success" && j.conclusion !== "failure")) continue;
         const arts = (await api(`/actions/runs/${r.id}/artifacts?per_page=100`)).artifacts;
-        const zu = jobs.map((j) => arts.find((a) => a.name === `konsum-voll-${/^voll (\d+)/.exec(j.name)[1]}` && !a.expired));
+        const zu = jobs.map((j) =>
+            arts.find((a) => a.name === `konsum-voll-${/^voll (\d+)/.exec(j.name)[1]}` && !a.expired)
+        );
         if (zu.some((a) => !a)) continue;
         const spuren = {};
         for (const a of zu)
             for (const [w, s] of Object.entries(JSON.parse(await lade(a.archive_download_url)).schritte))
-                spuren[w] = Object.fromEntries(Object.entries(s).map(([k, v]) => [k, Array.isArray(v) ? [...new Set([...((spuren[w] || {})[k] || []), ...v])] : v]));
-        const gruen = new Map(jobs.flatMap((j) => j.steps.map((s) => [s.name.replace(/\s+/g, " "), s.conclusion === "success"])));
+                spuren[w] = Object.fromEntries(
+                    Object.entries(s).map(([k, v]) => [
+                        k,
+                        Array.isArray(v) ? [...new Set([...((spuren[w] || {})[k] || []), ...v])] : v,
+                    ])
+                );
+        // jeder Job listet alle Schritte, fremde als skipped: es zählt nur der Schritt mit Urteil
+        const geurteilt = jobs.flatMap((j) =>
+            j.steps.filter((s) => s.conclusion === "success" || s.conclusion === "failure")
+        );
+        const gruen = new Map(geurteilt.map((s) => [s.name.replace(/\s+/g, " "), s.conclusion === "success"]));
         G = { lauf: r, spuren, gruen };
     }
     if (!G) return { gruppen: null, grund: `kein Ahn trägt die ganze Batterie mit Spur (${n} geprüft)` };
     const g = G.lauf.head_sha;
     const [vG, vK] = [g, kopf].map((rev) => vollSchritte(git(["show", `${rev}:.github/workflows/check.yml`])));
-    if (vG.rahmen !== vK.rahmen) return { gruppen: null, grund: `der Rahmen von voll wechselte seit Lauf ${G.lauf.id}` };
+    if (vG.rahmen !== vK.rahmen)
+        return { gruppen: null, grund: `der Rahmen von voll wechselte seit Lauf ${G.lauf.id}` };
     const wechsel = git(["-c", "core.quotePath=false", "diff", "--name-status", "--no-renames", g, kopf])
         .split("\n")
         .filter(Boolean)
         .map((z) => ({ art: z[0], datei: z.split("\t")[1] }));
-    const teile = wechsel.some((w) => w.datei === "package.json") ? teileVon(...[g, kopf].map((rev) => git(["show", `${rev}:package.json`]))) : [];
-    const [bG, bK] = [g, kopf].map((rev) => new Set(git(["ls-tree", "-r", "--name-only", rev]).split("\n").filter(Boolean)));
-    const verz = [bG, bK].map((b) => new Set([".", ...[...b].flatMap((f) => f.split("/").slice(0, -1).map((_, i, t) => t.slice(0, i + 1).join("/")))]));
+    const teile = wechsel.some((w) => w.datei === "package.json")
+        ? teileVon(...[g, kopf].map((rev) => git(["show", `${rev}:package.json`])))
+        : [];
+    const [bG, bK] = [g, kopf].map(
+        (rev) => new Set(git(["ls-tree", "-r", "--name-only", rev]).split("\n").filter(Boolean))
+    );
+    const verz = [bG, bK].map(
+        (b) =>
+            new Set([
+                ".",
+                ...[...b].flatMap((f) =>
+                    f
+                        .split("/")
+                        .slice(0, -1)
+                        .map((_, i, t) => t.slice(0, i + 1).join("/"))
+                ),
+            ])
+    );
     const grund = new Map(vG.schritte.map((k) => [k.name, { form: k.form, gruen: G.gruen.get(k.name) === true }]));
     const a = auswahl({ schritte: vK.schritte, grund, spuren: G.spuren, wechsel, teile, baum: bK, verz });
-    return { ...a, grund: `gegen Lauf ${G.lauf.id} (${G.lauf.head_branch} ${g.slice(0, 8)}): ${wechsel.length} Dateien gewechselt` };
+    return {
+        ...a,
+        grund: `gegen Lauf ${G.lauf.id} (${G.lauf.head_branch} ${g.slice(0, 8)}): ${wechsel.length} Dateien gewechselt`,
+    };
 }
 
 module.exports = { kopfUrteil, alleLaeufe, apiMit, auswahl, planAus, vollSchritte, teileVon, waehle };
 
 if (require.main === module) {
     const env = process.env;
-    const api = apiMit(`${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`, env.GH_TOKEN);
+    const api = apiMit(
+        `${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`,
+        env.GH_TOKEN
+    );
     const wf =
         String(env.GITHUB_WORKFLOW_REF || "")
             .replace(/^[^/]+\/[^/]+\/\.github\/workflows\//, "")
@@ -215,7 +286,9 @@ if (require.main === module) {
             // der eigene Lauf steht immer in der Liste — fehlt er, war die Seite leer
             const traegt = (rs) => rs.some((r) => String(r.id) === String(env.GITHUB_RUN_ID));
             const [nimm, seit] = [(r) => r.head_sha === env.GITHUB_SHA, Date.now() - 3 * 864e5];
-            const laeufe = IMMER.includes(ereignis) ? [] : await alleLaeufe(api, `/actions/workflows/${wf}/runs`, { nimm, seit, traegt });
+            const laeufe = IMMER.includes(ereignis)
+                ? []
+                : await alleLaeufe(api, `/actions/workflows/${wf}/runs`, { nimm, seit, traegt });
             const jobsJe = {};
             for (const r of laeufe)
                 if (String(r.id) !== String(env.GITHUB_RUN_ID) && r.conclusion === "success")
@@ -244,7 +317,11 @@ if (require.main === module) {
             const { execFileSync } = require("child_process");
             const git = (a) => {
                 try {
-                    return execFileSync("git", a, { encoding: "utf8", maxBuffer: 1 << 28, stdio: ["ignore", "pipe", "ignore"] });
+                    return execFileSync("git", a, {
+                        encoding: "utf8",
+                        maxBuffer: 1 << 28,
+                        stdio: ["ignore", "pipe", "ignore"],
+                    });
                 } catch {
                     return null;
                 }
@@ -258,7 +335,8 @@ if (require.main === module) {
                 return execFileSync("unzip", ["-p", zip, "konsum.json"], { encoding: "utf8", maxBuffer: 1 << 28 });
             };
             const w = await waehle({ api, wf, kopf: env.GITHUB_SHA, git, lade });
-            for (const x of (w.je || []).filter((x) => x.warum)) console.log(`  fährt: voll ${x.gruppe} „${x.name}" — ${x.warum}`);
+            for (const x of (w.je || []).filter((x) => x.warum))
+                console.log(`  fährt: voll ${x.gruppe} „${x.name}" — ${x.warum}`);
             if (w.gruppen) plan = plan.filter((e) => w.gruppen.includes(e.gruppe));
             u.grund = `Auswahl nach Konsum ${w.gruppen ? `${plan.length} von ${planAus(env.VOLL_GRUPPEN).length} Gruppen` : "alle Gruppen"} — ${w.grund}`;
             if (!plan.length) [u.voll, plan] = ["nein", planAus(env.VOLL_GRUPPEN)];
@@ -267,7 +345,8 @@ if (require.main === module) {
             `Kopf ${String(env.GITHUB_SHA).slice(0, 8)} (${ereignis}): voll=${u.voll} echt=${u.echt} — ${u.grund}`
         );
         const matrix = JSON.stringify({ include: plan });
-        if (env.GITHUB_OUTPUT) fs.appendFileSync(env.GITHUB_OUTPUT, `voll=${u.voll}\necht=${u.echt}\nmatrix=${matrix}\n`);
+        if (env.GITHUB_OUTPUT)
+            fs.appendFileSync(env.GITHUB_OUTPUT, `voll=${u.voll}\necht=${u.echt}\nmatrix=${matrix}\n`);
         console.log(`::notice title=Ein Urteil je Kopf::${u.grund}`);
     })().catch((e) => {
         console.error(`❌ ci-kopf: ${e.message}`);

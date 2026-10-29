@@ -972,7 +972,7 @@ function selbsttestZeuge() {
         grund: new Map([["A", { form: "a", gruen: true }]]),
         spuren: {
             "npm run gate:a": spur(["a.js"], { liste: ["lib"], teil: ["package.json#scripts.gate:a"], ruft: ["sh -c node a.js"] }),
-            "npm ci": spur(["package-lock.json"]),
+            "npm ci": spur(["package-lock.json"], { teil: ["package.json#~scripts"] }),
         },
         wechsel: [],
         teile: [],
@@ -991,6 +991,7 @@ function selbsttestZeuge() {
             ["die eigene Zeile von package.json", (z) => W(z, "package.json") && z.teile.push("scripts.gate:a"), /fährt „A" — package\.json#scripts\.gate:a/],
             ["ein Eintrag kommt, wo er listet", (z) => W(z, "lib/neu.js", "A"), /fährt „A" — lib\/ \(A lib\/neu\.js\)/],
             ["die Vorbereitung las die Datei", (z) => W(z, "package-lock.json"), /fährt „A" — Vorbereitung: package-lock\.json/],
+            ["eine Abhängigkeit in package.json (npm ci)", (z) => W(z, "package.json") && z.teile.push("devDependencies"), /fährt „A" — Vorbereitung: package\.json#devDependencies/],
         ],
         (z) => auswahl(z).je.filter((x) => x.warum).map((x) => `fährt „${x.name}" — ${x.warum}`),
         { fehler: f, klon: lage }

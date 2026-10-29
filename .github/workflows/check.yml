@@ -1479,10 +1479,11 @@ jobs:
               if: ${{ !cancelled() }}
               env:
                   KONSUM_GRUPPE: voll ${{ matrix.gruppe }}
-              # die Spur steht auch als Notiz am Job (gzip + base64, über die API lesbar): wo das Artefakt nicht zu holen ist
+              # die Spur steht auch in Notizen am Job (gzip + base64 in Teilen zu 4 000 Zeichen, der Deckel einer Notiz; über die API
+              # lesbar): wo das Artefakt nicht zu holen ist
               run: |
                   node scripts/lib/konsum-zeuge.cjs --sammle "$KONSUM_ZEUGE" --aus "$RUNNER_TEMP/konsum.json"
-                  echo "::notice title=konsum.json.gz.b64::$(gzip -9c "$RUNNER_TEMP/konsum.json" | base64 -w0)"
+                  gzip -9c "$RUNNER_TEMP/konsum.json" | base64 -w0 | fold -w 4000 | nl -w1 -s' ' | while read -r i teil; do echo "::notice title=konsum.json.gz.b64 $i::$teil"; done
 
             - uses: actions/upload-artifact@v4
               if: ${{ !cancelled() }}
