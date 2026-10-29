@@ -3863,7 +3863,7 @@
           const qp=[]; if(H){ let x=qx, z=qz, th=qth; for(let u=0;u<=40+rnd()*22;u+=DS){ th=trasseLenk(H,x,z,th,DS); qp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
           else for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
-  const pl=new Array(n), obbs=[], brunnen=[], fences=[], felder=[], staende=[];
+  const pl=new Array(n), obbs=(plan.belegt||[]).map(o=>({i:'belegt',o})), brunnen=[], fences=[], felder=[], staende=[];   /*belegt: Grundrisse, die vor jedem Haus stehen (der Kern eines Rings, `ringUm`)*/
   let platz=null;
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=Math.max(6,PW*0.55);
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
@@ -6624,6 +6624,48 @@
     var PASSUNG_LUFT = 0.02,
         PASSUNG_SCHRITTE = 4;
     // die obb des Baus mit der Hülle e im Rahmen q seines Loses (der Ursprung des Hauses bei q.x/q.z, gedreht um q.phi)
+    // DER RING UM DEN KERN (siedlung.K4 Staffel 2, `exportSettlement`): die Lose des Rings (das Layout LB um den Kern K, ab der
+    // Nummer nA) stehen um das Haus verschoben im Layout des Orts; wessen Grundriss das Haus oder einen Grundriss des Orts
+    // berührt (Abstand < gap), steht nicht; ihre Gassen, Laternen und ihre Welt kommen dazu — ihr Platz, Brunnen und Acker
+    // nicht: der Kern ist das Haus
+    function ringUm(lay, LB, K, nA, gap) {
+        var vs = function (q) {
+            return Object.assign({}, q, { x: q.x + K.x, z: q.z + K.z });
+        };
+        var belegt = lay.pl
+            .filter(Boolean)
+            .map(function (q) {
+                return q.obb;
+            })
+            .concat([{ cx: K.x, cz: K.z, phi: K.phi || 0, ex: K.ex || 4, ez: K.ez || 4 }]);
+        LB.pl.forEach(function (q, j) {
+            var o = q && q.obb ? Object.assign({}, q.obb, { cx: q.obb.cx + K.x, cz: q.obb.cz + K.z }) : null;
+            var frei =
+                !!o &&
+                belegt.every(function (a) {
+                    return obbSep(o, a) >= gap;
+                });
+            lay.pl[nA + j] = frei ? Object.assign(vs(q), { obb: o }) : null;
+            if (frei) belegt.push(o);
+        });
+        lay.roads = lay.roads.concat(
+            LB.roads.map(function (rd) {
+                return Object.assign({}, rd, { pts: rd.pts.map(vs) });
+            })
+        );
+        lay.laternen = lay.laternen.concat(
+            LB.laternen.map(function (l) {
+                return Object.assign(vs(l), l.wand ? { haus: nA + l.haus } : null);
+            })
+        );
+        var w = LB.welt;
+        lay.welt = {
+            x0: Math.min(lay.welt.x0, w.x0 + K.x),
+            x1: Math.max(lay.welt.x1, w.x1 + K.x),
+            z0: Math.min(lay.welt.z0, w.z0 + K.z),
+            z1: Math.max(lay.welt.z1, w.z1 + K.z),
+        };
+    }
     function obbImLos(q, e) {
         var lx = (e.x0 + e.x1) / 2,
             lz = (e.z0 + e.z1) / 2,
@@ -6670,20 +6712,48 @@
         // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
         // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
         var Htr = dp.hoehe ? hoeheAusRaster(dp.hoehe) : null;
-        var lay = dorfLayout(plan, ext, plan.seed, Htr);
-        // U6c — KONSUM BEIDSEITIG: der Export wendet DIESELBE Snap-/Brandwand-
-        // Wahrheit an wie buildDorf (Lab): reihenSnap rückt lay.pl zusammen
-        // (Slot-x/z/obb), brandwand markiert hp.brandwand (reist als ov.brandwand).
-        reihenSnap(Bs, lay.pl, plan.norm.gap);
-        for (i = 0; i < Bs.length; i++) Bs[i].q = lay.pl[i];
-        brandwand(
-            Bs.filter(function (b) {
-                return b.q;
-            }),
-            plan.norm.gap
-        );
-        brunnenWeicht(Bs, lay.pl, lay); // DER BRUNNEN WEICHT DEM HAUS (S4-N4): nach dem Snap — dieselbe Funktion wie buildDorf
-        wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
+        // DER KERN EINES RINGS (siedlung.K4 Staffel 2): ein gesetztes Haus im Ort (`dp.kern` {x, z, phi, ex, ez, ab}: seine Platte
+        // plan-lokal, ab = das Jahr des Orts, als es stand) wird Kern der Lose, die danach gegründet sind — sie wachsen in ihrem
+        // eigenen Layout um das Haus (`ringUm`), die älteren liegen, wie sie lagen (ihr Layout ist das des Schnitts bis ab)
+        var K = dp.kern && plan.chronik && isFinite(dp.kern.x) && isFinite(dp.kern.z) ? dp.kern : null;
+        var nA = plan.houses.length;
+        if (K) for (nA = 0; nA < plan.houses.length && plan.chronik.jahre[nA] <= K.ab; ) nA++;
+        // EIN Layout der Lose von…bis (um den Kern `kern`: die Kreuzung als Kern, ihr eigener Same, die Höhe am Haus) samt der
+        // Wahrheit des Labors (buildDorf): U6c — reihenSnap rückt die Reihe zusammen (Slot-x/z/obb), brandwand markiert
+        // hp.brandwand (reist als ov.brandwand); DER BRUNNEN WEICHT DEM HAUS (S4-N4) und DIE WANDLATERNE (K66-2) nach dem Snap
+        var teil = function (von, bis, kern, ort) {
+            var Bt = Bs.slice(von, bis),
+                p = Object.assign({}, plan, { houses: plan.houses.slice(von, bis), lose: plan.lose.slice(von, bis) });
+            var H =
+                Htr && kern
+                    ? function (x, z) {
+                          return Htr(x + kern.x, z + kern.z);
+                      }
+                    : Htr;
+            // der Ring trägt das Haus und die Grundrisse des Orts als belegt (in seinem Rahmen um das Haus)
+            if (kern)
+                Object.assign(p, {
+                    kernel: "kreuzung",
+                    nGestalt: bis - von,
+                    belegt: [{ cx: kern.x, cz: kern.z, phi: kern.phi || 0, ex: kern.ex || 4, ez: kern.ez || 4 }]
+                        .concat(ort.pl.filter(Boolean).map(function (q) { return q.obb; }))
+                        .map(function (o) { return Object.assign({}, o, { cx: o.cx - kern.x, cz: o.cz - kern.z }); }),
+                });
+            var L = dorfLayout(p, ext.slice(von, bis), kern ? (plan.seed ^ 0x2545f491) >>> 0 : plan.seed, H);
+            reihenSnap(Bt, L.pl, plan.norm.gap);
+            for (var j = 0; j < Bt.length; j++) Bt[j].q = L.pl[j];
+            brandwand(
+                Bt.filter(function (b) {
+                    return b.q;
+                }),
+                plan.norm.gap
+            );
+            brunnenWeicht(Bt, L.pl, L);
+            wandLaternen(Bt, L.pl, L);
+            return L;
+        };
+        var lay = teil(0, nA);
+        if (nA < plan.houses.length) ringUm(lay, teil(nA, plan.houses.length, K, lay), K, nA, plan.norm.gap);
         var slots = [],
             slotVon = {};
         for (i = 0; i < plan.houses.length; i++) {

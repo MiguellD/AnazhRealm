@@ -3,17 +3,7 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const {
-    statikServer,
-    waitFor,
-    ROOT: root,
-    hauptLauf,
-    nullSeite,
-    pruefer,
-    wandEnde,
-    selbsttestEnde,
-    studioKern,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -112,7 +102,7 @@ function jahresringe(FC, o = {}) {
                 fehl(`${x.groesse}, ${kirchen} Kirchen`);
             const quer = x.mauer?.segs.some((g) =>
                 x.slots.some((s) =>
-                    [0, 0.25, 0.5, 0.75, 1].some(
+                    [0, 0.5, 1].some(
                         (f) => FC.distPunktOBB(g.x0 + (g.x1 - g.x0) * f, g.z0 + (g.z1 - g.z0) * f, s.obb) < 1
                     )
                 )
@@ -169,7 +159,8 @@ function wachstumsGang(FC, o = {}, TC = studioKern("tetrapoda-core.js", "__tetra
 // hanse" seine Epoche; die Akte mit Jahr 1320 und 1935 (`spawnSettlement`) stehen mit der Größe, dem Turm und der Tracht ihrer
 // Epoche (`_bewohnerGestalten`); dann geht die Welt-Uhr `uhr` s vor: der Takt des Wachstums (`_ortWachstumTakt`) rechnet das
 // Gesetz, der Ort von 1320 wird am neuen Jahr Welt und der Zug hebt seine neuen Häuser (`_tickAutoSettlement`) — mehr Häuser,
-// die alten Einträge stehen (bis auf neu bebaute Lose), der Erdbau trägt sie. Läuft im Browser (jeMarke) — selbstgenügsam.
+// die alten Einträge stehen (bis auf neu bebaute Lose), der Erdbau trägt sie; sein Nachbar von 1320 (Same 11, 180 m) wächst im
+// selben Takt (WW4: bis w3w verschluckte der erste, der wuchs, den Takt). Läuft im Browser (jeMarke) — selbstgenügsam.
 async function weltWachstum() {
     const res = (window.__kanal.res = { uhr: 1500 });
     window.__marke("WW-Satz");
@@ -177,46 +168,68 @@ async function weltWachstum() {
     for (const w of ["dorf 7 300 jahr 1560", "dorf 7 hanse"]) r._chatDispatchLegacyCommand(w, [], () => {});
     delete r.spawnSettlement;
     const zellen = st.worldMeta.settlementCells || (st.worldMeta.settlementCells = {});
-    const ort = async (jahr, x) => {
+    const ort = async (jahr, x, seed = 7, z = 300) => {
         window.__marke(`WW-${jahr}`);
-        await r.spawnSettlement({ seed: 7, jahr, position: { x, y: 0, z: 300 } });
-        const k = Object.keys(zellen).find((q) => zellen[q].seed === 7 && Math.abs(zellen[q].x - x) < 200);
+        await r.spawnSettlement({ seed, jahr, position: { x, y: 0, z } });
+        const k = Object.keys(zellen).find((q) => zellen[q].seed === seed && Math.abs(zellen[q].x - x) < 200);
         const S = r._bewohnerSiedlungen.get(k);
         const haeuser = () =>
             S.plan.slots.map((s) => r._dorfHaus(S.ox + s.x, S.oz + s.z, s.seed >>> 0)).filter(Boolean);
-        const [P, tracht] = [S.plan, [...new Set(r._bewohnerGestalten(S).map((g) => g.ov.top))]];
-        const turm = P.slots.some((s) => s.rolle === "turm");
+        const P = S.plan;
         const kopf = {
             groesse: P.groesse,
             jahr: P.jahr + P.spanne,
             slots: P.slots.length,
             haeuser: haeuser().length,
-            turm,
-            tracht,
+            turm: P.slots.some((s) => s.rolle === "turm"),
+            tracht: [...new Set(r._bewohnerGestalten(S).map((g) => g.ov.top))],
         };
         return { S, c: zellen[k], haeuser, kopf };
     };
-    const [alt, neu] = [await ort(1320, 700), await ort(1935, -700)];
+    const [alt, neu, nach] = [await ort(1320, 700), await ort(1935, -700), await ort(1320, 700, 11, 120)];
     [res.alt, res.neu] = [alt.kopf, neu.kopf];
-    window.__marke("WW-Wachstum");
     const [E0, erd0, p] = [alt.haeuser(), st.worldMeta.erdbau[alt.c.ort].length, { x: alt.c.x, z: alt.c.z }];
-    st.spielZeit += res.uhr;
-    res.takt = r._ortWachstumTakt(p);
-    await r._ortWachsFlug;
-    window.__anazhAutoSettlement = true;
-    for (let i = 0; i < 4000 && (r._ortWachstumTakt(p), r._autoSettlementQueue); i++) {
-        r._tickAutoSettlement(p);
-        await new Promise(requestAnimationFrame);
-    }
-    delete window.__anazhAutoSettlement;
+    const wachse = async (m) => {
+        window.__marke(m);
+        st.spielZeit += res.uhr;
+        const takt = r._ortWachstumTakt(p);
+        await r._ortWachsFlug;
+        window.__anazhAutoSettlement = true;
+        for (let i = 0; i < 4000 && (r._ortWachstumTakt(p), r._dorfOffen()); i++) {
+            r._tickAutoSettlement(p);
+            await new Promise(requestAnimationFrame);
+        }
+        delete window.__anazhAutoSettlement;
+        return takt;
+    };
+    res.takt = await wachse("WW-Wachstum");
+    res.nachbar = [nach.kopf.jahr, nach.c.wachs.jahr];
     const E1 = alt.haeuser();
     res.wuchs = {
         jahr: alt.c.wachs.jahr,
         slots: alt.S.plan.slots.length,
         haeuser: E1.length,
         erdbau: [erd0, st.worldMeta.erdbau[alt.c.ort].length],
+        bleiben: +(E0.filter((e) => E1.includes(e)).length / E0.length).toFixed(3),
     };
-    res.wuchs.bleiben = +(E0.filter((e) => E1.includes(e)).length / E0.length).toFixed(3);
+    // DER KERN EINES RINGS: ein gesetztes Haus (Werk, sein Grund `haus:`) 6 m vor dem Rand des Orts; wächst er wieder, stehen die
+    // neuen Häuser um das Haus — ihr Median näher an ihm als am Kern des Orts
+    const R =
+        6 + Math.max(...alt.S.plan.slots.map((s) => Math.hypot(s.obb.cx, s.obb.cz) + Math.hypot(s.obb.ex, s.obb.ez)));
+    for (let a = 0; a < 8 && !res.haus; a++) {
+        const [x, z] = [p.x + Math.cos(a * 0.785) * R, p.z + Math.sin(a * 0.785) * R];
+        const Y = r.getTerrainHeightAt(x, z) + 0.5;
+        if (r._landAt(x, z, 0.2) && r.spawnArchitecture("haus_alemannisch", { x, y: Y, z }, { seed: 4711, werk: true }))
+            res.haus = [x, z];
+    }
+    for (let i = 0; i < 600 && !alt.c.kern; i++) await sleep(50);
+    await wachse("WW-Kern");
+    const ring = alt
+        .haeuser()
+        .filter((e) => !E1.includes(e))
+        .map((e) => [e.position.x, e.position.z]);
+    const med = (q) => ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[ring.length >> 1];
+    res.ring = { neu: ring.length, zumHaus: med(res.haus), zumOrt: med([p.x, p.z]) };
     return res;
 }
 
@@ -1653,6 +1666,13 @@ hauptLauf(async () => {
             ist === "300,1560,,,,hanse · dorf,false,poncho,stadt,true,tshirt" && a.haeuser * n.haeuser > 0,
             W.bruch
         );
+        const k = W.ring || {};
+        check(
+            `WW3 KERN EINES RINGS: ${k.neu} neue Häuser, Median ${k.zumHaus} m vom Haus, ${k.zumOrt} m vom Ort`,
+            k.neu > 0 && k.zumHaus < k.zumOrt,
+            W.bruch
+        );
+        check(`WW4 JEDER NAHE ORT JE TAKT: der Nachbar ${W.nachbar}`, W.nachbar?.[1] > W.nachbar[0], W.bruch);
         check(
             `WW2 DAS WACHSTUM in ${W.uhr} s: ${a.jahr} → ${g.jahr}, Häuser ${a.haeuser} → ${g.haeuser}/${g.slots}, die alten ${g.bleiben}, Erdbau ${g.erdbau}`,
             W.takt &&

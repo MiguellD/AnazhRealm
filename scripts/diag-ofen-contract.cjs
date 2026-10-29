@@ -195,13 +195,10 @@ function ofenStart(eingriff) {
     sb.OffscreenCanvas = function (w, h) {
         this.width = w;
         this.height = h;
-        this.getContext = (_art, o) => (
-            gpu.push(!(o && o.willReadFrequently)),
-            {
-                createImageData: (iw, ih) => ({ data: new Uint8ClampedArray(iw * ih * 4) }),
-                putImageData: (img) => (bild = img.data),
-            }
-        );
+        this.getContext = (_art, o) => (gpu.push(!(o && o.willReadFrequently)), {
+            createImageData: (iw, ih) => ({ data: new Uint8ClampedArray(iw * ih * 4) }),
+            putImageData: (img) => (bild = img.data),
+        });
     };
     if (eingriff) eingriff(sb);
     const zaehl = { gebrochen: 0, zugriffe: 0 };
@@ -384,8 +381,5 @@ function taeterRinde(sb) {
         check
     );
 
-    wandEnde(
-        errs,
-        "der Ofen-Vertrag steht: Tier und Mensch gießen je Stoff-Klasse × Gelenk, je Gelenk und je Beipack byte-gleich zum Golden, deterministisch und samen-invariant; Math.pow erreicht keine Klasse."
-    );
+    wandEnde(errs, "der Ofen-Vertrag steht: Tier und Mensch gießen je Stoff-Klasse × Gelenk, je Gelenk und je Beipack byte-gleich zum Golden, deterministisch und samen-invariant; Math.pow erreicht keine Klasse.");
 })();

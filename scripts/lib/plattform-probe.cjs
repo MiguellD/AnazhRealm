@@ -219,15 +219,12 @@ function ratscheUrteil(satz, PP, R) {
     const rot = [];
     const faellt = [];
     if (!z) return { rot: [`${satz}: keine Zeile in der Ratsche`], faellt };
-    if (z.faelle !== PP.faelle)
-        rot.push(`${satz}: ${PP.faelle} Probe-Fälle statt ${z.faelle} (der Nenner der Ratsche)`);
+    if (z.faelle !== PP.faelle) rot.push(`${satz}: ${PP.faelle} Probe-Fälle statt ${z.faelle} (der Nenner der Ratsche)`);
     for (const [n, f] of Object.entries(PP.kipptJe)) {
         // pow ist hart 0 — außer ein Satz nennt seinen gepinnten Wirt (powWirt: CI und lokal dieselbe V8)
         const grenze = n === "pow" && !z.powWirt ? 0 : (z.kippt && z.kippt[n]) || 0;
         if (f.length > grenze)
-            rot.push(
-                `${satz} ${n} kippt ${f.length} > ${grenze}${PP.taeter && PP.taeter[n] ? " ← " + PP.taeter[n] : ""}`
-            );
+            rot.push(`${satz} ${n} kippt ${f.length} > ${grenze}${PP.taeter && PP.taeter[n] ? " ← " + PP.taeter[n] : ""}`);
     }
     for (const [n, g] of Object.entries(z.kippt || {})) {
         const ist = (PP.kipptJe[n] || []).length;
@@ -296,24 +293,18 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
         check(`SELBST-TEST: die Ratsche ${satz} reißt bei kippendem Math.pow — beim Namen`, ratscheSelbsttest(satz));
         return PP;
     }
-    const powSatz =
-        zeile && zeile.powWirt
-            ? "Math.pow hält seine Zeile (gepinnter Wirt — CI und lokal dieselbe V8)"
-            : "Math.pow ±1 ULP kippt kein Byte";
+    const powSatz = zeile && zeile.powWirt
+        ? "Math.pow hält seine Zeile (gepinnter Wirt — CI und lokal dieselbe V8)"
+        : "Math.pow ±1 ULP kippt kein Byte";
     check(
         `PLATTFORM-PROBE ${satz}: ${powSatz}, die übrigen Transzendenten halten die Ratsche (${PP.faelle} Fälle; benannt: ${benannt || "keine — plattformgleich"}; Nenner ${nenner || "0"})`,
         urteil.rot.length === 0 && PP.faelle > 0,
         urteil.rot.join(" · ")
     );
     if (urteil.faellt.length)
-        console.log(
-            `  ↓ RATSCHE ${satz} kann fallen (spec/asset-contract/plattform-ratsche.json): ${urteil.faellt.join(" · ")}`
-        );
+        console.log(`  ↓ RATSCHE ${satz} kann fallen (spec/asset-contract/plattform-ratsche.json): ${urteil.faellt.join(" · ")}`);
     check(`SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau`, PP.selbst);
-    check(
-        `SELBST-TEST: die Ratsche ${satz} reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen`,
-        ratscheSelbsttest(satz)
-    );
+    check(`SELBST-TEST: die Ratsche ${satz} reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen`, ratscheSelbsttest(satz));
     return PP;
 }
 
@@ -370,8 +361,7 @@ function objektAbdruck(h, o, m, mehr) {
 
 // DER SCHLÜSSEL EINES FALLS der Vertrags-Linsen (fachwerk · porta · schmiede): Rezept, Saat, Stufe und die Schlüssel der
 // Prägung — je Linse eine eigene Zeile war ein Zwilling.
-const fallSchluessel = (c) =>
-    `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
+const fallSchluessel = (c) => `${c.rezeptId}-s${c.seed}-L${c.lod}${c.ov ? "-ov_" + Object.keys(c.ov).sort().join("_") : ""}`;
 
 // DER GOLDEN-VERGLEICH der Vertrags-Linsen (fachwerk · porta · schmiede · vehicle; auch ihr Selbst-Test ruft ihn): die
 // Fälle des Goldens gegen das Ist (sha256, dann objects/vertices) → Abweichungsliste.
@@ -439,12 +429,7 @@ function goldenWand(datei, cv, ist, check, n, minted = "buildInstance(rezeptId, 
 // Kern (`studioKern` frisch) — je Fall `bau(K, c)` gefingert (`finger`, `schluessel`), danach `weg(g)`; am Ende trägt `name` wieder den Kern der
 // Linse. Bis zur Decke w3s-sukzession lud, baute und legte jede Linse selbst (fünf Mal).
 async function kernProbe(satz, datei, name, faelle, check, o = {}) {
-    const {
-        bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov),
-        finger = fingerabdruck,
-        schluessel = fallSchluessel,
-        weg = () => {},
-    } = o;
+    const { bau = (K, c) => K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov), finger = fingerabdruck, schluessel = fallSchluessel, weg = () => {} } = o;
     const eigen = globalThis[name];
     const bauen = (K) => {
         const r = {};

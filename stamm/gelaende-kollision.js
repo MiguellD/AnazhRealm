@@ -376,6 +376,7 @@ class AnazhRealm_gelaende_kollision {
         ];
         const reich = (v) => Math.max(0, ...v.slots.map((s) => Math.hypot(s.x || 0, s.z || 0) + 16));
         const p = key.startsWith("haus:") && splats && splats.find((q) => q.art === "platte" && q.vorplatz == null);
+        if (p && E && E[key]) this._ortKernAkt(p, reich); // das gesetzte Haus wird Kern eines Rings (siedlung.K4 Staffel 2)
         for (const [k, v] of P && E ? P : [])
             if (E[k] && (p ? k : key) === k) {
                 const um = (f) => FC.festWeg(v, f) || (v.fest || []).some((g) => g.cx === f.cx && g.cz === f.cz);

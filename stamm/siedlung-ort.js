@@ -1869,15 +1869,23 @@ class AnazhRealm_siedlung_ort {
         akt.then(ende, ende);
         return akt;
     }
-    // Was das Dorf noch baut: die Akte im Flug und die Häuser des Zugs im Takt (und sein Gang, `_dorfErlebnis`) samt dem Export
-    // ihrer Zelle (`_tickAutoSettlement`)
+    // Was das Dorf noch baut: die Akte im Flug, das Wachstum eines Orts (`_ortWaechst` im Flug, seine Züge in
+    // `_ortWachsHaeuser`) und die Häuser des Zugs im Takt (und sein Gang, `_dorfErlebnis`) samt dem Export ihrer Zelle
+    // (`_tickAutoSettlement`)
     // — der Zug nur, solange sein Takt lebt (`_dorfTaktLebt`, dasselbe Urteil wie der Term „dorf" des ersten Weltbilds): ein Ort
     // ohne Dorf-Zug hält ihn an, und ein Zug, den kein Takt baut, hielt die Welt ewig offen (CI 39780312347: „Dorf offen 18").
     _dorfOffen() {
-        const q = this._dorfTaktLebt() && this._autoSettlementQueue;
+        const lebt = this._dorfTaktLebt();
+        const [q, H] = [lebt && this._autoSettlementQueue, lebt && this._ortWachsHaeuser];
         const zug =
             q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) + !!q.gang : 0;
-        return (this._dorfImFlug | 0) + zug + (this._autoSettlementPendingKey ? 1 : 0);
+        return (
+            (this._dorfImFlug | 0) +
+            zug +
+            (this._autoSettlementPendingKey ? 1 : 0) +
+            (this._ortWachsFlug ? 1 : 0) +
+            (H ? H.size : 0)
+        );
     }
     async _dorfAkt(opts) {
         const o = opts && typeof opts === "object" ? opts : {};
@@ -2944,9 +2952,11 @@ class AnazhRealm_siedlung_ort {
     // Wachstums bis zur Uhr (fachwerk `wachstum`: die Kraft seiner Bewohner, ihre Furcht aus seinen Akten nach dem EINEN
     // Furcht-Gesetz) — sein Gedächtnis (`wachs`) geht mit; trägt das Jahr ein Los, das sein Plan nicht trägt, wird er am neuen Jahr
     // Welt (`_ortWaechst`). Ein ferner Ort holt nach, wenn der Spieler naht (das Gesetz ist taktfrei). EIN Ort zur Zeit; der Zug
-    // seiner neuen Häuser tritt in den nächsten freien Takt. Rückgabe true = der Takt tat seinen Dorf-Akt.
+    // seiner neuen Häuser tritt in den nächsten freien Takt. Jeder nahe Ort rechnet jeden Takt — seine Uhr (`wachs.uhr`) sagt,
+    // ob er ihn schon rechnete; bis w3w verschluckte ein Nachbar, der wuchs, den Takt jedes Orts nach ihm. Rückgabe true = der
+    // Takt tat seinen Dorf-Akt.
     _ortWachstumTakt(p) {
-        if (this._ortWachsFlug) return false;
+        if (this._ortWachsFlug || this._autoSettlementQueue) return false; // ein Zug zur Zeit: keiner fällt halb gebaut
         const H = this._ortWachsHaeuser;
         if (H && H.size) {
             const [k, q] = H.entries().next().value;
@@ -2954,10 +2964,9 @@ class AnazhRealm_siedlung_ort {
             this._autoSettlementQueue = q;
             return true;
         }
-        const st = this.state;
-        const takt = Math.floor(st.spielZeit / AnazhRealm.SIEDLUNG_WACHS.taktS);
+        const [st, tS] = [this.state, AnazhRealm.SIEDLUNG_WACHS.taktS];
+        const takt = Math.floor(st.spielZeit / tS);
         if (takt === this._ortWachsTakt) return false;
-        this._ortWachsTakt = takt; // Instanz-Feld (die _editSaveTimer-Klasse)
         const [cells, FC, FG] = [
             (st.worldMeta || {}).settlementCells || {},
             globalThis.__fachwerkCore,
@@ -2965,7 +2974,13 @@ class AnazhRealm_siedlung_ort {
         ];
         for (const k in cells) {
             const c = cells[k];
-            const alt = c && c.wachs && this._stlWegeKeys && this._stlWegeKeys.has(k) && this._ortPlaene.get(c.ort);
+            const alt =
+                c &&
+                c.wachs &&
+                Math.floor(c.wachs.uhr / tS) < takt &&
+                this._stlWegeKeys &&
+                this._stlWegeKeys.has(k) &&
+                this._ortPlaene.get(c.ort);
             const nah = AnazhRealm.AUTO_SETTLEMENT.nearM + this._siedlungMehrM(c && c.nH);
             if (!alt || !alt.chronik || (c.x - p.x) ** 2 + (c.z - p.z) ** 2 > nah * nah) continue;
             const furcht = (a) => FG.furchtErinnert(a, FG.F);
@@ -2977,6 +2992,7 @@ class AnazhRealm_siedlung_ort {
                 .finally(() => (this._ortWachsFlug = null));
             return true;
         }
+        this._ortWachsTakt = takt; // Instanz-Feld (die _editSaveTimer-Klasse): jeder nahe Ort rechnete diesen Takt
         return false;
     }
     // DER ORT WIRD AM NEUEN JAHR WELT (siedlung.K4 Staffel 2): der Export am Jahr seines Gedächtnisses (`_ortDp`) wird an genau
@@ -3036,7 +3052,8 @@ class AnazhRealm_siedlung_ort {
     // DER AKT EINES ORTS AUS SEINEM GEDÄCHTNIS (speicher.K3): sein Same, seine Zahl, seine Epoche (der Akt eines Satzes oder des
     // Nexus trägt seine eigene, die Zelle ihre Legende), sein Budget, das Jahr seines Wachstums (`wachs`, siedlung.K4 Staffel 2) und
     // der Grund seiner Trasse (siedlung.K3: der Export liest das Raster, wo seine Gassen lagen; ein Ort ohne wx/wz stammt von vor
-    // der Trasse und lag eben). Leser: die Wiederkehr (`_tickAutoSettlement`) und das Wachstum (`_ortWaechst`).
+    // der Trasse und lag eben), dazu der Kern seines Rings (`kern`). Leser: die Wiederkehr (`_tickAutoSettlement`) und das
+    // Wachstum (`_ortWaechst`).
     _ortDp(k, c) {
         const akt = k.startsWith("d:");
         return {
@@ -3045,8 +3062,22 @@ class AnazhRealm_siedlung_ort {
             epoche: akt ? c.epoche : this._siedlungEpoche(c.seed),
             budget: akt ? c.budget : undefined,
             jahr: c.wachs ? c.wachs.jahr : undefined,
+            kern: c.kern,
             ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined,
         };
+    }
+    // DAS HAUS WIRD KERN EINES RINGS (siedlung.K4 Staffel 2): legt ein gesetztes Haus seinen Grund (die Platte p, `haus:`) im Reich
+    // eines wachsenden Orts (`reich`: seine Slots + 16 m wie die Ort-Wahl), trägt dessen Gedächtnis die Akte `kern` — die Platte
+    // im Rahmen des Orts und das Jahr seines Plans, der steht: die Lose danach wachsen um das Haus (fachwerk `ringUm`), die
+    // Wiederkehr und jedes Wachstum lesen sie (`_ortDp`). Ein Ort trägt EINEN Kern. Leser: `_ortFremdPruefen`.
+    _ortKernAkt(p, reich) {
+        const cells = (this.state.worldMeta || {}).settlementCells || {};
+        for (const k in cells) {
+            const c = cells[k];
+            const v = c && c.wachs && !c.kern && this._ortPlaene && this._ortPlaene.get(c.ort);
+            if (v && v.chronik && Math.hypot(p.cx - c.x, p.cz - c.z) <= reich(v))
+                c.kern = { x: p.cx - c.x, z: p.cz - c.z, phi: p.phi, ex: p.ex, ez: p.ez, ab: v.jahr + v.spanne };
+        }
     }
     // DIE ZELLE, DIE WIEDERKEHRT: der erste Ort des Gedächtnisses (in der Folge seiner Gründung), der nahe dem Spieler steht und
     // in dieser Sitzung noch nicht wiederkam (`_stlWegeKeys`: seine Wege) — [Schlüssel, Gedächtnis] oder null. Leser: der Takt
