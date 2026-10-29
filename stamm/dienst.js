@@ -1293,12 +1293,9 @@ class AnazhRealm_dienst {
     // verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler). `takt`: die Sicherung des Takts (Autosave,
     // Edit-Timer) — die Glieder der Listen hat der Besen im Leerlauf geprüft (`_standAenderung`); jeder andere Ruf fragt alles.
     saveState(takt = false) {
-        // DIE SPERRE DES WELT-WECHSELS (`_weltWechselNeuLaden`): die Seite stirbt gleich, ihr Speicher gehört der Ziel-Welt.
+        // DIE SPERRE DES WELT-WECHSELS (`_weltWechsel`): die alte Welt geht, der Speicher gehört der Ziel-Welt.
         if (this._weltWechselSperre) {
-            this.log(
-                "Speichern verweigert: die Seite wechselt die Welt (der Reload läuft) — dieser Stand bleibt ungesichert.",
-                "WARN"
-            );
+            this.log("Speichern verweigert: die Seite wechselt die Welt — dieser Stand bleibt ungesichert.", "WARN");
             return false;
         }
         // DIE SPERRE DES LADENS (speicher.K1): solange loadState die Welt zusammensetzt, ist sie halb — neun Setter riefen
