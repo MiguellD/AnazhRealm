@@ -1408,6 +1408,9 @@
             schmiede: Object.freeze({ werk: Object.freeze([7, 18]) }),
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
             gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
+            // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
+            // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch
+            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true }),
         }),
         berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
     });

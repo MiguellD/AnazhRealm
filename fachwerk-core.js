@@ -3789,6 +3789,249 @@
         if(!naht) break;
         kante(naht[1],naht[2]); naehte.push([naht[1],naht[2]]); }
       return {knoten:kn, kanten:kan, naehte}; }
+    // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
+    // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
+    // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
+    // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
+    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich), ihr längster zusammenhängender Teil. Knoten mit drei und
+    // mehr Nachbarn näher als `kreuzM` sind EINE Kreuzung (mit drei und mehr Ausgängen; zwei Stücke derselben Straße stoßen
+    // nur aneinander), jedes Ende ein Knotenpunkt, dazwischen die Strecken. Jede Strecke trägt zwei Spuren (rechts der Fahrt um
+    // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
+    // Laterne, ein Stand in die Spur ragt, weicht sie aus (nach außen bis `ausweichM`, nach innen bis `einweichM`), sonst trägt die Strecke
+    // keinen Wagen (`frei`); wo die Spuren dabei näher rücken als zwei halbe Wagen, ist eine ENGE (einer zur Zeit). Durch die
+    // Kreuzung fährt er geradeaus gerade, sonst im Bogen seines Wendekreises (`kurveR`), wo das einen Grundriss streift (der
+    // Brunnen in ihrer Mitte), im Kreisel um sie; trägt keins, ist das Abbiegen verboten (`wege`, `verboten`). Ein Netz
+    // ohne Wende fährt nicht: DIE WENDE am Ende jeder Trasse — ein Kreis von `wendeM` (frei um
+    // `halbM` + `wendeRandM`) `wendeAbM` vom Ende in jeder Richtung, die Spur hinein, der Kreis den langen Weg herum (von der
+    // Spur heraus fort), die Spur heraus (`bahn`), je Ende bis `wendeN` — und um ihn DER PLATZ: die Stellen eines Wagens
+    // (`parkL` × `parkB`) längs des Kreises, frei von Grundriss, Tritt, der Mitte jedes Wegs (die Gasse bleibt dem Fuß) und der
+    // Spur zur Wende. Der Plan v2 (`ortPlan`) wählt je Ende die erste, deren Kreis und Plätze Land tragen und nicht steiler als
+    // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
+    // Boden (`verkehrsBoden`).
+    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, kreiselRandM: 1, wendeM: 6.5,
+      wendeRandM: 1.2, wendeAbM: [7, 40], wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+    function verkehrVon(plan){
+      const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
+      for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
+      return {n:N, slots}; }
+    // die Sperren im Raster von `zM` (je Zelle die Boxen, die sie berühren): die Frage `gesperrt` an (x, z) liest nur ihre Zelle;
+    // mit `r` die Frage, ob eine Box näher als r liegt (der Abstand zur gedrehten Box, je Zelle im Umkreis)
+    function sperrenRaster(sperren, zM){
+      const R=new Map();
+      for(const o of sperren){ const r=Math.hypot(o.ex,o.ez);
+        for(let i=Math.floor((o.cx-r)/zM);i<=Math.floor((o.cx+r)/zM);i++) for(let j=Math.floor((o.cz-r)/zM);j<=Math.floor((o.cz+r)/zM);j++){
+          const k=i*2097152+j; (R.get(k)||(R.set(k,[]),R.get(k))).push(o); } }
+      return (x,z,r)=>{ if(!(r>0)) return gesperrt(R.get(Math.floor(x/zM)*2097152+Math.floor(z/zM))||[],x,z);
+        for(let i=Math.floor((x-r)/zM);i<=Math.floor((x+r)/zM);i++) for(let j=Math.floor((z-r)/zM);j<=Math.floor((z+r)/zM);j++)
+          for(const o of R.get(i*2097152+j)||[]){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
+            if(Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-o.ex),Math.max(0,Math.abs(dx*s+dz*c)-o.ez))<r) return true; }
+        return false; }; }
+    function verkehrsNetz(plan, ox, oz){
+      const V=VERKEHR_GESETZ, zu=sperrenRaster(planSperren(plan,ox,oz,0),V.zelleM);
+      const zuP=sperrenRaster(planSperren(plan,ox,oz,0.2),V.zelleM);
+      const frei=(x,z,r)=>!zu(x,z,r);
+      const gang=(p,q,r)=>{ const m=Math.max(1,Math.ceil(Math.hypot(q.x-p.x,q.z-p.z)/0.5)); for(let u=0;u<=m;u++) if(!frei(p.x+(q.x-p.x)*u/m,p.z+(q.z-p.z)*u/m,r)) return false; return true; };
+      // DIE KNOTEN: je Punkt einer Trasse, die zwei Wagen trägt (über dem Wasser die Achse der Brücke, `wegUeberBruecken`), die
+      // Folge ihre Kante, zwei Punkte zweier Trassen näher als `naheM` (sie treffen sich) verbunden; DIE LÄUFE aller Wege
+      // (Straßen und Feldwege), an denen kein Platz liegt (`amWeg`)
+      const kn=[], nb=[], laeufe=[], netz=new Map(), zN=V.naheM;
+      (plan.roads||[]).concat(plan.feldwege||[]).forEach((rd,ri)=>{ let vor=null;
+        for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue; const P={x:ox+q.x, z:oz+q.z};
+          if(vor) laeufe.push([vor,P]); vor=P;
+          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]);
+          if(i>0&&kn[i-1].ri===ri){ nb[i].push(i-1); nb[i-1].push(i); } P.ri=ri;
+          const ix=Math.floor(P.x/zN), iz=Math.floor(P.z/zN);
+          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[])
+            if(kn[j].ri!==ri&&(kn[j].x-P.x)**2+(kn[j].z-P.z)**2<zN*zN&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); }
+          (netz.get(ix*2097152+iz)||(netz.set(ix*2097152+iz,[]),netz.get(ix*2097152+iz))).push(i); } });
+      const n=kn.length;
+      const teil=new Int32Array(n).fill(-1); let best=-1, bestL=0;
+      for(let r=0;r<n;r++){ if(teil[r]>=0||!nb[r].length) continue; const st=[r]; let L=0; teil[r]=r;
+        while(st.length){ const i=st.pop(); for(const j of nb[i]){ if(j>i) L+=Math.hypot(kn[j].x-kn[i].x,kn[j].z-kn[i].z); if(teil[j]<0){ teil[j]=r; st.push(j); } } }
+        if(L>bestL){ bestL=L; best=r; } }
+      if(best<0) return {kreuzungen:[], strecken:[], laenge:0};
+      // DIE STUMMEL: ein Ende, dessen Kette bis zur nächsten Gabel kürzer als kreuzM ist, ist ein Rest der Kreuzung (ein Stück der
+      // Straße ragt über den Stoß hinaus) — er fällt, bis keiner mehr bleibt
+      for(let weiter=true;weiter;){ weiter=false;
+        for(let i=0;i<n;i++){ if(teil[i]!==best||nb[i].length!==1) continue;
+          const kette=[i]; let [v,j]=[i,nb[i][0]], L=Math.hypot(kn[j].x-kn[i].x,kn[j].z-kn[i].z);
+          while(nb[j].length===2&&L<V.kreuzM){ const w=nb[j][0]===v?nb[j][1]:nb[j][0]; kette.push(j); L+=Math.hypot(kn[w].x-kn[j].x,kn[w].z-kn[j].z); [v,j]=[j,w]; }
+          if(nb[j].length<3||L>=V.kreuzM) continue;
+          for(const k of kette){ for(const m of nb[k]) nb[m].splice(nb[m].indexOf(k),1); nb[k].length=0; teil[k]=-1; }
+          weiter=true; } }
+      // DIE GRUPPEN: Knoten mit drei und mehr Nachbarn, näher als kreuzM vereint; ein Knoten, dessen Nachbarn alle in EINER
+      // Gruppe liegen, liegt in ihr (das Ende eines Wegs im Dreieck der Kreuzung — sonst hieße es ein Ende ohne Weg); jeder
+      // andere Knoten ist seine eigene
+      const wurzel=new Int32Array(n).map((_,i)=>i), finde=(i)=>{ while(wurzel[i]!==i) i=wurzel[i]=wurzel[wurzel[i]]; return i; };
+      const viel=[]; for(let i=0;i<n;i++) if(teil[i]===best&&nb[i].length>=3) viel.push(i);
+      for(let a=0;a<viel.length;a++) for(let b=a+1;b<viel.length;b++){ const p=kn[viel[a]], q=kn[viel[b]];
+        if((p.x-q.x)**2+(p.z-q.z)**2<V.kreuzM*V.kreuzM) wurzel[finde(viel[a])]=finde(viel[b]); }
+      const drin=new Uint8Array(n); for(const i of viel) drin[i]=1;
+      for(let i=0;i<n;i++) if(teil[i]===best&&!drin[i]&&nb[i].length&&nb[i].every(j=>drin[j]&&finde(j)===finde(nb[i][0]))){ wurzel[i]=finde(nb[i][0]); drin[i]=2; }
+      const gruppe=(i)=>drin[i]?finde(i):i, glieder=new Map(), nach=new Map();
+      for(let i=0;i<n;i++) if(teil[i]===best){ const g=gruppe(i); (glieder.get(g)||(glieder.set(g,[]),glieder.get(g))).push(i);
+        for(const j of nb[i]){ const h=gruppe(j); if(h!==g) (nach.get(g)||(nach.set(g,new Set()),nach.get(g))).add(h); } }
+      const mitte=new Map(); for(const [g,L] of glieder){ let x=0, z=0; for(const i of L){ x+=kn[i].x/L.length; z+=kn[i].z/L.length; } mitte.set(g,{x,z}); }
+      // DIE KNOTENPUNKTE: die Kreuzung (drei und mehr Ausgänge) und das Ende (einer); ihr Radius: das weiteste Glied, die Spur, der halbe Wagen
+      const kreuzungen=[], kpVon=new Map();
+      for(const [g,N] of nach) if(N.size!==2){ const c=mitte.get(g); let r=0; for(const i of glieder.get(g)) r=Math.max(r,Math.hypot(kn[i].x-c.x,kn[i].z-c.z));
+        kpVon.set(g,kreuzungen.length); kreuzungen.push({x:c.x, z:c.z, r:N.size>1?r+V.spurM+V.halbM:0, ende:N.size===1, strecken:[], wenden:[]}); }
+      // DIE STRECKEN: von jedem Knotenpunkt jeden Ausgang entlang, bis zum nächsten Knotenpunkt (jede einmal), je Meter (die Ecken
+      // bleiben). DER STUMMEL: eine Strecke kürzer als kreuzM an ein Ende ist ein Rest der Kreuzung (zwei Stücke einer Straße
+      // überlappen am Stoß) — sie fällt; ein Knotenpunkt, dem so nur zwei Strecken bleiben, ist keine Kreuzung: die Spuren laufen
+      // ungekürzt durch ihn (Radius 0)
+      const ketten=[], gegangen=new Set();
+      for(const [g,K] of kpVon) for(const h0 of nach.get(g)){ if(gegangen.has(g+">"+h0)) continue;
+        const P=[mitte.get(g)]; let [vor,jetzt]=[g,h0];
+        while(!kpVon.has(jetzt)){ P.push(mitte.get(jetzt)); const N=[...nach.get(jetzt)].filter(h=>h!==vor); if(N.length!==1) break; [vor,jetzt]=[jetzt,N[0]]; }
+        if(!kpVon.has(jetzt)) continue;
+        P.push(mitte.get(jetzt)); gegangen.add(g+">"+h0); gegangen.add(jetzt+">"+vor);
+        const M=[P[0]]; for(let i=1;i<P.length;i++){ const m=Math.max(1,Math.ceil(Math.hypot(P[i].x-P[i-1].x,P[i].z-P[i-1].z))); for(let t=1;t<=m;t++) M.push({x:P[i-1].x+(P[i].x-P[i-1].x)*t/m, z:P[i-1].z+(P[i].z-P[i-1].z)*t/m}); }
+        let L=0; for(let i=1;i<M.length;i++) L+=Math.hypot(M[i].x-M[i-1].x,M[i].z-M[i-1].z);
+        const J=kpVon.get(jetzt);
+        if(L<V.kreuzM&&(kreuzungen[K].ende||kreuzungen[J].ende)) continue;
+        ketten.push({K, J, M, L}); }
+      const zahl=kreuzungen.map(()=>0); for(const c of ketten){ zahl[c.K]++; zahl[c.J]++; }
+      kreuzungen.forEach((K,ki)=>{ K.r=zahl[ki]<=2?0:Math.max(K.r,V.kurveR+V.spurM); });
+      const strecken=[];
+      const AUSWEICH=[0]; for(let d=0.25;d<=V.ausweichM+1e-9;d+=0.25) AUSWEICH.push(d,...(d<=V.einweichM+1e-9?[-d]:[]));
+      for(const {K, J, M, L} of ketten){
+        const id=strecken.length, A=kreuzungen[K], B=kreuzungen[J];
+        let ok=true, stelle=null;
+        // die Spur je Punkt der Mitte und ihr Abstand zu ihr (`off`, NaN: in der Kreuzung gekürzt)
+        const spur=(Q,r0,r1)=>{ const S=[], off=new Float64Array(Q.length).fill(NaN);
+          for(let i=0;i<Q.length;i++){ const a=Q[Math.max(0,i-1)], b=Q[Math.min(Q.length-1,i+1)], l=Math.hypot(b.x-a.x,b.z-a.z)||1, ux=(b.x-a.x)/l, uz=(b.z-a.z)/l;
+            if(Math.hypot(Q[i].x-Q[0].x,Q[i].z-Q[0].z)<r0||Math.hypot(Q[i].x-Q[Q.length-1].x,Q[i].z-Q[Q.length-1].z)<r1) continue;
+            let q=null; for(const d of AUSWEICH){ const o=V.spurM+d, x=Q[i].x-uz*o, z=Q[i].z+ux*o; if(frei(x,z,V.halbM)){ q={x,z}; off[i]=o; break; } }
+            if(!q){ if(ok) stelle={x:Q[i].x, z:Q[i].z}; ok=false; q={x:Q[i].x-uz*V.spurM, z:Q[i].z+ux*V.spurM}; off[i]=V.spurM; }
+            S.push(q); }
+          return {S, off}; };
+        const hin=spur(M,A.r,B.r), her=spur(M.slice().reverse(),B.r,A.r);
+        // DIE ENGE: wo eine Spur nach innen weicht, bis zwei Wagen nicht mehr nebeneinander passen (die Spuren näher als zwei
+        // halbe Wagen), fährt einer zur Zeit — je Lauf solcher Punkte EIN Ort (Mitte, Radius über seine Punkte samt Wagen)
+        const engen=[]; let lauf=null;
+        for(let i=0;i<=M.length;i++){ const eng=i<M.length&&hin.off[i]+her.off[M.length-1-i]<2*V.halbM;
+          if(eng) (lauf||(lauf=[])).push(M[i]);
+          else if(lauf){ const c={x:0,z:0}; for(const q of lauf){ c.x+=q.x/lauf.length; c.z+=q.z/lauf.length; }
+            let r=0; for(const q of lauf) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); engen.push({x:c.x, z:c.z, r:r+V.spurM+V.halbM}); lauf=null; } }
+        strecken.push({a:K, b:J, laenge:L, mitte:M, spur:[hin.S,her.S], frei:ok&&hin.S.length>1&&her.S.length>1, stelle, engen});
+        A.strecken.push(id); B.strecken.push(id); }
+      // DIE WENDE an jedem Ende: der Kreis, die Bahn (Spur hinein, der lange Bogen, Spur heraus) und die Plätze an ihm
+      const R2=new Map(), zM=V.zelleM, key=(x,z)=>Math.floor(x/zM)*2097152+Math.floor(z/zM);
+      for(const [a,b] of laeufe){
+        for(let x=Math.floor(Math.min(a.x,b.x)/zM)-1;x<=Math.floor(Math.max(a.x,b.x)/zM)+1;x++)
+          for(let z=Math.floor(Math.min(a.z,b.z)/zM)-1;z<=Math.floor(Math.max(a.z,b.z)/zM)+1;z++){ const k=x*2097152+z; (R2.get(k)||(R2.set(k,[]),R2.get(k))).push([a,b]); } }
+      const amWeg=(x,z,r)=>{ for(const [a,b] of R2.get(key(x,z))||[]){ const dx=b.x-a.x, dz=b.z-a.z, l2=dx*dx+dz*dz||1, t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/l2));
+        if((x-a.x-dx*t)**2+(z-a.z-dz*t)**2<r*r) return true; } return false; };
+      const nahStrecke=(x,z,Q,r)=>{ for(let i=1;i<Q.length;i++){ const a=Q[i-1], b=Q[i], dx=b.x-a.x, dz=b.z-a.z, l2=dx*dx+dz*dz||1, t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/l2));
+        if((x-a.x-dx*t)**2+(z-a.z-dz*t)**2<r*r) return true; } return false; };
+      const W=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
+      // DIE ABBIEGER (`wege`: „von>nach" der Strecken → die Punkte zwischen der Spur hinein und der Spur hinaus): geradeaus die
+      // gerade Verbindung; jeder andere der BOGEN mit dem Wendekreis der Stadtwagen (`kurveR`), tangential an die Verlängerung
+      // beider Spuren — die Spur endet an der Kreuzung um ihn gekürzt (ihr Radius mindestens kurveR samt Spur), er beginnt nie
+      // vor ihrem Ende; frei, wo er keinen Grundriss und keinen Tritt näher als den halben Wagen samt `abbiegRandM` streift (der
+      // Wagen schert im Bogen nach innen aus); sonst DER KREISEL um die Mitte (sie zur Linken, in der Ordnung der rechten Spur) auf
+      // dem kleinsten freien Radius ab kurveR; sonst ist das Abbiegen verboten (`verboten`)
+      const richtung=(Q,ende)=>{ const a=ende?Q[Math.max(0,Q.length-3)]:Q[0], b=ende?Q[Q.length-1]:Q[Math.min(Q.length-1,2)], l=Math.hypot(b.x-a.x,b.z-a.z)||1; return {x:(b.x-a.x)/l, z:(b.z-a.z)/l}; };
+      const bogen=(p,u,q,w,R)=>{ const dt=u.x*w.x+u.z*w.z, cr=u.x*w.z-u.z*w.x;
+        if(dt>0.995) return [];
+        if(dt<-0.9||Math.abs(cr)<1e-6) return null;
+        const t=((q.x-p.x)*w.z-(q.z-p.z)*w.x)/cr, X={x:p.x+u.x*t, z:p.z+u.z*t};
+        const d=R*Math.tan(Math.acos(Math.max(-1,Math.min(1,dt)))/2), sq=(q.x-X.x)*w.x+(q.z-X.z)*w.z;
+        if(t<d-0.5||sq<d-0.5) return null;
+        const T1={x:X.x-u.x*d, z:X.z-u.z*d}, T2={x:X.x+w.x*d, z:X.z+w.z*d};
+        const nx=w.x-u.x*dt, nz=w.z-u.z*dt, nl=Math.hypot(nx,nz), C={x:T1.x+nx/nl*R, z:T1.z+nz/nl*R};
+        const a1=Math.atan2(T1.z-C.z,T1.x-C.x), da=Math.atan2(Math.sin(Math.atan2(T2.z-C.z,T2.x-C.x)-a1),Math.cos(Math.atan2(T2.z-C.z,T2.x-C.x)-a1));
+        const A=[], m=Math.max(2,Math.ceil(Math.abs(da)*R)); for(let k=0;k<=m;k++) A.push({x:C.x+Math.cos(a1+da*k/m)*R, z:C.z+Math.sin(a1+da*k/m)*R});
+        return A; };
+      kreuzungen.forEach((K,ki)=>{ K.verboten=[]; K.wege={}; if(K.ende) return; const r0=V.halbM, rB=V.halbM+(K.r>0?V.abbiegRandM:0);
+        for(const si of K.strecken) for(const so of K.strecken){ if(si===so) continue; const a=strecken[si], b=strecken[so];
+          const rein=a.b===ki?a.spur[0]:a.spur[1], raus=b.a===ki?b.spur[0]:b.spur[1], wort=si+">"+so;
+          if(rein.length<2||raus.length<2){ K.verboten.push(wort); continue; }
+          const p=rein[rein.length-1], q=raus[0], frei=(A,r)=>{ const P=[p,...A,q]; for(let i=1;i<P.length;i++) if(!gang(P[i-1],P[i],r)) return false; return true; };
+          // durch einen Stoß (keine Kreuzung, Radius 0) laufen die Spuren ungekürzt: die gerade Verbindung
+          const B=K.r>0?bogen(p,richtung(rein,true),q,richtung(raus,false),V.kurveR):[];
+          if(B&&frei(B,B.length?rB:r0)){ K.wege[wort]=B; continue; }
+          let weg=null;
+          if(K.r>0){ const ap=Math.atan2(p.z-K.z,p.x-K.x), aq=Math.atan2(q.z-K.z,q.x-K.x); let span=ap-aq; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.3) span+=2*Math.PI;
+            for(let rho=V.kurveR;rho<=K.r+V.kreiselRandM&&!weg;rho+=0.5){ const A=[], m=Math.max(2,Math.ceil(span*rho));
+              for(let t=0;t<=m;t++){ const w=ap-span*t/m; A.push({x:K.x+Math.cos(w)*rho, z:K.z+Math.sin(w)*rho}); }
+              if(frei(A,r0)) weg=A; } }
+          if(weg) K.wege[wort]=weg; else K.verboten.push(wort); }
+        // DIE VERTRÄGLICHKEIT (`konflikt`): zwei Wege durch die Kreuzung, die einander nirgends näher kommen als zwei halbe Wagen
+        // (ein Bogen schert um (parkL/2)²/(2·kurveR) weiter aus) — samt `kreuzSpurM` ihrer Spuren davor und danach —, fahren
+        // zugleich (geradeaus gegeneinander, rechts ab nebeneinander); jedes andere Paar einer nach dem anderen
+        K.konflikt=[]; const zug=(wort)=>{ const [si,so]=wort.split(">").map(Number), a=strecken[si], b=strecken[so];
+          const rein=a.b===ki?a.spur[0]:a.spur[1], raus=b.a===ki?b.spur[0]:b.spur[1], P=[];
+          for(let i=rein.length-1, L=0;i>=0&&L<=V.kreuzSpurM;i--){ if(P.length) L+=Math.hypot(rein[i].x-P[0].x,rein[i].z-P[0].z); P.unshift(rein[i]); }
+          P.push(...K.wege[wort]); for(let i=0, L=0;i<raus.length&&L<=V.kreuzSpurM;i++){ const q=P[P.length-1]; L+=Math.hypot(raus[i].x-q.x,raus[i].z-q.z); P.push(raus[i]); }
+          return {P, krumm:K.wege[wort].length>0}; };
+        const woerter=Object.keys(K.wege), Z=woerter.map(zug), aus=(V.parkL/2)**2/(2*V.kurveR);
+        const abst=(A,B)=>{ let m=Infinity; for(const p of A) for(let j=1;j<B.length;j++){ const a=B[j-1], b=B[j], dx=b.x-a.x, dz=b.z-a.z, l2=dx*dx+dz*dz||1, t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/l2)); m=Math.min(m,Math.hypot(p.x-a.x-dx*t,p.z-a.z-dz*t)); } return m; };
+        for(let i=0;i<woerter.length;i++) for(let j=i+1;j<woerter.length;j++){ const g=2*V.halbM+(Z[i].krumm?aus:0)+(Z[j].krumm?aus:0);
+          if(Math.min(abst(Z[i].P,Z[j].P),abst(Z[j].P,Z[i].P))<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); } });
+      kreuzungen.forEach((K,ki)=>{ if(!K.ende||!K.strecken.length) return; const s=strecken[K.strecken[0]];
+        const rein=s.b===ki?s.spur[0]:s.spur[1], raus=s.b===ki?s.spur[1]:s.spur[0], M=s.b===ki?s.mitte:s.mitte.slice().reverse();
+        if(rein.length<2||raus.length<2) return;
+        const pin=rein[rein.length-1], pout=raus[0], e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
+        for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
+          const cx=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, cz=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k;
+          if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) continue;
+          // der Kreis frei: keine Sperre näher als Rf an seiner Mitte (der Abstand zur gedrehten Box)
+          const Rf=V.wendeM+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) continue;
+          // die Bahn hinein und heraus treffen den Ring mindestens zwei Spuren auseinander (die Sehne 2·spurM): bis hier liefen
+          // beide zum Ring-Punkt Richtung Ende, bei fernem Kreis fast derselbe — zwei Wagen gegeneinander standen dort Bug an Bug
+          let ain=Math.atan2(pin.z-cz,pin.x-cx), aout=Math.atan2(pout.z-cz,pout.x-cx); const dreh=W(ain-aout)>=0?1:-1;
+          const dMin=2*Math.asin(Math.min(1,V.spurM/V.wendeM)), dA0=W(ain-aout)*dreh;
+          if(dA0<dMin){ const mA=aout+dreh*dA0/2; [ain,aout]=[mA+dreh*dMin/2, mA-dreh*dMin/2]; }
+          const e1={x:cx+Math.cos(ain)*V.wendeM, z:cz+Math.sin(ain)*V.wendeM}, e2={x:cx+Math.cos(aout)*V.wendeM, z:cz+Math.sin(aout)*V.wendeM};
+          if(!gang(pin,e1,V.halbM)||!gang(e2,pout,V.halbM)) continue;
+          let span=(aout-ain)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<Math.PI) span+=2*Math.PI;
+          const bahn=[pin], m=Math.ceil(span*V.wendeM);
+          for(let t=0;t<=m;t++){ const w=ain+dreh*span*t/m; bahn.push({x:cx+Math.cos(w)*V.wendeM, z:cz+Math.sin(w)*V.wendeM}); }
+          bahn.push(pout);
+          // die Plätze: tangential am Ring um den Kreis, in der Richtung des Bogens (er fährt vorwärts aus ihm heraus)
+          const rP=V.wendeM+V.halbM+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
+          for(let w=0;w<2*Math.PI-dA/2;w+=dA){ const b=ain+dreh*w, x=cx+Math.cos(b)*rP, z=cz+Math.sin(b)*rP, tx=-Math.sin(b)*dreh, tz=Math.cos(b)*dreh;
+            let frei2=true;
+            for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
+              if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,[pin,e1],V.halbM)||nahStrecke(px,pz,[e2,pout],V.halbM)) frei2=false; }
+            if(frei2) plaetze.push({x, z, beta:b, fahrt:Math.atan2(tx,tz)}); }
+          K.wenden.push({x:cx, z:cz, r:V.wendeM, frei:Rf, dreh, ain, aout, bahn, plaetze}); } });
+      let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
+      return {kreuzungen, strecken, laenge}; }
+    // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende,
+    // deren Kreis und Plätze Land tragen (ctx.wasserAt) und deren Grund (ctx.hoeheAt) nicht steiler als `hangMax` liegt (`wende`,
+    // sonst null); ihr Ring (der Wagen samt `ringRandM`), die Spur hinein und heraus und ihre Plätze liegen als Erdbau auf der
+    // Höhe der Fläche am Ende (`flaeche`: der Weg dort) — EINE Fläche mit dem Weg. Bis dahin lag die Wende auf dem Grund neben
+    // der Trasse (die Böschung 60 %): Stufen über 0,2 m je 0,5 m an jeder Bahn, kein Ende trug eine Wende, kein Wagen fuhr.
+    // Rückgabe {netz, erdbau}. Leser: der Wirt (`_verkehrAnlegen`: das Netz, die Wenden, ihr Bild über den Hebel der Dörfer).
+    function verkehrsBoden(plan, ox, oz, ctx, flaeche){
+      const V=VERKEHR_GESETZ, N=verkehrsNetz(plan,ox,oz), erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
+      const land=(x,z)=>!(ctx.wasserAt&&ctx.wasserAt(x,z)), h=(x,z)=>ctx.hoeheAt(x,z);
+      const trasse=(a,b,y,w)=>erdbau.push({art:"trasse", x0:r6(a.x), z0:r6(a.z), y0:y, x1:r6(b.x), z1:r6(b.z), y1:y, w:r6(w)});
+      for(const K of N.kreuzungen){ K.wende=null; if(!K.ende) continue;
+        const y=flaeche(K.x,K.z); if(y===null||!isFinite(y)) continue;
+        for(const w of K.wenden){ const h0=h(w.x,w.z); let ok=land(w.x,w.z)&&isFinite(h0);
+          for(let a=0;a<12&&ok;a++){ const x=w.x+Math.cos(a*Math.PI/6)*w.r, z=w.z+Math.sin(a*Math.PI/6)*w.r; ok=land(x,z)&&Math.abs(h(x,z)-h0)<=V.hangMax*w.r; }
+          if(!ok) continue;
+          // die Bahn liegt, wo sie eine Fläche der Stadt kreuzt (das Ende des Wegs, ein Nachbar), auf deren Höhe: sonst wählte
+          // der Plan einen Ring, der über den fallenden Weg läuft — eine Stufe in der Fläche
+          for(let i=1;i<w.bahn.length&&ok;i++){ const a=w.bahn[i-1], b=w.bahn[i], m=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/0.5));
+            for(let u=0;u<=m&&ok;u++){ const f=flaeche(a.x+(b.x-a.x)*u/m,a.z+(b.z-a.z)*u/m); if(f!==null&&Math.abs(f-y)>V.flaecheM) ok=false; } }
+          if(!ok) continue;
+          const plaetze=w.plaetze.filter(p=>{ const fx=Math.sin(p.fahrt), fz=Math.cos(p.fahrt), hs=[];
+            for(const u of [-1,1]) for(const v of [-1,1]){ const x=p.x+fx*u*V.parkL*0.5-fz*v*V.parkB*0.5, z=p.z+fz*u*V.parkL*0.5+fx*v*V.parkB*0.5;
+              if(!land(x,z)) return false; hs.push(h(x,z)); }
+            return land(p.x,p.z)&&Math.max(...hs)-Math.min(...hs)<=V.hangMax*V.parkL; });
+          K.wende=Object.assign({},w,{plaetze,y:r6(y)}); break; }
+        const w=K.wende; if(!w) continue;
+        const ring=[]; for(let a=0;a<=2*Math.PI+1e-9;a+=1/w.r) ring.push({x:w.x+Math.cos(a)*w.r, z:w.z+Math.sin(a)*w.r});
+        for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM);
+        trasse(w.bahn[0],w.bahn[1],w.y,2*V.halbM); trasse(w.bahn[w.bahn.length-2],w.bahn[w.bahn.length-1],w.y,2*V.halbM);
+        for(const p of w.plaetze){ const fx=Math.sin(p.fahrt)*V.parkL*0.5, fz=Math.cos(p.fahrt)*V.parkL*0.5;
+          trasse({x:p.x-fx,z:p.z-fz},{x:p.x+fx,z:p.z+fz},w.y,V.parkB); } }
+      return {netz:N, erdbau}; }
     function strassengraph(rnd, plan, sW, lw, Rw, H){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
   const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
@@ -6982,6 +7225,8 @@
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
         brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
         umM: 0.25, // so weit über den Saum seiner Gasse läuft der Umweg um einen Fremd-Slot (`ortPlan`, ctx.fest)
+        kreuzungM: 10, // so weit reicht die Scheibe einer Kreuzung höchstens (zwei Arme unter spitzem Winkel, `ortPlan`)
+        kreuzSinus: 0.34, // flacher als ~20° treffen sich zwei Arme nicht (sie laufen fort: ein Weg, der den anderen fortsetzt)
     };
     // DER EINGANG eines Slots (K10-6 · K66, plan-lokal), den der Gang von der Gasse betritt: z haus-lokal, y seine Schwelle über dem
     // Boden des Hauses — die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9),
@@ -7158,13 +7403,18 @@
         var platzY = null;
         if (pz && isFinite(pz.cx) && isFinite(pz.cz) && isFinite(pz.ex) && isFinite(pz.ez))
             platzY = r6(median(rechteck(pz.cx, pz.cz, pz.phi || 0, pz.ex, pz.ez)));
-        var imPlatz = function (x, z) {
+        // AM PLATZ liegt ein Weg-Punkt, dessen Weg (die halbe Breite `hw`) die Platte des Platzes samt Saum berührt — er trägt
+        // die Höhe des Platzes (PFLICHT-OFFEN C: die Hauptstraße am Markt der Metropole lief 2,5 m neben ihm auf ihrer eigenen
+        // Höhe, die Platte überdeckte ihren Kern um 0,6 m — eine Stufe von 0,74 m quer durch die Fahrbahn, an der jeder Wagen
+        // stand); mindestens 1 m um den Platz (der Weg, der ihn quert)
+        var imPlatz = function (x, z, hw) {
             if (platzY === null) return false;
             var c = Math.cos(pz.phi || 0);
             var s = Math.sin(pz.phi || 0);
             var dx = x - pz.cx;
             var dz = z - pz.cz;
-            return Math.abs(dx * c - dz * s) <= pz.ex + 1 && Math.abs(dx * s + dz * c) <= pz.ez + 1;
+            var rand = Math.max(1, hw + O.saumM);
+            return Math.abs(dx * c - dz * s) <= pz.ex + rand && Math.abs(dx * s + dz * c) <= pz.ez + rand;
         };
         // 1b) DIE FREMD-SLOTS (bauen.K2 Staffel 2): ctx.fest nennt die Häuser, die ohne diesen Plan stehen — gesetzt vom Spieler,
         //    der KI, der Vorschau —, je die Platte ihres Grundrisses samt Saum aus ihrem EIGENEN Erdbau ({cx, cz, phi, ex, ez},
@@ -7269,6 +7519,7 @@
         // Punkte (gleicher Abstand, der erste gewinnt), ohne die quadratische Schleife (nH 300: 1 206 Punkte je Kandidat)
         var profilNetz = new Map();
         var profilR = 0;
+        var profilL = 0; // das längste Stück eines profilierten Wegs (die Suche nach dem Lauf reicht über seine halbe Länge)
         var profilZ = function (ix, iz) {
             return (ix + 32768) * 65536 + (iz + 32768);
         };
@@ -7276,13 +7527,15 @@
             var key = profilZ(Math.floor(pt[0] / 4), Math.floor(pt[1] / 4));
             var lst = profilNetz.get(key);
             if (!lst) profilNetz.set(key, (lst = []));
+            var vor = profil[profil.length - 1];
+            if (vor && vor[4] === pt[4]) profilL = Math.max(profilL, Math.hypot(pt[0] - vor[0], pt[1] - vor[1]));
             lst.push(profil.length);
             profil.push(pt);
             profilR = Math.max(profilR, 1.5, pt[3]);
         };
-        var profilNah = function (x, z) {
+        var profilNah = function (x, z, r) {
             var out = [];
-            var rz = Math.ceil(profilR / 4) + 1; // eine Zelle Rand: die Rundung am Zellrand fällt nie aus der Suche
+            var rz = Math.ceil(r / 4) + 1; // eine Zelle Rand: die Rundung am Zellrand fällt nie aus der Suche
             var ix = Math.floor(x / 4);
             var iz = Math.floor(z / 4);
             for (var a = -rz; a <= rz; a++)
@@ -7297,30 +7550,215 @@
         var wege = [];
         var roads = Array.isArray(plan.roads) ? plan.roads : [];
         var k;
+        var lagen = roads.map(function (r) {
+            var b = (isFinite(r.w) ? r.w : 3) / 2;
+            return { hw: b, lage: gelegt(r, b) };
+        });
+        // DIE KREUZUNG (PFLICHT-OFFEN C): wo das Ende eines Wegs auf einem anderen liegt (an dessen Lauf oder Ende binnen seiner
+        // halben Breite samt Saum: Kreuzung, Einmündung, Knick), liegt EINE Fläche — jeder Weg-Punkt in ihrer Scheibe und der
+        // erste dahinter tragen ihre Höhe. Bis dahin trug jeder Weg dort sein eigenes Profil, und der Erdbau (die letzte Trasse
+        // gewinnt, ihr Ende ist rund) legte Stufen von 0,2–0,7 m quer durch die Fahrbahn, an denen jeder Wagen stand. Die Scheibe
+        // deckt die Überdeckung der Arme samt Saum (die Ecke zweier Streifen a, b unter dem Winkel θ liegt √(a² + b² +
+        // 2ab·|cos θ|) / sin θ fern; fast gerade fort: die halbe Breite), höchstens `kreuzungM`; Scheiben, die sich schneiden,
+        // tragen EINE Höhe — die des Platzes, wo eine ihn berührt, sonst die des ersten Wegs durch sie (sein Profil, gekappt im
+        // Gefälle: die Fläche liegt auf dem Weg, nie auf einem Grund, den kein Weg erreicht).
+        var amLauf = function (P, x, z) {
+            var best = { d: Infinity, s: 0, L: 0 };
+            var s0 = 0;
+            for (var j = 1; j < P.length; j++) {
+                var ax = P[j - 1].x;
+                var az = P[j - 1].z;
+                var dx = P[j].x - ax;
+                var dz = P[j].z - az;
+                var L2 = dx * dx + dz * dz;
+                var L = Math.sqrt(L2);
+                var t = L2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2)) : 0;
+                var d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+                if (d < best.d) best = { d: d, s: s0 + t * L, ux: L ? dx / L : 1, uz: L ? dz / L : 0 };
+                s0 += L;
+            }
+            best.L = s0;
+            return best;
+        };
+        // die Stellen: jedes Ende eines Wegs und jeder Schnitt zweier Läufe (zwei Wege, die einander mitten kreuzen; gesucht
+        // je Stück nur unter den Stücken späterer Wege in seinen Zellen)
+        var huelle = lagen.map(function (l) {
+            var P = l.lage.pts;
+            var h = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity };
+            for (var j = 0; j < P.length; j++) {
+                h.x0 = Math.min(h.x0, P[j].x - l.hw);
+                h.x1 = Math.max(h.x1, P[j].x + l.hw);
+                h.z0 = Math.min(h.z0, P[j].z - l.hw);
+                h.z1 = Math.max(h.z1, P[j].z + l.hw);
+            }
+            return h;
+        });
+        var stellen = [];
+        var stuecke = [];
+        var stueckNetz = new Map();
+        var stueckZellen = function (A, B, f) {
+            for (var ix = Math.floor(Math.min(A.x, B.x) / 8); ix <= Math.floor(Math.max(A.x, B.x) / 8); ix++)
+                for (var iz = Math.floor(Math.min(A.z, B.z) / 8); iz <= Math.floor(Math.max(A.z, B.z) / 8); iz++) f(profilZ(ix, iz));
+        };
+        lagen.forEach(function (l, r) {
+            var P = l.lage.pts;
+            if (P.length < 2) return;
+            stellen.push(P[0], P[P.length - 1]);
+            for (var j = 1; j < P.length; j++) {
+                var id = stuecke.length;
+                stuecke.push({ r: r, A: P[j - 1], B: P[j] });
+                stueckZellen(P[j - 1], P[j], function (key) {
+                    if (!stueckNetz.has(key)) stueckNetz.set(key, []);
+                    stueckNetz.get(key).push(id);
+                });
+            }
+        });
+        var stempel = new Int32Array(stuecke.length).fill(-1);
+        stuecke.forEach(function (sa, ia) {
+            stueckZellen(sa.A, sa.B, function (key) {
+                var lst = stueckNetz.get(key);
+                for (var li = 0; li < lst.length; li++) {
+                    var ib = lst[li];
+                    var sb = stuecke[ib];
+                    if (sb.r <= sa.r || stempel[ib] === ia) continue;
+                    stempel[ib] = ia;
+                    var rx = sa.B.x - sa.A.x;
+                    var rz = sa.B.z - sa.A.z;
+                    var qx = sb.B.x - sb.A.x;
+                    var qz = sb.B.z - sb.A.z;
+                    var den = rx * qz - rz * qx;
+                    if (Math.abs(den) < 1e-9) continue;
+                    var wx = sb.A.x - sa.A.x;
+                    var wz = sb.A.z - sa.A.z;
+                    var ta = (wx * qz - wz * qx) / den;
+                    var tb = (wx * rz - wz * rx) / den;
+                    if (ta >= 0 && ta <= 1 && tb >= 0 && tb <= 1) stellen.push({ x: sa.A.x + rx * ta, z: sa.A.z + rz * ta });
+                }
+            });
+        });
+        var kreuzungen = [];
+        for (var st = 0; st < stellen.length; st++) {
+            var E = stellen[st];
+            if (kreuzungen.some(function (q) { return Math.hypot(q.x - E.x, q.z - E.z) < 1; })) continue;
+            var arme = [];
+            for (var kb = 0; kb < roads.length; kb++) {
+                var PB = lagen[kb].lage.pts;
+                var hk = huelle[kb];
+                if (PB.length < 2 || E.x < hk.x0 - O.saumM || E.x > hk.x1 + O.saumM || E.z < hk.z0 - O.saumM || E.z > hk.z1 + O.saumM) continue;
+                var am = amLauf(PB, E.x, E.z);
+                if (am.d > lagen[kb].hw + O.saumM) continue;
+                var b0 = { ri: kb, hw: lagen[kb].hw, ux: am.ux, uz: am.uz };
+                if (am.s > 0.5) arme.push(Object.assign({}, b0, { ux: -am.ux, uz: -am.uz }));
+                if (am.s < am.L - 0.5) arme.push(b0);
+            }
+            if (!arme.some(function (q) { return q.ri !== arme[0].ri; })) continue;
+            var R = 0;
+            for (var i1 = 0; i1 < arme.length; i1++) {
+                R = Math.max(R, arme[i1].hw);
+                for (var i2 = i1 + 1; i2 < arme.length; i2++) {
+                    if (arme[i1].ri === arme[i2].ri) continue;
+                    var co = arme[i1].ux * arme[i2].ux + arme[i1].uz * arme[i2].uz;
+                    var si = Math.sqrt(Math.max(0, 1 - co * co));
+                    if (si < O.kreuzSinus) continue;
+                    var a = arme[i1].hw + O.saumM;
+                    var b = arme[i2].hw + O.saumM;
+                    R = Math.max(R, Math.sqrt(a * a + b * b + 2 * a * b * Math.abs(co)) / si);
+                }
+            }
+            kreuzungen.push({ x: E.x, z: E.z, R: Math.min(R, O.kreuzungM), g: kreuzungen.length });
+        }
+        // die Scheiben, die sich schneiden, sind EINE Fläche (die Gruppe `g`, ihre Höhe `kreuzungY[g]`)
+        var gruppe = function (g) {
+            while (kreuzungen[g].g !== g) g = kreuzungen[g].g;
+            return g;
+        };
+        for (var kc = 0; kc < kreuzungen.length; kc++)
+            for (var kd = kc + 1; kd < kreuzungen.length; kd++) {
+                var qc = kreuzungen[kc];
+                var qd = kreuzungen[kd];
+                if (Math.hypot(qc.x - qd.x, qc.z - qd.z) < qc.R + qd.R) kreuzungen[gruppe(kd)].g = gruppe(kc);
+            }
+        var kreuzungY = {};
+        kreuzungen.forEach(function (q) {
+            q.g = gruppe(q.g);
+            if (imPlatz(q.x, q.z, q.R)) kreuzungY[q.g] = platzY;
+        });
+        // die Kreuzung eines Weg-Punkts: die nächste Scheibe, in der er liegt — oder sein Nachbar (der erste Punkt dahinter
+        // trägt ihre Höhe: die Fläche reicht bis an den Rand der Scheibe); -1 außerhalb
+        var kreuzNetz = new Map();
+        kreuzungen.forEach(function (q, j) {
+            for (var ix = Math.floor((q.x - q.R) / O.kreuzungM); ix <= Math.floor((q.x + q.R) / O.kreuzungM); ix++)
+                for (var iz = Math.floor((q.z - q.R) / O.kreuzungM); iz <= Math.floor((q.z + q.R) / O.kreuzungM); iz++) {
+                    var key = profilZ(ix, iz);
+                    if (!kreuzNetz.has(key)) kreuzNetz.set(key, []);
+                    kreuzNetz.get(key).push(j);
+                }
+        });
+        var inKreuzung = function (x, z) {
+            var best = -1;
+            var bd = Infinity;
+            var lst = kreuzNetz.get(profilZ(Math.floor(x / O.kreuzungM), Math.floor(z / O.kreuzungM))) || [];
+            for (var li = 0; li < lst.length; li++) {
+                var j = lst[li];
+                var d = Math.hypot(x - kreuzungen[j].x, z - kreuzungen[j].z);
+                if (d <= kreuzungen[j].R && d < bd) {
+                    bd = d;
+                    best = j;
+                }
+            }
+            return best;
+        };
         for (var ri = 0; ri < roads.length; ri++) {
             var rd = roads[ri];
-            var hw = (isFinite(rd.w) ? rd.w : 3) / 2;
-            var lage = gelegt(rd, hw);
+            var hw = lagen[ri].hw;
+            var lage = lagen[ri].lage;
             var pts = lage.pts;
             var n = pts.length;
             var sw = [];
             var roh = [];
             var pin = [];
+            var offen = []; // [Punkt, Kreuzung] der Kreuzungen ohne Höhe: dieser Weg gibt sie ihnen
             for (k = 0; k < n; k++) {
                 sw.push(k ? sw[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z) : 0);
                 roh.push(H(pts[k].x, pts[k].z));
                 pin.push(null);
-                if (imPlatz(pts[k].x, pts[k].z)) {
+                if (imPlatz(pts[k].x, pts[k].z, hw)) {
                     pin[k] = platzY;
                     continue;
                 }
+                var kz = inKreuzung(pts[k].x, pts[k].z);
+                if (kz < 0 && k > 0) kz = inKreuzung(pts[k - 1].x, pts[k - 1].z);
+                if (kz < 0 && k < n - 1) kz = inKreuzung(pts[k + 1].x, pts[k + 1].z);
+                if (kz >= 0) {
+                    if (kreuzungY[kreuzungen[kz].g] !== undefined) pin[k] = kreuzungY[kreuzungen[kz].g];
+                    else offen.push([k, kz]);
+                    continue;
+                }
+                // WO SICH DIE FLÄCHEN ZWEIER WEGE DECKEN (der Abstand seines Punkts zum Lauf eines früheren Wegs unter beiden
+                // halben Breiten samt Säumen, mindestens 1,5 m), trägt der Punkt dessen Höhe — der Lauf zwischen seinen Punkten,
+                // nie nur ein Punkt (zwei Wege, die 2–3 m nebeneinander laufen, trugen sonst je ihre Höhe, und der spätere legte
+                // Stufen von 0,6 m längs der Fahrbahn)
                 var best = Infinity;
-                var nah = profilNah(pts[k].x, pts[k].z);
+                var nah = profilNah(pts[k].x, pts[k].z, profilR + hw + 2 * O.saumM + profilL / 2);
                 for (var qi = 0; qi < nah.length; qi++) {
                     var q = nah[qi];
-                    var d = Math.hypot(pts[k].x - profil[q][0], pts[k].z - profil[q][1]);
-                    if (d <= Math.max(1.5, profil[q][3]) && d < best) {
-                        best = d;
+                    for (var qs = -1; qs <= 0; qs++) {
+                        var A = profil[q + qs];
+                        var B = profil[q + qs + 1];
+                        if (!A || !B || A[4] !== B[4]) continue;
+                        var bx = B[0] - A[0];
+                        var bz = B[1] - A[1];
+                        var bl = bx * bx + bz * bz;
+                        var bt = bl > 0 ? Math.max(0, Math.min(1, ((pts[k].x - A[0]) * bx + (pts[k].z - A[1]) * bz) / bl)) : 0;
+                        var d = Math.hypot(pts[k].x - A[0] - bx * bt, pts[k].z - A[1] - bz * bt);
+                        if (d <= Math.max(1.5, A[3] + hw + 2 * O.saumM) && d < best) {
+                            best = d;
+                            pin[k] = r6(A[2] + (B[2] - A[2]) * bt);
+                        }
+                    }
+                    var d0 = Math.hypot(pts[k].x - profil[q][0], pts[k].z - profil[q][1]);
+                    if (d0 <= Math.max(1.5, profil[q][3]) && d0 < best) {
+                        best = d0;
                         pin[k] = profil[q][2];
                     }
                 }
@@ -7350,23 +7788,76 @@
                 ys.push(cnt ? sum / cnt : null);
             }
             // das Gefälle gekappt gegen den letzten Punkt MIT Höhe (eine Spanne ohne Höhe trägt die Brücke, nie ein NaN)
-            var pv = -1;
-            for (k = 0; k < n; k++) {
-                if (ys[k] === null) continue;
-                if (pin[k] === null && pv >= 0) {
-                    var g = O.gefaelle * (sw[k] - sw[pv]);
-                    ys[k] = Math.min(ys[pv] + g, Math.max(ys[pv] - g, ys[k]));
+            var kappen = function () {
+                var pv = -1;
+                for (k = 0; k < n; k++) {
+                    if (ys[k] === null) continue;
+                    if (pin[k] === null && pv >= 0) {
+                        var g = O.gefaelle * (sw[k] - sw[pv]);
+                        ys[k] = Math.min(ys[pv] + g, Math.max(ys[pv] - g, ys[k]));
+                    }
+                    pv = k;
                 }
-                pv = k;
+                pv = -1;
+                for (k = n - 1; k >= 0; k--) {
+                    if (ys[k] === null) continue;
+                    if (pin[k] === null && pv >= 0) {
+                        var g2 = O.gefaelle * (sw[pv] - sw[k]);
+                        ys[k] = Math.min(ys[pv] + g2, Math.max(ys[pv] - g2, ys[k]));
+                    }
+                    pv = k;
+                }
+            };
+            kappen();
+            // die Kreuzungen ohne Höhe (in der Folge des Wegs) tragen die dieses Wegs an seinem Punkt nächst ihrer Mitte —
+            // gekappt in das Gefälle zu den festen Punkten davor und danach (die Fläche liegt, wo der Weg sie erreicht: bis
+            // dahin hob die Scheibe am Ende eines Hangs den Weg vor ihr, und an der Platte des Platzes riss eine Stufe von 1,4 m);
+            // dann trägt der Weg sie über die ganze Scheibe, gekappt wie jede Höhe
+            if (offen.length) {
+                var scheiben = [];
+                offen.forEach(function (o) {
+                    var q = kreuzungen[o[1]];
+                    var d = Math.hypot(pts[o[0]].x - q.x, pts[o[0]].z - q.z);
+                    var sch = scheiben.filter(function (c) {
+                        return c.g === q.g;
+                    })[0];
+                    if (!sch) scheiben.push((sch = { g: q.g, k: [], d: Infinity, y: null }));
+                    sch.k.push(o[0]);
+                    if (ys[o[0]] !== null && d < sch.d) [sch.d, sch.y] = [d, ys[o[0]]];
+                });
+                scheiben.forEach(function (sch) {
+                    if (sch.y === null) return;
+                    var a = Math.min.apply(null, sch.k);
+                    var b = Math.max.apply(null, sch.k);
+                    var lo = -Infinity;
+                    var hi = Infinity;
+                    for (var ip = a - 1; ip >= 0; ip--)
+                        if (pin[ip] !== null) {
+                            lo = pin[ip] - O.gefaelle * (sw[a] - sw[ip]);
+                            hi = pin[ip] + O.gefaelle * (sw[a] - sw[ip]);
+                            break;
+                        }
+                    for (var iq = b + 1; iq < n; iq++)
+                        if (pin[iq] !== null) {
+                            lo = Math.max(lo, pin[iq] - O.gefaelle * (sw[iq] - sw[b]));
+                            hi = Math.min(hi, pin[iq] + O.gefaelle * (sw[iq] - sw[b]));
+                            break;
+                        }
+                    kreuzungY[sch.g] = r6(lo <= hi ? Math.min(hi, Math.max(lo, sch.y)) : (lo + hi) / 2);
+                    sch.k.forEach(function (kk) {
+                        pin[kk] = ys[kk] = kreuzungY[sch.g];
+                    });
+                });
+                kappen();
             }
-            pv = -1;
-            for (k = n - 1; k >= 0; k--) {
-                if (ys[k] === null) continue;
-                if (pin[k] === null && pv >= 0) {
-                    var g2 = O.gefaelle * (sw[pv] - sw[k]);
-                    ys[k] = Math.min(ys[pv] + g2, Math.max(ys[pv] - g2, ys[k]));
-                }
-                pv = k;
+            // zwischen zwei festen Punkten, die das Gefälle nicht verbindet (zwei Flächen, deren Höhe andere Wege setzten),
+            // steigt der Weg gleichmäßig — nie eine Stufe am Rand der einen
+            for (var p0 = -1, p1 = 0; p1 < n; p1++) {
+                if (pin[p1] === null) continue;
+                if (p0 >= 0 && p1 > p0 + 1 && Math.abs(pin[p1] - pin[p0]) > O.gefaelle * (sw[p1] - sw[p0]))
+                    for (var pm = p0 + 1; pm < p1; pm++)
+                        if (ys[pm] !== null) ys[pm] = pin[p0] + ((pin[p1] - pin[p0]) * (sw[pm] - sw[p0])) / (sw[p1] - sw[p0]);
+                p0 = p1;
             }
             // DAS BRÜCKEN-ETIKETT: wo der Weg Welt-Wasser kreuzt (ctx.wasserAt), trägt er eine Brücke — ihr Deck spannt gerade
             // von Widerlager zu Widerlager (den trockenen Punkten davor und danach), unter ihr legt der Erdbau keine Trasse, und
@@ -7396,7 +7887,7 @@
             }
             for (k = 0; k < n; k++) {
                 ys[k] = r6(ys[k]);
-                profilSetzen([pts[k].x, pts[k].z, ys[k], hw]);
+                profilSetzen([pts[k].x, pts[k].z, ys[k], hw, ri]);
             }
             // je Strecke ZWEI Trassen derselben Höhe: der Saum (Weg + saumM je Seite) liegt unter den Grundrissen, der Weg selbst
             // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand; eine Strecke an der Brücke trägt keine
@@ -7644,6 +8135,12 @@
                 return weg;
             });
         if (festGetroffen.length) v2.fest = festGetroffen;
+        // DER VERKEHR DER STADT (`verkehrsBoden`): das Netz der Wagen und seine Wenden als Boden des Plans — zuletzt im Erdbau
+        if (verkehrVon(v2).n) {
+            var vb = verkehrsBoden(v2, ox, oz, ctx, auf);
+            v2.verkehr = vb.netz;
+            v2.erdbau = v2.erdbau.concat(vb.erdbau);
+        }
         return v2;
     }
 
@@ -7816,6 +8313,9 @@
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
         wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen
+        VERKEHR_GESETZ: VERKEHR_GESETZ, // PFLICHT-OFFEN C — der Verkehr der Stadt (Wagen je Häuser, halbe Breite, der Platz)
+        verkehrVon: verkehrVon, // PFLICHT-OFFEN C — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
+        verkehrsNetz: verkehrsNetz, // PFLICHT-OFFEN C — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
         planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
         BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
         nasseLaeufe: nasseLaeufe, // fahrzeug.K2 — die nassen Läufe eines Wegs und ihre Widerlager (Gasse und Feldweg)

@@ -1,5 +1,6 @@
 // diag-settlement.cjs (gate:settlement) — Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
-// Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · N: der Export
+// Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
+// (`kreuzungsUrteil`) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
@@ -760,6 +761,87 @@ function feldWurfImOrt(anker, defekt) {
     return res;
 }
 
+// ===== TEIL K (PFLICHT-OFFEN C): DIE KREUZUNG IST EINE FLÄCHE — je Fixture (T · X · Knick · Fort · Schräg) über einem Hang
+// von 6, 12 und 20 % der Plan v2 (fachwerk `ortPlan`), sein Erdbau wie die Welt ihn liest (gelaende-core `erdbauY`, der Leser
+// jeder Höhe: Körper, Rad, die Stufen-Probe des Verkehrs `_verkehrAnlegen`): auf jeder Fahrbahn (den Kernen) springt der Boden
+// je 0,5 m höchstens um das Gefälle des Gesetzes (`ORT_GESETZ.gefaelle` 12 % → 0,06 m). Bis K hatte jeder Weg an der
+// Kreuzung sein eigenes Profil, die letzte Trasse gewann: 0,15–0,67 m je 0,5 m (T 0,61 · X 0,67 · Knick 0,36 · Fort 0,36),
+// in der Metropole 60 Stellen, an denen jeder Wagen stand. `stoer` (Selbsttest) hebt die Fahrbahn des zweiten Wegs um 0,3 m.
+function kreuzungsUrteil(FC, Gb, o = {}) {
+    const lauf = (x0, z0, dx, dz, n) =>
+        Array.from({ length: n }, (_, i) => ({ x: x0 + dx * i * 3, z: z0 + dz * i * 3 }));
+    const faelle = {
+        T: [
+            { pts: lauf(-45, 0, 1, 0, 31), w: 5 },
+            { pts: lauf(0, 0, 0, 1, 15), w: 3.9 },
+        ],
+        X: [
+            { pts: lauf(-45, 0, 1, 0, 31), w: 5 },
+            { pts: lauf(0, 0, 0, 1, 15), w: 5 },
+            { pts: lauf(0, 0, 0, -1, 15), w: 5 },
+        ],
+        Knick: [
+            { pts: lauf(-45, 0, 1, 0, 16), w: 5 },
+            { pts: lauf(0, 0, 0.6, 0.8, 15), w: 5 },
+        ],
+        Fort: [
+            { pts: lauf(-45, 0, 1, 0, 16), w: 5 },
+            { pts: lauf(0, 0, 1, 0, 15), w: 5 },
+        ],
+        Schraeg: [
+            { pts: lauf(-45, 0, 1, 0, 31), w: 5 },
+            { pts: lauf(0, 0, 0.707, 0.707, 15), w: 3.9 },
+        ],
+    };
+    const amKern = (roads, x, z) =>
+        roads.some((r) =>
+            r.pts.some((p, i) => {
+                if (!i) return false;
+                const a = r.pts[i - 1];
+                const [dx, dz] = [p.x - a.x, p.z - a.z];
+                const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz)));
+                return Math.hypot(x - a.x - dx * t, z - a.z - dz * t) <= r.w / 2;
+            })
+        );
+    const aus = { max: 0, wo: "", je: [] };
+    for (const [name, roads] of Object.entries(faelle))
+        for (const hang of [0.06, 0.12, 0.2]) {
+            const ctx = {
+                hoeheAt: (x, z) => x * hang + z * hang * 0.5 + Math.sin(x * 0.2) * 0.5,
+                flaeche: (sp) => {
+                    const E = Gb.erdbauNormal(sp);
+                    return (x, z) => Gb.erdbauFlaeche(E, x, z);
+                },
+            };
+            const v2 = FC.ortPlan({ slots: [], roads, laternen: [] }, { x: 0, z: 0 }, ctx); // BÜHNE: reines ortPlan-Fixture am Hang
+            const sp = o.stoer
+                ? v2.erdbau.map((q) =>
+                      q.art === "trasse" && q.weg === 3 ? { ...q, y0: q.y0 + 0.3, y1: q.y1 + 0.3 } : q
+                  )
+                : v2.erdbau;
+            const E = Gb.erdbauNormal(sp);
+            let max = 0;
+            let wo = "";
+            for (let x = -44; x < 44; x += 0.5)
+                for (let z = -44; z < 44; z += 0.5) {
+                    if (!amKern(roads, x, z)) continue;
+                    const a = Gb.erdbauY(E, x, z, NaN);
+                    for (const [u, v] of [
+                        [0.5, 0],
+                        [0, 0.5],
+                    ]) {
+                        if (!amKern(roads, x + u, z + v)) continue;
+                        const b = Gb.erdbauY(E, x + u, z + v, NaN);
+                        if (a === a && b === b && Math.abs(b - a) > max) [max, wo] = [Math.abs(b - a), `${x}/${z}`];
+                    }
+                }
+            aus.je.push(`${name} ${Math.round(hang * 100)} % ${max.toFixed(3)}`);
+            if (max > aus.max) [aus.max, aus.wo] = [max, `${name} am Hang ${Math.round(hang * 100)} % bei ${wo}`];
+        }
+    aus.gruen = aus.max <= 0.06 + 1e-6;
+    return aus;
+}
+
 // Die dp-Fixtures der Goldens (klein = schnell; ein Dorf + ein Weiler).
 const FIXTURES = [
     { seed: 7, nH: 12 },
@@ -951,6 +1033,16 @@ hauptLauf(async () => {
                 JSON.stringify({ br, freiN, yMit, yOhne, deck: mit.roads[0].ys[10] })
             );
         }
+        // V-K (PFLICHT-OFFEN C): die Kreuzung — das Gesetz GRÜN, eine um 0,3 m gehobene Fahrbahn des zweiten Wegs ROT beim Namen
+        {
+            require(path.join(root, "gelaende-core.js"));
+            const [k0, k1] = [{}, { stoer: 1 }].map((o) => kreuzungsUrteil(FC, globalThis.__gelaendeCore, o));
+            check(
+                "Selbst-Test K KREUZUNG: das Gesetz GRÜN · die gehobene Fahrbahn ROT beim Namen",
+                k0.gruen && !k1.gruen && /bei -?\d/.test(k1.wo),
+                `Gesetz ${k0.max.toFixed(3)} · Mutante ${k1.max.toFixed(3)} (${k1.wo})`
+            );
+        }
         // V-Z (siedlung.K2): der Zensus am Rang-Gesetz mit festem Export (das Fenster misst die Größen allein) — das Gesetz
         // GRÜN; ROT beim Namen ZIPF: gleich große Siedlungen, jede Stufe so groß wie die erste, ein Export ohne Graph, einer
         // ohne Mauer (Z1: keine Stadt), kein Rang
@@ -1005,6 +1097,16 @@ hauptLauf(async () => {
         Z.zipf.gruen
     );
     if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
+
+    console.log("=== TEIL K: DIE KREUZUNG IST EINE FLÄCHE (PFLICHT-OFFEN C) ===");
+    require(path.join(root, "gelaende-core.js"));
+    const K = kreuzungsUrteil(FC, globalThis.__gelaendeCore);
+    console.log("KREUZUNG " + JSON.stringify({ max: +K.max.toFixed(3), wo: K.wo, je: K.je }));
+    check(
+        `K1 KREUZUNG: der größte Sprung der Fahrbahn je 0,5 m ${K.max.toFixed(3)} m (Soll ≤ 0,06, das Gefälle) — ${K.wo}`,
+        K.gruen
+    );
+    if (process.argv.includes("--nur-k")) process.exit(errs.length ? 1 : 0);
 
     console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
     const plans = {};
