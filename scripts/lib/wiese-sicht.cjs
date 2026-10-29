@@ -79,7 +79,7 @@ function installWieseSicht() {
     // DAS SOLL JE SENKE: wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
     // Büschels im Frustum der Linsen-Kamera (die Sicht-Kugel des Büschels umschließt ihren Fuß: jeder solche Büschel
     // trifft), das Rand-Band dünnt wie im Satz (Würfel-Ordnung gegen den Anteil), die Stufe nur, wo sie ohne Hysterese
-    // feststeht (≤ stufe1 sicher L1, > stufe1 + stufe1Rand sicher L2). Ein dünner Ring (der Waldboden unter der
+    // feststeht (≤ stufe1 sicher L1, > stufe1 + stufe1Rand sicher L2), die Narbe der Saison dünnt wie im Satz. Ein dünner Ring (der Waldboden unter der
     // Kronen-Karte) trägt Senken, deren Stufe im Blick keinen Büschel hat — leer ist dort richtig; leer bei Soll > 0 nie.
     window.__wieseErwartet = (r, kam, fr) => {
         const nw = r.state.nahWiese;
@@ -91,10 +91,12 @@ function installWieseSicht() {
         const p = new window.THREE.Vector3();
         const ax = kam.position.x,
             az = kam.position.z;
+        // die Narbe der Saison dünnt wie das Rand-Band (`uWiesenDichte`, SAISON_GESETZ `wd`: der Satz liest dieselbe Uniform)
+        const dichte = r._ensureSeasonUniforms().uWiesenDichte.value;
         for (const k of nw.kacheln.values())
             for (const b of k.bueschel) {
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                if (b.ordnung >= Math.max(0, Math.min(dichte, (NW.radius - d) / NW.rand + 0.5))) continue;
                 const stufe = d <= NW.stufe1 ? 1 : d > NW.stufe1 + NW.stufe1Rand ? 2 : 0;
                 if (!stufe || !fr.containsPoint(p.set(b.x, b.y, b.z))) continue;
                 const key = `${b.vorlage}:L${stufe}`;
