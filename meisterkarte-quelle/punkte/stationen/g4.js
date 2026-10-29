@@ -505,15 +505,52 @@ const alle = [
         ],
         quelle: "1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte",
     },
+    // die Art-Zeile und der Kern-Wechsel (Stufe 2, w3u-platte): der Erst-Boot füllt ein frisches Profil, der Zweit-Boot nimmt
+    // Blatt-Atlas, Dorf-Export und Karten je ganz von der Platte (die Liefer-Marke `_foundryLiefer` je Art: Bau-Ereignisse im
+    // Werk UND im Haupt-Faden — die Karte backt dort, ein Blatt-Atlas, den der Haupt-Faden malt, zählt neu), der dritte Boot
+    // serviert fachwerk-core mit einem Kommentar mehr (sein Gesetz-SHA springt): nur die Leser von fachwerk bauen neu, jeder
+    // fremde Neubau dessen, was die Platte trug, und jeder Leser, der noch von ihr kommt, ist ROT beim Namen (`wechselUrteil`
+    // in diag-boot-stage, die Schale `_foundrySchale` stempelt jede Lieferung mit dem Gesetz-SHA der Kerne, die sie liest).
     {
         kriterium: "pipeline.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Blatt-Atlas, Dorf-Export und Karten laufen jedes Boot live (nie auf der Platte), und kein Werkzeug zählt fremde Neubauten " +
-            "nach einem geänderten Kern-SHA",
-        quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %",
+        befehl: [
+            "bash",
+            "-c",
+            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; S() { node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" "$@"; }; S > /dev/null; S; S --kern-wechsel fachwerk; E=$?; rm -rf "$P"; exit $E`,
+        ],
+        env: { BOOT_STAGE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: false,
+        minuten: 9,
+        urteil: (j, lauf) => {
+            const out = String(lauf.stdout || "");
+            const art = /^\s*(?:✅|❌) LIEFERUNG je Art: (.+)$/m.exec(out);
+            const kw = /^\s*(?:✅|❌) KERN-WECHSEL fachwerk: (\d+) Leser neu · fremd (\d+)(.*) · alt (\d+)(.*)$/m.exec(out);
+            if (!art || !kw) return { gruen: false, zahl: "keine Art-Zeile oder kein Kern-Wechsel (Exit " + lauf.exit + ")" };
+            const je = {};
+            for (const m of art[1].matchAll(/([\w-]+) (\d+)\/(\d+) (\d+) ms/g)) je[m[1]] = { platte: +m[2], n: +m[3] };
+            const ganz = ["blatt-atlas", "dorf-export", "karte"].every((k) => je[k] && je[k].n > 0 && je[k].platte === je[k].n);
+            const [leser, fremd, alt] = [+kw[1], +kw[2], +kw[4]];
+            return {
+                gruen: ganz && leser > 0 && fremd === 0 && alt === 0,
+                zahl:
+                    "Zweit-Boot von der Platte " + art[1] + " · Kern-Wechsel fachwerk: " + leser + " Leser neu, fremd " + fremd +
+                    kw[3] + ", alt " + alt + kw[5],
+            };
+        },
+        pfad: [
+            "stamm/studio-bruecke.js",
+            "stamm/stoff-instanz.js",
+            "stamm/vegetation-baum.js",
+            "stamm/siedlung-ort.js",
+            "foundry-bruecke.js",
+            "cores.manifest.json",
+            "scripts/diag-boot-stage.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
     },
 
     // ───────────────────────────── KI ─────────────────────────────
