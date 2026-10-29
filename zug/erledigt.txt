@@ -68,3 +68,4 @@ takt19-abab nicht-langsamer abab b3f9ae95 gegen 9e92be45: w-ego 4+4 nicht-langsa
 spike-pixel-gtx Exit1 station spike-pixel-gtx.sh an f653389d
 z67-bisekt LANGSAMER abab 29a5f696 gegen c5fb8cbc: stadt 4+4 LANGSAMER
 takt21a-gtx gemessen punkte 98ef98bb gtx: 21 grün / 22 rot
+takt21b-gtx gemessen punkte 98ef98bb gtx: 46 grün / 40 rot
