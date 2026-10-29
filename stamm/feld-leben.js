@@ -18,7 +18,8 @@ class AnazhRealm_feld_leben {
         for (const a of je || []) if (a.tat === "brand") w = Math.max(w, this._sukzession(a).asche);
         const v = Math.round(w * 255);
         let neu = false;
-        for (const stufe of wk.stufen) if (stufe.zentriert && this._ascheZelle(stufe, cx * cs, cz * cs, v, true)) neu = true;
+        for (const stufe of wk.stufen)
+            if (stufe.zentriert && this._ascheZelle(stufe, cx * cs, cz * cs, v, true)) neu = true;
         if (neu) this._nahRingNeuIn(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs);
         return neu;
     }
@@ -42,7 +43,7 @@ class AnazhRealm_feld_leben {
         for (let j = j0; j <= j1; j++)
             for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
                 const n = setzen ? v : Math.max(A[k], v);
-                if (n !== A[k]) (A[k] = n), (neu = true);
+                if (n !== A[k]) ((A[k] = n), (neu = true));
             }
         if (neu) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
         return neu;
@@ -2050,7 +2051,8 @@ class AnazhRealm_feld_leben {
         const n = bf.get(cx + "," + cz);
         if (n && n.t0 !== null) return null;
         // ein neuer Brand misst sein Bett neu, und nichts eines alten wartet
-        if (!bf.size) [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
+        if (!bf.size)
+            [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
         return this._brandZuenden(cx, cz, st.spielZeit, x, z);
     }
 

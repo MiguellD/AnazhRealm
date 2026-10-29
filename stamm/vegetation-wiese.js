@@ -1275,7 +1275,8 @@ class AnazhRealm_vegetation_wiese {
     // `feuchte` (optional): die Feuchte des Orts, wo der Rufer sie schon trägt (die Asche: das Bett des Brands).
     _wuchsAt(x, z, feuchte) {
         const W = AnazhRealm.WUCHS;
-        const wasser = W.wasserBasis + (1 - W.wasserBasis) * (Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z));
+        const wasser =
+            W.wasserBasis + (1 - W.wasserBasis) * (Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z));
         const N = this._naehrstoffAt(x, z);
         return ((wasser * N * (1 + W.naehrK)) / (N + W.naehrK)) * this._bodenLichtFeld(x, z, x, z)(x, z);
     }
@@ -2198,7 +2199,11 @@ AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75, naehrK: 0.2, naehrMax: 1.6
 // DIE SUKZESSION NACH DEM BRAND (stoffe.K5#2, `_sukzession`): die Rampen im Rest der Narbe — die Asche liegt bis 0,08 und ist
 // bei 0,3 nachgegrünt (das Gras der Nah-Wiese), der Busch der Nah-Streu wächst von 0,3 bis 0,6; gezählt in `stufen` Schritten
 // je Rampe.
-AnazhRealm.SUKZESSION = Object.freeze({ asche: Object.freeze([0.08, 0.3]), busch: Object.freeze([0.3, 0.6]), stufen: 8 });
+AnazhRealm.SUKZESSION = Object.freeze({
+    asche: Object.freeze([0.08, 0.3]),
+    busch: Object.freeze([0.3, 0.6]),
+    stufen: 8,
+});
 
 // Material-Strata: ab dieser Tiefe (m) unter der Oberfläche dominiert stein, auch wenn eine andere
 // Achse gewänne. Wirkt NUR bei Aufrufern mit y-Argument (Aufrufe ohne y unverändert).

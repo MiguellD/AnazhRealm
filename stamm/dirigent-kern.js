@@ -1711,7 +1711,15 @@ class AnazhRealm {
         this._brandGlutUm(x, z, R, (b) => {
             const o = b.ort || this._brandOrt(b);
             if ((o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) > R * R) return;
-            nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L: Lf, masse: AnazhRealm.BRAND.licht * b.glut, phase: o.phase });
+            nimm(b, {
+                quelle: "brand",
+                x: o.x,
+                y: o.y,
+                z: o.z,
+                L: Lf,
+                masse: AnazhRealm.BRAND.licht * b.glut,
+                phase: o.phase,
+            });
         });
         // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
         for (const a of this._tatIndex().lava) {
