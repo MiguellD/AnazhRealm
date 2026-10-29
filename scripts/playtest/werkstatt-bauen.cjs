@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
 // Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
-async function checkBandV1774UseByRole(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1774UseByRole({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const blu = r.state.blueprints;
@@ -206,10 +204,8 @@ async function checkBandV1774UseByRole(ctx) {
 // die WERKSTATT als Präzisions-Quelle: ihre Präzision emergiert aus der
 // Substanz (dichte+harte Esse → feiner), und applyOpToPart NAH einer passenden Station hebt den opChain-
 // Cap über den Werkzeug-Cap (bessere Esse → höherer Cap, kein Crafting-Zirkel). Additiv (max), kein Regress.
-async function checkBandV1776WorkshopPrecision(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1776WorkshopPrecision({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh;
@@ -222,7 +218,7 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         r.state.blueprints["wp_soft"] = {
             name: "wp_soft",
             label: "soft",
-            parts: [{ shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            parts: [__teil("box", "leder", 0, 0, 0, 1, 1, 1)],
         };
         const softP = r._workshopStationPrecision(r.state.blueprints["wp_soft"]);
         out.esseP = esseP;
@@ -243,7 +239,7 @@ async function checkBandV1776WorkshopPrecision(ctx) {
         r.state.blueprints["wp_work"] = {
             name: "wp_work",
             label: "work",
-            parts: [{ shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            parts: [__teil("box", "eisen", 0, 0, 0, 1, 1, 1)],
         };
         if (!Array.isArray(p.tools)) p.tools = [];
         if (!p.tools.includes("schmiede-hammer")) p.tools.push("schmiede-hammer");
@@ -281,10 +277,8 @@ async function checkBandV1776WorkshopPrecision(ctx) {
 // die STEIGERUNG sichtbar + craftbar: eine Meister-Esse (Eisen) ist die bessere Esse (höherer
 // Cap aus dichterer/härterer Substanz), und der Werkstatt-Readout zeigt die Präzision → der Spieler SIEHT
 // „bessere Esse → höherer Cap" + lernt das Prinzip für alle Systeme (besseres Material → besseres Werk).
-async function checkBandV1777SteigerungVisible(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1777SteigerungVisible({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const esse = r.state.blueprints["esse"];
         const meister = r.state.blueprints["esse_meister"];
@@ -332,10 +326,8 @@ async function checkBandV1777SteigerungVisible(ctx) {
 
 // die WERTE eines Werks folgen Material × Form (fähigkeiten steigen+sinken), sichtbar im Readout; die Werkstatt erscheint
 // im Werkzeuge-Feld sobald platziert+nah; das Undo/Redo unter den Parts.
-async function checkBandV1789WorkshopReadout(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1789WorkshopReadout({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const prevMode = r.getGameMode();
         const blu = r.state.blueprints;
@@ -452,10 +444,8 @@ async function checkBandV1789WorkshopReadout(ctx) {
 // (2) Material dramatisch (Eisen-Klinge ≥ 2× Holz), (3) der Equip-Fold ist EINE Quelle
 // (`_foldEquippedStatTags`, Spieler+Kreatur), size-neutral, (4) Rolle scharf (Pickel→Werkzeug,
 // Schwert→Waffe); + Drehbank-Proximity + CSS.
-async function checkBandV1790Recalibration(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1790Recalibration({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const prevMode = r.getGameMode();
         const box = (m, s, p) => ({ shape: "box", material: m, size: s, position: p || { x: 0, y: 0, z: 0 } });
@@ -597,15 +587,13 @@ async function checkBandV1790Recalibration(ctx) {
     );
 }
 
-async function checkBandWelle6Keybindings(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Maus-Aktionen (abbauen + platzieren) ###
     // LMB abbauen / RMB platzieren über Keybinding. Architektur-Hit → removeArchitecture; kein Hit →
     // Voxel-carve. Stamina-Gate via getGameMode wie applyOpToPart.
     const wave6a6Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Statische Konstante
@@ -701,7 +689,6 @@ async function checkBandWelle6Keybindings(ctx) {
     // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit einem Sinus-Ping; stille
     // Strukturen bleiben stumm.
     const wave6a6V2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Threshold-Konstante existiert
@@ -787,7 +774,6 @@ async function checkBandWelle6Keybindings(ctx) {
     // _updateBuildModeHud baut den Text aus state.keybindings über _formatBindingCode; setKeybinding
     // + resetKeybindings triggern ein HUD-Refresh (nie veraltete Beschriftung).
     const wave6c3V2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         r.resetKeybindings();
@@ -838,7 +824,6 @@ async function checkBandWelle6Keybindings(ctx) {
     // Sechs Aktionen rebindable: break, place, confirmBuild, inventory, cancelBuild, jump.
     // Konflikt-Auflösung über Swap; persistiert in localStorage.
     const wave6c3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Statische Konstanten
@@ -985,10 +970,8 @@ async function checkBandWelle6Keybindings(ctx) {
 // Architektur-Instancing (HISM), reine Mathematik: die Per-Leaf-World-Matrix `entryWorldMatrix ×
 // leaf.localMatrix` MUSS bit-gleich zum klassischen Group-Child-`matrixWorld` sein, sonst rendert
 // das Instancing verschoben. Dazu: water_wave nicht instancbar; Leaf-Farbe gleich (Mirror-Drift).
-async function checkBandWellePerfCArchInstancing(ctx) {
-    const { page, check } = ctx;
+async function checkBandWellePerfCArchInstancing({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
@@ -1190,15 +1173,13 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
-async function checkBandWelle6XAudit(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Audit-Fixes ###
     // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
     // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
     const wave6x1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
@@ -1323,7 +1304,6 @@ async function checkBandWelle6XAudit(ctx) {
     // B1 Logbuch-Toggle (default versteckt) · B2 keine Welt-Bauwerke-Buttons im world-drawer ·
     // B4 Scrollrad zyklt durch die Hotbar-Slots.
     const wave6x2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // B1 — Logbuch-Toggle (Section sichtbar, #log toggelt)
@@ -1403,7 +1383,6 @@ async function checkBandWelle6XAudit(ctx) {
     // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
     // C3 Soul-bound Sprung-Steilheits-Toleranz
     const wave6x3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- C1: at_player_forward DSL-Resolver
@@ -1566,7 +1545,6 @@ async function checkBandWelle6XAudit(ctx) {
     // ### Identity ###
     // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
     const wave6x45Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- F1: state-Felder existieren mit Defaults
@@ -1626,18 +1604,16 @@ async function checkBandWelle6XAudit(ctx) {
 // M1 VERBINDUNGS-WERKSTATT: der Dialog ist ZWEI Gruppen Glyph-KACHELN; der SUBSTANZ-VORSCHLAG =
 // argmax über die bestehende Stärke-Wahrheit (kein zweites Mapping); ANKER-Kacheln starten den
 // FACE-SNAP-Pick (3×3 je Fläche), der Punkt reist als Substanz.
-async function checkBandM1VerbindungsWerkstatt(ctx) {
-    const { page, check } = ctx;
+async function checkBandM1VerbindungsWerkstatt({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const mk = (mat) => ({
             name: "__m1band",
             builtIn: false,
             parts: [
-                { shape: "box", material: mat, position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                { shape: "box", material: mat, position: { x: 1.0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("box", mat, 0, 0.5, 0, 1, 1, 1),
+                __teil("box", mat, 1.0, 0.5, 0, 1, 1, 1),
             ],
         });
         try {
@@ -1747,10 +1723,8 @@ async function checkBandM1VerbindungsWerkstatt(ctx) {
 // NUTZER-BLICK (diag-nachbau): (1) der Verbindungs-Dialog öffnet IMMER (✂ Lösen ist eine Kachel,
 // ein Klick ERSETZT), sonst sind Anker verbundener Parts unerreichbar; (2) consumable frisst keinen
 // Holz-Kasten (spread-Gegen-Achse); (3) das Rezeptbuch kennt die Fahrzeug-Gruppe.
-async function checkBandNutzerBlickNachbau(ctx) {
-    const { page, check } = ctx;
+async function checkBandNutzerBlickNachbau({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const ws = r._ensureWorkshopState();
@@ -1761,12 +1735,7 @@ async function checkBandNutzerBlickNachbau(ctx) {
             if (blu.__nb_wagen) delete blu.__nb_wagen;
             blu.__nb_wagen = { name: "__nb_wagen", label: "NB-Wagen", builtIn: false, parts: [], connections: [] };
             const add = (part) => r.addPartToBlueprint("__nb_wagen", part);
-            add({
-                shape: "box",
-                material: "holz",
-                position: { x: 0, y: 0.85, z: 0 },
-                size: { x: 1.3, y: 0.35, z: 2.1 },
-            });
+            add(__teil("box", "holz", 0, 0.85, 0, 1.3, 0.35, 2.1));
             const rad = (x, z) =>
                 add({
                     shape: "cylinder",
@@ -1880,10 +1849,8 @@ async function checkBandNutzerBlickNachbau(ctx) {
 
 // W-G Werkstatt-Gelenke begreifbar: macht computeMotionRoles · CONNECTION_TYPES sichtbar (Achsen-
 // Geister im Viewer · Progressive Disclosure · Lehr-Satz · Gelenk-Probe). Headless prüft die LOGIK.
-async function checkBandWGGelenke(ctx) {
-    const { page, check } = ctx;
+async function checkBandWGGelenke({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (e) LEHR-SATZ: pure Funktion, alle Gelenk-Rollen → Menschen-Sprache.
         out.teachRad = /Rad.*rollt.*Querachse/.test(r._jointTeachLine("rad", "x") || "");

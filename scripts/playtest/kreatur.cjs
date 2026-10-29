@@ -7,10 +7,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // Die Logik-Konsumenten lesen die lebendige auraAt-API (nicht das eingefrorene worldFieldAt; den Bestand misst
 // gate:kreatur-takt kaskade).
-async function checkBandV1725FieldReaders(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1725FieldReaders({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
@@ -22,10 +20,8 @@ async function checkBandV1725FieldReaders(ctx) {
 // Kombat-Stats: knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS) wie
 // damage/speed/hpMax — schwere Keule langsam-wuchtig, leichte harte Klinge schnell. Geprüft: Profile
 // differenzieren durch DIESELBE Pipeline für Spieler + Kreatur, sichtbar in der UI.
-async function checkBandV1751CombatStats(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1751CombatStats({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const S = r.constructor.STAT_FROM_TAGS;
 
@@ -109,10 +105,8 @@ async function checkBandV1751CombatStats(ctx) {
 // Kreatur-Kampf symmetrisch zum Spieler: computeCreatureStats liefert hpMax + defense;
 // die Rüstung dämpft (`dealt = roh² / (roh + defense)`, Welle L K-D5 — die flache Wand max(1, roh − defense) fiel); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
 // Spieler-Töter, removeCreature). Konsument ist der damage_creature-DSL-Op.
-async function checkBandV1753CreatureCombat(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1753CreatureCombat({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
@@ -219,10 +213,8 @@ async function checkBandV1753CreatureCombat(ctx) {
 // damage/knockback); tryMouseBreak dispatcht: Kreatur in Reichweite → angreifen, sonst Architektur →
 // harvest, sonst carve. Affekt: Zorn ∝ Waffen-Härte beim Angriff, SCHULD ∝ lebendig×bond beim Töten
 // eines friedlichen Wesens.
-async function checkBandV1754PlayerAttack(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1754PlayerAttack({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
@@ -351,15 +343,13 @@ async function checkBandV1754PlayerAttack(ctx) {
     );
 }
 
-async function checkBandWelle6HBuildAndPersist(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6HBuildAndPersist({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
     // Umkehrung von gather: Phasen take (zum Spieler) → walk (weg) → spawn (Architektur am Kreatur-Ort);
     // _buildMaterialGate ist EINE Funktion für Spieler-confirmBuild und die Kreatur-take-Phase.
     const wave6hP2b2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -687,7 +677,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material, build:blueprint): Speed-Bonus
     // je Level, Audio + Journal beim Level-Up, UI-Pills; Levels sind abgeleitet, nie separat gespeichert.
     const wave6hP2dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -947,7 +936,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     // Kreatur-Identitäten überleben Reload: der Save trägt {name, soul, memory, position, bornAt} je
     // Kreatur (~1 KB), Memory-Cap 200; tote Kreaturen (removeCreature) fallen aus dem Save.
     const wave6hP2d1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -1133,15 +1121,13 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     }
 }
 
-async function checkBandWelle6HCreatureStats(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6HCreatureStats({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
     // Kreatur, Spieler und Architektur sind Compound aus parts × Material × Form; Stats kommen aus
     // derselben STAT_FROM_TAGS-Pipeline; Body-Speed-Mul (stats.speed/7) wirkt im Tick neben Spec-Mul.
     const wave6hP2f1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -1306,7 +1292,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
     // Kreaturen tragen Werkzeug + Rüstung wie der Spieler: equipped Compound-Tags stacken mit
     // TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT; Persistenz via _serializeCreature → snap.equipped.
     const wave6hP2f2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -1503,7 +1488,6 @@ async function checkBandWelle6HCreatureStats(ctx) {
     // Boost = `computeCompoundTags(consumableBp) × scale` — kein Hardcode, keine Tabelle. Bauplan mit
     // role:"consumable" + consumableMeta; RMB + Hotbar-Konsumable + Raycast-Kreatur = Übergabe.
     const wave6hP2f3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -1724,10 +1708,8 @@ async function checkBandWelle6HCreatureStats(ctx) {
 // W-D RITT + SPAWN-HYGIENE: (1) der Reiter sitzt auf der SITZ-Hüfte (SITZ_HIP_OFFSET 0.45) statt
 // der Steh-Anatomie (+0.9); (2) SPIELER-KLEMME an der Kreatur-Wurzel: kein frisches Wesen
 // materialisiert IM Spieler (≥ 3 m radial); Restore/Peer-Sicht bleiben PRECISE (bit-treu).
-async function checkBandWDRittSpawn(ctx) {
-    const { page, check } = ctx;
+async function checkBandWDRittSpawn({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
         // (1) die Sitz-Hüfte beweist gate:vehicle-drive am Aufsitzen (sitzKern); (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
@@ -1756,10 +1738,8 @@ async function checkBandWDRittSpawn(ctx) {
 
 // KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
 // Spieler-Symmetrie): größere Kreaturen sind robuster aber langsamer.
-async function checkBandV18208CreatureSizeSymmetry(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18208CreatureSizeSymmetry({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 

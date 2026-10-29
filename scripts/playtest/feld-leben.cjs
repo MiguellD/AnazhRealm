@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
 // Emotion (FIELD_TO_EMOTION: lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
 // Save/Restore von Position + Emotionen → kein State-Leak in Folge-Bänder.
-async function checkBandV1721LivingFieldAura(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1721LivingFieldAura({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
         const wf = r.worldFieldAt(123, -456);
@@ -74,10 +72,8 @@ async function checkBandV1721LivingFieldAura(ctx) {
 // Schreib-Seite: eine Geburt deponiert Leben, das den frozen lebendig-Kern HEBT (auraAt blendet),
 // zerfällt (Homöostase), bei max sättigt; der at_field_need-Loop schließt sich (belebt → ein ANDERER
 // Punkt wird ärmster). Leerer Overlay == frozen; der spawn_creature-Pfad deponiert.
-async function checkBandV1727WritableField(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1727WritableField({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         // die Geburt trägt Leben ins Feld: ein spawn_creature über die DSL deponiert an der Wiege (am Ruf)
@@ -145,10 +141,8 @@ async function checkBandV1727WritableField(ctx) {
 
 // Kreatur-Trickle: NUR getragene Kreaturen (tendsLife) träufeln Leben in ihre Zelle → die Region
 // erhält sich nach dem Geburts-Puls; ambiente Fauna träufelt NICHT (kein Runaway); rate-limitiert.
-async function checkBandV1729CreatureTrickle(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1729CreatureTrickle({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         if (r.state.lifeField) r.state.lifeField.clear();
@@ -186,10 +180,8 @@ async function checkBandV1729CreatureTrickle(ctx) {
 // Räumliche Emotion: `_feelAction` prägt die Emotion an der Spieler-Zelle ein, auraAt blendet den
 // lokalen Abdruck über die globale Stimmung, der Welt-Tint liest das → färbt den Ort. Die
 // emotion-Achse ist damit schreibbar UND räumlich konsumiert.
-async function checkBandV1732SpatialEmotion(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1732SpatialEmotion({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         if (r.state.emotionField) r.state.emotionField.clear();
         const e = r.state.player.emotions;
@@ -255,10 +247,8 @@ async function checkBandV1732SpatialEmotion(ctx) {
 // Wohl-Maß + gleitende Baseline (Mess-Schicht für Regel-Fitness + Emotion): die EMA rechnet richtig —
 // Cold-Start = erste Beobachtung, stabiler Input → hält, Sprung → trackt mit Lag; Spieler-Baseline
 // ebenso.
-async function checkBandV1742Wohl(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1742Wohl({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const W = window.AnazhRealm ? window.AnazhRealm.WERTUNG : r.constructor.WERTUNG;
 
@@ -341,10 +331,8 @@ async function checkBandV1742Wohl(ctx) {
 // Emotion als APPRAISAL: δ = Situation − Spieler-Baseline; Situation = Welt um den Spieler (lebendig)
 // + HP, NIE seine Stimmung (sonst Rückkopplung → Runaway). Geprüft: Verbesserung → joy-Puls,
 // Gewöhnung (δ→0), kein Runaway; anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle.
-async function checkBandV1744Appraisal(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1744Appraisal({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
@@ -484,10 +472,8 @@ async function checkBandV1744Appraisal(ctx) {
 // Die Klammer: rule.value und δ_spieler sind dasselbe Vorhersagefehler-Signal — feuert eine Regel NAH
 // am Spieler bei positivem δ_spieler, gibt es Bonus-Credit ∝ Nähe (ferne ausgeschlossen). Anti-Gaming:
 // δ_spieler ist die SITUATION, nie die stempelbare Emotion → kein Reward-Hacking.
-async function checkBandV1750Klammer(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1750Klammer({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
@@ -585,8 +571,7 @@ async function checkBandV1750Klammer(ctx) {
     );
 }
 
-async function checkBandWelle6APolish(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welle 6.A — Interaktion-Polish (Erdung auf Bauwerken) ###
@@ -594,7 +579,6 @@ async function checkBandWelle6APolish(ctx) {
     // `_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`. groundDistance 0.6 (nicht 0.5),
     // damit der y-Offset eines Sub-Compounds auf einer Plattform den Sprung nicht blockiert.
     const wave6aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state.playerVel) return null;
         const out = {};
 
@@ -718,7 +702,6 @@ async function checkBandWelle6APolish(ctx) {
     // begehbar (Normal-Y < hang.maxSlopeY = 0.5, >60°), gilt `state.onSteepSlope = true` und der
     // Bewegungs-Input wird auf 20 % gedrosselt — kein Kleben an senkrechten Wänden.
     const wave6a3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // 6.A3 — Tests wandern 19.07.: der State-Zwilling fiel, die Leser
@@ -833,7 +816,6 @@ async function checkBandWelle6APolish(ctx) {
     // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
     // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -930,7 +912,6 @@ async function checkBandWelle6APolish(ctx) {
 
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
     const wave6e1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
@@ -987,7 +968,6 @@ async function checkBandWelle6APolish(ctx) {
     // Beweist: das alte Intro-Modal ist restlos weg; der Begleiter (Eins) lädt EINMAL diegetisch ein
     // (Einladung, keine Steuerungs-Anleitung), gegated + idempotent.
     const wowStartResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
@@ -1027,7 +1007,6 @@ async function checkBandWelle6APolish(ctx) {
     // (computeConnectionStrength → grün/gelb/rot). Schwächste Verbindung < 0.7 →
     // _applyCompoundWorldEffects schreibt einen idempotenten weakness-Journal-Eintrag.
     const wave6fResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1224,15 +1203,13 @@ async function checkBandWelle6APolish(ctx) {
     }
 }
 
-async function checkBandWelle6GHylomorphism(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6GHylomorphism({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Hylomorphismus-Unification ###
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
     const wave6gResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
@@ -1406,7 +1383,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const out = {};
             {
                 // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
@@ -1438,7 +1414,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // benachbarte Chunks bauen — an der gemeinsamen Naht teilen >50 % der Vertices die Position
         // (ohne die Disziplin ~0).
         const r42bSkirt = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const chunks = [...r.state.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
             if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
             const seen = new Map();
@@ -1459,7 +1434,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         // Insel-Höhen-Amplitude skaliert mit `height`.
         const r42bIslandAmp = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const noise = { noise2D: () => 0.5 };
             // height=5: kleine Insel
             const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
@@ -1474,7 +1448,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         // DSL spawn_island akzeptiert 5. `size`-Argument.
         const r42bDsl = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const before = r.state.floatingIslands.length;
             r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
             const after = r.state.floatingIslands.length;
@@ -1491,7 +1464,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // braucht aField/uv, die Surface-Nets-Geometrie nicht hat → Löcher). _attachIslandColors färbt
         // grün-oben/erdig-unten per Vertex-Normale.
         const r42c = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const out = {};
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
@@ -1570,7 +1542,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // magieleitung) — KEINE Tabelle: Bauplan-Compound-Tags resonieren mit dem Welt-Tag-Feld.
     // Baupläne: stein_block (dichte), kristall_geode (magieleitung), glutbrunnen (glut).
     const wave6gP2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // der Voxel-Populator ist die lebende Schicht.
@@ -1797,7 +1768,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // felsbogen (Trilithon, begehbarer Überhang) + felsturm (Fels-Nadel) als Welt-Bürger — KEIN
     // Voxel-Terrain: die Per-Part-Kollision lässt zwischen den Pfeilern eine echte begehbare Lücke.
     const wave6gP3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         const bps = r.state.blueprints || {};
@@ -1990,7 +1960,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // Ein Grabe-Hieb löst Terrain in Material auf, dessen Identität aus worldFieldAt emergiert (die
     // sichtbare Farbe ist das Material, das der Spieler bekommt) — keine Biom-Tabelle.
     const wave6gP4Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
 
@@ -2113,10 +2082,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
 // Γ3 FELD-CHARAKTER FOUNDATION:
 // Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
 // Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/Disziplin).
-async function checkBandV18203Gamma3FeldCharakter(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 

@@ -469,9 +469,7 @@ const server = statikServer();
 // Pixel enthält, ist es dasselbe Wasser; liest es den Nachbar-Block (der Pfahl, nah), ist es durchsichtig — ein heller Saum.
 function saumProbe(ort) {
     return (async () => {
-        const r = window.anazhRealm,
-            st = r.state,
-            T = window.THREE;
+        const T = window.THREE;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -576,9 +574,7 @@ function saumProbe(ort) {
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
 function buehne(nFrames, nachtLicht) {
     return (async () => {
-        const r = window.anazhRealm,
-            st = r.state,
-            T = window.THREE;
+        const T = window.THREE;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -921,7 +917,7 @@ function buehne(nFrames, nachtLicht) {
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            const r = await window.__weltDa((r) => {
+            await window.__weltDa((r) => {
                 const st = r.state;
                 return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });
@@ -937,7 +933,6 @@ function buehne(nFrames, nachtLicht) {
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
         await page.setViewport({ width: 321, height: 241 });
         await page.evaluate(async () => {
-            const r = window.anazhRealm;
             for (let i = 0; i < 6; i++) {
                 if (r.state.renderer._nodes?.nodeFrame)
                     r.state.renderer._nodes.nodeFrame.update();

@@ -105,7 +105,6 @@ function ptTri2(px, py, pz, T) {
     await page.evaluate(async () => {
         let stubbed = false;
         for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
-            const r = window.anazhRealm;
             if (r && !stubbed && r.state && r.state.renderer) {
                 r.state.renderer.render = function () {};
                 if (typeof r.state.renderer.renderAsync === "function")
@@ -133,7 +132,6 @@ function ptTri2(px, py, pz, T) {
         // SETTLE: Streaming-Dirties + Wasser-Iso abklingen lassen, damit das C-Experiment
         // mit einem RUHIGEN Dirty-Set startet (sonst zählt es Streaming-Rebuilds mit).
         for (let i = 0; i < 200; i++) {
-            const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
                 try {
                     r._gameLoopTick(performance.now());
@@ -141,13 +139,11 @@ function ptTri2(px, py, pz, T) {
             }
             await sleep(2);
         }
-        const r = window.anazhRealm;
         if (r) r._drainDirtyVoxelChunks();
     });
 
     // ===== MESSUNG A + B — die RÄUMLICHE Naht (gleiche LOD vs Cross-LOD) =====
     const spatial = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
 
@@ -295,7 +291,6 @@ function ptTri2(px, py, pz, T) {
     // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
         // STALE-TEST: den Geomorph für ALLE Chunks FRISCH gegen die JETZT gestreamten Nachbar-
@@ -440,7 +435,6 @@ function ptTri2(px, py, pz, T) {
 
     // ===== MESSUNG E — A1: Morph-Cap + STITCH-BAND (sichtbare Spalten gedeckt?) =====
     const stitch = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
         let bandMeshes = 0,
@@ -521,7 +515,6 @@ function ptTri2(px, py, pz, T) {
 
     // ===== MESSUNG C — die ZEITLICHE Naht (async-Fenster beim Carve) =====
     const temporal = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const s = r.state;
         const span = r._voxelChunkConfig(0).span;
 

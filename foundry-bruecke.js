@@ -472,18 +472,19 @@ const foundryKanal = (() => {
             __post({ type: "settlement", world: "terrain", reqId: msg && msg.reqId, plan }, "*");
         }
     }
-    // DER GRUND-PLAN (S4): der Grund eines gesetzten Hauses als reine DATEN — GENERISCH wie __replySettlement liefert ihn
-    // der ERSTE Manifest-Kern mit einer grundPlan-Formel (fachwerk: der Körper-Satz und der Keller aus dem Plan des Hauses).
-    // Er rechnet im Faden: im Haupt-Faden malte sein erster Ruf die Karten des Studios (Radeon kalt 1,18 s).
-    function __replyGrundPlan(msg) {
-        let grund = null;
+    // DER SLOT-PLAN (bauen.K2): das gesetzte Haus als Slot eines Plans, reine DATEN — GENERISCH wie __replySettlement liefert
+    // ihn der ERSTE Manifest-Kern mit einer slotPlan-Formel (fachwerk: Mass-Bau, Tür, Grundfläche und Grund-Datum, dieselbe
+    // Slot-Zeile wie der Export des Dorfs). Er rechnet im Faden: im Haupt-Faden malte sein erster Ruf die Karten des Studios
+    // (Radeon kalt 1,18 s).
+    function __replySlotPlan(msg) {
+        let slot = null;
         for (const zk of __zweitKerne()) {
-            if (typeof zk.kern.grundPlan === "function") {
-                grund = zk.kern.grundPlan(msg.presetId, msg.seed, msg.ov || null);
+            if (typeof zk.kern.slotPlan === "function") {
+                slot = zk.kern.slotPlan(msg.presetId, msg.seed, msg.ov || null, msg.phi);
                 break;
             }
         }
-        __post({ type: "grund", world: "terrain", reqId: msg.reqId, grund }, "*");
+        __post({ type: "slot", world: "terrain", reqId: msg.reqId, slot }, "*");
     }
     // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
     // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
@@ -750,21 +751,23 @@ const foundryKanal = (() => {
                 },
                 "*"
             );
-            // DER EINE BLATT-ATLAS reist als Bild (S7) NACH dem Buch (B3a): der Worker malt ihn (OffscreenCanvas) samt
-            // Mip-Kette, die Transport-Schale macht ihn zur Fracht und gibt die Puffer per Transfer weiter — der Haupt-Thread
-            // malt und mippt nie. Bis B3a war er die Vorbedingung des ganzen Buchs (Radeon kalt 1,81 s Malen + 0,98 s Fracht
-            // vor jedem Auftrag); jetzt bestellt die Welt, während er entsteht, und nur ein Körper, der ihn liest, wartet.
-            if (typeof window === "undefined")
-                __post(
-                    {
-                        type: "blatt-atlas",
-                        world: "terrain",
-                        reqId: msg && msg.reqId,
-                        blattAtlas: self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) }),
-                    },
-                    "*"
-                );
         }
+    }
+    // DER EINE BLATT-ATLAS reist als Bild (S7) NACH dem Buch (B3a): der Worker malt ihn (OffscreenCanvas) samt Mip-Kette, die
+    // Transport-Schale macht ihn zur Fracht und gibt die Puffer per Transfer weiter — der Haupt-Thread malt und mippt nie. Bis
+    // B3a war er die Vorbedingung des ganzen Buchs (Radeon kalt 1,81 s Malen + 0,98 s Fracht vor jedem Auftrag); jetzt bestellt
+    // die Welt, während er entsteht. Den Kanal fragt die Schale des Buch-Fadens nach dem Buch, wenn ihre Platte ihn nicht trägt
+    // (pipeline.K4 Stufe 2).
+    function __replyBlattAtlas(msg) {
+        __post(
+            {
+                type: "blatt-atlas",
+                world: "terrain",
+                reqId: msg && msg.reqId,
+                blattAtlas: self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) }),
+            },
+            "*"
+        );
     }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
     // lesend (buildInstance/emitTree unveraendert). kind aus dem Material-Zeiger.
@@ -1170,8 +1173,10 @@ const foundryKanal = (() => {
         // Kern-spezifisches Literal (M8: Tabelle vor if). Fail-soft: kein Kern/Fehler
         // -> plan null, der Host behandelt das geschlossen.
         "export-settlement": __replySettlement,
-        // DER GRUND-PLAN-KANAL (S4): der Grund eines gesetzten Hauses aus seinem Plan, vor seinem Bau (`_hausGrundSetzen`)
-        "grund-plan": __replyGrundPlan,
+        // DER SLOT-PLAN-KANAL (bauen.K2): das gesetzte Haus als Slot seines Plans, vor seinem Bau (`_hausGrundSetzen`)
+        "slot-plan": __replySlotPlan,
+        // DER BLATT-ATLAS-KANAL (S7): das Bild des EINEN Blatt-Atlas (die Schale des Buch-Fadens fragt ihn)
+        "blatt-atlas": __replyBlattAtlas,
     };
     return (msg) => {
         if (!msg || typeof msg !== "object" || !Object.prototype.hasOwnProperty.call(KANAL, msg.type)) return false;

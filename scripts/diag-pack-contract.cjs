@@ -118,20 +118,21 @@ async function bootLauf(text) {
     const url = (p) => new URL(p + "?v=" + A.VERSION, "http://wirt/index.html").href;
     const liste = (feld) => echt.flatMap((c) => [].concat(c[feld] || [])).map(url);
     aus.sollLaden = ["lib", "scripts", "bruecke"].flatMap(liste).join(" ");
-    const quellen = liste("scripts").concat(liste("bruecke")).map((u) => `<${u}>`);
-    aus.sollStempel = [fs.readFileSync(path.join(PK.ROOT, "cores.manifest.json"), "utf8"), ...quellen].join("\n");
+    const je = (c) => ["scripts", "lib", "bruecke"].flatMap((f) => [].concat(c[f] || [])).map((p) => `<${url(p)}>`);
+    aus.sollStempel = echt.map((c) => je(c).join("\n")).join("\n\n");
     if (!blob) return Object.assign(aus, { fehler: "kein Boot-Blob bei der Geburt — der Haupt-Faden holt das Manifest (fetch) vor ihr" }); // prettier-ignore
     const ord = [];
     const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), postMessage: (m) => (aus.post = m) };
     w.XMLHttpRequest = function () { this.open = () => {}; this.send = () => (this.responseText = text); }; // prettier-ignore
     w.importScripts = (...u) => (ord.push("laden"), (aus.laden = ord[0] === "message" ? u.join(" ") : "die Schale steht nicht davor")); // prettier-ignore
     w.fetch = (u) => Promise.resolve({ text: () => Promise.resolve(`<${u}>`) });
-    w.crypto = { subtle: { digest: (_a, b) => ((aus.stempel = new TextDecoder().decode(b)), new Promise(() => {})) } };
+    const st = [];
+    w.crypto = { subtle: { digest: (_a, b) => (st.push(new TextDecoder().decode(b)), (aus.stempel = st.join("\n\n")), new Promise(() => {})) } }; // prettier-ignore
     w.self = w.globalThis = w;
     vm.runInContext(blob, vm.createContext(w));
     w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
     aus.wand = !!(aus.post && aus.post.meshes[0].position && !aus.post.meshes[0].aWind);
-    for (let i = 0; i < 50 && aus.stempel == null; i++) await new Promise((r) => setImmediate(r));
+    for (let i = 0; i < 50 && st.length < echt.length; i++) await new Promise((r) => setImmediate(r));
     return aus;
 }
 
@@ -173,7 +174,7 @@ async function main() {
     const labor = /\/worlds\/[^/?]+\/(?!lib\/)[^?]*\.js|\/(OrbitControls|PointerLockControls|EffectComposer|UnrealBloomPass|FXAAShader)\.js/; // prettier-ignore
     check(lauf.laden === lauf.sollLaden && !labor.test(lauf.laden), "Boot: die Schale steht vor dem Studio, der Faden lädt lib · scripts · bruecke allein aus dem Manifest, keine Labor-Datei (K42)"); // prettier-ignore
     check(lauf.wand, "Boot: die Konsum-Wand (FOUNDRY_LESEN) reist in die Schale — ein ungelesenes Attribut fällt vor dem Transfer");
-    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: Manifest-Text vor ALLEN core.scripts + core.bruecke (Mesh-Extraktion, Karten-Bäcker), keine Labor-Shell (K42)"); // prettier-ignore
+    check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: je Kern seine scripts · lib · bruecke (Mesh-Extraktion, Karten-Bäcker), keine Labor-Shell (K42)"); // prettier-ignore
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);
         process.exit(1);
@@ -191,7 +192,7 @@ async function main() {
         // Hook-Verhalten: false → null TROTZ ready-Worker (der Fallback ist übersprungen).
         const hooked = await realm.page.evaluate(async () => {
             window.__anazhLiveBake = false;
-            const m = await window.anazhRealm._foundryRequest("eiche", 5, 2);
+            const m = await r._foundryRequest("eiche", 5, 2);
             delete window.__anazhLiveBake; // Default wiederherstellen (die Gate-Hook-Lehre: sichern/restoren)
             return m === null;
         });

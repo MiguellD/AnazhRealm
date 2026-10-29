@@ -7,10 +7,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // Abbauen kostet substanz-gebundene MÜHE; EINE Tauglichkeit (gehaltenes Ding vs Material) dirigiert
 // Tempo/Stamina/Ertrag — viele Hiebe statt Instant, ein gutes Werkzeug bricht schneller + lootet.
-async function checkBandV1755HarvestEffort(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1755HarvestEffort({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const H = r.constructor.HARVEST;
@@ -137,10 +135,8 @@ async function checkBandV1755HarvestEffort(ctx) {
 // das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
 // harte Materie wird zur KLINGE (spitz → schneidet Weiches) ODER zur KEULE (stumpf → wuchtet Hartes),
 // das Material wählt den Kanal, das richtige Gerät gewinnt; man erntet auch mit der Waffe. KONSUM.
-async function checkBandV1755W2Profile(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1755W2Profile({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const blu = r.state.blueprints;
@@ -251,10 +247,8 @@ async function checkBandV1755W2Profile(ctx) {
 // die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
 // (Klinge/Brecher/Gerät · Schutz · Wesen · Tor · Wirkung) aus Form × Material, rollen-unabhängig.
 // Heilt den „nur Bauwerk"-Befund. KONSUM (nicht Existenz): die Werkstatt-Rollen-Zeile rendert es.
-async function checkBandV1759CapabilityReadout(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1759CapabilityReadout({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         // greifbare Klinge (octahedron) vs greifbarer Brecher (box), DIESELBE Materie stein, eine Position (span 0)
@@ -332,10 +326,8 @@ async function checkBandV1759CapabilityReadout(ctx) {
 // die MATERIAL-Sichtbarkeit für die Mach-Akte (der Avatar-Bug: stiller Fehlschlag bei fehlendem
 // Material). Das Fehlende sticht am Dropdown-Eintrag heraus (✗ fehlt …) + ein gescheitertes Verkörpern
 // setzt das Select zurück, statt eine falsche Seele zu zeigen. Snapshot + Restore (Mode/Soul/Inventar).
-async function checkBandV1775MakeActCost(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1775MakeActCost({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const setMode = (m) => {
@@ -428,42 +420,25 @@ async function checkBandV1775MakeActCost(ctx) {
 // Rollen-Klassifikation an der Wurzel: eine greifbare Geräte-Form (spitz/griff-elongiert) wird über
 // die FORM Waffe/Werkzeug statt Bauwerk (trennt den Substanz-Zwilling Klinge/Bauwerk); Würfel,
 // große Strukturen, Körper und Tore bleiben unverändert.
-async function checkBandV1783ImplementClassification(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1783ImplementClassification({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const mk = (parts) => ({ name: "_u4", parts });
         const spike = mk([
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.3, y: 0.3, z: 1.8 } },
+            __teil("cone", "eisen", 0, 0, 0, 0.3, 0.3, 1.8),
         ]);
         const handle = mk([
-            {
-                shape: "cylinder",
-                material: "eisen",
-                position: { x: 0, y: 0, z: 0 },
-                size: { x: 0.25, y: 1.6, z: 0.25 },
-            },
+            __teil("cylinder", "eisen", 0, 0, 0, 0.25, 1.6, 0.25),
         ]);
         const largeBlock = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 8, y: 8, z: 8 } },
+            __teil("box", "stein", 0, 0, 0, 8, 8, 8),
         ]);
         const smallCube = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            __teil("box", "stein", 0, 0, 0, 1, 1, 1),
         ]);
         const body = mk([
-            { shape: "box", material: "fleisch", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
+            __teil("box", "fleisch", 0, 1, 0, 0.8, 1.6, 0.5),
+            __teil("cylinder", "fleisch", -0.7, 1, 0, 0.3, 1.2, 0.3),
+            __teil("cylinder", "fleisch", 0.7, 1, 0, 0.3, 1.2, 0.3),
         ]);
         const out = {};
         out.spikeRole = r.computeBlueprintRole(spike);
@@ -523,10 +498,8 @@ async function checkBandV1783ImplementClassification(ctx) {
 
 // Schöpfer-Browser-Befunde: die Werkstatt-Kohärenz (die Affordanzen sind Fähigkeiten, nicht
 // Rollen) + der Schwert-Samen (eine Klinge, die SCHNEIDET). Rendert den echten Stats-Readout.
-async function checkBandV1786WorkshopCoherence(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1786WorkshopCoherence({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const renderFor = (name) => {
             const ws = r._ensureWorkshopState();
@@ -590,10 +563,8 @@ async function checkBandV1786WorkshopCoherence(ctx) {
 // M6 Ernte/Spawn-Ehrlichkeit: (1) Ertrags-SOCKEL (yieldMult ≥ yieldMin — die Faust erntet den Baum),
 // (2) EINE Mühe-Sprache fürs Terrain (Schlag-Zahl im pfad, Stamina anteilig), (3) die Spieler-Klemme
 // an der WURZEL spawnArchitecture (kein Spawn-Pfad umgeht sie).
-async function checkBandM6ErnteSpawn(ctx) {
-    const { page, check } = ctx;
+async function checkBandM6ErnteSpawn({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const pm = r.state.playerMesh.position;
         const savedMode = r.getGameMode();

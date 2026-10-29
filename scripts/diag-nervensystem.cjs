@@ -73,17 +73,17 @@ function seitenHelfer() {
     window.__buch = () =>
         window.__weltDa((x) => x._foundry && x._foundry.ready && x._foundry.recipes && x._foundry.recipes.meilenstein);
     window.__stele = (o) =>
-        window.anazhRealm.state.architectures.find(
+        r.state.architectures.find(
             (a) => a.type === "stele_meilenstein" && (!o || Math.hypot(a.position.x - o.x, a.position.z - o.z) < o.r)
         );
     const geo = (t) => ({
         geometry: { attributes: { position: t.position, normal: t.normal }, index: { array: t.index } },
     });
     const bau = (teile) => window.__abdruck({ traverse: (f) => teile.map(geo).forEach(f) }, true);
-    const gezeigt = (w) => w.instSlots.map((x) => window.anazhRealm.state.archInstanceGroups.get(x.key).mesh.geometry);
+    const gezeigt = (w) => w.instSlots.map((x) => r.state.archInstanceGroups.get(x.key).mesh.geometry);
     window.__bauWerk = (w) => bau([...new Set(gezeigt(w))].map((g) => ({ ...g.attributes, index: g.index.array })));
     window.__bauFoundry = async (...a) =>
-        bau(((await window.anazhRealm._foundryWorkerRequest(...a, null, false, 0)) || []).filter((m) => m.position));
+        bau(((await r._foundryWorkerRequest(...a, null, false, 0)) || []).filter((m) => m.position));
     window.__stand = (w) => JSON.stringify([w.id, w.position, w.rotationY, w.seed, w.studioOv]);
 }
 
@@ -143,7 +143,7 @@ hauptLauf(async () => {
     const url = `ws://127.0.0.1:${SIGNAL}`;
     for (const p of [page, peer])
         await p.evaluate(async (u) => (await window.__buch()).initP2PSync("k5", { url: u }), url);
-    for (const p of [page, peer]) await waitFor(p, () => window.anazhRealm.state.p2p.peers.size > 0, "der Mitspieler");
+    for (const p of [page, peer]) await waitFor(p, () => r.state.p2p.peers.size > 0, "der Mitspieler");
 
     // ===== C · E: ein Ort vor der Lichtung (schöpfer, Ego) =====
     const [c, e] = await page.evaluate(async () => {
@@ -193,7 +193,6 @@ hauptLauf(async () => {
         Object.assign(
             e,
             await page.evaluate(async () => {
-                const st = window.anazhRealm.state;
                 const da = () => window.__stele(st.frei);
                 const steht = await window.__gebautNach("der Meilenstein", { fertig: da }).then(
                     () => true,
@@ -212,14 +211,13 @@ hauptLauf(async () => {
                     const tris = [...geo].reduce((n, g) => n + g.index.count / 3, 0);
                     lod.push({ d, ist: w._servedLod, tris, bau: window.__bauWerk(w) });
                 }
-                window.anazhRealm.saveState();
+                r.saveState();
                 const werk = { stand: window.__stand(w), id: w.id, seed: w.seed, ov: w.studioOv };
                 return { steht, lod, werk, stelle: { x: w.position.x, z: w.position.z, r: 0.01 } };
             })
         );
         // P2P: das Werk reiste beim Setzen (`confirmBuild` → `_werkProgramm`), der Mitspieler baut es und zeigt es nah
         e.p2p = await peer.evaluate(async (id) => {
-            const r = window.anazhRealm;
             const takt = async () => r._gameLoopTick(performance.now());
             const w = () => r.state.architectures.find((a) => a.id === id);
             await window.__gebautNach("das Werk beim Mitspieler", { fertig: w, takt });
@@ -242,8 +240,6 @@ hauptLauf(async () => {
         }, e.stelle);
         // KI-Satz: der Satz geht an die KI (`maybeAnswerWithLlm`), ihre Antwort ist ein fester DSL-Text (spawn_studio mit Reglern)
         e.ki = await page.evaluate(async (o) => {
-            const r = window.anazhRealm;
-            const st = r.state;
             const x = o.x + 6;
             const program = [
                 "spawn_studio",

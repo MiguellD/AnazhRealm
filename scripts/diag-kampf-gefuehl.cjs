@@ -752,8 +752,7 @@ async function k1Ende(browser, K) {
         if (NUR_K5) return k5Ende(browser, await k5Lauf(page));
         if (NUR_K1) return k1Ende(browser, await k1Lauf(browser, page));
         out = await page.evaluate(() => {
-            const r = window.anazhRealm,
-                s = r.state,
+            const s = r.state,
                 A = r.constructor;
             const o = { checks: {} };
             // KERN-PFLICHT: die Schwung-/Gefühls-Gesetze leben NUR im schmiede-Gesetzbuch (ARENA).

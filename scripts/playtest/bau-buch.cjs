@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Rollen-Resonanz: computeBlueprintRole = ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕
 // bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES; „architecture“ ist positive Signatur (dicht +
 // hart) → Stein-Tempel/Felsbogen wird Bauwerk, obwohl body-förmig.
-async function checkBandV1769RoleResonance(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1769RoleResonance({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const part = (mat, x, y, z) => ({
@@ -148,10 +146,8 @@ async function checkBandV1769RoleResonance(ctx) {
 // Katalysator-Op aus Form × Material (scharf→schneiden, stumpf-dicht→schmieden, magie→wandeln):
 // `setBlueprintToolMeta(name)` ohne opClass leitet ab, eine explizite opClass ist Override; additive
 // bleibt Intent. Wächter synthetisch (Built-in-Tools sind formlos).
-async function checkBandV1771ToolOpFromForm(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1771ToolOpFromForm({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const mk = (shape, mat) => ({
@@ -226,10 +222,8 @@ async function checkBandV1771ToolOpFromForm(ctx) {
 // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ1 — SCHWERPUNKT + MASSE (der Grundstein) ═══
 // Physik-Schiedsrichter, headless objektiv (reine Berechnung, kein WebGPU-Flake): ein
 // asymmetrischer Bauplan hat den CoM nahe der schweren Seite, nicht in der Mitte.
-async function checkBandOmegaPhi1CoM(ctx) {
-    const { page, check } = ctx;
+async function checkBandOmegaPhi1CoM({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         // (die Masse in kg aus ρ der Stoff-Zeile und ihre Mutation misst gate:kampf-gefuehl (A), physik K1)
         const dense = "stein";
@@ -262,11 +256,9 @@ async function checkBandOmegaPhi1CoM(ctx) {
 // Ω-PHYSIS Säule I (Ω-Φ2..Φ5 Schiedsrichter) + Säule II (Ω-L1..L3 + Ω-W1): die gerechnete Physik
 // speist den Resonanz-Leser + den Warum-Chip, getrennt von der Konvention; reine Berechnung → kein
 // Flake.
-async function checkBandOmegaPhysisSaeuleI_II(ctx) {
-    const { page, check } = ctx;
+async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            C = r.constructor;
+        const C = r.constructor;
         const mats = r.state.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
@@ -373,29 +365,22 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
 // die ROLLE-PASSUNG (Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): die FORM
 // eines Produkts moduliert die Wirkung seiner Ausrüstung — eine scharfe Klinge wirkt als Gerät stärker als
 // ein gleich-materieller Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
-async function checkBandV1779RoleFitQuality(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1779RoleFitQuality({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.QUALITY_ROLE_FIT;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const blade = {
             name: "_rf_blade",
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.6 } },
-                {
-                    shape: "cone",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 1.2 },
-                    size: { x: 0.2, y: 0.1, z: 0.6 },
-                },
+                __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.6),
+                __teil("cone", "eisen", 0, 0, 1.2, 0.2, 0.1, 0.6),
             ],
         };
         const blob = {
             name: "_rf_blob",
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+                __teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2),
             ],
         };
         // (1) die Passung diskriminiert über die FORM (gleiches Material eisen, andere Form)
@@ -410,13 +395,13 @@ async function checkBandV1779RoleFitQuality(ctx) {
         const plate = {
             name: "_rf_plate",
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } },
+                __teil("box", "eisen", 0, 0, 0, 1.5, 0.3, 1.0),
             ],
         };
         const soft = {
             name: "_rf_soft",
             parts: [
-                { shape: "box", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1.5, y: 0.3, z: 1.0 } },
+                __teil("box", "leder", 0, 0, 0, 1.5, 0.3, 1.0),
             ],
         };
         out.armorDiscriminates = r._blueprintRoleFit(plate, "armor") > r._blueprintRoleFit(soft, "armor");
@@ -424,12 +409,7 @@ async function checkBandV1779RoleFitQuality(ctx) {
         const deadC = {
             name: "_rf_dead",
             parts: [
-                {
-                    shape: "sphere",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.5, y: 0.5, z: 0.5 },
-                },
+                __teil("sphere", "stein", 0, 0, 0, 0.5, 0.5, 0.5),
             ],
         };
         out.consumableDiscriminates =
@@ -474,57 +454,45 @@ async function checkBandV1779RoleFitQuality(ctx) {
 // der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
 // (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
 // referenziert sie (U2 webt sie ein) → die Form ist vollständig im Vektor, kein Regress.
-async function checkBandV1780FormAxes(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1780FormAxes({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const mk = (parts) => ({ name: "_u1", parts });
         const blade = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.8 } },
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.4 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 1.8),
+            __teil("cone", "eisen", 0, 0, 1.4, 0.2, 0.1, 0.6),
         ]);
         const cube = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+            __teil("box", "eisen", 0, 0, 0, 1.2, 1.2, 1.2),
         ]);
         const column = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
-            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
-            { shape: "box", material: "stein", position: { x: 0, y: 2, z: 0 }, size: { x: 0.6, y: 1, z: 0.6 } },
+            __teil("box", "stein", 0, 0, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 1, 0, 0.6, 1, 0.6),
+            __teil("box", "stein", 0, 2, 0, 0.6, 1, 0.6),
         ]);
         const wideBase = mk([
-            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: -1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: -1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: 1.5, y: 0, z: 1.5 }, size: { x: 0.4, y: 0.6, z: 0.4 } },
-            { shape: "box", material: "stein", position: { x: 0, y: 1.5, z: 0 }, size: { x: 2, y: 0.6, z: 2 } },
+            __teil("box", "stein", -1.5, 0, -1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 1.5, 0, -1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", -1.5, 0, 1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 1.5, 0, 1.5, 0.4, 0.6, 0.4),
+            __teil("box", "stein", 0, 1.5, 0, 2, 0.6, 2),
         ]);
         const body = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 1, z: 0 }, size: { x: 0.8, y: 1.6, z: 0.5 } },
-            {
-                shape: "cylinder",
-                material: "stein",
-                position: { x: -0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
-            {
-                shape: "cylinder",
-                material: "stein",
-                position: { x: 0.7, y: 1, z: 0 },
-                size: { x: 0.3, y: 1.2, z: 0.3 },
-            },
+            __teil("box", "stein", 0, 1, 0, 0.8, 1.6, 0.5),
+            __teil("cylinder", "stein", -0.7, 1, 0, 0.3, 1.2, 0.3),
+            __teil("cylinder", "stein", 0.7, 1, 0, 0.3, 1.2, 0.3),
         ]);
         const lump = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-            { shape: "box", material: "stein", position: { x: 1.4, y: 1.2, z: 1.0 }, size: { x: 0.6, y: 0.6, z: 0.6 } },
+            __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+            __teil("box", "stein", 1.4, 1.2, 1.0, 0.6, 0.6, 0.6),
         ]);
         const container = mk([
-            { shape: "box", material: "quarz", position: { x: -1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
-            { shape: "box", material: "quarz", position: { x: 1, y: 1, z: 0 }, size: { x: 0.2, y: 2, z: 2 } },
-            { shape: "box", material: "quarz", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 0.2, z: 2 } },
+            __teil("box", "quarz", -1, 1, 0, 0.2, 2, 2),
+            __teil("box", "quarz", 1, 1, 0, 0.2, 2, 2),
+            __teil("box", "quarz", 0, 0, 0, 2, 0.2, 2),
         ]);
         const solid = mk([
-            { shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 } },
+            __teil("box", "stein", 0, 0, 0, 2, 2, 2),
         ]);
         const V = (b) => r._blueprintProductVector(b);
         const out = {};
@@ -561,10 +529,8 @@ async function checkBandV1780FormAxes(ctx) {
 
 // Das EINE Rollen-Signatur-Register: jede Rolle eine VOLLE Signatur über alle Achsen; das volle
 // Profil entscheidet (Klinge = bessere Waffe, Block = besseres Bauwerk). _blueprintRoleFit liest es.
-async function checkBandV1781RoleRegister(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1781RoleRegister({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const REG = r.constructor.ROLE_SIGNATURES;
         const cfg = r.constructor.QUALITY_ROLE_FIT;
@@ -589,11 +555,11 @@ async function checkBandV1781RoleRegister(ctx) {
         );
         const mk = (parts) => ({ name: "_u2", parts });
         const blade = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
+            __teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
         ]);
         const block = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } },
+            __teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4),
         ]);
         // TIEFE: das volle Profil — die Klinge ist eine bessere WAFFE, der Block ein besseres BAUWERK
         const bladeWeapon = r._blueprintRoleFit(blade, "weapon");
@@ -608,15 +574,15 @@ async function checkBandV1781RoleRegister(ctx) {
         out.inRange = bladeWeapon <= cfg.max + 1e-9 && blockWeapon >= cfg.min - 1e-9;
         // vehicle — die neuen Form-Achsen (spread) tragen die neue Rolle
         const vehicleForm = mk([
-            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: -1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: -1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: 1.5, y: 0, z: 1 }, size: { x: 0.5, y: 0.5, z: 0.5 } },
-            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 3, y: 0.5, z: 2 } },
+            __teil("box", "eisen", -1.5, 0, -1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 1.5, 0, -1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", -1.5, 0, 1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 1.5, 0, 1, 0.5, 0.5, 0.5),
+            __teil("box", "eisen", 0, 1, 0, 3, 0.5, 2),
         ]);
         const mast = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
-            { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 0.4, y: 1, z: 0.4 } },
+            __teil("box", "eisen", 0, 0, 0, 0.4, 1, 0.4),
+            __teil("box", "eisen", 0, 1, 0, 0.4, 1, 0.4),
         ]);
         out.vehicleDiscriminates = r._blueprintRoleFit(vehicleForm, "vehicle") > r._blueprintRoleFit(mast, "vehicle");
         out.vehVals = `Basis=${round(r._blueprintRoleFit(vehicleForm, "vehicle"))} Mast=${round(r._blueprintRoleFit(mast, "vehicle"))}`;
@@ -650,21 +616,19 @@ async function checkBandV1781RoleRegister(ctx) {
 // der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
 // ganze Resonanz) + die Achse zum perfekten Katalysator. Der Spieler-Kompass: er baut frei, das Spektrum
 // liest ihn + sagt, welche Achse zu drehen ist. (Die Klassifikation Klinge→Waffe macht erst U4.)
-async function checkBandV1782CatalystReadout(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1782CatalystReadout({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 100) / 100;
         const mk = (parts) => ({ name: "_u3", parts });
         const blade = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 2.0 } },
-            { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.5 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+            __teil("box", "eisen", 0, 0, 0, 0.2, 0.1, 2.0),
+            __teil("cone", "eisen", 0, 0, 1.5, 0.2, 0.1, 0.6),
         ]);
         const ball = mk([
-            { shape: "sphere", material: "leder", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+            __teil("sphere", "leder", 0, 0, 0, 1, 1, 1),
         ]);
         const block = mk([
-            { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.4, y: 1.4, z: 1.4 } },
+            __teil("box", "eisen", 0, 0, 0, 1.4, 1.4, 1.4),
         ]);
         const out = {};
         const spec = r._blueprintRoleSpectrum(blade);
@@ -712,10 +676,8 @@ async function checkBandV1782CatalystReadout(ctx) {
 }
 
 // die Prozess-Op rückgängig machen (removePartOp); die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool").
-async function checkBandV1785RoleDisplayAndUndo(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1785RoleDisplayAndUndo({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const DEFLEN = r._defaultPartOpChain().length;
         // (#3a) ein ROLLENLOSER Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default.
@@ -751,12 +713,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         delete r.state.blueprints["_v1785_undo"];
         r.createBlueprint("_v1785_undo", "Undo-Test");
         // ein stumpfer, dichter eisen-Block → der Form nach „architecture" (kein Pointed-Blade-Gate)
-        r.addPartToBlueprint("_v1785_undo", {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        });
+        r.addPartToBlueprint("_v1785_undo", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         const ub = r.state.blueprints["_v1785_undo"];
         out.roleBeforeApply = r.computeBlueprintRole(ub); // erwartet: architecture
         // (#1a) removePartOp auf der Grund-Kette → nichts zu entfernen
@@ -819,10 +776,8 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
 
 // das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
 // nach vorn"). Jeder Editor-Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar.
-async function checkBandV1787UndoRedo(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1787UndoRedo({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         delete r.state.blueprints["_ur"];
         if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
@@ -889,10 +844,8 @@ async function checkBandV1787UndoRedo(ctx) {
 // Die Werkstatt IST der Prozess: Start nur mit hände; eine platzierte + nahe (frieden/pfad) oder
 // besessene (schöpfer) Werkstatt liefert ihren Prozess, eine bessere → höherer Cap; die
 // Domain-Werkzeuge sind ihre Op-Bibliothek.
-async function checkBandV1788WorkshopAsProcess(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1788WorkshopAsProcess({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const prevMode = r.getGameMode();
         // (1) der Spieler startet mit den Basics: nur hände ist Starter, die Domain-Ops sind op-Bibliothek
@@ -910,12 +863,7 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
         // ein eigener eisen-Bauplan
         delete r.state.blueprints["_wp88"];
         r.createBlueprint("_wp88", "WP88");
-        r.addPartToBlueprint("_wp88", {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0, y: 1, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        });
+        r.addPartToBlueprint("_wp88", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
         r.setGameMode("schöpfer");
         const menuS = r._workshopProcessesForMenu();
@@ -978,13 +926,11 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
-async function checkBandWave4(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWave4({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Materialien als Tag-Profile ###
     const wave4p1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Statisches Tag-Schema
@@ -1117,7 +1063,6 @@ async function checkBandWave4(ctx) {
 
     // ### Helix + Form-Tag-Aktivierungs-Matrix ###
     const wave4p2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // FORM_TAG_ACTIVATION existiert + frozen
@@ -1256,7 +1201,6 @@ async function checkBandWave4(ctx) {
 
     // ### Werkzeuge + opChain + Präzision ###
     const wave4p3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Werkzeug-State + Konstanten
@@ -1483,13 +1427,11 @@ async function checkBandWave4(ctx) {
     }
 }
 
-async function checkBandWave5(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWave5({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
     const wave5bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Konstanten
@@ -1502,24 +1444,9 @@ async function checkBandWave5(ctx) {
         // Bounding-Box-Mathematik: Compound mit drei Parts
         const testBp = {
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 2, y: 2, z: 2 },
-                },
-                {
-                    shape: "cone",
-                    material: "eisen",
-                    position: { x: 0, y: 3, z: 0 },
-                    size: { x: 1, y: 2, z: 1 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "bronze",
-                    position: { x: 4, y: 0, z: 0 },
-                    size: { x: 1, y: 2, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 2, 2, 2),
+                __teil("cone", "eisen", 0, 3, 0, 1, 2, 1),
+                __teil("cylinder", "bronze", 4, 0, 0, 1, 2, 1),
             ],
         };
         const bb = r._compoundBoundingBox(testBp);
@@ -1533,24 +1460,9 @@ async function checkBandWave5(ctx) {
         out.cylAtOutside = labelsCyl.has("at_outside");
 
         // Kontakt-Check: zwei berührende Boxen
-        const pA = {
-            shape: "box",
-            material: "stein",
-            position: { x: 0, y: 0, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        };
-        const pB = {
-            shape: "box",
-            material: "eisen",
-            position: { x: 0.9, y: 0, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        };
-        const pC = {
-            shape: "box",
-            material: "eisen",
-            position: { x: 5, y: 0, z: 0 },
-            size: { x: 1, y: 1, z: 1 },
-        };
+        const pA = __teil("box", "stein", 0, 0, 0, 1, 1, 1);
+        const pB = __teil("box", "eisen", 0.9, 0, 0, 1, 1, 1);
+        const pC = __teil("box", "eisen", 5, 0, 0, 1, 1, 1);
         out.contactsTouching = r._partsAreInContact(pA, pB);
         out.contactsRespectsGap = !r._partsAreInContact(pA, pC);
 
@@ -1558,18 +1470,8 @@ async function checkBandWave5(ctx) {
         // → magieleitung sollte räumlich höher sein als atomar.
         const tipBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.3, y: 3, z: 0.3 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.3, 3, 0.3),
+                __teil("pyramid", "quarz", 0, 2, 0, 0.5, 1, 0.5),
             ],
         };
         const atomar = r.computeCompoundTags(tipBp);
@@ -1579,18 +1481,8 @@ async function checkBandWave5(ctx) {
         // geprüft wird nur: pointed-at-bottom trägt kein at_top (kein Spitze-Bonus).
         const noTipBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.3, y: 3, z: 0.3 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("cylinder", "holz", 0, 2, 0, 0.3, 3, 0.3),
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
             ],
         };
         const labelsBottomPyr = r._classifyPartPosition(noTipBp.parts[1], r._compoundBoundingBox(noTipBp));
@@ -1601,24 +1493,9 @@ async function checkBandWave5(ctx) {
         // at_outside (xz-Distanz vom Compound-Zentrum), der mittlere nicht.
         const outsideBp = {
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: -3, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 3, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", -3, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 3, 0, 0, 1, 1, 1),
             ],
         };
         const outsideBB = r._compoundBoundingBox(outsideBp);
@@ -1647,13 +1524,7 @@ async function checkBandWave5(ctx) {
             label: "Atomar-Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: r._defaultPartOpChain(),
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1, { opChain: r._defaultPartOpChain() }),
             ],
         };
         r.selectBlueprintForEdit("wave5b-atomar");
@@ -1739,7 +1610,6 @@ async function checkBandWave5(ctx) {
 
     // ### Hohlraum + Symmetrieachse + Resonanz-Array ###
     const wave5bp2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.hollowShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_HOLLOW_SHAPES);
@@ -1751,19 +1621,9 @@ async function checkBandWave5(ctx) {
         const bellBp = {
             parts: [
                 // große Quarz-Glocke
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 3, y: 3, z: 3 },
-                },
+                __teil("sphere", "quarz", 0, 1, 0, 3, 3, 3),
                 // kleiner Bronze-Klöppel im Inneren
-                {
-                    shape: "sphere",
-                    material: "bronze",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.4, y: 0.4, z: 0.4 },
-                },
+                __teil("sphere", "bronze", 0, 1, 0, 0.4, 0.4, 0.4),
             ],
         };
         const pairs = r._findHollowPairs(bellBp);
@@ -1775,18 +1635,8 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: zwei sphere nebeneinander, KEIN Hohlraum
         const sideBySideBp = {
             parts: [
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: -2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "sphere",
-                    material: "bronze",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("sphere", "quarz", -2, 0, 0, 1, 1, 1),
+                __teil("sphere", "bronze", 2, 0, 0, 1, 1, 1),
             ],
         };
         out.noHollowWhenSeparate = r._findHollowPairs(sideBySideBp).length === 0;
@@ -1794,24 +1644,9 @@ async function checkBandWave5(ctx) {
         // Prinzip 3: Y-Achsen-Symmetrie. Stab aus 3 Zylindern entlang Y.
         const staffBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 0, 1, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 0, 2, 0, 0.3, 1, 0.3),
             ],
         };
         out.staffHasSymmetry = r._hasYAxisSymmetry(staffBp);
@@ -1821,18 +1656,8 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: zwei Zylinder weit auseinander → keine Symmetrie
         const wideBp = {
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: -5, y: 0, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 5, y: 0, z: 0 },
-                    size: { x: 0.3, y: 1, z: 0.3 },
-                },
+                __teil("cylinder", "holz", -5, 0, 0, 0.3, 1, 0.3),
+                __teil("cylinder", "holz", 5, 0, 0, 0.3, 1, 0.3),
             ],
         };
         out.wideNoSymmetry = !r._hasYAxisSymmetry(wideBp);
@@ -1840,30 +1665,10 @@ async function checkBandWave5(ctx) {
         // Prinzip 5: Resonanz-Array — 4 Pyramiden auf einem Kreis um die Mitte
         const arrayBp = {
             parts: [
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: -2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: 2 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: -2 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, 2, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, -2, 0.5, 1, 0.5),
             ],
         };
         out.arrayDetected = r._hasResonantArray(arrayBp);
@@ -1874,42 +1679,17 @@ async function checkBandWave5(ctx) {
         // Negativ-Test: nur 2 Pyramiden → kein Array
         const twoBp = {
             parts: [
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: -2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -2, 0, 0, 0.5, 1, 0.5),
             ],
         };
         out.twoNoArray = !r._hasResonantArray(twoBp);
         // Negativ-Test: 3 Pyramiden auf unterschiedlichen Radien
         const unevenBp = {
             parts: [
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: -5, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "pyramid",
-                    material: "quarz",
-                    position: { x: 0, y: 0, z: 8 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("pyramid", "quarz", 2, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", -5, 0, 0, 0.5, 1, 0.5),
+                __teil("pyramid", "quarz", 0, 0, 8, 0.5, 1, 0.5),
             ],
         };
         out.unevenNoArray = !r._hasResonantArray(unevenBp);
@@ -1926,18 +1706,8 @@ async function checkBandWave5(ctx) {
             [0, 2],
             [0, -2],
         ]) {
-            glockenspielBp.parts.push({
-                shape: "sphere",
-                material: "quarz",
-                position: { x: cx, y: 1, z: cz },
-                size: { x: 1.2, y: 1.2, z: 1.2 },
-            });
-            glockenspielBp.parts.push({
-                shape: "sphere",
-                material: "bronze",
-                position: { x: cx, y: 1, z: cz },
-                size: { x: 0.3, y: 0.3, z: 0.3 },
-            });
+            glockenspielBp.parts.push(__teil("sphere", "quarz", cx, 1, cz, 1.2, 1.2, 1.2));
+            glockenspielBp.parts.push(__teil("sphere", "bronze", cx, 1, cz, 0.3, 0.3, 0.3));
         }
         const glockAtomar = r.computeCompoundTags(glockenspielBp);
         const glockSpatial = r.computeSpatialTags(glockenspielBp);
@@ -1976,7 +1746,6 @@ async function checkBandWave5(ctx) {
 
     // ### Verbindungstypen mit Lastformel ###
     const wave5aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Konstanten
@@ -2006,18 +1775,8 @@ async function checkBandWave5(ctx) {
             label: "W5A Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0.95, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0.95, 0, 0, 1, 1, 1),
             ],
             connections: [],
         };
@@ -2033,18 +1792,8 @@ async function checkBandWave5(ctx) {
             label: "W5A Soft",
             builtIn: false,
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "leder",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "leder",
-                    position: { x: 0.95, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("cylinder", "leder", 0, 0, 0, 1, 1, 1),
+                __teil("box", "leder", 0.95, 0, 0, 1, 1, 1),
             ],
             connections: [],
         };
@@ -2068,8 +1817,8 @@ async function checkBandWave5(ctx) {
         const v2 = r.validateBlueprintConnections([{ type: "schmusen", partA: 0, partB: 1 }], 2);
         const touchingBp = {
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-                { shape: "box", material: "eisen", position: { x: 0, y: 1, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
+                __teil("box", "eisen", 0, 1, 0, 1, 1, 1),
             ],
         };
         out.validRejectsUnknownType =
@@ -2130,18 +1879,8 @@ async function checkBandWave5(ctx) {
             label: "W5A Weak",
             builtIn: false,
             parts: [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.2, y: 0.2, z: 0.2 },
-                },
-                {
-                    shape: "box",
-                    material: "holz",
-                    position: { x: 0.18, y: 0, z: 0 },
-                    size: { x: 0.2, y: 0.2, z: 0.2 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.2, 0.2, 0.2),
+                __teil("box", "holz", 0.18, 0, 0, 0.2, 0.2, 0.2),
             ],
             connections: [{ type: "sewing", partA: 0, partB: 1 }],
         };
@@ -2201,7 +1940,6 @@ async function checkBandWave5(ctx) {
 
     // ### Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
     const wave5cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.opClassesFrozen = Object.isFrozen(r.constructor.TOOL_OP_CLASSES);
@@ -2391,7 +2129,6 @@ async function checkBandWave5(ctx) {
 
     // ### Bugfixes nach Welle-5-Reflexion ###
     const bugfixResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -2401,24 +2138,9 @@ async function checkBandWave5(ctx) {
             label: "Bug1 Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 1, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 1, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 2, 0, 0, 1, 1, 1),
             ],
             connections: [
                 { type: "hafting", partA: 0, partB: 1 },
@@ -2439,24 +2161,9 @@ async function checkBandWave5(ctx) {
             label: "Shift Test",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 1, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 2, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 1, 0, 0, 1, 1, 1),
+                __teil("box", "stein", 2, 0, 0, 1, 1, 1),
             ],
             connections: [{ type: "hafting", partA: 1, partB: 2 }],
         };
@@ -2472,13 +2179,7 @@ async function checkBandWave5(ctx) {
             role: "tool",
             toolMeta: { opName: "bug2-op", opClass: "subtractive" },
             parts: [
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
-                },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
             ],
             connections: [],
         };
@@ -2502,13 +2203,7 @@ async function checkBandWave5(ctx) {
             role: "tool",
             toolMeta: { opName: "noisy-op", opClass: "subtractive" },
             parts: [
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
-                },
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
             ],
             connections: [],
         };
@@ -2518,12 +2213,7 @@ async function checkBandWave5(ctx) {
             label: "Plain Blueprint",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
             ],
             connections: [],
         };
@@ -2563,13 +2253,11 @@ async function checkBandWave5(ctx) {
     }
 }
 
-async function checkBandWaves9And10a(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWaves9And10a({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const AR = r.constructor;
         const out = {};
@@ -2772,7 +2460,6 @@ async function checkBandWaves9And10a(ctx) {
 
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
     const wave9bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const AR = r.constructor;
         const out = {};
@@ -2916,7 +2603,6 @@ async function checkBandWaves9And10a(ctx) {
 
     // ### Welt-Werkstatt-Architekturen + Distance-Gate ###
     const wave9cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -3022,7 +2708,6 @@ async function checkBandWaves9And10a(ctx) {
 
     // ### Maschinen-Bonus + Seelen-Bauplane ###
     const wave9dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -3130,7 +2815,6 @@ async function checkBandWaves9And10a(ctx) {
 
     // ### Präzision als Stat-Multiplikator ###
     const wave10aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -3143,30 +2827,14 @@ async function checkBandWaves9And10a(ctx) {
 
             // Parts ohne opChain → 1.0 ("geboren")
             const partsBornless = [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
-                {
-                    shape: "sphere",
-                    material: "knochen",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                },
+                __teil("box", "stein", 0, 1, 0, 1, 1, 1),
+                __teil("sphere", "knochen", 0, 1, 0, 1, 1, 1),
             ];
             out.partsNoChainIs1 = r._compoundAvgPrecisionFromParts(partsBornless) === 1.0;
 
             // Parts mit Hand-opChain (cap 0.4) → 0.4
             const partsHand = [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }],
-                },
+                __teil("box", "stein", 0, 1, 0, 1, 1, 1, { opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }] }),
             ];
             out.partsHandIs04 = Math.abs(r._compoundAvgPrecisionFromParts(partsHand) - 0.4) < 0.001;
 
@@ -3274,10 +2942,8 @@ async function checkBandWaves9And10a(ctx) {
 // M2 ROLLEN-WAHRHEIT (diag-roles): das Register kennt `vehicle`, kein Hüll-Volumen-Exploit
 // (auseinanderziehen ≠ stärker), der Klon behält Substanz (connections) + Intent (role).
 // KONSUM, nicht Existenz.
-async function checkBandM2RollenWahrheit(ctx) {
-    const { page, check } = ctx;
+async function checkBandM2RollenWahrheit({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const sigs = r.constructor.FORM_ROLE_SIGNATURES;
@@ -3324,8 +2990,8 @@ async function checkBandM2RollenWahrheit(ctx) {
         // (Σ-Substanz-Volumen statt Hüll-Volumen).
         const mk = (d) => ({
             parts: [
-                { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
-                { shape: "box", material: "eisen", position: { x: d, y: 0, z: 0 }, size: { x: 0.4, y: 0.4, z: 0.4 } },
+                __teil("box", "eisen", 0, 0, 0, 0.4, 0.4, 0.4),
+                __teil("box", "eisen", d, 0, 0, 0.4, 0.4, 0.4),
             ],
         });
         out.exploitTot = Math.abs(r._compoundSizeFactor(mk(0.5)) - r._compoundSizeFactor(mk(10))) < 1e-9;
@@ -3388,10 +3054,8 @@ async function checkBandM2RollenWahrheit(ctx) {
 // AUTO-VERBINDUNG + Sattel-Optik/Probesitz-Ghost (behavioral: diag-autoconnect). Wände: Transition-
 // Geburt/-Lösung · „✂ Lösen“ geehrt · Typ folgt Substanz · Tür/Wirbel nur aus bewusster Hand ·
 // rotations-bewusste Kontakt-Hülle · Anker überleben Part-Löschen · Ghost nur in der Werkstatt.
-async function checkBandV18164AutoConnect(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18164AutoConnect({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
@@ -3538,10 +3202,8 @@ async function checkBandV18164AutoConnect(ctx) {
 // Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
 // Wind-Term im Stoff + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
-async function checkBandV18214SkeletonMesh(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18214SkeletonMesh({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 

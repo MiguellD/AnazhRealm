@@ -148,9 +148,8 @@ async function welt() {
 
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
-        const r = await window.__weltDa();
+        await window.__weltDa();
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
-        const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
         if (!(f && f.ready)) return { fatal: "Foundry nicht bereit" };
@@ -300,8 +299,6 @@ async function welt() {
         await sleep(150);
         return page.evaluate(
             async (TAKTE, PROBEN) => {
-                const r = window.anazhRealm;
-                const st = r.state;
                 const proben = [];
                 for (let p = 0; p < PROBEN; p++) {
                     for (let i = 0; i < TAKTE; i++) {
@@ -333,8 +330,7 @@ async function welt() {
     const messung = await reihe();
     // die EINE Quelle liest den Zeichenpuffer am Ruf
     const quelleLiest = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            ren = r.state.renderer,
+        const ren = r.state.renderer,
             alt = ren.getDrawingBufferSize,
             eigen = Object.prototype.hasOwnProperty.call(ren, "getDrawingBufferSize");
         let n = 0;
@@ -347,7 +343,6 @@ async function welt() {
         selbst = {};
         // (a) ein VERKEHRTES Gesetz: die Probe-Gruppe liest `_schirm()` und zeichnet mehr Instanzen, je kleiner der Schirm
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             const T = window.THREE;
             const probe = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial(), 64);
             probe.name = "schirmProbe";
@@ -363,13 +358,11 @@ async function welt() {
         });
         selbst.verkehrt = await reihe();
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             delete r._schirmMessen;
             r.state.scene.remove(window.__schirmProbe);
         });
         // (c) die Quelle EINGEFROREN: ein fester Schirm (der alte Rückfall 1080) — das Fell folgt dem Fenster nicht mehr
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             const roh = Object.getPrototypeOf(r)._schirmMessen;
             r._schirmMessen = function () {
                 const s = roh.call(this);
@@ -380,7 +373,7 @@ async function welt() {
         });
         selbst.eingefroren = await reihe();
         await page.evaluate(() => {
-            delete window.anazhRealm._schirmMessen;
+            delete r._schirmMessen;
         });
     }
     await ende();

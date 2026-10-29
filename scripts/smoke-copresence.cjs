@@ -21,65 +21,24 @@
 // durch die volle null-origin-Wand hindurch).
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, halteBis, startProc, eigenePorte, waitFor, pruefer } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
 
-// Der Klon, in dem die Linse liegt, und der Port je Linse (COPRESENCE_PORT; der Save-Server liest PORT, der
-// Signal-Server ANAZH_SIGNALING_PORT aus COPRESENCE_SIGNAL_PORT). die eigenen Ports: COPRESENCE_PORT und
-// COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
-let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
-const ROOM = "smoke-copresence-room";
-
+// Die eigenen Ports: COPRESENCE_PORT und COPRESENCE_SIGNAL_PORT, sonst freie des Systems (welt-boot `zweiImMesh`) — nie
+// 4312/4313, die Server des Schöpfers. Die Namen setzt jede Seite vor dem Beitritt — die peer-join-Injektion trägt sie in
+// die Fremd-Welt.
 (async () => {
     const { errs: failures, check } = pruefer();
-    [PORT, SIGNAL_PORT] = await eigenePorte("COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT");
-    PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
-    SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
-
-    console.log("Starte save-server + signaling-server ...");
-    const saveServer = await startProc("save-server.js", /läuft/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-    const signaling = await startProc("signaling-server.js", /lauscht/, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) });
-
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
-
+    const mesh = await zweiImMesh(browser, "COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT", "smoke-copresence-room", (p, i) =>
+        p.evaluate((n) => (r.state.player.name = n), ["Anna", "Bo"][i])
+    );
     try {
-        const pageA = await browser.newPage();
-        const pageB = await browser.newPage();
-        await pageA.setViewport({ width: 1024, height: 640 });
-        await pageB.setViewport({ width: 1024, height: 640 });
-
-        console.log("Lade beide Spielseiten ...");
-        await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await waitFor(pageA, () => !!window.anazhRealm, "Seite A initialisiert");
-        await waitFor(pageB, () => !!window.anazhRealm, "Seite B initialisiert");
-
-        // Namen setzen — die peer-join-Injektion trägt sie in die Fremd-Welt.
-        await pageA.evaluate(() => {
-            window.anazhRealm.state.player.name = "Anna";
-        });
-        await pageB.evaluate(() => {
-            window.anazhRealm.state.player.name = "Bo";
-        });
-
-        // Mesh aufbauen (das smoke-webrtc-Muster).
-        const joinRoom = (wsUrl, room) => {
-            const r = window.anazhRealm;
-            r.state.p2p.url = wsUrl;
-            r.state.p2p.roomOverride = room;
-            r.initP2PSync(null);
-            return r.state.p2p.peerId;
-        };
-        const peerIdA = await pageA.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        const peerIdB = await pageB.evaluate(joinRoom, SIGNALING_URL, ROOM);
-        console.log(`Seite A peerId=${peerIdA}, Seite B peerId=${peerIdB}`);
-        await waitFor(pageA, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf A aktiv");
-        await waitFor(pageB, () => window.anazhRealm.state.p2p.meshActive === true, "Mesh auf B aktiv");
+        const [pageA, pageB, peerIdA, peerIdB] = [...mesh.seiten, ...mesh.peerIds];
         check("WebRTC-Mesh steht (A + B)", true);
 
         // A holt + betritt das Begegnungs-Portal (der echte Spieler-Pfad:
         // obtainPortalForWorld → Overlay → invite-Broadcast wie enterPortal).
         const enteredA = await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             const got = r.obtainPortalForWorld("begegnung");
             if (!got.ok) return { ok: false, reason: got.reason };
             const bp = r.state.blueprints[got.blueprint];
@@ -101,18 +60,16 @@ const ROOM = "smoke-copresence-room";
         // B bekommt die Einladung (mit Tier-Wahrheit im Banner) + folgt.
         await waitFor(
             pageB,
-            () => !!(window.anazhRealm.state.p2p && window.anazhRealm.state.p2p.pendingInvite),
+            () => !!(r.state.p2p && r.state.p2p.pendingInvite),
             "B sieht die Portal-Einladung"
         );
         const bannerB = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             r._renderPortalInviteBanner();
             const tier = document.querySelector("#portal-invite-banner .portal-invite-tier");
             return tier ? tier.textContent : "";
         });
         check("B: der Einladungs-Banner sagt die Tier-Wahrheit", /Ko-Präsenz/.test(bannerB), bannerB);
         const joinedB = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             const res = r.joinPortalInvite();
             const po = r._portalOverlay;
             return { ok: res.ok === true, coPresence: po ? po.coPresence === true : false };
@@ -127,7 +84,7 @@ const ROOM = "smoke-copresence-room";
         await waitFor(
             pageB,
             (idA) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.peers && po.peers.has(idA));
             },
             "B sieht A's Pose in seiner Sub-Welt (po.peers)",
@@ -137,7 +94,7 @@ const ROOM = "smoke-copresence-room";
         await waitFor(
             pageA,
             (idB) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.peers && po.peers.has(idB));
             },
             "A sieht B's Pose in seiner Sub-Welt (po.peers)",
@@ -150,13 +107,13 @@ const ROOM = "smoke-copresence-room";
         await waitFor(
             pageB,
             () => {
-                const j = window.anazhRealm.state.worldJournal;
+                const j = r.state.worldJournal;
                 return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "B's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
         const journalB = await pageB.evaluate(() => {
-            const j = window.anazhRealm.state.worldJournal;
+            const j = r.state.worldJournal;
             const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
             return hit.length ? hit[hit.length - 1].text : "";
         });
@@ -164,13 +121,13 @@ const ROOM = "smoke-copresence-room";
         await waitFor(
             pageA,
             () => {
-                const j = window.anazhRealm.state.worldJournal;
+                const j = r.state.worldJournal;
                 return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "A's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
         const journalA = await pageA.evaluate(() => {
-            const j = window.anazhRealm.state.worldJournal;
+            const j = r.state.worldJournal;
             const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
             return hit.length ? hit[hit.length - 1].text : "";
         });
@@ -182,7 +139,7 @@ const ROOM = "smoke-copresence-room";
         // local-pose wandert → B sieht die NEUE Pose übers Mesh. Der volle
         // Kreis: AnazhRealm-Taste treibt die fremde Engine treibt das Mesh.
         const bridgeA = await pageA.evaluate(() => {
-            const po = window.anazhRealm._portalOverlay;
+            const po = r._portalOverlay;
             return {
                 actions: po && po.inputActions ? po.inputActions.slice() : null,
                 hint: po && po.hintEl ? po.hintEl.textContent : "",
@@ -205,13 +162,14 @@ const ROOM = "smoke-copresence-room";
         const halt = await halteBis(pageA, {
             taste: "KeyW",
             ziel: (beforeZ) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
             },
             args: [bridgeA.poseZ === null ? 0 : bridgeA.poseZ],
             frist: 30000,
         });
-        if (!halt.erreicht) throw new Error("Timeout: A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)");
+        if (!halt.erreicht)
+            throw new Error("Timeout: A: die Heimat-Taste bewegte die fremde Gestalt (localPose wandert)");
         check("A: Heimat-Taste → fremde Engine → local-pose (der volle Kreis)", true, `${halt.ms} ms W`);
 
         // W18-D — der PERSISTENZ-SLOT: A's Welt exponiert ihren Zustand
@@ -236,11 +194,11 @@ const ROOM = "smoke-copresence-room";
 
         // Abschied: A verlässt das Portal → A's Posen verstummen → B's Sweep
         // räumt A als peer-leave (Timeout 6 s + Sweep 2 s).
-        await pageA.evaluate(() => window.anazhRealm.exitPortal());
+        await pageA.evaluate(() => r.exitPortal());
         await waitFor(
             pageB,
             (idA) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.peers && !po.peers.has(idA));
             },
             "B: A verstummt → peer-leave (Abwesenheits-Sweep)",
@@ -252,14 +210,13 @@ const ROOM = "smoke-copresence-room";
         // enter → die fremde Gestalt steht, wo sie stand (die bewegte Position
         // aus dem Input-Brücken-Lauf, nicht 0/0).
         await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             const bp = r.state.blueprints["portal_begegnung"];
             r._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
         });
         await waitFor(
             pageA,
             () => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.localPose && po.localPose.z < -50);
             },
             "A: die Welt erwachte an der gemerkten Position (restoreState)"
@@ -269,7 +226,6 @@ const ROOM = "smoke-copresence-room";
         // W18-D — das WOHNEN: B (noch im Portal) wohnt hier → der Hinweis
         // sagt es, der Zeiger steht, die Gefährten sehen „wohnt in …".
         const dwellB = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             const res = r.dwellInPortal();
             const po = r._portalOverlay;
             let marker = null;
@@ -293,7 +249,7 @@ const ROOM = "smoke-copresence-room";
         await waitFor(
             pageA,
             (idB) => {
-                const entry = window.anazhRealm.state.p2p.peers.get(idB);
+                const entry = r.state.p2p.peers.get(idB);
                 return !!(entry && /Begegnungs-Feld/.test(entry.dwellingIn || ""));
             },
             "A sieht B's Wohnsitz übers Mesh (soul-Kanal)",
@@ -304,17 +260,17 @@ const ROOM = "smoke-copresence-room";
         // W18-D — die KRONE: B lädt neu → der Boot kehrt DURCH DAS TOR zurück
         // (du wachst auf, wo du wohnst — nicht auf der Heimat-Wiese).
         await pageB.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
-        await waitFor(pageB, () => !!window.anazhRealm, "B nach Reload initialisiert");
+        await waitFor(pageB, () => !!r, "B nach Reload initialisiert");
         await waitFor(
             pageB,
             () => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && /begegnung/.test(po.world));
             },
             "B: der Boot kehrte durch das Tor zurück (Wohnen überlebte den Reload)"
         );
         const rebornB = await pageB.evaluate(() => {
-            const po = window.anazhRealm._portalOverlay;
+            const po = r._portalOverlay;
             return { hint: po && po.hintEl ? po.hintEl.textContent : "" };
         });
         check("B: du wachst auf, wo du wohnst (Boot-Rückkehr durchs Tor)", true);
@@ -322,13 +278,12 @@ const ROOM = "smoke-copresence-room";
 
         // W18-D — „ziehe heim": das Wohnen endet, der Zeiger fällt.
         const movedHome = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             const res = r.endDwelling();
             return { was: res.was, marker: localStorage.getItem("anazh.portalDwelling") };
         });
         check('B: „ziehe heim" beendet das Wohnen', movedHome.was === "begegnung" && movedHome.marker === null);
-        await pageB.evaluate(() => window.anazhRealm.exitPortal());
-        await pageA.evaluate(() => window.anazhRealm.exitPortal());
+        await pageB.evaluate(() => r.exitPortal());
+        await pageA.evaluate(() => r.exitPortal());
 
         console.log("");
         if (failures.length) {
@@ -343,8 +298,6 @@ const ROOM = "smoke-copresence-room";
         console.error("❌ Smoke-Test abgebrochen:", err.message);
         process.exitCode = 1;
     } finally {
-        await browser.close().catch(() => {});
-        saveServer.kill();
-        signaling.kill();
+        await mesh.ende();
     }
 })();

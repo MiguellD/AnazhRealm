@@ -853,6 +853,7 @@ class AnazhRealm_dirigent_takt {
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
         this._leibKontakte();
+        this._freiSchritt(dt); // DER FREIE KÖRPER (physik.K3): Kiste, Fass — fallen, stapeln, gestoßen kippen
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf

@@ -51,7 +51,6 @@ function geklemmteStufe(listeJson, wahl) {
 // ready-Handshake, D der Auto-Blueprint am EINEN Chokepoint, P die Place-Auflösung, E das Asset je Stufe, F der Schlüssel der Wahl.
 async function epsilonSeite(w) {
     await window.__weltDa();
-    const r = window.anazhRealm;
     const A = r.constructor;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
@@ -161,4 +160,22 @@ function selbsttest() {
     );
 }
 
-module.exports = { kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };
+// DER LEBENDE DRAHT einer ε-Linse (fachwerk · porta · schmiede · vehicle): die Null-Seite am Server (`port`), die Seite der
+// Domäne `W` (`epsilonSeite`), die eigene Probe der Linse (`probe`, in derselben Seite), die Stufen der Kerne dort (dieselben
+// Dateien wie der Worker, nie eine Abschrift) und ihr Urteil → [eps, out, kern]. Bis zur Decke w3s-sukzession trug jede
+// ε-Linse diesen Gang selbst.
+async function epsilonDraht(server, port, W, check, probe) {
+    console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
+    await server.lausche(port);
+    const { browser, page } = await require("./welt-boot.cjs").nullSeite({ frist: 180000 });
+    await server.zeige(page, 30000);
+    const eps = await page.evaluate(epsilonSeite, W);
+    const out = probe && (await page.evaluate(probe));
+    const kern = await page.evaluate(seitenStufen, kernRaeume());
+    await browser.close();
+    server.close();
+    epsilonUrteil(check, eps, W, kern);
+    return [eps, out, kern];
+}
+
+module.exports = { epsilonDraht, kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };

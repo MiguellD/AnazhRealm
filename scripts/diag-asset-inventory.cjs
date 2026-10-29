@@ -59,7 +59,7 @@ hauptLauf(async () => {
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
         for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter();) {
-            const r0 = window.anazhRealm;
+            const r0 = r;
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
                     r0._gameLoopTick(performance.now());
@@ -69,7 +69,6 @@ hauptLauf(async () => {
             }
             await sleep(6);
         }
-        const r = window.anazhRealm;
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => !!!(f && !f.ready));
@@ -107,7 +106,6 @@ hauptLauf(async () => {
         // selbst (scripts/lib/wiese-sicht.cjs) — jede Senke muss danach als STUDIO-Emitter im Zensus stehen.
         o.wiese = window.__wieseSicht(r);
         // ── Identitäts-Karten (die Teilmenge wird über IDENTITÄT klassifiziert):
-        const st = r.state;
         const grassSet = new Set();
         if (st.voxelChunkGrass) for (const m of st.voxelChunkGrass.values()) if (m) grassSet.add(m);
         const waterSet = new Set();

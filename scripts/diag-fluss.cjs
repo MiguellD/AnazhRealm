@@ -10,14 +10,15 @@
 //   V1  Konsum-Wand: aWind fällt, position/color reisen · V2 Uint16-Index ≤ 65 536 Vertices, Uint32 darüber
 //   V3  Transfer: der Studio-Puffer ist nach dem Senden abgelöst (byteLength 0)
 //   V4  Platte: zweite Anfrage kommt von der Platte, das Studio baut nicht noch einmal
-//   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 Format-Wechsel leert die Platte
-//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V14 die Platte hält keinen Faden — die Karte reist seit S2
-//       nie durch den Kanal (sie backt im Welt-Renderer, `_karteWeltBacken`)
-// S7f die Stempel-Probe: ein UI-Edit am Labor lässt den Stempel stehen, ein Brücken-Edit bewegt ihn. Der Boot selbst (die
-//   Schale vorn, Laden und Stempel allein aus dem Manifest, keine Labor-Datei) ist ein LAUF: gate:pack-contract `bootLauf`
-//   (B3a; vorher S3 · S7a · S7e · W4 · W5)
+//   V5  nurPlatte (Ship-Hook): Miss = leere Antwort, kein Bau · V6 ein Format-Wechsel baut neu · V9 ein Kern-Wechsel baut nur
+//       seine Leser (Körper, Dorf-Export, Karte unter dem Gesetz-SHA ihrer Kerne, pipeline.K4 Stufe 2)
+//   V7  Saison-Nagel · V8 Vorrat (Platte, leere Antwort) · V14 die Platte hält keinen Faden — die Karte backt seit S2 im
+//       Welt-Renderer (`_karteWeltBacken`), durch den Kanal reisen nur ihre BC-Bytes zur Platte und zurück (V9)
+// Der Boot selbst (die Schale vorn, Laden und Stempel je Kern allein aus dem Manifest, keine Labor-Datei) ist ein LAUF:
+//   gate:pack-contract `bootLauf` (B3a; vorher S3 · S7a · S7e · W4 · W5, S7f fiel mit pipeline.K4 Stufe 2 an ihn)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
-//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W6 DIE WERK-FÄDEN:
+//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot nimmt nach der Liefer-Marke des Spiels die Körper
+//   ≥ 95 %, den Blatt-Atlas und den Dorf-Export ganz von der Platte · W6 DIE WERK-FÄDEN:
 //   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
 //   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
 //   Fahrzeug-Vorrat wärmt nur die Platte
@@ -63,28 +64,6 @@ function schaleVon() {
 // 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/T + 0,03 — das alte `h % 16` (untere Bits) legte ein Klon-Gitter. (b) Das
 // Eimer-Urteil des Orts: im Bestand wählt der Same 1..V (je 1/V ± 0,03), frei steht immer der Solitär T; eine Art ohne
 // Solitär behält ihren Samen.
-// K42 — DIE STEMPEL-PROBE: der Platten-Stempel (die Formel der Schale, in Node nachgerechnet: pack-kanon computeStamp)
-// bleibt bei einem UI-Edit am Pflanzen-Labor gleich und springt bei einem Edit an der Brücke. `lies` (DARF) färbt eine
-// Quelle für den Selbsttest.
-const LABOR_SHELL = "worlds/terrain/phytogenesis.js";
-function stempelProbe(lies) {
-    const PK = require("./lib/pack-kanon.cjs");
-    const roh = (rel) => (lies && lies(rel)) || fs.readFileSync(path.join(root, rel), "utf8");
-    const man = JSON.parse(roh("cores.manifest.json"));
-    const br = (man.find((c) => c && typeof c.bruecke === "string") || {}).bruecke || null;
-    const mit = (ziel, zusatz) => PK.computeStamp(root, (rel) => (rel === ziel ? roh(rel) + zusatz : lies && lies(rel)));
-    const basis = mit(null, "");
-    const labor = mit(LABOR_SHELL, "\n// UI-Edit am Labor (Stempel-Probe)\n");
-    const bruecke = br ? mit(br, "\n// Edit an der Brücke (Stempel-Probe)\n") : basis;
-    return [
-        [
-            "S7f die Stempel-Probe: ein UI-Edit am Pflanzen-Labor lässt den Platten-Stempel stehen, ein Brücken-Edit bewegt ihn",
-            !!br && labor === basis && bruecke !== basis,
-            `Stempel ${basis.slice(0, 12)} · Labor-Edit ${labor.slice(0, 12)} · Brücken-Edit ${bruecke.slice(0, 12)}`,
-        ],
-    ];
-}
-
 // Die Klon-Linse ruft die Methoden der GELADENEN Klasse (`stammLib.ladeKlasse`: Kerne wie index.html, dann der Stamm) —
 // `teile` trägt im Selbsttest einen gebrochenen Stamm; der Solitär und der Kern-Wert kommen aus den echten Statiken.
 function gestalten(teile) {
@@ -174,6 +153,8 @@ function gestalten(teile) {
 // Saison, die es sah (der Saison-Nagel).
 const STUDIO = `
 let gebaut = 0, letzte = null;
+self.__aKern = { PRESETS: { ka: {} }, exportSettlement() {} };
+self.__bKern = { PRESETS: { kb: {} } };
 const saisons = [];
 self.onmessage = (e) => {
     const m = e.data;
@@ -194,7 +175,8 @@ self.onmessage = (e) => {
                   aWind: { array: new Float32Array(9), itemSize: 3 }, index: new Uint32Array([0, 1, 2]) },
                 { kind: "foliage", mat: {}, position: { array: gross, itemSize: 3 }, index: new Uint32Array([0, 1, 69999]) },
             ] });
-    } else if (m.type === "frage")
+    } else if (m.type === "export-settlement") self.postMessage({ type: "settlement", reqId: m.reqId, plan: { n: ++gebaut } });
+    else if (m.type === "frage")
         self.postMessage({ type: "antwort", gebaut, saisons: saisons.slice(), abgeloest: letzte ? letzte.byteLength === 0 : null });
 };`;
 
@@ -203,6 +185,9 @@ async function verhalten(schaleSrc) {
         seiten: {
             "/": "<!doctype html><meta charset=utf-8><title>fluss</title>",
             "/kern.js": "// kern",
+            "/a.js": "// a",
+            "/b.js": "// b",
+            "/b2.js": "// b neu",
         },
     });
     await server.lausche(PORT);
@@ -212,13 +197,16 @@ async function verhalten(schaleSrc) {
         await server.zeige(page, undefined, "", "load");
         return await page.evaluate(
             async (schale, studio) => {
-                const neu = (format, platte) => {
+                const o = location.origin;
+                const neu = (format, platte, b) => {
                     const cfg = {
                         lesen: ["position", "normal", "color", "uv"],
                         format,
                         platte,
-                        manifestText: "[]",
-                        stempelUrls: [location.origin + "/kern.js"],
+                        kerne: [{ id: "basis", ns: null, basis: true, urls: [o + "/kern.js"] }].concat(
+                            b ? [{ id: "a", ns: "__aKern", urls: [o + "/a.js"] }, { id: "b", ns: "__bKern", urls: [o + b] }] : []
+                        ),
+                        wirt: [o + "/kern.js"],
                     };
                     const boot = "(function " + schale + ")(" + JSON.stringify(cfg) + ");" + studio;
                     const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
@@ -240,139 +228,51 @@ async function verhalten(schaleSrc) {
                     return { w, frag };
                 };
                 const aus = {};
+                const bau = (w, reqId, presetId, mehr) => w.frag(Object.assign({ type: "build-asset", reqId, presetId, seed: 1, lod: 0 }, mehr)); // prettier-ignore
+                const frage = (w) => w.frag({ type: "frage" }, "antwort");
                 const A = neu(2, true);
-                const a1 = await A.frag({ type: "build-asset", reqId: "a1", presetId: "x", seed: 1, lod: 0 });
-                const m0 = a1 && a1.meshes[0];
-                const m1 = a1 && a1.meshes[1];
+                const a1 = await bau(A, "a1", "x");
+                const [m0, m1] = a1 ? a1.meshes : [];
                 aus.wand = !!(m0 && !m0.aWind && m0.position && m0.color);
-                aus.u16 = !!(m0 && m0.index instanceof Uint16Array);
-                aus.u32 = !!(m1 && m1.index instanceof Uint32Array);
-                const q1 = await A.frag({ type: "frage" }, "antwort");
-                aus.transfer = !!(q1 && q1.abgeloest === true);
-                const key = "x|1|0";
-                const b1 = await A.frag({
-                    type: "build-asset",
-                    reqId: "b1",
-                    presetId: "x",
-                    seed: 1,
-                    lod: 0,
-                    platte: key,
-                });
+                aus.u16 = m0?.index instanceof Uint16Array;
+                aus.u32 = m1?.index instanceof Uint32Array;
+                aus.transfer = (await frage(A))?.abgeloest === true;
+                const key = { platte: "x|1|0" };
+                const b1 = await bau(A, "b1", "x", key);
                 await sleep(400);
-                const b2 = await A.frag({
-                    type: "build-asset",
-                    reqId: "b2",
-                    presetId: "x",
-                    seed: 1,
-                    lod: 0,
-                    platte: key,
-                });
-                const q2 = await A.frag({ type: "frage" }, "antwort");
-                aus.platte = !!(
-                    b1 &&
-                    !b1.platte &&
-                    b2 &&
-                    b2.platte === true &&
-                    b2.meshes.length === 2 &&
-                    q2 &&
-                    q2.gebaut === 2
-                );
-                aus.platteSchlank = !!(
-                    b2 &&
-                    b2.meshes[0] &&
-                    !b2.meshes[0].aWind &&
-                    b2.meshes[0].index instanceof Uint16Array
-                );
-                const c1 = await A.frag({
-                    type: "build-asset",
-                    reqId: "c1",
-                    presetId: "y",
-                    seed: 1,
-                    lod: 0,
-                    platte: "y|1|0",
-                    nurPlatte: true,
-                });
-                const q3 = await A.frag({ type: "frage" }, "antwort");
-                aus.nurPlatte = !!(c1 && c1.meshes.length === 0 && q3 && q3.gebaut === 2);
+                const b2 = await bau(A, "b2", "x", key);
+                const q2 = await frage(A);
+                aus.platte = !!b1 && !b1.platte && b2?.platte === true && b2.meshes.length === 2 && q2?.gebaut === 2;
+                aus.platteSchlank = !!b2?.meshes[0] && !b2.meshes[0].aWind && b2.meshes[0].index instanceof Uint16Array;
+                const c1 = await bau(A, "c1", "y", { platte: "y|1|0", nurPlatte: true });
+                aus.nurPlatte = c1?.meshes.length === 0 && (await frage(A))?.gebaut === 2;
                 A.w.terminate();
                 const B = neu(3, true);
-                const d1 = await B.frag({
-                    type: "build-asset",
-                    reqId: "d1",
-                    presetId: "x",
-                    seed: 1,
-                    lod: 0,
-                    platte: key,
-                });
-                aus.format = !!(d1 && !d1.platte && d1.meshes.length === 2);
+                const d1 = await bau(B, "d1", "x", key);
+                aus.format = !!d1 && !d1.platte && d1.meshes.length === 2;
                 B.w.terminate();
                 // V7 DER SAISON-NAGEL: ein Herbst-Körper (ohne Platte) erreicht das Studio als
                 // Sommer — jeder Bau ist Golden-Sommer, die Farbe trägt der Host.
                 const C = neu(3, false);
-                await C.frag({ type: "build-asset", reqId: "s1", presetId: "x", seed: 2, lod: 1, season: "autumn" });
-                const q4 = await C.frag({ type: "frage" }, "antwort");
-                aus.nagel = !!(
-                    q4 &&
-                    q4.saisons.length === 1 &&
-                    q4.saisons.every((s) => s === "summer")
-                );
+                await bau(C, "s1", "x", { seed: 2, lod: 1, season: "autumn" });
+                const q4 = await frage(C);
+                aus.nagel = q4?.saisons.length === 1 && q4.saisons.every((s) => s === "summer");
                 C.w.terminate();
                 // V8 DER VORRAT: ein Vorrats-Auftrag baut einmal, schreibt die Platte und antwortet LEER; der nächste
                 // Abruf desselben Körpers kommt von der Platte, ein zweiter Vorrat baut nicht.
+                const gt = (vorrat) => ({ seed: 7, platte: "gt|7|0", vorrat });
                 const D = neu(3, true);
-                const v1 = await D.frag({
-                    type: "build-asset",
-                    reqId: "v1",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                    vorrat: true,
-                });
+                const v1 = await bau(D, "v1", "gt", gt(true));
                 await sleep(400);
-                const v2 = await D.frag({
-                    type: "build-asset",
-                    reqId: "v2",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                    vorrat: true,
-                });
-                const v3 = await D.frag({
-                    type: "build-asset",
-                    reqId: "v3",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                });
-                const q5 = await D.frag({ type: "frage" }, "antwort");
-                aus.vorrat = !!(
-                    v1 &&
-                    v1.meshes.length === 0 &&
-                    v2 &&
-                    v2.meshes.length === 0 &&
-                    v3 &&
-                    v3.platte === true &&
-                    v3.meshes.length === 2 &&
-                    q5 &&
-                    q5.gebaut === 1
-                );
+                const v2 = await bau(D, "v2", "gt", gt(true));
+                const v3 = await bau(D, "v3", "gt", gt());
+                aus.vorrat =
+                    v1?.meshes.length === 0 && v2?.meshes.length === 0 && v3?.platte === true && v3.meshes.length === 2 && (await frage(D))?.gebaut === 1; // prettier-ignore
                 D.w.terminate();
                 // V8b ohne Platte wärmt der Vorrat nichts: leere Antwort, KEIN Bau.
                 const E = neu(3, false);
-                const v4 = await E.frag({
-                    type: "build-asset",
-                    reqId: "v4",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                    vorrat: true,
-                });
-                const q6 = await E.frag({ type: "frage" }, "antwort");
-                aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
+                const v4 = await bau(E, "v4", "gt", gt(true));
+                aus.vorratOhnePlatte = v4?.meshes.length === 0 && (await frage(E))?.gebaut === 0;
                 E.w.terminate();
                 // V14 DIE PLATTE HÄLT KEINEN FADEN: zwei Fäden auf EINER Platte (die Werk-Fäden, `_foundryHelfer`). Der
                 // eine baut lang (1,5 s synchron); der andere baut währenddessen zwei Körper — der zweite liest erst
@@ -382,8 +282,7 @@ async function verhalten(schaleSrc) {
                 const Wk = neu(3, true);
                 const tH0 = performance.now();
                 let tLang = null;
-                const koerper = (w, id, presetId) =>
-                    w.frag({ type: "build-asset", reqId: id, presetId, seed: 1, lod: 0, platte: presetId + "|1|0" });
+                const koerper = (w, id, presetId) => bau(w, id, presetId, { platte: presetId + "|1|0" });
                 const lang = koerper(H, "kh1", "lang").then((k) => {
                     tLang = performance.now() - tH0;
                     return k;
@@ -397,6 +296,22 @@ async function verhalten(schaleSrc) {
                 aus.fadenMs = { werk: Math.round(tWerk), lang: tLang == null ? null : Math.round(tLang) };
                 H.w.terminate();
                 Wk.w.terminate();
+                // V9 DER KERN-WECHSEL baut nur seine Leser (pipeline.K4 Stufe 2): Kern a trägt die Art ka und den Dorf-Export, b
+                // die Art kb; ein neuer Text von b (sein SHA springt) baut kb neu — ka, ihre Karte und das Dorf kommen von der Platte
+                const dorf = (w, id) => w.frag({ type: "export-settlement", reqId: id, dp: { n: 1, h: new Float32Array([1, 2]) } });
+                const karte = { type: "karte", presetId: "ka", platte: "fimp|bc|ka" };
+                const K1 = neu(3, true, "/b.js");
+                await koerper(K1, "k1", "ka");
+                await koerper(K1, "k2", "kb");
+                await dorf(K1, "k3");
+                K1.w.postMessage(Object.assign({}, karte, { type: "karte-ablage", karte: { bytes: new Uint8Array(8), frame: {} } }));
+                await sleep(400);
+                K1.w.terminate();
+                const K2 = neu(3, true, "/b2.js");
+                const [a, b, d, k] = [await koerper(K2, "m1", "ka"), await koerper(K2, "m2", "kb"), await dorf(K2, "m3"), await K2.frag(Object.assign({ reqId: "m4" }, karte))]; // prettier-ignore
+                aus.kernWechsel = !!a?.platte && !b?.platte && b?.liefer?.kerne.join() === "b,basis" && !!d?.platte && k?.karte?.bytes.byteLength === 8; // prettier-ignore
+                aus.kernWechselZeile = [a, b, d, k].map((x) => x && (x.presetId || x.type) + (x.platte ? " Platte" : " gebaut")).join(" · "); // prettier-ignore
+                K2.w.terminate();
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
@@ -430,27 +345,6 @@ const WELT_HAKEN = () => {
     window.Blob = B1;
     const W0 = window.Worker;
     const fl = (window.__fl = { posts: [], antworten: [], faeden: 0, reist: new Set() });
-    const bytes = (m) => {
-        let b = 0;
-        const seen = new Set();
-        const add = (a) => {
-            if (a && ArrayBuffer.isView(a) && !seen.has(a.buffer)) {
-                seen.add(a.buffer);
-                b += a.byteLength;
-            }
-        };
-        if (Array.isArray(m.meshes))
-            for (const x of m.meshes) {
-                if (!x) continue;
-                for (const k in x) if (x[k] && x[k].array) add(x[k].array);
-                add(x.index);
-            }
-        if (m.payload) {
-            add(m.payload.albedo);
-            add(m.payload.normal);
-        }
-        return b;
-    };
     window.Worker = class extends W0 {
         constructor(u, o) {
             super(u, o);
@@ -460,23 +354,13 @@ const WELT_HAKEN = () => {
                 // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
                 if (m && m.type === "asset" && Array.isArray(m.meshes))
                     for (const x of m.meshes) for (const k in x || {}) if (x[k] && x[k].array) fl.reist.add(k);
-                if (m && (m.type === "asset" || m.type === "impostor"))
-                    fl.antworten.push({
-                        w: this.__flNr,
-                        id: m.reqId,
-                        t: m.type,
-                        platte: m.platte === true,
-                        vorrat: m.vorrat === true,
-                        bytes: bytes(m),
-                        p: m.presetId,
-                        s: m.seed,
-                        l: m.lod,
-                    });
+                if (m && m.type === "asset")
+                    fl.antworten.push({ w: this.__flNr, vorrat: m.vorrat === true, leer: !m.meshes.length, p: m.presetId });
             });
         }
         postMessage(m, t) {
             if (m && m.type === "build-asset")
-                fl.posts.push({ t: m.type, p: m.presetId, s: m.seed, l: m.lod, ov: !!m.ov, w: this.__flNr, id: m.reqId });
+                fl.posts.push({ p: m.presetId, s: m.seed, l: m.lod, ov: !!m.ov, w: this.__flNr, id: m.reqId });
             return t ? super.postMessage(m, t) : super.postMessage(m);
         }
     };
@@ -484,7 +368,6 @@ const WELT_HAKEN = () => {
 const WELT_MESSEN = async () => {
     await window.__weltDa(); // der Ring wächst nach dem Erwachen des Boots (die Tiere stehen, ehe der Takt läuft)
     for (const weiter = window.__deckel("der Ring am Fluss", 6000); weiter(); ) {
-        const r = window.anazhRealm;
         if (r && typeof r._gameLoopTick === "function") {
             try {
                 r._gameLoopTick(performance.now());
@@ -493,7 +376,6 @@ const WELT_MESSEN = async () => {
         }
         await sleep(6);
     }
-    const r = window.anazhRealm;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => !!(!(f && !f.ready)));
     const pump = async (n) => {
@@ -524,31 +406,22 @@ const WELT_MESSEN = async () => {
         T[sp] = r._foundryGestalten(sp);
     const samen = {};
     for (const x of fl.posts)
-        if (x.t === "build-asset" && !x.ov) (samen[x.p] = samen[x.p] || []).includes(x.s) || samen[x.p].push(x.s);
+        if (!x.ov) (samen[x.p] = samen[x.p] || []).includes(x.s) || samen[x.p].push(x.s);
     const karten = {};
     for (const k of r._kartenAtlas ? r._kartenAtlas.zellen.keys() : [])
         if (k.startsWith("fimp:") && !k.startsWith("fimp:g:")) {
             const sp = k.slice(5).split("|")[0];
             karten[sp] = (karten[sp] || 0) + 1;
         }
-    const MB = (arr) => arr.reduce((a, x) => a + x.bytes, 0) / 1048576;
-    const gebaut = fl.antworten.filter((x) => !x.platte);
     const boot = {
         posts: fl.posts.length,
         antworten: fl.antworten.length,
         // tote Fracht: L2-Geometrie einer Karten-Art (Baum/Strauch) — ihre Fernstufe ist die Karte, kein Leser liest sie
-        kartenArtL2: fl.posts.filter((x) => x.t === "build-asset" && x.l === 2 && r._foundryPresetIsTree(x.p)).length,
+        kartenArtL2: fl.posts.filter((x) => x.l === 2 && r._foundryPresetIsTree(x.p)).length,
         // ein Boot räumt nie im LRU (der Deckel trägt den ganzen Boot)
         lru: f.lruEvicted ? f.lruEvicted.size : 0,
         cache: f.cache.size,
-        gebautMB: MB(gebaut),
-        gebautN: gebaut.length,
-        platteMB: MB(fl.antworten.filter((x) => x.platte)),
-        platteN: fl.antworten.filter((x) => x.platte).length,
-        gebautListe: gebaut
-            .filter((x) => x.bytes > 0)
-            .slice(0, 12)
-            .map((x) => `${x.p}|${x.s}|${x.l}`),
+        je: f.lieferung.je, // die Liefer-Marke des Spiels (`_foundryLiefer`): je Art von der Platte · im Werk · im Haupt-Faden
     };
     // W6 — DIE WERK-FÄDEN: je Bahn (das Werk k = 0, jeder Helfer k) ihre Aufträge, Antworten und jede Nummer, die eine
     // fremde Bahn nennt (die Pumpe schrieb `w<k>_` falsch) oder die `_foundryBahn` falsch liest
@@ -557,9 +430,9 @@ const WELT_MESSEN = async () => {
         (f.helfer || []).map((h) => ({ k: h.k, nr: nrVon(h.w), bereit: h.bereit === true }))
     );
     for (const b of bahnen) {
-        const ps = fl.posts.filter((x) => x.t === "build-asset" && x.w === b.nr);
+        const ps = fl.posts.filter((x) => x.w === b.nr);
         b.posts = ps.length;
-        b.antworten = fl.antworten.filter((x) => x.t === "asset" && x.w === b.nr).length;
+        b.antworten = fl.antworten.filter((x) => x.w === b.nr).length;
         b.fremd = ps
             .filter((x) => {
                 const m = /w(\d+)_\d+$/.exec(String(x.id));
@@ -569,7 +442,7 @@ const WELT_MESSEN = async () => {
             .slice(0, 4);
     }
     boot.werk = { kerne: navigator.hardwareConcurrency, bahnen };
-    if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten) };
+    if (window.__flussNurBoot) return { boot };
     // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und den toten aWind · aCenter · aType zählt, was
     // `_foundryBuildMesh` liest — die Menge muss FOUNDRY_LESEN sein, und was im Boot reist, steht in der Wand
     const lesen = r.constructor.FOUNDRY_LESEN,
@@ -584,7 +457,7 @@ const WELT_MESSEN = async () => {
     const krit = (r._foundryLibrarySpec().critical || {}).species || [];
     const vorrat = {
         arten: krit.length,
-        kalt: krit.filter((sp) => !fl.antworten.some((x) => x.p === sp && x.vorrat && x.bytes === 0)),
+        kalt: krit.filter((sp) => !fl.antworten.some((x) => x.p === sp && x.vorrat && x.leer)),
     };
     const instanziert = () => (r.state.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
@@ -617,7 +490,6 @@ const WELT_MESSEN = async () => {
         wand: { lesen: [...lesen], gelesen: [...gelesen], reist: [...fl.reist] },
         vorrat,
         boot,
-        bootMB: fl.antworten.reduce((a, x) => a + x.bytes, 0) / 1048576,
         saison: {
             kontrolle,
             posts: fl.posts.length - n0,
@@ -671,15 +543,13 @@ function urteilWelt(d) {
         d.boot.lru === 0,
         `${d.boot.lru} Räumungen · ${d.boot.cache} Körper im Cache`
     );
-    const z = d.zweit && d.zweit.boot;
+    // die Liefer-Marke des Zweit-Boots: je Art der Anteil von der Platte gegen alles, was im Werk oder Haupt-Faden entstand
+    const je = (d.zweit && d.zweit.boot.je) || {};
+    const traegt = (k, q) => !!je[k] && je[k].platte >= Math.max(1, q * (je[k].platte + je[k].werk + je[k].haupt));
     pruef(
-        "W3 der Zweit-Boot kommt von der Platte: Kanal-Neubau ≤ 5 MB, die Platte trägt den Boot",
-        z && z.gebautMB <= 5 && z.platteN >= 50,
-        z
-            ? `Erst-Boot gebaut ${d.boot.gebautMB.toFixed(1)} MB · Zweit-Boot gebaut ${z.gebautMB.toFixed(2)} MB ` +
-                  `(${z.gebautN} Antworten), von der Platte ${z.platteMB.toFixed(1)} MB (${z.platteN})` +
-                  (z.gebautListe.length ? ` · neu: ${z.gebautListe.join(" ")}` : "")
-            : "kein Zweit-Boot gemessen"
+        "W3 der Zweit-Boot kommt von der Platte: die Körper ≥ 95 %, der Blatt-Atlas und der Dorf-Export ganz (pipeline.K4)",
+        traegt("koerper", 0.95) && traegt("blatt-atlas", 1) && traegt("dorf-export", 1),
+        JSON.stringify(je)
     );
     const s = d.saison;
     pruef(
@@ -758,11 +628,12 @@ const VERHALTEN = [
     ["V4 Platte: die zweite Anfrage kommt von der Platte, kein zweiter Bau", "platte"],
     ["V4b die Platte hält die verschlankte Antwort", "platteSchlank"],
     ["V5 nurPlatte: Miss = leere Antwort, kein Bau", "nurPlatte"],
-    ["V6 ein neues Transport-Format leert die Platte", "format"],
+    ["V6 ein neues Transport-Format baut die Platte neu", "format"],
     ["V7 Saison-Nagel: ein Herbst-Körper erreicht das Studio als Sommer", "nagel"],
     ["V8 Vorrat: einmal gebaut, auf die Platte, leere Antwort; der Abruf trifft die Platte", "vorrat"],
     ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
     ["V14 die Platte hält keinen Faden: ein Werk-Faden baut zwei Körper, während ein anderer 1,5 s baut", "faden"],
+    ["V9 ein Kern-Wechsel baut nur seine Leser: neuer Kern b → kb neu, ka · ihre Karte · das Dorf von der Platte", "kernWechsel"],
 ];
 
 hauptLauf(async () => {
@@ -824,8 +695,6 @@ hauptLauf(async () => {
                 kartenArtL2: 0,
                 lru: 0,
                 cache: 230,
-                gebautMB: 70,
-                gebautN: 190,
                 werk: {
                     kerne: 16,
                     bahnen: [
@@ -836,7 +705,7 @@ hauptLauf(async () => {
                 },
             },
             zweit: {
-                boot: { gebautMB: 0.4, gebautN: 3, platteMB: 69, platteN: 187, gebautListe: ["wolf|0|0"] },
+                boot: { je: { koerper: { platte: 187, werk: 3, haupt: 0 }, "blatt-atlas": { platte: 1, werk: 0, haupt: 0 }, "dorf-export": { platte: 2, werk: 0, haupt: 0 } } }, // prettier-ignore
             },
             saison: {
                 kontrolle: { posts: 0, removes: 300 },
@@ -851,118 +720,38 @@ hauptLauf(async () => {
             },
         };
         const rot = (d, w) => urteilWelt(d).find((g) => g[0].startsWith(w))[1] === false;
-        const mitWerk = (bahnen) => Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { werk: { kerne: 16, bahnen } }) });
-        check(
-            "Selbst-Test 10w: das Werk baut allein (kein Helfer, der Null-Renderer schloss sie aus) → W6 rot",
-            rot(mitWerk([{ k: 0, bereit: true, posts: 200, antworten: 200, fremd: [] }]), "W6")
-        );
-        check(
-            "Selbst-Test 10x: ein Helfer wird nie bereit und baut nichts → W6 rot",
-            rot(
-                mitWerk([
-                    { k: 0, bereit: true, posts: 200, antworten: 200, fremd: [] },
-                    { k: 1, bereit: false, posts: 0, antworten: 0, fremd: [] },
-                ]),
-                "W6"
-            )
-        );
-        check(
-            "Selbst-Test 10y: ein Auftrag reist mit der Nummer einer fremden Bahn (w2_ im Faden 1) → W6 rot",
-            rot(
-                mitWerk([
-                    { k: 0, bereit: true, posts: 100, antworten: 100, fremd: [] },
-                    { k: 1, bereit: true, posts: 100, antworten: 100, fremd: ["gw2_17"] },
-                ]),
-                "W6"
-            )
-        );
-        check(
-            "Selbst-Test 10z: ein Helfer bleibt Antworten schuldig → W6 rot",
-            rot(
-                mitWerk([
-                    { k: 0, bereit: true, posts: 100, antworten: 100, fremd: [] },
-                    { k: 1, bereit: true, posts: 100, antworten: 90, fremd: [] },
-                ]),
-                "W6"
-            )
-        );
-        check(
-            "Selbst-Test 10a: das Welt-Urteil ist auf gesunden Daten grün",
-            urteilWelt(gut).every((g) => g[1])
-        );
-        check(
-            "Selbst-Test 10b: Saison-Wechsel mit 131 Aufträgen / 131 neuen Schlüsseln → W2a rot",
-            rot(
-                Object.assign({}, gut, { saison: Object.assign({}, gut.saison, { posts: 131, neueSchluessel: 131 }) }),
-                "W2a"
-            )
-        );
-        check(
-            "Selbst-Test 10e: unruhige Welt (Kontroll-Fenster bestellt) → W2a rot (die Sonde misst nicht sauber)",
-            rot(
-                Object.assign({}, gut, {
-                    saison: Object.assign({}, gut.saison, { kontrolle: { posts: 7, removes: 0 } }),
-                }),
-                "W2a"
-            )
-        );
-        check(
-            "Selbst-Test 10c: Eiche bestellt 16 Samen → W1a rot",
-            rot(Object.assign({}, gut, { samen: { eiche: [...Array(16).keys()].map((i) => i + 1) } }), "W1a")
-        );
-        check(
-            "Selbst-Test 10d: 16 Eichen-Karten → W1b rot",
-            rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { eiche: 16 }) }), "W1b")
-        );
-        check(
-            "Selbst-Test 10d2: eine Art ohne Leser im Bild hat keine Karte (mammut 0) → W1b grün (K30)",
-            !rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { mammut: 0 }) }), "W1b")
-        );
-        check(
-            "Selbst-Test 10f: 56 Baum-L2-Aufträge im Boot → W1c rot",
-            rot(Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { kartenArtL2: 56 }) }), "W1c")
-        );
-        check(
-            "Selbst-Test 10g: der Boot räumt 162 Körper im LRU → W1d rot",
-            rot(Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { lru: 162 }) }), "W1d")
-        );
-        check(
-            "Selbst-Test 10h: der Zweit-Boot baut 470 MB neu (Saison im Schlüssel, Karten nie auf der Platte) → W3 rot",
-            rot(
-                Object.assign({}, gut, {
-                    zweit: { boot: Object.assign({}, gut.zweit.boot, { gebautMB: 470, platteN: 17 }) },
-                }),
-                "W3"
-            )
-        );
-        const shellAlsBruecke = (rel) =>
-            rel === "cores.manifest.json"
-                ? fs
-                      .readFileSync(path.join(root, rel), "utf8")
-                      .replace('"bruecke": "foundry-bruecke.js"', '"bruecke": "' + LABOR_SHELL + '"')
-                : null;
-        const W = (zusatz) => Object.assign({}, gut, zusatz);
-        check(
-            "Selbst-Test 1: ein Wand-Name ohne Leser (aWind) → W7 rot",
-            rot(W({ wand: Object.assign({}, gut.wand, { lesen: ["position", "color", "aWind"] }) }), "W7")
-        );
-        check(
-            "Selbst-Test 1b: im Boot reist ein Attribut ohne Leser (aCenter) → W7 rot",
-            rot(W({ wand: Object.assign({}, gut.wand, { reist: ["position", "aCenter"] }) }), "W7")
-        );
-        check(
-            "Selbst-Test 22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread → W8 rot",
-            rot(W({ vorrat: { arten: 2, kalt: ["gt"] } }), "W8")
-        );
-        check(
-            "Selbst-Test 20: das Manifest nennt die Labor-Shell als Brücke → S7f rot (ein UI-Edit leerte den Cache)",
-            stempelProbe(shellAlsBruecke)[0][1] === false
-        );
+        const mit = (teil, zusatz) => Object.assign({}, gut, { [teil]: Object.assign({}, gut[teil], zusatz) });
+        const bahn = (k, bereit, posts, antworten, fremd = []) => ({ k, bereit, posts, antworten, fremd });
+        const werk = (...b) => mit("boot", { werk: { kerne: 16, bahnen: [bahn(0, true, 200, 200), ...b] } });
+        const zweit = (k, J) => mit("zweit", { boot: { je: Object.assign({}, gut.zweit.boot.je, { [k]: Object.assign({ platte: 0, werk: 0, haupt: 0 }, J) }) } }); // prettier-ignore
+        check("Selbst-Test 10a: das Welt-Urteil ist auf gesunden Daten grün", urteilWelt(gut).every((g) => g[1]));
+        check("Selbst-Test 10d2: eine Art ohne Leser im Bild hat keine Karte (mammut 0) → W1b grün (K30)", !rot(mit("karten", { mammut: 0 }), "W1b")); // prettier-ignore
+        for (const [name, d, w] of [
+            ["10w: das Werk baut allein (kein Helfer, der Null-Renderer schloss sie aus)", werk(), "W6"],
+            ["10x: ein Helfer wird nie bereit und baut nichts", werk(bahn(1, false, 0, 0)), "W6"],
+            ["10y: ein Auftrag reist mit der Nummer einer fremden Bahn (w2_ im Faden 1)", werk(bahn(1, true, 100, 100, ["gw2_17"])), "W6"], // prettier-ignore
+            ["10z: ein Helfer bleibt Antworten schuldig", werk(bahn(1, true, 100, 90)), "W6"],
+            ["10b: Saison-Wechsel mit 131 Aufträgen / 131 neuen Schlüsseln", mit("saison", { posts: 131, neueSchluessel: 131 }), "W2a"], // prettier-ignore
+            ["10e: unruhige Welt (Kontroll-Fenster bestellt — die Sonde misst nicht sauber)", mit("saison", { kontrolle: { posts: 7, removes: 0 } }), "W2a"], // prettier-ignore
+            ["10c: Eiche bestellt 16 Samen", mit("samen", { eiche: [...Array(16).keys()].map((i) => i + 1) }), "W1a"],
+            ["10d: 16 Eichen-Karten", mit("karten", { eiche: 16 }), "W1b"],
+            ["10f: 56 Baum-L2-Aufträge im Boot", mit("boot", { kartenArtL2: 56 }), "W1c"],
+            ["10g: der Boot räumt 162 Körper im LRU", mit("boot", { lru: 162 }), "W1d"],
+            ["10h: der Zweit-Boot baut 170 Körper neu (Saison im Schlüssel, Kern-SHA eines Fremden)", zweit("koerper", { platte: 17, werk: 170 }), "W3"], // prettier-ignore
+            ["10i: der Zweit-Boot malt den Blatt-Atlas neu", zweit("blatt-atlas", { werk: 1 }), "W3"],
+            ["1: ein Wand-Name ohne Leser (aWind)", mit("wand", { lesen: ["position", "color", "aWind"] }), "W7"],
+            ["1b: im Boot reist ein Attribut ohne Leser (aCenter)", mit("wand", { reist: ["position", "aCenter"] }), "W7"],
+            ["22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread", mit("vorrat", { kalt: ["gt"] }), "W8"],
+        ])
+            check(`Selbst-Test ${name} → ${w} rot`, rot(d, w));
         const ohneVorrat = bruch(
             schale,
             "if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));",
             ""
         );
+        const alleKerne = bruch(schale, "stempelVon(huelle(l.eigner))", "stempelVon(kerne.map((k) => k.id))");
+        const v9 = await verhalten(alleKerne);
+        check("Selbst-Test 23: die Schale stempelt jede Lieferung mit ALLEN Kernen (bis K4#2: ein Kern-Edit leerte die Platte) → V9 rot", v9.kernWechsel === false); // prettier-ignore
         const v4 = await verhalten(ohneVorrat);
         check(
             "Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot",
@@ -986,7 +775,6 @@ hauptLauf(async () => {
     console.log("=== FLUSS-WAND — statisch ===");
     for (const [n, ok, d] of statisch()) check(n, ok, d);
     const schale = schaleVon();
-    for (const [n, ok, d] of stempelProbe()) check(n, ok, d);
     console.log("=== FLUSS-WAND — Klon-Linse (Gestalten aus dem Studio-Budget, 600 × 600 Streu-Zellen) ===");
     const gs = gestalten();
     for (const [sp, a] of Object.entries(gs.arten))
@@ -1005,12 +793,12 @@ hauptLauf(async () => {
         check(
             n,
             v[k] === true,
-            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · lang ${v.fadenMs.lang} ms` : ""
+            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · lang ${v.fadenMs.lang} ms` : k === "kernWechsel" ? v.kernWechselZeile : ""
         );
     console.log("=== FLUSS-WAND — Welt-Sonde (Null-Renderer, echter Studio-Worker, Boot + Saison-Wechsel) ===");
     const w = await welt();
     console.log(
-        `  Boot: ${w.boot.posts} Aufträge · ${w.bootMB.toFixed(1)} MB Antworten · Karten ${JSON.stringify(w.karten)}`
+        `  Boot: ${w.boot.posts} Aufträge · Karten ${JSON.stringify(w.karten)}`
     );
     for (const [n, ok, d] of urteilWelt(w)) check(n, ok, d);
     wandEnde(errs, "der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau.");

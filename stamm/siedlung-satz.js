@@ -1410,7 +1410,9 @@ class AnazhRealm_siedlung_satz {
         const N = raster(W.stufen.map((S) => S.texelM));
         const kN = raster(AnazhRealm.LAUB_STREU.texelM);
         const wege = karte(N, 2, THREE.RGFormat, "wege-karte");
-        const streu = karte(kN, 1, THREE.RedFormat, "kronen-streu");
+        // DIE DECKE DES BODENS (stoffe.K2#2): die Kronen-Karte trägt zwei Kanäle derselben Fläche — R die Laubstreu unter den Kronen,
+        // G die Asche des Brands (`_ascheMalen`); EIN Sampler, EIN Abgriff je Stufe im Boden-Stoff.
+        const streu = karte(kN, 2, THREE.RGFormat, "kronen-streu");
         const fluesse = karte(N, 1, THREE.RedFormat, "fluss-karte");
         const stufen = W.stufen.map((S, si) => {
             const daten = wege.schicht(si);
@@ -1418,9 +1420,11 @@ class AnazhRealm_siedlung_satz {
             // DIE KRONEN-STREU dieser Stufe: dasselbe Fenster, dieselbe Mitte (also dasselbe UV), eigenes Raster.
             // `summe` ist die Wahrheit (die ungekappte Summe aller Kronen-Beiträge je Texel — eine Krone fällt exakt
             // heraus), `daten` ihr gekapptes Abbild für die Karte, nachgezogen im Schmutz-Rechteck beim Upload.
+            // `asche` ist die Wahrheit des Kanals G (die Asche je Texel, 0…255, gemalt aus den Taten `brand`).
             const kronen = {
                 N: kN,
                 summe: new Uint16Array(kN * kN),
+                asche: new Uint8Array(kN * kN),
                 daten: streu.schicht(si),
                 tex: streu.tex,
                 schmutz: null,
@@ -1662,6 +1666,7 @@ class AnazhRealm_siedlung_satz {
                     }
             }
         }
+        this._ascheStufeMalen(stufe); // die Asche des Fensters neu (die Aschen der Taten, nie die Welt)
         kr.schmutz = [0, N - 1, 0, N - 1]; // das ganze Abbild zog um
         kr.upload = -Infinity; // nach dem Umzug sofort hochladen
     }
@@ -1671,6 +1676,12 @@ class AnazhRealm_siedlung_satz {
     // (0 offen, 0,6 unter einer Krone, 1 wo Kronen sich schließen) — Boden, Nah-Wiese und Klang lesen sie, nie das
     // Kronenlicht-Feld der Platzierung (`_canopyLightAt` sagt, wo Bäume wachsen DÜRFEN, nicht wo sie stehen).
     _kronenStreuAt(x, z) {
+        return this._bodenDeckeAt(x, z, false);
+    }
+
+    // Der EINE Leser der Kronen-Karte: die Stufe wie `_wegeFeldAt`, bilinear über R (die Laubstreu aus der Summe, gekappt wie
+    // die Karte) oder G (die Asche).
+    _bodenDeckeAt(x, z, asche) {
         const wk = this.state.wegeKarte;
         if (!wk) return 0;
         const [nah, fern] = wk.stufen;
@@ -1689,52 +1700,12 @@ class AnazhRealm_siedlung_satz {
         if (i < 0 || j < 0 || i >= N - 1 || j >= N - 1) return 0;
         const tx = fx - i;
         const tz = fz - j;
-        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach)
-        const at = (a, b) => Math.min(255, kr.summe[b * N + a]) / 255;
+        // aus der Summe, gekappt wie die Karte (die `daten` ziehen erst beim gebündelten Upload nach), oder aus der Asche
+        const at = asche ? (a, b) => kr.asche[b * N + a] / 255 : (a, b) => Math.min(255, kr.summe[b * N + a]) / 255;
         return (
             (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
             (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
         );
-    }
-
-    // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
-    // (phytogenesis `canopyLight`): je Krone des EINEN Registers (`wegeKarte.kronen`: Mitte, Radius r wie die Kronen-
-    // Schüchternheit) die Deckung exp(−q), q = d² / (σ·r)² bis q < qMax, L = exp(−canopyK · Σ Deckung). Gibt den Leser
-    // (x, z) → L eines Rechtecks: die Kronen, die es erreichen, sammelt er EINMAL (Lehre 25). Nah-Wiese und Nah-Streu lesen
-    // ihn je Kachel; ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`, bis zur Reichweite des
-    // Lichts). Bis K70 lasen beide das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die
-    // Wiese zusätzlich die Kronen-Karte als Faktor — die Streu-Scheibe (voll bis r, Rand 1,7 r) ist breiter als der Schatten
-    // des Labors (an der Kronen-Kante 0,47): am Waldrand der Mess-Wiese dünnte das die offene Wiese auf 0,75 Licht.
-    _bodenLichtFeld(x0, z0, x1, z1) {
-        const U = AnazhRealm.UNDERGROWTH;
-        const wk = this.state.wegeKarte;
-        const reichJeR = U.kronenSigma * Math.sqrt(U.kronenQMax);
-        const kronen = [];
-        if (wk && wk.kronen.size) {
-            const R = (wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand) * reichJeR;
-            const Z = AnazhRealm.LAUB_STREU.zelleM;
-            for (let zz = Math.floor((z0 - R) / Z); zz <= Math.floor((z1 + R) / Z); zz++)
-                for (let zx = Math.floor((x0 - R) / Z); zx <= Math.floor((x1 + R) / Z); zx++) {
-                    const zelle = wk.kronenZellen.get(zx + "," + zz);
-                    if (!zelle) continue;
-                    for (const c of zelle.values()) {
-                        const reich = c[2] * reichJeR;
-                        if (c[0] + reich < x0 || c[0] - reich > x1 || c[1] + reich < z0 || c[1] - reich > z1) continue;
-                        const s = U.kronenSigma * c[2];
-                        kronen.push(c[0], c[1], 1 / (s * s));
-                    }
-                }
-        }
-        return (x, z) => {
-            let deckung = 0;
-            for (let i = 0; i < kronen.length; i += 3) {
-                const dx = x - kronen[i];
-                const dz = z - kronen[i + 1];
-                const q = (dx * dx + dz * dz) * kronen[i + 2];
-                if (q < U.kronenQMax) deckung += Math.exp(-q);
-            }
-            return Math.exp(-U.canopyK * deckung);
-        };
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
@@ -1856,8 +1827,8 @@ class AnazhRealm_siedlung_satz {
             }
             stufe.grundNeu = false;
             if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
-            // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
-            // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
+            // Neu gemalte Kronen und Aschen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild
+            // zieht nur im Schmutz-Rechteck aus der Summe (R, gekappt bei 255) und der Asche (G) nach.
             const kr = stufe.kronen;
             if (kr.schmutz && jetzt - kr.upload >= AnazhRealm.LAUB_STREU.uploadMs) {
                 const [i0, i1, j0, j1] = kr.schmutz;
@@ -1865,7 +1836,8 @@ class AnazhRealm_siedlung_satz {
                 for (let j = j0; j <= j1; j++)
                     for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
                         const v = kr.summe[k];
-                        kr.daten[k] = v > 255 ? 255 : v;
+                        kr.daten[2 * k] = v > 255 ? 255 : v;
+                        kr.daten[2 * k + 1] = kr.asche[k];
                     }
                 this._wegeSchichtHoch(kr.tex, stufe.schicht);
                 kr.schmutz = null;
@@ -2060,9 +2032,11 @@ class AnazhRealm_siedlung_satz {
         const _wm = _T.mix(wFern, wNah, innen).mul(imFenster);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
         // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
-        // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster).
-        const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).depth(_T.int(nah.schicht)).r;
-        const kFern = _T.texture(fern.kronen.tex, relFern.add(0.5)).depth(_T.int(fern.schicht)).r;
+        // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster). Derselbe Abgriff trägt in G die Asche.
+        const dNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).depth(_T.int(nah.schicht));
+        const dFern = _T.texture(fern.kronen.tex, relFern.add(0.5)).depth(_T.int(fern.schicht));
+        const kNah = dNah.r;
+        const kFern = dFern.r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
         const _laubRausch = this._rauschAtlas()
             .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
@@ -2077,9 +2051,15 @@ class AnazhRealm_siedlung_satz {
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
         // (Lehre 21: nie doppelt; bis 06.10. lag die Streu so bei Y 0,065 unter dem Soll 0,08–0,15).
         const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k);
+        // DIE ASCHE DES BRANDS (stoffe.K2#2, `_ascheMalen`): wo die Front ein Bett verzehrte, liegt die Asche der Palette über
+        // Wiese und Streu, bis sie nachgrünt (`_sukzession`) — nur auf Begehbarem (die Wand des Hangs trug kein Bett). Dieselben
+        // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm.
+        const s = P.asche;
+        const _a = _T.mix(dFern.g, dNah.g, innen).mul(_begehbar).mul(imFenster);
+        const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]), _a);
         const e = P.dirt;
         const a = P.wet;
-        const mitErde = _T.mix(mitStreu, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
+        const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
         return _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _wm.g.mul(_begehbar));
     }
 
@@ -2281,8 +2261,9 @@ class AnazhRealm_siedlung_satz {
     }
     // Die Boden-Schichten EINES Settlement-Exports (Straßen · Feldwege · Platz · Äcker) in die Wege-Karte und die
     // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
-    // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot).
-    _stlWegeBuild(plan, origin, key) {
+    // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot). `nurWege`:
+    // ein neuer Plan desselben Orts (`_ortNeuRechnen`) — Zaun und Mauer stehen schon. Die Formen merken ihren Plan (`plan`).
+    _stlWegeBuild(plan, origin, key, nurWege) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         if (key && this._stlWegeKeys.has(key)) return 0;
@@ -2291,7 +2272,7 @@ class AnazhRealm_siedlung_satz {
         let n = 0;
         const MAX = 900; // Kappe je Siedlung
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
-        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [] };
+        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {
             box.formen.push(f);
             for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeKarteMale(stufe, f);
@@ -2428,6 +2409,7 @@ class AnazhRealm_siedlung_satz {
         const pm = this.state.playerMesh;
         if (pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
         if (box.x0 < box.x1) this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+        if (nurWege) return n;
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
         for (const fz of plan.fences || []) {
@@ -2611,6 +2593,7 @@ class AnazhRealm_siedlung_satz {
                 stufe.zentriert = false;
                 this._wegeSchichtHoch(stufe.tex, stufe.schicht);
                 stufe.kronen.summe.fill(0);
+                stufe.kronen.asche.fill(0);
                 stufe.kronen.daten.fill(0);
                 stufe.kronen.schmutz = null;
                 this._wegeSchichtHoch(stufe.kronen.tex, stufe.schicht);
@@ -3394,6 +3377,7 @@ class AnazhRealm_siedlung_satz {
             // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
             entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
             this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
+            this._freiKoerperSetzen(entry, bp); // ein freier Bauplan (Kiste, Fass) ist ein Starrkörper des Lösers (physik.K3)
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die

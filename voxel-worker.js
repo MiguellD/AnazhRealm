@@ -449,7 +449,17 @@ function ortWahl(msg) {
     const FC = self.__fachwerkCore;
     const { plan, origin, W } = msg;
     const t0 = self.performance.now();
-    const ctx = G.ortCtx(state, (x, z) => ortNass(msg, null, x, z));
+    // DER ORT, DER WELT IST, RECHNET NEU (bauen.K2 Staffel 2, `_ortNeuPlanen`): `ohne` [von, bis) nimmt seinen eigenen Erdbau aus
+    // der Höhe — wie bei seiner Wahl, bevor er lag; `fest` sind die Fremd-Slots seines Umkreises (fachwerk `ortPlan` ctx.fest)
+    const L = msg.ohne
+        ? Object.assign({}, state, {
+              erdbau: G.erdbauNormal((state.erdbauRoh || []).filter((_p, i) => i < msg.ohne[0] || i >= msg.ohne[1])),
+          })
+        : state;
+    const ctx = Object.assign(
+        G.ortCtx(L, (x, z) => ortNass(msg, null, x, z, L)),
+        { fest: msg.fest || [] }
+    );
     let i = 0;
     let kandidaten = 0;
     for (let ring = 0; ring <= W.ringe; ring++) {
@@ -523,8 +533,8 @@ function ortTraegt(msg, k, grob) {
 // DAS WASSER DES ORTS an (x, z): der Boden (gelaende-core `hoehe` samt dem Erdbau früherer Orte, darauf der Erdbau `E` des
 // Plans, null: der Boden vor dem Plan) verschiebt die Gestalt des Gewässers (`gewaesserForm`) um mehr als `bodenTolM`, oder er
 // liegt weniger als `M` über dem Wasser des Gesetzes. Leser: das Welt-Wasser des Plans (`ortWahl`) und `ortTraegt`.
-function ortNass(msg, E, x, z) {
-    const h0 = G.hoehe(state, x, z, true);
+function ortNass(msg, E, x, z, L = state) {
+    const h0 = G.hoehe(L, x, z, true);
     const he = E ? G.erdbauY(E, x, z, h0) : h0;
     const h = G.gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
     if (Math.abs(h - he) > msg.W.bodenTolM) return true;

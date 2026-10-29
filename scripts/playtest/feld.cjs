@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Ring 2: DSL-Sandbox live — Welt-Identität, Effekte auf state, Budget-Limits, Ablehnung unbekannter
 // Ops, delay-Scheduler, dslCompose; plus Nexus-Loop-Dispatch (_gameLoopTick synchron treiben, da
 // Headless-Chromium rAF auf ~1 Hz drosselt). EIN Block, weil beide dslResults + phase2Results teilen.
-async function checkRing2Dsl(ctx) {
-    const { page, check } = ctx;
+async function checkRing2Dsl({ page, check }) {
     const dslResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {
             worldIdSet: false,
             slugSet: false,
@@ -115,7 +113,6 @@ async function checkRing2Dsl(ctx) {
     });
 
     const phase2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: r.state.dsl.history.length,
@@ -133,10 +130,7 @@ async function checkRing2Dsl(ctx) {
         // DSL-Effekt: weather wirkt auf state (Satz des Spielers)
         check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
         // Leben-Schau 2: ein Programm ohne Quelle (die Welt) schreibt das Wetter nie selbst — es wünscht
-        check(
-            "Leben-Schau 2: ein Programm ohne Quelle schreibt das Wetter nie selbst",
-            dslResults.weltWuenscht
-        );
+        check("Leben-Schau 2: ein Programm ohne Quelle schreibt das Wetter nie selbst", dslResults.weltWuenscht);
         check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
         check("DSL-Position: at_origin + spawn_creature wirkt", dslResults.positionEffect);
         check("DSL-Condition: when/weather_is verzweigt korrekt", dslResults.conditionEffect);
@@ -179,10 +173,8 @@ async function checkRing2Dsl(ctx) {
 // Harmonie statt Revert: drei Kräfte verschmelzen, ohne zu überschreiben — Wetter (Feld weicht dem
 // Willen: ×(1−emoSignal)), Sky (DSL-Tönung blendet mit Tag-Nacht + fadet), Spawn (Ring um den
 // Spieler, nicht AUF ihm). Sky-Fade behavioral mit Restore, Rest Source-Probe (kein Spawn-Leak).
-async function checkBandV1723Harmony(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1723Harmony({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.skyTint = null;
         r.state.skyTintTarget = 0;
@@ -223,7 +215,11 @@ async function checkBandV1723Harmony(ctx) {
         out.spawnRings =
             born.length > 0 &&
             dR.every((d) => d >= 4 - 1e-6 && d <= 6.5 + 1e-6) &&
-            born.every((a, i) => born.every((b, j) => j <= i || Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) > 0.05));
+            born.every((a, i) =>
+                born.every(
+                    (b, j) => j <= i || Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) > 0.05
+                )
+            );
         born.forEach((c) => r.removeCreature(c));
         r.state.maxCreatures = capR;
         return out;
@@ -242,10 +238,8 @@ async function checkBandV1723Harmony(ctx) {
 
 // Feld-Richtung: der Nexus trägt Leben zum BEDARF (at_field_need = ärmster Punkt im Ring). Beweis:
 // der Resolver findet das lebendig-Minimum, dslComposeAtomic nutzt ihn.
-async function checkBandV1726FieldDirection(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1726FieldDirection({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
         const pm = r.state.playerMesh.position;
@@ -278,10 +272,8 @@ async function checkBandV1726FieldDirection(ctx) {
 
 // Emotion aus dem SEIN: alle sechs Achsen speisen sich aus TATEN (ACTION_TO_EMOTION an jeder
 // Handlungs-Stelle), ZUSTAND (niedrige HP) und UMGEBUNG (Feld) — nicht nur aus Chat-Stichwörtern.
-async function checkBandV1730EmotionFromBeing(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1730EmotionFromBeing({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const A2E = r.constructor.ACTION_TO_EMOTION;
         // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
@@ -323,10 +315,8 @@ async function checkBandV1730EmotionFromBeing(ctx) {
 // rule-Primitiv: ein `when`, das NICHT verfällt — `rule` REGISTRIERT Bedingung→Effekt in
 // state.worldRules, _tickWorldRules prüft fortlaufend. Gemessen u. a.: kein Sofort-Effekt, everySec,
 // TTL, Frame-Budget, Dedup, Cap+Eviction, keine Same-Tick-Kaskade, deterministische Regel-RNG.
-async function checkBandV1733WorldRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1733WorldRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         const now = () => performance.now() / 1000;
@@ -430,10 +420,10 @@ async function checkBandV1733WorldRules(ctx) {
         r._tickWorldRules(now() + 1);
         out.childFiresNextFrame = r.state.weather === "rainy";
 
-        // --- (10) deterministische Regel-RNG ---
-        const fake = { id: 4242, fires: 0, source: "human" };
+        // --- (10) deterministische Regel-RNG: eine Funktion des Gesetzes (`_regelHash`), nie seiner Platz-Nummer ---
+        const fake = { id: 4242, cond: ["random_chance", 0.3], effect: ["weather", "rainy"] };
         const s0a = r._worldRuleSeed(fake, 0);
-        const s0b = r._worldRuleSeed(fake, 0);
+        const s0b = r._worldRuleSeed({ ...fake, id: 7 }, 0);
         const s1 = r._worldRuleSeed(fake, 1);
         out.seedStable = s0a === s0b;
         out.seedVariesPerFire = s0a !== s1;
@@ -452,10 +442,7 @@ async function checkBandV1733WorldRules(ctx) {
         res.cfgWired && res.registryArray && res.tickWired
     );
     // Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)
-    check(
-        "Welt-Regeln: `rule` REGISTRIERT",
-        res.regOk && res.registeredOne && res.notFiredOnRegister
-    );
+    check("Welt-Regeln: `rule` REGISTRIERT", res.regOk && res.registeredOne && res.notFiredOnRegister);
     // Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird (sorrow>0.5 → rainy)
     check("Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird", res.firesWhenTrue);
     check("Welt-Regeln: das everySec-Gate verhindert Per-Frame-Feuern", res.everySecGate);
@@ -469,30 +456,19 @@ async function checkBandV1733WorldRules(ctx) {
     // Welt-Regeln: Dedup — dieselbe Regel zweimal bleibt EIN Eintrag
     check("Welt-Regeln: Dedup", res.dedup);
     // Welt-Regeln: Cap haelt (Runaway-Schutz), Mensch-Regel ueberlebt die Nexus-Flut
-    check(
-        "Welt-Regeln: Cap haelt, Mensch-Regel ueberlebt die Nexus-Flut",
-        res.capHolds && res.humanSurvives
-    );
+    check("Welt-Regeln: Cap haelt, Mensch-Regel ueberlebt die Nexus-Flut", res.capHolds && res.humanSurvives);
     // Welt-Regeln: Re-Entrancy — eine vom Effekt erzeugte Regel feuert nicht im selben Tick
-    check(
-        "Welt-Regeln: Re-Entrancy",
-        res.reentrancyNoCascade && res.childRegistered && res.childFiresNextFrame
-    );
-    // Welt-Regeln: deterministische Regel-RNG (stabil pro fireIndex, variiert ueber die Zeit)
-    check(
-        "Welt-Regeln: deterministische Regel-RNG",
-        res.seedStable && res.seedVariesPerFire && res.rngDeterministic
-    );
+    check("Welt-Regeln: Re-Entrancy", res.reentrancyNoCascade && res.childRegistered && res.childFiresNextFrame);
+    // Welt-Regeln: deterministische Regel-RNG (gleich je Gesetz und Scheibe der Welt-Uhr, jede Scheibe neu)
+    check("Welt-Regeln: deterministische Regel-RNG", res.seedStable && res.seedVariesPerFire && res.rngDeterministic);
 }
 
 // Feld-Kopplung: Regeln LESEN das Feld (field_above/field_below über auraAt, frozen + räumliche
 // emotion) und SCHREIBEN es (deposit_life/deposit_emotion → Overlays) — ein Substrat. Kern-Probe:
 // die Heilungs-Regel schließt den Loop (field_below lebendig → deposit_life → steigt → Regel
 // stoppt); Default at_player; invalide Achse → no-op.
-async function checkBandV1734FieldRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1734FieldRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
         const mkCtx = () => r.dslCtx({ source: "test" });
@@ -611,10 +587,7 @@ async function checkBandV1734FieldRules(ctx) {
 
     check("Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
     // Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)
-    check(
-        "Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck",
-        res.depositLifeReadBack
-    );
+    check("Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck", res.depositLifeReadBack);
     // Feld-Regeln: deposit_emotion → field_above(emotion) liest es zurueck, RAEUMLICH (A != B)
     check(
         "Feld-Regeln: deposit_emotion → field_above liest es zurueck, RAEUMLICH",
@@ -637,10 +610,8 @@ async function checkBandV1734FieldRules(ctx) {
 // (resonant, ephemer per ttlSec), bewertet über ein Lebens-Fenster (Fitness = Engagement + Kosten +
 // Erfolg, attributierbar): bewährt → ERNEUERN, inert/erroring → VERFALLEN, Neue erben von
 // Überlebenden. generateEvolution mischt Regel + Geste; dslMutate hält die Regel-Form.
-async function checkBandV1735NexusEvolvesRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1735NexusEvolvesRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         const now = () => performance.now() / 1000;
@@ -779,63 +750,33 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
     });
 
     // Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)
-    check(
-        "Nexus-Regeln: dslComposeRule liefert eine gueltige Regel",
-        res.composeStruct
-    );
+    check("Nexus-Regeln: dslComposeRule liefert eine gueltige Regel", res.composeStruct);
     // Nexus-Regeln: der Nexus SCHREIBT das Feld (deposit_life + deposit_emotion komponiert)
-    check(
-        "Nexus-Regeln: der Nexus SCHREIBT das Feld",
-        res.effWritesField
-    );
+    check("Nexus-Regeln: der Nexus SCHREIBT das Feld", res.effWritesField);
     // Nexus-Regeln: der Nexus LIEST das Feld (field_below/field_above komponiert)
     check("Nexus-Regeln: der Nexus LIEST das Feld", res.condReadsField);
     // Nexus-Regeln: generateEvolution mischt Regeln + Gesten (der composeRuleProb-Hook)
-    check(
-        "Nexus-Regeln: generateEvolution mischt Regeln + Gesten",
-        res.evoMix,
-        `rules=${res.ruleCount}/80`
-    );
+    check("Nexus-Regeln: generateEvolution mischt Regeln + Gesten", res.evoMix, `rules=${res.ruleCount}/80`);
     // Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit
-    check(
-        "Nexus-Regeln: per-Regel-Fitness",
-        res.fitnessFires && res.fitnessHigh,
-        `fit=${res.fitnessVal}`
-    );
+    check("Nexus-Regeln: per-Regel-Fitness", res.fitnessFires && res.fitnessHigh, `fit=${res.fitnessVal}`);
     // Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)
-    check(
-        "Nexus-Regeln: Erneuerung",
-        res.renewSurvives
-    );
+    check("Nexus-Regeln: Erneuerung", res.renewSurvives);
     // Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende
     check("Nexus-Regeln: Verfall", res.inertExpires);
     // Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt
-    check(
-        "Nexus-Regeln: Verfall",
-        res.erroringExpires,
-        `fit=${res.erroringFitness}`
-    );
+    check("Nexus-Regeln: Verfall", res.erroringExpires, `fit=${res.erroringFitness}`);
     // Nexus-Regeln: dslMutate haelt die Regel-Form (Nachkomme bleibt eine Regel, kein throw)
-    check(
-        "Nexus-Regeln: dslMutate haelt die Regel-Form",
-        res.mutateKeepsRule
-    );
+    check("Nexus-Regeln: dslMutate haelt die Regel-Form", res.mutateKeepsRule);
     // Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel (frisch oder Nachkomme)
-    check(
-        "Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel",
-        res.composeNexusRule
-    );
+    check("Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel", res.composeNexusRule);
 }
 
 // Mensch-Regeln per Chat „wann immer X, dann Y“: Y über die bestehenden Chat-Patterns, X über
 // _parseChatCondition (Feld + Stimmung). Whitelist-Wand: eine Mensch-Regel fasst den frozen
 // Worldgen NICHT an. „zeige regeln“ listet, „vergiss regeln“ widerruft, unsichere Effekte → abgelehnt.
-async function checkBandV1736HumanRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1736HumanRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
-        const now = () => performance.now() / 1000;
         const mkSink = () => {
             const msgs = [];
             return { input: { value: "x" }, append: (s) => msgs.push(String(s)), msgs };
@@ -889,11 +830,8 @@ async function checkBandV1736HumanRules(ctx) {
             JSON.stringify(rule.effect) === JSON.stringify(["weather", "sunny"]) &&
             s1.msgs.some((m) => /Gesetz aufgestellt/.test(m));
 
-        // --- (6) die Mensch-Regel FEUERT (über den Welt-Tick) ---
-        r.state.weather = "rainy";
-        if (rule) rule.lastFired = -Infinity;
-        r._tickWorldRules(now());
-        out.ruleFires = r.state.weather === "sunny";
+        // (6) das Feuern einer Mensch-Regel über den Welt-Tick urteilt gate:mp-sync (h) an der echten Seite (A's Gesetz aus dem
+        // Gespräch feuert, seine Erzählung steht im Wissen); der Mock-Zwilling fiel mit ultiversum.K4
 
         // --- (7) describeProgram(rule) menschen-lesbar ---
         const desc = r.describeProgram(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }]);
@@ -932,33 +870,19 @@ async function checkBandV1736HumanRules(ctx) {
     });
 
     // Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)
-    check(
-        "Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung",
-        res.condParse
-    );
+    check("Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung", res.condParse);
     // Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns (jeder Effekt wird Regel-fähig)
-    check(
-        "Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns",
-        res.effParse
-    );
+    check("Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns", res.effParse);
     // Mensch-Regeln: Whitelist-Wand — reaktive Effekte erlaubt, frozen Worldgen abgelehnt
     check("Mensch-Regeln: Whitelist-Wand", res.whitelist);
     // V17.36 Mensch-Regeln: „wann immer X, dann Y" erstellt eine Mensch-Regel (source=human, permanent)
-    check(
-        "V17.36 Mensch-Regeln: „wann immer X, dann Y\" erstellt eine Mensch-Regel",
-        res.ruleCreated
-    );
-    // Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick (rainy → sunny)
-    check("Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick", res.ruleFires);
+    check('V17.36 Mensch-Regeln: „wann immer X, dann Y" erstellt eine Mensch-Regel', res.ruleCreated);
     // Mensch-Regeln: describeProgram(rule) ist menschen-lesbar
     check("Mensch-Regeln: describeProgram ist menschen-lesbar", res.describeReadable, res.descSample);
     // V17.36 Mensch-Regeln: „zeige regeln" listet die aktiven Gesetze (von wem)
-    check("V17.36 Mensch-Regeln: „zeige regeln\" listet die aktiven Gesetze", res.rulesListed);
+    check('V17.36 Mensch-Regeln: „zeige regeln" listet die aktiven Gesetze', res.rulesListed);
     // Mensch-Regeln: ein unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel
-    check(
-        "Mensch-Regeln: ein unsicherer Effekt wird abgelehnt",
-        res.unsafeRejected
-    );
+    check("Mensch-Regeln: ein unsicherer Effekt wird abgelehnt", res.unsafeRejected);
     check("Mensch-Regeln: eine unbekannte Bedingung → sanftes Feedback, keine Regel", res.unknownCond);
     check('V17.36 Mensch-Regeln: „vergiss regeln" widerruft die Mensch-Gesetze', res.rulesForgotten);
 }
@@ -966,10 +890,8 @@ async function checkBandV1736HumanRules(ctx) {
 // Gesetze-Sektion in der BESTEHENDEN Fähigkeiten-UI (kein Parallel-Panel): state.worldRules im selben
 // Drawer via describeProgram; eine Regel STEHT (kein ▶) → ✕ (vergiss, nur Mensch-Regeln) +
 // aktiv/ruht-Indikator; beide Sektionen einklappbar.
-async function checkBandV1737RulesUI(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1737RulesUI({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const host = document.getElementById("status-worldrules");
 
@@ -1066,38 +988,24 @@ async function checkBandV1737RulesUI(ctx) {
         res.nexusCappedTopN && res.nexusHasMoreLine
     );
     // Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip (V17.31 Konsum)
-    check(
-        "Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip",
-        res.nexusValueChipSorted
-    );
+    check("Hof-Partitur: Nexus nach gelerntem Wert sortiert + Wert-Chip", res.nexusValueChipSorted);
     check("Hof-Partitur: 'alle'-Toggle zeigt alle Nexus-Experimente", res.expandShowsAll);
     check("Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
     // Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)
-    check(
-        "Gesetze-UI: eine Mensch-Regel rendert als Row mit ✕",
-        res.humanRow
-    );
+    check("Gesetze-UI: eine Mensch-Regel rendert als Row mit ✕", res.humanRow);
     // Gesetze-UI: eine Nexus-Regel ist gelistet + DIREKT steuerbar (📌+⏸+✕, kein ▶)
     check("Gesetze-UI: eine Nexus-Regel ist gelistet + DIREKT steuerbar", res.nexusRow);
     // Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel (Event-Delegation), Nexus bleibt
-    check(
-        "Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel, Nexus bleibt",
-        res.forgetWorks && res.nexusSurvives
-    );
+    check("Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel, Nexus bleibt", res.forgetWorks && res.nexusSurvives);
     // Gesetze-UI: beide Sektionen (Faehigkeiten + Gesetze) sind einklappbar (collapsible-header)
-    check(
-        "Gesetze-UI: beide Sektionen sind einklappbar",
-        res.collapsibleHeaders
-    );
+    check("Gesetze-UI: beide Sektionen sind einklappbar", res.collapsibleHeaders);
 }
 
 // Gesetze-UX: Persistenz-Label (permanent vs ~Ns), eigene Gesetze pausieren (Tick skippt)/löschen,
 // Nexus-Regel per 📌 adoptieren (permanent + eviction-geschützt). Modus-Gating: eine FREMDE
 // Nexus-Regel verwerfen ist Schöpfer-Geste; Favoriten oben.
-async function checkBandV1739RulesUX(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1739RulesUX({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
         const host = document.getElementById("status-worldrules");
@@ -1219,41 +1127,24 @@ async function checkBandV1739RulesUX(ctx) {
     check("Gesetze-UX: Persistenz-Label", res.labels);
     check("Gesetze-UX: ein PAUSIERTES Gesetz feuert nicht; reaktiviert feuert es wieder", res.pauseWorks);
     // Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel (pinned + permanent)
-    check(
-        "Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel",
-        res.pinAdopts && res.pinPermLabel
-    );
+    check("Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel", res.pinAdopts && res.pinPermLabel);
     // Gesetze-UX: die Eviction schuetzt eine angepinnte Regel (ueberlebt die Nexus-Flut)
-    check(
-        "Gesetze-UX: die Eviction schuetzt eine angepinnte Regel",
-        res.pinnedSurvivesEviction
-    );
+    check("Gesetze-UX: die Eviction schuetzt eine angepinnte Regel", res.pinnedSurvivesEviction);
     // Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar (⏸+✕ in JEDEM Modus, kein pin-zuerst)
-    check(
-        "Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar",
-        res.ephemeralControllable
-    );
+    check("Gesetze-UX: ephemeres Nexus-Experiment direkt steuerbar", res.ephemeralControllable);
     // Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich (auch in frieden)
-    check(
-        "Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich",
-        res.ephemeralForgetWorks
-    );
+    check("Gesetze-UX: der ✕-Klick verwirft das Experiment wirklich", res.ephemeralForgetWorks);
     // Gesetze-UX: Sortierung — angepinnte Favoriten rendern zuerst
     check("Gesetze-UX: Sortierung", res.sortPinnedFirst);
     // Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore (die Schoepfer-Wahl bleibt)
-    check(
-        "Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore",
-        res.persistFlags
-    );
+    check("Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore", res.persistFlags);
 }
 
 // Mensch · Nexus · LLM schreiben am SELBEN Regel-Satz: das LLM kennt die Regel-Grammatik (Prompt);
 // die Effekt-Whitelist lebt am EINEN Chokepoint _registerWorldRule → auch LLM-Regeln berühren nur
 // die reaktive Welt. LLM-Regeln sind EPHEMER (fitness-getestet, adoptierbar).
-async function checkBandV1740LlmRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1740LlmRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -1300,28 +1191,20 @@ async function checkBandV1740LlmRules(ctx) {
     });
 
     // KI-Regeln: die UNIVERSELLE Whitelist (in _registerWorldRule) — LLM-Regel mit frozen-Effekt abgelehnt, reaktiver passiert
-    check(
-        "KI-Regeln: die UNIVERSELLE Whitelist",
-        res.unsafeRejected && res.safeRegistered
-    );
+    check("KI-Regeln: die UNIVERSELLE Whitelist", res.unsafeRejected && res.safeRegistered);
     // KI-Regeln: eine LLM-Regel ist EPHEMER per Default (fitness-getestet + adoptierbar)
-    check(
-        "KI-Regeln: eine LLM-Regel ist EPHEMER per Default",
-        res.llmEphemeral
-    );
+    check("KI-Regeln: eine LLM-Regel ist EPHEMER per Default", res.llmEphemeral);
     // KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)
     check("KI-Regeln: die LLM-Regel ist voll funktional", res.llmFires);
     // V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)
-    check("V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok\"", res.consoleLabel);
+    check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok"', res.consoleLabel);
 }
 
 // Gesetzes-Faden, zwei Konsumenten der EINEN Spur lastFired/fires: (a) _worldRuleActivityLabel zeigt
 // live „⚡ feuert“, (b) das erste Erwachen einer EIGENEN Mensch-Regel wird eine Welt-Erinnerung
 // (einmal, idempotent über die Signatur; Nexus-Regeln nicht). Geprüft nach echtem Feuern.
-async function checkBandV1741RuleThread(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1741RuleThread({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -1427,39 +1310,22 @@ async function checkBandV1741RuleThread(ctx) {
         res.labelRuht && res.labelFeuert && res.labelAktiv && res.labelPausiert
     );
     // V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst (.rule-firing) — DOM-Konsum
-    check(
-        "V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert\" + pulst",
-        res.domShowsFeuert
-    );
+    check('V17.41 Gesetzes-Faden: nach echtem Feuern zeigt der Console-Span „⚡ feuert" + pulst', res.domShowsFeuert);
     // Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST (Live-ness im Diff, kein manueller Reset)
-    check(
-        "Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST",
-        res.signatureLive
-    );
+    check("Gesetzes-Faden: das Feuern ändert die Render-Signatur VON SELBST", res.signatureLive);
     // V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung („Dein Gesetz erwachte")
-    check(
-        "V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung",
-        res.journalAwoke
-    );
+    check("V17.41 Gesetzes-Faden: das erste Erwachen einer MENSCH-Regel wird eine Welt-Erinnerung", res.journalAwoke);
     // Gesetzes-Faden: idempotent — dieselbe Regel neu aufgestellt + gefeuert schreibt KEINE zweite Erinnerung
-    check(
-        "Gesetzes-Faden: idempotent",
-        res.journalIdempotent
-    );
+    check("Gesetzes-Faden: idempotent", res.journalIdempotent);
     // Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung (der Faden ist DEIN Gesetz)
-    check(
-        "Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung",
-        res.nexusNoJournal
-    );
+    check("Gesetzes-Faden: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung", res.nexusNoJournal);
 }
 
 // Lokal-attribuierte Regel-Fitness: reward = struktureller δ am Effekt-Ort über die Baseline, EMA in
 // rule.value; _worldRuleFitness = valueScore × Erfolg × Kosten (neutral knapp unter der Schwelle). Geprüft: Heiler/neutral/
 // Schädling diskriminieren; die Eviction wirft den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
-async function checkBandV1743RuleFitness(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1743RuleFitness({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- (1) die Fitness DISKRIMINIERT (Heiler > neutral > Schädling) ---
@@ -1557,50 +1423,33 @@ async function checkBandV1743RuleFitness(ctx) {
     });
 
     // Wertung: _worldRuleFitness DISKRIMINIERT (Heiler > neutral > Schädling — die alte ≈0.99-Fitness konnte das nicht)
-    check(
-        "Wertung: _worldRuleFitness DISKRIMINIERT",
-        res.fitnessDiscriminates
-    );
+    check("Wertung: _worldRuleFitness DISKRIMINIERT", res.fitnessDiscriminates);
     // Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness (Schädling und neutral verfallen, affekt.K3)
-    check(
-        "Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness",
-        res.harmerDecays
-    );
+    check("Wertung: nur wessen δ seine Kosten trägt, bleibt über renewFitness", res.harmerDecays);
     // Wertung: _ruleRewardPos misst am Effekt-Ort (at) bzw. an der Spieler-Position (positionsloser Effekt)
     check(
         "Wertung: _ruleRewardPos misst am Effekt-Ort bzw. an der Spieler-Position",
         res.rewardPosFromEffect && res.rewardPosFallbackPlayer
     );
     // Wertung: END-TO-END — eine heilende Regel (deposit_life) akkumuliert POSITIVEN Wert (der Ort blüht auf)
-    check(
-        "Wertung: END-TO-END",
-        res.healerPositiveValue
-    );
+    check("Wertung: END-TO-END", res.healerPositiveValue);
     // Wertung: eine neutrale Regel (Wetter, berührt lebendig nicht) akkumuliert ~0 Wert
-    check(
-        "Wertung: eine neutrale Regel akkumuliert ~0 Wert",
-        res.neutralZeroValue
-    );
+    check("Wertung: eine neutrale Regel akkumuliert ~0 Wert", res.neutralZeroValue);
     // Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt
     check(
         "Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag; Mensch/pinned geschützt",
         res.evictsLowestValue && res.evictProtectsHuman
     );
     // Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)
-    check(
-        "Wertung: rule.value ist reaktiv",
-        res.valueNotInSnapshot
-    );
+    check("Wertung: rule.value ist reaktiv", res.valueNotInSnapshot);
 }
 
 // Emotionaler Kern, Substrat + FUSION: unter den sechs Gefühlen liegt ein Affekt-Raum
 // (EMOTION_GEOMETRY: Valenz × Erregung). `_emotionState` liest dominantes Gefühl + Schwerpunkt +
 // INTENSITÄT (6-dim Abstand vom Neutralen: bittersüß = Valenz~0, hohe Intensität). Sanfte Kohärenz
 // in updatePlayerEmotions dämpft gegensätzliche Achsen; Konsum: die KI kennt die Stimmung.
-async function checkBandV1745EmotionCore(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1745EmotionCore({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const GEO = r.constructor.EMOTION_GEOMETRY;
@@ -1693,63 +1542,37 @@ async function checkBandV1745EmotionCore(ctx) {
     // Emotion-Kern: EMOTION_GEOMETRY vollständig (alle 6 Achsen, Valenz × Erregung)
     check("Emotion-Kern: EMOTION_GEOMETRY vollständig", res.geoComplete);
     // Emotion-Kern: prinzipielle Valenz-Vorzeichen (joy/hope/peace +, sorrow/chaos −) — Russell
-    check(
-        "Emotion-Kern: prinzipielle Valenz-Vorzeichen",
-        res.geoValenceSigns
-    );
+    check("Emotion-Kern: prinzipielle Valenz-Vorzeichen", res.geoValenceSigns);
     // Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol (die Geometrie trägt die Kohärenz)
-    check(
-        "Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol",
-        res.geoArousalOpposed
-    );
+    check("Emotion-Kern: peace ↔ chaos sind Erregungs-Gegenpol", res.geoArousalOpposed);
     // Emotion-Kern: Readout — ein klares dominantes Gefühl (joy=0.8 → Freude, Valenz +)
-    check(
-        "Emotion-Kern: Readout",
-        res.clearDominant
-    );
+    check("Emotion-Kern: Readout", res.clearDominant);
     // Emotion-Kern: FUSION — bittersüß hebt die Valenz auf (~0)
     check("Emotion-Kern: FUSION", res.bittersweetValenceCancels);
     // Emotion-Kern: FUSION — bittersüß behält HOHE Intensität (das additive Modell verfehlt das)
-    check(
-        "Emotion-Kern: FUSION",
-        res.bittersweetIntensityHigh
-    );
+    check("Emotion-Kern: FUSION", res.bittersweetIntensityHigh);
     // V17.45 Emotion-Kern: FUSION — bittersüß labelt „Zwiespalt" + nennt die zwei Gefühle (mix)
-    check(
-        "V17.45 Emotion-Kern: FUSION",
-        res.bittersweetLabel
-    );
+    check("V17.45 Emotion-Kern: FUSION", res.bittersweetLabel);
     // V17.45 Emotion-Kern: Ruhe — wenig Aktivierung → „ruhig"
     check("V17.45 Emotion-Kern: Ruhe", res.calmReadout);
     // Emotion-Kern: KONSUM — die KI (llmBuildSystemPrompt) kennt ein klares Gefühl (Freude)
-    check(
-        "Emotion-Kern: KONSUM",
-        res.promptClear
-    );
+    check("Emotion-Kern: KONSUM", res.promptClear);
     // Emotion-Kern: KONSUM — die KI kennt den Zwiespalt (bittersüß)
     check("Emotion-Kern: KONSUM", res.promptMix);
     // Emotion-Kern: KONSUM — die KI kennt die Ruhe
     check("Emotion-Kern: KONSUM", res.promptCalm);
     // Emotion-Kern: Kohärenz — ein Gegenpol (sorrow) dämpft joy (der Zustand wird kohärent)
-    check(
-        "Emotion-Kern: Kohärenz",
-        res.coherenceDamps
-    );
+    check("Emotion-Kern: Kohärenz", res.coherenceDamps);
     // Emotion-Kern: Kohärenz — eine EINZELNE klare Emotion wird NICHT gedämpft (0.7-Trigger heil)
-    check(
-        "Emotion-Kern: Kohärenz",
-        res.singleNotDamped
-    );
+    check("Emotion-Kern: Kohärenz", res.singleNotDamped);
 }
 
 // Appraisal-Brücke: die Gefühls-Antwort auf eine Tat EMERGIERT aus den Substanz-Tags
 // (computeCompoundTags → TAG_TO_EMOTION × Magnitude), nicht aus dem Tat-Namen — lebendiges Holz ≠
 // toter Stein, Schöpfen feuert Stolz ∝ Komplexität. ACTION_TO_EMOTION bleibt Fallback für tag-lose
 // Akte (explore/damage).
-async function checkBandV1746EmotionSubstance(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1746EmotionSubstance({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const savedEmo = { ...p.emotions };
@@ -1815,10 +1638,7 @@ async function checkBandV1746EmotionSubstance(ctx) {
         return out;
     });
     // Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt
-    check(
-        "Substanz: lebendig → peace, dichte → hope",
-        res.lebendigPeace && res.dichteHope
-    );
+    check("Substanz: lebendig → peace, dichte → hope", res.lebendigPeace && res.dichteHope);
     // Substanz: brennbar → chaos + awe (Gefahr-Thrill)
     check("Substanz: brennbar → chaos + awe", res.brennbarChaos);
     // Substanz: die Achsen sind sauber getrennt (dichte erzeugt keine lebendig-joy)
@@ -1830,36 +1650,22 @@ async function checkBandV1746EmotionSubstance(ctx) {
     // Substanz: KONSUM — build(lebendiges Holz) gibt mehr peace als build(toter Stein)
     check("Substanz: KONSUM", res.woodMorePeace);
     // Substanz: KONSUM — build(Stein) gibt mehr hope als build(Holz) — verschiedene Substanz, verschiedenes Gefühl
-    check(
-        "Substanz: KONSUM",
-        res.stoneMoreHope
-    );
+    check("Substanz: KONSUM", res.stoneMoreHope);
     // Substanz: KONSUM — Magnitude end-to-end (große Schöpfung bewegt mehr)
     check("Substanz: KONSUM", res.magnitudeEndToEnd);
     // Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)
-    check(
-        "Substanz: der schöpferische Akt → Stolz + Substanz-Färbung",
-        res.createPride
-    );
+    check("Substanz: der schöpferische Akt → Stolz + Substanz-Färbung", res.createPride);
     // Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)
-    check(
-        "Substanz: KEIN Regress",
-        res.noRegressBuild
-    );
+    check("Substanz: KEIN Regress", res.noRegressBuild);
     // Substanz: Fallback — ein tag-loser Akt (explore) nutzt weiter ACTION_TO_EMOTION
-    check(
-        "Substanz: Fallback",
-        res.fallbackExplore
-    );
+    check("Substanz: Fallback", res.fallbackExplore);
 }
 
 // Fast/Slow: schnelle Emotion (Spike, Decay PRO ACHSE — Furcht kurz, Trauer lang) vs. langsame
 // Stimmung (`mood`, EMA über Minuten), in die sie zerfällt; die Stimmung färbt die nächste Bewertung
 // kongruent (gebounded gegen Feedback) und ist das, was die KI liest.
-async function checkBandV1747FastSlow(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1747FastSlow({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const DECAY = r.constructor.EMOTION_DECAY;
@@ -1963,50 +1769,27 @@ async function checkBandV1747FastSlow(ctx) {
     // Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)
     check("Fast/Slow: EMOTION_DECAY-Tabelle", res.decayTable);
     // Fast/Slow: KONSUM — Furcht (chaos) verfliegt SCHNELLER als Trauer (sorrow) [pro-Achse-Decay]
-    check(
-        "Fast/Slow: KONSUM",
-        res.fearFadesFasterThanGrief
-    );
+    check("Fast/Slow: KONSUM", res.fearFadesFasterThanGrief);
     // Fast/Slow: beide Achsen zerfallen (Decay wirkt)
     check("Fast/Slow: beide Achsen zerfallen", res.bothDecayed);
     // Fast/Slow: die STIMMUNG ist eine langsame EMA — sie lagt der Emotion (ein Tick → klein)
-    check(
-        "Fast/Slow: die STIMMUNG ist eine langsame EMA",
-        res.moodLagsEmotion
-    );
+    check("Fast/Slow: die STIMMUNG ist eine langsame EMA", res.moodLagsEmotion);
     // Fast/Slow: KONSUM — anhaltendes Gefühl → die Stimmung KONVERGIERT (das Temperament wächst)
-    check(
-        "Fast/Slow: KONSUM",
-        res.moodConverges
-    );
+    check("Fast/Slow: KONSUM", res.moodConverges);
     // Fast/Slow: KONSUM — eine trübe Stimmung färbt das Erleben (dämpft die Freude eines guten Ereignisses)
-    check(
-        "Fast/Slow: KONSUM",
-        res.moodColorsAppraisal
-    );
+    check("Fast/Slow: KONSUM", res.moodColorsAppraisal);
     // Fast/Slow: KEIN Runaway — eine trübe Stimmung bei konstanter Situation manufakturiert KEINE Emotion (V17.44-Lehre)
-    check(
-        "Fast/Slow: KEIN Runaway",
-        res.noMoodRunaway
-    );
+    check("Fast/Slow: KEIN Runaway", res.noMoodRunaway);
     // Fast/Slow: KONSUM — die KI kennt die GRUNDSTIMMUNG (Trauer), getrennt vom akuten Gefühl (Freude)
-    check(
-        "Fast/Slow: KONSUM",
-        res.promptHasMood && res.promptHasAcute
-    );
+    check("Fast/Slow: KONSUM", res.promptHasMood && res.promptHasAcute);
     // Fast/Slow: V17.30 heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle
-    check(
-        "Fast/Slow: V17.30 heil",
-        res.triggerReachable
-    );
+    check("Fast/Slow: V17.30 heil", res.triggerReachable);
 }
 
 // Soziales Gefühl: Emotion naher Kreaturen fließt zum Spieler (∝ Nähe × Bindung, gebounded), Bindung
 // wächst mit gemeinsamer Zeit, Verlust schmerzt ∝ Bindung, die KI TENDET die Stimmung (tröstet).
-async function checkBandV1748Social(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1748Social({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const AX = r.constructor.EMOTION_AXES;
@@ -2119,48 +1902,28 @@ async function checkBandV1748Social(ctx) {
     // Soziales: KONSUM — ein leidendes Wesen nah betrübt (sorrow)
     check("Soziales: KONSUM", res.sadGrieves);
     // G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben — ein awe-fühlendes Wesen steckt mit AWE an (binär unmöglich)
-    check(
-        "G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben",
-        res.vecContagionAwe
-    );
+    check("G4-1 KONSUM: die Contagion liest das 6-Achsen-Innenleben", res.vecContagionAwe);
     // G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat (ACTION_TO_EMOTION.damage → Vektor; 'sad' fällt aus der Valenz-Projektion)
-    check(
-        "G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat",
-        res.creatureFeelsDamage
-    );
+    check("G4-1: der Kreatur-Treffer fühlt über DASSELBE Substrat", res.creatureFeelsDamage);
     // Soziales: gebounded — die Contagion sättigt am Ziel (≤0.5), kein Runaway (V17.44-Lehre)
-    check(
-        "Soziales: gebounded",
-        res.contagionBounded
-    );
+    check("Soziales: gebounded", res.contagionBounded);
     // Soziales: KONSUM — die BINDUNG gewichtet die Contagion (gebunden färbt mehr als fremd)
-    check(
-        "Soziales: KONSUM",
-        res.bondWeights
-    );
+    check("Soziales: KONSUM", res.bondWeights);
     // Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)
     check("Soziales: eine WARTENDE Kreatur baut keine Bindung auf", res.waitNoBond);
     // Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)
-    check(
-        "Soziales: KONSUM",
-        res.bondLossHurts
-    );
+    check("Soziales: KONSUM", res.bondLossHurts);
     // Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)
     check("Soziales: KONSUM", res.tendComforts);
     // Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht
-    check(
-        "Soziales: kein Trost ohne Trübsal",
-        res.noTendWhenOk
-    );
+    check("Soziales: kein Trost ohne Trübsal", res.noTendWhenOk);
 }
 
 // G8 R2 — die Irreversibilitäts-Wand (M3): SOVEREIGN_ACTIONS (frozen) disjunkt
 // von jedem Auto-Pool + eine Host-gerenderte Geste. Eine vergiftete Welt/LLM/
 // Regel kann einen souveränen Akt NIE auslösen — nur du, jetzt, über die Geste.
-async function checkBandG8R2SovereignWall(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R2SovereignWall({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         const SA = K.SOVEREIGN_ACTIONS;
@@ -2215,21 +1978,28 @@ async function checkBandG8R2SovereignWall(ctx) {
     check("G8 R2: ein souveräner Op im DSL wird sovereign_blocked", res.dslBlocks);
     check("G8 R2: in einer Kette fällt der souveräne Op, der legitime läuft", res.chainBlocksSovereignNotRest);
     // G8 R2: die Host-Geste (skipConfirm→ok · Nicht-souverän→verweigert)
-    check(
-        "G8 R2: die Host-Geste",
-        res.gestureSkipConfirm && res.gestureRefusesUnknown
-    );
+    check("G8 R2: die Host-Geste", res.gestureSkipConfirm && res.gestureRefusesUnknown);
     // G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen (blockiert beim Feuern)
-    check(
-        "G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen",
-        res.ruleEffectBlocked
-    );
+    check("G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen", res.ruleEffectBlocked);
 }
 
 module.exports = {
-    checkRing2Dsl, checkBandV1723Harmony, checkBandV1726FieldDirection, checkBandV1730EmotionFromBeing,
-    checkBandV1733WorldRules, checkBandV1734FieldRules, checkBandV1735NexusEvolvesRules, checkBandV1736HumanRules,
-    checkBandV1737RulesUI, checkBandV1739RulesUX, checkBandV1740LlmRules, checkBandV1741RuleThread,
-    checkBandV1743RuleFitness, checkBandV1745EmotionCore, checkBandV1746EmotionSubstance, checkBandV1747FastSlow,
-    checkBandV1748Social, checkBandG8R2SovereignWall,
+    checkRing2Dsl,
+    checkBandV1723Harmony,
+    checkBandV1726FieldDirection,
+    checkBandV1730EmotionFromBeing,
+    checkBandV1733WorldRules,
+    checkBandV1734FieldRules,
+    checkBandV1735NexusEvolvesRules,
+    checkBandV1736HumanRules,
+    checkBandV1737RulesUI,
+    checkBandV1739RulesUX,
+    checkBandV1740LlmRules,
+    checkBandV1741RuleThread,
+    checkBandV1743RuleFitness,
+    checkBandV1745EmotionCore,
+    checkBandV1746EmotionSubstance,
+    checkBandV1747FastSlow,
+    checkBandV1748Social,
+    checkBandG8R2SovereignWall,
 };

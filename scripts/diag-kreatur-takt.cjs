@@ -16,6 +16,9 @@ const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
 const argv = process.argv.slice(2);
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
+// DER ORT der Probe (`--ort stadt-voll`: die volle Stadt der Probe bewohner, am Schirm des Profi-Bands) und seine Täter
+const ORT = opt("--ort", null);
+const taeterVon = (p) => TAETER[ORT ? `${p}@${ORT}` : p];
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
 const RAMPE = JSON.parse(
@@ -33,6 +36,7 @@ const DAUER_S = {
     gier: 5,
     jagd: 77,
     herde: 44,
+    schwarm: 2,
     peer: 1,
     zufall: 1,
     nexus: 1,
@@ -69,7 +73,10 @@ const gewaehlt = (() => {
 async function headless(laeufe) {
     const server = statikServer();
     await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    const { browser, page } = await nullSeite({
+        frist: 900000,
+        viewport: ORT ? { width: 1920, height: 1080 } : undefined,
+    });
     page.setDefaultTimeout(880000);
     const [aus, dauer] = [[], {}];
     const zeit = async (p, fn) => {
@@ -125,31 +132,29 @@ async function headless(laeufe) {
             await einschwingen();
         };
         const mit = (probe) => laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes(probe));
-        if (mit("querhang").length) {
+        // je Probe ihre fremde Welt aus der Prüfbühne, ihr Feld am Ergebnis des eigenen Laufs und ihr Zusatz: die Rampe am
+        // Querhang, die Gegenprobe des Lebensraums (Tiere K4: die Wildnis anderer Saat)
+        const FREMD = {
+            querhang: ["rampe", { hangOrt: RAMPE }, (j) => (j.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 })],
+            lebensraum: [
+                "gegen",
+                {},
+                (j) => {
+                    delete j.worldMeta.erbgut;
+                    const id = "lebensraum-gegen";
+                    Object.assign(j.worldMeta, { worldId: id, slug: id, seed: id });
+                    Object.assign(j, { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } });
+                },
+            ],
+        };
+        for (const [p, [feld, zusatz, welt]] of Object.entries(FREMD)) {
+            if (!mit(p).length) continue;
             const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
-            await zeit("querhang", () => fremdeWelt(json));
-            for (const [l, li] of mit("querhang")) {
-                const z = await zeit("querhang", () =>
-                    lauf({ proben: ["querhang"], taeter: l.taeter, hangOrt: RAMPE })
-                );
-                if (aus[li].querhang) aus[li].querhang.rampe = z.querhang || { fehler: "die Rampe lief nicht" };
-            }
-        }
-        // die Gegenprobe des Lebensraums (Tiere K4): die Wildnis anderer Saat
-        if (mit("lebensraum").length) {
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            delete json.worldMeta.erbgut;
-            Object.assign(json.worldMeta, {
-                worldId: "lebensraum-gegen",
-                slug: "lebensraum-gegen",
-                seed: "lebensraum-gegen",
-            });
-            Object.assign(json, { architectures: [], creatures: [], playerPosition: { x: 0, y: 80, z: 0 } });
-            await zeit("lebensraum", () => fremdeWelt(json));
-            for (const [l, li] of mit("lebensraum")) {
-                const z = await zeit("lebensraum", () => lauf({ proben: ["lebensraum"], taeter: l.taeter }));
-                if (aus[li].lebensraum) aus[li].lebensraum.gegen = z.lebensraum;
+            welt(json);
+            await zeit(p, () => fremdeWelt(json));
+            for (const [l, li] of mit(p)) {
+                const z = await zeit(p, () => lauf({ proben: [p], taeter: l.taeter, ...zusatz }));
+                if (aus[li][p]) aus[li][p][feld] = z[p] || { fehler: "die fremde Welt lief nicht" };
             }
         }
     } finally {
@@ -177,16 +182,16 @@ hauptLauf(async () => {
     // in ihm und gibt je Täter seine Sicht (`sicht`); das Wort, das ihn nennt, bleibt in Node
     const [laeufe, faelle] = [[], []];
     if (SELBST) {
-        const ohne = gewaehlt.filter((p) => !(TAETER[p] && TAETER[p].length));
+        const ohne = gewaehlt.filter((p) => !(taeterVon(p) && taeterVon(p).length));
         if (ohne.length) {
             console.log(`❌ SELBST-TEST: Proben ohne Täter: ${ohne.join(", ")} — die Linse wäre ungeprüft`);
             process.exit(1);
         }
     }
     for (const p of gewaehlt) {
-        const [T, ein] = [SELBST ? TAETER[p] : [[null]], SELBST && EIN_LAUF.includes(p)];
-        if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t) });
-        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t }) - 1, t, re }); // prettier-ignore
+        const [T, ein] = [SELBST ? taeterVon(p) : [[null]], SELBST && EIN_LAUF.includes(p)];
+        if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t), ort: ORT });
+        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT }) - 1, t, re }); // prettier-ignore
     }
     const t0 = Date.now();
     const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);

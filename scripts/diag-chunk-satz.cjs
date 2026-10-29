@@ -395,8 +395,7 @@ const { errs, check } = pruefer();
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
-            const r = window.anazhRealm,
-                s = r.state;
+            const s = r.state;
             const res = {};
             // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
             // austreiben.
@@ -519,6 +518,14 @@ const { errs, check } = pruefer();
                     for (const [kl, arts] of klassen)
                         if (arts.length > 1) z.satzStoff.zwillinge.push(kl + " ×" + arts.length);
                 }
+                // die erste Instanz, erster Vertex: die Geometrie geo × Instanz-Matrix e, in Welt-Lage im Pool des Satzes (Bereich
+                // bereich) auf 1 mm je Achse
+                const ersteEcke = (e, geo, satz, bereich) => {
+                    const [q, w, o] = [geo.attributes.position.array, satz.geom.attributes.position.array, bereich.vStart * 3];
+                    return [0, 1, 2].every(
+                        (c) => Math.abs(w[o + c] - (e[c] * q[0] + e[c + 4] * q[1] + e[c + 8] * q[2] + e[c + 12])) <= 1e-3
+                    );
+                };
                 // (h) DER BAU-SATZ: jede lebende Gruppe einer Satz-Art (Rezept-kind in BAU_SATZ, gesetzt, kein
                 // Tür-Flügel) zeichnet nie selbst und trägt ihren Bereich treu im Satz ihres Stoffs.
                 z.bauSatz = { gruppen: 0, imSatz: 0, selbst: [], ohneBereich: [] };
@@ -542,20 +549,11 @@ const { errs, check } = pruefer();
                         // der Schatten-Zwilling einer Satz-Art (die NUR-WURF-Stufe 3, S3 haus) lebt im Wurf-Satz `bauWurf`
                         // seines Stoffs (`_bauSatzArt`), jede gezeigte Gruppe im Satz ihrer Art
                         const satzName = g.shadowTwin ? "bauWurf" : SATZ[rec.kind];
-                        let treu = !!b && b.vAnzahl === n * g.liveCount && satz.mesh.name === satzName;
-                        if (treu) {
-                            // die erste Instanz, erster Vertex: Geometrie × Instanz-Matrix, in Welt-Lage im Pool
-                            const e = g.mesh.instanceMatrix.array;
-                            const q = g.geom.attributes.position.array;
-                            const w = satz.geom.attributes.position.array;
-                            const o = b.vStart * 3;
-                            const soll = [
-                                e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12],
-                                e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13],
-                                e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14],
-                            ];
-                            for (let c = 0; c < 3; c++) if (Math.abs(w[o + c] - soll[c]) > 1e-3) treu = false;
-                        }
+                        const treu =
+                            !!b &&
+                            b.vAnzahl === n * g.liveCount &&
+                            satz.mesh.name === satzName &&
+                            ersteEcke(g.mesh.instanceMatrix.array, g.geom, satz, b);
                         if (treu) z.bauSatz.imSatz++;
                         else z.bauSatz.ohneBereich.push(name);
                         // (n) die erste Ecke trägt die Regler des Studio-Stoffs der Gruppe (snorm8: 1/127)
@@ -592,19 +590,8 @@ const { errs, check } = pruefer();
                             const satz = s.chunkSaetze ? s.chunkSaetze.get(a.satz) : null;
                             const bb = satz ? satz.bloecke.get(a.key + "@" + kk) : null;
                             const n = a.geo.attributes.position.count;
-                            let treu = !!bb && bb.vAnzahl === n * b.n && satz.spec.mat === a.mat;
-                            if (treu) {
-                                const e = b.matrizen;
-                                const q = a.geo.attributes.position.array;
-                                const w = satz.geom.attributes.position.array;
-                                const o = bb.vStart * 3;
-                                const soll = [
-                                    e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12],
-                                    e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13],
-                                    e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14],
-                                ];
-                                for (let c = 0; c < 3; c++) if (Math.abs(w[o + c] - soll[c]) > 1e-3) treu = false;
-                            }
+                            const treu =
+                                !!bb && bb.vAnzahl === n * b.n && satz.spec.mat === a.mat && ersteEcke(b.matrizen, a.geo, satz, bb);
                             if (treu) z.streuSatz.imSatz++;
                             else z.streuSatz.ohneBereich.push(a.key + "@" + kk);
                         }
@@ -1284,7 +1271,6 @@ const { errs, check } = pruefer();
         // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
         // (die Ring-Kette K51 morphte nur die Naht) springt.
         out.sprung = await page.evaluate(async () => {
-            const r = window.anazhRealm;
             const s = r.state;
             const S = r._voxelChunkConfig(0).span;
             const karte = (e, key) => {

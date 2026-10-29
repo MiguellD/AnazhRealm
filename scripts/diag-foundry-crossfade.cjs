@@ -314,8 +314,7 @@ async function runPartB() {
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };
         // ── Boot + Foundry abwarten ──
-        const r = await window.__weltDa();
-        const st = r.state;
+        await window.__weltDa();
         const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
         const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (der Stamm liest das Kern-Gesetz)
@@ -1174,7 +1173,6 @@ async function runPartB() {
     // EINEN Konversions-Chokepoint (_foundryBuildMesh); der Gruppen-Bau überschreibt
     // mit echten Stufen. ──
     const attrWand = await page.evaluate(() => {
-        const r = window.anazhRealm;
         let geprueft = 0,
             verstoesse = 0;
         r.state.scene.traverse((o) => {
@@ -1194,8 +1192,6 @@ async function runPartB() {
     // headless reapt SOFORT (byte-alte Gates) · echt hält die Frist die Hülle ·
     // Realloc in der Frist mintet NICHT neu · der Reaper räumt nach Ablauf. ──
     const gnade = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const o = {};
         let bpName = null;
         for (const n in st.blueprints) {
@@ -1239,7 +1235,6 @@ async function runPartB() {
     // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
     // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
     const kehraus = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const key = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const ex = 15345,
             ez = 6789;
@@ -1289,8 +1284,6 @@ async function runPartB() {
     // (9) DIE LAUTE BLENDE in der Seite: der Uniform-Satz verliert uLodD0, ein Baum-Stoff wird frisch gebaut (der Cache der
     // Stoffe leer) — bricht er beim Namen, oder zeichnet er still ohne Maske? Danach steht alles wie vorher.
     const laut = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const res = {};
         const lu = r._ensureLodUniforms();
         const alt = st.lodUniforms;

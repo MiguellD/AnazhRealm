@@ -5,8 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandW17Multiplayer(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### das Mesh-als-Server ###
@@ -14,7 +13,6 @@ async function checkBandW17Multiplayer(ctx) {
     // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
     // Rate-Limit + Deckel; Zwei-Browser-Durchlauf: smoke-webrtc.cjs.
     const w17bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
@@ -251,7 +249,6 @@ async function checkBandW17Multiplayer(ctx) {
     // sandgesicherten iframe), Gäste routen an ihn (subworld-srv), Antworten kommen gezielt zurück
     // (subworld-cli). Geprüft: Routing-Methoden; Zwei-Browser-Durchlauf: smoke-webrtc.
     const w17jsResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
@@ -548,7 +545,6 @@ async function checkBandW17Multiplayer(ctx) {
     // Verlässt der Compute-Host das Mesh, wählt jeder Gast aus dem zuletzt annoncierten Roster
     // deterministisch denselben Nachfolger (kleinste peerId); der baut einen frischen Server-Kontext.
     const w17mResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const SUBW = "worlds/skeleton/index.html";
@@ -725,7 +721,6 @@ async function checkBandW17Multiplayer(ctx) {
     // Wer ein Multiplayer-Portal betritt, broadcastet portal-invite; Mitspieler bekommen „mitkommen?“,
     // „Ja“ holt + betritt das Portal.
     const w17cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -903,7 +898,6 @@ async function checkBandW17Multiplayer(ctx) {
     // Die Multiplayer-Marke fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, den
     // Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld baut ein einladendes Multiplayer-Portal.
     const w17mpResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1014,7 +1008,6 @@ async function checkBandW17Multiplayer(ctx) {
     // serverMode fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize
     // und den Welt-Katalog — sonst verlöre eine vendorte js-compute-Welt still ihren serverMode (→ relay).
     const w17svResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1116,13 +1109,11 @@ async function checkBandW17Multiplayer(ctx) {
     }
 }
 
-async function checkBandW12WorldPortal(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welt-Portal: Rolle + Built-in welt_portal ###
     const w12c1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const C = r.constructor;
 
@@ -1285,7 +1276,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Skelett-Welt + iframe-Overlay + CSP ###
     const w12c2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // CSP: frame-src 'self' (nur same-origin iframes erlaubt).
@@ -1336,7 +1326,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Betreten / Pause / Rückkehr ###
     const w12c3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // Portal-Affordance: welt_portal trägt AUSSCHLIESSLICH isPortal
@@ -1435,7 +1424,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Strom-Welt (three-fluid-fx) ###
     const w12p2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // Built-in welt_strom-Portal.
@@ -1478,7 +1466,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### DSL-Brücke (das Protokoll) ###
     const w12bridgeResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // _sanitizePortalMeta säubert das dsl-Manifest.
@@ -1567,7 +1554,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### zweite fremde Welt (dritte Gestalt: Phytogenesis & Lithos) ###
     const w12terrainResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // Built-in welt_terrain-Portal + Manifest.
@@ -1618,7 +1604,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Welt-Registry + Portal-Zielen ###
     const w12registryResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
 
@@ -1700,7 +1685,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Portal-Größe emergiert aus der Avatar-Größe ###
     const w12portalSizeResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const passage = r._avatarPassageSize();
         out.passageSane = typeof passage === "number" && passage > 0.5 && passage < 30;
@@ -1749,13 +1733,12 @@ async function checkBandW12WorldPortal(ctx) {
     // Das Umwidmen lebt in der WERKSTATT-Mach-Zone: geprüft werden die Werkstatt-Reihe des gewählten
     // Bauplans + der ✨-Emergent-Reset.
     const w12markResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.blueprints.test_mark_ring = {
             name: "test_mark_ring",
             label: "TestMarkRing",
             builtIn: false,
-            parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+            parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
         };
         const ws = r._ensureWorkshopState();
         const savedSel = ws.selectedBlueprint;
@@ -1807,7 +1790,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
     const w12p3aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const journal = () => r.state.worldJournal.entries;
         const lastEntry = () => journal()[journal().length - 1];
@@ -1912,7 +1894,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     // ### Teil B: die native Manifest-Stufe ###
     const w12p3bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // _sanitizeDslSubset — der gemeinsame Manifest-Sanitizer.
         out.sanitizeFilters =
@@ -1995,10 +1976,8 @@ async function checkBandW12WorldPortal(ctx) {
 // G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
 // (sandboxed → null-origin · vendored → unforgeable sandboxed · kein Welt-Pfad
 // zum innersten Ring). Die ECHTE Isolation beweist die Sonde smoke-sandbox (git-Archiv) im Browser.
-async function checkBandG8R3Locality(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R3Locality({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
         // trusted → + allow-same-origin + allow-pointer-lock (unser
@@ -2035,10 +2014,8 @@ async function checkBandG8R3Locality(ctx) {
 // KO-PRÄSENZ: das Mesh trägt Posen (subworld-pose, Welt-Schlüssel + Empfänger-Rate-Wand), die Heimat
 // injiziert peer-join/-state/-leave ins Sub-Welt-iframe, die WELT rendert die Gefährten
 // (worlds/begegnung). E2E: `npm run smoke:copresence`; dieses Band friert die Mechanik.
-async function checkBandW18CoPresence(ctx) {
-    const { page, check } = ctx;
+async function checkBandW18CoPresence({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) die Tier-Wahrheit: EINE Quelle, drei ehrliche Stufen.
         out.tier2 = r._portalCoPresenceTier({ coPresence: true }).tier === 2;
@@ -2156,10 +2133,8 @@ async function checkBandW18CoPresence(ctx) {
 // INPUT-BRÜCKE: eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt die Tasten als
 // SEMANTISCHE Aktionen ({type:"input", action, down} — Daten, nie Key-Codes). Eingefrorenes
 // Vokabular, Tipp-Feld-Wand, Listener lebt + stirbt mit dem Overlay. E2E: smoke:copresence.
-async function checkBandW18InputBridge(ctx) {
-    const { page, check } = ctx;
+async function checkBandW18InputBridge({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) das eingefrorene Vokabular + die Tasten-Karte (WASD/Pfeile).
         const A = r.constructor.PORTAL_INPUT_ACTIONS;
@@ -2238,10 +2213,8 @@ async function checkBandW18InputBridge(ctx) {
 // DARIN LEBEN: das Wohnen ist ein globaler Zeiger (anazh.portalDwelling, NIE im Welt-Snapshot);
 // der Boot kehrt durchs Tor zurück, Gefährten sehen „wohnt in …“ (soul-Kanal), anazh.portalState
 // trägt den Zustand der Fremd-Welt zurück (restoreState im enter). Reload-E2E lebt im Smoke.
-async function checkBandW18Dwell(ctx) {
-    const { page, check } = ctx;
+async function checkBandW18Dwell({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const savedPo = r._portalOverlay;
         const savedDwell = localStorage.getItem("anazh.portalDwelling");
@@ -2349,10 +2322,8 @@ async function checkBandW18Dwell(ctx) {
 // R6 SELBST-ERWEITERUNG (Capability-Inversion): eine Welt REICHT eine Fähigkeit (DSL-Daten in die
 // Quarantäne-Queue, nie ausgeführt), der Mensch GEWÄHRT (grant_capability), der LAUF geht durch die
 // dslRun-Sandbox; der Rückruf wirkt VOR und NACH der Gewähr; die Gewähr überlebt den Reload.
-async function checkBandR6Capability(ctx) {
-    const { page, check } = ctx;
+async function checkBandR6Capability({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const savedPo = r._portalOverlay;
         const savedProps = r.state.capabilityProposals;

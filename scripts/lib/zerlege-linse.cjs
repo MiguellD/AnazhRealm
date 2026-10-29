@@ -337,39 +337,18 @@ function belegungSelbsttest() {
     return f;
 }
 
-// DIE EINE BANK-RUNDE (gpu-bank · zerlegen): n Frames direkt hintereinander (ohne rAF, ohne VSync) — je Frame der
-// Schatten-Takt wie im Loop und `_loopRender` —, dann auf die GPU warten. Liegt die GPU je Frame über der CPU, ist
-// Gesamtzeit / n die reine GPU-Zeit je Frame. (Alle n Frames laufen in EINER Aufgabe: die Leinwand präsentiert erst
-// danach — das Präsentieren steht nicht in der Bank.) DIE STEMPEL DER BANK: der Spiel-Loop löst den Zeitstempel-Pool je
-// gerendertem Frame auf (`_perfGpuResolveKick`), die Bank rendert ohne ihn — sie leert den Pool vor ihren Frames und nach
-// ihnen (außerhalb der gemessenen Spanne; r184 setzt ihn nur beim Auflösen zurück, `__stempelWache`). Ein Auflösen, das
-// schon läuft, deckt die Abfragen danach nicht: höchstens drei Züge, bis der Pool leer ist.
+// DIE EINE BANK-RUNDE (gpu-bank · zerlegen · die Bank der Kosten-Leiste): die Hülle trägt sie (`AnazhHuelle.bankRunde`, die Welt lädt
+// worlds/huelle/huelle.js) — n Frames direkt hintereinander (ohne rAF, ohne VSync), je Frame der Schatten-Takt wie im Loop und
+// `_loopRender`, dann auf die GPU warten; Gesamtzeit / n ist die GPU-Zeit je Frame, wenn die GPU über der CPU liegt. Den
+// Zeitstempel-Pool leert sie vor und nach den Frames (der Spiel-Loop löst ihn je Frame auf, die Bank rendert ohne ihn).
 function bankRunde(n) {
-    return (async () => {
-        const r = window.anazhRealm;
-        const rend = r.state.renderer;
-        const q = rend.backend.device.queue;
-        const stempelAuf = async () => {
-            const pool = rend.backend.trackTimestamp === true && rend.backend.timestampQueryPool.render;
-            for (let i = 0; pool && i < 3 && pool.currentQueryIndex > 0; i++) await rend.resolveTimestampsAsync("render");
-        };
-        await q.onSubmittedWorkDone();
-        await stempelAuf();
-        const t0 = performance.now();
-        let cpu = 0;
-        for (let i = 0; i < n; i++) {
-            const c0 = performance.now();
-            if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
-            r._loopRender();
-            cpu += performance.now() - c0;
-        }
-        const tAb = performance.now();
-        await q.onSubmittedWorkDone();
-        const t1 = performance.now();
-        await stempelAuf();
-        return { jeFrame: (t1 - t0) / n, cpuJeFrame: cpu / n, nachlauf: t1 - tAb };
-    })();
+    const r = window.anazhRealm;
+    const rend = r.state.renderer;
+    return window.AnazhHuelle.bankRunde(rend, n, () => {
+        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+        r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
+        r._loopRender();
+    });
 }
 
 // DIE STEMPEL-WACHE: r184 legt je Render-Pass zwei Abfragen in einen festen Pool (WebGPUTimestampQueryPool, 2048) und

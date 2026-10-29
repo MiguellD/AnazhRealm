@@ -26,8 +26,8 @@ class AnazhRealm_stoff_instanz {
     // sie zeichnet (Zeile 0 oben, die Ansicht v in der Zelle v). EIN Material, EIN Einheits-Quad, EINE globale Instanz-Gruppe
     // (`IMPOSTOR_ATLAS_GRUPPE`); Schicht, Rahmen und Sichthöhe reisen je Instanz (aKarte — `_lodSlotStamp`). DIE KARTE BACKT
     // IN DER WELT (S2, `_karteWeltBacken`): der Welt-Renderer zeichnet die L1-Gestalt, die GPU zieht die deckungstreuen Mips
-    // nach dem Karten-Gesetz und kodiert sie (`_karteAblage`) — kein Bäcker-Faden, kein zweiter Renderer, keine Rücklese,
-    // keine Platte. Das FORMAT ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-
+    // nach dem Karten-Gesetz und kodiert sie (`_karteAblage`) — kein Bäcker-Faden, kein zweiter Renderer; die BC-Bytes reisen
+    // EINMAL zurück auf die Platte der Schale, der Zweit-Boot legt sie, ohne zu backen (pipeline.K4 Stufe 2). Das FORMAT ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-
     // Albedo + BC5-Normale auf 1/normalTeiler + rg8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,27 MiB je
     // Schicht), ohne es (WebGL2, WebGPU ohne BC) zeichnet die Karte direkt in die Schicht eines rgba8-Array-Ziels, die GPU
     // zieht die Mips (2,8 MiB je Schicht; `_impostorAtlasTexturen` meldet es EINMAL laut). Befund V18.528: je Karte zwei
@@ -409,8 +409,8 @@ class AnazhRealm_stoff_instanz {
         return at ? this._tickKarteWelt(at) : 0;
     }
 
-    // DIE KARTE BACKT IN DER WELT (S2 — Labor = Welt per Konstruktion): kein Bäcker-Faden, kein zweiter Renderer, keine
-    // Rücklese, keine Platte. Der Welt-Renderer (r184) zeichnet die L1-Gestalt, die die Welt ohnehin trägt — dieselben
+    // DIE KARTE BACKT IN DER WELT (S2 — Labor = Welt per Konstruktion): kein Bäcker-Faden, kein zweiter Renderer; was sie
+    // backte, trägt die Platte der Schale (`_karteWeltBacken`, pipeline.K4 Stufe 2). Der Welt-Renderer (r184) zeichnet die L1-Gestalt, die die Welt ohnehin trägt — dieselben
     // Geometrien, dieselben Stoffe — in V Ansichten (die Gestalt gegengedreht, gleiche Zellen, gleicher Rahmen
     // `impostorFrame`); über MRT schreibt der Stoff seine Albedo (`diffuseColor`: vor jedem Licht, ohne Tonkurve), seine
     // Normale (Sicht-Raum der Bake-Kamera) und die Sonnen-Sicht seiner Krone. Je Takt EIN Budget-Fenster (`KARTE_WELT_MS`),
@@ -431,7 +431,6 @@ class AnazhRealm_stoff_instanz {
         }
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !this._impostorAtlasTexturen(at)) return 0;
-        if (at.fmt === "bc" && !this._karteRechner()) return 0; // die Programme der GPU-Ablage kompilieren noch
         // Die Karte ist GPU-Arbeit wie das Bild: sie geht an der EINEN Leine (`_gpuLeineStraff`), ihr Takt bindet sich an
         // (`_gpuLeineBinden`) — auf einer langsamen GPU wartet so das nächste Bild auf sie, statt hinter ihr zu verhungern.
         if (this._gpuLeineStraff()) return 0;
@@ -600,10 +599,47 @@ class AnazhRealm_stoff_instanz {
         return B;
     }
 
-    // Eine Karte im Welt-Renderer backen: null = die L1 reist (bestellt) oder ihre Programme kompilieren, false =
-    // gescheitert, true = gebacken.
+    // Eine Karte im Welt-Renderer backen: null = die Platte antwortet noch, die L1 reist (bestellt) oder ihre Programme
+    // kompilieren, false = gescheitert, true = gebacken (oder von der Platte gelegt).
+    // DIE PLATTE ZUERST (pipeline.K4 Stufe 2): die BC-Karte einer Art liegt unter dem Gesetz-SHA ihrer Kerne und dem Stempel
+    // des Wirts auf der Platte der Schale (`_foundrySchale`, Frage `karte`): ein Treffer legt ihre Bytes in die Schicht — ohne
+    // L1, Bühne und Programme; ein Miss backt, und die Ablage reicht dieselben Bytes zurück in den Faden (`_karteAblage`).
+    // `z._platte`: undefined = ungefragt, false = die Frage reist, null = backen, sonst der Treffer.
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
+        const bc = at.fmt === "bc";
+        if (bc && z._platte !== null) {
+            if (z._platte === undefined) {
+                z._platte = false;
+                const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key };
+                const wort = `FOUNDRY TIMEOUT: karte(${z.key}) nach 45 s Arbeit ohne Reply → sie backt`;
+                this._foundryAuftrag(this._foundry, "krt", frage, z._bedarfD2, 45000, wort).then((m) => {
+                    z._platte = (m && m.karte) || null;
+                    z._liefer = m && m.liefer;
+                });
+            }
+            if (z._platte === false) return null;
+            const k = z._platte;
+            const lage = at.lage || (at.lage = this._karteRechenPlan(at, true));
+            if (!this._karteGpuTexturen(at)) for (const t of [at.map, at.nmap, at.lmap]) rend.initTexture(t);
+            const ziele = this._karteGpuTexturen(at);
+            z._platte = null;
+            const t0 = performance.now();
+            if (ziele && k.bytes && k.bytes.byteLength === lage.ausB) {
+                for (const q of lage.kopien)
+                    rend.backend.device.queue.writeTexture(
+                        { texture: ziele[q.tex], mipLevel: q.mip, origin: { x: 0, y: 0, z: z.idx } },
+                        k.bytes,
+                        { offset: q.off, bytesPerRow: q.zeileB, rowsPerImage: q.zeilen },
+                        { width: q.w, height: q.h, depthOrArrayLayers: 1 }
+                    );
+                this._foundryLiefer(this._foundry, "platte", "karte", z._liefer, performance.now() - t0);
+                z._weltNeu = false;
+                if (!z.gebacken) this._karteGebacken(z, k.frame);
+                return true;
+            }
+        }
+        if (bc && !this._karteRechner()) return null; // die Programme der GPU-Ablage kompilieren noch
         const lod = this._foundryServierStufe(z.preset, 1);
         const key = this._foundryKoerperKey(z.preset, z.variant, lod, z.ov);
         const g = this._foundryCacheGet(key);
@@ -621,7 +657,6 @@ class AnazhRealm_stoff_instanz {
         const core = globalThis.__phytoCore;
         const SZ = AnazhRealm.KARTE_SONNEN_SICHT;
         const B = this._karteBuehne(at);
-        const bc = at.fmt === "bc";
         const t0 = performance.now();
         // die Gestalt auf die Bühne: dieselben Geometrien und Stoffe, die die Welt zeichnet
         B.wurzel.clear();
@@ -753,8 +788,14 @@ class AnazhRealm_stoff_instanz {
             B.wurzel.clear();
         }
         if (!ganz) return null;
-        if (bc) this._karteAblage(at, z.idx, B);
+        const platte = z._liefer && {
+            preset: z.preset,
+            rest: z._liefer.rest,
+            frame: { halfW: fr.halfW, halfH: fr.halfH },
+        };
+        if (bc) this._karteAblage(at, z.idx, B, platte);
         B.zuletzt = performance.now();
+        this._foundryLiefer(this._foundry, "haupt", "karte", z._liefer, B.zuletzt - t0);
         (at.weltMs || (at.weltMs = [])).push(+(B.zuletzt - t0).toFixed(2));
         z._weltNeu = false;
         if (!z.gebacken) this._karteGebacken(z, fr);
@@ -805,8 +846,8 @@ class AnazhRealm_stoff_instanz {
     // sich nur die Ziel-Schicht der Kopien): Stufe 0 zählt die Deckung je Ansicht, jede tiefere Stufe summiert, glättet,
     // wählt deckungstreu (genau so viele deckende Texel je Ansicht wie Stufe 0 deckt — das Karten-Gesetz der Mips) und
     // kodiert BC1; die Normale mittelt als Vektor ab 1/normalTeiler und kodiert BC5; die Sonnen-Sicht mittelt über die
-    // deckenden Texel auf 1/lichtTeiler.
-    _karteRechenPlan(at) {
+    // deckenden Texel auf 1/lichtTeiler. `nurLage`: nur die Lage der Bytes (die Kopien), ohne Puffer — die Karte der Platte.
+    _karteRechenPlan(at, nurLage) {
         const dev = this.state.renderer.backend.device;
         const M = at.masse;
         const G = globalThis.__phytoCore.KARTEN_GESETZ;
@@ -946,6 +987,7 @@ class AnazhRealm_stoff_instanz {
             Math.ceil((M.lw * M.lh) / 2 / 64),
             1
         );
+        if (nurLage) return { kopien, ausB };
         const U = GPUBufferUsage;
         const mk = (label, size, usage) =>
             dev.createBuffer({ label: "karte-" + label, size: Math.max(16, size), usage });
@@ -962,12 +1004,13 @@ class AnazhRealm_stoff_instanz {
         const roh = new Uint8Array(slots.length * 256);
         slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
         dev.queue.writeBuffer(P.param, 0, roh);
-        return { P, puffer: Object.values(P), zuege, kopien, gruppe: null, quellen: null };
+        return { P, puffer: Object.values(P), zuege, kopien, ausB, gruppe: null, quellen: null };
     }
 
     // DIE ABLAGE: die GPU zieht aus der Bühne die Stufen der Schicht und kodiert sie, die Kopien legen sie in die Schicht
-    // `idx` der Atlas-Texturen — keine Rücklese, kein Byte über den Haupt-Faden.
-    _karteAblage(at, idx, B) {
+    // `idx` der Atlas-Texturen. Mit `platte` ({preset, rest, frame}, die Platte trägt die Karte nicht) reisen dieselben Bytes
+    // zurück und per Transfer in den Faden der Schale (`karte-ablage`) — der Haupt-Faden schreibt keine Platte.
+    _karteAblage(at, idx, B, platte) {
         const rend = this.state.renderer;
         const dev = rend.backend.device;
         const R = this._karteRechner();
@@ -1009,7 +1052,22 @@ class AnazhRealm_stoff_instanz {
                 { texture: ziele[k.tex], mipLevel: k.mip, origin: { x: 0, y: 0, z: idx } },
                 { width: k.w, height: k.h, depthOrArrayLayers: 1 }
             );
+        const U = GPUBufferUsage;
+        const lese =
+            platte && dev.createBuffer({ label: "karte-platte", size: plan.ausB, usage: U.MAP_READ | U.COPY_DST });
+        if (lese) enc.copyBufferToBuffer(plan.P.aus, 0, lese, 0, plan.ausB);
         dev.queue.submit([enc.finish()]);
+        if (lese)
+            lese.mapAsync(GPUMapMode.READ).then(
+                () => {
+                    const bytes = new Uint8Array(lese.getMappedRange().slice(0));
+                    lese.destroy();
+                    const karte = { bytes, frame: platte.frame };
+                    const msg = { type: "karte-ablage", presetId: platte.preset, platte: platte.rest, karte };
+                    if (this._foundry && this._foundry.worker) this._foundry.worker.postMessage(msg, [bytes.buffer]);
+                },
+                () => lese.destroy()
+            );
     }
 
     // DIE KARTE STEHT — der EINE Ausgang jedes Bakes: Rahmen, Ende der Zusage, die wartenden Regionen und Bau-Takte wecken.

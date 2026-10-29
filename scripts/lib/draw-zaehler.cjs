@@ -25,7 +25,6 @@
 // jede Schatten-Kaskade `k<i>` (ohne CSM die EINE Karte des Haupt-Lichts `k0`), die Ausgabe der Post-Kette `post`
 // (r184-RenderPipeline-Quad), sonst der Name der Szene (r184 benennt seine Quads: `TRAA`), der Kamera, ihr Typ.
 function passName(scene, camera) {
-    const st = window.anazhRealm.state;
     if (camera === st.camera) return "haupt";
     const csm = st.csmNode;
     if (csm && csm.lights)
@@ -73,8 +72,6 @@ function satzInhalt(s, pass, drawTris, instanzKlasse, slotEintrag) {
 function drawZensus(opts) {
     return (async () => {
         const o = opts || {};
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         const csm = st.csmNode;
         const passOf = (scene, camera) => window.__passName(scene, camera);
@@ -334,15 +331,12 @@ function drawZensus(opts) {
 // Kehraus-Punkt (er läuft hier einmal, gegen den gezählten Frame), sonst stünde ein Takt-Fenster gefallener Gruppen als
 // `ruhend` im Urteil. Was danach ohne Bild bleibt, kann der Kehraus nicht nehmen: ein Leck.
 function kehrausJetzt() {
-    const r = window.anazhRealm;
     if (!r || !Number.isFinite(window.__zensusCalls)) return 0;
     r.state._gpuKehrausT = 0;
     return r._gpuKehraus(window.__zensusCalls, performance.now());
 }
 
 function pufferZensus() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const rend = st.renderer;
     const be = rend && rend.backend;
     const reg = rend && rend.info && rend.info.memoryMap;
@@ -466,7 +460,7 @@ function texturErzeuger(t) {
 // diesen Erzeuger um — der Abgriff sieht nur das Label, das beim Anlegen galt. `unbenannt` trägt je namenlosem
 // Objekt die Spur (Klasse, Format, Größe, Ziel).
 function texturZensus() {
-    const rend = window.anazhRealm.state.renderer;
+    const rend = r.state.renderer;
     const backend = rend.backend;
     const je = new Map();
     const unbenannt = [];
@@ -654,8 +648,6 @@ async function gangLauf(page, pufferStand, b) {
     const bilder = (n, dreh) =>
         page.evaluate(
             async (n, dreh) => {
-                const r = window.anazhRealm,
-                    st = r.state;
                 for (let i = 0, vor = null; i < n; i++) {
                     await new Promise((f) => requestAnimationFrame(f));
                     if (r._portalOverlay) return (r.exitPortal(), (st.yaw += Math.PI), n - i);
@@ -676,7 +668,7 @@ async function gangLauf(page, pufferStand, b) {
             for (
                 let k = 0, weiter = window.__deckel("die Ruhe der Zählung", Infinity);
                 k < 120 && weiter();
-                k = Object.values(window.anazhRealm._weltOffen()).some(Boolean) ? 0 : k + 1
+                k = Object.values(r._weltOffen()).some(Boolean) ? 0 : k + 1
             )
                 await raf();
         });
@@ -686,7 +678,7 @@ async function gangLauf(page, pufferStand, b) {
     };
     const drittel = Math.round((Number(b.min) || 6) * 1200);
     await page.evaluate(() =>
-        window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t))
+        r.state.renderer.setAnimationLoop((t) => r._gameLoopTick(t))
     );
     await ruhig();
     await bilder(1200);
@@ -695,20 +687,19 @@ async function gangLauf(page, pufferStand, b) {
     // Gebrauch gedeckelt wächst (die Werkbank der Satz-Blöcke, die Spiegel-Felder, die Leiber der Arten, die Ruhe des Foundry-
     // Cache, die Render-Objekte und Werfer des Sonnen-Schattens); die gemessene Runde geht in die Gegenrichtung über unbereiste
     // Welt und wechselt dieselbe Uhr — was mit der bereisten Welt oder je Wechsel wächst, wächst dort weiter.
-    const start = await page.evaluate(() => window.anazhRealm.state.playerMesh.position.toArray());
+    const start = await page.evaluate(() => r.state.playerMesh.position.toArray());
     const sage = async (wort) => {
         await tippe("enter");
         await cdp.send("Input.insertText", { text: "setze uhrzeit " + wort });
         await tippe("enter");
         await bilder(30);
-        return page.evaluate(() => window.anazhRealm.state.timeOfDay);
+        return page.evaluate(() => r.state.timeOfDay);
     };
     const runde = async (n, wort) => {
         const t0 = Date.now();
         await gehe(n);
         await page.evaluate(async () => {
-            const r = window.anazhRealm,
-                p = r.state.playerMesh.position;
+            const p = r.state.playerMesh.position;
             const e = (window.__gangGT = r.spawnArchitecture(
                 "fahrzeug_gt",
                 { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
@@ -718,14 +709,14 @@ async function gangLauf(page, pufferStand, b) {
         });
         await tippe("e");
         await bilder(60);
-        const fahrt = await page.evaluate(() => window.anazhRealm.state.player.mountedArch != null);
+        const fahrt = await page.evaluate(() => r.state.player.mountedArch != null);
         await gehe(n);
         if (fahrt) await tippe("e");
-        await page.evaluate(() => window.anazhRealm.removeArchitecture(window.__gangGT));
+        await page.evaluate(() => r.removeArchitecture(window.__gangGT));
         const uhr = await sage(wort);
         await gehe(n);
         const min = (Date.now() - t0) / 60000;
-        await page.evaluate((s) => window.anazhRealm.state.playerMesh.position.fromArray(s), start);
+        await page.evaluate((s) => r.state.playerMesh.position.fromArray(s), start);
         await ruhig();
         await bilder(1200);
         return { fahrt, uhr, min };
@@ -733,19 +724,19 @@ async function gangLauf(page, pufferStand, b) {
     const ein = await runde(drittel / 2, "mittag");
     const nacht = await sage("mitternacht");
     await bilder(1200);
-    await page.evaluate(() => (window.anazhRealm.state.yaw += Math.PI));
+    await page.evaluate(() => (r.state.yaw += Math.PI));
     // die Tiere je Erzeuger (`_taeterKlasse`: `tier:<seele>`) neben dem Stand
     const tiere = () =>
         page.evaluate(() => {
             const n = {};
-            for (const { userData: u } of window.anazhRealm.state.creatures)
+            for (const { userData: u } of r.state.creatures)
                 if (u && u._tierBaum) n["buf:szene:tier:" + (u.soul || "?")] = (n["buf:szene:tier:" + (u.soul || "?")] | 0) + 1;
             return n;
         });
     const vor = Object.assign(await pufferStand(true, 60), { min: 0, tiere: await tiere() });
     const lauf = await runde(drittel, "mittag");
     const nach = Object.assign(await pufferStand(true, 60), { min: lauf.min, tiere: await tiere() });
-    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+    await page.evaluate(() => r.state.renderer.setAnimationLoop(null));
     await cdp.detach();
     const urteil = gangUrteil({ vor, nach });
     if (!(ein.fahrt && lauf.fahrt)) urteil.push("fahrt: die Taste E nahm den GT 2 m neben dem Spieler nicht");

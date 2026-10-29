@@ -66,7 +66,6 @@ const AKTE = ["_depositLife", "_depositEmotion", "_observeFieldWohl", "_brandEnt
 // Die Sim-Linse (Seite): hüllt jede Methode des Prototyps und die Zellen jeder Sim (an der Instanz, je Frame neu gelegt).
 //   const S = window.__simLinseAn(); je Frame S.frame() → { wasser: n, …, akt: n, je: { wasser: { methode: n } } }; S.aus()
 function simLinseAn(sims, akte) {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     const namen = Object.keys(sims);
     const rolle = Object.fromEntries(akte.map((m) => [m, "akt"]));
@@ -177,7 +176,6 @@ function simRuheZeilen(R, wo) {
 }
 
 function standLinseAn(takte, blaetter, eigeneUhr) {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     const namen = Object.keys(takte);
     const orig = {};
@@ -316,8 +314,6 @@ function standPhase(frames) {
 // der Welle) · A · B. Gezählt je Phase: Einheiten je Takt, Zeit je Takt, Matrizen je Frame, CPU des Takts.
 function standLauf(k) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         const P = Object.getPrototypeOf(r);
         window.__buehne();
@@ -424,7 +420,7 @@ function standLauf(k) {
 // DAS URTEIL DER SIMS (feld.K3): in 60 s Ruhe nach einer Tat (Ernte, Leben) arbeitet keine Sim und kein Akt; ihr Ereignis weckt
 // jede (sonst STUMPF), danach schläft sie; der Wasser-Automat geht nach einem Wecken am Fixpunkt genau EINEN Takt; das Feld und
 // der Brand arbeiten nur in berührten Zellen.
-const BRAND_JE = 64; // je brennende Zelle und Schritt: ihr Gang, vier Würfel, die fangenden Nachbarn, die Asche
+const BRAND_JE = 64; // je Zelle des Feuers und Schritt: ihr Gang, die Zündung (Bett, Tempo, acht Ankünfte), die Asche
 function simUrteil(b, v) {
     const R = b.simRuhe;
     if (!R || !R.frames) v.push("LEER: keine Sim-Ruhe gemessen");
@@ -450,7 +446,8 @@ function simUrteil(b, v) {
     }
     if (W.nachwuchs && !W.nachwuchs.nachgewachsen) v.push("NACHWUCHS: die Ernte wuchs zu ihrer Zeit nicht nach");
     // (feld.K3#2) das Feld: vier Wellen Taten, die vorige tot — danach keine Tote in der Karte, die Räumung ging nie über eine
-    // ganze Karte (`·lifeField` …) und kostete höchstens zwei Einheiten je geschriebener Zelle
+    // ganze Karte (`·lifeField` …) noch über ihr Todes-Rad (`·lifeField.tod` …: sie nimmt die fälligen Eimer aus ihrer Halde) und
+    // kostete höchstens zwei Einheiten je geschriebener Zelle
     const F = W.feld;
     if (!F || !F.wellen || F.wellen.length < 4 || !(F.geschrieben > 0)) v.push("LEER: die Feld-Probe schrieb keine vier Wellen");
     else {
@@ -458,20 +455,24 @@ function simUrteil(b, v) {
         if (!(arbeit > 0)) v.push("STUMPF: die Taten im Feld zeigen der Sim-Linse keine Räumung");
         if (F.wellen.some((w) => w.tote > 0))
             v.push(`FELD-TOTE: nach den Wellen trägt die Karte ${F.wellen.map((w) => w.tote + " von " + w.groesse).join(" · ")} tote Zellen — sie räumt nach einer Schwelle, nicht am Tod`);
-        const karte = Object.entries(F.welle.aktAlle || {}).filter(([m]) => /^·[A-Za-z]+$/.test(m));
+        const karte = Object.entries(F.welle.aktAlle || {}).filter(([m]) => /^·[A-Za-z]+(.tod)?$/.test(m));
         if (karte.length || arbeit > 2 * F.geschrieben)
             v.push(`FELD-BESUCH: die Wellen kosteten ${arbeit} Einheiten für ${F.geschrieben} geschriebene Zellen` +
-                (karte.length ? `, die Räumung ging über die ganze Karte (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
+                (karte.length ? `, die Räumung ging über die ganze Karte oder ihr Rad (${karte.map((x) => x.join(" ")).join(", ")})` : "") + " — sie besucht Unberührte");
     }
-    // (feld.K3#2) der Brand arbeitet nur in brennenden Zellen (≤ BRAND_JE je Zelle und Schritt), erlischt, hinterlässt Asche,
-    // leuchtet, glüht und schläft danach
+    // (stoffe.K2 · feld.K3#2) der Brand arbeitet nur in seinen Zellen (≤ BRAND_JE je Zelle und Schritt), seine Front läuft mit
+    // dem Wind 0,5–2 m/s, gegen ihn ≤ 0,2 m/s und ohne ihn nirgends ≥ 0,5 m/s (die Mutante), er erlischt im Regen, hinterlässt
+    // Asche, leuchtet, glüht und schläft danach
     const Z = W.brand;
     if (!Z || !Z.start) v.push("LEER: an der Mess-Wiese fing kein Brand");
     else {
         const i = Z.zellen.findIndex((n, k) => Z.einheiten[k] > BRAND_JE * n);
         if (!Z.einheiten.some((e) => e > 0)) v.push("STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt");
         if (i >= 0) v.push(`BRAND-ZELLEN: Schritt ${i + 1} kostete ${Z.einheiten[i]} Einheiten bei ${Z.zellen[i]} brennenden Zellen (Soll ≤ ${BRAND_JE} je Zelle)`);
-        if (Z.brennt) v.push(`BRAND-ERLISCHT: nach ${Z.zellen.length} Schritten brennen noch ${Z.brennt} Zellen`);
+        if (Z.brennt) v.push(`BRAND-ERLISCHT: im Regen brennen noch ${Z.brennt} Zellen`);
+        if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
+        if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
+        if (!(Z.ohneWind < 0.5)) v.push(`BRAND-BLIND: ohne Wind läuft die Front bis ${Z.ohneWind} m/s`);
         if (!(Z.asche >= 1) || !(Z.lebNach < Z.lebVor - 0.1)) v.push(`BRAND-ASCHE: ${Z.asche} Aschen, lebendig am Herd ${Z.lebVor} → ${Z.lebNach}`);
         if (!(Z.glut > 0) || !Z.licht) v.push(`BRAND-LESER: glut am Herd +${Z.glut}, Leuchtquelle ${Z.licht ? "da" : "fehlt"}`);
         if (Z.nachher.sims.brand.summe > 0) v.push(`BRAND-RUHE: nach dem Erlöschen arbeitet der Brand — ${Z.nachher.sims.brand.summe} Einheiten`);

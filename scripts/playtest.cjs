@@ -37,7 +37,6 @@ async function safeEvaluate(page, fn, ...args) {
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         // Deterministische Mechanik-Probe (statt des flaky Box-Inhalts am Lauf-Ende): grokRender schreibt
         // einen Prüfsatz, die Box muss ihn tragen; ein leerer/null-Satz blankt sie NICHT.
@@ -146,7 +145,6 @@ if (require.main === module) hauptLauf(async () => {
         // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
         // (die offene Stelle der Ankunft ist der Ursprung). Rückgabe { x, y, z } oder null.
         window.__setzOrt = (name) => {
-            const r = window.anazhRealm;
             const bm = r.state.buildMode;
             const p = r.state.playerMesh.position;
             for (let R = 0; R <= 240; R += 6)
@@ -171,7 +169,6 @@ if (require.main === module) hauptLauf(async () => {
         // (`_ensureHydroTilesAround`, die Kachel kommt aus dem Faden: `kachel` wartet auf sie), damit jeder Hydro-Leser
         // (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
         window.__wasserOrt = async (art) => {
-            const r = window.anazhRealm;
             const G = window.__gelaendeCore;
             const kachel = (x, z) => window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
             window.__wasserOrtCache = window.__wasserOrtCache || {};
@@ -293,7 +290,6 @@ if (require.main === module) hauptLauf(async () => {
         // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
         // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
         window.__wasserChunk = async (art) => {
-            const r = window.anazhRealm;
             if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
             const ort = await window.__wasserOrt(art);
             if (!ort) return null;
@@ -355,6 +351,15 @@ if (require.main === module) hauptLauf(async () => {
                 return false;
             }
         };
+        // DAS EINE TEIL der Bänder (ein Bauplan-Part): Form, Stoff, Lage, Maß, danach der Rest des Teils (Drehung, Farbe …) in seiner
+        // Reihe. Vorher schrieb jedes Band jedes Teil als eigenes Literal (201 in 13 Domänen, je 45 Atome).
+        window.__teil = (shape, material, x, y, z, sx, sy, sz, rest) => ({
+            shape,
+            material,
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+            ...rest,
+        });
         // DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE frozen Tabelle. Bänder proben
         // r[window.__anker.X] — zieht ein Symbol um, wandert EINE Zeile; diag-apparat.cjs hält jeden Eintrag
         // gegen den lebenden Stamm-Code.
@@ -457,7 +462,7 @@ if (require.main === module) hauptLauf(async () => {
             // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
             // Geduldig, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
             // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger), nennt ihn die Stall-Akte (`__weltDa`).
-            const r = await window.__weltDa();
+            await window.__weltDa();
             // Nur den teuren GPU-Aufruf (`renderer.render`/`renderAsync`, swiftshader ~2.5 s/Frame) stubben,
             // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
             // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.
@@ -914,7 +919,6 @@ if (require.main === module) hauptLauf(async () => {
                     if (box && box.textContent) box.classList.add("visible");
                     // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
                     // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
-                    const r = window.anazhRealm;
                     if (r && r.state.renderer && window.__origRendererRender) {
                         r.state.renderer.render = window.__origRendererRender;
                         r.state.postProcessingFailed = false;

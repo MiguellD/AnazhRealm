@@ -10,8 +10,7 @@ const SKRIPTE = path.join(__dirname, "..");
 
 // die Basis-Invarianten direkt nach dem `finalState`-Greifen.
 // Welt-/Terrain-/Spieler-Grundprüfungen — verhaltens-identisch zur alten Inline-Form.
-function checkInitialState(ctx) {
-    const { check, finalState } = ctx;
+function checkInitialState({ check, finalState }) {
     check(
         "Welt initial generiert (terrainEverGenerated=true)",
         finalState.terrainEverGenerated === true,
@@ -63,8 +62,7 @@ function checkInitialState(ctx) {
 // Ring 1 Grok-Stimme: firstSpawn (1,5 s nach Erst-Worldgen) ist der einzige Trigger, der headless
 // zuverlässig kommt (idle 45 s, rainLong 60 s, jumpBurst ohne Keys, nexus irregulär) → geprüft
 // werden seenFirstSpawn + lastSpoke + Dialog-Text + mindestens ein "Grok: ..."-Log.
-function checkRing1Grok(ctx) {
-    const { check, finalState, logs } = ctx;
+function checkRing1Grok({ check, finalState, logs }) {
     check(
         "Grok hat Erst-Spawn registriert",
         finalState.grokSeenFirstSpawn === true,
@@ -95,10 +93,8 @@ function checkRing1Grok(ctx) {
 // die generische Präzisions-Leiter ist GEFALLEN: feuerstein/hammer/feile/
 // polierscheibe RAUS (die Werkstatt trägt jetzt die Präzision, V17.76/.77). hände bleibt die domain-
 // neutrale Baseline; die Op-Klassen-Abdeckung + der Crafting-Pfad bleiben intakt (kein Material verwaist).
-async function checkBandV1778LadderCut(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1778LadderCut({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const tools = r.state.tools || {};
         out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
@@ -155,15 +151,12 @@ async function checkBandV1778LadderCut(ctx) {
 // brechen (die Welt erstarrte; der Headless-Pump fing den Throw selbst und sah es nie). Der Loop
 // fängt selbst ab (loggt gedrosselt mit Stack, läuft weiter). Geprüft strukturell (try/catch +
 // _loopErrorBoundary) UND behavioral (ein werfender Schritt erstarrt den Loop NICHT).
-async function checkBandV18278LoopErrorBoundary(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18278LoopErrorBoundary({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || typeof r._gameLoopTick !== "function") return { error: "kein _gameLoopTick" };
         const out = {};
         // CONSUM (behavioral): ein werfender Frame-Schritt (updateFps) darf den Loop NICHT
         // mehr brechen — die Boundary fängt ihn, zählt ihn, der Tick kehrt normal zurück.
-        const st = r.state;
         const before = st._loopErrorCount || 0;
         let threw = false;
         try {
@@ -197,10 +190,8 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
 // EIN PID-Regler misst die Last je Subsystem (perfSense) und fährt ALLE Stellgrößen (Arch-Cull,
 // Streaming-, Wasser-Iso-Budget) nach gemessener Last — das teuerste gibt zuerst nach, Gravitation
 // NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
-async function checkBandWellePerfENexusGovernor(ctx) {
-    const { page, check } = ctx;
+async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const A = r.constructor; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
@@ -208,7 +199,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
         out.noParallelGovernor = window.__fehlt(r.selfAwarenessAnalyze, /_nexusAdaptiveQuality/);
 
-        const st = r.state;
         const snap = {
             sense: st.perfSense,
             radius: st.architectureCullingRadius,
@@ -460,10 +450,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
 // Waldboden 04.10. — die DEKO-KASKADE IST GEFALLEN: die Klein-Vegetation hing an den Chunk-Bändern (mesh · Kreuz-
 // Fernfeld · none); die Nah-Streu hängt am Schirm (Kachel-Ring um die Kamera, NAH_STREU), jenseits trägt der Boden.
 // Die Kaskade trägt nur noch LOD + KI-Takt; der Loop tickt die Nah-Streu im scatterDeco-Job.
-async function checkBandWaldbodenKaskade(ctx) {
-    const { page, check } = ctx;
+async function checkBandWaldbodenKaskade({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
         out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && Number.isFinite(b.aiDiv));
@@ -486,24 +474,15 @@ async function checkBandWaldbodenKaskade(ctx) {
 // Ω5 Perpetuum-Verbot als lebende Invariante: Modus-Wäsche (schöpfer baut gratis → pfad erntet
 // Ertrag aus dem Nichts) ist durch freeBorn geschlossen — die Herkunft entscheidet den Ertrag; die
 // Marke überlebt den Snapshot (sonst wüsche der Reload sie ab).
-async function checkBandTailleOmega5(ctx) {
-    const { page, check } = ctx;
+async function checkBandTailleOmega5({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.blueprints["_o5_werk"] = {
             name: "_o5_werk",
             label: "Ω5-Werk",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0.75, z: 0 },
-                    size: { x: 1.5, y: 1.5, z: 1.5 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                },
+                __teil("box", "stein", 0, 0.75, 0, 1.5, 1.5, 1.5, { rotation: { x: 0, y: 0, z: 0 }, opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }] }),
             ],
             connections: [],
         };
@@ -547,8 +526,7 @@ async function checkBandTailleOmega5(ctx) {
 // STATUSBAR auf ESSENZ: immer sichtbar nur Welt · Wetter · Modus · Zeit; die Werkstatt-Zahlen ruhen
 // hinter dem ···-Toggle (persistiert). Kein Verlust: alle Items bleiben im DOM, alle Schreiber
 // schreiben.
-async function checkBandV18149Statusbar(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18149Statusbar({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         const bar = document.getElementById("statusbar");
@@ -594,8 +572,7 @@ async function checkBandV18149Statusbar(ctx) {
 
 // HUD-Regel: auf schmalen Schirmen sitzt der Chat ÜBER der Hotbar-Ebene (Konsole und Hotbar
 // kollidierten sonst).
-async function checkBandV18163DetailTiefe(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18163DetailTiefe({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         // die Konsole-über-Hotbar-Regel lebt im CSS (媒-Query — die
@@ -621,8 +598,7 @@ async function checkBandV18163DetailTiefe(ctx) {
 // W-A KONSOLE: die Zustands-CSS gewinnt über JEDEN Inline-Schreiber (Drag/Restore) — eine Drag-
 // Höhe wird vom Einklappen GEDECKT und kehrt beim Entfalten zurück (drei unterscheidbare Höhen).
 // Der Griff ist eine SICHTBARE Ecken-Affordanz (Messing-Winkel) mit Richtungs-Titel.
-async function checkBandV18165KonsoleHeil(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18165KonsoleHeil({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         const cons = document.getElementById("console");
@@ -674,10 +650,8 @@ async function checkBandV18165KonsoleHeil(ctx) {
 // AAA-Atmosphäre-Wand: AERIAL ist frozen, und KEIN `static get AERIAL()` in der Klasse überdeckt
 // das Top-Level `AnazhRealm.AERIAL = …` (Getter ohne Setter: die non-strict-Zuweisung fällt LAUTLOS
 // durch, die Antennen läsen alte Werte) — fängt die ganze Getter-Schatten-Klasse.
-async function checkBandV18177AAA(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18177AAA({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
         // LIVE-Werte (was die Antennen wirklich lesen), NICHT Source-Strings.
@@ -711,10 +685,8 @@ async function checkBandV18177AAA(ctx) {
 // Verdrahtungs-Band — KONSUM, nicht Existenz: A1 _growTreeBlueprintForSpawn (Worldgen-Hook) ·
 // A2 setStructureBoost + Live-Uniform r5StructureBoost · A3 der Biss +
 // _tickCreatureScentStrike (wild-KI liest scent) · A4 applyOpToPart/applyWorkshopProcessToPart → Mana.
-async function checkBandV18210Verdrahtung(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18210Verdrahtung({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -743,8 +715,8 @@ async function checkBandV18210Verdrahtung(ctx) {
         // die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const ref =
-            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
-                window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            (r.constructor.SPECIES_TAG_REFERENCE &&
+                r.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
             null;
         const grownBp = k1 && r.state.blueprints[k1];
         out.a1TagNeutral = false;
@@ -783,7 +755,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             _grownSpecies: "baum_eiche",
             instanced: true,
             parts: [
-                { shape: "cylinder", material: "holz", position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 } },
+                __teil("cylinder", "holz", 0, 0, 0, 1, 1, 1),
             ],
         };
         r.state.architectures = r.state.architectures || [];
@@ -1050,12 +1022,10 @@ async function checkBandV18210Verdrahtung(ctx) {
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
 // gegen CPU) und das Budget des erzeugten WGSL misst dieselbe Linse am echten Renderer (`werkbank shader --stoff boden
 // --rauschprobe`).
-async function checkBandRauschGesetz(ctx) {
-    const { page, check } = ctx;
+async function checkBandRauschGesetz({ page, check }) {
     await page.evaluate(SK.SHADER_INSTALL);
     const res =
         (await safeEvaluate(page, () => {
-            const r = window.anazhRealm;
             const A = r.constructor;
             const out = {};
             const stoffe = [
@@ -1142,10 +1112,8 @@ async function checkBandRauschGesetz(ctx) {
     );
 }
 
-async function checkBandV18331ReplayDeterminism(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18331ReplayDeterminism({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const s = r.state;
         const out = {};
         if (!s.playerMesh || !s.playerVel) return out;
@@ -1212,10 +1180,8 @@ async function checkBandV18331ReplayDeterminism(ctx) {
 // spielen kann, einen screenshot erstellen kann … einen button für den export der daten". (P) das Panel füllt seine Felder
 // aus den EINEN Quellen (perfSense · Flugschreiber · Impostor-Zensus), der Kopf trägt die VERSION; (E) der Export liefert
 // denselben Flugschreiber-Trace als Datei; SELBST-TEST: ein leerer Flugschreiber liest als „kein Export".
-async function checkBandPerfPanel(ctx) {
-    const { page, check } = ctx;
+async function checkBandPerfPanel({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const res = {};
         // ~4 s Sim pumpen, damit Flugschreiber + Sekunden-Ring Substanz tragen (der Ring rollt an echter Wanduhr)
         let t = performance.now();
@@ -1276,10 +1242,8 @@ async function checkBandPerfPanel(ctx) {
 // Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden: ein Budget ≤ 0 lässt die Substanz-Queues
 // nie monoton wachsen. Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
-async function checkBandExistenzBoden(ctx) {
-    const { page, check } = ctx;
+async function checkBandExistenzBoden({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const s = r.state;
         const pos = s.playerMesh.position;
         const res = {};
@@ -1349,11 +1313,8 @@ async function checkBandExistenzBoden(ctx) {
 // Godrays (V8 Kür) — eingefaltet aus gate:godray: der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
 // (A) die reine `_godrayFrameGate` remappt Höhe×Wetter (dass der March im Ausgabe-Bild zeichnet, beweist gate:post-kette an
 // und aus); (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
-async function checkBandGodray(ctx) {
-    const { page, check } = ctx;
+async function checkBandGodray({ page, check }) {
     const o = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const out = { MAX: r.constructor.PERF_GODRAY_MAX };
         // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0
         out.gateHigh = r._godrayFrameGate(0.9, 1.0);
@@ -1391,11 +1352,8 @@ async function checkBandGodray(ctx) {
 // des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
 // Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der
 // Flugschreiber-Snapshot nennt `szeneSkala`.
-async function checkBandSzeneSkala(ctx) {
-    const { page, check } = ctx;
+async function checkBandSzeneSkala({ page, check }) {
     const o = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const THREE = window.THREE;
         const K = r.constructor;
         const LAYER = K.FOLIAGE_LAYER;
@@ -1463,11 +1421,8 @@ async function checkBandSzeneSkala(ctx) {
 // GPU-Anwender gestubbt, alles gesichert und wiederhergestellt. S1 schwache GPU drosselt und konvergiert (Studio-Regime ohne
 // Rebuild-Schleife) · S2 Streaming ist heilig · S3 starke GPU erholt · S4 Session-Zeit-Invarianz · S5 der Geräte-Seed (Klassen,
 // Konsum, headless byte-alt) · S6 der Grenzzyklus-Schnitt (Laub- und Architektur-Radius) · S7 der Ladeschirm misst nichts.
-async function checkBandReglerSim(ctx) {
-    const { page, check } = ctx;
+async function checkBandReglerSim({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            st = r.state;
         const A = window.AnazhRealm || r.constructor;
         const o = {};
         const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };

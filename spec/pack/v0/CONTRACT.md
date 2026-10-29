@@ -17,10 +17,11 @@
 
 ## v0 — Schlüssel
 
-Ein Eintrag je gebackenem Asset im IndexedDB-Store `anazhFoundryAssets/assets`:
+Ein Eintrag je Lieferung im IndexedDB-Store `anazhFoundryAssets/assets`, sein Schlüssel = der Stempel der Kerne, die sie
+liest (s. u. „Stempel"), vor dem Rest (pipeline.K4 Stufe 2):
 
 ```text
-<preset>|<gestalt>|<lod>
+f<FOUNDRY_PLATTE_FORMAT>|<kern>:<sha>,…~<rest>      Körper: <rest> = <preset>|<gestalt>|<lod>
 ```
 
 Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod, ov)` (Stamm) — derselbe String ist
@@ -28,8 +29,11 @@ Platten-, Cache- und leafKey-Stamm. Ein GEPRÄGTER Körper (Ofen-Mensch, Tier mi
 seinen ov-Hash an: `<preset>|<gestalt>|<lod>|ov:<hash>` (`_studioOvHash`, reihenfolgefest) — nur die Werkstatt-Vorschau
 und die Hand (`wo === 0` mit ov) sind Unikate ohne Platte.
 
-DIE KARTE liegt seit S2 auf keiner Platte: sie backt im Welt-Renderer aus der L1-Gestalt (`_karteWeltBacken`), die GPU
-legt sie ab (BC1/BC5, deckungstreue Mips) — kein Kanal, kein Codec im Worker, kein Store-Eintrag.
+DIE ÜBRIGEN LIEFERUNGEN gehen durch DIESELBE Schale: der Dorf-Export (`stl|<SHA seiner Frage>`, Wert `{ plan }`), der EINE
+Blatt-Atlas (`blatt-atlas`, Wert = seine Fracht) und die Karte (`fimp|bc|<Zelle>`, Wert `{ w, bytes, frame }`): sie backt im
+Welt-Renderer aus der L1-Gestalt (`_karteWeltBacken`), die GPU legt sie ab (BC1/BC5, deckungstreue Mips) und reicht dieselben
+Bytes zurück in den Faden; `w` ist der Stempel des Wirts (Stamm + Engine, VERSION maskiert) — nur das BC-Format liegt auf
+der Platte.
 
 - `preset` — ein Schlüssel aus dem Studio-Rezeptbuch (`get-recipes`; Bäume `eiche fichte tanne
 birke weide mammut` · Boden `gras strauch blume` · Fels `findling basalt sediment zacken
@@ -73,25 +77,24 @@ Mesh {
 ## v0 — Stempel (die Drift-Wand)
 
 Ein persistierter Bake IST eine Kopie → sein Stempel MUSS der Hash der GENERATOR-QUELLEN sein
-(kein Versions-Ritual). Symbol: die Transport-Schale `_foundrySchale` (der Boot `_ensureAssetFoundry` reicht
-ihr den Manifest-Text und die Skript-URLs):
+(kein Versions-Ritual) — und zwar DER Quellen, die er liest. Symbol: die Transport-Schale `_foundrySchale` (der Boot
+`_ensureAssetFoundry` reicht ihr je Kern die URLs seiner Quellen, `_foundryStart`):
 
 ```text
-stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + bruecke_1 + … + bruecke_m ) + "|f" + FOUNDRY_PLATTE_FORMAT
+sha(kern) = SHA-256( script_1 + "\n" + … + lib_1 + … + bruecke_1 ) — die ersten 16 Hex
+stempel(lieferung) = "f" + FOUNDRY_PLATTE_FORMAT + "|" + ( <kern>:<sha> je gelesenem Kern, sortiert, mit "," )
 ```
 
-- `manifestText` — der ROHE Text von `cores.manifest.json` (ein Manifest-Edit = neuer Kern-Satz = Bust).
-- `script_i` — der Text JEDES `scripts[]`-Eintrags ALLER Manifest-Kerne, in Manifest-Reihenfolge
-  (heute: `phyto-core.js`, `foundry-core.js`, `vehicle-core.js`) — jeder Kern ist Generator-Quelle.
-- `bruecke_j` — der Text JEDER `bruecke` der Manifest-Kerne (heute `foundry-bruecke.js`; K42, vorher seit V18.527 die
-  Labor-Shell `worlds/terrain/phytogenesis.js`): die Brücke trägt `__extractAssetMesh` (backt matrixWorld in die
-  Vertices) und `bakeImpostorAtlas` (die Karte) — ein Brücken-Edit leert die Platte, ein UI-Edit am Labor nie
-  (gate:fluss S7f).
+- gelesen sind: die Basis (der Kern mit `bruecke`, heute phyto: `phyto-core.js`, `foundry-core.js`, die lib three r128 und
+  `foundry-bruecke.js` — die Brücke trägt `__extractAssetMesh` und `bakeImpostorAtlas`), jeder Kern, dessen Tafel die Art
+  trägt (`PRESETS`; der Dorf-Export: `exportSettlement`), und jeder Kern, den ein gelesener beim Namen (`ns`) nennt (heute
+  nennt foundry-core `__gelaendeCore` und `__koerperCore`). Ein Kern-Edit baut so nur seine Leser neu (`diag-boot-stage
+  --kern-wechsel`); ein Edit an der Labor-Shell `worlds/terrain/phytogenesis.js` bewegt keinen Stempel (gate:pack-contract `bootLauf`).
 - Jeder Fetch trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene versionierte Datei).
-- `|f<n>` — das Transport-Format (heute 3: saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index):
-  eine geänderte Konsum-Wand, Verengung oder Schlüssel-Form leert den Cache von selbst.
-- Beim DB-Open wird `__stamp` gelesen: Mismatch → `store.clear()` + neuen Stempel schreiben
-  (der GANZE Cache ist potenziell Drift). Match → der Cache lebt weiter.
+- `f<n>` — das Transport-Format (heute 3: saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index):
+  eine geänderte Konsum-Wand, Verengung oder Schlüssel-Form baut die Platte von selbst neu.
+- `__stamp` = `f<n>|` + jedes `<kern>:<sha>` in Manifest-Folge. Beim DB-Open gelesen: Mismatch → es fällt jeder Schlüssel,
+  dessen Stempel einen Kern-SHA trägt, den kein Kern mehr hat (oder ein anderes Format); Match → der Cache lebt weiter.
 
 ## v0 — Miss/Bust/Fail-stumm-Regeln
 
@@ -100,7 +103,7 @@ stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + brueck
 | Cache-Treffer                  | die Schale antwortet von der Platte (`platte: true` am Reply), das Studio baut nicht            |
 | Cache-Miss                     | die Schale reicht den Auftrag an das Studio; dessen Antwort → Wand · Verengung · Put · Transfer |
 | Worker noch nicht ready        | ehrliches `null` (`FOUNDRY KALT`) — der Aufrufer deferriert + fragt später (gate-treu)          |
-| Stempel-Mismatch               | Store leeren + neuen Stempel schreiben (Bust VON SELBST bei Generator- und Format-Edit)         |
+| Stempel-Mismatch               | die Schlüssel ohne gültigen Kern-SHA fallen, `__stamp` neu (nur die Leser des Kerns bauen neu)  |
 | Headless/Null-Renderer         | Platte AUS (`cfg.platte` false, gate-deterministisch); der Schlüssel reist, die Schale entscheidet |
 | Vorrat (`vorrat: true`)        | liegt der Körper auf der Platte oder gibt es keine: leere Antwort ohne Bau; sonst Bau → Put → leer |
 | Jeder IDB-/Quota-/Parse-Fehler | die Schale schreibt nicht mehr und fragt nur noch das Studio (nie ein Nutzer-sichtbarer Fehler) |

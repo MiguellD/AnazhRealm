@@ -1864,6 +1864,17 @@ const RENDER_LAUF = /^(render|renderAsync|compile|compileAsync)$/;
 const RENDER_TRAEGER = /renderer|^pp$|postProcessing|pipeline/i;
 const GEO_SCHREIBEN = /^(setAttribute|setIndex|addGroup|setDrawRange|computeVertexNormals)$/;
 const GEO_TRAEGER = /geo/i;
+// DER GLIED-RUF: `e` ruft ein Glied mit festem Namen (`objekt.name(…)`, nicht berechnet) — `name` ein Wort, ein Muster
+// oder null (jeder Name), `dies`: das Objekt ist `this`. Die EINE Prüfung, die bis hier jede Fang-Regel selbst ausschrieb.
+const gliedRuf = (e, name, dies) =>
+    e.type === "CallExpression" &&
+    e.callee.type === "MemberExpression" &&
+    !e.callee.computed &&
+    (!dies || e.callee.object.type === "ThisExpression") &&
+    (name == null || (name.test ? name.test(e.callee.property.name) : e.callee.property.name === name));
+// DER NAME EINES KNOTENS: ein Bezeichner (`geo`) oder sein letztes Glied (`this.geo`), sonst ""
+const knotenName = (k) =>
+    k.type === "Identifier" ? k.name : k.type === "MemberExpression" && !k.computed ? k.property.name : "";
 function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const acorn = require("acorn");
     const kommentare = [];
@@ -1879,12 +1890,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     };
     // ein Promise-Fang: `….catch((e) => …)` — sein Rückruf ist ein catch, die Kette davor sein Block
     const istPromiseFang = (n) =>
-        n.type === "CallExpression" &&
-        n.callee.type === "MemberExpression" &&
-        !n.callee.computed &&
-        n.callee.property.name === "catch" &&
-        n.arguments.length >= 1 &&
-        /Function/.test(n.arguments[0].type);
+        gliedRuf(n, "catch") && n.arguments.length >= 1 && /Function/.test(n.arguments[0].type);
     // AUFGESCHOBEN läuft, was der Versuch nur ablegt: eine Funktion als Wert eines Objekts (`{ render: () => … }`), an ein
     // Glied gehängt (`el.onclick = () => …`) oder einem Zeitgeber/Hörer übergeben (rAF, setTimeout, addEventListener …) —
     // sie läuft nach dem Versuch, ihr Fehler erreicht seinen catch nie (die Hülle lief über die UI-Räume vom Chat in die
@@ -1896,12 +1902,8 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         if (el.type === "Property" && el.value === c) return true;
         if (el.type === "MethodDefinition" || el.type === "PropertyDefinition") return true;
         if (el.type === "AssignmentExpression" && el.right === c && el.left.type === "MemberExpression") return true;
-        if ((el.type === "CallExpression" || el.type === "NewExpression") && el.arguments.includes(c)) {
-            const k = el.callee;
-            const name =
-                k.type === "Identifier" ? k.name : k.type === "MemberExpression" && !k.computed ? k.property.name : "";
-            return ZEITGEBER.test(name);
-        }
+        if ((el.type === "CallExpression" || el.type === "NewExpression") && el.arguments.includes(c))
+            return ZEITGEBER.test(knotenName(el.callee));
         return false;
     };
     // der Versuch ohne seine Fänge: catch-Rümpfe und Promise-Rückrufe zählen nie zum Bau, Aufgeschobenes läuft nicht in ihm
@@ -2010,47 +2012,12 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 e.left.property.name === "needsUpdate"
             )
                 hit = "lädt hoch (needsUpdate)";
-            else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                GEO_SCHREIBEN.test(e.callee.property.name) &&
-                GEO_TRAEGER.test(
-                    e.callee.object.type === "Identifier"
-                        ? e.callee.object.name
-                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
-                          ? e.callee.object.property.name
-                          : ""
-                )
-            )
+            else if (gliedRuf(e, GEO_SCHREIBEN) && GEO_TRAEGER.test(knotenName(e.callee.object)))
                 hit = "schreibt die Geometrie (" + e.callee.property.name + ")";
-            else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                e.callee.property.name === "postMessage" &&
-                /worker/i.test(
-                    e.callee.object.type === "Identifier"
-                        ? e.callee.object.name
-                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
-                          ? e.callee.object.property.name
-                          : ""
-                )
-            )
+            else if (gliedRuf(e, "postMessage") && /worker/i.test(knotenName(e.callee.object)))
                 hit = "schickt dem Faden einen Bau-Auftrag (postMessage)";
-            else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                RENDER_LAUF.test(e.callee.property.name)
-            ) {
-                const o = e.callee.object;
-                const t =
-                    o.type === "Identifier"
-                        ? o.name
-                        : o.type === "MemberExpression" && !o.computed
-                          ? o.property.name
-                          : "";
+            else if (gliedRuf(e, RENDER_LAUF)) {
+                const t = knotenName(e.callee.object);
                 if (RENDER_TRAEGER.test(t)) hit = "läuft den Render-Graphen (" + t + "." + e.callee.property.name + ")";
             }
         });
@@ -2059,13 +2026,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const ruft = (n) => {
         const s = new Set();
         geheVersuch(n, (e) => {
-            if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression" &&
-                !e.callee.computed
-            )
-                s.add(e.callee.property.name);
+            if (gliedRuf(e, null, true)) s.add(e.callee.property.name);
         });
         return s;
     };
@@ -2093,13 +2054,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 /Function/.test(e.right.type)
             )
                 gehe(e.right, (c) => {
-                    if (
-                        c.type === "CallExpression" &&
-                        c.callee.type === "MemberExpression" &&
-                        c.callee.object.type === "ThisExpression" &&
-                        !c.callee.computed
-                    )
-                        s.add(c.callee.property.name);
+                    if (gliedRuf(c, null, true)) s.add(c.callee.property.name);
                 });
         });
         return s;
@@ -2171,10 +2126,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 fn = e.right;
                 art = e.left.property.name;
             } else if (
-                e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                !e.callee.computed &&
-                e.callee.property.name === "addEventListener" &&
+                gliedRuf(e, "addEventListener") &&
                 e.arguments.length >= 2 &&
                 e.arguments[0].type === "Literal" &&
                 /Function/.test(e.arguments[1].type)
@@ -2187,13 +2139,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             if (!f) return;
             if (art === "onmessage")
                 gehe(fn, (c) => {
-                    if (
-                        c.type === "CallExpression" &&
-                        c.callee.type === "MemberExpression" &&
-                        c.callee.object.type === "ThisExpression" &&
-                        !c.callee.computed
-                    )
-                        f.rufe.add(c.callee.property.name);
+                    if (gliedRuf(c, null, true)) f.rufe.add(c.callee.property.name);
                 });
             else if (HOERER.test(art)) f.hoerer.push({ art, fn });
         });
@@ -2251,12 +2197,9 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             if (!/Function/.test(c.type)) flach(c, f);
         });
     };
+    const istLog = (e) => gliedRuf(e, "log", true);
     const istErrorLog = (e) =>
-        e.type === "CallExpression" &&
-        e.callee.type === "MemberExpression" &&
-        e.callee.object.type === "ThisExpression" &&
-        !e.callee.computed &&
-        e.callee.property.name === "log" &&
+        istLog(e) &&
         e.arguments.length >= 2 &&
         e.arguments[1].type === "Literal" &&
         e.arguments[1].value === "ERROR";
@@ -2273,17 +2216,9 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         !!e &&
         (istErrorLog(e) ||
             (e.type === "AwaitExpression" && lautE(e.argument)) ||
-            (e.type === "CallExpression" &&
-                e.callee.type === "MemberExpression" &&
-                e.callee.object.type === "ThisExpression" &&
-                !e.callee.computed &&
-                bruchHelfer.has(e.callee.property.name) &&
-                e.callee.property.name !== "log"));
+            (gliedRuf(e, null, true) && bruchHelfer.has(e.callee.property.name) && e.callee.property.name !== "log"));
     const istSchlangeZurueck = (e) =>
-        e.type === "CallExpression" &&
-        e.callee.type === "MemberExpression" &&
-        !e.callee.computed &&
-        e.callee.property.name === "push" &&
+        gliedRuf(e, "push") &&
         /Queue|Schlange/.test(srcRoh.slice(e.callee.object.start, e.callee.object.end));
     const wiederholt = (s) =>
         !!s &&
@@ -2406,14 +2341,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         }
         const logs = [];
         flach(m.value.body, (n) => {
-            if (
-                n.type === "CallExpression" &&
-                n.callee.type === "MemberExpression" &&
-                n.callee.object.type === "ThisExpression" &&
-                !n.callee.computed &&
-                n.callee.property.name === "log"
-            )
-                logs.push(n);
+            if (istLog(n)) logs.push(n);
         });
         // DIE FRIST (Prüfer K22-3): ein Zähler ist nur laut, wenn eine Frist (setTimeout) ihn meldet — sonst blieb eine Folge,
         // die vor der nächsten Meldung endete, still. Jeder this.log der Frist meldet ERROR, mindestens einer steht.
@@ -2429,27 +2357,13 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 /Function/.test(n.arguments[0].type)
             )
                 gehe(n.arguments[0], (c) => {
-                    if (
-                        c.type === "CallExpression" &&
-                        c.callee.type === "MemberExpression" &&
-                        c.callee.object.type === "ThisExpression" &&
-                        !c.callee.computed &&
-                        c.callee.property.name === "log"
-                    )
-                        fristLogs.push(c);
+                    if (istLog(c)) fristLogs.push(c);
                 });
         });
         // still ist jeder this.log des Melders, der nicht ERROR meldet — auch in einer inneren Funktion (der Frist)
         const alleLogs = [];
         gehe(m.value.body, (n) => {
-            if (
-                n.type === "CallExpression" &&
-                n.callee.type === "MemberExpression" &&
-                n.callee.object.type === "ThisExpression" &&
-                !n.callee.computed &&
-                n.callee.property.name === "log"
-            )
-                alleLogs.push(n);
+            if (istLog(n)) alleLogs.push(n);
         });
         const still = alleLogs.filter((n) => !istErrorLog(n));
         const fristFehlt = !!zaehlt && !fristLogs.some(istErrorLog);
@@ -2505,10 +2419,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 n.type === "VariableDeclarator" &&
                 n.id.type === "Identifier" &&
                 n.init &&
-                n.init.type === "CallExpression" &&
-                n.init.callee.type === "MemberExpression" &&
-                n.init.callee.object.type === "ThisExpression" &&
-                !n.init.callee.computed
+                gliedRuf(n.init, null, true)
             )
                 vars.set(n.id.name, n.init.callee.property.name);
         });
@@ -2638,13 +2549,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             // meldet dort; geprüft werden Ketten aus fremder Quelle (fetch, ein Versprechen von außen).
             const glieder = [];
             let wurzel = istPromiseFang(n) ? n.callee.object : null;
-            while (
-                wurzel &&
-                wurzel.type === "CallExpression" &&
-                wurzel.callee.type === "MemberExpression" &&
-                !wurzel.callee.computed &&
-                /^(then|catch|finally)$/.test(wurzel.callee.property.name)
-            ) {
+            while (wurzel && gliedRuf(wurzel, /^(then|catch|finally)$/)) {
                 if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
                 wurzel = wurzel.callee.object;
             }
@@ -3641,14 +3546,7 @@ function main() {
                 if (n.type === "TryStatement" && n.handler) {
                     k = n.handler.body;
                     ort = n.handler;
-                } else if (
-                    n.type === "CallExpression" &&
-                    n.callee.type === "MemberExpression" &&
-                    !n.callee.computed &&
-                    n.callee.property.name === "catch" &&
-                    n.arguments.length >= 1 &&
-                    /Function/.test(n.arguments[0].type)
-                ) {
+                } else if (gliedRuf(n, "catch") && n.arguments.length >= 1 && /Function/.test(n.arguments[0].type)) {
                     k = n.arguments[0].body;
                     ort = n.arguments[0];
                 } else if (

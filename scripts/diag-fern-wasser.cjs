@@ -26,7 +26,6 @@ async function runOnce(browser, noFoundry) {
     await warteAufWelt(page, 120000);
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)
     await page.evaluate(async () => {
-        const r = window.anazhRealm;
         for (let i = 0; i < 120; i++) {
             try {
                 r._gameLoopTick(performance.now());
@@ -35,7 +34,6 @@ async function runOnce(browser, noFoundry) {
         }
     });
     const out = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const s = r.state;
         const o = {};
         const F = r.constructor.FAR_WATER;
