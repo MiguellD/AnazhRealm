@@ -1932,17 +1932,20 @@ const stationen = [
     },
 
     // ───────── fahrzeug.K2 — die Fahrt kommt durch: das Wegenetz trägt das Rad (Staffel 1, w3t-wegenetz) ─────────
-    // gate:fahr-leben --wegenetz (Node, Null-Renderer): die feste Route der Saat — von der Mess-Wiese über die Orte −1,−5 · −2,−6 ·
-    // −3,−5 · −4,−6 · −5,−5 · −6,−6 (je zwei Nachbarn im Wegenetz, `_wegenetzNachbarn`), die am Spieler erwachen wie im Spiel; die
-    // Feldwege zwischen ihnen und die Nähte ihrer Netze legt das Gesetz (fachwerk `wegZwischen`, `wegeNetz`), die Route ist die
-    // kürzeste über das Netz (`_wegenetzRoute`); der GT fährt sie mit dem Fahrer am Steuer (`fahrerSetzen`: Verb-Tafel → der EINE
-    // Fahr-Schritt des Kerns) in gemischten Bildern (8,3–33,3 ms), die Telemetrie zählt der Sim-Schritt (FIXED_DT). Headless gilt:
-    // der Sim-Schritt ist bildratenunabhängig (`--gleich` fährt 60 fps, dieselbe Bahn). Das Urteil liest `WEGENETZ {…}`.
-    // An main 675a3889 ROT (kein Feldweg zwischen Orten, die Dorf-Netze in 4–6 Teilen: keine Route); die Mutante (`--mutante`,
-    // die Weg-Erkennung aus: die Luftlinie) ROT.
+    // gate:fahr-leben --wegenetz: die feste Route der Saat — von der Mess-Wiese über die Orte −1,−5 · 0,−5 · 1,−6 · 2,−7 · 3,−6 ·
+    // 4,−7 (je zwei Nachbarn im Wegenetz, `_wegenetzNachbarn`), die am Spieler erwachen wie im Spiel; die Feldwege zwischen ihnen
+    // und die Nähte ihrer Netze legt das Gesetz (fachwerk `wegZwischen`, `wegeNetz`), die Route ist die kürzeste über das Netz
+    // (`_wegenetzRoute`, 2632 m, Weg 98 %, Boden Wiese/Wald/Dorf); der GT fährt sie mit dem Fahrer am Steuer (`fahrerSetzen`:
+    // Verb-Tafel → der EINE Fahr-Schritt des Kerns), die Telemetrie zählt der Sim-Schritt (FIXED_DT). Das Urteil liest
+    // `WEGENETZ {…}`. An main 675a3889 ROT (kein Feldweg zwischen Orten, die Dorf-Netze in 4–6 Teilen: keine Route); die Mutante
+    // (`--mutante`, die Weg-Erkennung aus: die Luftlinie) ROT (Weg 0, fest nach 120 m). Am Zweig headless: 0 Steckenbleiber, über
+    // 0,8 · vmax 73,7 % (gemischte Bilder 8,3–33,3 ms) bzw. 75,3 % (`--gleich`, 60 fps) — der Sim-Schritt ist fest, die Welt
+    // (Natur-Strom, Boden) kommt je Bild: 12 444 gegen 12 225 Takte, darum urteilen Radeon und GTX. Erwartet dort: Route ✅,
+    // an ✅, Steckenbleiber 0 ✅, Tempo ❌ (~74 % gegen 80 %: drei Bäche quer — zwei Feldwege und eine Gasse von 4,−7 — und
+    // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax).
     {
-        kriterium: "fahrzeug.K2", staffel: 1, geraet: "headless",
-        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, zeit: false, minuten: 6,
+        kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 10,
         urteil: (j, lauf) => {
             const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
             if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ")" };
