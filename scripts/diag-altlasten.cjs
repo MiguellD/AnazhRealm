@@ -1051,7 +1051,7 @@ function checkAliasArten(core) {
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
 const stripComments = stammLib.ohneKommentare;
-const { kinder } = stammLib;
+const { kinder, gliedRuf } = stammLib;
 
 // `auch`: ein Name, der zusätzlich in einer Studio-Datei außerhalb der Stamm-Liste fiel (dort gilt NUR er — das Labor
 // trägt eigene Namen, die im Stamm gefallen sind).
@@ -1849,14 +1849,6 @@ const RENDER_LAUF = /^(render|renderAsync|compile|compileAsync)$/;
 const RENDER_TRAEGER = /renderer|^pp$|postProcessing|pipeline/i;
 const GEO_SCHREIBEN = /^(setAttribute|setIndex|addGroup|setDrawRange|computeVertexNormals)$/;
 const GEO_TRAEGER = /geo/i;
-// DER GLIED-RUF: `e` ruft ein Glied mit festem Namen (`objekt.name(…)`, nicht berechnet) — `name` ein Wort, ein Muster
-// oder null (jeder Name), `dies`: das Objekt ist `this`. Die EINE Prüfung, die bis hier jede Fang-Regel selbst ausschrieb.
-const gliedRuf = (e, name, dies) =>
-    e.type === "CallExpression" &&
-    e.callee.type === "MemberExpression" &&
-    !e.callee.computed &&
-    (!dies || e.callee.object.type === "ThisExpression") &&
-    (name == null || (name.test ? name.test(e.callee.property.name) : e.callee.property.name === name));
 // DER NAME EINES KNOTENS: ein Bezeichner (`geo`) oder sein letztes Glied (`this.geo`), sonst ""
 const knotenName = (k) =>
     k.type === "Identifier" ? k.name : k.type === "MemberExpression" && !k.computed ? k.property.name : "";
@@ -3360,8 +3352,7 @@ function main() {
             warte(frist, { "scripts/diag-w.cjs": 1 }) === 0 &&
             warte(frist, { "scripts/diag-w.cjs": 2 }) === 1 &&
             warte("async () => { for (let n = 0; !e.fertig && n < 120; n++) await tick(); };") === 0 &&
-            warte("async () => { await (await page.waitForSelector(s, { visible: true })).click(); };") === 1 &&
-            warte("async () => { await klickInRuhe(page, s); };") === 0 &&
+            warte("async () => [(await p.waitForSelector(s)).click(), klickInRuhe(p, s)];") === 1 &&
             eigenBoots([["scripts/diag-s.cjs", 'spawn("node", ["save-server.js"]);']]).length === 1;
         if (!warteFeuert) {
             console.log("❌ SELBST-TEST: die Warte-Wand feuert nicht (oder steht heute rot)", scanWarteWand(gates));

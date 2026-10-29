@@ -463,7 +463,8 @@ hauptLauf(async () => {
     // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
     await page.waitForFunction(() => anazhRealm.state.p2p.connected);
     uhr = Date.now();
-    for (const s of ['[data-tab="bibliothek"]', 'button[data-teilen="welt"]']) await klickInRuhe(page, s);
+    await klickInRuhe(page, '[data-tab="bibliothek"]');
+    await klickInRuhe(page, 'button[data-teilen="welt"]');
     await page.waitForFunction(() => document.querySelector('code[data-teilen="welt"]').textContent);
     const msW = Date.now() - uhr;
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)

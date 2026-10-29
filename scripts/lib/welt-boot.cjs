@@ -17,7 +17,7 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
-const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
+const { ohneKommentare, ast, wandere, zeileVon, gliedRuf } = require("./stamm.cjs");
 
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
@@ -184,7 +184,7 @@ async function ruht(l) {
 // Prägungs-Probe traf in der Werkstatt-Liste das Tor daneben, CI-Lauf 40850577623).
 async function klickInRuhe(page, sel) {
     const el = await page.waitForSelector(sel, { visible: true });
-    await page.evaluate(() => window.__ruht());
+    await page.evaluate("__ruht()");
     await el.click();
 }
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
@@ -1224,11 +1224,7 @@ const hat = (x, f) => {
     });
     return j;
 };
-const uhr = (c) =>
-    c.type === "CallExpression" &&
-    c.callee.property &&
-    c.callee.property.name === "now" &&
-    /^(performance|Date)$/.test(c.callee.object.name);
+const uhr = (c) => gliedRuf(c, "now") && /^(performance|Date)$/.test(c.callee.object.name);
 const frist = (t) =>
     hat(
         t,
@@ -1265,19 +1261,11 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
             ) {
                 const s = schleifen.filter((l) => l.body.start <= n.start && n.end <= l.body.end).pop();
                 if (s) fristen.add(s);
-            } else if (
-                n.type === "CallExpression" &&
-                n.callee.property &&
-                n.callee.property.name === "click" &&
-                hat(n.callee.object, (c) => c.property && c.property.name === "waitForSelector")
-            ) {
-                errs.push(
-                    `Warte-Wand: ${name}:${zeileVon(src, n.start)} klickt am Pixel, ehe die UI ruht — das EINE Klicken ist \`klickInRuhe\``
-                );
-            } else if (n.type === "CallExpression" && n.callee.property && n.callee.property.name === "catch") {
+            } else if (gliedRuf(n, "click") && hat(n, (c) => gliedRuf(c, "waitForSelector")))
+                errs.push(`Warte-Wand: ${name}:${zeileVon(src, n.start)} klickt ohne klickInRuhe`);
+            else if (gliedRuf(n, "catch")) {
                 const w = n.callee.object;
-                const o =
-                    w.callee && w.callee.property && w.callee.property.name === "waitForFunction" && w.arguments[1];
+                const o = gliedRuf(w, "waitForFunction") && w.arguments[1];
                 const f = n.arguments[0];
                 const wirft = f && hat(f, (c) => c.type === "ThrowStatement");
                 if (

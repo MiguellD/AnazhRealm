@@ -565,6 +565,14 @@ function wandere(n, f, ahnen = []) {
     kinder(n, (c) => wandere(c, f, ahnen));
     ahnen.pop();
 }
+// DER GLIED-RUF: `e` ruft ein Glied mit festem Namen (`objekt.name(…)`, nicht berechnet) — `name` ein Wort, ein Muster
+// oder null (jeder Name), `dies`: das Objekt ist `this`. Die EINE Prüfung, die bis hier jede Fang-Regel selbst ausschrieb (gate:altlasten, die Warte-Wand).
+const gliedRuf = (e, name, dies) =>
+    e.type === "CallExpression" &&
+    e.callee.type === "MemberExpression" &&
+    !e.callee.computed &&
+    (!dies || e.callee.object.type === "ThisExpression") &&
+    (name == null || (name.test ? name.test(e.callee.property.name) : e.callee.property.name === name));
 const schluesselVon = (t, n) =>
     !n.computed && (n.key.type === "Identifier" || n.key.type === "PrivateIdentifier")
         ? n.key.name
@@ -1069,6 +1077,7 @@ module.exports = {
     ast,
     zeileVon,
     wandere,
+    gliedRuf,
     glieder,
     gliedAn,
     rufe,
