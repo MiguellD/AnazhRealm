@@ -47,7 +47,7 @@ async function kreaturProben(r, T, opts) {
         const altUhr = s.creatureAnimationTime;
         const altAi = r._creatureAiFrame;
         const altStroeme = r._faunaStroeme;
-        const altFelder = [s.lifeField, s.emotionField];
+        const altFelder = [s.lifeField, s.emotionField, s.faunaBestand];
         const altSpieler = Object.assign({}, s.player);
         // das Tempo des Spielers und die Spiel-Zeit samt dem Takt des Lebenszyklus kehren nach jeder Probe zurück
         const altTempo = [s.speed, s.sprintSpeed, s.jumpPower, s.spielZeit, s.faunaLifecycle];
@@ -59,8 +59,7 @@ async function kreaturProben(r, T, opts) {
         if (s.playerVel) s.playerVel.setValue(0, 0, 0);
         r._spielerLageAlt = null;
         s._herdContagionAcc = 0;
-        s.lifeField = undefined;
-        s.emotionField = undefined;
+        [s.lifeField, s.emotionField, s.faunaBestand] = [];
         s.creatureAnimationTime = 100;
         r._creatureAiFrame = 0;
         r._faunaStroeme = null;
@@ -103,8 +102,7 @@ async function kreaturProben(r, T, opts) {
             if (altVel && s.playerVel) s.playerVel.setValue(altVel[0], altVel[1], altVel[2]);
             r._spielerLageAlt = altLage;
             s._herdContagionAcc = altHerde;
-            s.lifeField = altFelder[0];
-            s.emotionField = altFelder[1];
+            [s.lifeField, s.emotionField, s.faunaBestand] = altFelder;
         }
     };
     // Ein Ort auf Land (nicht im Wasser), relativ zum Spieler.
@@ -767,6 +765,13 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "riss") decke("_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
         if (taeter === "jagd-schritt") schrittJagd();
         if (taeter === "riss-verloren") decke("_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
+        // der Jäger, dessen Tier im Gesetz verhungert, fällt sofort — mitten in seinem Riss (28.10.: 9 von 10 Opfern ohne Maul)
+        if (taeter === "jaeger-faellt")
+            decke("_bestandTode", (alt) => (tode) => {
+                alt.call(r, tode);
+                for (const c of s.creatures.slice())
+                    if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
+            });
         const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
@@ -3695,6 +3700,7 @@ const TAETER = {
         ["jagd-schritt", /die Jagd hetzt nie: 0 von/],
         ["riss", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
         ["riss-verloren", /im Übergang verloren: [1-9]/],
+        ["jaeger-faellt", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
     ],
     herde: [
         ["herde", /am Blick/],
