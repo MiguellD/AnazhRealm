@@ -2478,6 +2478,8 @@ class AnazhRealm_bild_kosten {
             else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
         } else if (k >= 0) this._instanzWahlPass("schatten", S);
         else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S);
+        // die Wahl der GPU: die Arenen ihrer Senken legen die Aufträge dieses Passes, EIN Compute zählt sie (nach dem Takt)
+        if (!nach) this._instanzWahlGpu(kamera, S);
         // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
         this._chunkSatzPass(kamera, nach, k, S);
         // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
@@ -3105,10 +3107,13 @@ class AnazhRealm_bild_kosten {
     // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
     // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
     // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    // "gpu" (Spike gpu-wahl): die Senke eines Gang-Satzes (`aGang`), die nicht wirft — Haut und Kleid der Bewohner, das Auge
+    // der Tiere zeichnen nur im Hauptbild —, wählt auf der GPU (`_instanzWahlGpu`); ihr Wurf zeichnet jede Instanz.
     _instanzWahlArt(leaf, castShadow, regional) {
         if (regional || !leaf || leaf.tuer) return null;
         const at = leaf.geom && leaf.geom.attributes;
         if (!at) return null;
+        if (at.aGang) return castShadow ? null : "gpu";
         if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
         if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
         if (leaf.shadowTwin) return "schatten";
@@ -3199,6 +3204,189 @@ class AnazhRealm_bild_kosten {
         const hL = geo.attributes.aH0L.array[i]; // das Vorzeichen: der Halt der Stufe ohne Partner (sie zeichnet voll)
         const kL = Math.min(L.ref / Math.max(Math.abs(hL), 1e-3), 1);
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, hL < 0);
+    }
+
+    // DIE WAHL DER GPU (Spike gpu-wahl, Rang 7 des Luft-Urteils 28.10.). Befund (Luft-Urteil, Stadt-Gipfel stadt-voll): der
+    // Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im Nah-Kreis, auch hinter
+    // dem Blick: ihre Senken wählte keine Pass-Art (`_instanzWahlArt` kannte nur Pflanzen-Stufen und Karten). Jetzt wählt eine
+    // Arena, deren Senken die Art "gpu" tragen, im Haken jedes Passes, vor seinem Encoder (r184 reicht ihn bei `finishRender`
+    // ein, die Queue ordnet: Aufträge · Rechnung · Zug): sie legt die Aufträge dieser Kamera (`_wahlVor`: die Zahl jedes Zugs 0,
+    // seine erste Instanz der Abschnitt der Liste dieser Kamera), und EIN Compute je Kamera prüft jede ihrer Instanzen nach dem
+    // EINEN Gesetz der Pass-Wahl (`_passTrifft` als WGSL, `PASS_WAHL_WGSL`), schreibt die getroffenen verdichtet in die Liste
+    // und zählt die Zahl des Zugs atomar im Auftrags-Puffer der Arena; der Instanz-Knoten liest `matrizen[liste[instance_index]]`
+    // (`_senkenKnoten`). Ein Wurf ist der Bruch der Arena (`_arenaBruch`): jedes Glied zeichnet wieder über seinen Zeichner.
+    _instanzWahlGpu(kamera, S) {
+        const reg = AnazhRealm.__arenen;
+        if (!reg || !reg.size || AnazhRealm.__arenaBruch) return;
+        const rend = this.state.renderer;
+        try {
+            const arenen = [];
+            for (const a of reg.values()) {
+                if (!a._wahl || !kamera.layers.test(a.layers)) continue;
+                const zug = a._wahlVor(rend, kamera);
+                if (zug && zug.wahl.length) arenen.push(a, zug);
+            }
+            if (arenen.length) this._wahlRechnen(rend, S.lage, arenen);
+        } catch (e) {
+            this._arenaBruch(e);
+        }
+    }
+
+    // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
+    // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
+    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (x: die Instanzen zu 64, y: ihre Züge).
+    _wahlRechnen(rend, L, arenen) {
+        const be = rend.backend,
+            dev = be.device,
+            U = GPUBufferUsage;
+        let W = AnazhRealm.__wahlGpu;
+        if (!W || W.dev !== dev) {
+            const lay = dev.createBindGroupLayout({
+                label: "pass-wahl",
+                entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
+                    binding: i,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type, hasDynamicOffset: i === 1 },
+                })),
+            });
+            const module = dev.createShaderModule({ label: "pass-wahl", code: AnazhRealm.PASS_WAHL_WGSL });
+            const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
+            const pipe = dev.createComputePipeline({
+                label: "pass-wahl",
+                layout,
+                compute: { module, entryPoint: "wahl" },
+            });
+            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 128, usage: U.UNIFORM | U.COPY_DST });
+            W = AnazhRealm.__wahlGpu = {
+                dev,
+                lay,
+                pipe,
+                lage,
+                lageF: new Float32Array(32),
+                puffer: null,
+                f: null,
+                u: null,
+            };
+        }
+        const al = dev.limits.minStorageBufferOffsetAlignment;
+        const off = [];
+        let bytes = 0;
+        for (let i = 1; i < arenen.length; i += 2) {
+            off.push(bytes);
+            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 48) / al) * al;
+        }
+        if (!W.puffer || W.puffer.size < bytes) {
+            const size = Math.max(bytes, 2 * (W.puffer ? W.puffer.size : 0));
+            if (W.puffer) W.puffer.destroy();
+            W.puffer = dev.createBuffer({ label: "pass-wahl-auftraege", size, usage: U.STORAGE | U.COPY_DST });
+            W.f = new Float32Array(size / 4);
+            W.u = new Uint32Array(W.f.buffer);
+        }
+        const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
+        dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
+        dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
+        const enc = dev.createCommandEncoder({ label: "pass-wahl" });
+        const pass = enc.beginComputePass({ label: "pass-wahl" });
+        pass.setPipeline(W.pipe);
+        for (let j = 0; j < off.length; j++) {
+            const a = arenen[2 * j],
+                q = a.__instanzQuelle,
+                n = arenen[2 * j + 1].wahl.length / 5;
+            for (const x of [q.instanceMatrix, q.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
+            const puf = [W.lage, W.puffer, ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer)];
+            let bg = a.__wahlBG;
+            if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
+                const entries = puf.map((buffer, i) => ({
+                    binding: i,
+                    resource: { buffer, size: i === 1 ? n * 48 : undefined },
+                }));
+                bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
+            }
+            pass.setBindGroup(0, bg.bg, [off[j]]);
+            pass.dispatchWorkgroups(Math.ceil(nMax[j] / 64), n);
+        }
+        pass.end();
+        dev.queue.submit([enc.finish()]);
+    }
+
+    // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 32 Floats): je Ebene des Frustums Normale und
+    // Abstand des Auges (n·a + d — die Instanz rechnet relativ zum Auge, f32 trägt keine Kilometer auf Millimeter), das Auge,
+    // der Rand (Halt + Licht, je Meter Abstand der Rand der zeitlichen Auflösung + der Drehung) — die Größen von `_passTrifft`.
+    static _wahlLage(L, aus) {
+        const E = L.fr.planes;
+        for (let p = 0; p < 6; p++) {
+            const n = E[p].normal;
+            aus.set([n.x, n.y, n.z, n.x * L.ax + n.y * L.ay + n.z * L.az + E[p].constant], p * 4);
+        }
+        aus.set([L.ax, L.ay, L.az, 0, L.halt + L.licht, L.rand + L.dreh, 0, 0], 24);
+        return aus;
+    }
+
+    // Die Aufträge einer Arena ab dem Wort `o` (das `Auftrag`-Gefüge, 12 Worte): die Kugel der Gestalt (`_gangSatzHuelle`),
+    // erste Instanz · Zahl · Platz der Zahl im Auftrags-Puffer · Abschnitt der Liste, der Saum (die Gestalt des Gangs trägt
+    // keinen: ihre Kugel deckt jede Pose). `wahl` aus `_auftraege`: [Glied, erste Instanz, Zahl, Platz, Abschnitt] je Zug.
+    // Liefert die größte Zahl (die Breite des Dispatch).
+    static _wahlAuftraege(wahl, f, u, o) {
+        let nMax = 0;
+        for (let j = 0; j < wahl.length; j += 5, o += 12) {
+            const g = wahl[j].geometry;
+            if (!g.boundingSphere) g.computeBoundingSphere();
+            const s = g.boundingSphere;
+            f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
+            u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
+            f.set([0, 0, 0, 0], o + 8);
+            nMax = Math.max(nMax, wahl[j + 2]);
+        }
+        return nMax;
+    }
+
+    // DIE HÜLLE DES GANGS (die Kugel der Wahl einer Gestalt im Satz, `_gangSatz`): die Kugel jeder Senke maß der Stand — jede
+    // gebackene Zeile des Knochen-Puffers (`_gangSatzPose`) weitet sie um das Bild der Kugel jedes Knochen-Platzes (`kugeln`:
+    // die Ecken, die er trägt, im Raum ihrer Bindung; ihr Bild liegt höchstens die größte Streckung der Zeile mal den Radius
+    // neben dem Bild der Mitte). Jede Ecke einer Zeile mischt solche Bilder, der Knoten mischt die Zeilen: die Kugel deckt jede
+    // Pose des Gangs, nicht nur den Stand.
+    static _gangSatzKugeln(satz) {
+        const K = new Float64Array(satz.J * 4),
+            B = new Float64Array(satz.J * 6).fill(Infinity);
+        for (let gang = 0; gang < 2; gang++)
+            for (const q of satz.quellen) {
+                const a = q.m.geometry.attributes;
+                for (let i = 0; i < a.position.count; i++)
+                    for (let c = 0; c < 4; c++) {
+                        if (!(a.skinWeight.getComponent(i, c) > 0)) continue;
+                        const p = q.platz[a.skinIndex.getComponent(i, c)] * 4;
+                        const v = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)];
+                        if (gang)
+                            K[p + 3] = Math.max(K[p + 3], Math.hypot(v[0] - K[p], v[1] - K[p + 1], v[2] - K[p + 2]));
+                        else
+                            for (let k = 0; k < 3; k++) {
+                                B[p * 1.5 + k] = Math.min(B[p * 1.5 + k], v[k]);
+                                B[p * 1.5 + 3 + k] = Math.min(B[p * 1.5 + 3 + k], -v[k]);
+                                K[p + k] = (B[p * 1.5 + k] - B[p * 1.5 + 3 + k]) / 2;
+                            }
+                    }
+            }
+        return K;
+    }
+    static _gangSatzHuelle(satz, zeile) {
+        const D = satz.tex.image.data,
+            K = satz.kugeln;
+        for (const geo of satz.geos) {
+            const s = geo.boundingSphere,
+                c = [s.center.x, s.center.y, s.center.z];
+            for (let p = 0; p < satz.J; p++) {
+                const o = (zeile * satz.J + p) * 12;
+                let d2 = 0,
+                    st = 0;
+                for (let r = 0; r < 3; r++) {
+                    const b = o + r * 4,
+                        w = D[b] * K[p * 4] + D[b + 1] * K[p * 4 + 1] + D[b + 2] * K[p * 4 + 2] + D[b + 3] - c[r];
+                    d2 += w * w;
+                    st = Math.max(st, D[o + r] ** 2 + D[o + 4 + r] ** 2 + D[o + 8 + r] ** 2); // die Spalte r der Zeile
+                }
+                s.radius = Math.max(s.radius, Math.sqrt(d2) + Math.sqrt(st) * K[p * 4 + 3]);
+            }
+        }
     }
 
     // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
@@ -3584,5 +3772,33 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
 });
+// DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; Spike gpu-wahl, `_instanzWahlGpu`): je Instanz
+// eines Auftrags ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der
+// Saum) gegen jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; getroffen → ein Platz in der Liste ihres
+// Abschnitts, die Zahl des Zugs atomar. Die Licht-Kapsel der Kaskaden trägt sie nicht: die Art "gpu" wirft nie.
+AnazhRealm.PASS_WAHL_WGSL = `
+struct Lage { ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f }
+struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
+@group(0) @binding(0) var<uniform> lage: Lage;
+@group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
+@group(0) @binding(2) var<storage, read> matrizen: array<mat4x4f>;
+@group(0) @binding(3) var<storage, read_write> liste: array<u32>;
+@group(0) @binding(4) var<storage, read_write> args: array<atomic<u32>>;
+@compute @workgroup_size(64)
+fn wahl(@builtin(global_invocation_id) id: vec3u) {
+    let a = auftraege[id.y];
+    if (id.x >= a.platz.y) { return; }
+    let i = a.platz.x + id.x;
+    let m = matrizen[i];
+    let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
+    let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
+    let rr = a.kugel.w * sqrt(s2) + a.saum.x + lage.rand.x + lage.rand.y * length(c);
+    for (var p = 0u; p < 6u; p++) {
+        let e = lage.ebenen[p];
+        if (dot(e.xyz, c) + e.w < -rr) { return; }
+    }
+    liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
+}
+`;
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.
 AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);

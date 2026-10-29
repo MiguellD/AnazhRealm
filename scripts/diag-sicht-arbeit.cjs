@@ -105,30 +105,32 @@ function urteil(b) {
 }
 
 function selbsttest() {
+    // die drei Maße einer Größe über die Frames (Mittel, Median, Maximum)
+    const werte = (mittel, median = mittel, max = mittel) => ({ mittel, median, max });
     const phase = (arbeit, bytes, treffer) => ({
         frames: 10,
-        paesse: { mittel: 3, median: 3, max: 3 },
-        arbeit: { mittel: arbeit, median: arbeit, max: arbeit },
+        paesse: werte(3),
+        arbeit: werte(arbeit),
         arbeitFrames: arbeit > 0 ? 10 : 0,
         arbeitOhne: { frames: arbeit > 0 ? 10 : 0, median: arbeit, max: arbeit },
         aenderungFrames: 0,
         schreibFrames: bytes > 0 ? 10 : 0,
         ohneFrames: bytes > 0 ? 10 : 0,
-        ecken: { mittel: 0, median: 0, max: 0 },
-        bytes: { mittel: bytes, median: bytes, max: bytes },
-        bytesOhne: { mittel: bytes, median: bytes, max: bytes },
+        ecken: werte(0),
+        bytes: werte(bytes),
+        bytesOhne: werte(bytes),
         bytesOhneJe: bytes > 0 ? { "boden wahl:lage": bytes * 10 } : {},
-        legeOhne: { mittel: 0, median: 0, max: 0 },
+        legeOhne: werte(0),
         legeOhneFrames: 0,
         legeOhneJe: {},
-        treffer: { mittel: treffer, median: treffer, max: treffer },
-        hoehlenSicht: { mittel: 0, median: 0, max: 0 },
-        hoehlenSichtLicht: { mittel: 0, median: 0, max: 0 },
-        abschnitt: { mittel: 0, median: 0, max: 0 },
-        passTrifft: { mittel: 0, median: 0, max: 0 },
-        instanzBehalten: { mittel: 0, median: 0, max: 0 },
-        werferTrifft: { mittel: 0, median: 0, max: 0 },
-        hinaus: { mittel: 0, median: 0, max: 0 },
+        treffer: werte(treffer),
+        hoehlenSicht: werte(0),
+        hoehlenSichtLicht: werte(0),
+        abschnitt: werte(0),
+        passTrifft: werte(0),
+        instanzBehalten: werte(0),
+        werferTrifft: werte(0),
+        hinaus: werte(0),
     });
     const sonne = (arbeitFrames, lichtFrames, stufe) =>
         Object.assign(phase(arbeitFrames > 0 ? 300 : 0, 0, 9), {
@@ -137,7 +139,7 @@ function selbsttest() {
             lichtFrames,
             sonneRad: 0.026,
             stufe,
-            arbeit: { mittel: arbeitFrames > 0 ? 20 : 0, median: 0, max: arbeitFrames > 0 ? 3000 : 0 },
+            arbeit: werte(arbeitFrames > 0 ? 20 : 0, 0, arbeitFrames > 0 ? 3000 : 0),
         });
     const gruen = {
         sonne: sonne(12, 6, 1 / 255),
@@ -146,7 +148,7 @@ function selbsttest() {
         gehen: phase(5000, 0, 0),
         bruch: phase(4000, 0, 0),
         legeBruch: Object.assign(phase(0, 0, 9), {
-            legeOhne: { mittel: 2400, median: 2400, max: 2400 },
+            legeOhne: werte(2400),
             legeOhneFrames: 10,
             legeOhneJe: { "boden dicht:ohne haupt": 24000 },
         }),
@@ -212,10 +214,10 @@ function selbsttest() {
     );
     const mitAenderung = klon();
     Object.assign(mitAenderung.ruhe, {
-        arbeit: { mittel: 800, median: 0, max: 10000 },
+        arbeit: werte(800, 0, 10000),
         arbeitFrames: 66,
         aenderungFrames: 80,
-        bytes: { mittel: 5291, median: 0, max: 232320 },
+        bytes: werte(5291, 0, 232320),
         schreibFrames: 69,
     });
     const v2 = urteil(mitAenderung);
@@ -224,105 +226,63 @@ function selbsttest() {
     // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame — ein Satz-Inhalt
     // zählt nur mit BENANNTEM Grund (`grund`), nie über die Zähler des Spiels (Stand, Verdichten)
     const kl = (f) => SICHT.sichtBytesKlasse(f);
+    // ein Frame mit 100 Bytes eines benannten Grunds (ohne Inhalt, wenn der Fall keinen nennt)
+    const bytes100 = (grund, mehr) => ({ bytes: 100, bytesGrund: { [grund]: 100 }, inhalt: {}, ...mehr });
     const klassen = [
         [
             "Inhalt änderte sich (ein Bereich kam)",
-            {
-                bytes: 100,
-                bytesGrund: { "boden wahl:stand haupt": 100 },
-                inhalt: { boden: { grund: "aenderung", bereiche: 1, stand: 1 } },
-            },
+            bytes100("boden wahl:stand haupt", { inhalt: { boden: { grund: "aenderung", bereiche: 1, stand: 1 } } }),
             "aenderung",
         ],
-        ["Stand ohne Inhalt", { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: {} }, "ohne"],
+        ["Stand ohne Inhalt", bytes100("boden wahl:stand haupt"), "ohne"],
         [
             "Stand-Bruch (der Satz zählt nur seinen Stand)",
-            {
-                bytes: 100,
-                bytesGrund: { "streuSatz wahl:stand haupt": 100 },
+            bytes100("streuSatz wahl:stand haupt", {
                 inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } },
-            },
+            }),
             "ohne",
         ],
         [
             "Verdichten-Zähler ohne Grund",
-            {
-                bytes: 100,
-                bytesGrund: { "bauSatz wahl:neu k0": 100 },
+            bytes100("bauSatz wahl:neu k0", {
                 inhalt: { bauSatz: { stand: 0, verdichtet: 1, bereiche: 0, keys: [] } },
-            },
+            }),
             "ohne",
         ],
         [
             "Verdichten nach dem Überhang (die neue Wahl danach)",
-            {
-                bytes: 100,
-                bytesGrund: { "bauSatz wahl:neu k0": 100 },
-                inhalt: { bauSatz: { grund: "folge", verdichtet: 1 } },
-            },
+            bytes100("bauSatz wahl:neu k0", { inhalt: { bauSatz: { grund: "folge", verdichtet: 1 } } }),
             "folge",
         ],
         [
             "Inhalt einer anderen Familie",
-            {
-                bytes: 100,
-                bytesGrund: { "boden wahl:neu k0": 100 },
-                inhalt: { wasser: { grund: "aenderung", bereiche: 1 } },
-            },
+            bytes100("boden wahl:neu k0", { inhalt: { wasser: { grund: "aenderung", bereiche: 1 } } }),
             "ohne",
         ],
-        [
-            "Licht drehte (Kaskade)",
-            { bytes: 100, bytesGrund: { "boden wahl:lage k0": 100 }, licht: 1, inhalt: {} },
-            "aenderung",
-        ],
-        [
-            "Licht drehte (Hauptbild)",
-            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, licht: 1, inhalt: {} },
-            "ohne",
-        ],
-        [
-            "Kamera bewegt (Hauptbild)",
-            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, kamera: 1, inhalt: {} },
-            "aenderung",
-        ],
-        ["Lage ohne Licht", { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, inhalt: {} }, "ohne"],
+        ["Licht drehte (Kaskade)", bytes100("boden wahl:lage k0", { licht: 1 }), "aenderung"],
+        ["Licht drehte (Hauptbild)", bytes100("boden wahl:lage haupt", { licht: 1 }), "ohne"],
+        ["Kamera bewegt (Hauptbild)", bytes100("boden wahl:lage haupt", { kamera: 1 }), "aenderung"],
+        ["Lage ohne Licht", bytes100("boden wahl:lage k1", { licht: 0 }), "ohne"],
         [
             "Licht drehte seit dem letzten Pass der Kaskade (sie ruhte im Frame der Drehung)",
-            { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, lichtJe: { k1: 1 }, inhalt: {} },
+            bytes100("boden wahl:lage k1", { licht: 0, lichtJe: { k1: 1 } }),
             "aenderung",
         ],
         [
             "Licht drehte nur für die andere Kaskade",
-            { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, lichtJe: { k0: 1 }, inhalt: {} },
+            bytes100("boden wahl:lage k1", { licht: 0, lichtJe: { k0: 1 } }),
             "ohne",
         ],
         [
             "Licht je Kaskade für das Hauptbild",
-            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, licht: 0, lichtJe: { haupt: 1 }, inhalt: {} },
+            bytes100("boden wahl:lage haupt", { licht: 0, lichtJe: { haupt: 1 } }),
             "ohne",
         ],
-        [
-            "Blende des Reglers (Hauptbild)",
-            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, blende: 1, inhalt: {} },
-            "aenderung",
-        ],
-        [
-            "Verdichten einer ruhenden Wahl",
-            { bytes: 100, bytesGrund: { "bauSatz dicht k0": 100 }, inhalt: {} },
-            "folge",
-        ],
-        ["Umlegen", { bytes: 100, bytesGrund: { "boden umlegen haupt": 100 }, inhalt: {} }, "folge"],
-        [
-            "Verdichten ohne Schuld",
-            { bytes: 100, bytesGrund: { "bauSatz dicht:ohne k0": 100 }, licht: 1, inhalt: {} },
-            "ohne",
-        ],
-        [
-            "Umlegen ohne Wahl",
-            { bytes: 100, bytesGrund: { "boden umlegen:ohne haupt": 100 }, kamera: 1, inhalt: {} },
-            "ohne",
-        ],
+        ["Blende des Reglers (Hauptbild)", bytes100("boden wahl:lage haupt", { blende: 1 }), "aenderung"],
+        ["Verdichten einer ruhenden Wahl", bytes100("bauSatz dicht k0"), "folge"],
+        ["Umlegen", bytes100("boden umlegen haupt"), "folge"],
+        ["Verdichten ohne Schuld", bytes100("bauSatz dicht:ohne k0", { licht: 1 }), "ohne"],
+        ["Umlegen ohne Wahl", bytes100("boden umlegen:ohne haupt", { kamera: 1 }), "ohne"],
         ["ungesehene Bytes", { bytes: 100, bytesGrund: {}, inhalt: {} }, "ohne"],
     ];
     for (const [name, f, soll] of klassen) {
@@ -591,8 +551,7 @@ function selbsttest() {
         stufe: null,
         fehlt: [],
     });
-    const churnPhase = () =>
-        SICHT.sichtPhase([churnFrame(), churnFrame(), churnFrame(), churnFrame(), churnFrame(), churnFrame()], 1);
+    const churnPhase = () => SICHT.sichtPhase(Array.from({ length: 6 }, churnFrame), 1);
     const faelle = [
         [
             "Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)",
@@ -689,9 +648,9 @@ function selbsttest() {
             "Bytes in Ruhe",
             (b) =>
                 Object.assign(b.ruhe, {
-                    bytes: { mittel: 96, median: 0, max: 960 },
+                    bytes: werte(96, 0, 960),
                     schreibFrames: 1,
-                    bytesOhne: { mittel: 96, median: 0, max: 960 },
+                    bytesOhne: werte(96, 0, 960),
                     ohneFrames: 1,
                     bytesOhneJe: { "bauSatz dicht?": 960 },
                 }),
@@ -701,15 +660,15 @@ function selbsttest() {
             "Neulegen in Ruhe (K71: 0 Bytes, der Gang über die Zellen)",
             (b) =>
                 Object.assign(b.ruhe, {
-                    legeOhne: { mittel: 48, median: 0, max: 480 },
+                    legeOhne: werte(48, 0, 480),
                     legeOhneFrames: 1,
                     legeOhneJe: { "bauSatz dicht:ohne k0": 480 },
                 }),
             /RUHE: 48 Indizes je Frame neu gelegt ohne Änderung .*bauSatz dicht:ohne k0 480/,
         ],
-        ["kein Treffer", (b) => (b.ruhe.treffer = { mittel: 0, median: 0, max: 0 }), /LINSE BLIND: kein Pass traf/],
-        ["starres Drehen", (b) => (b.drehen.arbeit = { mittel: 0, median: 0, max: 0 }), /STARR: beim Drehen/],
-        ["starres Gehen", (b) => (b.gehen.arbeit = { mittel: 1, median: 0, max: 3 }), /STARR: beim Gehen/],
+        ["kein Treffer", (b) => (b.ruhe.treffer = werte(0)), /LINSE BLIND: kein Pass traf/],
+        ["starres Drehen", (b) => (b.drehen.arbeit = werte(0)), /STARR: beim Drehen/],
+        ["starres Gehen", (b) => (b.gehen.arbeit = werte(1, 0, 3)), /STARR: beim Gehen/],
         [
             "untreue Wahl",
             (b) => b.treue.abweichung.push("boden|haupt: 41 statt 43 Zellen"),
@@ -726,7 +685,7 @@ function selbsttest() {
             "stumpfe Lege-Linse (der Lege-Bruch steht unter fremdem Grund)",
             (b) =>
                 (b.legeBruch = Object.assign(phase(0, 0, 9), {
-                    legeOhne: { mittel: 2400, median: 2400, max: 2400 },
+                    legeOhne: werte(2400),
                     legeOhneFrames: 10,
                     legeOhneJe: { "boden umlegen:ohne haupt": 24000 },
                 })),

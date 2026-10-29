@@ -1464,7 +1464,8 @@ class AnazhRealm_stoff_instanz {
         // je Objekt der Speicher-Puffer `feld` seiner Quelle: die Matrizen jeder Senke, die Art-Größen des Winds der Arena
         class SenkenPuffer extends SB {
             constructor(feld, typ, n, name) {
-                super(new THREE.StorageInstancedBufferAttribute(new Float32Array(n), n), typ, 0);
+                const A = typ === "uint" ? Uint32Array : Float32Array;
+                super(new THREE.StorageInstancedBufferAttribute(new A(n), n), typ, 0);
                 this.feld = feld;
                 this.updateType = "object";
                 this.setName(name);
@@ -1482,16 +1483,34 @@ class AnazhRealm_stoff_instanz {
                 if (p) this.value = p;
             }
         }
-        const matrix = new SenkenPuffer("instanceMatrix", "mat4", 16, "instanzMatrix")
-            .toReadOnly()
-            .element(T.instanceIndex);
+        // DER INDEX DER INSTANZ: zieht eine Arena aus der Wahl der GPU (Marke `aWahl`, `_instanzWahlGpu`), ist er ihr Eintrag in
+        // der Liste ihres Passes (`liste[instance_index]`, die erste Instanz des Zugs ist sein Abschnitt) — Matrix, Art-Größen
+        // des Winds und Gang lesen ihn; sonst der Index des Zugs
+        const liste = new SenkenPuffer("liste", "uint", 1, "arenaWahlListe").toReadOnly();
+        const wahl = (b) => b.hasGeometryAttribute("aWahl");
+        class WahlWert extends N {
+            constructor(typ, ja, nein) {
+                super(typ);
+                Object.assign(this, { ja, nein });
+            }
+            setup(builder) {
+                return wahl(builder) ? this.ja() : this.nein();
+            }
+        }
+        const index = T.nodeObject(
+            new WahlWert(
+                "uint",
+                () => liste.element(T.instanceIndex),
+                () => T.instanceIndex
+            )
+        );
+        const gang = new SenkenPuffer("gang", "vec2", 2, "arenaGang").toReadOnly().element(index);
+        const matrix = new SenkenPuffer("instanceMatrix", "mat4", 16, "instanzMatrix").toReadOnly().element(index);
         // DIE ART-GRÖSSEN DES WINDS IN DER ARENA (G1): je Instanz ein vec4 im Speicher-Puffer, nie ein Vertex-Puffer — die
         // Arena belegt genau die Vertex-Puffer ihres Zeichners (r184 bindet je gelesenes Attribut einen; WebGPU trägt höchstens
         // `maxVertexBuffers` 8). Befund 16.10. (Radeon, Genesis Third, GPU-Wache): `aWindArt` als neunter Vertex-Puffer, „Vertex
         // buffer count (9) exceeds the maximum" — die Pipeline des Laubs abgesagt, jede nahe Krone fehlte im Bild.
-        const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt")
-            .toReadOnly()
-            .element(T.instanceIndex).xyz;
+        const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt").toReadOnly().element(index).xyz;
         class SenkenInstanz extends N {
             constructor() {
                 super("void");
@@ -1506,7 +1525,19 @@ class AnazhRealm_stoff_instanz {
                 return null;
             }
         }
-        AnazhRealm.__senkenKnoten = { matrix, windArt, instanz: new SenkenInstanz() };
+        AnazhRealm.__senkenKnoten = {
+            matrix,
+            windArt,
+            // der Gang je Instanz (`_gangSatzKnoten`): in der Wahl am Index aus dem Speicher-Puffer der Arena, sonst das Attribut
+            gang: T.nodeObject(
+                new WahlWert(
+                    "vec2",
+                    () => gang,
+                    () => T.attribute("aGang", "vec2")
+                )
+            ),
+            instanz: new SenkenInstanz(),
+        };
         return AnazhRealm.__senkenKnoten;
     }
     // DIE GEOMETRIE-ARENA (G1, die GPU-Welt): EIN Render-Objekt je Stoff. Befund 16.10. (Radeon, EINE Welt, je Ort ein
@@ -1644,6 +1675,14 @@ class AnazhRealm_stoff_instanz {
         a._rend = renderer;
         a._stapel.push(null);
         try {
+            // die Wahl der GPU legte den Zug vor dem Pass (`_wahlVor`): ohne ihn zöge die Arena ungewählt — ein Bruch
+            if (a._wahl) {
+                const zug = a._zuege.get(camera);
+                if (!zug || !zug.bereit) throw new Error("GPU-WAHL: die Arena zieht ohne die Wahl ihres Passes");
+                zug.bereit = false;
+                a._stapel[a._stapel.length - 1] = zug;
+                return;
+            }
             if (!a._ordnen(renderer, false)) return;
             // nimmt ein Bündel die Arena auf, legt sie ihre Plätze fest (der Takt schreibt danach ihre Aufträge)
             const auf = a._fest && !!renderer._currentRenderBundle;
@@ -1663,7 +1702,7 @@ class AnazhRealm_stoff_instanz {
         console.warn("DIE GEOMETRIE-ARENA: " + AnazhRealm.__arenaOhne + " — jede Senke zeichnet über ihren Zeichner");
         return false;
     }
-    // Der Stoff-Schlüssel einer Senke — null, wo die Arena sie nicht tragen kann (verschränkte Puffer, Morph, Stoff-Reihe);
+    // Der Stoff-Schlüssel einer Senke — null, wo die Arena sie nicht tragen kann (verschränkt je Instanz, Morph, Stoff-Reihe);
     // das Nein gilt, bis Geometrie oder Stoff wechseln: kein Zug baut seine Zeichenketten neu.
     static _arenaSchluessel(m) {
         const geo = m.geometry,
@@ -1676,17 +1715,22 @@ class AnazhRealm_stoff_instanz {
             return null;
         }
         if (m.instanceColor) form += "farbe:" + m.instanceColor.itemSize;
-        return [form, m.layers.mask, m.castShadow, m.receiveShadow, m.renderOrder, AnazhRealm._arenaStoff(s)].join("|");
+        const w = m.__wahlGpu === true; // die Wahl der GPU (`_instanzWahlArt`) zieht in ihrer eigenen Arena
+        return [form, m.layers.mask, m.castShadow, m.receiveShadow, m.renderOrder, w, AnazhRealm._arenaStoff(s)].join(
+            "|"
+        );
     }
-    // Die Attribut-Form einer Geometrie, mit oder ohne Instanz-Größen — null: keine Geometrie, Morph oder verschränkt.
+    // Die Attribut-Form einer Geometrie, mit oder ohne Instanz-Größen — null: keine Geometrie, Morph oder verschränkt je Instanz.
     static _arenaForm(geo, mitInstanz) {
         if (!geo || (geo.morphAttributes && Object.keys(geo.morphAttributes).length)) return null;
         let form = "";
         for (const k of Object.keys(geo.attributes).sort()) {
             const a = geo.attributes[k];
-            if (a.isInterleavedBufferAttribute || !a.array) return null;
+            // ein verschränkter Puffer (die Vorlage des Gang-Satzes) trägt seine Spur: Versatz und Schritt
+            const v = a.isInterleavedBufferAttribute ? a.data : null;
+            if (!a.array || (v && v.isInstancedInterleavedBuffer)) return null;
             if (a.isInstancedBufferAttribute && !mitInstanz) continue;
-            const t = a.array.constructor.name;
+            const t = a.array.constructor.name + (v ? "@" + a.offset + "/" + v.stride : "");
             form += k + ":" + a.itemSize + t + (a.normalized ? "n" : "") + (a.isInstancedBufferAttribute ? "I," : ",");
         }
         return form;
@@ -1777,6 +1821,7 @@ class AnazhRealm_stoff_instanz {
             }
         };
         const vier = (n) => Math.ceil(n / 4) * 4; // jede Kapazität ein Vielfaches von 4 Elementen
+        const WAHL = new T.BufferAttribute(new Float32Array(1), 1); // die Marke der Wahl der GPU (kein Shader liest sie)
         // DIE RESIDENZ FOLGT DEM BILD — auch in der Arena (Lehre 27, das Gesetz des Kehraus `_gpuKehraus`): sie hält eine
         // Gestalt, solange ein Glied sie mit Instanzen trägt, und einen Instanz-Platz je Instanz, die ein Glied zieht —
         // GPU_KEHRAUS_MS über das letzte Mal hinaus, dann wird ihr Platz frei. Befund 16.10. (Prüfung Runde 2 und Messung
@@ -1824,12 +1869,15 @@ class AnazhRealm_stoff_instanz {
         const quelleWeg = (m) => (AnazhRealm.__quelleWeg || (AnazhRealm.__quelleWeg = new Set())).add(m);
         // in die Warteschlange vor dem Submit dieses Passes über die EINE Wort-Schrift; ohne GPU-Puffer lädt r184 beim
         // ersten Zug das ganze Array
+        // ein verschränkter Puffer liegt bei r184 unter seinen Daten (je Zug lädt EIN Attribut sie, `attributeCall`)
         const schreib = (rend, a, start, n) => {
             const be = rend && rend.backend;
-            if (!be || !be.device || !a || n <= 0 || !rend._attributes.has(a)) return;
-            const d = be.get(a),
-                b = a.array.BYTES_PER_ELEMENT;
-            if (d.buffer) AnazhRealm._schreibWorte(be.device.queue, d.buffer, a.array, start * b, (start + n) * b);
+            const v = a && a.isInterleavedBufferAttribute ? a.data : null;
+            if (!be || !be.device || !a || n <= 0 || !(v ? be.has(v) : rend._attributes.has(a))) return;
+            const q = v || a;
+            const d = be.get(q),
+                b = q.array.BYTES_PER_ELEMENT;
+            if (d.buffer) AnazhRealm._schreibWorte(be.device.queue, d.buffer, q.array, start * b, (start + n) * b);
         };
         // ein Puffer fällt erst nach dem Submit des Frames: ein offener Pass (das Hauptbild um den verschachtelten
         // Schatten-Render) trägt ihn noch in seinem Kommando-Paket („used in submit while destroyed")
@@ -1947,11 +1995,16 @@ class AnazhRealm_stoff_instanz {
                 if ((this.neu || brach) && this.gestalten.size > 0) this.bauen(jetzt - AnazhRealm.GPU_KEHRAUS_MS);
             }
             kopie(b) {
-                const q = b.geo;
+                const q = b.geo,
+                    fertig = new Set();
                 for (const k in this.attr) {
                     const a = this.attr[k];
-                    a.array.set(q.attributes[k].array.subarray(0, b.nv * a.itemSize), b.bv * a.itemSize);
-                    schreib(this.rend, a, b.bv * a.itemSize, b.nv * a.itemSize);
+                    const v = a.isInterleavedBufferAttribute ? a.data : null,
+                        s = v ? v.stride : a.itemSize;
+                    if (fertig.has(v || a)) continue; // ein verschränkter Puffer kopiert einmal, mit allen seinen Attributen
+                    fertig.add(v || a);
+                    (v || a).array.set(q.attributes[k].array.subarray(0, b.nv * s), b.bv * s);
+                    schreib(this.rend, a, b.bv * s, b.nv * s);
                 }
                 const ix = this.index.array;
                 if (q.index) ix.set(q.index.array.subarray(0, b.ni), b.fi);
@@ -1976,9 +2029,25 @@ class AnazhRealm_stoff_instanz {
                 this.vCap = vier(nv + (nv >> 4) + 64);
                 this.iCap = vier(ni + (ni >> 4) + 192);
                 this.attr = {};
+                const daten = new Map(); // je verschränkter Puffer der Vorlage seiner im Lager
                 for (const k in v0.attributes) {
                     const a = v0.attributes[k];
                     if (a.isInstancedBufferAttribute) continue;
+                    const v = a.isInterleavedBufferAttribute ? a.data : null;
+                    if (v) {
+                        if (!daten.has(v))
+                            daten.set(
+                                v,
+                                new T.InterleavedBuffer(new v.array.constructor(this.vCap * v.stride), v.stride)
+                            );
+                        this.attr[k] = new T.InterleavedBufferAttribute(
+                            daten.get(v),
+                            a.itemSize,
+                            a.offset,
+                            a.normalized
+                        );
+                        continue;
+                    }
                     const arr = new a.array.constructor(this.vCap * a.itemSize);
                     this.attr[k] = new T.BufferAttribute(arr, a.itemSize, a.normalized);
                 }
@@ -2036,6 +2105,7 @@ class AnazhRealm_stoff_instanz {
                 this.matrixAutoUpdate = false;
                 this.matrixWorldAutoUpdate = false;
                 this._wind = !!(m.material.userData && m.material.userData.windArt);
+                this._wahl = m.__wahlGpu === true; // die Wahl der GPU: die Zahl jedes Zugs zählt der Compute (`_instanzWahlGpu`)
                 this._marke = m.__zeichner.__fassade.attributes.aInstanzSenke;
                 this._lager = lager;
                 lager.arenen.add(this);
@@ -2185,6 +2255,21 @@ class AnazhRealm_stoff_instanz {
                 if (this._bereit && this.glieder.length)
                     for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
             }
+            // DIE WAHL DER GPU VOR DEM PASS (`_instanzWahlGpu`, im Haken des Passes vor seinem Encoder): Glieder abgleichen, die
+            // Aufträge dieser Kamera schreiben, die Liste so groß wie ihre Abschnitte — ihr Zug (`_arenaZug`) nimmt sie
+            _wahlVor(rend, camera) {
+                this._rend = rend;
+                if (!this._ordnen(rend, false)) return null;
+                const zug = this._zugFuer(camera, false),
+                    q = this.__instanzQuelle;
+                if (!q.liste || q.liste.array.length < this._segZahl * this._nCap) {
+                    weg(rend, q.liste);
+                    q.liste = new IND(new Uint32Array(this._segZahl * this._nCap), 1);
+                }
+                this._auftraege(zug, camera, rend, false);
+                zug.bereit = true;
+                return zug;
+            }
             // DER ABSCHIED: durch das Bündel (`_archBundleSceneRemove`) — wird es leer, verlässt es mit seinem Verdeckungs-
             // Proxy Szene und Register. Befund 16.10. (Prüfung, Reise Wiese → Dorf): die Arena nahm sich still aus ihrem
             // Bündel, das leere Bündel blieb samt Proxy in Szene und `_regionBundles` (1 → 5 leer, ohne Arena 0).
@@ -2203,6 +2288,7 @@ class AnazhRealm_stoff_instanz {
                 const G = this.geometry.attributes;
                 for (const k in G) if (G[k].isInstancedBufferAttribute) weg(this._rend, G[k]);
                 weg(this._rend, this.__instanzQuelle.instanceMatrix);
+                weg(this._rend, this.__instanzQuelle.liste);
                 weg(this._rend, this._ind);
                 this._zuege.clear();
                 this._zuegeB.clear();
@@ -2225,6 +2311,7 @@ class AnazhRealm_stoff_instanz {
                     g = new T.InstancedBufferGeometry();
                 for (const k in L.attr) g.setAttribute(k, L.attr[k]);
                 g.setAttribute("aInstanzSenke", this._marke);
+                if (this._wahl) g.setAttribute("aWahl", WAHL);
                 this._instanzSeite(g, alt);
                 g.setIndex(L.index);
                 this._fassade(g);
@@ -2249,18 +2336,17 @@ class AnazhRealm_stoff_instanz {
                     raumGib(this._nFrei, this._nCap, zu);
                     this._nCap += zu;
                 }
+                // in der Wahl liest der Shader jede Instanz-Größe am Index ihrer Liste: ein Speicher-Puffer (`_senkenKnoten`)
+                const K = this._wahl ? T.StorageInstancedBufferAttribute : T.InstancedBufferAttribute;
                 const neu = (k, a) =>
                     g.setAttribute(
                         k,
-                        new T.InstancedBufferAttribute(
-                            new a.array.constructor(this._nCap * a.itemSize),
-                            a.itemSize,
-                            a.normalized
-                        )
+                        new K(new a.array.constructor(this._nCap * a.itemSize), a.itemSize, a.normalized)
                     );
                 for (const k in m0.geometry.attributes)
                     if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
                 if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
+                q.gang = g.attributes.aGang || null;
                 q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
                 // die Art-Größen des Winds: ein Speicher-Puffer wie die Matrizen (`_senkenKnoten().windArt`), in der Geometrie
                 // nur die Marke, die das Programm der Arena vom Programm des Zeichners trennt (kein Shader liest sie als Attribut)
@@ -2580,6 +2666,9 @@ class AnazhRealm_stoff_instanz {
                 zug.offs.length = 0;
                 zug.zuege.length = 0;
                 zug.tri = 0;
+                // die Wahl der GPU: je Zug [Glied, erste Instanz, Zahl, Platz der Zahl im Auftrags-Puffer, Abschnitt der Liste]
+                const wahl = this._wahl ? zug.wahl || (zug.wahl = []) : null;
+                if (wahl) wahl.length = 0;
                 let k = 0,
                     ziehen = 0,
                     frust = false,
@@ -2612,11 +2701,14 @@ class AnazhRealm_stoff_instanz {
                     n = Math.min(n, z.cap);
                     this._block(m, z, n);
                     const o = k * 5;
+                    // in der Wahl zählt der Compute die Instanzen, die erste ist der Abschnitt der Liste (je Kamera ein Block-Raum)
+                    const li = zug.seg * this._nCap + z.erst;
                     args[o] = ni;
-                    args[o + 1] = n;
+                    args[o + 1] = wahl ? 0 : n;
                     args[o + 2] = b.fi + s0;
                     args[o + 3] = b.bv;
-                    args[o + 4] = z.erst;
+                    args[o + 4] = wahl ? li : z.erst;
+                    if (wahl) wahl.push(m, z.erst, n, basis + o + 1, li);
                     zug.offs.push((basis + o) * 4);
                     zug.zuege.push(m);
                     zug.tri += (ni / 3) * n;
@@ -3185,6 +3277,7 @@ class AnazhRealm_stoff_instanz {
             geo.computeBoundingSphere();
             satz.geos.push(geo);
             const m = AnazhRealm._instanzMesh(geo, stoff, spec.cap);
+            m.__wahlGpu = this._instanzWahlArt({ geom: geo }, !!sk.wurf, false) === "gpu";
             m.name = spec.name;
             m.userData.inventar = spec.inventar;
             m.userData.teil = sk.teil;
@@ -3197,6 +3290,7 @@ class AnazhRealm_stoff_instanz {
             satz[sk.teil] = m;
             satz.senken.push(m);
         }
+        satz.kugeln = AnazhRealm._gangSatzKugeln(satz);
         return satz;
     }
 
@@ -3221,6 +3315,7 @@ class AnazhRealm_stoff_instanz {
                 D[o + r * 4 + 3] = e[12 + r];
             }
         });
+        if (satz.kugeln) AnazhRealm._gangSatzHuelle(satz, zeile);
     }
     // DIE ECKE i DER QUELLE q in der Zeile `zeile` auf der CPU, wie der Knoten sie zeichnet: Lage und Normale nach `aus`
     static _gangSatzEcke(D, J, zeile, q, i, aus) {
@@ -3426,7 +3521,7 @@ class AnazhRealm_stoff_instanz {
     static _gangSatzKnoten(tex, n, baender) {
         const T = THREE.TSL;
         return T.Fn(() => {
-            const a = T.attribute("aGang", "vec2");
+            const a = AnazhRealm._senkenKnoten().gang; // der Gang der Instanz (in der Wahl der GPU am Index ihrer Liste)
             const ki = T.attribute("aKnochen", "vec4");
             const kw = T.attribute("aGewicht", "vec4");
             const roh = T.vec4(T.attribute("aRoh", "vec3"), 1);

@@ -131,6 +131,10 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 't.instanceColor){s=kn("vec3","vInstanceColor").mul(s)}', organ: "DIE SENKE (die Instanz-Farbe liest r184 als vInstanceColor — der Instanz-Knoten schreibt sie aus `instanzFarbe`)" },
     { file: "vendor/three.webgpu.min.js", sub: "n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (je Bindung das Attribut des Speicher-Knotens, ein Wechsel baut die Bindegruppe neu — die Matrix je Zeichen-Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "get attribute(){return this.nodeUniform.value}", organ: "DIE SENKE (die Speicher-Bindung liest das Attribut aus dem Wert ihres Knotens — `_senkenKnoten` stellt ihn je Objekt)" },
+    // DIE WAHL DER GPU (Spike gpu-wahl): der Haken des Passes läuft vor seinem Encoder (der Compute geht vor dem Zug), der
+    // Compute bindet die Puffer der Arena über r184s Attribut-Arten
+    { file: "vendor/three.webgpu.min.js", sub: "l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera?", organ: "_instanzWahlGpu (der Haken des Passes vor seinem Encoder)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const Ay=1,Ey=2,wy=3,Cy=4", organ: "_wahlRechnen (r184 AttributeType: 3 Speicher, 4 Auftrag)" },
     // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX: `setupPosition` legt die Zuweisung des
     // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
     // und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und
