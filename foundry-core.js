@@ -98,6 +98,9 @@ const PORTAL_GROUND = {
     magie: 0x7a58b8,
     sediment: 0x7a6a52,
     flechte: 0x6b8057,
+    // die Asche eines Brands (stoffe.K2#2, der Boden-Stoff der Welt): verkohlte Halme und Streu, linear Y 0,052 (verbrannte
+    // Wiese 0,04–0,08, Jin & Roy 2005)
+    asche: 0x45403a,
 };
 
 const PORTAL_SKY = {

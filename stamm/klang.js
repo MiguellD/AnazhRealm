@@ -249,6 +249,35 @@ class AnazhRealm_klang {
         return (dx, dz, d = Math.hypot(dx, dz)) => (d > 1e-3 ? Math.max(-1, Math.min(1, (dx * rx + dz * rz) / d)) : 0);
     }
 
+    // DIE NÄCHSTE GLUT AM OHR (px, pz) → { d, flaeche, pan } — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche,
+    // gestempelt beim Eintritt; bis K11 lief ein Umlauf über alle Bauten) und der Brand des Felds — jenseits der Hörweite schweigt
+    // das Gesetz. Die EINE Quelle des Knisterns (`_umweltLage`, die Linse des Brands).
+    _glutAmOhr(px, pz, pan) {
+        const glut = { d: Infinity, flaeche: 0, pan: 0 };
+        for (const e of this._blockerMit("glut")) {
+            if (!e.position) continue;
+            const d = Math.hypot(e.position.x - px, e.position.z - pz);
+            if (d < glut.d) {
+                glut.d = d;
+                glut.flaeche = this._glutFlaeche(e);
+                glut.pan = pan(e.position.x - px, e.position.z - pz);
+            }
+        }
+        // DER BRAND (stoffe.K2#2) knistert aus demselben Zustand, aus dem er leuchtet: die nächste glühende Zelle des Felds (der
+        // Abstand zu ihrer Fläche, 0 in ihr), ihre Brenn-Fläche die Zelle × Glut (`brandFeld`, `_tickBrand`)
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        this._brandGlutUm(px, pz, AnazhRealm.BRAND.hoerM, (b) => {
+            const [x0, z0] = [b.cx * cs, b.cz * cs];
+            const d = Math.hypot(Math.max(x0 - px, 0, px - x0 - cs), Math.max(z0 - pz, 0, pz - z0 - cs));
+            if (d < glut.d) {
+                glut.d = d;
+                glut.flaeche = cs * cs * b.glut;
+                glut.pan = pan(x0 + cs / 2 - px, z0 + cs / 2 - pz);
+            }
+        });
+        return glut;
+    }
+
     // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: der
     // EINE Wind am Ohr (`_windAt`), die Kronen-Deckung der STEHENDEN Bäume (die
     // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
@@ -312,8 +341,6 @@ class AnazhRealm_klang {
                 fall.pan = pan(wfall.x - px, wfall.z - pz);
             }
         }
-        // Die nächste Glut — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche, gestempelt beim Eintritt;
-        // jenseits der Hörweite schweigt das Gesetz). Bis K11 lief ein Umlauf über alle Bauten (48 je Frame, nur mit Klang).
         // Die singenden Vögel — die Leiber, die `_vogelTakt` zeichnet (`state.voegel`): Abstand zum Ohr und Richtung je Leib.
         const voegel = [];
         for (const v of this.state.voegel || []) {
@@ -323,16 +350,7 @@ class AnazhRealm_klang {
                 pan: pan(v.x - px, v.z - pz),
             });
         }
-        const glut = { d: Infinity, flaeche: 0, pan: 0 };
-        for (const e of this._blockerMit("glut")) {
-            if (!e.position) continue;
-            const d = Math.hypot(e.position.x - px, e.position.z - pz);
-            if (d < glut.d) {
-                glut.d = d;
-                glut.flaeche = this._glutFlaeche(e);
-                glut.pan = pan(e.position.x - px, e.position.z - pz);
-            }
-        }
+        const glut = this._glutAmOhr(px, pz, pan);
         return {
             // der EINE Wind am Ohr (`_windAt` auf der Bild-Uhr, A9): die Stärke am Ort und die wandernde Böe — dieselben Zahlen
             // (WIND_BOE) und dieselbe Richtung wie `_windSwayOffset` im Shader: was das Gras biegt, rauscht im Ohr

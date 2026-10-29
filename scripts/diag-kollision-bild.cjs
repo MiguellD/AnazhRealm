@@ -240,8 +240,6 @@ const zuBox = (R, x, z, [u, w] = lok(R, x, z)) => aussen([Math.abs(u) - R.hx, Ma
 
 // Die Zählung im Seiten-Kontext: je Studio-Werk im Umkreis das Bild gegen die Kollision.
 async function probe(K) {
-    const r = window.anazhRealm;
-    const st = r.state;
     let tMs = performance.now();
     const takt = () => r._gameLoopTick((tMs += 1000 / 60));
     const f = r._ensureAssetFoundry();
@@ -436,7 +434,6 @@ async function probe(K) {
 
 // (V) DER KONTAKT BEIM TEMPO im Seiten-Kontext: die Hindernisse stehen auf der ebenen Achse der Mess-Wiese, die Bahn längs +x.
 async function tempo(K) {
-    const r = window.anazhRealm;
     const [st, A, { mess: MW, HINDERNISSE, TAKTE }] = [r.state, r.constructor, K];
     const pm = st.playerMesh;
     const hh = (x, z) => r._voxelSurfaceY(x, z); // der Boden, auf dem die Körper gehen (die Oberkante des Felds)

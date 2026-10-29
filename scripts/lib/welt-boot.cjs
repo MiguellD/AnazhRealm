@@ -22,6 +22,11 @@ const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DIE EINE WELT JEDER SEITE (`r`, `st`): jede Seite trägt `r` (window.anazhRealm) und `st` (ihr Zustand, den nur der Konstruktor
+// setzt) als Getter (`WARTEN_SEITE`, vor jedem Skript) — eine Seiten-Funktion liest Welt und Zustand bei diesen Namen, ein eigenes
+// `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
+// der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable
+const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true });`;
 // DIE UHR DES LAUFS (`const log = laufUhr()`): jede Zeile trägt die Sekunden seit dem Ruf — je Linse ein eigenes `T0` samt
 // eigenem log war ein Zwilling
 const laufUhr =
@@ -35,7 +40,6 @@ const laufUhr =
 // DAS EINE WARTEN DER LINSEN (K-WANDUHR, Lehre 26: in Bau-Ereignissen, nie in Wanduhr-Sekunden) — Seiten-Funktionen als Text
 // in jede Seite (`WARTEN_SEITE`): `window.__seitenTakt()` ist ein Bild des Loops, ruht er, ein Takt von Hand.
 async function seitenTakt() {
-    const r = window.anazhRealm;
     const vor = r._weltStand ? r._weltStand.takte : -1;
     await new Promise((ok) => requestAnimationFrame(ok));
     if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
@@ -44,7 +48,6 @@ async function seitenTakt() {
 // einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
 // nur Takte ohne Offenes (`_weltOffen`); dann wirft er.
 async function weltStehtNach(takt, max) {
-    const r = window.anazhRealm;
     const st = r.state;
     const W = () => r._weltStand || {};
     const steht = () => r._weltSteht() && !r._bepflanzungWartet();
@@ -75,7 +78,6 @@ async function weltStehtNach(takt, max) {
 // `_archIsRendered(e)`) steht; vor jedem Takt ruft `bau(n)` ihn (ohne: `_rebuildArchitectureMesh(e)`). `e` ist ein Eintrag oder
 // der NAME dessen, was die Welt bauen soll. Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`); dann wirft sie beim Namen.
 async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
-    const r = window.anazhRealm;
     const steht = fertig || (() => r._archIsRendered(e));
     const baue = bau || (e && typeof e === "object" ? () => r._rebuildArchitectureMesh(e) : () => {});
     let n = 0;
@@ -108,7 +110,6 @@ function deckel(name, max, offen) {
         still = 0,
         vor = "";
     return () => {
-        const r = window.anazhRealm;
         const o = r && r._weltOffen ? r._weltOffen() : { welt: 1 };
         const auf = Object.values(o).some(Boolean);
         const jetzt = JSON.stringify(o);
@@ -130,12 +131,12 @@ async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
     // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
-    while (!(window.anazhRealm && window.anazhRealm.erwacht)) await sleep(50);
-    await window.anazhRealm.erwacht;
+    while (!(r && r.erwacht)) await sleep(50);
+    await r.erwacht;
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await sleep(50);
     window.__weltDaWartet = null;
-    return window.anazhRealm;
+    return r;
 }
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
@@ -161,7 +162,6 @@ function abdruck(x, alle) {
 // DER STAND DER LEBENDEN WELT, wie der Speicher-Faden ihn schrieb (`await window.__stand()`): alles Gesendete fest, dann sein JSON
 // aus IndexedDB — der Leser jedes Save-Rundlaufs (der Platz im localStorage trägt nur abgelegte und verlassene Welten).
 async function stand() {
-    const r = window.anazhRealm;
     await r._speicherStill();
     return (await r._idbGetWorld(r.state.worldMeta.worldId)).json;
 }
@@ -175,9 +175,9 @@ function png(u8, W, H) {
 }
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
-const bundlesNeu = () => window.anazhRealm.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -415,7 +415,7 @@ function pulsSeite() {
         }
     // der Stoff-Name je Pipeline am Backend der Welt (r184 createRenderPipeline(renderObject)), sobald es steht
     const stoffHaken = () => {
-        const st = window.anazhRealm && window.anazhRealm.state;
+        const st = r && r.state;
         const be = st && st.renderer && st.renderer.backend;
         if (!be || be.__weltPulsHaken || typeof be.createRenderPipeline !== "function") return;
         be.__weltPulsHaken = true;
@@ -442,13 +442,13 @@ function pulsSeite() {
     };
     const phase = () => {
         stoffHaken();
-        const st = window.anazhRealm && window.anazhRealm.state;
+        const st = r && r.state;
         const t = [document.readyState];
         if (document.visibilityState === "hidden") t.push("verborgen");
         if (st) {
             t.push(`renderer ${st.rendererReady === true ? "bereit" : "—"}`, `weltbild ${st._weltbildDa ? "da" : "—"}`);
             if (st.flightRecorder) t.push(`frames ${st.flightRecorder.frames}`);
-            const W = window.anazhRealm._weltStand; // worauf das Einschwingen wartet (`__weltStehtNach`), beim Namen
+            const W = r._weltStand; // worauf das Einschwingen wartet (`__weltStehtNach`), beim Namen
             if (W) t.push(`welt ${W.takte} Takte · Ruhe ${W.ruhe} · zuletzt ${W.grund}`);
         } else t.push("anazhRealm —");
         if (window.__weltDaWartet) t.push(`__weltDa wartet auf ${window.__weltDaWartet}`);
@@ -807,11 +807,19 @@ async function starteBrowser(opts = {}) {
         b.offen = false;
         if (!abbau) melde("absturz", "Browser getrennt ohne Abbau");
     });
-    const neu = browser.newPage.bind(browser);
-    browser.newPage = async (...a) => {
+    // jede neue Seite — auch die eines eigenen Kontexts — trägt ihre Werkzeuge vor dem ersten Skript (bis w3u-nachfolge hängte
+    // `targetcreated` sie an die Kontext-Seite erst nach dem Start ihres ersten Dokuments)
+    const angelegt = (neu) => async (...a) => {
         const p = fehlerSammler(await neu(...a));
         await akteAnSeite(p, b);
         return p;
+    };
+    browser.newPage = angelegt(browser.newPage.bind(browser));
+    const kontext = browser.createBrowserContext.bind(browser);
+    browser.createBrowserContext = async (...a) => {
+        const k = await kontext(...a);
+        k.newPage = angelegt(k.newPage.bind(k));
+        return k;
     };
     for (const p of await browser.pages()) await akteAnSeite(fehlerSammler(p), b);
     browser.on("targetcreated", async (t) => {
@@ -850,7 +858,7 @@ async function nullSeite(opts) {
     return { browser, page };
 }
 async function warteAufWelt(page, frist = 120000) {
-    await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
+    await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
     });
 }
@@ -876,7 +884,7 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 // DER LESER IM BLICK (Seite): der Spieler am Bach der Mess-Wiese, zurück, sobald das Wasser ZEICHNET, das Tiefen-Abbild gezogen
 // ist und das Weltbild steht (`welt`: nur diese Terme); `kappe`: die Pixel-Kappe des Holzes.
 async function uferStellen(opts) {
-    const r = await window.__weltDa(
+    await window.__weltDa(
         (w) =>
             w.state.rendererReady &&
             w.state.renderer &&
@@ -1133,7 +1141,6 @@ function booteWelt(page, name = "der Boot der Welt") {
         const start = performance.now();
         await window.__weltDa();
         for (const weiter = window.__deckel(name, 7500); weiter();) {
-            const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
                 try {
                     r._gameLoopTick(performance.now());
@@ -1183,7 +1190,7 @@ async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {
             peerIds.push(await p.evaluate(beitritt, `ws://127.0.0.1:${signal}`, raum));
         }
         for (const [i, p] of seiten.entries())
-            await waitFor(p, () => window.anazhRealm.state.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
+            await waitFor(p, () => r.state.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
         return { seiten, peerIds, ende };
     } catch (e) {
         await ende();

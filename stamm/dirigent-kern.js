@@ -1705,27 +1705,22 @@ class AnazhRealm {
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
         }
-        // DER BRAND (feld.K3#2): jede glühende Zelle des Felds leuchtet als Feuer über ihrer Mitte, die Masse folgt der Glut
-        const bf = this.state.brandFeld;
-        if (bf && bf.size) {
-            const cs = AnazhRealm.LIFE_FIELD.cell;
-            const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
-            for (const b of bf.values()) {
-                const [bx, bz] = [(b.cx + 0.5) * cs, (b.cz + 0.5) * cs];
-                if (!(b.glut > 0) || (bx - x) * (bx - x) + (bz - z) * (bz - z) > R * R) continue;
-                const phase = (((bx * 12.9898 + bz * 78.233) % 6.2832) + 6.2832) % 6.2832;
-                if (b.y == null) b.y = this._voxelSurfaceY(bx, bz) || 0;
-                nimm(b, {
-                    quelle: "brand",
-                    x: bx,
-                    y: b.y + 1,
-                    z: bz,
-                    L: Lf,
-                    masse: AnazhRealm.BRAND.licht * b.glut,
-                    phase,
-                });
-            }
-        }
+        // DER BRAND (feld.K3#2): jede glühende Zelle des Felds um das Auge (`_brandGlutUm`, die Blöcke ihres letzten Schritts) leuchtet
+        // als Feuer über ihrer Mitte (`_brandOrt`), die Masse folgt der Glut
+        const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
+        this._brandGlutUm(x, z, R, (b) => {
+            const o = b.ort || this._brandOrt(b);
+            if ((o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) > R * R) return;
+            nimm(b, {
+                quelle: "brand",
+                x: o.x,
+                y: o.y,
+                z: o.z,
+                L: Lf,
+                masse: AnazhRealm.BRAND.licht * b.glut,
+                phase: o.phase,
+            });
+        });
         // DIE LAVA (stoffe.K3-2): jede glühende Decke leuchtet als Feuer über ihrem Ort, die Masse folgt ihrer Glut (`_lavaZustand`)
         for (const a of this._tatIndex().lava) {
             if ((a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) > R * R) continue;
@@ -1825,7 +1820,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.125";
+AnazhRealm.VERSION = "18.546.126";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

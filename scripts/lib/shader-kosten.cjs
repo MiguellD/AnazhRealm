@@ -656,8 +656,6 @@ fn main( @location( 0 ) uv : vec2<f32> ) -> OutputStruct {
 function shaderKostenSeite(o) {
     return (async () => {
         const opt = o || {};
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         const objs = rend._objects;
         const roh = objs.get;
@@ -740,7 +738,6 @@ function mxLookup3(x, y, z) {
 
 function rauschProbe() {
     return (async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
         const TSL = T.TSL;
         const A = r.constructor;

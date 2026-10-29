@@ -43,7 +43,6 @@ const server = statikServer();
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
 // meisten vom Objekt geänderten Pixeln trägt Fern-UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
-    const r = window.anazhRealm;
     const THREE_ = window.THREE;
     const rend = r.state.renderer;
     const cam = r.state.camera;
@@ -113,7 +112,6 @@ const SICHT_FN = async (a) => {
 
 // Im Seiten-Kontext: EIN Schuss mit der gegebenen Kamera + die Zahlen dieses Renders.
 const SCHUSS_FN = async (kam) => {
-    const r = window.anazhRealm;
     const rend = r.state.renderer;
     const cam = r.state.camera;
     const scene = r.state.scene;
@@ -211,7 +209,7 @@ hauptLauf(async () => {
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
-        const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
+        await window.__weltDa(() => !(!r || !r.state));
         let stable = 0,
             last = -1;
         for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
@@ -287,7 +285,6 @@ hauptLauf(async () => {
     // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D) — dort sind Bühne und Kamera
     // wirklich eben.
     const wieseStart = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         let stable = 0,
@@ -314,7 +311,6 @@ hauptLauf(async () => {
 
     // ── 2: Spawn (Wolf · Eiche · Haus) auf flachen Bühnen der Wiese ──
     const spawn = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const pm = r.state.playerMesh.position;
         const setzeMittag = () => {
             try {
@@ -463,7 +459,6 @@ hauptLauf(async () => {
     // ── 3: Kamera je Klasse (Fern + Armlänge) — Objekt-Maße aus der Szene, Azimut aus der Blick-Wahl ──
     const objektInfo = () =>
         page.evaluate(() => {
-            const r = window.anazhRealm;
             const THREE_ = window.THREE;
             const k = {};
             const wolf = window.__beweisWolf;
@@ -528,7 +523,6 @@ hauptLauf(async () => {
     const umstellen = (kam, voll = false) =>
         page.evaluate(
             async (kam, voll) => {
-                const r = window.anazhRealm;
                 const g = r._voxelSurfaceY(kam.px, kam.pz);
                 r.state.playerMesh.position.set(kam.px, g + 1.8, kam.pz);
                 // Beim Einschwingen rendert der Takt NICHT (unter swiftshader kostet ein Voll-Render mit
@@ -712,13 +706,12 @@ hauptLauf(async () => {
             console.log(
                 `  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks · ungebaut in der Mesh-Zone ${um.offen}${um.warum ? " — " + um.warum : ""}${um.zielStufe ? " · ⚠ " + um.zielStufe : ""}\n      Impostor: ${um.zensus}`
             );
-            const g = await page.evaluate((k) => window.anazhRealm._voxelSurfaceY(k.px, k.pz), k);
+            const g = await page.evaluate((k) => r._voxelSurfaceY(k.px, k.pz), k);
             k.py = Math.max(g + 0.35, k.augeY != null ? k.augeY : g + k.augeH);
             await schiesse(klasse, art, k);
             // ZUSTANDS-LINSE: WAS steht im Bild — Studio-Mesh oder Feld-Satz, welche Stufe serviert?
             if (klasse !== "kreatur") {
                 const zst = await page.evaluate((klasse) => {
-                    const r = window.anazhRealm;
                     const e = klasse === "baum" ? window.__beweisBaum : window.__beweisHaus;
                     if (!e) return "kein Eintrag";
                     const wm = r.state.weltMarch;
@@ -743,7 +736,6 @@ hauptLauf(async () => {
     const ko = spawn.objekte.kreatur;
     if (MIT_WIESE && ko && !ko.fehlt) {
         const kam = await page.evaluate((o) => {
-            const r = window.anazhRealm;
             const pm = r.state.playerMesh.position;
             let dx = pm.x - o.x,
                 dz = pm.z - o.z;

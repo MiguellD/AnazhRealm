@@ -216,7 +216,6 @@ hauptLauf(async () => {
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
         await window.__weltDa();
-        const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
         await window.__weltDa(() => f &&

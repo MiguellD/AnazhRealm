@@ -92,7 +92,7 @@ hauptLauf(async () => {
         await PK.installPackSerializer(realm.page);
         // Das Rezeptbuch für meta.kind/coreId (reine Daten, einmal gezogen).
         const book = await realm.page.evaluate(() => {
-            const f = window.anazhRealm._foundry;
+            const f = r._foundry;
             const out = {};
             for (const id in f.recipes || {}) out[id] = { kind: f.recipes[id].kind, panel: f.recipes[id].panel };
             return out;

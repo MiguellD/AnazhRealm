@@ -30,7 +30,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
     const { errs: failures, check } = pruefer();
     const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
     const mesh = await zweiImMesh(browser, "COPRESENCE_PORT", "COPRESENCE_SIGNAL_PORT", "smoke-copresence-room", (p, i) =>
-        p.evaluate((n) => (window.anazhRealm.state.player.name = n), ["Anna", "Bo"][i])
+        p.evaluate((n) => (r.state.player.name = n), ["Anna", "Bo"][i])
     );
     try {
         const [pageA, pageB, peerIdA, peerIdB] = [...mesh.seiten, ...mesh.peerIds];
@@ -39,7 +39,6 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // A holt + betritt das Begegnungs-Portal (der echte Spieler-Pfad:
         // obtainPortalForWorld → Overlay → invite-Broadcast wie enterPortal).
         const enteredA = await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             const got = r.obtainPortalForWorld("begegnung");
             if (!got.ok) return { ok: false, reason: got.reason };
             const bp = r.state.blueprints[got.blueprint];
@@ -61,18 +60,16 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // B bekommt die Einladung (mit Tier-Wahrheit im Banner) + folgt.
         await waitFor(
             pageB,
-            () => !!(window.anazhRealm.state.p2p && window.anazhRealm.state.p2p.pendingInvite),
+            () => !!(r.state.p2p && r.state.p2p.pendingInvite),
             "B sieht die Portal-Einladung"
         );
         const bannerB = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             r._renderPortalInviteBanner();
             const tier = document.querySelector("#portal-invite-banner .portal-invite-tier");
             return tier ? tier.textContent : "";
         });
         check("B: der Einladungs-Banner sagt die Tier-Wahrheit", /Ko-Präsenz/.test(bannerB), bannerB);
         const joinedB = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             const res = r.joinPortalInvite();
             const po = r._portalOverlay;
             return { ok: res.ok === true, coPresence: po ? po.coPresence === true : false };
@@ -87,7 +84,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageB,
             (idA) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.peers && po.peers.has(idA));
             },
             "B sieht A's Pose in seiner Sub-Welt (po.peers)",
@@ -97,7 +94,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageA,
             (idB) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.peers && po.peers.has(idB));
             },
             "A sieht B's Pose in seiner Sub-Welt (po.peers)",
@@ -110,13 +107,13 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageB,
             () => {
-                const j = window.anazhRealm.state.worldJournal;
+                const j = r.state.worldJournal;
                 return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "B's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
         const journalB = await pageB.evaluate(() => {
-            const j = window.anazhRealm.state.worldJournal;
+            const j = r.state.worldJournal;
             const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
             return hit.length ? hit[hit.length - 1].text : "";
         });
@@ -124,13 +121,13 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageA,
             () => {
-                const j = window.anazhRealm.state.worldJournal;
+                const j = r.state.worldJournal;
                 return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "A's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
         const journalA = await pageA.evaluate(() => {
-            const j = window.anazhRealm.state.worldJournal;
+            const j = r.state.worldJournal;
             const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
             return hit.length ? hit[hit.length - 1].text : "";
         });
@@ -142,7 +139,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // local-pose wandert → B sieht die NEUE Pose übers Mesh. Der volle
         // Kreis: AnazhRealm-Taste treibt die fremde Engine treibt das Mesh.
         const bridgeA = await pageA.evaluate(() => {
-            const po = window.anazhRealm._portalOverlay;
+            const po = r._portalOverlay;
             return {
                 actions: po && po.inputActions ? po.inputActions.slice() : null,
                 hint: po && po.hintEl ? po.hintEl.textContent : "",
@@ -165,7 +162,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         const halt = await halteBis(pageA, {
             taste: "KeyW",
             ziel: (beforeZ) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
             },
             args: [bridgeA.poseZ === null ? 0 : bridgeA.poseZ],
@@ -197,11 +194,11 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
 
         // Abschied: A verlässt das Portal → A's Posen verstummen → B's Sweep
         // räumt A als peer-leave (Timeout 6 s + Sweep 2 s).
-        await pageA.evaluate(() => window.anazhRealm.exitPortal());
+        await pageA.evaluate(() => r.exitPortal());
         await waitFor(
             pageB,
             (idA) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.peers && !po.peers.has(idA));
             },
             "B: A verstummt → peer-leave (Abwesenheits-Sweep)",
@@ -213,14 +210,13 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // enter → die fremde Gestalt steht, wo sie stand (die bewegte Position
         // aus dem Input-Brücken-Lauf, nicht 0/0).
         await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             const bp = r.state.blueprints["portal_begegnung"];
             r._buildPortalOverlay(bp.portalMeta, { computeRole: "host" });
         });
         await waitFor(
             pageA,
             () => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && po.localPose && po.localPose.z < -50);
             },
             "A: die Welt erwachte an der gemerkten Position (restoreState)"
@@ -230,7 +226,6 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // W18-D — das WOHNEN: B (noch im Portal) wohnt hier → der Hinweis
         // sagt es, der Zeiger steht, die Gefährten sehen „wohnt in …".
         const dwellB = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             const res = r.dwellInPortal();
             const po = r._portalOverlay;
             let marker = null;
@@ -254,7 +249,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         await waitFor(
             pageA,
             (idB) => {
-                const entry = window.anazhRealm.state.p2p.peers.get(idB);
+                const entry = r.state.p2p.peers.get(idB);
                 return !!(entry && /Begegnungs-Feld/.test(entry.dwellingIn || ""));
             },
             "A sieht B's Wohnsitz übers Mesh (soul-Kanal)",
@@ -265,17 +260,17 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
         // W18-D — die KRONE: B lädt neu → der Boot kehrt DURCH DAS TOR zurück
         // (du wachst auf, wo du wohnst — nicht auf der Heimat-Wiese).
         await pageB.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
-        await waitFor(pageB, () => !!window.anazhRealm, "B nach Reload initialisiert");
+        await waitFor(pageB, () => !!r, "B nach Reload initialisiert");
         await waitFor(
             pageB,
             () => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!(po && /begegnung/.test(po.world));
             },
             "B: der Boot kehrte durch das Tor zurück (Wohnen überlebte den Reload)"
         );
         const rebornB = await pageB.evaluate(() => {
-            const po = window.anazhRealm._portalOverlay;
+            const po = r._portalOverlay;
             return { hint: po && po.hintEl ? po.hintEl.textContent : "" };
         });
         check("B: du wachst auf, wo du wohnst (Boot-Rückkehr durchs Tor)", true);
@@ -283,13 +278,12 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
 
         // W18-D — „ziehe heim": das Wohnen endet, der Zeiger fällt.
         const movedHome = await pageB.evaluate(() => {
-            const r = window.anazhRealm;
             const res = r.endDwelling();
             return { was: res.was, marker: localStorage.getItem("anazh.portalDwelling") };
         });
         check('B: „ziehe heim" beendet das Wohnen', movedHome.was === "begegnung" && movedHome.marker === null);
-        await pageB.evaluate(() => window.anazhRealm.exitPortal());
-        await pageA.evaluate(() => window.anazhRealm.exitPortal());
+        await pageB.evaluate(() => r.exitPortal());
+        await pageA.evaluate(() => r.exitPortal());
 
         console.log("");
         if (failures.length) {

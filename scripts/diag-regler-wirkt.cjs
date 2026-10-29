@@ -110,7 +110,6 @@ async function imStamm(cb) {
         // geladen und der Boot-Prefetch der Gattungen ist durch.
         await page.waitForFunction(
             () => {
-                const r = window.anazhRealm;
                 const f = r && r._foundry;
                 return !!(f?.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
             },
@@ -127,7 +126,6 @@ async function imStamm(cb) {
 // EINE Leser des Prägungs-Speichers `_studioPraegung` liefert nichts), {bruch: id, wert} (der Mensch-Bäcker wirft bei diesem Wert).
 function ofenMessen(page, opts) {
     return page.evaluate(async (o) => {
-        const r = window.anazhRealm;
         const f = r._foundry;
         const P = Object.getPrototypeOf(r);
         const ws = r._ensureWorkshopState();

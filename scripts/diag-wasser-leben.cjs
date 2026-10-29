@@ -796,18 +796,18 @@ async function quellTeil(browser, server, k, orte) {
 async function wasserDa(pg, bild) {
     await pg.waitForFunction(
         (bild) =>
-            window.anazhRealm &&
-            typeof window.anazhRealm._gameLoopTick === "function" &&
-            window.anazhRealm.state.hydrosphere &&
-            window.anazhRealm.state.hydrosphere.ready &&
-            (!bild || window.anazhRealm.state.rendererReady),
+            r &&
+            typeof r._gameLoopTick === "function" &&
+            r.state.hydrosphere &&
+            r.state.hydrosphere.ready &&
+            (!bild || r.state.rendererReady),
         { timeout: 600000, polling: 250 },
         bild
     );
     await pg.evaluate(WASSER_INSTALL);
     // DAS WETTER DER WAND (Wand 3, R9): das Wort des Spielers „sonnig", trocken — der Regen hebt See und Fluss (wetter.K3, P4
     // misst ihn eigens); nie das Wetter des Starts
-    await pg.evaluate(() => (window.anazhRealm._setWeather("sunny", "human"), window.anazhRealm._naesseTakt(1e6)));
+    await pg.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6)));
 }
 // die Quellen eines Teils `teil` ({ k, n }, null: alle) in den Kacheln der Probe
 const quellProbe = (pg, orte, teil) =>
