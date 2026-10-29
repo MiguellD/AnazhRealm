@@ -100,6 +100,21 @@ const befehlDer = (plan) => ["node", "-e", "(" + folge.toString() + ")(" + JSON.
 // MSYS2_ARG_CONV_EXCL: gpu-lauf.sh ruft node über die Git-bash; ohne diese Variable würde msys die Pfade in den Argumenten umschreiben
 const envDer = { WERKBANK_PORT: "{PORT}", MSYS2_ARG_CONV_EXCL: "*" };
 
+// Der Pfad des Wechsels (lod.K5, lod.K2): das Gesetz, seine Leser, der Regler, die Stufen der Kerne
+const LOD_PFAD = [
+    "stamm/vegetation-*.js",
+    "stamm/siedlung-bauten.js",
+    "stamm/studio-bruecke.js",
+    "stamm/dirigent-regler.js",
+    "stamm/dirigent-takt.js",
+    "stamm/stoff-material.js",
+    "foundry-core.js",
+    "fachwerk-core.js",
+    "porta-core.js",
+    "vehicle-core.js",
+    "phyto-core.js",
+];
+
 // Der Pfad, den jedes Ausgabe-Bild liest: Szene, Stoffe, Licht, Loop, Kerne, Seite, three r184, die Werkbank und ihre Aufnahme
 const BILD = [
     "stamm/bild-*.js",
@@ -1143,6 +1158,123 @@ const stationen = [
         },
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
         quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
+    },
+
+    // ───────── lod.K5 · lod.K2 — die Stufe folgt dem Schirm, nicht dem Regler (w3v-lod) ─────────
+    // DAS GESETZ DES WECHSELS im Spiel-Baum (`AnazhRealm._wechselGesetz`, stamm/vegetation-streu.js): der Abstand, an dem der Fehler der
+    // Stufe (LOD_SCHIRM.fehler, am Bau gemessen) 1 px trägt, höchstens der Haushalt des Buchs — beide am Schirm; jeder Leser fragt es
+    // (die Schwellen der Bäume und der Streu, die Grenzen von Haus, Tor, Wagen, Ausstattung), der Laub- und der Bau-Rand stehen am
+    // Schirm (`_randSchirm`). K5#1 an der GPU: je Familie die schlechteste Vorlage im Wechsel-Abstand des Gesetzes, L0 erzwungen gegen
+    // die gewählte Stufe im Ausgabe-Bild, Chamfer der Masken-Kanten (bericht/2910-lod-k5/kanten.js); die Mechanik ohne Bild misst
+    // bericht/2910-lod-k5/fehler-am-bau.cjs am Bau (29.10.: Baum 11 px, Haus 3,6, Tor 8, Wagen ≤ 1 — ROT erwartet, der Haushalt hält).
+    // K5#2 headless: die Regler-Simulation des Playtests (S6, die echte Kette Fold → PID → Aktuator) bei 30/60/144 fps, Puls und Regler
+    // ±10 %. K2#1 an der GPU: Gehen 4 m/s an der Mess-Wiese, je Schritt dieselbe Pose vor und nach dem Takt (bericht/2910-lod-k5/pop.js).
+    {
+        kriterium: "lod.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: befehlDer({
+            name: "lod.K5#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "8358db5b4001a2eac2e45670fb7db660c37037df", muss: true, ms: 1800000 },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.kanten;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e || !Array.isArray(e.faelle)) return { gruen: false, zahl: "keine Kanten-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            const FAM = { tree: "Baum", haus: "Haus", gate: "Tor", vehicle: "Wagen" };
+            const je = {};
+            const bruch = [];
+            for (const f of e.faelle) {
+                if (f.fehler || !f.ok || f.px == null || !(f.pixel >= 200)) bruch.push(f.kind + " L" + f.stufe + ": " + (f.fehler || (f.ok ? "Exemplar " + f.pixel + " px" : "Stufe nicht gestellt")));
+                else je[f.kind] = Math.max(je[f.kind] || 0, f.px);
+            }
+            const fehlt = Object.keys(FAM).filter((x) => !(x in je));
+            const gruen = hw && !bruch.length && !fehlt.length && Object.values(je).every((x) => x <= 1);
+            return {
+                gruen,
+                zahl:
+                    Object.keys(FAM).map((x) => FAM[x] + " " + (x in je ? je[x].toFixed(2) : "—") + " px").join(" · ") + " (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080)" +
+                    (bruch.length ? " · " + bruch.join(" · ") : "") + ", " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, ...LOD_PFAD],
+        quelle: "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät",
+    },
+    {
+        kriterium: "lod.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/playtest.cjs"],
+        env: { PLAYTEST_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) Regler-Sim S6 die Stufe und der Rand am Schirm/.test(x));
+            const m = l && /— K5#2 Spanne ([\d.]+) · (\{.*)$/.exec(l);
+            if (!m) return { gruen: false, zahl: "keine S6-Zeile der Regler-Simulation (Exit " + lauf.exit + ")" };
+            let s = null;
+            try {
+                s = JSON.parse(m[2]);
+            } catch (_e) {
+                return { gruen: false, zahl: "die S6-Zeile trägt kein JSON" };
+            }
+            const gruen = /^\s*✅/.test(l) && +m[1] >= 0.3 && s.laeufe >= 17 && s.anders === null;
+            return {
+                gruen,
+                zahl: s.laeufe + " Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale " + s.loadScale.join("–") + "): " +
+                    (s.anders === null ? "Abstände, Schwellen, Grenzen, Wahl und Ränder gleich" : "es wandert " + String(s.anders).slice(0, 120)) +
+                    ", die Mutante (Regler-Term im Gesetz) " + (/^\s*✅/.test(l) ? "wandert" : "oder die Spanne fehlt"),
+            };
+        },
+        pfad: [...LOD_PFAD, "scripts/playtest.cjs", "scripts/playtest/dirigent.cjs"],
+        quelle: "2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte",
+    },
+    {
+        kriterium: "lod.K2",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: befehlDer({
+            name: "lod.K2#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "umstellen", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
+                { name: "pop", probe: "@KOORD@/bericht/2910-lod-k5/pop.js", blob: "711c63c1c83fc438d1e29dedb4a9fc6cfa96e84a", muss: true, ms: 1800000 },
+            ],
+        }),
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.pop;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e || !Array.isArray(e.schritte) || e.schritte.length < 8) return { gruen: false, zahl: "keine Pop-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            const gruen = hw && e.anteilJeSekunde <= 0.05;
+            return {
+                gruen,
+                zahl:
+                    "Gehen 4 m/s: " + e.anteilJeSekunde + " % Pop-Pixel je Sekunde (" + e.popPixel + " px, Soll ≤ 0,05 %), je Schritt " +
+                    e.schritte.map((x) => x.pop + (x.stufen ? "*" : "")).join("/") + " (* = Stufen-Wechsel), Laub " + e.laub[0] + "–" + e.laub[e.laub.length - 1] +
+                    " m, perfTarget " + e.perfTargetMs + " ms, " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, ...LOD_PFAD, "stamm/gelaende-*.js"],
+        quelle: "1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde",
     },
 ];
 
