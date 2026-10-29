@@ -38,6 +38,7 @@ class AnazhRealm_siedlung_verkehr {
                 soll: von.n,
                 ohnePlatz: 0,
                 ohneFahrer: 0,
+                ohneNacht: 0,
                 laengeM: 0,
                 km: 0,
                 fest: 0,
@@ -238,14 +239,30 @@ class AnazhRealm_siedlung_verkehr {
                     ...[w.bahn[0], w.bahn[w.bahn.length - 1]].map((q) => Math.hypot(q.x - w.x, q.z - w.z) + VG.halbM)
                 )
             );
-        // DIE FAHRER: je Haus des Gesetzes sein erster Bewohner, sein Platz an der nächsten Wende mit freiem Platz
+        // DIE FAHRER: je Wagen des Gesetzes zwei — bei Tag die erste Person seines Hauses, bei Nacht die zweite (der Nachtfahrer,
+        // koerper-core TAGES_GESETZ: am Platz wechselt die Schicht, der Wagen fährt bei Tag und bei Nacht); steht das Haus nicht
+        // oder trägt es die Person nicht, fährt die erste freie der folgenden Häuser (bis hier fuhr dort keiner: 4 von 20 Wagen
+        // der Metropole ohne Fahrer). Sein Platz liegt an der Wende nächst der Tür des Tagfahrers, die nächste mit freiem Platz.
         const seed = S.plan.seed >>> 0;
+        const leute = new Map(S.liste.map((x) => [x.seed, x]));
+        const nS = S.plan.slots.length;
+        const frei = (si, p) => {
+            for (let k = 0; k < nS; k++) {
+                const x = leute.get(`${seed}:${(si + k) % nS}:${p}`);
+                if (x && !x.wagen) return x;
+            }
+            return null;
+        };
         for (const [w, si] of von.slots.entries()) {
-            const b = S.liste.find((x) => x.seed === `${seed}:${si}:0`);
+            const b = frei(si, 0);
             if (!b) {
                 VK.zahl.ohneFahrer++;
                 continue;
             }
+            b.wagen = true;
+            const nacht = frei(si, 1) || frei(si + 1, 0);
+            b.wagen = null;
+            if (!nacht) VK.zahl.ohneNacht++;
             const tuer = b.orte.tuer;
             const wahl = [...VK.wenden.entries()]
                 .filter(([, x]) => x.frei.length)
@@ -264,6 +281,7 @@ class AnazhRealm_siedlung_verkehr {
             const W = {
                 S,
                 b,
+                fahrer: nacht ? [b, nacht] : [b],
                 nr: w,
                 gen,
                 typ,
@@ -293,13 +311,15 @@ class AnazhRealm_siedlung_verkehr {
             // seiner Spur), zum Wagen gewandt
             const [ux, uz] = [Math.cos(park.beta), Math.sin(park.beta)];
             const seite = VG.parkB / 2 + V.standM;
-            b.rolle = "fahrer";
-            b.beruf = "fahrer";
-            b.wagen = W;
-            b.orte.werk = { x: park.x + ux * seite, z: park.z + uz * seite, blick: Math.atan2(-ux, -uz) };
+            const stand = { x: park.x + ux * seite, z: park.z + uz * seite, blick: Math.atan2(-ux, -uz) };
+            for (const [k, f] of W.fahrer.entries()) {
+                f.rolle = f.beruf = k ? "nachtfahrer" : "fahrer";
+                f.wagen = W;
+                f.orte.werk = stand;
+            }
             if (!this._verkehrWagenStellen(W)) {
                 VK.zahl.ohnePlatz++;
-                b.wagen = null;
+                for (const f of W.fahrer) f.wagen = null;
                 continue;
             }
             VK.wagen.push(W);
@@ -399,6 +419,11 @@ class AnazhRealm_siedlung_verkehr {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length || !S.liste) continue;
             for (const W of VK.wagen) {
+                // DER SCHICHTWECHSEL: steht der Wagen und will sein Fahrer nicht ans Werk, fährt, wer jetzt dorthin soll
+                if (W.zustand === "steht" && !W.b.amSteuer && W.b.ziel !== W.b.orte.werk) {
+                    const f = W.fahrer.find((x) => x.ziel === x.orte.werk);
+                    if (f) W.b = f;
+                }
                 const b = W.b;
                 const g = b.leib;
                 if (!g || !W.entry) continue;
@@ -1170,9 +1195,9 @@ class AnazhRealm_siedlung_verkehr {
         const VK = S.verkehr;
         if (!VK) return;
         for (const W of VK.wagen) {
-            if (W.b) {
-                W.b.amSteuer = false;
-                W.b.wagen = null;
+            for (const f of W.fahrer) {
+                f.amSteuer = false;
+                f.wagen = null;
             }
             if (W.entry) this.removeArchitecture(W.entry, { still: true });
             W.entry = null;

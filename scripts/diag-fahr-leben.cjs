@@ -775,14 +775,14 @@ const wegenetzVerdict = (m) =>
 // Sekunden — jedes Ende des Netzes trägt seine Wende, kein Boden der Spuren springt (`stufen`), jeder Wagen des Gesetzes steht
 // oder fährt, jeder fährt, keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne Schlüssel in
 // der Kreuzung, keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig. ════
-const VERKEHR = { stunde: 10, sek: 40 };
+const VERKEHR = { stunden: [10, 23], sek: 40 };
 const verkehrVerdict = (m) =>
     [
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
         [
-            m.wagen >= 1 && m.wagen + m.ohnePlatz + m.ohneFahrer === m.soll,
-            `Wagen ${m.wagen} von ${m.soll} (ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer})`,
+            m.soll >= 1 && m.wagen === m.soll && !m.ohneNacht,
+            `Wagen ${m.wagen} von ${m.soll} (ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
         ],
         [m.fahrend === m.wagen, `fahrend ${m.fahrend} von ${m.wagen}`],
         // keiner steht die ganze Zeit (min), der Verkehr fließt (Median): ein Stau-Knoten hielt Wagen bei 0 m und den Median
@@ -2320,6 +2320,46 @@ hauptLauf(async () => {
             );
         }
         {
+            // VK: ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
+            const g = {
+                ...{
+                    soll: 20,
+                    wagen: 20,
+                    ohnePlatz: 0,
+                    ohneFahrer: 0,
+                    ohneNacht: 0,
+                    fahrend: 20,
+                    wenden: 4,
+                    enden: 4,
+                    stufen: [],
+                    steher: [],
+                },
+                ...{ weg: { min: 26, median: 123 }, fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
+                ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82 },
+            };
+            const brueche = [
+                [{ wenden: 3 }, /Wenden 3/],
+                [{ stufen: [{ x: 1 }] }, /Stufen/],
+                [{ wagen: 19, fahrend: 19 }, /Wagen 19 von 20/],
+                [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
+                [{ fahrend: 12 }, /fahrend 12/],
+                [{ weg: { min: 0, median: 123 } }, /min 0 m/],
+                [{ weg: { min: 26, median: 45 } }, /Median 45/],
+                [{ fest: [{ nr: 4 }] }, /steckt/],
+                [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
+                [{ beruehrt: { leib: 0, wagen: 2 } }, /Wagen in Wagen 2/],
+                [{ ohneSchluessel: 1 }, /Schlüssel/],
+                [{ stoss: { wagen: 0, bau: 5 } }, /Stoß/],
+                [{ querMax: 2.3 }, /Spur/],
+                [{ msJeSchritt: 2.4 }, /Takt 2.4/],
+            ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
+            check(
+                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen",
+                !verkehrVerdict(g).length && !brueche.length,
+                JSON.stringify(brueche)
+            );
+        }
+        {
             // RM — DIE RÜCKMELDUNG: gute Maße == 0 Täter; je gekappte Kopplung genau ihr Kanal (Stimme · Feder · Rumble)
             const g = { klingt: 1, still: true, wankMm: 0.2, stoesse: 40, antwortMm: 9.6, stark: 0, summen: 0.54 };
             const v = (an) => {
@@ -2411,8 +2451,11 @@ hauptLauf(async () => {
             probeLeben,
             { verkehr: VERKEHR },
             (o) => {
-                const v = o.verkehr ? verkehrVerdict(o.verkehr) : [o.err];
-                check("VK (PFLICHT-OFFEN C) der Verkehr der Stadt", !v.length, v.join(" · "));
+                for (const h of VERKEHR.stunden) {
+                    const m = o.verkehr && o.verkehr[h];
+                    const v = m ? verkehrVerdict(m) : [o.err];
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr`, !v.length, v.join(" · "));
+                }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },
         ],

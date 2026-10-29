@@ -1409,8 +1409,11 @@
             kirche: Object.freeze({ werk: Object.freeze([7, 19]) }),
             gasthaus: Object.freeze({ werk: Object.freeze([10, 23]), ruhe: 23.6, mittagAmWerk: true }),
             // DER FAHRER (PFLICHT-OFFEN C): wer einen Wagen der Stadt fährt (der Wirt gibt ihm die Rolle, `_verkehrAnlegen`), ist
-            // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch
+            // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
+            // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
+            // und bei Nacht, am Platz wechselt die Schicht)
             fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true }),
+            nachtfahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, versatzH: 12 }),
         }),
         berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
     });
@@ -1444,7 +1447,7 @@
     function tagesPlan(same, rolle, heim, werk, stunde, platz, besuch) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
-        var h = ((Number(stunde) % 24) + 24) % 24;
+        var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
         var j = function (wort) {
             return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
         };

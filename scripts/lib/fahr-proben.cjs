@@ -642,10 +642,11 @@ async function probeLeben(expected) {
         };
     };
     // ── VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
-    // Spieler an ihrem Markt, die Uhr auf `stunde` (die Fahrer sind am Steuer, 7–19 Uhr); bis jeder Bewohner seinen Leib trägt und
-    // jeder Fahrer am Steuer sitzt, dann `sek` Sekunden im Takt des Spiels. Gezählt: die Wagen (Gesetz, gestellt, fahrend),
-    // ihr Weg, wer steckt, jeder Stoß der Hülle (Wagen · Bau · Leib), jede Berührung eines Wagens mit einem Bewohner (die
-    // Kapsel im Rechteck der Hülle) und zweier Wagen (ihre Rechtecke), die Ablage von der Spur und die Kosten des Sim-Takts.
+    // Spieler an ihrem Markt neben der Trasse; je Stunde (`stunden`: Tag und Nacht) bis jeder Bewohner seinen Leib trägt und jeder
+    // Fahrer am Steuer sitzt, dann `sek` Sekunden im Takt des Spiels. Gezählt: die Wagen (Gesetz, gestellt, fahrend), ihr Weg, wer
+    // steckt, jeder Stoß der Hülle, jede Berührung eines Wagens mit einem Bewohner (die Kapsel tiefer als 0,1 m im Rechteck der
+    // Hülle) und zweier Wagen (ihre Rechtecke), wer ohne Schlüssel in der Kreuzung ist, die Ablage von der Spur (außer im Ort, den
+    // er allein hält) und die Kosten des Sim-Takts; wer weniger als 30 m fuhr oder am Ende steht, beim Namen.
     const verkehr = async (o) => {
         const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find(
             (m) => m.id === "stadt-voll"
@@ -660,244 +661,162 @@ async function probeLeben(expected) {
         if (!S0()) await r.spawnSettlement({ seed, nH: 300, position: { x: ax, y: 0, z: az } });
         const S = S0();
         if (!S) throw new Error("keine Stadt am Messort stadt-voll");
-        stelle(S.ox, S.oz, 2);
-        r._uhrSetzen(o.stunde / 24, "regler");
-        const bereit = () =>
-            S.liste &&
-            S.liste.every((b) => b.leib) &&
-            S.verkehr &&
-            S.verkehr.wagen.every((W) => W.b.amSteuer || !W.b.leib);
-        for (const weiter = window.__deckel("verkehr: die Stadt steht", 4000); weiter() && !bereit(); i++) {
-            frame(i);
-            if (i % 8 === 7) await window.sleep();
-        }
-        const VK = S.verkehr;
-        if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
-        // der Spieler steht am Markt neben der Trasse (nie in ihr: dort hielte er jeden Wagen an) — der erste freie Punkt der Ringe
-        // um den Ursprung, 4 m und mehr von der Mitte jeder Strecke, in keinem Grundriss
-        const nebenTrasse = (x, zz) =>
-            VK.strecken.every((st2) => st2.mitte.every((q) => Math.hypot(q.x - x, q.z - zz) > 4));
-        let platz = null;
-        for (let rr = 6; rr <= 30 && !platz; rr += 2)
-            for (let k = 0; k < 16 && !platz; k++) {
-                const [x, zz] = [S.ox + Math.cos((k * Math.PI) / 8) * rr, S.oz + Math.sin((k * Math.PI) / 8) * rr];
-                const g = r._imGrundriss(x, zz, 0.5);
-                if (g !== "haus" && g !== "bau" && r._landAt(x, zz) && nebenTrasse(x, zz)) platz = { x, z: zz };
-            }
-        if (platz) stelle(platz.x, platz.z, 0.2);
         const R = A.PLAYER_WALL_RADIUS;
-        const m = { leib: 0, leibOrte: [], wagen: 0, wagenOrte: [], ohne: 0, quer: 0, takte: 0, ms: 0 };
         const P = Object.getPrototypeOf(r);
-        r._verkehrSchritt = function (dt) {
-            const t0 = performance.now();
-            P._verkehrSchritt.call(this, dt);
-            m.ms += performance.now() - t0;
-            m.takte++;
-        };
-        // die Kosten je Glied des Schritts (der Täter eines teuren Takts beim Namen; vier Glieder — die Hülle der Messung kostet
-        // selbst)
-        const prof = {};
-        for (const nm of ["_verkehrBild", "_verkehrFolge", "_fahrerSchritt", "_wagenSchritt"]) {
-            const f0 = P[nm];
-            r[nm] = function (...a) {
-                const t0 = performance.now();
-                try {
-                    return f0.apply(this, a);
-                } finally {
-                    const q = prof[nm] || (prof[nm] = [0, 0]);
-                    q[0] += performance.now() - t0;
-                    q[1]++;
-                }
-            };
-        }
         const lage = (W) => {
-            const e = W.entry;
-            const f = e._rideYaw || 0;
-            return { x: e.position.x, z: e.position.z, fx: Math.sin(f), fz: Math.cos(f), hl: W.hl, hw: W.hw };
+            const f = W.entry._rideYaw || 0;
+            return {
+                x: W.entry.position.x,
+                z: W.entry.position.z,
+                fx: Math.sin(f),
+                fz: Math.cos(f),
+                hl: W.hl,
+                hw: W.hw,
+            };
         };
-        // die Kapsel (x, z, rr) im Rechteck des Wagens, tiefer als `tief` (die Kapsel ist weiter als der Leib: wer 0,1 m an ihr
-        // vorbeistreift, berührt ihn nicht)
-        const tief = 0.1;
-        const drin = (L, x, z, rr) => {
-            const [dx, dz] = [x - L.x, z - L.z];
-            return (
-                Math.abs(dx * L.fx + dz * L.fz) < L.hl + rr - tief && Math.abs(dx * L.fz - dz * L.fx) < L.hw + rr - tief
-            );
-        };
-        // zwei Rechtecke (Trennachsen: die vier Achsen beider)
+        // die Kapsel (x, z) im Rechteck des Wagens, tiefer als 0,1 m; zwei Rechtecke über die vier Achsen beider
+        const drin = (L, x, z) =>
+            Math.abs((x - L.x) * L.fx + (z - L.z) * L.fz) < L.hl + R - 0.1 &&
+            Math.abs((x - L.x) * L.fz - (z - L.z) * L.fx) < L.hw + R - 0.1;
         const schnitt = (a, b) =>
-            [
-                [a.fx, a.fz],
-                [a.fz, -a.fx],
-                [b.fx, b.fz],
-                [b.fz, -b.fx],
-            ].every(([ux, uz]) => {
+            [a.fx, a.fz, b.fx, b.fz].every((_, k) => {
+                const [ux, uz] =
+                    k & 1 ? [(k < 2 ? a : b).fz, -(k < 2 ? a : b).fx] : [(k < 2 ? a : b).fx, (k < 2 ? a : b).fz];
                 const p = (L) => Math.abs(L.fx * ux + L.fz * uz) * L.hl + Math.abs(L.fz * ux - L.fx * uz) * L.hw;
                 return Math.abs((b.x - a.x) * ux + (b.z - a.z) * uz) < p(a) + p(b) - 0.05;
             });
-        const weg0 = new Map(VK.wagen.map((W) => [W, W.weg]));
-        const stoss0 = { ...VK.zahl.stoss };
-        const N = Math.round(o.sek * 60);
-        for (let k = 0; k < N; k++, i++) {
-            frame(i);
-            if (i % 8 === 7) await window.sleep();
-            if (k % 4) continue;
-            const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
-            const L = fahrend.map(lage);
-            // in der Kreuzung nur, wer ihren Schlüssel hält
-            for (const W of fahrend)
-                for (const Z of VK.zonen)
-                    if (
-                        Z.art === "kreuzung" &&
-                        Math.hypot(W.entry.position.x - Z.x, W.entry.position.z - Z.z) < Z.r - 1 &&
-                        !Z.halter.includes(W)
-                    )
-                        m.ohne++;
-            for (const [n, W] of fahrend.entries()) {
-                // die Ablage von der Spur zählt, wo andere fahren: nicht in einem Ort, den er allein hält und in dem er ist (die
-                // Kreuzung, die Wende samt Platz)
-                const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
-                if (W.F && !allein && W.F.quer > m.quer)
-                    [m.quer, m.querOrt] = [
-                        W.F.quer,
-                        [
-                            W.nr,
-                            k,
-                            Math.round(L[n].x),
-                            Math.round(L[n].z),
-                            W.grund,
-                            +W.entry._fahr.speed.toFixed(1),
-                            W.zonen
-                                .filter((z) => !z.weg)
-                                .map((z) => z.Z.art)
-                                .join("/"),
-                        ],
-                    ];
-                for (const b of S.liste)
-                    if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z, R)) {
-                        m.leib++;
-                        const key = b.seed + "|" + W.nr;
-                        if (m.leibOrte.length < 6 && !m.leibOrte.some((q) => q[0] === key))
-                            m.leibOrte.push([
-                                key,
-                                Math.round(b.leib.position.x),
-                                Math.round(b.leib.position.z),
-                                W.grund,
-                                +W.entry._fahr.speed.toFixed(1),
-                                b.weg ? "geht" : "steht",
-                            ]);
-                    }
-                for (let j = n + 1; j < fahrend.length; j++)
-                    if (schnitt(L[n], L[j])) {
-                        m.wagen++;
-                        const O = fahrend[j];
-                        const key = W.nr + "|" + O.nr;
-                        if (m.wagenOrte.length < 6 && !m.wagenOrte.some((q) => q[0] === key))
-                            m.wagenOrte.push([
-                                key,
-                                k,
-                                Math.round(L[n].x),
-                                Math.round(L[n].z),
-                                W.grund,
-                                O.grund,
-                                +W.entry._fahr.speed.toFixed(1),
-                                +O.entry._fahr.speed.toFixed(1),
-                                "sieht " +
-                                    (W.vorne ? W.vorne.O.nr + "@" + W.vorne.gap.toFixed(1) : "-") +
-                                    "/" +
-                                    (O.vorne ? O.vorne.O.nr + "@" + O.vorne.gap.toFixed(1) : "-"),
-                                "längs " +
-                                    ((L[j].x - L[n].x) * L[n].fx + (L[j].z - L[n].z) * L[n].fz).toFixed(1) +
-                                    " quer " +
-                                    ((L[j].x - L[n].x) * L[n].fz - (L[j].z - L[n].z) * L[n].fx).toFixed(1),
-                            ]);
-                    }
+        const aus = {};
+        for (const stunde of o.stunden) {
+            stelle(S.ox, S.oz, 2);
+            r._uhrSetzen(stunde / 24, "regler");
+            const bereit = () =>
+                S.liste && S.liste.every((b) => b.leib) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer);
+            for (const weiter = window.__deckel("verkehr: die Stadt steht", 4000); weiter() && !bereit(); i++) {
+                frame(i);
+                if (i % 8 === 7) await window.sleep();
             }
+            const VK = S.verkehr;
+            if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
+            // der Spieler steht am Markt neben der Trasse (nie in ihr): der erste freie Punkt der Ringe, 4 m und mehr von jeder Mitte
+            let platz = null;
+            for (let rr = 6; rr <= 30 && !platz; rr += 2)
+                for (let k = 0; k < 16 && !platz; k++) {
+                    const [x, z] = [S.ox + Math.cos((k * Math.PI) / 8) * rr, S.oz + Math.sin((k * Math.PI) / 8) * rr];
+                    const g = r._imGrundriss(x, z, 0.5);
+                    if (
+                        g !== "haus" &&
+                        g !== "bau" &&
+                        r._landAt(x, z) &&
+                        VK.strecken.every((s) => s.mitte.every((q) => Math.hypot(q.x - x, q.z - z) > 4))
+                    )
+                        platz = { x, z };
+                }
+            if (platz) stelle(platz.x, platz.z, 0.2);
+            const m = {
+                leib: 0,
+                leibOrte: [],
+                wagen: 0,
+                wagenOrte: [],
+                ohne: 0,
+                quer: 0,
+                querOrt: null,
+                takte: 0,
+                ms: 0,
+            };
+            r._verkehrSchritt = function (dt) {
+                const t0 = performance.now();
+                P._verkehrSchritt.call(this, dt);
+                [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
+            };
+            const weg0 = new Map(VK.wagen.map((W) => [W, W.weg]));
+            const stoss0 = { ...VK.zahl.stoss };
+            const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
+            for (let k = 0; k < Math.round(o.sek * 60); k++, i++) {
+                frame(i);
+                if (i % 8 === 7) await window.sleep();
+                if (k % 4) continue;
+                const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
+                const L = fahrend.map(lage);
+                for (const [n, W] of fahrend.entries()) {
+                    for (const Z of VK.zonen)
+                        if (
+                            Z.art === "kreuzung" &&
+                            Math.hypot(L[n].x - Z.x, L[n].z - Z.z) < Z.r - 1 &&
+                            !Z.halter.includes(W)
+                        )
+                            m.ohne++;
+                    const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
+                    if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
+                    for (const b of S.liste)
+                        if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z)) {
+                            m.leib++;
+                            if (m.leibOrte.length < 6)
+                                m.leibOrte.push([
+                                    b.seed + "|" + W.nr,
+                                    k,
+                                    ...ort2(L[n]),
+                                    W.grund,
+                                    b.weg ? "geht" : "steht",
+                                ]);
+                        }
+                    for (let j = n + 1; j < fahrend.length; j++)
+                        if (schnitt(L[n], L[j])) {
+                            m.wagen++;
+                            if (m.wagenOrte.length < 6)
+                                m.wagenOrte.push([
+                                    W.nr + "|" + fahrend[j].nr,
+                                    k,
+                                    ...ort2(L[n]),
+                                    W.grund,
+                                    fahrend[j].grund,
+                                ]);
+                        }
+                }
+            }
+            delete r._verkehrSchritt;
+            const steher = VK.wagen
+                .filter((W) => W.weg - weg0.get(W) < 30 || W.entry._fahr.speed < 0.1)
+                .map((W) => {
+                    const z0 = W.zonen.find((q) => !q.weg);
+                    const v = W.vorne;
+                    return [
+                        W.nr,
+                        Math.round(W.weg - weg0.get(W)),
+                        W.grund,
+                        ...ort2(lage(W)),
+                        z0 ? z0.Z.art + ":" + (z0.Z.halter.map((q) => q.nr).join("/") || "-") : "",
+                        v ? "vorne " + v.gap.toFixed(1) + "@" + v.O.nr : "",
+                    ];
+                });
+            const wege = VK.wagen.map((W) => W.weg - weg0.get(W)).sort((a, b) => a - b);
+            aus[stunde] = {
+                soll: VK.zahl.soll,
+                wagen: VK.wagen.length,
+                ohnePlatz: VK.zahl.ohnePlatz,
+                ohneFahrer: VK.zahl.ohneFahrer,
+                ohneNacht: VK.zahl.ohneNacht,
+                fahrend: VK.wagen.filter((W) => W.zustand === "faehrt").length,
+                netzM: Math.round(VK.zahl.laengeM),
+                wenden: VK.wenden.size,
+                enden: VK.kp.filter((K) => K.ende).length,
+                stufen: VK.zahl.stufen.slice(0, 6),
+                weg: {
+                    min: Math.round(wege[0] || 0),
+                    median: Math.round(wege[wege.length >> 1] || 0),
+                    summe: Math.round(wege.reduce((a, b) => a + b, 0)),
+                },
+                fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
+                stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
+                beruehrt: { leib: m.leib, wagen: m.wagen, orte: m.leibOrte, wagenOrte: m.wagenOrte },
+                ohneSchluessel: m.ohne,
+                steher,
+                querMax: +m.quer.toFixed(2),
+                querOrt: m.querOrt,
+                msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                sek: o.sek,
+            };
         }
-        delete r._verkehrSchritt;
-        for (const nm of Object.keys(prof)) delete r[nm];
-        // wer weniger als 30 m fuhr oder am Ende steht, beim Namen: sein Grund, sein Tempo, sein Ort und der Ort, auf den er wartet
-        const steher = VK.wagen
-            .filter((W) => W.weg - weg0.get(W) < 30 || (W.entry._fahr.speed || 0) < 0.1)
-            .map((W) => {
-                const z0 = W.zonen.find((q) => !q.weg);
-                return [
-                    W.nr,
-                    Math.round(W.weg - weg0.get(W)),
-                    W.grund,
-                    +(W.entry._fahr.speed || 0).toFixed(1),
-                    Math.round(W.entry.position.x),
-                    Math.round(W.entry.position.z),
-                    z0
-                        ? z0.Z.art +
-                          ":" +
-                          (z0.Z.halter.map((q) => q.nr).join("/") || "-") +
-                          ":" +
-                          Math.round(z0.ein - W.F.s)
-                        : "",
-                    W.vorne ? "vorne " + W.vorne.gap.toFixed(1) + "@" + W.vorne.O.nr : "",
-                    // wer ihn hält, wenn es ein Bewohner ist: der nächste Leib vor seinem Bug (Abstand, geht/steht, Tempo, beiseite,
-                    // sein Ziel)
-                    W.grund === "leib"
-                        ? (() => {
-                              const e = W.entry;
-                              const [fx, fz] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
-                              let best = null;
-                              for (const b of S.liste) {
-                                  if (!b.leib || b.drinnen || b.amSteuer) continue;
-                                  const [dx, dz] = [b.leib.position.x - e.position.x, b.leib.position.z - e.position.z];
-                                  const l = dx * fx + dz * fz;
-                                  const q = dx * fz - dz * fx;
-                                  if (l < 0 || l > 12 || Math.abs(q) > 3) continue;
-                                  if (!best || l < best[1])
-                                      best = [
-                                          b.seed,
-                                          +l.toFixed(1),
-                                          +q.toFixed(1),
-                                          b.weg ? "geht" : "steht",
-                                          +(b.tempoJetzt || 0).toFixed(2),
-                                          b.platz ? "beiseite" : "",
-                                          b.ziel ? Math.round(b.ziel.x) + "/" + Math.round(b.ziel.z) : "",
-                                      ];
-                              }
-                              return best;
-                          })()
-                        : null,
-                ];
-            });
-        const wege = VK.wagen.map((W) => W.weg - weg0.get(W)).sort((a, b) => a - b);
-        const kinds = {};
-        for (const W of VK.wagen) if (W.grund) kinds[W.grund] = (kinds[W.grund] || 0) + 1;
-        const takte = Math.max(1, m.takte);
-        return {
-            soll: VK.zahl.soll,
-            wagen: VK.wagen.length,
-            ohnePlatz: VK.zahl.ohnePlatz,
-            ohneFahrer: VK.zahl.ohneFahrer,
-            fahrend: VK.wagen.filter((W) => W.zustand === "faehrt").length,
-            netzM: Math.round(VK.zahl.laengeM),
-            wenden: VK.wenden.size,
-            enden: VK.kp.filter((K) => K.ende).length,
-            stufen: VK.zahl.stufen.slice(0, 6),
-            weg: {
-                min: Math.round(wege[0] || 0),
-                median: Math.round(wege[wege.length >> 1] || 0),
-                summe: Math.round(wege.reduce((a, b) => a + b, 0)),
-            },
-            fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
-            stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
-            beruehrt: { leib: m.leib, wagen: m.wagen, orte: m.leibOrte, wagenOrte: m.wagenOrte },
-            ohneSchluessel: m.ohne,
-            steher,
-            querMax: +m.quer.toFixed(2),
-            querOrt: m.querOrt || null,
-            grund: kinds,
-            msJeSchritt: +(m.ms / takte).toFixed(3),
-            prof: Object.fromEntries(
-                Object.entries(prof).map(([k, [t, n]]) => [k, [+(t / takte).toFixed(3), Math.round(n / takte)]])
-            ),
-            sek: o.sek,
-        };
+        return aus;
     };
     if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr) {
         try {

@@ -768,75 +768,54 @@ function feldWurfImOrt(anker, defekt) {
 // Kreuzung sein eigenes Profil, die letzte Trasse gewann: 0,15–0,67 m je 0,5 m (T 0,61 · X 0,67 · Knick 0,36 · Fort 0,36),
 // in der Metropole 60 Stellen, an denen jeder Wagen stand. `stoer` (Selbsttest) hebt die Fahrbahn des zweiten Wegs um 0,3 m.
 function kreuzungsUrteil(FC, Gb, o = {}) {
-    const lauf = (x0, z0, dx, dz, n) =>
-        Array.from({ length: n }, (_, i) => ({ x: x0 + dx * i * 3, z: z0 + dz * i * 3 }));
+    const lauf = (dx, dz, n, w, x0 = 0) => ({
+        pts: Array.from({ length: n }, (_, i) => ({ x: x0 + dx * i * 3, z: dz * i * 3 })),
+        w,
+    });
+    const quer = lauf(1, 0, 31, 5, -45);
     const faelle = {
-        T: [
-            { pts: lauf(-45, 0, 1, 0, 31), w: 5 },
-            { pts: lauf(0, 0, 0, 1, 15), w: 3.9 },
-        ],
-        X: [
-            { pts: lauf(-45, 0, 1, 0, 31), w: 5 },
-            { pts: lauf(0, 0, 0, 1, 15), w: 5 },
-            { pts: lauf(0, 0, 0, -1, 15), w: 5 },
-        ],
-        Knick: [
-            { pts: lauf(-45, 0, 1, 0, 16), w: 5 },
-            { pts: lauf(0, 0, 0.6, 0.8, 15), w: 5 },
-        ],
-        Fort: [
-            { pts: lauf(-45, 0, 1, 0, 16), w: 5 },
-            { pts: lauf(0, 0, 1, 0, 15), w: 5 },
-        ],
-        Schraeg: [
-            { pts: lauf(-45, 0, 1, 0, 31), w: 5 },
-            { pts: lauf(0, 0, 0.707, 0.707, 15), w: 3.9 },
-        ],
+        T: [quer, lauf(0, 1, 15, 3.9)],
+        X: [quer, lauf(0, 1, 15, 5), lauf(0, -1, 15, 5)],
+        Knick: [lauf(1, 0, 16, 5, -45), lauf(0.6, 0.8, 15, 5)],
+        Fort: [lauf(1, 0, 16, 5, -45), lauf(1, 0, 15, 5)],
+        Schraeg: [quer, lauf(0.707, 0.707, 15, 3.9)],
     };
-    const amKern = (roads, x, z) =>
-        roads.some((r) =>
-            r.pts.some((p, i) => {
-                if (!i) return false;
-                const a = r.pts[i - 1];
-                const [dx, dz] = [p.x - a.x, p.z - a.z];
-                const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz)));
-                return Math.hypot(x - a.x - dx * t, z - a.z - dz * t) <= r.w / 2;
-            })
-        );
+    const strecke = (p, a, b) => {
+        const [dx, dz] = [b.x - a.x, b.z - a.z];
+        const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
+        return Math.hypot(p.x - a.x - dx * t, p.z - a.z - dz * t);
+    };
+    const amKern = (roads, p) => roads.some((r) => r.pts.some((q, i) => i && strecke(p, r.pts[i - 1], q) <= r.w / 2));
     const aus = { max: 0, wo: "", je: [] };
     for (const [name, roads] of Object.entries(faelle))
         for (const hang of [0.06, 0.12, 0.2]) {
             const ctx = {
                 hoeheAt: (x, z) => x * hang + z * hang * 0.5 + Math.sin(x * 0.2) * 0.5,
-                flaeche: (sp) => {
-                    const E = Gb.erdbauNormal(sp);
-                    return (x, z) => Gb.erdbauFlaeche(E, x, z);
-                },
+                flaeche: (sp) =>
+                    (
+                        (E) => (x, z) =>
+                            Gb.erdbauFlaeche(E, x, z)
+                    )(Gb.erdbauNormal(sp)),
             };
             const v2 = FC.ortPlan({ slots: [], roads, laternen: [] }, { x: 0, z: 0 }, ctx); // BÜHNE: reines ortPlan-Fixture am Hang
-            const sp = o.stoer
-                ? v2.erdbau.map((q) =>
-                      q.art === "trasse" && q.weg === 3 ? { ...q, y0: q.y0 + 0.3, y1: q.y1 + 0.3 } : q
-                  )
-                : v2.erdbau;
-            const E = Gb.erdbauNormal(sp);
-            let max = 0;
-            let wo = "";
+            const E = Gb.erdbauNormal(
+                v2.erdbau.map((q) => (o.stoer && q.weg === 3 ? { ...q, y0: q.y0 + 0.3, y1: q.y1 + 0.3 } : q))
+            );
+            let [max, wo] = [0, ""];
             for (let x = -44; x < 44; x += 0.5)
                 for (let z = -44; z < 44; z += 0.5) {
-                    if (!amKern(roads, x, z)) continue;
+                    if (!amKern(roads, { x, z })) continue;
                     const a = Gb.erdbauY(E, x, z, NaN);
                     for (const [u, v] of [
                         [0.5, 0],
                         [0, 0.5],
                     ]) {
-                        if (!amKern(roads, x + u, z + v)) continue;
-                        const b = Gb.erdbauY(E, x + u, z + v, NaN);
-                        if (a === a && b === b && Math.abs(b - a) > max) [max, wo] = [Math.abs(b - a), `${x}/${z}`];
+                        const b = amKern(roads, { x: x + u, z: z + v }) ? Gb.erdbauY(E, x + u, z + v, NaN) : NaN;
+                        if (Math.abs(b - a) > max) [max, wo] = [Math.abs(b - a), `${x}/${z}`];
                     }
                 }
-            aus.je.push(`${name} ${Math.round(hang * 100)} % ${max.toFixed(3)}`);
-            if (max > aus.max) [aus.max, aus.wo] = [max, `${name} am Hang ${Math.round(hang * 100)} % bei ${wo}`];
+            aus.je.push(`${name} ${hang * 100} % ${max.toFixed(3)}`);
+            if (max > aus.max) [aus.max, aus.wo] = [max, `${name} am Hang ${hang * 100} % bei ${wo}`];
         }
     aus.gruen = aus.max <= 0.06 + 1e-6;
     return aus;
