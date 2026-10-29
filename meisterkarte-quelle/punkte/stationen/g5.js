@@ -1930,6 +1930,42 @@ const stationen = [
         ],
         quelle: "1 = ein Spieler schreibt eine DSL-Regel im Spiel, sie wirkt und reist zum Mitspieler",
     },
+
+    // ───────── fahrzeug.K2 — die Fahrt kommt durch: das Wegenetz trägt das Rad (Staffel 1, w3t-wegenetz) ─────────
+    // gate:fahr-leben --wegenetz (Node, Null-Renderer): die feste Route der Saat — von der Mess-Wiese über die Orte −1,−5 · −2,−6 ·
+    // −3,−5 · −4,−6 · −5,−5 · −6,−6 (je zwei Nachbarn im Wegenetz, `_wegenetzNachbarn`), die am Spieler erwachen wie im Spiel; die
+    // Feldwege zwischen ihnen und die Nähte ihrer Netze legt das Gesetz (fachwerk `wegZwischen`, `wegeNetz`), die Route ist die
+    // kürzeste über das Netz (`_wegenetzRoute`); der GT fährt sie mit dem Fahrer am Steuer (`fahrerSetzen`: Verb-Tafel → der EINE
+    // Fahr-Schritt des Kerns) in gemischten Bildern (8,3–33,3 ms), die Telemetrie zählt der Sim-Schritt (FIXED_DT). Headless gilt:
+    // der Sim-Schritt ist bildratenunabhängig (`--gleich` fährt 60 fps, dieselbe Bahn). Das Urteil liest `WEGENETZ {…}`.
+    // An main 675a3889 ROT (kein Feldweg zwischen Orten, die Dorf-Netze in 4–6 Teilen: keine Route); die Mutante (`--mutante`,
+    // die Weg-Erkennung aus: die Luftlinie) ROT.
+    {
+        kriterium: "fahrzeug.K2", staffel: 1, geraet: "headless",
+        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: false, zeit: false, minuten: 6,
+        urteil: (j, lauf) => {
+            const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
+            if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ")" };
+            const b = m.boden || {};
+            const teile = {
+                route: m.lang >= 2000 && m.wegAnteil >= 0.95,
+                an: m.ende === true,
+                steck: (m.steck || []).length === 0,
+                tempo: m.anteil >= 0.8,
+                boden: b.wiese > 0 && b.wald >= 0.1 && b.dorf >= 0.05,
+            };
+            const aus = Object.keys(teile).filter((k) => !teile[k]);
+            const p = (x) => Math.round((x || 0) * 1000) / 10 + " %";
+            return {
+                gruen: !aus.length && lauf.exit === 0,
+                zahl: "Route " + m.lang + " m (Weg " + p(m.wegAnteil) + "), gefahren " + m.weg + " m · Steckenbleiber " + (m.steck || []).length +
+                    " · über 0,8 · vmax " + p(m.anteil) + " von " + m.schritte + " Sim-Schritten · Boden Wiese " + p(b.wiese) + " / Wald " + p(b.wald) +
+                    " / Dorf " + p(b.dorf) + (aus.length ? " · außer Soll: " + aus.join(", ") : "") + " · Exit " + lauf.exit,
+            };
+        },
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs"],
+        quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
+    },
 ];
 
 module.exports = stationen;
