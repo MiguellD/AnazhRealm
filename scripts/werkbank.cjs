@@ -8,7 +8,7 @@
 //                                                           mit `anlauf` schwingt der Ort dort ein (Gründung, Stadt), `dach` stellt aufs Dach
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                      [--uhr 0..1] [--wetter rainy] [--saison winter] Bühne + echter Frame (Ausgabe-Pfad)
-//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
+//                                      [--klasse <regex>] [--spieler] [--abstand [--ringe 2,5,10,20,40]] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                      [--zeit Δt] | bild --selbsttest  DIE SICHTBARE BÖE (vegetation.K2): Luma-Varianz 0–15 m am Kamm
 //                                                           und im Tal der Böe über dem Rausch-Boden bei Wind 0
 //                                                           DIE KLASSEN IM BILD (spec/abnahme/soll-tafel.json): Teilung, Rauschen und Maße je Klasse;
@@ -1550,9 +1550,11 @@ async function starte() {
                     let abstand = null;
                     if (k.abstand) {
                         const T = THREE;
-                        // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
+                        // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante — oder FESTE Ringe
+                        // (`--ringe 2,5,10,20,40`, Vegetation K1: die Ringe der Meisterkarte, nie der Radius der gemessenen Welt)
                         const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
-                        const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
+                        const fest = k.ringe ? String(k.ringe).split(",").map(Number).filter((x) => x > 0) : null;
+                        const baender = [...new Set((fest ? [0, ...fest] : [0, 2, 5, 10, ring, 30, 80, 200]).filter((x) => x != null))].sort(
                             (a, b2) => a - b2
                         );
                         const zahl = {},
@@ -3076,6 +3078,7 @@ hauptLauf(async () => {
             klasse: opt("--klasse"),
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
+            ringe: opt("--ringe"),
             gesicht: opt("--gesicht"),
             arm: opt("--arm"),
             ist: opt("--ist"),

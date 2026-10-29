@@ -289,11 +289,15 @@ class AnazhRealm_vegetation_wiese {
 
     // Die Daten einer Kachel: je Büschel die Basis-Matrix (Ort · Drehung · Skala — die Welt-Skala des Studio-Teils hängt
     // der Sicht-Satz an) und sein Tint (`farben`, n×3), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne
-    // Büschel-Radius (grober Cull vor dem Büschel-Test).
+    // Büschel-Radius (grober Cull vor dem Büschel-Test). `welt` ist die Basis mit der Welt-Skala des Grases (`weltLokal`,
+    // die geteilte Matrix jedes Gras-Teils, L1 wie Karte) — der Sicht-Satz kopiert sie, statt je Büschel zu multiplizieren.
     _nahWieseKachelDaten(tx, tz, bueschel) {
         const K = AnazhRealm.NAH_WIESE.kachel;
         const n = bueschel.length;
         const basis = new Float32Array(n * 16);
+        const welt = new Float32Array(n * 16);
+        const weltLokal = this._foundryWorldScaleMatrix("gras");
+        const ks = weltLokal.elements[0];
         const farben = new Float32Array(n * 3);
         const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
         const q = this._tmpWieseQ || (this._tmpWieseQ = new THREE.Quaternion());
@@ -309,14 +313,20 @@ class AnazhRealm_vegetation_wiese {
             q.setFromAxisAngle(up, b.rot);
             sv.set(b.s, b.s, b.s);
             m4.compose(pv, q, sv).toArray(basis, i * 16);
+            sv.multiplyScalar(ks);
+            m4.compose(pv, q, sv).toArray(welt, i * 16);
             farben.set(b.f, i * 3);
             if (b.y < y0) y0 = b.y;
             if (b.y > y1) y1 = b.y;
             if (b.s > sMax) sMax = b.s;
         }
+        this._nahWieseKachelN = (this._nahWieseKachelN || 0) + 1;
         return {
+            id: this._nahWieseKachelN,
             bueschel,
             basis,
+            welt,
+            weltLokal,
             farben,
             l1: new Uint8Array(n),
             mx: (tx + 0.5) * K,
@@ -332,6 +342,10 @@ class AnazhRealm_vegetation_wiese {
     // Stufe beim Namen). Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
     // (Saison) ersetzt die Senken der Vorlage. Die Sicht-Kugel der Vorlage: Höhe der Mitte und Radius in Büschel-Skala 1
     // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse).
+    // DIE KARTE (w3w-wald, Stufe 2 = die Studio-Karte des Grases): ihr Teil ist das Achsen-Quad des EINEN Karten-Atlas
+    // (`_impostorLeaf`: Schicht, Rahmen, Sichthöhe) — die Senke zeichnet es über einer Instanz-Fassade (`_lodInstanceFacade`),
+    // je Büschel `aKarte` (Schicht, Halbbreite, Höhe, −Sichthöhe × Skala: voll, nie die Blende der Bäume); ihre Sicht-Kugel ist
+    // der Rahmen der Schicht in der Welt-Skala der Vorlage.
     _nahWieseSenken(v, stufe, fl) {
         const nw = this.state.nahWiese;
         const kopf = `${v}:L${stufe}`;
@@ -356,6 +370,7 @@ class AnazhRealm_vegetation_wiese {
                 lokal: lf.localMatrix,
                 leafKey: lf.leafKey,
                 quelle: lf._srcGroup || null,
+                karte: lf.atlasGruppe ? [lf.zelle, lf.rahmen[0], lf.rahmen[1], -lf.sicht] : null,
                 mesh: null,
                 kap: 0,
                 anzahl: 0,
@@ -366,8 +381,13 @@ class AnazhRealm_vegetation_wiese {
             this._senkeMesh(a, 256, this.state.scene);
             nw.senken.set(a.key, a);
             senken.push(a);
-            if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
-            kugel.copy(lf.geom.boundingSphere).applyMatrix4(lf.localMatrix);
+            if (a.karte)
+                kugel.set(kugel.center.set(0, lf.rahmen[1] / 2, 0), Math.hypot(lf.rahmen[0], lf.rahmen[1] / 2));
+            else {
+                if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
+                kugel.copy(lf.geom.boundingSphere);
+            }
+            kugel.applyMatrix4(lf.localMatrix);
             if (cy === null) cy = kugel.center.y;
             r = Math.max(r, kugel.radius + Math.hypot(kugel.center.x, kugel.center.z) + Math.abs(kugel.center.y - cy));
         }
@@ -381,7 +401,7 @@ class AnazhRealm_vegetation_wiese {
         const nw = this.state.nahWiese;
         if (a.mesh) {
             if (a.mesh.parent) a.mesh.parent.remove(a.mesh);
-            this._instanzAbschied(a.mesh);
+            this._nahWieseAbschied(a, a.mesh);
             a.mesh = null;
         }
         nw.senken.delete(a.key);
@@ -391,11 +411,17 @@ class AnazhRealm_vegetation_wiese {
     // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
     // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (die Kachel
-    // als Box, das Büschel als Kugel nach dem EINEN Gesetz der Pass-Wahl `_passTrifft` in der Lage dieses Passes `L`); jede
-    // Senke trägt dicht genau ihre sichtbaren Büschel. Die Büschel sind Daten der Kacheln, keine Instanzen einer Gruppe: der
-    // Satz schreibt ihre Matrizen, und er rechnet nur, wenn sich der Ring (`neu`) oder die Lage des Passes ändert — ihre
-    // Generation `L.gen` (`_passLageGen`, das EINE Gesetz der Lage: nie wegen des Versatzes der zeitlichen Auflösung, nie
-    // wegen des atmenden Auges; den Rand dafür trägt das Gesetz).
+    // als Box, das Büschel der L1 als Kugel nach dem EINEN Gesetz der Pass-Wahl `_passTrifft` in der Lage dieses Passes `L`;
+    // die Karte, 2 Dreiecke, urteilt an ihrer Kachel); jede Senke trägt dicht ihre Büschel. Die Büschel sind Daten der
+    // Kacheln, keine Instanzen einer Gruppe: der Satz schreibt ihre Matrizen, und er rechnet nur, wenn sich der Ring (`neu`)
+    // oder die Lage des Passes ändert — ihre Generation `L.gen` (`_passLageGen`, das EINE Gesetz der Lage: nie wegen des
+    // Versatzes der zeitlichen Auflösung, nie wegen des atmenden Auges; den Rand dafür trägt das Gesetz).
+    // DER KARTEN-BLOCK (w3w-wald): eine Kachel ganz im Band der Karte (jenseits der L1-Hysterese, diesseits des Rand-Bands)
+    // legt ihre Karten als EINEN vorgepackten Block je Senke (`_nahWieseKartenBlock`: Matrix mit der Narbe, Tint, Karte), nur
+    // die Kacheln an den Grenzen gehen je Büschel. Was ein Slot trägt, nennt sein Schlüssel (`a.wer`: Kachel, Büschel oder
+    // Block, die Fassung der Narbe) — ein Slot mit demselben Schlüssel trägt denselben Inhalt und wird nicht geschrieben.
+    // Gemessen (headless, Mess-Wiese, Ring 42 m, 10 876 Büschel in 183 Kacheln): je Büschel 1,1–1,5 ms je Satz, als Block
+    // 0,2–0,3 ms stehend, 0,17–0,34 ms gehend.
     _nahWieseSicht(kamera, L) {
         const nw = this.state.nahWiese;
         if (!nw || !kamera || !nw.senken.size) return;
@@ -415,12 +441,24 @@ class AnazhRealm_vegetation_wiese {
                 ziel[stufe][v] = vl;
                 if (vl && vl.r + Math.abs(vl.cy) > rMax) rMax = vl.r + Math.abs(vl.cy);
             }
+        // die Narbe der Saison (SAISON_GESETZ `wu` · `wd`): ihre Höhe trägt die Hochachse jedes Büschels, ihre Dichte ein Präfix
+        // der Würfel-Ordnung (dieselbe gleichmäßige Ausdünnung wie das Rand-Band). Die FASSUNG zählt Narbe und Vorlagen: ändert
+        // sich eines, gilt kein Schlüssel und kein Block von vorher.
+        const su = this._ensureSeasonUniforms();
+        const wuchs = su.uWiesenWuchs.value;
+        const dichte = su.uWiesenDichte.value;
+        const fs = nw.fassung || (nw.fassung = { n: 0, wuchs: NaN, dichte: NaN, vl: [] });
+        const vls = [ziel[1][0], ziel[1][1], ziel[2][0], ziel[2][1]];
+        if (fs.wuchs !== wuchs || fs.dichte !== dichte || vls.some((x, i) => fs.vl[i] !== x))
+            Object.assign(fs, { n: fs.n + 1, wuchs, dichte, vl: vls });
+        const fn = fs.n % 1024;
         // Jede Senke hebt ihre Version nur, wenn sich ihr Inhalt änderte (K71): eine neue Lage des Passes, die dieselben
-        // Büschel wählt (der Spieler atmet in der Third-Sicht), schreibt dieselben Matrizen — eine gehobene Version frischte
-        // jede Senke voll auf und lud ihren Puffer neu (an der Wiese in Ruhe vier Senken je vierten Frame).
+        // Büschel wählt (der Spieler atmet in der Third-Sicht), schreibt nichts — eine gehobene Version frischte jede Senke voll
+        // auf und lud ihren Puffer neu (an der Wiese in Ruhe vier Senken je vierten Frame). `ab` = der erste geschriebene Slot.
         for (const a of nw.senken.values()) {
             a.anzahl = 0;
             a.anders = false;
+            a.ab = Infinity;
         }
         const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
         const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
@@ -429,59 +467,138 @@ class AnazhRealm_vegetation_wiese {
         // die Stufen-Hysterese gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jedes Büschel aus dem Jetzt
         if (this._augeSprung(nw, ax, we[13], az)) for (const k of nw.kacheln.values()) k.l1.fill(0);
         const H = NW.kachel * 0.5;
+        const s1 = NW.stufe1 + NW.stufe1Rand;
+        const r0 = NW.radius - NW.rand / 2;
+        const halb = (H + 0.34) * Math.SQRT2;
+        const [radius, rand, stufe1] = [NW.radius, NW.rand, NW.stufe1];
         for (const k of nw.kacheln.values()) {
             const n = k.bueschel.length;
             if (!n || !this._passTrifft(L, k.mx, (k.y0 + k.y1) / 2, k.mz, H, (k.y1 - k.y0) / 2, H, k.sMax * rMax))
                 continue;
+            const dk = Math.sqrt((k.mx - ax) * (k.mx - ax) + (k.mz - az) * (k.mz - az));
+            if (dk - halb > s1 && dk + halb <= r0) {
+                this._nahWieseKartenBlock(k, ziel[2], fs, wuchs, dichte, mw, m4);
+                continue;
+            }
             for (let i = 0; i < n; i++) {
                 const b = k.bueschel[i];
-                const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
-                const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
+                const d = Math.sqrt((b.x - ax) * (b.x - ax) + (b.z - az) * (b.z - az));
+                if (b.ordnung >= Math.max(0, Math.min(dichte, (radius - d) / rand + 0.5))) continue;
+                const l1 = k.l1[i] ? d <= s1 : d <= stufe1;
                 k.l1[i] = l1 ? 1 : 0;
                 const vl = ziel[l1 ? 1 : 2][b.vorlage];
-                if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
-                m4.fromArray(k.basis, i * 16);
+                if (!vl) continue;
+                // die L1 (Hunderte Dreiecke je Büschel) prüft ihre Kugel, die Karte (2 Dreiecke) urteilt an ihrer Kachel
+                if (l1 && !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
+                const wer = (k.id * 8192 + i) * 1024 + fn;
                 for (const a of vl.senken) {
                     if (a.anzahl >= a.kap) {
                         this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
                         a.anders = true;
                     }
-                    const e = mw.multiplyMatrices(m4, a.lokal).elements;
-                    const arr = a.mesh.instanceMatrix.array;
-                    const o = a.anzahl * 16;
-                    for (let j = 0; j < 16; j++) {
-                        const alt = arr[o + j];
-                        arr[o + j] = e[j];
-                        if (arr[o + j] !== alt) a.anders = true;
+                    const o = a.anzahl++;
+                    if (a.wer[o] === wer) continue;
+                    a.wer[o] = wer;
+                    if (o < a.ab) a.ab = o;
+                    a.anders = true;
+                    // die Welt-Matrix des Büschels: vorgerechnet (`welt`, die Welt-Skala des Grases), sonst Basis × Teil
+                    let e = k.welt;
+                    let eo = i * 16;
+                    if (a.lokal !== k.weltLokal) {
+                        e = mw.multiplyMatrices(m4.fromArray(k.basis, eo), a.lokal).elements;
+                        eo = 0;
                     }
-                    // der Tint des Büschels (W1): ein anderer Tint im Slot ist ein anderes Büschel, also eine andere Matrix
+                    const arr = a.mesh.instanceMatrix.array;
+                    for (let j = 0; j < 16; j++) arr[o * 16 + j] = j >= 4 && j <= 6 ? e[eo + j] * wuchs : e[eo + j];
+                    // der Tint des Büschels (W1)
                     const ca = a.mesh.instanceColor.array;
-                    ca[a.anzahl * 3] = k.farben[i * 3];
-                    ca[a.anzahl * 3 + 1] = k.farben[i * 3 + 1];
-                    ca[a.anzahl * 3 + 2] = k.farben[i * 3 + 2];
-                    a.anzahl++;
+                    ca[o * 3] = k.farben[i * 3];
+                    ca[o * 3 + 1] = k.farben[i * 3 + 1];
+                    ca[o * 3 + 2] = k.farben[i * 3 + 2];
+                    // die Karte des Büschels: Schicht und Rahmen der Vorlage, die Sichthöhe × seine Skala (negativ: voll)
+                    if (a.karte) {
+                        const ka = a.mesh.geometry.attributes.aKarte.array;
+                        ka[o * 4] = a.karte[0];
+                        ka[o * 4 + 1] = a.karte[1];
+                        ka[o * 4 + 2] = a.karte[2];
+                        ka[o * 4 + 3] = a.karte[3] * b.s;
+                    }
                 }
             }
         }
-        // Der Vergleich liest das CPU-Array als Spiegel der GPU: ein offener Bereich (geschrieben, noch nicht hochgeladen —
-        // r184 leert die Bereiche erst nach dem Upload) fällt darum nie, der neue umfasst ihn (sonst lüde ein späterer Pass mit
+        // Der Upload: ab dem ersten geschriebenen Slot bis zur Anzahl. Ein offener Bereich (geschrieben, noch nicht hochgeladen
+        // — r184 leert die Bereiche erst nach dem Upload) fällt nie, der neue umfasst ihn (sonst lüde ein späterer Pass mit
         // denselben Bytes in den oberen Slots nichts, und die GPU hielte die Matrizen von vorher).
         for (const a of nw.senken.values()) {
             if (a.anders) {
                 const im = a.mesh.instanceMatrix;
+                let ab = Math.min(a.ab, a.anzahl) * 16;
                 let ende = a.anzahl * 16;
-                for (const r of im.updateRanges) if (r.start + r.count > ende) ende = r.start + r.count;
+                for (const r of im.updateRanges) {
+                    if (r.start < ab) ab = r.start;
+                    if (r.start + r.count > ende) ende = r.start + r.count;
+                }
                 im.clearUpdateRanges();
-                if (ende) im.addUpdateRange(0, ende);
+                if (ende > ab) im.addUpdateRange(ab, ende - ab);
                 im.needsUpdate = true;
-                // der Tint wandert im Gleichschritt mit der Matrix (je Slot 3 statt 16 Werte) — nur der Bereich, nie die Kapazität
-                const ic = a.mesh.instanceColor;
-                ic.clearUpdateRanges();
-                if (ende) ic.addUpdateRange(0, (ende / 16) * 3);
-                ic.needsUpdate = true;
+                // der Tint und die Karte wandern im Gleichschritt mit der Matrix (je Slot 3 bzw. 4 statt 16 Werte)
+                const mit = [[a.mesh.instanceColor, 3]];
+                if (a.karte) mit.push([a.mesh.geometry.attributes.aKarte, 4]);
+                for (const [at, w] of mit) {
+                    at.clearUpdateRanges();
+                    if (ende > ab) at.addUpdateRange((ab / 16) * w, ((ende - ab) / 16) * w);
+                    at.needsUpdate = true;
+                }
             }
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
+        }
+    }
+
+    // DER KARTEN-BLOCK einer Kachel ganz im Band der Karte: je Senke der Karte die gepackten Büschel (Würfel-Ordnung unter der
+    // Dichte der Narbe) — Matrix mit der Höhe der Narbe, Tint, Karte —, gepackt EINMAL je Fassung (`k.pack`); der Block
+    // tritt in seine Senke als EINE Kopie, und nur, wo der Slot ihn nicht schon trägt (sein Schlüssel `a.wer`).
+    _nahWieseKartenBlock(k, karten, fs, wuchs, dichte, mw, m4) {
+        k.l1.fill(0);
+        if (!k.pack || k.pack.n !== fs.n) {
+            const bl = new Map();
+            for (let i = 0; i < k.bueschel.length; i++) {
+                const b = k.bueschel[i];
+                const vl = b.ordnung < dichte ? karten[b.vorlage] : null;
+                if (!vl) continue;
+                for (const a of vl.senken) {
+                    let p = bl.get(a);
+                    if (!p) bl.set(a, (p = { m: [], c: [], q: [], n: 0 }));
+                    const e =
+                        a.lokal === k.weltLokal
+                            ? k.welt.subarray(i * 16, i * 16 + 16)
+                            : mw.multiplyMatrices(m4.fromArray(k.basis, i * 16), a.lokal).elements;
+                    for (let j = 0; j < 16; j++) p.m.push(j >= 4 && j <= 6 ? e[j] * wuchs : e[j]);
+                    p.c.push(k.farben[i * 3], k.farben[i * 3 + 1], k.farben[i * 3 + 2]);
+                    if (a.karte) p.q.push(a.karte[0], a.karte[1], a.karte[2], a.karte[3] * b.s);
+                    p.n++;
+                }
+            }
+            for (const p of bl.values())
+                [p.m, p.c, p.q] = [new Float32Array(p.m), new Float32Array(p.c), new Float32Array(p.q)];
+            k.pack = { n: fs.n, bl };
+        }
+        const wer = (k.id * 8192 + 8191) * 1024 + (fs.n % 1024);
+        for (const [a, p] of k.pack.bl) {
+            if (!a.mesh) continue;
+            while (a.anzahl + p.n > a.kap) {
+                this._senkeMesh(a, Math.ceil(Math.max(a.kap * 1.5, a.anzahl + p.n)), this.state.scene);
+                a.anders = true;
+            }
+            const o = a.anzahl;
+            a.anzahl += p.n;
+            if (a.wer[o] === wer) continue;
+            a.mesh.instanceMatrix.array.set(p.m, o * 16);
+            a.mesh.instanceColor.array.set(p.c, o * 3);
+            if (a.karte) a.mesh.geometry.attributes.aKarte.array.set(p.q, o * 4);
+            a.wer[o] = wer;
+            a.wer.fill(-1, o + 1, o + p.n);
+            if (o < a.ab) a.ab = o;
+            a.anders = true;
         }
     }
 
@@ -722,7 +839,8 @@ class AnazhRealm_vegetation_wiese {
     _senkeMesh(a, kap, eltern) {
         if (!eltern) throw new Error(`_senkeMesh(${a.name}): kein Eltern-Knoten`);
         const alt = a.mesh;
-        const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
+        // die Karte zeichnet über ihrer eigenen Fassade (je Büschel `aKarte`), jede andere Senke über der Studio-Geometrie
+        const m = AnazhRealm._instanzMesh(a.karte ? this._lodInstanceFacade(a.geo, kap) : a.geo, a.mat, kap);
         m.name = a.name;
         m.castShadow = false;
         m.receiveShadow = true;
@@ -734,14 +852,28 @@ class AnazhRealm_vegetation_wiese {
         if (alt) {
             m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
             m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
+            if (a.karte)
+                m.geometry.attributes.aKarte.array.set(alt.geometry.attributes.aKarte.array.subarray(0, a.anzahl * 4));
             if (alt.parent) alt.parent.remove(alt);
-            this._instanzAbschied(alt);
+            this._nahWieseAbschied(a, alt);
             a.wachse++;
+            a.ab = 0; // der neue Puffer lädt ganz
         }
         AnazhRealm._instanzZahl(m, a.anzahl);
+        // der Schlüssel je Slot (`_nahWieseSicht`): was er trägt — gewachsen trägt die neue Senke denselben Inhalt
+        const wer = new Float64Array(kap).fill(NaN);
+        if (alt && a.wer) wer.set(a.wer.subarray(0, Math.min(a.anzahl, a.wer.length)));
+        a.wer = wer;
         a.mesh = m;
         a.kap = kap;
         eltern.add(m);
+    }
+
+    // Der Abschied einer Senke der Nah-Wiese: die Instanz-Puffer (`_instanzAbschied`), bei der Karte dazu die `aKarte` ihrer
+    // Fassade — sie gehört der Senke allein (r184 hielte sie bis `_attributes.delete`, Lehre 27).
+    _nahWieseAbschied(a, mesh) {
+        if (a.karte) this._gpuAbschied(mesh.geometry.attributes.aKarte);
+        this._instanzAbschied(mesh);
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke

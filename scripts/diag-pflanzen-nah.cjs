@@ -59,8 +59,9 @@ const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");
-// die Oktave der Blatt-Farbe, wie die Welt sie trägt (die Klasse geladen, nie ihr Text; D3c)
-const OKTAVE = stammLib.ladeKlasse(ROOT).AnazhRealm.BLATT_FARBE_OKTAVE;
+// die Oktave der Blatt-Farbe, wie die Welt sie trägt (die Klasse geladen, nie ihr Text; D3c); die Klasse liest auch das Jahr (J)
+const KLASSE = stammLib.ladeKlasse(ROOT).AnazhRealm;
+const OKTAVE = KLASSE.BLATT_FARBE_OKTAVE;
 const PORT = Number(process.env.PFLANZEN_PORT || 4548);
 
 // Die Soll-Bänder (lineare Luminanz Y, Tageslicht-Albedo): Betulin-Weiß der Birke 0,40–0,55 (mit Strichen im Mittel
@@ -248,14 +249,14 @@ function bluetenUrteil(fall, T) {
         m: { saftmal: m, blaetter: r.length },
     };
 }
-// Die mittlere Kante der Karten-Quads (je 4 Vertices, Ecke 0 → 1) eines Laub-Teils.
-function kartenKante(T) {
+// Die mittlere Kante der Karten-Quads (je 4 Vertices, Ecke `e` → e + 1, Vorgabe 0) eines Laub-Teils.
+function kartenKante(T, e = 0) {
     let s = 0,
         n = 0;
     for (const t of T) {
         if (t.kind !== "foliageTex") continue;
         const p = t.pos;
-        for (let i = 0; i + 11 < p.length; i += 12) {
+        for (let i = 3 * e; i + 11 - 3 * e < p.length; i += 12) {
             s += Math.hypot(p[i + 3] - p[i], p[i + 4] - p[i + 1], p[i + 5] - p[i + 2]);
             n++;
         }
@@ -278,17 +279,7 @@ function blattMass(fall, T, skala, zweig) {
 }
 function nadelMass(fall, T, skala) {
     // die Wedel-Länge: Kante 1→2 der Strähnen-Karte (längs der Bahn; Kante 0→1 ist ihre Breite)
-    let sL = 0,
-        nL = 0;
-    for (const t of T) {
-        if (t.kind !== "foliageTex") continue;
-        const p = t.pos;
-        for (let i = 0; i + 11 < p.length; i += 12) {
-            sL += Math.hypot(p[i + 6] - p[i + 3], p[i + 7] - p[i + 4], p[i + 8] - p[i + 5]);
-            nL++;
-        }
-    }
-    const kante = nL ? sL / nL : 0;
+    const kante = kartenKante(T, 1);
     if (!kante) return { v: [`${fall}: kein Wedel`], m: {} };
     const nadel = (kante / PC.BLATT_ATLAS_WEDEL.kern) * (PC.WEDEL_ZWEIG.nadel / PC.BLATT_ATLAS_ZELLE) * skala;
     return { v: nadel <= NADEL_MAX_M ? [] : [`${fall}: Nadel ${nadel.toFixed(3)} m > ${NADEL_MAX_M} m`], m: { nadel } };
@@ -343,7 +334,22 @@ function teppichFuss(T) {
     fuss.sort((a, b) => a - b);
     return (fuss[Math.floor(fuss.length * 0.9)] - lo) / (hi - lo);
 }
-function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
+// Das EINE Dreieck-Raster der Linse: jedes Pixel (seine Mitte) des Bilds N × M im Dreieck (x[0..2], y[0..2]) deckt, das
+// `an(b1, b2)` (die baryzentrischen Gewichte der Ecken 1 und 2) gelten lässt.
+function dreieck(bild, N, M, x, y, an) {
+    const fl = (x[1] - x[0]) * (y[2] - y[0]) - (y[1] - y[0]) * (x[2] - x[0]);
+    if (Math.abs(fl) < 1e-9) return;
+    for (let v = Math.max(0, Math.floor(Math.min(...y))); v <= Math.min(M - 1, Math.ceil(Math.max(...y))); v++)
+        for (let u = Math.max(0, Math.floor(Math.min(...x))); u <= Math.min(N - 1, Math.ceil(Math.max(...x))); u++) {
+            if (bild[v * N + u]) continue;
+            const X = u + 0.5 - x[0],
+                Y = v + 0.5 - y[0];
+            const b1 = (X * (y[2] - y[0]) - Y * (x[2] - x[0])) / fl,
+                b2 = (Y * (x[1] - x[0]) - X * (y[1] - y[0])) / fl;
+            if (b1 >= 0 && b2 >= 0 && b1 + b2 <= 1 && (!an || an(b1, b2))) bild[v * N + u] = 1;
+        }
+}
+function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG, wuchs = 1, dichte = 1) {
     const e = (neigung * Math.PI) / 180,
         se = Math.sin(e),
         ce = Math.cos(e);
@@ -355,20 +361,15 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
         pv = [0, 0, 0];
     for (let gj = Math.ceil(-3 / step); gj * step <= 3; gj++)
         for (let gi = Math.ceil(-3 / step); gi * step <= 3; gi++) {
-            let hs = ((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1;
-            const w = () => {
-                hs = (hs + 0x6d2b79f5) >>> 0;
-                let t = hs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            const w = PC.mulberry32(((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1);
             const cx = gi * step + (w() - 0.5) * 0.68,
                 cz = gj * step + (w() - 0.5) * 0.68,
                 s = skala * (0.7 + w() * 0.7),
                 rot = w() * Math.PI * 2,
                 c = Math.cos(rot) * s,
                 sn = Math.sin(rot) * s;
+            // die Dichte der Narbe (J): ein Präfix der Würfel-Ordnung steht — der fünfte Wurf, hinter allen der Gestalt
+            if (dichte < 1 && w() >= dichte) continue;
             for (const t of T) {
                 if (!t.idx) continue;
                 const P = t.pos,
@@ -379,23 +380,9 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
                             x = cx + c * P[o] + sn * P[o + 2],
                             z = cz - sn * P[o] + c * P[o + 2];
                         pu[q] = (x + 1) / RES;
-                        pv[q] = (P[o + 1] * s * ce - z * se + se) / RES;
+                        pv[q] = (P[o + 1] * s * wuchs * ce - z * se + se) / RES;
                     }
-                    const u0 = Math.max(0, Math.floor(Math.min(pu[0], pu[1], pu[2]))),
-                        u1 = Math.min(NU - 1, Math.ceil(Math.max(pu[0], pu[1], pu[2]))),
-                        v0 = Math.max(0, Math.floor(Math.min(pv[0], pv[1], pv[2]))),
-                        v1 = Math.min(NV - 1, Math.ceil(Math.max(pv[0], pv[1], pv[2])));
-                    if (u0 > u1 || v0 > v1) continue;
-                    const fl = (pu[1] - pu[0]) * (pv[2] - pv[0]) - (pv[1] - pv[0]) * (pu[2] - pu[0]);
-                    if (Math.abs(fl) < 1e-9) continue;
-                    for (let v = v0; v <= v1; v++)
-                        for (let u = u0; u <= u1; u++) {
-                            const x = u + 0.5,
-                                y = v + 0.5;
-                            const a = ((pu[1] - x) * (pv[2] - y) - (pv[1] - y) * (pu[2] - x)) / fl,
-                                b = ((pu[2] - x) * (pv[0] - y) - (pv[2] - y) * (pu[0] - x)) / fl;
-                            if (a >= 0 && b >= 0 && a + b <= 1) bild[v * NU + u] = 1;
-                        }
+                    dreieck(bild, NU, NV, pu, pv);
                 }
             }
         }
@@ -512,12 +499,24 @@ for (let c = 0; c < 256; c++) {
     const x = c / 255;
     LIN8[c] = x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
 }
+// Bilinear (clamp) wie die GPU: die Stufe m am Texel-Ort (x, y) (die Mitte des ersten Texels bei 0) → [Luma linear, Alpha].
+function texel(m, x, y) {
+    const [W, H, d, x0, y0] = [m.width, m.height, m.data, Math.floor(x), Math.floor(y)];
+    let l = 0,
+        a = 0;
+    for (let q = 0; q < 4; q++) {
+        const w = (q & 1 ? x - x0 : 1 - x + x0) * (q >> 1 ? y - y0 : 1 - y + y0);
+        const o = (Math.min(H - 1, Math.max(0, y0 + (q >> 1))) * W + Math.min(W - 1, Math.max(0, x0 + (q & 1)))) * 4;
+        l += w * (0.2126 * LIN8[d[o]] + 0.7152 * LIN8[d[o + 1]] + 0.0722 * LIN8[d[o + 2]]);
+        a += (w * d[o + 3]) / 255;
+    }
+    return [l, a];
+}
 // je Zelle: Deckung (Anteil der Proben über dem alphaTest) und die Luminanz des Lesers relativ zu Y(wert);
 // `teilen`: der Leser teilt das gefilterte rgb durch alpha (die Welt), sonst liest er es gerade (das Labor, blutend).
 function frachtStufe(m, wert, teilen) {
     const W = m.width,
         H = m.height,
-        d = m.data,
         Z = W / 4;
     const yw = 0.2126 * wert[0] + 0.7152 * wert[1] + 0.0722 * wert[2];
     const n = Math.min(512, Z * 2);
@@ -529,47 +528,27 @@ function frachtStufe(m, wert, teilen) {
             for (let i = 0; i < n; i++) {
                 const x = ((c + (i + 0.5) / n) / 4) * W - 0.5,
                     y = ((j + 0.5) / n) * H - 0.5;
-                const x0 = Math.floor(x),
-                    y0 = Math.floor(y),
-                    fx = x - x0,
-                    fy = y - y0;
-                let r = 0,
-                    g = 0,
-                    b = 0,
-                    a = 0;
-                for (let q = 0; q < 4; q++) {
-                    const dx = q & 1,
-                        dy = q >> 1;
-                    const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-                    const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
-                    r += w * LIN8[d[o]];
-                    g += w * LIN8[d[o + 1]];
-                    b += w * LIN8[d[o + 2]];
-                    a += (w * d[o + 3]) / 255;
-                }
+                const [l, a] = texel(m, x, y);
                 if (a < 0.5) continue;
                 ok++;
-                const k = teilen ? 1 / Math.max(1e-3, a) : 1;
-                sy += (0.2126 * r + 0.7152 * g + 0.0722 * b) * k;
+                sy += teilen ? l / Math.max(1e-3, a) : l;
             }
         zellen.push({ dk: ok / (n * n), Y: ok ? sy / ok / yw : 0 });
     }
     return { Z, zellen };
 }
+// Die BC-Stufen der Fracht, dekodiert wie die GPU sie liest.
+const bcStufen = (fr, fmt = fr.bc.format || "bc1") =>
+    fr.bc.mips.map((m) => ({ width: m.width, height: m.height, data: PC.bcDekodiere(m.data, m.width, m.height, fmt) }));
 // Die Reihen: das Labor (das Bild, gerade) und die Welt je Format (die Fracht, der EINE Leser). `bcLeser` (Selbsttest):
 // wie der BC1-Pfad gelesen wird — true = geteilt (die Welt), false = gerade.
 function frachtReihen(bild, bcLeser) {
     const fr = PC.blattAtlasFracht(bild, true);
     const stufen = (mips, teilen) =>
         mips.filter((m) => m.width / 4 >= FRACHT_MIN_ZELLE).map((m) => frachtStufe(m, fr.wert, teilen));
-    const bc = fr.bc.mips.map((m) => ({
-        width: m.width,
-        height: m.height,
-        data: PC.bcDekodiere(m.data, m.width, m.height, fr.bc.format || "bc1"),
-    }));
     return {
         labor: stufen(bild.mips, false),
-        welt: { bc: stufen(bc, bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
+        welt: { bc: stufen(bcStufen(fr), bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
     };
 }
 function frachtUrteil(R) {
@@ -623,41 +602,14 @@ const kornSchwelle = () => 0.5;
 const KORN_MAX = 0.083;
 function kornReihe(mips, zBasis) {
     // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
-    const stufeA = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
-        let a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            a += w * d[(Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4 + 3];
-        }
-        return a / 255;
-    };
-    const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
+    const probe = atlasProbe(mips, zBasis);
     return (lambda) => {
         const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
-        const l = Math.max(0, lambda - versatz),
-            l0 = Math.min(mips.length - 1, Math.floor(l)),
-            l1 = Math.min(mips.length - 1, l0 + 1),
-            f = l - Math.floor(l);
-        const probe = (c, u, v) => {
-            const a0 = stufeA(mips[l0], c, u, v);
-            return l1 === l0 || f === 0 ? a0 : a0 + (stufeA(mips[l1], c, u, v) - a0) * f;
-        };
         // Das Pixel, wie die zeitliche Auflösung es ruhend zeigt: das Mittel über die Halton-Unterproben (TRAANode).
         const pixel = (c, px, py, schwelle) => {
             let k = 0;
             for (const [hx, hy] of KORN_HALTON)
-                if (probe(c, (px + hx) / N, (py + hy) / N) >= schwelle(px + hx, py + hy)) k++;
+                if (probe(lambda, c, (px + hx) / N, (py + hy) / N)[1] >= schwelle(px + hx, py + hy)) k++;
             return k / KORN_HALTON.length;
         };
         const zellen = [];
@@ -686,36 +638,12 @@ function kornReihe(mips, zBasis) {
 // sind; Farb-Korn = Σ|ΔL| / Σ L beim ½-Pixel-Versatz. Die Farbe liest ihre Stufe λ + Oktave (AnazhRealm.BLATT_FARBE_OKTAVE,
 // aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
 const FARB_KORN_ANTEIL = 0.5;
-function farbKornReihe(mips, zBasis) {
-    const lin = new Float64Array(256);
-    for (let i = 0; i < 256; i++) {
-        const v = i / 255;
-        lin[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    }
-    const stufe = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
-        let l = 0,
-            a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
-            l += w * (0.2126 * lin[d[o]] + 0.7152 * lin[d[o + 1]] + 0.0722 * lin[d[o + 2]]);
-            a += (w * d[o + 3]) / 255;
-        }
-        return [l, a];
-    };
+// Der EINE Leser der Fracht wie die GPU (Korn und Farb-Korn): (λ, Zelle, u, v) → [Luma linear, Alpha], trilinear (die Stufe
+// aus λ), bilinear je Stufe.
+function atlasProbe(mips, zBasis) {
+    const stufe = (m, c, u, v) => texel(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5);
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
-    const probe = (lam, c, u, v) => {
+    return (lam, c, u, v) => {
         const l = Math.max(0, lam - versatz),
             l0 = Math.min(mips.length - 1, Math.floor(l)),
             l1 = Math.min(mips.length - 1, l0 + 1),
@@ -725,6 +653,9 @@ function farbKornReihe(mips, zBasis) {
         const p1 = stufe(mips[l1], c, u, v);
         return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
     };
+}
+function farbKornReihe(mips, zBasis) {
+    const probe = atlasProbe(mips, zBasis);
     return (lambda, oktave) => {
         const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
         const pixel = (px, py) => {
@@ -754,13 +685,8 @@ function farbKornReihe(mips, zBasis) {
 function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
     const v = [],
         m = {};
-    const bc = fr.bc.mips.map((x) => ({
-        width: x.width,
-        height: x.height,
-        data: PC.bcDekodiere(x.data, x.width, x.height, bcFmt),
-    }));
     for (const [fmt, mips] of [
-        ["bc", bc],
+        ["bc", bcStufen(fr, bcFmt)],
         ["rgba", fr.rgba.mips],
     ]) {
         const r = farbKornReihe(mips, mips[0].width / 4);
@@ -776,11 +702,7 @@ function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
 }
 // Die Reihen je Format der Welt (die Fracht, wie die GPU sie liest) — `fr` = blattAtlasFracht(bild, true).
 function kornReihen(fr, bcFmt) {
-    const bc = fr.bc.mips.map((m) => ({
-        width: m.width,
-        height: m.height,
-        data: PC.bcDekodiere(m.data, m.width, m.height, bcFmt),
-    }));
+    const bc = bcStufen(fr, bcFmt);
     return {
         bc: kornReihe(bc, bc[0].width / 4),
         rgba: kornReihe(fr.rgba.mips, fr.rgba.mips[0].width / 4),
@@ -824,13 +746,7 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
 const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
 const HD_BESTAND = [40, 100];
 function altbestandGroesse() {
-    let a = 0x2545f491;
-    const rng = () => {
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    const rng = PC.mulberry32(0x2545f491);
     const s = [];
     for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
     s.sort((x, y) => x - y);
@@ -935,7 +851,7 @@ function hoehenUrteil(roh, skala) {
 // × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz.
 const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
 function pflanzKroneUrteil(roh, skala, a, nadel) {
-    const v = [], m = {}, px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))); // prettier-ignore
+    const v = [], m = {}; // prettier-ignore
     for (const [art, soll] of Object.entries(PC.FOREST_PACK.crown)) {
         const f = roh[`${art}-s1-L0`], lo = Array(8).fill(Infinity), hi = Array(8).fill(-Infinity); // prettier-ignore
         if (nadel(art) || !f) continue;
@@ -951,6 +867,105 @@ function pflanzKroneUrteil(roh, skala, a, nadel) {
         m[art] = `${ist.toFixed(2)} m (Tafel ${soll})`;
         if (!(Math.abs(ist / soll - 1) <= 0.12)) v.push(`Krone ${art}: gewachsen ${ist.toFixed(2)} m, Tafel ${soll} m`);
     }
+    return { v, m };
+}
+
+// (J) DAS JAHR ALS GESTALT (w3w-wald, Vegetation K5): die Saison ändert die Gestalt, nicht nur die Farbe. KRONE: je Laub-Art (L0
+// und L1, Gestalt 1) die Deckung der Seitenansicht (4 Azimute, orthographisch; Rinde deckt, die Karte nach der Atlas-Alpha ≥ 0,5
+// an der Stelle, die der Stamm liest) im Winter ≤ JAHR.laubWinter × Sommer, der Frühling dazwischen (der Austrieb). Gelesen wird
+// der GELADENE Stamm-Code `_laubFall` (der Leser von `_blattAtlasProbe`) über einen numerischen Spiegel der TSL-Knoten, die er ruft —
+// nie eine Kopie der Formel; die Präsenz ist `_saisonWert(phase, "pr")` des Gesetzes. WIESE: je Gras-Stufe der Teppich (T) mit der
+// Narbe des Gesetzes (`_saisonWert(phase, "wu" | "wd")`: die Hochachse des Büschels und das Präfix der Würfel-Ordnung, wie der
+// Sicht-Satz sie liest) unter JAHR.neigung: LAI aus der
+// Lücke (Nilson, G 0,5) im Winter ≤ JAHR.wieseWinter × Sommer, der Frühling dazwischen. Die Mitten der Jahreszeiten: JAHR.phase.
+// Die ganze Gestalt (Laub und Holz) urteilt an den Arten der Meisterkarte (JAHR.soll, die Maske f:eiche|birke|buche); JEDE Laub-Art
+// verliert ihr Laub (die Deckung über dem Holz allein ≤ JAHR.laubAnteil) — ein Holz, das dichter steht (Karst), fällt nicht unter
+// den Laubfall.
+const JAHR = {
+    laubWinter: 0.3,
+    laubAnteil: 0.1,
+    wieseWinter: 0.5,
+    neigung: 45,
+    soll: ["eiche", "birke", "buche"],
+    phase: { fruehling: 0.125, sommer: 0.375, winter: 0.875 },
+};
+// Der Spiegel: jeder Knoten ist eine Funktion der Umgebung (uv, Präsenz) auf ein Paar (ein Skalar trägt sich doppelt),
+// jede Methode komponentenweise.
+function tslSpiegel() {
+    const w = (x, e) => (x && x.f ? x.f(e) : [x, x]);
+    const je = (n, e, a, b) => a.map((x, i) => OP[n](x, ...b.map((y) => w(y, e)[i])));
+    const OP = { mul: (a, b) => a * b, add: (a, b) => a + b, sub: (a, b) => a - b, div: (a, b) => a / b, max: Math.max, equal: (a, b) => +(a === b), clamp: (a, lo, hi) => Math.min(hi, Math.max(lo, a)), abs: Math.abs, step: (k, x) => +(x >= k) }; // prettier-ignore
+    const K = (f) => new Proxy({ f }, { get: (k, n) => (n === "f" ? f : n === "x" || n === "y" ? K((e) => Array(2).fill(f(e)[+(n === "y")])) : (...b) => K((e) => je(n, e, f(e), b))) }); // prettier-ignore
+    const T = { attribute: (n) => K((e) => e[n]), float: (c) => K(() => [c, c]), vec2: (a, b) => K((e) => [w(a, e)[0], w(b, e)[0]]), select: (c, a, b) => K((e) => w(w(c, e)[0] ? a : b, e)), floor: (a) => K((e) => w(a, e).map(Math.floor)), step: (k, x) => K((e) => je("step", e, w(k, e), [x])) }; // prettier-ignore
+    return { T, K };
+}
+// Der Leser des Laubfalls aus dem geladenen Stamm: (u, v, Präsenz) → { u, v, drin }. `fall` (Selbsttest) ersetzt die Methode.
+function laubLeser(atlas, fall) {
+    const { T, K } = tslSpiegel();
+    const wir = { _ensureSeasonUniforms: () => ({ uLaubPraesenz: K((e) => [e.p, e.p]) }), _stoffBruch: (m) => new Error(m) };
+    const r = (fall || KLASSE.prototype._laubFall).call(wir, T, { image: atlas });
+    return (u, v, p) => {
+        const e = { uv: [u, v], p };
+        return { uv: r.uv.f(e), drin: r.drin.f(e)[0] };
+    };
+}
+// Die Laub-Maske des Atlas bei der Präsenz p (ein Viertel der Auflösung): je Mitte der Leser des Stamms, dann die Alpha ≥ 0,5.
+const px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n)));
+function laubMaske(a, leser, p) {
+    const w = a.width >> 2, h = a.height >> 2, d = new Uint8Array(w * h); // prettier-ignore
+    for (let i = 0; i < w * h; i++) {
+        const l = leser(((i % w) + 0.5) / w, (Math.floor(i / w) + 0.5) / h, p);
+        d[i] = l.drin && a.data[(px(l.uv[1], a.height) * a.width + px(l.uv[0], a.width)) * 4 + 3] >= 128;
+    }
+    return { w, h, d };
+}
+// Die Deckung der Seitenansicht (Anteil gedeckter Pixel im Rahmen der Gestalt, Mittel über 4 Azimute) unter der Laub-Maske m.
+function kronenSeite(T, m) {
+    const teile = T.filter((t) => t.idx && (t.kind === "bark" || t.kind === "foliageTex"));
+    let R = 0, y0 = Infinity, y1 = -Infinity; // prettier-ignore
+    for (const t of teile)
+        for (let i = 0; i < t.pos.length; i += 3)
+            (R = Math.max(R, Math.hypot(t.pos[i], t.pos[i + 2]))), (y0 = Math.min(y0, t.pos[i + 1])), (y1 = Math.max(y1, t.pos[i + 1])); // prettier-ignore
+    const N = 160, M = Math.max(1, Math.round((N * (y1 - y0)) / (2 * R))); // prettier-ignore
+    let summe = 0;
+    for (let k = 0; k < 4; k++) {
+        const c = Math.cos((k * Math.PI) / 4), s = Math.sin((k * Math.PI) / 4), bild = new Uint8Array(N * M), x = [], y = []; // prettier-ignore
+        for (const t of teile)
+            for (let i = 0; i < t.idx.length; i += 3) {
+                const e = [t.idx[i], t.idx[i + 1], t.idx[i + 2]];
+                e.forEach((o, q) => ((x[q] = ((t.pos[o * 3] * c + t.pos[o * 3 + 2] * s + R) / (2 * R)) * N), (y[q] = ((t.pos[o * 3 + 1] - y0) / (y1 - y0)) * M))); // prettier-ignore
+                const at = (b1, b2, j) => t.uv[e[0] * 2 + j] * (1 - b1 - b2) + t.uv[e[1] * 2 + j] * b1 + t.uv[e[2] * 2 + j] * b2;
+                dreieck(bild, N, M, x, y, t.kind === "bark" ? null : (b1, b2) => m.d[px(at(b1, b2, 1), m.h) * m.w + px(at(b1, b2, 0), m.w)]); // prettier-ignore
+            }
+        summe += bild.reduce((n, b) => n + b, 0) / bild.length / 4;
+    }
+    return summe;
+}
+// Das Urteil des Jahres über alle Laub-Arten (Baum und Strauch, L0/L1) und die Gras-Stufen: je Messname Sommer · Winter ·
+// Frühling, der Winter ≤ `max` × Sommer, der Frühling dazwischen.
+function jahrUrteil(roh, buch, a, step, skala, opt = {}) {
+    const v = [], m = {}, leser = laubLeser(a, opt.fall), e = (JAHR.neigung * Math.PI) / 180, maske = []; // prettier-ignore
+    const S = (k) => ["sommer", "winter", "fruehling"].map((ph) => (opt.wert || KLASSE.prototype._saisonWert).call(null, JAHR.phase[ph], k)); // prettier-ignore
+    const jahr = (k, [s, w, f], max) => {
+        m[k] = `Winter ${(w / s).toFixed(3)} × Sommer · Frühling ${(f / s).toFixed(3)} · Sommer ${s.toFixed(3)}`;
+        if (max && !(w <= max * s)) v.push(`Jahr ${k}: Winter ${(w / s).toFixed(3)} × Sommer (> ${max})`);
+        if (!(f > w && f < s)) v.push(`Jahr ${k}: kein Austrieb (Frühling ${f.toFixed(3)})`);
+    };
+    for (const [k, f] of Object.entries(roh)) {
+        const art = buch[f.presetId];
+        if (art && art.kind === "grass") {
+            const [wu, wd] = [S("wu"), S("wd")];
+            jahr("wiese " + k, wu.map((x, i) => (-Math.log(Math.max(1 - teppichDeckung(f.T, step, skala(f.presetId), JAHR.neigung, x, wd[i]), 1e-6)) * Math.sin(e)) / 0.5), JAHR.wieseWinter); // prettier-ignore
+        }
+        if (!art || !["tree", "shrub"].includes(art.kind) || f.seed !== 1 || f.ov || !(f.lod <= 1) || PC.artPhaenotyp(art.s, art).conifer || !f.T.some((t) => t.kind === "foliageTex")) continue; // prettier-ignore
+        // das Holz allein (die Präsenz an ihrer Grenze): die Linse trennt, was fällt (das Laub), von dem, was steht (die Rinde)
+        const [d, h] = [S("pr").map((p, i) => kronenSeite(f.T, (maske[i] ||= laubMaske(a, leser, p)))), kronenSeite(f.T, (maske[3] ||= laubMaske(a, leser, 1e-3)))]; // prettier-ignore
+        const laub = (d[1] - h) / Math.max(d[0] - h, 1e-6);
+        jahr("krone " + k, d, JAHR.soll.includes(f.presetId) && JAHR.laubWinter);
+        m["krone " + k] += ` · Laub ${laub.toFixed(3)}, Holz ${(h / d[0]).toFixed(3)}`;
+        if (!(laub <= JAHR.laubAnteil)) v.push(`Jahr krone ${k}: das Laub deckt im Winter ${laub.toFixed(3)} seines Sommers`);
+    }
+    if (!["krone", "wiese"].every((x) => Object.keys(m).some((n) => n.startsWith(x)))) v.push("Jahr: keine Laub-Krone oder keine Gras-Stufe gemessen"); // prettier-ignore
     return { v, m };
 }
 
@@ -1199,6 +1214,11 @@ hauptLauf(async () => {
                 .join("\n")
     );
 
+    // (J) das Jahr als Gestalt: Laubfall und Narbe aus dem Gesetz der Saison, gelesen am geladenen Stamm
+    const jahr = jahrUrteil(roh, buch, bild.mips[0], rc.understory.grassStep, skala);
+    fails.push(...jahr.v);
+    console.log("Jahr:\n" + Object.entries(jahr.m).map(([n, x]) => `  ${n}: ${x}`).join("\n")); // prettier-ignore
+
     // SELBSTTEST — jede Probe an einer kranken Kopie.
     const kopie = (T) => T.map((t) => Object.assign({}, t, { col: t.col ? Float32Array.from(t.col) : null }));
     const birke = roh["birke-s1-L0"],
@@ -1385,6 +1405,13 @@ hauptLauf(async () => {
             teppichUrteil("schwebt", hoch, 1, rc.understory.grassStep, skala("gras")).v.some((x) => /schwebt/.test(x)),
         ]);
     } else st.push(["Gras-Fall fehlt", false]);
+    // (J) der Leser ohne Laubfall (die Zelle unberührt, wie vor w3w-wald) und ein Gesetz ohne Wuchs (die Narbe im Winter wie im
+    // Sommer) — beide MÜSSEN rot sein und beim Namen nennen
+    for (const [n, opt, re] of [
+        ["Laub ohne Fall", { fall: (T) => ({ uv: T.attribute("uv"), drin: T.float(1) }) }, /^Jahr krone.*\(>/],
+        ["Narbe ohne Wuchs", { wert: (ph, k) => (k === "pr" ? KLASSE.prototype._saisonWert(ph, k) : 1) }, /^Jahr wiese.*\(>/],
+    ])
+        st.push([n, jahrUrteil(roh, buch, bild.mips[0], rc.understory.grassStep, skala, opt).v.some((x) => re.test(x))]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 

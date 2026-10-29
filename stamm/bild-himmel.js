@@ -738,11 +738,19 @@ class AnazhRealm_bild_himmel {
     // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
     // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
-    // (audit-strict-Whitelist).
+    // (audit-strict-Whitelist). DIE SAISON ALS GESTALT (w3w-wald): dieselbe Heimat trägt die zwei Kanäle der Gestalt —
+    // `uLaubPraesenz` (SAISON_GESETZ `pr`: jede Laub-Zelle des Blatt-Atlas zieht sich auf ihre Mitte, `_blattAtlasProbe`) und
+    // die Narbe in zwei Kanälen: `uWiesenWuchs` (`wu`: ihre Höhe; der Sicht-Satz der Nah-Wiese und die Halm-Schicht des Bodens
+    // lesen ihn) und `uWiesenDichte` (`wd`: der Anteil ihrer Büschel, der steht; der Sicht-Satz dünnt nach der Würfel-Ordnung).
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = THREE.TSL;
-        this.state.seasonUniforms = { uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)) };
+        this.state.seasonUniforms = {
+            uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)),
+            uLaubPraesenz: TSL.uniform(1),
+            uWiesenWuchs: TSL.uniform(1),
+            uWiesenDichte: TSL.uniform(1),
+        };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
         // per-Objekt-Klon auf dem Stand seines letzten Refresh ein (Patchwork).
@@ -757,11 +765,7 @@ class AnazhRealm_bild_himmel {
     // TSL), schreibt in `out` (r/g/b); das Gate ruft es GPU-frei.
     _saisonMul(phase, out) {
         const SG = AnazhRealm._saisonGesetz();
-        const t = (((phase - 0.125) % 1) + 1) % 1;
-        const f = t * 4;
-        const i = Math.floor(f) % 4;
-        const j = (i + 1) % 4;
-        const k = f - Math.floor(f);
+        const { i, j, k } = AnazhRealm._saisonStuetze(phase);
         const a = SG.stuetzen[i].ti;
         const b = SG.stuetzen[j].ti;
         const kanal = (hex, s) => ((hex >> s) & 255) / 255;
@@ -773,6 +777,16 @@ class AnazhRealm_bild_himmel {
         out.g = mul(8);
         out.b = mul(0);
         return out;
+    }
+
+    // DIE GESTALT DER SAISON (w3w-wald): ein Kanal `schluessel` der Stützstellen (`pr` Laub, `wu` Höhe und `wd` Dichte der Narbe) linear
+    // zwischen denselben Stützstellen wie die Tönung (`_saisonStuetze`) — Sommer-Mitte ist 1, der Winter hält das Laub bei 0,06
+    // und die Narbe bei einem Fünftel ihrer Höhe und der Hälfte ihrer Büschel, der Frühling treibt aus. Rein (ohne TSL); das
+    // Gate ruft es GPU-frei.
+    _saisonWert(phase, schluessel) {
+        const S = AnazhRealm._saisonGesetz().stuetzen;
+        const { i, j, k } = AnazhRealm._saisonStuetze(phase);
+        return S[i][schluessel] + (S[j][schluessel] - S[i][schluessel]) * k;
     }
 
     // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. DIE SAISON IST EINE FARBE (V18.527):
@@ -800,6 +814,14 @@ class AnazhRealm_bild_himmel {
         if (g && g.phase === st.seasonPhase && g.su === st.seasonUniforms) return;
         const su = this._ensureSeasonUniforms();
         if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
+        // die Gestalt der Saison: das Laub fällt und treibt aus (`uLaubPraesenz`), die Narbe sinkt, dünnt und wächst
+        // (`uWiesenWuchs`, `uWiesenDichte`) — eine neue Narbe legt den Sicht-Satz der Nah-Wiese neu (`_nahWieseSicht`)
+        su.uLaubPraesenz.value = this._saisonWert(st.seasonPhase, "pr");
+        const wu = this._saisonWert(st.seasonPhase, "wu");
+        const wd = this._saisonWert(st.seasonPhase, "wd");
+        if ((su.uWiesenWuchs.value !== wu || su.uWiesenDichte.value !== wd) && st.nahWiese) st.nahWiese.neu = true;
+        su.uWiesenWuchs.value = wu;
+        su.uWiesenDichte.value = wd;
         st.season = this._seasonName(st.seasonPhase);
         this._saisonGemalt = { phase: st.seasonPhase, su };
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
@@ -3148,7 +3170,9 @@ AnazhRealm._saisonGesetz = function () {
         SG &&
         Array.isArray(SG.stuetzen) &&
         SG.stuetzen.length === 4 &&
-        SG.stuetzen.every((s) => s && Number.isFinite(s.ti)) &&
+        SG.stuetzen.every(
+            (s) => s && Number.isFinite(s.ti) && Number.isFinite(s.pr) && Number.isFinite(s.wu) && Number.isFinite(s.wd)
+        ) &&
         Number.isFinite(SG.bau) &&
         Number.isFinite(SG.mulMin) &&
         Number.isFinite(SG.mulMax) &&
@@ -3156,6 +3180,13 @@ AnazhRealm._saisonGesetz = function () {
     )
         return SG;
     return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
+};
+// Die Lage der Welt-Phase zwischen den Stützstellen: die Welt zählt die Saison-MITTEN (Sommer 0,375), das Studio die Stützstellen
+// (t = Phase − 0,125); i/j die zwei Stützstellen, k der Anteil der zweiten — EINE Rechnung für Tönung und Gestalt.
+AnazhRealm._saisonStuetze = function (phase) {
+    const f = ((((phase - 0.125) % 1) + 1) % 1) * 4;
+    const i = Math.floor(f) % 4;
+    return { i, j: (i + 1) % 4, k: f - Math.floor(f) };
 };
 AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe

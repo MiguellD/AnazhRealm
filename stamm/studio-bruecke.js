@@ -3545,14 +3545,17 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // Die Pflanzen mit Reglern (KI K2, phyto-core PARAMS_BY_KIND flower · grass): ein Natur-Bauplan je Rezept aus der Kraut-
     // Substanz (ein Halm aus `kraut`, weicher Stoff unter BLOCKER_DENSITY_MIN: kein Blocker, man geht hindurch; das Bild
     // zeichnet das Studio), gesetzt durch die Natur-Wand wie der Hain; die Streu und die Nah-Wiese bleiben ohne Eintrag.
-    // Vorher war „Blume" kein Wort der Welt und neun Regler-Zeilen für kein Programm erreichbar.
+    // Vorher war „Blume" kein Wort der Welt und neun Regler-Zeilen für kein Programm erreichbar. Das Gras trägt seit w3w-wald
+    // seine Karte (foundry-core budget.grass[2].karte: die Stufe 2 ist das Achsen-Quad der gebackenen L1) — die Nah-Wiese zieht
+    // sie über die EINE Karten-Bahn (`_foundryFlattenFor` → `_foundryBuildImpostorFlat`), ein gesetztes Gras ebenso.
     ...Object.fromEntries(
         [
-            ["flower", "blume_"],
-            ["grass", "gras_"],
-        ].map(([art, prefix]) => [
+            ["flower", "blume_", false],
+            ["grass", "gras_", true],
+        ].map(([art, prefix, karte]) => [
             art,
             Object.freeze({
+                ...(karte ? { impostor: true } : {}),
                 prefix,
                 substanz: {
                     label: "Kraut",

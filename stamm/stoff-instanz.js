@@ -699,15 +699,20 @@ class AnazhRealm_stoff_instanz {
         cam.updateProjectionMatrix();
         cam.updateMatrixWorld(true);
         // Die Bühne hält still, was keine Gestalt ist: Wind, die zeitliche Laub-Kante, die Durchsicht (die Stufen-Maske hält
-        // `_buehneRender`) — danach zurück auf den Welt-Stand.
+        // `_buehneRender`) — danach zurück auf den Welt-Stand. Die Karte backt GOLDEN-SOMMER wie jeder Körper (V18.527): die
+        // Tönung und die Laub-Präsenz der Saison stehen auf Sommer, das Jahr legt der Kartenstoff darüber (w3w-wald: bis dahin
+        // trug eine im Winter gebackene Karte die Winter-Tönung zweimal).
         const lu = this.state.lodUniforms;
         const wu = this.state.windUniforms;
+        const su = this.state.seasonUniforms;
         const halt = [];
         const still = (u, setze) => {
             if (!u) return;
             halt.push([u, u.value && u.value.clone ? u.value.clone() : u.value]);
             setze(u.value, u);
         };
+        still(su && su.uSeasonMul, (w) => w.setRGB(1, 1, 1));
+        still(su && su.uLaubPraesenz, (w, u) => (u.value = 1));
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));

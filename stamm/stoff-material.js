@@ -2278,7 +2278,8 @@ class AnazhRealm_stoff_material {
                 // (starke Parallaxe), steiler Blick kaum — der 0.18-Boden hält die
                 // Wanderung am Horizont endlich (dort blendet _nah ohnehin aus).
                 const _steil = _blick.y.abs().max(0.18);
-                const _halmHoch = _T.float(0.32); // m sichtbare Halm-Schicht
+                // m sichtbare Halm-Schicht, im Jahr mit der Narbe der Nah-Wiese (`uWiesenWuchs`, SAISON_GESETZ `wu`)
+                const _halmHoch = _T.float(0.32).mul(this._ensureSeasonUniforms().uWiesenWuchs);
                 const _wanderX = _blick.x.div(_steil).mul(_halmHoch);
                 const _wanderZ = _blick.z.div(_steil).mul(_halmHoch);
                 const _f = _T.float(9.0); // Halm-Frequenz (~11 cm — Armlängen-lesbar)

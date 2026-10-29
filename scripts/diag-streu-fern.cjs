@@ -11,7 +11,7 @@
 // (Lehre 16) — die Linse öffnet die Backend-Wand `_weltMarchGezeichnet` (die Kapsel-Liste ist CPU-Daten), damit die
 // Plätze WIRKLICH belegt werden und D die echte Füllung misst. Die Echt-GPU-Zahl kommt aus `werkbank zaehlen`.
 //
-//   A KONSUM   die fernform-Zeilen liegen live auf dem Host (tree/shrub karte · flower/rock gesetz · grass boden); der
+//   A KONSUM   die fernform-Zeilen liegen live auf dem Host (tree/shrub/grass karte · flower/rock gesetz); der
 //              Flip `rock.fernform = "boden"` baut eine Region neu und ihre Fels-Zellen jenseits der Grenze tragen
 //              form "boden" — zurück auf "gesetz" tragen sie "gesetz". Das Datum ändert die Welt, kein Zwilling fährt.
 //   B ABSENZ   keine lebende Instanz einer Gesetz-/Boden-Art (`fscatter:<art>:<g>:<stufe>`) steht jenseits der
@@ -515,12 +515,12 @@ hauptLauf(async () => {
     );
     const F = out.fern || {};
     check(
-        "A KONSUM: fernform je Art live (tree/shrub karte · flower/rock gesetz · grass boden)",
+        "A KONSUM: fernform je Art live (tree/shrub/grass karte · flower/rock gesetz)",
         F.tree === "karte" &&
             F.shrub === "karte" &&
             F.flower === "gesetz" &&
             F.rock === "gesetz" &&
-            F.grass === "boden",
+            F.grass === "karte",
         F
     );
     const fb = out.flipBoden || {},

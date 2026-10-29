@@ -430,6 +430,10 @@ class AnazhRealm_daten {
     // 19.10. an der GEZEICHNETEN Vorlage (Geometrie × lokale Matrix des Teils, beide Vorlagen, L1/L2) 0,606–0,683 m, dazu der
     // Hub im Sturm (WIND_GESETZ 0,035 m); die 0,17 vom 17.10. lasen das Studio-Gras ohne die Matrix — ein Büschel 0,4 m vor der
     // Wand steckte seine Halme durch sie in den Anbau (gate:haus-welt W9 misst die Weite an der Vorlage).
+    // DIE WIESE BIS ZUM SAUM (w3w-wald, Vegetation K1): jenseits `stufe1` trägt die Stufe 2 des Grases, seine Studio-Karte
+    // (foundry-core budget.grass[2].karte: je Büschel das Achsen-Quad mit der gebackenen L1, 2 Dreiecke) — der Ring reicht bis
+    // 42 m (das Rand-Band dünnt 40–44 m), die festen Ringe der Wiese 2–5 / 5–10 / 10–20 / 20–40 m tragen dasselbe Raster und
+    // dieselbe Narbe. Bis dahin endete die Wiese bei 14 + 4 m mit den L2-Halmen (0,575 der Halm-Fläche der L1).
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -437,9 +441,9 @@ class AnazhRealm_daten {
                 kachel: 6,
                 stufe1: 5,
                 stufe1Rand: 0.5,
-                radius: 14,
+                radius: 42,
                 rand: 4,
-                kachelnJeTakt: 1,
+                kachelnJeTakt: 3,
                 reich: 0.72,
             })
         );

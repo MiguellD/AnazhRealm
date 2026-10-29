@@ -221,14 +221,20 @@ var KACHEL_VIS = { lab: "tile-12", host: "none" };
 // (seasonColors -> Laub-Toenung, Praesenz, Bluete; uSeasonMul im Laub- und Karten-Shader) und die Welt (jeder
 // Welt-Koerper ist Sommer gebacken, das Jahr traegt uSeasonMul = clamp(ti(t) / bau, mulMin, mulMax) je Kanal,
 // die Karte folgt zu kartenGewicht). t: 0 Fruehling / .25 Sommer / .5 Herbst / .75 Winter, linear im Ring.
+// w3w-wald (rein additiv) — DIE SAISON ALS GESTALT: `pr` (die Laub-Praesenz, Studio: jede Laub-Karte zieht sich auf ihre
+// Mitte) liest seitdem auch die Welt (Laubfall der Laub-Zellen des Blatt-Atlas, Nadel bleibt); die Wiesen-Narbe traegt
+// zwei Kanaele: `wu` die Hoehe gegen den Sommer (im Winter ein Fuenftel: 5–15 cm Narbe gegen 40–80 cm), `wd` den Anteil
+// ihrer Bueschel, der steht (im Winter die Haelfte — die Narbe stirbt zurueck, der Grund zeigt sich); der Austrieb ab dem
+// Spaetwinter, nach dem Schnitt des Herbstes sieben Zehntel (der Jahresgang der Gruenland-Narbe, gesetzt). Kein Bauer liest
+// `wu`/`wd` (kein Mesh-Byte).
 // var (nicht const): reist als globalThis.SAISON_GESETZ zum Studio-Leser — wie HIMMEL/WASSER.
 // prettier-ignore
 var SAISON_GESETZ = {
     stuetzen: [
-        { ti: 0x6a9a3e, ac: 0x88b450, pr: 0.72, bl: 0.85 },
-        { ti: 0x4f7a30, ac: 0x6f9a3a, pr: 1.0, bl: 0.12 },
-        { ti: 0xb0702a, ac: 0xd2922f, pr: 0.55, bl: 0.0 },
-        { ti: 0x6e6650, ac: 0x847c64, pr: 0.06, bl: 0.0 },
+        { ti: 0x6a9a3e, ac: 0x88b450, pr: 0.72, bl: 0.85, wu: 0.55, wd: 0.8 },
+        { ti: 0x4f7a30, ac: 0x6f9a3a, pr: 1.0, bl: 0.12, wu: 1.0, wd: 1.0 },
+        { ti: 0xb0702a, ac: 0xd2922f, pr: 0.55, bl: 0.0, wu: 0.7, wd: 0.9 },
+        { ti: 0x6e6650, ac: 0x847c64, pr: 0.06, bl: 0.0, wu: 0.2, wd: 0.5 },
     ],
     bau: 0x4f7a30,       // die Toenung, mit der ein Koerper gebacken ist (Sommer, setSeasonColors("summer"))
     mulMin: 0.25, mulMax: 4.0,
@@ -518,10 +524,17 @@ const PORTAL_RENDER_CONFIG = {
             // gestreckter Grannen (4 × 1), die aus 2–5 m als helle V-Zeichen über der Narbe standen; 8 → 4 Dreiecke je Rispe
             // (L1 798/990 → 702/858 an den zwei Vorlagen) — die Dreiecke tragen die Narbe, die das Bodenlicht der stehenden
             // Kronen dichter wirft (`_bodenLichtFeld`).
+            // DIE WIESE BIS ZUM SAUM (w3w-wald, Vegetation K1): die Stufe 2 des Grases ist seine KARTE (B2: „2 grob/Impostor",
+            // wie Baum und Strauch) — die Welt zeichnet jenseits der L1 das Achsen-Quad mit der gebackenen L1-Gestalt
+            // (bakeImpostorAtlas im Welt-Renderer), nie mehr die L2-Halme: die L2 trug 0,575 der Halm-Fläche der L1 (je Büschel
+            // 0,65/0,81 gegen 1,08/1,46 m², echte Brücke, Welt-Skala) — der Ring 5–10 m der Wiese stand bei LAI 1,51 —, und
+            // 0–40 m in Halmen hiesse ~3 300 Büschel im Blick über dem Haushalt (nahWiese 80 000 Dreiecke). Die Karte ist die L1
+            // im Bild (flächen-treu), je Büschel 2 Dreiecke. Der Bauer baut die Stufe 2 weiter (das Labor setzt sie fern, die
+            // Goldens bleiben byte-gleich: gate:asset-contract zählt eine Karten-Zeile nicht); ihr `rispe` liest er dort.
             grass: {
                 1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 2, breite: 3.2 } },
-                2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
-                fernform: "boden",
+                2: { tris: 2, draws: 1, schatten: false, karte: true, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
+                fernform: "karte",
             },
             flower: {
                 0: { tris: 3600, draws: 2, schatten: 0 },

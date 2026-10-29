@@ -173,18 +173,44 @@ class AnazhRealm_vegetation_baum {
     // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
     // DIE DECKUNG (A3): `a` liest die Stufe des Schirms am Versatz des Laubs (`_laubVersatz`), der Stoff schneidet sie an
     // seiner Zahl alphaTest — Bild und Schatten an derselben Schwelle.
+    // DER LAUBFALL (w3w-wald, Vegetation K5): die Laub-Zellen lesen ihre Zelle um die Präsenz der Saison (`uLaubPraesenz`,
+    // SAISON_GESETZ `pr`) auf ihre Mitte gezogen — dasselbe Gesetz wie das Studio, dessen Laub-Karte im Vertex auf ihre Mitte
+    // schrumpft (foundry-core `mix(aCenter, transformed, uLeafPresence)`; die Welt trägt aCenter nicht, die Zelle trägt die Mitte),
+    // die Deckung fällt mit dem Quadrat der Präsenz. Was außerhalb der gezogenen Zelle liest, deckt nicht. Die Wedel-Zelle (Nadel,
+    // phyto-core `BLATT_ATLAS_WEDEL`) bleibt im Jahr. Jeder Leser fällt mit: Krone L0/L1, ihr Schatten-Teil, das Grammatik-Laub.
     _blattAtlasProbe(T) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
-        const uv = T.attribute("uv", "vec2");
+        const { uv, drin } = this._laubFall(T, tex);
         const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
         const deckung = T.texture(tex, this._laubVersatz(T, uv, T.dFdx(uv), T.dFdy(uv)));
         const w = tex.userData.wert;
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: deckung.a,
+            a: deckung.a.mul(drin),
         };
+    }
+
+    // Die Lese-Stelle des Laubfalls: die Zellen liegen in EINER Zeile (quadratisch, ihre Zahl = Breite / Höhe des Atlas), die
+    // Zelle des Fragments aus uv.x; `drin` = 1, solange die gezogene Stelle in ihrer Zelle bleibt.
+    _laubFall(T, tex) {
+        const core = globalThis.__phytoCore;
+        const img = tex.image || {};
+        const zellen = Math.round(img.width / img.height);
+        if (!(zellen >= 1) || !core || !core.BLATT_ATLAS_WEDEL)
+            throw this._stoffBruch("der Laubfall: der Blatt-Atlas ohne Zellen oder ohne Wedel-Zelle (phyto-core)");
+        const uv0 = T.attribute("uv", "vec2");
+        const zelle = T.floor(uv0.x.mul(zellen)).clamp(0, zellen - 1);
+        const p = T.select(
+            zelle.equal(T.float(core.BLATT_ATLAS_WEDEL.zelle)),
+            T.float(1),
+            this._ensureSeasonUniforms().uLaubPraesenz.max(T.float(1e-3))
+        );
+        const mitte = T.vec2(zelle.add(0.5).div(zellen), 0.5);
+        const uv = mitte.add(uv0.sub(mitte).div(p));
+        const d = uv.sub(mitte).abs();
+        return { uv, drin: T.step(d.x, T.float(0.5 / zellen)).mul(T.step(d.y, T.float(0.5))) };
     }
 
     // DER VERSATZ DES LAUBS (A3): jede Laub- und Nadel-Karte jeder Stufe — der Blatt-Atlas (Studio- und Grammatik-Laub,
