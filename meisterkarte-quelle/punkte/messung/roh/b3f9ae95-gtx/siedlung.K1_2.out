@@ -1,0 +1,26 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c A=$(cygpath -m "$1" 2> /dev/null || echo "$1"); HAUS_WELT_JSON="$A.gang" node scripts/diag-haus-welt.cjs --phasen=haus,start; echo "GANG EXIT $?"; HAUS_WELT_JSON="$A.bild" node scripts/diag-haus-welt.cjs --phasen=grund --bild; echo "BILD EXIT $?"; node -e 'const f = require("fs"), a = process.argv[1]; f.writeFileSync(a, JSON.stringify({ gang: JSON.parse(f.readFileSync(a + ".gang")), bild: JSON.parse(f.readFileSync(a + ".bild")) }))' "$A" siedlung-k1 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-gtx\siedlung.K1_2.json
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 26 Häuser, Start-Dorf 18/18 · Gier 114/-83/119/-37/176/135/-46/134/224/-75/105/-76/18/-162/88/115/18/-162/231/141/-39/-39/141/141/-39/141° · W1 Vorplatz über der Diele -0.36/-0.36/-0.36/-0.37/-0.37/-0.36/-0.37/-0.36/-0.37/-0.36/-0.36/-0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.37/-0.36/-0.37/-0.36/-0.36/-0.36/-0.36/-0.37/-0.36 m · W2 Diele 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0 cm · W4c Überstand 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0 m · W5 Optik 100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/100/99.8/100 % · {"fern":{"x":212,"z":212},"W7":{"haeuser":24,"imBau":0,"zweitesDorf":30,"zweitesImBau":0}}
+  ❌ W10 Wand: haus_italienisch 0.27 · haus_provenzalisch 0.27 m geklettert (Soll > 0,5)
+  1 Welten, 1 zugleich, 92 s
+❌ gate:haus-welt ROT (1)
+GANG EXIT 1
+[linse-gpu] nvidia/pascal
+[welt-boot] FEHLER console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+  Dorf-Ort {"x":-129,"z":-94,"hang":0.598}, Start 0/0 · 0 Häuser, Start-Dorf 0/18 · {"fern":{"x":212,"z":212}} · W9 {"haeuser":43,"weite":0.6828020898649549,"summe":[0,0,0,0,94],"gegenprobe":[57089],"third":[[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null],[0,null]],"wasser":[["see",0,0,[[41156,1334,18645,39182],[23172,309,5497,39283]]],["fluss",0,0,[[28211,1292,28106,56747],[5862,608,5751,64447]]]],"innen":[0.815,0.108,null,null,0.37,0.438,0.457,0.243,0.248,0.405,0.139,0.274,0.363,0.369,0.455,0.387,0.536,0.402],"abbau":[{"art":"dorf","vorher":{"gruende":1,"offen":1,"kellerErde":0},"boxen":1,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":1}},{"art":"gesetzt","plan":1,"vorher":{"gruende":1,"offen":2,"kellerErde":null},"boxen":2,"weg":true,"nachher":{"gruende":0,"offen":0,"kellerErde":null}}],"waise":{"start":true,"gruende":95,"gesperrt":true,"ohne":33,"slots":36,"haeuser":3,"reload":3,"zugOffen":true,"ausstattung":{"brunnen":[4,4],"laternen":[23,23],"staende":[3,3]},"verblasst":true,"ms":44991}}
+  ❌ W10 Innen-Bild: 4 von 18 Häusern unter 15 % des Außen-Schattens (haus_schwarzwald 0.022720288292137365/0.20954663797640916 · haus_alpenchalet 0.020774849076996036/undefined · haus_skandinavisch undefined/0.11161963675825695 · haus_schwarzwald 0.020357089401636223/0.14609092242693067)
+  ❌ W9 Wasser: [["see",0,0,[[41156,1334,18645,39182],[23172,309,5497,39283]]],["fluss",0,0,[[28211,1292,28106,56747],[5862,608,5751,64447]]]]
+  ❌ W9 Waise: 33 von 95 Gründen ohne Bau (-422/-1339,-402/-1346,-427/-1376,-409/-1365,-410/-1373,-396/-1363,-427/-1331,-445/-1342,-434/-1387,-448/-1353,-453/-1384,-445/-1374,-431/-1321,-383/-1362,-458/-1378,-439/-1394,-387/-1346,-464/-1403,-449/-1412,-452/-1318,-453/-1307,-460/-1389,-436/-1308,-456/-1345,-372/-1360,-362/-1358,-464/-1332,-470/-1399,-470/-1382,-464/-1372,-477/-1394,-474/-1343,-485/-1389)
+  ❌ W9 Zug: blind — der Zug lebt
+  1 Welten, 1 zugleich, 348 s
+❌ gate:haus-welt ROT (4)
+[welt-boot] ROT — 1 Fehler der Welt:
+  · console.error: THREE.Destroyed texture [Texture "TRAANode.resolve"] used in a submit. |  - While calling [Queue].Submit([[CommandBuffer from CommandEncoder "renderContext_3"]]) | 
+BILD EXIT 1
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  4385 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

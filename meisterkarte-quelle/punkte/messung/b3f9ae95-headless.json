@@ -1,8 +1,8 @@
 {
  "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
  "geraet": "headless",
- "zeit": "2026-10-28T21:38:53.702Z",
- "host": "farm:40769478876",
+ "zeit": "2026-10-29T01:00:47.516Z",
+ "host": "farm:40795724717",
  "je": {
   "affekt.K3#1": {
    "gruen": false,
@@ -617,17 +617,15 @@
    "host": "farm:40769478876/5"
   },
   "feld.K3#2": {
-   "gruen": false,
-   "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 1575 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: gezündet true, 30 Schritte, brennend bis 3 Zellen, Einheiten je Zelle und Schritt bis 38, noch brennend 0, Asche 3, lebendig am Herd 0.839 → 0.531, glut +0.68, Licht true",
+   "gruen": true,
+   "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 1560 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: gezündet true, 38 Schritte, brennend bis 3 Zellen, Einheiten je Zelle und Schritt bis 22, noch brennend 0, Asche 3, lebendig am Herd 0.839 → 0.526, glut +0.68, Licht true",
    "exit": 0,
-   "minuten": 0.82,
-   "grund": "ROT: Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 1575 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: gezündet true, 30 Schritte, brennend bis 3 Zellen, Einheiten je Zelle und Schritt bis 38, noch brennend 0, Asche 3, lebendig am Herd 0.839 → 0.531, glut +0.68, Licht true",
-   "zeit": "2026-10-28T21:15:24.109Z",
-   "abdruck": "b0d142e1e4d9",
+   "minuten": 0.98,
+   "zeit": "2026-10-28T22:41:21.932Z",
+   "abdruck": "a58b1433c7c1",
    "port": 7704,
    "bahn": "1/1",
-   "host": "farm:40769478876/5",
-   "zwilling": "feld.K3#1"
+   "host": "farm:40781278480/1"
   },
   "stoffe.K2#1": {
    "gruen": false,
@@ -1145,6 +1143,40 @@
    "port": 7704,
    "bahn": "1/1",
    "host": "farm:40769478876/9"
+  },
+  "bauen.K2#1": {
+   "gruen": false,
+   "zahl": "kein gesetztes Haus am Hang (W9 Slot null)",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "ROT: kein gesetztes Haus am Hang (W9 Slot null)",
+   "zeit": "2026-10-29T01:00:46.179Z",
+   "abdruck": "8c1ff5d03680",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40795724717/1"
+  },
+  "studios.K2#1": {
+   "gruen": true,
+   "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
+   "exit": 0,
+   "minuten": 4.28,
+   "zeit": "2026-10-29T00:59:10.173Z",
+   "abdruck": "c9f9969260f0",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40795724717/2"
+  },
+  "fahrzeug.K1#1": {
+   "gruen": true,
+   "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
+   "exit": 0,
+   "minuten": 0.01,
+   "zeit": "2026-10-29T01:00:47.516Z",
+   "abdruck": "37c3aaaa8f26",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40795724717/3"
   }
  }
 }

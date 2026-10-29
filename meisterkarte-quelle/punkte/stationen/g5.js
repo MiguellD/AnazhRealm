@@ -1236,6 +1236,58 @@ const stationen = [
         quelle: "1 = fuseWorlds(A, B) byte-gleich auf zwei Geräten",
     },
 
+    // ───────── ultiversum.K3 — Die Bibliothek (w3s-bibliothek) ─────────
+    // gate:praegung-welt (L) --bibliothek (Null-Renderer, ein Gerät, ~20 s): je Art (Welt, Regel, Bauplan) legt bibliothekLege einen
+    // Eintrag an — die EINE Hülle des Teilens (_werkCode), signiert, Code = SHA-256 der Bytes; bibliothekFinde(code) findet ihn
+    // durch den EINEN Eingang (Größe, Signatur, Rückruf) wieder. Mutanten: ein Byte (everySec 30 → 31) auf der Platte → „signatur",
+    // ein Eintrag unter fremdem Code → „code", ein Mesh (2400 Zahlen) im Welt-Gesetz → „gross" (> 8192 B). Am Kopf vor w3s-bibliothek
+    // ROT (bibliothekLege fehlt: ABSTURZ, Exit 2); an w3s-bibliothek 24b9ccaa GRÜN: Welt 1041 B (Akten 1, Regeln 7), Regel 335 B,
+    // Bauplan 428 B, Mesh 17850 B ROT, Exit 0.
+    {
+        kriterium: "ultiversum.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-praegung-welt.cjs", "--bibliothek"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = ["BIBLIOTHEK welt:", "BIBLIOTHEK regel:", "BIBLIOTHEK bauplan:", "MUTANTE Byte:", "MUTANTE Code:", "MUTANTE Mesh:"];
+            const je = soll.map((k) => l.find((x) => x.includes(k) && /^\s*(✅|❌) /.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt: " + soll.filter((_, i) => !je[i]).join(" ") + " (Exit " + lauf.exit + ")" };
+            const bytes = je.slice(0, 3).map((x) => (x.match(/— (\d+) B/) || [])[1]);
+            return {
+                gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)) && bytes.every((b) => b && +b <= 8192),
+                zahl: "Welt " + bytes[0] + " B · Regel " + bytes[1] + " B · Bauplan " + bytes[2] + " B · " + je.slice(3).map((x) => x.split(" — ")[1]).join(" · "),
+            };
+        },
+        pfad: ["stamm/netz-identitaet.js", "stamm/speicher-welten.js", "stamm/feld-dsl.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = Welten, Regeln und Baupläne liegen signiert vor, je Gesetz ≤ 8 KB, auffindbar über einen Code",
+    },
+    {
+        kriterium: "ultiversum.K3",
+        staffel: 2,
+        geraet: "headless",
+        // derselbe Lauf: bibliothekForke(Welt) verändert das Gesetz (wetter storm) und signiert mit dem eigenen Pass, ein zweiter Fork
+        // darauf; die Kette des Enkels nennt je Vorgänger Autor und Code ([Welt-Code, Fork-Code]), der Eintrag ist offenes JSON —
+        // sein Gesetz byte-gleich das Gesetz der Welt (Stand-Tafel). Offen bleibt der Pull eines Codes über das Mesh (ein Gerät).
+        befehl: ["node", "scripts/diag-praegung-welt.cjs", "--bibliothek"],
+        env: { PRAEGUNG_WELT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const l = String(lauf.stdout || "").split(/\r?\n/);
+            const je = ["FORK: Herkunfts-Kette", "BIBLIOTHEK offen lesbar:"].map((k) => l.find((x) => x.includes(k) && /^\s*(✅|❌) /.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "Zeile fehlt (Exit " + lauf.exit + ")" };
+            return { gruen: lauf.exit === 0 && je.every((x) => /✅/.test(x)), zahl: je.map((x) => x.trim().slice(0, 90)).join(" | ") };
+        },
+        pfad: ["stamm/netz-identitaet.js", "stamm/speicher-welten.js", "scripts/diag-praegung-welt.cjs", "scripts/lib/welt-boot.cjs"],
+        quelle: "2 = forkbar mit Herkunfts-Kette, offen lesbar",
+    },
+
     // ───────── ultiversum.K5 — Vertrauen (teilen-sicher) ─────────
     {
         kriterium: "ultiversum.K5",
@@ -1838,6 +1890,47 @@ const stationen = [
         ],
         quelle: "1 = Untertitel für jede Stimme und jeden Ruf aus dem Klang-Gesetz ODER ein Farb-Modus (jede Klassen-Grenze unter Deuteranopie-Simulation ΔE ≥ 10)",
     },
+
+    // ───────── ultiversum.K4 — Spieler schreiben Gesetze und teilen sie (Zweig w3t-spielergesetz) ─────────
+    {
+        kriterium: "ultiversum.K4",
+        staffel: 1,
+        geraet: "headless",
+        // gate:mp-sync (h), zwei Seiten einer Maschine, ein echter Broker (Zwilling von feld.K2 — EIN Lauf): A schreibt im Gespräch
+        // „wann immer es zufällig passt, dann erzähle …" (der EINE Satz-Parser `_regelAusSatz` → `rule` → `_registerWorldRule`,
+        // der dsl-Kanal `p2pBroadcastDsl`); neu heißt: sein Hash (`_regelHash`) steht in keiner Vorlage (`GESETZ_VORLAGEN` und die
+        // Gesetze, die A's Welt schon trägt). B trägt es, würfelt in 40 Scheiben der Welt-Uhr denselben Wurf, obwohl B drei
+        // Platz-Nummern mehr zählt, und die Wirkung steht bei beiden (die Erzählung im Wissen, B's Tagebuch „Das Gesetz von …"),
+        // gewartet bis zur Scheibe nach dem ersten wahren Wurf (die Welt-Uhr ist die Frist). Mutanten im selben Lauf: A sagt die
+        // Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz. Am Grund 675a3889 fehlt (h) (ROT „keine (h)-Zeile"); mit
+        // der alten Saat (Platz-Nummer + Feuer) und dem Gesetz des Mitspielers als Experiment ROT (Wurf VERSCHIEDEN, das Gesetz
+        // schlief auf beiden Seiten, B's Tagebuch schweigt); am Zweig 0708ba56 GRÜN (Hash d7ff724d, Wurf gleich, wirkt bei A und B).
+        befehl: ["node", "scripts/diag-mp-sync.cjs"],
+        env: { MP_SYNC_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = String(lauf.stdout || "").split(/\r?\n/);
+            const soll = [/^\s*(OK|ROT)\s+\(h\) A schreibt ein neues Gesetz/, /^\s*(OK|ROT)\s+\(h\) Selbsttest: /];
+            const je = soll.map((re) => z.find((x) => re.test(x)));
+            if (je.some((x) => !x)) return { gruen: false, zahl: "keine (h)-Zeile (Exit " + lauf.exit + ")" };
+            return { gruen: je.every((x) => /^\s*OK/.test(x)), zahl: je.map((x) => x.trim().slice(0, 220)).join(" | ") };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/netz-*.js",
+            "stamm/werkstatt-*.js",
+            "stamm/dienst.js",
+            "stamm/dirigent-*.js",
+            "signaling-server.js",
+            "save-server.js",
+            "scripts/diag-mp-sync.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = ein Spieler schreibt eine DSL-Regel im Spiel, sie wirkt und reist zum Mitspieler",
+    },
+
     // ───────── fahrzeug.K2 — die Fahrt kommt durch: das Wegenetz trägt das Rad (Staffel 1, w3t-wegenetz) ─────────
     // gate:fahr-leben --wegenetz: die feste Route der Saat — von der Mess-Wiese über die Orte −1,−5 · 0,−5 · 1,−6 · 2,−7 · 3,−6 ·
     // 4,−7 (je zwei Nachbarn im Wegenetz, `_wegenetzNachbarn`), die am Spieler erwachen wie im Spiel; die Feldwege zwischen ihnen
@@ -1881,4 +1974,6 @@ const stationen = [
 module.exports = stationen;
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
-module.exports.fehlt = [];
+module.exports.fehlt = [
+    { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
+];

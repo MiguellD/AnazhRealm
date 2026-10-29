@@ -15,7 +15,7 @@
 //   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
 //        die Teil-Messungen der Scheiben zur EINEN messung/<sha8>-<geraet>.json samt Roh-Ausgaben
 //   node punkte.cjs buchen --kopf <sha>
-//        liest alle messung/*.json, urteilt R6 (Pfad unberührt seit der Messung) und R10, schreibt stand.json
+//        liest alle messung/*.json, urteilt R6 (Pfad und Linse unberührt seit der Messung) und R10, schreibt stand.json
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
@@ -38,7 +38,7 @@
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
-// der Station gleicht und deren Pfad zwischen Mess-SHA und Kopf in Welt-Bytes unberührt ist (weltDateien). 1 = jede
+// der Station gleicht und deren Pfad und Linse zwischen Mess-SHA und Kopf ohne Stempel unberührt sind (stempelDateien, linsenVon). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
 // sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN; ungemessen ist 0.
 // ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
@@ -492,8 +492,8 @@ function auswahl(opt) {
     // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
     if (opt.offen) {
         const frisch = frischUrteil(ladeMessungen(), (s) =>
-            weltDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
-            { tot, roh: rohAus() });
+            stempelDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
+            { tot, roh: rohAus(), linsen: linsenAm(repo, sha) });
         meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
     }
     return { repo, sha, meine, tot };
@@ -854,10 +854,11 @@ async function fahrePlan(gruppen, bahnen, fahre) {
 }
 
 // ───────────────────────────────── Buchung ─────────────────────────────────
-// messungen: Liste {sha, geraet, je}; geaendert(messSha) → Liste der Dateien bis zum Kopf (wirft, wenn unbekannt)
-// die jüngste frische Messung je Station und Gerät (Abdruck gleich, Pfad seit der Messung in Welt-Bytes unberührt) — das EINE
-// Frische-Urteil für die Buchung und für `run --offen`. opt.tot(st) → die toten Globs am Ziel-Stand (Wand PFAD) · opt.roh(sha,
-// geraet, id) → die Roh-Ausgabe einer Messung ohne eigenen Zeugen (Wand GPU; "" wenn keine)
+// messungen: Liste {sha, geraet, je}; geaendert(messSha) → Liste der Dateien bis zum Kopf ohne Stempel (stempelDateien; wirft,
+// wenn unbekannt) — die jüngste frische Messung je Station und Gerät (Abdruck gleich, Linse und Pfad seit der Messung unberührt;
+// Werkzeug außerhalb der Linse ist kein Wechsel) — das EINE Frische-Urteil für die Buchung und für `run --offen`. opt.tot(st) →
+// die toten Globs am Ziel-Stand (Wand PFAD) · opt.roh(sha, geraet, id) → die Roh-Ausgabe einer Messung ohne eigenen Zeugen (Wand
+// GPU; "" wenn keine) · opt.linsen(st, messSha) → die Linse der Station am Mess-SHA und am Ziel (linsenAm; wirft, wenn unlesbar)
 function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
     const diffCache = new Map();
     const diff = (sha) => {
@@ -871,7 +872,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const tot = opt.tot ? opt.tot(st) : [];
         if (tot.length) return { gruen: false, ungemessen: true, tot: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe);
-        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [];
+        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], linse = 0, linsenTaeter = [], unlesbar = null;
         const frisch = [];
         for (const m of messungen) {
             if (m.geraet !== g || !m.je || !m.je[id]) continue;
@@ -879,7 +880,11 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
             if (e.abdruck !== ab) { fremd++; continue; }
             const d = diff(m.sha);
             if (d.fehler) { unbekannt++; continue; }
-            const t = d.dateien.filter((f) => trifftPfad(f, st.pfad));
+            let L;
+            try { L = new Set(opt.linsen ? opt.linsen(st, m.sha) : []); } catch (e) { unlesbar = e.message; continue; }
+            const l = d.dateien.filter((f) => L.has(f));
+            if (l.length) { linse++; linsenTaeter = l; continue; }
+            const t = d.dateien.filter((f) => !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad));
             if (t.length) { alt++; taeter = t; continue; }
             // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
             if (st.gpu && e.gruen) {
@@ -892,7 +897,8 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         frisch.sort((a, b) => String(b.zeit).localeCompare(String(a.zeit)));
         if (frisch.length) return frisch[0];
         // der Grund der jüngsten verworfenen Art zuerst: ein GRÜN ohne Zeugen vor dem R6 einer älteren Messung
-        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : alt ? "Pfad seit der Messung geändert (R6: " + taeter.slice(0, 3).join(", ") + (taeter.length > 3 ? " +" + (taeter.length - 3) : "") + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
+        const nenne = (xs) => xs.slice(0, 3).join(", ") + (xs.length > 3 ? " +" + (xs.length - 3) : "");
+        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : linse ? "Linse seit der Messung geändert (R6: " + nenne(linsenTaeter) + ")" : alt ? "Pfad seit der Messung geändert (R6: " + nenne(taeter) + ")" : unlesbar ? "Linse unlesbar — kein R6-Urteil (" + unlesbar + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
     };
 }
 
@@ -943,10 +949,11 @@ function ladeMessungen(mdir = path.join(DIR, "messung")) {
     return fs.readdirSync(mdir).filter((f) => /\.json$/.test(f)).map((f) => JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")));
 }
 
-// R6 urteilt über WELT-Bytes: Mess-Werkzeug (scripts/, spec/, .github/, docs/, artifacts/, *.md) und reine Versions-Stempel
-// (?v=, "version", VERSION) sind kein Weltwechsel — 23.10.: jede Versions-Stufe stempelt index.html und die Worker neu, und die
-// Buchung am nächsten Kopf warf darum jede Station mit index.html im Pfad weg, obwohl kein Spiel-Byte anders war. Das Werkzeug
-// selbst trägt der Abdruck der Station (Befehl, Urteil, Pfad, Hilfen).
+// R6 urteilt über die Bytes OHNE Versions-Stempel (?v=, "version", VERSION) — 23.10.: jede Versions-Stufe stempelt index.html
+// und die Worker neu, und die Buchung am nächsten Kopf warf darum jede Station mit index.html im Pfad weg, obwohl kein Spiel-Byte
+// anders war. Mess-Werkzeug (scripts/, spec/, .github/, docs/, artifacts/, *.md) ist kein Weltwechsel — AUSSER der Linse der
+// Station (linsenVon): der Abdruck hasht nur den Befehls-String, nie den Inhalt der Linse (28.10.: nach einem Linsen-Umbau galt
+// die Messung mit der alten Linse still als frisch).
 const WERKZEUG_PFAD = /^(scripts|spec|\.github|docs|artifacts)\/|\.md$/;
 const VERSIONS_STEMPEL = [
     [/\?v=[0-9A-Za-z._-]+/g, "?v="],
@@ -954,8 +961,9 @@ const VERSIONS_STEMPEL = [
     [/(VERSION\s*=\s*["'`])[^"'`]*(["'`])/g, "$1$2"],
 ];
 const ohneStempel = (z) => VERSIONS_STEMPEL.reduce((s, [rx, e]) => s.replace(rx, e), z);
-// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → die Dateien, deren Welt-Bytes sich änderten
-function weltDateien(namen, diffText) {
+// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → die Dateien, deren Bytes ohne Stempel sich änderten
+// (Werkzeug eingeschlossen — welches davon zählt, urteilt frischUrteil je Station)
+function stempelDateien(namen, diffText) {
     const je = new Map();
     let cur = null;
     for (const z of String(diffText).split("\n")) {
@@ -971,11 +979,90 @@ function weltDateien(namen, diffText) {
         else if (z[0] === "+") cur.neu.push(ohneStempel(z.slice(1)));
     }
     return String(namen).split("\n").filter(Boolean).filter((f) => {
-        if (WERKZEUG_PFAD.test(f)) return false;
         const d = je.get(f);
         if (!d || d.bin) return true;
         return d.weg.sort().join("\n") !== d.neu.sort().join("\n");
     });
+}
+
+// DIE LINSE EINER STATION (R6 über das Werkzeug, 28.10.): jede Datei unter scripts/, die ihr Befehl oder ihre Umgebung nennt
+// ("scripts/…", "./scripts/…", "{BAUM}/scripts/…"), jede Werkzeug-Datei, die ihr pfad trifft, und jede lokale Datei, die diese
+// per require("./…") laden — der Aufruf-Gang `rufe` der Stamm-Bibliothek (scripts/lib/stamm.cjs, acorn), kein zweiter Parser.
+// dateien: die Dateien am Stand · lies(f) → Text am Stand oder null · rufe: stammAm(…).rufe. Ein unlesbarer Text wirft (beim Namen)
+const LINSE_IM_BEFEHL = /(?<![\w$./-])(?:\{BAUM\}\/|\.\/)?(scripts\/[\w./-]*\w)/g;
+function linsenVon(st, dateien, lies, rufe) {
+    const da = dateien instanceof Set ? dateien : new Set(dateien);
+    const text = st.befehl.join(" ") + " " + Object.values(st.env || {}).join(" ");
+    const offen = [...text.matchAll(LINSE_IM_BEFEHL)].map((m) => m[1]).filter((f) => da.has(f));
+    const pfad = st.pfad.map(globRegex);
+    for (const f of da) if (WERKZEUG_PFAD.test(f) && pfad.some((re) => re.test(f))) offen.push(f);
+    const linse = new Set();
+    while (offen.length) {
+        const f = offen.shift();
+        if (linse.has(f)) continue;
+        linse.add(f);
+        if (!/\.[cm]?js$/.test(f)) continue;
+        const t = lies(f);
+        if (t == null) continue;
+        let rs;
+        try { rs = rufe(t); } catch (e) { throw new Error("Linse " + f + " unlesbar: " + e.message); }
+        for (const r of rs) {
+            const a = r.ziel === "require" && r.args[0];
+            if (!a || a.type !== "Literal" || typeof a.value !== "string" || !/^\.\.?\//.test(a.value)) continue;
+            const ziel = path.posix.normalize(path.posix.join(path.posix.dirname(f), a.value));
+            const x = [ziel, ziel + ".cjs", ziel + ".js", ziel + ".json", ziel + "/index.js"].find((k) => da.has(k));
+            if (x) offen.push(x);
+        }
+    }
+    return [...linse].sort();
+}
+// DIE STAMM-BIBLIOTHEK des Spiels am Stand rev — aus git, nie aus dem Arbeitsbaum des Klons (er steht auf beliebigem Zweig);
+// ihr acorn löst sie aus node_modules des Klons
+function stammAm(repo, rev) {
+    const Module = require("module");
+    const f = path.join(repo, "scripts", "lib", "stamm.cjs");
+    const m = new Module(f, module);
+    m.filename = f;
+    m.paths = Module._nodeModulePaths(path.dirname(f));
+    m._compile(git(["show", rev + ":scripts/lib/stamm.cjs"], repo), f);
+    return m.exports;
+}
+// opt.linsen der Buchung am Kopf: (st, messSha) → die Linse der Station am Mess-SHA UND am Kopf (ein require, das dazukam oder
+// fiel, zählt), Texte je Blob einmal gelesen und geparst
+function linsenAm(repo, kopf) {
+    const { rufe } = stammAm(repo, kopf);
+    const baeume = new Map(), texte = new Map(), rufeJe = new Map();
+    const baum = (sha) => {
+        if (!baeume.has(sha)) {
+            const b = new Map();
+            for (const z of git(["ls-tree", "-r", sha], repo).split(/\r?\n/)) {
+                const m = /^\d+ blob ([0-9a-f]+)\t(.+)$/.exec(z);
+                if (m) b.set(m[2], m[1]);
+            }
+            baeume.set(sha, { b, dateien: new Set(b.keys()) });
+        }
+        return baeume.get(sha);
+    };
+    const blobRufe = (t) => {
+        if (!rufeJe.has(t)) rufeJe.set(t, rufe(t).map((r) => ({ ziel: r.ziel, args: r.args.slice(0, 1).map((a) => ({ type: a.type, value: a.value })) })));
+        return rufeJe.get(t);
+    };
+    const linse = (st, sha) => {
+        const { b, dateien } = baum(sha);
+        const lies = (f) => {
+            const id = b.get(f);
+            if (!id) return null;
+            if (!texte.has(id)) texte.set(id, git(["cat-file", "-p", id], repo));
+            return texte.get(id);
+        };
+        return linsenVon(st, dateien, lies, blobRufe);
+    };
+    const je = new Map();
+    return (st, sha) => {
+        const k = schluessel(st) + "|" + sha;
+        if (!je.has(k)) je.set(k, [...new Set([...linse(st, sha), ...linse(st, kopf)])]);
+        return je.get(k);
+    };
 }
 
 // die GTX-Stationen, deren Messung am Kopf Punkte ändern KANN — gefragt am EINEN Frische-Urteil der Buchung (s = buchen(…), je
@@ -1089,8 +1176,8 @@ function buchenCli(opt) {
     const kopfVoll = voll(repo, opt.kopf);
     const dateien = dateienAm(repo, kopfVoll);
     const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
-        weltDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
-        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus() });
+        stempelDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
+        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: linsenAm(repo, kopfVoll) });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     if (opt.trocken) return s;
@@ -1129,7 +1216,8 @@ async function selbsttest() {
     const echt = ladeGeprueft();
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
-    // (1b) R6 liest Welt-Bytes: Werkzeug und Versions-Stempel fallen, echter Code bleibt, Binär bleibt
+    // (1b) R6 liest Bytes ohne Stempel: Versions-Stempel fallen, Code, Binär und Werkzeug bleiben (welches Werkzeug zählt, urteilt
+    // frischUrteil an der Linse der Station)
     {
         const namen = "index.html\nscripts/lib/welt-boot.cjs\nstamm/kampf.js\ngelaende-core.js\nbild.png\nREADME.md";
         const dt = [
@@ -1139,8 +1227,8 @@ async function selbsttest() {
             "diff --git a/gelaende-core.js b/gelaende-core.js", "@@ -1 +1 @@", '-importScripts("a.js?v=1.2");', '+importScripts("a.js?v=1.3");', "+neu();",
             "diff --git a/bild.png b/bild.png", "Binary files a/bild.png and b/bild.png differ",
         ].join("\n");
-        const w = weltDateien(namen, dt).join(",");
-        pruef("R6 Welt-Bytes: Stempel und Werkzeug fallen, Code und Binär bleiben", w === "stamm/kampf.js,gelaende-core.js,bild.png", w);
+        const w = stempelDateien(namen, dt).join(",");
+        pruef("R6 ohne Stempel: Stempel fallen, Code, Binär und Werkzeug bleiben", w === "scripts/lib/welt-boot.cjs,stamm/kampf.js,gelaende-core.js,bild.png,README.md", w);
     }
     // (2) jede Format-Verletzung beim Namen
     const st0 = { kriterium: "gelaende.K4", staffel: 1, geraet: "headless", befehl: ["node", "-e", "0"], gpu: false, zeit: false, minuten: 1,
@@ -1488,6 +1576,27 @@ async function selbsttest() {
     pruef("BUCHUNG ungemessen → 0 (R10)", b.je["gelaende.K4"].punkte === 0 && /R10/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], [M("a1", "radeon", "gelaende.K4#2", s2, true), M("b2", "gtx", "gelaende.K4#2", s2, true)], keine, h);
     pruef("BUCHUNG Staffel 2 grün ohne Staffel 1 → 0", b.je["gelaende.K4"].punkte === 0, b.je["gelaende.K4"].beleg);
+    // (5b) DIE LINSE an der Buchung (R6 über das Werkzeug): ein Umbau der Linse — im Befehl genannt oder per require geladen —
+    // macht die Messung alt; fremdes Werkzeug nie. Der require-Gang ist rufe der Stamm-Bibliothek am Kopf des Spiel-Klons
+    {
+        const { rufe } = stammAm(spielRepo(), "origin/main");
+        const texte = {
+            "scripts/diag-x.cjs": '#!/usr/bin/env node\nconst { pruefer } = require("./lib/y.cjs");\nconst ort = require("../spec/ort.json");\n',
+            "scripts/lib/y.cjs": 'module.exports = require("./z");\n', "scripts/lib/z.cjs": "module.exports = 1;\n", "scripts/lib/fremd.cjs": "1;\n",
+            "spec/ort.json": "{}", "stamm/wasser-hydro.js": "",
+        };
+        const sl = { ...s1, befehl: ["node", "scripts/diag-x.cjs", "--port", "{PORT}"] };
+        const ls = linsenVon(sl, Object.keys(texte), (f) => (f in texte ? texte[f] : null), rufe);
+        pruef("LINSE Befehl und require-Hülle (stamm.cjs rufe)", ls.join() === "scripts/diag-x.cjs,scripts/lib/y.cjs,scripts/lib/z.cjs,spec/ort.json", ls.join());
+        const ml = [M("a1", "radeon", "gelaende.K4#1", sl, true)];
+        const radeon = (w) => w.je["gelaende.K4"].stationen.find((x) => x.geraet === "radeon");
+        let w = buchen("kopf", [sl], ml, () => ["scripts/lib/z.cjs"], h, [], { linsen: () => ls });
+        pruef("LINSE geändert → ungemessen mit dem Grund", w.je["gelaende.K4"].punkte === 0 && radeon(w).ungemessen && radeon(w).grund === "Linse seit der Messung geändert (R6: scripts/lib/z.cjs)", JSON.stringify(radeon(w)));
+        w = buchen("kopf", [sl], ml, () => ["scripts/lib/fremd.cjs", "README.md"], h, [], { linsen: () => ls });
+        pruef("LINSE unverändert (fremdes Werkzeug geändert) → frisch", w.je["gelaende.K4"].punkte === 1 && radeon(w).gruen, w.je["gelaende.K4"].beleg);
+        w = buchen("kopf", [sl], ml, () => [], h, [], { linsen: () => { throw new Error("Linse scripts/diag-x.cjs unlesbar: x"); } });
+        pruef("LINSE unlesbar → ungemessen beim Namen", w.je["gelaende.K4"].punkte === 0 && /Linse unlesbar — kein R6-Urteil/.test(radeon(w).grund), radeon(w).grund);
+    }
     // (6) Übergang in gen.cjs
     const stand = { kopf: "abcd1234", je: { "gelaende.K4": { punkte: 2, beleg: "Maschine: z" } } };
     const k0 = { name: "n", punkte: 1, beleg: "Hand" };
@@ -1630,4 +1739,5 @@ if (require.main === module) {
     });
 }
 
-module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation };
+module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
+    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText };
