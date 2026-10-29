@@ -2459,7 +2459,16 @@ class AnazhRealm_siedlung_satz {
         const P = this._stlMauerEnsurePool();
         const wk = this._wegeKarteEnsure();
         const FUSS = AnazhRealm.STADTMAUER_FUSS_M;
-        const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [] };
+        // die Mauer merkt ihren Plan und ihre Streifen im Pool (`_stlMauerNeu`: sie wächst mit dem Ort)
+        const box = {
+            x0: Infinity,
+            z0: Infinity,
+            x1: -Infinity,
+            z1: -Infinity,
+            formen: [],
+            mauerVon: plan,
+            streifen: [P ? P.top : 0],
+        };
         const form = (f) => {
             box.formen.push(f);
             const r = AnazhRealm._wegeFormRadius(f);
@@ -2543,6 +2552,7 @@ class AnazhRealm_siedlung_satz {
             form({ typ: "kasten", kanal: -1, ax: x, az: z, bx: x, bz: z, ex: tb, ez: tb, phi: 0, halb: 0 });
             n++;
         }
+        box.streifen.push(P ? P.top : 0);
         if (box.formen.length) {
             wk.siedlungen.push(box); // die Natur-Wand liest die Linie (`_aufWeg`); einen Boden-Kanal malt sie nicht
             wk.raeumen.push(box); // was schon in der Linie der Mauer wuchs, räumt der Takt (`_wegeRaeumen`)
