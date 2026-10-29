@@ -699,7 +699,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
     _blockerAustritt(entry) {
-        this._blockerWacheMelden(entry._blockerHuelle);
+        if (!entry._verkehrFaehrt) this._blockerWacheMelden(entry._blockerHuelle);
         this._blockerNetzLoesen(entry);
         if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
         entry._blockerGen = 0;
@@ -716,7 +716,10 @@ class AnazhRealm_gelaende_kollision {
     // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).
     _blockerNetzSetzen(entry) {
         const N = this._blockerNetz();
-        this._blockerWacheMelden(entry._blockerHuelle);
+        // der fahrende Wagen des Verkehrs ist ein Leib im Gedränge, nie eine Wand der Wege (`_verkehrImRaster`): seine Hülle
+        // wandert je Schritt, die Wache sähe in jedem einen Wechsel
+        const wache = !entry._verkehrFaehrt;
+        if (wache) this._blockerWacheMelden(entry._blockerHuelle);
         this._blockerNetzLoesen(entry);
         if (entry._blockerGen !== N.gen) return;
         entry._blockerZellenGen = N.gen;
@@ -763,7 +766,7 @@ class AnazhRealm_gelaende_kollision {
                 ? [x0, x1, z0, z1]
                 : null;
         entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
-        this._blockerWacheMelden(entry._blockerHuelle);
+        if (wache) this._blockerWacheMelden(entry._blockerHuelle);
     }
 
     // DER LEIB DES FLÜGELS (leib.K4): ein Tür- oder Tor-Flügel zeichnet als eigene Instanz (das Blatt mit Scharnier `tuer`, auch

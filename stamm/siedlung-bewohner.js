@@ -647,7 +647,7 @@ class AnazhRealm_siedlung_bewohner {
         S.gestalten.forEach((G, gi) => {
             const Z = G.satz;
             if (!Z || Z.fertig || je <= 0) return;
-            const b = S.liste.find((x) => x.gestalt === gi && x.leib && !x.nah);
+            const b = S.liste.find((x) => x.gestalt === gi && x.leib && !x.nah && !x.amSteuer);
             if (!b) return;
             for (; je > 0 && Z.gebacken < Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++);
             if (Z.gebacken >= Z.n) {
@@ -780,7 +780,8 @@ class AnazhRealm_siedlung_bewohner {
                 S.planStunde = null;
                 S.uhrStunde = stunde;
                 this._bewohnerWacheSetzen(S);
-                this._bewohnerStandPruefen(S, null); // was der Wald-Takt schon brachte
+                if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (PFLICHT-OFFEN C)
+                this._bewohnerStandPruefen(S, null); // was der Wald-Takt schon brachte, und die Spuren der Wagen
             }
             // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
             if (S.wache.stand !== S.wegeStand) {
@@ -809,7 +810,7 @@ class AnazhRealm_siedlung_bewohner {
             const R = S.raster || (S.raster = new Map());
             for (const l of R.values()) l.length = 0;
             for (const b of S.liste) {
-                if (!b.leib || b.drinnen) continue;
+                if (!b.leib || b.drinnen || b.amSteuer) continue;
                 if (!b.weg) b.vx = b.vz = 0;
                 const k =
                     Math.floor(b.leib.position.x / BW.rasterM) * 2097152 + Math.floor(b.leib.position.z / BW.rasterM);
@@ -817,6 +818,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (l) l.push(b);
                 else R.set(k, [b]);
             }
+            if (S.verkehr) this._verkehrImRaster(S, R); // der fahrende Wagen ist ein Leib mit Vorrang im Gedränge
             const nah = this._bewohnerNah || (this._bewohnerNah = []);
             nah.length = 0;
             for (const b of S.liste) {
@@ -840,9 +842,12 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 const g = b.leib;
                 const u = g.userData;
+                // AM STEUER gehört sein Leib dem Wagen (`_tickVerkehr`) — springt die Uhr, steigt er aus, und seine Ankunft gilt
+                if (b.amSteuer && !(b.ankunft && ankuenfte < BW.ankunftJeTakt)) continue;
                 if (b.ankunft && ankuenfte < BW.ankunftJeTakt) {
                     b.ankunft = false;
                     ankuenfte++;
+                    if (b.amSteuer) this._verkehrAussteigen(S, b, true);
                     this._bewohnerAnkunft(S, b, stunde, echt, p);
                     b.lageNeu = true;
                     anders = true;
@@ -869,7 +874,7 @@ class AnazhRealm_siedlung_bewohner {
                     else R.set(k, [b]); // die anderen sehen ihn ab diesem Takt
                 }
                 // wer Platz machte, geht zurück, wenn sein Stand frei ist und der, dem er ihn machte (`platz`,
-                // `_bewohnerPlatz`), nicht mehr auf ihn zugeht — bis hier ging er, sobald sein Stand frei war: wer auf ihn
+                // `_bewohnerPlatz`; ein Wagen trägt die Breite seiner Bahn, `kF`), nicht mehr auf ihn zugeht — bis hier ging er, sobald sein Stand frei war: wer auf ihn
                 // wartete (`_bewohnerAusweichen`), fand ihn um 21,71 Uhr Takt für Takt wieder dort (wohnhaus #809070, 10
                 // Spielminuten 0 m)
                 const w = b.platz;
@@ -879,6 +884,8 @@ class AnazhRealm_siedlung_bewohner {
                 // wohin der geht, dem er Platz machte: der Spieler `ausweichS` voraus, der Bewohner zum nächsten Punkt
                 const wv =
                     w && (w.spieler ? SP.voraus : w.weg && !w.drinnen && w.wi < w.weg.length ? w.weg[w.wi] : null);
+                // (dem Wagen, `kF`: wer auf dem Weg beiseite trat, bleibt, bis die Bahn an seinem Ort frei ist — sein Ziel liegt fern)
+                const zo = w && w.kF ? g.position : b.ziel;
                 if (
                     w &&
                     b.da &&
@@ -888,13 +895,13 @@ class AnazhRealm_siedlung_bewohner {
                         wv &&
                         w.leib &&
                         this._streckeBoxAbstand2(
-                            { minX: b.ziel.x, maxX: b.ziel.x, minZ: b.ziel.z, maxZ: b.ziel.z },
+                            { minX: zo.x, maxX: zo.x, minZ: zo.z, maxZ: zo.z },
                             w.leib.position.x,
                             w.leib.position.z,
                             wv.x,
                             wv.z
                         ) <
-                            ((w.spieler ? kS : 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) + 0.1) ** 2
+                            ((w.spieler ? kS : w.kF || 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) + 0.1) ** 2
                     )
                 )
                     [b.platz, b.da] = [false, false];
@@ -966,7 +973,7 @@ class AnazhRealm_siedlung_bewohner {
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
             for (const b of S.liste) {
                 const g = b.leib;
-                if (!g) continue;
+                if (!g || b.amSteuer) continue;
                 const istNah = nah.indexOf(b) >= 0;
                 if (istNah !== !!b.nah) {
                     b.nah = istNah;
@@ -1586,7 +1593,8 @@ class AnazhRealm_siedlung_bewohner {
             if (sD2 < (4 + vor) ** 2) kS = this._bewohnerSpielerAbstand(b); // 4 m: jenseits des weitesten Raums
             if (sD2 < (kS + vor) ** 2) nb.push(SP);
         }
-        const kO = (o) => (o === SP && sD2 >= kS * kS ? kS : K);
+        // der Wagen des Verkehrs trägt seinen Radius (`kR`, `_verkehrImRaster`: die halbe Breite samt Kapsel)
+        const kO = (o) => (o === SP && sD2 >= kS * kS ? kS : o.kR || K);
         if (!nb.length) return null;
         // DER BESETZTE PUNKT: steht ein Leib auf dem nächsten Punkt seines Wegs und ist er neben ihm (näher als zwei Kapseln),
         // gilt der Punkt als erreicht, wenn das Bein von hier zum übernächsten frei ist — das Bein des Tags beginnt an ihm, und
@@ -1608,8 +1616,8 @@ class AnazhRealm_siedlung_bewohner {
         const um = this._bewohnerUm(b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
         // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
-        // der Spieler nie — um ihn tastet das Ausweichen)
-        if (um && !um.spieler && this._bewohnerPlatz(S, um, p, q, b)) return { vx: 0, vz: 0 };
+        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen)
+        if (um && !um.spieler && !um.wagen && this._bewohnerPlatz(S, um, p, q, b)) return { vx: 0, vz: 0 };
         // DIE WACHE: der Schritt mit (cx, cz) endet in keiner Kapsel (wer schon zu nah ist, entfernt sich) — sonst der, in
         // dessen Kapsel er endete
         const wache = (cx, cz) => {
@@ -1617,7 +1625,7 @@ class AnazhRealm_siedlung_bewohner {
             for (const o of nb) {
                 const [ox, oz] = [o.leib.position.x, o.leib.position.z];
                 const d2 = (ox - x) ** 2 + (oz - z) ** 2;
-                if (d2 < K * K && d2 < (ox - p.x) ** 2 + (oz - p.z) ** 2) return o;
+                if (d2 < (o.kR || K) ** 2 && d2 < (ox - p.x) ** 2 + (oz - p.z) ** 2) return o;
             }
             return null;
         };
@@ -1715,14 +1723,15 @@ class AnazhRealm_siedlung_bewohner {
                 const [rx, rz] = [o.leib.position.x - p.x, o.leib.position.z - p.z];
                 return { o, vor: rx * hx + rz * hz, quer: rz * hx - rx * hz };
             })
-            .filter((c) => c.vor > 0 && c.vor < hl && Math.abs(c.quer) < K)
+            .filter((c) => c.vor > 0 && c.vor < hl && Math.abs(c.quer) < (c.o.kR || K))
             .sort((a, c) => a.vor - c.vor)[0];
         if (!steht || !setzen) return steht ? steht.o : false;
-        const D = K + AnazhRealm.BEWOHNER.umRandM;
+        // um den ruhenden Wagen (`kR`: seine Breite samt Kapsel, `_verkehrImRaster`) so weit wie um seinen Radius
+        const D = (steht.o.kR || K) + AnazhRealm.BEWOHNER.umRandM;
         const o = steht.o.leib.position;
         for (const seite of steht.quer > 0 ? [-1, 1] : [1, -1]) {
             const d = { x: o.x - hz * seite * D, z: o.z + hx * seite * D, _um: true };
-            if (nb.some((n) => Math.hypot(n.leib.position.x - d.x, n.leib.position.z - d.z) < K)) continue;
+            if (nb.some((n) => Math.hypot(n.leib.position.x - d.x, n.leib.position.z - d.z) < (n.kR || K))) continue;
             if (this._bewohnerWand(p, d) || this._bewohnerWand(d, q)) continue;
             b.weg.splice(b.wi, 0, d);
             const rest = new Float64Array(b.weg.length);
@@ -1844,7 +1853,7 @@ class AnazhRealm_siedlung_bewohner {
         const boden0 = (x, z) => this._trittUeber(x, z, this.getTerrainHeightAt(x, z), Infinity);
         for (const ent of kand) {
             const boxen = ent.blockerAABBs;
-            if (!boxen) continue;
+            if (!boxen || ent._verkehrFaehrt) continue; // der fahrende Wagen ist ein Leib im Gedränge, keine Wand (`_verkehrImRaster`)
             for (const box of boxen) {
                 if (box.tritt || this._streckeBoxAbstand2(box, a.x, a.z, e.x, e.z) >= R * R) continue;
                 if (st === null) {
@@ -2068,18 +2077,21 @@ class AnazhRealm_siedlung_bewohner {
     // `auswegM`, je 0,6 m zwölf Richtungen), den er in gerader Linie frei erreicht — `ausDerWand`: steht er selbst in einer
     // Hülle, zählt die Linie nicht —, der frei steht (mit `rand` Raum), Land ist, in keinem Grundriss liegt, `raum` (Stände)
     // nicht näher als `raumM` trägt und selbst einen Knoten frei erreicht. Gemerkt je Stand der Wache (`o._ausweg`); null: keiner.
-    _bewohnerAusweg(N, o, ausDerWand = false, raum = null, rand = 0) {
+    _bewohnerAusweg(N, o, ausDerWand = false, raum = null, rand = 0, frei = null, weit = AnazhRealm.BEWOHNER.auswegM) {
         if (o._ausweg !== undefined) return o._ausweg;
         const BW = AnazhRealm.BEWOHNER;
         let gefunden = null;
-        for (let r = 0.6; r <= BW.auswegM + 1e-6 && !gefunden; r += 0.6)
+        for (let r = 0.6; r <= weit + 1e-6 && !gefunden; r += 0.6)
             for (let i = 0; i < 12 && !gefunden; i++) {
                 const q = { x: o.x + Math.cos((i * Math.PI) / 6) * r, z: o.z + Math.sin((i * Math.PI) / 6) * r };
-                if (this._bewohnerWand(q, q, true, rand) || (!ausDerWand && this._bewohnerWand(o, q))) continue;
+                // die billigen Proben zuerst (Lehre 25): die Spur, der Raum, der Grundriss — dann die Wand und das Land
+                if (frei && !frei(q)) continue;
                 if (raum && raum.some((p) => p !== o && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < BW.raumM * BW.raumM))
                     continue;
                 const g = this._imGrundriss(q.x, q.z, BW.saumM);
-                if (g === "haus" || g === "bau" || !this._landAt(q.x, q.z, 0.2)) continue;
+                if (g === "haus" || g === "bau") continue;
+                if (this._bewohnerWand(q, q, true, rand) || (!ausDerWand && this._bewohnerWand(o, q))) continue;
+                if (!this._landAt(q.x, q.z, 0.2)) continue;
                 if (this._bewohnerAnschluss(N, q) >= 0) gefunden = q;
             }
         return (o._ausweg = gefunden);
@@ -2101,10 +2113,19 @@ class AnazhRealm_siedlung_bewohner {
             const ur = o.ur || (o.ur = { x: o.x, z: o.z });
             if (trifft && !trifft(o, o) && !trifft(ur, ur)) continue;
             const raum = [...staende].filter((p) => p !== o).map((p) => p.ur || p);
-            const neu = (rand) => this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raum, rand);
-            const q = !this._bewohnerWand(ur, ur, true, BW.standRandM)
-                ? ur
-                : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0));
+            const neu = (rand, frei, weit) =>
+                this._bewohnerAusweg(N, { x: ur.x, z: ur.z }, true, raum, rand, frei, weit);
+            // DER STAND WEICHT DER SPUR (PFLICHT-OFFEN C): wer stundenlang steht, steht nie in der Spur eines Wagens
+            // (`_verkehrAufSpur`) — sein Ausweg reicht dafür bis `spurAuswegM` (die Gasse daneben, die Lücke zwischen zwei Häusern);
+            // trägt keiner, steht er, wo er stand (der Wagen hält vor ihm, und er macht Platz, `_verkehrFolge`)
+            const frei = S.verkehr ? (p) => !this._verkehrAufSpur(S, p.x, p.z) : null;
+            const q =
+                !this._bewohnerWand(ur, ur, true, BW.standRandM) && (!frei || frei(ur))
+                    ? ur
+                    : (frei && (neu(BW.standRandM, frei, BW.spurAuswegM) || neu(0, frei, BW.spurAuswegM))) ||
+                      (!this._bewohnerWand(ur, ur, true, BW.standRandM)
+                          ? ur
+                          : neu(BW.standRandM) || (!this._bewohnerWand(ur, ur, true) ? ur : neu(0)));
             if (!q) {
                 this._bruchMelden(
                     `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} steht in einer Hülle, kein Ausweg`
@@ -2185,6 +2206,7 @@ class AnazhRealm_siedlung_bewohner {
     // (`_kreaturZiegelTod`, `_disposeSoulGroup`), die Vorlagen der Gestalten verlieren `fest` — das Memo räumt sie, sobald kein
     // Leib sie hält. Die Liste fällt mit: kehrt der Spieler zurück, entsteht sie neu aus dem Plan (dieselbe Funktion).
     _bewohnerFort(S) {
+        this._verkehrFort(S); // die Wagen gehen mit (ihre Fahrer sind Leiber der Liste)
         for (const b of S.liste || []) {
             const g = b.leib;
             if (!g) continue;
@@ -2248,7 +2270,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // seines Besuchs, besuchWeitM = so fern von ihnen und seinem Werk höchstens (`_bewohnerGestalten`) · gasseFreiM = so fern
 // von der Mitte jeder Gasse steht jeder Stand · anschlussN = so viele Knoten fragt
 // der Anschluss eines Orts (`_bewohnerAnschluss`) · auswegM = so weit sucht ein Ort ohne freien Anschluss seinen Ausweg
-// (`_bewohnerAusweg`) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
+// (`_bewohnerAusweg`), spurAuswegM ein Stand in der Spur eines Wagens (`_verkehrAufSpur`) · standRandM = so viel Raum hält jeder Stand zu jeder Wand über die Kapsel hinaus: ein Gehender
 // passt zwischen beide (`_bewohnerStandPruefen`) · umRandM = so weit über zwei Kapseln geht er am Stehenden vorbei
 // (`_bewohnerUm`) · linieM = so weit voraus auf seinem Bein liegt der Punkt, auf den zurückgeht, wer auswich
 // (`_bewohnerLinie`). DIE BEGEGNUNG (mensch.K5): begegnungM = so nah tritt der Spieler heran, bis der Bewohner ihm den Kopf
@@ -2300,6 +2322,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     gasseFreiM: 1.6,
     anschlussN: 48,
     auswegM: 3,
+    spurAuswegM: 15,
     standRandM: 0.75,
     umRandM: 0.15,
     linieM: 2,

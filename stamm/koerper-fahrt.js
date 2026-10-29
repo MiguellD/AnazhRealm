@@ -139,8 +139,9 @@ class AnazhRealm_koerper_fahrt {
 
     // Sitz-Pose des Avatars: die Oberschenkel liegen waagerecht auf dem Sitz, die Unterschenkel hängen, die Arme vorgehalten
     // (Zügel); Lage, Blick und Rumpf-Neigung setzt der Sitz des Gefährts (`_sitzLage`). Absolute Werte pro Frame (kein
-    // Drift); beim Absteigen räumt _animateHuman die Rotationen, `_sitzLageLoesen` den Wurzel-Knochen.
-    _applySeatPose(group, _t) {
+    // Drift); beim Absteigen räumt _animateHuman die Rotationen, `_sitzLageLoesen` den Wurzel-Knochen. `entry`: das Gefährt
+    // (der Spieler sein gerittenes, der Fahrer des Verkehrs seinen Wagen, `_tickVerkehr`).
+    _applySeatPose(group, _t, entry = this._mountedEntry) {
         // GUSS 2b — der Rig-Avatar SITZT über die Bein-/Arm-Bones (Beine angewinkelt nach
         // vorn, Arme vorgehalten); absolute Werte (kein Drift — _animateHumanoidRig räumt sie).
         const rig = group.userData && group.userData.rig;
@@ -165,7 +166,7 @@ class AnazhRealm_koerper_fahrt {
             rig.armR.shoulder.rotation.x = -0.4;
             rig.armL.elbow.rotation.x = -0.5;
             rig.armR.elbow.rotation.x = -0.5;
-            this._sitzLage(group, rig);
+            this._sitzLage(group, rig, entry);
         }
         // ABSCHIEDS-WELLE (Konvergenz C) — der Nicht-Rig-Sitz-Zweig (Box-Avatar-parts)
         // ist GESCHNITTEN: die Sitz-Pose gilt nur dem menschlichen Rig-Avatar (der
@@ -178,9 +179,9 @@ class AnazhRealm_koerper_fahrt {
     // hält (höchstens FAHR.sitzLehneMaxRad), der Kopf bleibt aufrecht. Die Maße des Leibs misst die HAUT einmal je Rig
     // (`_sitzLeib`), die Neigung je Gefährt die Knochen (`_sitzNeigung`); je Frame nur Gier und Lage des Wurzel-Knochens.
     // Vorher drehte die Pose nur die Beine: das Hüftgelenk stand 0,85 m über der Sitzfläche, der Scheitel 0,99 m über dem
-    // GT-Dach, der Leib saß in der Wagenmitte statt auf dem Fahrersitz und drehte mit der Maus (gate:fahr-leben L9).
-    _sitzLage(group, rig) {
-        const entry = this._mountedEntry;
+    // GT-Dach, der Leib saß in der Wagenmitte statt auf dem Fahrersitz und drehte mit der Maus (gate:fahr-leben L9). Die
+    // Matrizen zieht der Chokepoint der Glied-Leser nach (`_leibMatrix`: auch der ruhende Leib eines Bewohners am Steuer).
+    _sitzLage(group, rig, entry = this._mountedEntry) {
         const hips = rig.hips;
         if (!entry || !hips || !hips.parent || !rig.legL || !rig.legR || !rig.legL.hip || !rig.legR.hip) return;
         if (!rig._sitzBasis) {
@@ -215,7 +216,7 @@ class AnazhRealm_koerper_fahrt {
         const fz = ort.achseX ? -Math.sin(th) : Math.cos(th);
         hips.rotation.y = Math.atan2(fx, fz) - group.rotation.y;
         hips.position.copy(rig._sitzBasis);
-        group.updateMatrixWorld(true);
+        this._leibMatrix(group);
         // das Hüftgelenk (Mitte beider) auf den Anker: waagerecht der Anker im Rahmen des Gefährts, senkrecht die
         // Sitzfläche + das Gesäß, gemessen am Ursprung des Reiters (er trägt Sitz-Höhe und Hub der Feder)
         const v =
@@ -293,7 +294,7 @@ class AnazhRealm_koerper_fahrt {
         const nah = group.userData._gelenk ? group.userData._gelenk.nah : group;
         if (rig.spine) rig.spine.rotation.x = 0;
         if (rig.head) rig.head.rotation.x = 0;
-        group.updateMatrixWorld(true);
+        this._leibMatrix(group);
         const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
         const v = new THREE.Vector3();
         const schenkel = new Set([rig.legL.hip, rig.legR.hip]);
@@ -401,7 +402,7 @@ class AnazhRealm_koerper_fahrt {
         const scheitel = (phi) => {
             rig.spine.rotation.x = -phi;
             rig.head.rotation.x = phi;
-            group.updateMatrixWorld(true);
+            this._leibMatrix(group);
             rig.legL.hip.getWorldPosition(a);
             rig.legR.hip.getWorldPosition(b);
             rig.head.getWorldPosition(k);
@@ -1054,8 +1055,14 @@ class AnazhRealm_koerper_fahrt {
     // Linie — der Spiegel ist waagrecht, Nick und Wank folgen nie dem Seegrund; sonst steht es auf dem Grund (es watet,
     // dichter als Wasser sinkt es). Bis zur Integration las der Fahr-Schritt die Lauf-Fläche (`_waterRunSurfaceAt`, die
     // Familie wasser schnitt sie) mit einer eigenen Tauchtiefe — ein zweiter Wasser-Leser neben dem Körper. Je Werk EINE
-    // Funktion (kein Abschluss je Schritt); ein Werk, das das Wasser nie trägt, fragt es nicht.
+    // Funktion (kein Abschluss je Schritt); ein Werk, das das Wasser nie trägt, fragt es nicht. Der fahrende Wagen des Verkehrs
+    // liest ihn gemerkt im Raster seiner Spur (`_verkehrBoden`: Fahr-Schritt und Rad lesen denselben).
     _fahrBoden(entry) {
+        const W = entry._verkehrFaehrt && entry._verkehrWagen;
+        if (W && W.S && W.S.verkehr) return this._verkehrBoden(W.S, entry);
+        return this._fahrBodenRoh(entry);
+    }
+    _fahrBodenRoh(entry) {
         const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
         if (entry._fahrBodenFn && entry._fahrBodenGestalt === gestalt) return entry._fahrBodenFn;
         entry._fahrBodenGestalt = gestalt;
@@ -1116,6 +1123,73 @@ class AnazhRealm_koerper_fahrt {
         // Längs x: der Nick (Bug ab = +) dreht um z gegen den Sinn, der Wank um x; längs z: Nick um x, Wank um z.
         if (entry._fahrAchseX) m.rotation.set(rr, ry, -rp, "YZX");
         else m.rotation.set(rp, ry, rr, "YXZ");
+    }
+
+    // DIE LAGE EINES GESETZ-WAGENS aus seinem Fahr-Zustand (der Ritt des Spielers und der Wagen des Verkehrs): Höhe, Lage (Nick
+    // Bug ab = +, Wank die Flanke (cos, −sin) oben = +), Federn, Gier und die Fahr-Phase (der Rad-Winkel des Kerns, Weg/radR;
+    // applyJoint multipliziert den rad-Kanal ×1.6) — die Kurven-Feder neigt den Aufbau nach außen wie die Probefahrt.
+    _wagenLage(entry, fz) {
+        const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
+        entry.position.y = fz.y + 0.5 + clear;
+        entry._rideY = entry.position.y;
+        entry._rideVy = fz.vy;
+        entry._terrainPitchZiel = entry._rideTerrainPitch = -fz.steig;
+        entry._terrainRollZiel = entry._rideRoll = fz.wank;
+        entry._ridePitch = -fz.fNick;
+        entry._rideKurvenRoll = fz.fWank;
+        entry._rideHeave = fz.fHub;
+        entry._rideSp = fz.speed;
+        if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
+        entry._ridePhase = fz.wheelAng / 1.6;
+    }
+
+    // DER FAHR-SCHRITT EINES WAGENS OHNE REITER (der EINE Fahr-Schritt des Kerns — Kräfte, Hülle, Lage): der gestoßene Wagen im
+    // Nachlauf (`_fahrNachlauf`, die Handbremse) und der Wagen mit einem Bewohner am Steuer (`_verkehrSchritt`, Gas · Bremse ·
+    // Lenkung seines Fahrers) fahren ihn; der Ritt des Spielers fährt denselben Kern über den Kontakt-Löser seines Leibs. Die Hülle
+    // stößt, was sie trifft (Bauwerk, Wagen, Leib — das EINE Impuls-Gesetz, `_fahrHuelleKontakt`); seine Blocker ziehen mit
+    // (`genau`: je Schritt, sonst ab `schwelleM` m / 0,1 rad wie im Ritt); `huelle` false: fern vom Spieler, auf der freien Spur
+    // des Gesetzes, fährt er ohne Hüllen-Probe (der Verkehr, Gebot 7). Liefert die Gegner der Hülle in diesem Schritt (null: keiner).
+    _wagenSchritt(entry, e, dt, genau = true, huelle = true, schwelleM = 0.5) {
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const fz = entry._fahr;
+        const x0 = fz.x;
+        const z0 = fz.z;
+        e.tiefe = this._fahrTiefe(fz);
+        e.haft = this._fahrHaft(fz);
+        e.wind = this._fahrWind(fz);
+        vc.fahrKraefte(fz, e, entry._fahrSatz, dt);
+        entry._rideYaw = fz.yaw + Math.PI / 2;
+        const k = huelle ? this._fahrHuelle(entry) : null;
+        let gegner = null;
+        if (k) {
+            const cyW = Math.cos(fz.yaw);
+            const syW = Math.sin(fz.yaw);
+            const vxW = fz.vlong * cyW - fz.vlat * syW;
+            const vzW = -fz.vlong * syW - fz.vlat * cyW;
+            const hk = this._fahrHuelleKontakt(entry, k, x0, z0, vxW, vzW, dt, false);
+            fz.x = hk.x;
+            fz.z = hk.z;
+            fz.vlong = hk.vx * cyW - hk.vz * syW;
+            fz.vlat = -hk.vx * syW - hk.vz * cyW;
+            if (k.schubQuelle.length) gegner = k.schubQuelle.slice();
+        }
+        entry.position.x = fz.x;
+        entry.position.z = fz.z;
+        this._blockerBewegt(entry); // sein Platz wandert (die Nachbarschaft fragt ihn direkt)
+        entry.rotationY = this._rittGier(entry, entry._rideYaw);
+        const st = entry._blockerStampAt;
+        if (
+            entry.blockerAABBs &&
+            (genau ||
+                !st ||
+                Math.abs(st.x - entry.position.x) > schwelleM ||
+                Math.abs(st.z - entry.position.z) > schwelleM ||
+                Math.abs(st.ry - entry.rotationY) > 0.1)
+        ) {
+            this._populateBlockerAABBs(entry);
+            entry._blockerStampAt = genau ? null : { x: entry.position.x, z: entry.position.z, ry: entry.rotationY };
+        }
+        return gegner;
     }
 
     // DER RITT IM SIM-SCHRITT (Welle L, Q1 — Befund 06.10.: der Ritt schrieb den Sitz NACH der Interpolation auf das
@@ -1184,21 +1258,7 @@ class AnazhRealm_koerper_fahrt {
                 entry._rideY = null;
                 return;
             }
-            entry.position.y = fz.y + 0.5 + clear;
-            entry._rideY = entry.position.y;
-            entry._rideVy = fz.vy;
-            entry._terrainPitchZiel = -fz.steig;
-            entry._terrainRollZiel = fz.wank;
-            entry._rideTerrainPitch = -fz.steig;
-            entry._rideRoll = fz.wank;
-            entry._ridePitch = -fz.fNick;
-            entry._rideKurvenRoll = fz.fWank;
-            entry._rideHeave = fz.fHub;
-            entry._rideSp = fz.speed;
-            if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
-            // Die Fahr-Phase ist der Rad-Winkel des Kerns (Weg/radR, rückwärts rückwärts); applyJoint multipliziert den
-            // rad-Kanal ×1.6.
-            entry._ridePhase = fz.wheelAng / 1.6;
+            this._wagenLage(entry, fz);
             pm.y = entry.position.y - 0.5 + sitz + fz.fHub;
             // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen.
             this.state._fieldVy = 0;
@@ -1305,6 +1365,19 @@ class AnazhRealm_koerper_fahrt {
     // trocken μ 1 auf jeden Boden, nass 0,7 (`NAESSE.haft`).
     _fahrHaft(fz) {
         const n = Math.min(1, Math.max(0, this.state.naesse || 0));
+        // DER MERKER am Fahr-Zustand (Lehre 25: der Takt kostet, was ihn betrifft): der Boden unter dem Rad ist derselbe, bis der
+        // Wagen `HAFT_MERK_M` weiter ist, die Nässe oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je
+        // Schritt neu (der Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms)
+        const st = AnazhRealm._stoffStand || 0;
+        const M = fz._haft;
+        if (
+            M &&
+            M.n === n &&
+            M.st === st &&
+            Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M &&
+            Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M
+        )
+            return M.mu;
         const mu = (stoff) => {
             const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
             if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * n;
@@ -1317,6 +1390,7 @@ class AnazhRealm_koerper_fahrt {
         let m = mu(this._terrainMaterialAt(fz.x, fz.z, fz.y));
         if (gruen > 0) m += (mu("gras") - m) * gruen;
         if (pfad > 0) m += (mu("erde") - m) * pfad;
+        fz._haft = { x: fz.x, z: fz.z, n, st, mu: m };
         return m;
     }
 
@@ -1336,13 +1410,19 @@ class AnazhRealm_koerper_fahrt {
     // in Sicht (`sichtM`): so schnell, wie ihr Bogen den Anteil `quer` des Reibkreises (μ des Bodens unter dem Rad, `_fahrHaft`)
     // und des Einschlags trägt, und so früh gebremst, wie der Anteil `brems` reicht; am Ende hält er. `F.s` (Weg auf der Route),
     // `F.quer` (Abstand zu ihr) und die Zählung des Takts (`F.takte`, `F.tempo`, `F.fest`) lesen die Linse und wer der Fahrt folgt.
+    // Der Fahrer des Spielers sitzt in `_fahrer`; jeder Wagen mit einem Bewohner am Steuer trägt seinen eigenen (`_verkehrSchritt`)
+    // — dieselbe Linie (`_fahrerLinie`), derselbe Schritt, nur Wagen und Lage sind seine.
     fahrerSetzen(pts) {
+        return (this._fahrer = this._fahrerLinie(pts));
+    }
+    // DIE LINIE EINES FAHRERS aus den Punkten seiner Route (Welt x/z) — null, wenn sie keine Strecke trägt.
+    _fahrerLinie(pts) {
         const D = AnazhRealm.FAHRER;
         const P = [];
         for (const q of pts || [])
             if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
                 P.push({ x: q.x, z: q.z });
-        if (P.length < 2) return (this._fahrer = null);
+        if (P.length < 2) return null;
         // DIE LINIE DES FAHRERS: die Route je Meter, gemittelt über ±kurveM (an den Enden das symmetrische Stück) — der Knick
         // einer Gasse wird der Bogen, den die Drehung über ±kurveM misst (am Knick schoss er über den Bogen hinaus und kroch zurück)
         const M = [P[0]];
@@ -1381,7 +1461,7 @@ class AnazhRealm_koerper_fahrt {
             return th[i];
         };
         const k = s.map((u) => Math.abs(richtung(u + D.kurveM) - richtung(u - D.kurveM)) / (2 * D.kurveM));
-        return (this._fahrer = {
+        return {
             pts: P,
             bogen: s,
             k,
@@ -1398,17 +1478,18 @@ class AnazhRealm_koerper_fahrt {
             grund: {},
             orte: {},
             nach: "anfahrt",
-        });
+            deckel: Infinity,
+        };
     }
-    _fahrerSchritt(T) {
-        const F = this._fahrer;
-        const ent = this._mountedEntry;
+    // DER SCHRITT DES FAHRERS am Steuer von `ent` an der Lage `p` (der Spieler: sein gerittener Wagen an seinem Leib; ein Wagen
+    // des Verkehrs: er selbst an seinem Fahr-Zustand). `F.deckel` (m/s, gesetzt von wem der Fahrt folgt: der Verkehr vor ihm,
+    // `_verkehrSchritt`) deckelt das Soll wie eine Kurve.
+    _fahrerSchritt(T, F = this._fahrer, ent = this._mountedEntry, p = this.state.playerMesh.position) {
         const z = ent && ent._fahr;
         const G = z && this._fahrSatz(ent, this._vehicleProfile(ent));
         if (!G || !Number.isFinite(z.x)) return;
         const D = AnazhRealm.FAHRER;
         const [P, S] = [F.pts, F.bogen];
-        const p = this.state.playerMesh.position;
         let best = Infinity;
         for (let i = F.i; i < Math.min(P.length - 1, F.i + 40); i++) {
             const [a, b] = [P[i], P[i + 1]];
@@ -1455,10 +1536,13 @@ class AnazhRealm_koerper_fahrt {
             const w = Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s));
             if (w < soll) [soll, grund, kWo] = [w, vk === 0 ? "ende" : "kurve", i];
         }
+        if (F.deckel < soll) [soll, grund, kWo] = [Math.max(0, F.deckel), "folge", -1];
         const e = soll - v;
         T.gas = Math.max(0, Math.min(1, e / D.bandMs));
         T.bremse = v > D.bremsV ? Math.max(0, Math.min(1, -e / D.bandMs)) : 0;
-        T.handbremse = F.ende;
+        // unter `haltMs` Soll hält er die Handbremse (unter bremsV bremst der Kern nicht: wer hinter einem Stehenden auf Soll 0
+        // kam, rollte mit 0,3–0,5 m/s in ihn — 327 Berührungen in der Metropole)
+        T.handbremse = F.ende || soll < D.haltMs;
         // DIE FAHRT ZÄHLT SICH im Sim-Takt: je Schritt das Tempo in Zehnteln von vmax (`F.tempo`), und wer vor dem Ende `festS`
         // lang keine `festM` auf der Route vorankommt, steckt fest (`F.fest`: wo, m auf der Route)
         F.takte++;
@@ -1503,38 +1587,8 @@ class AnazhRealm_koerper_fahrt {
             // Stoß weiter (Bauwerke, Wagen, Leiber), seine Blocker ziehen mit. Ohne Fahrer tritt keiner die Bremse: im Kern ist
             // `brake` unter bremsV der Rückwärtsgang (die Taste S) — der leere Wagen fuhr damit rückwärts in den Spieler (K12:
             // mit dem Rückwärtsgang des Kerns 0,67 m tief, gate:fahr-leben L6).
-            const rutscht = Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs;
-            if (rutscht) {
-                const x0 = fz.x;
-                const z0 = fz.z;
-                vc.fahrKraefte(
-                    fz,
-                    { hand: true, tiefe: this._fahrTiefe(fz), haft: this._fahrHaft(fz), wind: this._fahrWind(fz) },
-                    entry._fahrSatz,
-                    dt
-                );
-                entry._rideYaw = fz.yaw + Math.PI / 2;
-                const k = this._fahrHuelle(entry);
-                if (k) {
-                    const cyW = Math.cos(fz.yaw);
-                    const syW = Math.sin(fz.yaw);
-                    const vxW = fz.vlong * cyW - fz.vlat * syW;
-                    const vzW = -fz.vlong * syW - fz.vlat * cyW;
-                    const hk = this._fahrHuelleKontakt(entry, k, x0, z0, vxW, vzW, dt, false);
-                    fz.x = hk.x;
-                    fz.z = hk.z;
-                    fz.vlong = hk.vx * cyW - hk.vz * syW;
-                    fz.vlat = -hk.vx * syW - hk.vz * cyW;
-                }
-                entry.position.x = fz.x;
-                entry.position.z = fz.z;
-                this._blockerBewegt(entry); // sein Platz wandert (die Nachbarschaft fragt ihn direkt)
-                entry.rotationY = this._rittGier(entry, entry._rideYaw);
-                if (entry.blockerAABBs) {
-                    this._populateBlockerAABBs(entry);
-                    entry._blockerStampAt = null;
-                }
-            }
+            if (Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs)
+                this._wagenSchritt(entry, { hand: true }, dt);
             vc.fahrStand(fz, entry._fahrSatz, this._fahrBoden(entry), dt);
             const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
             entry.position.y = fz.y + 0.5 + clear;
@@ -2453,10 +2507,13 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // Anteile des Reibkreises (μ·g) und des Einschlags in der Kurve und des Reibkreises beim Bremsen davor · kriechMs = so langsam
 // fährt er höchstens um eine Kehre · bogenM = auf mindestens so viele Meter misst er den Bogen zurück auf die Route ·
 // kurveM = über ±so viele Meter misst er die Drehung der Route · sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
-// bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltM = so nah am Ende hält er · festM / festS =
+// bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltMs = unter diesem Soll zieht er die
+// Handbremse · haltM = so nah am Ende hält er · festM / festS =
 // so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber · tempoTeil = unter diesem Anteil von vmax ist
 // ein Takt langsam (fahrzeug.K2: ≥ 80 % der Takte darüber), seinen Täter zählt er je ortM der Route; hangRad = steiler bergauf
 // ist der Hang der Täter.
+// HAFT_MERK_M: so weit (je Achse) fährt ein Wagen auf dem gemerkten Reibkreis seines Bodens (`_fahrHaft`).
+AnazhRealm.HAFT_MERK_M = 1;
 AnazhRealm.FAHRER = Object.freeze({
     ld0: 3,
     ldV: 0.35,
@@ -2470,6 +2527,7 @@ AnazhRealm.FAHRER = Object.freeze({
     sichtM: 120,
     bandMs: 1.5,
     bremsV: 0.5,
+    haltMs: 0.1,
     haltM: 2,
     festM: 1,
     festS: 2,

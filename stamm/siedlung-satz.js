@@ -2792,9 +2792,23 @@ class AnazhRealm_siedlung_satz {
         // das Auge sieht — der Stand-Leser der Sicht um den Boden des Fahr-Schritts (`_standSicht`, wie Huf und Fuß; die Sim
         // bleibt auf dem Gesetz). Bis H5 federte das Rad auf das Gesetz: an der Mess-Wiese p95 4,9 cm neben dem Mesh (K8).
         const P = this._archTmpRadP || (this._archTmpRadP = new THREE.Vector3());
+        // fern federt kein Rad einzeln (`_radGrob`, der Verkehr jenseits `VERKEHR.genauM`: der Hub eines Rads deckt dort keinen
+        // Bildpunkt) — es steht in der Ebene der vier
+        if (entry._radGrob) return out;
         P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
-        const gesetz = this._fahrBoden(entry)(P.x, P.z);
-        const boden = Number.isFinite(gesetz) ? this._standSicht(P.x, P.z, gesetz, false) : gesetz;
+        // je Nabe EIN Boden in dieser Lage (Rad, Sattel und Nabe eines Rads teilen ihn — jedes Blatt fragte die Säule und das
+        // Mesh): der Merker gilt, solange die ungefederte Lage dieselbe ist (Ort und Gier)
+        const E = ewU.elements;
+        let M = entry._radBodenMerk;
+        if (!M || M.x !== E[12] || M.z !== E[14] || M.c !== E[0] || M.s !== E[2])
+            M = entry._radBodenMerk = { x: E[12], z: E[14], c: E[0], s: E[2], naben: new Map() };
+        const nabe = rd.hx * 1009 + rd.hz;
+        let boden = M.naben.get(nabe);
+        if (boden === undefined) {
+            const gesetz = this._fahrBoden(entry)(P.x, P.z);
+            boden = Number.isFinite(gesetz) ? this._standSicht(P.x, P.z, gesetz, false) : gesetz;
+            M.naben.set(nabe, boden);
+        }
         if (Number.isFinite(boden)) {
             // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die
             // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz)
