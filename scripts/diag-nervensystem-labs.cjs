@@ -17,7 +17,6 @@ const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbs
 const fs = require("fs");
 const path = require("path");
 
-const PORT = Number(process.env.NERV_LABS_PORT || 4437);
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -55,7 +54,7 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws(manifestSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 

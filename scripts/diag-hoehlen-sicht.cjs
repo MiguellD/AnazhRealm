@@ -50,7 +50,7 @@
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint — MUSS rot fallen und
 // ihn beim Namen nennen.
-//   node scripts/diag-hoehlen-sicht.cjs [--selftest]   (npm run gate:hoehlen-sicht; Port HOEHLEN_SICHT_PORT)
+//   node scripts/diag-hoehlen-sicht.cjs [--selftest]   (npm run gate:hoehlen-sicht)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -626,7 +626,6 @@ const { statikServer, warteAufWelt, nullSeite, wandEnde } = require("./lib/welt-
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
-const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
 // Die Mess-Wiese (die Blicke wiese und hang), die Mitte der Welt und das Quadrat der Mündungs-Suche um sie (halbe Seite, m).
 // Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt.
 const { messort, WELT_MITTE } = require("./lib/welt-orte.cjs");
@@ -635,7 +634,7 @@ const server = statikServer();
 
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
     await page.evaluateOnNewDocument(installHoehlenStrahl);
