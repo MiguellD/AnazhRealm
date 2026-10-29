@@ -692,7 +692,7 @@ const wegenetzVerdict = (m) =>
         [m.wegAnteil >= 0.95, `querfeldein (Weg ${m.wegAnteil})`],
         [m.ende, `nicht angekommen (${m.weg} m)`],
         [!m.steck.length, `Steckenbleiber bei ${m.steck} m`],
-        [m.anteil >= 0.8, `über 0,8 · vmax ${m.anteil}`],
+        [m.anteil >= 0.8, `über 0,8 · vmax ${m.anteil} — Täter ${JSON.stringify(m.grund)} · ${(m.taeter || []).slice(0, 4).map((t) => `${t.grund} bei ${t.s} m (${t.n})`).join(", ")}`],
         [m.boden.wiese > 0 && m.boden.wald >= 0.1 && m.boden.dorf >= 0.05, `Boden ${JSON.stringify(m.boden)}`],
     ].flatMap(([ok, t]) => (ok ? [] : [t]));
 

@@ -1395,6 +1395,9 @@ class AnazhRealm_koerper_fahrt {
             fest: [],
             anker: 0,
             steht: 0,
+            grund: {},
+            orte: {},
+            nach: "anfahrt",
         });
     }
     _fahrerSchritt(T) {
@@ -1444,9 +1447,13 @@ class AnazhRealm_koerper_fahrt {
         let soll = F.ende
             ? 0
             : Math.min(G.vmax, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(D.bogenM, Math.hypot(dx, dz))));
+        // was das Soll deckelt: der Bogen zurück auf die Route, eine Kurve in Sicht (wo, ihr Radius) oder das Ende
+        let grund = F.ende ? "ende" : "bogen";
+        let kWo = -1;
         for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
             const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
-            soll = Math.min(soll, Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s)));
+            const w = Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s));
+            if (w < soll) [soll, grund, kWo] = [w, vk === 0 ? "ende" : "kurve", i];
         }
         const e = soll - v;
         T.gas = Math.max(0, Math.min(1, e / D.bandMs));
@@ -1458,6 +1465,24 @@ class AnazhRealm_koerper_fahrt {
         F.tempo[Math.max(0, Math.min(10, Math.floor((10 * v) / G.vmax)))]++;
         if (F.s - F.anker >= D.festM || F.ende) [F.anker, F.steht] = [F.s, 0];
         else if (++F.steht === Math.round(D.festS / AnazhRealm.FIXED_DT)) F.fest.push(Math.round(F.s));
+        // DER TÄTER JEDES LANGSAMEN TAKTS (Gebot 10, unter `tempoTeil` · vmax): deckelt das Soll, sein Grund (die Kurve, der Bogen
+        // zurück, das Ende); fährt der Wagen unter einem freien Soll, die Welt am Rad — das Wasser (`_fahrTiefe`), der Hang
+        // (Steigung über `hangRad`) —, sonst holt er auf, was der letzte Täter ihm nahm (`F.nach`, am Start die Anfahrt). Je
+        // `ortM` der Route die Takte und ihr Täter (`F.orte`), die Linse nennt die schwersten.
+        const lim = D.tempoTeil * G.vmax;
+        if (soll < lim && grund !== "bogen") F.nach = grund;
+        if (v < lim) {
+            const g =
+                soll < lim ? grund : this._fahrTiefe(z) > 0 ? "wasser" : (z.steig || 0) > D.hangRad ? "hang" : F.nach;
+            if (g === "wasser" || g === "hang") F.nach = g;
+            F.grund[g] = (F.grund[g] || 0) + 1;
+            const o = Math.floor(F.s / D.ortM);
+            const ort = F.orte[o] || (F.orte[o] = { n: 0, vMin: Infinity, rMin: Infinity, grund: {} });
+            ort.n++;
+            ort.vMin = Math.min(ort.vMin, v);
+            ort.grund[g] = (ort.grund[g] || 0) + 1;
+            if (kWo >= 0) ort.rMin = Math.min(ort.rMin, 1 / Math.max(F.k[kWo], 1e-4));
+        }
     }
 
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
@@ -2429,7 +2454,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // fährt er höchstens um eine Kehre · bogenM = auf mindestens so viele Meter misst er den Bogen zurück auf die Route ·
 // kurveM = über ±so viele Meter misst er die Drehung der Route · sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
 // bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltM = so nah am Ende hält er · festM / festS =
-// so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber.
+// so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber · tempoTeil = unter diesem Anteil von vmax ist
+// ein Takt langsam (fahrzeug.K2: ≥ 80 % der Takte darüber), seinen Täter zählt er je ortM der Route; hangRad = steiler bergauf
+// ist der Hang der Täter.
 AnazhRealm.FAHRER = Object.freeze({
     ld0: 3,
     ldV: 0.35,
@@ -2446,6 +2473,9 @@ AnazhRealm.FAHRER = Object.freeze({
     haltM: 2,
     festM: 1,
     festS: 2,
+    tempoTeil: 0.8,
+    ortM: 25,
+    hangRad: 0.05,
 });
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER

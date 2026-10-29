@@ -564,8 +564,13 @@ async function probeLeben(expected) {
         }
         r.fahrerSetzen(null);
         const t = F.tempo;
+        // die Täter der langsamen Takte (der Fahrer zählt sie je `ortM` der Route): die schwersten Orte mit Takten, Täter, v min, Radius
+        const D = A.FAHRER;
+        const taeter = Object.entries(F.orte).sort((a, c) => c[1].n - a[1].n).slice(0, 12).map(([o, q]) => ({
+            s: +o * D.ortM, n: q.n, grund: Object.entries(q.grund).sort((a, c) => c[1] - a[1])[0][0],
+            v: +q.vMin.toFixed(1), r: Number.isFinite(q.rMin) ? +q.rMin.toFixed(1) : null }));
         return { lang: Math.round(F.lang), weg: Math.round(F.s), ende: F.ende, schritte: F.takte, tempo: t, steck: F.fest, anteil: (t[8] + t[9] + t[10]) / F.takte,
-            wegAnteil: b.weg / b.n, boden: { wiese: b.wiese / b.n, wald: b.wald / b.n, dorf: b.dorf / b.n }, lage: [p.x, p.z] };
+            wegAnteil: b.weg / b.n, boden: { wiese: b.wiese / b.n, wald: b.wald / b.n, dorf: b.dorf / b.n }, lage: [p.x, p.z], grund: F.grund, taeter };
     };
     if (expected.nurKette || expected.nurRueck || expected.wegenetz) {
         try {
