@@ -1,5 +1,5 @@
 class AnazhRealm_netz_identitaet {
-    // ===== ATLAS · Netz/identitaet — Vibe-Pass · Signaturen · Regionen · Pins und Hallen · Bann =====
+    // ===== ATLAS · Netz/identitaet — Vibe-Pass · Signaturen · Bibliothek · Regionen · Pins und Hallen · Bann =====
     // ### Vibe-Pass: die souveräne Avatar-Identität ###
     // Ed25519-Schlüsselpaar, lokal beim ersten Erwachen erzeugt: der öffentliche Schlüssel IST der Avatar,
     // der private signiert Werke. crypto.subtle trägt Ed25519 nativ (kein Vendoring); nur im Secure
@@ -613,23 +613,26 @@ class AnazhRealm_netz_identitaet {
         return !!bp && !bp.builtIn && !bp._foundryAutoSpecies && Array.isArray(bp.parts);
     }
 
-    _werkKanon(programm) {
-        return JSON.stringify({ v: 1, programm });
+    // Die signierte Fracht einer Hülle in fester Reihe: das Programm (Werk, Regel) oder das Gesetz (Welt) und die Herkunft
+    // (`provenance`, der Fork eines Eintrags der Bibliothek) — ein Werk ohne Herkunft signiert byte-gleich wie seit v1.
+    _werkKanon(h) {
+        return JSON.stringify({ v: 1, programm: h.programm, gesetz: h.gesetz, provenance: h.provenance });
     }
 
-    // Versiegelt ein reisendes Programm mit dem Vibe-Pass → EIN Code (`_werkHuelle`). Die Signatur deckt v + programm.
-    async _werkCode(programm) {
-        const sig = await this._vibeSign(this._werkKanon(programm));
+    // Versiegelt eine Fracht mit dem Vibe-Pass → EIN Code (`_werkHuelle`). Die Signatur deckt `_werkKanon`.
+    async _werkCode(fracht, max) {
+        const sig = await this._vibeSign(this._werkKanon(fracht));
         if (!sig) return { ok: false, grund: "sign_failed" };
-        return this._werkHuelle({ programm, sig });
+        return this._werkHuelle({ ...fracht, sig }, max);
     }
 
-    // DAS EINE CODE-FORMAT jedes Teilens: `WERK_CODE.praefix` + base64url der Hülle { v, programm | welt, autor, sig } — ein
-    // Werk trägt sein Programm, eine Welt ihre signierte Adresse (`teileWelt`). { ok, code } | { ok:false, grund }.
-    _werkHuelle(fracht) {
+    // DAS EINE CODE-FORMAT jedes Teilens: `WERK_CODE.praefix` + base64url der Hülle { v, programm | gesetz | welt, autor, sig } —
+    // ein Werk trägt sein Programm, eine Welt ihre signierte Adresse (`teileWelt`), ein Eintrag der Bibliothek sein Gesetz
+    // (`huelle` sind seine Bytes; die Decke `max` des Codes). { ok, code, huelle } | { ok:false, grund }.
+    _werkHuelle(fracht, max = AnazhRealm.WERK_CODE.max) {
         const huelle = JSON.stringify({ v: 1, ...fracht, autor: this.state.vibePass.publicKeyHex });
         const code = AnazhRealm.WERK_CODE.praefix + this._vibeBytesToB64u(new TextEncoder().encode(huelle));
-        return code.length <= AnazhRealm.WERK_CODE.max ? { ok: true, code } : { ok: false, grund: "gross" };
+        return code.length <= max ? { ok: true, code, huelle } : { ok: false, grund: "gross" };
     }
 
     // DIE GESTE DES SENDERS einer Welt: die aktive Welt wird Gastgeber (Rolle host, der Raum offen — der Host beantwortet den
@@ -662,8 +665,13 @@ class AnazhRealm_netz_identitaet {
             whom: "jeden mit dem Code",
         };
         if (!this._sovereignGesture("sign_manifest", was, opts)) return { ok: false, grund: "cancelled" };
-        const seed = this._werkSame(bp, name, null);
-        return this._werkCode(this._werkProgramm(name, null, seed, null, this._studioStampFor(name), 0));
+        return this._werkCode({ programm: this._werkReise(name) });
+    }
+
+    // Das reisende Programm eines Bauplans ohne Ort und Id — der Code (`teileWerk`) und die Bibliothek tragen dasselbe.
+    _werkReise(name) {
+        const bp = this.state.blueprints[name];
+        return this._werkProgramm(name, null, this._werkSame(bp, name, null), null, this._studioStampFor(name), 0);
     }
 
     // DIE GESTE DES EMPFÄNGERS: ein Code (Chat) → dasselbe Werk an der eigenen Pose. Jede Wand fällt LAUT und beim Namen
@@ -726,7 +734,7 @@ class AnazhRealm_netz_identitaet {
         const vertrag = this._ovVertrag(name, spawn[5]);
         if (vertrag) return ab(vertrag);
         if (typeof h.autor !== "string" || typeof h.sig !== "string") return ab("unsigniert");
-        if (!(await this._vibeVerify(this._werkKanon(p), h.sig, h.autor))) return ab("signatur");
+        if (!(await this._vibeVerify(this._werkKanon(h), h.sig, h.autor))) return ab("signatur");
         let ziel = name;
         for (let n = 1; def && this.state.blueprints[ziel]; n++) ziel = `${name.slice(0, 30)}-geteilt${n > 1 ? n : ""}`;
         const s = spawn.slice();
@@ -735,7 +743,7 @@ class AnazhRealm_netz_identitaet {
         const steht = lauf.log.find((e) => e.event === "spawned_blueprint" && e.id != null);
         if (!steht) return ab("steht_nicht:" + ziel);
         const fremd = Object.keys(h)
-            .filter((k) => !["v", "programm", "autor", "sig"].includes(k))
+            .filter((k) => !["v", "programm", "provenance", "autor", "sig"].includes(k))
             .map((k) => k.replace(/[^\w-]/g, "?").slice(0, 24));
         if (fremd.length)
             this.log(`Geteiltes Werk: fremde Felder der Hülle ignoriert (must-ignore): ${fremd.join(", ")}`, "INFO");
@@ -763,6 +771,135 @@ class AnazhRealm_netz_identitaet {
         );
         const res = await this._weltBeitritt(addr, { slugHint: opts.slugHint || addr.label });
         return res.ok ? { ok: true, welt: res.worldId, autor: addr.authorPubKey } : ab("beitritt:" + res.reason);
+    }
+
+    // ### DIE BIBLIOTHEK (ultiversum.K3): signierte Gesetze, klein, über einen Code auffindbar, forkbar ###
+    // EIN Verzeichnis über der EINEN Hülle des Teilens (`_werkCode` → `_werkHuelle`, dieselbe Signatur): ein Eintrag ist GESETZ,
+    // nie Mesh — ein Bauplan sein reisendes Programm (`_werkReise`: Teile, Same, Stempel), eine Regel ihr rule-Programm, eine Welt
+    // Saat · Gelände · Wetter · Regeln · Akten (die Edits), gelesen aus der EINEN Stand-Tafel (`_standTafel`). Das Urteil ist die
+    // Größe (`BIBLIOTHEK.max` Bytes je Eintrag). Der Code ist der Inhalts-Hash (SHA-256 der Bytes): wer ihn hat, findet den
+    // Eintrag und prüft ihn selbst — Hash, Signatur, Rückruf (`_artifactProvenanceTainted`). Der Fork trägt die Herkunfts-Kette
+    // (`provenance`, je Glied Autor und Code des Vorgängers) unter der Signatur des Forkenden; jeder Eintrag ist offenes JSON.
+    _bibliothek() {
+        if (!this.state.bibliothek) {
+            let roh = null;
+            try {
+                roh = JSON.parse(localStorage.getItem(AnazhRealm.BIBLIOTHEK.speicher) || "{}");
+            } catch {
+                roh = null;
+            }
+            this.state.bibliothek = roh && typeof roh === "object" && !Array.isArray(roh) ? roh : {};
+        }
+        return this.state.bibliothek;
+    }
+
+    // Die Fracht eines Eintrags je Art (null: die Quelle fehlt) — die Regel als ihr Programm (`rule`), in der Welt wie allein.
+    _bibliothekFracht(art, quelle) {
+        const regel = (r) => ["rule", r.cond, r.effect, { everySec: r.everySec, ttlSec: r.ttlSec }];
+        if (art === "bauplan") return this.state.blueprints[quelle] ? { programm: this._werkReise(quelle) } : null;
+        if (art === "regel") {
+            const r = (this.state.worldRules || []).find((x) => x.id === quelle);
+            return r ? { programm: regel(r) } : null;
+        }
+        if (art !== "welt") return null;
+        const feld = (k) => this._standTafel().find((z) => z[0] === k)[1](false, {});
+        const wm = feld("worldMeta");
+        const gelaende = [feld("terrainSteepness"), feld("terrainBaseHeight")];
+        const regeln = feld("worldRules").map(regel);
+        return {
+            gesetz: {
+                saat: wm.seed,
+                gen: wm.genVersion,
+                gelaende,
+                wetter: feld("weather"),
+                regeln,
+                akten: wm.voxelEdits || [],
+            },
+        };
+    }
+
+    // DER EINE EINGANG eines Eintrags (eigen und fremd, beim Ablegen und beim Finden): Bytes ≤ Decke, Hülle v1, die Art aus der
+    // Fracht, Signatur des Autors über `_werkKanon`, kein zurückgerufener Schlüssel in der Kette. { ok, code, art, bytes, eintrag }.
+    async _bibliothekPruefe(text) {
+        const bytes = new TextEncoder().encode(String(text));
+        if (bytes.length > AnazhRealm.BIBLIOTHEK.max) return { ok: false, grund: "gross", bytes: bytes.length };
+        let h = null;
+        try {
+            h = JSON.parse(text);
+        } catch {
+            return { ok: false, grund: "kaputt" };
+        }
+        if (!h || typeof h !== "object" || Array.isArray(h) || h.v !== 1) return { ok: false, grund: "version" };
+        const p = h.programm;
+        const kopf = Array.isArray(p) ? (p[0] === "chain" && Array.isArray(p[2]) ? p[2][0] : p[0]) : null;
+        const art =
+            h.gesetz && typeof h.gesetz === "object" && !p
+                ? "welt"
+                : { rule: "regel", spawn_blueprint: "bauplan" }[kopf] || null;
+        if (!art) return { ok: false, grund: "art" };
+        if (!(await this._vibeVerify(this._werkKanon(h), h.sig, h.autor))) return { ok: false, grund: "signatur" };
+        if (this._artifactProvenanceTainted({ authorPubKey: h.autor, provenance: h.provenance }))
+            return { ok: false, grund: "rueckruf" };
+        const code = this._vibeBytesToHex(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
+        return { ok: true, code, art, bytes: bytes.length, eintrag: h };
+    }
+
+    // Nimmt einen Eintrag (seine Bytes) durch den EINEN Eingang ins Verzeichnis, unter seinem Code; gespeichert spieler-global
+    // (localStorage `BIBLIOTHEK.speicher`, nie im Welt-Stand). Scheitert das Speichern, fällt der Eintrag laut.
+    async bibliothekAufnehmen(text) {
+        const res = await this._bibliothekPruefe(text);
+        if (!res.ok) return res;
+        const verz = this._bibliothek();
+        verz[res.code] = text;
+        try {
+            localStorage.setItem(AnazhRealm.BIBLIOTHEK.speicher, JSON.stringify(verz));
+        } catch (e) {
+            delete verz[res.code];
+            return { ok: false, grund: "speicher:" + (e && e.name) };
+        }
+        return { ok: true, code: res.code, art: res.art, bytes: res.bytes };
+    }
+
+    // Das Wiederfinden über den Code: der Eintrag nur, wenn seine Bytes den Code tragen und der Eingang ihn hält.
+    async bibliothekFinde(code) {
+        const text = this._bibliothek()[code];
+        if (typeof text !== "string") return { ok: false, grund: "unbekannt" };
+        const res = await this._bibliothekPruefe(text);
+        return res.ok && res.code !== code ? { ok: false, grund: "code" } : res;
+    }
+
+    // DIE GESTE DES ABLEGENS: ein Gesetz der Welt (art welt · regel mit der Regel-Id · bauplan mit dem Namen) wird signiert
+    // Eintrag — durch die EINE souveräne Geste. { ok, code, art, bytes } | { ok:false, grund }.
+    async bibliothekLege(art, quelle, opts) {
+        const fracht = this._bibliothekFracht(art, quelle);
+        return fracht
+            ? this._bibliothekSiegeln(fracht, `${art} „${quelle ?? "diese Welt"}"`, opts)
+            : { ok: false, grund: "unbekannt" };
+    }
+
+    // DER FORK: ein gefundener Eintrag wird mein Eintrag — `aendere(fracht)` verändert sein Gesetz, die Kette wächst um den
+    // Vorgänger (Autor und Code), die Signatur ist meine. { ok, code, … } | { ok:false, grund }.
+    async bibliothekForke(code, aendere, opts) {
+        const alt = await this.bibliothekFinde(code);
+        if (!alt.ok) return alt;
+        const { programm, gesetz, provenance } = JSON.parse(this._bibliothek()[code]);
+        const kette = [...this._sanitizeProvenance(provenance), { by: alt.eintrag.autor, at: Date.now(), code }];
+        const fracht = { programm, gesetz, provenance: kette };
+        if (aendere) aendere(fracht);
+        return this._bibliothekSiegeln(fracht, `Fork von ${code.slice(0, 12)}`, opts);
+    }
+
+    async _bibliothekSiegeln(fracht, was, opts) {
+        const vp = this.state.vibePass;
+        if (!vp || !vp.ready) return { ok: false, grund: "no_vibepass" };
+        const geste = {
+            what: `${was} in die Bibliothek legen`,
+            value: "deine Signatur bürgt dafür",
+            whom: "jeden mit dem Code",
+        };
+        if (!this._sovereignGesture("sign_manifest", geste, opts)) return { ok: false, grund: "cancelled" };
+        const h = await this._werkCode(fracht, Infinity);
+        return h.ok ? this.bibliothekAufnehmen(h.huelle) : h;
     }
 
     // ### Welt-Manifest-Signatur ###
@@ -2053,6 +2190,8 @@ class AnazhRealm_netz_identitaet {
             const by = this._normalizePubKey(link.by);
             if (!by) continue;
             out.push({ by, at: typeof link.at === "number" ? link.at : 0 });
+            // der Fork der Bibliothek nennt je Glied den Code des Vorgängers
+            if (typeof link.code === "string" && /^[0-9a-f]{64}$/.test(link.code)) out[out.length - 1].code = link.code;
             if (out.length >= 16) break; // gedeckelt — kein unbegrenztes Wachsen
         }
         return out;
@@ -2262,6 +2401,8 @@ AnazhRealm.WORLD_GUEST_RIGHTS_STAGES = Object.freeze(["frieden", "pfad", "mitsch
 // Voxel-Chunk-Span ist FROZEN (43.2 m, _voxelChunkConfig); Region = 8×43.2 = 345.6 m.
 AnazhRealm.REGION_SPAN_M = 345.6;
 AnazhRealm.REGION_HYSTERESIS_M = 10;
+// DIE BIBLIOTHEK: die Decke je Eintrag (Bytes der Hülle — ein Gesetz wiegt Kilobytes, ein Mesh nie) und ihr Speicher-Schlüssel.
+AnazhRealm.BIBLIOTHEK = Object.freeze({ max: 8192, speicher: "anazh.bibliothek" });
 // DER WERK-CODE (Teilen in EINER Geste, Werk und Welt): Präfix, Decke (ein Werk reist in ≤ 4 KB), Abstand vor der Pose des
 // Empfängers und je Wand der Satz des Spielers (`empfangeWerk` nennt jede Absage beim Namen — der Schlüssel ist der Kopf des Grunds).
 AnazhRealm.WERK_CODE = Object.freeze({
