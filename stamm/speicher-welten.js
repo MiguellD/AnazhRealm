@@ -20,7 +20,7 @@ class AnazhRealm_speicher_welten {
             worldId: null,
             slug: "",
             creator: "local",
-            visibility: "private",
+            visibility: "privat",
             parentWorlds: [],
             bornAt: 0,
             // Terrain-Seed der Welt — die EINE Quelle der Welt-Geometrie (SimplexNoise(seed)). Neue Welten
