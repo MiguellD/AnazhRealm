@@ -1643,6 +1643,17 @@ class AnazhRealm_vegetation_streu {
         return this._lodTreeVisHeightFor(entry._lodSpecies, entry._lodVariantIndex, s);
     }
 
+    // DER SCHEITEL EINER KRONE c der Kronen-Karte ([x, z, Radius, Scheitel, Baum], der Schwarm landet auf ihm, luftwasser.K2):
+    // der Fuß des Baums + seine Sichthöhe — dieselbe Zahl, die seine Stufen stempeln (die Streu-Zelle trägt sie seit ihrem Bau,
+    // `_scatterSichtHoehe`; der Eintrags-Baum liest sie aus seinem Höhen-Buch, nur wenn er im Bild steht: ein kalter Eintrag
+    // bestellt nichts). NaN = unbekannt, dort landet keiner.
+    _kronenOben(c) {
+        const e = c[4];
+        if (!e) return c[3];
+        const h = this._archIsRendered(e) ? this._lodTreeVisHeight(e) : null;
+        return h > 0 ? e.position.y + h : NaN;
+    }
+
     // DIE EINE SICHTHÖHE EINES FOUNDRY-BAUMS — die Zahl, die seine Masken lesen: die Höhe der Höhen-Stufe
     // (_foundryBaumHoehe; Template-Höhe × Preset-Welt-Skala) × Instanz-Skala, exakt was die Instanz-Fassade je Slot
     // stempelt (_lodSlotStamp) — für L0, L1 UND das Billboard. Befund 04.10. (Werkbank, Mess-Wiese): die CPU las die

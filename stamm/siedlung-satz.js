@@ -1437,9 +1437,8 @@ class AnazhRealm_siedlung_satz {
             const fluss = { daten: fluesse.schicht(si), tex: fluesse.tex, hydroN: -1 };
             return { S, N, schicht: si, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
-        // `kronen` ist das Register (Schlüssel → [x, z, Radius, Scheitel, Baum], der Scheitel über `_kronenOben`),
-        // `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
-        // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
+        // `kronen` ist das Register (Schlüssel → [x, z, Radius, Scheitel, Baum]), `kronenZellen` sein Raum-Index (Zellen
+        // `LAUB_STREU.zelleM` → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
         // `raeumen`: die neuen Flächen, deren schon gewachsene Natur der Takt räumt (`_wegeRaeumen`, K52).
         st.wegeKarte = {
             stufen,
@@ -1473,17 +1472,13 @@ class AnazhRealm_siedlung_satz {
     // vergaß der Umzug der fernen Stufe alles jenseits ihres Fensters, auch die Eintrags-Kronen, die nur beim Entstehen
     // eintragen; wer > 1 km lief und zurückkam, fand unter jedem Eintrags-Baum (Mess-Wiese: 722 von 789 Kronen) bis zum
     // Reload keine Streu. Der Raum-Index (`kronenZellen`) bindet die Kosten des Umzugs an den Streifen, nie an den Bestand.
-    // DER SCHEITEL (luftwasser.K2: der Schwarm landet auf ihm): `oben` = der Fuß der Streu-Zelle + ihre Sichthöhe, oder der
-    // Eintrags-Baum `baum` selbst (seine Höhen-Stufe lädt beim Eintrag oft noch) — gelesen über `_kronenOben`.
+    // DER SCHEITEL (der Schwarm landet auf ihm): `oben` (Streu: Fuß + Sichthöhe) oder der Eintrag `baum` — `_kronenOben`.
     _kronenStreuNeu(schluessel, x, z, radius, oben = NaN, baum = null) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
         // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt; eine GEÄNDERTE fällt erst heraus.
         const alt = wk.kronen.get(schluessel);
-        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) {
-            [alt[3], alt[4]] = [oben, baum];
-            return;
-        }
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return void ([alt[3], alt[4]] = [oben, baum]);
         if (alt) this._kronenStreuWeg(schluessel);
         const c = [x, z, radius, oben, baum];
         wk.kronen.set(schluessel, c);
@@ -1511,17 +1506,6 @@ class AnazhRealm_siedlung_satz {
         if (zelle && zelle.delete(schluessel) && zelle.size === 0) wk.kronenZellen.delete(zk);
         for (const stufe of wk.stufen) if (stufe.zentriert) this._kronenStreuMale(stufe, c[0], c[1], c[2], null, -1);
         this._kronenStreuWiese(c[0], c[1], c[2]);
-    }
-
-    // DER SCHEITEL EINER KRONE c der Karte (der Schwarm landet auf ihm, luftwasser.K2): der Fuß des Baums + seine Sichthöhe —
-    // dieselbe Zahl, die seine Stufen stempeln (die Streu-Zelle trägt sie seit ihrem Bau, `_scatterSichtHoehe`; der
-    // Eintrags-Baum liest sie aus seinem Höhen-Buch, `_lodTreeVisHeight`, nur wenn er im Bild steht: ein kalter Eintrag bestellt
-    // nichts). NaN = unbekannt, dort landet keiner.
-    _kronenOben(c) {
-        const e = c[4];
-        if (!e) return c[3];
-        const h = this._archIsRendered(e) ? this._lodTreeVisHeight(e) : null;
-        return h > 0 ? e.position.y + h : NaN;
     }
 
     // Der Schlüssel der Index-Zelle (Kante `LAUB_STREU.zelleM`), in der der Kronen-Mittelpunkt (x, z) liegt.
