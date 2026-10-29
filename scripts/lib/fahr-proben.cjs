@@ -978,15 +978,28 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
-        // DER FAHRER DER LINIE ist der Fahrer des Spiels (`fahrerSetzen`, fahrzeug.K2): er hält auf der Linie der Bahn auf die Kante zu
-        // (200 m in ihrer Fahrt — er bremst vor keinem Ende); bis dahin lenkte ein zweiter Fahrer der Linse mit A und D.
-        const linie = (k) => r.fahrerSetzen([{ x: k.sx, z: k.sz }, { x: k.sx + Math.sin(k.fahrt) * 200, z: k.sz + Math.cos(k.fahrt) * 200 }]);
+        // DER FAHRER DER LINIE: W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die Linie
+        // (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück.
+        let gierVor = null;
+        const halteLinie = (g, k) => {
+            tasten(true);
+            const gier = Number.isFinite(g._rideYaw) ? g._rideYaw : k.fahrt;
+            const q = (g.position.x - k.sx) * Math.cos(k.fahrt) - (g.position.z - k.sz) * Math.sin(k.fahrt);
+            const ziel = k.fahrt - Math.max(-0.6, Math.min(0.6, 0.35 * q));
+            const dreh = gierVor === null ? 0 : gier - gierVor;
+            gierVor = gier;
+            let e = ziel - gier - 3 * dreh;
+            e = Math.atan2(Math.sin(e), Math.cos(e));
+            if (e > 0.02) st.keys.a = true;
+            else if (e < -0.02) st.keys.d = true;
+        };
         if (kl) {
             bahnWache = klippenBahn(kl);
             const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei);
             if (g2) {
                 anfahren(g2, 12, kl.fahrt);
-                linie(kl);
+                tasten(true, false);
+                gierVor = null;
                 let yv = g2.position.y;
                 let sprung = 0;
                 let luft = 0;
@@ -997,8 +1010,11 @@ async function probeLeben(expected) {
                     schritte++;
                     if (g2._fahr && g2._fahr.luft) luft++;
                 });
-                for (let i = 0; i < 420; i++) frame(i);
-                r.fahrerSetzen(null);
+                for (let i = 0; i < 420; i++) {
+                    halteLinie(g2, kl);
+                    frame(i);
+                }
+                tasten(false);
                 bilder(60);
                 ab2();
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
@@ -1018,12 +1034,14 @@ async function probeLeben(expected) {
             const g4 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei);
             if (g4) {
                 anfahren(g4, 12, kl.fahrt);
-                linie(kl);
+                tasten(true, false);
                 let hoehe = 0;
                 let hoeheMax = -Infinity;
                 let luftN = 0;
                 let gefahren = 0;
+                gierVor = null;
                 for (let i = 0; i < 420; i++) {
+                    halteLinie(g4, kl);
                     frame(i);
                     gefahren++;
                     hoehe = g4.position.y - 0.5 - hh(g4.position.x, g4.position.z);
@@ -1041,7 +1059,7 @@ async function probeLeben(expected) {
                     `${((g4.position.x - kl.sx) * Math.cos(kl.fahrt) - (g4.position.z - kl.sz) * Math.sin(kl.fahrt)).toFixed(2)} m quer, in ${gefahren} Frames (Kante bei ` +
                     `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
                     (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
-                r.fahrerSetzen(null);
+                tasten(false);
                 const imFlug = !!(g4._fahr && g4._fahr.luft);
                 r.dismountArchitecture();
                 let yv = g4.position.y;
