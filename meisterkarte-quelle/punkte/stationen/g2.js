@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -2844,6 +2844,50 @@ const stationen = [
         pfad: KREATUR,
         quelle: "1 = Vogel- oder Fischschwarm mit Φ ≥ 0,8 und Kohäsion ≥ 0,9 aus `verbandZug`",
     },
+    // ───────── luftwasser.K2 Staffel 2 — die Flucht als EIN Pulk, die Landung auf den Bäumen der Welt (Zweig w3u-leittier: tetrapoda
+    // schwarmLeittier, `_schwarmLeittier`, der Scheitel der Kronen-Karte `_kronenOben`) ─────────
+    // Derselbe Lauf der Probe schwarm (ein Zwilling der Staffel 1, Null-Renderer, R3: Ereignis und Landung sind Mechanik), ihr
+    // Akt II nach den 60 s: ein Baum an der Mitte des Kreises (im Bild gebaut), jede Krone der Welt daneben zählt; der Spieler geht
+    // dem Leittier mit 5 m/s entgegen, bis es auffliegt, dann steht er. Soll aus der Staffel: der Pulk flieht — das Mittel der
+    // Glieder entfernt sich vom Spieler bis zur Ruhe um ≥ 40 m, ≥ 95 % der Glieder ≥ 20 m mit, sein größter Verbund im Flug
+    // (Glied zu Glied wie Staffel 1) ≥ 0,9 —, und er landet in der Ruhe auf einer Krone der Welt: das Leittier ± 0,25 m auf dem
+    // Scheitel aus der Quelle, die den Baum baut (Eintrag: Fuß + `_lodTreeVisHeight`, Streu-Zelle: Fuß + `_scatterSichtHoehe`),
+    // ≥ 99 % der Glieder auf der Krone (binnen Radius, unter dem Scheitel). Schlupflöcher: das Leittier als Funktion der Uhr ohne
+    // Ereignis (ROT „flieht nie“), die Landung auf einer zweiten Höhe (ROT „neben dem Scheitel“). Gefahren 29.10. lokal (Laptop,
+    // headless) am Zweig w3u-leittier e00c21fb: Flucht nach 5,3 s, Abstand 30,2 → 95,6 m, 1,0 der Glieder mit, Verbund 1,0;
+    // Landung nach 25 s auf a:1298, Δ 0,000 m über dem Scheitel 79,0 m, 1,0 auf der Krone; die Mutanten Uhr und Höhe ROT.
+    {
+        kriterium: "luftwasser.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "schwarm"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "schwarm");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe schwarm (Exit " + lauf.exit + ")" };
+            if (z.fehler) return { gruen: false, zahl: "Probe-Fehler: " + z.fehler };
+            const [F, L] = [z.flucht || {}, z.landung || {}];
+            if (F.ausloesS == null) return { gruen: false, zahl: "das Leittier flieht nie vor dem Spieler (30 s im Gang auf es zu)" };
+            const pulk = F.ruheM - F.abstandM >= 40 && F.wegAnteil >= 0.95 && F.kohaesion >= 0.9 && F.kohaesion <= 1;
+            const landet = L.nachS != null && L.dyM <= 0.25 && L.aufKrone >= 0.99;
+            return {
+                gruen: pulk && landet,
+                zahl:
+                    "Flucht nach " + (+F.ausloesS).toFixed(1) + " s, Abstand " + F.abstandM + " → " + F.ruheM + " m, " + F.wegAnteil +
+                    " der Glieder mit, Verbund " + F.kohaesion + "; " +
+                    (L.nachS != null
+                        ? "Landung nach " + (+L.nachS).toFixed(1) + " s auf " + L.krone + ", Δ " + L.dyM + " m zum Scheitel " +
+                          L.scheitelM + " m, " + L.aufKrone + " auf der Krone"
+                        : "keine Landung (Modus " + L.modus + ")") +
+                    " (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99)",
+            };
+        },
+        pfad: [...KREATUR, "stamm/siedlung-satz.js", "stamm/vegetation-streu.js"],
+        quelle: "2 = Flucht vor dem Spieler als EIN Pulk, Landung auf Bäumen der Welt",
+    },
 
     // ───────── luftwasser.K5 — der Schwarm fern EIN Agent (Zweig schwarm: tetrapoda VOGEL_GESETZ.schwarm, `_vogelSchwarmTakt`) ─────────
     // EINE Werkbank an der Weiche (`schwarmLauf` oben, Port {PORT}+20000), die Prüfbühne mit dem festen Schwarm von 100 Gliedern,
@@ -3048,17 +3092,6 @@ const stationen = [
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
 const fehlt = [
-    {
-        kriterium: "luftwasser.K2",
-        staffel: 2,
-        geraet: "headless",
-        befehl: null,
-        grund:
-            "Welt fehlt: das Leittier des Schwarms (das Zentrum) ist eine Funktion der Welt-Uhr ohne Ereignis — es flieht nie " +
-            "vor dem Spieler und landet nie; die Kronen-Karte (wegeKarte.kronen) trägt je Krone nur [x, z, Radius], keine Höhe " +
-            "zum Landen; der Verband trüge die Flucht als EIN Pulk (ein Leittier, verbandZug)",
-        quelle: "2 = Flucht vor dem Spieler als EIN Pulk, Landung auf Bäumen der Welt",
-    },
     {
         kriterium: "mensch.K1",
         staffel: 2,
