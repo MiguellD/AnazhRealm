@@ -3107,13 +3107,15 @@ class AnazhRealm_bild_kosten {
     // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
     // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
     // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
-    // "gpu" (Spike gpu-wahl): die Senke eines Gang-Satzes (`aGang`), die nicht wirft — Haut und Kleid der Bewohner, das Auge
-    // der Tiere zeichnen nur im Hauptbild —, wählt auf der GPU (`_instanzWahlGpu`); ihr Wurf zeichnet jede Instanz.
+    // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
+    // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
+    // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
+    // Pflanzen-Stufen und die Karte (ihr Fenster der Blende liest aH0 · aKarte).
     _instanzWahlArt(leaf, castShadow, regional) {
         if (regional || !leaf || leaf.tuer) return null;
         const at = leaf.geom && leaf.geom.attributes;
         if (!at) return null;
-        if (at.aGang) return castShadow ? null : "gpu";
+        if (at.aGang) return "gpu";
         if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
         if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
         if (leaf.shadowTwin) return "schatten";
@@ -3206,9 +3208,10 @@ class AnazhRealm_bild_kosten {
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, hL < 0);
     }
 
-    // DIE WAHL DER GPU (Spike gpu-wahl, Rang 7 des Luft-Urteils 28.10.). Befund (Luft-Urteil, Stadt-Gipfel stadt-voll): der
-    // Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im Nah-Kreis, auch hinter
-    // dem Blick: ihre Senken wählte keine Pass-Art (`_instanzWahlArt` kannte nur Pflanzen-Stufen und Karten). Jetzt wählt eine
+    // DIE WAHL DER GPU (Rang 7 des Luft-Urteils 28.10., gebaut nach dem Spike gpu-wahl). Befund (Luft-Urteil, Stadt-Gipfel
+    // stadt-voll): der Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im
+    // Nah-Kreis, auch hinter dem Blick —, jede Kaskade ihren Wurf ganz (je ~110k): die Senken des Gang-Satzes wählte keine
+    // Pass-Art (`_instanzWahlArt` kannte nur Pflanzen-Stufen und Karten). Jetzt wählt eine
     // Arena, deren Senken die Art "gpu" tragen, im Haken jedes Passes, vor seinem Encoder (r184 reicht ihn bei `finishRender`
     // ein, die Queue ordnet: Aufträge · Rechnung · Zug): sie legt die Aufträge dieser Kamera (`_wahlVor`: die Zahl jedes Zugs 0,
     // seine erste Instanz der Abschnitt der Liste dieser Kamera), und EIN Compute je Kamera prüft jede ihrer Instanzen nach dem
@@ -3256,13 +3259,13 @@ class AnazhRealm_bild_kosten {
                 layout,
                 compute: { module, entryPoint: "wahl" },
             });
-            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 128, usage: U.UNIFORM | U.COPY_DST });
+            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 272, usage: U.UNIFORM | U.COPY_DST });
             W = AnazhRealm.__wahlGpu = {
                 dev,
                 lay,
                 pipe,
                 lage,
-                lageF: new Float32Array(32),
+                lageF: new Float32Array(68),
                 puffer: null,
                 f: null,
                 u: null,
@@ -3309,16 +3312,29 @@ class AnazhRealm_bild_kosten {
         dev.queue.submit([enc.finish()]);
     }
 
-    // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 32 Floats): je Ebene des Frustums Normale und
+    // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 68 Floats): je Ebene des Frustums Normale und
     // Abstand des Auges (n·a + d — die Instanz rechnet relativ zum Auge, f32 trägt keine Kilometer auf Millimeter), das Auge,
-    // der Rand (Halt + Licht, je Meter Abstand der Rand der zeitlichen Auflösung + der Drehung) — die Größen von `_passTrifft`.
+    // der Rand (Halt + Licht, je Meter Abstand der Rand der zeitlichen Auflösung + der Drehung); im Kaskaden-Pass die
+    // Licht-Kapsel: je Ebene der Scheibe (`fit.ebenen`) dasselbe, die Licht-Tiefe über dem Boden der Box (die dritte Zeile von
+    // `fit.basisInv` relativ zum Auge, minus `zb`), das Licht (w = 1: die Kapsel gilt) und ihr Saum (Saum der Scheibe, zweimal
+    // der Halt, der Licht-Rand) — die Größen von `_passTrifft`.
     static _wahlLage(L, aus) {
-        const E = L.fr.planes;
-        for (let p = 0; p < 6; p++) {
-            const n = E[p].normal;
-            aus.set([n.x, n.y, n.z, n.x * L.ax + n.y * L.ay + n.z * L.az + E[p].constant], p * 4);
-        }
-        aus.set([L.ax, L.ay, L.az, 0, L.halt + L.licht, L.rand + L.dreh, 0, 0], 24);
+        const ax = L.ax,
+            ay = L.ay,
+            az = L.az;
+        const ebene = (P, o) => {
+            const n = P.normal;
+            aus.set([n.x, n.y, n.z, n.x * ax + n.y * ay + n.z * az + P.constant], o);
+        };
+        for (let p = 0; p < 6; p++) ebene(L.fr.planes[p], p * 4);
+        aus.set([ax, ay, az, 0, L.halt + L.licht, L.rand + L.dreh, 0, 0], 24);
+        const f = L.fit;
+        if (!f) return aus.fill(0, 32);
+        for (let p = 0; p < 6; p++) ebene(f.ebenen[p], 32 + p * 4);
+        const b = f.basisInv.elements,
+            d = L.dir;
+        aus.set([b[2], b[6], b[10], b[2] * ax + b[6] * ay + b[10] * az + b[14] - f.zb], 56);
+        aus.set([d.x, d.y, d.z, 1, f.saum + 2 * L.halt + L.licht, 0, 0, 0], 60);
         return aus;
     }
 
@@ -3776,12 +3792,16 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
 });
-// DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; Spike gpu-wahl, `_instanzWahlGpu`): je Instanz
-// eines Auftrags ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der
-// Saum) gegen jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; getroffen → ein Platz in der Liste ihres
-// Abschnitts, die Zahl des Zugs atomar. Die Licht-Kapsel der Kaskaden trägt sie nicht: die Art "gpu" wirft nie.
+// DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; `_instanzWahlGpu`): je Instanz eines Auftrags
+// ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der Saum) gegen
+// jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel
+// entlang des Lichts, bis sie ganz unter der Box liegt — gegen jede Ebene der Scheibe: liegen beide Enden jenseits einer
+// Ebene, wirft sie dort nicht. Getroffen → ein Platz in der Liste ihres Abschnitts, die Zahl des Zugs atomar.
 AnazhRealm.PASS_WAHL_WGSL = `
-struct Lage { ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f }
+struct Lage {
+    ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
+    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f
+}
 struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
 @group(0) @binding(0) var<uniform> lage: Lage;
 @group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
@@ -3796,10 +3816,19 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
     let m = matrizen[i];
     let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
-    let rr = a.kugel.w * sqrt(s2) + a.saum.x + lage.rand.x + lage.rand.y * length(c);
+    let r = a.kugel.w * sqrt(s2) + a.saum.x;
+    let rr = r + lage.rand.x + lage.rand.y * length(c);
     for (var p = 0u; p < 6u; p++) {
         let e = lage.ebenen[p];
         if (dot(e.xyz, c) + e.w < -rr) { return; }
+    }
+    if (lage.licht.w > 0.5) {
+        let ende = c + lage.licht.xyz * max(0.0, dot(lage.tiefe.xyz, c) + lage.tiefe.w + r);
+        let st = r + lage.saum.x;
+        for (var p = 0u; p < 6u; p++) {
+            let e = lage.kapsel[p];
+            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return; }
+        }
     }
     liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
 }

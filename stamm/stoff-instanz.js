@@ -1613,8 +1613,9 @@ class AnazhRealm_stoff_instanz {
     // Zeichen-Aufträge (5 uint: Indizes · Instanzen · erster Index · Basis-Vertex · erste Instanz) in den Abschnitt DIESER
     // Kamera ihres EINEN Auftrags-Puffers (der Schatten-Render läuft verschachtelt mitten im Hauptbild), und r184 gibt sie aus
     // EINEM Render-Objekt als N drawIndexedIndirect aus (backend `_draw`: `getIndirectOffset` als Liste — vendor
-    // three.webgpu.min.js gelesen). Die Wahl bleibt die EINE der CPU (`_passTrifft`): ein Cull-Compute wäre ihr Zwilling und
-    // trüge nach dem Profil höchstens ihre 0,147 / 0,142 ms (Genesis Third / Wiese Ego). Die erste Instanz eines indirekten
+    // three.webgpu.min.js gelesen). Je Senke wählt EINE Wahl nach dem EINEN Gesetz (`_passTrifft`): die Pflanzen-Stufen und die
+    // Karte die der CPU (`count`), die Senken des Gang-Satzes die der GPU (`_instanzWahlGpu`, die Zahl zählt der Compute in
+    // den Auftrags-Puffer) — nie beide für dieselbe Senke. Die erste Instanz eines indirekten
     // Zugs braucht `indirect-first-instance`; ohne das Merkmal (WebGL2) zeichnet jede Senke über ihren Zeichner, und die Arena
     // meldet sich einmal laut ab (`__arenaOhne`, gate:webgl-probe W3). Ein Wurf in ihrem Takt ist ein BRUCH (`_bruchMelden`):
     // sie gibt jedes Glied seinem Zeichner zurück und nimmt keines mehr (`__arenaBruch`) — r184 bliebe nach einem Wurf
@@ -2314,7 +2315,9 @@ class AnazhRealm_stoff_instanz {
                     for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
             }
             // DIE WAHL DER GPU VOR DEM PASS (`_instanzWahlGpu`, im Haken des Passes vor seinem Encoder): Glieder abgleichen, die
-            // Aufträge dieser Kamera schreiben, die Liste so groß wie ihre Abschnitte — ihr Zug (`_arenaZug`) nimmt sie
+            // Aufträge dieser Kamera schreiben, die Liste so groß wie ihre Abschnitte — ihr Zug (`_arenaZug`) nimmt sie. Die
+            // Liste liegt ab ihrer Geburt auf der GPU: rechnete in ihrem Frame kein Zug (jedes Glied außer Sicht), fand ein Leser
+            // nach dem Frame (der Band-Zähler, die Blick-Sonde) eine Liste ohne Puffer („reading 'size'").
             _wahlVor(rend, camera) {
                 this._rend = rend;
                 if (!this._ordnen(rend, false)) return null;
@@ -2323,6 +2326,7 @@ class AnazhRealm_stoff_instanz {
                 if (!q.liste || q.liste.array.length < this._segZahl * this._nCap) {
                     weg(rend, q.liste);
                     q.liste = new IND(new Uint32Array(this._segZahl * this._nCap), 1);
+                    rend._attributes.update(q.liste, 3); // r184 AttributeType.STORAGE
                 }
                 this._auftraege(zug, camera, rend, false);
                 zug.bereit = true;
@@ -2621,12 +2625,15 @@ class AnazhRealm_stoff_instanz {
                 const L = this._segCap * 5;
                 return this._ind.array.subarray(seg * L, (seg + 1) * L);
             }
-            // der Auftrags-Puffer wächst (mehr Glieder oder Kameras): die Abschnitte ziehen um, das Bündel nimmt neu auf
+            // der Auftrags-Puffer wächst (mehr Glieder oder Kameras): die Abschnitte ziehen um, das Bündel nimmt neu auf. In
+            // der Wahl der GPU zählt der Compute die Zahl jedes Zugs nur in den Puffer: wüchse er mitten im Frame (die erste
+            // Kaskade nach dem Hauptbild), zöge ein Zug, den eine frühere Kamera rechnete, aus dem neuen mit Zahl 0 — darum
+            // trägt er dort Abschnitte für drei weitere Kameras (Hauptbild und zwei Kaskaden wachsen nie mitten im Frame).
             _indNeu() {
                 const alt = this._ind,
                     altCap = this._segCap;
                 this._segCap = Math.max(this._segCap, Math.ceil(this.glieder.length * 1.5), 8);
-                this._segZahl = Math.max(this._segZahl, this._segN) + 1;
+                this._segZahl = Math.max(this._segZahl, this._segN) + (this._wahl ? 3 : 1);
                 this._ind = new IND(new Uint32Array(this._segZahl * this._segCap * 5), 1);
                 for (const z of [...this._zuege.values(), ...this._zuegeB.values()]) {
                     const neu = this._ansicht(z.seg);
