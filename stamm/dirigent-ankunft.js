@@ -487,104 +487,7 @@ class AnazhRealm_dirigent_ankunft {
         };
         this._seite.felder.add("_seite");
         await this._weltAnkunft();
-        this._seiteWach(canvas, renderer, camera, weltVerbunden);
-    }
-
-    // DIE VORLADE DER WELT (init und der Welt-Wechsel am Ort, `_weltAmOrt`): Identität, Erbgut, Pass, Rolle, Physik, Nexus der
-    // aktiven Welt. → ob die Welt verbunden erwacht (Rolle host oder guest)
-    async _weltVorlauf() {
-        // Aktive Welt-Identität VOR ensureWorldMeta laden, sonst triggert fresh=true (neue UUID + Genesis)
-        // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save. DIE RETTUNGS-KETTE DES BOOTS
-        // (Gegenprüfung Runde 4): erst der IndexedDB-Stand der aktiven Welt (V18.151, Faden #6), dann fragt die Vorlade die
-        // EINE Kette (IndexedDB ⇄ Abbild am Stempel → .bak), BEVOR ensureWorldMeta eine neue Id vergibt.
-        await this._idbPreload();
-        this._preloadActiveWorldMeta();
-        this.ensureWorldMeta();
-        // EINE NEUE WELT NUR, WENN DIE KETTE LEER IST — UND DANN LAUT: was gefunden wurde, warum frisch.
-        if (this._bootLeer) {
-            const b = this._bootLeer;
-            const satz = b.id
-                ? `Die Welt ${b.id} ließ sich nicht finden (${b.befund.join(", ")}) — eine neue Welt erwacht.`
-                : `Kein gespeicherter Stand (${b.befund.join(", ")}) — eine neue Welt erwacht.`;
-            this.log(satz, b.id ? "ERROR" : "INFO");
-            this._chatEcho(satz);
-        }
-        // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht
-        // erwachen — der Wurf landet auf dem Ladeschirm (`_bootAnazhRealm`), nie fährt sie still als Wildnis.
-        this._erbgut();
-        // Vibe-Pass laden oder beim ersten Erwachen erzeugen — nach ensureWorldMeta, damit die
-        // Genesis-Erinnerung ins Journal der aktiven Welt fließt (die Identität ist welt-unabhängig).
-        await this._ensureVibePass();
-        // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
-        // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
-        this._firstWorldWelcome();
-        // Auto-Connect, wenn der Spieler die Verbindung aktiv gelassen hat oder worldMeta.role host/guest
-        // ist (welt-intrinsischer Modus); ensureWorldMeta lief schon, die worldId ist Raum-Default.
-        // Die Absicht setzt die Tür selbst (initP2PSync); Guests bekamen vom Importer hostInfo.url ins localStorage
-        // gespeichert, p2pLoadPersisted oben hat das schon aufgenommen. Verbunden wird erst mit stehendem Leib (vor der
-        // Hauptschleife, unten): vorher kannte der Partner die Seite den ganzen Weltbau lang, ohne dass ein Takt von ihr kam.
-        const weltRolle = this.state.worldMeta ? this.state.worldMeta.role : null;
-        const weltVerbunden = weltRolle === "host" || weltRolle === "guest";
-        if (weltVerbunden) this.state.p2p.role = weltRolle;
-        try {
-            await this.core.initPhysics();
-            this.log("Physik erfolgreich initialisiert", "INFO");
-        } catch (error) {
-            this.log(`Physik fehlgeschlagen: ${error.message} – Ohne Physik fortfahren`, "ERROR");
-            this.state.physicsWorld = null;
-        }
-
-        try {
-            this.initializeNexus();
-            this.log("Nexus erfolgreich initialisiert", "INFO");
-        } catch (error) {
-            this.log(`Nexus-Initialisierung fehlgeschlagen: ${error.message} – Ohne Nexus fortfahren`, "ERROR");
-        }
-        return weltVerbunden;
-    }
-
-    // DIE ANKUNFT DER WELT (init und der Welt-Wechsel am Ort): der Leib, der Stand der aktiven Welt, das Buch in ihr, ihr
-    // Gelände — erst dann Eingabe, Tor und Schleife.
-    async _weltAnkunft() {
-        const scene = this.state.scene;
-        // Spieler-Mesh = THREE.Group als Anker (Position + Skalierung); applyPlayerSoul füllt ihn — EIN Pfad
-        // für initialen Bau und späteren Wechsel.
-        const initialGroup = new THREE.Group();
-        initialGroup.position.set(0, 20, 0);
-        initialGroup.visible = true;
-        scene.add(initialGroup);
-        this.state.playerMesh = initialGroup;
-        const initialSoul =
-            this.state.player.soul && this.playerSoulDefs[this.state.player.soul] ? this.state.player.soul : "human";
-        // Der Avatar-Bau blockt den Boot nicht: die Skin-Isosurface ist die große synchrone Blockade
-        // (~1.9 s bei res 56). Headless baut synchron (das Gate braucht den Avatar sofort); sonst
-        // deferiert — bis dahin ist der Spieler die leere Anker-Group (Physik/Kamera/Bewegung laufen).
-        // applyPlayerSoul trägt den Physik-Body aufs fertige Mesh über.
-        if (this.state.renderer && this.state.renderer._isHeadlessNull) {
-            this._syncBauen("naht", () => this.applyPlayerSoul(initialSoul)); // der Null-Renderer des Gates (`SYNC_STELLEN`)
-        } else {
-            this.state._deferredAvatarSoul = initialSoul;
-        }
-        this.log("Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert", "INFO");
-        this.state.selfAwareness.components.push("playerMesh");
-
-        // Kein Ammo-Spieler-Body: der Spieler läuft feld-nativ (`_stepCharacter`) — horizontale
-        // Intent-Velocity in `state.playerVel` (angelegt in `initPhysics`), Vertikale in `_fieldVy`,
-        // Kollision liest das Dichtefeld.
-        this.state.playerVel.setValue(0, 0, 0);
-        this.state._fieldVy = 0;
-        this.state.selfAwareness.components.push("fieldController");
-
-        // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (IndexedDB ⇄ Abbild → .bak; der IDB-Stand
-        // des Boot-Vorlaufs wird hier verbraucht).
-        this.loadState();
-        this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
-        // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
-        await this.generateNewWorld();
-    }
-
-    // DIE SEITE NACH DER ANKUNFT (nur init): Eingabe, Tor und Schleife.
-    _seiteWach(canvas, renderer, camera, weltVerbunden) {
+        // die Welt steht: Eingabe, Tor und Schleife der Seite (nur init — der Welt-Wechsel am Ort trägt sie weiter)
         // DER LADESCHIRM HÄLT JEDE TASTE (Gegenprüfung Runde 2; Integration V18.536, Gelb 2 der dritten v1-Gegenprüfung): EIN
         // Fänger in der Capture-Phase des Fensters läuft vor jedem anderen Hörer (Spiel, Omnibox Strg+K, Schubladen-Esc,
         // Werkstatt-Tasten, Portal-Weitergabe, Chat-Feld) — solange der Ladeschirm steht, endet jedes Tasten-Ereignis hier.
@@ -754,6 +657,99 @@ class AnazhRealm_dirigent_ankunft {
         this._weltAnschluss(weltVerbunden);
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
+    }
+
+    // DIE VORLADE DER WELT (init und der Welt-Wechsel am Ort, `_weltAmOrt`): Identität, Erbgut, Pass, Rolle, Physik, Nexus der
+    // aktiven Welt. → ob die Welt verbunden erwacht (Rolle host oder guest)
+    async _weltVorlauf() {
+        // Aktive Welt-Identität VOR ensureWorldMeta laden, sonst triggert fresh=true (neue UUID + Genesis)
+        // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save. DIE RETTUNGS-KETTE DES BOOTS
+        // (Gegenprüfung Runde 4): erst der IndexedDB-Stand der aktiven Welt (V18.151, Faden #6), dann fragt die Vorlade die
+        // EINE Kette (IndexedDB ⇄ Abbild am Stempel → .bak), BEVOR ensureWorldMeta eine neue Id vergibt.
+        await this._idbPreload();
+        this._preloadActiveWorldMeta();
+        this.ensureWorldMeta();
+        // EINE NEUE WELT NUR, WENN DIE KETTE LEER IST — UND DANN LAUT: was gefunden wurde, warum frisch.
+        if (this._bootLeer) {
+            const b = this._bootLeer;
+            const satz = b.id
+                ? `Die Welt ${b.id} ließ sich nicht finden (${b.befund.join(", ")}) — eine neue Welt erwacht.`
+                : `Kein gespeicherter Stand (${b.befund.join(", ")}) — eine neue Welt erwacht.`;
+            this.log(satz, b.id ? "ERROR" : "INFO");
+            this._chatEcho(satz);
+        }
+        // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht
+        // erwachen — der Wurf landet auf dem Ladeschirm (`_bootAnazhRealm`), nie fährt sie still als Wildnis.
+        this._erbgut();
+        // Vibe-Pass laden oder beim ersten Erwachen erzeugen — nach ensureWorldMeta, damit die
+        // Genesis-Erinnerung ins Journal der aktiven Welt fließt (die Identität ist welt-unabhängig).
+        await this._ensureVibePass();
+        // Welle 6.E2 — Intro-Overlay beim ersten Welt-Start. Liest seen.intro
+        // aus dem soeben hydrierten worldJournal + localStorage `anazh.ui.skipIntro`.
+        this._firstWorldWelcome();
+        // Auto-Connect, wenn der Spieler die Verbindung aktiv gelassen hat oder worldMeta.role host/guest
+        // ist (welt-intrinsischer Modus); ensureWorldMeta lief schon, die worldId ist Raum-Default.
+        // Die Absicht setzt die Tür selbst (initP2PSync); Guests bekamen vom Importer hostInfo.url ins localStorage
+        // gespeichert, p2pLoadPersisted oben hat das schon aufgenommen. Verbunden wird erst mit stehendem Leib (vor der
+        // Hauptschleife, unten): vorher kannte der Partner die Seite den ganzen Weltbau lang, ohne dass ein Takt von ihr kam.
+        const weltRolle = this.state.worldMeta ? this.state.worldMeta.role : null;
+        const weltVerbunden = weltRolle === "host" || weltRolle === "guest";
+        if (weltVerbunden) this.state.p2p.role = weltRolle;
+        try {
+            await this.core.initPhysics();
+            this.log("Physik erfolgreich initialisiert", "INFO");
+        } catch (error) {
+            this.log(`Physik fehlgeschlagen: ${error.message} – Ohne Physik fortfahren`, "ERROR");
+            this.state.physicsWorld = null;
+        }
+
+        try {
+            this.initializeNexus();
+            this.log("Nexus erfolgreich initialisiert", "INFO");
+        } catch (error) {
+            this.log(`Nexus-Initialisierung fehlgeschlagen: ${error.message} – Ohne Nexus fortfahren`, "ERROR");
+        }
+        return weltVerbunden;
+    }
+
+    // DIE ANKUNFT DER WELT (init und der Welt-Wechsel am Ort): der Leib, der Stand der aktiven Welt, das Buch in ihr, ihr
+    // Gelände — erst dann Eingabe, Tor und Schleife.
+    async _weltAnkunft() {
+        const scene = this.state.scene;
+        // Spieler-Mesh = THREE.Group als Anker (Position + Skalierung); applyPlayerSoul füllt ihn — EIN Pfad
+        // für initialen Bau und späteren Wechsel.
+        const initialGroup = new THREE.Group();
+        initialGroup.position.set(0, 20, 0);
+        initialGroup.visible = true;
+        scene.add(initialGroup);
+        this.state.playerMesh = initialGroup;
+        const initialSoul =
+            this.state.player.soul && this.playerSoulDefs[this.state.player.soul] ? this.state.player.soul : "human";
+        // Der Avatar-Bau blockt den Boot nicht: die Skin-Isosurface ist die große synchrone Blockade
+        // (~1.9 s bei res 56). Headless baut synchron (das Gate braucht den Avatar sofort); sonst
+        // deferiert — bis dahin ist der Spieler die leere Anker-Group (Physik/Kamera/Bewegung laufen).
+        // applyPlayerSoul trägt den Physik-Body aufs fertige Mesh über.
+        if (this.state.renderer && this.state.renderer._isHeadlessNull) {
+            this._syncBauen("naht", () => this.applyPlayerSoul(initialSoul)); // der Null-Renderer des Gates (`SYNC_STELLEN`)
+        } else {
+            this.state._deferredAvatarSoul = initialSoul;
+        }
+        this.log("Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert", "INFO");
+        this.state.selfAwareness.components.push("playerMesh");
+
+        // Kein Ammo-Spieler-Body: der Spieler läuft feld-nativ (`_stepCharacter`) — horizontale
+        // Intent-Velocity in `state.playerVel` (angelegt in `initPhysics`), Vertikale in `_fieldVy`,
+        // Kollision liest das Dichtefeld.
+        this.state.playerVel.setValue(0, 0, 0);
+        this.state._fieldVy = 0;
+        this.state.selfAwareness.components.push("fieldController");
+
+        // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (IndexedDB ⇄ Abbild → .bak; der IDB-Stand
+        // des Boot-Vorlaufs wird hier verbraucht).
+        this.loadState();
+        this._foundryWirtSteht(); // das Buch, das mit der Seite kam, geht jetzt in die Welt (B3a)
+        // die Welt steht, wenn ihre Heimat aus dem Voxel-Faden kommt (Karte hydro-faden): erst dann Eingabe, Tor und Schleife
+        await this.generateNewWorld();
     }
 
     // DER ANSCHLUSS DER ANGEKOMMENEN WELT (init und der Welt-Wechsel am Ort): das Tor des Wohnens, dann die Leitung.
