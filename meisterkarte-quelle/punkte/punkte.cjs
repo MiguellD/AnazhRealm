@@ -92,8 +92,11 @@ function hilfeText() {
 // DIE PROBE der Sitzung (29.10., Takt 19 an b3f9ae95 Radeon: 64 GPU-Stationen 879 Stations-Minuten, Mittel 13,7 min — 282 min am
 // Schloss, 103 min Abbau-Schwanz, jede Station ihr eigener Boot; die Welt lädt warm in Sekunden): argv und Deckel; eine Station mit
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
+// DER DECKEL einer Probe liegt bei mindestens 2 × ihrer gemessenen Arbeit (wie 2 × minuten beim befehl). Der Gegenlauf an b3f9ae95
+// (Radeon, 29.10.) zeigte: mensch.K1#1 lief mit 300 s in den Deckel, obwohl ihr Urteil nach 227 s stand. Statt „DER BAU STEHT NICHT“
+// meldete sie den Deckel. leib.K1#2 braucht ~16 min Arbeit, deshalb liegt die Obergrenze bei 40 min.
 const PROBE_SEK = 90;
-const PROBE_MAX_S = 1200;
+const PROBE_MAX_S = 2400;
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
 const probeSek = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
 function abdruck(st, hilfe = hilfeText()) {

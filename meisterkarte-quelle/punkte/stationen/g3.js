@@ -636,7 +636,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:luft-tiefe:echt mit Messung (ferne-luft e9f79deb, Beleg an d3a626ee): luftTiefe vom Hügel Genesis + 120 m,
         // 4 Azimute, Uhr 0,5 und 0,27, Urteil luftTiefeUrteil gegen spec/farbe/luft-referenz.json (Bucholtz 1995)
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
+        probe: { sek: 420, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -669,7 +669,7 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // derselbe Lauf wie ferne.K1#1 (gate:luft-tiefe:echt): der Restkontrast am Rand der letzten Fern-Schale, 4 Azimute, klar, Uhr 0,5
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
+        probe: { sek: 420, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -703,7 +703,7 @@ const stationen = [
         // 0,27 je Kanal (Δβ blau−rot), den Farbton bei 8 km (≤ 10° von der In-Streuung), die Sonnenseite (Y der In-Streuung zur Sonne /
         // gegen sie ≥ 1,2), das ferne Weiß bei Sonne 5° (weiße Lambert-Tafel 5 km, R/B ≥ 1,3) und den Ton des Himmels (Hillaire). Ein
         // OFFEN der Referenz hält nur den Exit des Gates, die Staffel K1-2 bleibt ROT, solange ein K1-2-Befund steht.
-        probe: { sek: 300, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
+        probe: { sek: 420, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -743,7 +743,7 @@ const stationen = [
         // binnen 3 km, Auge 40 m) — K2-2 je Rand-Spalte der Struktur-Tensor von ln Y, keine waagrechte Linie ab 1° (luft-referenz
         // `band.linie`), 4 Azimute je Ort, Uhr 0,5 —, danach am Messort Genesis die Band-Linse: die Klasse boden (Boden-Satz · Wasser-Satz ·
         // Fern-Ring · Fern-Wasser) über Haupt + k0 + k1 im Haushalt (12 Befehle / 120k Dreiecke, spec/profiband/haushalt.json).
-        probe: { sek: 900, befehl: befehlDer({
+        probe: { sek: 960, befehl: befehlDer({
             name: "ferne.K2#2",
             schritte: [
                 { name: "luft", args: ["licht", "--luft", "--datei", "@DIR@/luft.json"], datei: "@DIR@/luft.json" },
@@ -851,7 +851,7 @@ const stationen = [
         // Kamera <m> vor die Fläche, die der Ego-Blick trifft; klassenMasse liefert glatt (8×8-Blöcke mit σ Luma < 4) und nyquist.
         // Die Schüsse: Boden (bodenSatz) an der Mess-Wiese, Fels (formationenSatz) am höchsten Punkt einer Genesis-Formation.
         // An origin/main gibt es `--arm` noch nicht; die Station ist dort ROT („arm fehlt“).
-        probe: { sek: 300, befehl: befehlDer({
+        probe: { sek: 600, befehl: befehlDer({
             name: "material.K2#1",
             texte: { FELS_ZIEL },
             schritte: [
@@ -925,7 +925,7 @@ const stationen = [
         // Umgebungslicht π, nicht das belichtete Bild. Für das Haus wird der Ton jeder Stufe gegen L0 gerechnet (`stufeVon`); für den Fels
         // werden die Stufen der Art rock abgefragt (`_foundryKindStages`): ist es nur [0], zeigt die Welt den Fels nur in L0, und die
         // Fels-Hälfte ist erfüllt (M43).
-        probe: { sek: 300, befehl: befehlDer({
+        probe: { sek: 420, befehl: befehlDer({
             name: "material.K3#1",
             schritte: [
                 { name: "ort", args: ["umstellen", "0", "0"], muss: true },
@@ -993,7 +993,7 @@ const stationen = [
         // in ihrer Stufe; der Fels zeigt nur L0 (wie #1). Die Haus-Stufen des Glas-Stils (hochhaus, volle_moderne) hält offline
         // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
         // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
-        probe: { sek: 300, befehl: befehlDer({
+        probe: { sek: 420, befehl: befehlDer({
             name: "material.K3#2",
             schritte: [
                 { name: "ort", args: ["umstellen", "0", "0"], muss: true },

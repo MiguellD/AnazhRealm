@@ -703,7 +703,7 @@ module.exports = [
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 240, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--datei", "{AUS}"] },
+        probe: { sek: 360, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--datei", "{AUS}"] },
         gpu: true,
         zeit: false,
         minuten: 4,

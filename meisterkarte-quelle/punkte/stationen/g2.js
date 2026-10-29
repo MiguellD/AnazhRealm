@@ -1192,7 +1192,7 @@ function sollKlasseStation(o) {
         kriterium: o.kriterium,
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 300, befehl: [
+        probe: { sek: 420, befehl: [
             "bash",
             "-c",
             [
@@ -1639,7 +1639,7 @@ const stationen = [
         // Spieler-Wort, Loop 12 s, gezählt im Frustum der Spiel-Kamera, gezeichnet, Sichtlinie frei) mit dem Bild aus dem
         // Ausgabe-Pfad (`b64png.cjs` → <aus>-platz-8uhr-third.png). Ports: save-server {PORT}, Werkbank {PORT}+20000 (Seite −1).
         // platz-8.js und b64png.cjs leben im Koord-Baum (R6 sieht sie nicht; ihr Text steht hier per Pfad im Abdruck).
-        probe: { sek: 300, befehl: [
+        probe: { sek: 600, befehl: [
             "bash",
             "-c",
             [
@@ -1712,7 +1712,7 @@ const stationen = [
         // Zweig w3u-stadt-leben b361f456): 1 094 Bewohner, im Nah-Ring (19,8 m) 136–142 draußen, 40–50 mit laufendem Gang in 12
         // Läufen (am Rand des Solls); vor dem Zweig 0 Bewohner (die Liste wartete auf die Hüllen der kalten Häuser). Mutanten ROT
         // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-        probe: { sek: 600, befehl: [
+        probe: { sek: 840, befehl: [
             "bash",
             "-c",
             [
@@ -2089,7 +2089,7 @@ const stationen = [
         kriterium: "tiere.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 300, befehl: [
+        probe: { sek: 360, befehl: [
             "bash",
             "-c",
             [
@@ -2645,7 +2645,7 @@ const stationen = [
         kriterium: "oekologie.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 300, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)] },
+        probe: { sek: 480, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2676,7 +2676,7 @@ const stationen = [
     // über 24 Spielstunden je ≥ 0,9 ihrer Soll-Orte (unterN 0), 4–10 Wege je Bewohner und Tag, und je 1,5 h die Lage, die sah,
     // wer blieb, gegen die, die findet, wer 1 h fort war (16 Prüf-Stunden, die Liste neu, die Uhr gesprungen): jeder ±2 m.
     // Das Schlupfloch Teleport fällt an sprungN, der Plan bit-gleich je Same. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-    probe: { sek: 360, befehl: [
+    probe: { sek: 420, befehl: [
         "bash",
         "-c",
         [
