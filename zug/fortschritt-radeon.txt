@@ -1640,3 +1640,4 @@
 2026-10-29 03:43:25 takt19-radeon fahrzeug.K3#1 GRÜN 13.9 · 44/71
 2026-10-29 03:47:30 takt19-radeon fahrzeug.K3#2 GRÜN 16.0 · 45/71
 2026-10-29 03:50:45 takt19-radeon fahrzeug.K4#1 GRÜN 15.2 · 46/71
+2026-10-29 03:51:00 takt19-radeon fahrzeug.K4#2 GRÜN 15.2 · 47/71
