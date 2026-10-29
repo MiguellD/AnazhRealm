@@ -1400,11 +1400,11 @@ function wieseUrteil(s) {
 }
 // das Rohe der Zeile (stdout, so urteilt auch die Probe des Selbsttests) oder {AUS}
 const vegetationRoh = (j, lauf) => jsonZeile(lauf.stdout, /^VEGETATION /) || j;
-const wieseStation = (staffel, posen, sek, quelle) => ({
+const wieseStation = (staffel, posen, sek, quelle, ausnahme) => ({
     kriterium: "vegetation.K1",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: { sek, befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(posen.map((p) => [...p, null, "wiese"]))] },
+    probe: { sek, ...(ausnahme ? { ausnahme } : {}), befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(posen.map((p) => [...p, null, "wiese"]))] },
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -1477,11 +1477,11 @@ function jahrProben(plan) {
     if (plan.some((p) => p[3] === "fruehling")) mit.push({ name: "kein Austrieb", o: { krone: { fruehling: { pixel: 5000 } } }, gruen: false });
     return mit.filter((m) => plan.some((p) => p[4] === "wiese") || !m.o.wiese).map((m) => ({ name: m.name, stdout: zeile(m.o), gruen: m.gruen }));
 }
-const jahrStation = (staffel, plan, zeiten, sek, quelle) => ({
+const jahrStation = (staffel, plan, zeiten, sek, quelle, ausnahme) => ({
     kriterium: "vegetation.K5",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: { sek, befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] },
+    probe: { sek, ...(ausnahme ? { ausnahme } : {}), befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] },
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -3506,22 +3506,24 @@ const stationen = [
     }),
     // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
     // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
-    wieseStation(1, [["wiese", "third", 0.5]], 60, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
+    wieseStation(1, [["wiese", "third", 0.5]], 45, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
     wieseStation(
         2,
         ["wiese", "genesis"].flatMap((o) => ["ego", "third"].flatMap((s) => [0.5, 0.3].map((u) => [o, s, u]))),
-        300,
-        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte"
+        90,
+        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
+        "acht Schüsse 1920×1080 (Mess-Wiese und Genesis × Ego und Third × Uhr 0,5 und 0,3), je Schuss die Kamera des Spiels, die festen Ringe und der Zähler"
     ),
     // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
     // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
-    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 60, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
+    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 45, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
     jahrStation(
         2,
         ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was])),
         ["sommer", "winter", "fruehling"],
-        180,
-        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"
+        90,
+        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
+        "sechs Schüsse 1920×1080: Krone und Wiese je in Sommer, Winter und Frühling an derselben Pose, die Jahreszeit über das Wort"
     ),
 ];
 

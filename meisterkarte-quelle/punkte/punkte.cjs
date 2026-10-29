@@ -44,14 +44,20 @@
 //   radeon und gtx: die Staffel nennt beide Geräte, die 1 zählt erst, wenn JEDES grün ist — Pflicht, wo die quelle sie nennt) ·
 //   proben (optional): [{ name, stdout, gruen }] Roh-Ausgaben des Befehls mit dem Urteil, das die Station über sie spricht
 //   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
-//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe PROBE_SEK, höchstens PROBE_MAX_S) } —
+//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe und höchstens PROBE_DECKEL_S, mit ausnahme
+//   höchstens PROBE_AUSNAHME_S) } —
 //   die Station misst als Probe in der EINEN warmen Welt der Sitzung (fahreSitzung), nie mit eigenem Boot; dazu {PORT} = der Port
 //   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank,
 //   PUNKTE_SITZUNG_STROM = der Strom der Sitzung (je Bild eine Zeile, stromSeite; Zapfen, Marke und Leser exportiert diese Maschine),
 //   PUNKTE_PROBE = ihr Name. Dazu optional: mutiert (true: sie ändert die Welt — baut, gräbt, Tab-Tod, Speichern/Laden —, nur nach
 //   ihr setzt die Sitzung die Welt zurück) · stellung ("anfang" | "ende": die Reihe der Sitzung, sitzungsReihe) · ausnahme (der Grund,
-//   warum sie über 45 s braucht; nie über PROBE_AUSNAHME_S). Eine Station trägt GENAU EINES von befehl und probe; befehl bleibt nur,
-//   wo das Kriterium Kälte oder Dauer misst oder das Spiel-Skript selbst bootet.
+//   warum sie über PROBE_DECKEL_S braucht; nie über PROBE_AUSNAHME_S, nie an einer Probe bis PROBE_DECKEL_S). Eine Station trägt GENAU
+//   EINES von befehl und probe; auf radeon|gtx NUR probe (DIE FAHRT, fahrtUrteil).
+// DIE FAHRT (29.10., das Gesetz des Schöpfers: „Ein kpl. Fahrt durch jedes System max 30 min, inbegriff ist dann auch die dauerlast"):
+//   je Karte (radeon, gtx) die Summe der Deckel ihrer Läufe in der Sitzung (Zwillinge einmal) plus der Boot ≤ FAHRT_MAX_S — sonst
+//   ROT mit den drei größten beim Namen (pruefeStationen: liste, run und buchen fallen dort); im Läufer die Wache (fahreSitzung):
+//   reißt eine Probe ihren Deckel, fällt sie und ist UNGEMESSEN beim Namen, reißt die Fahrt FAHRT_MAX_S, endet sie und nennt die
+//   offenen Proben (m.sitzung.offen).
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
@@ -97,11 +103,12 @@ function hilfeText() {
 // DIE PROBE der Sitzung (29.10., Takt 19 an b3f9ae95 Radeon: 64 GPU-Stationen 879 Stations-Minuten, Mittel 13,7 min — 282 min am
 // Schloss, 103 min Abbau-Schwanz, jede Station ihr eigener Boot; die Welt lädt warm in Sekunden): argv und Deckel; eine Station mit
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
-const PROBE_SEK = 90;
-const PROBE_MAX_S = 1200;
 // DAS BUDGET DER PROBE (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min"): Ziel ≤ 15 s, Deckel 45 s, nur
-// mit `ausnahme` (der Grund beim Namen) bis 90 s — eine Probe mit ausnahme über PROBE_AUSNAHME_S ist ROT
+// mit `ausnahme` (der Grund beim Namen) bis 90 s — darüber ROT, auch mit ausnahme; DIE FAHRT je Karte ≤ FAHRT_MAX_S samt Boot
+const PROBE_DECKEL_S = 45;
 const PROBE_AUSNAHME_S = 90;
+const PROBE_SEK = PROBE_DECKEL_S;
+const FAHRT_MAX_S = 1800;
 const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung"];
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
 const probeSek = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
@@ -159,20 +166,25 @@ function pruefeStationen(liste, karte) {
             if (st.befehl !== undefined) f.push("genau eines von befehl und probe");
             if (!p || typeof p !== "object") f.push("probe ist kein { befehl, sek }");
             else {
-                if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1 && p.sek <= PROBE_MAX_S))
-                    f.push("probe.sek nicht 1.." + PROBE_MAX_S);
+                // DER DECKEL (die Fahrt, b): bis PROBE_DECKEL_S frei, darüber nur mit ausnahme bis PROBE_AUSNAHME_S, darüber nie
+                const sek = probeSek(st);
+                if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1)) f.push("probe.sek keine ganze Zahl ≥ 1");
+                else if (sek > PROBE_AUSNAHME_S) f.push("Deckel " + sek + " s über " + PROBE_AUSNAHME_S + " s — nie, auch mit ausnahme (die Fahrt ≤ " + FAHRT_MAX_S / 60 + " min)");
+                else if (sek > PROBE_DECKEL_S && p.ausnahme === undefined) f.push("Deckel " + sek + " s über " + PROBE_DECKEL_S + " s ohne ausnahme (der Grund beim Namen, bis " + PROBE_AUSNAHME_S + " s)");
+                else if (sek <= PROBE_DECKEL_S && p.ausnahme !== undefined) f.push("ausnahme an einem Deckel von " + sek + " s — sie trägt nur einen über " + PROBE_DECKEL_S + " s");
                 if (Object.keys(p).some((k) => !PROBE_SCHLUESSEL.includes(k))) f.push("probe trägt nur " + PROBE_SCHLUESSEL.join(", "));
                 if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
                 if (p.stellung !== undefined && !["anfang", "ende"].includes(p.stellung)) f.push("probe.stellung nicht anfang|ende");
                 if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 12)) f.push("probe.ausnahme ohne Grund");
-                if (p.ausnahme !== undefined && probeSek(st) > PROBE_AUSNAHME_S) f.push("probe.sek über " + PROBE_AUSNAHME_S + " s auch mit ausnahme");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));
                 }
             }
             if (!st.gpu || ge.includes("headless")) f.push("probe nur an einer GPU-Station (die Sitzung hält die Welt einer Karte)");
-        }
+        } else if (ge.some((g) => g !== "headless") && st.befehl !== undefined)
+            // DIE FAHRT (a): auf einer Karte misst jede Station als Probe der EINEN Welt — ein eigener Boot je Station war die 610 min
+            f.push("befehl auf " + ge.filter((g) => g !== "headless").join("+") + " — eine Station der Karte misst nur als Probe der Sitzung (die Fahrt ≤ " + FAHRT_MAX_S / 60 + " min)");
         const argv = befehlVon(st);
         if (!Array.isArray(argv) || !argv.length || argv.some((a) => typeof a !== "string"))
             f.push((st.probe ? "probe." : "") + "befehl ist kein argv");
@@ -196,7 +208,24 @@ function pruefeStationen(liste, karte) {
     const kr = new Set(ok.map((s) => s.kriterium));
     for (const k of kr)
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+    fehler.push(...fahrtUrteil(ok));
     return { stationen: ok, fehler };
+}
+// DIE FAHRT einer Karte (c): die Läufe ihrer Sitzung (Zwillinge einmal, gruppiere) mit ihrem Deckel, die größten zuerst, und die
+// Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
+function fahrtSumme(stationen, geraet) {
+    const je = gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet)))
+        .map((g) => [g.map(schluessel).join("+"), probeSek(g[0])])
+        .sort((a, b) => b[1] - a[1]);
+    return { je, deckel: je.reduce((s, x) => s + x[1], 0), boot: SITZUNG_BOOT_S, summe: je.reduce((s, x) => s + x[1], 0) + SITZUNG_BOOT_S };
+}
+function fahrtUrteil(stationen) {
+    return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
+        const f = fahrtSumme(stationen, g);
+        if (f.summe <= FAHRT_MAX_S) return [];
+        return [g + ": die Fahrt " + f.summe + " s über " + FAHRT_MAX_S + " s (Σ Deckel " + f.deckel + " s in " + f.je.length + " Läufen + Boot " + f.boot +
+            " s) — die größten: " + f.je.slice(0, 3).map(([n, s]) => n + " " + s + " s").join(", ")];
+    });
 }
 
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
@@ -397,7 +426,9 @@ function fahreGruppe(sts, ctx) {
         // ein Lauf, der das Schloss nie bekam, ist KEINE Messung: ungemessen beim Grund (eintragen legt ihn nie nach m.je)
         const offen = (grund, exit = null) => fertig({ gruen: false, ungemessen: true, zahl: grund, exit, minuten: min(), grund });
         if (!!sitz !== !!st.probe) return rot(st.probe ? "eine Probe misst nur in der Sitzung (fahreSitzung)" : "ein befehl fährt nie in der Sitzung");
-        const deckelS = sitz ? probeSek(st) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
+        // in der Sitzung der Deckel der Probe, gekappt am Rest der Fahrt (sitz.restS, fahreSitzung)
+        const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < probeSek(st);
+        const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : probeSek(st)) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = befehlVon(st).map((a) => ersetze(a, ctx));
         const env = { ...process.env };
         // die Werkbank der Bahn: wer sie ohne --port ruft, trifft die seines Bands (nie die 4490 einer Nachbar-Bahn)
@@ -490,6 +521,9 @@ function fahreGruppe(sts, ctx) {
                     (zeugeText ? "\n--- gpu-zeuge ---\n" + zeugeText : ""));
             }
             if (tot && !amSchloss) return offen("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + stillS + " s beim Warten — beendet, ungemessen", code);
+            // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe am Deckel UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
+            // nie GRÜN); der Rest der Fahrt kappte sie: die Fahrt riss FAHRT_MAX_S
+            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + " — beendet, UNGEMESSEN", code);
             if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet", code);
             if (sig) return rot("Absturz: Signal " + sig, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
@@ -568,8 +602,10 @@ async function baumSperre(repo, geraet) {
 // und Shader-Cache bleiben), das Fenster 1920×1080 wie beim Start — jede Probe beginnt in einer frisch geborenen Welt wie früher jeder Boot, und eine gescheiterte Probe
 // hinterlässt nichts. Die Sitzung startet nie neu: trägt die Welt nicht mehr (Grundstellung scheitert), sind die übrigen Proben
 // ungemessen beim Grund, nie ROT. Bis dahin fuhr jede Station ihren eigenen Boot (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz).
-const SITZUNG_MAX_S = 4 * 3600;
-const SITZUNG_BOOT_S = 600;
+// DER BOOT der Welt zählt in die Fahrt (fahrtUrteil): Radeon b3f9ae95 29.10. stand die Welt nach 10,5 und 40 s — der Deckel 120 s;
+// das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S), nie länger
+const SITZUNG_BOOT_S = 120;
+const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
 const GRUNDSTELLUNG =
@@ -923,6 +959,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         return kopf;
     }
     console.log("  SITZUNG " + ctx.geraet + " · die Welt steht nach " + s.bootS + " s (Schloss nach " + s.warten + " min) · " + gruppen.length + " Proben · Welt :" + (ctx.port + 20000));
+    // DIE UHR DER FAHRT ab dem Schloss (der Boot zählt mit, das Warten nie): reißt sie FAHRT_MAX_S (ctx.fahrtMaxS nur im Selbsttest),
+    // endet die Sitzung — die laufende Probe fällt am Rest, jede folgende ist UNGEMESSEN beim Namen
+    const fahrtMaxS = ctx.fahrtMaxS || FAHRT_MAX_S;
+    const fahrt0 = Date.now() - (s.bootS || 0) * 1000;
+    const restS = () => fahrtMaxS - (Date.now() - fahrt0) / 1000;
+    kopf.offen = [];
     // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
     let aktuell = "(sitzung)", laeuft = null, ruht = false;
@@ -940,8 +982,14 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         zapf(aktuell).finally(() => (frei = true));
     }, ctx.stromTaktMs || STROM_TAKT_MS);
     await zapf(aktuell);
-    let zuruecksetzen = false;
+    let zuruecksetzen = false, gerissen = null;
     for (const g of gruppen) {
+        if (!gerissen && restS() <= 0) gerissen = "vor " + schluessel(g[0]);
+        if (gerissen) {
+            kopf.offen.push(...g.map(schluessel));
+            await melde(g, g.map(() => ohne("die Fahrt riss " + fahrtMaxS + " s (" + gerissen + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
+            continue;
+        }
         if (!tot && zuruecksetzen) {
             ruht = true;
             await zapf(aktuell);
@@ -971,7 +1019,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const zeit = new Date().toISOString();
         await zapf(aktuell);
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, probe: aktuell } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, probe: aktuell, restS: restS(), fahrtMaxS } });
+        if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
         aktuell = "(sitzung)";
         kopf.proben++;
@@ -981,6 +1030,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     clearInterval(takt);
     await zapf(aktuell);
     kopf.strom = stromKopf(strom, zz);
+    kopf.fahrtS = +((Date.now() - fahrt0) / 1000).toFixed(1);
+    if (gerissen) {
+        kopf.grund = "die Fahrt riss " + fahrtMaxS + " s " + gerissen + " — offen: " + kopf.offen.join(", ");
+        console.log("  SITZUNG " + kopf.grund);
+    } else delete kopf.offen;
+    console.log("  SITZUNG Fahrt " + kopf.fahrtS + " s (Soll ≤ " + fahrtMaxS + " s) · " + kopf.proben + " Proben · Grundstellung " + kopf.grundstellungS.length + "×");
     await sitzungStoppen(s, stop);
     kopf.minuten = +((Date.now() - t0) / 60000).toFixed(2);
     return kopf;

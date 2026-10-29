@@ -1298,7 +1298,7 @@ const stationen = [
         // ohne sie) und ihrer Ebene (Haupt-Achsen der Welt-Punkte, ≤ 3 cm), das Maß der Wasser-Station (`klassenMasse` spiegelTreue,
         // die Achse an der Ebene: abnahme-urteil `spiegelPartner` mit `normale`). Gültig: Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel
         // in der Ebene und ≥ 8 Blöcke.
-        probe: { sek: 60, befehl: befehlDer({
+        probe: { sek: 45, befehl: befehlDer({
             name: "material.K4#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1357,7 +1357,7 @@ const stationen = [
         // Spitze ρ (Kappe θh ≤ 1° je Energie, 1/sr). DIE REFERENZ: MERL (Matusik et al. 2003) über die NBRDF-Netze von Sztrajman et al.
         // 2021 (github asztr/Neural-BRDF data/merl_nbrdf.zip), bei θd 25° dieselben Maße je Exemplar; das Band der Klasse von ihrem
         // kleinsten bis zum größten Exemplar, die Toleranz der Bühne Breite ± max(0,3°, 5 %), Spitze ×/÷ 1,3.
-        probe: { sek: 60, befehl: befehlDer({
+        probe: { sek: 90, ausnahme: "je Klasse der Stoff-Tafel eine Kugel im Welt-Stoff ihrer Zeile, die Belichtungs-Reihe C/A × 1, 1/32, 1/1024 je Kugel", befehl: befehlDer({
             name: "material.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },

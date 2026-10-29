@@ -1463,7 +1463,7 @@ const stationen = [
         kriterium: "siedlung.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: sitzung(600,
+        probe: { ausnahme: "der Ort wächst über 1500 s Welt-Uhr (der Ort 1320, das Haus am Rand, die Uhr, der Ring) und das Bild vom Hügel — dazu Teil W in node", ...sitzung(90,
             "A=$(cygpath -m '{AUS}')",
             "teil W node scripts/diag-settlement.cjs --nur-w",
             "boot",
@@ -1485,7 +1485,7 @@ const stationen = [
             "rm -f \"$L/ring.abnahme.json\"",
             "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
             "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ),
+        ) },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -2534,69 +2534,6 @@ const stationen = [
         ],
         quelle: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s",
     },
-    // ───────── tore.K5 Staffel 2 — beide Flüsse an beiden Geräten (tore-k5-welt) ─────────
-    // DIESELBE Probe wie #1 (gate:praegung-welt), B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte. Nach dem Bauplan (≤ 4 KB,
-    // Bau-Hash A = B) teilt A seine Welt in EINER Geste (Bibliothek → Teilen: dieselbe Hülle `anazh-werk:`, signiert wie jede
-    // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten`, Neuladen); die Kontrolle ist das
-    // Ereignis `_weltbildKommt` in A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m. Das Urteil
-    // verlangt jede Zeile von #1, die vier WELT-Zeilen und „B echt" (ein Lauf mit Null-Renderer zählt nie). Headless (B null)
-    // an tore-k5-welt: Bauplan 530 Zeichen, Welt-Code 515, Welt 136 KB, Kontrolle 1 610 ms, Leib 1 236 ms, Bau-Hash
-    // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
-    // der signaling-server las nur den ersten (Join-Timeout 10 s).
-    {
-        kriterium: "tore.K5",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
-        env: { PRAEGUNG_WELT_PORT: "{PORT}", PRAEGUNG_WELT_B: "echt" },
-        gpu: true,
-        zeit: true,
-        minuten: 6,
-        urteil: (j, lauf) => {
-            const l = String(lauf.stdout || "").split(/\r?\n/);
-            const soll = [
-                ["Bauplan", /^\s*(✅|❌) A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB/],
-                ["Gerät", /^\s*(✅|❌) B ist ein ANDERES GERÄT: /],
-                ["Selbsttest", /^\s*(✅|❌) SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT/],
-                ["Signatur", /^\s*(✅|❌) B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A/],
-                ["Pose", /^\s*(✅|❌) B: gezeichnet an der eigenen Pose/],
-                ["Zeit", /^\s*(✅|❌) ZEIT: Klick bis Code \+ Enter bis gezeichnet ≤ 10 s/],
-                ["Stempel", /^\s*(✅|❌) B: Stempel und Same reisen tief gleich/],
-                ["Bau-Hash", /^\s*(✅|❌) BAU-HASH A ↔ B byte-gleich/],
-                ["Welt-Code", /^\s*(✅|❌) WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A/],
-                ["Beitritt", /^\s*(✅|❌) WELT: B steht in A's Welt \(Id, Same, Gast, > 128 KB\) und kennt A am Anschluss/],
-                ["Kontrolle", /^\s*(✅|❌) WELT: KONTROLLE ≤ 5 s — Klick bis Code \+ Enter bis zum ersten Weltbild — .*, B echt\)/],
-                ["Leib", /^\s*(✅|❌) WELT: der Leib geht unter W ≥ 1 m/],
-            ];
-            const je = soll.map(([, re]) => l.find((x) => re.test(x)));
-            const fehlt = soll.filter((_, i) => !je[i]).map(([n]) => n);
-            if (fehlt.length) return { gruen: false, zahl: "Zeile fehlt: " + fehlt.join(", ") + " (Exit " + lauf.exit + ")" };
-            const rot = soll.filter((_, i) => !/✅/.test(je[i])).map(([n]) => n);
-            const nach = (i) => je[i].split(" — ").pop().slice(0, 120);
-            return {
-                gruen: !rot.length && lauf.exit === 0,
-                zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Bauplan " + nach(0) + " · Welt-Code " + nach(8) +
-                    " · Welt " + nach(9) + " · Kontrolle " + nach(10) + " · Leib " + nach(11) + " · " + nach(7),
-            };
-        },
-        pfad: [
-            "stamm/netz-identitaet.js",
-            "stamm/netz-p2p.js",
-            "stamm/netz-portal.js",
-            "stamm/feld-dsl.js",
-            "stamm/feld-leben.js",
-            "stamm/studio-bruecke.js",
-            "stamm/werkstatt-*.js",
-            "stamm/speicher-laden.js",
-            "stamm/dirigent-ankunft.js",
-            "index.html",
-            "signaling-server.js",
-            "scripts/diag-praegung-welt.cjs",
-            "scripts/lib/welt-boot.cjs",
-        ],
-        quelle: "2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
-    },
-
     // ───────── spielgang.K3 — Bedienung: HUD und Menü antworten, ohne das Bild zu verdecken (Zweig hud-zugang) ─────────
     {
         kriterium: "spielgang.K3",
@@ -2775,5 +2712,9 @@ module.exports = stationen;
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
 module.exports.fehlt = [
+    // DIE FAHRT (29.10., das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min je Gerät): auf einer Karte misst jede Station
+    // als Probe der EINEN Welt der Sitzung — tore.K5#2 fuhr gate:praegung-welt mit eigenem Boot (A und B je ein Browser, Radeon b3f9ae95
+    // 1,69 min, ROT Kontrolle 7 699 ms; GTX 98ef98bb ROT 3,0 min)
+    { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT" },
     { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
 ];
