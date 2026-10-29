@@ -1,0 +1,11 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx'); K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b3f9ae95-gtx\speicher.K4_2.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp "$K/bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs" "$D/"; : werk 2710-speicher-zwei; cd "$B"; BAUM="$B" PORT=7754 node "$D/speicher-zwei.cjs" bild --json "$A"
+[linse-gpu] nvidia/pascal
+  ❌ (B) bild-diff 1.56 % an derselben Pose nach dem Neuladen (Soll ≤ 1 %), Pflicht-Inhalt vor {"bau":true,"grube":true,"wasser":2} · nach {"bau":true,"grube":true,"wasser":2}
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37:  8715 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
