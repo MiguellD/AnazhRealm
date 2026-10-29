@@ -1595,8 +1595,8 @@ class AnazhRealm_vegetation_streu {
     // DAS GESETZ DES WECHSELS (lod.K5, `AnazhRealm._wechselGesetz`): eine Stufe gilt ab dem Abstand, an dem ihr Kanten-Versatz
     // zur L0 — der Fehler ihres Baus (LOD_SCHIRM.fehler, je Familie einmal gemessen am Bau) mal die
     // Brennweite des Schirms — das Soll von LOD_SCHIRM.px Bildpunkten trägt, höchstens am Haushalt des Buchs. Jeder Leser fragt
-    // es: die Schwellen der Bäume und der Streu (`_stufenSchirm`), die Grenzen von Haus, Tor, Wagen und Ausstattung
-    // (`_archStufenGrenzen`). Kein Regler, keine Bildrate. `groesse` ist der Bezug der Zeile (Baum: die Sichthöhe; sonst die
+    // es: die Schwellen der Bäume, der Streu und jeder Karten-Art (`_stufenSchirm`, ihre Maske), die Grenzen von Haus, Tor und
+    // Ausstattung (`_archStufenGrenzen`). Kein Regler, keine Bildrate. `groesse` ist der Bezug der Zeile (Baum: die Sichthöhe; sonst die
     // Welt-Skala des Eintrags, der Fehler in Metern); null = die Art trägt die Stufe nicht.
     _wechselAbstand(kind, stufe, groesse) {
         return AnazhRealm._wechselGesetz(kind, stufe, groesse, this._schirm().hoehe);
@@ -2447,7 +2447,8 @@ AnazhRealm.LOD_DISTANCES = (() => {
 // Peilung in den Bildpunkten des Abstands gerastert, Chamfer der Kanten, an jeder Vorlage, die schlechteste der Art zählt; die
 // Karte des Baums als Mischung ihrer zwei nächsten gebackenen L1-Ansichten, die Tor-Flügel der L0 in der Fern-Pose) — der Fehler
 // ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms: der Baum relativ zu seiner Sichthöhe, jede gebaute Art
-// in Metern bei Welt-Skala 1. `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
+// in Metern bei Welt-Skala 1; der Wagen trägt keine Zeile, er wechselt an der Maske des Baums (die Limousine trägt dort
+// 0,02 px). `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
 // < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
 // (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d).
 AnazhRealm.LOD_SCHIRM = Object.freeze({
@@ -2458,7 +2459,6 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
         tree: Object.freeze({ 1: 0.0376, 2: 0.0578 }), // die Weide (ihre Krone doppelt so breit wie hoch), L1 und Karte
         haus: Object.freeze({ 1: 0.0238, 2: 0.1152 }), // modern · alemannisch
         gate: Object.freeze({ 1: 0.0156, 2: 0.34 }), // kathedrale · geisttor (bis r = 32 Größen nie ≤ 1 px: untere Schranke)
-        vehicle: Object.freeze({ 1: 0.0044 }), // limousine (obere Schranke: an der Auflösung des Rasters)
         ausstattung: Object.freeze({ 1: 0.0117 }), // brunnen
     }),
 });

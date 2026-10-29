@@ -1812,10 +1812,12 @@ class AnazhRealm_studio_bruecke {
     }
     // DIE STUFEN-GRENZEN EINER GEBAUTEN ART aus dem Gesetz des Schirms (lod.K5, `_wechselAbstand`): je gezeigter Stufe der
     // Abstand (Meter × Welt-Skala des Eintrags), an dem ihr Kanten-Versatz zur L0 das Soll trägt, höchstens ihr Haushalt; die
-    // Hysterese des Buchs (B2c `hyst`, sonst LOD_SCHIRM.hyst) — der LOD-Takt wählt nach IHNEN (`_stufeNachGrenzen`), Haus, Tor,
-    // Wagen und Ausstattung am selben Gesetz (bis w3v-lod: das Tor nach `ab` seines Buchs, Haus und Wagen nach den rohen
-    // Baum-Distanzen). → { erste, grenzen: [{ stufe, ab }], h } oder null (die Art trägt keine Zeile — der Baum misst in seiner
-    // Wahrnehmungs-Distanz). Am Eintrag gemerkt, je Schirm (die Art eines Eintrags wechselt nie).
+    // Hysterese des Buchs (B2c `hyst`, sonst LOD_SCHIRM.hyst) — der LOD-Takt wählt nach IHNEN (`_stufeNachGrenzen`), Haus, Tor
+    // und Ausstattung am selben Gesetz (bis w3v-lod: das Tor nach `ab` seines Buchs, das Haus nach den rohen Baum-Distanzen).
+    // → { erste, grenzen: [{ stufe, ab }], h } oder null: eine Karten-Art (KIND_POLICY `impostor`: Baum, Strauch, Wagen) wechselt,
+    // wo ihre Maske blendet — an den Schwellen der Bäume (`_stufenSchirm`, der Wagen in rohen Metern, Sichthöhe 0); eine eigene
+    // Zeile wäre ein Zwilling der Maske (der Wagen auf L1 ab 3,1 m, seine Maske zeigte die L0 bis 12 m). Am Eintrag gemerkt, je
+    // Schirm (die Art eines Eintrags wechselt nie).
     _archStufenGrenzen(entry) {
         const zeilen = this._schirm().hoehe;
         if (entry._stufenGrenzen !== undefined && entry._stufenGrenzenZeilen === zeilen) return entry._stufenGrenzen;
@@ -1827,7 +1829,8 @@ class AnazhRealm_studio_bruecke {
         const art = L && L.budget ? L.budget[rec.kind] : null;
         const st = this._foundryKindStages(preset) || [];
         const grenzen = [];
-        for (const s of rec.kind === "tree" ? [] : st.slice(1)) {
+        const karte = AnazhRealm.KIND_POLICY[rec.kind];
+        for (const s of karte && karte.impostor === true ? [] : st.slice(1)) {
             if (art && art[s] && art[s].nurWurf === true) continue;
             const ab = this._wechselAbstand(rec.kind, s, 1);
             if (ab != null) grenzen.push({ stufe: s, ab });

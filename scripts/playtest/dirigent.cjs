@@ -1609,12 +1609,12 @@ async function checkBandReglerSim(ctx) {
             }
             // ── S6: DIE STUFE UND DER RAND AM SCHIRM (lod.K5 Staffel 2; vorher der Grenzzyklus-Schnitt: der Radius atmete 58↔130 m und
             // baute dieselben Rand-Zellen im Kreis) — bei 30, 60 und 144 Bildern, gepulstem Kopfraum (7/30 ms) und dem Regler des
-            // Spielers ±10 % (perfTargetMs) stehen die Abstände des Gesetzes (`_wechselAbstand`), die Schwellen der Bäume, die Grenzen
-            // von Haus, Tor und Wagen (`_archStufenGrenzen`), die Stufen-Wahl, die Wahrnehmungs-Distanz der Maske, der Laub-Radius an
+            // Spielers ±10 % (perfTargetMs) stehen die Abstände des Gesetzes (`_wechselAbstand`), die Schwellen der Bäume und Karten-
+            // Arten, die Grenzen von Haus und Tor (`_archStufenGrenzen`), die Stufen-Wahl, die Wahrnehmungs-Distanz der Maske, der Laub-Radius an
             // der Kante (der Rand am Schirm, gekappt am gebauten Ring) und der Bau-Radius am Schirm (`_randSchirm`) GLEICH, während
             // der Regler wandert (loadScale-Spanne ≥ 0,3). Die Gegenprobe im selben Lauf: das Gesetz mit einem Regler-Term wandert. ──
             {
-                const ARTEN = [["tree", 1], ["tree", 2], ["haus", 1], ["haus", 2], ["gate", 1], ["gate", 2], ["vehicle", 1], ["ausstattung", 1]];
+                const ARTEN = [["tree", 1], ["tree", 2], ["haus", 1], ["haus", 2], ["gate", 1], ["gate", 2], ["ausstattung", 1]];
                 const { span } = r._voxelChunkConfig();
                 const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
                 const schirm = () => {
@@ -1622,7 +1622,7 @@ async function checkBandReglerSim(ctx) {
                     return JSON.stringify({
                         d: ARTEN.map(([k, s]) => r._wechselAbstand(k, s, 1)),
                         t: [A.LOD_DISTANCES.thresh01, A.LOD_DISTANCES.thresh12],
-                        g: ["haus_alemannisch", "tor_drachentor", "fahrzeug_gt"].map((type) => r._archStufenGrenzen({ type })),
+                        g: ["haus_alemannisch", "tor_drachentor"].map((type) => r._archStufenGrenzen({ type })),
                         wahl: [[6, 0, 8], [14, 1, 12], [24, 1, 20], [30, 1, 12], [60, 2, 30]].map((x) => r._chooseLODForDistance(...x)),
                         wahrnehmung: r._lodPerceptionDistance(100, 12),
                         laub: st.foliageRadius === Math.min(r._randSchirm("laub"), (ring + 1) * span),
