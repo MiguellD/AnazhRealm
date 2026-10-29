@@ -1,0 +1,40 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf1.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf2.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf3.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ2 $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf2.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ3 $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf3.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf1.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf2.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\leib.K1_1.json.lauf3.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":50,"fehlt":0,"p50":29.6,"p95":44.6,"max":59,"eingabe":0.6,"hoerer":0.1,"kette":12.9,"kurve":16.8,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":10.9,"p95":27.1,"max":30.8,"eingabe":0.5,"hoerer":0.4,"kette":9.9,"kurve":0,"takte":1}
+third/gehen {"n":50,"fehlt":0,"p50":30.5,"p95":44.3,"max":46.2,"eingabe":0.6,"hoerer":0,"kette":12.1,"kurve":16.7,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":8.5,"p95":25.8,"max":29.3,"eingabe":0.6,"hoerer":0.4,"kette":6.9,"kurve":0,"takte":1}
+LATENZ GRÜN (Bild 16.8 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ2
+ego/gehen {"n":50,"fehlt":0,"p50":32,"p95":44.6,"max":48.7,"eingabe":0.5,"hoerer":0,"kette":15.7,"kurve":16.7,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":18,"p95":26.7,"max":41.8,"eingabe":0.5,"hoerer":0.4,"kette":17.4,"kurve":0,"takte":2}
+third/gehen {"n":50,"fehlt":0,"p50":31.7,"p95":45,"max":52.6,"eingabe":0.7,"hoerer":0.1,"kette":14.1,"kurve":16.5,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":16.7,"p95":25.7,"max":26,"eingabe":0.5,"hoerer":0.4,"kette":16.4,"kurve":0,"takte":2}
+LATENZ GRÜN (Bild 17 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ3
+ego/gehen {"n":50,"fehlt":0,"p50":32.4,"p95":50.4,"max":53.5,"eingabe":0.6,"hoerer":0.1,"kette":14.8,"kurve":16.7,"takte":4}
+ego/wechsel {"n":50,"fehlt":0,"p50":9.8,"p95":27.3,"max":32,"eingabe":0.6,"hoerer":0.4,"kette":8.6,"kurve":0,"takte":1}
+third/gehen {"n":50,"fehlt":0,"p50":35.1,"p95":46.8,"max":49.4,"eingabe":0.6,"hoerer":0.1,"kette":14.3,"kurve":17,"takte":4}
+third/wechsel {"n":50,"fehlt":0,"p50":10.5,"p95":29.6,"max":31,"eingabe":0.6,"hoerer":0.4,"kette":8.9,"kurve":0,"takte":1}
+LATENZ ROT (Bild 22.2 ms) ego/gehen p95 50.4 ms > 50 (fehlt 0) — Täter kurve 16.7 ms, 4 Takte
+@@PUNKTE@@ EXIT 1
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

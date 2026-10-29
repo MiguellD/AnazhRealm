@@ -1,0 +1,100 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf1.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf2.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf3.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN1 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ1 $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf1.json"
+teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN2 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ2 $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf2.json"
+teil SPIEL2 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN3 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ3 $W latenz --verb hieb --sicht third,ego --proben 30 --json "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf3.json"
+teil SPIEL3 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf1.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf2.json" "C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\halten.K2_1.json.lauf3.json"
+@@PUNKTE@@ HAKEN1
+{
+ "ms": 3,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ1
+third/hieb {"n":30,"fehlt":0,"p50":21.7,"p95":34.2,"max":34.6,"eingabe":0.6,"hoerer":2.5,"kette":13.7,"kurve":0,"takte":3,"halt":9}
+ego/hieb {"n":30,"fehlt":0,"p50":19.5,"p95":32.5,"max":35.5,"eingabe":0.6,"hoerer":1.9,"kette":12.4,"kurve":0,"takte":3,"halt":10}
+LATENZ GRÜN (Bild 16.8 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL1
+{
+ "ms": 3,
+ "ergebnis": {
+  "gesetzt": 59,
+  "dauerMs": [
+   136,
+   179
+  ],
+  "haltTakte": 1058,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ HAKEN2
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ2
+third/hieb {"n":30,"fehlt":0,"p50":20.8,"p95":38.5,"max":39.2,"eingabe":0.6,"hoerer":3.2,"kette":16.3,"kurve":0,"takte":3,"halt":9}
+ego/hieb {"n":30,"fehlt":0,"p50":20.5,"p95":27.9,"max":35.8,"eingabe":0.7,"hoerer":1.3,"kette":10.7,"kurve":0,"takte":3,"halt":9}
+LATENZ GRÜN (Bild 16.9 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL2
+{
+ "ms": 2,
+ "ergebnis": {
+  "gesetzt": 58,
+  "dauerMs": [
+   154,
+   169
+  ],
+  "haltTakte": 1046,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ HAKEN3
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ3
+third/hieb {"n":30,"fehlt":0,"p50":21.6,"p95":36.8,"max":37.1,"eingabe":1.4,"hoerer":3.4,"kette":14.8,"kurve":0,"takte":3,"halt":9}
+ego/hieb {"n":30,"fehlt":0,"p50":21.6,"p95":34.6,"max":36.9,"eingabe":0.6,"hoerer":3.2,"kette":13.6,"kurve":0,"takte":3,"halt":9}
+LATENZ GRÜN (Bild 16.9 ms) 
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ SPIEL3
+{
+ "ms": 3,
+ "ergebnis": {
+  "gesetzt": 58,
+  "dauerMs": [
+   131,
+   174
+  ],
+  "haltTakte": 1045,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
