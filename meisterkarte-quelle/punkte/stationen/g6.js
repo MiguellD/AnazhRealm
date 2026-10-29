@@ -6,12 +6,15 @@
 // ankunft-aussen: ankunft K2#1 K3#1). Je Kriterium und Staffel steht hier der Befehl, mit dem
 // der Beleg gemessen wurde.
 //
-// HARNESS-STATIONEN: einige Belege maß eine Mess-Bahn mit Scratch-Werkzeug aus dem Zweig koordination
-// (`bericht/2210-messschuld-6cfce/skripte/`: spiel.cjs, m14-spielgang, m15-wind, m15-schritt; `bericht/2310-messschuld-gtx-452972/
-// echt-k1.cjs`). Diese Dateien tragen den Baum ihres Mess-Platzes fest im Text. Die Station kopiert sie darum neben ihre Ausgabe
-// (`{AUS}` ohne .json + "-werk"/), setzt dort {BAUM} und {KOORD} ein und schreibt nichts in den Bericht zurück. Der Befehl selbst
-// steht hier wörtlich, ist also Teil des Abdrucks. Den Text des Scratch-Werkzeugs liest der Abdruck nicht: wer es ändert, muss
-// den Befehl hier mitändern (z. B. das Datum im Kommentar-Feld `# werk`), sonst zählt die alte Messung weiter.
+// DIE PROBEN VON KLANG UND SPEICHER (29.10., das Gesetz des Schöpfers: EINE Fahrt durch jedes System ≤ 30 min, die Dauerlast
+// eingeschlossen): jede misst in der EINEN warmen Welt der Sitzung (punkte.cjs fahreSitzung: `werkbank start --echt` an
+// WERKBANK_PORT, ihr Log PUNKTE_SITZUNG_LOG nennt die Karte) über /eval und /reload — nie mit eigenem Boot, Browser oder Port.
+// Bis 29.10. bootete jede ihr eigenes Spiel aus Scratch-Werkzeug unter bericht/ (m15-wind, m15-schritt, echt-k1, speicher-zwei):
+// an ea07267e (Radeon) 2,1–14,7 min je Lauf, Σ 60,2 min für die neun Läufe (11,0 davon am Schloss). Der Läufer `sitzungLauf` ruft die
+// Seiten-Funktionen (`…Seite`, in der Seite: die Welt `window.anazhRealm`) mit Frist und schreibt sein Ergebnis nach {AUS}; die
+// Linse des Spiels (diag-klang-zensus: werkzeug, koerperSeite, taktSeite) liest die Probe aus dem Spiel-Baum am SHA (`skript`) —
+// EINE Quelle, kein Zwilling; ihr Skript steht im pfad der Station. Gemessen wird am Ereignis (Bilder, Stände, Haken des
+// Schreibers), nie an der Wanduhr; die Uhr, das Wetter, der Ort werden gestellt statt erwartet.
 //
 // Nicht fassbar (Werkzeug fehlt) steht unten in `fehlt`, mit befehl: null und dem Grund beim Namen. Diese Einträge zählen 0,
 // und der Läufer sieht sie nicht: `module.exports` bleibt die Liste der fahrbaren Stationen.
@@ -22,16 +25,6 @@ const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
 const VOR =
     "set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D=\"${A%.json}-werk\"; " +
     'rm -rf "$D"; mkdir -p "$D/roh"; ';
-// Die Spiel-Harness der Radeon-Mess-Bahn (spiel.cjs): das echte Spiel im Fenster über einen Host ohne save-server-Pfad
-// (save-server auf {PORT}, nie 4312 — dort hieße der Host save-server, R5: der Pfad des Spielers).
-const HARNESS =
-    VOR +
-    'cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; ' +
-    'sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" ' +
-    '-e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; ' +
-    '(PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); ' +
-    "for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; " +
-    "export SPIEL_URL=http://localhost:{PORT}; ";
 // DER ZYKLUS OHNE ALTER beim Namen (echt-k1 zählt ihn als halbe Welt mit Alter 999): die Probe sucht den Schreiber, dessen
 // Stand x/z/b/e dem geladenen GENAU gleicht. 23.10. an 7c6f4b49 (Radeon) gab es ihn je Lauf einmal nicht — der geladene Stand
 // lag mit gleichen Blöcken und Edits 4/−25 mm neben dem letzten Schreiber vor dem Tod (z8: 388/93905 → 392/93880): der Spieler
@@ -48,22 +41,820 @@ function ohneAlter(j) {
             return "z" + z.z + (w ? " " + (g.x - w.rec.x) + "/" + (g.z - w.rec.z) + " mm neben dem Schreiber " + ((tot - w.t) / 1000).toFixed(2) + " s vor dem Tod (b/e gleich)" : " ohne Schreiber mit gleichem b/e");
         });
 }
-// Der Tab-Tod am Pfad des Spielers (statischer Host ohne save-server), Stand M37: Tod im Dorf-Erwachen in Zyklus 1 und 2.
-const ECHT_K1 =
-    VOR +
-    'sed -e "s#C:/Users/micha/Desktop/AnazhRealm-OMEN/koordination#$K#g" -e "s#C:/Users/micha/Desktop/AnazhRealm-OMEN/n2010-b2b#$B#g" ' +
-    '"$K/bericht/2310-messschuld-gtx-452972/echt-k1.cjs" > "$D/echt-k1.cjs"; ' +
-    // werk: echt-k1 mit dem Lese-Haken der OMEN (042f681a, 23.10.: das Alter am gelesenen Stand, die Versetzung als eigene Zahl)
-    ': werk 2310-lese-haken; WT="$B" OUT_DIR="$D" ECHT_PORT={PORT} node "$D/echt-k1.cjs" ';
 
-// DIE MESS-BAHN speicher-zwei (Karte speicher-zwei, 27.10.): `bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs` fährt das
-// echte Spiel aus dem Spiel-Baum (dessen welt-boot, Ausgabe-Aufnahme, Messort) — `takt` für speicher.K2#2, `bild` für
-// speicher.K4#2. Unter scripts/ des Spiels trüge die Decke die zwei Bahnen nicht (+2 139 Atome); die Bahn kopiert sich neben die
-// Ausgabe wie die HARNESS, `# werk` nennt ihren Stand.
-const SPEICHER_ZWEI =
-    VOR +
-    'cp "$K/bericht/2710-speicher-zwei/skripte/speicher-zwei.cjs" "$D/"; ' +
-    ': werk 2710-speicher-zwei; cd "$B"; BAUM="$B" PORT={PORT} node "$D/speicher-zwei.cjs" ';
+// ─────────────────── DER LÄUFER DER PROBEN (Node, im Spiel-Baum der Sitzung) ───────────────────
+// `lauf(h)` mit h = { seite, reload, ruf, skript, aus, koord, warte, path }; was `lauf` zurückgibt, steht in {AUS} (dazu `sek`, die
+// Dauer der Probe). Ein Fehler steht dort als `fehler` und endet mit Exit 1. `seite(fn, args, ms)` fährt eine Seiten-Funktion (ihr
+// Text) mit JSON-Argumenten in der Welt der Sitzung; `reload()` lädt die Seite im warmen Browser neu (dasselbe Profil, derselbe
+// Speicher: die Wiederkehr); `skript(datei, name)` liest eine Funktion der Linse aus ihrem Skript am SHA.
+async function sitzungLauf(lauf) {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const [aus, koord] = process.argv.slice(1);
+    const port = Number(process.env.WERKBANK_PORT);
+    const ruf = (weg, nutz, ms = 60000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        ja({ fehler: weg + " ohne JSON: " + d.slice(0, 200) });
+                    }
+                });
+            });
+            q.setTimeout(ms, () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    const seite = async (fn, args = [], ms = 60000) => {
+        const a = await ruf("/eval", { code: "return await (" + fn + ")(..." + JSON.stringify(args) + ");" }, ms);
+        if (!a || a.fehler)
+            throw new Error(String(fn).slice(0, 48).replace(/\s+/g, " ") + " … — " + ((a && a.fehler) || "keine Antwort") + (a && a.stapel ? " @ " + a.stapel.join(" ← ") : ""));
+        return a.ergebnis;
+    };
+    const reload = async () => {
+        const a = await ruf("/reload", {}, 120000);
+        if (!a || a.neu !== true) throw new Error("/reload: " + JSON.stringify(a).slice(0, 200));
+        return a.ms;
+    };
+    const skript = (datei, name) => {
+        const t = fs.readFileSync(datei, "utf8").replace(/\r\n/g, "\n");
+        const i = t.search(new RegExp("^(async )?function " + name + "\\(", "m"));
+        const e = i < 0 ? -1 : t.indexOf("\n}\n", i);
+        if (e < 0) throw new Error(datei + " trägt keine Funktion " + name + " (die Linse am SHA)");
+        return t.slice(i, e + 2);
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const t0 = Date.now();
+    let j = {}, code = 0;
+    try {
+        const z = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        if (z) console.log(z);
+        j = (await lauf({ seite, reload, ruf, skript, aus, koord, warte, path, linse: z })) || {};
+    } catch (e) {
+        j = { fehler: String((e && e.message) || e) };
+        console.log("PROBE ROT: " + j.fehler);
+        code = 1;
+    }
+    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
+    fs.writeFileSync(aus, JSON.stringify(j, null, 1));
+    console.log("PROBE " + j.sek + " s");
+    process.exit(code);
+}
+// der Befehl einer Probe: die Seiten-Funktionen als Konstanten vor dem Läufer; {AUS} und {KOORD} als Argumente
+const sitzungBefehl = (lauf, seiten = []) => [
+    "node",
+    "-e",
+    seiten.map((f) => "const " + f.name + " = " + f + ";\n").join("") + "(" + sitzungLauf + ")(" + lauf + ");",
+    "{AUS}",
+    "{KOORD}",
+];
+
+// ─────────────────── klang.K2#1: Wind gesehen ↔ gehört ───────────────────
+// In der Seite am Messort der Wiese: Ego, der Blick der Wiese, Tiere gehalten, Sonne (die Böen frei). Der Klang in einem eigenen
+// Kontext (die Geste trägt /eval), der Analyser am Gain der Wind-Stimme (Bandpass unter 1,5 kHz, an ihrer Erzeugung gefunden);
+// das Bild ist das präsentierte Fenster im Takt seines Bilds (der Zeichen-Puffer, 480 × 270, untere 45 % je 2 px), jedes dritte
+// GEZEICHNETE Bild (ein Takt ohne Bild — die GPU-Leine — liest nichts). Je `fen` ms ein Fenster: die mittlere |ΔLuma| je 50 ms und das RMS des Ohrs. Danach stehen Klang, Tiere, Wetter, Sicht
+// und Loop wie vorher. Bis 29.10. m15-wind: eigener Boot, CDP-Screencast, 60 s in 0,5-s-Fenstern (ea07267e Radeon 3,68 min).
+async function windSeite(o) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer, A = window.BaseAudioContext.prototype, C = Object.getPrototypeOf(r);
+    const [bq, gn, kreatur, sicht, wetter, wUhr] = [A.createBiquadFilter, A.createGain, C.__tiereGehalten ? null : C.updateCreatures, st.cameraMode, st.weather, st.weatherEffectTime];
+    const paare = [], bilder = [], ohr = [];
+    let letzter = null, mess = false, n = 0, takt = null, gezeichnet = 0, gelesen = 0, loop = 0;
+    const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender"), render = r._loopRender;
+    r._loopRender = function () {
+        gezeichnet++;
+        return render.apply(this, arguments);
+    };
+    A.createBiquadFilter = function () {
+        return (letzter = bq.apply(this, arguments));
+    };
+    A.createGain = function () {
+        const g = gn.apply(this, arguments);
+        if (letzter) paare.push({ filter: letzter, gain: g });
+        letzter = null;
+        return g;
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    try {
+        if (st.symphony.enabled) r.disposeSymphony();
+        window.__tiereHalten();
+        window.__wetterSetzen("sunny");
+        if (st.cameraMode !== "first") r.setCameraMode("first");
+        const stell = () => {
+            st.playerMesh.position.set(o.x, r._voxelSurfaceY(o.x, o.z) + 1.8, o.z);
+            [st.yaw, st.pitch] = [o.gier, -0.12];
+        };
+        stell();
+        await window.__weltStehtNach(async () => (stell(), await window.__seitenTakt()));
+        r.initSymphony();
+        const s = st.symphony;
+        if (s.ctx.state !== "running") await s.ctx.resume();
+        const can = rend.domElement, W = 480, H = 270, y0 = Math.floor(H * 0.55), w = W - 8, h = H - 4 - y0;
+        const c2 = new OffscreenCanvas(W, H).getContext("2d", { willReadFrequently: true });
+        rend.setAnimationLoop((t) => {
+            r._gameLoopTick(t);
+            loop++;
+            if (!mess || gezeichnet === gelesen) return;
+            gelesen = gezeichnet;
+            if (++n % 3) return;
+            c2.drawImage(can, 0, 0, W, H);
+            const d = c2.getImageData(4, y0, w, h).data, lum = [];
+            for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+                const i = (y * w + x) * 4;
+                lum.push(0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]);
+            }
+            bilder.push({ t: performance.now(), lum: Float32Array.from(lum) });
+        });
+        let wind = null;
+        for (let i = 0; i < 200 && !wind; i++) {
+            wind = paare.filter((p) => p.filter.type === "bandpass" && p.filter.frequency.value < 1500 && p.filter.context === s.ctx).pop() || null;
+            if (!wind) await warte(50);
+        }
+        const stand = { ctx: s.ctx.state, enabled: s.enabled, um: !!s.umwelt, paare: paare.length, steht: !!r._weltSteht() };
+        const zensus = s.umwelt.graph.zensus().filter((v) => v.an).map((v) => [v.name, +v.db.toFixed(1)]);
+        if (!wind) return { stand, wahl: { fehler: "keine Wind-Stimme", zensus } };
+        const an = s.ctx.createAnalyser();
+        an.fftSize = 2048;
+        wind.gain.connect(an);
+        const td = new Float32Array(an.fftSize);
+        takt = setInterval(() => {
+            an.getFloatTimeDomainData(td);
+            let q = 0;
+            for (let i = 0; i < td.length; i++) q += td[i] * td[i];
+            ohr.push([performance.now(), Math.sqrt(q / td.length)]);
+        }, 50);
+        const [tA, nA] = [performance.now(), loop];
+        mess = true;
+        await warte(o.sek * 1000);
+        mess = false;
+        clearInterval(takt);
+        const fps = +((loop - nA) / ((performance.now() - tA) / 1000)).toFixed(1);
+        if (bilder.length < 2 || ohr.length < 2) return { stand, wahl: { hz: wind.filter.frequency.value, zensus }, fpsVor: fps, bilder: bilder.length };
+        const t0 = Math.max(bilder[0].t, ohr[0][0]), t1 = Math.min(bilder[bilder.length - 1].t, ohr[ohr.length - 1][0]);
+        const nF = Math.max(0, Math.floor((t1 - t0) / o.fen));
+        const [bew, bewN, lau, lauN] = [0, 0, 0, 0].map(() => new Array(nF).fill(0));
+        for (let i = 1; i < bilder.length; i++) {
+            const [a, b] = [bilder[i - 1], bilder[i]], dt = b.t - a.t, f = Math.floor((b.t - t0) / o.fen);
+            if (dt <= 0 || f < 0 || f >= nF) continue;
+            let q = 0;
+            for (let k = 0; k < b.lum.length; k++) q += Math.abs(b.lum[k] - a.lum[k]);
+            bew[f] += q / b.lum.length / (dt / 50);
+            bewN[f]++;
+        }
+        for (const [t, v] of ohr) {
+            const f = Math.floor((t - t0) / o.fen);
+            if (f >= 0 && f < nF) (lau[f] += v), lauN[f]++;
+        }
+        const [B, Q] = [[], []];
+        for (let f = 0; f < nF; f++) if (bewN[f] && lauN[f]) B.push(+(bew[f] / bewN[f]).toFixed(4)), Q.push(+(lau[f] / lauN[f]).toFixed(6));
+        return { stand, wahl: { hz: wind.filter.frequency.value, kandidaten: paare.length, zensus }, fpsVor: fps, bilder: bilder.length, ohrProben: ohr.length, B, A: Q };
+    } finally {
+        mess = false;
+        clearInterval(takt);
+        rend.setAnimationLoop(null);
+        if (eigen) r._loopRender = render;
+        else delete r._loopRender;
+        [A.createBiquadFilter, A.createGain] = [bq, gn];
+        if (st.symphony.enabled) r.disposeSymphony();
+        if (kreatur) (C.updateCreatures = kreatur), delete C.__tiereGehalten;
+        try {
+            if (st.weather !== wetter) window.__wetterSetzen(wetter);
+        } finally {
+            st.weatherEffectTime = wUhr;
+        }
+        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+    }
+}
+// die Kreuzkorrelation wie m15-wind (Lag ±3 s), die Zeile `{"stand":…}` liest das Urteil
+async function windLauf(h) {
+    const BAND = require(h.path.resolve("scripts/lib/band-urteil.cjs"));
+    const ort = BAND.ladeSpec("wiese").ort;
+    const fen = 200;
+    const w = await h.seite(windSeite, [{ x: ort.spieler[0], z: ort.spieler[1], gier: BAND.ortGier(ort), sek: 21, fen }], 90000);
+    const [B, A] = [w.B || [], w.A || []];
+    const pear = (x, y) => {
+        const n = Math.min(x.length, y.length);
+        const mx = x.slice(0, n).reduce((a, b) => a + b, 0) / n, my = y.slice(0, n).reduce((a, b) => a + b, 0) / n;
+        let sxy = 0, sxx = 0, syy = 0;
+        for (let i = 0; i < n; i++) (sxy += (x[i] - mx) * (y[i] - my)), (sxx += (x[i] - mx) ** 2), (syy += (y[i] - my) ** 2);
+        return { r: sxy / Math.sqrt(sxx * syy), n, cvX: Math.sqrt(sxx / n) / mx, cvY: Math.sqrt(syy / n) / my };
+    };
+    const lags = [];
+    const M = Math.round(3000 / fen);
+    if (B.length > 2 * M)
+        for (let L = -M; L <= M; L++) {
+            const x = L >= 0 ? B.slice(L) : B.slice(0, B.length + L);
+            const y = L >= 0 ? A.slice(0, A.length - L) : A.slice(-L);
+            lags.push({ lagS: +((L * fen) / 1000).toFixed(2), ...pear(x, y) });
+        }
+    const r0 = lags.find((l) => l.lagS === 0);
+    const best = lags.length ? lags.reduce((a, b) => (b.r > a.r ? b : a)) : undefined;
+    const zeile = { stand: w.stand, wahl: w.wahl, fpsVor: w.fpsVor, bilder: w.bilder, fenster: B.length, r0, best };
+    console.log(JSON.stringify(zeile));
+    return { ...zeile, fen, ohrProben: w.ohrProben, lags, reiheBild: B, reiheOhr: A };
+}
+
+// ─────────────────── klang.K4#1 · #2: der Schritt je Stoff, der Körper klingt ───────────────────
+// (S) In der Seite: die Orte je Stoff am Gesetz des Schritts (`_schrittMaterialAt` bei stehender Boden-Karte, eine 12-m-Strecke
+// längs −x zu ≥ 80 % EIN trockener Stoff — erst die Wiese um den Messort, dann ferne Kandidaten, die der Spieler anfährt), je Stoff
+// `gehMs` Gehen mit W (die Taste ins Fenster, der Loop läuft), ein Analyser an jedem Schritt-Gain (gefunden an der Erzeugung in
+// `_playSchrittOneShot`), je 8 ms Pegel und Spektral-Schwerpunkt; ein Schritt ist eine Folge mit Lücken < 30 ms, sein Etikett der
+// Stoff des Klangs (`_schrittKlang.letzter`). Danach Klang, Erzeugung und Loop wie vorher. Bis 29.10. m15-schritt: eigener Boot,
+// 10 s je Stoff (ea07267e Radeon 2,09 min); (F) fuhr diag-klang-zensus mit eigenem Boot hinterher (klang.K4#2 5,25 min).
+async function schrittSeite(o) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer, A = window.BaseAudioContext.prototype, gn = A.createGain;
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
+    let abgriff = null, takt = null;
+    A.createGain = function () {
+        const g = gn.apply(this, arguments);
+        if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
+            try {
+                g.connect(abgriff);
+            } catch (_e) {}
+        return g;
+    };
+    const sicht = st.cameraMode;
+    try {
+        if (st.symphony.enabled) r.disposeSymphony();
+        r.initSymphony();
+        const s = st.symphony;
+        if (s.ctx.state !== "running") await s.ctx.resume();
+        if (st.cameraMode !== "first") r.setCameraMode("first");
+        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+        const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
+        const strecke = (x, z, karte, schritt) => {
+            const m = mat(x, z, karte);
+            if (!m || m === "wasser") return null;
+            const n = 3 * (Math.floor(12 / schritt) + 1);
+            let fehl = 0;
+            for (let d = 0; d <= 12; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m && ++fehl > 0.2 * n) return null;
+            return m;
+        };
+        const suche = (x0, z0, rad, schon) => {
+            const fund = {};
+            for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
+                for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
+                    const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
+                    const m = strecke(x, z, true, 1);
+                    if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
+                }
+            return fund;
+        };
+        const kandidaten = (x0, z0, schon) => {
+            const je = {}, aus = [];
+            for (let rr = 40; rr <= 2500; rr += 25)
+                for (let i = 0; i < 64; i++) {
+                    const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
+                    const m = strecke(x, z, false, 3);
+                    if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
+                    je[m].push([x, z]);
+                    aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
+                }
+            return aus;
+        };
+        const hin = (x, z) => {
+            st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        };
+        const karteDa = async (x, z) => {
+            for (let i = 0; i < 200; i++) {
+                if (r._bodenSichtAt(x, z) !== null && r._bodenSichtAt(x - 12, z) !== null) return true;
+                await warte(50);
+            }
+            return false;
+        };
+        hin(o.x, o.z);
+        await karteDa(o.x, o.z);
+        const orte = suche(o.x, o.z, 120, []), fahrten = [];
+        if (Object.keys(orte).length < 3)
+            for (const k of kandidaten(o.x, o.z, Object.keys(orte))) {
+                if (Object.keys(orte).length >= 3 || fahrten.length >= 5) break;
+                if (orte[k.m]) continue;
+                hin(k.x, k.z);
+                const karte = await karteDa(k.x, k.z);
+                const neu = karte ? suche(k.x, k.z, 30, Object.keys(orte)) : {};
+                fahrten.push({ hinweis: k.m, ort: [k.x, k.z], karte, neu: Object.keys(neu) });
+                Object.assign(orte, neu);
+            }
+        const an = s.ctx.createAnalyser();
+        an.fftSize = 1024;
+        an.smoothingTimeConstant = 0;
+        abgriff = an;
+        const fd = new Float32Array(an.frequencyBinCount), td = new Float32Array(an.fftSize), proben = [];
+        takt = setInterval(() => {
+            an.getFloatTimeDomainData(td);
+            let q = 0;
+            for (let i = 0; i < td.length; i++) q += td[i] * td[i];
+            const rms = Math.sqrt(q / td.length);
+            if (rms < 1e-4) return;
+            an.getFloatFrequencyData(fd);
+            const hz = s.ctx.sampleRate / an.fftSize;
+            let num = 0, den = 0;
+            for (let k = 1; k < fd.length; k++) {
+                const p = Math.pow(10, fd[k] / 10);
+                (num += p * k * hz), (den += p);
+            }
+            proben.push({ t: performance.now(), rms, schwer: num / den, mat: st._schrittKlang && st._schrittKlang.letzter && st._schrittKlang.letzter.material });
+        }, 8);
+        const stoffe = {};
+        for (const [m, [x, z]] of Object.entries(orte)) {
+            st.yaw = -Math.PI / 2;
+            hin(x, z);
+            await karteDa(x, z);
+            await warte(o.ruhMs);
+            const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
+            proben.length = 0;
+            taste("keydown");
+            await warte(o.gehMs);
+            taste("keyup");
+            await warte(500);
+            const bursts = [];
+            let cur = null;
+            for (const p of proben.slice()) {
+                if (!cur || p.t - cur.t1 > 30) bursts.push((cur = { t0: p.t, t1: p.t, w: 0, sw: 0, mats: {} }));
+                cur.t1 = p.t;
+                cur.w += p.rms * p.rms;
+                cur.sw += p.rms * p.rms * p.schwer;
+                cur.mats[p.mat] = (cur.mats[p.mat] || 0) + 1;
+            }
+            const alle = bursts.map((b) => ({ ms: Math.round(b.t1 - b.t0), schwerHz: Math.round(b.sw / b.w), mat: Object.keys(b.mats).sort((a, c) => b.mats[c] - b.mats[a])[0] }));
+            const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
+            const p1 = st.playerMesh.position;
+            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
+        }
+        return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe };
+    } finally {
+        clearInterval(takt);
+        taste("keyup");
+        rend.setAnimationLoop(null);
+        abgriff = null;
+        A.createGain = gn;
+        if (st.symphony.enabled) r.disposeSymphony();
+        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+    }
+}
+// (S) je Etikett des Schritts die Zeile, die das Urteil liest; (F) der Körper-Teil der Klang-Linse in derselben Welt: werkzeug und
+// koerperSeite aus diag-klang-zensus am SHA (Motor · Landung · Doppler am OfflineAudioContext), ihr Urteil koerperUrteil
+async function schrittLauf(h) {
+    const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const S = await h.seite(schrittSeite, [{ x: M.x, z: M.z, gehMs: 3500, ruhMs: 600 }], 120000);
+    console.log(JSON.stringify({ klang: S.klang, orte: S.orte, fahrten: S.fahrten }));
+    const je = {};
+    for (const v of Object.values(S.stoffe)) for (const b of v.alle) (je[b.mat] = je[b.mat] || []).push(b.schwerHz);
+    for (const [m, a] of Object.entries(je)) {
+        a.sort((x, y) => x - y);
+        console.log(m, "n", a.length, "median", a[a.length >> 1], "p10", a[Math.floor(a.length * 0.1)], "p90", a[Math.floor(a.length * 0.9)]);
+    }
+    const D = "scripts/diag-klang-zensus.cjs";
+    const [W, K, U] = ["werkzeug", "koerperSeite", "koerperUrteil"].map((n) => h.skript(D, n));
+    const F = await h.seite("async (m) => { window.__klangW = (" + W + ")(); return await (" + K + ")(m, null); }", [M], 120000);
+    const u = new Function("return (" + U + ")")()(F);
+    console.log("── (F) DER KÖRPER KLINGT: " + u.zahl);
+    for (const t of u.rot) console.log("   " + t);
+    return { schritt: S, koerper: F, rot: u.rot };
+}
+// EINE Probe für beide Staffeln (Zwillinge: derselbe Befehl fährt einmal), die Welt danach verändert: Stürze aus 12 m, ein GT
+const K4_PROBE = { sek: 60, befehl: sitzungBefehl(schrittLauf, [schrittSeite]) };
+const K4_AUSNAHME =
+    "der Schritt braucht drei Stoffe an Orten des Gesetzes (ferne Kandidaten mit Karten-Warten, je Stoff 3,5 s Gehen), der Körper 32 " +
+    "Abgriffe am OfflineAudioContext — erwartet ~35 s, Deckel 60 s (bis 29.10.: 2,1 + 5,3 min mit zwei eigenen Boots)";
+
+// ─────────────────── klang.K5#2: der Klang-Takt in Bewegung, Aussetzer am Ausgang ───────────────────
+// taktSeite der Klang-Linse (diag-klang-zensus am SHA: Klang-ms je Bild über symphonyTick · _schrittKlangTick · _tierRuf, die
+// Aussetzer über `AudioContext.playbackStats`) in der Welt der Sitzung, ihr Loop im Fenster (echt). Der Gang verdichtet: je Phase
+// `n` × 60 Bilder — gehen (W, je 60 Bilder ein Tipp A) · Fahrt im GT (W/S im Wechsel je 120 Bilder) · Nacht (Uhr 0) —, die Tasten
+// ins Fenster, gehalten bis zum Bild, nie nach der Uhr; die Aussetzer über die ganze Wiedergabe der drei Phasen. Bis 29.10.:
+// `--takt --echt --minuten 10` mit eigenem Boot (ea07267e Radeon 14,74 min).
+async function taktFahrt(quelle, m, namen, o) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer;
+    const taktSeite = new Function("return (" + quelle + ")")();
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const taste = (k, typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: k, code: "Key" + k.toUpperCase(), bubbles: true }));
+    const T = () => window.__klangTakt;
+    const halte = async (k, ziel, ms) => {
+        taste(k, "keydown");
+        const t0 = performance.now();
+        try {
+            while (!ziel() && performance.now() - t0 < ms) await warte(16);
+        } finally {
+            taste(k, "keyup");
+        }
+        return ziel();
+    };
+    const phase = async (name, n, pendeln) => {
+        T().start(name);
+        for (let i = 0; i < n; i++) {
+            await halte(pendeln && Math.floor(i / 2) % 2 ? "s" : "w", () => T().bilder.length >= 60 * (i + 1), 10000);
+            if (!pendeln) (taste("a", "keydown"), await warte(70), taste("a", "keyup"));
+        }
+        return T().urteil(o.soll);
+    };
+    try {
+        if (st.symphony.enabled) r.disposeSymphony();
+        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+        const seite = taktSeite(m, true, namen);
+        if (!(await halte("w", () => T().weg >= 3, 20000))) throw new Error("der Spieler geht nicht: W 20 s ohne 3 m");
+        await phase("ein", 2);
+        const a = T().audio();
+        const ph = {};
+        ph.gehen = await phase("gehen", o.n);
+        const p = st.playerMesh.position;
+        p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
+        const e = (window.__klangGT = r.spawnArchitecture("fahrzeug_gt", { x: p.x + 3, y: r.getTerrainHeightAt(p.x + 3, p.z) + 0.5, z: p.z }, { silent: true, precise: true }));
+        await window.__gebautNach(e);
+        r.mountArchitecture(e);
+        ph.fahrt = await phase("fahrt", o.n, true);
+        ph.fahrt.sattel = !!st.symphony.fahrt;
+        r.dismountArchitecture();
+        r.setTimeOfDay(0, "regler");
+        ph.nacht = await phase("nacht", o.n);
+        const b = T().audio();
+        const aus = a && b && b.gleich ? { n: b.n - a.n, still: +(b.still - a.still).toFixed(3), s: +(b.s - a.s).toFixed(1) } : null;
+        return { seite, phasen: ph, aussetzer: aus };
+    } finally {
+        for (const k of ["w", "s", "a"]) taste(k, "keyup");
+        rend.setAnimationLoop(null);
+        if (window.__klangGT && st.player && st.player.mountedArch != null) r.dismountArchitecture();
+        if (window.__klangGT) r.removeArchitecture(window.__klangGT, { still: true });
+        window.__klangGT = null;
+        if (st.symphony.enabled) r.disposeSymphony();
+    }
+}
+// die Befunde wie die Klang-Linse (`takt`): Aussetzer, Bewegung je Phase, p95 über dem Soll, der Sattel der Fahrt
+async function taktLauf(h) {
+    const D = "scripts/diag-klang-zensus.cjs";
+    const text = require("fs").readFileSync(D, "utf8");
+    const soll = Number((/const TAKT_SOLL_MS = ([\d.]+);/.exec(text) || [])[1]);
+    const teile = (/const TAKT_TEILE = (\[[^\]]*\]);/.exec(text) || [])[1];
+    if (!(soll > 0) || !teile) throw new Error(D + " trägt TAKT_SOLL_MS oder TAKT_TEILE nicht");
+    const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10 }], 150000);
+    console.log("Klang-Takt:", JSON.stringify(j.seite));
+    const rot = (j.rot = []);
+    for (const [name, z] of Object.entries(j.phasen)) {
+        console.log("── " + name + ": Klang-ms je Bild p95 " + z.p95 + " · max " + z.max + " (" + z.bilder + " Bilder, " + z.weg + " m) · trägt " + (z.traeger.join(" · ") || "—"));
+        if (!(z.bilder >= 300 && z.weg >= 10)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
+        else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
+    }
+    const a = j.aussetzer;
+    console.log("── Aussetzer am Ausgang: " + (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still)" : "ungezählt"));
+    if (!a) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
+    else if (a.n) rot.push("T aussetzer: " + a.n + " in " + a.s + " s Wiedergabe");
+    if (!j.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
+    for (const t of rot) console.log("   " + t);
+    return j;
+}
+
+// ─────────────────── speicher.K1#1 · #2: der Tab-Tod am Pfad des Spielers ───────────────────
+// Die Welt der Sitzung läuft am Pfad des Spielers ohne save-server-Pfad (isSaveServerHost nur an :4312). Je Zyklus: die Seite
+// (nach dem Laden) nennt den Stand, der sie trägt (Lage, Blöcke, Edits) und den Befund des Ladens (logBuffer: „ließ sich nicht
+// laden“ · korrupt · unlesbar · „Welt aus .bak“); dann wird der Speicher-Faden mit dem Vorspann `todFaden` neu geboren (die
+// Schranke `_speicherStill` vorher, die Welt geht ganz an ihn): er meldet je Stand platz (vor dem Put) · idb (nach dem Put, vor
+// dem Ende der Transaktion) · fest (Transaktion zu) und HÄLT an einem scharfen Ort IN seinem Schreiber an. Der Spieler geht (W),
+// je 0,5 s ein Stein-Block 6 m rechts und eine Grube 5 m links. DER TOD (`sterben`): kein Schreiber der Seite erreicht mehr den
+// Speicher (Storage, IndexedDB, Worker), der Faden stirbt mitten in seiner Transaktion (terminate: sie wird nie fest), die Seite
+// lädt neu (/reload, dasselbe Profil) — der Tab-Tod, wie ihn die Platte sieht. Vier Tode: idb und platz am nächsten Autosave des
+// Spiels (die Kadenz: der geladene Stand ist der vorige feste), erwachen-hart (sobald der Gang des Dorf-Erwachens läuft),
+// erwachen-idb (am IDB-Schreiben des saveState mitten im Gang). Bis 29.10. echt-k1: 20 harte Tode (taskkill des Browsers) mit je
+// eigenem Boot (ea07267e Radeon 13,24 min).
+function todFaden(rec) {
+    let scharf = null;
+    const k = new BroadcastChannel("k1");
+    k.onmessage = (e) => (scharf = e.data);
+    const melde = (art, json) => {
+        k.postMessage({ t: Date.now(), art, rec: rec(json), faden: 1 });
+        if (scharf !== art) return;
+        k.postMessage({ t: Date.now(), art: "__TOD__" });
+        for (;;);
+    };
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (v, key) {
+        if (String(key).endsWith(".bak") || !v || typeof v.json !== "string") return put.apply(this, arguments);
+        melde("platz", v.json);
+        const q = put.apply(this, arguments);
+        this.transaction.addEventListener("complete", () => melde("fest", v.json));
+        melde("idb", v.json);
+        return q;
+    };
+}
+function todRec(json) {
+    try {
+        const s = JSON.parse(json);
+        return {
+            x: Math.round(s.playerPosition.x * 1e3),
+            z: Math.round(s.playerPosition.z * 1e3),
+            b: (s.architectures || []).filter((a) => a.type === "stein_block").length,
+            e: s.voxelEdits ? s.voxelEdits.n : ((s.worldMeta && s.worldMeta.voxelEdits) || []).length,
+        };
+    } catch (_e) {
+        return { kaputt: 1 };
+    }
+}
+async function todZyklus(o) {
+    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId && x.state.playerMesh);
+    const st = r.state, rend = st.renderer;
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const bis = async (f, ms) => {
+        for (const t0 = performance.now(); !f() && performance.now() - t0 < ms; ) await warte(50);
+        return !!f();
+    };
+    rend.setAnimationLoop((t) => r._gameLoopTick(t));
+    await bis(() => st._weltbildDa != null, 30000);
+    const p = st.playerMesh.position;
+    const g = { x: Math.round(p.x * 1e3), z: Math.round(p.z * 1e3), b: (st.architectures || []).filter((a) => a.type === "stein_block").length, e: (st.worldMeta.voxelEdits || []).length, w: st.worldMeta.worldId };
+    const befund = (st.logBuffer || []).filter((t) => /ließ sich nicht laden|korrupt|unlesbar|Welt aus \.bak/i.test(t)).map((t) => t.slice(0, 160));
+    const dorf = o.dorf ? { reserviert: !!(st.worldMeta.settlementCells || {})[o.dorf.key], haeuser: (st.architectures || []).filter((a) => /^haus_/.test(a.type) && Math.hypot(a.position.x - o.dorf.x, a.position.z - o.dorf.z) < 260).length } : null;
+    if (!o.art) return rend.setAnimationLoop(null), { g, befund, dorf };
+    const K = { alle: [], tot: null, bauFehler: 0, absage: {} };
+    const k = new BroadcastChannel("k1");
+    const S = r._speicherZustand();
+    let bauer = null;
+    const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
+    const sterben = () => {
+        if (K.tot) return;
+        K.tot = Date.now();
+        const nichts = function () {};
+        const zu = function () {
+            throw new DOMException("die Seite ist tot", "InvalidStateError");
+        };
+        Storage.prototype.setItem = Storage.prototype.removeItem = Storage.prototype.clear = nichts;
+        for (const n of ["put", "add", "delete", "clear"]) IDBObjectStore.prototype[n] = zu;
+        IDBFactory.prototype.open = zu;
+        Worker.prototype.postMessage = nichts;
+        if (S.faden) S.faden.terminate();
+        clearInterval(bauer);
+        rend.setAnimationLoop(null);
+    };
+    k.onmessage = (e) => (e.data.art === "__TOD__" ? sterben() : K.alle.push(e.data));
+    // der Faden neu geboren mit dem Vorspann (Blob vor importScripts); die Schranke zuerst, dann geht die Welt ganz an ihn
+    if (!window.__k1Roh) window.__k1Roh = window.Worker;
+    const Roh = window.__k1Roh, vorspann = "(" + o.faden + ")(" + o.rec + ");";
+    window.Worker = function (url, opt) {
+        if (!opt || opt.name !== "speicher") return new Roh(url, opt);
+        return new Roh(URL.createObjectURL(new Blob([vorspann + " importScripts(" + JSON.stringify(new URL(url, location.href).href) + ");"])), opt);
+    };
+    if (S.faden) {
+        await r._speicherStill();
+        S.faden.terminate();
+        [S.faden, S.welt] = [null, null];
+    }
+    r.saveState();
+    if (!(await bis(() => K.alle.some((x) => x.art === "fest"), 15000))) throw new Error("der neue Faden schreibt keinen festen Stand");
+    taste("keydown");
+    bauer = setInterval(() => {
+        try {
+            const q = st.playerMesh.position, ziel = { x: q.x + 6, y: r._terrainMacroSurfaceY(q.x + 6, q.z), z: q.z }, u = r._setzUrteil("stein_block", ziel, true);
+            if (u.ok || u.grund === "material") r.spawnArchitecture("stein_block", ziel, { silent: true });
+            else K.absage[u.grund] = (K.absage[u.grund] || 0) + 1;
+            r.carveVoxel(q.x - 5, r._terrainMacroSurfaceY(q.x - 5, q.z), q.z, 1.5);
+        } catch (_e) {
+            K.bauFehler++;
+        }
+    }, 500);
+    await warte(o.vorMs);
+    let erwachen = null, verfehlt = false;
+    if (/^erwachen/.test(o.art)) {
+        const A = r.constructor._siedlungGesetz(), res = st.worldMeta.settlementCells || {};
+        const [cx0, cz0] = [Math.floor(p.x / A.cellM), Math.floor(p.z / A.cellM)];
+        let best = null;
+        for (let dx = -3; dx <= 3; dx++)
+            for (let dz = -3; dz <= 3; dz++) {
+                const i = r._autoSettlementCellInfo(cx0 + dx, cz0 + dz);
+                if (!i || res[i.key]) continue;
+                const d = Math.hypot(i.x - p.x, i.z - p.z);
+                if (!best || d < best.d) best = { i, d, cx: cx0 + dx, cz: cz0 + dz };
+            }
+        if (!best) throw new Error("keine freie Dorf-Zelle im Umkreis");
+        erwachen = { key: best.i.key, nH: best.i.nH, x: best.i.x, z: best.i.z, d: Math.round(best.d) };
+        r._autoSettlementSpawnCell(best.cx, best.cz, best.i);
+        erwachen.gangAktiv = await bis(() => !!(r._autoSettlementQueue && r._autoSettlementQueue.gang), 30000);
+    }
+    if (o.art === "erwachen-hart") sterben();
+    else {
+        k.postMessage(o.art === "erwachen-idb" ? "idb" : o.art);
+        if (o.art === "erwachen-idb") r.saveState();
+        if (!(await bis(() => K.tot, o.hakenMs))) (verfehlt = true), sterben();
+    }
+    taste("keyup");
+    return { g, befund, dorf, tot: K.tot, alle: K.alle, erwachen, verfehlt, bauFehler: K.bauFehler, absage: K.absage };
+}
+// je Tod der geladene Stand gegen die Schreiber vor ihm: das Alter am jüngsten FESTEN Schreiber mit gleichen Blöcken und Edits,
+// verloren ist, was fest lag und nicht kam; die Felder wie echt-k1 (zyklen, todZeiten, alle — `ohneAlter` liest sie)
+async function todLauf(h) {
+    const ARTEN = ["idb", "platz", "erwachen-hart", "erwachen-idb"];
+    const zyklen = [], alle = [], todZeiten = [];
+    let vorher = null, bauFehler = 0;
+    for (let z = 0; z <= ARTEN.length; z++) {
+        const art = ARTEN[z] || null;
+        const c = await h.seite(todZyklus, [{ art, faden: String(todFaden), rec: String(todRec), vorMs: 1500, hakenMs: 12000, dorf: vorher && vorher.erwachen }], 90000);
+        const zeile = { z, g: c.g, befund: c.befund };
+        if (vorher) {
+            const vor = vorher.alle.filter((e) => e.t <= vorher.tot && e.rec && !e.rec.kaputt);
+            const gleich = (e) => e.rec.b === c.g.b && e.rec.e === c.g.e;
+            const fest = vor.filter((e) => e.art === "fest");
+            const traeger = fest.filter(gleich).length ? fest.filter(gleich) : vor.filter(gleich);
+            zeile.alterS = traeger.length ? Math.max(0, vorher.tot - Math.max(...traeger.map((e) => e.t))) / 1000 : null;
+            zeile.alterAm = traeger.length ? traeger[0].art : null;
+            zeile.verlorenBloecke = Math.max(c.g.b, ...fest.map((e) => e.rec.b)) - c.g.b;
+            zeile.verlorenEdits = Math.max(c.g.e, ...fest.map((e) => e.rec.e)) - c.g.e;
+            zeile.eGeladen = c.g.e;
+            zeile.tod = vorher.art;
+            if (c.dorf) zeile.dorfGeladen = c.dorf;
+        }
+        if (art) {
+            Object.assign(zeile, { erwachen: c.erwachen || undefined, verfehlt: c.verfehlt, bauFehler: c.bauFehler, absage: c.absage });
+            bauFehler += c.bauFehler;
+            vorher = { tot: c.tot, art, alle: c.alle, erwachen: c.erwachen };
+            todZeiten.push(c.tot);
+            alle.push(...c.alle);
+        }
+        zyklen.push(zeile);
+        console.log("z" + z + " " + (zeile.tod || "boot") + " geladen=" + JSON.stringify(c.g) + " alter=" + zeile.alterS + " verloren=" + zeile.verlorenBloecke + "/" + zeile.verlorenEdits + (c.erwachen ? " erw=" + JSON.stringify(c.erwachen) : "") + (c.verfehlt ? " VERFEHLT" : "") + (c.befund.length ? " " + c.befund.join("|") : ""));
+        if (art) await h.reload();
+    }
+    const tod = zyklen.filter((x) => x.tod);
+    const j = {
+        tode: tod.length,
+        alterMax: Math.max(...tod.map((x) => (x.alterS == null ? 999 : x.alterS))),
+        ueber10: tod.filter((x) => x.alterS == null || !(x.alterS <= 10)).length,
+        halbe: tod.filter((x) => x.alterS == null || x.verlorenBloecke > 0 || x.verlorenEdits > 0).length,
+        korrupt: zyklen.filter((x) => x.befund.length).length,
+        bauFehler,
+        zyklen,
+        alle,
+        todZeiten,
+    };
+    console.log("ERGEBNIS " + JSON.stringify({ ...j, zyklen: undefined, alle: undefined }));
+    return j;
+}
+// EINE Probe für beide Staffeln (Zwillinge), vier Neuladen im warmen Browser
+const TOD_PROBE = { sek: 90, befehl: sitzungBefehl(todLauf, [todFaden, todRec, todZyklus]) };
+const TOD_AUSNAHME =
+    "der Tab-Tod ist ein Neuladen je Tod (vier Arten: idb, platz, erwachen-hart, erwachen-idb), idb und platz am nächsten Autosave " +
+    "des Spiels (≤ 5 s + Leerlauf, die Kadenz ist die Messung) — erwartet ~60 s, Deckel 90 s (bis 29.10.: 20 Tode mit je eigenem " +
+    "Boot, 13,2 min)";
+
+// ─────────────────── speicher.K2#1 · #2: Speichern kostet kein Bild ───────────────────
+// taktSeite der Mess-Bahn speicher-zwei (Karte 27.10.) in der Welt der Sitzung: eine Hülle um jeden Speicher-Schritt des
+// Haupt-Fadens — der Ruf (`saveState`), das Zusammensetzen (`_standNachholen`), der Besen (`_standFegen`), der Versand (`schicke`)
+// — summiert je Task das SPEICHER-BILD; je rAF-Bild die Speicher-ms darin. 20 Stände frisch, dann `edits` Gruben am Ereignis (der
+// Zustand „nach 2 h mit 10 000 Edits“, nie die Wanduhr), wieder 20 Stände. Die Uhr des Autosaves gestellt statt erwartet:
+// `saveInterval` `intervall` s (das Spiel 5 s) — derselbe Pfad, je Stand dieselbe Arbeit, 20 Stände in ~10 s statt 100 s.
+// Ein Bild über 16,7 ms (vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms darunter bliebe.
+// Bis 29.10. eigener Boot und 2 × 20 Stände am 5-s-Autosave (ea07267e Radeon K2#1 5,97 + K2#2 6,56 min).
+async function speicherTaktSeite(n, edits, intervall) {
+    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId && x.state.playerMesh);
+    const P = { tiefe: 0, bild: 0 };
+    const roh = new Map();
+    const huelle = (o, name, zaehlt) => {
+        const f = o[name];
+        roh.set([o, name], Object.prototype.hasOwnProperty.call(o, name) ? f : null);
+        o[name] = function (...a) {
+            if (zaehlt && !zaehlt(this)) return f.apply(this, a);
+            const t0 = performance.now();
+            P.tiefe++;
+            try {
+                return f.apply(this, a);
+            } finally {
+                const d = performance.now() - t0;
+                if (!--P.tiefe && !P.task) queueMicrotask(() => (P.B.push(P.task[0]), (P.task = null)));
+                if (!P.tiefe) (P.task = P.task || [0]), (P.task[0] += d), (P.bild += d);
+            }
+        };
+    };
+    const takt = r.state.saveInterval;
+    r.state.saveInterval = intervall;
+    try {
+        for (const x of ["saveState", "_standNachholen", "_standFegen"]) huelle(r, x);
+        huelle(r._speicherZustand(), "schicke", (s) => s.unterwegs && ++P.n);
+        const phase = async () => {
+            Object.assign(P, { B: [], n: 0, wegen: 0 });
+            const bild = async () => {
+                const vor = r._weltStand ? r._weltStand.takte : -1;
+                const t = await new Promise(requestAnimationFrame);
+                if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(t);
+                return t;
+            };
+            P.ueber = 0;
+            for (let i = 0, t = await bild(); P.n < n && i < n * 1200; i++, P.bild = 0) {
+                const dt = -t + (t = await bild());
+                if (dt > 17.2) P.ueber++;
+                if (P.bild && dt > 17.2 && dt - P.bild <= 16.7) P.wegen++;
+            }
+            const B = P.B.sort((x, y) => x - y), q = (p) => +(B[Math.floor(p * (B.length - 1))] || 0).toFixed(3);
+            return { staende: P.n, bilder: B.length, p50: q(0.5), p95: q(0.95), max: q(1), ueber: P.ueber, wegen: P.wegen };
+        };
+        const [frisch, p] = [await phase(), r.state.playerMesh.position.clone()];
+        const t0 = performance.now();
+        for (let i = 0; i < edits; i++) {
+            const [x, z] = [p.x + (i % 100) * 2 - 100, p.z + Math.floor(i / 100) * 2 - 100];
+            r.carveVoxel(x, r._terrainMacroSurfaceY(x, z) - 1, z, 1.5);
+            if (i % 100 === 99) await window.__seitenTakt();
+        }
+        const grubenS = +((performance.now() - t0) / 1000).toFixed(1);
+        return { frisch, edits: { ...(await phase()), n: r.state.worldMeta.voxelEdits.length }, grubenS, isoliert: self.crossOriginIsolated };
+    } finally {
+        r.state.saveInterval = takt;
+        for (const [[o, name], f] of roh) if (f) o[name] = f;
+            else delete o[name];
+    }
+}
+// die frische Welt: trägt die Welt der Sitzung schon Edits (eine Probe davor), holt die Probe die Grundstellung der Maschine
+async function speicherTaktLauf(h) {
+    const frisch = await h.seite(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).length === 0);
+    if (!frisch) {
+        const g = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], { encoding: "utf8", timeout: 120000 });
+        if (g.status !== 0) throw new Error("grundstellung: Exit " + g.status + " " + String(g.stdout + g.stderr).slice(-300));
+    }
+    const j = await h.seite(speicherTaktSeite, [20, 10000, 0.5], 150000);
+    for (const [k, v] of Object.entries({ frisch: j.frisch, edits: j.edits }))
+        console.log("(Z) " + k + ": Speicher-Bild " + JSON.stringify(v) + " — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern");
+    console.log("Gruben " + j.grubenS + " s · Uhr der Seite " + (j.isoliert ? "isoliert (5 µs)" : "NICHT isoliert (100 µs)") + (frisch ? "" : " · Grundstellung vorher"));
+    return { ...j, grundstellung: !frisch };
+}
+// EINE Probe für beide Staffeln (Zwillinge); die Welt danach: 10 000 Gruben
+const SPEICHER_TAKT_PROBE = { sek: 90, befehl: sitzungBefehl(speicherTaktLauf, [speicherTaktSeite]) };
+const SPEICHER_TAKT_AUSNAHME =
+    "2 × 20 Stände am gestellten Autosave (0,5 s) und 10 000 Gruben am Ereignis (der Zustand nach 2 h), dazu höchstens eine " +
+    "Grundstellung für die frische Welt — erwartet ~45 s, Deckel 90 s (bis 29.10.: 2 × 20 Stände am 5-s-Autosave mit je eigenem " +
+    "Boot, 6,0 + 6,6 min)";
+
+// ─────────────────── speicher.K4#2: die Wiederkehr zeigt dieselbe Welt ───────────────────
+// bildSeite der Mess-Bahn speicher-zwei in der Welt der Sitzung: am Bach der Mess-Wiese (welt-boot `uferStellen` am SHA, der Loop
+// läuft, bis das Wasser zeichnet) setzt der Spieler einen Stein-Block 6 m vor sich und gräbt eine Grube (r 2 m) 9 m vor sich ans
+// Ufer; die Welt steht, die Bühne (Mittag · Sonne · Sommer) — Ausgabe-Bild A 320 × 180. Der Stand ist fest (`__stand`), die Seite
+// lädt neu im warmen Browser (dasselbe Profil: die Wiederkehr), derselbe Ort und Blick, Bild B. diff = Anteil der Pixel mit
+// |ΔLuma| > 8; der Pflicht-Inhalt: Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick (Third, Neigung −0,5), das
+// Wasser zeichnet; das RAUSCHEN ist derselbe Blick ohne Neuladen. Bis 29.10. speicher-zwei `bild` mit eigenem Boot (3,25 min).
+async function uferSeite(quelle, opts) {
+    const r = window.anazhRealm, rend = r.state.renderer;
+    const ufer = new Function("return (" + quelle + ")")();
+    rend.setAnimationLoop((t) => r._gameLoopTick(t));
+    try {
+        return await ufer(opts);
+    } finally {
+        rend.setAnimationLoop(null);
+    }
+}
+async function speicherBildSeite(setzen, wasser) {
+    const r = window.anazhRealm;
+    const [st, p] = [r.state, r.state.playerMesh.position];
+    const ort = (vor, quer) => [p.x + Math.sin(st.yaw) * vor - Math.cos(st.yaw) * quer, p.z + Math.cos(st.yaw) * vor + Math.sin(st.yaw) * quer];
+    const [b, g] = [ort(6, -2.5), ort(9, 2.5)];
+    if (setzen) r.spawnArchitecture("stein_block", { x: b[0], y: r._terrainMacroSurfaceY(...b), z: b[1] }, { silent: true });
+    if (setzen) r.carveVoxel(g[0], r._voxelSurfaceY(...g), g[1], 2);
+    if (st.cameraMode !== "third") r.setCameraMode("third");
+    st.pitch = -0.5;
+    await window.__weltStehtNach();
+    window.__buehne();
+    const blick = (l, [x, z]) => {
+        const v = new window.THREE.Vector3(x, r._voxelSurfaceY(x, z) + 0.3, z).project(st.camera);
+        return l.some((e) => Math.hypot((e.position || e).x - x, (e.position || e).z - z) < 0.5) && Math.max(Math.abs(v.x), Math.abs(v.y), v.z) < 1;
+    };
+    const { u8 } = await window.__ausgabeAufnahme(320, 180);
+    const c = new OffscreenCanvas(320, 180);
+    c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(u8), 320, 180), 0, 0);
+    const b64 = (a) => {
+        let s = "";
+        for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000));
+        return btoa(s);
+    };
+    return {
+        png: b64(new Uint8Array(await (await c.convertToBlob()).arrayBuffer())),
+        lage: { kamera: st.camera.position.toArray().map((v) => +v.toFixed(3)), blick: [+st.yaw.toFixed(4), +st.pitch.toFixed(4)], uhr: st.timeOfDay, wetter: st.weather, bauten: st.architectures.length, edits: (st.worldMeta.voxelEdits || []).length },
+        u8: b64(Uint8Array.from(u8)),
+        pflicht: { bau: blick(st.architectures, b), grube: blick(st.worldMeta.voxelEdits || [], g), wasser },
+    };
+}
+async function speicherBildLauf(h) {
+    const fs = require("fs");
+    const ufer = String(require(h.path.resolve("scripts/lib/welt-boot.cjs")).uferStellen);
+    const messort = require(h.path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
+    const schuss = async (setzen) => {
+        const u = await h.seite(uferSeite, [ufer, { messort }], 120000);
+        if (u.fehler) throw new Error("(B) " + u.fehler);
+        return h.seite(speicherBildSeite, [setzen, u.wasser], 90000);
+    };
+    const A = await schuss(true);
+    const A2 = await h.seite(speicherBildSeite, [false, A.pflicht.wasser], 90000);
+    await h.seite(async () => (window.anazhRealm.saveState(), (await window.__stand()).length));
+    const reloadMs = await h.reload();
+    const B = await schuss(false);
+    const [a, a2, b] = [A, A2, B].map((x) => Buffer.from(x.u8, "base64"));
+    const L = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+    const j = { lage: { vor: A.lage, nach: B.lage }, diff: 0, rauschen: 0, vor: A.pflicht, nach: B.pflicht, reloadMs, adapter: { renderer: h.linse } };
+    for (let i = 0; i < a.length; i += 4) j.diff += Math.abs(L(a, i) - L(b, i)) > 8 ? 400 / a.length : 0;
+    for (let i = 0; i < a.length; i += 4) j.rauschen += Math.abs(L(a, i) - L(a2, i)) > 8 ? 400 / a.length : 0;
+    for (const [k, x] of [["vor", A], ["vor2", A2], ["nach", B]]) fs.writeFileSync(h.aus.replace(/\.json$/, "") + "-" + k + ".png", Buffer.from(x.png, "base64"));
+    console.log("(B) bild-diff " + j.diff.toFixed(2) + " % nach dem Neuladen (" + reloadMs + " ms), Rauschen " + j.rauschen.toFixed(2) + " %, Pflicht vor " + JSON.stringify(j.vor) + " · nach " + JSON.stringify(j.nach));
+    return j;
+}
 const HYDRO_PFAD = [
     "voxel-worker.js",
     "gelaende-core.js",
@@ -1184,14 +1975,16 @@ module.exports = [
         kriterium: "klang.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // M33 (reihe.sh `m33`): m15-wind 60 s an der Mess-Wiese, Ego, Böen frei, Tiere gehalten, Klang per CDP-Klick; Bild =
-        // CDP-Screencast (|ΔLuma| im Boden-Ausschnitt je 0,5 s), Ohr = Analyser am Gain der Wind-Stimme
-        befehl: ["bash", "-c", HARNESS + 'node "$D/m15-wind.cjs" 60'],
+        // M33 in der Sitzung (`windSeite`, oben): 21 s an der Mess-Wiese, Ego, Böen frei, Tiere gehalten, der Klang in einem eigenen
+        // Kontext; Bild = das präsentierte Fenster (|ΔLuma| im Boden-Ausschnitt), Ohr = Analyser am Gain der Wind-Stimme, je 0,2 s ein
+        // Fenster (≥ 100 wie vorher, Lag ±3 s). Bis 29.10. m15-wind 60 s in 0,5-s-Fenstern mit eigenem Boot (ea07267e Radeon 3,68 min)
+        probe: { sek: 45, befehl: sitzungBefehl(windLauf, [windSeite]) },
+        mutiert: false,
         gpu: true,
         // zeit: der Screencast liefert seine Bilder nur ungestört (27.10., Takt 8 erstmals in Bahnen: neben zwei Bild-Läufen CV Bild
         // 2,16 statt 0,26–0,29 und r 0,00 statt 0,80–0,85 an 607d0c73 · b2c6c627 · 83df2052) — das Urteil hängt an der Wanduhr
         zeit: true,
-        minuten: 5,
+        minuten: 0.5,
         urteil: (j, lauf) => {
             const z = jsonZeile(lauf.stdout, /^\{"stand":/);
             if (!z || !z.r0) return { gruen: false, zahl: "keine Wind-Zeile (Exit " + lauf.exit + ")" };
@@ -1216,9 +2009,10 @@ module.exports = [
             "stamm/vegetation-streu.js",
             "spec/profiband/haushalt.json",
             "scripts/lib/band-urteil.cjs",
-            "scripts/lib/abnahme-urteil.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/werkbank.cjs",
         ],
         quelle: "1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6",
     },
@@ -1330,15 +2124,17 @@ module.exports = [
         kriterium: "klang.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // M15 K4: m15-schritt (je Stoff 10 s Gehen mit W an einem Ort, dessen 12-m-Gangstrecke `_schrittMaterialAt` — das Gesetz des
-        // Schritts, bei stehender Boden-Karte — zu ≥ 80 % einen trockenen Stoff nennt; fehlt er an der Wiese, fährt die Probe ferne Kandidaten an,
-        // Analyser an jedem Schritt-Gain), dann `--auswerten` je Etikett des Schritts — der Schwerpunkt-Median je Stoff
-        // werk: die Ort-Wahl am Gesetz des Schritts mit Fahrt zu fernen Kandidaten (26.10., werkzeug-heil; an main 83df2052 auf der Radeon
-        // gras 5648 Hz n 21 · laub 5265 Hz n 23 · quarz 3208 Hz n 21, kleinster Abstand 383 Hz — vorher 2 Stoffe mit ≥ 5 Schritten)
-        befehl: ["bash", "-c", HARNESS + ': werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten'],
+        // M15 K4 in der Sitzung (`schrittSeite`, oben): je Stoff 3,5 s Gehen mit W an einem Ort, dessen 12-m-Gangstrecke
+        // `_schrittMaterialAt` — das Gesetz des Schritts, bei stehender Boden-Karte — zu ≥ 80 % einen trockenen Stoff nennt (fehlt er an
+        // der Wiese, fährt die Probe ferne Kandidaten an), Analyser an jedem Schritt-Gain, je Etikett des Schritts der Schwerpunkt-Median.
+        // Bis 29.10. m15-schritt mit eigenem Boot, 10 s je Stoff (an main 83df2052 Radeon gras 5648 Hz n 21 · laub 5265 Hz n 23 · quarz
+        // 3208 Hz n 21, kleinster Abstand 383 Hz; ea07267e Radeon 2,09 min)
+        probe: K4_PROBE,
+        mutiert: true,
+        ausnahme: K4_AUSNAHME,
         gpu: true,
         zeit: false,
-        minuten: 5,
+        minuten: 1,
         urteil: (j, lauf) => {
             const je = [];
             for (const l of String(lauf.stdout || "").split(/\r?\n/)) {
@@ -1363,6 +2159,8 @@ module.exports = [
             "stamm/daten.js",
             "scripts/lib/band-urteil.cjs",
             "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-orte.cjs",
+            "scripts/werkbank.cjs",
         ],
         quelle: "1 = am Abgriff gemessen: der Spektral-Schwerpunkt der Schritte je Stoff ≥ 300 Hz verschieden",
     },
@@ -1370,8 +2168,8 @@ module.exports = [
         kriterium: "klang.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // EIN Lauf, alle vier Teile: (S) die Schritte je Stoff wie klang.K4#1 (m15-schritt im echten Spiel, Analyser am Schritt-Gain,
-        // stdout); (F) der Körper-Teil des Klang-Zensus (`diag-klang-zensus --json`, Port {PORT}+1, j.koerper): je Abgriff liegt der
+        // EIN Lauf, alle vier Teile (derselbe wie klang.K4#1): (S) die Schritte je Stoff (`schrittSeite`, Analyser am Schritt-Gain,
+        // stdout); (F) der Körper-Teil des Klang-Zensus (werkzeug + koerperSeite aus diag-klang-zensus am SHA, j.koerper): je Abgriff liegt der
         // Master-Bus EINEN Klang-Takt lang an einem OfflineAudioContext, die Linse fährt den festen Schritt des Leibs —
         // motor [Upm, Hz] im Sattel des GT mit Gas (der Grundton = die stärkste Linie gegen die Drehzahl klang `fahrtUpm`),
         // landung [h, Aufprall des Leib-Lösers `_sturzTempo`, Landungen, Aufprall des Klangs, dB] für einen Hopser aus 0,2 m und
@@ -1380,19 +2178,14 @@ module.exports = [
         // (n ≥ 5) mit kleinstem Abstand ≥ 300 Hz UND Motor r ≥ 0,9 (≥ 10 Abgriffe) UND Landung genau einmal je Sturz mit dem
         // Aufprall des Leib-Lösers, je Stufe lauter und r(dB, Aufprall) ≥ 0,9, der Hopser stumm UND Doppler: die Radial-
         // Geschwindigkeit am Ohr v = c·(1 − 1/f) über die des Gesetzes, beide Vorzeichen, Steigung durch den Ursprung 1 ± 10 %,
-        // r ≥ 0,9, jeder Punkt ± 10 % — dazu kein Befund „F …" der Linse. Der Körper-Teil rechnet am Null-Renderer (das Klang-Gesetz
-        // ist CPU), die Schritte tragen die Karte (`[linse-gpu]` aus m15-schritt).
-        befehl: [
-            "bash",
-            "-c",
-            HARNESS +
-                ': werk 2610-schritt-gesetz; node "$D/m15-schritt.cjs" && node "$D/m15-schritt.cjs" --auswerten; ' +
-                'KLANG_ZENSUS_PORT=$(( {PORT} + 1 )) node scripts/diag-klang-zensus.cjs --json "$A" > "$D/zensus.log" 2>&1; ' +
-                'echo "zensus EXIT=$?"; grep -F "(F)" "$D/zensus.log"',
-        ],
+        // r ≥ 0,9, jeder Punkt ± 10 % — dazu kein Befund „F …" der Linse. Das Klang-Gesetz des Körpers ist CPU (OfflineAudioContext),
+        // die Schritte tragen die Karte der Sitzung. Bis 29.10. m15-schritt und der ganze Zensus mit zwei eigenen Boots (ea07267e 5,25 min).
+        probe: K4_PROBE,
+        mutiert: true,
+        ausnahme: K4_AUSNAHME,
         gpu: true,
         zeit: false,
-        minuten: 9,
+        minuten: 1,
         urteil: (j, lauf) => {
             const f = (x, n) => (typeof x === "number" && isFinite(x) ? x.toFixed(n) : "—");
             const r = (a, b) => {
@@ -1468,6 +2261,8 @@ module.exports = [
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/band-urteil.cjs",
             "scripts/lib/software-gpu.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/werkbank.cjs",
             "spec/profiband/haushalt.json",
         ],
         quelle: "2 = beides, die Landung skaliert mit dem Aufprall, Doppler proportional zur Radialgeschwindigkeit",
@@ -1512,15 +2307,20 @@ module.exports = [
         kriterium: "klang.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // M15 in EINER Linse (Zweig klang-takt-k5): `diag-klang-zensus --takt --echt --minuten 10` — gehen 4 · Fahrt 3 · nachts
-        // 3 min an der Uhr des Klangs, Klang-ms je Bild, die Aussetzer am Ausgang über `AudioContext.playbackStats` vor und nach
-        // dem Gang (j.aussetzer = { n, still, s }; null = ungezählt, die Linse meldet dann selbst ROT „T aussetzer"); m14-spielgang
-        // und die HARNESS fallen für diese Station. An main fehlt der Zähler (ungezählt, ROT).
-        befehl: ["node", "scripts/diag-klang-zensus.cjs", "--takt", "--echt", "--minuten", "10", "--json", "{AUS}"],
-        env: { KLANG_ZENSUS_PORT: "{PORT}" },
+        // M15 in der Sitzung (`taktFahrt`, oben: taktSeite der Klang-Linse am SHA): gehen · Fahrt · nachts je 600 Bilder (≥ 600 wie
+        // vorher), Klang-ms je Bild, die Aussetzer am Ausgang über `AudioContext.playbackStats` vor und nach dem Gang (j.aussetzer =
+        // { n, still, s }; null = ungezählt → ROT „T aussetzer"). DER GANG IST VERDICHTET (Gesetz 29.10.: die Dauerlast liegt in der
+        // EINEN Fahrt ≤ 30 min): 0 Aussetzer über die ganze Wiedergabe der drei Phasen (≥ 15 s) statt 10 min an der Uhr — die 10 min
+        // der Staffel nennt die Zahl, der Schöpfer entscheidet ihren Text. Bis 29.10. `--takt --echt --minuten 10` mit eigenem Boot
+        // (ea07267e Radeon 14,74 min).
+        probe: { sek: 75, befehl: sitzungBefehl(taktLauf, [taktFahrt]) },
+        mutiert: true,
+        ausnahme:
+            "drei Phasen je 600 Bilder in Bewegung (gehen, Fahrt im GT, Nacht) bei 60 Hz ≥ 30 s Wiedergabe, dazu Aufsitzen und Einlauf — " +
+            "erwartet ~40 s, Deckel 75 s (bis 29.10.: 10 min Spielgang, 14,7 min mit eigenem Boot)",
         gpu: true,
         zeit: true,
-        minuten: 15,
+        minuten: 1,
         urteil: (j, lauf) => {
             const ph = (j && j.phasen) || {};
             const takt = ["gehen", "fahrt", "nacht"].map((n) => ({ n, p: ph[n] }));
@@ -1530,12 +2330,12 @@ module.exports = [
                 takt.every((t) => t.p && t.p.bilder >= 600 && t.p.p95 <= 0.2) &&
                 !!(ph.fahrt && ph.fahrt.sattel) &&
                 !!j && Array.isArray(j.rot) && !j.rot.length &&
-                !!a && a.n === 0 && a.s >= 570;
+                !!a && a.n === 0 && a.s >= 15;
             return {
                 gruen,
                 zahl:
                     "Klang-Takt p95 " + takt.map((t) => t.n + " " + (t.p ? t.p.p95 : "?")).join(" · ") + " ms · Aussetzer " +
-                    (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still)" : "ungezählt") + " (Exit " + lauf.exit + ")",
+                    (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still; verdichtet, Staffel: 10 min)" : "ungezählt") + " (Exit " + lauf.exit + ")",
             };
         },
         pfad: [
@@ -1550,9 +2350,11 @@ module.exports = [
             "stamm/daten.js",
             "scripts/diag-klang-zensus.cjs",
             "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
             "scripts/lib/software-gpu.cjs",
             "scripts/lib/vram-abgriff.cjs",
             "scripts/lib/draw-zaehler.cjs",
+            "scripts/werkbank.cjs",
         ],
         quelle: "2 = dazu Klang-Takt ≤ 0,2 ms Haupt-Faden p95 in Bewegung und 0 Aussetzer in 10 min Spielgang, beide Geräte",
     },
@@ -1562,12 +2364,15 @@ module.exports = [
         kriterium: "speicher.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // M37 (m37.sh): echt-k1 20 am Host ohne save-server — 20 harte Tode (taskkill /F /T) am Schreib-Haken idb · fest ·
-        // platz, zufällig und im Dorf-Erwachen; Alter des geladenen Stands, halbe Welt (Blöcke und Edits), korrupt
-        befehl: ["bash", "-c", ECHT_K1 + '20 punkte; E=$?; cp "$D/echt-k1-punkte.json" "$A" 2>/dev/null; exit $E'],
+        // M37 in der Sitzung (`todZyklus`, oben): vier Tode am Pfad des Spielers — am Schreib-Haken idb und platz des Speicher-Fadens,
+        // hart im Dorf-Erwachen und an dessen IDB-Schreiben; Alter des geladenen Stands, halbe Welt (Blöcke und Edits), korrupt.
+        // Bis 29.10. echt-k1 20 (20 harte Tode des Browsers, je ein Boot; ea07267e Radeon 13,24 min)
+        probe: TOD_PROBE,
+        mutiert: true,
+        ausnahme: TOD_AUSNAHME,
         gpu: true,
         zeit: true,
-        minuten: 10,
+        minuten: 1.5,
         urteil: (j, lauf) => {
             if (!j || !Array.isArray(j.zyklen)) return { gruen: false, zahl: "kein Ergebnis des Tab-Tods (Exit " + lauf.exit + ")" };
             const verfehlt = j.zyklen.filter((z) => z.verfehlt).length;
@@ -1576,7 +2381,7 @@ module.exports = [
             if (!(edits > 0)) return { gruen: false, zahl: "Sonde blind: in keinem Zyklus entstand ein Edit" };
             if (j.bauFehler > 0) return { gruen: false, zahl: "Sonde wackelt: der Bauer warf " + j.bauFehler + "-mal (ausser dem Tod)" };
             const oa = ohneAlter(j);
-            const gruen = j.tode >= 20 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10;
+            const gruen = j.tode >= 4 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10;
             return {
                 gruen,
                 zahl:
@@ -1584,7 +2389,7 @@ module.exports = [
                     j.halbe + " halbe Welten · " + verfehlt + " Haken verfehlt" + (oa.length ? " · ohne Alter " + oa.join(" · ") : ""),
             };
         },
-        pfad: SPEICHER_PFAD,
+        pfad: SPEICHER_PFAD.concat(["speicher-faden.js", "scripts/werkbank.cjs"]),
         quelle: "1 = der Browser-Pfad (ohne save-server) besteht den Tab-Tod an einem Gerät: Stand ≤ 10 s alt, 0 korrupt, 0 halbe Welten",
     },
     {
@@ -1593,10 +2398,12 @@ module.exports = [
         geraet: ["radeon", "gtx"],
         // derselbe Lauf an beiden Geräten; dazu verlangt: Tode mitten im IDB-put und am localStorage-Platz, und der Tod im
         // laufenden Gang des Dorf-Erwachens (hart und am IDB-Schreiben des saveState, der den Gang schließt — be20b015)
-        befehl: ["bash", "-c", ECHT_K1 + '20 punkte; E=$?; cp "$D/echt-k1-punkte.json" "$A" 2>/dev/null; exit $E'],
+        probe: TOD_PROBE,
+        mutiert: true,
+        ausnahme: TOD_AUSNAHME,
         gpu: true,
         zeit: true,
-        minuten: 10,
+        minuten: 1.5,
         urteil: (j, lauf) => {
             if (!j || !Array.isArray(j.zyklen)) return { gruen: false, zahl: "kein Ergebnis des Tab-Tods (Exit " + lauf.exit + ")" };
             const verfehlt = j.zyklen.filter((z) => z.verfehlt).length;
@@ -1609,7 +2416,7 @@ module.exports = [
             const gang = j.zyklen.filter((z) => z.erwachen && z.erwachen.gangAktiv).length;
             const arten = ["idb", "platz", "erwachen-hart", "erwachen-idb"].filter((a) => tode.includes(a));
             const gruen =
-                j.tode >= 20 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10 && arten.length === 4 && gang >= 2;
+                j.tode >= 4 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10 && arten.length === 4 && gang >= 2;
             return {
                 gruen,
                 zahl:
@@ -1617,50 +2424,55 @@ module.exports = [
                     " verfehlt · Tod-Arten " + arten.join("/") + " · im laufenden Erwachen " + gang + (oa.length ? " · ohne Alter " + oa.join(" · ") : ""),
             };
         },
-        pfad: SPEICHER_PFAD,
+        pfad: SPEICHER_PFAD.concat(["speicher-faden.js", "scripts/werkbank.cjs"]),
         quelle: "2 = an beiden Geräten, auch mitten im IDB- oder localStorage-Schreiben",
     },
     {
         kriterium: "speicher.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // M38: derselbe Tab-Tod, 4 Zyklen (davon 2 mit erwachender Zelle): die Hülle um `saveState` zählt die Haupt-Faden-ms je
-        // Ruf — die Leck-Probe des Flugschreibers (`_imLeerlauf`) liegt außerhalb der Hülle, ein eigener Posten.
-        // DAS URTEIL liest das SPEICHER-BILD (Messung: „Haupt-Faden-ms des Speicher-Bilds“), also die Kosten je Save: p95 der Rufe
-        // ≤ 0,3 ms. Das p95 über ALLE Bilder (echt-k1 `jeBild`: die Rufe mit Nullen auf die Bildzahl aufgefüllt) ist per
-        // Konstruktion blind — 97 Rufe in 9888 Bildern geben immer 0 —, es steht nur in der Zahl. Ein Ruf ist eine untere Schranke
-        // des Speicher-Bilds (zwei Rufe in einem Bild zählen einzeln).
-        befehl: ["bash", "-c", ECHT_K1 + '4 k2; E=$?; cp "$D/echt-k1-k2.json" "$A" 2>/dev/null; exit $E'],
+        // M38 in der Sitzung: DAS SPEICHER-BILD der frischen Welt aus derselben Probe wie speicher.K2#2 (`speicherTaktSeite`, oben) —
+        // je Task die Haupt-Faden-ms von saveState, _standNachholen, _standFegen und dem Versand zusammen (die Kosten je Save, der
+        // Ruf allein war bis 29.10. eine untere Schranke), p95 über die Speicher-Bilder von 20 Ständen ≤ 0,3 ms. Trägt die Welt der
+        // Sitzung schon Edits, holt die Probe vorher die Grundstellung (frisch). Bis 29.10. echt-k1 4 k2 (4 Tode, je Ruf die ms;
+        // ea07267e Radeon 5,97 min).
+        probe: SPEICHER_TAKT_PROBE,
+        mutiert: true,
+        ausnahme: SPEICHER_TAKT_AUSNAHME,
         gpu: true,
         zeit: true,
-        minuten: 4,
+        minuten: 1,
         urteil: (j, lauf) => {
-            const s = j && j.saveMs;
-            if (!s || !(j.bilder > 0)) return { gruen: false, zahl: "keine Save-Zählung (Exit " + lauf.exit + ")" };
-            const gruen = j.bilder >= 1000 && j.saveRufe >= 10 && s.p95 != null && s.p95 <= 0.3;
+            const f = j && j.frisch;
+            if (!f || !(f.bilder > 0)) return { gruen: false, zahl: "keine Speicher-Bilder der frischen Welt (Exit " + lauf.exit + ")" };
+            // eine Sonde ohne Messung ist ROT: kein Stand kam an
+            if (!(f.staende >= 20)) return { gruen: false, zahl: "Sonde blind: " + f.staende + " Stände in der frischen Welt" };
             return {
-                gruen,
+                gruen: f.p95 <= 0.3,
                 zahl:
-                    "je Speicher-Bild (Ruf) p50 " + s.p50 + " / p95 " + s.p95 + " / max " + s.max + " ms (Soll p95 ≤ 0,3; " + j.saveRufe +
-                    " Rufe in " + j.bilder + " Bildern; aufgefüllt je Bild p95 " + (j.jeBild ? j.jeBild.p95 : "—") + ", blind)",
+                    "je Speicher-Bild in der frischen Welt p50 " + f.p50 + " / p95 " + f.p95 + " / max " + f.max + " ms (Soll p95 ≤ 0,3; " +
+                    f.staende + " Stände, " + f.bilder + " Speicher-Bilder" + (j.grundstellung ? ", Grundstellung vorher" : "") + ")",
             };
         },
-        pfad: SPEICHER_PFAD,
+        pfad: SPEICHER_PFAD.concat(["speicher-faden.js", "scripts/werkbank.cjs"]),
         quelle: "1 = ≤ 0,3 ms je Bild (p95) in einer frischen Welt, auf dem Pfad des Spielers",
     },
     {
         kriterium: "speicher.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // speicher-zwei `takt --echt`: Fenster und Karte, der echte Takt mit dem Autosave des Spiels (saveInterval); eine Hülle
-        // um jeden Speicher-Schritt des Haupt-Fadens — der Ruf (saveState), das Zusammensetzen (_standNachholen), der Besen
-        // (_standFegen), der Versand (schicke) — summiert je Task das SPEICHER-BILD. 20 Stände frisch, dann 10 000 Gruben am
-        // Ereignis (der Zustand „nach 2 h mit 10 000 Edits", nie die Wanduhr), wieder 20 Stände. Ein Bild über 16,7 ms (am
-        // vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms darunter bliebe.
-        befehl: ["bash", "-c", SPEICHER_ZWEI + 'takt --echt --json "$A"'],
+        // `speicherTaktSeite` (oben) in der Welt der Sitzung: Fenster und Karte, der echte Takt mit dem Autosave des Spiels (seine Uhr
+        // gestellt: saveInterval 0,5 s statt 5 s, derselbe Pfad); eine Hülle um jeden Speicher-Schritt des Haupt-Fadens — der Ruf
+        // (saveState), das Zusammensetzen (_standNachholen), der Besen (_standFegen), der Versand (schicke) — summiert je Task das
+        // SPEICHER-BILD. 20 Stände frisch, dann 10 000 Gruben am Ereignis (der Zustand „nach 2 h mit 10 000 Edits", nie die Wanduhr),
+        // wieder 20 Stände. Ein Bild über 16,7 ms (am vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms
+        // darunter bliebe. Bis 29.10. speicher-zwei `takt --echt` mit eigenem Boot (ea07267e Radeon 6,56 min).
+        probe: SPEICHER_TAKT_PROBE,
+        mutiert: true,
+        ausnahme: SPEICHER_TAKT_AUSNAHME,
         gpu: true,
         zeit: true,
-        minuten: 12,
+        minuten: 1,
         urteil: (j, lauf) => {
             const ph = j ? [j.frisch, j.edits] : [];
             if (!ph[0] || !ph[1]) return { gruen: false, zahl: "keine Speicher-Bilder (Exit " + lauf.exit + ")" };
@@ -1675,7 +2487,7 @@ module.exports = [
                 zahl: "Speicher-Bild frisch " + zeile(j.frisch) + " · nach " + j.edits.n + " Edits " + zeile(j.edits) + " (Soll p95 ≤ 0,1)",
             };
         },
-        pfad: SPEICHER_PFAD.concat(["speicher-faden.js"]),
+        pfad: SPEICHER_PFAD.concat(["speicher-faden.js", "scripts/werkbank.cjs"]),
         quelle: "2 = ≤ 0,1 ms in der frischen Welt UND nach 2 h mit 10 000 Edits, kein Frame > 16,7 ms wegen des Speicherns, beide Geräte",
     },
     {
@@ -1783,17 +2595,22 @@ module.exports = [
         kriterium: "speicher.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // speicher-zwei `bild` (Rezept linse: am Gerät die Karte, ohne Karte das Software-Holz): am Bach der Mess-Wiese
+        // `speicherBildSeite` (oben) in der Welt der Sitzung, auf ihrer Karte: am Bach der Mess-Wiese
         // (welt-boot uferStellen — das Wasser zeichnet im Blick) setzt der Spieler einen Stein-Block 6 m vor sich und gräbt eine
         // Grube (r 2 m) 9 m vor sich ans Ufer; die Welt steht, die Bühne (Mittag · Sonne · Sommer, das Wetter als Wort, die Uhr
         // gehalten) — Ausgabe-Bild A 320×180. Der Stand ist fest (__stand), die Seite lädt neu (dasselbe Profil: die
         // Wiederkehr), derselbe Ort und Blick, Bild B. diff = Anteil der Pixel mit |ΔLuma| > 8 (von 255); der Pflicht-Inhalt:
         // Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick der Kamera (Third, Neigung −0,5), das Wasser zeichnet.
         // Daneben das RAUSCHEN der Bahn (derselbe Blick ohne Neuladen) und die drei Bilder neben der Ausgabe ({AUS}-vor/-vor2/-nach.png).
-        befehl: ["bash", "-c", SPEICHER_ZWEI + 'bild --json "$A"'],
+        // Das Neuladen ist /reload im warmen Browser der Sitzung. Bis 29.10. speicher-zwei `bild` mit eigenem Boot (ea07267e 3,25 min).
+        probe: { sek: 60, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]) },
+        mutiert: true,
+        ausnahme:
+            "die Wiederkehr ist ein Neuladen im warmen Browser (GTX Zweit-Boot ~12 s) und zweimal das Ufer im Blick (das Wasser zeichnet) " +
+            "— erwartet ~30 s, Deckel 60 s (bis 29.10.: 3,3 min mit eigenem Boot)",
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1,
         urteil: (j, lauf) => {
             if (!j || !(j.diff >= 0)) return { gruen: false, zahl: "kein Bild-Rundlauf (Exit " + lauf.exit + ")" };
             const ganz = (q) => !!q && q.bau && q.grube && q.wasser > 0;
@@ -1814,6 +2631,8 @@ module.exports = [
             "gelaende-core.js",
             "voxel-worker.js",
             "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/band-urteil.cjs",
+            "scripts/werkbank.cjs",
         ]),
         quelle: "2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
     },
