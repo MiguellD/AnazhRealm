@@ -29,7 +29,7 @@ z75 rot/abgebrochen. **Jeder Zug OHNE w3v-lod@3e446fde ist sicher rot** (Kandida
 Folge-Schnitt offen: der Session-Läufer hält das GPU-Schloss bis 55 min — Runner.Worker (CI echt) braucht Vorrang zwischen Proben.
 
 ## Läuft (ohne Tokens weiter)
-- kette34 (z76): zug-sammler2 mit Paar-Probe — stadt-takt-bewohner, gpu-wahl-bau, **w3v-lod**, heil-schwarm-k3, heil-l8-lockstep,
+- kette35 (z77, PFLICHT lod: fährt erst, wenn w3v-lod@3e446fde grün ist; z75/z76 ohne lod abgebrochen): zug-sammler2 mit Paar-Probe — w3v-lod zuerst, stadt-takt-bewohner, gpu-wahl-bau, **w3v-lod**, heil-schwarm-k3, heil-l8-lockstep,
   w3w-jahrhunderte, w3w-studios, w3v-brand-bild, w3w-glanz, w3w-wald, spike-ci-konsum, w3v-licht (Frist 60). Logs: %TEMP%\claude\zug-sammler-z76.log, fahre-z76.log.
 - OMEN: takt21b-gtx am 98ef98bb (alter Läufer, ~33/50) — wird mit der nächsten Landung alt.
 - Workflow dreissig-minuten (6 Umbauer + Vereiner): alle GPU-Stationen ≤ 30 min je Gerät, Linse in liste — bei der Notbremse gestoppt,
