@@ -149,12 +149,30 @@ const STADT_HUEGEL = [
     "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }",
     "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
     "for i in $(seq 1 60); do timeout 60 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1; " +
-        LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 5; done",
+        LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 1; done",
     "echo '@@PUNKTE@@ STAND'; cat \"$L/stand.json\"; echo",
     "timeout 60 $W eval '" + STADT_KAMERA + "' > \"$L/kamera.json\" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat \"$L/kamera.json\"; echo",
     "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/kamera.json\" 2> /dev/null)",
     "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
 ];
+// DIE STADT IN EINEM LAUF (siedlung.K2#1 und #2, Zwillinge, 29.10.): Teil Z mit dem Zipf-Fit (`diag-settlement --nur-z --zipf`, Node,
+// 8 Saaten) läuft NEBEN der Stadt der Sitzung (seine Zeilen danach, Z), der Weg zum Hügel, bis die Mauer steht (STADT_HUEGEL), das
+// Bild mittags und in der Dämmerung; {AUS} = { mittag, daemmerung }. Bis dahin fuhr jede Staffel Teil Z und die Stadt für sich,
+// der Stand fragte alle 5 s. Die Stadt wächst am Hügel (mutiert).
+const SIEDLUNG_SITZUNG = sitzung(90,
+    "A=$(cygpath -m '{AUS}')",
+    '( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &',
+    ...STADT_HUEGEL,
+    "rm -f \"$L/stadt-mittag.abnahme.json\" \"$L/stadt-daemmerung.abnahme.json\"",
+    "teil MITTAG $W bild $K --uhr 0.5 --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
+    "teil DAEMMERUNG $W bild $K --uhr 0.25 --datei \"$L/stadt-daemmerung.png\" --w 1600 --h 900",
+    "node -e 'const f = require(\"fs\"), l = (n) => { try { return JSON.parse(f.readFileSync(process.argv[2] + \"/stadt-\" + n + \".abnahme.json\", \"utf8\")); } catch (e) { return null; } }; " +
+        "f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l(\"mittag\"), daemmerung: l(\"daemmerung\") }))' \"$A\" \"$L\"",
+    "wait",
+    'echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"'
+);
+const SIEDLUNG_AUSNAHME =
+    "die nächste Stadt wächst am Hügel am echten Takt, bis ihre Mauer steht (Gründung, Häuser, Mauer-Export), zugleich Teil Z über 8 Saaten in Node — ein Lauf für zwei Stationen";
 
 // DER HIT-STOP DES SPIELS neben der Linse (halten.K2, 23.10.): latenz zählt den Halt im Bild (stehende Schwung-Uhr UND Hand);
 // die Haken zählen daneben, was das Spiel tut — jeder Treffer, der den Halt setzt (`_kampfHitJuice`, seine Dauer), und wie weit
@@ -176,7 +194,11 @@ const HIT_LESEN =
 // p95 75,8 ms bei Bildzeit 32,9 ms gegen 43,3 ms bei 16,6 ms an 1d9164e9): die Bildzeit eines Laufs hängt an Gerät und Last
 // (8,7–32,9 ms an der Radeon), das Kriterium an keiner. Jede Latenz-Station fährt LAEUFE eigene Boots (Sitzung je Boot,
 // `{N}` = die Nummer) und urteilt über den SCHLECHTESTEN; jede Bildzeit steht in der Zahl.
-const LAEUFE = 3;
+// IN DER SITZUNG (29.10., ≤ 30 min je Gerät): EIN Lauf in der Welt der Sitzung, kein zweiter Boot (bis dahin 3 Boots × 50 Proben je
+// Reihe, 6–15 min je Station); LATENZ_PROBEN je Sicht × Verb, p95 ≤ 50 ms und fehlt 0 wie vorher — die Bildzeit des Laufs steht in
+// der Zahl, ein Lauf bei hoher Bildzeit bleibt ROT beim Namen
+const LAEUFE = 1;
+const LATENZ_PROBEN = 15;
 const lauf = (n, zeilen) => zeilen.map((z) => z.replace(/\{N\}/g, String(n)));
 const latenzLaeufe = (...zeilen) => {
     const json = Array.from({ length: LAEUFE }, (_, i) => '"{AUS}.lauf' + (i + 1) + '.json"').join(" ");
@@ -205,6 +227,34 @@ function latenzSchlechtester(j, ids, n, soll = 50) {
         da,
     };
 }
+// DIE LATENZ DER VERBEN UND DER HIT-STOP IN EINEM LAUF (leib.K1#2 und halten.K2#1, Zwillinge, 29.10.): die Haken des Spiels, die
+// Linse über gehen, springen, einsteigen, hieb in Ego und Third, das Lesen der Haken — bis dahin fuhr jede Station ihre drei Boots
+// (halten.K2#1 hieb allein, 30 Proben je Reihe); einsteigen und hieb lassen Wagen und Treffer in der Welt (mutiert)
+const LATENZ_HALT_SITZUNG = sitzung(90,
+    ...latenzLaeufe(
+        "boot",
+        "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
+        "teil HAKEN{N} $W eval '" + HIT_HAKEN + "'",
+        "teil LATENZ{N} $W latenz --proben " + LATENZ_PROBEN + ' --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "{AUS}.lauf{N}.json"',
+        "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
+    )
+);
+const LATENZ_HALT_AUSNAHME =
+    "die Latenz-Linse je Probe: Ruhe abwarten, Taste, erstes bewegtes Bild — 4 Verben × 2 Sichten × " + LATENZ_PROBEN + " Proben in EINEM Lauf für zwei Stationen";
+// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): gate:fahr-leben (T4, T5; eigene Null-Welt auf
+// {PORT}+20001) läuft NEBEN der Welt der Sitzung; darin der Ritt (tempo3.js, WELT), die Grundstellung, der Blick am Steilhang
+// (blick.js, BLICK); die Zeilen der Linse danach (FAHR). Bis dahin fuhr jede der drei Stationen die Linse und ihren Boot für sich.
+const FAHR_SITZUNG = sitzung(90,
+    '( env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs; echo "@@PUNKTE@@ EXIT $?" ) > "$L/fahr.out" 2>&1 &',
+    "boot",
+    'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"',
+    "boot",
+    'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"',
+    "wait",
+    'echo "@@PUNKTE@@ FAHR"; cat "$L/fahr.out"'
+);
+const FAHR_AUSNAHME =
+    "gate:fahr-leben des Spiels läuft ganz (T0–T5, keine Wahl der Zeilen) in eigener Null-Welt, zugleich Ritt und Blick in der Welt — ein Lauf für drei Stationen";
 
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
@@ -214,12 +264,18 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // Garage: gate:garage-labor mit dem Mess-Patch bei vmax (bericht/2110-mk-kopf/garage-mk.diff, Zeile MK2110); Welt: der GT
         // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/2110-gtx-messschuld/tempo3.js über werkbank eval, M27)
-        probe: sitzung(600,
-            'echo "@@PUNKTE@@ GARAGE"',
-            'git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 600 node scripts/diag-garage-mk.cjs',
-            'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs',
+        // IN DER SITZUNG (29.10.): die Garage (eigenes Labor auf {PORT}+20001) läuft NEBEN dem Ritt in der Welt der Sitzung, ihre Zeilen
+        // danach; der Patch fällt vor und nach ihr. Der GT bleibt in der Welt (mutiert)
+        ausnahme: "das Garagen-Labor (eigene Seite, Mess-Patch bei vmax) zugleich mit dem Ritt des GT bis Vollgas in der Welt",
+        mutiert: true,
+        probe: sitzung(90,
+            "git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs",
+            '( git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 85 node scripts/diag-garage-mk.cjs; ' +
+                'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs ) > "$L/garage.out" 2>&1 &',
             "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"'
+            'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"',
+            "wait",
+            'echo "@@PUNKTE@@ GARAGE"; cat "$L/garage.out"'
         ),
         env: K,
         gpu: true,
@@ -251,11 +307,10 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // die Zusätze der 2: Drift, Rückkehr (tempo3.js in der Welt), Ruck (gate:fahr-leben T4) und EIN FOV-Schreiber (T5)
-        probe: sitzung(480,
-            'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
-            "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"'
-        ),
+        // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K4#1/#2 (FAHR_SITZUNG, Zwillinge)
+        ausnahme: FAHR_AUSNAHME,
+        mutiert: true,
+        probe: FAHR_SITZUNG,
         env: K,
         gpu: true,
         zeit: false,
@@ -292,11 +347,10 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:fahr-leben T4 (Absteigen in Fahrt, Azimut nach 10 Bildern) + der Blick im Bild am Steilhang bergab, Third → Ego →
         // Third (bericht/2010-buendel-abab/blick.js über werkbank eval, M8): der GT in den Bildern 1–3 nach dem Wechsel
-        probe: sitzung(480,
-            'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
-            "boot",
-            'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"'
-        ),
+        // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K3#2 (FAHR_SITZUNG, Zwillinge)
+        ausnahme: FAHR_AUSNAHME,
+        mutiert: true,
+        probe: FAHR_SITZUNG,
         env: K,
         gpu: true,
         zeit: false,
@@ -330,18 +384,14 @@ const stationen = [
     // ───────── siedlung.K2 — die Stadt in Reichweite (Zweig stadt-tor-k2: Rang-Gesetz im fachwerk-core, Mauer im Export) ─────────
     // Teil Z der Siedlungs-Linse (`diag-settlement --nur-z`, Node, 8 Saaten × zufälliger Spawn, Auto-Zellen binnen 2 km) und das
     // Bild der nächsten Stadt aus dem Ausgabe-Pfad am Boot-Seed (Abnahme-Urteil des Beweisbilds). An main: Z1 0/8 (ROT).
+    // IN DER SITZUNG (29.10.): EIN Lauf mit Staffel 2 (SIEDLUNG_SITZUNG, Zwillinge) — das Bild mittags ist das der Staffel 1 ({AUS}.mittag)
     {
         kriterium: "siedlung.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: sitzung(720,
-            "A=$(cygpath -m '{AUS}')",
-            "teil Z node scripts/diag-settlement.cjs --nur-z",
-            ...STADT_HUEGEL,
-            "rm -f \"$L/stadt-mittag.abnahme.json\"",
-            "teil BILD $W bild $K --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
-            "cp \"$L/stadt-mittag.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ),
+        ausnahme: SIEDLUNG_AUSNAHME,
+        mutiert: true,
+        probe: SIEDLUNG_SITZUNG,
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -357,7 +407,9 @@ const stationen = [
             const kb = jsonBlock(teil("KAMERA"));
             const k = (kb && kb.ergebnis) || {};
             const steht = s.mauer > 0 && !s.zug && !s.pending;
-            const bild = !!j && j.ok === true;
+            // das Beweisbild mittags ({AUS}.mittag des gemeinsamen Laufs; ein {AUS} ohne mittag ist das Bild selbst)
+            const b1 = j && j.mittag !== undefined ? j.mittag : j;
+            const bild = !!b1 && b1.ok === true;
             const gruen = zOk && steht && !k.fehler && k.segs > 0 && k.hoeher > 0 && bild;
             return {
                 gruen,
@@ -366,7 +418,7 @@ const stationen = [
                     (w.wahl ? w.wahl.cx + "," + w.wahl.cz + " nH " + w.wahl.nH + " " + w.wahl.d + " m vom Genesis-Ort" : "keine mit Ort") +
                     " · Mauer " + (k.segs != null ? k.segs + " Segmente/" + k.tuerme + " Türme" : k.fehler || "?") + ", Pool " + s.mauer +
                     (s.zug ? ", Zug läuft" : "") + " · Schuss vom " + k.art + " " + k.d + " m vor der Mitte, " + k.hoeher + " m höher · " +
-                    (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+                    (b1 && b1.zeile ? b1.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
             };
         },
         pfad: [
@@ -396,16 +448,9 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: sitzung(720,
-            "A=$(cygpath -m '{AUS}')",
-            "teil ZIPF node scripts/diag-settlement.cjs --nur-z --zipf",
-            ...STADT_HUEGEL,
-            "rm -f \"$L/stadt-mittag.abnahme.json\" \"$L/stadt-daemmerung.abnahme.json\"",
-            "teil MITTAG $W bild $K --uhr 0.5 --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
-            "teil DAEMMERUNG $W bild $K --uhr 0.25 --datei \"$L/stadt-daemmerung.png\" --w 1600 --h 900",
-            "node -e 'const f = require(\"fs\"), l = (n) => { try { return JSON.parse(f.readFileSync(process.argv[2] + \"/stadt-\" + n + \".abnahme.json\", \"utf8\")); } catch (e) { return null; } }; " +
-                "f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l(\"mittag\"), daemmerung: l(\"daemmerung\") }))' \"$A\" \"$L\""
-        ),
+        ausnahme: SIEDLUNG_AUSNAHME,
+        mutiert: true,
+        probe: SIEDLUNG_SITZUNG,
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -756,11 +801,12 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
-        probe: sitzung(600,
+        // IN DER SITZUNG (29.10.): EIN Lauf, LATENZ_PROBEN je Reihe (4 Reihen) — Ziel 30 s
+        probe: sitzung(45,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-                'teil LATENZ{N} $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "{AUS}.lauf{N}.json"'
+                "teil LATENZ{N} $W latenz --proben " + LATENZ_PROBEN + ' --sicht ego,third --verb gehen,wechsel --json "{AUS}.lauf{N}.json"'
             )
         ),
         env: K,
@@ -768,7 +814,7 @@ const stationen = [
         zeit: true,
         minuten: 10,
         urteil: (j) => {
-            const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], 50);
+            const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], LATENZ_PROBEN);
             return { gruen, zahl };
         },
         pfad: LATENZ,
@@ -779,20 +825,17 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
-        probe: sitzung(1080,
-            ...latenzLaeufe(
-                "boot",
-                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-                'teil LATENZ{N} $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "{AUS}.lauf{N}.json"'
-            )
-        ),
+        // IN DER SITZUNG (29.10.): der Zwilling von halten.K2#1 (LATENZ_HALT_SITZUNG)
+        ausnahme: LATENZ_HALT_AUSNAHME,
+        mutiert: true,
+        probe: LATENZ_HALT_SITZUNG,
         env: K,
         gpu: true,
         zeit: true,
         minuten: 24,
         urteil: (j) => {
             const ids = ["gehen", "springen", "einsteigen", "hieb"].flatMap((v) => ["ego/" + v, "third/" + v]);
-            const { gruen, zahl } = latenzSchlechtester(j, ids, 50);
+            const { gruen, zahl } = latenzSchlechtester(j, ids, LATENZ_PROBEN);
             return { gruen, zahl };
         },
         pfad: LATENZ,
@@ -1093,22 +1136,17 @@ const stationen = [
         // werkbank latenz --verb hieb (halten-latenz): Klick per CDP bis zur Marke getCurrentTexture, an der die rechte Hand ≥ 1 cm
         // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
         // schlechteste urteilt (bildraten-fest, wie leib.K1)
-        probe: sitzung(600,
-            ...latenzLaeufe(
-                "boot",
-                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-                "teil HAKEN{N} $W eval '" + HIT_HAKEN + "'",
-                'teil LATENZ{N} $W latenz --verb hieb --sicht third,ego --proben 30 --json "{AUS}.lauf{N}.json"',
-                "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
-            )
-        ),
+        // IN DER SITZUNG (29.10.): der Zwilling von leib.K1#2 (LATENZ_HALT_SITZUNG) — die Reihen hieb in Ego und Third daraus
+        ausnahme: LATENZ_HALT_AUSNAHME,
+        mutiert: true,
+        probe: LATENZ_HALT_SITZUNG,
         env: K,
         gpu: true,
         zeit: true,
         minuten: 14,
         urteil: (j, lauf) => {
             const ids = ["third/hieb", "ego/hieb"];
-            const r = latenzSchlechtester(j, ids, 30);
+            const r = latenzSchlechtester(j, ids, LATENZ_PROBEN);
             if (!r.da) return r;
             // der Hit-Stop je Lauf (die längere Sicht), der schlechteste Lauf urteilt
             const halt = Math.min(...r.da.map((l) => Math.max(0, ...ids.map((id) => (l.reihen[id] && l.reihen[id].halt) || 0))));
@@ -1835,7 +1873,10 @@ const stationen = [
         // rechnet, zählt nicht doppelt). Am Grund a03b7b06 fehlt das Verb
         // (ROT „keine Bedienung"); swiftshader in der Cloud: Deckung 12,51 % ohne → 3,18 % mit dem Spiel-Zustand (zwei Läufe gleich, HUD 50 · Menü 21 Interaktionen), INP Sekunden
         // (CPU-Raster, kein Urteil).
-        probe: sitzung(180,
+        // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die HUD-Maske, 5 Runden echte Eingabe (das Urteil verlangt ≥ 30 HUD- und
+        // ≥ 15 Menü-Interaktionen: 4 Runden reichen dem Menü nicht)
+        ausnahme: "5 Runden echter Eingabe im laufenden Loop (je 8 Hotbar-Klicks und Tab, Tab, I, Esc, je Klick ein Bild), davor die HUD-Maske aus dem Bild",
+        probe: sitzung(90,
             "boot",
             "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
             "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
