@@ -1679,12 +1679,6 @@ class AnazhRealm_siedlung_satz {
         return this._bodenDeckeAt(x, z, false);
     }
 
-    // DIE ASCHE an (x, z) ∈ [0, 1] (stoffe.K2#2) — der Kanal G derselben Karte, bilinear aus denselben Bytes, die der Boden-Stoff
-    // liest (`_wegeBodenFarbe`): 1 frisch verbrannt, 0 nachgegrünt. Die Nah-Wiese liest sie (auf der Asche steht kein Halm).
-    _ascheAt(x, z) {
-        return this._bodenDeckeAt(x, z, true);
-    }
-
     // Der EINE Leser der Kronen-Karte: die Stufe wie `_wegeFeldAt`, bilinear über R (die Laubstreu aus der Summe, gekappt wie
     // die Karte) oder G (die Asche).
     _bodenDeckeAt(x, z, asche) {
@@ -1712,116 +1706,6 @@ class AnazhRealm_siedlung_satz {
             (at(i, j) * (1 - tx) + at(i + 1, j) * tx) * (1 - tz) +
             (at(i, j + 1) * (1 - tx) + at(i + 1, j + 1) * tx) * tz
         );
-    }
-
-    // DIE ASCHE MALEN (stoffe.K2#2): die 16-m-Zelle (cx, cz) des Felds trägt in jeder zentrierten Stufe den Kanal G aus ihren
-    // Taten `brand` — die stärkste Asche, die ihre Sukzession noch trägt (`_sukzession`); wo sie sich ändert, baut die Nah-Wiese
-    // darüber neu (auf der Asche steht kein Halm, auf der nachgegrünten wieder). Rückgabe: ob sich ein Texel änderte.
-    _ascheMalen(cx, cz) {
-        const wk = this.state.wegeKarte;
-        if (!wk) return false;
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const je = this._tatIndex().je.get(cx + "," + cz);
-        let w = 0;
-        for (const a of je || []) if (a.tat === "brand") w = Math.max(w, this._sukzession(a).asche);
-        const v = Math.round(w * 255);
-        let neu = false;
-        for (const stufe of wk.stufen) if (stufe.zentriert && this._ascheZelle(stufe, cx * cs, cz * cs, v, true)) neu = true;
-        if (neu) this._nahRingNeuIn(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs);
-        return neu;
-    }
-
-    // Nah-Wiese und Nah-Streu bauen im Rechteck neu — nur, wenn es den weiteren ihrer Ringe um die EINE Mitte (die Kamera)
-    // berührt; jenseits steht keine Kachel, die Zelle kostet nichts (ein Brand von 2 000 Zellen fern der Kamera).
-    _nahRingNeuIn(x0, z0, x1, z1) {
-        const mitte = this.state.camera
-            ? this.state.camera.position
-            : this.state.playerMesh && this.state.playerMesh.position;
-        if (!mitte) return 0;
-        const reich = (R) => R.radius + R.rand + R.kachel * 1.5;
-        const d = Math.hypot(Math.max(x0 - mitte.x, 0, mitte.x - x1), Math.max(z0 - mitte.z, 0, mitte.z - z1));
-        if (d > Math.max(reich(AnazhRealm.NAH_WIESE), reich(AnazhRealm.NAH_STREU))) return 0;
-        return this._nahWieseNeuIn(x0, z0, x1, z1);
-    }
-
-    // Eine Zelle (Ecke x0, z0, Kante LIFE_FIELD.cell) in EINE Stufe malen: `v` setzt (`setzen`) oder hebt (das Maximum) jedes
-    // Texel, dessen Mitte in ihr liegt. Rückgabe: ob sich ein Texel änderte.
-    _ascheZelle(stufe, x0, z0, v, setzen) {
-        const kr = stufe.kronen;
-        const N = kr.N;
-        const t = stufe.S.fensterM / N;
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
-        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
-        const i0 = Math.max(0, Math.ceil((x0 - x0w) / t - 0.5));
-        const i1 = Math.min(N - 1, Math.ceil((x0 + cs - x0w) / t - 0.5) - 1);
-        const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
-        const j1 = Math.min(N - 1, Math.ceil((z0 + cs - z0w) / t - 0.5) - 1);
-        if (i1 < i0 || j1 < j0) return false;
-        const A = kr.asche;
-        let neu = false;
-        for (let j = j0; j <= j1; j++)
-            for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
-                const n = setzen ? v : Math.max(A[k], v);
-                if (n !== A[k]) (A[k] = n), (neu = true);
-            }
-        if (neu) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
-        return neu;
-    }
-
-    // Die Asche EINER zentrierten Stufe ganz neu (nach ihrem Umzug, einer geladenen Welt): leeren, jede Tat `brand` im Fenster
-    // malt ihre Zelle (das Maximum je Zelle) — die Kosten tragen die Aschen, nie die Welt.
-    _ascheStufeMalen(stufe) {
-        const kr = stufe.kronen;
-        kr.asche.fill(0);
-        const cs = AnazhRealm.LIFE_FIELD.cell;
-        const h = stufe.S.fensterM / 2 + cs;
-        for (const a of this._tatIndex().brand) {
-            if (Math.abs(a.x - stufe.mitteX) > h || Math.abs(a.z - stufe.mitteZ) > h) continue;
-            const v = Math.round(this._sukzession(a).asche * 255);
-            if (v > 0) this._ascheZelle(stufe, Math.floor(a.x / cs) * cs, Math.floor(a.z / cs) * cs, v, false);
-        }
-        kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
-    }
-
-    // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
-    // (phytogenesis `canopyLight`): je Krone des EINEN Registers (`wegeKarte.kronen`: Mitte, Radius r wie die Kronen-
-    // Schüchternheit) die Deckung exp(−q), q = d² / (σ·r)² bis q < qMax, L = exp(−canopyK · Σ Deckung). Gibt den Leser
-    // (x, z) → L eines Rechtecks: die Kronen, die es erreichen, sammelt er EINMAL (Lehre 25). Nah-Wiese und Nah-Streu lesen
-    // ihn je Kachel; ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`, bis zur Reichweite des
-    // Lichts). Bis K70 lasen beide das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die
-    // Wiese zusätzlich die Kronen-Karte als Faktor — die Streu-Scheibe (voll bis r, Rand 1,7 r) ist breiter als der Schatten
-    // des Labors (an der Kronen-Kante 0,47): am Waldrand der Mess-Wiese dünnte das die offene Wiese auf 0,75 Licht.
-    _bodenLichtFeld(x0, z0, x1, z1) {
-        const U = AnazhRealm.UNDERGROWTH;
-        const wk = this.state.wegeKarte;
-        const reichJeR = U.kronenSigma * Math.sqrt(U.kronenQMax);
-        const kronen = [];
-        if (wk && wk.kronen.size) {
-            const R = (wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand) * reichJeR;
-            const Z = AnazhRealm.LAUB_STREU.zelleM;
-            for (let zz = Math.floor((z0 - R) / Z); zz <= Math.floor((z1 + R) / Z); zz++)
-                for (let zx = Math.floor((x0 - R) / Z); zx <= Math.floor((x1 + R) / Z); zx++) {
-                    const zelle = wk.kronenZellen.get(zx + "," + zz);
-                    if (!zelle) continue;
-                    for (const c of zelle.values()) {
-                        const reich = c[2] * reichJeR;
-                        if (c[0] + reich < x0 || c[0] - reich > x1 || c[1] + reich < z0 || c[1] - reich > z1) continue;
-                        const s = U.kronenSigma * c[2];
-                        kronen.push(c[0], c[1], 1 / (s * s));
-                    }
-                }
-        }
-        return (x, z) => {
-            let deckung = 0;
-            for (let i = 0; i < kronen.length; i += 3) {
-                const dx = x - kronen[i];
-                const dz = z - kronen[i + 1];
-                const q = (dx * dx + dz * dz) * kronen[i + 2];
-                if (q < U.kronenQMax) deckung += Math.exp(-q);
-            }
-            return Math.exp(-U.canopyK * deckung);
-        };
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur

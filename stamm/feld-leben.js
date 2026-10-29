@@ -1,5 +1,68 @@
 class AnazhRealm_feld_leben {
     // ===== ATLAS · Feld/leben — Lebens-Feld · Aura · Wohl · Welt-Feld · Selbst-Analyse =====
+    // DIE ASCHE an (x, z) ∈ [0, 1] (stoffe.K2#2) — der Kanal G derselben Karte, bilinear aus denselben Bytes, die der Boden-Stoff
+    // liest (`_wegeBodenFarbe`): 1 frisch verbrannt, 0 nachgegrünt. Die Nah-Wiese liest sie (auf der Asche steht kein Halm).
+    _ascheAt(x, z) {
+        return this._bodenDeckeAt(x, z, true);
+    }
+
+    // DIE ASCHE MALEN (stoffe.K2#2): die 16-m-Zelle (cx, cz) des Felds trägt in jeder zentrierten Stufe den Kanal G aus ihren
+    // Taten `brand` — die stärkste Asche, die ihre Sukzession noch trägt (`_sukzession`); wo sie sich ändert, baut die Nah-Wiese
+    // darüber neu (auf der Asche steht kein Halm, auf der nachgegrünten wieder). Rückgabe: ob sich ein Texel änderte.
+    _ascheMalen(cx, cz) {
+        const wk = this.state.wegeKarte;
+        if (!wk) return false;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const je = this._tatIndex().je.get(cx + "," + cz);
+        let w = 0;
+        for (const a of je || []) if (a.tat === "brand") w = Math.max(w, this._sukzession(a).asche);
+        const v = Math.round(w * 255);
+        let neu = false;
+        for (const stufe of wk.stufen) if (stufe.zentriert && this._ascheZelle(stufe, cx * cs, cz * cs, v, true)) neu = true;
+        if (neu) this._nahRingNeuIn(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs);
+        return neu;
+    }
+
+    // Eine Zelle (Ecke x0, z0, Kante LIFE_FIELD.cell) in EINE Stufe malen: `v` setzt (`setzen`) oder hebt (das Maximum) jedes
+    // Texel, dessen Mitte in ihr liegt. Rückgabe: ob sich ein Texel änderte.
+    _ascheZelle(stufe, x0, z0, v, setzen) {
+        const kr = stufe.kronen;
+        const N = kr.N;
+        const t = stufe.S.fensterM / N;
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const x0w = stufe.mitteX - stufe.S.fensterM / 2;
+        const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
+        const i0 = Math.max(0, Math.ceil((x0 - x0w) / t - 0.5));
+        const i1 = Math.min(N - 1, Math.ceil((x0 + cs - x0w) / t - 0.5) - 1);
+        const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
+        const j1 = Math.min(N - 1, Math.ceil((z0 + cs - z0w) / t - 0.5) - 1);
+        if (i1 < i0 || j1 < j0) return false;
+        const A = kr.asche;
+        let neu = false;
+        for (let j = j0; j <= j1; j++)
+            for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
+                const n = setzen ? v : Math.max(A[k], v);
+                if (n !== A[k]) (A[k] = n), (neu = true);
+            }
+        if (neu) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
+        return neu;
+    }
+
+    // Die Asche EINER zentrierten Stufe ganz neu (nach ihrem Umzug, einer geladenen Welt): leeren, jede Tat `brand` im Fenster
+    // malt ihre Zelle (das Maximum je Zelle) — die Kosten tragen die Aschen, nie die Welt.
+    _ascheStufeMalen(stufe) {
+        const kr = stufe.kronen;
+        kr.asche.fill(0);
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const h = stufe.S.fensterM / 2 + cs;
+        for (const a of this._tatIndex().brand) {
+            if (Math.abs(a.x - stufe.mitteX) > h || Math.abs(a.z - stufe.mitteZ) > h) continue;
+            const v = Math.round(this._sukzession(a).asche * 255);
+            if (v > 0) this._ascheZelle(stufe, Math.floor(a.x / cs) * cs, Math.floor(a.z / cs) * cs, v, false);
+        }
+        kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
+    }
+
     creatureJump(creature, ansprung = false) {
         const ud = creature && creature.userData;
         if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;

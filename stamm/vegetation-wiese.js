@@ -1,5 +1,58 @@
 class AnazhRealm_vegetation_wiese {
     // ===== ATLAS · Vegetation/wiese — Nah-Wiese · Nah-Streu · Affinität · Boden-Material =====
+    // Nah-Wiese und Nah-Streu bauen im Rechteck neu — nur, wenn es den weiteren ihrer Ringe um die EINE Mitte (die Kamera)
+    // berührt; jenseits steht keine Kachel, die Zelle kostet nichts (ein Brand von 2 000 Zellen fern der Kamera).
+    _nahRingNeuIn(x0, z0, x1, z1) {
+        const mitte = this.state.camera
+            ? this.state.camera.position
+            : this.state.playerMesh && this.state.playerMesh.position;
+        if (!mitte) return 0;
+        const reich = (R) => R.radius + R.rand + R.kachel * 1.5;
+        const d = Math.hypot(Math.max(x0 - mitte.x, 0, mitte.x - x1), Math.max(z0 - mitte.z, 0, mitte.z - z1));
+        if (d > Math.max(reich(AnazhRealm.NAH_WIESE), reich(AnazhRealm.NAH_STREU))) return 0;
+        return this._nahWieseNeuIn(x0, z0, x1, z1);
+    }
+
+    // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
+    // (phytogenesis `canopyLight`): je Krone des EINEN Registers (`wegeKarte.kronen`: Mitte, Radius r wie die Kronen-
+    // Schüchternheit) die Deckung exp(−q), q = d² / (σ·r)² bis q < qMax, L = exp(−canopyK · Σ Deckung). Gibt den Leser
+    // (x, z) → L eines Rechtecks: die Kronen, die es erreichen, sammelt er EINMAL (Lehre 25). Nah-Wiese und Nah-Streu lesen
+    // ihn je Kachel; ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`, bis zur Reichweite des
+    // Lichts). Bis K70 lasen beide das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die
+    // Wiese zusätzlich die Kronen-Karte als Faktor — die Streu-Scheibe (voll bis r, Rand 1,7 r) ist breiter als der Schatten
+    // des Labors (an der Kronen-Kante 0,47): am Waldrand der Mess-Wiese dünnte das die offene Wiese auf 0,75 Licht.
+    _bodenLichtFeld(x0, z0, x1, z1) {
+        const U = AnazhRealm.UNDERGROWTH;
+        const wk = this.state.wegeKarte;
+        const reichJeR = U.kronenSigma * Math.sqrt(U.kronenQMax);
+        const kronen = [];
+        if (wk && wk.kronen.size) {
+            const R = (wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand) * reichJeR;
+            const Z = AnazhRealm.LAUB_STREU.zelleM;
+            for (let zz = Math.floor((z0 - R) / Z); zz <= Math.floor((z1 + R) / Z); zz++)
+                for (let zx = Math.floor((x0 - R) / Z); zx <= Math.floor((x1 + R) / Z); zx++) {
+                    const zelle = wk.kronenZellen.get(zx + "," + zz);
+                    if (!zelle) continue;
+                    for (const c of zelle.values()) {
+                        const reich = c[2] * reichJeR;
+                        if (c[0] + reich < x0 || c[0] - reich > x1 || c[1] + reich < z0 || c[1] - reich > z1) continue;
+                        const s = U.kronenSigma * c[2];
+                        kronen.push(c[0], c[1], 1 / (s * s));
+                    }
+                }
+        }
+        return (x, z) => {
+            let deckung = 0;
+            for (let i = 0; i < kronen.length; i += 3) {
+                const dx = x - kronen[i];
+                const dz = z - kronen[i + 1];
+                const q = (dx * dx + dz * dz) * kronen[i + 2];
+                if (q < U.kronenQMax) deckung += Math.exp(-q);
+            }
+            return Math.exp(-U.canopyK * deckung);
+        };
+    }
+
     // Die Wiese ist Boden-Funktion: jede Gras-Zelle wird gras-los verbucht (null), die Halme zeichnet
     // die Parallax-Funktion im Terrain-Albedo. Keine Halm-Geometrie.
     _buildVoxelChunkGrass(cx, cz) {

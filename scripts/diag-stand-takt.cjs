@@ -732,39 +732,41 @@ function nachwuchsUrteil({ echt: e, mutante: m } = {}) {
 function brandUrteil(b) {
     if (!b || !b.halt || !b.regen || !b.asche || !b.asche.asche || !b.zeit) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
     const [h, m, f, rg, rm, l, lm, a, z] = [b.halt, b.haltM, b.fels, b.regen, b.regenM, b.leser, b.leserM, b.asche, b.zeit];
-    return [
-        h.brannte >= 2 && h.nass >= 1 ? "" : `HALT: ${h.brannte} Zellen brannten, am nassen Gras hielt die Front ${h.nass}×`,
-        h.wasserGebrannt === 0 && h.nassGebrannt === 0 ? "" : `HALT-BRUCH: ${h.wasserGebrannt} Zellen über Wasser, ${h.nassGebrannt} im nassen Gras brannten`,
-        m && m.nassGebrannt >= 1 && m.nass === 0 ? "" : `MUTANTE-HALT: ohne die Feuchte des Orts brannten ${m && m.nassGebrannt} nasse Zellen, ${m && m.nass} hielten`,
-        m && m.wasser + h.wasser >= 1 && m.wasserGebrannt === 0 ? "" : `FLUSS: am Wasser hielt die Front ${h.wasser}× (ohne die Feuchte des Orts ${m && m.wasser}×), über Wasser brannten ${m && m.wasserGebrannt}`,
-        f && f.erreicht && f.gehalten ? "" : `FELS: ${JSON.stringify(f)}`,
-        rg.brannte >= 1 && rg.s <= 60 ? "" : `REGEN: ${rg.brannte} Zellen brannten, im Regen erloschen nach ${rg.s} s (Soll ≤ 60)`,
-        rm && rm.s > 60 ? "" : `MUTANTE-REGEN: ohne das freie Wasser erlosch der Brand nach ${rm && rm.s} s`,
-        l && l.licht >= 1 && l.rauch >= 1 && l.glutD <= 16 && l.glutF >= 64 ? "" : `LESER: ${JSON.stringify(l)}`,
-        lm && lm.licht === 0 && lm.rauch === 0 && lm.glutF < 64 ? "" : `MUTANTE-LESER: ohne Brand ${JSON.stringify(lm)}`,
-        a.asche.Y <= 0.08 && a.asche.a >= 0.99 ? "" : `ASCHE: Albedo ${a.asche.Y} (Soll ≤ 0,08), Decke ${a.asche.a}`,
-        a.gras && a.gras.a === 0 && a.gras.Y >= 0.95 * a.vor.Y ? "" : `GRÜNT: nach der Stufe Gras ${JSON.stringify(a.gras)} (vorher Albedo ${a.vor.Y})`,
-        a.mutante.Y > 0.08 && a.mutante.halme >= 0.8 * a.vor.halme ? "" : `MUTANTE-ASCHE: ohne die Decke Albedo ${a.mutante.Y}, ${a.mutante.halme} Halme`,
-        z.brennend >= 2000 && z.bildMs <= 0.5 && z.verzugS <= 2 ? "" : `ZEIT: ${z.brennend} brennende Zellen, je Bild p95 ${z.bildMs} ms (Takt ${z.schrittMs}, Leser ${z.leserMs}; Soll ≤ 0,5), der Schritt bis ${z.verzugS} s hinter der Uhr (Soll ≤ 2)`,
-    ].filter(Boolean);
+    const T = [
+        ["HALT", h.brannte >= 2 && h.nass >= 1, h],
+        ["HALT-BRUCH", h.wasserGebrannt === 0 && h.nassGebrannt === 0, h],
+        ["MUTANTE-HALT", m && m.nassGebrannt >= 1 && m.nass === 0, m],
+        ["FLUSS", m && m.wasser + h.wasser >= 1 && m.wasserGebrannt === 0, m],
+        ["FELS", f && f.erreicht && f.gehalten, f],
+        ["REGEN", rg.brannte >= 1 && rg.s <= 60, rg],
+        ["MUTANTE-REGEN", rm && rm.s > 60, rm],
+        ["LESER", l && l.licht >= 1 && l.rauch >= 1 && l.glutD <= 16 && l.glutF >= 64, l],
+        ["MUTANTE-LESER", lm && lm.licht === 0 && lm.rauch === 0 && lm.glutF < 64, lm],
+        ["ASCHE", a.asche.Y <= 0.08 && a.asche.a >= 0.99, a.asche],
+        ["GRÜNT", a.gras && a.gras.a === 0 && a.gras.Y >= 0.95 * a.vor.Y, a.gras],
+        ["MUTANTE-ASCHE", a.mutante.Y > 0.08 && a.mutante.halme >= 0.8 * a.vor.halme, a.mutante],
+        ["ZEIT", z.brennend >= 2000 && z.bildMs <= 0.5 && z.verzugS <= 2, z],
+    ];
+    return T.filter((t) => !t[1]).map(([n, , x]) => n + ": " + JSON.stringify(x));
 }
 
 // Die Folge (stoffe.K5#2): auf der Asche kein Halm und kein Kraut, nach der Stufe Gras die Halme (≥ 80 %) vor den Kräutern (≤ 30 %),
 // nach der Stufe Busch die Kräuter (≥ 80 %); die Ernte nimmt Nährstoff und Wuchs, Asche und Leichnam geben ihn zurück, die Mutante
-// lässt den Wuchs gleich; der Jungwuchs (Stubben → Sämling, der Wald nach dem Busch) ist nicht gebaut.
+// lässt den Wuchs gleich; der Jungwuchs (Stubben → Sämling, der Wald nach dem Busch) ist nicht gebaut — SÄMLING nennt ihn.
 function sukzessionUrteil(s) {
-    const a = s && s.asche;
-    const n = s && s.naehr;
+    const [a, n] = [s && s.asche, s && s.naehr];
     if (!a || !a.asche || !n || !(a.vor.halme >= 20) || !(a.vor.kraut >= 3)) return ["LEER: " + JSON.stringify(a && a.vor)];
-    return [
-        a.asche.halme <= 0.05 * a.vor.halme && a.asche.kraut === 0 ? "" : `ASCHE: ${a.asche.halme} Halme, ${a.asche.kraut} Kräuter auf der Asche`,
-        a.gras && a.gras.halme >= 0.8 * a.vor.halme && a.gras.kraut <= 0.3 * a.vor.kraut ? "" : `GRAS: nach der Stufe Gras ${JSON.stringify(a.gras)} (vorher ${a.vor.halme} Halme, ${a.vor.kraut} Kräuter)`,
-        a.busch && a.busch.kraut >= 0.8 * a.vor.kraut ? "" : `BUSCH: nach der Stufe Busch ${JSON.stringify(a.busch)} (vorher ${a.vor.kraut} Kräuter)`,
-        n.ernte.n >= 3 && n.ernte.N < n.ernte.N0 - 0.04 && n.ernte.W < n.ernte.W0 ? "" : `ERNTE: ${JSON.stringify(n.ernte)}`,
-        n.asche >= 1.2 && n.leichnam >= 1.1 ? "" : `RÜCKGABE: Nährstoff auf der Asche ${n.asche}, am Leichnam ${n.leichnam}`,
-        n.mutante.W === n.mutante.W0 ? "" : `MUTANTE-NÄHRSTOFF: bei festem Nährstoff Wuchs ${n.mutante.W0} → ${n.mutante.W}`,
-        s.saemling ? "" : "SÄMLING: kein Jungwuchs — der Stubben trägt keinen Sämling, nach dem Busch wirft der Wald den gewachsenen Baum (treeParams(alter) nicht gebaut)",
-    ].filter(Boolean);
+    const [v, g, e] = [a.vor, a.gras, n.ernte];
+    const T = [
+        ["ASCHE", a.asche.halme <= 0.05 * v.halme && a.asche.kraut === 0, a.asche],
+        ["GRAS", g && g.halme >= 0.8 * v.halme && g.kraut <= 0.3 * v.kraut, g],
+        ["BUSCH", a.busch && a.busch.kraut >= 0.8 * v.kraut, a.busch],
+        ["ERNTE", e.n >= 3 && e.N < e.N0 - 0.04 && e.W < e.W0, e],
+        ["RÜCKGABE", n.asche >= 1.2 && n.leichnam >= 1.1, n],
+        ["MUTANTE-NÄHRSTOFF", n.mutante.W === n.mutante.W0, n.mutante],
+        ["SÄMLING", s.saemling, "kein Jungwuchs aus dem Stubben, der Wald wirft den gewachsenen Baum (treeParams(alter))"],
+    ];
+    return T.filter((t) => !t[1]).map(([x, , y]) => x + ": " + JSON.stringify(y));
 }
 
 async function brandSeite(MESS) {
@@ -913,7 +915,6 @@ async function brandSeite(MESS) {
         for (const rv of st.hydrosphere?.rivers || []) for (const q of rv.points) if (!q.inLake && d(q) < 320) punkte.push(q);
         punkte.sort((p, q) => d(p) - d(q));
         let herd = null;
-        const profile = [];
         for (const p of punkte) {
             const w = r._windAt(p.x, p.z, st.spielZeit);
             const [seen, strahl] = [new Set(), []];
@@ -925,7 +926,6 @@ async function brandSeite(MESS) {
                 const art = f ? (nassBett(cx, cz) ? "nass" : f.zeile.name === "gras" ? "trocken" : "laub") : r._nassAt(mitte(cx, cz).x, mitte(cx, cz).z) ? "wasser" : "kein";
                 strahl.push({ cx, cz, art, boden: f ? f.boden : null });
             }
-            if (profile.length < 12) profile.push(Math.round(d(p)) + ":" + strahl.slice(0, 24).map((q) => (q.art[0] + (q.boden == null ? "" : Math.round(q.boden * 9)))).join(""));
             // das Wasser, dann das nasse Bett, dann trockenes Bett ohne Lücke bis zum Herd — der längste trockene Lauf gewinnt
             const n = strahl.findIndex((q) => q.art === "nass");
             if (n < 1 || strahl[n - 1].art !== "wasser") continue;
@@ -937,10 +937,7 @@ async function brandSeite(MESS) {
             if (j > k && (!herd || j - k > herd.abstand))
                 herd = Object.assign(mitte(strahl[j].cx, strahl[j].cz), { fluss: [Math.round(p.x), Math.round(p.z)], nass: k - n + 1, abstand: j - k });
         }
-        if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (" + punkte.length + " Punkte: " + profile.join(" ") + ")" };
-        const fh = r._brandStoff(...zelle(herd.x, herd.z));
-        const Th = fh && r._brandTempo(fh, st.spielZeit);
-        aus.haltHerd = fh && { stoff: fh.zeile.name, leb: r3(fh.leb), boden: r3(fh.boden), gx: r3(fh.gx), gz: r3(fh.gz), R: Th && r3(Th.R), ecc: Th && r3(Th.ecc) };
+        if (!herd) return { fehler: "kein Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese" };
         const lauf = (h) => (r._brandEntfachen(h.x, h.z), brennen(3600));
         aus.halt = Object.assign({ herd: [Math.round(herd.x), Math.round(herd.z)], fluss: herd.fluss, nassZellen: herd.nass, trockenZellen: herd.abstand, schritte: lauf(herd) }, zaehle());
         leer(), halt.clear(), gezuendet.clear();
@@ -1041,14 +1038,11 @@ async function brandSeite(MESS) {
         N.leichnam = r3(r._naehrstoffAt(D.x, D.z));
         // ZEIT: jede Zelle mit Bett im geladenen Ring um die Mess-Wiese fängt (eine Spirale); trägt die Welt dort weniger als
         // 2 000 Zellen Bett (das Bett der Wiese liest die Boden-Karte gebauter Chunks), füllen Abzüge der brennenden Zellen den
-        // Rest 16 km fern (derselbe Schritt je Zelle: Feuchte, Glut, Ausbrennen samt Asche) — gezählt beide
         leer(), trocken(), wort("cloudy");
         const [zx, zz] = zelle(MESS.x, MESS.z);
-        let versucht = 0;
         for (let R = 0; R <= 40; R++)
             for (let i = -R; i <= R; i++)
                 for (const [cx, cz] of R ? [[zx + i, zz - R], [zx + i, zz + R], [zx - R, zz + i], [zx + R, zz + i]] : [[zx, zz]]) {
-                    versucht++;
                     r._brandEntfachen(mitte(cx, cz).x, mitte(cx, cz).z);
                     if (!R) break;
                 }
@@ -1060,44 +1054,24 @@ async function brandSeite(MESS) {
             bf().set(cx + "," + cz, Object.assign({}, q, { cx, cz, von: null, y: null }));
         }
         const zn = brennt().length;
-        const [ms, lms, teil] = [[], [], { asche: 0, zuenden: 0, licht: 0, rauch: 0, glut: 0, n: { asche: 0, zuenden: 0 } }];
-        const uhrt = (k, fn) => function (...x) {
-            const t0 = performance.now();
-            try {
-                return fn.apply(this, x);
-            } finally {
-                teil[k] += performance.now() - t0;
-                teil.n[k]++;
-            }
-        };
-        r._tatSchreiben = uhrt("asche", P._tatSchreiben);
-        r._brandZuenden = uhrt("zuenden", P._brandZuenden);
         // 1 200 Bilder zu 1/60 s (20 s Spielzeit): je Bild der Takt (`_tickBrand`, seine geteilte Arbeit) und die Leser; der Verzug
         // ist die Spielzeit, um die der angefangene Schritt hinter der Uhr liegt
-        const [fms, B0] = [[], st.spielZeit];
+        const [ms, lms] = [[], []];
         let verzug = 0;
         for (let i = 0; i < 1200; i++) {
             st.spielZeit += 1 / 60;
-            let t0 = performance.now();
+            const t0 = performance.now();
             r._tickBrand();
-            ms.push(performance.now() - t0);
-            verzug = Math.max(verzug, st.spielZeit - (r._brandRest ? r._brandRest.t : r._brandUhr));
             const t1 = performance.now();
+            verzug = Math.max(verzug, st.spielZeit - (r._brandRest ? r._brandRest.t : r._brandUhr));
             r._leuchtQuellen(pm.x, pm.y, pm.z, 64);
-            const t2 = performance.now();
             r._updateDorfRauch(1 / 60);
-            const t3 = performance.now();
             r._glutAmOhr(pm.x, pm.z, () => 0);
-            const t4 = performance.now();
-            [teil.licht, teil.rauch, teil.glut] = [teil.licht + t2 - t1, teil.rauch + t3 - t2, teil.glut + t4 - t3];
-            lms.push(t4 - t1);
-            fms.push(t4 - t0);
+            ms.push(performance.now() - t0);
+            lms.push(performance.now() - t1);
         }
-        delete r._tatSchreiben;
-        delete r._brandZuenden;
-        for (const k of ["asche", "zuenden", "licht", "rauch", "glut"]) teil[k] = r3(teil[k] / 1200);
-        const p95 = (v) => r3(v.slice().sort((p, q) => p - q)[Math.min(v.length - 1, Math.floor(v.length * 0.95))] || 0);
-        aus.zeit = { teil, brennend: zn, echt: echt.length, versucht, nachher: brennt().length, spielS: r3(st.spielZeit - B0), bildMs: p95(fms), bildMax: r3(Math.max(0, ...fms)), schrittMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug) };
+        const p95 = (v) => r3(v.sort((p, q) => p - q)[Math.floor(v.length * 0.95)]);
+        aus.zeit = { brennend: zn, echt: echt.length, bildMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug) };
         leer();
         aus.saemling = null; // der Jungwuchs ist nicht gebaut (treeParams(alter))
         return aus;
