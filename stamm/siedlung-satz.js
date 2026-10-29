@@ -2013,8 +2013,9 @@ class AnazhRealm_siedlung_satz {
     // getretenen Erde (R) und zum Acker (G) der
     // Wege-Karte, in den Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), nur auf
     // Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
-    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
-    _wegeBodenFarbe(_T, vc) {
+    // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg). `aus` (optional)
+    // nimmt den Anteil der Asche je Fragment (`aus.asche`), den die Rauheit des Stoffs liest.
+    _wegeBodenFarbe(_T, vc, aus) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
@@ -2053,10 +2054,19 @@ class AnazhRealm_siedlung_satz {
         const mitStreu = _T.mix(vc, _T.vec3(l[0], l[1], l[2]), _k);
         // DIE ASCHE DES BRANDS (stoffe.K2#2, `_ascheMalen`): wo die Front ein Bett verzehrte, liegt die Asche der Palette über
         // Wiese und Streu, bis sie nachgrünt (`_sukzession`) — nur auf Begehbarem (die Wand des Hangs trug kein Bett). Dieselben
-        // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm.
+        // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm. Sie ist kein Belag in EINER Farbe: verkohlte
+        // Halme und graue Asche liegen in Flecken (das EINE Rauschen in zwei Oktaven, 0,9 und 3,1 je m, im Mittel die Albedo der
+        // Palette) und matt (die Rauheit 1, `aus.asche`) — eine glatte, einfarbig dunkle Fläche las sich als nasse Platte.
         const s = P.asche;
         const _a = _T.mix(dFern.g, dNah.g, innen).mul(_begehbar).mul(imFenster);
-        const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]), _a);
+        const _R = this._rauschAtlas();
+        const _fleck = _R
+            .raum(_T.vec3(xz.x.mul(0.9), xz.y.mul(0.9), _T.float(5.7)))
+            .mul(0.5)
+            .add(_R.raum(_T.vec3(xz.x.mul(3.1), xz.y.mul(3.1), _T.float(9.1))).mul(0.3))
+            .add(1);
+        if (aus) aus.asche = _a;
+        const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]).mul(_fleck), _a);
         const e = P.dirt;
         const a = P.wet;
         const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _wm.r.mul(_begehbar));
@@ -3235,7 +3245,8 @@ class AnazhRealm_siedlung_satz {
         }
         if (!this.state.scene) return nein("buehne");
         // DIE TAT BLEIBT, WO DAS GESETZ NEU SETZT (speicher.K3): ein Wurf des Gesetzes fällt, wo eine Tat ihn nahm (`_tatSperrt`)
-        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z)) return nein("tat");
+        if (opts.ausGesetz === true && position && this._tatSperrt(position.x, position.z, opts.studioOv))
+            return nein("tat");
         // Der Same eines Werks ohne eigenen (Bau einer Kreatur, Plattform, Portal) kommt aus dem Welt-Strom seiner Art (Γ5,
         // Lehre 7) — nie Math.random: der Mitspieler und der Reload sähen ein anderes Werk.
         const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);
@@ -3864,12 +3875,13 @@ AnazhRealm.LAUB_STREU = Object.freeze({
     zelleM: 64,
 });
 // DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
-// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
-// Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den
-// Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem
-// Satz, dem Bau-Modus oder der KI ist Bau. Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
-// bis K10-6 stand sie als Bau: eine im Grundriss des Dorfs der Zelle −4,−4 schob die Ort-Wahl von 80 auf 96 m, je nach
-// Lade-Stand der Würfe.
+// je Sample): die Baumarten, der Fels und die Geode. Was das Feld wirft, trägt die Marke des Wurfs (`feldWurf`,
+// `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den Grund (`_bauFrei`),
+// und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem Satz, dem Bau-Modus
+// oder der KI ist Bau. DAS FELD WIRFT KEIN FEUER (stoffe.K2#2): die Feuerstelle (`glutbrunnen`, die Gestalt des Fachwerks mit
+// Glut, Flammen und Feuer-Licht) ist ein Werk der Hand — bis w3v-brand-bild warf die Stimme glut sie in die Wildnis (65 brennende
+// Feuerstellen binnen 400 m um die Mess-Wiese, die nächste 13 m vom Herd: die orangen Flammen-Marken im Gras vor jedem Brand);
+// das Feuer der Wildnis ist der Brand des Felds (`brandFeld`).
 AnazhRealm.FELD_WURF = Object.freeze([
     "baum_eiche",
     "baum_kiefer",
@@ -3880,7 +3892,6 @@ AnazhRealm.FELD_WURF = Object.freeze([
     "baum_karst",
     "stein_block",
     "kristall_geode",
-    "glutbrunnen",
 ]);
 // Die Instanz-Attribute der LOD-Fassade (`_lodInstanceFacade`) mit ihrer Breite: Sichthöhen (aH0/aH0L), Billboard-
 // die Karte (aKarte = Atlas-Schicht, Halbbreite, Höhe — template-lokal — und die Sichthöhe, negativ = verdeckt).

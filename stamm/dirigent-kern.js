@@ -81,7 +81,9 @@ class AnazhRealm {
             satzStoffe: null, // Map Bau-Satz-Art → { name, mat, wurf } (_bauSatzArt)
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
             bauSatzRaten: null, // Map Gruppen-Schlüssel → der Bereich, der in Raten eintritt (_bauSatzRate)
-            dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
+            dorfRauchSatz: null, // die Rauch-InstancedMesh der Kamine (_rauchZeichnen)
+            brandRauchSatz: null, // die Rauch-InstancedMesh der Fahne des Brands (_brandRauch → _rauchZeichnen)
+            brandFlammenSatz: null, // die Flammen der Front (_brandFlammenZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
             stlWege: null, // der Wege-Pool der Siedlungen
             _chunkIdbHits: 0,
@@ -764,6 +766,8 @@ class AnazhRealm {
             architectures: [],
             // KAMIN-RAUCH (.105): Settlement-Rauchquellen + Teilchen (Lab dorfRauch-Wire).
             dorfRauch: { quellen: [], teilchen: [] },
+            // DIE FAHNE DES BRANDS (stoffe.K2#2, `_brandRauch`): ihre Ballen, der Zähler ihres Samens
+            brandRauch: { teilchen: [], n: 0 },
             architectureNextId: 1,
             // Φ7 (V18.190) — DIE PORTAL-HALLEN: kuratierte Welt-Verzeichnisse.
             // Ein Eintrag ist eine signierte Sammlung von Welt-Adressen (Φ1),

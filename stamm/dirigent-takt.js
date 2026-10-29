@@ -214,6 +214,8 @@ class AnazhRealm_dirigent_takt {
 
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);
+                // ### Das Bild des Brands ### (stoffe.K2#2 — Flammen auf der Front, die Fahne des Rauchs)
+                this._brandBild(delta);
                 // ### Funken ### (halten.K2 — die Späne eines Treffers aus dem Stoff-Paar fliegen und verlöschen)
                 this._funkenTakt(delta);
 

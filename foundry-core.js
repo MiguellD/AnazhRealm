@@ -4764,7 +4764,7 @@ function __weltSkalaArt(id) {
     return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
 }
 
-function deriveParamsPlant(pre) {
+function deriveParamsPlant(pre, alter) {
     // die Dials aus dem Dial-Kontext des Wirts (`__dials`): im Bau die Preset-Dials, im Labor das Regler-Objekt der Hülle (K47)
     const _D = __dials;
     const api = _D.api,
@@ -4819,7 +4819,7 @@ function deriveParamsPlant(pre) {
     const core = typeof self !== "undefined" && self.__phytoCore;
     if (!core || typeof core.treeParams !== "function")
         throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT), alter);
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
@@ -5085,7 +5085,8 @@ function buildInstance(presetId, seed, lod, ov) {
             __rockKind = P.kind;
             emitRock(P);
         } else {
-            const P = deriveParamsPlant(pre);
+            // die Jugend-Gestalt (stoffe.K5#2) reist als Prägung `ov.alter` in die EINE Ableitung (phyto-core `treeParams`)
+            const P = deriveParamsPlant(pre, ov ? ov.alter : undefined);
             if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") {
                 const zeile = (PORTAL_RENDER_CONFIG.lod.budget.flower[lod] || {}).tris;
@@ -5152,7 +5153,8 @@ function skelettDerGestalt(presetId, seed, lod, ov) {
         seed,
         lod,
         pre,
-        __weltSkalaArt(presetId)
+        __weltSkalaArt(presetId),
+        ov ? ov.alter : undefined
     );
     if (ov) Object.assign(P, ov);
     const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));

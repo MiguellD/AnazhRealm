@@ -592,8 +592,8 @@ async function gtDorfweg(v2, anker, sek) {
     return res;
 }
 
-// DIE WÜRFE DES FELDS WEICHEN DEM ORT: jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
-// des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
+// DIE WÜRFE DES FELDS WEICHEN DEM ORT: jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode), weicht dem Ort wie die
+// Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
 // Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`).
 // C-K5b DER VORRAT JE ZELLE (Karte vorrat-pingpong): am Mess-Ort `dorf` liegen zwei Zellen im Vorlauf-Ring. Der Zug läuft je
 // Gang einen Takt, bis 20 Gänge nichts unterwegs ist und kein Export beginnt, dann 150 Gänge Ruhe; gezählt werden die Bereitungen
@@ -678,10 +678,10 @@ async function vorratAmDorf(messort, alt) {
 }
 // Je Art ein Wurf an einem
 // freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
-// und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: die Feuerstelle des Satzes oder des Bau-Modus ist Bau (sie sperrt den
-// Grund, kein Grundriss und kein Weg räumt sie) — es entscheidet die HERKUNFT (die Marke `feldWurf`, die nur der Wurf des
-// Felds trägt: `_enqueueVegetationSpawn`), nie die Art. `defekt` ist der Selbst-Schein: "bau" — die Feuerstelle gilt wieder als Bau (der Wurf
-// MUSS sperren); "art" — die Art entscheidet (das Werk MUSS weichen).
+// und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: der Stein des Satzes oder des Bau-Modus ist Bau (er sperrt den Grund,
+// kein Grundriss und kein Weg räumt ihn) — es entscheidet die HERKUNFT (die Marke `feldWurf`, die nur der Wurf des Felds
+// trägt: `_enqueueVegetationSpawn`), nie die Art. `defekt` ist der Selbst-Schein: "bau" — der Wurf gilt als Bau (er MUSS
+// sperren); "art" — die Art entscheidet (das Werk MUSS weichen).
 // Läuft im Browser (page.evaluate) — selbstgenügsam.
 function feldWurfImOrt(anker, defekt) {
     const res = { sperrt: [], grundriss: [], weg: [], fehl: [], werk: { arten: [], weicht: [] } };
@@ -697,14 +697,10 @@ function feldWurfImOrt(anker, defekt) {
         "baum_karst",
         "stein_block",
         "kristall_geode",
-        "glutbrunnen",
     ];
     res.arten = LISTE.length;
     res.quelle = Array.isArray(A.FELD_WURF) && A.FELD_WURF.join() === LISTE.join();
-    if (defekt === "bau")
-        r._weichtDemBau = function (e) {
-            return this._istNatur(e);
-        };
+    if (defekt === "bau") r._weichtDemBau = () => false;
     if (defekt === "art")
         r._weichtDemBau = function (e) {
             return this._istNatur(e) || (!!e && A.FELD_WURF.includes(e.type));
@@ -720,7 +716,7 @@ function feldWurfImOrt(anker, defekt) {
         r._wildnisTraegt = () => true;
         r._vegSpawnImmediate = true;
         try {
-            r._enqueueVegetationSpawn("glutbrunnen", { x: anker.x, y: 0, z: anker.z }, { silent: true, seed: 4711 });
+            r._enqueueVegetationSpawn("stein_block", { x: anker.x, y: 0, z: anker.z }, { silent: true, seed: 4711 });
         } finally {
             delete r._naturSetzen; // die Methoden des Prototyps gelten wieder
             delete r._wildnisTraegt;
@@ -2960,8 +2956,8 @@ hauptLauf(async () => {
     );
     check(
         // und bleibt im Grundriss: die Linse sieht den Täter
-        "O Auto-Dorf: Selbst-Schein — die Feuerstelle als Bau sperrt den Grund",
-        !FWd.err && FWd.sperrt.includes("glutbrunnen") && FWd.grundriss.includes("glutbrunnen"),
+        "O Auto-Dorf: Selbst-Schein — der Wurf als Bau sperrt den Grund",
+        !FWd.err && FWd.sperrt.length > 0 && FWd.grundriss.length > 0,
         FWd.err
             ? FWd.err.split("\n")[0]
             : `sperrt: ${FWd.sperrt.join(", ") || "—"} · im Grundriss: ${FWd.grundriss.join(", ") || "—"}`
@@ -2977,8 +2973,8 @@ hauptLauf(async () => {
     );
     check(
         // die Linse sieht den Täter
-        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht die Feuerstelle des Menschen",
-        !FWa.err && FWa.werk.weicht.some((w) => w.startsWith("glutbrunnen")),
+        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht das Werk des Menschen",
+        !FWa.err && FWa.werk.weicht.length > 0,
         FWa.err ? FWa.err.split("\n")[0] : `weicht als Werk: ${FWa.werk.weicht.join(", ") || "—"}`
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");

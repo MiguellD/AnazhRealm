@@ -564,9 +564,10 @@ class AnazhRealm_vegetation_streu {
             ];
             const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
             // was der Zustand der Welt urteilt, urteilt der Haupt-Faden: die promotete Zelle dieser Schicht (ihre realen
-            // Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3), das exakte Wasser-Verdikt (`_landAt`)
+            // Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3) oder ihn noch nicht wachsen ließ (das Alter
+            // des Orts, `_baumAlter`: die Narbe eines Brands, der Stubben), das exakte Wasser-Verdikt (`_landAt`)
             if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
-            if (layer.promotable && this._tatSperrt(tf.x, tf.z)) continue;
+            if (layer.promotable && (this._tatSperrt(tf.x, tf.z) || this._baumAlter(tf.x, tf.z) < 1)) continue;
             if (!this._landAt(tf.x, tf.z, 0.4)) continue;
             const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
             const variantIndex = h % N;

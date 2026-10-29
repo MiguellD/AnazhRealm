@@ -65,7 +65,7 @@ class AnazhRealm_bau_vorlagen {
             },
         ];
         // Affinitäts-Baupläne, damit Regionen sich strukturell unterscheiden: stein_block (dichte+härte →
-        // Felsen-Felder) · kristall_geode (magieleitung+resoniert → Magie) · glutbrunnen (brennbar → Vulkan).
+        // Felsen-Felder) · kristall_geode (magieleitung+resoniert → Magie); die Feuerstelle ist Bau, kein Wurf (`FELD_WURF`).
         // Felsblock = noiserock aus der härte; Material + Größe (stein, 2.4) fix → Affinitäts-Baseline bleibt.
         const steinBlockParts = [
             {
@@ -196,7 +196,7 @@ class AnazhRealm_bau_vorlagen {
         // DIE FEUERSTELLE (Architektur-Welle 05.10.): die Gestalt baut das Gesetzbuch (fachwerk `feuerstelle`, über die
         // studioGestalt-Zeile unten) — diese Parts sind ihre unsichtbare SUBSTANZ: der Steinring als niedriger Blocker
         // (30 cm, man steigt hinüber) und der Glut-Kern. Form und Stoff wie zuvor (Zylinder Stein · Kugel Glut): die
-        // Tags sind größen-unabhängig (computeCompoundTags), die Affinität und damit jeder Ort im Glut-Feld bleibt.
+        // Tags sind größen-unabhängig (computeCompoundTags).
         const glutbrunnenParts = [
             {
                 shape: "cylinder",

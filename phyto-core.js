@@ -2039,8 +2039,9 @@
     // Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf, das Totholz seine vergraute Borke). Gibt den
     // P-Vektor für `growSkeleton` und die Bau-Stufen (foundry-core `deriveParamsPlant` delegiert hierher, Studio und
     // Foundry-Worker lesen ihn). Die Zieh-Reihenfolge ist die der Vorlage: 3 Farb-Würfe, der Wuchs-Strom, die Phase,
-    // danach nur beim Totholz die Bruch-Höhe — derselbe Same ⇒ dieselbe Gestalt.
-    function treeParams(dials, seedInt, stufe, art, weltSkala) {
+    // danach nur beim Totholz die Bruch-Höhe — derselbe Same ⇒ dieselbe Gestalt. `alter` (stoffe.K5#2, optional): die
+    // Jugend-Gestalt desselben Individuums (JUGEND unten); ohne sie der gewachsene Baum, byte-gleich.
+    function treeParams(dials, seedInt, stufe, art, weltSkala, alter) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
         const api = dials.api,
@@ -2101,8 +2102,26 @@
             P.hd = ph.hd;
             P.weltSkala = weltSkala;
         }
+        // DIE JUGEND-GESTALT (stoffe.K5#2): `alter` ∈ (0, 1) ist der Jungwuchs desselben Individuums (derselbe Same, derselbe
+        // Strom, kein Wurf mehr) — der Sämling aus dem Stubben, der Wald nach dem Brand; seine Größe ist `alter` × die des
+        // gewachsenen (die Welt pflanzt ihn in dieser Skala, die Vorlage bleibt im Maß der Art: Raster, Naht und Wind messen in
+        // ihr). Die Gestalt der Jugend: die Krone reicht zum Grund (der Kronenansatz × alter: kein Schatten hat die unteren Äste
+        // genommen), er verzweigt in weniger Ordnungen (die Tiefe fällt bis auf JUGEND.tiefeAb ihrer selbst, nie unter
+        // JUGEND.tiefe), der Anlauf wächst mit, und das Blatt wächst langsamer als der Baum (in der Vorlage × alter^−¼ — der
+        // Sämling trägt wenige, große Blätter).
+        if (alter > 0 && alter < 1 && ph.kind === "tree" && !ph.tot) {
+            P.alter = alter;
+            if (P.crownBase) P.crownBase *= alter;
+            if (P.flare) P.flare *= alter;
+            P.leafSize *= Math.pow(alter, -0.25);
+            P.maxDepth = Math.max(
+                JUGEND.tiefe,
+                Math.round(P.maxDepth * (JUGEND.tiefeAb + (1 - JUGEND.tiefeAb) * alter))
+            );
+        }
         return P;
     }
+    const JUGEND = Object.freeze({ tiefe: 3, tiefeAb: 0.5 });
 
     // DER EINE IMPOSTOR-RAHMEN (Studio v36, phytogenesis bakeImpostorAtlas — „Drähte statt
     // Kopien", 08.07.): Bake-Kamera UND Billboard-Quad ALLER Leser (AnazhRealm-Main ·

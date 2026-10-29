@@ -5056,7 +5056,8 @@
         // die Fülle trägt Zahl und Höhe. Albedo dunkel-orange (unten 0,55/0,30/0,08 · Spitze 0,45/0,14/0,035), das Licht
         // ist der Stoff.
         var nFl = F < 0.15 ? 0 : 3 + Math.round(F * 2);
-        var zunge = [[0, 0], [0.5, 0.06], [0.56, 0.2], [0.44, 0.42], [0.26, 0.64], [0.1, 0.86], [0, 1]];
+        var zunge = FLAMME.zunge,
+            fton = FLAMME.ton;
         for (i = 0; i < nFl; i++) {
             var fh = (0.2 + zF() * 0.3) * (0.6 + 0.6 * F) * G * (i === 0 ? 1.25 : 1),
                 fw = fh * (0.24 + zF() * 0.08),
@@ -5079,7 +5080,7 @@
             ausSetze(fl, Math.cos(fa) * fd, 0.045, Math.sin(fa) * fd, 0, fdreh, 0);
             ausFaerbe(fl, "feuer", W, function (x, y) {
                 var t = Math.max(0, Math.min(1, (y - 0.045) / fh));
-                return { ton: ausAuf([0.55 - 0.1 * t, 0.3 - 0.16 * t, 0.08 - 0.045 * t], "feuer") };
+                return { ton: ausAuf([fton[0][0] - fton[0][1] * t, fton[1][0] - fton[1][1] * t, fton[2][0] - fton[2][1] * t], "feuer") };
             });
             ausTeil(g, fl, "feuer");
         }
@@ -7161,6 +7162,15 @@
 
     // ── KAMIN-RAUCH (.105/.106) — Partikel-Feel als DATEN: Host + Lab lesen
     //    denselben Block (worlds/fachwerk frame fail-soft; residual = rich VFX).
+    // DIE FLAMME (Architektur-Welle 05.10.; geteilt seit stoffe.K2#2): die Zunge der Feuerstelle und der Flammen des Brands der
+    // Welt — ihr Profil [Radius, Höhe] je Einheit der Flammen-Höhe, ihr Ton (linear) je Kanal [Wurzel, Abfall bis zur Spitze]
+    // und die Stärke ihres Leuchtens (LEUCHT_FEUER: Leuchtdichte = Ton × leucht). Labor und Welt lesen dasselbe Datum.
+    var FLAMME = {
+        zunge: [[0, 0], [0.5, 0.06], [0.56, 0.2], [0.44, 0.42], [0.26, 0.64], [0.1, 0.86], [0, 1]],
+        ton: [[0.55, 0.1], [0.3, 0.16], [0.08, 0.045]],
+        leucht: LEUCHT_FEUER,
+    };
+
     var RAUCH_GESETZ = {
         maxTeilchen: 26,
         spawnChance: 0.3,
@@ -7284,6 +7294,7 @@
         ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,
+        FLAMME: FLAMME,
         BEGEH_GESETZ: BEGEH_GESETZ,
         BEGEH_VIS: BEGEH_VIS,
         ZEIT_GESETZ: ZEIT_GESETZ,

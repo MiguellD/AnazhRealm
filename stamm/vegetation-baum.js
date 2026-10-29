@@ -1033,6 +1033,104 @@ class AnazhRealm_vegetation_baum {
         return true;
     }
 
+    // Der Dart `d` wird Baum (`_forestPlantChunk`, `_waldNachwuchs`): ein ECHTER Architektur-Eintrag (spawnArchitecture über
+    // _enqueueVegetationSpawn) → harvestbar, kollidierbar, getaggt, LOD. Gespawnt wird die BASIS-Art (`d.sp`) + der Varianten-
+    // Index explizit, nie über `_growTreeBlueprintForSpawn` (baut ~170k-Geometrie eager). Der Render wählt die Quelle (Foundry,
+    // ohne Studio lazy `_buildVariantLODs`); die LOD-Identität (`_lodSpecies`/`_lodVariantIndex`) reist durch die Spawn-Opts —
+    // ohne sie kein L0/L1/L2/Impostor. IM ALTER SEINES ORTS (stoffe.K5#2, `_baumAlter`): der Jungwuchs (alter < 1) steht in
+    // `alter` × seiner Größe und trägt seine Gestalt als Prägung (`studioOv.alter`, phyto-core `treeParams(…, alter)` im
+    // Foundry-Pfad — Körper, Karte und der gefühlte Baum aus EINER Ableitung, ihr ov-Hash trennt sie vom gewachsenen); kein
+    // Sonder-Sämling. Die Krone streut Laub, sobald der
+    // Baum als Eintrag steht (`spawnArchitecture`, Radius = die Kronen-Schüchternheit `_kronenRadiusFuer`) — nie schon beim
+    // Wurf. Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die
+    // reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
+    _waldDartSetzen(d, alter) {
+        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const regionSeed = `${worldSeed}|${d.sp}|${Math.floor(d.x / 256)},${Math.floor(d.z / 256)}`;
+        const variantIndex =
+            typeof this._treeVariantIndexFor === "function" ? this._treeVariantIndexFor(d.sp, regionSeed) : 0;
+        this._enqueueVegetationSpawn(
+            d.sp,
+            { x: d.x, y: d.surfaceY + 0.5, z: d.z },
+            Object.assign(
+                {
+                    seed: d.seed,
+                    silent: true,
+                    scale: alter < 1 ? d.s * alter : d.s,
+                    rotationY: d.rotY,
+                    _lodSpecies: d.sp,
+                    _lodVariantIndex: variantIndex,
+                },
+                alter < 1 ? { studioOv: { alter } } : null
+            )
+        );
+        if (this._scatterRegisterCell) this._scatterRegisterCell(d.x, d.z, "tree", d.sp, variantIndex);
+        if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
+    }
+
+    // DER JUNGWUCHS DES WALDS AM ORT (stoffe.K5#2): eine Tat wechselte die Stufe ihrer Sukzession (`_sukzessionMalen`, die
+    // Heilung) — jeder stehende Dart des Walds im Kasten x0…x1 · z0…z1 eines gepflanzten Chunks trägt danach den Baum im Alter
+    // seines Orts (`_baumAlter`): der Brand nimmt die Bäume seiner Narbe, der Stubben treibt den Sämling, der Jungwuchs wächst
+    // Stufe um Stufe, die Heilung stellt den gewachsenen. Steht der Baum in seinem Alter, bleibt er; sonst fällt er still und
+    // der neue tritt ein. Ein Chunk ohne Plan oder Saat pflanzt selbst im Alter seiner Orte (`_forestPlantChunk`).
+    // → die Zahl der Wechsel.
+    _waldNachwuchs(x0, z0, x1, z1) {
+        const st = this.state;
+        if (!st.scene || !st.blueprints || !st.voxelPopulatedChunks || !this._forestGesetzWahr()) return 0;
+        const C = AnazhRealm.FOREST.cell;
+        const [ga, ha, gb, hb] = [Math.floor(x0 / C), Math.floor(z0 / C), Math.floor(x1 / C), Math.floor(z1 / C)];
+        const { span } = this._voxelChunkConfig();
+        const gepflanzt = (x, z) => {
+            const ck = Math.floor(x / span) + "," + Math.floor(z / span);
+            return (
+                st.voxelPopulatedChunks.has(ck) &&
+                !(this._saatOffen && this._saatOffen.has(ck)) &&
+                !(this._waldPflanzWarten && this._waldPflanzWarten.has(ck))
+            );
+        };
+        // nur, wo ein Chunk gepflanzt steht — fern bestellt der Kasten keinen Plan (der Chunk pflanzt, wenn er kommt)
+        if (![x0, x1].some((x) => [z0, z1].some((z) => gepflanzt(x, z)))) return 0;
+        const seedInt = this._forestSeedInt();
+        this._forestDartStand(seedInt);
+        // fehlt der Plan (ein neuer Stand des Walds: der Regen hob die Hydrosphäre), wartet der Kasten in der Schlange des Walds
+        // (`_tickWaldPlan`) — nie still verworfen: die Bäume der Narbe kehrten sonst nie zurück
+        if (!this._waldPlanKasten(ga - 2, ha - 2, gb + 2, hb + 2)) {
+            (this._waldNachwuchsWarten || (this._waldNachwuchsWarten = new Map())).set([x0, z0, x1, z1].join(), [
+                x0,
+                z0,
+                x1,
+                z1,
+            ]);
+            return 0;
+        }
+        // die Bäume, die im Kasten stehen oder in der Pflanz-Schlange warten (ihr Wurf), je Dart-Ort (binnen 5 cm)
+        const imKasten = (p) => p && p.x >= x0 - 1 && p.x < x1 + 1 && p.z >= z0 - 1 && p.z < z1 + 1;
+        const Q = st.pendingVegSpawns || [];
+        const steht = [
+            ...st.architectures.filter((e) => e && e._lodSpecies && imKasten(e.position)),
+            ...Q.filter((q) => q.opts && q.opts._lodSpecies && imKasten(q.position)),
+        ];
+        const am = (d) => steht.find((e) => Math.hypot(e.position.x - d.x, e.position.z - d.z) < 0.05);
+        const cellDarts = (gx, gz) => this._forestCellDarts(gx, gz, seedInt);
+        const [zelle, fd] = [this._brandZellen(), this._effectiveFoliageDensity()];
+        let n = 0;
+        for (let gz = ha; gz <= hb; gz++)
+            for (let gx = ga; gx <= gb; gx++)
+                for (const d of cellDarts(gx, gz)) {
+                    if (d.x < x0 || d.x >= x1 || d.z < z0 || d.z >= z1 || !gepflanzt(d.x, d.z)) continue;
+                    if (!this._forestDartSteht(d, gx, gz, cellDarts) || (fd < 1 && d.keep >= fd)) continue;
+                    const alter = this._baumAlter(d.x, d.z, zelle);
+                    const e = am(d);
+                    const ov = e && (e.studioOv || (e.opts && e.opts.studioOv));
+                    if ((e ? (ov && ov.alter) || 1 : 0) === alter) continue;
+                    if (e && e.opts) Q.splice(Q.indexOf(e), 1);
+                    else if (e) this.removeArchitecture(e, { still: true });
+                    if (alter > 0) this._waldDartSetzen(d, alter);
+                    n++;
+                }
+        return n;
+    }
+
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         const F = AnazhRealm.FOREST;
@@ -1074,6 +1172,7 @@ class AnazhRealm_vegetation_baum {
             }
             return d;
         };
+        const zelle = this._brandZellen();
         let planted = 0;
         for (let gz = c0z; gz <= c1z; gz++) {
             for (let gx = c0x; gx <= c1x; gx++) {
@@ -1082,45 +1181,16 @@ class AnazhRealm_vegetation_baum {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
-                    if (this._tatAm("faellen", d.x, d.z)) continue; // die Tat bleibt (feld.K4): hier fiel der Baum, er heilt erst
+                    // DAS ALTER DES ORTS (stoffe.K5#2, `_baumAlter`): wo ein Baum fiel oder die Narbe eines Brands liegt, steht
+                    // kein Baum oder sein Jungwuchs, bis die Tat heilt (feld.K4)
+                    const alter = this._baumAlter(d.x, d.z, zelle);
+                    if (!(alter > 0)) continue;
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
                     // Im Studio-Regime ist fd=1 → dieser Check feuert nie; sonst dünnt der Perf-Regler.
                     if (fd < 1 && d.keep >= fd) continue;
-                    // Der Baum wird ein ECHTER Architektur-Eintrag (spawnArchitecture über _enqueueVegetationSpawn) →
-                    // harvestbar, kollidierbar, getaggt, LOD. Gespawnt wird die BASIS-Art (`d.sp`) + der Varianten-Index
-                    // explizit, nie über `_growTreeBlueprintForSpawn` (baut ~170k-Geometrie eager). Der Render wählt die
-                    // Quelle (Foundry, ohne Studio lazy `_buildVariantLODs`); die LOD-Identität (`_lodSpecies`/
-                    // `_lodVariantIndex`) reist durch die Spawn-Opts — ohne sie kein L0/L1/L2/Impostor.
-                    const regX = Math.floor(d.x / 256);
-                    const regZ = Math.floor(d.z / 256);
-                    const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-                    const regionSeed = `${worldSeed}|${d.sp}|${regX},${regZ}`;
-                    const variantIndex =
-                        typeof this._treeVariantIndexFor === "function"
-                            ? this._treeVariantIndexFor(d.sp, regionSeed)
-                            : 0;
-                    this._enqueueVegetationSpawn(
-                        d.sp,
-                        { x: d.x, y: d.surfaceY + 0.5, z: d.z },
-                        {
-                            seed: d.seed,
-                            silent: true,
-                            scale: d.s,
-                            rotationY: d.rotY,
-                            _lodSpecies: d.sp,
-                            _lodVariantIndex: variantIndex,
-                        }
-                    );
+                    this._waldDartSetzen(d, alter);
                     planted++;
-                    // Die Krone streut Laub, sobald der Baum als Eintrag steht (`spawnArchitecture`, Radius = die
-                    // Kronen-Schüchternheit `_kronenRadiusFuer`) — nie schon beim Wurf.
-                    // Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
-                    // Resolver mappt die Cell auf die reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
-                    if (this._scatterRegisterCell) {
-                        this._scatterRegisterCell(d.x, d.z, "tree", d.sp, variantIndex);
-                    }
-                    if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
                     // Totholz: ~TOTHOLZ_RATE der Bäume tragen einen gefallenen Stamm in 3–5 m Abstand. Im Studio-Regime
                     // AUS (Monolith-Regel ohne Studio-Gesetz, Fremd-Silhouette); foundry-aus prüft das Band über
                     // __anazhGateNoFoundry weiter.
@@ -1404,7 +1474,7 @@ class AnazhRealm_vegetation_baum {
         const probe = (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2;
         // Wald-Dichte: Bäume sind in lebendig-hohen Regionen VIEL wahrscheinlicher → echte Wälder aus den
         // bestehenden, abbaubaren Bäumen (kein paralleles Deko-System); getragen von HISM-Instancing,
-        // Lazy-Collision (< 40 m) und Distanz-Culling. Felsen/Geoden/Glutbrunnen bleiben spärliche Landmarken.
+        // Lazy-Collision (< 40 m) und Distanz-Culling. Felsen und Geoden bleiben spärliche Landmarken.
         const TREE_NAMES = new Set([
             "baum_eiche",
             "baum_kiefer",
@@ -1521,7 +1591,7 @@ class AnazhRealm_vegetation_baum {
         let spawnName = bestName;
         let spawnScale = 1;
         let spawnYaw = 0;
-        // Landmark-Genome: ist der Sieger ein Fels-/Kristall-/Glut-Wahrzeichen, wähle eine REGION-
+        // Landmark-Genome: ist der Sieger ein Fels- oder Kristall-Wahrzeichen, wähle eine REGION-
         // deterministische Formation (ein Feld trägt EINEN Stil → HISM-Instancing wirkt). Die Gestalt kommt
         // NACH dem Sieg, der Name bleibt kanonischer Affinitäts-Träger (tag-frozen); je Stück scale/yaw.
         const landmarkPool = AnazhRealm.SCATTER_VARIANT_POOL && AnazhRealm.SCATTER_VARIANT_POOL[bestName];
@@ -2193,7 +2263,7 @@ class AnazhRealm_vegetation_baum {
         return !AnazhRealm._studioRenderConfig && this._foundryEnabled();
     }
 
-    // Streu-Strukturen eines Voxel-Chunks (Felsen/Geoden/Glutbrunnen/Formationen + Unterwuchs): Sample-
+    // Streu-Strukturen eines Voxel-Chunks (Felsen/Geoden/Formationen + Unterwuchs): Sample-
     // Raster über die Chunk-Bounds (`span`, origin-basiert) durch `_vegetationSampleSpawn`, Höhe aus
     // `_voxelSurfaceY`; die Bäume pflanzt `_forestPlantChunk`. Idempotent über
     // `state.voxelPopulatedChunks`, am Voxel-Chunk-Lifecycle aufgehängt.

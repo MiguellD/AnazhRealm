@@ -1326,15 +1326,18 @@ async function probeLeben(expected) {
             return m;
         };
         // L1 DER HANGFUSS: 9,3 m/s, Gier 92,3°, über den Hangfuß an einen Glutbrunnen — Soll: seine flache Box schiebt den
-        // Wagen nie auf höheren Grund, die Höhe friert nie ein. Der Ort aus der Welt: der nächste Glutbrunnen am Dorf-Messort
-        // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), angefahren mit Tempo und Gier der Schau (Start 5,6 m,
-        // Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
+        // Wagen nie auf höheren Grund, die Höhe friert nie ein. Der Ort der Schau am Dorf-Messort (spec/profiband/haushalt.json
+        // `dorf`, `expected.dorf`): die Feuerstelle als Werk an der Stelle, an der bis w3v-brand-bild das Feld sie warf (das Feld
+        // wirft kein Feuer mehr, `FELD_WURF`), angefahren mit Tempo und Gier der Schau (Start 5,6 m, Spieler 3,1 m vor ihm
+        // längs der Gier). Steht sie nicht → vakuös, laut.
         const D = expected.dorf;
         await ankommen(D.x, D.z);
-        let G = null;
-        for (const e of st.architectures)
-            if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
-                if (!G || flach(e.position, D) < flach(G.position, D)) G = e;
+        const [gx, gz] = [-844.56, -866.16];
+        const G = r.spawnArchitecture(
+            "glutbrunnen",
+            { x: gx, y: hh(gx, gz) + 0.5, z: gz },
+            { precise: true, werk: true, seed: 1406444790, rotationY: 1.9167 }
+        );
         const gierL1 = (92.3 * Math.PI) / 180;
         const vor = (d) => [G.position.x - Math.sin(gierL1) * d, G.position.z - Math.cos(gierL1) * d];
         S.hangfuss = G
@@ -1348,7 +1351,8 @@ async function probeLeben(expected) {
                   },
                   150
               )
-            : { ziel: false, kontakte: 0, fehlt: "kein Glutbrunnen am Dorf-Messort" };
+            : { ziel: false, kontakte: 0, fehlt: "die Feuerstelle am Dorf-Messort steht nicht" };
+        if (G && st.architectures.includes(G)) r.removeArchitecture(G);
         // L3–L5 DER STOSS: der GT fährt mit W aus 9 m Anlauf in der freien Gasse auf ein Hindernis, das NICHT gehalten wird.
         // Kontakt = der erste Schritt, in dem der Kontakt-Löser Lage oder Fahrt nahm (`z.kontakt`); gemessen: die Fahrt davor
         // und danach (die kleinste in den 8 Schritten danach: Rückprall), der Weg des Getroffenen längs der Fahrt, die

@@ -823,7 +823,9 @@ class AnazhRealm_stoff_material {
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
+                        const _bodenAus = {};
+                        const _bodenVc =
+                            opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode, _bodenAus) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
@@ -852,7 +854,11 @@ class AnazhRealm_stoff_material {
                             }
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
-                            if (_terrRough.node) mat.roughnessNode = _terrRough.node;
+                            // die Asche des Brands ist matt (`_wegeBodenFarbe`, stoffe.K2#2)
+                            if (_terrRough.node)
+                                mat.roughnessNode = _bodenAus.asche
+                                    ? _Ta.mix(_terrRough.node, _Ta.float(1), _bodenAus.asche)
+                                    : _terrRough.node;
                         }
                     } else if (opts.pflanzenStoff) {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —

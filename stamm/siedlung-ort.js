@@ -939,17 +939,6 @@ class AnazhRealm_siedlung_ort {
                 });
             }
         }
-        // DER BRAND RAUCHT (stoffe.K2#2) aus demselben Zustand, aus dem er leuchtet und knistert: jede glühende Zelle des Felds
-        // (`brandFeld`) im Umkreis des Spielers ist eine Quelle über ihrer Mitte — sie verlischt mit ihrer Glut.
-        const pm = st.playerMesh;
-        if (pm) {
-            const R = AnazhRealm.BRAND.rauchM;
-            const [px, pz] = [pm.position.x, pm.position.z];
-            this._brandGlutUm(px, pz, R, (b) => {
-                const o = b.ort || this._brandOrt(b);
-                if ((o.x - px) * (o.x - px) + (o.z - pz) * (o.z - pz) <= R * R) quellen.push(o);
-            });
-        }
         dr.quellen = quellen;
         if (quellen.length && !this._dorfRauchLogged) {
             this._dorfRauchLogged = true;
@@ -1005,7 +994,7 @@ class AnazhRealm_siedlung_ort {
             T2.s *= G.scaleMul;
             if (T2.a <= G.aKill) dr.teilchen.splice(k, 1);
         }
-        this._dorfRauchZeichnen(G, dr.teilchen);
+        this._rauchZeichnen(G, dr.teilchen);
     }
 
     // DER RAUCH IST EIN SATZ (Welle 6): jedes Teilchen war ein eigenes Mesh mit eigenem Stoff (die Deckkraft je Kiste) —
@@ -1014,10 +1003,12 @@ class AnazhRealm_siedlung_ort {
     // "box-lambert", in der Welt rau-Standard — r184-Lambert liest scene.environment nie diffus), die Deckkraft je
     // Instanz als Attribut. Gleichfarbige Teilchen mischen ohne Tiefen-Schreiben unabhängig von der Reihenfolge (über
     // a₁, a₂ symmetrisch): das Bild der von fern nach nah sortierten Einzel-Kisten, ohne Sortierung.
-    _dorfRauchZeichnen(G, teilchen) {
+    // DER SATZ JE GESETZ: `satz` ist sein Platz im Zustand — der Kamin (`dorfRauchSatz`, RAUCH_GESETZ: die Kiste des Labors) und
+    // die Fahne des Brands (`brandRauchSatz`, BRAND.bild.rauch: Ballen, `form` "ballen", `name` sein Stempel).
+    _rauchZeichnen(G, teilchen, satz = "dorfRauchSatz") {
         const st = this.state;
-        let R = st.dorfRauchSatz;
-        if (!R && !teilchen.length) return; // kein Rauch, kein Mesh
+        let R = st[satz];
+        if ((!R && !teilchen.length) || typeof THREE === "undefined" || !st.scene) return; // kein Rauch, kein Mesh
         if (!R || R.cap < G.maxTeilchen || R.size !== G.size) {
             if (R) {
                 if (R.mesh.parent) R.mesh.parent.remove(R.mesh);
@@ -1026,7 +1017,10 @@ class AnazhRealm_siedlung_ort {
                 R.mat.dispose();
             }
             const cap = G.maxTeilchen;
-            const geo = new THREE.BoxGeometry(G.size, G.size, G.size);
+            const geo =
+                G.form === "ballen"
+                    ? new THREE.IcosahedronGeometry(G.size, 1)
+                    : new THREE.BoxGeometry(G.size, G.size, G.size);
             const alpha = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1);
             geo.setAttribute("aRauchDeck", alpha);
             const mat = new THREE.MeshStandardNodeMaterial({
@@ -1039,13 +1033,13 @@ class AnazhRealm_siedlung_ort {
             mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
             this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
-            mesh.name = "dorf-rauch";
-            mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
+            mesh.name = G.name || "dorf-rauch";
+            mesh.userData.inventar = G.inventar || mesh.name; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             AnazhRealm._instanzZahl(mesh, 0);
             st.scene.add(mesh);
-            R = st.dorfRauchSatz = { mesh, geo, mat, alpha, cap, size: G.size, m: new THREE.Matrix4() };
+            R = st[satz] = { mesh, geo, mat, alpha, cap, size: G.size, m: new THREE.Matrix4() };
         }
         const n = Math.min(teilchen.length, R.cap);
         const e = R.m.elements;
@@ -3020,8 +3014,7 @@ class AnazhRealm_siedlung_ort {
     }
 
     // Weicht der Eintrag dem Bau? Die Natur (`_istNatur`) und jeder Wurf des Felds (die Marke `feldWurf`, die nur der Wurf
-    // trägt: `_enqueueVegetationSpawn` → `spawnArchitecture`, eine Art aus `FELD_WURF`; die Feuerstelle des Glut-Felds ist Bau
-    // ihrer Gestalt nach — Kollision, Grundriss, Trittfläche —, aber ein Wurf). Was weicht, sperrt keinem Ort den Grund
+    // trägt: `_enqueueVegetationSpawn` → `spawnArchitecture`, eine Art aus `FELD_WURF`). Was weicht, sperrt keinem Ort den Grund
     // (`_bauFrei`) und fällt im Grundriss eines Baus und auf dem Weg eines Dorfs (`_naturRaeumen`). Bis K10-6 wich der Wurf nur,
     // wenn er NACH dem Bau kam: eine Feuerstelle im Grundriss des Orts 80 m weit schob die Ort-Wahl im Spiel auf 96 m. Es
     // entscheidet die HERKUNFT, nie die Art: bis K10-6 Nachbesserung 2 wich auch die Feuerstelle des Satzes und des Bau-Modus

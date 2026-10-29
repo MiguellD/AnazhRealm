@@ -6,60 +6,133 @@ class AnazhRealm_feld_leben {
         return this._bodenDeckeAt(x, z, true);
     }
 
-    // DIE ASCHE MALEN (stoffe.K2#2): die 16-m-Zelle (cx, cz) des Felds trägt in jeder zentrierten Stufe den Kanal G aus ihren
-    // Taten `brand` — die stärkste Asche, die ihre Sukzession noch trägt (`_sukzession`); wo sie sich ändert, baut die Nah-Wiese
-    // darüber neu (auf der Asche steht kein Halm, auf der nachgegrünten wieder). Rückgabe: ob sich ein Texel änderte.
+    // DIE NARBE DES BRANDS an (x, z) (stoffe.K2#2) → { m, asche, busch, wald } oder null (kein Brand um den Ort): die verbrannte
+    // Fläche ist eine weiche Grenze AUS DEM FELD, nie das 16-m-Raster seiner Zellen. Der Anteil `o` der verbrannten Zellen um den
+    // Ort (die vier Zell-Mitten um ihn, smoothstep-bilinear — eine Zerlegung der Eins: im Innern einer Brandfläche 1, auf der
+    // Kante einer verbrannten und einer stehenden Zelle 0,5, eine Treppe von Zellen ein glatter Zug) ist der Abstand zum
+    // Brand-Rand; das EINE Rauschen (gelaende-core `rauschRaum`, die Schicht aus der Saat der Welt) verschiebt ihn in den Oktaven
+    // von `BRAND.narbe`, und die Grenze fällt über `band`: `m` ∈ [0, 1], wie sehr der Ort verbrannte. `asche`, `busch`, `wald`
+    // sind die Sukzession der verbrannten Zellen um ihn (ihr gewichtetes Mittel, `_brandZelle`). `zelle(cx, cz)` → null oder die
+    // Sukzession der Zelle — der Maler reicht seinen Speicher (`_brandZellen`). Bis w3v-brand-bild malte jede Zelle ihr Quadrat:
+    // die Asche lag als Platte mit geraden Kanten im 16-m-Raster, die Halme endeten an der Zellkante.
+    _brandNarbe(x, z, zelle = this._brandZellen()) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        const [u, v] = [x / cs - 0.5, z / cs - 0.5];
+        const [i, j] = [Math.floor(u), Math.floor(v)];
+        const S = (t) => t * t * (3 - 2 * t);
+        const [a, b] = [S(u - i), S(v - j)];
+        const n = { o: 0, asche: 0, busch: 0, wald: 0 };
+        for (const [di, dj, w] of [
+            [0, 0, (1 - a) * (1 - b)],
+            [1, 0, a * (1 - b)],
+            [0, 1, (1 - a) * b],
+            [1, 1, a * b],
+        ]) {
+            const c = w > 0 ? zelle(i + di, j + dj) : null;
+            if (c) for (const k of ["asche", "busch", "wald"]) n[k] += w * c[k];
+            if (c) n.o += w;
+        }
+        if (!(n.o > 0)) return null;
+        const N = AnazhRealm.BRAND.narbe;
+        const [R, L] = [globalThis.__gelaendeCore.rauschRaum, this._forestSeedInt() % 251];
+        let r = 0;
+        for (let k = 0; k < N.lambda.length; k++) r += N.amp[k] * R(x / N.lambda[k], z / N.lambda[k], L + 7 * k);
+        // das Rauschen wirkt am Rand (4·o·(1 − o)): im Innern einer Brandfläche bleibt sie ganz, fern von ihr ganz frei
+        return {
+            m: Math.min(1, Math.max(0, (n.o - 0.5 + r * 4 * n.o * (1 - n.o)) / N.band + 0.5)),
+            asche: n.asche / n.o,
+            busch: n.busch / n.o,
+            wald: n.wald / n.o,
+        };
+    }
+
+    // Die Sukzession der verbrannten Zelle (cx, cz) → { asche, busch, wald } (die stärkste Asche, der jüngste Busch und Wald
+    // ihrer Taten `brand`, `_sukzession`) oder null; `_brandZellen` ist ihr Speicher für EINEN Gang (der Maler, die Wiese).
+    _brandZelle(cx, cz) {
+        const I = this._tatIndex();
+        let c = null;
+        for (const a of I.brand.length ? I.je.get(cx + "," + cz) || [] : []) {
+            if (a.tat !== "brand") continue;
+            const s = this._sukzession(a);
+            c = c
+                ? {
+                      asche: Math.max(c.asche, s.asche),
+                      busch: Math.min(c.busch, s.busch),
+                      wald: Math.min(c.wald, s.wald),
+                  }
+                : { asche: s.asche, busch: s.busch, wald: s.wald };
+        }
+        return c;
+    }
+    _brandZellen() {
+        const M = new Map();
+        return (cx, cz) => {
+            const k = cx + "," + cz;
+            if (!M.has(k)) M.set(k, this._brandZelle(cx, cz));
+            return M.get(k);
+        };
+    }
+
+    // DIE ASCHE MALEN (stoffe.K2#2): die Asche der Zelle (cx, cz) und ihrer Ränder in jeder zentrierten Stufe — der Kanal G
+    // jedes Texels ist die Narbe an seiner Mitte mal ihre Asche (`_brandNarbe`); die Narbe einer Zelle reicht bis an die Mitten
+    // ihrer Nachbarinnen, gemalt wird die Fläche ±½ Zelle um sie. Wo sich ein Texel ändert, baut die Nah-Wiese darüber neu (auf
+    // der Asche steht kein Halm, über die Grenze dünnen sie aus). Rückgabe: ob sich ein Texel änderte.
     _ascheMalen(cx, cz) {
         const wk = this.state.wegeKarte;
         if (!wk) return false;
         const cs = AnazhRealm.LIFE_FIELD.cell;
-        const je = this._tatIndex().je.get(cx + "," + cz);
-        let w = 0;
-        for (const a of je || []) if (a.tat === "brand") w = Math.max(w, this._sukzession(a).asche);
-        const v = Math.round(w * 255);
+        const [x0, z0, x1, z1] = [(cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs];
+        const zelle = this._brandZellen();
         let neu = false;
         for (const stufe of wk.stufen)
-            if (stufe.zentriert && this._ascheZelle(stufe, cx * cs, cz * cs, v, true)) neu = true;
-        if (neu) this._nahRingNeuIn(cx * cs, cz * cs, (cx + 1) * cs, (cz + 1) * cs);
+            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x1, z1, zelle)) neu = true;
+        if (neu) this._nahRingNeuIn(x0, z0, x1, z1);
         return neu;
     }
 
-    // Eine Zelle (Ecke x0, z0, Kante LIFE_FIELD.cell) in EINE Stufe malen: `v` setzt (`setzen`) oder hebt (das Maximum) jedes
-    // Texel, dessen Mitte in ihr liegt. Rückgabe: ob sich ein Texel änderte.
-    _ascheZelle(stufe, x0, z0, v, setzen) {
+    // Die Fläche [x0, x1) × [z0, z1) in EINE Stufe malen: jedes Texel, dessen Mitte in ihr liegt, trägt die Asche der Narbe an
+    // seiner Mitte. Rückgabe: ob sich ein Texel änderte.
+    _ascheFlaeche(stufe, x0, z0, x1, z1, zelle) {
         const kr = stufe.kronen;
         const N = kr.N;
         const t = stufe.S.fensterM / N;
-        const cs = AnazhRealm.LIFE_FIELD.cell;
         const x0w = stufe.mitteX - stufe.S.fensterM / 2;
         const z0w = stufe.mitteZ - stufe.S.fensterM / 2;
         const i0 = Math.max(0, Math.ceil((x0 - x0w) / t - 0.5));
-        const i1 = Math.min(N - 1, Math.ceil((x0 + cs - x0w) / t - 0.5) - 1);
+        const i1 = Math.min(N - 1, Math.ceil((x1 - x0w) / t - 0.5) - 1);
         const j0 = Math.max(0, Math.ceil((z0 - z0w) / t - 0.5));
-        const j1 = Math.min(N - 1, Math.ceil((z0 + cs - z0w) / t - 0.5) - 1);
+        const j1 = Math.min(N - 1, Math.ceil((z1 - z0w) / t - 0.5) - 1);
         if (i1 < i0 || j1 < j0) return false;
         const A = kr.asche;
         let neu = false;
         for (let j = j0; j <= j1; j++)
-            for (let k = j * N + i0, e = j * N + i1; k <= e; k++) {
-                const n = setzen ? v : Math.max(A[k], v);
-                if (n !== A[k]) ((A[k] = n), (neu = true));
+            for (let i = i0; i <= i1; i++) {
+                const n = this._brandNarbe(x0w + (i + 0.5) * t, z0w + (j + 0.5) * t, zelle);
+                const v = n ? Math.round(n.m * n.asche * 255) : 0;
+                if (v !== A[j * N + i]) ((A[j * N + i] = v), (neu = true));
             }
         if (neu) AnazhRealm._kronenSchmutz(kr, i0, i1, j0, j1);
         return neu;
     }
 
     // Die Asche EINER zentrierten Stufe ganz neu (nach ihrem Umzug, einer geladenen Welt): leeren, jede Tat `brand` im Fenster
-    // malt ihre Zelle (das Maximum je Zelle) — die Kosten tragen die Aschen, nie die Welt.
+    // malt die vier Flächen zwischen den Zell-Mitten um ihre Zelle, jede Fläche einmal — die Kosten tragen die Aschen, nie die Welt.
     _ascheStufeMalen(stufe) {
         const kr = stufe.kronen;
         kr.asche.fill(0);
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const h = stufe.S.fensterM / 2 + cs;
+        const [zelle, gemalt] = [this._brandZellen(), new Set()];
         for (const a of this._tatIndex().brand) {
             if (Math.abs(a.x - stufe.mitteX) > h || Math.abs(a.z - stufe.mitteZ) > h) continue;
-            const v = Math.round(this._sukzession(a).asche * 255);
-            if (v > 0) this._ascheZelle(stufe, Math.floor(a.x / cs) * cs, Math.floor(a.z / cs) * cs, v, false);
+            const [cx, cz] = [Math.floor(a.x / cs), Math.floor(a.z / cs)];
+            for (let qj = cz - 1; qj <= cz; qj++)
+                for (let qi = cx - 1; qi <= cx; qi++) {
+                    if (gemalt.has(qi + "," + qj)) continue;
+                    gemalt.add(qi + "," + qj);
+                    const [x0, z0] = [(qi + 0.5) * cs, (qj + 0.5) * cs];
+                    this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle);
+                }
         }
         kr.schmutz = [0, kr.N - 1, 0, kr.N - 1];
     }
@@ -1645,7 +1718,7 @@ class AnazhRealm_feld_leben {
     // === Welt-Affinitäts-Feld ===
     // Keine Biome-Tabelle: vier SimplexNoise-Schichten (lebendig, dichte, glut, magieleitung) in der
     // MATERIAL_TAG_KEYS-Sprache; Baupläne spawnen, wo ihre Compound-Tags resonieren (lebendig → Wald,
-    // dichte → stein_block, magieleitung → kristall_geode, glut → glutbrunnen). Seltenheit emergiert aus
+    // dichte → stein_block, magieleitung → kristall_geode; glut wirft kein Feuer, `FELD_WURF`). Seltenheit emergiert aus
     // dem Noise. state.worldMeta.seed fließt in die Noise → jede Welt eigen, Multi-User-deterministisch.
     worldFieldAt(x, z) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -2120,6 +2193,12 @@ class AnazhRealm_feld_leben {
             ez,
             R: T.R,
             kopf: [T.px, T.pz],
+            ecc: T.ecc,
+            tr: T.tr,
+            gx: f.gx,
+            gz: f.gz,
+            // H·w (kJ/m²): die Wärme des Betts je Fläche — mal dem Tempo die Intensität der Front (Byram), die das Bild liest
+            iw: (f.zeile.brenn.heiz / 1000) * f.zeile.brenn.last * Math.min(1, f.leb),
         });
         bf.set(key, zelle);
         for (const [dx, dz] of AnazhRealm.BRAND.nachbarn) {
@@ -2229,6 +2308,166 @@ class AnazhRealm_feld_leben {
         const y = (b.y != null ? b.y : this._voxelSurfaceY(x, z) || 0) + 1;
         const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
         return (b.ort = { x, y, z, phase, brand: true, id: "brand:" + b.cx + "," + b.cz });
+    }
+
+    // DAS BILD DES BRANDS (stoffe.K2#2): jede glühende Zelle um das Auge (`_brandGlutUm` bis `BRAND.bild.weiteM` — dieselben
+    // Zellen in demselben Zustand, den Licht, Ohr und Asche lesen) zeichnet ihre FLAMMEN auf ihrer Front und ihren RAUCH als
+    // Fahne. DIE FRONT einer Zelle zur Spielzeit t ist die Ellipse ihres Eintritts (`_brandZuenden`: der Brennpunkt am Eintritt,
+    // die Spitze längs `kopf`): r(θ) = (t − t0)·R(θ), R(θ) = R·(1 − ecc)/(1 − ecc·cos θ). Die Flammen stehen auf ihr, soweit sie
+    // in der Zelle liegt, je eine halbe Länge auseinander; die Länge nach Byram 1959 (L = 0,0775·I^0,46, I = H·w·R(θ) in kW/m aus
+    // der Zeile des Betts), geneigt mit dem EINEN Wind (Froude: tan φ = u/√(g·L)), flackernd nach dem Datum des Feuer-Lichts
+    // (fachwerk `lichtFlackern`), Gestalt und Ton aus dem Flammen-Gesetz des Fachwerks (`FLAMME`, wie die Feuerstelle). DER RAUCH
+    // ist eine Linien-Fahne (Morton–Taylor–Turner 1956): je glühende Zelle Ballen im Takt ihrer Glut von ihren Flammen, sie
+    // steigen mit der Auftriebs-Geschwindigkeit der Front w = (g·I/(ρ·c·T))^⅓, wachsen mit der Höhe (b = b0 + α·Δz), verdünnen
+    // (Deckung ∝ b0/b) und ziehen mit dem Wind. Bis w3v-brand-bild las nur der Kamin-Rauch die Zelle (Kistchen à 0,34 m, 26 für
+    // jede Quelle der Welt: ein Faden, durch den die Krone schien), und keine Flamme stand im Bild — nur der Fleck des Lichts.
+    _brandBild(dt) {
+        const st = this.state;
+        const auge = st.camera ? st.camera.position : st.playerMesh && st.playerMesh.position;
+        const fl = (this._brandFlammen = []);
+        const qu = [];
+        const [B, K, t] = [AnazhRealm.BRAND.bild, AnazhRealm.LIFE_FIELD.cell, st.spielZeit];
+        const FW = globalThis.__fachwerkCore;
+        const L = FW.LICHT_GESETZ.feuer;
+        if (auge)
+            this._brandGlutUm(auge.x, auge.z, B.weiteM, (b) => {
+                if (b.t0 === null || !(b.R > 0 && t > b.t0) || fl.length >= B.flammenMax) return;
+                const [x0, z0, xc, zc] = [b.cx * K, b.cz * K, (b.cx + 0.5) * K, (b.cz + 0.5) * K];
+                const [px, pz] = b.kopf;
+                const w = this._windAt(xc, zc, t);
+                const u = w.ms * B.flammenWind;
+                const n0 = fl.length;
+                // die Front fern gröber abgetastet (die Kosten tragen der Schirm und die Nähe, Gebot 7)
+                const N = Math.max(
+                    B.winkelMin,
+                    Math.min(B.winkel, Math.round((B.winkel * B.nahM) / Math.hypot(xc - auge.x, zc - auge.z)))
+                );
+                let [s, naechste, vx, vz] = [0, 0, null, null];
+                for (let i = 0; i <= N; i++) {
+                    const th = Math.PI * ((2 * i) / N - 1);
+                    const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * Math.cos(th));
+                    const [c, sn, r] = [Math.cos(th), Math.sin(th), (t - b.t0) * Rt];
+                    const [x, z] = [b.ex + r * (px * c - pz * sn), b.ez + r * (pz * c + px * sn)];
+                    if (vx !== null) s += Math.hypot(x - vx, z - vz);
+                    [vx, vz] = [x, z];
+                    if (s < naechste || x < x0 || x >= x0 + K || z < z0 || z >= z0 + K) continue;
+                    const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
+                    naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
+                    const phase = (((x * 12.9898 + z * 78.233) % 6.2832) + 6.2832) % 6.2832;
+                    fl.push({
+                        x,
+                        y: b.y + b.gx * (x - xc) + b.gz * (z - zc),
+                        z,
+                        lang: lang * (1 + L.flacker.amp * FW.lichtFlackern(L, this._bildZeit, phase)),
+                        kipp: Math.atan(u / Math.sqrt(9.81 * lang)),
+                        wx: w.x,
+                        wz: w.z,
+                        dreh: phase,
+                        I: b.iw * Rt,
+                    });
+                }
+                if (fl.length > n0) qu.push({ b, von: n0, bis: fl.length });
+            });
+        this._brandFlammenZeichnen(fl);
+        this._brandRauch(dt, qu);
+    }
+
+    // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild. Je Zelle und Sekunde
+    // `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens
+    // `rauch.max` im Himmel (der älteste weicht dem neuen); jeder steigt, wächst, verdünnt und zieht (`_windAt` am Ballen).
+    _brandRauch(dt, qu) {
+        const st = this.state;
+        const R = AnazhRealm.BRAND.bild.rauch;
+        const T = st.brandRauch.teilchen;
+        const s = Number.isFinite(dt) && dt > 0 ? Math.min(dt, 0.1) : 0;
+        const fl = this._brandFlammen;
+        for (const q of qu) {
+            q.b.rauchSchuld = (q.b.rauchSchuld || 0) + R.jeS * q.b.glut * s;
+            for (; q.b.rauchSchuld >= 1; q.b.rauchSchuld--) {
+                if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
+                const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
+                const f = fl[q.von + (h % (q.bis - q.von))];
+                T.push({
+                    x: f.x,
+                    y: f.y + f.lang,
+                    z: f.z,
+                    y0: f.y + f.lang,
+                    b0: R.b0 * f.lang,
+                    s: R.b0 * f.lang,
+                    w: Math.min(R.wMax, Math.cbrt((9.81 * f.I * 1000) / (1.2 * 1005 * 300))),
+                    a: R.a0,
+                    alt: 0,
+                });
+            }
+        }
+        for (let k = T.length - 1; k >= 0; k--) {
+            const p = T[k];
+            const w = this._windAt(p.x, p.z, this._bildZeit);
+            p.y += p.w * s;
+            p.x += w.x * w.ms * s;
+            p.z += w.z * w.ms * s;
+            p.alt += s;
+            p.s = p.b0 + R.alpha * (p.y - p.y0);
+            p.a = (R.a0 * p.b0) / p.s;
+            if (p.a < R.aKill || p.alt > R.lebenS) T.splice(k, 1);
+        }
+        this._rauchZeichnen(R, T, "brandRauchSatz");
+    }
+
+    // Die Flammen des Bilds (`_brandBild`) als EIN Satz: die Zunge des Flammen-Gesetzes (fachwerk `FLAMME`) als Drehkörper mit
+    // dem Ton von der Wurzel zur Spitze, leuchtend (Ton × leucht, additiv, die Spitze verlischt), je Flamme ihre Matrix (Ort,
+    // Neigung in den Wind, Drehung, Länge; Breite `bild.breite` × Länge).
+    _brandFlammenZeichnen(fl) {
+        const st = this.state;
+        let S = st.brandFlammenSatz;
+        if ((!S && !fl.length) || typeof THREE === "undefined" || !st.scene) return;
+        const B = AnazhRealm.BRAND.bild;
+        if (!S) {
+            const F = globalThis.__fachwerkCore.FLAMME;
+            const geo = new THREE.LatheGeometry(
+                F.zunge.map(([r, y]) => new THREE.Vector2(r, y)),
+                B.zungeSegmente
+            );
+            const P = geo.attributes.position;
+            const [ton, deck] = [new Float32Array(P.count * 3), new Float32Array(P.count)];
+            for (let i = 0; i < P.count; i++) {
+                const y = P.getY(i);
+                for (let c = 0; c < 3; c++) ton[3 * i + c] = (F.ton[c][0] - F.ton[c][1] * y) * F.leucht;
+                deck[i] = Math.pow(1 - y, B.spitze);
+            }
+            geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 3));
+            geo.setAttribute("aDeck", new THREE.BufferAttribute(deck, 1));
+            const T = THREE.TSL;
+            const mat = new THREE.MeshBasicNodeMaterial({
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+            });
+            mat.colorNode = T.vec4(T.attribute("aTon", "vec3"), T.attribute("aDeck", "float"));
+            const mesh = AnazhRealm._instanzMesh(geo, mat, B.flammenMax);
+            mesh.name = "brand-flammen";
+            mesh.userData.inventar = "brand"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.frustumCulled = false;
+            AnazhRealm._instanzZahl(mesh, 0);
+            st.scene.add(mesh);
+            const [Q, V] = [() => new THREE.Quaternion(), () => new THREE.Vector3()];
+            S = st.brandFlammenSatz = { mesh, m: new THREE.Matrix4(), q: Q(), dreh: Q(), p: V(), sk: V(), achse: V() };
+            S.hoch = V().set(0, 1, 0);
+        }
+        const n = Math.min(fl.length, B.flammenMax);
+        for (let k = 0; k < n; k++) {
+            const f = fl[k];
+            // die eigene Drehung der Zunge, dann die Neigung um die Achse quer zum Wind (hoch × Wind)
+            S.dreh.setFromAxisAngle(S.hoch, f.dreh);
+            S.q.setFromAxisAngle(S.achse.set(f.wz, 0, -f.wx).normalize(), f.kipp).multiply(S.dreh);
+            S.m.compose(S.p.set(f.x, f.y, f.z), S.q, S.sk.set(B.breite * f.lang, f.lang, B.breite * f.lang));
+            S.mesh.setMatrixAt(k, S.m);
+        }
+        AnazhRealm._instanzZahl(S.mesh, n);
+        if (n > 0) S.mesh.instanceMatrix.needsUpdate = true;
     }
 
     // === DIE LAVA (stoffe.K3-2): geschmolzener Stein auf der glut-Achse, der zu Stein erstarrt ===
@@ -2376,8 +2615,8 @@ class AnazhRealm_feld_leben {
     }
 
     // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
-    // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende (die Asche zur nächsten Stufe ihrer
-    // Sukzession, `_sukzessionNaechste`), die nächste Sicherung trägt sie.
+    // das Fällen die Größe des Baums für den Stumpf). Der Nachwuchs wacht zu ihrem Ende (die Asche und der Stubben zur nächsten
+    // Stufe ihrer Sukzession, `_sukzessionNaechste`), die nächste Sicherung trägt sie.
     _tatSchreiben(tat, x, z, mehr) {
         const wm = this.state.worldMeta;
         if (!Array.isArray(wm.taten)) wm.taten = [];
@@ -2385,10 +2624,12 @@ class AnazhRealm_feld_leben {
         const a = Object.assign({ tat, x: r2(x, 100), z: r2(z, 100), h: r2(this._weltStunde(), 1e4) }, mehr);
         this._weltRegt(); // der Weckruf vor jedem Schreiben
         wm.taten.push(a);
-        const ende = tat === "brand" ? this._sukzessionNaechste(a) : a.h + this._tatIndex().dauer.get(a);
+        const folge = tat === "brand" || tat === "faellen";
+        const ende = folge ? this._sukzessionNaechste(a) : a.h + this._tatIndex().dauer.get(a);
         if (!(this._nachwuchsFaellig <= ende)) this._nachwuchsFaellig = ende;
         if (tat === "faellen") this._nahStreuTat(a);
-        if (tat === "brand") this._sukzessionMalen(a); // die Asche liegt (stoffe.K2#2): Boden-Decke, Wiese und Streu der Zelle
+        // die Asche liegt (stoffe.K2#2): Boden-Decke, Wiese und Streu der Narbe, und der Brand nimmt die Bäume in ihr
+        if (folge) this._sukzessionMalen(a);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return a;
     }
@@ -2457,9 +2698,11 @@ class AnazhRealm_feld_leben {
     }
 
     // Sperrt eine Tat den Wurf des Gesetzes an (x,z)? Der Boot wirft die Welt neu (speicher.K3) — wo ein Baum fiel, bis die Narbe
-    // heilt, wo ein Wurf abgebaut wurde, für immer: die Promotion, die Streu und jeder Wurf durch `_naturSetzen` fragen hier.
-    _tatSperrt(x, z) {
-        return this._tatAm("faellen", x, z) || this._tatAm("abbauen", x, z);
+    // heilt (sein Jungwuchs, der Wurf in der Prägung `ov` mit dem Alter des Orts, `_baumAlter`, steht), wo ein Wurf abgebaut
+    // wurde, für immer: die Promotion, die Streu und jeder Wurf durch `_naturSetzen` fragen hier.
+    _tatSperrt(x, z, ov) {
+        if (this._tatAm("abbauen", x, z)) return true;
+        return this._tatAm("faellen", x, z) && !(ov && ov.alter > 0 && ov.alter === this._baumAlter(x, z));
     }
 
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
@@ -2853,11 +3096,49 @@ AnazhRealm.BRAND = Object.freeze({
     aufS: 4,
     minStoff: 0.15,
     licht: 4,
-    rauchM: 192, // bis hierher raucht eine glühende Zelle um den Spieler (`_updateDorfRauch`, die Weite des Chunk-Rings)
     budgetMs: 0.25, // so viel Arbeit eines Schritts geht je Bild (`_brandArbeit`) …
     mindestJeBild: 8, // … und mindestens so viele Aschen und Zündungen (ein kleiner Brand geht seinen Schritt in einem Bild)
     blockZellen: 4, // die Leser fragen die glühenden Zellen je Block von 4 × 4 Zellen (64 m, `_brandGlutUm`)
     hoerM: 256, // so weit hört das Ohr den Brand knistern (`_glutAmOhr`)
+    // das Bild (`_brandBild`): bis `weiteM` um das Auge, die Front in `winkel` Schritten abgetastet (jenseits von `nahM` je
+    // Abstand gröber, nie unter `winkelMin`), je Flamme ein Abstand von
+    // `abstand` × ihrer Länge (mindestens `abstandMinM`), höchstens `flammenMax`; `flammenWind` der Wind auf Flammenhöhe je Wind
+    // in 10 m (Albini–Baughman 1979, offenes Gras); die Zunge in `zungeSegmente` Kanten, `breite` × Länge breit, ihre Deckung
+    // fällt zur Spitze mit (1 − h)^spitze. Der Rauch: `jeS` Ballen je Zelle und Sekunde bei voller Glut, höchstens `max`, die
+    // Ballen beginnen mit `b0` × Flammen-Länge, wachsen um `alpha` je Meter Steigen, decken anfangs `a0` und fallen unter
+    // `aKill` oder nach `lebenS`; Steigen höchstens `wMax` m/s; der Satz (Ballen, Stoff `color`, Kante `size`, Gestalt `form`)
+    bild: Object.freeze({
+        weiteM: 160,
+        winkel: 96,
+        winkelMin: 16,
+        nahM: 40,
+        abstand: 0.45,
+        abstandMinM: 0.5,
+        flammenMax: 1600,
+        flammenWind: 0.4,
+        zungeSegmente: 6,
+        breite: 0.42,
+        spitze: 0.8,
+        rauch: Object.freeze({
+            jeS: 8,
+            max: 600,
+            b0: 0.6,
+            alpha: 0.16,
+            a0: 0.82,
+            aKill: 0.08,
+            lebenS: 25,
+            wMax: 7,
+            color: 0x8d8881,
+            size: 1,
+            form: "ballen",
+            maxTeilchen: 600,
+            name: "brand-rauch",
+            inventar: "brand",
+        }),
+    }),
+    // die Grenze der Narbe (`_brandNarbe`): das Rauschen je Oktave (Wellenlänge m, Hub im Anteil der Zellen am Rand — der Hub
+    // verschiebt die Kante um bis zu 4 m, eine halbe Zelle) und die Breite, über die sie fällt (0,18 im Anteil: ~2 m angesengter Saum)
+    narbe: Object.freeze({ lambda: Object.freeze([14, 5]), amp: Object.freeze([0.7, 0.25]), band: 0.18 }),
     feuchte: Object.freeze({ trocken: 0.06, faser: 0.35, nass: 2.5 }),
     mineral: Object.freeze({ gesamt: 0.0555, frei: 0.01 }),
     lbMax: 8,
