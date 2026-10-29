@@ -1,0 +1,25 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\mensch.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
+
+  ❌ bewohner  {"fehler":"Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 665 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)\n    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:2938:20)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:274:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)"}
+       ↳ Error: DER BAU STEHT NICHT: bewohner: die Stadt nach 665 Takten — die Welt hat nichts mehr offen
+    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)
+    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2420:57)
+    at async stadtTag (eval at <anonymous> (:2:29), <anonymous>:2630:13)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:2938:20)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:274:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2461:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:214:13)
+
+  (186 s)
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
