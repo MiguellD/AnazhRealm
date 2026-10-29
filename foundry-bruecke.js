@@ -751,21 +751,23 @@ const foundryKanal = (() => {
                 },
                 "*"
             );
-            // DER EINE BLATT-ATLAS reist als Bild (S7) NACH dem Buch (B3a): der Worker malt ihn (OffscreenCanvas) samt
-            // Mip-Kette, die Transport-Schale macht ihn zur Fracht und gibt die Puffer per Transfer weiter — der Haupt-Thread
-            // malt und mippt nie. Bis B3a war er die Vorbedingung des ganzen Buchs (Radeon kalt 1,81 s Malen + 0,98 s Fracht
-            // vor jedem Auftrag); jetzt bestellt die Welt, während er entsteht, und nur ein Körper, der ihn liest, wartet.
-            if (typeof window === "undefined")
-                __post(
-                    {
-                        type: "blatt-atlas",
-                        world: "terrain",
-                        reqId: msg && msg.reqId,
-                        blattAtlas: self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) }),
-                    },
-                    "*"
-                );
         }
+    }
+    // DER EINE BLATT-ATLAS reist als Bild (S7) NACH dem Buch (B3a): der Worker malt ihn (OffscreenCanvas) samt Mip-Kette, die
+    // Transport-Schale macht ihn zur Fracht und gibt die Puffer per Transfer weiter — der Haupt-Thread malt und mippt nie. Bis
+    // B3a war er die Vorbedingung des ganzen Buchs (Radeon kalt 1,81 s Malen + 0,98 s Fracht vor jedem Auftrag); jetzt bestellt
+    // die Welt, während er entsteht. Den Kanal fragt die Schale des Buch-Fadens nach dem Buch, wenn ihre Platte ihn nicht trägt
+    // (pipeline.K4 Stufe 2).
+    function __replyBlattAtlas(msg) {
+        __post(
+            {
+                type: "blatt-atlas",
+                world: "terrain",
+                reqId: msg && msg.reqId,
+                blattAtlas: self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) }),
+            },
+            "*"
+        );
     }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
     // lesend (buildInstance/emitTree unveraendert). kind aus dem Material-Zeiger.
@@ -1173,6 +1175,8 @@ const foundryKanal = (() => {
         "export-settlement": __replySettlement,
         // DER SLOT-PLAN-KANAL (bauen.K2): das gesetzte Haus als Slot seines Plans, vor seinem Bau (`_hausGrundSetzen`)
         "slot-plan": __replySlotPlan,
+        // DER BLATT-ATLAS-KANAL (S7): das Bild des EINEN Blatt-Atlas (die Schale des Buch-Fadens fragt ihn)
+        "blatt-atlas": __replyBlattAtlas,
     };
     return (msg) => {
         if (!msg || typeof msg !== "object" || !Object.prototype.hasOwnProperty.call(KANAL, msg.type)) return false;

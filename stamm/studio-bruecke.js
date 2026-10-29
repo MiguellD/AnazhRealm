@@ -60,12 +60,25 @@ class AnazhRealm_studio_bruecke {
                 typeof crypto !== "undefined" &&
                 !!crypto.subtle &&
                 !this._nullRendererGewaehlt();
+            // DER WIRT DER KARTE (pipeline.K4 Stufe 2): die Karte zeichnet der Welt-Renderer — ihr Gesetz neben dem ihrer Art
+            // sind der Stamm und die Engine (r184 aus der Import-Karte); die Schale stempelt jede Karte der Platte mit ihnen
+            const karte = typeof document !== "undefined" && document.querySelector('script[type="importmap"]');
             const start = {
                 v: "?v=" + AnazhRealm.VERSION,
                 base: typeof window !== "undefined" && window.location ? window.location.href : "",
                 lesen: AnazhRealm.FOUNDRY_LESEN,
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
+                wirt: karte
+                    ? [...document.querySelectorAll("script[src]")]
+                          .map((s) => s.src)
+                          .filter((u) => /\/stamm\//.test(u))
+                          .concat(
+                              Object.values(JSON.parse(karte.textContent).imports || {}).map(
+                                  (u) => new URL(u, location.href).href
+                              )
+                          )
+                    : [],
             };
             const boot =
                 "(function " +
@@ -114,14 +127,15 @@ class AnazhRealm_studio_bruecke {
         }
         return f;
     }
-    // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement) — EINE pending-Map, die
-    // reqIds sind disjunkt. Die Karte backt seit S2 im Welt-Renderer (`_karteWeltBacken`), kein Faden antwortet ihr.
+    // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement), Slot (slot), die Frage
+    // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
+    // sind disjunkt.
     _foundryAntwort(f, m) {
         if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
                 this.log("BUDGET-BRUCH " + m.presetId + " L" + m.lod + ": " + JSON.stringify(m.budgetBruch), "ERROR");
-            this._foundryLiefer(f, m.bau ? "werk" : m.platte ? "platte" : "leer");
+            this._foundryLiefer(f, m.bau ? "werk" : m.platte ? "platte" : "leer", "koerper", m.liefer);
             const p = f.pending.get(m.reqId);
             if (p) {
                 f.pending.delete(m.reqId);
@@ -133,24 +147,37 @@ class AnazhRealm_studio_bruecke {
                     f.nachAtlas.push(() => p(meshes));
                 else p(meshes);
             }
-        } else if (m.type === "settlement" || m.type === "slot") {
+        } else if (m.type === "settlement" || m.type === "slot" || m.type === "karte") {
             // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung (fachwerk exportSettlement, generisch
-            // über die Zweit-Kern-Schleife der Brücke); der Slot-Plan-Kanal (bauen.K2): das gesetzte Haus als Slot.
+            // über die Zweit-Kern-Schleife der Brücke, der Dorf-Export der Platte); der Slot-Plan-Kanal (bauen.K2): das
+            // gesetzte Haus als Slot; die Karte: die ganze Antwort (ihre Bytes oder null, die Liefer-Marke)
+            if (m.type === "settlement")
+                this._foundryLiefer(f, m.platte ? "platte" : m.bau ? "werk" : "leer", "dorf-export", m.liefer);
             const ps = f.pending.get(m.reqId);
             if (ps) {
                 f.pending.delete(m.reqId);
-                ps((m.type === "slot" ? m.slot : m.plan) || null);
+                ps(m.type === "karte" ? m : (m.type === "slot" ? m.slot : m.plan) || null);
             }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
         this._foundryUhren(f);
     }
-    // DIE LIEFER-MARKE (pipeline.K4) am EINEN Weg jedes Körpers: der Auftrag (`_foundryAuftrag`), wie seine Antwort kam
-    // (`_foundryAntwort`: von der Platte · im Werk gebaut — die Schale stempelt `bau` an jeden Studio-Lauf · leer) und der Guss
-    // des Haupt-Fadens (`_ofenBudget`). Der Leser: diag-boot-stage --kalt (die Liefer-Zeile; --zweit urteilt die Stufe 1).
-    _foundryLiefer(f, art) {
-        const L = f && (f.lieferung || (f.lieferung = { auftrag: 0, platte: 0, werk: 0, leer: 0, haupt: 0 }));
-        if (L) L[art]++;
+    // DIE LIEFER-MARKE (pipeline.K4) am EINEN Weg jeder Lieferung: der Auftrag eines Körpers (`_foundryAuftrag`), wie seine
+    // Antwort kam (`_foundryAntwort`: von der Platte · im Werk gebaut — die Schale stempelt `bau` an jeden Studio-Lauf · leer),
+    // der Guss des Haupt-Fadens (`_ofenBudget`) — die Körper oben (Stufe 1); je Art (`je`: koerper · blatt-atlas · dorf-export ·
+    // karte, die Karte backt im Haupt-Faden) dieselben Wege und die ms ihres Erzeugers im Haupt-Faden, je Lieferung mit
+    // Platten-Schlüssel ihr Rest, ihr Weg und die Kerne, die sie liest (`liste`, die Schale nennt sie: Stufe 2). Der Leser:
+    // diag-boot-stage --kalt (die Liefer-Zeilen).
+    _foundryLiefer(f, wie, art, liefer, ms) {
+        const L =
+            f &&
+            (f.lieferung || (f.lieferung = { auftrag: 0, platte: 0, werk: 0, leer: 0, haupt: 0, je: {}, liste: [] }));
+        if (!L) return;
+        if (!art || art === "koerper") L[wie]++;
+        const J = art && (L.je[art] || (L.je[art] = { platte: 0, werk: 0, haupt: 0, leer: 0, ms: 0 }));
+        if (J && wie) J[wie]++;
+        if (J) J.ms += ms || 0;
+        if (liefer) L.liste.push([art, liefer.rest, wie, liefer.kerne.join(",")]);
     }
     // DER EINE BLATT-ATLAS (S7, B3a): seine Fracht kommt NACH dem Buch — der Buch-Faden malt, mippt und kodiert ihn, während
     // die Welt schon bestellt (bis B3a war er die Vorbedingung des ganzen Buchs: Radeon kalt 1,81 s Malen + 0,98 s Fracht vor
@@ -158,7 +185,8 @@ class AnazhRealm_studio_bruecke {
     // vor ihm kamen, gehen jetzt in die Welt.
     _foundryBlattAtlas(f, m) {
         const a = m.blattAtlas;
-        if (f.blattAtlas) return; // ein zweites Buch (ein Tor fragt den Kanal) trägt kein neues Bild
+        if (f.blattAtlas) return; // ein zweites Bild trägt nichts Neues
+        this._foundryLiefer(f, m.platte ? "platte" : "werk", "blatt-atlas", m.liefer);
         if (!a || !a.rgba || !Array.isArray(a.rgba.mips) || !a.rgba.mips.length)
             throw this._stoffBruch("der Blatt-Atlas kam ohne Bild (blatt-atlas)");
         this._blattAtlasBild = a;
@@ -515,29 +543,34 @@ class AnazhRealm_studio_bruecke {
     // aus cores.manifest.json, EINE Quelle, ?v= Pflicht), stellt die Transport-Schale VOR das Studio (ihr Kanal-Hörer steht
     // zuerst) und lädt die lib der Kerne (three r128 + die Geometrie-Helfer, keine Labor-Szene) → die Kerne in Manifest-Folge
     // (phyto- VOR foundry-core) → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
-    // (die Blob-URL hat keine Basis). Der Stempel der Platte hasht jede Generator-Quelle: die Kern-Skripte UND die Brücke
-    // (`__extractAssetMesh`, `bakeImpostorAtlas`), nie die Labor-Shell. Ein Manifest ohne Kern bricht laut (`worker.onerror`).
+    // (die Blob-URL hat keine Basis). Die Platte stempelt jede Lieferung mit dem Gesetz-SHA ihrer Kerne: je Kern seine
+    // Quellen (scripts · lib · bruecke — die Brücke trägt `__extractAssetMesh`, `bakeImpostorAtlas`), nie die Labor-Shell;
+    // die Basis ist der Kern der Brücke. Ein Manifest ohne Kern bricht laut (`worker.onerror`).
     static _foundryStart(b, schale) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
         const x = new W.XMLHttpRequest();
         x.open("GET", url("cores.manifest.json"), false);
         x.send();
-        const manifestText = x.responseText;
-        const manifest = JSON.parse(manifestText);
+        const manifest = JSON.parse(x.responseText);
         if (!Array.isArray(manifest) || !manifest.length)
             throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
-        const liste = (feld) => {
+        const liste = (feld, kerne = manifest) => {
             const out = [];
-            for (const core of manifest)
+            for (const core of kerne)
                 for (const s of [].concat((core && core[feld]) || [])) if (typeof s === "string" && s) out.push(url(s));
             return out;
         };
-        const quellen = liste("scripts").concat(liste("bruecke"));
-        schale({ lesen: b.lesen, format: b.format, platte: b.platte, manifestText, stempelUrls: quellen });
+        const kerne = manifest.map((c) => ({
+            id: c.id || c.ns,
+            ns: c.ns || null,
+            basis: !!c.bruecke,
+            urls: ["scripts", "lib", "bruecke"].flatMap((feld) => liste(feld, [c])),
+        }));
+        schale({ lesen: b.lesen, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
         W.__PHYTO_FOUNDRY_WORKER = true;
         W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
-        W.importScripts(...liste("lib").concat(quellen)); // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
+        W.importScripts(...liste("lib").concat(liste("scripts"), liste("bruecke"))); // die Brücke startet sich selbst
     }
     // ==================== DIE TRANSPORT-SCHALE: der Host-Teil des Foundry-Kanals IM Worker ====================
     // Befund 02.10. (Fluss-Linse, Mess-Wiese, Holz voll): beim Boot liefen 262 Studio-Assets = 404 MB durch den
@@ -545,22 +578,31 @@ class AnazhRealm_studio_bruecke {
     // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
     // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
     // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
-    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + die Brücke, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
-    //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
+    //   PLATTE        Get · Put je Lieferung unter dem GESETZ-SHA ihrer Kerne (pipeline.K4 Stufe 2): je Kern SHA-256 über
+    //                 seine Quellen (`cfg.kerne`). Eine Lieferung liest die Basis (den Kern der Brücke), jeden Kern, dessen
+    //                 Tafel sie trägt (PRESETS, exportSettlement), und jeden Kern, den ein gelesener beim Namen (ns) nennt
+    //                 — ihr Schlüssel trägt deren SHA vor dem Rest (`f<FOUNDRY_PLATTE_FORMAT>|<kern>:<sha>,…~<rest>`): ein
+    //                 geänderter Kern baut nur seine Leser neu (bis 28.10. leerte jeder Kern-Edit die ganze Platte). Weicht
+    //                 `__stamp` (alle Kern-SHA) ab, fegt das Öffnen die Schlüssel, deren SHA kein Kern mehr trägt. Der
+    //                 Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
     //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
-    // Ein `build-asset` mit `platte` (Schlüssel `_foundryKoerperKey`: `<preset>|<gestalt>|<lod>[|ov:…]`) fragt erst die
-    // Platte; ein Miss geht an das Studio (byte-unberührt), dessen Antwort die Schale abfängt, verschlankt, schreibt und
-    // überträgt. `vorrat` wärmt nur die Platte (leere Antwort). `nurPlatte` (der Ship-Hook `__anazhLiveBake === false`) baut
-    // nie: Miss = leere Antwort. Diese Funktion läuft als
+    // DIE LIEFERUNGEN gehen alle durch DIESE Schale: ein `build-asset` mit `platte` (Rest `_foundryKoerperKey`:
+    // `<preset>|<gestalt>|<lod>[|ov:…]`) fragt erst die Platte; ein Miss geht an das Studio (byte-unberührt), dessen Antwort
+    // die Schale abfängt, verschlankt, schreibt und überträgt — so auch der Dorf-Export (`export-settlement`, Rest = SHA seiner
+    // Frage) und der EINE Blatt-Atlas (der Buch-Faden fragt ihn nach dem Buch selbst). Die Karte backt der Welt-Renderer:
+    // `karte` fragt die Platte (Treffer = ihre Bytes, Miss = null), `karte-ablage` legt die gebackene ab; ihr Wert trägt dazu
+    // den Stempel des Wirts (`cfg.wirt`: Stamm und Engine, VERSION maskiert). Jede Antwort nennt die Kerne, die sie liest
+    // (`lesen`, die Liefer-Marke). `vorrat` wärmt nur die Platte (leere Antwort). `nurPlatte` (der Ship-Hook
+    // `__anazhLiveBake === false`) baut nie: Miss = leere Antwort. Diese Funktion läuft als
     // Quelltext im Worker — sie greift auf nichts außerhalb ihres eigenen Rumpfs zu.
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
         const roh = W.postMessage.bind(W);
-        const schreibAuftrag = new Map(); // reqId → Platten-Schlüssel des Studio-Baus, der gerade läuft
+        const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
         // synchroner Studio-Lauf, gerufen aus dem Lese-Erfolg, hält dessen Transaktion bis zu seinem Ende offen — und jede
         // Transaktion des anderen Fadens wartet dahinter (gemessen 05.10., gate:arch-feld Erst-Boot: fünf L1-Körper des
@@ -599,53 +641,87 @@ class AnazhRealm_studio_bruecke {
             t.addEventListener("abort", ende);
             return t;
         };
+        // DAS GESETZ DER PLATTE: je Kern sein SHA (16 Hex) und die Kerne, die seine Quellen beim Namen nennen. Die Kerne einer
+        // Lieferung (`huelle`, sortiert): die Basis, ihre Eigner und, was ein gelesener Kern nennt; `eigner` sind die Kerne,
+        // deren Tafel die Art trägt.
+        const hex = (s) =>
+            crypto.subtle
+                .digest("SHA-256", new TextEncoder().encode(s))
+                .then((b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join(""));
+        const text = (u) => fetch(u).then((r) => r.text());
+        const kerne = cfg.kerne || [];
+        let G = null;
+        const huelle = (eigner) => {
+            const ids = new Set(eigner);
+            for (const k of kerne) if (k.basis) ids.add(k.id);
+            for (const id of ids) for (const j of G.nennt.get(id) || []) ids.add(j);
+            return [...ids].sort();
+        };
+        const stempelVon = (ids) => "f" + cfg.format + "|" + ids.map((id) => id + ":" + G.sha.get(id)).join(",");
+        const schluessel = (l) => stempelVon(huelle(l.eigner)) + "~" + l.rest;
+        const liest = (l) => (G && l ? { kerne: huelle(l.eigner), rest: l.rest } : undefined);
+        const eigner = (traegt) =>
+            kerne.filter((k) => k.ns && W[k.ns] && typeof W[k.ns] === "object" && traegt(W[k.ns])).map((k) => k.id);
+        const artVon = (pid) => eigner((n) => !!n.PRESETS && Object.prototype.hasOwnProperty.call(n.PRESETS, pid));
         let db = null;
         let dbTot = !cfg.platte || typeof indexedDB === "undefined";
         const platte = dbTot
             ? Promise.resolve(null)
-            : Promise.all([cfg.manifestText, ...cfg.stempelUrls.map((u) => fetch(u).then((r) => r.text()))])
-                  .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
-                  .then((buf) => {
-                      const stempel =
-                          Array.from(new Uint8Array(buf))
-                              .map((b) => b.toString(16).padStart(2, "0"))
-                              .join("") +
-                          "|f" +
-                          cfg.format;
-                      return new Promise((resolve) => {
-                          const req = indexedDB.open("anazhFoundryAssets", 1);
-                          req.onupgradeneeded = () => req.result.createObjectStore("assets");
-                          req.onerror = () => resolve(null);
-                          req.onsuccess = () => {
-                              const d = req.result;
-                              const t = tx(d, "readwrite");
-                              const st = t.objectStore("assets");
-                              const g = st.get("__stamp");
-                              g.onsuccess = () => {
-                                  // Generator oder Transport-Format geändert → der GANZE Cache ist Drift → leeren.
-                                  if (g.result !== stempel) {
-                                      st.clear();
-                                      st.put(stempel, "__stamp");
-                                  }
-                              };
-                              t.oncomplete = () => resolve(d);
-                              t.onerror = () => resolve(null);
+            : Promise.all(kerne.map((k) => Promise.all(k.urls.map(text)).then((t) => t.join("\n"))))
+                  .then((quellen) =>
+                      Promise.all(quellen.map(hex)).then((sha) => {
+                          const nennt = (i) => kerne.filter((j) => j.ns && j !== kerne[i] && quellen[i].includes(j.ns));
+                          G = {
+                              sha: new Map(kerne.map((k, i) => [k.id, sha[i].slice(0, 16)])),
+                              nennt: new Map(kerne.map((k, i) => [k.id, nennt(i).map((j) => j.id)])),
                           };
-                      });
-                  })
+                          const stempel = stempelVon(kerne.map((k) => k.id));
+                          const gilt = new Set(stempel.slice(stempel.indexOf("|") + 1).split(","));
+                          return new Promise((resolve) => {
+                              const req = indexedDB.open("anazhFoundryAssets", 1);
+                              req.onupgradeneeded = () => req.result.createObjectStore("assets");
+                              req.onerror = () => resolve(null);
+                              req.onsuccess = () => {
+                                  const d = req.result;
+                                  const t = tx(d, "readwrite");
+                                  const st = t.objectStore("assets");
+                                  const g = st.get("__stamp");
+                                  g.onsuccess = () => {
+                                      if (g.result === stempel) return;
+                                      // ein Kern oder das Format wechselte: es fällt NUR, wessen Gesetz kein Kern mehr trägt
+                                      st.put(stempel, "__stamp");
+                                      st.openKeyCursor().onsuccess = (e) => {
+                                          const c = e.target.result;
+                                          if (!c) return;
+                                          const k = String(c.key);
+                                          const kopf = k.slice(0, Math.max(0, k.indexOf("~"))).split("|");
+                                          const traegt =
+                                              kopf[0] === "f" + cfg.format &&
+                                              !!kopf[1] &&
+                                              kopf[1].split(",").every((x) => gilt.has(x));
+                                          if (k !== "__stamp" && !traegt) st.delete(c.primaryKey);
+                                          c.continue();
+                                      };
+                                  };
+                                  t.oncomplete = () => resolve(d);
+                                  t.onerror = () => resolve(null);
+                              };
+                          });
+                      })
+                  )
                   .catch(() => null)
                   .then((d) => {
                       db = d;
                       if (!d) dbTot = true;
                       return d;
                   });
-        // Der Platten-Wert eines Schlüssels: Körper `{ meshes }` (oder null).
-        const lies = (key) =>
+        // Der Platten-Wert einer Lieferung `l` ({eigner, rest}) — oder null.
+        const lies = (l) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
                           try {
-                              const g = tx(d, "readonly").objectStore("assets").get(key);
+                              const g = tx(d, "readonly").objectStore("assets").get(schluessel(l));
                               g.onsuccess = () => resolve(g.result && typeof g.result === "object" ? g.result : null);
                               g.onerror = () => resolve(null);
                           } catch (_e) {
@@ -654,11 +730,11 @@ class AnazhRealm_studio_bruecke {
                       })
                     : null
             );
-        const schreib = (key, wert) => {
+        const schreib = (l, wert) => {
             if (!db || dbTot) return;
             try {
                 const t = tx(db, "readwrite");
-                t.objectStore("assets").put(wert, key).onerror = () => {
+                t.objectStore("assets").put(wert, schluessel(l)).onerror = () => {
                     dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
                 };
                 // Der Put schließt, ohne dass dieser Faden seinen Erfolg erst abholt (er fällt mitten in einen Studio-
@@ -668,13 +744,13 @@ class AnazhRealm_studio_bruecke {
                 dbTot = true;
             }
         };
-        // Liegt der Schlüssel auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
-        const hat = (key) =>
+        // Liegt die Lieferung auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
+        const hat = (l) =>
             platte.then((d) =>
                 d
                     ? new Promise((resolve) => {
                           try {
-                              const c = tx(d, "readonly").objectStore("assets").count(key);
+                              const c = tx(d, "readonly").objectStore("assets").count(schluessel(l));
                               c.onsuccess = () => resolve(c.result > 0);
                               c.onerror = () => resolve(false);
                           } catch (_e) {
@@ -707,7 +783,9 @@ class AnazhRealm_studio_bruecke {
             }
             return Array.from(set);
         };
-        const antwort = (m, meshes, vonPlatte) =>
+        const fracht = (fr) =>
+            Array.from(new Set(fr.rgba.mips.concat(fr.bc ? fr.bc.mips : []).map((s) => s.data.buffer)));
+        const antwort = (m, meshes, vonPlatte, l) =>
             roh(
                 {
                     type: "asset",
@@ -719,44 +797,97 @@ class AnazhRealm_studio_bruecke {
                     lod: m.lod | 0,
                     meshes,
                     platte: vonPlatte,
+                    liefer: liest(l),
                 },
                 puffer(meshes)
             );
         W.postMessage = function (msg, a, b) {
+            const auftrag = msg && schreibAuftrag.get(msg.type === "blatt-atlas" ? msg.type : msg.reqId);
+            if (auftrag) schreibAuftrag.delete(msg.type === "blatt-atlas" ? msg.type : msg.reqId);
             if (msg && msg.type === "asset" && Array.isArray(msg.meshes)) {
                 msg.bau = true; // das Bau-Ereignis im Werk (die Liefer-Marke): nur ein Studio-Lauf antwortet hier
                 schlank(msg.meshes);
-                const auftrag = schreibAuftrag.get(msg.reqId);
                 if (auftrag !== undefined) {
-                    schreibAuftrag.delete(msg.reqId);
+                    msg.liefer = liest(auftrag);
                     // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
-                    if (msg.meshes.length) schreib(auftrag.key, { meshes: msg.meshes });
+                    if (msg.meshes.length) schreib(auftrag, { meshes: msg.meshes });
                     // Der Vorrat: der Körper liegt jetzt auf der Platte — zum Haupt-Thread reist er nicht (kein Leser).
                     if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));
                 }
                 return roh(msg, puffer(msg.meshes));
             }
             // Das Bild des EINEN Blatt-Atlas (es reist nach dem Buch, B3a): die Schale macht es im Worker zur FRACHT
-            // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
-            // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
+            // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne), legt sie auf
+            // die Platte und reicht sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
             if (msg && msg.type === "blatt-atlas" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);
-                const stufen = fr ? fr.rgba.mips.concat(fr.bc ? fr.bc.mips : []) : [];
+                if (fr && auftrag) schreib(auftrag, fr);
                 return roh(
-                    Object.assign({}, msg, { blattAtlas: fr }),
-                    Array.from(new Set(stufen.map((st) => st.data.buffer)))
+                    Object.assign({}, msg, { blattAtlas: fr, bau: true, liefer: liest(auftrag) }),
+                    fr ? fracht(fr) : []
                 );
+            }
+            // Der Plan des Dorfs (der Dorf-Export, reine Daten): auf die Platte, wenn das Studio einen trug
+            if (msg && msg.type === "settlement") {
+                if (auftrag && msg.plan) schreib(auftrag, { plan: msg.plan });
+                return roh(Object.assign({}, msg, { bau: true, liefer: liest(auftrag) }));
             }
             return roh(msg, a, b);
         };
+        // DER EINE BLATT-ATLAS: der Buch-Faden fragt ihn nach dem Buch selbst (B3a, vor jedem Körper seiner Schlange) — von
+        // der Platte, sonst malt ihn das Studio (Kanal `blatt-atlas`) und die Schale legt seine Fracht ab.
+        if (W.name === "buch") {
+            const l = { eigner: [], rest: "blatt-atlas" };
+            lies(l).then((wert) => {
+                if (wert && wert.rgba)
+                    return roh(
+                        { type: "blatt-atlas", world: "terrain", blattAtlas: wert, platte: true, liefer: liest(l) },
+                        fracht(wert)
+                    );
+                schreibAuftrag.set("blatt-atlas", l);
+                bauten.push(() => W.onmessage({ data: { type: "blatt-atlas" } }));
+                los();
+            });
+        }
+        // DIE KARTE: ihr Wert trägt den Stempel des Wirts (die Quellen des Welt-Renderers, VERSION maskiert: ein Versions-
+        // Sprung allein baut keine Karte neu); ohne ihn gibt es keine Karte auf der Platte.
+        let wirt = null;
+        const wirtSha = () =>
+            wirt ||
+            (wirt = Promise.all((cfg.wirt || []).map(text))
+                .then((t) => (t.length ? hex(t.map((s) => s.replace(/VERSION = "[^"]*"/g, "")).join("\n")) : null))
+                .catch(() => null));
+        const karte = (m) => {
+            const l = { eigner: artVon(m.presetId), rest: m.platte };
+            if (m.type === "karte-ablage")
+                return platte.then(
+                    (d) => d && m.karte && wirtSha().then((w) => w && schreib(l, Object.assign({ w }, m.karte)))
+                );
+            return lies(l)
+                .then((wert) => wert && wirtSha().then((w) => (w && wert.w === w ? wert : null)))
+                .then((wert) =>
+                    roh(
+                        {
+                            type: "karte",
+                            world: "terrain",
+                            reqId: m.reqId,
+                            karte: wert ? { bytes: wert.bytes, frame: wert.frame } : null,
+                            platte: !!wert,
+                            liefer: liest(l),
+                        },
+                        wert ? [wert.bytes.buffer] : []
+                    )
+                );
+        };
         // Der Kanal-Hörer steht VOR dem `onmessage` des Studios (registriert beim Import) — er sieht jede
-        // Nachricht zuerst und hält jeden Körper-Auftrag an. DER SAISON-NAGEL (V18.527): jeder Bau ist
+        // Nachricht zuerst und hält jeden Auftrag einer Lieferung an. DER SAISON-NAGEL (V18.527): jeder Bau ist
         // Golden-Sommer — das Studio sieht season "summer", gleich was der Auftrag trägt; das Jahr färbt der Host
         // (uSeasonMul). So kann kein Saison-Rest im Studio (setSeasonColors) einen Körper oder die Platte färben.
         W.addEventListener("message", (ev) => {
             const m = ev.data;
-            if (!m || m.type !== "build-asset") return;
+            if (!m || !/^(build-asset|export-settlement|karte|karte-ablage)$/.test(m.type)) return;
             ev.stopImmediatePropagation();
+            if (m.type === "karte" || m.type === "karte-ablage") return karte(m);
             const weiter = Object.assign({}, m, { season: "summer" });
             delete weiter.platte;
             delete weiter.nurPlatte;
@@ -766,21 +897,47 @@ class AnazhRealm_studio_bruecke {
                 });
                 los();
             };
+            if (m.type === "export-settlement") {
+                // DER DORF-EXPORT: sein Rest ist der SHA seiner Frage (Plan-Daten und Höhen-Raster), seine Eigner die Kerne
+                // mit exportSettlement
+                if (dbTot) return studio();
+                const frage = JSON.stringify(m.dp, (k, v) => (ArrayBuffer.isView(v) ? Array.from(v) : v));
+                return hex(String(frage)).then((h) => {
+                    const l = {
+                        eigner: eigner((n) => typeof n.exportSettlement === "function"),
+                        rest: "stl|" + h.slice(0, 32),
+                    };
+                    return lies(l).then((wert) => {
+                        if (wert && wert.plan)
+                            return roh({
+                                type: "settlement",
+                                world: "terrain",
+                                reqId: m.reqId,
+                                plan: wert.plan,
+                                platte: true,
+                                liefer: liest(l),
+                            });
+                        schreibAuftrag.set(m.reqId, l);
+                        studio();
+                    });
+                });
+            }
             if (typeof m.platte !== "string") return studio();
+            const l = { eigner: artVon(m.presetId), rest: m.platte };
             if (m.vorrat) {
                 // DER VORRAT wärmt nur die Platte: liegt der Körper schon dort — oder gibt es keine Platte (nichts zu
                 // wärmen) —, antwortet die Schale leer ohne Bau; sonst baut das Studio, die Schale schreibt.
-                return hat(m.platte).then((da) => {
-                    if (da || dbTot) return antwort(m, [], da);
-                    schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: true });
+                return hat(l).then((da) => {
+                    if (da || dbTot) return antwort(m, [], da, l);
+                    schreibAuftrag.set(m.reqId, Object.assign({ vorrat: true }, l));
                     studio();
                 });
             }
-            lies(m.platte).then((wert) => {
+            lies(l).then((wert) => {
                 const hit = wert && Array.isArray(wert.meshes) ? wert.meshes : null;
-                if (hit) return antwort(m, hit, true);
-                if (m.nurPlatte) return antwort(m, [], false);
-                schreibAuftrag.set(m.reqId, { key: m.platte, vorrat: false });
+                if (hit) return antwort(m, hit, true, l);
+                if (m.nurPlatte) return antwort(m, [], false, l);
+                schreibAuftrag.set(m.reqId, l);
                 studio();
             });
         });
