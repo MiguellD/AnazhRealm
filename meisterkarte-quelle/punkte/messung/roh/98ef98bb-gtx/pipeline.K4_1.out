@@ -1,0 +1,34 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c P="$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\98ef98bb-gtx\pipeline.K4_1.json' 2>/dev/null || echo 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\98ef98bb-gtx\pipeline.K4_1.json').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; E=$?; rm -rf "$P"; exit $E
+[linse-gpu] nvidia/pascal
+
+=== DIE ZWEIT-ZEILE (Profil mit Platte) — echte GPU · nvidia pascal · Holz voll · V18.546.128 ===
+    0 s  blockiert  590 ms · Foundry 0 wartend · 0 im Werk | die Welt entsteht
+    1 s  blockiert  116 ms (Bauten 108 · Buch 28) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · das Dorf kehrt wieder · 4 Wald-Stücke warten auf ihre Gestalt
+    2 s  blockiert  963 ms (Bauten 5 · Boden 13 · Saat 13) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · das Dorf kehrt wieder · 4 Wald-Stücke warten auf ihre Gestalt
+    3 s  blockiert  971 ms (Bauten 47 · Streu 21 · Boden 31 · Saat 123 · Gruppen-Bau 98 · Erst-Bau 497) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 4 im Werk | der Horizont wächst (0 %) · 2 Bäume und Bauten wachsen · das Dorf kehrt wieder · 13 Bäume werden gepflanzt, 16 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+    4 s  blockiert  974 ms (Wald-Plan 397 · Streu 138) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 4 im Werk | der Horizont wächst (0 %) · 2 Bäume und Bauten wachsen · das Dorf kehrt wieder · 13 Bäume werden gepflanzt, 16 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+    5 s  blockiert  959 ms (Bauten 63 · Streu 183 · Gestalt 12 · Boden 7 · Gruppen-Bau 12 · Erst-Bau 475) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 3 wartend · 4 im Werk | der Horizont wächst (43 %) · 14 Bäume und Bauten wachsen · das Dorf kehrt wieder · 163 Bäume werden gepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    6 s  blockiert  968 ms (Bauten 6 · Streu 147 · Gestalt 16 · Boden 13 · Gruppen-Bau 19 · Dorf 9 · Erst-Bau 384) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Horizont wächst (94 %) · 25 Bäume und Bauten wachsen · 6 Häuser des Dorfs wachsen · 151 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt
+    7 s  blockiert  958 ms (Bauten 64 · Streu 72 · Gestalt 66 · Gruppen-Bau 14 · Dorf 60 · Erst-Bau 112) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Horizont wird gemalt · 28 Bäume und Bauten wachsen · 3 Häuser des Dorfs wachsen · 109 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 4 ferne Bäume werden gemalt
+    8 s  blockiert  778 ms (Bauten 27 · Streu 271 · Gestalt 63 · Boden 7 · Gruppen-Bau 11 · Erst-Bau 413) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Horizont wird gemalt · 2 Bäume und Bauten wachsen · 2 Wald-Stücke warten auf ihre Gestalt
+    9 s  blockiert  820 ms (Streu 25 · Gestalt 18 · Erst-Bau 96) · 3 Pipelines offen · Vorrat bestellt · Foundry 33 wartend · 36 im Werk | 
+   10 s  blockiert 1000 ms · 3 Pipelines offen · Vorrat bestellt · Foundry 33 wartend · 36 im Werk | 
+   11 s  blockiert 1000 ms · 3 Pipelines offen · Vorrat bestellt · Foundry 33 wartend · 36 im Werk | 
+   12 s  blockiert  997 ms (Saat 7) · 3 Pipelines offen · Vorrat bestellt · Foundry 33 wartend · 36 im Werk | 
+   13 s  blockiert  984 ms · Vorrat bestellt · Foundry 0 wartend · 0 im Werk | 
+   14 s  blockiert  989 ms (Gestalt 5 · Saat 23) · Vorrat bestellt · Foundry 0 wartend · 0 im Werk | — die Kontrolle
+  1.6 s  das Buch der Studios ist da
+  die Klasse Pflanzen bis zum Weltbild: 1578 ms Haupt-Faden (Wald-Plan 405 · Streu 860 · Gestalt 178 · Saat 135)
+
+  ❌ t(Kontrolle) warm 14.95 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 12) · Eigenmeldung 9.30 s
+  ✅ LIEFERUNG zweit: 198 von 198 von der Platte (100.0 %) · Werk 0 · Haupt-Faden 0 · leer 0 · verschluckt 0
+  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 5 ms
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 38196 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

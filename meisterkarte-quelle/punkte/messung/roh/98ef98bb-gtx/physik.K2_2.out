@@ -1,0 +1,76 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/diag-kollision-bild.cjs --bild
+=== KOLLISION = BILD — die Karte zeichnet, Mess-Wiese 150 m ===
+[linse-gpu] nvidia/pascal
+[stall-akte] ═══ diag-kollision-bild.cjs · Seite #3 http://127.0.0.1:7754/index.html · der Puls steht seit 20.2 s
+[stall-akte] offen evaluate(tempo) seit 22.1 s
+[stall-akte] Puls 60×, zuletzt vor 20.2 s — complete · renderer bereit · weltbild da · frames 1741 · welt 2438 Takte · Ruhe 0 · zuletzt Foundry offen 1 · programme 110 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #110 renderPipeline_MeshPhysicalNodeMaterial_60
+[stall-akte] Stempel 10:48:13.752 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:48:13.752 gpu.createRenderPipelineAsync #106 renderPipeline_MeshStandardNodeMaterial_61
+[stall-akte] Stempel 10:48:13.867 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66883 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:48:13.867 gpu.createRenderPipelineAsync #107 renderPipeline_MeshStandardNodeMaterial_62
+[stall-akte] Stempel 10:48:13.978 Pipeline MeshStandardNodeMaterial · SkinnedMesh · vs 5977 fs 66882 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:48:13.978 gpu.createRenderPipelineAsync #108 renderPipeline_MeshStandardNodeMaterial_63
+[stall-akte] Stempel 10:48:14.100 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 11755 fs 66787 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:48:14.100 gpu.createRenderPipelineAsync #109 renderPipeline_MeshPhysicalNodeMaterial_239
+[stall-akte] Stempel 10:48:14.229 Pipeline MeshPhysicalNodeMaterial · SkinnedMesh · vs 5262 fs 66758 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:48:14.232 gpu.createRenderPipelineAsync #110 renderPipeline_MeshPhysicalNodeMaterial_60
+[stall-akte] Stempel 10:48:32.341 Pipeline MeshStandardNodeMaterial · instanz-zeichner · vs 5662 fs 58761 Zeichen · 3 Lichter
+[stall-akte] Stempel 10:48:32.341 gpu.createRenderPipelineAsync #111 renderPipeline_MeshStandardNodeMaterial_34
+[stall-akte] CPU (2 s) renderer 7244 108 % · GPU 3896 3 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 47:54 gpu 19/r 612 · 47:56 gpu 31/r 573 · 47:58 gpu 173/r 533 · 48:00 gpu 35/r 362 · 48:02 gpu 41/r 209 · 48:04 gpu 35/r 183 · 48:06 gpu 35/r 147 · 48:08 gpu 77/r 133 · 48:10 gpu 498/r 246 · 48:12 gpu 404/r 168 · 48:14 gpu 400/r 168 · 48:17 gpu 90/r 79 · 48:19 gpu 22/r 101 · 48:21 gpu 12/r 133 · 48:23 gpu 6/r 118 · 48:25 gpu 8/r 151 · 48:27 gpu 11/r 138 · 48:29 gpu 6/r 109 · 48:31 gpu 8/r 115 · 48:33 gpu 16/r 359 · 48:35 gpu 3/r 202 · 48:37 gpu 3/r 519 · 48:39 gpu 3/r 477 · 48:41 gpu 3/r 326 · 48:43 gpu 3/r 139 · 48:45 gpu 3/r 105 · 48:47 gpu 3/r 114 · 48:49 gpu 3/r 119 · 48:51 gpu 4/r 109 · 48:53 gpu 3/r 106
+[stall-akte] Stapel _tickFocusingAffordances :1592 < tickAffordances :1890 < loop :259 < takt :8 < fahre :116 < (anonym) :203 < lauf :192 < galopp :197
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 30 (zuvor ~52)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 28 (zuvor ~50)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 26 (zuvor ~47)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 30 (zuvor ~45)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 30 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 26 (zuvor ~42)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [WARN] FPS-Einbruch: 23 (zuvor ~41)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_1, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [INFO] Boot-Phase 3 (Kreaturen) progressiv vollendet.
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [ERROR] BEWOHNER: das Wege-Netz von „Lindenheim" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.128] [INFO] Nexus-Evolution (Regel) registriert: evo_2
+[stall-akte] Stderr [13580:4244:1029/114833.774:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [13580:4244:1029/114833.774:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] Stderr [13580:4244:1029/114833.774:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: PHONE_REGISTRATION_ERROR
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _tickFocusingAffordances :1592
+[stall-akte] Seite #3: der Puls kehrt zurück nach 37.2 s — complete · renderer bereit · weltbild da · frames 1749 · welt 9878 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 111 · gl-sync 0 · zuletzt gpu.createRenderPipelineAsync #111 renderPipeline_MeshStandardNodeMaterial_34
+  747 Studio-Werke · Box ohne Bild seitlich/oben 4.30/0.09 m · Bild ohne Box 0.16 m
+  OFFEN (U) haus: haus_roemisch#399 — 3.26 m neben jeder Box (bei 6.3/0.6/5.0)
+  OFFEN (U) haus: haus_griechisch#403 — 2.15 m neben jeder Box (bei -2.1/0.2/4.2)
+  OFFEN (U) haus: haus_alemannisch#929 — 1.02 m neben jeder Box (bei 0.8/1.7/2.1)
+  OFFEN (U) ausstattung: brunnen_dorf#930 — 0.33 m neben jeder Box (bei 1.4/1.2/0.0)
+  OFFEN (U) ausstattung: marktstand_dorf#931 — 0.69 m neben jeder Box (bei 1.6/0.3/-0.1)
+  (V) Kontakt beim Tempo: 126/126 Zeilen · Schmuggel {"koerper":"schmuggel","hindernis":"mauer","kad":"deckel","v":5.86,"wer":"_t_kontakt_mauer#933","durch":true,"tief":0.285,"spalt":0}
+      fuchs      5.860 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      wolf       7.450 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      baer       8.230 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      riese      13.520 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.000 m
+      gehen      1.150 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      sprint     5.170 m/s · Durchtritt 0/10 · Eindringen max 0.000 m · Spalt max 0.000 m
+      fall       25.000 m/s · Durchtritt 0/2 · Eindringen max 0.001 m · Spalt max 0.000 m
+      wagen      19.630 m/s · Durchtritt 0/20 · Eindringen max 0.000 m · Spalt max 0.018 m · im Bild Spalt max 0.090 m, Eindringen max 0.025 m · fahrzeug_supersport vmax 16.36 m/s × 1.2
+      gestossen  16.370 m/s · Durchtritt 0/4 · Eindringen max 0.000 m · Spalt max 0.000 m · im Bild Spalt max 0.000 m, Eindringen max 0.170 m
+  Stoß im Ausgabe-Bild: Wagen 8110 px · Bär 576 px in 640×360 · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Bär an der Mauer im Bild frei 7.48 m · Luma 92.8 σ 42.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.128 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.63 m/s @144 → _t_kontakt_mauer#933 — im Bild Spalt 0 m, Eindringen 0.025 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.62 m/s @60 → _t_kontakt_mauer#933 — im Bild Spalt 0.09 m, Eindringen 0 m
+  OFFEN (V) BILD ≠ KOLLISION: wagen 19.61 m/s @30 → _t_kontakt_mauer#933 — im Bild Spalt 0.079 m, Eindringen 0 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @144 → _t_kontakt_mauer#933 — im Bild Spalt 0 m, Eindringen 0.045 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @60 → _t_kontakt_mauer#933 — im Bild Spalt 0 m, Eindringen 0.1 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.37 m/s @30 → _t_kontakt_mauer#933 — im Bild Spalt 0 m, Eindringen 0.163 m
+  OFFEN (V) BILD ≠ KOLLISION: gestossen 16.24 m/s @deckel → _t_kontakt_mauer#933 — im Bild Spalt 0 m, Eindringen 0.17 m
+
+❌ KOLLISION = BILD ROT:
+  (B) BLOCKER OHNE BILD: haus_roemisch#397 bei -201.1/-1136.5 — eine Box ragt 3.34 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_roemisch#400 bei -181.9/-1134.9 — eine Box ragt 4.30 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_roemisch#405 bei -183.7/-1155.9 — eine Box ragt 0.56 m seitlich über das Bild
+  (B) BLOCKER OHNE BILD: haus_griechisch#407 bei -162.1/-1136.5 — eine Box ragt 0.56 m seitlich über das Bild
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 24584 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
