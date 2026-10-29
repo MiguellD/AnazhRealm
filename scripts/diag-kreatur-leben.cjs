@@ -185,7 +185,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
     // bestand an EINER Saat) und die Mutante „Fraß-Leser aus“ (der Fraß liest keinen Jungwuchs) ohne Wölfe. In der 6. Stunde
     // je Gattung der Bestand und der Jungwuchs: die Äsung des Reviers, wie die Kapazität des Rotwilds sie liest
     // (K ∝ Σ Lebensraum × Äsung) ──
-    await buehne("kaskade", async (restore) => {
+    await buehne("kaskade", async () => {
         const lauf = zeitraffer();
         let frassAus = false;
         decke(
@@ -620,7 +620,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
     });
     // ── lebensraum (Tiere K4; die Geburt fern, außer Blick, in Gruppen): an neun Orten (Raster 300 m) je 25 Geburten — je Tier
     // Gattung, Boden-Klasse, Abstand, Blick, der Nächste der Gruppe, je Wurf der Bär am Fluss; die Gegenprobe in anderer Saat ──
-    await buehne("lebensraum", async (restore) => {
+    await buehne("lebensraum", async () => {
         if (taeter === "lebensraum")
             decke("_pickFaunaSoulAtPlayer", () => (x, z, rng) => A.CREATURE_SOUL_NAMES[Math.floor(rng() * 4)]);
         const alt = {
