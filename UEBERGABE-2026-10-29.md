@@ -62,3 +62,10 @@ Alle lokalen Workflows waren beendet; Wache gestoppt; notbremse.sh: WIP kern-kar
 aufraeumen.ps1: 0 Treffer, kein Runner.Worker; GPU-Schloss: .
 Die OMEN fährt takt21b am alten Kopf 98ef98bb weiter (wertlos für die Buchung, ohne Tokens). Der Messplatz-Blick läuft im Terminal-Tab „Messplatz“.
 **Gebucht 138/330. main 715754fc (z77). Erster Schritt nach dem Reset: siehe „Nächste Schritte“ + Nachträge oben.**
+
+## Nachtrag 23:00 (Konto bei 100 %, Übernahme durch das nächste Konto)
+Ohne Tokens laufen noch: **Farm headless am Mess-Kopf 715754fc** (run --offen, Lauf auf GitHub; die Messung pusht die Farm selbst nach
+koordination) und auf der OMEN **z77-abab** (98ef98bb gegen 715754fc, Zellen stadt + w-ego: der ruhige GTX-Beweis des Bewohner-Takts).
+zug/mess-kopf.txt = 715754fc. Sonst läuft nichts; alle Cloud-Karten haben abgegeben (w3w-verkehr fcfd85d7 + -koord 75a93a10 neu).
+Start des nächsten Kontos: (1) Heim der Reste auf 715754fc (Cloud) → EIN Zug; (2) Grundstellung ohne Neuladen (lokal, Beweis = Radeon-Fahrt
+am Mess-Kopf); (3) GTX-Fahrt + Farm-Ergebnis → buchen am 715754fc.
