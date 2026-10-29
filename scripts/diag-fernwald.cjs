@@ -366,10 +366,10 @@ hauptLauf(async () => {
         }
 
         // ── D: der Übergang am Radius — ein Baum in der Mesh-Zone nahe dem Rand wandert hinaus und zurück ──
-        // Der Cull-Radius ist GEREGELT (ARCH_QUALITY_RADIUS_MIN..MAX, headless folgt er dem PID je Takt): der Baum steht
-        // diesseits des kleinsten Radius und wandert jenseits des größten, der Zonen-Wechsel hängt nie am Regler-Stand.
-        const RMIN = AR.ARCH_QUALITY_RADIUS_MIN,
-            RMAX = AR.ARCH_QUALITY_RADIUS_MAX;
+        // Der Cull-Radius ist der Rand am Schirm (`_randSchirm`, lod.K5 — kein Regler): der Baum steht diesseits des Rands und
+        // wandert jenseits.
+        const RMIN = r._randSchirm("bau"),
+            RMAX = RMIN;
         const uebergang = async () => {
             const kand = karten()
                 .filter(

@@ -684,7 +684,7 @@
             ],
             "stufe": 0,
             "maxM": 64,
-            "grund": "Ein Baum zeigt L0 nur nah: LOD_DISTANCES.thresh01 12 m × Sichthöhen-Dehnung × perfDistMulMax 1,3 bleibt für jeden Studio-Baum unter 64 m."
+            "grund": "Ein Baum zeigt L0 nur nah: LOD_DISTANCES.thresh01 (das Gesetz des Schirms, höchstens der Haushalt d0 12 m) × Sichthöhen-Dehnung bleibt für jeden Studio-Baum unter 64 m; kein Regler streckt sie (lod.K5)."
         }
     ]
 }

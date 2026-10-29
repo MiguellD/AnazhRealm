@@ -458,7 +458,9 @@ Komponenten-SÄTZE, keine Klassen):
   gebaut für alle fünf Portale). Das Protokoll richtet die Heimat (`gate:portal-konformanz`, alle 13
   Welten über den echten Weg): die Welt meldet `ready` (ihr Wörterbuch gewinnt, Stufe „nativ"); die
   Heimat schickt `enter` beim load und auf die ERSTE ready (ein Echo je enter bleibt endlich); die Welt
-  nimmt nur Nachrichten ihres Eltern-Fensters an (`event.source`); ein Wort kommt flach
+  nimmt nur Nachrichten ihres Eltern-Fensters an (`event.source`); vor ihrem ersten `enter` sagt sie nur
+  `ready`, und jedes Ereignis ist die Antwort auf eine Nachricht der Heimat (enter, Wort, Gefährte), nie
+  ein Ruf aus ihrem Bild-Takt oder einer Uhr; ein Wort kommt flach
   `["w", …args]` oder als `["chain", …]` und wirkt sichtbar (Ereignis ins Journal der Heimat oder
   Zustand der Welt-UI); Esc meldet `exit`. Stumme Einzelwörter und Echo-Welten stehen als Ratsche in
   `spec/vertraege/ratsche.json`.
