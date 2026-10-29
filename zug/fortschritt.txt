@@ -868,3 +868,4 @@
 2026-10-29 13:12:27 takt21a-gtx material.K3#2 ROT 3.9 · 35/44
 2026-10-29 13:17:10 takt21a-gtx material.K1#1,material.K1#2 ROT/ROT 4.6 · 37/44
 2026-10-29 13:18:15 takt21a-gtx schatten.K1#1 GRÜN 1.0 · 38/44
+2026-10-29 13:25:48 takt21a-gtx lod.K5#1 ROT 7.5 · 39/44
