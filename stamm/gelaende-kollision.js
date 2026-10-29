@@ -292,8 +292,8 @@ class AnazhRealm_gelaende_kollision {
     // der Plan rechnet in den Metern des Gesetzbuchs.
     // EIN GRUND-DATUM (bauen.K2 Staffel 2): nur ein Haus, dessen Grund sein Ort schon trägt (der Slot eines Dorfs, ein Grund mit
     // der Mitte auf dem Haus), legt keinen — jedes andere legt seinen, auch auf der Gasse, dem Platz oder dem Vorplatz eines
-    // Orts. Bis hier legte ein Haus auf irgendeinem Erdbau keinen (`_ortFrei`): im Ortsradius blieb sein Keller Erde, der Gang
-    // die Treppe hinab hob den Leib aus dem Grund (der Anti-Clip, gate:haus-welt W11).
+    // Orts. Bis hier legte ein Haus auf irgendeinem Erdbau keinen (`_ortFrei`): auf der Gasse blieb sein Keller Erde, der Gang
+    // die Treppe hinab endete auf der Diele (gate:haus-welt W11, Fuß −0,01 m statt −2,28 m im Keller).
     _hausGrundSetzen(entry) {
         const pos = entry && entry.position;
         const art = pos ? this._grundrissGesetz(entry.type) : null;

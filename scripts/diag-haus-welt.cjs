@@ -622,9 +622,12 @@ async function proben(phasen) {
                     ziel(`rand ${f.atLevel} ${v}`, xm(f) + v, oben(f), f.base + f.N * f.rise);
                 }
         }
-        // DIE WAND: frontal gegen die Wand neben der Tür klettert der Körper (gewolltes Klettern trägt)
+        // DIE WAND: frontal gegen die Wand neben der Tür klettert der Körper (gewolltes Klettern trägt) — ausgeruht: die Wand
+        // misst das Klettern, nie die Ausdauer, die die Wände der Häuser davor zehrten (mit dem Start-Dorf 27 Häuser je Welt,
+        // die letzten kletterten erschöpft 0,27 m)
         const wx = tu.x + (tu.x < 0 ? 1 : -1) * (tu.w / 2 + 0.7);
         const [wv, wz] = [welt(e, wx, tu.z - 0.7), welt(e, wx, tu.z + 1)];
+        s.player.stamina = s.player.staminaMax;
         stell(wv.x, base + 0.75 + FUSS, wv.z);
         let [wy, wmax] = [0, -Infinity];
         for (let k = 0; k < 120; k++) {
@@ -798,6 +801,8 @@ async function proben(phasen) {
         // die EINE Steilheit über ±4 m
         const hang = (x, z) => (sw.hang = r._slopeAt(x, z, hh, 4)) >= 0.15;
         const se = vs && (await setze(vs, "w9-slot", ring(dorfMitte, [60, 90, 120, 160]), hang, vs.rotationY));
+        // der Erdbau zählt, wenn er liegt (die Folge Grund vor Hülle urteilt W9 Plan)
+        await warteBis(() => !(r._grundOffen || []).size, 4, 200);
         const { welt: eb, byte } = (se && slotVon(vs, se)) || {};
         if (eb) {
             const vp = eb.find((q) => q.vorplatz >= 0) || {};
