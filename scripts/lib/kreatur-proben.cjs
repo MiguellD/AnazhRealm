@@ -2285,16 +2285,16 @@ async function kreaturProben(r, T, opts) {
             /* der Takt meldet selbst */
         }
     };
-    const bisDa = async (name, offen) => {
-        for (const weiter = window.__deckel(name, 120); weiter() && offen(); await sleep(16)) tick();
+    const bisDa = async (name, offen, max) => {
+        for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep(16)) tick();
     };
     // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
     // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
     // dieselben Wenden
-    const uhrAuf = async (h, wo, da) => {
+    const uhrAuf = async (h, wo, da, max) => {
         r._uhrSetzen(h / 24, "regler");
         r._tickBewohner(0);
-        await bisDa(wo, () => !da());
+        await bisDa(wo, () => !da(), max);
         r._uhrSetzen(h / 24, "regler");
     };
     // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
@@ -2478,42 +2478,62 @@ async function kreaturProben(r, T, opts) {
             r._tickBewohner(dt);
             M.messen(dt);
         };
-        // ── DIE STADT (mensch.K3 Staffel 2): am Ort der Stadt des Profi-Bands (spec/profiband/haushalt.json `stadt`) das Wort
-        // des Spielers „dorf <Same> 30" (`spawnSettlement`: nH ≥ 27 wie mensch.K1), der Spieler am Rand ihres Platzes, bis
-        // jeder Bewohner seinen Leib trägt; die Uhr springt auf 5 Uhr (jeder steht, wo ihn sein Tag sieht), dann 24
-        // Spielstunden (der Täter: 3) mit der Uhr des Spiels und dem Wege-Messer
-        const stadtTag = async () => {
-            const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find(
-                (m) => m.id === "stadt"
-            );
-            const [seed, [x, z]] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker];
+        // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
+        // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
+        // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
+        const ringMesser = (liste, ph = new Map(), k = 0) => ({
+            messen: () => ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase)),
+            zahl: (N = r._bewohnerFeldGrenze().ein) => {
+                const nah = liste.filter((b) => !b.drinnen && ab(b.leib.position, pm) < N);
+                const gang = nah.filter((b) => Math.abs(wrap(b.walkPhase - ph.get(b))) > 0.2).length;
+                return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang };
+            },
+        });
+        // ── DIE STADT AM MESSORT `ort` des Profi-Bands (spec/profiband/haushalt.json): das Wort des Spielers
+        // „dorf <Same> <nH>" an ihrem Anker (`spawnSettlement`), der Spieler am Rand ihres Platzes, bis jeder Bewohner
+        // seinen Leib trägt; dann je Täter (Selbsttest) ein Fenster mit seiner Decke: die Uhr springt auf ihre Stunde (jeder
+        // steht, wo ihn sein Tag sieht), ihre Takte mit der Uhr des Spiels und ihr Messer.
+        // · stadt (mensch.K3 Staffel 2): „dorf <Same> 30" (nH ≥ 27 wie mensch.K1), 5 Uhr, 24 Spielstunden (der Täter: 3),
+        //   das Wege-Messer. Täter: wer ausweicht, weicht nie · die EINE Frage an die Wand (`_bewohnerWand`: der Weg, die
+        //   Wache, das Ausweichen, die Linie zurück auf das Bein) ist blind
+        // · stadt-voll (mensch.K1 Staffel 2, `--ort stadt-voll`): „dorf 7 300" (die Metropole), der Spieler an ihrem
+        //   Ursprung am Markt im Gedränge (am Rand des Platzes stehen 81 statt 136 im Nah-Ring), 7 Uhr (der Morgengang über
+        //   den Platz), 600 Takte zu 1/60 s, der Nah-Ring. Täter: der Gang steht (`_gaitTick` ohne Tempo und Zeit) · der
+        //   Nah-Ring ist leer (die Feld-Grenze 0)
+        const stadtTag = async (ort = "stadt") => {
+            const voll = ort !== "stadt";
+            const o = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find((m) => m.id === ort);
+            const [seed, [x, z], nH] = [Number(o.gruendung.wort.split(" ")[1]), o.gruendung.anker, voll ? 300 : 30];
             const S0 = () =>
                 [...(r._bewohnerSiedlungen || new Map()).values()].find(
                     (q) => q.plan.seed === seed && Math.hypot(q.ox - x, q.oz - z) < 200
                 );
-            if (!S0()) await r.spawnSettlement({ seed, nH: 30, position: { x, y: 0, z } });
+            if (!S0()) await r.spawnSettlement({ seed, nH, position: { x, y: 0, z } });
             const S = S0();
             if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
-                return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} 30" bei ${x}/${z})` };
+                return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };
+            if (voll) pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + A.PLAYER_FOOT_OFFSET, S.oz);
             const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
-            await bisDa("bewohner: die Stadt", () => !da());
-            await stehtUm("bewohner: die Stadt");
-            // je Tag die Ankunft um 5 Uhr und ein eigenes Messer; Täter (Selbsttest) je 3 Spielstunden mit seiner Decke: wer
-            // ausweicht, weicht nie — dann die EINE Frage an die Wand (`_bewohnerWand`: der Weg, die Wache, das Ausweichen,
-            // die Linie zurück auf das Bein) ist blind
-            for (const [t, ueber] of taeter
+            await bisDa(`bewohner: ${ort}`, () => !da(), 4 * nH);
+            await stehtUm(`bewohner: ${ort}`);
+            const T = voll
                 ? [
+                      ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
+                      ["bewohner-voll-leer", "_bewohnerFeldGrenze", () => () => ({ ein: 0, aus: 0 })],
+                  ]
+                : [
                       ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
                       ["bewohner-stadt-blind", "_bewohnerWand"],
-                  ]
-                : [[]]) {
-                // prettier-ignore
-                const [ab, M] = [[], wegeMesser(S.liste)];
-                await uhrAuf(5, "bewohner: die Ankunft der Stadt", da);
-                if (ueber) decke(ueber, () => () => null, ab);
-                for (let i = 0; i < (taeter ? 30 : 240) * takte; i++) takt(DT, M);
+                  ];
+            for (const [t, ueber, mit = () => () => null] of taeter ? T : [[]]) {
+                const [ab, M] = [[], (voll ? ringMesser : wegeMesser)(S.liste)];
+                await uhrAuf(voll ? 7 : 5, `bewohner: ${ort}`, da, 4 * nH);
+                if (ueber) decke(ueber, mit, ab);
+                for (let i = 0; i < (voll ? 600 : (taeter ? 30 : 240) * takte); i++) takt(voll ? 1 / 60 : DT, M);
+                sicht[t] = {
+                    stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, [voll ? "ring" : "wege"]: M.zahl() },
+                };
                 for (const f of ab) f();
-                sicht[t] = { stadt: { haeuser: haeuserIn(S.plan.slots, S.ox, S.oz).length, wege: M.zahl() } };
             }
             return taeter ? null : sicht[undefined].stadt;
         };
@@ -2526,6 +2546,7 @@ async function kreaturProben(r, T, opts) {
                         Math.hypot(e.position.x - (ox + sl.x), e.position.z - (oz + sl.z)) < 1
                 )
             );
+        if (opts && opts.ort) return { stadt: await stadtTag(opts.ort), sicht: taeter ? sicht : undefined };
         const S = await startDorf(restore);
         if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
         const plan = S.plan;
@@ -3156,6 +3177,13 @@ function urteil(name, z) {
     // Tag, keine Berührung
     const st = name === "bewohner" ? z.stadt : null;
     if (st) soll(!st.fehler && st.haeuser >= 27, `Stadt: ${st.fehler || st.haeuser + " Häuser (Soll nH ≥ 27)"}`);
+    // DIE VOLLE STADT (mensch.K1 Staffel 2, ihr Nah-Ring): ≥ 200 Bewohner, ≥ 40 im Nah-Ring mit laufendem Gang
+    const ri = st && st.ring;
+    if (ri)
+        soll(
+            ri.gesamt >= 200 && ri.nahGang >= 40,
+            `Stadt: ${ri.gesamt} Bewohner, im Nah-Ring ${ri.nah} draußen, ${ri.nahGang} mit laufendem Gang (Soll ≥ 200, ≥ 40)`
+        );
     for (const [v, wo] of [
         [name === "bewohner" && z.wege, ""],
         [st && st.wege, "Stadt: "],
@@ -3171,7 +3199,8 @@ function urteil(name, z) {
             `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}), Berührung: ${v.beruehrN} (${v.beruehr})`
         );
     }
-    if (name === "bewohner") {
+    // das Start-Dorf (ohne `--ort`: seine Wege)
+    if (name === "bewohner" && z.wege) {
         const [sg, b, wk] = [z.satzGang || {}, z.blick, z.wiederkehr || { ueberN: "ungemessen" }];
         soll(
             z.leiber > 0 && Math.abs(z.quote - 1) <= 0.05,
@@ -3651,6 +3680,11 @@ const TAETER = {
         ["bewohner-wiederkehr", /Wiederkehr nach 1 h Abwesenheit: [1-9]/],
         ["bewohner-stadt-blind", /Stadt: Durchdringung: [1-9]/],
         ["bewohner-stadt-rempeln", /Berührung: [1-9]/],
+    ],
+    // die volle Stadt (`--ort stadt-voll`)
+    "bewohner@stadt-voll": [
+        ["bewohner-voll-starr", /[1-9]\d* draußen, 0 mit laufendem Gang/],
+        ["bewohner-voll-leer", /im Nah-Ring 0 draußen/],
     ],
     begegnung: [
         ["begegnung-starr", /Kopf-Zuwendung/],
