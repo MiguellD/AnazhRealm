@@ -1,5 +1,5 @@
 // Stationen der Gruppe II (src/g2.js). Format und Regeln: punkte/punkte.cjs (Kopf).
-// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit) und jedes der
+// Erfasst: jedes Kriterium mit Punkten am Kopf (tiere.K1 · tiere.K3 · oekologie.K5 · mensch.K2 · mensch.K3), mensch.K4 (Zweig w3v-leib-menge), luftwasser.K1 (Zweig vogel-zensus), luftwasser.K2#1 (Zweig w3s-schwarm) und #2 (Zweig w3u-leittier), luftwasser.K5 (Zweig schwarm), mensch.K5#1, vegetation.K2#1 (Zweig boe-zeit), vegetation.K1 und K5 (Zweig w3w-wald) und jedes der
 // Messschuld M30–M43 (M40 mensch.K1 · M41 vegetation.K4 · M42 tiere.K3); kein Stau-Zweig kippt ein Kriterium der Gruppe II.
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
@@ -1296,6 +1296,226 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
         "node \"$SK/b64png.cjs\" \"$B-platz.txt\" \"$B-platz-8uhr-third.png\"",
     ].join("\n"),
 ] };
+
+// ───────── vegetation.K1 · K5 — DIE WIESE BIS ZUM SAUM, DAS JAHR ALS GESTALT (Zweig w3w-wald) ─────────
+// EIN Lauf (`vegetationLauf`, im Spiel-Baum; die Werkbank der Sitzung auf {PORT} + 20000) je Station, `plan` = die Schüsse
+// [Ort, Sicht, Uhr, Saison, Was]. „wiese“: die Kamera des Spiels (`umstellen --ort … --sicht …`, 30 Takte `_loopCamera`), die
+// Teilung der Wiese mit den FESTEN Ringen der Meisterkarte (`bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand
+// --ringe 2,5,10,20,40` — nie der Radius der gemessenen Welt) und der Zähler an derselben Kamera (`zaehlen --alle`). „krone“: der
+// nächste Laubbaum (eiche · birke · buche) 15–80 m um den Spieler, das Auge 14 m vor seinem Fuß zum Spieler hin auf 1,7 m, der
+// Blick 6 m über den Fuß, die Maske `^f:(eiche|birke|buche):L[01]$` (die Stufen, die das Auge nah zeichnet; die Karte L2 trägt
+// den Laubfall nicht — offen benannt im Zweig). Die Jahreszeit über das Wort des Spielers (`bild --saison`: die Phase springt auf
+// die Mitte der Jahreszeit — nie durch Warten); jedes Bild 1920 × 1080 aus dem Ausgabe-Pfad, `--wahl 0`. Die Zeile
+// „VEGETATION {…}“ trägt je Schuss das Rohe, die Urteile rechnen daraus.
+async function vegetationLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, plan] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const B = aus.replace(/\.json$/, "");
+    const erg = { schuesse: [] };
+    const ruf = async (weg, o) => {
+        const a = await werkbankRuf(W, weg, o);
+        if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+        return a;
+    };
+    const SPIEL = "const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));";
+    const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
+    for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+    try {
+        await ruf("/fenster", { w: 1920, h: 1080 });
+        for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
+            const n = [ort, sicht, uhr, saison, was].join("-");
+            await ruf("/umstellen", { ort, sicht });
+            const k = (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
+            if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
+            const [px, py, pz, lx, ly, lz] = k;
+            const wiese = was === "wiese";
+            const datei = B + "-" + n + ".png";
+            const b = await ruf("/bild", {
+                px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, ringe: wiese ? "2,5,10,20,40" : undefined,
+                klasse: wiese ? "^(nahWiese:.*|streuSatz|bodenSatz)$" : "^f:(eiche|birke|buche):L[01]$",
+            });
+            const ab = JSON.parse(fs.readFileSync(datei.replace(/\.png$/, ".abnahme.json"), "utf8"));
+            const kl = b.klasse || {};
+            const sch = { n, was, kamera: k, pose: ab.pose, leinwand: [ab.bild.w, ab.bild.h], ok: ab.ok, zeile: String(ab.zeile || "").slice(0, 300), pixel: Object.values(kl.klassen || {}).reduce((q, v) => q + (v.pixel || 0), 0) };
+            if (wiese) {
+                const a = kl.abstand;
+                Object.assign(sch, { baender: a.baender, cos: a.cos, klassen: a.klassen, farbton: a.farbton.kacheln });
+                const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
+                sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+            }
+            erg.schuesse.push(sch);
+        }
+    } catch (e) {
+        erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+    console.log("VEGETATION " + JSON.stringify(erg));
+}
+// DIE RINGE EINES WIESEN-SCHUSSES: je fester Ring (die Bänder 2–5 · 5–10 · 10–20 · 20–40 m) der wirksame Blatt-Flächen-Index wie
+// abnahme-urteil `laiWirk` (Nilson: P = Grund / (Halm + Grund), LAI = −ln P · cos θ / G, G 0,5; Halm = nahWiese + streuSatz, Grund =
+// bodenSatz). Ein Ring mit Halmen und OHNE Grund-Pixel ist geschlossen („satt“): die Lücke 0 misst Nilson nur als untere Schranke
+// (−ln(0,5/n) · cos θ / G, unter flachem Blick klein) — er zählt als dicht; sein Sprung zum Nachbarn ist ungemessen, den Nachbarn
+// hält dort sein eigenes LAI ≥ 1,7.
+const wieseRinge = (s) =>
+    s.baender.slice(1, -1).map((von, i) => {
+        let h = 0, g = 0; // prettier-ignore
+        for (const [n, z] of Object.entries(s.klassen || {}))
+            if (/^(nahWiese:.*|streuSatz)$/.test(n)) h += z[i + 1] || 0;
+            else if (n === "bodenSatz") g += z[i + 1] || 0;
+        const lai = h + g && s.cos[i + 1] > 0 ? (-Math.log(Math.max(g, 0.5) / (h + g)) * s.cos[i + 1]) / 0.5 : null;
+        return { ring: von + "–" + s.baender[i + 2], h, g, lai, satt: h > 0 && g === 0 };
+    });
+// die Farbton-Streuung 2–5 m wie abnahme-urteil `farbtonStreuung` (σh je 2-m-Kachel ab 400 Proben, gewichtet nach Proben)
+const wieseFarbton = (s) => {
+    const ks = (s.farbton || []).filter((k) => k[1] >= 400);
+    const sig = (k) => (Math.sqrt(-2 * Math.log(Math.max(1e-9, Math.min(1, k[4] ? Math.hypot(k[2], k[3]) / k[4] : 1)))) * 180) / Math.PI;
+    const n = ks.reduce((a, k) => a + k[1], 0);
+    return n ? ks.reduce((a, k) => a + sig(k) * k[1], 0) / n : null;
+};
+// die Pose des Schusses ist die Kamera, die der Lauf rechnete — Ort UND Blick (die Blick-Wahl verschiebt sie nie, `--wahl 0`)
+const posePasst = (s) => {
+    const [pk, pb] = [(s.pose && s.pose.kamera) || [], (s.pose && s.pose.blick) || []];
+    const d = Math.hypot(s.kamera[3] - s.kamera[0], s.kamera[4] - s.kamera[1], s.kamera[5] - s.kamera[2]) || 1;
+    return pk.length === 3 && pb.length === 3 && [0, 1, 2].every((i) => Math.abs(s.kamera[i] - pk[i]) <= 0.05 && Math.abs((s.kamera[i + 3] - s.kamera[i]) / d - pb[i]) <= 0.01);
+};
+// das Urteil eines Wiesen-Schusses (K1): jeder feste Ring LAI ≥ 1,7 (oder satt), der Sprung zwischen Nachbar-Ringen ≤ 15 % des
+// inneren, die Farbton-Streuung 2–5 m ≥ 10,7°, nahWiese im Haupt-Pass ≤ 4 Befehle / 80k Dreiecke (spec/profiband/haushalt.json),
+// die Pose = die Kamera des Spiels, 1920 × 1080, die Abnahme des Bilds ok
+function wieseUrteil(s) {
+    const R = wieseRinge(s);
+    const ft = wieseFarbton(s);
+    const dicht = R.every((x) => x.satt || (x.lai != null && x.lai >= 1.7));
+    const saum = R.slice(1).every((x, i) => x.satt || R[i].satt || (x.lai != null && R[i].lai > 0 && Math.abs(x.lai - R[i].lai) / R[i].lai <= 0.15));
+    const budget = !!s.budget && s.budget[0] <= 4 && s.budget[1] <= 80000;
+    const bild = s.leinwand[0] === 1920 && s.leinwand[1] === 1080 && s.ok === true && posePasst(s);
+    return {
+        gruen: dicht && saum && ft != null && ft >= 10.7 && budget && bild,
+        zahl:
+            s.n + ": LAI " + R.map((x) => x.ring + " " + (x.satt ? "satt" : x.lai == null ? "—" : x.lai.toFixed(2))).join(" · ") + (saum ? "" : " (Saum springt > 15 %)") +
+            ", Farbton 2–5 m " + (ft == null ? "ungemessen" : ft.toFixed(2) + "°") + ", nahWiese " + (s.budget ? s.budget[0] + " Befehle / " + s.budget[1] + " Dreiecke" : "ungezählt") +
+            (bild ? "" : ", Bild/Pose WEICHT AB (" + s.leinwand.join("×") + ", ok " + s.ok + ", Pose " + posePasst(s) + ")"),
+    };
+}
+// das Rohe der Zeile (stdout, so urteilt auch die Probe des Selbsttests) oder {AUS}
+const vegetationRoh = (j, lauf) => jsonZeile(lauf.stdout, /^VEGETATION /) || j;
+const wieseStation = (staffel, posen, sek, quelle) => ({
+    kriterium: "vegetation.K1",
+    staffel,
+    geraet: ["radeon", "gtx"],
+    probe: { sek, befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(posen.map((p) => [...p, null, "wiese"]))] },
+    gpu: true,
+    zeit: false,
+    minuten: staffel === 1 ? 2 : 6,
+    urteil: (j, lauf) => {
+        const e = vegetationRoh(j, lauf);
+        if (!e || e.fehler || !Array.isArray(e.schuesse) || e.schuesse.length !== posen.length)
+            return { gruen: false, zahl: "ohne alle Schüsse: " + ((e && e.fehler) || "kein VEGETATION (Exit " + lauf.exit + ")") };
+        const u = e.schuesse.map(wieseUrteil);
+        return { gruen: u.every((x) => x.gruen), zahl: u.map((x) => x.zahl).join(" | ") };
+    },
+    proben: wieseProben(posen),
+    pfad: VEGETATION_PFAD,
+    quelle,
+});
+// die Schlupflöcher als Mutanten (der Selbsttest urteilt jede): eine Wiese, die bis 40 m dicht steht, ist GRÜN; ein dünner Ring
+// 5–10 m, ein Saum, der bei 20 m abreißt, ein Budget über 4 Befehle, eine verschobene Pose und ein fehlender Schuss sind ROT
+function wieseProben(posen) {
+    const ring = (h, g) => ({ "nahWiese:L1:0:0": [9, h, h, h, h], bodenSatz: [9, g[0], g[1], g[2], g[3]] });
+    const schuss = (o) => ({ n: "probe", was: "wiese", kamera: [0, 1.7, 0, 100, 1.7, 0], pose: { kamera: [0, 1.7, 0], blick: [1, 0, 0] }, leinwand: [1920, 1080], ok: true, baender: [0, 2, 5, 10, 20, 40], cos: [0.9, 0.5, 0.3, 0.15, 0.08], klassen: ring(20000, [400, 0, 0, 0]), farbton: [["0,0", 800, 0.6, 0.55, 1]], budget: [4, 52000], ...o }); // prettier-ignore
+    const zeile = (o, n = posen.length) => "VEGETATION " + JSON.stringify({ schuesse: Array.from({ length: n }, () => schuss(o)) });
+    return [
+        { name: "dicht bis 40 m", stdout: zeile({}), gruen: true },
+        { name: "Ring 5–10 m dünn", stdout: zeile({ klassen: ring(20000, [400, 8000, 0, 0]) }), gruen: false },
+        { name: "Saum reißt bei 20 m", stdout: zeile({ klassen: ring(20000, [400, 0, 0, 15000]) }), gruen: false },
+        { name: "Saum springt 19 %", stdout: zeile({ klassen: ring(20000, [400, 100, 0, 0]) }), gruen: false },
+        { name: "5 Befehle", stdout: zeile({ budget: [5, 52000] }), gruen: false },
+        { name: "Pose verschoben", stdout: zeile({ kamera: [0.5, 1.7, 0, 100, 1.7, 0] }), gruen: false },
+        { name: "ein Schuss fehlt", stdout: zeile({}, posen.length - 1), gruen: false },
+    ];
+}
+// das Jahr (K5): je Saison die Pixel der Laub-Maske an DERSELBEN Pose; Winter ≤ 0,3 × Sommer, der Frühling dazwischen (der
+// Austrieb); die Wiese (Staffel 2): der LAI 2–10 m (Pixel-Mittel der Ringe 2–5 und 5–10 m) im Winter ≤ 0,5 × Sommer, der Frühling
+// dazwischen. Ohne Krone im Bild (< 2 000 Pixel im Sommer) misst der Schuss nichts: ROT.
+function jahrUrteil(e, zeiten) {
+    const je = (was) => Object.fromEntries(e.schuesse.filter((s) => s.was === was).map((s) => [s.n.split("-")[3], s]));
+    const [k, w] = [je("krone"), je("wiese")];
+    const lai = (s) => {
+        const R = wieseRinge(s).slice(0, 2).filter((x) => x.lai != null);
+        const n = R.reduce((a, x) => a + x.h + x.g, 0);
+        return n ? R.reduce((a, x) => a + x.lai * (x.h + x.g), 0) / n : null;
+    };
+    const L = Object.fromEntries(Object.entries(w).map(([z, s]) => [z, lai(s)]));
+    const P = Object.fromEntries(Object.entries(k).map(([z, s]) => [z, s.pixel]));
+    const bild = Object.values({ ...k, ...w }).every((s) => s.ok === true && posePasst(s) && s.leinwand[0] === 1920) && Object.values(k).every((s) => JSON.stringify(s.kamera) === JSON.stringify(k.sommer && k.sommer.kamera));
+    const krone = P.sommer >= 2000 && P.winter <= 0.3 * P.sommer && (!zeiten.includes("fruehling") || (P.fruehling > P.winter && P.fruehling < P.sommer));
+    const wiese = !w.sommer || (L.sommer > 0 && L.winter <= 0.5 * L.sommer && L.fruehling > L.winter && L.fruehling < L.sommer);
+    const f = (x, n = 0) => (x == null ? "—" : Number(x).toFixed(n));
+    return {
+        gruen: bild && krone && wiese && Object.keys(k).length === zeiten.length,
+        zahl:
+            "Krone " + zeiten.map((z) => z + " " + f(P[z]) + " px").join(" · ") + " → Winter " + (P.sommer ? f(P.winter / P.sommer, 3) : "—") + " × Sommer" +
+            (w.sommer ? ", Wiese LAI 2–10 m " + zeiten.map((z) => z + " " + f(L[z], 2)).join(" · ") + " → Winter " + (L.sommer ? f(L.winter / L.sommer, 3) : "—") + " × Sommer" : "") +
+            (bild ? "" : ", Bild/Pose WEICHT AB"),
+    };
+}
+// die Schlupflöcher des Jahrs als Mutanten: ein Laubfall auf 0,15 und eine Wiese auf 0,3 ihres Sommers sind GRÜN; ein Winter, der
+// nur färbt (die Krone deckt 0,9), ein Frühling ohne Austrieb, eine Wiese, die im Winter steht, und ein Schuss an anderer Pose ROT
+function jahrProben(plan) {
+    const px = { sommer: 40000, winter: 6000, fruehling: 30000 };
+    const ring = (g) => ({ "nahWiese:L1:0:0": [0, 20000, 20000, 0, 0], bodenSatz: [0, g, g, 0, 0] });
+    const lg = { sommer: 400, winter: 9000, fruehling: 2500 };
+    const schuss = ([, , , z, was], o = {}) => ({ n: "wiese-ego-0.5-" + z + "-" + was, was, kamera: [0, 1.7, 0, 100, 1.7, 0], pose: { kamera: [0, 1.7, 0], blick: [1, 0, 0] }, leinwand: [1920, 1080], ok: true, pixel: px[z], baender: [0, 2, 5, 10, 20, 40], cos: [0.9, 0.5, 0.3, 0.15, 0.08], klassen: ring(lg[z]), ...((o[was] || {})[z] || {}) }); // prettier-ignore
+    const zeile = (o) => "VEGETATION " + JSON.stringify({ schuesse: plan.map((p) => schuss(p, o)) });
+    const mit = [
+        { name: "Laub und Wiese fallen", o: {}, gruen: true },
+        { name: "der Winter färbt nur", o: { krone: { winter: { pixel: 36000 } } }, gruen: false },
+        { name: "die Wiese steht im Winter", o: { wiese: { winter: { klassen: ring(500) } } }, gruen: false },
+        { name: "der Winter an anderer Pose", o: { krone: { winter: { kamera: [3, 1.7, 0, 103, 1.7, 0], pose: { kamera: [3, 1.7, 0], blick: [1, 0, 0] } } } }, gruen: false },
+    ];
+    if (plan.some((p) => p[3] === "fruehling")) mit.push({ name: "kein Austrieb", o: { krone: { fruehling: { pixel: 5000 } } }, gruen: false });
+    return mit.filter((m) => plan.some((p) => p[4] === "wiese") || !m.o.wiese).map((m) => ({ name: m.name, stdout: zeile(m.o), gruen: m.gruen }));
+}
+const jahrStation = (staffel, plan, zeiten, sek, quelle) => ({
+    kriterium: "vegetation.K5",
+    staffel,
+    geraet: ["radeon", "gtx"],
+    probe: { sek, befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] },
+    gpu: true,
+    zeit: false,
+    minuten: staffel === 1 ? 2 : 6,
+    urteil: (j, lauf) => {
+        const e = vegetationRoh(j, lauf);
+        if (!e || e.fehler || !Array.isArray(e.schuesse) || e.schuesse.length !== plan.length)
+            return { gruen: false, zahl: "ohne alle Schüsse: " + ((e && e.fehler) || "kein VEGETATION (Exit " + lauf.exit + ")") };
+        return jahrUrteil(e, zeiten);
+    },
+    proben: jahrProben(plan),
+    pfad: VEGETATION_PFAD,
+    quelle,
+});
+// R6 der Vegetation: die Gestalt (Stamm Vegetation · Stoff · Bild · Studio), die Gesetzbücher (Saison und Gras im foundry-core,
+// Blatt-Atlas im phyto-core), die Werkbank und ihre Linsen-Hilfen, der Haushalt des Budgets
+const VEGETATION_PFAD = [
+    "stamm/vegetation-*.js",
+    "stamm/stoff-*.js",
+    "stamm/bild-*.js",
+    "stamm/dirigent-*.js",
+    "stamm/studio-*.js",
+    "stamm/daten.js",
+    "foundry-core.js",
+    "phyto-core.js",
+    "index.html",
+    "spec/profiband/haushalt.json",
+    "scripts/werkbank.cjs",
+    "scripts/lib/abnahme-urteil.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/draw-zaehler.cjs",
+    "scripts/lib/software-gpu.cjs",
+    "scripts/lib/welt-boot.cjs",
+];
 
 const stationen = [
     {
@@ -3304,11 +3524,45 @@ const stationen = [
         pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js", "spec/farbe/albedo-tafel.json"],
         quelle: "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät",
     }),
+    // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
+    // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
+    wieseStation(1, [["wiese", "third", 0.5]], 60, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
+    wieseStation(
+        2,
+        ["wiese", "genesis"].flatMap((o) => ["ego", "third"].flatMap((s) => [0.5, 0.3].map((u) => [o, s, u]))),
+        300,
+        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte"
+    ),
+    // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
+    // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
+    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 60, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
+    jahrStation(
+        2,
+        ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was])),
+        ["sommer", "winter", "fruehling"],
+        180,
+        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"
+    ),
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
 // was hier steht, bucht weiter die Hand oder bleibt 0, bis das Werkzeug steht.
-const fehlt = [];
+const fehlt = [
+    // vegetation.K3 (Zweig w3w-wald, 29.10.): das Band der REF real-mischwald (Stämme je Bildbreite, Unterholz-Deckung 0–2 m) steht
+    // nirgends — weder im Spiel-Baum (spec/abnahme) noch hier; aus der Cloud ist die Quelle nicht ladbar (Wikimedia: 403 am Proxy).
+    {
+        kriterium: "vegetation.K3",
+        staffel: 1,
+        befehl: null,
+        grund: "die REF real-mischwald fehlt (kein Band für Stämme je Bildbreite und Unterholz-Deckung 0–2 m im Repo, aus der Cloud nicht ladbar): ohne Band urteilt keine Station; die Licht-Flecken (Boden-Luma unter Kronen gegen offenen Boden, zwei Uhrzeiten) misst erst die Station Wald mit diesem Band",
+    },
+    {
+        kriterium: "vegetation.K3",
+        staffel: 2,
+        befehl: null,
+        grund: "dieselbe fehlende REF real-mischwald wie Staffel 1, dazu fehlt das Gesetz der Strahlen: Volumen-Licht über die EINE Luft gibt es nicht (Strahl-Kontrast im Gegenlicht ungemessen)",
+    },
+];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)
 const sprungVon = (z) => (z.wege && z.wege.sprungN !== undefined ? z.wege.sprungN : z.sprungN);
 

@@ -1303,6 +1303,129 @@ const stationen = [
         pfad: [...BILD, ...LOD_PFAD, "stamm/gelaende-*.js"],
         quelle: "1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde",
     },
+    {
+        kriterium: "material.K4",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // w3w-glanz (EIN Spiegel-Pass für Wasser, Glas, Lack, Metall, Nässe — das Glanz-Ziel des Szenen-Passes, `_spiegelUmgebung`):
+        // koordination `bericht/2910-w3w-glanz/spiegel-lack.js` über `werkbank eval` in der Welt der Sitzung — ein GT rechts neben dem
+        // Spieler, der Ego-Blick (`_loopCamera`) trifft seine Flanke streifend; Lack und Seiten-Scheibe je mit ihrer Maske (der Schuss
+        // ohne sie) und ihrer Ebene (Haupt-Achsen der Welt-Punkte, ≤ 3 cm), das Maß der Wasser-Station (`klassenMasse` spiegelTreue,
+        // die Achse an der Ebene: abnahme-urteil `spiegelPartner` mit `normale`). Gültig: Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel
+        // in der Ebene und ≥ 8 Blöcke.
+        probe: { sek: 60, befehl: befehlDer({
+            name: "material.K4#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "spiegel", probe: "@KOORD@/bericht/2910-w3w-glanz/spiegel-lack.js", blob: "e9ba0e39b1c24c8773296cdefc57551d1b298d4c", muss: true },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.spiegel;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e) return { gruen: false, zahl: "keine Spiegel-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            if (e.ende !== "ok" || !e.ergebnis) return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
+            const st = e.stand || {};
+            const pose = st.sicht === "first" && st.uhr === 0.5 && st.wetter === "sunny";
+            const teile = [];
+            let gruen = false;
+            for (const n of ["lack", "glas"]) {
+                const m = e.ergebnis[n] || {};
+                const gueltig = m.ebene >= 2000 && m.bloecke >= 8 && m.einfallGrad >= 45 && m.einfallGrad <= 85 && !m.quer;
+                if (hw && pose && gueltig && m.spiegelTreue != null && m.spiegelTreue >= 0.5) gruen = true;
+                teile.push(
+                    n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
+                        " Blöcke, Einfall " + m.einfallGrad + "°, Normale " + JSON.stringify(m.normale)) + ")"
+                );
+            }
+            return {
+                gruen,
+                zahl: teile.join(" · ") + " · Soll ≥ 0,5 an Lack oder Scheibe · " + st.sicht + " Uhr " + st.uhr + " " + st.wetter + " · " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [
+            ...BILD,
+            "stamm/studio-*.js",
+            "stamm/siedlung-*.js",
+            "stamm/bau-*.js",
+            "vehicle-core.js",
+            "foundry-bruecke.js",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät",
+    },
+    {
+        kriterium: "material.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // w3w-glanz (Rauheit und Metall aus der Stoff-Zeile, `_stoffOptik`): koordination `bericht/2910-w3w-glanz/kugel-glanz.js` über
+        // `werkbank eval` — je Klasse EINE Kugel im Welt-Stoff ihrer Zeile (Umgebung aus), das Auge bei θd 25°, die Belichtungs-Reihe
+        // C / A × 1, 1/32, 1/1024 → die BRDF je Pixel, ihr Profil über θh; Breite θ50 (Median der Spitzen-Energie über θh 0–20°) und
+        // Spitze ρ (Kappe θh ≤ 1° je Energie, 1/sr). DIE REFERENZ: MERL (Matusik et al. 2003) über die NBRDF-Netze von Sztrajman et al.
+        // 2021 (github asztr/Neural-BRDF data/merl_nbrdf.zip), bei θd 25° dieselben Maße je Exemplar; das Band der Klasse von ihrem
+        // kleinsten bis zum größten Exemplar, die Toleranz der Bühne Breite ± max(0,3°, 5 %), Spitze ×/÷ 1,3.
+        probe: { sek: 60, befehl: befehlDer({
+            name: "material.K5#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "kugel", probe: "@KOORD@/bericht/2910-w3w-glanz/kugel-glanz.js", blob: "d3d9eb61334d924027e700d582839c5a8c09a694", muss: true },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            if (j.fehler) return { gruen: false, zahl: "Folge: " + j.fehler };
+            const k = j.schritte && j.schritte.kugel;
+            const e = k && k.json && k.json.ergebnis;
+            if (!e) return { gruen: false, zahl: "keine Kugel-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
+            if (e.ende !== "ok") return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
+            // je Klasse [θ50 von, bis] in Grad und [ρ von, bis] in 1/sr — MERL über NBRDF bei θd 25°
+            const REF = {
+                eisen: [[11.09, 11.09], [8.2, 8.2], "black-oxidized-steel"],
+                bronze: [[1.31, 7.79], [51.4, 471.3], "alum-bronze 7,79°/51,4, brass 1,31°/471,3"],
+                quarz: [[0.63, 1.45], [437.3, 698.5], "black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3"],
+                stahl: [[0.45, 0.47], [716.5, 775.0], "steel, ss440, chrome-steel"],
+            };
+            const teile = [];
+            let im = 0;
+            for (const [n, [b, s, ex]] of Object.entries(REF)) {
+                const m = (e.klassen || {})[n];
+                if (!m || m.breite == null || m.spitze == null) {
+                    teile.push(n + " ungemessen");
+                    continue;
+                }
+                const tb = Math.max(0.3, 0.05 * b[1]);
+                const gueltig = m.thetaD != null && Math.abs(m.thetaD - 25) <= 3 && m.pixel >= 5000 && (m.luecken || []).length === 0;
+                const breit = m.breite >= b[0] - tb && m.breite <= b[1] + tb;
+                const spitz = m.spitze >= s[0] / 1.3 && m.spitze <= s[1] * 1.3;
+                if (gueltig && breit && spitz) im++;
+                teile.push(
+                    n + " θ50 " + m.breite + "° " + (breit ? "im" : "NEBEN dem") + " Band, ρ " + m.spitze + " " + (spitz ? "im" : "NEBEN dem") + " Band" +
+                        (gueltig ? "" : " UNGÜLTIG (θd " + m.thetaD + ", " + m.pixel + " px, Lücken " + JSON.stringify(m.luecken) + ")") + " — " + ex
+                );
+            }
+            const st = e.stand || {};
+            const gruen = hw && im >= 3 && st.uhr === 0.5 && st.wetter === "sunny";
+            return {
+                gruen,
+                zahl: im + " von 4 Klassen im Band (Soll ≥ 3): " + teile.join(" · ") + " · Sonne " + e.sonnenHoeheGrad + "°, Uhr " + st.uhr + " " + st.wetter + ", " + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "stamm/bau-*.js", "stamm/siedlung-*.js", "stamm/vegetation-*.js", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = Glanz-Breite und -Spitze an der Kugel-Bühne für ≥ 3 Klassen im realen Band einer gemessenen BRDF-Referenz, an einem Gerät",
+    },
 ];
 
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.

@@ -1455,16 +1455,27 @@ module.exports = [
     // ── stoffe.K2#2 ── gate:stand-takt --brand (Null-Renderer, Mess-Wiese, Spielzeit-Schritte des Takts `_tickBrand`; headless, die ms
     // je Bild an der CPU des Läufers — das Bild von Asche, Rauch und Glut an Radeon und GTX misst diese Station nicht): die Feuchte des Betts ist EINE Funktion des Orts (stamm/feld-leben.js `_brandFeuchte`: die Luft-Trockene,
     // der Boden der Zelle aus der Hydrosphäre `_feuchteAt` bis zur Faser-Sättigung, der Regen als freies Wasser bis 250 %), die
-    // Asche liegt im Boden-Stoff (Kanal G der Kronen-Karte, `_ascheMalen`, die Palette `asche` Y 0,052) und grünt mit der Sukzession
-    // nach, Rauch (`_updateDorfRauch`) und Knistern (`_glutAmOhr`) lesen `brandFeld` wie das Licht. Gemessen: HALT windauf des Flusses
+    // Asche liegt im Boden-Stoff (Kanal G der Kronen-Karte, `_ascheMalen`, die Palette `asche` Y 0,052) als weiche Grenze aus dem Feld
+    // (`_brandNarbe`: der Anteil verbrannter Zell-Mitten, vom EINEN Rauschen verschoben — nie das 16-m-Raster) und grünt mit der
+    // Sukzession nach; das Bild (`_brandBild`: die Flammen der Front aus derselben Zelle, die das Licht liest, Länge nach Byram, und
+    // die Fahne als Linien-Plume mit Körper) und Knistern (`_glutAmOhr`) lesen `brandFeld` wie das Licht. Gemessen: HALT windauf des Flusses
     // nächst der Mess-Wiese (je Zelle, die die Front erreichte und nicht fing, ihr Grund; die Mutante ohne die Feuchte des Orts
-    // brennt ins nasse Ufer), FELS neben der nächsten Stein-Zelle, REGEN (30 s Brand, dann das Wort Regen; die Mutante ohne freies
-    // Wasser), LESER im Brand, ASCHE an der Zelle des Herds (Albedo, Halme; nach der Stufe Gras), ZEIT 2 km fern bei ≥ 2 000
-    // brennenden Zellen (je Bild p95 von Takt und Lesern, der Verzug des Schritts). Vorher (main b3f9ae95 + w3s-feuer): das Laub fiel im
+    // brennt ins nasse Ufer), FELS die Stein-Zellen, die dieselbe Front erreichte und nicht fing, REGEN (30 s Brand, dann das Wort Regen; die Mutante ohne freies
+    // Wasser), LESER im Brand (Licht, Flammen, Fahne, Ohr; DECKUNG der Fahne 8 m über den Flammen, die Mutante Fäden ohne Körper),
+    // KANTE der Narbe (am Saum der Asche der Anteil der Gefälle in den Achsen und der Abstand zum 16-m-Raster, die Mutante malt das
+    // Quadrat der Zelle), ASCHE an der Zelle des Herds (Asche, Halme; nach der Stufe Gras), ZEIT 2 km fern bei ≥ 2 000 brennenden
+    // Zellen (je Bild p95 von Takt und Lesern, der Verzug des Schritts) und SCHIRM (das Bild des Brands je Bild, im Deckel seiner
+    // Flammen und Zellen). Die Uhr ist Spieler-Wort: HALT brennt mittags (bis w3v-brand-bild lief die Uhr, so weit das Booten
+    // brauchte — derselbe Herd trug 0 bis 95 Aschen). Vorher (main b3f9ae95 + w3s-feuer): das Laub fiel im
     // Landregen erst nach 196 s, das nasse Ufer brannte wie die Kuppe, die Asche trug keine Albedo, Rauch und Knistern lasen den Brand
     // nicht, 2 000 Zellen kosteten je Schritt 7,4 ms und die Leser 2,5 ms je Bild. Am Zweig w3u-nachfolge (Null-Renderer, Radeon-Laptop):
     // GRÜN — Regen 20 s (Mutante 300), Halt 2× am nassen Gras (Mutante: 7 nasse brennen, 4× Halt am Wasser), Fels hält, Asche Y 0,052
-    // → nach der Stufe Gras 0,148, je Bild p95 0,3 ms bei 2 000 Zellen (451 der Welt), Verzug 1 s. GPU: an der Station.
+    // → nach der Stufe Gras 0,148, je Bild p95 0,3 ms bei 2 000 Zellen (451 der Welt), Verzug 1 s. In der Nacht (Radeon) brannte EINE
+    // Zelle als Fleck ohne Flamme, die Fahne ein Faden, die Asche eine Platte mit geraden Kanten im Raster. Am Zweig w3v-brand-bild
+    // (Null-Renderer, Cloud): GRÜN — Halt 95 Zellen, 3× am nassen Gras, 11× am Stein (Mutante 7 nasse), Regen 7 s (Mutante 300), Flammen 21 bis
+    // 2,23 m, Deckung 0,989 (Mutante 0,163), Kante Achse 0,31 · Linie 1,25 m (Mutante 0,963 · 0), Asche voll 0,81 → Gras 0, je Bild
+    // p95 0,2 ms, Schirm 0,7 ms bei 2 000 Zellen. Der Schritt des Brands fällt mit einem Hauch (bis dahin hing ein Lauf, der die Uhr
+    // auf `_brandUhr + schrittS` stellte, an ~0,1 % der Uhren: derselbe Herd trug 0 bis 95 Aschen). GPU: an der Station.
     {
         kriterium: "stoffe.K2",
         staffel: 2,
@@ -1478,7 +1489,7 @@ module.exports = [
             const B = jsonZeile(lauf.stdout, /^BRAND \{/);
             if (!B || !B.halt || !B.regen || !B.zeit || !B.asche || !B.asche.asche)
                 return { gruen: false, zahl: "keine BRAND-Zeile (Exit " + lauf.exit + ")" };
-            const [h, m, f, rg, rm, l, a, z] = [B.halt, B.haltM, B.fels, B.regen, B.regenM, B.leser, B.asche, B.zeit];
+            const [h, m, rg, rm, l, a, z, k, km] = [B.halt, B.haltM, B.regen, B.regenM, B.leser, B.asche, B.zeit, B.kante || {}, B.kanteM || {}];
             const gruen =
                 /✅ BRAND GRÜN/.test(lauf.stdout) &&
                 h.nass >= 1 &&
@@ -1486,26 +1497,33 @@ module.exports = [
                 h.wasserGebrannt === 0 &&
                 h.nassGebrannt === 0 &&
                 m.nassGebrannt >= 1 &&
-                !!f &&
-                f.gehalten === true &&
+                h.fels >= 1 &&
                 rg.s <= 60 &&
                 rm.s > 60 &&
                 l.licht >= 1 &&
                 l.rauch >= 1 &&
+                l.flammen >= 1 &&
+                l.deckung >= 0.9 &&
                 l.glutF >= 64 &&
-                a.asche.Y <= 0.08 &&
+                k.achse <= 0.4 &&
+                k.linie >= 0.8 &&
+                km.linie < 0.5 &&
+                a.asche.a >= 0.99 &&
                 a.gras.a === 0 &&
                 z.brennend >= 2000 &&
                 z.bildMs <= 0.5 &&
+                z.schirmMs <= 1 &&
                 z.verzugS <= 2;
             return {
                 gruen,
                 zahl:
                     "Halt: " + h.brannte + " Zellen brannten, die Front hielt " + h.nass + "× am nassen Gras (ohne die Feuchte des Orts brannten " +
-                    m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + (f ? f.grund : "—") +
-                    " · Regen löscht nach " + rg.s + " s (Mutante " + rm.s + " s) · Asche Y " + a.asche.Y + " → nach der Stufe Gras " +
-                    a.gras.Y + " · Licht " + l.licht + ", Rauch " + l.rauch + ", Glut am Ohr " + l.glutF + " m² · " + z.brennend +
-                    " brennende Zellen (" + z.echt + " der Welt): je Bild p95 " + z.bildMs + " ms (Leser " + z.leserMs + "), der Schritt bis " + z.verzugS + " s hinter der Uhr",
+                    m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + h.fels + "× gehalten" +
+                    " · Regen löscht nach " + rg.s + " s (Mutante " + rm.s + " s) · Asche " + a.asche.a + " (voll " + a.asche.voll +
+                    ") → nach der Stufe Gras " + a.gras.a + " · Kante Achse " + k.achse + ", Linie " + k.linie + " m (Mutante " + km.achse +
+                    ", " + km.linie + ") · Licht " + l.licht + ", Flammen " + l.flammen + " bis " + l.lang + " m, Fahne " + l.rauch +
+                    " Ballen, Deckung " + l.deckung + ", Glut am Ohr " + l.glutF + " m² · " + z.brennend + " brennende Zellen (" + z.echt +
+                    " der Welt): je Bild p95 " + z.bildMs + " ms (Leser " + z.leserMs + "), Schirm " + z.schirmMs + " ms, der Schritt bis " + z.verzugS + " s hinter der Uhr",
             };
         },
         pfad: [
@@ -1516,11 +1534,13 @@ module.exports = [
             "stamm/vegetation-*.js",
             "stamm/siedlung-satz.js",
             "stamm/siedlung-ort.js",
+            "stamm/stoff-material.js",
             "stamm/klang.js",
             "stamm/bild-himmel.js",
             "stamm/dirigent-*.js",
             "stamm/daten.js",
             "foundry-core.js",
+            "fachwerk-core.js",
             "phyto-core.js",
             "gelaende-core.js",
             "scripts/diag-stand-takt.cjs",
@@ -1750,8 +1770,14 @@ module.exports = [
     // Fällen −0,3, Asche +0,4, Leichnam +0,2, abklingend mit der Narbe), der Wuchs liest ihn nach Monod (`_wuchsAt`). Gemessen an der
     // Zelle des Herds: Halme und Kräuter vor dem Brand, auf der Asche, nach der Stufe Gras und nach der Stufe Busch; an ihrer
     // Nachbarin die Ernte jeder Pflanze (Nährstoff und Wuchs, die Mutante bei festem Nährstoff), die Asche frisch, der Leichnam eines
-    // Risses von Spieler-Hand. Der Jungwuchs fehlt: kein Sämling aus dem Stubben, nach dem Busch wirft der Wald den gewachsenen Baum
-    // (keine Jugend-Gestalt `treeParams(alter)`) — die Station steht ROT, bis er steht.
+    // Risses von Spieler-Hand. DER SÄMLING: der nächste Baum fällt, am Stubben steht bis zum Austrieb kein Baum, dann sein Jungwuchs
+    // in den Stufen `SUKZESSION.jugend` (die Jugend-Gestalt `treeParams(…, alter)` im Pfad der Foundry, `studioOv.alter`, Größe =
+    // Alter), nach der Heilung der gewachsene; seine Gestalt (das Skelett der Prägung) trägt weniger Ordnungen und Glieder, die
+    // Mutante (treeParams ohne `alter`) dieselben. DER WALD: der Brand nimmt jeden Baum seiner Narbe (≥ ½), mit dem Wald der
+    // Sukzession kehrt ihr Jungwuchs zurück, nach der letzten Heilung der gewachsene. Die Asche zählt auf ihrer vollen Fläche (die
+    // Narbe ist eine weiche Grenze, kein Quadrat). Am Zweig w3v-brand-bild (Null-Renderer, Cloud): GRÜN — auf voller Asche (0,81 der
+    // Zelle) kein Halm und kein Kraut, Gras 464/477, Busch 20/23 Kräuter, Sämling 0 → 0,06 → 0,18 → 0,7 → 1 (Skala = Alter),
+    // Gestalt [5 Ordnungen, 1 461 Glieder] gegen [9, 2 933] (Mutante gleich), Wald 79 Bäume: der Brand nimmt 79, Jungwuchs 79, heil 79.
     {
         kriterium: "stoffe.K5",
         staffel: 2,
@@ -1764,14 +1790,16 @@ module.exports = [
         urteil: (j, lauf) => {
             const S = jsonZeile(lauf.stdout, /^SUKZESSION \{/);
             const [a, n] = S ? [S.asche, S.naehr] : [];
+            const [J, G, W] = [(S && S.saemling && S.saemling.stufen) || [], S && S.saemling && S.saemling.gestalt, S && S.wald];
             if (!a || !a.asche || !a.gras || !a.busch || !n || !n.ernte)
                 return { gruen: false, zahl: "keine SUKZESSION-Zeile (Exit " + lauf.exit + ")" };
             const gruen =
                 /✅ SUKZESSION GRÜN/.test(lauf.stdout) &&
                 a.vor.halme >= 20 &&
                 a.vor.kraut >= 3 &&
-                a.asche.halme <= 0.05 * a.vor.halme &&
-                a.asche.kraut === 0 &&
+                a.asche.voll >= 0.4 &&
+                a.asche.halmeVoll <= 0.05 * a.vor.halme * a.asche.voll &&
+                a.asche.krautVoll === 0 &&
                 a.gras.halme >= 0.8 * a.vor.halme &&
                 a.gras.kraut <= 0.3 * a.vor.kraut &&
                 a.busch.kraut >= 0.8 * a.vor.kraut &&
@@ -1780,14 +1808,17 @@ module.exports = [
                 n.asche >= 1.2 &&
                 n.leichnam >= 1.1 &&
                 n.mutante.W === n.mutante.W0 &&
-                !!S.saemling;
+                !!(J.length === 5 && J[0].alter === 0 && J[2].alter > 0 && J[2].alter < 1 && J[4].alter === 1 && J[4].skala === 1) &&
+                !!(G && G[0][1] < G[1][1]) &&
+                !!(W && W.vor >= 3 && W.brand === 0 && W.jung >= 0.6 * W.vor && W.heil >= 0.9 * W.vor);
             return {
                 gruen,
                 zahl:
                     "Halme " + a.vor.halme + " → Asche " + a.asche.halme + " → Gras " + a.gras.halme + " · Kräuter " + a.vor.kraut +
                     " → Asche " + a.asche.kraut + " → Gras " + a.gras.kraut + " → Busch " + a.busch.kraut + " · Ernte (" + n.ernte.n +
                     "): Nährstoff " + n.ernte.N0 + " → " + n.ernte.N + ", Wuchs " + n.ernte.W0 + " → " + n.ernte.W + " · Asche " + n.asche +
-                    ", Leichnam " + n.leichnam + " · Sämling " + (S.saemling ? "steht" : "fehlt (treeParams(alter) nicht gebaut)"),
+                    ", Leichnam " + n.leichnam + " · Sämling " + (J.length ? J.map((q) => q.alter).join(" → ") : "fehlt") +
+                    (G ? ", Gestalt " + JSON.stringify(G) : "") + (W ? " · Wald " + W.vor + ": Brand nimmt " + (W.vor - W.brand) + ", Jungwuchs " + W.jung + ", heil " + W.heil : ""),
             };
         },
         pfad: [
