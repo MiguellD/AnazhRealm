@@ -7,7 +7,9 @@ name: Code-Check
 # `voll`, die ganze übrige Batterie): auf integ-probe und main, auf einem PR nach main, nachts, auf Abruf und bei
 # `[ci voll]` in der Commit-Message; die Gruppen nach dem p90 ihrer Schritte verteilt (spec/ci/ci-zeiten.json,
 # `node scripts/ci-zeiten.cjs` misst und verteilt, K61 je Klasse cpu/gpu), jede ≤ dem Mittel ihrer Klasse + 0,5 min, hinter dem
-# Kopf-Richter (Job `kopf`: ein Kopf, der die volle Batterie schon grün trug, fährt sie nicht noch einmal). `[skip ci]` (WIP)
+# Kopf-Richter (Job `kopf`: ein Kopf, der die volle Batterie schon grün trug, fährt sie nicht noch einmal; auf einem Zweig fahren
+# nur die Gruppen, deren Schritte nach Konsum fahren — der Konsum-Zeuge legt je Gruppe die Spur ab, scripts/ci-kopf.cjs `waehle`
+# vergleicht sie mit den Wechseln seit dem Grund). `[skip ci]` (WIP)
 # überspringt beides. gate:ci-deckung hält die Waage: jeder Schritt steht an GENAU einer Stelle, keine Gruppe über ihrem
 # Deckel, kein Schritt ohne Zeit, ein voller Lauf nie mehr Jobs zugleich als das Konto Läufer-Plätze hat.
 on:

@@ -158,9 +158,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `npm run format:check` · `npm run atlas` (+ `--find`).
 - Lokal der Puls der berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je
   Version; gemergt bei grüner Zweig-CI.
-- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 Gruppen (1–7 CPU, 8–18 GPU; Playtest = Gruppe 1)
-  auf integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; `node scripts/ci-zeiten.cjs` misst und
-  verteilt, `gate:ci-deckung` hält die Waage; `[skip ci]` überspringt beides.
+- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 Gruppen (die Tafel, heute 1–13 CPU, 14–18 GPU; Playtest = Gruppe 1)
+  auf integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter — auf einem Zweig nur die Gruppen, deren
+  Schritte nach Konsum fahren (der Konsum-Zeuge `scripts/lib/konsum-zeuge.cjs` legt je Gruppe die Spur ab, `ci-kopf` wählt gegen den Grund,
+  die Tafel `VOLL_GRUPPEN`); `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält Waage und Zeugen (Z); `[skip ci]`
+  überspringt beides.
 - GPU-Zeit nur `werkbank gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
 - Commits klein, deutsch, emoji-frei, die Message ist der Chronik-Eintrag; PR nur auf Wunsch. Docs: `docs/README.md` ist die EINE Karte.

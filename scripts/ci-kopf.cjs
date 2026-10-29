@@ -210,7 +210,10 @@ async function waehle({ api, wf, kopf, git, lade }) {
         const jobs = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs.filter((j) =>
             VOLL_JOB.test(j.name)
         );
-        if (!jobs.length || jobs.some((j) => j.conclusion !== "success" && j.conclusion !== "failure")) continue;
+        // die ganze Batterie: so viele voll-Jobs wie die Tafel Gruppen (`voll k/n`), jeder mit Urteil — ein gewählter Lauf ist kein Grund
+        const gesamt = jobs.length && Number(/^voll \d+\/(\d+)/.exec(jobs[0].name)[1]);
+        if (!jobs.length || jobs.length !== gesamt || jobs.some((j) => j.conclusion !== "success" && j.conclusion !== "failure"))
+            continue;
         const arts = (await api(`/actions/runs/${r.id}/artifacts?per_page=100`)).artifacts;
         const zu = jobs.map((j) =>
             arts.find((a) => a.name === `konsum-voll-${/^voll (\d+)/.exec(j.name)[1]}` && !a.expired)
