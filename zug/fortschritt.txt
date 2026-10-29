@@ -822,3 +822,4 @@
 2026-10-29 07:11:14 MELDEN takt19-abab: Dienst hing 03:36-06:54 im Boot stadt-A1 (werkbank lauf --wandern bahn ohne Frist, sonst ~47 s) und hielt das GPU-Schloss omen-mp; echt-Job 40809054698 /1 und /2 warteten im job-start-Hook je 25 min auf das Schloss -> ROT (kein Runner-Fehler, keine Runner-Version). Behoben: serie.sh Frist je lauf 600/900 s + HÄNGER-Zeile, Neustart 06:55, z67-abab läuft, takt19-abab setzt an stadt fort. echt darf zurück auf die OMEN: ein Boot hält das Schloss jetzt höchstens ~25 min, normal 3-5 min
 2026-10-29 07:21:09 z67-abab d-ego nicht-langsamer 10.9 · 2/3 (2+2)
 2026-10-29 07:38:55 z67-abab stadt VERLÄNGERN 17.7 · 3/3 (2+2)
+2026-10-29 07:52:53 z67-abab w-ego(4+4) nicht-langsamer 13.9 · verlängert (4+4)
