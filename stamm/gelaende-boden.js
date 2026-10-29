@@ -667,12 +667,14 @@ class AnazhRealm_gelaende_boden {
         const amWasser = nass === undefined ? this._erdbauAmWasser(G.erdbauNormal(splats)) : nass;
         wm.erdbau[key] = splats;
         this._erdbauWirkt(splats, amWasser, { erdbauDazu: splats });
+        this._ortFremdPruefen(key, splats); // ein gesetztes Haus im Ortsradius: die Gasse weicht ihm (bauen.K2 Staffel 2)
         return true;
     }
     // DER GRUND FÄLLT MIT DEM BAU (S4, Lehre 3): der Erdbau `grund` eines Hauses — der eigene Schlüssel des gesetzten Hauses
     // (`haus:`, `_hausGrundSetzen`) oder ein Splat im Erdbau seines Orts (`ortPlan`) — liegt mit der Mitte auf dem Eintrag;
     // `removeArchitecture` nimmt ihn mit, die Gedächtnisse am Ort fallen wie beim Legen (`_erdbauWirkt`). Die Platte des Orts
-    // (seine Fläche) bleibt. Vorher überlebte der Grund den Bau: der gezeichnete Boden blieb geschnitten, der Keller hohl —
+    // (seine Fläche) bleibt; der Ein-Slot-Ort des gesetzten Hauses (`haus:`: Platte, Grund, Vorplatz, bauen.K2) fällt ganz —
+    // sonst trüge sein Schlüssel die Platte weiter, und ein Haus am selben Ort legte nie wieder einen Grund. Vorher überlebte der Grund den Bau: der gezeichnete Boden blieb geschnitten, der Keller hohl —
     // ein Loch in der Welt, wo das Haus stand.
     _erdbauGrundFaellt(entry) {
         const wm = this.state.worldMeta;
@@ -681,6 +683,7 @@ class AnazhRealm_gelaende_boden {
         const sein = (q) => q && q.art === "grund" && Math.abs(q.cx - p.x) < 0.05 && Math.abs(q.cz - p.z) < 0.05;
         const weg = [];
         const ohne = []; // ihre Stellen in der Reihe des Erdbaus (`_erdbauRoh`) vor dem Fall
+        const haus = []; // die Schlüssel gesetzter Häuser, die ganz fallen (die Gasse ihres Orts liegt wieder, wie sie lag)
         let i = 0;
         for (const k of Object.keys(wm.erdbau)) {
             const liste = wm.erdbau[k];
@@ -689,19 +692,22 @@ class AnazhRealm_gelaende_boden {
                 i += liste.length;
                 continue;
             }
+            const ganz = k.startsWith("haus:");
             for (const q of liste) {
-                if (sein(q)) {
+                if (ganz || sein(q)) {
                     weg.push(q);
                     ohne.push(i);
                 }
                 i++;
             }
-            const rest = liste.filter((q) => !sein(q));
+            const rest = ganz ? [] : liste.filter((q) => !sein(q));
             if (rest.length) wm.erdbau[k] = rest;
             else delete wm.erdbau[k];
+            if (ganz) haus.push([k, liste]);
         }
         if (!weg.length) return false;
         this._erdbauWirkt(weg, this._erdbauAmWasser(globalThis.__gelaendeCore.erdbauNormal(weg)), { erdbauOhne: ohne });
+        for (const [k, liste] of haus) this._ortFremdPruefen(k, liste);
         return true;
     }
     // Was ein gelegter oder gefallener Erdbau (seine Splats) am Ort ändert, fällt dort: Stand, Caches und Wald im Umkreis,
@@ -859,7 +865,7 @@ class AnazhRealm_gelaende_boden {
             let wahl = flug.get(key);
             if (!wahl) {
                 wahl = this._ortWahlImFaden(plan, { x: origin.x, z: origin.z }, frei, fest).then(
-                    (v2) => (ple.set(key, v2), flug.delete(key), v2),
+                    (v2) => (ple.set(key, v2), flug.delete(key), this._ortFremdPruefen(key), v2),
                     (e) => (flug.delete(key), Promise.reject(e))
                 );
                 flug.set(key, wahl);
@@ -871,7 +877,9 @@ class AnazhRealm_gelaende_boden {
     static _ortSchluessel(plan, origin) {
         return "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
     }
-    async _ortWahlImFaden(plan, origin, frei, fest) {
+    // Der Faden rechnet mit den Fremd-Slots um den Ort (`_ortFest`: die gesetzten Häuser, um die der Plan seine Wege legt, bauen.K2
+    // Staffel 2); `ohne` [von, bis): die Stellen des Erdbaus, die die Höhe nicht trägt (der eigene des Orts, `_ortNeuPlanen`).
+    async _ortWahlImFaden(plan, origin, frei, fest, ohne) {
         const W = fest ? Object.assign({}, AnazhRealm.ORT_WAHL, { ringe: 0 }) : AnazhRealm.ORT_WAHL;
         const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
@@ -902,6 +910,8 @@ class AnazhRealm_gelaende_boden {
                     M: AnazhRealm.WERK_LAND_M,
                     spieler: pm ? { x: pm.x, z: pm.z, frei: AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN } : null,
                     raster,
+                    fest: this._ortFest(origin, suche),
+                    ohne,
                 },
                 [raster.lx.buffer, raster.lz.buffer]
             );

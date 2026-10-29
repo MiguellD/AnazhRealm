@@ -127,7 +127,7 @@ class AnazhRealm_studio_bruecke {
         }
         return f;
     }
-    // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement), Grund (grund), die Frage
+    // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement), Slot (slot), die Frage
     // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
     // sind disjunkt.
     _foundryAntwort(f, m) {
@@ -147,16 +147,16 @@ class AnazhRealm_studio_bruecke {
                     f.nachAtlas.push(() => p(meshes));
                 else p(meshes);
             }
-        } else if (m.type === "settlement" || m.type === "grund" || m.type === "karte") {
+        } else if (m.type === "settlement" || m.type === "slot" || m.type === "karte") {
             // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung (fachwerk exportSettlement, generisch
-            // über die Zweit-Kern-Schleife der Brücke, der Dorf-Export der Platte); der Grund-Plan-Kanal (S4): der Grund
-            // eines gesetzten Hauses; die Karte: die ganze Antwort (ihre Bytes oder null, die Liefer-Marke)
+            // über die Zweit-Kern-Schleife der Brücke, der Dorf-Export der Platte); der Slot-Plan-Kanal (bauen.K2): das
+            // gesetzte Haus als Slot; die Karte: die ganze Antwort (ihre Bytes oder null, die Liefer-Marke)
             if (m.type === "settlement")
                 this._foundryLiefer(f, m.platte ? "platte" : m.bau ? "werk" : "leer", "dorf-export", m.liefer);
             const ps = f.pending.get(m.reqId);
             if (ps) {
                 f.pending.delete(m.reqId);
-                ps(m.type === "karte" ? m : (m.type === "grund" ? m.grund : m.plan) || null);
+                ps(m.type === "karte" ? m : (m.type === "slot" ? m.slot : m.plan) || null);
             }
         }
         // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)

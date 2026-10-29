@@ -2457,7 +2457,7 @@
     // zeichnet dort seinen Boden (Diele, Anbau-Estrich, Hof- und Flügel-Boden), 0: der Grund ist sein Boden (der Turm — seine
     // Geschossböden beginnen im ersten Stock —, das Rund — ein Kreis, keine Box —, das Pfahlhaus über dem Grund). Dazu der
     // Keller-Raum [x0, x1, z0, z1, y0, y1] (vom Kellerboden bis zur Decke auf Grade) oder null; `arten` nennt je Box ihre Masse. Nur die Basis des Stapels
-    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Plan des gesetzten Hauses (`grundPlan`), ortPlan (der
+    // steht auf dem Grund. Leser: exportSettlement (der Slot), der Slot des gesetzten Hauses (`slotPlan`), ortPlan (der
     // Erdbau `grund`, gelaende-core) und gate:haus-welt W9. Vorher reiste EINE Box (obb) und die Tür-Zeile — der Anbau und der Turm lagen
     // außerhalb jedes Grundrisses (Büschel im Anbau), der Keller war voll Erde.
     var GRUND_BODEN = { haupt: 1, anbau: 1, fluegel: 1, hofarm: 1, turm: 0, rund: 0 };
@@ -4111,18 +4111,53 @@
         });
         return B;
     }
-    // DER GRUND AUS DEM PLAN (S4): das Grund-Datum eines Hauses (`grundVon`: der Körper-Satz und der Keller) aus seinem Plan
-    // (`planBau`, ~2 ms statt ~26 ms des Mass-Baus), in der Merge-Ordnung von `buildInstance` (Rezept, ov, Same). Der Wirt legt
-    // damit den Grund des gesetzten Hauses beim Setzen (`_hausGrundSetzen`), vor dem Bau der Chunks um ihn — bis S4-N2 kam er
-    // mit der Hülle des gebauten Hauses (das Vorschau-Haus am Tor: gesetzt bei 2,1 s, die Hülle bei 8,2 s, dann 6 Chunks am
-    // Spawn neu, Radeon kalt). null: kein Haus-Rezept.
-    function grundPlan(rezeptId, seed, ov) {
+    // DER SLOT EINES HAUSES (bauen.K2): die EINE Zeile, die ein Haus in einen Plan trägt — der Mass-Bau `B` (Hülle `ext`, Tür
+    // aus `dims`, Kamin, Grund-Datum), der Parameter-Vektor `hp` und der Rahmen `q` {x, z, phi} samt seiner Grundfläche `obb`.
+    // Leser: der Export des Dorfs (`exportSettlement`, je Slot des Layouts) und das gesetzte Haus (`slotPlan`) — beide gehen
+    // danach durch DENSELBEN Plan v2 (`ortPlan`: Platte, Grund, Vorplatz). `kultur`: das Rezept (ohne: hp.kultur).
+    function hausSlot(B, hp, q, obb, kultur) {
+        return {
+            x: q.x,
+            z: q.z,
+            phi: q.phi,
+            obb: obb,
+            ext: B.ext,
+            kultur: typeof kultur === "string" ? kultur : typeof hp.kultur === "string" ? hp.kultur : null,
+            seed: hp.seed >>> 0,
+            rolle: typeof hp.rolle === "string" ? hp.rolle : "wohnhaus",
+            baujahr: isFinite(hp.baujahr) ? hp.baujahr | 0 : 0,
+            ov: JSON.parse(JSON.stringify(hp)),
+            // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE + der Kern-Footprint W/D je Slot (dims-Wahrheit aus massBau) — der
+            // Host baut daraus die Blocker-Wände MIT Tür-Lücke (Betreten; Haus-lokal, vor slot.phi).
+            tuer: tuerZeile(B.dims),
+            // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) — null wenn massBau kein chimney (ROUND/modern/kuppel).
+            chimney: kaminSpitze(B.chimney),
+            // DAS GRUND-DATUM (S4, additiv): der Körper-Satz und der Keller (`grundVon`), haus-lokal vor slot.phi — ortPlan
+            // legt daraus den Erdbau `grund` (gelaende-core)
+            grund: B.grund,
+        };
+    }
+    // DAS GESETZTE HAUS ALS SLOT (bauen.K2): ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau am Tor) wird ein
+    // Ein-Slot-Plan — derselbe Mass-Bau wie das Haus im Dorf (`massBauExport`, in der Merge-Ordnung von `buildInstance`:
+    // Rezept, ov, Same), seine Grundfläche das Rechteck der Hülle um ihre Mitte in der Gier `phi` (die Formel des Layouts,
+    // `dorfLayout`), am Ursprung des Plans. Der Wirt rechnet daraus im Ort-Faden den Plan v2 (`ortPlan`) und legt dessen Erdbau
+    // — Platte, Grund und Vorplatz wie der Dorf-Slot derselben Gestalt. Bis bauen.K2 kam nur der Grund (`grundPlan`, der
+    // Plan-Bau): der Vorplatz entstand nur im Dorf. null: kein Haus-Rezept.
+    function slotPlan(rezeptId, seed, ov, phi) {
         var pre = PRESETS[rezeptId];
         if (!pre || pre.kind === "ausstattung") return null;
         var p = hausParams(pre, ov || null);
         var sd = Number(seed);
         if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
-        return planBau(p).grund;
+        var B = massBauExport(p);
+        var e = B.ext;
+        var f = isFinite(phi) ? Number(phi) : 0;
+        var c = Math.cos(f);
+        var s = Math.sin(f);
+        var lcx = (e.x0 + e.x1) / 2;
+        var lcz = (e.z0 + e.z1) / 2;
+        var obb = { cx: lcx * c + lcz * s, cz: -lcx * s + lcz * c, phi: f, ex: (e.x1 - e.x0) / 2, ez: (e.z1 - e.z0) / 2 };
+        return hausSlot(B, p, { x: 0, z: 0, phi: f }, obb, rezeptId);
     }
 
     // DIE TÜR-ZEILE (DORF-ERLEBNIS, die EINE Formel): Haustür (Rechteck, Front −z) und Hintertür samt Kern-Footprint W/D,
@@ -6534,31 +6569,16 @@
                 ev = Bs[i].ext,
                 o = plan.lose[i] ? obbImLos(q, ev) : q.obb;
             slotVon[i] = slots.length;
-            slots.push({
-                x: q.x,
-                z: q.z,
-                phi: q.phi,
-                obb:
+            slots.push(
+                hausSlot(
+                    Bs[i],
+                    hp,
+                    q,
                     plan.norm.gap <= 0.6 && hp.brandwand
                         ? obbAnDerBrandwand(o, hp.brandwand, ev, Bs[i].wandX)
-                        : { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez },
-                ext: ev,
-                kultur: typeof hp.kultur === "string" ? hp.kultur : null,
-                seed: hp.seed >>> 0,
-                rolle: typeof hp.rolle === "string" ? hp.rolle : "wohnhaus",
-                baujahr: isFinite(hp.baujahr) ? hp.baujahr | 0 : 0,
-                ov: JSON.parse(JSON.stringify(hp)),
-                // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE + der Kern-Footprint
-                // W/D je Slot (dims-Wahrheit aus massBau) — der Host baut daraus die
-                // Blocker-Wände MIT Tür-Lücke (Betreten; Haus-lokal, vor slot.phi).
-                tuer: tuerZeile(Bs[i].dims),
-                // KAMIN-RAUCH (.105): Spitze haus-lokal (Lab dorfRauch-Formel) —
-                // null wenn massBau kein chimney (ROUND/modern/kuppel).
-                chimney: kaminSpitze(Bs[i].chimney),
-                // DAS GRUND-DATUM (S4, additiv): der Körper-Satz und der Keller (`grundVon`), haus-lokal vor slot.phi — ortPlan
-                // legt daraus den Erdbau `grund` (gelaende-core)
-                grund: Bs[i].grund,
-            });
+                        : { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez }
+                )
+            );
         }
         var aus = {
             seed: plan.seed,
@@ -6643,6 +6663,7 @@
         hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
         brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
+        umM: 0.25, // so weit über den Saum seiner Gasse läuft der Umweg um einen Fremd-Slot (`ortPlan`, ctx.fest)
     };
     // DER EINGANG eines Slots (K10-6 · K66, plan-lokal), den der Gang von der Gasse betritt: z haus-lokal, y seine Schwelle über dem
     // Boden des Hauses — die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9),
@@ -6729,6 +6750,45 @@
             for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
         return -1;
     }
+    // Liang–Barsky: das Stück [t0, t1] der Strecke a → b (im Rahmen eines Rechtecks) in |u| ≤ A, |v| ≤ B, null ohne
+    function clipRechteck(a, b, A, B) {
+        var t0 = 0;
+        var t1 = 1;
+        var p = [a[0] - b[0], b[0] - a[0], a[1] - b[1], b[1] - a[1]];
+        var q = [a[0] + A, A - a[0], a[1] + B, B - a[1]];
+        for (var i = 0; i < 4; i++) {
+            if (p[i] === 0) {
+                if (q[i] < 0) return null;
+            } else if (p[i] < 0) t0 = Math.max(t0, q[i] / p[i]);
+            else t1 = Math.min(t1, q[i] / p[i]);
+        }
+        return t0 <= t1 ? [t0, t1] : null;
+    }
+    // DER LAUF IM FREMD-SLOT (bauen.K2 Staffel 2): betritt der Lauf `pts` die Platte `f` {cx, cz, phi, ex, ez} (beide im Rahmen
+    // des Plans) samt der halben Wegbreite `hw` und dem Saum der Gasse? {lok: der Lauf im Rahmen der Platte, ke/kx: die erste und
+    // die letzte Strecke darin} oder null. Leser: `ortPlan` (der Umweg) und `festWeg`.
+    function festLauf(pts, f, hw) {
+        var c = Math.cos(f.phi || 0);
+        var s = Math.sin(f.phi || 0);
+        var lok = pts.map(function (p) {
+            return [(p.x - f.cx) * c - (p.z - f.cz) * s, (p.x - f.cx) * s + (p.z - f.cz) * c];
+        });
+        var ke = -1;
+        var kx = -1;
+        for (var k = 1; k < lok.length; k++) {
+            var tt = clipRechteck(lok[k - 1], lok[k], f.ex + hw + ORT_GESETZ.saumM, f.ez + hw + ORT_GESETZ.saumM);
+            if (tt && tt[1] - tt[0] > 1e-9) kx = ke < 0 ? (ke = k) : k;
+        }
+        return ke < 0 ? null : { lok: lok, ke: ke, kx: kx };
+    }
+    // BETRITT EIN WEG DES PLANS v2 DEN FREMD-SLOT f (absolut, eine Platte wie ctx.fest)? Leser: der Wirt (`_ortFremdPruefen`: nur
+    // der Ort, dessen Gasse oder Feldweg ein gesetztes Haus betritt, rechnet neu — nie jeder Ort, in dessen Radius es steht).
+    function festWeg(v2, f) {
+        var g = { cx: f.cx - v2.ort.x, cz: f.cz - v2.ort.z, phi: f.phi, ex: f.ex, ez: f.ez };
+        return (v2.roads || []).concat(v2.feldwege || []).some(function (rd) {
+            return !!festLauf(rd.pts || [], g, (isFinite(rd.w) ? rd.w : 3) / 2);
+        });
+    }
     function ortPlan(plan, origin, ctx) {
         if (
             !plan ||
@@ -6788,6 +6848,102 @@
             var dz = z - pz.cz;
             return Math.abs(dx * c - dz * s) <= pz.ex + 1 && Math.abs(dx * s + dz * c) <= pz.ez + 1;
         };
+        // 1b) DIE FREMD-SLOTS (bauen.K2 Staffel 2): ctx.fest nennt die Häuser, die ohne diesen Plan stehen — gesetzt vom Spieler,
+        //    der KI, der Vorschau —, je die Platte ihres Grundrisses samt Saum aus ihrem EIGENEN Erdbau ({cx, cz, phi, ex, ez},
+        //    absolut; der Wirt `_ortFest`, EIN Grund-Datum). Sie sind feste Slots des Plans: jede Gasse und jeder Feldweg, deren
+        //    Lauf die Platte samt halber Breite und Saum betritt, weicht ihrem Rand um `umM` weiter, den Weg um die Ecken mit
+        //    weniger Häusern des Plans, sonst den kürzeren; endet der Lauf darin, endet er an ihrem Rand — dieselben Wege, dasselbe
+        //    Profil danach, kein zweiter Gassen-Bauer. Der Lauf des Exports bleibt am Weg (`lauf`): ein späterer Plan rechnet von
+        //    ihm (fällt das Haus, liegt die Gasse wie vorher). Ohne ctx.fest ist der Plan byte-derselbe. Bis bauen.K2-2 lief die Gasse
+        //    des Orts durch das gesetzte Haus — gemalt, getreten, das Netz der Bewohner führte hindurch.
+        var fest = (Array.isArray(ctx.fest) ? ctx.fest : []).map(function (f) {
+            return { cx: f.cx - ox, cz: f.cz - oz, phi: f.phi || 0, ex: f.ex, ez: f.ez, f: f };
+        });
+        var festGetroffen = [];
+        var clip = clipRechteck;
+        var umlegen = function (pts, hw) {
+            for (var fi = 0; fi < fest.length; fi++) {
+                var f = fest[fi];
+                var im = festLauf(pts, f, hw);
+                if (!im) continue;
+                if (festGetroffen.indexOf(f.f) < 0) festGetroffen.push(f.f);
+                var lok = im.lok;
+                var ke = im.ke;
+                var kx = im.kx;
+                var c = Math.cos(f.phi);
+                var s = Math.sin(f.phi);
+                var welt = function (u, v) {
+                    return { x: r6(f.cx + u * c + v * s), z: r6(f.cz - u * s + v * c) };
+                };
+                // Ein- und Austritt am um `umM` weiteren Rand (der Umweg läuft auf ihm, der Rand der Platte bleibt frei)
+                var A = f.ex + hw + O.saumM + O.umM;
+                var B = f.ez + hw + O.saumM + O.umM;
+                var an = function (j, t) {
+                    return [lok[j - 1][0] + (lok[j][0] - lok[j - 1][0]) * t, lok[j - 1][1] + (lok[j][1] - lok[j - 1][1]) * t];
+                };
+                var te = clip(lok[ke - 1], lok[ke], A, B);
+                while (te[0] === 0 && ke > 1) te = clip(lok[--ke - 1], lok[ke], A, B);
+                var tx = clip(lok[kx - 1], lok[kx], A, B);
+                while (tx[1] === 1 && kx < lok.length - 1) tx = clip(lok[kx], lok[++kx], A, B);
+                var ein = te[0] > 0 ? an(ke, te[0]) : null;
+                var aus = tx[1] < 1 ? an(kx, tx[1]) : null;
+                var vorn = ein ? pts.slice(0, ke).concat([welt(ein[0], ein[1])]) : [];
+                var hinten = aus ? [welt(aus[0], aus[1])].concat(pts.slice(kx)) : [];
+                if (!ein || !aus) {
+                    pts = vorn.concat(hinten);
+                    continue;
+                }
+                // die Stelle eines Rand-Punkts auf dem Umfang (gegen den Uhrzeiger ab der Ecke −A, −B), die Seite mit dem
+                // kleinsten Abstand
+                var P = 4 * (A + B);
+                var um = function (q) {
+                    var d = [Math.abs(q[1] + B), Math.abs(q[0] - A), Math.abs(q[1] - B), Math.abs(q[0] + A)];
+                    var m = d.indexOf(Math.min.apply(null, d));
+                    return [q[0] + A, 2 * A + q[1] + B, 3 * A + 2 * B - q[0], 4 * A + 3 * B - q[1]][m];
+                };
+                var ta = um(ein);
+                var tb = um(aus);
+                var ecken = [[-A, -B, 0], [A, -B, 2 * A], [A, B, 2 * A + 2 * B], [-A, B, 4 * A + 2 * B]];
+                var wahl = [1, -1]
+                    .map(function (dir) {
+                        var mod = function (t) {
+                            return (((t - ta) * dir) % P + P) % P;
+                        };
+                        var ecke = ecken
+                            .filter(function (e) {
+                                return mod(e[2]) > 0 && mod(e[2]) < mod(tb);
+                            })
+                            .sort(function (e, g) {
+                                return mod(e[2]) - mod(g[2]);
+                            });
+                        var lauf = [ein].concat(ecke, [aus]);
+                        var haeuser = 0;
+                        for (var j = 1; j < lauf.length; j++)
+                            for (var t = 0; t <= 1; t += 0.125) {
+                                var w = welt(lauf[j - 1][0] + (lauf[j][0] - lauf[j - 1][0]) * t, lauf[j - 1][1] + (lauf[j][1] - lauf[j - 1][1]) * t);
+                                for (var si = 0; si < plan.slots.length; si++)
+                                    if (plan.slots[si].obb && distPunktOBB(w.x, w.z, plan.slots[si].obb) < hw) haeuser++;
+                            }
+                        return { ecke: ecke, haeuser: haeuser, lang: mod(tb) };
+                    })
+                    .sort(function (a, b) {
+                        return a.haeuser - b.haeuser || a.lang - b.lang;
+                    })[0];
+                pts = vorn.concat(
+                    wahl.ecke.map(function (e) {
+                        return welt(e[0], e[1]);
+                    }),
+                    hinten
+                );
+            }
+            return pts;
+        };
+        // je Weg der Lauf des Exports (`lauf`, sonst `pts`) um die Fremd-Slots gelegt: { pts, lauf? } — `lauf` nur, wo er weicht
+        var gelegt = function (rd, hw) {
+            var lauf = Array.isArray(rd.lauf) ? rd.lauf : Array.isArray(rd.pts) ? rd.pts : [];
+            var pts = fest.length ? umlegen(lauf, hw) : lauf;
+            return pts === lauf ? { pts: lauf } : { pts: pts, lauf: lauf };
+        };
         // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
         var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
         // DAS NETZ DES PROFILS (siedlung.K5): ein Weg-Punkt sucht seinen gepinnten Nachbarn nur in den Zellen, die seine größte
@@ -6825,8 +6981,9 @@
         var k;
         for (var ri = 0; ri < roads.length; ri++) {
             var rd = roads[ri];
-            var pts = rd && Array.isArray(rd.pts) ? rd.pts : [];
             var hw = (isFinite(rd.w) ? rd.w : 3) / 2;
+            var lage = gelegt(rd, hw);
+            var pts = lage.pts;
             var n = pts.length;
             var sw = [];
             var roh = [];
@@ -6939,7 +7096,9 @@
                         w: r6(2 * (hw + (tier ? 0 : O.saumM))),
                         weg: 2 * ri + tier, // die Strecken EINES Wegs: unter ihnen trägt die nächste Mitte (gelaende-core erdbauY)
                     });
-            wege.push(bruecken.length ? Object.assign({}, rd, { ys: ys, bruecken: bruecken }) : Object.assign({}, rd, { ys: ys }));
+            var weg = Object.assign({}, rd, lage, bruecken.length ? { ys: ys, bruecken: bruecken } : { ys: ys });
+            if (!lage.lauf) delete weg.lauf;
+            wege.push(weg);
         }
         if (platzY !== null)
             erdbau.push({
@@ -7061,7 +7220,9 @@
             ob = sl.obb;
             var tu = sl.tuer;
             var grund = grunde[si];
-            var y = hy[si] !== null ? hy[si] : r6(median(grund));
+            // DER BODEN DES HAUSES: die Höhe seiner Gasse, ohne Gasse der Median seines Grundrisses — das gesetzte Haus
+            // (`slotPlan`) bringt seinen Boden mit (`sl.y`, wohin der Spieler es setzte; ein Slot des Exports trägt keinen)
+            var y = isFinite(sl.y) ? r6(sl.y) : hy[si] !== null ? hy[si] : r6(median(grund));
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
@@ -7156,6 +7317,15 @@
         });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
+        // die Feldwege weichen den Fremd-Slots wie die Gassen (sie tragen kein Profil); `fest`: die Fremd-Slots, denen ein Weg wich
+        var fw0 = Array.isArray(plan.feldwege) ? plan.feldwege : [];
+        if (fest.length || fw0.some(function (fw) { return fw.lauf; }))
+            v2.feldwege = fw0.map(function (fw) {
+                var weg = Object.assign({}, fw, gelegt(fw, (isFinite(fw.w) ? fw.w : 3) / 2));
+                if (!weg.lauf || weg.pts === weg.lauf) delete weg.lauf;
+                return weg;
+            });
+        if (festGetroffen.length) v2.fest = festGetroffen;
         return v2;
     }
 
@@ -7281,6 +7451,7 @@
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
+        festWeg: festWeg, // bauen.K2 — betritt ein Weg des Plans v2 die Platte eines gesetzten Hauses? (der Wirt rechnet dann neu)
         ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,
@@ -7339,7 +7510,7 @@
         hausParams: hausParams,
         massBau: massBau,
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
-        grundPlan: grundPlan, // der Grund des gesetzten Hauses aus seinem Plan (S4) — der Wirt legt ihn beim Setzen
+        slotPlan: slotPlan, // das gesetzte Haus als Ein-Slot-Plan (bauen.K2) — der Wirt rechnet daraus den Plan v2 und legt dessen Erdbau
         chimneyTipFromParams: chimneyTipFromParams,
         buildStufe: buildStufe,
         geomsZuGruppe: geomsZuGruppe,
