@@ -915,8 +915,7 @@ async function starte() {
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade(page.evaluate(() => anazhRealm.erwacht));
-        await loopAus();
+        await lade(page.evaluate(() => anazhRealm.erwacht)); // der Takt bleibt, wie er war (aus)
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };

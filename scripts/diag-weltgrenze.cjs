@@ -535,8 +535,7 @@ async function fahreWeg(browser, weg, schein) {
         if (tuer) {
             // AM ORT: die Seite, die nie neu lud, trägt B allein — ihr voller Snapshot, ihre Leser, ihre Gedächtnisse
             if (rep.navigiert) rep.befunde.push("die Tür lud die Seite neu — der Wechsel am Ort brach");
-            const z = await bereit(page, ziel);
-            rep.boot.push(z.ms);
+            const z = await bereit(page, ziel); // der Tausch ist durch (`erwacht`): keine eigene Boot-Zeit
             if (!z.ok) rep.befunde.push(`die Seite erwachte in ${z.welt} statt in der Ziel-Welt ${ziel} (am Ort)`);
             else {
                 if (basis !== "geburt" && !(await page.evaluate(() => window.__grenze.markerB())))
