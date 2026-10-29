@@ -3347,15 +3347,18 @@ class AnazhRealm_bild_kosten {
     // Pose des Gangs, nicht nur den Stand.
     static _gangSatzKugeln(satz) {
         const K = new Float64Array(satz.J * 4),
-            B = new Float64Array(satz.J * 6).fill(Infinity);
+            B = new Float64Array(satz.J * 6).fill(Infinity),
+            v = [0, 0, 0];
         for (let gang = 0; gang < 2; gang++)
             for (const q of satz.quellen) {
                 const a = q.m.geometry.attributes;
-                for (let i = 0; i < a.position.count; i++)
+                for (let i = 0; i < a.position.count; i++) {
+                    v[0] = a.position.getX(i);
+                    v[1] = a.position.getY(i);
+                    v[2] = a.position.getZ(i);
                     for (let c = 0; c < 4; c++) {
                         if (!(a.skinWeight.getComponent(i, c) > 0)) continue;
                         const p = q.platz[a.skinIndex.getComponent(i, c)] * 4;
-                        const v = [a.position.getX(i), a.position.getY(i), a.position.getZ(i)];
                         if (gang)
                             K[p + 3] = Math.max(K[p + 3], Math.hypot(v[0] - K[p], v[1] - K[p + 1], v[2] - K[p + 2]));
                         else
@@ -3365,6 +3368,7 @@ class AnazhRealm_bild_kosten {
                                 K[p + k] = (B[p * 1.5 + k] - B[p * 1.5 + 3 + k]) / 2;
                             }
                     }
+                }
             }
         return K;
     }
