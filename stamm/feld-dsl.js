@@ -1101,7 +1101,7 @@ class AnazhRealm_feld_dsl {
             // das verwendete Seed ein, damit alle Peers DIESELBEN Häuser sehen. spawn_village hebt das
             // fachwerk-Dorf (spawnSettlement → exportSettlement über den EINEN Worker); ein Spawn-Akt je Op —
             // die Häuser deckelt nH, den Nexus-Hort der autonomous-Cap.
-            spawn_village: ([positionNode, seed, gier, tanH], ctx) => {
+            spawn_village: ([positionNode, seed, gier, tanH, jahr], ctx) => {
                 // Eine GROSSE Struktur nie AUF den Spieler: das misst der Akt am Plan selbst (`_siedlungsAnker` — die Mitte
                 // und der Radius seiner Häuser); die Schätzung „haus_basis × 3" davor ist gefallen. Trägt das Programm den
                 // BLICK des Sprechers (Gier und Bildwinkel, „baue dorf hier"), steht das Dorf vor IHM — bei jedem Peer an
@@ -1124,9 +1124,11 @@ class AnazhRealm_feld_dsl {
                 // die Größe aus dem Siedlungs-Gesetz (fachwerk SIEDLUNG) — das Stamm-Literal 9 fiel (Karte Dorf/Stadt
                 // DEFEKT 4: zwei Chat-Wege mit zwei Größen-Wahrheiten); `spawnSettlement` liest das Gesetz NACH der
                 // Buch-Ankunft (bei kaltem Buch fiel die Größe sonst still auf den Kern-Default)
+                // das Jahr des Orts (siedlung.K4, optional): es wählt die Epoche seiner Zeitachse (`_dorfAkt`)
                 this.spawnSettlement({
                     position: pos,
                     seed: s,
+                    jahr: jahr != null && Number.isFinite(Number(jahr)) ? Number(jahr) : undefined,
                     nHAusGesetz: true,
                     autonomous: this._feldHandelt(ctx),
                     verlangt: ctx.source,

@@ -15,7 +15,7 @@
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
 //   (6) SICHT-BESITZ — mit bereitem Ring weitet die
-//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die Luft misst gate:luft-tiefe:echt im Bild;
+//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt);
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
 //   (9) DIE NAHT — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
