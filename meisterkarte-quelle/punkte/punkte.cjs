@@ -151,7 +151,11 @@ function pruefeStationen(liste, karte) {
             else {
                 if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1 && p.sek <= PROBE_MAX_S))
                     f.push("probe.sek nicht 1.." + PROBE_MAX_S);
-                if (Object.keys(p).some((k) => !["befehl", "sek"].includes(k))) f.push("probe trägt nur befehl und sek");
+                if (Object.keys(p).some((k) => !["befehl", "sek", "mutiert", "ausnahme"].includes(k))) f.push("probe trägt nur befehl, sek, mutiert und ausnahme");
+                // DAS BUDGET DER PROBE (29.10., der Schöpfer: eine Fahrt durch jedes System ≤ 30 min): mutiert (die Probe ändert die
+                // Welt, nur nach ihr fällt sie zurück) ist boolesch, ausnahme nennt den Grund eines Deckels über 45 s
+                if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
+                if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 8)) f.push("probe.ausnahme ohne Grund");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));

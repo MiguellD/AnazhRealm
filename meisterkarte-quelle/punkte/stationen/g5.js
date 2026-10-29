@@ -4,6 +4,7 @@
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
+const { seiteProbe } = require("./seite.cjs");
 
 // DIE PROBE IN DER SITZUNG (punkte.cjs fahreSitzung, 29.10.): die Welt steht schon — save-server {PORT}, `werkbank start --echt`
 // auf {PORT}+20000 (WERKBANK_PORT), eine Linse neben ihr auf {PORT}+20001. `boot` holt eine FRISCHE Welt: die erste ist es schon
@@ -42,6 +43,210 @@ const KOPF_BOOT = [
 ];
 const bootSitzung = (...zeilen) => ["bash", "-c", [...KOPF_BOOT, ...zeilen].join("\n")];
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
+
+// ───────── DIE PROBEN AN DER SEITE (Zweig proben-leib, stationen/seite.cjs): leib.K2 · leib.K4 · halten.K1#2 · halten.K5 · tore.K3 ─────────
+// Bis 29.10. bootete jede dieser Stationen ihre Linse mit eigener Welt (Takt 19 an b3f9ae95: 4–10 Soll-Minuten je Lauf); jetzt
+// ruft die Probe in der Welt der Sitzung die Seiten-Funktionen der Linse selbst (aus ihrer Datei am SHA, `H.quelle`) und nur
+// die Teile, die das Kriterium urteilt. Wo die Messung Takte zählt und kein Pixel des Fensters, misst sie im Fenster 640×360
+// (die Karte zeichnet jeden Takt, das Fenster kostet nur GPU-Zeit; die Grundstellung der nächsten Probe stellt 1920×1080).
+
+// leib.K2 #1 + #2 (Zwillinge, EIN Lauf): K8 und K9 von gate:koerper-stand (`rollen`, die Seiten-Funktion der Linse) an Mess-Wiese
+// und 25°-Hang — der Fuß auf drei Bahnen je Ort und der Sprung je Sicht und Leib. Der Huf (je Größen-Band ein Reh) und das Rad
+// (der GT in Fahrt) urteilt gelaende.K5, nie diese Station: die Probe reicht ihnen keinen Leib (spawnCreatureAt des Bands und
+// spawnArchitecture des GT geben null — `rollen` überspringt beide beim Namen). Der Dorf-Zug ruht wie im Haushalt der Wiese
+// (`__anazhAutoSettlement` false, die Linse setzte ihn vor dem Boot). Das Urteil liest {AUS} { k8 } wie bisher.
+async function leibK2Seite(H) {
+    const D = H.quelle("scripts/diag-koerper-stand.cjs", ["K8_UMFANG", "eignerKarte", "gezeichnet", "rollen"]);
+    await H.ruf("/fenster", { w: 640, h: 360 });
+    await H.frist();
+    const o = await H.seite(
+        "window.__anazhAutoSettlement = false; window.__eignerKarte = " + D.eignerKarte + "; window.__gezeichnet = " + D.gezeichnet + "; " +
+            "await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} }); " +
+            "const sc = r.spawnCreatureAt, sa = r.spawnArchitecture; " +
+            "r.spawnCreatureAt = function (...a) { return a[4] === \"wesen\" && a[5] && a[5].bodySize ? null : sc.apply(this, a); }; " +
+            "r.spawnArchitecture = function (t, ...a) { return t === \"fahrzeug_gt\" ? null : sa.call(this, t, ...a); }; " +
+            "try { return await (" + D.rollen + ")(" + D.K8_UMFANG + "); } finally { r.spawnCreatureAt = sc; r.spawnArchitecture = sa; }"
+    );
+    H.schritt("rollen");
+    fs.writeFileSync(H.aus, JSON.stringify({ k8: o }, null, 1));
+    const m = (t) => (t ? t.p95 + " cm (n " + t.n + ", stecken " + t.stecken + ")" : "—");
+    for (const ort of ["wiese", "hang"])
+        if (o && o[ort]) console.log("K8 " + ort + " " + o[ort].x + "/" + o[ort].z + " " + o[ort].neig + "° · fuss " + m(o[ort].fuss) + " · falllinie " + m(o[ort].falllinie) + " · stufe " + m(o[ort].stufe));
+    if (o && o.sprung) console.log("K9 " + JSON.stringify(o.sprung));
+    return 0;
+}
+
+// leib.K4 #1 + #2 (Zwillinge, EIN Lauf): K4 von gate:kamera-leib — `leibInstall`, die Anker der Mess-Wiese aus `leibWiese` (die
+// Quote der Posen 0: die 40 Posen und der Ritt sind K2, nie diese Station) und `leibGang` mit der Vorgabe GANG der Linse und dem
+// Teil gang2 (im Haus, am Steilhang, im Sprint). Die Zeilen und Urteile wie die Linse (`urteilGang`, `pruefer`).
+async function leibK4Seite(H) {
+    const D = H.quelle("scripts/diag-kamera-laub.cjs", ["ORTE", "LEIB_R", "pct", "quantil", "GANG", "GANG_ARTEN", "urteilGang", "leibInstall", "leibWiese", "leibGang"]);
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const zusatz = require(path.resolve("scripts/lib/kamera-nah.cjs")).KAMERA_NAH_INSTALL + "\n" + require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
+    await H.ruf("/fenster", { w: 640, h: 360 });
+    await H.frist();
+    const x = await H.seite(
+        "window.__anazhAutoSettlement = false;\n" + zusatz + "\nwindow.__buehne(); await (" + D.leibInstall + ")(" + JSON.stringify({ R: D.LEIB_R }) + "); " +
+            "const w = await (" + D.leibWiese + ")(" + JSON.stringify({ x: M.x, z: M.z, quote: { haus: 0, fels: 0, baum: 0 } }) + "); " +
+            "const g = await (" + D.leibGang + ")(" + JSON.stringify(Object.assign({}, D.GANG, { zwei: true })) + "); " +
+            "return { anker: w.anker, fehlt: w.fehlt, err: w.err, g };"
+    );
+    H.schritt("gang");
+    const gang = x.g;
+    console.log("=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel " + D.GANG.R + " m): Mess-Wiese " + M.x + "/" + M.z + " · Anker " + JSON.stringify(x.anker) + (x.err ? " · " + String(x.err).split("\n")[0] : ""));
+    const n = (a) => JSON.stringify(a.reduce((h, k) => ((h[k] = (h[k] || 0) + 1), h), {}));
+    for (const g of (gang && gang.gaenge) || [])
+        console.log("  " + g.art.padEnd(5) + " " + g.typ + ": " + g.bilder + " Bilder · heran " + g.heran.d0 + " → " + g.heran.d1 + " m" + (g.drinnen == null ? "" : " · im Haus " + g.drinnen) +
+            " · Kugel " + n(g.taeter.flatMap((t) => t.taeter.map((y) => t.phase + ": " + y))) + " · Nah-Pixel " + n(g.nah.flatMap((t) => Object.keys(t.jeKlasse).map((y) => t.phase + ": " + y))) +
+            " · Ruck p95 " + (g.ruck.length ? D.quantil(g.ruck, 0.95).toFixed(4) : "—") + " höchstens " + (g.ruck.length ? Math.max(...g.ruck).toFixed(3) : "—") + " m");
+    console.log("  der Arm ohne Flügel-Leib: " + (gang && gang.schmuggel) + " Proben mit Bau");
+    if (gang && gang.hang) console.log("  Steilhang " + JSON.stringify(gang.hang) + " (Weltbild fehlt " + gang.fehlt + ") · die Kamera im Hang: " + gang.senk + " von 10 Bildern mit Täter");
+    const { errs, check } = H.WB.pruefer();
+    for (const [stufe, name] of [
+        [1, "K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib"],
+        [2, "K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint"],
+    ]) {
+        const v = D.urteilGang(gang, stufe);
+        check(name, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+    }
+    return errs.length ? 1 : 0;
+}
+
+// halten.K5 #1 + #2 (Zwillinge, EIN Lauf): Q13/Q14 von gate:kampf-gefuehl --k5 — K5_VOR (der Takt von Hand: fünf Stürze, zwei
+// Tod-Lagen, der Tod durch den Wolf, die Werte je Werk und Nahrung, saveState), der Reload der Seite (die Werkbank lädt neu, der
+// Spielstand bleibt: die Grundstellung kommt erst vor der nächsten Probe), der Abdruck danach; Urteil und Zeilen aus der Linse
+// (`k5Bericht` mit S17 · S18 · S20). Mutiert: Tod, Inventar, Speichern.
+async function haltenK5Seite(H) {
+    const KP = require(path.resolve("scripts/lib/kampf-proben.cjs"));
+    const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["hash", "json", "zeig", "k5Verdict", "q14Verdict", "k5Bericht"]);
+    await H.frist();
+    await H.seite("await window.__weltStehtNach(); return 1;");
+    H.schritt("welt");
+    const K = await H.seite("return (" + KP.K5_VOR + ")(" + KP.K5_ABDRUCK + ");");
+    H.schritt("k5");
+    await new Promise((ok) => setTimeout(ok, 1500)); // der IDB-Put landet (wie die Linse)
+    await H.ruf("/reload");
+    K.nachReload = await H.seite("return window.__seitenTakt().then(" + KP.K5_ABDRUCK + ");");
+    H.schritt("reload");
+    let ok = true;
+    D.k5Bericht(K, (c, msg) => {
+        console.log("  " + (c ? "✅" : "❌") + " " + msg);
+        if (!c) ok = false;
+    });
+    return ok ? 0 : 1;
+}
+
+// halten.K1 #2: Q15 von gate:kampf-gefuehl --k1 — je Lauf (vor · masse · schneide) K1_BILD im ewigen Loop der Seite (die Probe
+// schaltet ihn ein, `__loop`), das Bild des Treffers als PNG {AUS}-<lauf>.png, K1_LABOR im Labor worlds/schmiede (ein Rahmen der
+// Seite, verborgen wie der Hintergrund-Tab der Linse). Das Urteil `k1Verdict` der Linse, S21 wie die Linse.
+async function haltenK1Seite(H) {
+    const KP = require(path.resolve("scripts/lib/kampf-proben.cjs"));
+    const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["json", "zeig", "K1_SOLL", "k1Verdict"]);
+    await H.frist();
+    await H.seite(
+        "await window.__weltStehtNach(); const f = document.createElement(\"iframe\"); f.id = \"k1-labor\"; f.style.display = \"none\"; " +
+            "const da = new Promise((ok) => (f.onload = ok)); f.src = \"/worlds/schmiede/index.html\"; document.body.appendChild(f); " +
+            "await Promise.race([da, sleep(60000).then(() => { throw new Error(\"das Labor worlds/schmiede lädt nicht in 60 s\"); })]); window.__loop(1); return 1;"
+    );
+    H.schritt("welt und labor");
+    const page = await H.cdp().catch((e) => (console.log("@@PUNKTE@@ BILD ohne Seite: " + e.message), null));
+    const K = { welt: {}, labor: {} };
+    for (const l of ["vor", "masse", "schneide"]) {
+        K.welt[l] = await H.seite("return (" + KP.K1_BILD + ")(" + JSON.stringify(l) + ");").catch((e) => ({ abbruch: String(e.message).split("\n")[0] }));
+        if (K.welt[l].traf && page) await page.screenshot({ path: H.aus + "-" + l + ".png" });
+        K.labor[l] = await H.seite("return document.getElementById(\"k1-labor\").contentWindow.eval(" + JSON.stringify("(" + KP.K1_LABOR + ")(" + JSON.stringify(l) + ")") + ");");
+        H.schritt(l);
+    }
+    await H.seite("window.__loop(); return 1;");
+    const { errs, check } = H.WB.pruefer();
+    D.zeig("Q15", K);
+    const v = D.k1Verdict(K);
+    check("Q15 halten.K1 Staffel 2: Masse × Schneide × Tempo im Bild und am Labor-Werk " + v, !v.length);
+    const [W, L] = [K.welt, K.labor];
+    check(
+        "SELBST-TEST (S21): die Breitseite im Bild, ein Bild ohne Frame, ein Labor ohne Mutation",
+        !!W.vor.traf &&
+            D.k1Verdict({ ...K, welt: { ...W, vor: { ...W.vor, schneideBild: 0.18 } } }).includes("vor-bahn") &&
+            D.k1Verdict({ ...K, welt: { ...W, vor: { abbruch: "x" } } }).includes("vor-abbruch: x") &&
+            D.k1Verdict({ ...K, labor: { ...L, masse: L.vor } }).includes("masse-labor")
+    );
+    return errs.length ? 1 : 0;
+}
+
+// tore.K3 #1 + #2 (Zwillinge, EIN Lauf): K8 von gate:portal-konformanz — der Spieler trägt, was die Linse ihm gibt (Kiesel,
+// Laterne, Brustpanzer, Inventar, Hotbar, die Gestalt des Leibs, das Pferd), holt sein Werk aus der Garage (`werkHolen`) und geht
+// durch jedes Tor des Genesis-Rings (`betreten`: W durch die Apertur, sonst E), der Handshake klingt durch die Schleuse aus, der
+// Abdruck drüben aus der Hülle, Esc bringt heim (`schleuse` esc), der Abdruck daheim — die Tafel `K8 [[welt, weg, vor, drüben,
+// nach, esc], …]` wie die Linse; K1–K7 und die Ratschen der übrigen Welten urteilt gate:portal-konformanz, nie diese Station.
+// Die Seite der Sitzung als puppeteer-Page (die Linse liest den Rahmen der Welt und hält Tasten). Mutiert: Pferd, Hand, Inventar.
+async function toreK3Seite(H) {
+    const D = H.quelle(
+        "scripts/diag-portal-konformanz.cjs",
+        ["WELTEN", "probefahrt", "stromZeichnet", "MITGEBRACHT", "TEILE", "abdruck", "UEBERSETZT", "betreten", "bereitBis", "werkHolen", "zaehler", "zaehlerAus", "schleuseNr", "schleusenZeit", "hinFrame", "seitenHelfer", "rueckHoerer", "schleuse"],
+        { halteBis: H.WB.halteBis, waitFor: H.WB.waitFor, sleep: H.WB.sleep },
+        "rahmen: () => hinFrame"
+    );
+    await H.ruf("/fenster", { w: 1280, h: 720 });
+    const page = await H.cdp();
+    await page.evaluate(() => window.__weltDa((r) => !!r.state.vibePass?.ready));
+    // DIE AUSSTATTUNG des Reisenden wie die Linse (`lauf` von diag-portal-konformanz: Ring, Pferd, Hand, Rüstung, Inventar, Hotbar, Leib)
+    await page.evaluate((M) => {
+        st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
+        st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
+        r._genesisPortalRing(r._genesisMitte());
+        r.mountArchitecture(r.spawnArchitecture("reittier_holzross", st.playerMesh.position));
+        r.equipHeld("kiesel");
+        r.equipArmor("ruestung_brustpanzer");
+        st.player.equipped.offhand = "laterne_dorf";
+        for (const n of ["stein_block", "stein_block", "trank_lebenssaft"]) r.addToInventory(n);
+        st.hotbar[2] = "stein_block";
+        r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
+    }, D.MITGEBRACHT);
+    await page.evaluate(D.seitenHelfer);
+    await D.werkHolen(page);
+    H.schritt("werk");
+    const ids = await page.evaluate(
+        (ws) => ws.filter((id) => r.state.architectures.some((e) => /^welt_/.test(e.type) && r.state.blueprints[e.type].portalMeta.world === "worlds/" + id + "/index.html")),
+        D.WELTEN.map((w) => w.id)
+    );
+    const ring = [];
+    for (const w of D.WELTEN.filter((x) => ids.includes(x.id))) {
+        const vor = await page.evaluate(D.abdruck, true);
+        const b = await D.betreten(page, w);
+        if (!b || !b.weg) {
+            console.log("  " + w.id + ": " + ((b && b.fehler) || "kein Tor"));
+            ring.push([w.id, null, vor, {}, {}, false]);
+            continue;
+        }
+        await D.bereitBis(page, w.id);
+        let s = await D.schleuse(page, "heimat", w);
+        while (s.enterImFenster && s.zaehler.enters <= 3) s = await D.schleuse(page, "heimat", w);
+        const fr = D.rahmen();
+        const drueben = fr ? await fr.evaluate(D.abdruck, false) : {};
+        await D.zaehlerAus(page);
+        const esc = fr ? !(await D.schleuse(page, "esc", null)).offen : false;
+        if (!esc) await page.evaluate(() => r._portalOverlay && r.exitPortal());
+        ring.push([w.id, b.weg, vor, drueben, await page.evaluate(D.abdruck, true), esc]);
+        H.schritt(w.id);
+    }
+    console.log("K8 " + JSON.stringify(ring));
+    return ring.length >= 10 ? 0 : 1;
+}
+// die Proben (Zwillinge tragen DIESELBE Probe: punkte.cjs gruppiere fährt sie einmal)
+const LEIB_K2 = seiteProbe(60, leibK2Seite, {
+    mutiert: true,
+    ausnahme: "K8 und K9 zählen Takte: der Fuß auf sechs Bahnen je ≥ 200 Kontakte und sechs Sprünge (~3000 Takte im Fenster 640×360)",
+});
+const LEIB_K4 = seiteProbe(90, leibK4Seite, {
+    mutiert: true,
+    ausnahme: "neun Gänge der Vorgabe GANG zu je ~1000 Bildern (rückwärts heran, zwei 360°-Orbits zu 6 s Spielzeit, der Ruck je Bild)",
+});
+const HALTEN_K5 = seiteProbe(30, haltenK5Seite, { mutiert: true });
+const HALTEN_K1 = seiteProbe(40, haltenK1Seite, { mutiert: true });
+const TORE_K3 = seiteProbe(90, toreK3Seite, {
+    mutiert: true,
+    ausnahme: "elf Tore (die Garage und zehn des Genesis-Rings): je Welt ein Studio im Rahmen und der Gang 4 m durch die Apertur",
+});
 
 // Pfade (R6): die Dateien, die die Messung liest
 const FAHRT = [
@@ -810,11 +1015,11 @@ const stationen = [
         // und stufe (zehn Stufen, Steigung 0,17 m, hinauf und hinab) an Mess-Wiese und 25°-Hang, je ≥ 200 Kontakte; die
         // Steckenbleiber über alle sechs Gänge (je halbe Sekunde mit gehaltener Taste < 15 cm voran, oder das Ende nie erreicht).
         // Das Urteil liest nur den Fuß aus dem JSON — die übrigen Rollen der Linse richten gelaende.K5.
-        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
-        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        // Seit 29.10. die Probe LEIB_K2 in der Welt der Sitzung (oben, leibK2Seite; vorher der eigene Boot der Linse, 10 Soll-Minuten)
+        probe: LEIB_K2,
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1,
         urteil: (j, lauf) => {
             const k = j && j.k8;
             if (!k || !k.hang || !k.wiese) return { gruen: false, zahl: "kein K8 der Linse (Exit " + lauf.exit + ")" };
@@ -851,6 +1056,7 @@ const stationen = [
             "voxel-worker.js",
             "spec/profiband/haushalt.json",
             "scripts/diag-koerper-stand.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/software-gpu.cjs",
@@ -870,12 +1076,11 @@ const stationen = [
         // Gesetz koerper LEIB.sprung (v = √(2d(F/m − g)), `_sprungAbdruck`). Das Urteil: der Fuß von #1 (dazu) und je Sicht
         // das Bild (die Hüfte in Third, das Auge in Ego heben sich mit der Kapsel, ≥ 80 %), die Masse senkt Höhe UND Weite um
         // ≥ 10 %, die Kraft hebt beide um ≥ 10 %. Headless (Null-Renderer, leib-k2-sprung 27.10.): Ego und Third 0,323/2,85 m,
-        // Masse 0,179/2,16 m, Kraft 0,504/3,45 m, Auge 0,315 m, Hüfte 0,326 m.
-        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
-        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        // Masse 0,179/2,16 m, Kraft 0,504/3,45 m, Auge 0,315 m, Hüfte 0,326 m. Seit 29.10. dieselbe Probe LEIB_K2 (Zwilling von #1).
+        probe: LEIB_K2,
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1,
         urteil: (j, lauf) => {
             const fuss = stationen.find((s) => s.kriterium === "leib.K2" && s.staffel === 1).urteil(j, lauf);
             const sp = (j && j.k8 && j.k8.sprung) || {};
@@ -915,6 +1120,7 @@ const stationen = [
             "voxel-worker.js",
             "spec/profiband/haushalt.json",
             "scripts/diag-koerper-stand.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/software-gpu.cjs",
@@ -930,12 +1136,13 @@ const stationen = [
         // gate:kamera-leib Teil gang mit --bild (echter Renderer): Stamm, Fels, Haus im echten Spiel-Takt, rückwärts heran +
         // 360°-Orbit; Kugel in Fels/Bau, Nah-Pixel von Fels, Gelände und Rinde, Ruck p95
         // der Gang läuft NUR im Teil leib (diag-kamera-laub: `if (TEILE.includes("leib")) { … if (TEILE.includes("gang"))`), wie
-        // gate:kamera-leib (`--teile leib,gang,ninja --bild`); `--teile gang` allein mass nichts (23.10.: „Gang: nicht gemessen“)
-        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang", "--bild"],
-        env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        // gate:kamera-leib (`--teile leib,gang,ninja --bild`); `--teile gang` allein mass nichts (23.10.: „Gang: nicht gemessen“).
+        // Seit 29.10. die Probe LEIB_K4 in der Welt der Sitzung (leibK4Seite: die Anker aus leibWiese, der Gang mit gang2 — der
+        // Zwilling von #2, EIN Lauf; vorher der eigene Boot, 6 Soll-Minuten)
+        probe: LEIB_K4,
         gpu: true,
         zeit: false,
-        minuten: 6,
+        minuten: 2,
         // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — unter `--bild` zeichnet die Welt
         // auf der Karte (seit gpu-wand: Rezept linse ohne Null-Renderer), kamera-nah rechnet die Nah-Pixel gegen die Szene, die sie
         // zeichnet; zeichnet sie nie (welt-boot: „das Rezept ist null“), ist das ROT (Wand GPU in punkte.cjs und hier).
@@ -970,7 +1177,10 @@ const stationen = [
             "stamm/dirigent-takt.js",
             "stamm/daten.js",
             "scripts/diag-kamera-laub.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/kamera-nah.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-orte.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/software-gpu.cjs",
         ],
@@ -988,11 +1198,11 @@ const stationen = [
         // „auch": die Zeile der Staffel 1 (Stamm, Fels, Haus beim Gehen) zählt mit; Wand-Pixel (Bau) zählen in jedem Gang, die
         // Weiche „zeichnet nie" ist ROT (Wand GPU in punkte.cjs und hier). gate:kamera-leib (CI) fährt gang2 nicht, solange er ROT
         // ist (26.10., swiftshader mit --bild am Code-Zweig lk4-steil: Ruck p95 im Haus-Sprint 0,048 m, sonst grün).
-        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang,gang2", "--bild"],
-        env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        // Seit 29.10. dieselbe Probe LEIB_K4 (Zwilling von #1; vorher der eigene Boot, 8 Soll-Minuten).
+        probe: LEIB_K4,
         gpu: true,
         zeit: false,
-        minuten: 8,
+        minuten: 2,
         urteil: (j, lauf) => {
             const zeilen = lauf.stdout.split(/\r?\n/);
             const z1 = zeilen.find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
@@ -1029,6 +1239,7 @@ const stationen = [
             "voxel-worker.js",
             "spec/profiband/haushalt.json",
             "scripts/diag-kamera-laub.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/kamera-nah.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/wasser-linse.cjs",
@@ -1403,11 +1614,11 @@ const stationen = [
         kriterium: "halten.K5",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
-        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        // seit 29.10. die Probe HALTEN_K5 in der Welt der Sitzung (haltenK5Seite; vorher der eigene Boot `--k5`, 4 Soll-Minuten)
+        probe: HALTEN_K5,
         gpu: true,
         zeit: false,
-        minuten: 4,
+        minuten: 1,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
             const q = l.find((x) => /^\s*(✅|❌) Q13 halten\.K5 Staffel 1/.test(x));
@@ -1426,7 +1637,7 @@ const stationen = [
             const rot = /❌/.test(q) ? " · ROT: " + q.split("Zustand ").slice(1).join("").trim() : "";
             return { gruen: lauf.exit === 0 && /✅/.test(q) && !stumm.length, zahl: zahl + rot + (stumm.length ? " · Selbst-Test stumm: " + stumm.join(", ") : "") };
         },
-        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js"],
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "scripts/werkbank.cjs"],
         quelle: "1 = Fall-Schaden aus dem Aufprall-Tempo, Tod und Wiederkehr am Ort mit Zustand (Inventar, Bindung) über Speichern, an einem Gerät",
     },
     // halten.K5 Staffel 2 (halten-masse): derselbe Lauf `--k5` (Zwilling der Staffel 1, fährt einmal), Q14 nach dem Tod: die Werte des
@@ -1440,11 +1651,10 @@ const stationen = [
         kriterium: "halten.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
-        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        probe: HALTEN_K5, // seit 29.10. dieselbe Probe (Zwilling von #1)
         gpu: true,
         zeit: false,
-        minuten: 4,
+        minuten: 1,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
             const q = l.find((x) => /^\s*(✅|❌) Q14 halten\.K5 Staffel 2/.test(x));
@@ -1462,7 +1672,7 @@ const stationen = [
             const rot = /❌/.test(q) ? " · ROT: " + q.split("Werk und Nahrung ").slice(1).join("").trim() : "";
             return { gruen: /✅/.test(q) && s20, zahl: zahl + rot + (s20 ? "" : " · Selbst-Test S20 stumm") };
         },
-        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/bau-*.js"],
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/bau-*.js", "scripts/werkbank.cjs"],
         quelle: "2 = Lebenswerte lesen Werk und Nahrung (Mutation), beide Geräte",
     },
     // ───────── halten.K1 Staffel 2 — der Treffer aus dem Gesetz im Bild, Labor = Welt (halten-masse) ─────────
@@ -1477,11 +1687,11 @@ const stationen = [
         kriterium: "halten.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k1"],
-        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware", KAMPF_BILDER: "{AUS}" },
+        // seit 29.10. die Probe HALTEN_K1 in der Welt der Sitzung (haltenK1Seite; vorher der eigene Boot `--k1`, 6 Soll-Minuten)
+        probe: HALTEN_K1,
         gpu: true,
         zeit: false,
-        minuten: 6,
+        minuten: 1,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
             const q = l.find((x) => /^\s*(✅|❌) Q15 halten\.K1 Staffel 2/.test(x));
@@ -1500,7 +1710,7 @@ const stationen = [
             const rot = /❌/.test(q) ? " · ROT: " + q.split("Labor-Werk ").slice(1).join("").trim() : "";
             return { gruen: lauf.exit === 0 && /✅/.test(q) && s21, zahl: zahl + rot + (s21 ? "" : " · Selbst-Test S21 stumm") };
         },
-        pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html"],
+        pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html", "scripts/werkbank.cjs"],
         quelle: "2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
     },
     // ───────── fahrzeug.K5 — Rückmeldung: der Körper fühlt die Fahrt (fahr-rueckmeldung) ─────────
@@ -1628,7 +1838,8 @@ const stationen = [
     // heimbringen. An main 206b395a ROT: 0/30 (drüben hält keine Hülle etwas, daheim vor = nach).
     {
         kriterium: "tore.K3", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 5,
+        // seit 29.10. die Probe TORE_K3 in der Welt der Sitzung (toreK3Seite: nur K8; vorher der eigene Boot aller Welten, 5 Soll-Minuten)
+        probe: TORE_K3, gpu: true, zeit: false, minuten: 2,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
             let R = null;
@@ -1657,6 +1868,7 @@ const stationen = [
             "stamm/koerper-bewegung.js",
             "worlds/huelle/huelle.js",
             "scripts/diag-portal-konformanz.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = Leib, Inventar und Gehaltenes stehen nach Tor hin und zurück byte-gleich, an einem Gerät",
@@ -1672,7 +1884,7 @@ const stationen = [
     // am Grund eeaff9d6 Reittier 0/10 (drüben fehlte es — das Gepäck trug es nicht).
     {
         kriterium: "tore.K3", staffel: 2, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 5,
+        probe: TORE_K3, gpu: true, zeit: false, minuten: 2, // seit 29.10. dieselbe Probe (Zwilling von #1)
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
             let R = null;
@@ -1703,6 +1915,7 @@ const stationen = [
             "stamm/bau-vorlagen.js",
             "worlds/huelle/huelle.js",
             "scripts/diag-portal-konformanz.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "2 = auch Reittier/Fahrzeug und die Rundreise eines Werks Studio → Welt → Studio mit gleichem Bau-Hash, für jede Ziel-Seite",
