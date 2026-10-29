@@ -896,3 +896,4 @@
 2026-10-29 15:00:57 takt21b-gtx tore.K5#2 ROT 3.0 · 25/50
 2026-10-29 15:02:29 takt21b-gtx spielgang.K3#1 ROT 1.4 · 26/50
 2026-10-29 15:05:59 takt21b-gtx fahrzeug.K2#1 ROT 3.4 · 27/50
+2026-10-29 15:07:40 takt21b-gtx ankunft.K2#1 ROT 1.6 · 28/50
