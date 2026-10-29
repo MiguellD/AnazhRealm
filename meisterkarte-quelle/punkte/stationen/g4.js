@@ -195,6 +195,89 @@ function reglerLesen(lauf) {
     };
 }
 
+// studios.K1 aus demselben Lauf (REGLER_BEFEHL): je Teil die Zeilen-Zahl (`Regler-wirkt Teil N (…): Y PARAMS-Zeilen`), die
+// toten (`  TOT <name> — …`) und gebrochenen (`❌ BRICHT <name>`) beim Namen, die Bild-Schwelle des Selbsttests (das
+// Schlupfloch „0,1 mm am Hash": ein Hash allein zählt nie) und die Baum-Zeilen (die Art tree in der Reduktion der Stufen-Probe)
+function k1Lesen(lauf) {
+    const out = String(lauf.stdout || "");
+    const teile = [...out.matchAll(/^Regler-wirkt Teil (\d) \(.*?\): (\d+) PARAMS-Zeilen .*?· (\d+) Zeilen an ihrem Leser der Welt/gm)];
+    const tot = [...out.matchAll(/^ {2}TOT (\S+) — (.*)$/gm)].map((m) => [m[1], m[2]]);
+    const bricht = [...out.matchAll(/^❌ BRICHT (\S+) — /gm)].map((m) => m[1]);
+    const zeilen = teile.reduce((n, m) => n + Number(m[2]), 0);
+    const bild = /^✅ SELBST-TEST Bild-Schwelle: 0,1 mm .* → tot · 3 cm .* → wirkt/m.exec(out);
+    return {
+        teile: teile.length,
+        zeilen,
+        wirkt: zeilen - tot.length - bricht.length,
+        leser: teile.reduce((n, m) => n + Number(m[3]), 0),
+        tot,
+        bricht,
+        bild: bild ? bild[0].replace(/^✅ SELBST-TEST Bild-Schwelle: /, "") : null,
+        baum: /^STUFEN \(B2c, pipeline\.K3\): .*Reduktion je Art .*\btree L1\/L0/m.test(out),
+        exits: [...out.matchAll(/^TEIL (\d) EXIT (\d+)/gm)].map((m) => +m[2]),
+    };
+}
+const k1Zahl = (k) =>
+    k.wirkt + "/" + k.zeilen + " Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr (" + (k.zeilen ? ((100 * k.wirkt) / k.zeilen).toFixed(1) : "–") +
+    " %, davon " + k.leser + " an ihrem Leser der Welt) · " + (k.bild ? "Bild-Schwelle " + k.bild : "OHNE Bild-Schwelle (der Hash allein zählt nie)") +
+    (k.tot.length ? " · tot " + k.tot.map(([n, g]) => n + " (" + (/(\d+(?:\.\d+)?) %/.exec(g) || ["", "0"])[1] + " %)").join(", ") : "") +
+    (k.bricht.length ? " · BRICHT " + k.bricht.join(", ") : "") + " · Baum-Zeilen " + (k.baum ? "gemessen" : "keine in PARAMS_BY_KIND") +
+    " · Exits " + k.exits.join("/");
+
+// DIE K4-PROBE (studios.K4, Zweig w3w-studios-koord): das Skript im Koordinations-Baum (bericht/2910-w3w-studios/skripte/k4-bild.cjs)
+// fährt in der warmen Welt der Sitzung (Werkbank {PORT}+20000) je Mesh-Studio dasselbe Werk in Bühne und Welt — die Bühne nennt es
+// über ihren Knopf „In der Welt ansehen" (die Übergabe der Hülle), die Welt setzt es über den EINEN Übergabe-Kanal; Pose = die
+// Vorschau-Kamera der Welt (Gier 0,6 · Neigung 0,32 · fov 45, Rahmen-Gesetz `_workshopRahmen`), beide aus dem Ausgabe-Pfad;
+// Bild-Differenz über der Vereinigung der Masken (ΔLuma > 18 oder nur eine Seite), dazu die Albedo-Tafel beider Seiten je Studio.
+const K4_BEFEHL = [
+    "bash",
+    "-c",
+    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
+];
+const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
+const k4Zahl = (j) => {
+    const s = (j && j.studios) || {};
+    const gruen = K4_STUDIOS.filter((id) => s[id] && s[id].gruen === true);
+    return {
+        gruen,
+        zahl:
+            gruen.length + "/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (" + (j.geraet || "Gerät ungenannt") + ") · " +
+            K4_STUDIOS.map((id) => {
+                const z = s[id] || {};
+                return id + " " + (z.differenz && z.differenz.anteil != null ? (100 * z.differenz.anteil).toFixed(1) + " %" : "–") +
+                    "/" + (z.albedo && z.albedo.max != null ? z.albedo.max : "–") + (z.gruen ? "" : z.grund ? " [" + String(z.grund).slice(0, 90) + "]" : "");
+            }).join(" · ") + ((j.fehler || []).length ? " · " + j.fehler.join(" | ").slice(0, 200) : ""),
+    };
+};
+const K4_PFAD = [
+    "worlds/huelle/",
+    "worlds/garage/",
+    "worlds/portale/",
+    "worlds/schmiede/",
+    "worlds/fachwerk/",
+    "worlds/terrain/",
+    "worlds/koerperstudio/",
+    "worlds/tetrapoda/",
+    "*-core.js",
+    "foundry-bruecke.js",
+    "stamm/werkstatt-vorschau.js",
+    "stamm/werkstatt-bauen.js",
+    "stamm/netz-portal.js",
+    "stamm/studio-*.js",
+    "stamm/siedlung-*.js",
+    "stamm/stoff-*.js",
+    "stamm/bild-*.js",
+    "stamm/dirigent-*.js",
+    "spec/farbe/albedo-tafel.json",
+    "scripts/werkbank.cjs",
+    "scripts/diag-albedo-tafel.cjs",
+    "scripts/lib/albedo-tafel.cjs",
+    "scripts/lib/licht-linsen.cjs",
+    "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/welt-boot.cjs",
+    "scripts/lib/software-gpu.cjs",
+];
+
 // diag-werkstatt-weg (L-WERKSTATT, BRENNGLAS): die Rohdatei artifacts/werkstatt-weg/weg.json wandert nach {AUS}
 const WEG_BEFEHL = [
     "bash",
@@ -1450,6 +1533,77 @@ const alle = [
             "scripts/lib/software-gpu.cjs",
         ],
         quelle: "2 = auch für KI-gesetzte und geteilte Werke, Ego und Third, beide Geräte",
+    },
+    // ── studios.K1 ── jeder Griff wirkt sichtbar oder hörbar (Zweig w3w-studios): gate:regler-wirkt urteilt am BILD des Werks
+    // (`bauBild`: die Vorschau-Pose unter dem Belichtungs-Gesetz der Welt, ≥ 1 % der Gestalt-Pixel mit ΔLuma > 18) bzw. an
+    // seinem Leser der Welt (Membran · Ritt · Ohr). Zwilling von pipeline.K3 (REGLER_BEFEHL): EIN Lauf, headless (die Brücke
+    // baut in JS, das Raster rechnet die CPU — geräteunabhängig)
+    {
+        kriterium: "studios.K1",
+        staffel: 1,
+        geraet: "headless",
+        befehl: REGLER_BEFEHL,
+        env: { ...SOFT, REGLER_WIRKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const k = k1Lesen(lauf);
+            if (k.teile !== 3) return { gruen: false, zahl: k.teile + " von 3 Teilen mit Zeilen-Zahl (Exits " + k.exits.join("/") + ")" };
+            return { gruen: !!k.bild && k.zeilen > 0 && k.wirkt / k.zeilen >= 0.8, zahl: k1Zahl(k) };
+        },
+        pfad: REGLER_PFAD,
+        quelle: "1 = ≥ 80 % der Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr",
+    },
+    {
+        kriterium: "studios.K1",
+        staffel: 2,
+        geraet: "headless",
+        befehl: REGLER_BEFEHL,
+        env: { ...SOFT, REGLER_WIRKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const k = k1Lesen(lauf);
+            if (k.teile !== 3) return { gruen: false, zahl: k.teile + " von 3 Teilen mit Zeilen-Zahl (Exits " + k.exits.join("/") + ")" };
+            return { gruen: !!k.bild && k.baum && k.zeilen > 0 && k.wirkt === k.zeilen, zahl: k1Zahl(k) };
+        },
+        pfad: REGLER_PFAD,
+        quelle: "2 = 100 % — der Nenner ist die Zeilen-Zahl bei der Messung (eine Ratsche, die nur wächst, mit den Baum-Zeilen)",
+    },
+    // ── studios.K4 ── Studio = Welt im Bild: die K4-Probe in der warmen Welt der Sitzung (K4_BEFEHL), Staffel 1 auf einer Karte
+    {
+        kriterium: "studios.K4",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 900, befehl: K4_BEFEHL },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + "): " + String(lauf.stdout || "").split(/\r?\n/).filter((l) => /^K4 /.test(l)).slice(-2).join(" | ").slice(0, 300) };
+            const k = k4Zahl(j);
+            return { gruen: k.gruen.length >= 3, zahl: k.zahl };
+        },
+        pfad: K4_PFAD,
+        quelle: "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10",
+    },
+    {
+        kriterium: "studios.K4",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 900, befehl: K4_BEFEHL },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            if (!j || !j.studios) return { gruen: false, zahl: "kein K4-JSON (Exit " + lauf.exit + ")" };
+            const k = k4Zahl(j);
+            return { gruen: k.gruen.length === 7, zahl: k.zahl };
+        },
+        pfad: K4_PFAD,
+        quelle: "2 = 7/7 auf beiden Geräten",
     },
     // ── studios.K5 ── das Probe-Gesetzbuch (Fixture-Kern in spec/) über die Werkstatt in der Welt (gate:nervensystem E)
     {
