@@ -77,7 +77,6 @@ hauptLauf(async () => {
     const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
     const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { c: {}, d: {}, f: {} };
-        const r = window.anazhRealm;
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         // ===== C: die MERGE-SEMANTIK direkt (first-wins + disjunkt), mit Restore =====

@@ -235,7 +235,6 @@ function wieseUrteil(m, S, mitGras) {
 // laut, nie ein Ersatz-Ort).
 function weltOrte(art, opts) {
     const o = opts || {};
-    const r = window.anazhRealm;
     const [mx, mz] = o.mitte || window.__weltMitte;
     const rMax = o.rMax || 400;
     const schritt = o.schritt || 6;
@@ -494,7 +493,6 @@ function weltOrt(art, opts) {
 // ±3 m daneben trocken (der Spiegel des Gesetzes liegt ≥ 0,3 m unter dem Grund), Stufe ≤ stufeMax je 2 m und Quergefälle ≤ querMax
 // je m; die kleinste Stufe — mit `naechster` im nächsten Ring, der einen trägt. Leser: gate:fahr-leben, gate:vehicle-drive B-e.
 function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechster = false) {
-    const r = window.anazhRealm;
     let best = null;
     for (let ring = 0; ring <= ringe && !(naechster && best); ring++)
         for (let k = 0; k < (ring ? 8 : 1); k++) {

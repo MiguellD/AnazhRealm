@@ -17,7 +17,6 @@ hauptLauf(async () => {
     });
 
     const S = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const out = { ready: false, coldBefore: 0, foundryBefore: 0, foundryAfter: 0, ticks: 0, err: null };
         const isTree = (e) =>
             e && e.position && !!r._foundryPresetForEntry(e);

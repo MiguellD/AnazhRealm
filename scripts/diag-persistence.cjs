@@ -283,7 +283,6 @@ function ttHaken() {
 // Der Treiber: W gehalten, je 16 ms ein Takt, je zweiter ein Loch auf dem Raster (die Linie wächst über den FIFO-Deckel 256
 // von K23, jedes Loch steht nach dem Laden), je 50. ein Block 40 m neben dem Weg (die Genesis-Lichtung räumt Basalt).
 function ttTreiber(e0) {
-    const r = window.anazhRealm;
     const n = window.__ttN;
     let t = 0;
     window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW", key: "w", bubbles: true }));
@@ -331,7 +330,7 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         const tGoto = Date.now();
         await server.zeige(page, 120000);
         const g = (zeile.geladen = await page.evaluate(async () => {
-            const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+            await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
             const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
             const g0 = window.__ttRec({
                 ...r.state,
@@ -429,7 +428,7 @@ const server = statikServer();
 // Takt die Lage, eine Zeile der Tafel) ist ROT an seinem Namen.
 const LEBEN = ["worldJournal", "dslHistory", "dslAbilities", "knowledgeBase", "dslPatternMemory", "creatures"];
 async function wegSeite(km, min, edits) {
-    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
+    await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
     const [st, spur, S] = [r.state, [], []];
     let t = performance.now();
     const takt = async (n, f) => {
@@ -534,7 +533,7 @@ function korpusSoll(k) {
 }
 // Am Kopf: liegt die Grube je Edit am Boden (die Oberfläche unter dem Gesetz)? Dann der Save des Kopfs (Material dazu, fehlt es).
 async function korpusIst(s) {
-    const r = await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
+    await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
     if (!r.state.player.inventory.some((x) => x && x.kind === "material")) r.addMaterialToInventory("stein", 5);
     r.saveState();
     const ls = { ...localStorage, [r.worldStorageKey(s.welt)]: await window.__stand() };

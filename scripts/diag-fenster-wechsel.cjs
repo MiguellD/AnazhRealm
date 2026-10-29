@@ -67,8 +67,6 @@ function fensterSammler() {
 // ein Schritt nach der Änderung: `n` gerenderte Frames im laufenden Loop (die GPU-Leine zählt sie) — mit `pr` erst, bis die
 // Pixel-Ratio dort steht (höchstens 60 Frames); dann der Stand des Schritts
 async function fensterSchritt(o) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const L = () => (r._gpuLeine ? r._gpuLeine.gerendert : 0);
     if (o.pr != null) {
         const f0 = L();
@@ -128,7 +126,7 @@ async function fensterSchritt(o) {
         const schritt = async (name, text, tu, pr, bisMeldung) => {
             await page.evaluate((s) => (window.__fensterEcht.schritt = s), name);
             await tu();
-            const kopfVor = await page.evaluate(() => (window.anazhRealm._gpuWache || { meldungen: [] }).meldungen.length);
+            const kopfVor = await page.evaluate(() => (r._gpuWache || { meldungen: [] }).meldungen.length);
             const s = await page.evaluate(fensterSchritt, { n: bisMeldung ? 2 : 3, pr, bisMeldung: !!bisMeldung });
             s.fremd = Object.entries(s.gpu).map(([k, n]) => `${n}× ${k}`);
             s.wacheNeu = s.wache - wacheVor;
@@ -144,7 +142,7 @@ async function fensterSchritt(o) {
         const befund = (s) =>
             s.fremd.join(" | ") || (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
         const fenster = (w, h, dsf) => () => page.setViewport({ width: w, height: h, deviceScaleFactor: dsf });
-        const pixelRatio = (v) => () => page.evaluate((x) => window.anazhRealm.state.renderer.setPixelRatio(x), v);
+        const pixelRatio = (v) => () => page.evaluate((x) => r.state.renderer.setPixelRatio(x), v);
         const erg = {};
         const SCHRITTE = [
             ["E1", "704×396 DPR 1", fenster(704, 396, 1), null],
@@ -174,7 +172,7 @@ async function fensterSchritt(o) {
                     .join("/")}`
         );
         // ES: der Selbsttest am echten Frame — ohne den Wächter fällt der Pixel-Ratio-Schritt beim Namen (der letzte Schritt)
-        await page.evaluate(() => (window.anazhRealm.constructor._diaetVorTextur = () => false));
+        await page.evaluate(() => (r.constructor._diaetVorTextur = () => false));
         const es = await schritt("ES", "setPixelRatio(1.25) ohne Wächter", pixelRatio(1.25), 1.25, true);
         const faellt = (s) => [...s.fremd, ...s.wacheKoepfe].some((k) => GROESSEN_ZIELE.test(k));
         check(

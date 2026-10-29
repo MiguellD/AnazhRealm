@@ -80,7 +80,6 @@ const S4_TOLERANZ = 0.1;
 async function s4Probe(page, station, schein) {
     return page.evaluate(
         (st, tol, schein) => {
-            const r = window.anazhRealm;
             const s = r.state;
             const out = { station: st.id, koerper: [], befunde: [] };
             const inStation = (e) =>
@@ -191,7 +190,6 @@ const S0_E2_NACHT = 10;
 async function s0Probe(page, station, schein) {
     return page.evaluate(
         async (st, umkreis, e2min, schein) => {
-            const r = window.anazhRealm;
             const s = r.state;
             const T = window.THREE;
             const out = {
@@ -463,7 +461,6 @@ function zeigeS4(rep, schein) {
 async function probe(page, welt, wuerfe, evolutionen, schein) {
     return page.evaluate(
         async (welt, wuerfe, evolutionen, schein) => {
-            const r = window.anazhRealm;
             const s = r.state;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
             const takt = async (ms) => {
@@ -642,7 +639,6 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // (jede gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
 const S0_NAH_INSTALL = () => {
     window.__s0Nah = (mitte, radius, mit) => {
-        const st = window.anazhRealm.state;
         const rend = st.renderer;
         const welt = st.scene;
         // WAS DER FEUERKREIS LIEST: der Boden-Satz, die Feuerstelle (ihr Bau-Satz, ihre Gruppe oder ihr eigenes Mesh) und, was
@@ -692,7 +688,7 @@ const S0_NAH_INSTALL = () => {
         // DIE WAHL JE PASS TRÄGT DIE KUGEL: ein Satz (Hülle 1e9) zeichnet, was das EINE Gesetz der Pass-Wahl (`_passTrifft`) in
         // seinen Zellen trifft, eine Wahl-Gruppe ihre Instanzen ebenso — die Kugel urteilt mit (Körper: Box mit Saum), sonst
         // zeichnete der Schuss jeden Bau, jede Zelle Boden im Blick bis zum Horizont
-        const r0 = window.anazhRealm;
+        const r0 = r;
         zaehl.verworfen = 0;
         r0._passTrifft = function (L, cx, cy, cz, hx, hy, hz, rand) {
             if (!Object.getPrototypeOf(this)._passTrifft.call(this, L, cx, cy, cz, hx, hy, hz, rand)) return false;
@@ -766,7 +762,6 @@ const S0_NAH_INSTALL = () => {
 // die Linse bricht sofort ab (sie wächst nie mehr); reißt die Frist, nennt sie die Lage der Foundry (das Buch, die Schlange,
 // was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt.
 const S0_GESTALT_INSTALL = () => {
-    const r = window.anazhRealm;
     const weg = Object.getPrototypeOf(r).removeArchitecture;
     r.removeArchitecture = function (e, ...rest) {
         if (e && e === window.__s0Wache && !e.__s0Fiel)
@@ -890,7 +885,6 @@ const S0_HIMMEL_TOL = 0.03; // relativ, plus 0,005 absolut: die Umgebung nach de
 async function himmelProbe(page, taub) {
     return page.evaluate(
         async (taub, tol) => {
-            const r = window.anazhRealm;
             const s = r.state;
             const out = { himmel: [], befunde: [] };
             const uhr = (t) => {
@@ -1035,7 +1029,6 @@ async function lichtLauf() {
             const id = await page.evaluate(
                 async (json) => {
                     await window.__weltDa((w) => w.importWorldBeside);
-                    const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
                     const res = r.importWorldBeside(json);
                     if (!res.ok) return null;
@@ -1070,7 +1063,6 @@ async function lichtLauf() {
             const fehler = await phase(name, (rest) =>
                 page.evaluate(
                     async (st, gestalt) => {
-                        const r = window.anazhRealm;
                         const s = r.state;
                                                 s.renderer.setAnimationLoop(null);
                         let laengsterTakt = 0; // der längste Takt dieser Phase (ms): hielt ein Takt die Seite an, steht er im Urteil
@@ -1153,7 +1145,6 @@ async function lichtLauf() {
         if (SELBSTTEST && !ergebnis.sauber)
             wache = await phase("Schein Wache", () =>
                 page.evaluate(() => {
-                    const r = window.anazhRealm;
                     const p = window.__s0Feuer.position;
                     const x = p.x + 60;
                     const z = p.z;
@@ -1180,7 +1171,6 @@ async function lichtLauf() {
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(async (schein, nahM, palette) => {
-                    const r = window.anazhRealm;
                     const s = r.state;
                     const T = window.THREE;
                     const rend = s.renderer;
@@ -1393,7 +1383,6 @@ async function lichtLauf() {
     // 5 m zurück — die Figur im Licht des Pools; dazu das Feuer aus 6 m (K11b: der Lichtkreis und sein Saum)
     if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
         const pngs = await page.evaluate(async (nahM) => {
-            const r = window.anazhRealm;
             const s = r.state;
             const f = window.__s0Feuer.position;
             const g = (x, z) => r._voxelSurfaceY(x, z);
@@ -1617,7 +1606,7 @@ hauptLauf(async () => {
         // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
         // trägt in r184 nur das indirekte Licht) trägt den Licht-Pool (`userData.lichtPool`, `_leuchtStoff`) oder ist Quelle
         window.__stoffZensus = () => {
-            const s = window.anazhRealm.state;
+            const s = r.state;
             const gesehen = new Set();
             const ohne = new Map();
             let lit = 0;
@@ -1664,7 +1653,6 @@ hauptLauf(async () => {
             const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
             // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
             const id = await page.evaluate((json) => {
-                const r = window.anazhRealm;
                 const res = r.importWorldBeside(json);
                 if (!res.ok) return null;
                 r.activeWorldSet(res.worldId);
@@ -1676,7 +1664,6 @@ hauptLauf(async () => {
         if (welt === "buehne") {
             // jeder Bühnen-Lauf auf frischer Bühne (der Schein-Lauf erbt nichts vom sauberen)
             await page.evaluate((id) => {
-                const r = window.anazhRealm;
                 r.activeWorldSet(id);
             }, importiert);
             await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });

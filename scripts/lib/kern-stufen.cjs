@@ -51,7 +51,6 @@ function geklemmteStufe(listeJson, wahl) {
 // ready-Handshake, D der Auto-Blueprint am EINEN Chokepoint, P die Place-Auflösung, E das Asset je Stufe, F der Schlüssel der Wahl.
 async function epsilonSeite(w) {
     await window.__weltDa();
-    const r = window.anazhRealm;
     const A = r.constructor;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);

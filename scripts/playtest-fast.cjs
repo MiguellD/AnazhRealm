@@ -59,7 +59,6 @@ function check(name, ok) {
         });
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
-            const r = window.anazhRealm;
             if (!r || typeof r._gameLoopTick !== "function") return;
             if (r.state.renderer) {
                 window.__origRender = r.state.renderer.render.bind(r.state.renderer);
@@ -105,7 +104,6 @@ function check(name, ok) {
         await page
             .waitForFunction(
                 () => {
-                    const r = window.anazhRealm;
                     return !!r?._foundry?.recipes?.[r.constructor.KOERPER_HOST_RECIPE];
                 },
                 { polling: 100, timeout: 180000 }
@@ -117,8 +115,7 @@ function check(name, ok) {
         // ── KERN-CHECKS (selbst-enthalten, defensiv) ──
         const R = await page.evaluate(() => {
             const out = {};
-            const r = window.anazhRealm,
-                st = r && r.state;
+            const st = r && r.state;
             const safe = (fn) => {
                 try {
                     return fn();
@@ -386,7 +383,6 @@ function check(name, ok) {
         // v1.0-Schritt 4 ohne Schlüssel: der Satz wird zum Studio-Programm. Die KI-Antwort trägt der Korpus mit den
         // Antworten eines echten Modells (scripts/diag-v1-pfad.cjs --korpus).
         const K = await page.evaluate(async () => {
-            const r = window.anazhRealm;
             const o = {};
             try {
                 const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
@@ -401,7 +397,6 @@ function check(name, ok) {
         // je Art der Welt × Gestalt × Stufe trägt er die Höhe, die Rinde, die Laub-Farbe und die Nadel-Art des Gesetzes —
         // Schlüssel für Schlüssel. Konsum-Leser: der Kollisions-Stamm (`_populateBlockerAABBs`) und die Werkstatt-Vorschau.
         const RI = await page.evaluate(() => {
-            const r = window.anazhRealm;
             const pc = window.__phytoCore;
             const tab = window.__terrainCore && window.__terrainCore.PHYTO_PRESETS;
             const o = { faelle: 0, rot: 0, abw: {}, selbst: false };

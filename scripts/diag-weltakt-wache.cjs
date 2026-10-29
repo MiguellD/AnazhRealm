@@ -173,8 +173,6 @@ const server = statikServer();
 // Die Probe im Seiten-Kontext: jeder Weg des Spiels unter der Bühne, der Schmuggel an der Engstelle vorbei, die freie Welt,
 // die Quelle.
 async function probe(GESCHICKT) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const t = () => performance.now() / 1000;
     // die Dörfer der Probe: `spawnSettlement` baut asynchron (Foundry-Export) — die Probe wartet jedes ab
     const doerfer = [];

@@ -646,9 +646,7 @@ const server = statikServer();
         befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;
             let HINAUS = null;
-            const r = window.anazhRealm,
-                st = r.state,
-                T = window.THREE;
+            const T = window.THREE;
             const takt = () => {
                 try {
                     r._gameLoopTick(performance.now());

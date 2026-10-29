@@ -314,8 +314,7 @@ async function runPartB() {
     const out = await page.evaluate(async () => {
         const res = { samples: [], err: null };
         // ── Boot + Foundry abwarten ──
-        const r = await window.__weltDa();
-        const st = r.state;
+        await window.__weltDa();
         const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
         const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (Bänder aus dem Kern, Schwellen aus dem Gesetz)
@@ -1156,7 +1155,6 @@ async function runPartB() {
     // EINEN Konversions-Chokepoint (_foundryBuildMesh); der Gruppen-Bau überschreibt
     // mit echten Stufen. ──
     const attrWand = await page.evaluate(() => {
-        const r = window.anazhRealm;
         let geprueft = 0,
             verstoesse = 0;
         r.state.scene.traverse((o) => {
@@ -1176,8 +1174,6 @@ async function runPartB() {
     // headless reapt SOFORT (byte-alte Gates) · echt hält die Frist die Hülle ·
     // Realloc in der Frist mintet NICHT neu · der Reaper räumt nach Ablauf. ──
     const gnade = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const o = {};
         let bpName = null;
         for (const n in st.blueprints) {
@@ -1221,7 +1217,6 @@ async function runPartB() {
     // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
     // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
     const kehraus = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const key = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const ex = 15345,
             ez = 6789;
@@ -1271,8 +1266,6 @@ async function runPartB() {
     // (9) DIE LAUTE BLENDE in der Seite: der Uniform-Satz verliert uLodD0, ein Baum-Stoff wird frisch gebaut (der Cache der
     // Stoffe leer) — bricht er beim Namen, oder zeichnet er still ohne Maske? Danach steht alles wie vorher.
     const laut = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const res = {};
         const lu = r._ensureLodUniforms();
         const alt = st.lodUniforms;
@@ -1466,7 +1459,7 @@ async function main() {
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
             !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
-            JSON.stringify(out.warm)
+            out.warm
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);
         let holes = 0,
@@ -1512,7 +1505,7 @@ async function main() {
     check(
         "SPIEGEL DER BLENDE: die Masken-Uniformen tragen je Bild das CPU-Band (LOD_DISTANCES) — vor dem Bild alt, nach ihm neu",
         sp.seed === true && sp.vorBild === false && sp.nachBild === true && sp.zurueck === true,
-        JSON.stringify(sp)
+        sp
     );
 
     if (out && Array.isArray(out.zensus)) {
@@ -1552,7 +1545,7 @@ async function main() {
         check(
             "STUFEN-WAHRHEIT: das Billboard stand im Sweep mit SEINEM Stempel (= die Höhe der L1, kein Rahmen-Modell)",
             (SW.voll.modi.fin || 0) > 0,
-            JSON.stringify(SW.voll.modi)
+            SW.voll.modi
         );
         const ST = SW.strauch;
         check(
@@ -1562,7 +1555,7 @@ async function main() {
                 out.strauchWarm.l0 &&
                 out.strauchWarm.l1 &&
                 out.strauchWarm.l2,
-            JSON.stringify({ preset: out.strauchPreset, warm: out.strauchWarm })
+            { preset: out.strauchPreset, warm: out.strauchWarm }
         );
         if (ST) {
             check(
@@ -1572,7 +1565,7 @@ async function main() {
                     (ST.voll.modi.fin || 0) > 0 &&
                     !ST.voll.modi.l1e &&
                     !ST.voll.modi.frei,
-                JSON.stringify(ST.voll.modi)
+                ST.voll.modi
             );
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
         } else check("STRAUCH-Sweep lief", false, "fehlt");
@@ -1590,7 +1583,7 @@ async function main() {
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): jede gezeigte Stufe hat ihren Partner (L0 ↔ L1), alle warm`,
                 !!op.preset && mitPartner && op.alleWarm === true,
-                JSON.stringify({ preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm })
+                { preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm }
             );
             if (!op.voll) {
                 check(`KETTE DES GESETZBUCHS (${op.typ}): Sweep lief`, false, "fehlt");
@@ -1606,7 +1599,7 @@ async function main() {
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): der Partner steht im Bild — jede gezeigte Stufe zeichnet im Sweep`,
                 g.length > 0 && g.every((s) => (op.voll.stufen[s] || 0) > 0),
-                JSON.stringify({ stufen: op.voll.stufen, modi: op.voll.modi })
+                { stufen: op.voll.stufen, modi: op.voll.modi }
             );
             if (op.satzArt)
                 check(

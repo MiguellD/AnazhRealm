@@ -3,17 +3,15 @@
 // 4 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
-async function checkBandRing2Extended(ctx) {
-    const { page, check, logs, errors, finalState } = ctx;
+async function checkBandRing2Extended({ page, check, logs, errors, finalState }) {
     void errors;
     void finalState;
     // ### Ring 2 Phase 3 – Chat → DSL ###
     // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
     // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
     const phase3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -221,7 +219,6 @@ async function checkBandRing2Extended(ctx) {
     // (a) Selektion bevorzugt statistisch high-fitness, (b) Mutation behält strukturelle Invarianten,
     // (c) dslCompose mit historyProbability=1 nutzt tatsächlich die History.
     const phase7Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -318,7 +315,6 @@ async function checkBandRing2Extended(ctx) {
 
     // ### Schicht 1 — IQ-Schicht (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory) ###
     const iqResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Keyword-Extraktion
@@ -392,13 +388,7 @@ async function checkBandRing2Extended(ctx) {
         return out;
     });
 
-    if (!iqResults || iqResults.error) {
-        check(
-            "Schicht 1: IQ-Snapshot erreichbar",
-            false,
-            (iqResults && iqResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Schicht 1: IQ-Snapshot erreichbar", iqResults)) {
         check("Schicht 1: pathExtractKeywords liefert echte Tokens", iqResults.keywordsExtracted);
         check("Schicht 1: Keyword-Filter wirft Stoppwörter raus", iqResults.keywordsFilterStopwords);
         check("Schicht 1: rememberChatKeywords füllt das Fenster", iqResults.keywordsRemembered);
@@ -416,10 +406,8 @@ async function checkBandRing2Extended(ctx) {
 // Nexus-Augen: dslComposeAtomic LIEST auraAt am Spieler und komponiert resonant zum lokalen Feld
 // (docs/das-lebendige-feld.md §2/§3.1). Beweis: feld-resonante Farbwahl (kontrollierte rng →
 // deterministisch) + weiter valide DSL.
-async function checkBandV1722NexusEyes(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1722NexusEyes({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const lo = () => 0.0; // kontrollierte rng (< jede Achsen-Stärke → resoniert)
         out.magieColor = r.dslComposeFieldColor(lo, { magieleitung: 1, glut: 0, lebendig: 0 }) === "#d4a3ff";
@@ -439,15 +427,13 @@ async function checkBandV1722NexusEyes(ctx) {
     check("Nexus-Augen: komponiert weiter valide DSL", res.composesValid);
 }
 
-async function checkBandWelle6HCreatureLlm(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
     // Der Spieler spricht mit EINER Kreatur; der Persona-Prompt versammelt ihre volle Identität
     // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). Kein echter LLM-Call: geprüft: Builder + Routing.
     const wave6hP2eV1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -612,7 +598,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     // @Name ist die primäre Kreatur-Adresse (ohne Trenner fiele "Bran wie gehts" an die Welt-KI);
     // Soul-Farben tragen Identität (Sprite=cyan / Wesen=brass / Geist=grün).
     const wave6hP2eV11Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
@@ -745,7 +730,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     // Phrasen-Pool. Hooks: _onCreatureLevelUp · applyCreatureBoost · no_material_found (gather-tick) ·
     // no_inventory_for_build (build-tick).
     const wave6hP2eV2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -946,7 +930,6 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     // (schöpfer = auto-execute, pfad/frieden = Inline-Buttons); LLM-Augmentation bei seltenen Events mit
     // eigenem 10-Min-Throttle. Geprüft: Whitelist, Modus-Diskrimination, Memory-Einträge, Sandbox-Defense.
     const wave6hP2eV3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
         const Class = r.constructor;
@@ -1172,13 +1155,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
     }
 }
 
-async function checkBandWorkshopPolishAndLlm(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1258,7 +1239,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v805Results && !v805Results.error) {
+    if (ohneWurf(check, "V8.05", v805Results)) {
         // V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)
         check(
             "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas",
@@ -1292,13 +1273,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
             v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
         );
-    } else if (v805Results && v805Results.error) {
-        check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
     }
 
     // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1348,7 +1326,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v806Results && !v806Results.error) {
+    if (ohneWurf(check, "V8.06", v806Results)) {
         // V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)
         check(
             "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar",
@@ -1367,13 +1345,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         check("V8.06: Mode-Bar hat Hintergrund-Farbe", v806Results.modeBarHasBg);
         // V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)
         check("V8.06: Stats-Panel hat dunklen Hintergrund", v806Results.statsHasDarkBg);
-    } else if (v806Results && v806Results.error) {
-        check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
 
     // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1440,7 +1415,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v807Results && !v807Results.error) {
+    if (ohneWurf(check, "V8.07", v807Results)) {
         // V8.07: Klone-Button IMMER enabled (auch bei built-in)
         check("V8.07: Klone-Button IMMER enabled", v807Results.cloneBtnAlwaysEnabled);
         // V8.07: Neu-Button IMMER enabled (auch bei built-in)
@@ -1461,13 +1436,10 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         );
         // idempotent — zweiter Apply lässt keine Inline-Größe zurück
         check("idempotent", v807Results.idempotentAfterApply);
-    } else if (v807Results && v807Results.error) {
-        check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
     }
 
     // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
     const llmResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // den Ollama-Weg (Endpunkt, Body, Antwort, Parser) und die Tür jedes Anbieters durch die CSP fährt der KI-Korpus am Verhalten (diag-v1-pfad --korpus)
@@ -1510,13 +1482,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         });
     });
 
-    if (!llmResults || llmResults.error) {
-        check(
-            "Schicht 2: LLM-Snapshot erreichbar",
-            false,
-            (llmResults && llmResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Schicht 2: LLM-Snapshot erreichbar", llmResults)) {
         check("Schicht 2: Gemini-Header trägt x-goog-api-key", llmResults.googleHeaderHasApiKey);
         check("Schicht 2: Anthropic-Body trägt system + messages", llmResults.anthropicBodyShape);
         check("Schicht 2: Gemini-Body trägt systemInstruction + contents", llmResults.geminiBodyShape);
@@ -1536,7 +1502,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
     // Lokales Ollama braucht keinen Key, gehostete Setups einen Bearer-Token: buildHeaders schickt
     // Authorization NUR bei gesetztem Key.
     const ollamaKeyResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
@@ -1551,17 +1516,14 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (ollamaKeyResults && !ollamaKeyResults.error) {
+    if (ohneWurf(check, "V7.94 Ollama-Key", ollamaKeyResults)) {
         check("V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>", ollamaKeyResults.bearerWithKey);
-    } else if (ollamaKeyResults && ollamaKeyResults.error) {
-        check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
     }
 
     // ### Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
@@ -1617,7 +1579,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v795Results && !v795Results.error) {
+    if (ohneWurf(check, "V7.95 Ollama-Cloud", v795Results)) {
         // V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)
         check(
             "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat",
@@ -1656,15 +1618,12 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:false",
             v795Results.bodyHasCommon
         );
-    } else if (v795Results && v795Results.error) {
-        check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
     }
 
     // ### Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.llm) return null;
         const out = {};
 
@@ -1697,7 +1656,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
     // 404-Hint-Test
     const v797ErrorResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.llm) return null;
         const out = {};
         const origFetch = window.fetch;
@@ -1725,31 +1683,26 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v797AutoResults && !v797AutoResults.error) {
+    if (ohneWurf(check, "V7.97 Auto-Bypass", v797AutoResults)) {
         // V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)
         check(
             "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT",
             v797AutoResults.proxyUsedForCloud
         );
-    } else if (v797AutoResults && v797AutoResults.error) {
-        check(`V7.97 Auto-Bypass: evaluate-Fehler — ${v797AutoResults.error}`, false);
     }
-    if (v797ErrorResults && !v797ErrorResults.error) {
+    if (ohneWurf(check, "V7.97 Error-Hint", v797ErrorResults)) {
         check(
             "V7.97 Error-Hint: HTTP 404 'model not found' → klarer Hinweis mit Modell-Namen + 'ollama list'",
             v797ErrorResults.errorMentionsModel &&
                 v797ErrorResults.errorMentionsOllamaList &&
                 v797ErrorResults.errorMentionsModelName
         );
-    } else if (v797ErrorResults && v797ErrorResults.error) {
-        check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
     }
 
     // ### Parser-Robustheit für lokale Reasoning-Models ###
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1787,7 +1740,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         return out;
     });
 
-    if (v798Results && !v798Results.error) {
+    if (ohneWurf(check, "V7.98 Parser", v798Results)) {
         check(
             "V7.98 Parser: <think>...</think>-Block wird gestripped, dahinter liegendes JSON sauber geparst",
             v798Results.thinkStripped
@@ -1811,8 +1764,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback",
             v798Results.emptyJsonFallsBackToText
         );
-    } else if (v798Results && v798Results.error) {
-        check(`V7.98 Parser: evaluate-Fehler — ${v798Results.error}`, false);
     }
 }
 

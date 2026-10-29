@@ -5,14 +5,12 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandVoxelP3AndInventory(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandVoxelP3AndInventory({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
     // `carveVoxel` nimmt eine Säule aus dem Dichte-Feld (gelaende-core `editForm`: Radius r, halbe Höhe r).
     const voxelP3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
@@ -48,7 +46,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Async-Rebuild via Dirty-Queue: ein Edit markiert Voxel-Chunks dirty statt sync zu rebuilden, der
     // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks` ist die Test-Naht (sync-Drain).
     const voxelV940cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Den Test-Voxel-Ring SYNC auffüllen, damit der Edit Chunks zum Markieren findet: ein Tick-Loop
@@ -115,7 +112,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.carveVoxel(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
-            const st = r.state;
             const worker = r._voxelFadenTraegt();
             st._bodenEinbau = null;
             let fin = 0;
@@ -182,7 +178,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Dispose-Before-Build + Retry-Counter: den alten Chunk VOR dem Neubau entsorgen (alt + neu
     // parallel im Heap → kaskadierende OOMs).
     const voxelV940dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Dieses Band prüft die SYNC-Bau-Mechanik (dispose-before-build, Fail-Retry-Counter, OOM-give-up)
@@ -269,7 +264,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit; (3) `_ensureVoxelChunkAt` (Streaming)
     // trägt einen Retry-Counter wie der Re-Mesh-Pfad — beide Bau-Pfade konsistent.
     const voxelV940eResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         const base = r.state.terrainBaseHeight || 0;
@@ -352,7 +346,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ### (die Säule des Füll-Edits über die Maus und den Reload: gate:fall-waechter B)
     const voxelP3bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
@@ -389,7 +382,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Im pfad-Modus kostet das Aufschütten Material; in frieden +
     // schöpfer ist es frei (das Spielmodi-Muster).
     const voxelP3cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
         const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
@@ -467,7 +459,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
     // damagePlayer + Stamina-Kosten sind modus-gated.
     const wave6c2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
@@ -623,7 +614,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // 27 Slots mit Tag-Resonanz; Tag-Profile emergieren aus computeCompoundTags(blueprint).
     // Drag-Click-Pfad: Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
     const wave6c1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Datenmodell
@@ -943,7 +933,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Das Inventar listet die craftbaren Baupläne mit Kosten + rollen-gerechtem Fertigen-Knopf und
     // zeigt sichtbar, was getragen wird.
     const recipeBookResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -990,7 +979,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Vier Pfade: inv→inv (swap), inv→hot (Hotbar setzt), hot→hot (swap), hot→inv (Hotbar räumen).
     // HTML5-Drag-Events sind headless inkonsistent → Drop-Handler direkt mit fingiertem state.drag.
     const dragResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
 
@@ -1170,7 +1158,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     // Inventar öffnen → exitPointerLock (Cursor erscheint, HTML5-Drag&Drop geht); WASD bleibt aktiv;
     // Esc schließt das Inventar.
     const lockResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
@@ -1245,10 +1232,8 @@ async function checkBandVoxelP3AndInventory(ctx) {
 // Cell-Build gerufen, (3) Damm-Spawn → Footprint-Cells nach Rebuild SOLID, (4) Damm-Remove →
 // wieder air/water je Density+waterLevel, (5) Voxel-Carve unter waterLevel → Cells nach Rebuild
 // water (das Wasser fließt per Cell-Klassifikation ins Loch, kein BFS).
-async function checkBandWelleC3CellularReaction(ctx) {
-    const { page, check } = ctx;
+async function checkBandWelleC3CellularReaction({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const STATE = r.constructor.CELL_STATE;
@@ -1634,10 +1619,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
 // Worker-Density im Streaming-Pfad: (1) Worker-State nach Worldgen synced (`voxelWorkerSynced-
 // HydroStateGen === voxelWorkerStateGen`); (2) `_fetchOrRequestChunkDensity` liefert (Cache/pending);
 // (3) Worker-Density-Build == Sync-Build; (4) voxelEdit notifiziert den Worker (state-gen bumpt).
-async function checkBandWellePerf3cPhase2Async(ctx) {
-    const { page, check } = ctx;
+async function checkBandWellePerf3cPhase2Async({ page, check }) {
     const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Worker-Methoden existieren
@@ -1699,10 +1682,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
 // Voller Chunk-Mesh im Worker: er trägt die komplette Pipeline (Iso-Meshing + Cells + Colors),
 // nicht nur die Density-Samples. Invariante: alle 4 Arrays (positions/normals/colors/waterCells)
 // des Worker-Builds gleichen dem Sync-Build.
-async function checkBandWellePerf3cPhase3FullMesh(ctx) {
-    const { page, check } = ctx;
+async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
     const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // Worker initialisieren + Worldgen-State synchronisieren (im realen
@@ -1908,10 +1889,8 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
 // Voxel-Worker engagiert (~71 ms Mesh-Bau off-thread): `_voxelWorkerSyncWorldgenState` bootstrappt
 // ihn (`_getVoxelWorker`), sonst baut `_acquireVoxelChunkBuild` zirkulär JEDEN Chunk sync. Wand:
 // nach dem Warmup ist der Worker engagiert (worldgenSynced), Bootstrap + Spieler-Chunk-async stehen.
-async function checkBandV17118WorkerEngaged(ctx) {
-    const { page, check } = ctx;
+async function checkBandV17118WorkerEngaged({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         return {
             // Behavioral: der Worker ist nach dem Warmup gebootstrappt + getrusted.
@@ -1966,10 +1945,8 @@ async function checkBandV17118WorkerEngaged(ctx) {
 // PHASE A — das Fundament watertight: A1 Morph-Cap+Stitch-Band ·
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Decken-Sprung-Klemme + Kamera-Clip; die Rettung aus dem Fill hebt den Turm, gate:fall-waechter B).
-async function checkBandPhaseAFundament(ctx) {
-    const { page, check } = ctx;
+async function checkBandPhaseAFundament({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm" };
         const out = {};
         // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
@@ -2078,11 +2055,8 @@ async function checkBandPhaseAFundament(ctx) {
 
 // Carve über den Worker: der Neubau des Spieler-Chunks (und jedes Chunks mit einem Schnitt im 3×3) geht über den Worker,
 // auch bei gesundem Frame (K69-2). Synchron baut nur ein ausdrückliches forceSync.
-async function checkBandCarveWorker(ctx) {
-    const { page, check } = ctx;
+async function checkBandCarveWorker({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         // Takte, bis der Chunk unter dem Spieler GEBAUT steht — das Bau-Ereignis; die Decke 600 ist ROT
         const steht = () => {
             const pc = st.lastPlayerVoxelChunk;

@@ -9,10 +9,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 
 // W3 UI-Puls: dirty(raum) → EINE rAF-gebündelte Render-Insel pro Raum. Das Organ `_uiDirty` dedupt
 // (Set + ein rAF) → Doppel-Render/Stale durch hand-verdrahtete Render-Aufrufe strukturell unmöglich.
-async function checkBandW3UiPuls(ctx) {
-    const { page, check } = ctx;
+async function checkBandW3UiPuls({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) das Organ + die Registry existieren.
         const reg = r._uiRoomRegistry();
@@ -74,8 +72,7 @@ async function checkBandW3UiPuls(ctx) {
 // Stellvertreter (Rückseiten seiner Hülle, EIN instanzierter Draw), PANORAMA ein Vollbild-Dreieck ohne Fragment-Tiefe. Die ECHTEN
 // Organ-Methoden: O1/O2 die Obergrenze folgt dem höchsten belegten Slot, freie Slots kehren zurück · T1 der Takt aus EINER Matrix ·
 // K1 der March-Draw · K2 das statische Budget je Fragment (`wgslKosten`); Selbsttests S1 (Panorama mit Tiefe) und S2 (ohne Nachzug).
-async function checkBandFeldStellvertreter(ctx) {
-    const { page, check } = ctx;
+async function checkBandFeldStellvertreter({ page, check }) {
     const budget = function budget(texte) {
         const code = texte.join("\n");
         const k = SK.wgslKosten(texte.map((t, i) => (i === 0 ? t.replace(/\bfn\s+/, "@fragment fn ") : t)).join("\n"));
@@ -90,7 +87,6 @@ async function checkBandFeldStellvertreter(ctx) {
     };
     const mitBudget = (a) => Object.assign(a, { budgetPano: budget(a.wgslPano), budgetMarch: budget(a.wgslMarch) });
     const probe = function probe(modus) {
-        const r = window.anazhRealm;
         const T = window.THREE;
         const W = r.constructor.WELT_MARCH;
         if (r.state.feldPass) r._feldPassDispose();

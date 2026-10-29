@@ -4,17 +4,15 @@
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Ω-PHYSIS Säule IV — Wahrheits-Spiegel: die gerechnete Physik treibt Ω-W2 (physik-wahre
 // Optimierung) + Ω-W3 (sichtbares Bau-Feedback). Reine Berechnung + Konsum-Source-Probe, kein
 // GPU-Flake; der LOOK des Wankens ist headless nicht prüfbar.
-async function checkBandOmegaWerkstattSpiegel(ctx) {
-    const { page, check } = ctx;
+async function checkBandOmegaWerkstattSpiegel({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            C = r.constructor;
+        const C = r.constructor;
         const mats = r.state.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
@@ -57,13 +55,11 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
 }
 
-async function checkBandCadWorkshop(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandCadWorkshop({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
     const wave6bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -264,7 +260,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
 
-    if (wave6bResults && !wave6bResults.error) {
+    if (ohneWurf(check, "Welle 6.B", wave6bResults)) {
         check("Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint", wave6bResults.selectedSetToVillage);
         check(
             "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
@@ -373,13 +369,10 @@ async function checkBandCadWorkshop(ctx) {
             "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons enabled bei eigenem Bauplan",
             wave6bResults.modeBarEnabledOnCustom
         );
-    } else if (wave6bResults && wave6bResults.error) {
-        check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
     }
 
     // ### Resize-Handles (Konsole + Drawer) + Background-Fix ###
     const resizeResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -433,7 +426,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
 
-    if (resizeResults && !resizeResults.error) {
+    if (ohneWurf(check, "Resize", resizeResults)) {
         check(
             "Resize: Konsole hat .resize-tr Handle (oben-rechts, wächst nach oben; bottom-verankert)",
             resizeResults.consoleHasHandle
@@ -452,13 +445,10 @@ async function checkBandCadWorkshop(ctx) {
             "BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
             resizeResults.drawerHasInsetShadow
         );
-    } else if (resizeResults && resizeResults.error) {
-        check(`Resize: evaluate-Fehler — ${resizeResults.error}`, false);
     }
 
     // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
     const omniResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -503,7 +493,7 @@ async function checkBandCadWorkshop(ctx) {
         }
         return out;
     });
-    if (omniResults && !omniResults.error) {
+    if (ohneWurf(check, "Omnibox", omniResults)) {
         check("Omnibox: c:wetter → nur Befehls-Treffer mit run() (KONSUM)", omniResults.cmdAllBefehl);
         check("Omnibox: c:wetter findet einen Wetter-Befehl", omniResults.cmdMatchesWetter);
         check("Omnibox: b: liefert Bauplan-Treffer", omniResults.bHasBlueprints);
@@ -514,13 +504,10 @@ async function checkBandCadWorkshop(ctx) {
         check("Omnibox: Ctrl+K öffnet das Overlay", omniResults.ctrlKOpens);
         check("Omnibox: Esc schließt das Overlay", omniResults.escCloses);
         check("Omnibox: der Maus-Trigger öffnet das Overlay (Maus-Parität)", omniResults.triggerOpens);
-    } else if (omniResults && omniResults.error) {
-        check(`Omnibox: evaluate-Fehler — ${omniResults.error}`, false);
     }
 
     // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
     const v801Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -608,7 +595,6 @@ async function checkBandCadWorkshop(ctx) {
 
     // ### Shape-Drag-Drop + Klick-Klick-Connection ###
     const v802Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -729,7 +715,7 @@ async function checkBandCadWorkshop(ctx) {
         return out;
     });
 
-    if (v802Results && !v802Results.error) {
+    if (ohneWurf(check, "Phase 3", v802Results)) {
         check("Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
         check(
             "Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
@@ -763,14 +749,11 @@ async function checkBandCadWorkshop(ctx) {
             "Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
             v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
         );
-    } else if (v802Results && v802Results.error) {
-        check(`Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
     }
 
     // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
     //             seitliche Material/Color-Palette
     const v803Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -874,13 +857,11 @@ async function checkBandCadWorkshop(ctx) {
     }
 }
 
-async function checkBandEarlyRingsAndUi(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
 
@@ -998,7 +979,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
     // ### Achsen-Vollabdeckung + Generator-Modulation ###
     const ring3v2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player) return null;
         const out = {};
         const p = r.state.player;
@@ -1127,7 +1107,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
     // ### anazhSymphony ###
     const ring4Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.symphony) return null;
         const out = {};
 
@@ -1165,7 +1144,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
     // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
     const uiResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const topbar = document.getElementById("topbar");
@@ -1281,7 +1259,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
     // Die Balken tragen deutsche Namen + Wirkungs-Tooltip (Legende); ein Bildschirmrand-Schimmer + Label
     // zeigen die dominante Emotion in JEDER Kamera (via _emotionState — dieselbe Quelle wie KI/Journal).
     const emoClarityResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const spieler = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
@@ -1357,7 +1334,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
     const uiActionsResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1418,7 +1394,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
     // ### UI V1 — Abilities-Liste + Save/Load ###
     const uiAbilitiesResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const container = document.getElementById("status-abilities");
@@ -1548,7 +1523,6 @@ async function checkBandEarlyRingsAndUi(ctx) {
 
     // ### UI V1 — Live-Tuning Slider ###
     const uiTuningResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const sliders = {
@@ -1657,7 +1631,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // (ein schlankes Chat-Widget), neue Nachrichten verblassen im #chat-feed. Der Test wandert
         // mit: die Toggle-Kette ist umgekehrt (collapsed → klick → open → klick → collapsed).
         out.chatFeedInside = panel && panel.querySelector("#chat-feed") !== null;
-        out.feedWired = !!(window.anazhRealm && window.anazhRealm._chatFeedWired);
+        out.feedWired = !!(r && r._chatFeedWired);
 
         // Collapse-Toggle
         const toggle = document.getElementById("console-collapse");
@@ -1700,10 +1674,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
 // Signierte BEWERTUNGS-ZEUGNISSE übers Mesh: {id,s,t,pub,sig} (ed25519 über das stabile
 // Kanonische), LWW pro (Ziel, Schlüssel) = CRDT-tauglich; kanal-exklusiv + rate-gegated;
 // revozierte Schlüssel fallen aus der Wertung. End-to-end mit ZWEITER Identität.
-async function checkBandV18134Social(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18134Social({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
         if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
@@ -1773,10 +1745,8 @@ async function checkBandV18134Social(ctx) {
 // F4 Stufe 2: LESEZEICHEN (privat-lokal, anazh.feedBookmarks — NIE
 // im Welt-Snapshot; das Mesh-Folgen ist die spaetere Stufe). Ein 🔖-Toggle
 // pro Feed-Karte + der „Gemerkt"-Kind-Chip, der Filter liest das dataset.
-async function checkBandV18135Bookmarks(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18135Bookmarks({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // Toggle-Roundtrip + Persistenz (localStorage, global).
         const id = "band135:test";
@@ -1803,10 +1773,8 @@ async function checkBandV18135Bookmarks(ctx) {
 // FOLGEN: das Merken einer IDENTITÄT (pubkey), privat-lokal (anazh.feedFollows, nie im Snapshot).
 // KONSUM: „Gefolgt“-Chip + Filter über data-followed; die Karte trägt den Toggle (nie auf eigenen
 // Werken); Folgen schreibt witness.
-async function checkBandV18142Follow(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18142Follow({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
         const pub = "ab".repeat(32);
@@ -1849,10 +1817,8 @@ async function checkBandV18142Follow(ctx) {
 // KOMMENTARE: signierte Text-Zeugnisse übers Mesh (append-only statt LWW). End-to-end mit ZWEITER
 // Ed25519-Identität: eigenes Wort signiert + bezeugt · fremdes verifiziert · Tamper bricht ·
 // Rückruf siebt · Batch/Handler/onopen verdrahtet · der Text bleibt DATEN (textContent-Wand).
-async function checkBandV18143Comments(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18143Comments({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const S = r.constructor.SOCIAL;
         out.config = Number.isFinite(S.maxComments) && Number.isFinite(S.maxCommentLen) && S.maxCommentsShown > 0;
@@ -1955,10 +1921,8 @@ async function checkBandV18143Comments(ctx) {
 // „FÜR DICH“: persönliche Feed-Reihung als LESBARE Verdichtung der sozialen Signale (Folgen +4 ·
 // Gemeinschafts-Ø vertrauens-gewichtet · Merken +2 · eigenes Urteil ×0.5 · Gesprächs-Puls
 // gedeckelt). Kein Server, keine Black-Box.
-async function checkBandV18147ForYou(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18147ForYou({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (2)-(3) BEHAVIORAL mit injizierten Signalen (restauriert).
         const savedFollows = r.state.feedFollows;
@@ -1986,10 +1950,8 @@ async function checkBandV18147ForYou(ctx) {
 // M5 HUD/Räume-Politur: kein Resize-Sprung der Konsole · Logbuch = Dev-Sicht (EIN Schalter) ·
 // Emotion-Track auf dunklem Grund · Boost-Chips mit Effekt + LIVE-Restzeit · Equip/Pickup →
 // Sofort-Refresh · Hof-Gemüt als HP-artiger Balken (Umwidmen: eigener W12-Test).
-async function checkBandM5HudPolitur(ctx) {
-    const { page, check } = ctx;
+async function checkBandM5HudPolitur({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) der RESIZE-Sprung ist tot: 1-px-Drag an der EINGEKLAPPTEN Konsole
         // (105 px) bleibt bei ~105 (nie die harte 180er-Min).
@@ -2092,10 +2054,8 @@ async function checkBandM5HudPolitur(ctx) {
 // M4 — EIN Such/Filter-Kern: _matchQuery (Mehrwort-UND) + _blueprintSearchText (der EINE Heuhaufen:
 // Rolle deutsch + id + Material + Tags); alle Flächen konsumieren sie. Nie auf die rohe role-id
 // matchen („bauwerk" träfe architecture nie).
-async function checkBandM4SuchKern(ctx) {
-    const { page, check } = ctx;
+async function checkBandM4SuchKern({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         try {
@@ -2170,10 +2130,8 @@ async function checkBandM4SuchKern(ctx) {
 // W-B HOF-KARTE: der EINE Emotions-Renderer (_buildEmotionRows) baut die 6-Achsen-Reihen für ICH
 // (live) und HOF (statisch); die NATUR ruht als <details>; Lesbarkeit KONSUM-bewiesen (die Farbe
 // IST hell, nicht „Token gesetzt“); die Werte-Balken tragen sichtbare Füllung.
-async function checkBandWBHofKarte(ctx) {
-    const { page, check } = ctx;
+async function checkBandWBHofKarte({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
@@ -2229,10 +2187,8 @@ async function checkBandWBHofKarte(ctx) {
 // W-C ICH-RAUM: (a) das Mach-Tor spricht inline (EIN Formatter, drei Konsumenten — kein stiller
 // Fehlschlag in der zugeklappten Konsole); (b) EIN Boost-Band, Abgelaufene werden entfernt;
 // (c) Haupthand/Nebenhand benannt; (e) Label == Tat (vehicle → „Fertigen“); (h) der WARUM-CHIP.
-async function checkBandWCIchWahrheit(ctx) {
-    const { page, check } = ctx;
+async function checkBandWCIchWahrheit({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         // (a) EIN Formatter + drei Konsumenten (KONSUM am Ruf im Nutzer-Zustand).
         out.formatter =
@@ -2386,8 +2342,7 @@ async function checkBandWCIchWahrheit(ctx) {
 // blume height/bloomCount), der Katalog zeigt die Studio-Rezepte (gras) und verabschiedet die Donoren (wagen 17 · tor 4 Parts in
 // der Substanz-Tabelle), die Regler des Tors kommen aus der PARAMS-Tabelle und treiben die Vorschau, das Interim ist ehrlich
 // (kalte Auswahl → pending, leere Bühne, „Studio-Asset lädt…").
-async function checkBandRezeptKatalog(ctx) {
-    const { page, check } = ctx;
+async function checkBandRezeptKatalog({ page, check }) {
     // die porta-PARAMS-Länge als unabhängige Node-Referenz (derselbe Lade-Pfad wie im Worker, nur ohne Browser)
     require(path.join(SKRIPTE, "..", "porta-core.js"));
     const pp =
@@ -2398,7 +2353,7 @@ async function checkBandRezeptKatalog(ctx) {
         async (portaLen) => {
             const res = { a: {}, b: {}, c: {}, d: {}, e: {} };
             // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
-            const r = await window.__weltDa();
+            await window.__weltDa();
             const f = r._ensureAssetFoundry();
             await window.__weltDa(
                 () =>

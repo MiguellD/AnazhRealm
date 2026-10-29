@@ -14,10 +14,9 @@ const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const { kanalImVm, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
 const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
-const { hauptLauf, nullSeite, ROOT } = require("./lib/welt-boot.cjs");
+const { hauptLauf, nullSeite, ROOT, argOpt } = require("./lib/welt-boot.cjs");
 
-const argNach = (n) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : null);
-const SAAT = Number(argNach("--saat")) >>> 0 || Date.now() >>> 0;
+const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 
 // ── die Studio-Seite: die Hülle in ihrem Fenster, der Eltern-Rahmen fängt, was sie postet ──
 function studioSeite() {
@@ -53,8 +52,7 @@ function welt(buch, teile) {
 }
 
 // Der Bau, den die Welt aus ihrem Speicher bestellt — je Art ihr Leser bis an die Grenze zum Bäcker.
-function weltBau(w, kind, preset, weltSame) {
-    const { r, AnazhRealm } = w;
+function weltBau({ r, AnazhRealm }, kind, preset, weltSame) {
     if (kind === "koerper") {
         let fang = null;
         r._ofenMenschTemplate = (dials, skinColor, hairColor, lod) => (
@@ -256,7 +254,7 @@ async function kanalPruefen() {
     check(
         "der Kern klemmt (height 99 → max), fremde Schlüssel · Passagiere · erfundene Wahlen · ein krummer Same fallen",
         klemm,
-        JSON.stringify(ws()[koerper] || null)
+        ws()[koerper] || null
     );
 
     console.log("\n=== SELBSTTEST — ein Sonderweg ist ROT ===");
@@ -293,7 +291,6 @@ async function weltPruefen() {
     const out = await page.evaluate(async () => {
         const res = {};
         await window.__weltDa();
-        const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat);
         const KC = window.__koerperCore;
@@ -381,7 +378,7 @@ async function weltPruefen() {
     check(
         "der LEBENDE Avatar gießt neu und trägt die Gestalt (rot nur mit Prägung · Haut ebenholz · Größen-Faktor ≠ 1)",
         out.rot && out.haut && out.groesse,
-        JSON.stringify(out)
+        out
     );
     check(
         "ein Kreatur-Spawn trägt das Werk der Gattung (size 3.5 ⇒ Welt-Gestalt ×3.5/2.4, wurf-normalisiert)",

@@ -28,17 +28,14 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde, argOpt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const ECHT = process.argv.includes("--echt");
-const TAG = (() => {
-    const i = process.argv.indexOf("--tag");
-    return i > 0 ? process.argv[i + 1] : "echt";
-})();
+const TAG = argOpt("--tag", "echt");
 const OUT = path.join(root, "artifacts", "schatten-bias", TAG);
 const WERFER = ["wolf", "fuchs", "busch", "pfosten", "spieler"];
 const IOU_MIN = 0.4;
@@ -255,8 +252,6 @@ const server = statikServer();
 // DIE BÜHNE (in der Seite): Boot, Foundry, die ebene Bühne der Mess-Wiese, Tiere fort.
 async function buehneBauen() {
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     if (!st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
@@ -275,8 +270,6 @@ async function buehneBauen() {
 
 // DIE PROBE (in der Seite): Werfer und Akne-Platten, je Sonne
 async function probe(cfg) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const rend = st.renderer;
     const { bx, bz } = window.__sb;

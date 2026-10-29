@@ -37,17 +37,14 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const PORT = Number(process.env.WELTBILD_FROST_PORT || 4426);
 const ECHT = process.argv.includes("--echt");
 const S5_PROBE = (process.argv.find((a) => a.startsWith("--s5=")) || "").slice(5); // Selbsttest der S5-Basis: frames | halde
-const BILDER = (() => {
-    const i = process.argv.indexOf("--bilder");
-    return i >= 0 ? path.resolve(process.argv[i + 1]) : null;
-})();
+const BILDER = argOpt("--bilder", null);
 // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
 // Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % — die Schwelle liegt dazwischen mit Abstand.
 const FOLGT_MIN = 0.05;
@@ -139,7 +136,6 @@ function geraeteHoerer() {
 // Der Prüf-Raum in der Seite: `wurzel` (was die Welt-GPU zeichnet und der Zensus liest), `zeichne(n)` (n Bilder der Welt-
 // GPU), `drehe()` (63° Gier), `leib` (der Welt-Leib, dessen Index der Täter T2 weitet), `leibWechsel()` (zeichnet ihn).
 function pruefRaum(echt) {
-    const r = window.anazhRealm;
     const T = window.THREE;
     const rend = r.state.renderer;
     const F = (window.__frostWand = { echt });
@@ -284,7 +280,6 @@ hauptLauf(async () => {
     const boot = await page.evaluate(
         async ({ minChunks, echt }) => {
             for (const weiter = window.__deckel("das erste Weltbild", 1200); weiter(); ) {
-                const r = window.anazhRealm;
                 const st = r && r.state;
                 // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm; headless
                 // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
@@ -300,7 +295,6 @@ hauptLauf(async () => {
                     break;
                 await sleep(300);
             }
-            const r = window.anazhRealm;
             const rend = r && r.state && r.state.renderer;
             return {
                 bereit: !!(r && r.state.rendererReady),
@@ -316,7 +310,7 @@ hauptLauf(async () => {
         `=== DIE FROST-WAND (${ECHT ? "echte GPU" : "swiftshader, kienspan"}) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
     );
     if (!boot.bereit || !boot.webgpu || (ECHT && !boot.warm)) {
-        check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, JSON.stringify(boot));
+        check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, boot);
         await browser.close();
         server.close();
         process.exit(1);
@@ -327,7 +321,7 @@ hauptLauf(async () => {
 
     const zeichne = (n) => page.evaluate((n) => window.__frostWand.zeichne(n), n);
     const clip = await page.evaluate(() => {
-        const b = window.anazhRealm.state.renderer.domElement.getBoundingClientRect();
+        const b = r.state.renderer.domElement.getBoundingClientRect();
         return { x: b.x + b.width * 0.2, y: b.y + b.height * 0.22, width: b.width * 0.6, height: b.height * 0.5 };
     });
     const schuss = async (datei) => {
@@ -428,7 +422,6 @@ hauptLauf(async () => {
     };
     const lageSeite = () =>
         page.evaluate(() => {
-            const r = window.anazhRealm;
             const be = r.state.renderer.backend;
             const kaputt = [];
             let n = 0,
@@ -499,7 +492,6 @@ hauptLauf(async () => {
     };
     const warteBuehne = (wer) =>
         page.evaluate(async (wer) => {
-            const r = window.anazhRealm;
             const holen = () =>
                 wer === "ich"
                     ? r.state.ichStage
@@ -522,28 +514,27 @@ hauptLauf(async () => {
     );
     await schritt("werkstatt-eiche", async () => {
         const wahl = await page.evaluate(() => {
-            const r = window.anazhRealm;
             r.toggleDrawer("werkstatt");
             if (r.state.blueprints && r.state.blueprints.baum_eiche)
                 return r.selectBlueprintForEdit("baum_eiche") ? "baum_eiche" : null;
             return null;
         });
         const b = await warteBuehne("werkstatt");
-        await page.evaluate(() => window.anazhRealm.closeAllDrawers());
+        await page.evaluate(() => r.closeAllDrawers());
         return { wahl, ...b };
     });
     await schritt("tab-ich-buehne", async () => {
-        await page.evaluate(() => window.anazhRealm.toggleInventoryOverlay(true));
+        await page.evaluate(() => r.toggleInventoryOverlay(true));
         const b = await warteBuehne("ich");
-        await page.evaluate(() => window.anazhRealm.toggleInventoryOverlay(false));
+        await page.evaluate(() => r.toggleInventoryOverlay(false));
         return b;
     });
     await schritt(
         "hof-buehne",
         async () => {
-            await page.evaluate(() => window.anazhRealm.toggleDrawer("kreaturen"));
+            await page.evaluate(() => r.toggleDrawer("kreaturen"));
             const b = await warteBuehne("hof");
-            await page.evaluate(() => window.anazhRealm.closeAllDrawers());
+            await page.evaluate(() => r.closeAllDrawers());
             return b;
         },
         true
@@ -553,7 +544,6 @@ hauptLauf(async () => {
     // wie die Welt. Die Probe zählt je Phase jede Welt-Geometrie und jeden Welt-Stoff, den ein Wechsel SELBST in die
     // Entsorgungs-Schlange legt (echt streamt die Welt nebenher), und leert die Schlange wie `_loopRender`.
     await page.evaluate((echt) => {
-        const r = window.anazhRealm;
         const F = window.__frostWand;
         const dev = r.state.renderer.backend.device;
         const welt = new Map();
@@ -649,7 +639,6 @@ hauptLauf(async () => {
     const ICH_TRI_MIN = 10000; // der Block-Zwilling der Bauplan-Teile trägt 5 388
     const seelen = await page.evaluate(
         async (echt) => {
-            const r = window.anazhRealm;
             const F = window.__frostWand;
             const E = window.__frostEntsorgung;
             let tausch = 0;
@@ -747,7 +736,7 @@ hauptLauf(async () => {
     for (const [s, je] of Object.entries(seelen.leiber))
         for (const [wer, u] of [["S1 Ich-Bühne", je.ich], ["S4 Mitspieler", je.peer]])
             check(`${wer} ${s}: der Leib der Welt`, leibGut(u), `${JSON.stringify(u)} (Soll fremd 0, tri ≥ ${ICH_TRI_MIN})`);
-    check("S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", !leibGut(seelen.selbst.leer) && !leibGut(seelen.selbst.zwilling), JSON.stringify(seelen.selbst));
+    check("S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", !leibGut(seelen.selbst.leer) && !leibGut(seelen.selbst.zwilling), seelen.selbst);
     // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt (dass sie Geometrie trugen, zeigt der Leib je Seele)
     check("S1 die Probe wechselt wirklich (Ich ×8 + Hof ×8 je Durchgang)", seelen.tausch >= 24, `${seelen.tausch} Wechsel`);
     // je Device und gemessenem Durchgang
@@ -762,7 +751,6 @@ hauptLauf(async () => {
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const E = window.__frostEntsorgung;
         const st = r._feedEnsurePreview();
         if (!st) return { fehlt: "keine Feed-Bühne" };
@@ -819,8 +807,7 @@ hauptLauf(async () => {
     // `_queueDispose` zählt), danach nennt die Linse jeden Satz, der doch verdichtete.
     const fenster = (auf) =>
         page.evaluate((auf) => {
-            const r = window.anazhRealm,
-                S = [...(r.state.chunkSaetze || new Map()).values()];
+            const S = [...(r.state.chunkSaetze || new Map()).values()];
             if (!auf) delete r._chunkSatzVerdichten;
             else
                 [window.__frostFenster, r._chunkSatzVerdichten] = [
@@ -836,7 +823,6 @@ hauptLauf(async () => {
     // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers.
     // Grafikspeicher, Geometrie-Zahl, Ofen-Memo, Stoff-Hörer und JS-Speicher bleiben beschränkt.
     const ofenStart = await page.evaluate(async (probe) => {
-        const r = window.anazhRealm;
         const E = window.__frostEntsorgung;
         r.toggleDrawer("werkstatt");
         const f = r._foundry;
@@ -895,7 +881,7 @@ hauptLauf(async () => {
         const heapNach = await heapMB();
         ruhe.push(...(await fenster(false)));
         const bericht = await page.evaluate(() => {
-            window.anazhRealm.closeAllDrawers();
+            r.closeAllDrawers();
             return window.__frostEntsorgung.bericht("ofen");
         });
         ofen = { ...bericht, ...ofenStart, nach, heapVor, heapNach, ruhe };
@@ -937,7 +923,6 @@ hauptLauf(async () => {
     const ruhePeers = await fenster(true);
     const heapPeersVor = await heapMB();
     const peers = await page.evaluate(async (echt) => {
-        const r = window.anazhRealm;
         const F = window.__frostWand;
         const E = window.__frostEntsorgung;
         const leiber = [];
@@ -983,7 +968,6 @@ hauptLauf(async () => {
     );
 
     await page.evaluate(() => {
-        const r = window.anazhRealm;
         const F = window.__frostWand;
         delete r._queueDispose;
         if (F.zeichneTakt) {
@@ -1008,8 +992,7 @@ hauptLauf(async () => {
 
     // P2 — DER PFAD UND DER ZWANG: ein Index ungerader Länge der Ich-Bühne, neu (wie `_gpuAbschied`), ganz und ab Element 1
     const p2 = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            T = window.THREE,
+        const T = window.THREE,
             W = window.__frostHoer.puffer,
             st = r.state.ichStage;
         const g = new T.BufferGeometry().setIndex([0, 1, 2, 0, 1]);
@@ -1040,7 +1023,6 @@ hauptLauf(async () => {
     // DIE TÄTER — die Wand beweist sich an jedem Lauf.
     console.log("\n=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===");
     const t1 = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
         const F = window.__frostWand;
         const geo = new T.BufferGeometry();
@@ -1062,12 +1044,12 @@ hauptLauf(async () => {
     check(
         "T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen",
         !!t1 && t1.some((s) => /frost-taeter-bereich/.test(s)),
-        JSON.stringify(t1)
+        t1
     );
     // T3 — die Puffer-Wache beißt: 3 × Uint16 (6 Bytes) auf einen eigenen Puffer der Welt-GPU
     const t3 = await page.evaluate(() => {
         const W = window.__frostHoer.puffer,
-            dev = window.anazhRealm.state.renderer.backend.device;
+            dev = r.state.renderer.backend.device;
         const buf = dev.createBuffer({ label: "frost-taeter-puffer", size: 8, usage: GPUBufferUsage.COPY_DST });
         try {
             dev.queue.writeBuffer(buf, 0, new Uint16Array(3));
@@ -1085,7 +1067,6 @@ hauptLauf(async () => {
     );
     selbsttest("T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
     const t2 = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const be = r.state.renderer.backend;
         let ziel = null;
         window.__frostWand.leib.traverse((o) => {
@@ -1126,7 +1107,7 @@ hauptLauf(async () => {
         check(
             "T2 die GPU-Wache des Spiels zählt die Validierung",
             !!l.gpuWache && l.gpuWache.n > t2.vor,
-            JSON.stringify(l.gpuWache)
+            l.gpuWache
         );
         check(
             "T2 der eigene Hörer hört die Validierung (Device oder r184-Fehler-Bereich)",

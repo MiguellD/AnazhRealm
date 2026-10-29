@@ -38,8 +38,6 @@ const server = statikServer();
         if (REAL) {
             // Der echte-Vendor-Pfad: der rAF-Loop rendert selbst — nur beobachten.
             const real = await page.evaluate(async () => {
-                const r = window.anazhRealm,
-                    st = r.state;
                 const samples = [];
                 for (let i = 0; i < 60; i++) {
                     await sleep(50);
@@ -78,8 +76,6 @@ const server = statikServer();
             process.exit(rf ? 1 : 0);
         }
         out = await page.evaluate(async () => {
-            const r = window.anazhRealm,
-                st = r.state;
             const o = {};
             // ── DER FAKE-INFO-VERTRAG (exakte r184-Semantik): `calls` wächst über die
             // LEBENSZEIT (reset() löscht ihn NICHT), `drawCalls` ist pro Frame. reset()

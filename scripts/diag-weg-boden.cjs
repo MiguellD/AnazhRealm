@@ -22,8 +22,6 @@ const SELFTEST = process.argv.includes("--selftest");
 const server = statikServer();
 
 function probe(stoerung) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const A = r.constructor;
     // Ein trockener Probe-Ort nahe dem Spieler (die Wasser-Wand würde Formen verwerfen), auf dem der Kern der Straße
@@ -182,8 +180,6 @@ function probe(stoerung) {
 // 8 TRITT — eine Feuerstelle (Bauplan `glutbrunnen`, Gestalt fachwerk `feuerstelle`) nahe dem Spieler; die Karte trägt
 // sonst nichts (kein Weg, keine Krone: der Fall, in dem der Takt früh zurückkehrt).
 function trittProbe(stoerung) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const A = r.constructor;
     const pm = st.playerMesh.position;
     let o = null;
@@ -321,7 +317,6 @@ hauptLauf(async () => {
     // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
     // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe)
     await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const warm = () => {
             const f = r._foundry;
             return f && f.recipes && f.recipes.feuerstelle && r.state.voxelChunks && r.state.voxelChunks.size > 20;

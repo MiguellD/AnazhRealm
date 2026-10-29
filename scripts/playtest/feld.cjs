@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Ring 2: DSL-Sandbox live — Welt-Identität, Effekte auf state, Budget-Limits, Ablehnung unbekannter
 // Ops, delay-Scheduler, dslCompose; plus Nexus-Loop-Dispatch (_gameLoopTick synchron treiben, da
 // Headless-Chromium rAF auf ~1 Hz drosselt). EIN Block, weil beide dslResults + phase2Results teilen.
-async function checkRing2Dsl(ctx) {
-    const { page, check } = ctx;
+async function checkRing2Dsl({ page, check }) {
     const dslResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {
             worldIdSet: false,
             slugSet: false,
@@ -115,7 +113,6 @@ async function checkRing2Dsl(ctx) {
     });
 
     const phase2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
             historyLen: r.state.dsl.history.length,
@@ -176,10 +173,8 @@ async function checkRing2Dsl(ctx) {
 // Harmonie statt Revert: drei Kräfte verschmelzen, ohne zu überschreiben — Wetter (Feld weicht dem
 // Willen: ×(1−emoSignal)), Sky (DSL-Tönung blendet mit Tag-Nacht + fadet), Spawn (Ring um den
 // Spieler, nicht AUF ihm). Sky-Fade behavioral mit Restore, Rest Source-Probe (kein Spawn-Leak).
-async function checkBandV1723Harmony(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1723Harmony({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.skyTint = null;
         r.state.skyTintTarget = 0;
@@ -243,10 +238,8 @@ async function checkBandV1723Harmony(ctx) {
 
 // Feld-Richtung: der Nexus trägt Leben zum BEDARF (at_field_need = ärmster Punkt im Ring). Beweis:
 // der Resolver findet das lebendig-Minimum, dslComposeAtomic nutzt ihn.
-async function checkBandV1726FieldDirection(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1726FieldDirection({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
         const pm = r.state.playerMesh.position;
@@ -279,10 +272,8 @@ async function checkBandV1726FieldDirection(ctx) {
 
 // Emotion aus dem SEIN: alle sechs Achsen speisen sich aus TATEN (ACTION_TO_EMOTION an jeder
 // Handlungs-Stelle), ZUSTAND (niedrige HP) und UMGEBUNG (Feld) — nicht nur aus Chat-Stichwörtern.
-async function checkBandV1730EmotionFromBeing(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1730EmotionFromBeing({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const A2E = r.constructor.ACTION_TO_EMOTION;
         // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
@@ -324,10 +315,8 @@ async function checkBandV1730EmotionFromBeing(ctx) {
 // rule-Primitiv: ein `when`, das NICHT verfällt — `rule` REGISTRIERT Bedingung→Effekt in
 // state.worldRules, _tickWorldRules prüft fortlaufend. Gemessen u. a.: kein Sofort-Effekt, everySec,
 // TTL, Frame-Budget, Dedup, Cap+Eviction, keine Same-Tick-Kaskade, deterministische Regel-RNG.
-async function checkBandV1733WorldRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1733WorldRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         const now = () => performance.now() / 1000;
@@ -478,10 +467,8 @@ async function checkBandV1733WorldRules(ctx) {
 // emotion) und SCHREIBEN es (deposit_life/deposit_emotion → Overlays) — ein Substrat. Kern-Probe:
 // die Heilungs-Regel schließt den Loop (field_below lebendig → deposit_life → steigt → Regel
 // stoppt); Default at_player; invalide Achse → no-op.
-async function checkBandV1734FieldRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1734FieldRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
         const mkCtx = () => r.dslCtx({ source: "test" });
@@ -623,10 +610,8 @@ async function checkBandV1734FieldRules(ctx) {
 // (resonant, ephemer per ttlSec), bewertet über ein Lebens-Fenster (Fitness = Engagement + Kosten +
 // Erfolg, attributierbar): bewährt → ERNEUERN, inert/erroring → VERFALLEN, Neue erben von
 // Überlebenden. generateEvolution mischt Regel + Geste; dslMutate hält die Regel-Form.
-async function checkBandV1735NexusEvolvesRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1735NexusEvolvesRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         const now = () => performance.now() / 1000;
@@ -789,10 +774,8 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
 // Mensch-Regeln per Chat „wann immer X, dann Y“: Y über die bestehenden Chat-Patterns, X über
 // _parseChatCondition (Feld + Stimmung). Whitelist-Wand: eine Mensch-Regel fasst den frozen
 // Worldgen NICHT an. „zeige regeln“ listet, „vergiss regeln“ widerruft, unsichere Effekte → abgelehnt.
-async function checkBandV1736HumanRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1736HumanRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const mkSink = () => {
             const msgs = [];
@@ -907,10 +890,8 @@ async function checkBandV1736HumanRules(ctx) {
 // Gesetze-Sektion in der BESTEHENDEN Fähigkeiten-UI (kein Parallel-Panel): state.worldRules im selben
 // Drawer via describeProgram; eine Regel STEHT (kein ▶) → ✕ (vergiss, nur Mensch-Regeln) +
 // aktiv/ruht-Indikator; beide Sektionen einklappbar.
-async function checkBandV1737RulesUI(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1737RulesUI({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const host = document.getElementById("status-worldrules");
 
@@ -1023,10 +1004,8 @@ async function checkBandV1737RulesUI(ctx) {
 // Gesetze-UX: Persistenz-Label (permanent vs ~Ns), eigene Gesetze pausieren (Tick skippt)/löschen,
 // Nexus-Regel per 📌 adoptieren (permanent + eviction-geschützt). Modus-Gating: eine FREMDE
 // Nexus-Regel verwerfen ist Schöpfer-Geste; Favoriten oben.
-async function checkBandV1739RulesUX(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1739RulesUX({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
         const host = document.getElementById("status-worldrules");
@@ -1164,10 +1143,8 @@ async function checkBandV1739RulesUX(ctx) {
 // Mensch · Nexus · LLM schreiben am SELBEN Regel-Satz: das LLM kennt die Regel-Grammatik (Prompt);
 // die Effekt-Whitelist lebt am EINEN Chokepoint _registerWorldRule → auch LLM-Regeln berühren nur
 // die reaktive Welt. LLM-Regeln sind EPHEMER (fitness-getestet, adoptierbar).
-async function checkBandV1740LlmRules(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1740LlmRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -1226,10 +1203,8 @@ async function checkBandV1740LlmRules(ctx) {
 // Gesetzes-Faden, zwei Konsumenten der EINEN Spur lastFired/fires: (a) _worldRuleActivityLabel zeigt
 // live „⚡ feuert“, (b) das erste Erwachen einer EIGENEN Mensch-Regel wird eine Welt-Erinnerung
 // (einmal, idempotent über die Signatur; Nexus-Regeln nicht). Geprüft nach echtem Feuern.
-async function checkBandV1741RuleThread(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1741RuleThread({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -1349,10 +1324,8 @@ async function checkBandV1741RuleThread(ctx) {
 // Lokal-attribuierte Regel-Fitness: reward = struktureller δ am Effekt-Ort über die Baseline, EMA in
 // rule.value; _worldRuleFitness = valueScore × Erfolg × Kosten (neutral knapp unter der Schwelle). Geprüft: Heiler/neutral/
 // Schädling diskriminieren; die Eviction wirft den wert-niedrigsten (nicht den ältesten); Mensch/pinned geschützt.
-async function checkBandV1743RuleFitness(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1743RuleFitness({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
 
         // --- (1) die Fitness DISKRIMINIERT (Heiler > neutral > Schädling) ---
@@ -1475,10 +1448,8 @@ async function checkBandV1743RuleFitness(ctx) {
 // (EMOTION_GEOMETRY: Valenz × Erregung). `_emotionState` liest dominantes Gefühl + Schwerpunkt +
 // INTENSITÄT (6-dim Abstand vom Neutralen: bittersüß = Valenz~0, hohe Intensität). Sanfte Kohärenz
 // in updatePlayerEmotions dämpft gegensätzliche Achsen; Konsum: die KI kennt die Stimmung.
-async function checkBandV1745EmotionCore(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1745EmotionCore({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const GEO = r.constructor.EMOTION_GEOMETRY;
@@ -1600,10 +1571,8 @@ async function checkBandV1745EmotionCore(ctx) {
 // (computeCompoundTags → TAG_TO_EMOTION × Magnitude), nicht aus dem Tat-Namen — lebendiges Holz ≠
 // toter Stein, Schöpfen feuert Stolz ∝ Komplexität. ACTION_TO_EMOTION bleibt Fallback für tag-lose
 // Akte (explore/damage).
-async function checkBandV1746EmotionSubstance(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1746EmotionSubstance({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const savedEmo = { ...p.emotions };
@@ -1695,10 +1664,8 @@ async function checkBandV1746EmotionSubstance(ctx) {
 // Fast/Slow: schnelle Emotion (Spike, Decay PRO ACHSE — Furcht kurz, Trauer lang) vs. langsame
 // Stimmung (`mood`, EMA über Minuten), in die sie zerfällt; die Stimmung färbt die nächste Bewertung
 // kongruent (gebounded gegen Feedback) und ist das, was die KI liest.
-async function checkBandV1747FastSlow(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1747FastSlow({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const DECAY = r.constructor.EMOTION_DECAY;
@@ -1821,10 +1788,8 @@ async function checkBandV1747FastSlow(ctx) {
 
 // Soziales Gefühl: Emotion naher Kreaturen fließt zum Spieler (∝ Nähe × Bindung, gebounded), Bindung
 // wächst mit gemeinsamer Zeit, Verlust schmerzt ∝ Bindung, die KI TENDET die Stimmung (tröstet).
-async function checkBandV1748Social(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1748Social({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const AX = r.constructor.EMOTION_AXES;
@@ -1957,10 +1922,8 @@ async function checkBandV1748Social(ctx) {
 // G8 R2 — die Irreversibilitäts-Wand (M3): SOVEREIGN_ACTIONS (frozen) disjunkt
 // von jedem Auto-Pool + eine Host-gerenderte Geste. Eine vergiftete Welt/LLM/
 // Regel kann einen souveränen Akt NIE auslösen — nur du, jetzt, über die Geste.
-async function checkBandG8R2SovereignWall(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R2SovereignWall({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         const SA = K.SOVEREIGN_ACTIONS;

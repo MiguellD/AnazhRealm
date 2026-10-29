@@ -3,10 +3,9 @@
 // 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
-async function checkBandRing11AndW7Mesh(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### modify_terrain stirbt, voxel_carve/_fill leben ###
@@ -14,7 +13,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
     const voxelV936Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
 
@@ -105,7 +103,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
     // eval-Pfad), CSP ws://, UI-Toggle; ohne echten WebSocket: initP2PSync ohne worldId lehnt ab, mit
     // worldId steht die Datenstruktur, auch wenn die Connection scheitert.
     const ring11Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -227,13 +224,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
 
         return out;
     });
-    if (!ring11Results || ring11Results.error) {
-        check(
-            "Ring 11 V1: Snapshot erreichbar",
-            false,
-            (ring11Results && ring11Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11 V1: Snapshot erreichbar", ring11Results)) {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
@@ -266,7 +257,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
     // Geprüft: Datenstruktur, Mesh-Komplett-Wand (_p2pMeshReady), peerId-Stempelung am Kanal
     // (anti-spoof), Transport-Wechsel in p2pSend, RTC-Handler + CSP; zwei Browser: smoke-webrtc.cjs.
     const w7Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const p2p = r.state.p2p;
@@ -406,13 +396,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
 
         return out;
     });
-    if (!w7Results || w7Results.error) {
-        check(
-            "W7 Phase 1: Snapshot erreichbar",
-            false,
-            (w7Results && w7Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 1: Snapshot erreichbar", w7Results)) {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
@@ -443,7 +427,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
     // gepullten Peer + nur bei pending. Geprüft: Reassembly, worldRole im soul-Kanal,
     // _p2pApplyWorldSnapshot, Resync-Fehlerpfade; echter Transfer: smoke-webrtc.cjs.
     const w7p2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const p2p = r.state.p2p;
@@ -607,13 +590,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
 
         return out;
     });
-    if (!w7p2Results || w7p2Results.error) {
-        check(
-            "W7 Phase 2: Snapshot erreichbar",
-            false,
-            (w7p2Results && w7p2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 2: Snapshot erreichbar", w7p2Results)) {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
@@ -640,15 +617,13 @@ async function checkBandRing11AndW7Mesh(ctx) {
     }
 }
 
-async function checkBandW16Distribution(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandW16Distribution({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Mesh-Welt-Verteilung ###
     // Eine vendorte Welt reist P2P (Transport spiegelt den W7-P2-world-pull). Geprüft: Sender,
     // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: smoke-webrtc.cjs.
     const w16Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const p2p = r.state.p2p;
@@ -1076,13 +1051,7 @@ async function checkBandW16Distribution(ctx) {
 
         return out;
     });
-    if (!w16Results || w16Results.error) {
-        check(
-            "W16 Phase 1: Mesh-Welt-Verteilung erreichbar",
-            false,
-            (w16Results && w16Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W16 Phase 1: Mesh-Welt-Verteilung erreichbar", w16Results)) {
         check(
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
@@ -1172,8 +1141,7 @@ async function checkBandW16Distribution(ctx) {
     }
 }
 
-async function checkBandLateMultiUser(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandLateMultiUser({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
@@ -1181,7 +1149,6 @@ async function checkBandLateMultiUser(ctx) {
     // peer-übergreifend identifizierbar. Geprüft: opts.id, spawn_blueprint mit archId + Idempotenz,
     // remove_architecture, Persistenz; das Setzen beim echten Mitspieler: gate:nervensystem E2 (P2P).
     const buildSyncResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.newArchIdUnique = typeof r._newArchId() === "string" && r._newArchId() !== r._newArchId();
@@ -1222,13 +1189,7 @@ async function checkBandLateMultiUser(ctx) {
 
         return out;
     });
-    if (!buildSyncResults || buildSyncResults.error) {
-        check(
-            "Multi-User-Bau-Sync: Snapshot erreichbar",
-            false,
-            (buildSyncResults && buildSyncResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Multi-User-Bau-Sync: Snapshot erreichbar", buildSyncResults)) {
         check("Bau-Sync: _newArchId liefert eindeutige string-ids", buildSyncResults.newArchIdUnique);
         check("Bau-Sync: spawnArchitecture nimmt eine geteilte string-id", buildSyncResults.spawnAcceptsStringId);
         check(
@@ -1253,7 +1214,6 @@ async function checkBandLateMultiUser(ctx) {
     // Opt-in (voiceShared), Rate-Limit, dslRun-Sandbox für das Antwort-Programm; Annahme-Wand
     // not_sharing/rate_limited/wrong-peer.
     const w7p3Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const p2p = r.state.p2p;
@@ -1392,13 +1352,7 @@ async function checkBandLateMultiUser(ctx) {
 
         return out;
     });
-    if (!w7p3Results || w7p3Results.error) {
-        check(
-            "W7 Phase 3: Snapshot erreichbar",
-            false,
-            (w7p3Results && w7p3Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 3: Snapshot erreichbar", w7p3Results)) {
         check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
         check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
         check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
@@ -1421,7 +1375,6 @@ async function checkBandLateMultiUser(ctx) {
     // Lobby: lobby-publish/list/join. Jeder Peer streamt SEINE Kreaturen; Mitspieler rendern sie als
     // Sicht-Schicht (remoteCreatures, NICHT in state.creatures).
     const w7p4Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const p2p = r.state.p2p;
@@ -1534,13 +1487,7 @@ async function checkBandLateMultiUser(ctx) {
 
         return out;
     });
-    if (!w7p4Results || w7p4Results.error) {
-        check(
-            "W7 Phase 4: Snapshot erreichbar",
-            false,
-            (w7p4Results && w7p4Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 4: Snapshot erreichbar", w7p4Results)) {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
@@ -1563,7 +1510,6 @@ async function checkBandLateMultiUser(ctx) {
     // grokRender ist der EINE Sprech-Engpass; spricht der Begleiter, reist der Text via companion-say an
     // alle Mitspieler (SpeechSynthesis, gegated auf deren Stimme-Toggle). Eigener Kanal wie soul/aura.
     const w11v4Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const p2p = r.state.p2p;
@@ -1688,13 +1634,7 @@ async function checkBandLateMultiUser(ctx) {
 
         return out;
     });
-    if (!w11v4Results || w11v4Results.error) {
-        check(
-            "W11 V4: Snapshot erreichbar",
-            false,
-            (w11v4Results && w11v4Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W11 V4: Snapshot erreichbar", w11v4Results)) {
         check("W11 V4: _p2pBroadcastCompanionSay sendet companion-say", w11v4Results.broadcastSends);
         check("W11 V4: der Broadcast trägt die gewählte Stimme", w11v4Results.broadcastCarriesVoice);
         check("W11 V4: leerer Begleiter-Text → kein Broadcast", w11v4Results.emptyTextNoBroadcast);
@@ -1716,7 +1656,6 @@ async function checkBandLateMultiUser(ctx) {
     // Hier bleibt, was keine echte Seite zeigt: das Modell und der getrennte Client senden nie, die eigene peerId und ein
     // kaputtes Programm fallen still.
     const ring11V2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         const sent = [];
@@ -1741,13 +1680,7 @@ async function checkBandLateMultiUser(ctx) {
         Object.assign(r.state.p2p, { enabled: false, connected: false, peerId: null });
         return out;
     });
-    if (!ring11V2Results || ring11V2Results.error) {
-        check(
-            "Ring 11 V2: Snapshot erreichbar",
-            false,
-            (ring11V2Results && ring11V2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11 V2: Snapshot erreichbar", ring11V2Results)) {
         check(
             "Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)",
             ring11V2Results.llmDoesNotBroadcast
@@ -1762,7 +1695,6 @@ async function checkBandLateMultiUser(ctx) {
     // (state.p2p.roomOverride)  4. spawn_*-Chat-Patterns embedden Position+Seed → der Empfänger spawnt
     // am SENDER-Ort  5. Non-broadcastable-Filter: player_*-Ops bleiben lokal.
     const ring11V21Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1884,13 +1816,7 @@ async function checkBandLateMultiUser(ctx) {
 
         return out;
     });
-    if (!ring11V21Results || ring11V21Results.error) {
-        check(
-            "Ring 11 V2.1: Snapshot erreichbar",
-            false,
-            (ring11V21Results && ring11V21Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11 V2.1: Snapshot erreichbar", ring11V21Results)) {
         check("Ring 11 V2.1: roomOverride persistiert via localStorage", ring11V21Results.roomOverridePersists);
         check(
             "Ring 11 V2.1: NON_BROADCASTABLE_OPS Set enthält player_*+set_visible",
@@ -1932,7 +1858,6 @@ async function checkBandLateMultiUser(ctx) {
     // Mode/Rolle im New-World-Dialog, world-snapshot-Empfang nur bei pending=true, role-State in worldMeta + p2p; den
     // Gast-Import samt Auto-Verbindung zum Host trägt der echte Beitritt (gate:praegung-welt, T-WELT).
     const ring115Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -2021,13 +1946,7 @@ async function checkBandLateMultiUser(ctx) {
 
         return out;
     });
-    if (!ring115Results || ring115Results.error) {
-        check(
-            "Ring 11.5: Snapshot erreichbar",
-            false,
-            (ring115Results && ring115Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11.5: Snapshot erreichbar", ring115Results)) {
         check(
             "Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta",
             ring115Results.hostRoleInSavedMeta
@@ -2060,13 +1979,11 @@ async function checkBandLateMultiUser(ctx) {
     }
 }
 
-async function checkBandV8SoulRoleAndWorkshop(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Soul-Sync (Peer-Avatar = echte Seele) ###
     const v834Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const p2p = r.state.p2p;
         p2p.peerId = "self-v834";
@@ -2254,7 +2171,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
     // ### Substanz-Rolle (Rolle aus der Substanz) ###
     const v835Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const part = (mat, x, y, z) => ({
             shape: "box",
@@ -2395,7 +2311,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
     // ### Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
     const v836Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche
         // (die leere Säule ist Bühne; die Wand-Kugel schiebt nicht seitlich).
@@ -2475,7 +2390,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
     // ### Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
     const v837Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // A — Bau-Kosten sichtbar im Werkstatt-Stats-Panel.
@@ -2580,7 +2494,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
     // ### Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
     const v838Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // C — Hover-Material-Info auf Bauplan-Slots.
@@ -2690,7 +2603,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
     // ### Werkzeug-Klassen + Präzision→Qualität ###
     const v839Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // Farb-Sprache: Rollen-Farben-Konstante.
@@ -2810,10 +2722,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 // G8 R1 — der gedämpfte Kanal (M2): EIN Token-Bucket pro Overlay am Eingang
 // (auch ready/exit/manifest) + ein per-Peer-Cap auf subworld-net. Eine Flut
 // klingt von selbst ab (Verwerfen, nicht Puffern; der Bucket settled).
-async function checkBandG8R1DampedChannel(ctx) {
-    const { page, check } = ctx;
+async function checkBandG8R1DampedChannel({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const K = r.constructor;
         const out = {};
         // (1) Konstanten verdrahtet.
@@ -2858,10 +2768,8 @@ async function checkBandG8R1DampedChannel(ctx) {
 // M8 Makro-Fenster: Broker-stats über den BESTEHENDEN WS-Kanal (kein neuer HTTP-Pfad/CSP) · die
 // Identitäts-Seite als gefilterter Feed (data-author) · der Vibe-Pass-Backup-Pfad sichtbar. Den
 // echten Server-Beweis trägt smoke:multiuser (1 Raum · 2 Peers · nur der Anfrager).
-async function checkBandM8MakroFenster(ctx) {
-    const { page, check } = ctx;
+async function checkBandM8MakroFenster({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) der stats-Handler: im Dispatch + cached + schreibt die Anzeige.
         out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS.stats === "_p2pMsgStats";

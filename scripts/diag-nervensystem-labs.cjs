@@ -62,7 +62,6 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {}, w: {} };
         await window.__weltDa();
-        const r = window.anazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
@@ -480,7 +479,7 @@ hauptLauf(async () => {
     check(
         "B: die B4-Regler-Tabellen reisen (paramsByKind klang=7 · koerper=8 · kreatur=5)",
         !!out.b.params && out.b.params.klang === 7 && out.b.params.koerper === 8 && out.b.params.kreatur === 5,
-        JSON.stringify(out.b.params)
+        out.b.params
     );
     check(
         "B: KEINE Auto-Blueprints der drei kinds (must-ignore am Chokepoint)",
@@ -611,12 +610,12 @@ hauptLauf(async () => {
             Math.abs(out.e.stepBridge.soll - 1) > 1e-3 &&
             Math.abs(out.e.stepBridge.traurig - out.e.stepBridge.soll) < 1e-9 &&
             out.e.stepBridge.neutral === 1,
-        JSON.stringify(out.e && out.e.stepBridge)
+        out.e && out.e.stepBridge
     );
     check(
         "E: beide Profil-Leser fließen durch den EINEN Resolver _motionProfileName (Konsum; ein Zwilling daran vorbei fällt)",
         !!out.e && JSON.stringify(out.e.resolver) === "[true,true,true]",
-        JSON.stringify(out.e && out.e.resolver)
+        out.e && out.e.resolver
     );
     check(
         "X (NULL): der WOLF liest die tetrapoda-wolf-Dials (gleiche Part-Zahl, Dials wirken, TAG-BYTE-GLEICH)",

@@ -49,7 +49,6 @@ const { errs, check } = pruefer();
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(async () => {
-            const r = window.anazhRealm;
             const res = {};
             // dieselbe Quelle-Prüfung für Echt-Lauf UND Selbst-Test (EINE Linse):
             const quelleGueltig = (q) => q === "echt" || q === "proxy";

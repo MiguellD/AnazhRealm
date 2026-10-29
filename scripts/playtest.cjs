@@ -34,10 +34,27 @@ async function safeEvaluate(page, fn, ...args) {
     });
 }
 
+// die Probe kam an (kein null, kein Wurf) — sonst ist die Zeile `name` rot mit dem Wurf (ohne Antwort: `leer`) und
+// die Prüfungen entfallen; die EINE Fassung für jedes Band (scripts/playtest/*.cjs)
+function erreichbar(check, name, res, leer = "page.evaluate fehlgeschlagen") {
+    if (res && !res.error) return true;
+    check(name, false, (res && res.error) || leer);
+    return false;
+}
+
+// die Probe lief ohne Wurf (und kam an) — ein Wurf macht die Zeile rot: `name: evaluate-Fehler — <Wurf>`, mit `zeile`
+// die Zeile `name` selbst mit dem Wurf als Detail; ohne Antwort schweigt sie, die Prüfungen entfallen
+function ohneWurf(check, name, res, zeile) {
+    if (res && res.error) {
+        if (zeile) check(name, false, res.error);
+        else check(`${name}: evaluate-Fehler — ${res.error}`, false);
+    }
+    return !!(res && !res.error);
+}
+
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         // Deterministische Mechanik-Probe (statt des flaky Box-Inhalts am Lauf-Ende): grokRender schreibt
         // einen Prüfsatz, die Box muss ihn tragen; ein leerer/null-Satz blankt sie NICHT.
@@ -97,7 +114,7 @@ async function gatherInitialFinalState(page) {
 
 // DIE BÄNDER nach Domäne (scripts/playtest/<domaene>[-<teil>].cjs, gestellt von `stamm-umzug --richter`); die Seite
 // (safeEvaluate) reicht der Läufer, die Reihenfolge des Laufs steht unten.
-module.exports = { safeEvaluate };
+module.exports = { safeEvaluate, erreichbar, ohneWurf };
 const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest")).filter((f) => f.endsWith(".cjs")).map((f) => require(`./playtest/${f}`)));
 
 if (require.main === module) hauptLauf(async () => {
@@ -146,7 +163,6 @@ if (require.main === module) hauptLauf(async () => {
         // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
         // (die offene Stelle der Ankunft ist der Ursprung). Rückgabe { x, y, z } oder null.
         window.__setzOrt = (name) => {
-            const r = window.anazhRealm;
             const bm = r.state.buildMode;
             const p = r.state.playerMesh.position;
             for (let R = 0; R <= 240; R += 6)
@@ -171,7 +187,6 @@ if (require.main === module) hauptLauf(async () => {
         // (`_ensureHydroTilesAround`, die Kachel kommt aus dem Faden: `kachel` wartet auf sie), damit jeder Hydro-Leser
         // (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
         window.__wasserOrt = async (art) => {
-            const r = window.anazhRealm;
             const G = window.__gelaendeCore;
             const kachel = (x, z) => window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
             window.__wasserOrtCache = window.__wasserOrtCache || {};
@@ -293,7 +308,6 @@ if (require.main === module) hauptLauf(async () => {
         // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
         // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
         window.__wasserChunk = async (art) => {
-            const r = window.anazhRealm;
             if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
             const ort = await window.__wasserOrt(art);
             if (!ort) return null;
@@ -466,7 +480,7 @@ if (require.main === module) hauptLauf(async () => {
             // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
             // Geduldig, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
             // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger), nennt ihn die Stall-Akte (`__weltDa`).
-            const r = await window.__weltDa();
+            await window.__weltDa();
             // Nur den teuren GPU-Aufruf (`renderer.render`/`renderAsync`, swiftshader ~2.5 s/Frame) stubben,
             // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
             // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.
@@ -923,7 +937,6 @@ if (require.main === module) hauptLauf(async () => {
                     if (box && box.textContent) box.classList.add("visible");
                     // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
                     // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
-                    const r = window.anazhRealm;
                     if (r && r.state.renderer && window.__origRendererRender) {
                         r.state.renderer.render = window.__origRendererRender;
                         r.state.postProcessingFailed = false;

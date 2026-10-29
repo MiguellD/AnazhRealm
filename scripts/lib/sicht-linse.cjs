@@ -58,7 +58,6 @@ const RUHE_LESER = [
 ];
 
 function sichtLinse(cfg) {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     if (window.__sichtLinse && window.__sichtLinse.P === P) return window.__sichtLinse;
     const stapel = [];
@@ -1102,8 +1101,6 @@ function sichtUrteil(b) {
 // Lage); die Bühne (Mittag · Sonne · Sommer) gilt vorher.
 function sichtLauf(k) {
     return (async () => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         window.__buehne();
         if (window.__tiereHalten) window.__tiereHalten();

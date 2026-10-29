@@ -3,15 +3,13 @@
 // 17 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
 // Rollen-Resonanz: computeBlueprintRole = ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕
 // bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES; „architecture“ ist positive Signatur (dicht +
 // hart) → Stein-Tempel/Felsbogen wird Bauwerk, obwohl body-förmig.
-async function checkBandV1769RoleResonance(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1769RoleResonance({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const part = (mat, x, y, z) => ({
@@ -148,10 +146,8 @@ async function checkBandV1769RoleResonance(ctx) {
 // Katalysator-Op aus Form × Material (scharf→schneiden, stumpf-dicht→schmieden, magie→wandeln):
 // `setBlueprintToolMeta(name)` ohne opClass leitet ab, eine explizite opClass ist Override; additive
 // bleibt Intent. Wächter synthetisch (Built-in-Tools sind formlos).
-async function checkBandV1771ToolOpFromForm(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1771ToolOpFromForm({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const mk = (shape, mat) => ({
@@ -226,10 +222,8 @@ async function checkBandV1771ToolOpFromForm(ctx) {
 // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ1 — SCHWERPUNKT + MASSE (der Grundstein) ═══
 // Physik-Schiedsrichter, headless objektiv (reine Berechnung, kein WebGPU-Flake): ein
 // asymmetrischer Bauplan hat den CoM nahe der schweren Seite, nicht in der Mitte.
-async function checkBandOmegaPhi1CoM(ctx) {
-    const { page, check } = ctx;
+async function checkBandOmegaPhi1CoM({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         // (die Masse in kg aus ρ der Stoff-Zeile und ihre Mutation misst gate:kampf-gefuehl (A), physik K1)
         const dense = "stein";
@@ -262,11 +256,9 @@ async function checkBandOmegaPhi1CoM(ctx) {
 // Ω-PHYSIS Säule I (Ω-Φ2..Φ5 Schiedsrichter) + Säule II (Ω-L1..L3 + Ω-W1): die gerechnete Physik
 // speist den Resonanz-Leser + den Warum-Chip, getrennt von der Konvention; reine Berechnung → kein
 // Flake.
-async function checkBandOmegaPhysisSaeuleI_II(ctx) {
-    const { page, check } = ctx;
+async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            C = r.constructor;
+        const C = r.constructor;
         const mats = r.state.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
@@ -373,10 +365,8 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
 // die ROLLE-PASSUNG (Schöpfer-Synergie „Qualität = wie gut passt die Form zur Rolle"): die FORM
 // eines Produkts moduliert die Wirkung seiner Ausrüstung — eine scharfe Klinge wirkt als Gerät stärker als
 // ein gleich-materieller Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
-async function checkBandV1779RoleFitQuality(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1779RoleFitQuality({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const cfg = r.constructor.QUALITY_ROLE_FIT;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
@@ -464,10 +454,8 @@ async function checkBandV1779RoleFitQuality(ctx) {
 // der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
 // (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
 // referenziert sie (U2 webt sie ein) → die Form ist vollständig im Vektor, kein Regress.
-async function checkBandV1780FormAxes(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1780FormAxes({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const mk = (parts) => ({ name: "_u1", parts });
         const blade = mk([
@@ -541,10 +529,8 @@ async function checkBandV1780FormAxes(ctx) {
 
 // Das EINE Rollen-Signatur-Register: jede Rolle eine VOLLE Signatur über alle Achsen; das volle
 // Profil entscheidet (Klinge = bessere Waffe, Block = besseres Bauwerk). _blueprintRoleFit liest es.
-async function checkBandV1781RoleRegister(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1781RoleRegister({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const REG = r.constructor.ROLE_SIGNATURES;
         const cfg = r.constructor.QUALITY_ROLE_FIT;
@@ -630,10 +616,8 @@ async function checkBandV1781RoleRegister(ctx) {
 // der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
 // ganze Resonanz) + die Achse zum perfekten Katalysator. Der Spieler-Kompass: er baut frei, das Spektrum
 // liest ihn + sagt, welche Achse zu drehen ist. (Die Klassifikation Klinge→Waffe macht erst U4.)
-async function checkBandV1782CatalystReadout(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1782CatalystReadout({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const round = (x) => Math.round((x || 0) * 100) / 100;
         const mk = (parts) => ({ name: "_u3", parts });
         const blade = mk([
@@ -692,10 +676,8 @@ async function checkBandV1782CatalystReadout(ctx) {
 }
 
 // die Prozess-Op rückgängig machen (removePartOp); die ANGEZEIGTE Rolle ist die emergente (eine rollenlose Klinge → „tool").
-async function checkBandV1785RoleDisplayAndUndo(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1785RoleDisplayAndUndo({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const DEFLEN = r._defaultPartOpChain().length;
         // (#3a) ein ROLLENLOSER Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default.
@@ -794,10 +776,8 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
 
 // das volle UNDO/REDO im Bauplan-Editor (Schöpfer-Wunsch „ein paar Schritte zurück und wieder
 // nach vorn"). Jeder Editor-Akt (Part hinzu/weg/ändern, Op anwenden/entfernen, Verbindung) ist umkehrbar.
-async function checkBandV1787UndoRedo(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1787UndoRedo({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         delete r.state.blueprints["_ur"];
         if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
@@ -864,10 +844,8 @@ async function checkBandV1787UndoRedo(ctx) {
 // Die Werkstatt IST der Prozess: Start nur mit hände; eine platzierte + nahe (frieden/pfad) oder
 // besessene (schöpfer) Werkstatt liefert ihren Prozess, eine bessere → höherer Cap; die
 // Domain-Werkzeuge sind ihre Op-Bibliothek.
-async function checkBandV1788WorkshopAsProcess(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1788WorkshopAsProcess({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const prevMode = r.getGameMode();
         // (1) der Spieler startet mit den Basics: nur hände ist Starter, die Domain-Ops sind op-Bibliothek
@@ -948,13 +926,11 @@ async function checkBandV1788WorkshopAsProcess(ctx) {
     );
 }
 
-async function checkBandWave4(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWave4({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Materialien als Tag-Profile ###
     const wave4p1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Statisches Tag-Schema
@@ -1041,13 +1017,7 @@ async function checkBandWave4(ctx) {
         return out;
     });
 
-    if (!wave4p1Results || wave4p1Results.error) {
-        check(
-            "Welle 4 P1: Snapshot erreichbar",
-            false,
-            (wave4p1Results && wave4p1Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 4 P1: Snapshot erreichbar", wave4p1Results)) {
         check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
@@ -1087,7 +1057,6 @@ async function checkBandWave4(ctx) {
 
     // ### Helix + Form-Tag-Aktivierungs-Matrix ###
     const wave4p2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // FORM_TAG_ACTIVATION existiert + frozen
@@ -1193,13 +1162,7 @@ async function checkBandWave4(ctx) {
         return out;
     });
 
-    if (!wave4p2Results || wave4p2Results.error) {
-        check(
-            "Welle 4 P2: Snapshot erreichbar",
-            false,
-            (wave4p2Results && wave4p2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 4 P2: Snapshot erreichbar", wave4p2Results)) {
         check("Welle 4 P2: FORM_TAG_ACTIVATION frozen", wave4p2Results.matrixFrozen);
         check("Welle 4 P2: Matrix deckt 9 Formen (inkl. helix)", wave4p2Results.matrixHasNineForms);
         check("Welle 4 P2: Matrix vollständig (keine undefined-Zelle)", wave4p2Results.matrixComplete);
@@ -1226,7 +1189,6 @@ async function checkBandWave4(ctx) {
 
     // ### Werkzeuge + opChain + Präzision ###
     const wave4p3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Werkzeug-State + Konstanten
@@ -1407,13 +1369,7 @@ async function checkBandWave4(ctx) {
         return out;
     });
 
-    if (!wave4p3Results || wave4p3Results.error) {
-        check(
-            "Welle 4 P3: Snapshot erreichbar",
-            false,
-            (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 4 P3: Snapshot erreichbar", wave4p3Results)) {
         check(
             "hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek",
             wave4p3Results.fiveStarterTools
@@ -1453,13 +1409,11 @@ async function checkBandWave4(ctx) {
     }
 }
 
-async function checkBandWave5(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWave5({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
     const wave5bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Konstanten
@@ -1605,13 +1559,7 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (!wave5bResults || wave5bResults.error) {
-        check(
-            "Welle 5 B: Snapshot erreichbar",
-            false,
-            (wave5bResults && wave5bResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 B: Snapshot erreichbar", wave5bResults)) {
         check("Welle 5 B: SPATIAL_POINTED_SHAPES frozen", wave5bResults.pointedShapesFrozen);
         check("Welle 5 B: SPATIAL_TRANSFERABLE_TAGS frozen", wave5bResults.transferableTagsFrozen);
         check("Welle 5 B: cone ist pointed-Shape", wave5bResults.pointedHasCone);
@@ -1638,7 +1586,6 @@ async function checkBandWave5(ctx) {
 
     // ### Hohlraum + Symmetrieachse + Resonanz-Array ###
     const wave5bp2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.hollowShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_HOLLOW_SHAPES);
@@ -1745,13 +1692,7 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (!wave5bp2Results || wave5bp2Results.error) {
-        check(
-            "Welle 5 B P2: Snapshot erreichbar",
-            false,
-            (wave5bp2Results && wave5bp2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 B P2: Snapshot erreichbar", wave5bp2Results)) {
         check("Welle 5 B P2: SPATIAL_HOLLOW_SHAPES frozen", wave5bp2Results.hollowShapesFrozen);
         check("Welle 5 B P2: sphere ist hollow-Shape", wave5bp2Results.hollowHasSphere);
         check("Welle 5 B P2: torus ist hollow-Shape", wave5bp2Results.hollowHasTorus);
@@ -1775,7 +1716,6 @@ async function checkBandWave5(ctx) {
 
     // ### Verbindungstypen mit Lastformel ###
     const wave5aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // Konstanten
@@ -1931,13 +1871,7 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (!wave5aResults || wave5aResults.error) {
-        check(
-            "Welle 5 A: Snapshot erreichbar",
-            false,
-            (wave5aResults && wave5aResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 A: Snapshot erreichbar", wave5aResults)) {
         check("Welle 5 A: CONNECTION_TYPES frozen", wave5aResults.connectionTypesFrozen);
         check("Welle 5 A: Acht Verbindungstypen definiert", wave5aResults.eightTypes);
         check("Welle 5 A: Jeder Typ hat strongTags", wave5aResults.eachTypeHasStrongTags);
@@ -1970,7 +1904,6 @@ async function checkBandWave5(ctx) {
 
     // ### Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
     const wave5cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.opClassesFrozen = Object.isFrozen(r.constructor.TOOL_OP_CLASSES);
@@ -2125,13 +2058,7 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (!wave5cResults || wave5cResults.error) {
-        check(
-            "Welle 5 C: Snapshot erreichbar",
-            false,
-            (wave5cResults && wave5cResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 C: Snapshot erreichbar", wave5cResults)) {
         check("Welle 5 C: TOOL_OP_CLASSES frozen", wave5cResults.opClassesFrozen);
         check("Welle 5 C: TOOL_OP_CLASSES hat 4 Klassen", wave5cResults.opClassesCount);
         check("Welle 5 C: computeBlueprintPrecisionCap = min(parts)", wave5cResults.precisionCapIsMin);
@@ -2160,7 +2087,6 @@ async function checkBandWave5(ctx) {
 
     // ### Bugfixes nach Welle-5-Reflexion ###
     const bugfixResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -2263,13 +2189,7 @@ async function checkBandWave5(ctx) {
         return out;
     });
 
-    if (!bugfixResults || bugfixResults.error) {
-        check(
-            "Bugfix Snapshot erreichbar",
-            false,
-            (bugfixResults && bugfixResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Bugfix Snapshot erreichbar", bugfixResults)) {
         check(
             "Bugfix: removePartFromBlueprint filtert betroffene Connections",
             bugfixResults.connectionsFilteredOnPartDelete
@@ -2285,13 +2205,11 @@ async function checkBandWave5(ctx) {
     }
 }
 
-async function checkBandWaves9And10a(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWaves9And10a({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const AR = r.constructor;
         const out = {};
@@ -2433,7 +2351,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (wave9aResults && !wave9aResults.error) {
+    if (ohneWurf(check, "Welle 9a", wave9aResults)) {
         check(
             "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
             wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
@@ -2488,13 +2406,10 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
             wave9aResults.manualOverrideStaysAfterApply
         );
-    } else if (wave9aResults && wave9aResults.error) {
-        check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
     }
 
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
     const wave9bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const AR = r.constructor;
         const out = {};
@@ -2593,7 +2508,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (wave9bResults && !wave9bResults.error) {
+    if (ohneWurf(check, "Welle 9b", wave9bResults)) {
         check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
         check(
             "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
@@ -2632,13 +2547,10 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
             wave9bResults.toolChipHasDomainDot
         );
-    } else if (wave9bResults && wave9bResults.error) {
-        check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
     }
 
     // ### Welt-Werkstatt-Architekturen + Distance-Gate ###
     const wave9cResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -2705,7 +2617,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (wave9cResults && !wave9cResults.error) {
+    if (ohneWurf(check, "Welle 9c", wave9cResults)) {
         check(
             "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
             wave9cResults.allStationsExist
@@ -2738,13 +2650,10 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9c: architecture-Bauplan (stein_block) überspringt Werkstatt-Check (keine Domain → kein Gate)",
             wave9cResults.archNoCheck
         );
-    } else if (wave9cResults && wave9cResults.error) {
-        check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
     }
 
     // ### Maschinen-Bonus + Seelen-Bauplane ###
     const wave9dResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -2816,7 +2725,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (wave9dResults && !wave9dResults.error) {
+    if (ohneWurf(check, "Welle 9d", wave9dResults)) {
         check(
             "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
             wave9dResults.regOk && wave9dResults.toolHasBonus
@@ -2846,13 +2755,10 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 9d UI (S7 V17.66): die EINE FERTIGEN-Zeile rendert bei role=soul im Werkstatt-DOM (statt des alten Soul-Knopfs)",
             wave9dResults.soulFertigenRendered && wave9dResults.oldSoulButtonGone
         );
-    } else if (wave9dResults && wave9dResults.error) {
-        check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
     }
 
     // ### Präzision als Stat-Multiplikator ###
     const wave10aResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -2953,7 +2859,7 @@ async function checkBandWaves9And10a(ctx) {
         return out;
     });
 
-    if (wave10aResults && !wave10aResults.error) {
+    if (ohneWurf(check, "Welle 10a", wave10aResults)) {
         check(
             "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
             wave10aResults.emptyIs1 && wave10aResults.nullIs1
@@ -2972,18 +2878,14 @@ async function checkBandWaves9And10a(ctx) {
             "Welle 10a: Tool-Präzision moduliert seinen Stat-Beitrag in computePlayerStats",
             wave10aResults.toolPrecModulates
         );
-    } else if (wave10aResults && wave10aResults.error) {
-        check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
     }
 }
 
 // M2 ROLLEN-WAHRHEIT (diag-roles): das Register kennt `vehicle`, kein Hüll-Volumen-Exploit
 // (auseinanderziehen ≠ stärker), der Klon behält Substanz (connections) + Intent (role).
 // KONSUM, nicht Existenz.
-async function checkBandM2RollenWahrheit(ctx) {
-    const { page, check } = ctx;
+async function checkBandM2RollenWahrheit({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const sigs = r.constructor.FORM_ROLE_SIGNATURES;
@@ -3094,10 +2996,8 @@ async function checkBandM2RollenWahrheit(ctx) {
 // AUTO-VERBINDUNG + Sattel-Optik/Probesitz-Ghost (behavioral: diag-autoconnect). Wände: Transition-
 // Geburt/-Lösung · „✂ Lösen“ geehrt · Typ folgt Substanz · Tür/Wirbel nur aus bewusster Hand ·
 // rotations-bewusste Kontakt-Hülle · Anker überleben Part-Löschen · Ghost nur in der Werkstatt.
-async function checkBandV18164AutoConnect(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18164AutoConnect({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
@@ -3244,10 +3144,8 @@ async function checkBandV18164AutoConnect(ctx) {
 // Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
 // Wind-Term im Stoff + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
-async function checkBandV18214SkeletonMesh(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18214SkeletonMesh({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 

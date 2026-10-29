@@ -43,7 +43,7 @@ hauptLauf(async () => {
     const out = await page.evaluate(
         async (zeitArg, blickArg) => {
             const res = { schuesse: {} };
-            const r = await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state));
+            await window.__weltDa(() => !(!r || !r.state));
             // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
             await window.__weltStehtNach();
             const rend = r.state.renderer;

@@ -884,8 +884,6 @@ async function probeBahn(B) {
         uhr.t = t;
     };
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && st.blueprints && st.blueprints.fahrzeug_gt);

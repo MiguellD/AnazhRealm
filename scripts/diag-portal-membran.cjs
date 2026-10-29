@@ -176,8 +176,6 @@ async function blickProbe(opts) {
 // DIE UHR STEHT JE LAUF (M2): Film, Welle und Puls lesen die Uhr des Membran-Ticks, die Wolken die des Himmels — bis M2
 // die Wanduhr des letzten Takts (milchweiß 3,2–5,5 % in 5 Läufen); seit A8 hält die Bühne jede Uhr des Bilds auf T.
 async function hellProbe() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const TSL = T.TSL;
     const rend = st.renderer;
@@ -448,7 +446,7 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
 

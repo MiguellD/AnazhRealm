@@ -479,8 +479,6 @@ const server = statikServer();
 
 // Die Proben im Seiten-Kontext.
 async function probe(K) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const A = r.constructor;
     let [tMs, tN] = [performance.now(), 0];
     // DER ATEM (ek-schleife): je 10 Takte gibt der Takt den Haupt-Faden frei (`await takt()`), wie das Spiel je Bild —

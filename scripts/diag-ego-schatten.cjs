@@ -165,9 +165,7 @@ const server = statikServer();
 function buehne(arg) {
     return (async () => {
         const { W, H, SCHWELLE, bilder } = arg;
-        const r = window.anazhRealm,
-            st = r.state,
-            T = window.THREE;
+        const T = window.THREE;
         const rend = st.renderer;
         const E = r.constructor.SHADOW_TWIN_LAYER;
         const P = Object.getPrototypeOf(r);

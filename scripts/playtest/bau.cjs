@@ -3,15 +3,13 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
-async function checkBandWaves1to3(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWaves1to3({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welt-Journal ###
     const journalResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
@@ -37,13 +35,7 @@ async function checkBandWaves1to3(ctx) {
         return out;
     });
 
-    if (!journalResults || journalResults.error) {
-        check(
-            "Welle 1 D: Journal-Snapshot erreichbar",
-            false,
-            (journalResults && journalResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 1 D: Journal-Snapshot erreichbar", journalResults)) {
         check("Welle 1 D: Genesis-Eintrag wurde beim ersten worldMeta-Init geschrieben", journalResults.genesisWritten);
         check("Welle 1 D: worldMeta.bornAt gesetzt", journalResults.bornAtSet);
         check("Welle 1 D: journalAppend hängt Eintrag an", journalResults.appendIncreases);
@@ -57,7 +49,6 @@ async function checkBandWaves1to3(ctx) {
 
     // ### Fraktale Baupläne + Schöpfer-DSL-Ops ###
     const wave2Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // C — Validation lehnt unbekannte Shape ab
@@ -137,13 +128,7 @@ async function checkBandWaves1to3(ctx) {
         return out;
     });
 
-    if (!wave2Results || wave2Results.error) {
-        check(
-            "Welle 2: Snapshot erreichbar",
-            false,
-            (wave2Results && wave2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 2: Snapshot erreichbar", wave2Results)) {
         check("Welle 2 C: Validation lehnt unbekannte Shape ab", wave2Results.rejectsUnknownShape);
         check("Welle 2 C: Validation lehnt leeren Parts-Array ab", wave2Results.rejectsEmpty);
         check("Welle 2 C: Validation akzeptiert gültige box-Parts", wave2Results.acceptsValid);
@@ -159,7 +144,6 @@ async function checkBandWaves1to3(ctx) {
 
     // ### Welt-Initiative + Welt-Tor ###
     const wave3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // E — neue Trigger im pool + triggers-Map
@@ -224,13 +208,7 @@ async function checkBandWaves1to3(ctx) {
         return out;
     });
 
-    if (!wave3Results || wave3Results.error) {
-        check(
-            "Welle 3: Snapshot erreichbar",
-            false,
-            (wave3Results && wave3Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 3: Snapshot erreichbar", wave3Results)) {
         check("Welle 3 E: journalEvent-Trigger im Grok-State", wave3Results.hasJournalEventTrigger);
         check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
         check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
@@ -256,10 +234,8 @@ async function checkBandWaves1to3(ctx) {
 // Die Werkstatt-Domäne EMERGIERT aus der Substanz (_computeWorkshopDomain, kein hardcoded
 // `workshopDomain`; Vorbild _isPortalShaped). Geprüft: die fünf Built-in-Werkstätten treffen ihre
 // Domäne (Tag-Drift-Wächter), die Regel diskriminiert nach Substanz, das Gate liest sie end-to-end.
-async function checkBandV1767WorkshopDomainEmergent(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1767WorkshopDomainEmergent({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const savedMode = r.getGameMode();
@@ -352,11 +328,9 @@ async function checkBandV1767WorkshopDomainEmergent(ctx) {
 // Ω-PHYSIS Säule III — Bauplan-Grammatik: Ω-B1 Tempel nach DORISCHER ORDNUNG (Entasis + Kanneluren
 // [flutedColumn], Echinus, Triglyphen, Giebel), Ω-B2 Schwert als OAKESHOTT-Typ (bladeProfile:
 // Verjüngung + Hohlkehle). Physik-Garant: Tempel steht, 1:7-Säulen knicken nicht, Balance gerechnet.
-async function checkBandOmegaGrammatik(ctx) {
-    const { page, check } = ctx;
+async function checkBandOmegaGrammatik({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm,
-            C = r.constructor;
+        const C = r.constructor;
         const o = {};
         // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
         // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
@@ -479,13 +453,11 @@ async function checkBandOmegaGrammatik(ctx) {
     check("⟡ Ω-B2 PHYSIK: die Balance ist GERECHNET (Ω-Φ4), typ-abhängig", res.balanceTyped === true);
 }
 
-async function checkBandWave10b(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandWave10b({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Compound-Tag-Affordances (Erkennung + UI) ###
     const wave10bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const AR = r.constructor;
         const out = {};
@@ -885,7 +857,7 @@ async function checkBandWave10b(ctx) {
         return out;
     });
 
-    if (wave10bResults && !wave10bResults.error) {
+    if (ohneWurf(check, "Welle 10b.1", wave10bResults)) {
         check(
             "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
             wave10bResults.thresholdsFrozen && wave10bResults.noShapeWhitelists && wave10bResults.affordanceLabelsExist
@@ -1053,13 +1025,10 @@ async function checkBandWave10b(ctx) {
             "W10 ext.: _tickLiftingAffordances setzt das Auftriebs-Feld nahe einem Heber, löscht es fern (Reichweite-Gate)",
             wave10bResults.liftFieldActiveNear && wave10bResults.liftFieldInactiveFar
         );
-    } else if (wave10bResults && wave10bResults.error) {
-        check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
     }
 
     // ### Welt-Reaktionen (die Mount-Absagen + zoom) ###
     const wave10b3Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         try {
@@ -1104,7 +1073,7 @@ async function checkBandWave10b(ctx) {
         return out;
     });
 
-    if (wave10b3Results && !wave10b3Results.error) {
+    if (ohneWurf(check, "Welle 10b.3", wave10b3Results)) {
         check(
             "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
             wave10b3Results.nonMoveableRejected
@@ -1118,18 +1087,14 @@ async function checkBandWave10b(ctx) {
             "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
             wave10b3Results.zoomFailsWithoutTarget
         );
-    } else if (wave10b3Results && wave10b3Results.error) {
-        check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
     }
 }
 
 // Ω6 Namensraum + Wachstumsregel: fremdes Vokabular (x:-präfixiert ODER künftige nackte Achsen)
 // REIST (must-preserve) und beeinflusst KEINE Kern-Lesart (must-ignore, behavioral: bit-gleiche
 // Rolle/Kosten/Tags/Vektor mit und ohne fremden Tag).
-async function checkBandTailleOmega6(ctx) {
-    const { page, check } = ctx;
+async function checkBandTailleOmega6({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const mkMat = (name, extraTags) => {
             r.state.materials[name] = {
@@ -1204,10 +1169,9 @@ async function checkBandTailleOmega6(ctx) {
 // Ψ0: paarweise Kosinus-Winkel aller Signaturen je Tabelle gegen die kalibrierte Baseline
 // (diag-band-belegung) — ein Paar ENGER als die akzeptierte Geschwister-Nähe wird ROT. FORM_ROLE
 // trägt zusätzlich eine harte Schranke (0.35): dort wird Übersprechen zur falschen ROLLE.
-async function checkBandPsi0Winkel(ctx) {
-    const { page, check } = ctx;
+async function checkBandPsi0Winkel({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = window.anazhRealm.constructor;
+        const A = r.constructor;
         const cos = (a, b) => {
             const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
             let dot = 0;
@@ -1272,7 +1236,6 @@ async function checkBandPsi0Winkel(ctx) {
     // Loops sind VERDICHTET. KONSUM aller Leser am Ruf + die Organ-
     // Semantik behavioral (floor strikt > · refs/refDefault-Norm · keys-Subset).
     const psi1 = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // ein Werk aus zwei Parts (Eisen-Block + Holz-Stiel): jeder Leser ruft das Organ unbedingt
         const bpK = { name: "_psi1", connections: [], parts: [
@@ -1311,10 +1274,8 @@ async function checkBandPsi0Winkel(ctx) {
 // Die Λ-Bänder (checkBandLambda* + checkBandV18177AAA) sind eigenständige Mess-Wände — eine
 // Regression wird als Λ-Klassifikation rot, nicht versteckt in fremden Source-Probes.
 // Λ.1: ein humanoider Körper (lebendige Masse mittig) ist body-shaped, ein Stein-Tempel nicht.
-async function checkBandLambda1LivingCenter(ctx) {
-    const { page, check } = ctx;
+async function checkBandLambda1LivingCenter({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         // Humanoid Body — anatomisch (Kopf/Rumpf oben, Beine unten, fleisch).
         const humanoid = {
@@ -1360,10 +1321,8 @@ async function checkBandLambda1LivingCenter(ctx) {
     );
 }
 
-async function checkBandV18266RockDetail(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18266RockDetail({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         if (typeof THREE === "undefined") return out;
         const triOf = (g) =>

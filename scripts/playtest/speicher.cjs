@@ -3,15 +3,13 @@
 // 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Regel-Persistenz: worldRules überleben den Reload (buildStateSnapshot/loadState: definierende
 // Felder, frische Akkus, dedup, cap), fuseWorlds VEREINIGT die Regel-Sätze. Eine restaurierte Regel
 // FEUERT; ein alter Save ohne worldRules → no-op.
-async function checkBandV1738RulePersistence(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1738RulePersistence({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -124,15 +122,13 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-async function checkBandRing8(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing8({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Multi-Welt-Verwaltung ###
     // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
     // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
     const ring8Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -330,13 +326,7 @@ async function checkBandRing8(ctx) {
 
         return out;
     });
-    if (!ring8Results || ring8Results.error) {
-        check(
-            "Ring 8: Snapshot erreichbar",
-            false,
-            (ring8Results && ring8Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8: Snapshot erreichbar", ring8Results)) {
         check("Ring 8: Schema-Version ist 8.0-multiworld-v1", ring8Results.schemaIsMultiworld);
         check(
             "Ring 8: eine neue Welt erbt kein Identitäts-Feld der alten (Positiv-Liste visibility · creator)",
@@ -381,7 +371,6 @@ async function checkBandRing8(ctx) {
 
     // ### Multi-Welt-Verwaltung: UI ###
     const ring8UiResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
@@ -415,13 +404,7 @@ async function checkBandRing8(ctx) {
         }
         return out;
     });
-    if (!ring8UiResults || ring8UiResults.error) {
-        check(
-            "Ring 8 UI: Snapshot erreichbar",
-            false,
-            (ring8UiResults && ring8UiResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8 UI: Snapshot erreichbar", ring8UiResults)) {
         check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block (V18.73)", ring8UiResults.pickerSectionInDom);
         check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
         check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
@@ -433,7 +416,6 @@ async function checkBandRing8(ctx) {
     // Jede Welt trägt ihren Seed in worldMeta; SimplexNoise wird damit gefüttert → verschiedene Welten
     // liefern verschiedene Geometrie.
     const ring81Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -500,13 +482,7 @@ async function checkBandRing8(ctx) {
         }
         return out;
     });
-    if (!ring81Results || ring81Results.error) {
-        check(
-            "Ring 8.1: Snapshot erreichbar",
-            false,
-            (ring81Results && ring81Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8.1: Snapshot erreichbar", ring81Results)) {
         check("Ring 8.1: Aktive Welt trägt einen Seed", ring81Results.activeHasSeed);
         check("Ring 8.1: Neue Welt A hat eigenen Seed", ring81Results.newWorldAHasSeed);
         check("Ring 8.1: Neue Welt B hat eigenen Seed", ring81Results.newWorldBHasSeed);
@@ -529,7 +505,6 @@ async function checkBandRing8(ctx) {
 
     // ### Status-Bar-Welt + der Erst-Spawn ### (der Lage-Rundlauf über echte Boots: gate:persistence (T))
     const ring82Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -564,13 +539,7 @@ async function checkBandRing8(ctx) {
 
         return out;
     });
-    if (!ring82Results || ring82Results.error) {
-        check(
-            "Ring 8.2: Snapshot erreichbar",
-            false,
-            (ring82Results && ring82Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 8.2: Snapshot erreichbar", ring82Results)) {
         check("leerer Welt-Snapshot trägt playerPosition:null", ring82Results.emptySnapHasNoPosition);
         check(
             "Save ohne playerPosition lässt terrainEverGenerated false (Erst-Spawn-Pfad)",
@@ -583,15 +552,13 @@ async function checkBandRing8(ctx) {
     }
 }
 
-async function checkBandRing9to10(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing9to10({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welt-Tor (Drei-Wahl-Import-Dialog) ###
     // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
     // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
     const ring9Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -688,13 +655,7 @@ async function checkBandRing9to10(ctx) {
         }
         return out;
     });
-    if (!ring9Results || ring9Results.error) {
-        check(
-            "Ring 9: Snapshot erreichbar",
-            false,
-            (ring9Results && ring9Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 9: Snapshot erreichbar", ring9Results)) {
         check(
             "Ring 9: #world-tor-* Dialog, Knöpfe und Summary im DOM",
             !ring9Results.domFehlt.length,
@@ -726,7 +687,6 @@ async function checkBandRing9to10(ctx) {
     // Diskrimination: zwei Eltern mit JE einer eindeutigen Sache (Material, Bauplan, Emotion) — die
     // Fusion trägt beide, die drei Strategien zeigen unterscheidbare Emotion-Aggregation.
     const ring10Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -919,13 +879,7 @@ async function checkBandRing9to10(ctx) {
         }
         return out;
     });
-    if (!ring10Results || ring10Results.error) {
-        check(
-            "Ring 10: Snapshot erreichbar",
-            false,
-            (ring10Results && ring10Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 10: Snapshot erreichbar", ring10Results)) {
         check(
             "Ring 10: Verschmelzen-Knöpfe (Dialog, Bibliothek) im DOM",
             !ring10Results.domFehlt.length,
@@ -972,7 +926,6 @@ async function checkBandRing9to10(ctx) {
     // `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quelle in die
     // aktive Welt; Konflikte bekommen `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
     const recipeResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1093,13 +1046,7 @@ async function checkBandRing9to10(ctx) {
         }
         return out;
     });
-    if (!recipeResults || recipeResults.error) {
-        check(
-            "Ring 10.1: Snapshot erreichbar",
-            false,
-            (recipeResults && recipeResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 10.1: Snapshot erreichbar", recipeResults)) {
         check("Ring 10.1: importRecipesFromWorld liefert ok=true", recipeResults.importOk);
         check("Ring 10.1: counts = {3 Baupläne, 1 Material, 1 Werkzeug}", recipeResults.importCounts);
         check("Ring 10.1: Bauplan in aktiver Welt verfügbar", recipeResults.bpAddedToState);
@@ -1121,13 +1068,11 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-async function checkBandTranslatorAndUntrusted(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
     const translatorResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
@@ -1306,7 +1251,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
     const transl2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
         r.state.customWorlds = {};
@@ -1535,7 +1479,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
     const sandboxResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
         // schwarm in der Registry, als sandboxed markiert.
@@ -1691,7 +1634,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
@@ -1863,7 +1805,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
@@ -2000,10 +1941,8 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 // Ω2 must-preserve als Gesetz: Unbekanntes überlebt jeden Serialize/Restore bit-gleich (EINE Quelle
 // _carryUnknown), die R4-Herkunftskette überlebt den Save, die Sicherheits-Wände halten
 // (Gegenproben), die Größen-Wand dämpft.
-async function checkBandTailleOmega2(ctx) {
-    const { page, check } = ctx;
+async function checkBandTailleOmega2({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const C = r.constructor;
         out.constants =
@@ -2131,10 +2070,8 @@ async function checkBandTailleOmega2(ctx) {
 // R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
-async function checkBandV18207R5StructureTexture(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18207R5StructureTexture({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 

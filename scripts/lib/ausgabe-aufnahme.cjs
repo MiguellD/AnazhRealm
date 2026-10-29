@@ -31,7 +31,6 @@ function seitenfehlerZaehlen() {
 }
 
 function saisonFest() {
-    const r = window.anazhRealm;
     if (r && r.state) r.state.autoSeason = false;
     else setTimeout(saisonFest, 50);
 }
@@ -42,7 +41,6 @@ function saisonFest() {
 // Wetter-Schreiber des Spiels (`_setWeather`) jeden Zug — Emotions-Effekt, Nexus, Gesetz, Mitspieler — und der Auto-Zug
 // verbraucht seinen Takt der Welt-Uhr ohne Wort; im Spiel steht der Halt auf 0.
 function wetterHalten() {
-    const st = window.anazhRealm.state;
     window.__wetterSpion();
     const u = st.weatherEffectTime;
     if (!(Number.isFinite(u) && u < 0)) st.weatherEffectTime = -1e9;
@@ -75,8 +73,6 @@ function spielStapel() {
 // als „roh" mit seinem Stapel im Buch. Die Hülle ruft den Schreiber des Prototyps je Aufruf (`werkbank methode` tauscht
 // ihn live). Das Buch liest `__wetterBuch(seit)`, das Urteil `wetterUrteil` (rein, unten).
 function wetterSpion() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const S =
         window.__wetterSpionBuch ||
         (window.__wetterSpionBuch = { seq: 0, buch: [], staende: new WeakSet(), quelle: null, stapel: null });
@@ -135,7 +131,6 @@ function wetterSpion() {
 // Das Buch des Spions seit `seit` (seq) und der Stand der Wache jetzt.
 function wetterBuch(seit) {
     const S = window.__wetterSpion();
-    const st = window.anazhRealm.state;
     const u = st.weatherEffectTime;
     return {
         seq: S.seq,
@@ -152,8 +147,6 @@ function wetterBuch(seit) {
 // lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs. `zug`: der Übergang des Spiels
 // bleibt (der Wetter-Zug der Licht-Linse).
 function wetterSetzen(wort, zug) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const S = window.__wetterSpion();
     const uhr = st.weatherEffectTime;
     st.weatherEffectTime = 0;
@@ -176,8 +169,6 @@ function wetterSetzen(wort, zug) {
 // Nexus-Gesetz „time_of_day ← dslEval ← _tickWorldRules"). Der eigene Gang der Uhr (Quelle „uhr", oder ohne Schreiber ein
 // Stapel aus `tickDayNight`) bucht nicht je Takt, er summiert: Schritte, Weg (Tag-Bruchteile vorwärts), größter Schritt.
 function uhrSpion() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const S =
         window.__uhrSpionBuch ||
         (window.__uhrSpionBuch = {
@@ -244,14 +235,13 @@ function uhrSpion() {
 // die Akte, die sein Aufrufer nennt (`ersatz`), damit der Täter trotzdem beim Namen steht. Das Buch liest `__weltaktBuch(seit)`,
 // das Urteil `weltaktUrteil` (rein, unten).
 function weltaktSpion(ersatz) {
-    const r = window.anazhRealm;
     const S =
         window.__weltaktSpionBuch ||
         (window.__weltaktSpionBuch = { seq: 0, buch: [], blind: false, huellen: new WeakMap() });
     const liste = r.constructor.DSL_WELTAKTE;
     S.blind = !Array.isArray(liste);
     const halt = () => {
-        const u = window.anazhRealm.state.weatherEffectTime;
+        const u = r.state.weatherEffectTime;
         return Number.isFinite(u) && u < 0;
     };
     const buche = (e) => {
@@ -283,7 +273,7 @@ function weltaktSpion(ersatz) {
 // Das Buch des Welt-Akt-Spions seit `seit` (seq) und der Halt jetzt.
 function weltaktBuch(seit) {
     const S = window.__weltaktSpion();
-    const u = window.anazhRealm.state.weatherEffectTime;
+    const u = r.state.weatherEffectTime;
     return {
         seq: S.seq,
         gehalten: Number.isFinite(u) && u < 0,
@@ -294,8 +284,6 @@ function weltaktBuch(seit) {
 
 // DIE LESER DER BILD-UHR `_bildZeit` (A9), [Name, Halter, Schlüssel] — die Uhr-Wache prüft, dass jeder mit ihr steht.
 function bildUhren() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const wu = st.windUniforms || {};
     const v2 = wu.uWindDir && wu.uWindDir.value;
     const u = [
@@ -316,7 +304,6 @@ function bildUhren() {
 // DIE UHR DER BÜHNE (A9): die Bühne hält NUR die EINE Bild-Uhr `_bildZeit` auf T = 12,5 s und zählt jeden Zug des Loops, den
 // sie verweigert (die Uhr-Wache liest ihn); das Tor, das im Takt schreibt, liest sie einmal beim Halt.
 function uhrHalten() {
-    const r = window.anazhRealm;
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
     const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
     if (d && d.get && d.get.__buehne) return;
@@ -329,8 +316,6 @@ function uhrHalten() {
 // `__weltStehtNach`, der Takt der Seite) und stellt nach jedem Takt Kamera und Stunde zurück; der Deckel `max` zählt
 // nur Takte ohne Offenes (`_weltOffen`) — den Bau bricht seine Frist. Sonst bricht der Schuss LAUT beim Täter.
 async function weltStehtWarten(max) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const cam = st.camera;
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
     const takt = async () => {
@@ -355,6 +340,7 @@ async function weltStehtWarten(max) {
 }
 
 function buehne(o) {
+    // die Bühne bindet die Welt selbst: ihr Selbsttest ruft sie in Node mit einem gestellten `window` (`buehneSelbsttest`)
     const r = window.anazhRealm;
     const st = r.state;
     const w = (o && o.wetter) || "sunny";
@@ -446,7 +432,6 @@ function buehneSelbsttest() {
 // liest dieselbe Regel jede Basis: Milch ist, was die Schicht dem hinzufügt, was ohne sie dort stünde. Zurück die Zahl der
 // Membranen und wie viele davon ohne Ziel standen.
 function membranOhneFilm(an) {
-    const r = window.anazhRealm;
     let n = 0,
         ohneZiel = 0;
     for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
@@ -488,7 +473,6 @@ function membranOhneFilm(an) {
 // (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
 // und LOD laufen weiter.
 function tiereHalten() {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     if (P.__tiereGehalten) return;
     const org = P.updateCreatures;
@@ -515,7 +499,7 @@ function tiereHalten() {
 // ausgelassener Bürger (die Welt stieß sie vor dem Bild an) zählen nicht.
 function erstRuhe(frame, opt, wer) {
     return (async () => {
-        const E = window.anazhRealm._erstZeichnung;
+        const E = r._erstZeichnung;
         if (!E) return null;
         const offenZaehlt = !(opt && opt.nurGezeichnete);
         const tE = performance.now();
@@ -523,7 +507,7 @@ function erstRuhe(frame, opt, wer) {
             stand = "";
         // der Grund einer Absage: die letzten Meldungen des Übersetzers und der Pipeline in der GPU-Wache (`_gpuWacheMeldung`)
         const grund = () => {
-            const m = ((window.anazhRealm._gpuWache || {}).meldungen || []).filter(
+            const m = ((r._gpuWache || {}).meldungen || []).filter(
                 (x) => x.quelle === "three" || x.quelle === "pipeline"
             );
             return m.length
@@ -548,9 +532,9 @@ function erstRuhe(frame, opt, wer) {
             // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
             // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
             const dev =
-                window.anazhRealm.state.renderer &&
-                window.anazhRealm.state.renderer.backend &&
-                window.anazhRealm.state.renderer.backend.device;
+                r.state.renderer &&
+                r.state.renderer.backend &&
+                r.state.renderer.backend.device;
             if (dev && dev.queue && typeof dev.queue.onSubmittedWorkDone === "function")
                 await dev.queue.onSubmittedWorkDone();
             await sleep(0);
@@ -590,8 +574,6 @@ function erstRuhe(frame, opt, wer) {
 // Verdecker davor). Das Ziel selbst zählt nie: seine ids (`ohne`) und jedes Werk, dessen Fuß näher als `r` (1,5 m) am Ziel
 // steht.
 function abnahmeMessen(opt) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const T = window.THREE;
     const cam = st.camera;
     const o = opt || {};
@@ -696,7 +678,6 @@ function abnahmeMessen(opt) {
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
 // Abnahme nach dem Schuss wirft beim Namen.
 function blickWahl(opt) {
-    const r = window.anazhRealm;
     const cam = r.state.camera;
     const z = opt.ziel;
     const n = Math.max(1, Math.floor(opt.wahl));
@@ -739,7 +720,6 @@ function blickWahl(opt) {
 // Aufnahme rendert darum IMMER in Canvas-Größe (was der Spieler sieht) und mittelt danach auf W×H herunter.
 function ausgabeAufnahme(W, H, warm, opt) {
     return (async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
         const rend = r.state.renderer;
         const db = rend.getDrawingBufferSize(new T.Vector2());

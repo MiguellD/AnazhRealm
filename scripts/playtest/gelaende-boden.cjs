@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Abenteuer graduiert: `explore` feuert nicht flach je Chunk-Wechsel, die Magnitude emergiert aus
 // Neuheit (visitedRegions) + Distanz vom Ursprung + Kühnheit (karge/glut-Aura via auraAt);
 // Konsum: kühnes Erkunden ≫ Pendeln (awe).
-async function checkBandV1749Adventure(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1749Adventure({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const p = r.state.player;
         const E = r.constructor.EXPLORE;
@@ -109,8 +107,7 @@ async function checkBandV1749Adventure(ctx) {
 }
 
 // Der Voxel-Boden (P1 + P2b) und die Abwesenheit des Heightfields.
-async function checkBandVoxelTerrainCore(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Voxel-Terrain — Dichte-Feld + Surface Nets ###
@@ -118,13 +115,11 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
     await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (r && r.state && r.state.voxelChunks) {
             for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
     const voxelP1Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
 
@@ -375,7 +370,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
     // Parallel, hinter dem Flag — jeder Schritt reversibel.
     const voxelP2bResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Voxel ist permanent (keine Toggle-Methoden): der Ring ist beim Init gefüllt
@@ -696,7 +690,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Voxel ist beim Init aktiv, `worldMeta.voxelTerrain` immer true (Zwangs-Migration in
     // `ensureWorldMeta`); Toggle-Methoden + `voxel terrain on/off`-Chat-Befehl sind weg.
     const voxelV935ToggleResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
         // Voxel ist beim Init aktiv (kein toggle nötig).
@@ -735,7 +728,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
     // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
     const voxelP5c1Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
 
@@ -795,7 +787,6 @@ async function checkBandVoxelTerrainCore(ctx) {
     // leben in den Voxel-Pendants (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
     // `_attachVoxelFieldColors`).
     const voxelV939Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         return {
             // populateChunkVegetation nennt noch ein Log-Text des Stamms, darum steht sie hier und nicht in gate:altlasten
@@ -821,10 +812,8 @@ async function checkBandVoxelTerrainCore(ctx) {
 // Distance-LOD: ferne Chunks (> 80 m) bauen mit step=3.6 m statt 1.8, dim=12 statt 24, dimY=62
 // statt 124 (8× weniger Cells). Span (43.2 m) + vertikaler Range (223.2 m) bleiben konstant
 // → Chunks world-aligned über die LOD-Grenze.
-async function checkBandWellePerf3bDistanceLod(ctx) {
-    const { page, check } = ctx;
+async function checkBandWellePerf3bDistanceLod({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Config-Trennung LOD 0 vs LOD 1
@@ -925,11 +914,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
 // DER RING IST EXISTENZ (`_ringWaechst`, Lehre 13): auf schwachem Holz (frameMs 50 ab Bild 1, jeder Frame über dem Budget,
 // der Regler ruht wie unter `__weltStehtNach`) wächst der Ring Schale um Schale bis zum Ziel, sobald die jetzige steht — nie
 // darüber, nie zurück unter Last; eine ungebaute Schale hält ihn, der gesenkte Regler des Spielers gilt sofort.
-async function checkBandJedesHolzExistenzBoden(ctx) {
-    const { page, check } = ctx;
+async function checkBandJedesHolzExistenzBoden({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const st = r.state;
         const F = [
             "renderer",
             "_activeRingRadius",
@@ -980,10 +966,8 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
 
 // Wasser-Cells leben IMMER auf LOD 0, unabhängig vom Terrain-LOD des Chunks — sonst klafft die
 // Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
-async function checkBandWelle993WaterLodSeam(ctx) {
-    const { page, check } = ctx;
+async function checkBandWelle993WaterLodSeam({ page, check }) {
     const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
@@ -1036,10 +1020,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
 // (schatten.K1), bis zur Band-0-Kante, bis maxFar = Reichweite × SCHATTEN_FERN_FAKTOR. Über die ganze geregelte Reichweite (MIN..MAX) und die
 // User-Decke (400 m) trägt jede Kaskade hinter der Kontakt-Kaskade ≥ 10 % der Tiefe. Die CSM-Init
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
-async function checkBandV18130CsmShadow(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18130CsmShadow({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
         out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
@@ -1108,10 +1090,8 @@ async function checkBandV18130CsmShadow(ctx) {
 // A3 — FERNE BINNENGEWÄSSER: Heimat-Region (±1024) unberührt; jenseits liefern lazy Kacheln (2048 m,
 // f(seed, Koordinate) — peer-identisch, egal wann berechnet) Seen · Flüsse · Erosion; eine
 // mitwandernde Region bräche den Determinismus. Voller Beweis: die Sonde diag-ferne-seen (git-Archiv).
-async function checkBandV18132FerneSeen(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18132FerneSeen({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
@@ -1197,10 +1177,8 @@ async function checkBandV18132FerneSeen(ctx) {
 // FAHR-TIEFE: das Fahr-Profil emergiert aus der Substanz (Räder = Tempo + Ausrollen, Masse =
 // Trägheit), der Sattel führt die Bewegung (EINE Quelle), Gelenke fahren mit (Phase ∝ Weg). Reiter
 // + Gefährt sind EINS: Kollision ruht im Sattel, unerntbar.
-async function checkBandV18150Ride(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18150Ride({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const pm = r.state.playerMesh.position;
         const savedMounted = r.state.player.mountedArch;
@@ -1324,10 +1302,8 @@ async function checkBandV18150Ride(ctx) {
     check("Fahr-Tiefe: Absteigen gibt frei", res.dismounts);
 }
 
-async function checkBandGammaGenese(ctx) {
-    const { page, check } = ctx;
+async function checkBandGammaGenese({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
         const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
@@ -1459,7 +1435,6 @@ async function checkBandGammaGenese(ctx) {
     );
     // Γ1-Lesart-4 BODEN-ATMET: die Feuchte zieht die EINE Boden-Farbe zur feuchten Erde (BODEN_FARBE.wet) — am Ruf gemessen.
     const zugNass = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const pm = r.state.playerMesh.position;
         const y = r._voxelSurfaceY(pm.x, pm.z) ?? pm.y;
         const farbe = (f) => {
@@ -1481,7 +1456,6 @@ async function checkBandGammaGenese(ctx) {
     // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
     // der Ebene (Relief-Minimum).
     const resG4 = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const G = window.__gelaendeCore;
         const out = {};
         out.struct = typeof G.grossform === "function" && Array.isArray(G.LANDFORM_REGLER);
@@ -1565,10 +1539,8 @@ async function checkBandGammaGenese(ctx) {
 // Γ-M LICHEN: grüne
 // Patina auf alten feuchten Steinen. Reine Render-Schicht, kein Welt-Effekt.
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
-async function checkBandV18199GammaMLichen(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18199GammaMLichen({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -1655,10 +1627,8 @@ async function checkBandV18199GammaMLichen(ctx) {
 
 // Pfade: Fluss-Bänke sind getrampelte Erde, lawful aus dem Drainage-Netz: _pathFieldAt → der Boden
 // packt (packedDirt, Main ↔ Worker bit-identisch) + das Gras weicht. Proben: KONSUM + Feld-Logik.
-async function checkBandWahrerAnblickPfade(ctx) {
-    const { page, check } = ctx;
+async function checkBandWahrerAnblickPfade({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -1724,10 +1694,8 @@ async function checkBandWahrerAnblickPfade(ctx) {
 // G1 Seam-Normal: zwei same-LOD-
 // Face-Nachbarn teilen ihre Boundary-Verts float-exakt (pad+crop); in der Rand-Schale rechnet der Gradient via sample()
 // (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale.
-async function checkBandSeamNormal(ctx) {
-    const { page, check } = ctx;
+async function checkBandSeamNormal({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const { dim, step, span, dimY, floorDrop } = r._voxelChunkConfig(0);
         const oy = (r.state.terrainBaseHeight || 0) - floorDrop;
         const fullSample = (x, y, z) => r._terrainDensityAt(x, y, z);
@@ -1776,8 +1744,7 @@ async function checkBandSeamNormal(ctx) {
 // des lebenden Tiers (Fern-Guss ohne Schatten auf 2 m, Aura und Traglast); jetzt liegt der Gefallene in der Stufe seines Abstands,
 // wirft nah Schatten, ohne Aura, Traglast, Wesen-Takt und Stimme. Selbsttest im selben Boot: je Täter der alte Defekt eingespielt —
 // jede Probe liest ROT aus ihrem Grund.
-async function checkBandTodZensus(ctx) {
-    const { page, check } = ctx;
+async function checkBandTodZensus({ page, check }) {
     const todZensus = function todZensus(r, T, taeter) {
         const s = r.state;
         const A = r.constructor;
@@ -2391,11 +2358,9 @@ async function checkBandTodZensus(ctx) {
 // verhungert nie an der Last (der Fixed-Step ist unbedingt) · (b) ohne gebauten Spieler-Chunk (gestallter Worker, Fern-Teleport)
 // trägt die feld-native Kollision · (c) nie im Soliden, nie Void · (d) die Pause: nach 10 s ohne Takt springt kein Wolf weiter
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
-async function checkBandBewegungUnterLast(ctx) {
-    const { page, check } = ctx;
+async function checkBandBewegungUnterLast({ page, check }) {
     const out = await safeEvaluate(page, async (selftest) => {
-        const r = window.anazhRealm,
-            s = r.state;
+        const s = r.state;
         const mesh = s.playerMesh;
         if (!mesh || !s.playerVel) return { error: "kein Spieler" };
         const span = r._voxelChunkConfig(0).span;

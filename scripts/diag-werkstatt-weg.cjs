@@ -336,8 +336,6 @@ const server = statikServer();
 async function probe(argW) {
     const out = {};
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
     const tick = async (n, ms) => {
         for (let i = 0; i < n; i++) {
@@ -924,8 +922,6 @@ async function probe(argW) {
 // ── L-WERKSTATT, die Seite: sie bereitet vor (vor dem Zähler) und liest — nie ein Schritt des Wegs. Headless tickt die
 // Schleife nicht von selbst: hier tickt `_gameLoopTick` (die Schleife des Spiels). ──
 function wegHelfer(arg) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const inv = st.player.inventory;
     const P = r._genesisPlattform().position;
     const yaw = Math.atan2(arg.frei.x - P.x, arg.frei.z - P.z);

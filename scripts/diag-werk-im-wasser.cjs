@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -407,8 +407,7 @@ function kernUrteil(VC) {
 async function probe(A) {
     const out = {};
     const soll = (n) => !A.nur || A.nur.includes(n); // `--nur`: Werkbank-Fragen (das Gate fährt alle)
-    const r = await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
-    const st = r.state;
+    await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
@@ -1708,8 +1707,7 @@ async function probe(A) {
 // "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
-    const r = await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
-    const st = r.state;
+    await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
     if (st.renderer) {
         st.renderer.render = function () {};
         if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
@@ -2218,8 +2216,7 @@ function selbsttest() {
 // Gesetz der Welt (Hydrosphäre, Wasser des Atlas über dem Boden) nächst der Mess-Wiese, nie als Literal der alten Welt (die
 // Orte von V18.540 lagen nach der neuen Landform im Trockenen: Hain, Furt, Rampe, Damm, Uferhäuser, See und Seerand).
 async function weltOrte(A) {
-    await window.__weltDa(() => !(!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready));
-    const r = window.anazhRealm;
+    await window.__weltDa(() => !(!r || !r.state.hydrosphere || !r.state.hydrosphere.ready));
     const G = window.__gelaendeCore;
     const [MX, MZ] = A.mess;
     const tiefe = (x, z) => {
@@ -2351,10 +2348,7 @@ async function weltOrte(A) {
     return out;
 }
 
-function argListe(name) {
-    const i = process.argv.indexOf(name);
-    return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].split(",") : null;
-}
+const argListe = (name, w = argOpt(name)) => (w ? w.split(",") : null);
 
 async function lauf() {
     const PORT = Number(process.env.WERK_WASSER_PORT || 4643);
@@ -2434,7 +2428,7 @@ async function lauf() {
                 ).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
-                    const r = await window.__weltDa();
+                    await window.__weltDa();
                     const res = r.importWorldBeside(json);
                     if (!res.ok) return null;
                     r.activeWorldSet(res.worldId);

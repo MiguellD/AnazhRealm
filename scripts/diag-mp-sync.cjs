@@ -126,7 +126,6 @@ function netzLog() {
 // mit (Puppeteer startet Chrome ohne Hintergrund-Drosselung der Zeitgeber, ChromeLauncher `--disable-background-timer-throttling`)
 function seitenPumpe() {
     setInterval(() => {
-        const r = window.anazhRealm;
         if (!r || !r._gameLoopTick || window.__ruht) return; // `__ruht`: der Loop steht (g)
         try {
             r._gameLoopTick(performance.now());
@@ -351,9 +350,9 @@ async function seite(browser, name, alteTuer) {
     await page.evaluateOnNewDocument(seitenPumpe);
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
     const da = () =>
-        !!window.anazhRealm &&
-        typeof window.anazhRealm._gameLoopTick === "function" &&
-        !!window.anazhRealm.state.playerMesh;
+        !!r &&
+        typeof r._gameLoopTick === "function" &&
+        !!r.state.playerMesh;
     await waitFor(page, da, `Seite ${name} bereit`);
     await page.evaluate(installiere, alteTuer);
     return page;
@@ -984,7 +983,6 @@ hauptLauf(async () => {
         await pageB.evaluate(() => anazhRealm.saveState());
         await pageB.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         const steht = (ids) => {
-            const r = window.anazhRealm;
             const da = r && r.state.playerMesh && !r._ladeSperre && r.state.p2p.connected;
             return !!da && ids.every((id) => (r.state.architectures || []).some((e) => String(e.id) === id));
         };
@@ -997,7 +995,7 @@ hauptLauf(async () => {
         // B spielt wieder (die Pumpe trägt jede Seite ab ihrer Geburt, die Probe hängt sich neu ein), bis sein erster Zug den
         // laufenden Sturm zieht
         if (nachReload) await pageB.evaluate(installiere, false);
-        await waitFor(pageB, () => window.anazhRealm._wetterZug !== undefined, "B zieht den Zug");
+        await waitFor(pageB, () => r._wetterZug !== undefined, "B zieht den Zug");
         // DERSELBE MOMENT auf beiden Seiten: die Welt-Uhr lief weiter, seit A seinen Abdruck der Akte nahm — unter Last stand B
         // im Reload bis 79 s, und der Zug wechselt je WETTER_ZUG_SEK (120 s); Edits, Bauten und Boden stehen seit den Akten still
         const R = nachReload ? await pageB.evaluate(abdruck, g.a) : null;
