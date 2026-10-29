@@ -1,8 +1,8 @@
 {
  "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
  "geraet": "headless",
- "zeit": "2026-10-28T22:41:21.932Z",
- "host": "farm:40781278480",
+ "zeit": "2026-10-29T01:00:47.516Z",
+ "host": "farm:40795724717",
  "je": {
   "affekt.K3#1": {
    "gruen": false,
@@ -1143,6 +1143,40 @@
    "port": 7704,
    "bahn": "1/1",
    "host": "farm:40769478876/9"
+  },
+  "bauen.K2#1": {
+   "gruen": false,
+   "zahl": "kein gesetztes Haus am Hang (W9 Slot null)",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "ROT: kein gesetztes Haus am Hang (W9 Slot null)",
+   "zeit": "2026-10-29T01:00:46.179Z",
+   "abdruck": "8c1ff5d03680",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40795724717/1"
+  },
+  "studios.K2#1": {
+   "gruen": true,
+   "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
+   "exit": 0,
+   "minuten": 4.28,
+   "zeit": "2026-10-29T00:59:10.173Z",
+   "abdruck": "c9f9969260f0",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40795724717/2"
+  },
+  "fahrzeug.K1#1": {
+   "gruen": true,
+   "zahl": "10 Achsen (5 Rezepte): Spitze 6.5–8.5°, Abfall bis 30° 20–24 %",
+   "exit": 0,
+   "minuten": 0.01,
+   "zeit": "2026-10-29T01:00:47.516Z",
+   "abdruck": "37c3aaaa8f26",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:40795724717/3"
   }
  }
 }

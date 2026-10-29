@@ -362,15 +362,74 @@ const alle = [
         ],
         quelle: "1 = Dreiecke ±5 % gegen renderer.info in ≥ 4/7 Mesh-Studios",
     },
+    // ── studios.K3#2 ── das Thermometer ganz (w3u-leiste): dieselbe Kosten-Zeile des Gangs trägt je Stufe die gezählten Befehle und
+    // das VRAM (r184 weitet 8/16-Bit-Felder samt Index auf 32 Bit) mit ihren Gegenzahlen — Befehle aus renderer.info, VRAM aus der
+    // Speicher-Karte des Renderers je Werk-Puffer (r184 info.memoryMap, r128 am GL-Kontext) —, die GPU-ms der Zeitstempel des
+    // Abschnitts und auf der Karte die Bank-Runde von gpu-bank (`?bank=12`, die EINE Bank der Hülle); beim Klang je Ort des
+    // Umwelt-Gesetzes die Audio-Graph-ms (offline, je Quantum). GPU-ms haben eine Gegenzahl nur gegen eine GPU-gebundene Bank
+    // (gpu-bank: über × 1,15) — der Zähl-Abschnitt (1×1, viele Befehle) kann CPU-gebunden sein, dann steht die Stufe ohne.
     {
         kriterium: "studios.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "die Leiste trägt gezeichnete Dreiecke und Befehle aus renderer.info (Zähl-Abschnitt, studios.K3#1), aber kein VRAM " +
-            "(info.memoryMap je Werk-Attribut), keine GPU-ms (Timer-Query gegen gpu-bank) und beim Klang keine Audio-Graph-ms; " +
-            "der Gang urteilt nur die Dreiecke",
+        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
+        env: { STUDIO_HUELLE_PORT: "{PORT}" },
+        gpu: true,
+        zeit: true,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const je = {};
+            for (const l of zeilen(lauf.stdout)) {
+                const m = /^\s{2}(\S+)\s+\d+ Anfragen · .* · Kosten (\[.*\])\s*$/.exec(l);
+                if (m && SEITEN[m[1]]) je[m[1]] = JSON.parse(m[2]);
+            }
+            if (!Object.keys(je).length) return { gruen: false, zahl: "keine Kosten-Zeile des Gangs (Exit " + lauf.exit + ")" };
+            const ab = (a, b) => Math.abs(a / b - 1) <= 0.05;
+            // je Stufe der erste Täter (null: wahr) — Dreiecke, Befehle, VRAM gegen ihre Gegenzahl, GPU-ms gegen die Bank
+            const taeter = (k) =>
+                !ab(k.leiste, k.gezeichnet) ? "△ " + k.leiste + "↔" + k.gezeichnet
+                : !ab(k.befehle, k.befehleGezeichnet) ? "Befehle " + k.befehle + "↔" + k.befehleGezeichnet
+                : !ab(k.vram, k.vramGpu) ? "VRAM " + k.vram + "↔" + k.vramGpu
+                : !(+k.bank > 1.15 * k.bankCpu) ? "Bank " + k.bank + " ms nicht GPU-gebunden (CPU " + k.bankCpu + ")"
+                : !ab(k.ms, k.bank) ? "GPU " + (k.ms || k.zeitFehlt) + " ms↔Bank " + k.bank
+                : null;
+            const mesh = Object.keys(SEITEN).filter((s) => s !== "klang");
+            const ohne = [];
+            let stufen = 0;
+            for (const s of mesh) {
+                const t = (je[s] || []).map((k) => taeter(k) && "L" + k.stufe + " " + taeter(k)).filter(Boolean);
+                if (!(je[s] || []).length) ohne.push(s + " (keine Zeile)");
+                else if (t.length) ohne.push(s + " " + t[0] + (t.length > 1 ? " (+" + (t.length - 1) + ")" : ""));
+                else stufen += je[s].length;
+            }
+            const orte = je.klang || [];
+            const imQuantum = orte.filter((k) => +k.audio <= +k.audioDeckel);
+            const klang = orte.length > 0 && imQuantum.length === orte.length;
+            return {
+                gruen: !ohne.length && klang,
+                zahl:
+                    "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in " + (mesh.length - ohne.length) + "/" + mesh.length + " Mesh-Studios (" +
+                    stufen + " Stufen), Klang " + imQuantum.length + "/" + orte.length + " Orte im Quantum" +
+                    (imQuantum.length ? " (Audio-Graph höchstens " + Math.max(...imQuantum.map((k) => +k.audio)).toFixed(3) + " ms)" : "") +
+                    (ohne.length ? ", ohne " + ohne.join(", ") : ""),
+            };
+        },
+        pfad: [
+            "worlds/huelle/",
+            "worlds/garage/",
+            "worlds/schmiede/",
+            "worlds/portale/",
+            "worlds/klang/",
+            "worlds/fachwerk/",
+            "worlds/koerperstudio/",
+            "worlds/tetrapoda/",
+            "worlds/terrain/",
+            "*-core.js",
+            "spec/profiband/haushalt.json",
+            "scripts/diag-studio-huelle.cjs",
+            "scripts/lib/software-gpu.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
         quelle: "2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms",
     },
 
