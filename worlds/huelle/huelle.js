@@ -1261,8 +1261,9 @@
                 zz.band.style.left = ((b.band / deckel) * 100).toFixed(1) + "%";
                 zz.band.style.display = "";
             } else zz.band.style.display = "none";
-            // die fertige Zeile urteilt ganz (dasselbe Urteil wie der Gang), die werdende (und die Werkstatt ohne Gegenzahl) am Deckel
-            var urteil = daten.fertig ? zeileUrteil(daten, daten.ms != null) : c.tris > deckel ? ["L" + s + " △ " + c.tris + " über dem Deckel " + deckel] : [];
+            // die fertige Zeile urteilt ganz — am dataset, dasselbe Urteil an denselben Zahlen wie der Gang —, die werdende (und die
+            // Werkstatt ohne Gegenzahl) am Deckel
+            var urteil = daten.fertig ? zeileUrteil(Object.assign({}, zz.z.dataset), daten.ms != null) : c.tris > deckel ? ["L" + s + " △ " + c.tris + " über dem Deckel " + deckel] : [];
             var klasse = urteil.length ? "fail" : b.band && c.tris > b.band ? "warn" : "pass";
             zz.z.className = "h-kosten-zeile " + klasse;
             var t = c.tris.toLocaleString("de-DE") + " / " + deckel.toLocaleString("de-DE") + " △";
