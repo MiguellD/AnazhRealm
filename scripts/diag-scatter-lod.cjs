@@ -301,7 +301,7 @@ hauptLauf(async () => {
         }
         res.d = dblk;
         // ── F: A/B durch DIESELBE Pipe ──
-        // Gestreute Fern-Geometrie (die Gras-Fernstufe; die Karten zeichnen seit W6 in der EINEN Atlas-Gruppe —
+        // Gestreute Fern-Geometrie (die Art, deren Stufe 2 keine Karte ist — seit w3w-wald die Blume; die Karten zeichnen seit W6 in der EINEN Atlas-Gruppe —
         // eigene Probe) über ein 4×4-Region-Raster: S=1 reproduziert das alte
         // per-Region-Keying (VORHER), die Produktions-Konstante keyt SUPER-REGIONEN
         // (NACHHER). Zählung = region-gekeyte Fern-Wrapper (+ Batches); danach Remove →
@@ -330,14 +330,23 @@ hauptLauf(async () => {
                 fern.kugel = Math.abs(rad(bS) - (M * 3 * Math.SQRT1_2 + 140)) < 1e-6 && Math.abs(rad(b1) - (M * Math.SQRT1_2 + 140)) < 1e-6;
                 for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg && bg.parent) bg.parent.remove(bg); }
             }
-            // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Gras-Fernstufe (Geometrie — sie
-            // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
+            // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Fern-GEOMETRIE (sie trägt die
+            // Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region). Der
+            // Lieferant der Fern-Geometrie steht im Gesetz, nie im Namen: die erste Art, deren Stufe 2 eine Budget-Zeile
+            // OHNE `karte` trägt (eine Karten-Stufe zeichnet in der Atlas-Gruppe und keyt nie regional — seit w3w-wald
+            // ist die Gras-L2 eine Karte, die Blume trägt die Fern-Geometrie), und ihr erstes Rezept im Buch.
+            const LB = (AR._studioRenderConfig && AR._studioRenderConfig.lod && AR._studioRenderConfig.lod.budget) || {};
+            const rez = (r._ensureAssetFoundry() || {}).recipes || {};
+            const fernArt = Object.keys(LB).find((k) => LB[k] && LB[k][2] && !LB[k][2].karte) || null;
+            const fernPreset = fernArt && Object.keys(rez).find((id) => rez[id] && rez[id].kind === fernArt);
+            fern.fernArt = fernArt + "/" + fernPreset;
             let flat = null,
                 karte = null;
+            if (!fernPreset) throw new Error("keine Art trägt eine Fern-Geometrie (Stufe 2 ohne karte) — die Diät hat keinen Lieferanten");
             await window
-                .__gebautNach("gras und strauch in L2", {
+                .__gebautNach(fernPreset + " und strauch in L2", {
                     fertig: () => {
-                        flat = r._foundryFlattenFor({ seed: 7 }, "gras", 2);
+                        flat = r._foundryFlattenFor({ seed: 7 }, fernPreset, 2);
                         karte = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
                         return !!(flat && flat.instanceable && karte && karte.instanceable);
                     },
@@ -536,7 +545,7 @@ hauptLauf(async () => {
             out.f.err || ""
         );
         check("F: die T3-Kugel liest die Konstante (Hebel 3 → Radius über 3 Regionen, die Region über eine)", out.f.kugel === true, out.f.err || "");
-        check("F: Gras-Fernstufe + strauch-Karte über die echte Pipe (lod=2)", out.f.flat === true, out.f.err || "");
+        check(`F: Fern-Geometrie (${out.f.fernArt}) + strauch-Karte über die echte Pipe (lod=2)`, out.f.flat === true, out.f.err || "");
         const K = out.f.karten || {};
         check(
             `F: DIE KARTEN-DIÄT (W6) — 16 Karten in 16 Regionen zeichnen in EINER Gruppe (${K.gruppe || "—"}), Bilanz dicht`,
@@ -566,7 +575,7 @@ hauptLauf(async () => {
                 out.f.vorher >= 16 &&
                 out.f.nachher >= 1 &&
                 out.f.vorher >= 4 * out.f.nachher,
-            `S=${out.f.s0}`
+            `S=${out.f.s0} · Lieferant ${out.f.fernArt}`
         );
         check(
             "F: Slot-Bilanz dicht — die Empty-Dispose räumt BEIDE Welten restlos",

@@ -381,8 +381,10 @@ async function stufenMessen(h, opts) {
     for (const art of Object.keys(pbk).sort()) {
         const B = budgetVonArt(rc, art);
         if (!B || (o.ohneArten || []).includes(art) || (o.nurArt && art !== o.nurArt)) continue;
+        // eine Karten-Stufe (`karte`, B2c) liefert keine Geometrie: die Welt zeichnet das Achsen-Quad aus der L1 (2 Dreiecke
+        // je Instanz), das L2-Gitter der Brücke zeichnet nur das Labor — ihre Zeile richtet es nie (wie gate:asset-contract)
         const stufen = Object.keys(B)
-            .filter((k) => /^\d+$/.test(k))
+            .filter((k) => /^\d+$/.test(k) && !B[k].karte)
             .map(Number);
         const lod = Math.min(...stufen);
         const s = B[lod].schatten;
