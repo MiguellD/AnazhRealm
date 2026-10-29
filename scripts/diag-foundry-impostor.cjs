@@ -51,7 +51,6 @@ async function installiereBacke(page) {
         // das Schicht-Format, das DIE WELT auf dem Probe-Renderer wählt (`_impostorAtlasFormat`: BC nur mit WebGPU-Ablage) —
         // bis S2b fragte die Probe `hasFeature`, und WebGL2 (s3tc) erzwang eine BC-Stufe, die die Welt dort nie fährt
         window.__fimpFormat = (ren) => {
-            const r = window.anazhRealm;
             const vor = r.state.renderer;
             r.state.renderer = ren;
             try {
@@ -61,7 +60,6 @@ async function installiereBacke(page) {
             }
         };
         window.__fimpBacke = async (ren, at, key, variant, geo) => {
-            const r = window.anazhRealm;
             const vor = r.state.renderer;
             r.state.renderer = ren;
             try {
@@ -97,7 +95,6 @@ async function installiereBacke(page) {
 // der L1-Geometrie, die async lädt), baut ihre Karten-Flats und streut drei Instanzen in die Welt-Gruppen.
 async function driveImpostor(page) {
     return await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const out = { ready: false, rec: null, err: null, hasIframe: null };
         try {
             const f = r._ensureAssetFoundry();
@@ -216,7 +213,6 @@ async function driveImpostor(page) {
 // beginnt, wenn die Welt steht (A9) — Selbsttest: eine wartende Karte hält die Ruhe.
 async function weltRuht(page) {
     return await page.evaluate(async () => {
-        const r = window.anazhRealm;
         const takte = await window.__weltStehtNach(null, 1800);
         const q = r._impostorBakeQueue || (r._impostorBakeQueue = []);
         const karte = q.push("fimp:gateRuhe|1") && r._weltSteht();
@@ -239,7 +235,6 @@ async function weltRuht(page) {
 //     (das Layout links oben zählt nach dem Umzug).
 async function kleberProbe(page, fmtWunsch) {
     return await page.evaluate(async (fmtWunsch) => {
-        const r = window.anazhRealm;
         const out = { err: null };
         try {
             const T = THREE;
@@ -450,7 +445,6 @@ async function kleberProbe(page, fmtWunsch) {
 // so viele Zeilen still, wie ein Texel hoch ist). SELBSTTEST: dieselbe Kante in 8-Texel-Stufen gemalt MUSS treppig stehen.
 async function vergroessertProbe(page, fmtWunsch) {
     return await page.evaluate(async (fmtWunsch) => {
-        const r = window.anazhRealm;
         const out = { err: null, fmt: fmtWunsch };
         try {
             const T = THREE;
@@ -568,7 +562,6 @@ function blickUrteil(mess) {
 }
 async function blickProbe(page) {
     return await page.evaluate(async (drehungen) => {
-        const r = window.anazhRealm;
         const out = { err: null, mess: [] };
         try {
             const T = THREE;
@@ -698,7 +691,6 @@ function windUrteil(mess) {
 }
 async function windProbe(page) {
     return await page.evaluate(async (faelle) => {
-        const r = window.anazhRealm;
         const out = { err: null, mess: [] };
         try {
             const T = THREE;

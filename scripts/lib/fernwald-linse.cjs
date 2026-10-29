@@ -32,9 +32,7 @@ const BLICKE = [
 
 function fernwaldLinse(opts) {
     return (async () => {
-        const r = window.anazhRealm;
         const T = window.THREE;
-        const st = r.state;
         st.renderer.setAnimationLoop(null);
         const W = opts.w || 1280,
             H = opts.h || 720;

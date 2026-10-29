@@ -56,7 +56,7 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const AR = r.constructor;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
@@ -616,7 +616,6 @@ hauptLauf(async () => {
         // davor, meldet die Linse `zuSpaet` statt still grün.
         const H = (window.__buchHalt = { nachrichten: [], frei: false, zuSpaet: false, los: null });
         const iv = setInterval(() => {
-            const r = window.anazhRealm;
             if (!r) return;
             clearInterval(iv);
             if (r._foundry && r._foundry.recipes) {
@@ -639,10 +638,8 @@ hauptLauf(async () => {
     const h = await hPage.evaluate(async (KALT) => {
         const H = window.__buchHalt;
         await window.__weltDa(() => H.zuSpaet || H.los);
-        const r = window.anazhRealm;
         const res = { zuSpaet: H.zuSpaet, halt: !!H.los };
         if (!H.los) return res;
-        const st = r.state;
         r._ensureAssetFoundry();
         // Die Linse: jeder Fehler, den die Loop-Grenze fängt, mit seinen Tätern (die ersten Stamm-Methoden des Stacks).
         const fehler = [];

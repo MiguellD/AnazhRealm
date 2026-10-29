@@ -50,7 +50,7 @@ function haengerAn() {
                 e.pass = window.__passName ? window.__passName(c.scene, c.camera) : "?";
                 // die Arena (G1) zeichnet für ihre Glieder: sie heißt nach dem ersten („haupt arena f:tanne:L1")
                 const g = c.object.isGeometrieArena && c.object.glieder[0];
-                e.klasse = (g ? "arena " : "") + window.anazhRealm._taeterKlasse(g || c.object);
+                e.klasse = (g ? "arena " : "") + r._taeterKlasse(g || c.object);
             } catch {
                 e.pass = e.pass || "?";
             }
@@ -58,7 +58,7 @@ function haengerAn() {
         H.namen.push(e);
         return e;
     };
-    const rend = window.anazhRealm.state.renderer;
+    const rend = r.state.renderer;
     // DER KNOTEN-BAU (r184 `Nodes.getForRender`): die CPU-Hälfte einer Erst-Zeichnung — der TSL-Graph des Stoffs wird zu
     // WGSL gebaut, synchron, wenn ein RenderObject zum ersten Mal zeichnet und sein Schlüssel nicht im Bau-Cache liegt.
     // Je synchronem Bau die Dauer, der Stoff und der Auftraggeber; ein asynchroner Bau (`buildAsync`, in Schritten mit
@@ -895,7 +895,7 @@ function selbsttest() {
 // die rechte Hand ≥ 1 cm steht, `hoerer` die Zeit im Hörer des Spiels, `halt` der Hit-Stop: die längste Folge
 // präsentierter Bilder nach dem Treffer mit stehender Schwung-Uhr und Hand.
 function latenzAn(k) {
-    const r = window.anazhRealm, st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
+    const rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
     window.__buehne();
     if (window.__tiereHalten) window.__tiereHalten();
     const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);

@@ -82,9 +82,7 @@ function bildZiele(q) {
 const bildZieleGut = (z) => !Object.keys(z).length;
 
 function probe(selbsttest) {
-    const r = window.anazhRealm;
     const T = window.THREE;
-    const st = r.state;
     const A = r.constructor;
     const K = A.SCHATTEN_KASKADE;
     const cam = st.camera;
@@ -1438,8 +1436,6 @@ function probe(selbsttest) {
         await warteAufWelt(page, 120000);
         // Die Welt pumpen, bis sie steht (das EINE Einschwingen, welt-boot `__weltStehtNach`; der Null-Renderer hat keinen Loop).
         const welt = await page.evaluate(async () => {
-            const r = window.anazhRealm;
-            const st = r.state;
             const takte = await window.__weltStehtNach(() => {
                 try {
                     r._gameLoopTick(performance.now());

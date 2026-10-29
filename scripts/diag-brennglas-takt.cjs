@@ -467,8 +467,6 @@ if (process.argv.includes("--selftest")) {
 const server = statikServer();
 
 async function probe() {
-    const r = window.anazhRealm;
-    const st = r.state;
     const AR = r.constructor;
     const P = Object.getPrototypeOf(r);
     // DAS ORAKEL: der Brennglas-Takt von main V18.536 — die Schleife über den ganzen Bestand, je Ziel dasselbe Wärme-Gesetz

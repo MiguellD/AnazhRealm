@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
 // embodyBlueprint (der Spieler-Pfad, forge-wenn-ungeformt). KONSUM (nicht Existenz).
-async function checkBandV1764ForgeAvatar(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1764ForgeAvatar({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const blu = r.state.blueprints;
         const p = r.state.player;
@@ -111,15 +109,13 @@ async function checkBandV1764ForgeAvatar(ctx) {
     );
 }
 
-async function checkBandRing5Soul(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing5Soul({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Ring 5 — createPlayerSoul V1 ###
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
     const ring5Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
         const out = {};
         // V2: state.playerMesh wird bei jedem Soul-Wechsel
@@ -436,7 +432,6 @@ async function checkBandRing5Soul(ctx) {
     // Toggle wechselt state.cameraMode (persistiert in localStorage), die Kamera orbitet hinter den
     // Spieler, playerMesh dreht mit yaw.
     const cameraResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh || !r.state.camera) return null;
         const out = {};
         const toggle = document.getElementById("camera-mode-toggle");
@@ -485,7 +480,6 @@ async function checkBandRing5Soul(ctx) {
     // Loop synchron treiben (_gameLoopTick = genau ein Frame): Headless-Chromium drosselt rAF auf ~1 Hz,
     // ein Warte-Fenster enthielte oft 0 Ticks.
     const cameraEffect = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r || !r.state.camera || !r.state.playerMesh) return null;
         r._gameLoopTick(performance.now());
         return {
@@ -507,7 +501,6 @@ async function checkBandRing5Soul(ctx) {
     // SICHTBARE Boden + der Radius der Kamera-Kugel (`_kamBodenY`, K06), nicht mehr die Füße − 0,2 m.
     const setPitchAndRead = async (pitch) => {
         return await page.evaluate((p) => {
-            const r = window.anazhRealm;
             r.setCameraMode("third");
             r.state.yaw = 0;
             r.state.pitch = p;
@@ -518,7 +511,6 @@ async function checkBandRing5Soul(ctx) {
                 r.state._fieldVy = 0;
             }
             r._gameLoopTick(performance.now());
-            const st = r.state;
             return {
                 d: st._cameraDesiredY - st.playerMesh.position.y,
                 boden: st._cameraDesiredY - st._kamBodenY,
@@ -531,7 +523,6 @@ async function checkBandRing5Soul(ctx) {
     const downDelta = (await setPitchAndRead(-Math.PI / 6)).d;
     const cameraPitch = { upDelta, geklemmt, downDelta };
     await page.evaluate(() => {
-        const r = window.anazhRealm;
         r.setCameraMode("first");
         r.state.pitch = 0;
     });
@@ -589,10 +580,8 @@ async function checkBandRing5Soul(ctx) {
 // M3 RITT: das GEFÄHRT führt vertikal (steht auf dem Terrain), der Reiter folgt (kinematisch auf
 // Sitz-Höhe); SITZ-Pose (Walk-Cycle ruht); Rad-ACHSE = Zylinder-Eigenachse (nicht die Verbindungs-
 // Richtung) + Anker im Rad-Zentrum (kein Eiern); der Rüstungs-FIT ist generisch.
-async function checkBandM3RittVollendet(ctx) {
-    const { page, check } = ctx;
+async function checkBandM3RittVollendet({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const pm = r.state.playerMesh.position;
         const savedMounted = r.state.player.mountedArch;
@@ -742,10 +731,8 @@ async function checkBandM3RittVollendet(ctx) {
 // Headless: Verdrahtung (das Schwimmen der Werke nach der Stoff-Zeile misst gate:fahr-leben --koerper, physik K1).
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
 // via _substanceResponseProfile; das additive Licht-Band fiel mit F6.)
-async function checkBandWFFluss(ctx) {
-    const { page, check } = ctx;
+async function checkBandWFFluss({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
         // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
@@ -779,10 +766,8 @@ async function checkBandWFFluss(ctx) {
 
 // Avatar-Größe → HP: größere custom Avatare haben mehr HP + Stamina (sqrt der Soul-Compound-Größe);
 // Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL (getunte intrinsische Seelen).
-async function checkBandV18195AvatarSizeHp(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18195AvatarSizeHp({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -909,10 +894,8 @@ async function checkBandV18195AvatarSizeHp(ctx) {
 
 // MANA-SYMMETRIE: die zweite Ausdauer-Achse — STAT_FROM_TAGS.manaMax, state.player.mana/manaMax, der Regen im Spiel-Takt
 // (MANA_REGEN_PER_SEC, M7 fährt ihn).
-async function checkBandV18196ManaSymmetry(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18196ManaSymmetry({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
@@ -1007,10 +990,8 @@ async function checkBandV18196ManaSymmetry(ctx) {
 // MANA-KONSUMENTEN FOUNDATION.
 // Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
 // KEIN DSL-Op.
-async function checkBandV18201ManaKonsum(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18201ManaKonsum({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
         // (K1) Helper existieren
@@ -1097,10 +1078,8 @@ async function checkBandV18201ManaKonsum(ctx) {
 
 // AVATAR-GRÖSSE-SPEED-TRADE: größere
 // Avatare sind langsamer (1/sqrt(sizeFactor)), Floor-Disziplin gewahrt.
-async function checkBandV18206SpeedTrade(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18206SpeedTrade({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
 
 
@@ -1211,10 +1190,8 @@ async function checkBandV18206SpeedTrade(ctx) {
 // bleiben Mechanik-Wahrheit (_soulParts). Wände: (1) Baum-Gruppe je Gattung, ≥ 2 Meshes, kein
 // Metaball-Rest · (2) NaN-Linse: Welt-BBox FINIT (ein NaN-Radius macht die Kreatur unsichtbar) ·
 // (3) KONSUM: _animateCompoundMotion bewegt die Baum-Beine · (4) ≤ 300 Meshes, geteilte Geometrien.
-async function checkBandKonvergenzTierBaum(ctx) {
-    const { page, check } = ctx;
+async function checkBandKonvergenzTierBaum({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = { arten: {} };
         for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
             const g = r._buildCreatureGroup(art);
@@ -1371,11 +1348,9 @@ async function checkBandKonvergenzTierBaum(ctx) {
 // (N) der nahe Wolf zeigt die feine Stufe, der ferne die gelenkige Grobstufe (< 20 Meshes, < ¼ der Dreiecke, an DIESELBEN Knochen);
 // (H) Pendeln im ±hyst-Band schaltet und gießt nie, weites Pendeln schaltet jeden Tick; (D) mit und ohne Schalter byte-gleiche
 // Sim-Spur (die Darstellung sickert nie in die Sim); (S) mit gestubbtem Schalter (immer nah) erkennt die Linse den alten Zustand.
-async function checkBandTierFern(ctx) {
-    const { page, check } = ctx;
+async function checkBandTierFern({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            s = r.state,
+        const s = r.state,
             A = r.constructor;
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
@@ -1635,11 +1610,9 @@ async function checkBandTierFern(ctx) {
 // (K07, ±10 %, der Sprint skatet nie) · (B) die Zwei-Knochen-IK pur (< 1 cm, gestreckt, nie NaN) · (C) der Posen-Blend stetig
 // (Δw ≤ 0,2 je Tick) · (D) der Tier-Root-Pitch folgt dem 30°-Hang, geerdet · (E) das Fuß-IK über den echten Pfad (Becken senkt
 // sich, Abgrund ohne NaN, Luft-Sperre); Selbsttests S1 (hartes Blend) und S2 (_slopePitch ≡ 0).
-async function checkBandKoerperBewegung(ctx) {
-    const { page, check } = ctx;
+async function checkBandKoerperBewegung({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm,
-            s = r.state,
+        const s = r.state,
             A = r.constructor;
         const o = { checks: {} };
         for (const fn of [
@@ -1940,8 +1913,7 @@ async function checkBandKoerperBewegung(ctx) {
 // leib.K5 — DAS GAMEPAD LENKT JEDES VERB (Meisterkarte Leib H): ein synthetisches Gamepad fährt jedes Verb durch den echten Takt,
 // gerichtet wird die Wirkung in Takten (Schlupfloch: ein auf 0/1 gerundeter Achs-Wert fällt an der Stetigkeit). Jedes Glied, das
 // `state.keys` liest, ist ROT beim Namen (frei: die Tastatur in init, der Sammler, die Tasten-Wand) — SELBSTTEST: ein Zwilling-Leser.
-async function checkBandGamepadVerben(ctx) {
-    const { page, check } = ctx;
+async function checkBandGamepadVerben({ page, check }) {
     const out = await safeEvaluate(page, () => {
         const [r, fx, los, spione] = [window.anazhRealm, [], [], {}];
         const [s, A, proto] = [r.state, r.constructor, Object.getPrototypeOf(r)];

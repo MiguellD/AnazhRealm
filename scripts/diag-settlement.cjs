@@ -420,8 +420,6 @@ const GASSE_SOLL = 4;
 async function gtDorfweg(v2, anker, sek) {
     const res = {};
     try {
-        const r = window.anazhRealm;
-        const st = r.state;
         const wege = (v2.roads || []).filter((w) => w.gen === 0 && Array.isArray(w.pts) && w.pts.length > 1);
         const laenge = (w) => {
             let L = 0;
@@ -605,7 +603,6 @@ async function gtDorfweg(v2, anker, sek) {
 // vor dem Erwachen, sein Erdbau noch nicht)
 // seines Höhen-Rasters, die Lese-Punkte außerhalb des Rasters und die Gassen (das Gefälle misst `gassenGefaelle`). Browser.
 async function vorratAmDorf(messort, alt) {
-    const r = window.anazhRealm;
     const SG = r.constructor._siedlungGesetz();
     const [cx, cz] = [Math.floor(messort[0] / SG.cellM), Math.floor(messort[1] / SG.cellM)];
     const zelle = new Map();
@@ -688,7 +685,6 @@ async function vorratAmDorf(messort, alt) {
 // Läuft im Browser (page.evaluate) — selbstgenügsam.
 function feldWurfImOrt(anker, defekt) {
     const res = { sperrt: [], grundriss: [], weg: [], fehl: [], werk: { arten: [], weicht: [] } };
-    const r = window.anazhRealm;
     const A = r.constructor;
     // die Arten des Felds (`_vegetationSampleSpawn`), wie die Linse sie kennt — die Welt trägt sie als EINE Liste
     const LISTE = [
@@ -1486,7 +1482,6 @@ hauptLauf(async () => {
     const out = await jeMarke(async () => {
         const res = (window.__kanal.res = {});
         window.__marke("B");
-        const r = window.anazhRealm;
         // 1) Der Export durch den EINEN Worker (massBau × Häuser braucht Sekunden; ein Hänger reißt an der Marke B).
         const plan = await r._foundryRequestSettlement({ seed: 7, nH: 8 });
         res.planOk = !!(plan && Array.isArray(plan.slots) && plan.slots.length >= 4);
@@ -2196,7 +2191,6 @@ hauptLauf(async () => {
         const dpO = { seed: 7, nH: 18, epoche: "gruenderzeit" };
         const outO = await page.evaluate(
             async (urteilSrc, dp, modus, messort) => {
-                const r = window.anazhRealm;
                 const [ortUrteil, kasten] = new Function(urteilSrc)();
                 const res = {};
                 try {
@@ -2724,7 +2718,6 @@ hauptLauf(async () => {
                     outO.gasse,
                     await page.evaluate(
                         (pose, je) => {
-                            const r = window.anazhRealm;
                             const cam = r.state.camera;
                             const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
                             const uhr0 = r.state.timeOfDay;

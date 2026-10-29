@@ -1078,8 +1078,6 @@ async function probe(arg) {
     const kiPort = arg && arg.kiPort;
     const out = {};
     await window.__weltDa();
-    const r = window.anazhRealm;
-    const st = r.state;
     const tick = async (n, ms) => {
         for (let i = 0; i < n; i++) {
             try {
@@ -1909,8 +1907,6 @@ async function probe(arg) {
 
 // ── WORT — DIE SEITE ──
 async function korpusAufbau(a) {
-    const r = window.anazhRealm;
-    const st = r.state;
     // die Welt steht und das Studio-Buch kennt jedes Wort des Korpus
     for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++)
         await window.__weltStehtNach();
@@ -2021,7 +2017,6 @@ async function korpusAufbau(a) {
 }
 
 async function korpusSatz(a) {
-    const r = window.anazhRealm;
     const K = window.__korpus;
     const praedikat = new Function(`return (${a.praedikat})`)();
     if (K.vor) K.zurueck(K.vor);
@@ -2070,8 +2065,6 @@ async function korpusSatz(a) {
 // erneuert (ihr born rückt) · verfallen (fort am ttl-Ende) · verdrängt (fort davor). Der Gegenlauf (lauf 1) mischt das δ: je Quelle
 // im Wechsel +1 / −1 über die Baseline des Rewards; die Mutante wertung-aus misst kein δ.
 async function regelRaffer(a) {
-    const r = window.anazhRealm;
-    const st = r.state;
     const R = window.__regeln || (window.__regeln = { vor: 0, z: [] });
     const q = (x) => (/^llm/.test(x.source) ? "llm" : x.source === "nexus" && "nexus");
     if (!R.uhr) {
@@ -2269,7 +2262,6 @@ function erinnerungsWand(t) {
     return out;
 }
 async function feindLauf(a) {
-    const r = window.anazhRealm;
     const [st, I, tat, m] = [r.state, a.inj, JSON.stringify(a.tat), { rufe: {}, ausgefuehrt: 0 }];
     for (const [id, w] of [
         ["llm-provider", "ollama"],

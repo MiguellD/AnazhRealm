@@ -180,9 +180,7 @@ const server = statikServer();
 // die Schatten-Karte zeichnet, und die GPU-Textur ihrer Farbe; das Bild: Luma unter der Kiste gegen freies Licht.
 function karteOhneFarbe() {
     return (async () => {
-        const r = window.anazhRealm,
-            st = r.state,
-            T = window.THREE,
+        const T = window.THREE,
             TSL = T.TSL;
         const rend = st.renderer;
         const be = rend.backend;
@@ -268,9 +266,7 @@ function karteOhneFarbe() {
 
 function rundungProbe() {
     return (async () => {
-        const r = window.anazhRealm,
-            st = r.state,
-            rend = st.renderer,
+        const rend = st.renderer,
             A = st._ausgabeAusgleich;
         const U = st.postProcessingUniforms && st.postProcessingUniforms.ausgabeAusgleich;
         const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, faktor: A && A.toArray(), gleich: !!(A && U && U.value === A) };
@@ -325,11 +321,10 @@ function rundungProbe() {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            const r = await window.__weltDa((r) => {
+            await window.__weltDa((r) => {
                 const st = r.state;
                 return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });
-            const st = r.state;
             return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
         });
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — der Zensus liest GPU-Befehle, die Wand wäre blind");
@@ -343,7 +338,6 @@ function rundungProbe() {
         await page.evaluate(AUSGABE_INSTALL); // die Ruhe der Erst-Zeichnung (`__erstRuhe`), vor jedem Zensus
         await page.evaluate(ZZ.ZIEL_INSTALL);
         await page.evaluate(() => {
-            const r = window.anazhRealm;
             r.state.renderer.setAnimationLoop(null);
             window.__gpuFehlerZ = [];
             r.state.renderer.backend.device.addEventListener("uncapturederror", (e) =>

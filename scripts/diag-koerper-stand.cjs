@@ -115,7 +115,6 @@ function gezeichnet(r, x, z) {
 // DIE TÄTER DES SELBSTTESTS: je Defekt der Leser vor seiner Heilung als Laufzeit-Stub an der Welt (je Lauf ein eigener
 // Kontext, kein Rückbau) — installiert vor dem Einschwingen, die Wand muss jeden beim Namen rot nennen.
 function taeter(inj) {
-    const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     const ueber = (n, vor) =>
         (r[n] = function (...a) {
@@ -211,7 +210,6 @@ const server = statikServer({ root: ROOT });
 const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 500 });
 
 async function proben(mitWiese, umfang) {
-    const r = window.anazhRealm;
     const s = r.state;
     const T = window.THREE;
     const A = r.constructor;
@@ -779,7 +777,6 @@ async function proben(mitWiese, umfang) {
 
 // ── K8 (Kopf der Datei) ──
 async function rollen(n) {
-    const r = window.anazhRealm;
     const s = r.state;
     const T = window.THREE;
     const pm = s.playerMesh;
@@ -1206,7 +1203,7 @@ hauptLauf(async () => {
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
                     try {
-                        window.anazhRealm._gameLoopTick(performance.now());
+                        r._gameLoopTick(performance.now());
                     } catch {}
                 })
             );

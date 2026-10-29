@@ -97,7 +97,6 @@ hauptLauf(async () => {
     const res = await page.evaluate(
         async (k) => {
             await window.__weltDa((r) => r.state);
-            const r = window.anazhRealm;
             if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
             // der Loop ruht die ganze Probe
             r.state.renderer.setAnimationLoop(null);
@@ -186,7 +185,6 @@ hauptLauf(async () => {
                 let vor = -1,
                     gleich = 0;
                 return () => {
-                    const st = r.state;
                     const n = st.voxelChunks ? st.voxelChunks.size : 0;
                     gleich = n === vor ? gleich + 1 : 0;
                     vor = n;

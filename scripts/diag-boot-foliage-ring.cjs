@@ -16,7 +16,6 @@ hauptLauf(async () => {
         await window.__weltDa((r) => r.state && r.state.blueprints);
     });
     const S = await page.evaluate(async () => {
-        const r = window.anazhRealm, st = r.state;
         // den NICHT-headless-Pfad erzwingen: der Null-Renderer gibt sich als echter aus, damit Ring und
         // foliageRadius wachsen wie auf einer Karte (der Boot: Ring 0, Laub 70 m).
         if (st.renderer) st.renderer._isHeadlessNull = false;

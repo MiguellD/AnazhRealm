@@ -454,8 +454,7 @@ function spiegelPartner(m, W, H, s) {
 // nie: ein Compute-Gang liest sie in einen Puffer, der danach geht, `_gpuAbschied`) und die Kamera des Schusses.
 function spiegelDaten() {
     return (async () => {
-        const r = window.anazhRealm,
-            S = window.THREE.TSL,
+        const S = window.THREE.TSL,
             cam = r.state.camera;
         const q = r.state.scenePass.getTextureNode("depth").value,
             [tw, th] = [q.image.width, q.image.height],

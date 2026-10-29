@@ -8,10 +8,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Regel-Persistenz: worldRules überleben den Reload (buildStateSnapshot/loadState: definierende
 // Felder, frische Akkus, dedup, cap), fuseWorlds VEREINIGT die Regel-Sätze. Eine restaurierte Regel
 // FEUERT; ein alter Save ohne worldRules → no-op.
-async function checkBandV1738RulePersistence(ctx) {
-    const { page, check } = ctx;
+async function checkBandV1738RulePersistence({ page, check }) {
     const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
@@ -124,15 +122,13 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
-async function checkBandRing8(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing8({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Multi-Welt-Verwaltung ###
     // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
     // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
     const ring8Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -381,7 +377,6 @@ async function checkBandRing8(ctx) {
 
     // ### Multi-Welt-Verwaltung: UI ###
     const ring8UiResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
         // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
@@ -433,7 +428,6 @@ async function checkBandRing8(ctx) {
     // Jede Welt trägt ihren Seed in worldMeta; SimplexNoise wird damit gefüttert → verschiedene Welten
     // liefern verschiedene Geometrie.
     const ring81Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -529,7 +523,6 @@ async function checkBandRing8(ctx) {
 
     // ### Status-Bar-Welt + der Erst-Spawn ### (der Lage-Rundlauf über echte Boots: gate:persistence (T))
     const ring82Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -583,15 +576,13 @@ async function checkBandRing8(ctx) {
     }
 }
 
-async function checkBandRing9to10(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandRing9to10({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### Welt-Tor (Drei-Wahl-Import-Dialog) ###
     // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
     // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
     const ring9Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -726,7 +717,6 @@ async function checkBandRing9to10(ctx) {
     // Diskrimination: zwei Eltern mit JE einer eindeutigen Sache (Material, Bauplan, Emotion) — die
     // Fusion trägt beide, die drei Strategien zeigen unterscheidbare Emotion-Aggregation.
     const ring10Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -972,7 +962,6 @@ async function checkBandRing9to10(ctx) {
     // `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quelle in die
     // aktive Welt; Konflikte bekommen `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
     const recipeResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
 
@@ -1121,13 +1110,11 @@ async function checkBandRing9to10(ctx) {
     }
 }
 
-async function checkBandTranslatorAndUntrusted(ctx) {
-    const { page, check, errors, finalState } = ctx;
+async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState }) {
     void errors;
     void finalState;
     // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
     const translatorResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
@@ -1306,7 +1293,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
     const transl2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
         r.state.customWorlds = {};
@@ -1535,7 +1521,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
     const sandboxResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         const REG = r.constructor.WORLD_REGISTRY;
         // schwarm in der Registry, als sandboxed markiert.
@@ -1691,7 +1676,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
@@ -1863,7 +1847,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
-        const r = window.anazhRealm;
         const out = {};
         r.state.customWorlds = {};
         const origRepo = r._vendorPostRepo;
@@ -2000,10 +1983,8 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 // Ω2 must-preserve als Gesetz: Unbekanntes überlebt jeden Serialize/Restore bit-gleich (EINE Quelle
 // _carryUnknown), die R4-Herkunftskette überlebt den Save, die Sicherheits-Wände halten
 // (Gegenproben), die Größen-Wand dämpft.
-async function checkBandTailleOmega2(ctx) {
-    const { page, check } = ctx;
+async function checkBandTailleOmega2({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
         const C = r.constructor;
         out.constants =
@@ -2131,10 +2112,8 @@ async function checkBandTailleOmega2(ctx) {
 // R5 STRUKTUR-TEXTUR: Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
-async function checkBandV18207R5StructureTexture(ctx) {
-    const { page, check } = ctx;
+async function checkBandV18207R5StructureTexture({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const A = r.constructor;
         const out = {};
 
