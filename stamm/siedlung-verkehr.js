@@ -678,7 +678,11 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DIE PUNKTE EINES ZUGS: die Spur der Strecke in seiner Richtung; die Bahn der Wende; aus dem Platz (vorwärts auf den Kreis,
-    // den Bogen bis zur Spur heraus) und in ihn (die Spur hinein, den Bogen bis vor den Platz, auf ihn).
+    // den Bogen bis zur Spur heraus) und in ihn (die Spur hinein, den Bogen bis vor den Platz, auf ihn). Zwischen Platz und Kreis
+    // fährt er erst den Bogen seines Wendekreises (`kurveR`, bis 45°), der in der Richtung des Platzes beginnt (endet): so fährt
+    // ihn der Wagen — und der Wagen im Platz vor (hinter) ihm steht auf ihm, er wartet, bis der fort ist. Bis hier lief die Sehne
+    // zum Kreis 48° aus dem Stand: der Wagen fuhr geradeaus in den Platz vor ihm (23 Uhr, die Wende der Metropole: 92 und 123
+    // Berührungen).
     _verkehrZugPunkte(S, W, m) {
         const VK = S.verkehr;
         if (m.art === "strecke") return (m.vor || []).concat(VK.strecken[m.si].spur[m.dir]);
@@ -691,22 +695,44 @@ class AnazhRealm_siedlung_verkehr {
             d -= Math.floor(d / (2 * Math.PI)) * 2 * Math.PI;
             return d;
         };
+        // der Bogen vom Platz (vorwärts, s = 1; rückwärts, s = −1) zur Seite der Mitte, bis 45° oder bis er den Kreis trifft
+        const R = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
+        const [tx, tz] = [Math.sin(pk.fahrt), Math.cos(pk.fahrt)];
+        const innen = -tz * (w.x - pk.x) + tx * (w.z - pk.z) > 0 ? 1 : -1;
+        const [nx, nz] = [-tz * innen, tx * innen];
+        const bogen = (s) => {
+            const B = [];
+            const n = Math.ceil((Math.PI / 4) * R);
+            for (let k = 1; k <= n; k++) {
+                const f = (k * Math.PI) / 4 / n;
+                const q = {
+                    x: pk.x + nx * R * (1 - Math.cos(f)) + s * tx * R * Math.sin(f),
+                    z: pk.z + nz * R * (1 - Math.cos(f)) + s * tz * R * Math.sin(f),
+                };
+                B.push(q);
+                if (Math.hypot(q.x - w.x, q.z - w.z) <= w.r) break;
+            }
+            const q = B[B.length - 1];
+            return { B, a: Math.atan2(q.z - w.z, q.x - w.x) };
+        };
         const schritt = AnazhRealm.VERKEHR.platzBogenM / w.r;
         const pts = [];
         if (m.art === "aus") {
-            const a0 = pk.beta + w.dreh * schritt;
+            const { B, a } = bogen(1);
+            pts.push({ x: pk.x, z: pk.z }, ...B);
+            const a0 = a + w.dreh * schritt;
             const span = um(a0, w.aout);
-            pts.push({ x: pk.x, z: pk.z });
             for (let t = 0; t <= span + 1e-9; t += 1 / w.r) pts.push(kreis(a0 + w.dreh * t));
             pts.push(w.bahn[w.bahn.length - 1]);
             return pts;
         }
-        const a1 = pk.beta - w.dreh * schritt;
-        const span = um(w.ain, a1);
+        const { B, a } = bogen(-1);
+        const span = um(w.ain, a - w.dreh * schritt);
         pts.push(w.bahn[0]);
         for (let t = 0; t <= span + 1e-9; t += 1 / w.r) pts.push(kreis(w.ain + w.dreh * t));
+        pts.push(...B.reverse());
         pts.push({ x: pk.x, z: pk.z });
-        pts.push({ x: pk.x + Math.sin(pk.fahrt) * 0.6, z: pk.z + Math.cos(pk.fahrt) * 0.6 });
+        pts.push({ x: pk.x + tx * 0.6, z: pk.z + tz * 0.6 });
         return pts;
     }
 
@@ -764,7 +790,7 @@ class AnazhRealm_siedlung_verkehr {
                 if (!Z.length || Z[Z.length - 1].Z !== z.Z)
                     Z.push({ Z: z.Z, dir: z.dir, wort: z.wort, von, bis: L + 2 * z.Z.r + 5 });
         }
-        const F = this._fahrerLinie(pts);
+        const F = this._fahrerLinie(pts, AnazhRealm.VERKEHR.kurveM);
         if (!F) return;
         W.F = F;
         const vorher = W.zonen;
@@ -776,7 +802,11 @@ class AnazhRealm_siedlung_verkehr {
             if (i >= F.pts.length || F.bogen[i] > bis) continue;
             let j = i;
             while (j + 1 < F.pts.length && Math.hypot(F.pts[j + 1].x - z.x, F.pts[j + 1].z - z.z) < z.r) j++;
-            W.zonen.push({ Z: z, dir, wort, ein: F.bogen[i], aus: F.bogen[j], weg: false });
+            // die Wende beginnt eine Wagenlänge vor ihrer Bahn: wer aus ihr in seine Spur einbiegt, hat den Bogen am Ende der
+            // Strecke hinter sich, bevor er den Wartenden passiert — bis hier wartete der im Bogen (10 Uhr: beide 40 s, der
+            // Wartende 1,21 m neben der Bahn bei 1,31 m Breite samt Bogen)
+            const vorlauf = z.art === "wende" ? globalThis.__fachwerkCore.VERKEHR_GESETZ.parkL : 0;
+            W.zonen.push({ Z: z, dir, wort, ein: Math.max(0, F.bogen[i] - vorlauf), aus: F.bogen[j], weg: false });
         }
         W.zonen.sort((a, b) => a.ein - b.ein);
         for (const a of vorher) if (!W.zonen.some((z) => z.Z === a.Z)) AnazhRealm._verkehrLos(a.Z, W);
@@ -889,7 +919,7 @@ class AnazhRealm_siedlung_verkehr {
         const fz = e._fahr;
         const v = Math.max(0, fz.vlong);
         let deckel = V.tempoMs;
-        W.grund = null;
+        [W.grund, W.wer] = [null, null];
         // das Fenster der Linie voraus: von F.i bis folgeM
         let j1 = F.i;
         while (j1 + 1 < F.pts.length && F.bogen[j1 + 1] < F.s + V.folgeM) j1++;
@@ -917,19 +947,22 @@ class AnazhRealm_siedlung_verkehr {
         };
         // er hält `abstandM` hinter dem Punkt, an dem der vor ihm hielte (v² = vO² + 2·b·(Lücke − Abstand); wer näher ist als der
         // Abstand, fährt langsamer als der vor ihm, im Maß der Lücke — ohne Lücke steht er, nie in ihn)
-        const halt = (gap, vO, grund) => {
+        const halt = (gap, vO, grund, wer = null) => {
             const w =
                 gap > V.abstandM
                     ? Math.sqrt(vO * vO + 2 * V.bremsMs2 * (gap - V.abstandM))
                     : gap > 0
                       ? vO * (gap / V.abstandM)
                       : 0;
-            if (w < deckel) [deckel, W.grund] = [w, grund];
+            if (w < deckel) [deckel, W.grund, W.wer] = [w, grund, wer]; // der Täter beim Namen (die Linse VK)
         };
         // DER WAGEN VOR IHM: nur wer in der Hülle des Fensters steht (samt seiner halben Länge und der Bahn), wird gefragt.
-        // In der Kurve schert der starre Wagen um l²·κ/2 aus seiner Bahn (κ: die schärfste Krümmung im Fenster, höchstens die des
-        // Wendekreises `kurveR`; die gemittelte Krümmung der Linie zählt doppelt) — so viel breiter ist seine Bahn dort (bis hier
-        // streifte er im Ring der Wende den Wagen am Platz, in der Kreuzung den Stehenden an ihrer Innenseite)
+        // In der Kurve schert der starre Wagen um l²·κ/2 aus seiner Bahn (κ höchstens die des Wendekreises `kurveR`; die gemittelte
+        // Krümmung der Linie zählt doppelt) — so viel breiter ist seine Bahn dort (bis hier streifte er im Ring der Wende den Wagen
+        // am Platz, in der Kreuzung den Stehenden an ihrer Innenseite). κ ist die schärfste AM ORT des anderen (`rundAn`: binnen
+        // seiner halben Länge um dessen Fußpunkt — dort steht sein Leib, wenn er ihn passiert); die des ganzen Fensters (`rund`)
+        // filtert nur vor. Bis hier galt sie überall: wer an der Haltelinie der Wende wartete, sperrte dem, der aus dem Ring kam,
+        // die gerade Bahn heraus (beide standen 40 s)
         W.vorne = null;
         let [hx0, hx1, hz0, hz1] = [Infinity, -Infinity, Infinity, -Infinity];
         let kMax = 0;
@@ -938,7 +971,14 @@ class AnazhRealm_siedlung_verkehr {
             [hx0, hx1, hz0, hz1] = [Math.min(hx0, q.x), Math.max(hx1, q.x), Math.min(hz0, q.z), Math.max(hz1, q.z)];
             if (F.k[i] > kMax) kMax = F.k[i];
         }
-        const rund = (W.hl * W.hl * Math.min(2 * kMax, 1 / globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR)) / 2;
+        const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
+        const rund = (W.hl * W.hl * Math.min(2 * kMax, 1 / kurveR)) / 2;
+        const rundAn = (i) => {
+            let k = 0;
+            for (let j = i; j >= F.i && F.bogen[i] - F.bogen[j] <= W.hl; j--) if (F.k[j] > k) k = F.k[j];
+            for (let j = i + 1; j <= j1 && F.bogen[j] - F.bogen[i] <= W.hl; j++) if (F.k[j] > k) k = F.k[j];
+            return (W.hl * W.hl * Math.min(2 * k, 1 / kurveR)) / 2;
+        };
         const rand = W.hw + V.seitM + 3;
         for (const O of S.verkehr.wagen) {
             if (O === W || !O.entry) continue;
@@ -973,15 +1013,15 @@ class AnazhRealm_siedlung_verkehr {
                 if (!q || q.s <= F.s || (a && q.s >= a.s)) continue;
                 const b = F.pts[Math.min(F.pts.length - 1, q.i + 1)];
                 const t = Math.atan2(b.x - F.pts[q.i].x, b.z - F.pts[q.i].z);
-                if (q.quer > W.hw + rund + (Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
+                if (q.quer > W.hw + rundAn(q.i) + (Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
                 [a, lt] = [q, t];
             }
             if (!a) continue;
             const of = o._fahr;
             const vO = of && O.zustand === "faehrt" ? Math.max(0, of.vlong * Math.cos(ry - lt)) : 0;
             const gap = a.s - F.s - W.hl;
-            if (!W.vorne || gap < W.vorne.gap) W.vorne = { gap, v: vO, s: a.s, O };
-            halt(gap, vO, "wagen");
+            if (!W.vorne || gap < W.vorne.gap) W.vorne = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a.i) };
+            halt(gap, vO, "wagen", O);
         }
         // WER IN DER SPUR STEHT ODER GEHT: die Bewohner im Raster um das Fenster, der Spieler
         // (nur vor seinem Bug: wer neben ihm geht, weicht ihm selbst — `_verkehrImRaster`)
@@ -990,24 +1030,30 @@ class AnazhRealm_siedlung_verkehr {
         // kommt, vor dem hält er
         const pruefe = (x, z, leib, vx, vz) => {
             const a = auf(x, z, jL);
-            if (!a || a.s <= F.s + W.hl - R || a.quer > W.hw + R + V.seitM + rund) return;
+            if (!a || a.s <= F.s + W.hl - R || a.quer > W.hw + R + V.seitM + rundAn(a.i)) return;
             const gap = a.s - F.s - W.hl - R;
             const b = F.pts[Math.min(F.pts.length - 1, a.i + 1)];
             const l = Math.hypot(b.x - F.pts[a.i].x, b.z - F.pts[a.i].z) || 1;
-            halt(gap, Math.max(0, ((vx || 0) * (b.x - F.pts[a.i].x) + (vz || 0) * (b.z - F.pts[a.i].z)) / l), "leib");
+            halt(
+                gap,
+                Math.max(0, ((vx || 0) * (b.x - F.pts[a.i].x) + (vz || 0) * (b.z - F.pts[a.i].z)) / l),
+                "leib",
+                leib
+            );
             // Platz verlangt er von dem, der ihn `platzS` lang hält — dem Stehenden wie dem Gehenden, der nicht aus der Bahn kommt
             // (ein langsamer Gänger hielt die Enge 30 s, sechs Wagen dahinter) — gegen die Bahn AM ORT des Leibs (das Stück der
-            // Linie um seinen Fußpunkt, je `platzBahnM` davor und dahinter): bis hier galt die Sehne vom Wagen bis zum Ende des
-            // Fensters — in der Kurve der Kreuzung lag der Platz „daneben" wieder auf der Bahn, der Bewohner stand dort, der Wagen
-            // wartete ewig
-            if (leib && gap < V.abstandM + 1 && v < 0.5 && (W.warteS += h) > V.platzS && !leib.platz) {
+            // Linie um seinen Fußpunkt, je `platzBahnM` davor und dahinter, jedes Stück der Bahn — nie ihre Sehne) und je `platzS`
+            // wieder, solange er bleibt: auch wer schon beiseite trat (für einen anderen oder zu knapp), tritt weiter. Bis hier fragte
+            // er nur, wer noch nie beiseite trat, gegen die Sehne von 6 m — in der Kurve der Kreuzung lag der Platz „daneben" 0,6 m
+            // in der Bahn, und Wagen und Bewohner warteten aufeinander (10 Uhr: Kreuzung und Enge der Metropole standen 40 s)
+            if (leib && gap < V.abstandM + 1 && v < 0.5 && (W.warteS += h) > V.platzS) {
                 let [i0, i2] = [a.i, a.i + 1];
                 while (i0 > 0 && F.bogen[a.i] - F.bogen[i0] < V.platzBahnM) i0--;
                 while (i2 < F.pts.length - 1 && F.bogen[i2] - F.bogen[a.i] < V.platzBahnM) i2++;
                 const q = F.pts[i2];
                 const fuer = W.platzLeib || (W.platzLeib = { leib: e, weg: [q], wi: 0, drinnen: false, kF: 0 });
-                [fuer.weg[0], fuer.kF] = [q, W.hw + R + V.seitM + rund];
-                this._bewohnerPlatz(S, leib, F.pts[i0], q, fuer, fuer.kF);
+                [fuer.weg[0], fuer.kF, W.warteS] = [q, W.hw + R + V.seitM + rundAn(a.i), 0];
+                this._bewohnerPlatz(S, leib, F.pts.slice(i0, i2 + 1), null, fuer, fuer.kF);
             }
         };
         // die Leiber zählen nur bis zu seinem Bremsweg samt Abstand voraus (Lehre 25): je Zelle des Rasters längs der Linie
@@ -1044,7 +1090,7 @@ class AnazhRealm_siedlung_verkehr {
         if (W.grund !== "leib" || v >= 0.5) W.warteS = 0;
         // DIE ORTE, DIE EINER ZUR ZEIT BEFÄHRT
         const z = this._verkehrZonen(S, W, v);
-        if (z < deckel) [deckel, W.grund] = [z, "ort"];
+        if (z < deckel) [deckel, W.grund, W.wer] = [z, "ort", null];
         return deckel;
     }
 
@@ -1064,7 +1110,16 @@ class AnazhRealm_siedlung_verkehr {
         const i0 = W.zonen.findIndex((z) => !z.weg);
         if (i0 < 0) return Infinity;
         const z0 = W.zonen[i0];
-        if (z0.Z.halter.includes(W)) return Infinity;
+        // WER HÄLT UND VOR EINEM STEHT, der auf denselben Ort wartet (an der Wende der Wagen im Platz vor ihm: sein Bogen aus dem
+        // Platz führt durch dessen Platz), gibt ihn ab und lässt ihn zuerst fahren (`weicht`) — bis hier hielt der hintere den
+        // Schlüssel, der vordere wartete auf ihn (23 Uhr: drei Wagen einer Wende 40 s)
+        const O = W.vorne && W.vorne.O;
+        if (z0.Z.halter.includes(W)) {
+            if (!(v < 0.5 && O && W.vorne.gap < V.abstandM + 1 && z0.Z.warte.includes(O))) return Infinity;
+            AnazhRealm._verkehrLos(z0.Z, W);
+            W.weicht = O;
+        }
+        if (W.weicht && !z0.Z.warte.includes(W.weicht)) W.weicht = null;
         const dEin = z0.ein - V.vorM - vor;
         if (dEin > (v * v) / (2 * V.bremsMs2) + V.frageM) return Infinity;
         const kette = [z0];
@@ -1098,7 +1153,7 @@ class AnazhRealm_siedlung_verkehr {
         // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander)
         const kopf = Z.warte.find((o) => o === W || !(o.vorne && Z.warte.includes(o.vorne.O)));
         // vor dem Kopf vorbei nur, wer ihm nicht im Weg ist (verträglich mit ihm: der Kopf wartet nie länger seinetwegen)
-        if (kette.every(darf) && (drinnen || !kopf || kopf === W || vertraeglich(z0, kopf)) && platz) {
+        if (!W.weicht && kette.every(darf) && (drinnen || !kopf || kopf === W || vertraeglich(z0, kopf)) && platz) {
             for (const z of kette) {
                 if (!z.Z.halter.includes(W)) z.Z.halter.push(W);
                 z.Z.richtung = z.dir;
@@ -1119,7 +1174,11 @@ class AnazhRealm_siedlung_verkehr {
         const VK = S.verkehr;
         this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
         const gen = this._editGenZaehler | 0;
-        const B = VK.boden && VK.boden.gen === gen ? VK.boden : (VK.boden = { gen, karte: new Map() });
+        let B = VK.boden;
+        if (!B || B.gen !== gen) {
+            B = VK.boden = { gen, karte: new Map(), roh: this._fahrBodenRoh(e) };
+            this._verkehrBodenBacken(S, B);
+        }
         if (e._verkehrBodenFn && e._verkehrBodenKarte === B) return e._verkehrBodenFn;
         e._verkehrBodenKarte = B;
         const roh = this._fahrBodenRoh(e);
@@ -1139,6 +1198,42 @@ class AnazhRealm_siedlung_verkehr {
                 return roh(x, z);
             return (a * (1 - tx) + b * tx) * (1 - tz) + (c * (1 - tx) + d * tx) * tz;
         });
+    }
+
+    // DER BODEN DER SPUR VORAB (Lehre 14: gecacht und im Leerlauf vorgebacken): jede Ecke des Rasters (`bodenM`) unter den
+    // Stücken des Spur-Rasters (die Spuren, die Wege durch die Kreuzungen, Bahn und Ring jeder Wende) bis `bodenRandM` neben
+    // ihnen, im Leerlauf des Haupt-Fadens (`_imLeerlauf`), solange er Zeit hat; ein neuer Stand des Bodens (ein Edit) backt neu.
+    // Bis hier zahlte der Schritt jede neue Ecke unter einem Rad (`_koerperBodenUnter`): ein Drittel des Sim-Takts der
+    // Metropole in den ersten 40 s.
+    _verkehrBodenBacken(S, B) {
+        const V = AnazhRealm.VERKEHR;
+        const m = V.bodenM;
+        const ecken = new Set();
+        for (const l of S.verkehr.spurRaster.values())
+            for (let i = 0; i < l.length; i += 4) {
+                const [ax, az, bx, bz] = [l[i], l[i + 1], l[i + 2], l[i + 3]];
+                const L = Math.hypot(bx - ax, bz - az) || 1;
+                const [nx, nz] = [-(bz - az) / L, (bx - ax) / L];
+                for (let t = 0; t <= L; t += m)
+                    for (let q = -V.bodenRandM; q <= V.bodenRandM; q += m) {
+                        const [x, z] = [ax + ((bx - ax) * t) / L + nx * q, az + ((bz - az) * t) / L + nz * q];
+                        const [ci, cj] = [Math.floor(x / m), Math.floor(z / m)];
+                        for (const d of [0, 1, 2097152, 2097153]) ecken.add(ci * 2097152 + cj + d); // die vier Ecken der Zelle
+                    }
+            }
+        const offen = [...ecken];
+        const takt = (frist) => {
+            if (S.verkehr.boden !== B) return; // ein neuer Stand backt selbst
+            // kein Leerlauf bis zur Frist (der Faden ist voll): `bodenBackN` Ecken doch — nie verhungert
+            let n = !frist || frist.didTimeout ? V.bodenBackN : 0;
+            while (offen.length && (n-- > 0 || (frist && frist.timeRemaining() > 1))) {
+                const k = offen.pop();
+                const i = Math.round(k / 2097152);
+                if (!B.karte.has(k)) B.karte.set(k, B.roh(i * m, (k - i * 2097152) * m));
+            }
+            if (offen.length) this._imLeerlauf(takt, 2000);
+        };
+        this._imLeerlauf(takt, 2000);
     }
 
     // DER WAGEN IM GEDRÄNGE (`_tickBewohner`, vor dem Takt der Köpfe; die Zelle legt `_bewohnerRasterLage`): je fahrendem Wagen drei Leiber längs seiner Achse
@@ -1233,7 +1328,7 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // Wand: die Kante einer Erdbau-Platte) · ruheMs = darunter (ohne Gas) ruht ein Wagen: keine Hülle, keine Boxen, kein neues
 // Bild · spurRandM = so viel Raum hält ein Stand über
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
-// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`)
+// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), bodenBackN = so viele Ecken je Ruf, wenn der Leerlauf ausbleibt · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
 // · radFeinM = so nah federt jedes Rad einzeln auf seinem Boden ·
 // standM = der Stand des Fahrers neben der Tür seines Wagens · einsteigM = so nah an ihm steigt er ein · tempoMs = das
 // Tempo der Stadt (30 km/h) · folgeM = so weit sieht der Fahrer voraus (Wagen, Leiber) · abstandM = so weit hält er hinter
@@ -1265,6 +1360,9 @@ AnazhRealm.VERKEHR = Object.freeze({
     engeRandM: 5,
     spurRandM: 1,
     bodenM: 0.5,
+    bodenRandM: 1.5,
+    kurveM: 4,
+    bodenBackN: 64,
     radFeinM: 20,
     standM: 0.7,
     einsteigM: 1.5,

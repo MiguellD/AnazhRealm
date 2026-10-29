@@ -1415,9 +1415,9 @@ class AnazhRealm_koerper_fahrt {
     fahrerSetzen(pts) {
         return (this._fahrer = this._fahrerLinie(pts));
     }
-    // DIE LINIE EINES FAHRERS aus den Punkten seiner Route (Welt x/z) — null, wenn sie keine Strecke trägt.
-    _fahrerLinie(pts) {
-        const D = AnazhRealm.FAHRER;
+    // DIE LINIE EINES FAHRERS aus den Punkten seiner Route (Welt x/z), gemittelt über ±kurveM (die Route des Wegenetzes `FAHRER.kurveM`,
+    // der Verkehr der Stadt `VERKEHR.kurveM`) — null, wenn sie keine Strecke trägt.
+    _fahrerLinie(pts, kurveM = AnazhRealm.FAHRER.kurveM) {
         const P = [];
         for (const q of pts || [])
             if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
@@ -1439,7 +1439,7 @@ class AnazhRealm_koerper_fahrt {
         }
         P.length = 0;
         for (let i = 0; i < M.length; i++) {
-            const w = Math.min(D.kurveM, i, M.length - 1 - i);
+            const w = Math.min(kurveM, i, M.length - 1 - i);
             P.push({ x: (sx[i + w + 1] - sx[i - w]) / (2 * w + 1), z: (sz[i + w + 1] - sz[i - w]) / (2 * w + 1) });
         }
         const s = [0];
@@ -1460,7 +1460,7 @@ class AnazhRealm_koerper_fahrt {
             }
             return th[i];
         };
-        const k = s.map((u) => Math.abs(richtung(u + D.kurveM) - richtung(u - D.kurveM)) / (2 * D.kurveM));
+        const k = s.map((u) => Math.abs(richtung(u + kurveM) - richtung(u - kurveM)) / (2 * kurveM));
         return {
             pts: P,
             bogen: s,
@@ -1531,7 +1531,9 @@ class AnazhRealm_koerper_fahrt {
         // was das Soll deckelt: der Bogen zurück auf die Route, eine Kurve in Sicht (wo, ihr Radius) oder das Ende
         let grund = F.ende ? "ende" : "bogen";
         let kWo = -1;
+        // (fern genug, dass schon der Bremsweg allein das Soll trägt, deckelt keine Kurve mehr: dort endet der Blick — Lehre 25)
         for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
+            if (2 * D.brems * mu * (S[i] - F.s) >= soll * soll) break;
             const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
             const w = Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s));
             if (w < soll) [soll, grund, kWo] = [w, vk === 0 ? "ende" : "kurve", i];

@@ -3237,7 +3237,7 @@ class AnazhRealm_siedlung_ort {
     _wegeNetzGrund(plan, ox, oz) {
         const W = AnazhRealm.WEGENETZ;
         const G = AnazhRealm.Gesetz("fachwerk:wegeNetz")(plan, AnazhRealm.BEWOHNER.kreuzM, W.halbM, W.nahtM);
-        G.knoten = G.knoten.map((q) => ({ x: ox + q.x, z: oz + q.z }));
+        G.knoten = G.knoten.map((q) => ({ x: ox + q.x, z: oz + q.z, w: q.w }));
         return G;
     }
 

@@ -775,7 +775,7 @@ const wegenetzVerdict = (m) =>
 // Sekunden — jedes Ende des Netzes trägt seine Wende, kein Boden der Spuren springt (`stufen`), jeder Wagen des Gesetzes steht
 // oder fährt, jeder fährt, keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne Schlüssel in
 // der Kreuzung, keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig. ════
-const VERKEHR = { stunden: [10, 23], sek: 40 };
+const VERKEHR = { stunden: (process.env.VK_H || "10,23").split(",").map(Number), sek: 40 };
 const verkehrVerdict = (m) =>
     [
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
@@ -785,11 +785,12 @@ const verkehrVerdict = (m) =>
             `Wagen ${m.wagen} von ${m.soll} (ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
         ],
         [m.fahrend === m.wagen, `fahrend ${m.fahrend} von ${m.wagen}`],
-        // keiner steht die ganze Zeit (min), der Verkehr fließt (Median): ein Stau-Knoten hielt Wagen bei 0 m und den Median
-        // unter 50 m, gesund 20–63 m und 97–151 m (10 Läufe, 29.10.) — wer hinter einem Gänger in der Enge wartet, wartet zu Recht
+        // keiner steht die ganze Zeit (min ≥ sek/4 m), der Verkehr fließt (Median ≥ 2·sek m): ein Stau-Knoten hielt Wagen bei 0 m
+        // und den Median unter 50 m, gesund 20–63 m und 97–151 m in 40 s (10 Läufe, 29.10.) — wer hinter einem Gänger in der Enge
+        // wartet, wartet zu Recht
         [
-            m.weg.min >= 10 && m.weg.median >= 80,
-            `Weg je Wagen min ${m.weg.min} m (Soll ≥ 10), Median ${m.weg.median} m (Soll ≥ 80) — ${JSON.stringify(m.steher.slice(0, 4))}`,
+            m.weg.min >= m.sek / 4 && m.weg.median >= 2 * m.sek,
+            `Weg je Wagen min ${m.weg.min} m (Soll ≥ ${m.sek / 4}), Median ${m.weg.median} m (Soll ≥ ${2 * m.sek}) — ${JSON.stringify(m.steher.slice(0, 4))}`,
         ],
         [!m.fest.length, `steckt: ${JSON.stringify(m.fest)}`],
         [!m.beruehrt.leib, `berührt Bewohner ${m.beruehrt.leib}× ${JSON.stringify(m.beruehrt.orte)}`],
@@ -2335,7 +2336,7 @@ hauptLauf(async () => {
                     steher: [],
                 },
                 ...{ weg: { min: 26, median: 123 }, fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
-                ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82 },
+                ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 40 },
             };
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
@@ -2470,7 +2471,14 @@ hauptLauf(async () => {
         ],
     ].find(([an]) => an);
     if (nur) {
+        const cdpP = process.env.VK_PROF ? await page.target().createCDPSession() : null;
+        if (cdpP) {
+            await cdpP.send("Profiler.enable");
+            await cdpP.send("Profiler.setSamplingInterval", { interval: 100 });
+            await cdpP.send("Profiler.start");
+        }
         const o = await page.evaluate(nur[1], { messort, ...nur[2] });
+        if (cdpP) require("fs").writeFileSync(process.env.VK_PROF, JSON.stringify((await cdpP.send("Profiler.stop")).profile));
         await browser.close();
         server.close();
         nur[3](o);

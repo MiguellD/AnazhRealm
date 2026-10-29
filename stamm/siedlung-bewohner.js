@@ -1477,19 +1477,42 @@ class AnazhRealm_siedlung_bewohner {
         for (let k = e; k >= 0 && k !== a; k = vor[k]) kette.push(k);
         kette.push(a);
         kette.reverse();
+        // DER GEHWEG (PFLICHT-OFFEN C): auf der Trasse des Verkehrs (ein Weg ab fachwerk VERKEHR_GESETZ.breiteM) geht er an
+        // ihrem Rand, auf der Seite seiner Spur (`gehwegM` von der Mitte, gestreut um `gehwegBreiteM`), um die Ecke auf dem
+        // Schnitt der Ränder beider Beine (höchstens doppelt so fern) — die Fahrbahn quert er nur, wo sein Weg sie kreuzt. Bis
+        // hier ging die Menge ±`spurM` um die Mitte der Trasse, und jeder Wagen hielt vor ihr (10 Uhr: die Kreuzung der
+        // Metropole stand, ihr Halter wartete auf einen Gehenden zwischen den Wagen).
+        const BW = AnazhRealm.BEWOHNER;
+        const breit = S.verkehr ? globalThis.__fachwerkCore.VERKEHR_GESETZ.breiteM : Infinity;
+        const geh = Math.sign(spur) * BW.gehwegM + (spur / BW.spurM) * BW.gehwegBreiteM;
+        const alt = [];
         const pts = kette.map((k, i) => {
             const q = N.knoten[k];
             const q0 = N.knoten[kette[Math.max(0, i - 1)]];
             const q1 = N.knoten[kette[Math.min(kette.length - 1, i + 1)]];
             const l = Math.hypot(q1.x - q0.x, q1.z - q0.z) || 1;
-            return { x: q.x - ((q1.z - q0.z) / l) * spur, z: q.z + ((q1.x - q0.x) / l) * spur };
+            const p = { x: q.x - ((q1.z - q0.z) / l) * spur, z: q.z + ((q1.x - q0.x) / l) * spur };
+            if (!spur || !(q.w >= breit)) return p;
+            // die Normalen beider Beine (ein Ende: die des einen), ihre Summe n: der Rand um die Ecke liegt um 2·geh / |n|² · n
+            const [l0, l1] = [Math.hypot(q.x - q0.x, q.z - q0.z), Math.hypot(q1.x - q.x, q1.z - q.z)];
+            const n0 = l0 > 1e-6 ? [(q0.z - q.z) / l0, (q.x - q0.x) / l0] : null;
+            const n1 = l1 > 1e-6 ? [(q.z - q1.z) / l1, (q1.x - q.x) / l1] : n0;
+            if (!n1) return p;
+            const n = [(n0 || n1)[0] + n1[0], (n0 || n1)[1] + n1[1]];
+            const f = (2 * geh) / Math.max(1, n[0] * n[0] + n[1] * n[1]);
+            alt[i] = p; // trägt der Rand dort nicht (die Laterne, der Baum am Rand), geht er in seiner Spur
+            return { x: q.x + n[0] * f, z: q.z + n[1] * f };
         });
-        if (ausA) pts.unshift(ausA);
+        if (ausA) (pts.unshift(ausA), alt.unshift(undefined));
         if (ausE) pts.push(ausE);
         pts.push(ziel);
         if (spur)
-            for (let i = 0, p = von; i < pts.length; p = pts[i++])
-                if (this._bewohnerWand(p, pts[i])) return this._bewohnerStrecke(S, von, ziel, 0);
+            for (let i = 0; i < pts.length; i++) {
+                if (!this._bewohnerWand(i ? pts[i - 1] : von, pts[i])) continue;
+                const r = alt[i] ? i : i && alt[i - 1] ? i - 1 : -1;
+                if (r < 0) return this._bewohnerStrecke(S, von, ziel, 0);
+                [pts[r], alt[r], i] = [alt[r], undefined, r - 1];
+            }
         return pts;
     }
 
@@ -1905,19 +1928,20 @@ class AnazhRealm_siedlung_bewohner {
 
     // PLATZ MACHEN (mensch.K3 Staffel 2): der Stehende o tritt auf den nächsten Punkt der Ringe um sich (je 0,6 m bis 1,8 m; für
     // den Spieler je 0,3 m bis über seinen Abstand `kF` hinaus), der mehr als `kF` (zwei Kapseln; dem Spieler sein Abstand,
-    // `_bewohnerSpielerAbstand`) neben dem Bein p → q des Gehenden liegt, frei von Wand und Leib ist und den er frei erreicht
-    // (`platz`; wer schon beiseite steht, tritt wieder); ist sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er
-    // zurück (`_tickBewohner`). Liefert, ob er Platz macht.
+    // `_bewohnerSpielerAbstand`) neben dem Bein p → q des Gehenden liegt (dem Wagen: neben jedem Stück seiner Bahn, p eine Folge
+    // von Punkten), frei von Wand und Leib ist und den er frei erreicht (`platz`; wer schon beiseite steht, tritt wieder); ist
+    // sein Stand wieder frei und der Gehende `fuer` an ihm vorbei, geht er zurück (`_tickBewohner`). Liefert, ob er Platz macht.
     _bewohnerPlatz(S, o, p, q, fuer, kF = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01) {
         if (o.platz && o.weg) return true; // er tritt schon beiseite
         const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const g = { x: o.leib.position.x, z: o.leib.position.z };
+        const bein = Array.isArray(p) ? p : [p, q];
         const dr = fuer && fuer.spieler ? 0.3 : 0.6; // dem Spieler auf 0,3 m genau: sein Abstand trägt die Erinnerung
         for (let r = dr; r <= Math.max(1.81, kF + 0.61); r += dr)
             for (let i = 0; i < 12; i++) {
                 const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
                 const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
-                if (this._streckeBoxAbstand2(pkt, p.x, p.z, q.x, q.z) < (kF + 0.1) ** 2) continue;
+                if (bein.some((c, k) => k && this._streckeBoxAbstand2(pkt, bein[k - 1].x, bein[k - 1].z, c.x, c.z) < (kF + 0.1) ** 2)) continue; // prettier-ignore
                 if (this._bewohnerNaechster(S, o, P.x, P.z) < K) continue;
                 if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P)) continue;
                 Object.assign(o, {
@@ -2423,7 +2447,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // ≤ 0,5 m hinter der Ankunft) · DIE ANKUNFT (`_bewohnerAnkunft`): ankunftH = so viele Stunden spielt der Leib seinen Tag nach,
 // höchstens ankunftWenden Wenden, die Wende gerastert auf wendeH · ankunftJeTakt = so viele Ankünfte je Takt · sprungH = ein
 // Sprung der Uhr ab hier stellt jeden neu (das Zeitraffer-Ereignis der Linse, 0,1 h, ist keiner) · wegeJeTakt = neue Wege je
-// Takt · direktM = bis hier geht er frei in gerader Linie, weiter über das Wege-Netz · spurM = seine Spur quer zum Weg · kreuzM = Knoten zweier Wege näher als dies
+// Takt · direktM = bis hier geht er frei in gerader Linie, weiter über das Wege-Netz · spurM = seine Spur quer zum Weg · gehwegM = so fern von der Mitte einer Trasse des Verkehrs geht er (ihre Spur, die halbe Breite des Wagens, Kapsel und Rand), gehwegBreiteM = so breit streuen die Spuren dort · kreuzM = Knoten zweier Wege näher als dies
 // kreuzen, naehtM = so weit schließt das Netz eine Lücke · vorM = der Punkt vor der Tür, über den jeder Weg ins Haus und
 // aus ihm geht. DIE WEGE (mensch.K3): kopfM = der Scheitel des Leibs über der Sohle — so hoch reicht die Kapsel, die jeder
 // Stand und jedes Bein gegen das Blocker-Netz fragt (`_bewohnerWand`). DIE STADT (mensch.K3 Staffel 2): rasterM = die Zelle
@@ -2471,6 +2495,8 @@ AnazhRealm.BEWOHNER = Object.freeze({
     wegeJeTakt: 2,
     direktM: 30,
     spurM: 0.8,
+    gehwegM: 3,
+    gehwegBreiteM: 0.2,
     kreuzM: 3,
     naehtM: 25,
     vorM: 1.6,

@@ -3862,7 +3862,7 @@
     // sechs, Lücken 21–41 m längs der Hauptstraße, der Feldweg 33 m vor dem letzten Stück im Wald). DIE NÄHTE schließen es: der
     // kürzeste freie gerade Schritt aus dem Teil des ersten Knotens zum Rest (bis `bisM`), frei, wo er keinen Grundriss (die
     // obb jedes Slots) und keinen Tritt der Ausstattung (Stand, Brunnen, Laterne, Hof-Baum) näher als `halbM` streift — bis
-    // EIN Netz steht. Rückgabe {knoten, kanten (je Knoten die Paare j, Länge, die Nähte darin), naehte [[i, j]]}. Leser: der
+    // EIN Netz steht. Rückgabe {knoten (je Knoten die Breite w seines Wegs), kanten (je Knoten die Paare j, Länge, die Nähte darin), naehte [[i, j]]}. Leser: der
     // Wirt (`_wegeNetzGrund`: die Bewohner gehen, der Fahrer fährt es, die Nähte liegen als Feldweg).
     function wegeNetz(plan, kreuzM, halbM, bisM){
       const kn=[], kan=[], zug=[], naehte=[];
@@ -3870,7 +3870,7 @@
       let wi=0;
       for(const rd of (plan.roads||[]).concat(plan.feldwege||[])){ let vor=-1;
         for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue;   /*über dem Wasser die Achse der Brücke (`wegUeberBruecken`)*/
-          kn.push({x:q.x,z:q.z}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
+          kn.push({x:q.x,z:q.z,w:rd.w||0}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
         wi++; }
       for(let i=0;i<kn.length;i++) for(let j=i+1;j<kn.length;j++)
         if(zug[i]!==zug[j]&&(kn[i].x-kn[j].x)**2+(kn[i].z-kn[j].z)**2<kreuzM*kreuzM) kante(i,j);
@@ -4062,16 +4062,21 @@
           if(weg) K.wege[wort]=weg; else K.verboten.push(wort); }
         // DIE VERTRÄGLICHKEIT (`konflikt`): zwei Wege durch die Kreuzung, die einander nirgends näher kommen als zwei halbe Wagen
         // (ein Bogen schert um (parkL/2)²/(2·kurveR) weiter aus) — samt `kreuzSpurM` ihrer Spuren davor und danach —, fahren
-        // zugleich (geradeaus gegeneinander, rechts ab nebeneinander); jedes andere Paar einer nach dem anderen
+        // zugleich (geradeaus gegeneinander, rechts ab nebeneinander); jedes andere Paar einer nach dem anderen. Der Abstand gilt
+        // Stück gegen Stück (zwei, die sich schneiden, 0): bis hier maß er nur die Punkte des einen gegen die Stücke des anderen —
+        // zwei Geraden über die Mitte tragen keinen Punkt in ihr, und 0>2 und 3>1 der Metropole kreuzten einander „verträglich“
         K.konflikt=[]; const zug=(wort)=>{ const [si,so]=wort.split(">").map(Number), a=strecken[si], b=strecken[so];
           const rein=a.b===ki?a.spur[0]:a.spur[1], raus=b.a===ki?b.spur[0]:b.spur[1], P=[];
           for(let i=rein.length-1, L=0;i>=0&&L<=V.kreuzSpurM;i--){ if(P.length) L+=Math.hypot(rein[i].x-P[0].x,rein[i].z-P[0].z); P.unshift(rein[i]); }
           P.push(...K.wege[wort]); for(let i=0, L=0;i<raus.length&&L<=V.kreuzSpurM;i++){ const q=P[P.length-1]; L+=Math.hypot(raus[i].x-q.x,raus[i].z-q.z); P.push(raus[i]); }
           return {P, krumm:K.wege[wort].length>0}; };
         const woerter=Object.keys(K.wege), Z=woerter.map(zug), aus=(V.parkL/2)**2/(2*V.kurveR);
-        const abst=(A,B)=>{ let m=Infinity; for(const p of A) for(let j=1;j<B.length;j++){ const a=B[j-1], b=B[j], dx=b.x-a.x, dz=b.z-a.z, l2=dx*dx+dz*dz||1, t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/l2)); m=Math.min(m,Math.hypot(p.x-a.x-dx*t,p.z-a.z-dz*t)); } return m; };
+        const pq=(p,a,b)=>{ const dx=b.x-a.x, dz=b.z-a.z, t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.z-a.z)*dz)/(dx*dx+dz*dz||1))); return Math.hypot(p.x-a.x-dx*t,p.z-a.z-dz*t); };
+        const o=(p,q,r)=>(q.x-p.x)*(r.z-p.z)-(q.z-p.z)*(r.x-p.x);
+        const abst=(A,B)=>{ let m=Infinity; for(let i=1;i<A.length;i++) for(let j=1;j<B.length;j++){ const a=A[i-1], b=A[i], c=B[j-1], d=B[j];
+            if(o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0) return 0; m=Math.min(m,pq(a,c,d),pq(b,c,d),pq(c,a,b),pq(d,a,b)); } return m; };
         for(let i=0;i<woerter.length;i++) for(let j=i+1;j<woerter.length;j++){ const g=2*V.halbM+(Z[i].krumm?aus:0)+(Z[j].krumm?aus:0);
-          if(Math.min(abst(Z[i].P,Z[j].P),abst(Z[j].P,Z[i].P))<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); } });
+          if(abst(Z[i].P,Z[j].P)<g) K.konflikt.push(woerter[i]+"|"+woerter[j], woerter[j]+"|"+woerter[i]); } });
       kreuzungen.forEach((K,ki)=>{ if(!K.ende||!K.strecken.length) return; const s=strecken[K.strecken[0]];
         const rein=s.b===ki?s.spur[0]:s.spur[1], raus=s.b===ki?s.spur[1]:s.spur[0], M=s.b===ki?s.mitte:s.mitte.slice().reverse();
         if(rein.length<2||raus.length<2) return;

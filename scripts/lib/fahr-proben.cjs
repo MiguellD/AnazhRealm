@@ -765,6 +765,7 @@ async function probeLeben(expected) {
                                     ...ort2(L[n]),
                                     W.grund,
                                     b.weg ? "geht" : "steht",
+                                    { nr: b.nr, wer: W.wer === b, platz: b.platz === W.platzLeib ? "fuerMich" : b.platz ? (b.platz.spieler ? "spieler" : "anderer") : false, v: +W.entry._fahr.speed.toFixed(2), leib: [+b.leib.position.x.toFixed(2), +b.leib.position.z.toFixed(2)], wagen: [+W.entry.position.x.toFixed(2), +W.entry.position.z.toFixed(2), +(W.entry._rideYaw || 0).toFixed(2)], bv: [+(b.vx || 0).toFixed(2), +(b.vz || 0).toFixed(2)], q: b.weg && b.weg[b.wi] ? [+b.weg[b.wi].x.toFixed(1), +b.weg[b.wi].z.toFixed(1)] : null, ruht: b.ruht, frist: !!b.frist },
                                 ]);
                         }
                     for (let j = n + 1; j < fahrend.length; j++)
@@ -777,11 +778,47 @@ async function probeLeben(expected) {
                                     ...ort2(L[n]),
                                     W.grund,
                                     fahrend[j].grund,
+                                    ...[W, fahrend[j]].map((X) => [X.zustand, X.heim, +X.F.s.toFixed(1), +X.F.lang.toFixed(1), !!X.F.ende, +X.entry._fahr.speed.toFixed(2), Math.round(X.entry.position.x * 10) / 10, Math.round(X.entry.position.z * 10) / 10, +(X.entry._rideYaw || 0).toFixed(2), X.vorne ? X.vorne.O.nr + "@" + X.vorne.gap.toFixed(1) : "-", X.zonen.filter((z) => !z.weg).map((z) => z.Z.art + (z.Z.halter.includes(X) ? "!" : "") + (z.ein - X.F.s - X.hl).toFixed(1)).join(",")]),
                                 ]);
                         }
                 }
             }
             delete r._verkehrSchritt;
+            const DBG = (b, W) => {
+                const g = b.leib.position;
+                const q = b.weg && b.weg[b.wi];
+                const zo =
+                    b.ziel === b.orte.werk
+                        ? "werk"
+                        : b.ziel === b.orte.heim
+                          ? "heim"
+                          : b.ziel === b.orte.platz
+                            ? "platz"
+                            : b.ziel === b.orte.besuch
+                              ? "besuch"
+                              : "?";
+                return {
+                    nr: b.nr,
+                    geht: !!b.weg,
+                    da: b.da,
+                    platz: !!b.platz,
+                    hinaus: b.hinaus,
+                    ziel: zo,
+                    ort: [+g.x.toFixed(1), +g.z.toFixed(1)],
+                    q: q ? [+q.x.toFixed(1), +q.z.toFixed(1)] : null,
+                    wi: b.wi,
+                    n: b.weg && b.weg.length,
+                    zielOrt: [+b.ziel.x.toFixed(1), +b.ziel.z.toFixed(1)],
+                    vx: +(b.vx || 0).toFixed(2),
+                    vz: +(b.vz || 0).toFixed(2),
+                    frist: !!b.frist,
+                    wache: S.wache.stand,
+                    ruht: b.ruht,
+                    amSteuer: b.amSteuer,
+                    zelle: b.rk,
+                    autoAbst: +Math.hypot(W.entry.position.x - g.x, W.entry.position.z - g.z).toFixed(1),
+                };
+            };
             const steher = VK.wagen
                 .filter((W) => W.weg - weg0.get(W) < 30 || W.entry._fahr.speed < 0.1)
                 .map((W) => {
@@ -792,8 +829,9 @@ async function probeLeben(expected) {
                         Math.round(W.weg - weg0.get(W)),
                         W.grund,
                         ...ort2(lage(W)),
-                        z0 ? z0.Z.art + ":" + (z0.Z.halter.map((q) => q.nr).join("/") || "-") : "",
-                        v ? "vorne " + v.gap.toFixed(1) + "@" + v.O.nr : "",
+                        z0 ? z0.Z.art + ":" + (z0.Z.halter.map((q) => q.nr).join("/") || "-") + " " + z0.wort + " ein " + (z0.ein - W.F.s - W.hl).toFixed(1) + " Z " + Math.round(z0.Z.x) + "/" + Math.round(z0.Z.z) + " r " + z0.Z.r.toFixed(1) : "",
+                        v ? "vorne " + v.gap.toFixed(1) + "@" + v.O.nr + " " + v.O.zustand + " quer " + (v.quer || 0).toFixed(2) + " rund " + (v.rund || 0).toFixed(2) + " ich " + Math.round(W.entry.position.x) + "/" + Math.round(W.entry.position.z) + " er " + Math.round(v.O.entry.position.x) + "/" + Math.round(v.O.entry.position.z) + " k " + (W.F.k[W.F.i] || 0).toFixed(3) : "",
+                        ...(W.grund === "leib" && W.wer ? [DBG(W.wer, W)] : []),
                     ];
                 });
             const wege = VK.wagen.map((W) => W.weg - weg0.get(W)).sort((a, b) => a - b);
