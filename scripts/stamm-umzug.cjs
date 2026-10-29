@@ -485,4 +485,4 @@ function main() {
 }
 
 if (require.main === module) process.exit(main());
-module.exports = { heile, beweise, tafelnMitziehen };
+module.exports = { heile };

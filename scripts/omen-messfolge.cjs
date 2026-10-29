@@ -1569,17 +1569,3 @@ if (require.main === module) {
     else
         hauptLauf(folgeMitNeulauf);
 }
-
-module.exports = {
-    FOLGE,
-    FOLGEN,
-    folgeUrteil,
-    wachenUrteil,
-    tierUrteil,
-    bandBefunde,
-    bandMessungAus,
-    beendeBaum,
-    streuungUrteil,
-    schalterUrteil,
-    bankJe,
-};

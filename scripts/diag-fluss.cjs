@@ -240,8 +240,12 @@ async function verhalten(schaleSrc) {
                     return { w, frag };
                 };
                 const aus = {};
+                // der EINE Körper-Auftrag der Bühne (je Ruf ein frisches Objekt)
+                const bau = (reqId, presetId, mehr, seed = 1) =>
+                    Object.assign({ type: "build-asset", reqId, presetId, seed, lod: 0 }, mehr);
+                const gt = (reqId, mehr) => bau(reqId, "gt", Object.assign({ platte: "gt|7|0" }, mehr), 7);
                 const A = neu(2, true);
-                const a1 = await A.frag({ type: "build-asset", reqId: "a1", presetId: "x", seed: 1, lod: 0 });
+                const a1 = await A.frag(bau("a1", "x"));
                 const m0 = a1 && a1.meshes[0];
                 const m1 = a1 && a1.meshes[1];
                 aus.wand = !!(m0 && !m0.aWind && m0.position && m0.color);
@@ -250,23 +254,9 @@ async function verhalten(schaleSrc) {
                 const q1 = await A.frag({ type: "frage" }, "antwort");
                 aus.transfer = !!(q1 && q1.abgeloest === true);
                 const key = "x|1|0";
-                const b1 = await A.frag({
-                    type: "build-asset",
-                    reqId: "b1",
-                    presetId: "x",
-                    seed: 1,
-                    lod: 0,
-                    platte: key,
-                });
+                const b1 = await A.frag(bau("b1", "x", { platte: key }));
                 await sleep(400);
-                const b2 = await A.frag({
-                    type: "build-asset",
-                    reqId: "b2",
-                    presetId: "x",
-                    seed: 1,
-                    lod: 0,
-                    platte: key,
-                });
+                const b2 = await A.frag(bau("b2", "x", { platte: key }));
                 const q2 = await A.frag({ type: "frage" }, "antwort");
                 aus.platte = !!(
                     b1 &&
@@ -283,33 +273,18 @@ async function verhalten(schaleSrc) {
                     !b2.meshes[0].aWind &&
                     b2.meshes[0].index instanceof Uint16Array
                 );
-                const c1 = await A.frag({
-                    type: "build-asset",
-                    reqId: "c1",
-                    presetId: "y",
-                    seed: 1,
-                    lod: 0,
-                    platte: "y|1|0",
-                    nurPlatte: true,
-                });
+                const c1 = await A.frag(bau("c1", "y", { platte: "y|1|0", nurPlatte: true }));
                 const q3 = await A.frag({ type: "frage" }, "antwort");
                 aus.nurPlatte = !!(c1 && c1.meshes.length === 0 && q3 && q3.gebaut === 2);
                 A.w.terminate();
                 const B = neu(3, true);
-                const d1 = await B.frag({
-                    type: "build-asset",
-                    reqId: "d1",
-                    presetId: "x",
-                    seed: 1,
-                    lod: 0,
-                    platte: key,
-                });
+                const d1 = await B.frag(bau("d1", "x", { platte: key }));
                 aus.format = !!(d1 && !d1.platte && d1.meshes.length === 2);
                 B.w.terminate();
                 // V7 DER SAISON-NAGEL: ein Herbst-Körper (ohne Platte) erreicht das Studio als
                 // Sommer — jeder Bau ist Golden-Sommer, die Farbe trägt der Host.
                 const C = neu(3, false);
-                await C.frag({ type: "build-asset", reqId: "s1", presetId: "x", seed: 2, lod: 1, season: "autumn" });
+                await C.frag(bau("s1", "x", { lod: 1, season: "autumn" }, 2));
                 const q4 = await C.frag({ type: "frage" }, "antwort");
                 aus.nagel = !!(
                     q4 &&
@@ -320,33 +295,10 @@ async function verhalten(schaleSrc) {
                 // V8 DER VORRAT: ein Vorrats-Auftrag baut einmal, schreibt die Platte und antwortet LEER; der nächste
                 // Abruf desselben Körpers kommt von der Platte, ein zweiter Vorrat baut nicht.
                 const D = neu(3, true);
-                const v1 = await D.frag({
-                    type: "build-asset",
-                    reqId: "v1",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                    vorrat: true,
-                });
+                const v1 = await D.frag(gt("v1", { vorrat: true }));
                 await sleep(400);
-                const v2 = await D.frag({
-                    type: "build-asset",
-                    reqId: "v2",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                    vorrat: true,
-                });
-                const v3 = await D.frag({
-                    type: "build-asset",
-                    reqId: "v3",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                });
+                const v2 = await D.frag(gt("v2", { vorrat: true }));
+                const v3 = await D.frag(gt("v3"));
                 const q5 = await D.frag({ type: "frage" }, "antwort");
                 aus.vorrat = !!(
                     v1 &&
@@ -362,15 +314,7 @@ async function verhalten(schaleSrc) {
                 D.w.terminate();
                 // V8b ohne Platte wärmt der Vorrat nichts: leere Antwort, KEIN Bau.
                 const E = neu(3, false);
-                const v4 = await E.frag({
-                    type: "build-asset",
-                    reqId: "v4",
-                    presetId: "gt",
-                    seed: 7,
-                    lod: 0,
-                    platte: "gt|7|0",
-                    vorrat: true,
-                });
+                const v4 = await E.frag(gt("v4", { vorrat: true }));
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
@@ -382,8 +326,7 @@ async function verhalten(schaleSrc) {
                 const Wk = neu(3, true);
                 const tH0 = performance.now();
                 let tLang = null;
-                const koerper = (w, id, presetId) =>
-                    w.frag({ type: "build-asset", reqId: id, presetId, seed: 1, lod: 0, platte: presetId + "|1|0" });
+                const koerper = (w, id, presetId) => w.frag(bau(id, presetId, { platte: presetId + "|1|0" }));
                 const lang = koerper(H, "kh1", "lang").then((k) => {
                     tLang = performance.now() - tH0;
                     return k;

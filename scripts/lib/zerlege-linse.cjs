@@ -1676,13 +1676,10 @@ function zerlegeTabelle(a, inv, sch) {
         );
     if (inv && inv.anatomie) {
         const A = inv.anatomie;
-        const liste = (arr, k, mitZiel) =>
+        const liste = (arr, k) =>
             arr
                 .slice(0, k)
-                .map(
-                    (e) =>
-                        `${e.was} ${f(e.n, 1)}×${e.mb ? " " + f(e.mb, 2) + " MB" : ""}${mitZiel && e.ziele ? " [" + e.ziele + "]" : ""}`
-                )
+                .map((e) => `${e.was} ${f(e.n, 1)}×${e.mb ? " " + f(e.mb, 2) + " MB" : ""}`)
                 .join(" · ") || "keine";
         z.push("");
         z.push(`FRAME-ANATOMIE je Frame (${A.frames} Bank-Frames, alles an):`);
@@ -1737,7 +1734,6 @@ module.exports = {
     zerlegeSchalter,
     zerlegeAuswerten,
     zerlegeTabelle,
-    zweiGipfel,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
     belegungAuswerten,

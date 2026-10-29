@@ -1111,29 +1111,14 @@ function himmelSelbsttest() {
         { name: "Nexus-Gesetz Uhr", wo: "uhr", quelle: "rule:nexus", stapel: "_tickWorldRules" },
         { name: "Nexus-Gesetz Regen", wo: "wetter", quelle: "rule:nexus", stapel: "_tickWorldRules" },
     ];
-    const gesetz = (o) =>
-        Object.assign(
-            {
-                phase: "gesetz",
-                takt,
-                uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
-                wetter: { buch: [nein("wetter", "rule:nexus", "rainy")], wort: "sunny", ende: "sunny" },
-                taeter: taeterG,
-            },
-            o
-        );
-    const frei = (buch, o) =>
-        Object.assign(
-            {
-                phase: "frei",
-                takt,
-                zugSek: 120,
-                uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
-                wetter: { buch, wort: null, ende: "rainy", freiAb: 5 },
-                taeter: taeterG,
-            },
-            o
-        );
+    // die Fabriken der Fixture: je Ruf ein frisches Buch (nie eine geteilte Referenz); `zugSek` gilt 120 s
+    const uhr = (buch = [nein("uhr", "rule:nexus", 0.17)], ende = 0.5 + 1000 * s, g = gang) =>
+        ({ buch, gang: g, start: 0.5, ende });
+    const wetterBuch = (extra, ende) =>
+        ({ buch: [nein("wetter", "rule:nexus", "rainy"), ...extra], wort: "sunny", ende });
+    const lauf = (phase, wetter, o) => Object.assign({ phase, takt, uhr: uhr(), wetter, taeter: taeterG }, o);
+    const gesetz = (o) => lauf("gesetz", wetterBuch([], "sunny"), o);
+    const frei = (buch, o) => lauf("frei", { buch, wort: null, ende: "rainy", freiAb: 5 }, o);
     const wunsch = {
         art: "gewuenscht",
         von: "sunny",
@@ -1172,18 +1157,13 @@ function himmelSelbsttest() {
     const taeterW = taeterG.concat([
         { name: "Wesen im Schöpfer-Modus", wo: "wetter", quelle: null, stapel: "_executeCreatureProgram" },
     ]);
-    const wesenWetter = (extra, ende) => ({
-        buch: [nein("wetter", "rule:nexus", "rainy"), ...extra],
-        wort: "sunny",
-        ende,
-    });
     const faelle = [
         ["gesetz ruhig", gesetz({}), "GRUEN", null],
         [
             "Nexus schreibt die Uhr",
             gesetz({
-                uhr: {
-                    buch: [
+                uhr: uhr(
+                    [
                         {
                             art: "schreiber",
                             von: 0.5,
@@ -1192,56 +1172,46 @@ function himmelSelbsttest() {
                             stapel: "set_time_of_day ← _tickWorldRules",
                         },
                     ],
-                    gang,
-                    start: 0.5,
-                    ende: 0.17,
-                },
+                    0.17
+                ),
             }),
             "ROT",
             "rule:nexus",
         ],
         [
             "roh an der Uhr",
-            gesetz({ uhr: { buch: [roh], gang, start: 0.5, ende: 0.17 } }),
+            gesetz({ uhr: uhr([roh], 0.17) }),
             "ROT",
             "ROH am Uhr-Schreiber vorbei",
         ],
         [
             "die Uhr springt",
-            gesetz({
-                uhr: { buch: [], gang: Object.assign({}, gang, { max: 0.2 }), start: 0.5, ende: 0.5 + 1000 * s },
-            }),
+            gesetz({ uhr: uhr([], undefined, Object.assign({}, gang, { max: 0.2 })) }),
             "ROT",
             "springt",
         ],
         ["der Gang lahmt", gesetz({ takt: Object.assign({}, takt, { tagMin: 8 }) }), "ROT", "Gesetz der Tag-Länge"],
         [
             "blinde Uhr",
-            gesetz({ uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.17 } }),
+            gesetz({ uhr: uhr(undefined, 0.17) }),
             "ROT",
             "blind",
         ],
         [
             "Zug gegen das Wort",
-            gesetz({
-                wetter: {
-                    buch: [nein("wetter", "rule:nexus", "rainy"), zug(130, 2, "sunny", "rainy")],
-                    wort: "sunny",
-                    ende: "rainy",
-                },
-            }),
+            gesetz({ wetter: wetterBuch([zug(130, 2, "sunny", "rainy")], "rainy") }),
             "ROT",
             "auto-zug",
         ],
         [
             "blindes Wetter",
-            gesetz({ wetter: { buch: [nein("wetter", "rule:nexus", "rainy")], wort: "sunny", ende: "rainy" } }),
+            gesetz({ wetter: wetterBuch([], "rainy") }),
             "ROT",
             "blind",
         ],
         [
             "Täter fehlt",
-            gesetz({ uhr: { buch: [], gang, start: 0.5, ende: 0.5 + 1000 * s } }),
+            gesetz({ uhr: uhr([]) }),
             "ROT",
             "Nexus-Gesetz Uhr: nicht im Buch",
         ],
@@ -1269,13 +1239,13 @@ function himmelSelbsttest() {
         // Schreiber rot beim Namen, und fehlt es im Buch, ist es ungeprüft
         [
             "Wesen verweigert",
-            gesetz({ wetter: wesenWetter([wesenE("verweigert")], "sunny"), taeter: taeterW }),
+            gesetz({ wetter: wetterBuch([wesenE("verweigert")], "sunny"), taeter: taeterW }),
             "GRUEN",
             null,
         ],
         [
             "Wesen gegen das Wort",
-            gesetz({ wetter: wesenWetter([wesenE("schreiber")], "rainy"), taeter: taeterW }),
+            gesetz({ wetter: wetterBuch([wesenE("schreiber")], "rainy"), taeter: taeterW }),
             "ROT",
             "creature:Fuchs",
         ],
@@ -1293,7 +1263,7 @@ function himmelSelbsttest() {
         ],
         [
             "das Wesen fehlt",
-            gesetz({ wetter: wesenWetter([], "sunny"), taeter: taeterW }),
+            gesetz({ wetter: wetterBuch([], "sunny"), taeter: taeterW }),
             "ROT",
             "Wesen im Schöpfer-Modus: nicht im Buch",
         ],

@@ -161,4 +161,4 @@ function selbsttest() {
     );
 }
 
-module.exports = { kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };
+module.exports = { kernRaeume, seitenStufen, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };

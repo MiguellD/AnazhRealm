@@ -40,9 +40,9 @@ hauptLauf(async () => {
         const setUe = (size) => {
             r._studioUebergabeEmpfang({ type: "uebergabe", kind: "kreatur", preset: "wolf", seed: 0, ov: { size } });
         };
-        const spawnWolf = (opts) =>
+        const spawnWolf = () =>
             // BÜHNE: der Wolf fällt präzise aus 40 m (die Probe misst Gestalt und Reload, nie den Boden)
-            r.spawnCreatureAt(0, 40, 0, "happy", "wolf", Object.assign({ precise: true, bodySize: 1 }, opts || {}));
+            r.spawnCreatureAt(0, 40, 0, "happy", "wolf", { precise: true, bodySize: 1 });
 
         // ── Übergabe size 3.5 → Wolf A gegossen ──
         setUe(3.5);

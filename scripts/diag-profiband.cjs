@@ -287,9 +287,14 @@ function selbsttest() {
     const S = stammKlasse(A);
     const tests = [];
     const t = (name, ok) => tests.push({ name, ok: !!ok });
+    // die Fabriken der Fixture: je Ruf ein frisches Objekt (nie eine geteilte veränderliche Referenz)
+    const klon = (x) => JSON.parse(JSON.stringify(x));
+    const vl = (k, mb, n) => ({ k, mb, n });
+    const zk = (klasse, je, jeTris, stufe = null, art = null, mehr) =>
+        Object.assign({ klasse, stufe, art, je, jeTris }, mehr);
     // Die Selbsttests urteilen gegen eine UNGEMESSENE Ratsche desselben Schemas mit fester Toleranz — die gemessenen
     // Werte der echten (die Hülle der Serie) dürfen keinen Selbsttest färben.
-    const rt = JSON.parse(JSON.stringify(ratsche));
+    const rt = klon(ratsche);
     rt.toleranzPct = 10;
     rt.toleranzAbs = { befehle: 2, dreiecke: 1000, vramMB: 1 };
     // gemessen (sonst nennte jedes Urteil die Ratsche „ungemessen", K26), jedes Feld ungemessen (null)
@@ -308,7 +313,7 @@ function selbsttest() {
     const nackt = { type: "Mesh", name: "", userData: {}, parent: scene };
     const streu = { type: "Mesh", name: "", userData: { inventar: "streu-klein" }, parent: scene };
     const kl = S.klasse(nackt, st);
-    const u1 = urteil([{ klasse: kl, stufe: null, art: null, je: { haupt: 1 }, jeTris: { haupt: 12 } }]);
+    const u1 = urteil([zk(kl, { haupt: 1 }, { haupt: 12 })]);
     t(
         "unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot",
         kl === "UNBENANNT:Mesh" && hatRot(u1, "unbenannt") && u1.linse === "ROT" && S.klasse(streu, st) === "streu-klein"
@@ -316,14 +321,8 @@ function selbsttest() {
 
     // S2 — die injizierte Fern-Geröll-L0-Instanz (der stille L0-Rückfall) bei 200 m: rot; bei 40 m nicht.
     const kg = S.instanz("fscatter:geroell:3:0#0@12,-7");
-    const geroell = (d) => ({
-        klasse: kg,
-        stufe: 0,
-        art: "scree",
-        je: { haupt: 1, k0: 1, k1: 1 },
-        jeTris: { haupt: 1280, k0: 1280, k1: 1280 },
-        dMax: d,
-    });
+    const geroell = (d) =>
+        zk(kg, { haupt: 1, k0: 1, k1: 1 }, { haupt: 1280, k0: 1280, k1: 1280 }, 0, "scree", { dMax: d });
     t(
         "fscatter:geroell:3:0 bei 200 m → rot, bei 40 m nicht",
         kg === "fscatter:geroell:L0" &&
@@ -332,15 +331,9 @@ function selbsttest() {
     );
 
     // S3 — eine Klasse über der Ratsche: rot; auf ihr und in der Toleranz (max(+10 %, +2)) nicht.
-    const r3 = JSON.parse(JSON.stringify(rt));
+    const r3 = klon(rt);
     r3.klassen.boden.haupt.befehle = 5;
-    const boden = (c) => ({
-        klasse: "bodenSatz",
-        stufe: null,
-        art: null,
-        je: { haupt: c },
-        jeTris: { haupt: c * 10 },
-    });
+    const boden = (c) => zk("bodenSatz", { haupt: c }, { haupt: c * 10 });
     t(
         "Boden haupt 8 Befehle über Ratsche 5 (+2) → rot, 7 nicht, 5 nicht",
         hatRot(urteil([boden(8)], r3), "ratsche") &&
@@ -349,11 +342,11 @@ function selbsttest() {
     );
 
     // S4 — eine Haushalt-Zeile über dem Band, eine Sammelzeile, ein unverankertes Muster.
-    const h4 = JSON.parse(JSON.stringify(haushalt));
+    const h4 = klon(haushalt);
     h4.klassen.find((k) => k.id === "reserve").befehle += 1;
-    const h4b = JSON.parse(JSON.stringify(haushalt));
+    const h4b = klon(haushalt);
     h4b.klassen.find((k) => k.id === "reserve").rest = true;
-    const h4c = JSON.parse(JSON.stringify(haushalt));
+    const h4c = klon(haushalt);
     h4c.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^g:(glut|tor)" });
     t(
         "Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht",
@@ -366,8 +359,8 @@ function selbsttest() {
     // S5 — ein benannter Täter, den keine Regel nimmt (eine neue Klasse einer Welle): rot `haushalt`, nie still in eine
     // Sammelzeile; `g:torus` fällt nicht unter `g:tor`.
     const u5 = urteil([
-        { klasse: "neuerSatz", stufe: null, art: null, je: { haupt: 3 }, jeTris: { haupt: 9 } },
-        { klasse: "g:torus:L0", stufe: 0, art: null, je: { haupt: 1 }, jeTris: { haupt: 9 } },
+        zk("neuerSatz", { haupt: 3 }, { haupt: 9 }),
+        zk("g:torus:L0", { haupt: 1 }, { haupt: 9 }, 0),
     ]);
     t(
         "neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)",
@@ -375,10 +368,10 @@ function selbsttest() {
     );
 
     // S7 — eine Textur ohne Erzeuger im VRAM-Abgriff wird rot.
-    const u7 = urteil([], null, { mb: 1, liste: [{ k: "tex:? rgba8unorm 1024x256x1", mb: 1, n: 1 }] });
+    const u7 = urteil([], null, { mb: 1, liste: [vl("tex:? rgba8unorm 1024x256x1", 1, 1)] });
     const u7b = urteil([], null, {
         mb: 1,
-        liste: [{ k: "tex:karte-albedo:eiche|#|summer rgba8unorm-srgb 1024x256x1", mb: 1, n: 1 }],
+        liste: [vl("tex:karte-albedo:eiche|#|summer rgba8unorm-srgb 1024x256x1", 1, 1)],
     });
     t(
         "tex:? → rot, karte-albedo nicht; die EINE Faltung: r184-ausgabe und kaskade0 ganz, bindingBuffer1381_ → bindingBuffer",
@@ -430,13 +423,13 @@ function selbsttest() {
 
     // S10 — die Ratsche zieht nur nach unten: ein ungemessenes Feld wird gesetzt, ein höheres gesenkt, ein
     // niedrigeres nie gehoben; der Nachzug besteht danach das eigene Schema (eingeschwungen).
-    const r10 = JSON.parse(JSON.stringify(rt));
+    const r10 = klon(rt);
     r10.klassen.boden.haupt.befehle = 10;
     r10.klassen.bau.haupt.befehle = 3;
     const u10 = urteil(
         [
-            { klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 7 }, jeTris: { haupt: 7000 } },
-            { klasse: "g:tor:L0", stufe: 0, art: null, je: { haupt: 5 }, jeTris: { haupt: 900 } },
+            zk("bodenSatz", { haupt: 7 }, { haupt: 7000 }),
+            zk("g:tor:L0", { haupt: 5 }, { haupt: 900 }, 0),
         ],
         r10
     );
@@ -458,25 +451,19 @@ function selbsttest() {
     // S11 — ein sauberer Zensus im Band ist GRÜN (das Urteil ist nicht immer rot) und jede Klasse findet ihre Zeile;
     // derselbe Zensus mit einem Wald über dem Band ist BAND-rot bei sauberer Linse (das Band färbt nie grün).
     const sauber = [
-        {
-            klasse: "bodenSatz",
-            stufe: null,
-            art: null,
-            je: { haupt: 4, k0: 4, k1: 4 },
-            jeTris: { haupt: 9e4 },
-        },
-        { klasse: S.instanz("f:eiche|0|0:2"), stufe: 0, art: "tree", je: { haupt: 2 }, jeTris: {}, dMax: 20 },
-        { klasse: S.instanz("fimp:fimp:eiche|3"), stufe: 2, art: "tree", je: { haupt: 1 }, jeTris: {} },
-        { klasse: S.instanz("tor#0@p:1,1"), stufe: 0, art: null, je: { haupt: 1 }, jeTris: {} },
-        { klasse: "himmel", stufe: null, art: null, je: { haupt: 1 }, jeTris: {} },
-        { klasse: "TRAA", stufe: null, art: null, je: { ortho: 1 }, jeTris: {} },
+        zk("bodenSatz", { haupt: 4, k0: 4, k1: 4 }, { haupt: 9e4 }),
+        zk(S.instanz("f:eiche|0|0:2"), { haupt: 2 }, {}, 0, "tree", { dMax: 20 }),
+        zk(S.instanz("fimp:fimp:eiche|3"), { haupt: 1 }, {}, 2, "tree"),
+        zk(S.instanz("tor#0@p:1,1"), { haupt: 1 }, {}, 0),
+        zk("himmel", { haupt: 1 }, {}),
+        zk("TRAA", { ortho: 1 }, {}),
     ];
-    const u8 = urteil(sauber, null, { mb: 100, liste: [{ k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 }, { k: "buf:szene:bodenSatz", mb: 95.6, n: 6 }] }, {
+    const u8 = urteil(sauber, null, { mb: 100, liste: [vl("tex:output rg11b10ufloat 1440x810x1", 4.4, 1), vl("buf:szene:bodenSatz", 95.6, 6)] }, {
         gpuJeFrameMs: 12,
     });
     const zeile = (id) => u8.klassen.find((z) => z.id === id);
     const wald = sauber.concat([
-        { klasse: "f:tanne:L1", stufe: 1, art: "tree", je: { haupt: 300 }, jeTris: { haupt: 4e6 }, dMax: 30 },
+        zk("f:tanne:L1", { haupt: 300 }, { haupt: 4e6 }, 1, "tree", { dMax: 30 }),
     ]);
     const u8b = urteil(wald, null, null, { gpuJeFrameMs: 30 });
     t(
@@ -545,18 +532,18 @@ function selbsttest() {
 
     // S14 — eine FREIE Klasse (Weltzustand: Tiere) trägt keine Ratsche: über jeder Zahl nie rot, die Summen-Ratsche
     // zählt sie nicht, der Nachzug setzt sie nicht; ein Grund ohne Gate und ein Wert an der freien Klasse sind rot.
-    const r14 = JSON.parse(JSON.stringify(rt));
+    const r14 = klon(rt);
     r14.frei = { tier: "Weltzustand — Kosten je Tier hält gate:kreatur-kosten" };
     r14.gesamt.befehle = 4;
     const z14 = [
-        { klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 4 }, jeTris: { haupt: 40 } },
-        { klasse: "tier:baer", stufe: null, art: null, je: { haupt: 40, k0: 40 }, jeTris: { haupt: 9e4 } },
+        zk("bodenSatz", { haupt: 4 }, { haupt: 40 }),
+        zk("tier:baer", { haupt: 40, k0: 40 }, { haupt: 9e4 }),
     ];
     const u14 = urteil(z14, r14);
     const n14 = BAND.ratscheNachziehen(r14, u14, { datum: "selbsttest", eingeschwungen: true });
-    const r14b = JSON.parse(JSON.stringify(r14));
+    const r14b = klon(r14);
     r14b.frei.tier = "Weltzustand";
-    const r14c = JSON.parse(JSON.stringify(r14));
+    const r14c = klon(r14);
     r14c.klassen.tier.haupt.befehle = 11;
     t(
         "freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot",
@@ -574,12 +561,12 @@ function selbsttest() {
     // (die Ratsche nimmt nie einen Lauf: ein Bau an der Cull-Kante zählt in einem Lauf 42 Befehle, im nächsten 0).
     const hl = BAND.bandHuelle([
         {
-            zensus: [{ klasse: "f:griechisch:L2", stufe: 2, art: "haus", je: { haupt: 42 }, jeTris: { haupt: 900 } }],
-            vram: { mb: 230, liste: [{ k: "tex:output rgba16float 1920x1080x1", mb: 15.8, n: 1 }] },
+            zensus: [zk("f:griechisch:L2", { haupt: 42 }, { haupt: 900 }, 2, "haus")],
+            vram: { mb: 230, liste: [vl("tex:output rgba16float 1920x1080x1", 15.8, 1)] },
         },
         {
-            zensus: [{ klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 6 }, jeTris: { haupt: 760 } }],
-            vram: { mb: 227, liste: [{ k: "buf:?", mb: 60, n: 1500 }] },
+            zensus: [zk("bodenSatz", { haupt: 6 }, { haupt: 760 })],
+            vram: { mb: 227, liste: [vl("buf:?", 60, 1500)] },
         },
     ]);
     t(
@@ -595,15 +582,15 @@ function selbsttest() {
     // Frame gezeichneten (`buf:bild`) nicht; die Halter-Schlüssel falten zu ihrem Halter, die größten Täter reisen mit.
     const v17 = (liste) => urteil([], null, { mb: 100, liste });
     const u17 = v17([
-        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
-        { k: "buf:szene:f:eiche:L0", mb: 1.7, n: 30 },
-        { k: "buf:szene:spieler", mb: 8.0, n: 48 },
-        { k: "buf:bild:vertex", mb: 0.001, n: 2 },
+        vl("buf:szene:bodenSatz", 21.0, 6),
+        vl("buf:szene:f:eiche:L0", 1.7, 30),
+        vl("buf:szene:spieler", 8.0, 48),
+        vl("buf:bild:vertex", 0.001, 2),
     ]);
     const u17b = v17([
-        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
-        { k: "buf:verwaist:instanzMatrix", mb: 2.3, n: 1530 },
-        { k: "buf:ruhend:eiche|#|#", mb: 1.2, n: 26 },
+        vl("buf:szene:bodenSatz", 21.0, 6),
+        vl("buf:verwaist:instanzMatrix", 2.3, 1530),
+        vl("buf:ruhend:eiche|#|#", 1.2, 26),
     ]);
     const lecks = u17b.rot.filter((x) => x.art === "leck");
     const szene = u17.vram.erzeuger.find((e) => e.erzeuger === "buf:szene");
@@ -627,9 +614,9 @@ function selbsttest() {
     // `band --ort genesis` nach `zerlegen`) → LINSE rot `leck` mit Zahl und Grund; ohne VRAM-Abgriff zählen die Textur-Objekte;
     // ein Band ohne Rahmen-Ziel bleibt sauber.
     const u17c = v17([
-        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
-        { k: "tex:r184-ausgabe rgba16float 1920x1080x1", mb: 15.8, n: 1 },
-        { k: "tex:r184-ausgabe:tiefe depth24plus 1920x1080x1", mb: 7.9, n: 1 },
+        vl("buf:szene:bodenSatz", 21.0, 6),
+        vl("tex:r184-ausgabe rgba16float 1920x1080x1", 15.8, 1),
+        vl("tex:r184-ausgabe:tiefe depth24plus 1920x1080x1", 7.9, 1),
     ]);
     const r17c = BAND.rahmenZielBefunde(null, {
         mb: 30,
@@ -650,41 +637,41 @@ function selbsttest() {
             BAND.vramBefunde(u17c).length === 1 &&
             r17c.length === 1 &&
             /23\.7 MB/.test(r17c[0].text) &&
-            BAND.rahmenZielBefunde({ mb: 21, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }, null).length ===
+            BAND.rahmenZielBefunde({ mb: 21, liste: [vl("buf:szene:bodenSatz", 21, 6)] }, null).length ===
                 0 &&
             !u17.rot.some((x) => /r184-ausgabe/.test(x.text))
     );
     // S18 — ein gefallener VRAM-Erzeuger (der Abgriff sieht ihn nicht mehr) zieht seine Ratsche auf 0, ein lebender sinkt.
-    const r18 = JSON.parse(JSON.stringify(rt));
+    const r18 = klon(rt);
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
     const n18 = BAND.ratscheNachziehen(r18, u17, { datum: "selbsttest", eingeschwungen: true });
     // S-K50 — DIE RENDER-ZIEL-KLASSE gegen ihren Haushalt: der Kopf 45f1eeae (Genesis third, 1080p, die Ziele der zeitlichen
     // Auflösung in voller Größe, das Szenen-Ziel in der Ausgabe) ist ROT mit jedem Erzeuger beim Namen; die Hochskalierung
     // (Szene 0,75, die Vortiefe im Kanal a der Geschichte) hält den Haushalt; ein Haushalt ohne die Klasse fällt im Schema.
     const rzVorher = v17([
-        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
-        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
-        { k: "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1", mb: 4.0, n: 1 },
-        { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
-        { k: "tex:output rg11b10ufloat 1920x1080x1", mb: 7.9, n: 1 },
-        { k: "tex:depth depth24plus 1920x1080x1", mb: 7.9, n: 1 },
-        { k: "tex:szene:tiefenabbild r32float 960x1080x1", mb: 4.0, n: 1 },
-        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+        vl("buf:szene:bodenSatz", 37.1, 1078),
+        vl("tex:TRAANode.history rgba16float 1920x1080x1", 15.8, 1),
+        vl("tex:TRAANode.history:tiefe depth16unorm 1920x1080x1", 4.0, 1),
+        vl("tex:TRAANode.resolve rgba16float 1920x1080x1", 15.8, 1),
+        vl("tex:output rg11b10ufloat 1920x1080x1", 7.9, 1),
+        vl("tex:depth depth24plus 1920x1080x1", 7.9, 1),
+        vl("tex:szene:tiefenabbild r32float 960x1080x1", 4.0, 1),
+        vl("tex:kaskade0:tiefe depth16unorm 2048x2048x1", 8.0, 1),
+        vl("tex:kaskade1:tiefe depth16unorm 2048x2048x1", 8.0, 1),
+        vl("tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", 4.0, 1),
     ]);
     const rzNachher = v17([
-        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
-        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
-        { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
-        { k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 },
-        { k: "tex:depth depth24plus 1440x810x1", mb: 4.4, n: 1 },
-        { k: "tex:szene:tiefenabbild r32float 720x810x1", mb: 2.2, n: 1 },
-        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+        vl("buf:szene:bodenSatz", 37.1, 1078),
+        vl("tex:TRAANode.history rgba16float 1920x1080x1", 15.8, 1),
+        vl("tex:TRAANode.resolve rgba16float 1920x1080x1", 15.8, 1),
+        vl("tex:output rg11b10ufloat 1440x810x1", 4.4, 1),
+        vl("tex:depth depth24plus 1440x810x1", 4.4, 1),
+        vl("tex:szene:tiefenabbild r32float 720x810x1", 2.2, 1),
+        vl("tex:kaskade0:tiefe depth16unorm 2048x2048x1", 8.0, 1),
+        vl("tex:kaskade1:tiefe depth16unorm 2048x2048x1", 8.0, 1),
+        vl("tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", 4.0, 1),
     ]);
-    const rzOhne = JSON.parse(JSON.stringify(haushalt));
+    const rzOhne = klon(haushalt);
     delete rzOhne.renderZiele;
     const rzRot = rzVorher.rot.find((x) => x.art === "renderziele");
     t(
@@ -699,13 +686,13 @@ function selbsttest() {
             BAND.haushaltPruefen(rzOhne).fehler.some((f) => /renderZiele braucht/.test(f))
     );
     // … und `nur: "vram"` (ein Schnitt, der nur den Speicher bewegt) lässt die Klassen-Zeilen und ihre Serie stehen.
-    const r18b = JSON.parse(JSON.stringify(r18));
+    const r18b = klon(r18);
     r18b.klassen.boden.haupt.befehle = 10;
     r18b.gemessen = { datum: "klassen-serie", eingeschwungen: true };
     const u18b = urteil(
-        [{ klasse: "bodenSatz", stufe: null, art: null, je: { haupt: 7 }, jeTris: { haupt: 7000 } }],
+        [zk("bodenSatz", { haupt: 7 }, { haupt: 7000 })],
         r18b,
-        { mb: 100, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }
+        { mb: 100, liste: [vl("buf:szene:bodenSatz", 21, 6)] }
     );
     const n18b = BAND.ratscheNachziehen(r18b, u18b, { datum: "vram-serie", eingeschwungen: true }, "vram");
     t(
@@ -724,16 +711,16 @@ function selbsttest() {
     );
     // S19 — die Geometrie der Tiere ist der freie Erzeuger `buf:tier` (Weltzustand): keine Ratsche, nicht in der gebundenen
     // Summe, der Nachzug setzt ihn nie; die übrige Szene bleibt `buf:szene`.
-    const r19 = JSON.parse(JSON.stringify(rt));
+    const r19 = klon(rt);
     r19.frei = { tier: "Weltzustand — Kosten je Tier hält gate:kreatur-kosten" };
     r19.vramMB = { "buf:tier": 1, "buf:szene": 30 };
     r19.gesamt.vramMB = 31;
     const u19 = urteil([], r19, {
         mb: 40,
         liste: [
-            { k: "buf:szene:bodenSatz", mb: 30, n: 6 },
-            { k: "buf:szene:tier:baer", mb: 6, n: 60 },
-            { k: "buf:szene:tier:fuchs", mb: 4, n: 50 },
+            vl("buf:szene:bodenSatz", 30, 6),
+            vl("buf:szene:tier:baer", 6, 60),
+            vl("buf:szene:tier:fuchs", 4, 50),
         ],
     });
     const n19 = BAND.ratscheNachziehen(r19, u19, { datum: "s19", eingeschwungen: true }, "vram");
@@ -751,7 +738,7 @@ function selbsttest() {
     // Zug-Wahl, mit einer Ratsche, die schon ein anderer Ort trägt, und eine Soll-Zeile ohne Quelle werden rot; der echte
     // Haushalt nicht. Ohne Wahl gilt die Mess-Wiese, ein unbekannter Ort bricht laut.
     const h20 = (f) => {
-        const h = JSON.parse(JSON.stringify(haushalt));
+        const h = klon(haushalt);
         f(h.messorte);
         return BAND.messortePruefen(h);
     };
@@ -776,9 +763,9 @@ function selbsttest() {
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
     // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (ein Blick nach −z = π, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
-    const r21 = JSON.parse(JSON.stringify(rt));
+    const r21 = klon(rt);
     r21.klassen.bau.haupt.befehle = 20;
-    const bauGenesis = [{ klasse: "f:kathedrale:L0", stufe: 0, art: "gate", je: { haupt: 30 }, jeTris: { haupt: 9000 } }];
+    const bauGenesis = [zk("f:kathedrale:L0", { haupt: 30 }, { haupt: 9000 }, 0, "gate")];
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
     const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
     t(
@@ -796,10 +783,10 @@ function selbsttest() {
     // Exemplar-Zahl (vor S1) trägt keine Soll-Zeile.
     const s22 = BAND.ortSoll(gen.ort, {
         klassen: [
-            { klasse: "f:drachentor:L0", stufe: 0, art: "gate", je: { haupt: 52 }, jeTris: { haupt: 368000 }, inst: 52, exemplare: 2 },
-            { klasse: "f:drachentor:L1", stufe: 1, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 9e5 }, inst: 26, exemplare: 1 },
-            { klasse: "f:gt:L0", stufe: 0, art: "vehicle", je: { haupt: 12 }, jeTris: { haupt: 3e4 }, inst: 12, exemplare: 1 },
-            { klasse: "f:ruine:L0", stufe: 0, art: "gate", je: { haupt: 7 }, jeTris: { haupt: 85652 }, inst: 7 },
+            zk("f:drachentor:L0", { haupt: 52 }, { haupt: 368000 }, 0, "gate", { inst: 52, exemplare: 2 }),
+            zk("f:drachentor:L1", { haupt: 26 }, { haupt: 9e5 }, 1, "gate", { inst: 26, exemplare: 1 }),
+            zk("f:gt:L0", { haupt: 12 }, { haupt: 3e4 }, 0, "vehicle", { inst: 12, exemplare: 1 }),
+            zk("f:ruine:L0", { haupt: 7 }, { haupt: 85652 }, 0, "gate", { inst: 7 }),
         ],
     });
     t(
@@ -809,7 +796,7 @@ function selbsttest() {
     // S20b — DIE WIESE: das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
     // am Gesetz ist der gefallene Messort ein Hang (Hang, Horizont, Blick rot), der Ort des Haushalts eine Wiese.
     const w20 = (f) => {
-        const h = JSON.parse(JSON.stringify(haushalt));
+        const h = klon(haushalt);
         f(h.messorte.find((o) => o.id === "wiese"));
         return h;
     };
@@ -830,7 +817,7 @@ function selbsttest() {
             !wieseAmGesetz(haushalt).befunde.length
     );
     // S23 — ein Anker ohne Methoden-Namen bricht das Schema; der echte Anker ist einer.
-    const h23c = JSON.parse(JSON.stringify(haushalt));
+    const h23c = klon(haushalt);
     h23c.messorte[1].anker = "36 0";
     t(
         "Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte",
@@ -885,18 +872,13 @@ function selbsttest() {
 
     // S26 — DER SATZ-INHALT (S3 haus, 1b): ein Satz zeichnet je Pass EINEN Befehl — die Ratschen-Zeile nennt, wer darin
     // liegt („bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760"), die Tabelle druckt den Inhalt je Pass.
-    const r26 = JSON.parse(JSON.stringify(rt));
+    const r26 = klon(rt);
     r26.klassen.bau.k0 = { befehle: 1, dreiecke: 4224 };
-    const satz26 = {
-        klasse: "bauSatz",
-        stufe: null,
-        art: null,
-        je: { haupt: 1, k0: 1 },
-        jeTris: { haupt: 18445, k0: 12760 },
+    const satz26 = zk("bauSatz", { haupt: 1, k0: 1 }, { haupt: 18445, k0: 12760 }, null, null, {
         inhalt: {
             k0: [{ klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [] }],
         },
-    };
+    });
     const u26 = urteil([satz26], r26);
     const zeile26 = u26.rot.find((x) => x.art === "ratsche" && /^bau k0/.test(x.text));
     t(
@@ -937,12 +919,7 @@ function selbsttest() {
     // eine L1 (15 000) über den Satz-Inhalt → 77 500 je Haus (807×); eine Art daneben zählt nicht; `stufe` UND `stufen`
     // zugleich (oder keins) bricht das Schema. Ein Pass ohne Exemplar trägt keine Zeile.
     const dorf = BAND.ortOf(haushalt, "dorf");
-    const satz27 = {
-        klasse: "bauSatz",
-        stufe: null,
-        art: null,
-        je: { k0: 1 },
-        jeTris: { k0: 155000 + 12760 },
+    const satz27 = zk("bauSatz", { k0: 1 }, { k0: 155000 + 12760 }, null, null, {
         inhalt: {
             k0: [
                 { klasse: "f:alemannisch:L0", stufe: 0, art: "haus", zellen: 6, tris: 140000, eintraege: [11, 12] },
@@ -950,11 +927,11 @@ function selbsttest() {
                 { klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [1, 2] },
             ],
         },
-    };
+    });
     const s27 = BAND.ortSoll(dorf, { klassen: [satz27] });
     const haus27 = s27.find((x) => x.name === "Haus-Wurf" && /k0/.test(x.klasse));
     const h27 = (f) => {
-        const h = JSON.parse(JSON.stringify(haushalt));
+        const h = klon(haushalt);
         f(h.messorte.find((o) => o.id === "dorf").soll[0]);
         return BAND.messortePruefen(h);
     };
@@ -1036,7 +1013,7 @@ function selbsttest() {
         zs.ort,
         nwT
     );
-    const rtLeer = JSON.parse(JSON.stringify(rtW));
+    const rtLeer = klon(rtW);
     rtLeer.klassen[nwB.klasse].haupt.dreiecke = null;
     const nwOhne = gestaltWand(haushalt, rtLeer, nwB, zs.ort, nwT);
     t(
@@ -1096,11 +1073,11 @@ function selbsttest() {
         }).ratsche;
         const fr = (r, v, m) =>
             BAND.ratscheFrische({ haushalt, version: v || "18.543.0", ratschen: [slot(r)], messungen: m || [] });
-        const alt2 = JSON.parse(JSON.stringify(frisch));
+        const alt2 = klon(frisch);
         alt2.gemessen.version = "18.541.0";
-        const fremd = JSON.parse(JSON.stringify(frisch));
+        const fremd = klon(frisch);
         fremd.gemessen.geraet = "radeon";
-        const ungemessen = JSON.parse(JSON.stringify(frisch));
+        const ungemessen = klon(frisch);
         ungemessen.gemessen = null;
         t(
             "H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile " +
@@ -1121,10 +1098,10 @@ function selbsttest() {
         );
         // Der Re-Mint hebt, der Nachzug nie; das Band-Urteil ohne gemessene Ratsche nennt sie `ungemessen`, eine zu weite
         // Ratsche `weit` — beide sperren den Nachzug nicht (die Linse bleibt sauber), der Leser der Messfolge liest sie.
-        const r31 = JSON.parse(JSON.stringify(rt));
+        const r31 = klon(rt);
         r31.gemessen = { datum: "selbsttest", eingeschwungen: true };
         r31.klassen.boden.haupt = { befehle: 7, dreiecke: 70000 };
-        const boden9 = [{ klasse: "bodenSatz", stufe: 0, art: null, je: { haupt: 10 }, jeTris: { haupt: 7000 } }];
+        const boden9 = [zk("bodenSatz", { haupt: 10 }, { haupt: 7000 }, 0)];
         const u31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: r31 });
         const nach31 = BAND.ratscheNachziehen(r31, u31, { datum: "x" }).ratsche;
         const neu31 = BAND.ratscheNachziehen(BAND.ratscheNeu(r31), u31, { datum: "x" }).ratsche;
@@ -1163,9 +1140,9 @@ function selbsttest() {
         );
         // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
         // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
-        const hAlt = JSON.parse(JSON.stringify(haushalt));
+        const hAlt = klon(haushalt);
         hAlt.geraet = "Radeon 890M";
-        const hKam = JSON.parse(JSON.stringify(haushalt));
+        const hKam = klon(haushalt);
         hKam.sichten.third.kamera = "drohne";
         t(
             "Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; " +

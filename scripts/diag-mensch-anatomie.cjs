@@ -432,13 +432,16 @@ const zeige = (m) =>
 if (process.argv.includes("--selftest")) {
     console.log("=== SELBST-TEST: die Mensch-Anatomie-Linse feuert ===");
     let rot = 0;
-    const pruefe = (name, verzerre, muster) => {
-        const sb = ladeWelt();
-        const f = urteile(sb, messe(sb, verzerre));
+    // die EINE Probe: laden, mit dem Eingriff messen, urteilen — der Leib (Welt) und der Kopf (Ofen) teilen sie
+    const pruefeMit = (laden, urteil, messen) => (name, eingriff, muster) => {
+        const sb = laden();
+        const f = urteil(sb, messen(sb, eingriff));
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
     };
+    const pruefe = pruefeMit(ladeWelt, urteile, messe),
+        pruefeKopf = pruefeMit(ladeOfen, urteileKopf, messeKopf);
     pruefe("S1 die 1,5-fache Hand wird erkannt", (B) => B.parts.hand1.scale.multiplyScalar(1.5), /^handL/);
     pruefe(
         "S2 die doppelten Augäpfel werden erkannt",
@@ -456,13 +459,6 @@ if (process.argv.includes("--selftest")) {
         },
         /^augenAbstand/
     );
-    const pruefeKopf = (name, eingriff, muster) => {
-        const so = ladeOfen();
-        const f = urteileKopf(so, messeKopf(so, eingriff));
-        const ok = f.some((x) => muster.test(x));
-        console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
-        if (!ok) rot++;
-    };
     const ohren = (B) =>
         B.parts.head.children.filter((c) => !c.isMesh && c.children.length && Math.abs(c.position.x) > 0.3);
     pruefeKopf(

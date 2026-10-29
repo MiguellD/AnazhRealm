@@ -194,7 +194,7 @@ async function wasserKoerper(o = {}) {
         st.yaw = -Math.PI / 2; // vorwärts = −x
         const g = { frames: 0, tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 0 };
         Object.assign(g, { seeFrames: 0, luft: 0, maxM: 0 });
-        for (; g.frames < (o.gehFrames || 1500) && pm.position.x > mx; g.frames++) {
+        for (; g.frames < 1500 && pm.position.x > mx; g.frames++) {
             schritt({ w: true });
             const fuss = pm.position.y - FUSS;
             const geerdet = st._fieldWasGrounded === true;
@@ -628,16 +628,16 @@ function __wasserSeeAm(r, ziel) {
 // Seit D3 ist der Himmel über dem Wasser die Himmels-Sicht der EINEN Atmosphäre, gemalt auf der GPU und EINE Lesung später auf
 // der CPU (`_himmelFrisch`): der Null-Renderer malt keinen Himmel (Lehre 16). Die Probe fährt darum im Bild-Lauf (B), am See
 // nächst der Mess-Wiese, die Kamera 10 m über und 3 m unter seinem Spiegel.
-async function wasserLicht(o = {}) {
+async function wasserLicht() {
     const r = window.anazhRealm;
     const st = r.state;
     if (!st.renderer || st.renderer._isHeadlessNull) return { fehler: "kein echter Renderer (der Himmel lebt auf der GPU)" };
-    const ziel = o.see || (await window.__wasserOrte({})).see.mitte;
+    const ziel = (await window.__wasserOrte({})).see.mitte;
     const seeAm = window.__wasserSeeAm(r, ziel);
     if (seeAm.fehler) return { fehler: seeAm.fehler };
     const spiegel = seeAm.see.level;
     const mx = ziel[0];
-    const mz = (o.start || (await window.__wasserOrte({})).see.ufer)[1];
+    const mz = (await window.__wasserOrte({})).see.ufer[1];
     const R = wasserRund(3);
     const aus = {};
     // DAS LICHT AM WASSER (W-L-a, W-L-b): die Farbe der Luft (das Medium, das die Unterwasser-Sicht trägt) zur
@@ -734,7 +734,7 @@ async function wasserUfer(o = {}) {
     const { p: best, fluesse } = __wasserFlussNah(r, ziel[0], ziel[1]); // der Fluss des Befunds liegt jenseits ±1024 m
     if (!best) return { fehler: "kein Fluss" };
     await window.__wasserStrom([best.x, best.z], 3);
-    for (let k = 0; k < (o.takte || 600); k++) r._tickWorldWaterCA();
+    for (let k = 0; k < 600; k++) r._tickWorldWaterCA();
     // Der Körper-Leser: die EINE Wasser-Wahrheit am Körper.
     const koerper = (x, z, boden) => r._koerperWasser(x, z, boden);
     const span = r._voxelChunkConfig(0).span;
@@ -825,7 +825,7 @@ async function wasserStrom(ort, hoehe) {
 }
 
 // ── F3: DER GRABEN AM FLUSS ── Je ein Graben 1 m und 3 m jenseits der Krone (`__wasserKroneVon`, je eine Bank)
-// über den Weg des Grabe-Hiebs (DSL `voxel_carve`, r 3,5 m), dann Takt um Takt, bis der Automat ruht (höchstens `o.takte`).
+// über den Weg des Grabe-Hiebs (DSL `voxel_carve`, r 3,5 m), dann Takt um Takt, bis der Automat ruht (≤ 900 Takte).
 // Je Takt über ±9 m je 0,5 m das GEZEICHNETE Wasser > 10 cm über dem gezeichneten Boden (`_bodenSichtAt`) gegen den Spiegel
 // des Gesetzes (`_atlasWaterLevelAt`, jenseits der Krone `_hydroSpiegelQuer`): `doppelt`, `ueber` (> 10 cm darüber), in Ruhe
 // `abseits` (> 10 cm darunter, wo der Spiegel über dem Boden des Gesetzes liegt); die Nah-Wiese ganz außerhalb des
@@ -866,7 +866,7 @@ async function wasserGraben(o = {}) {
         return m;
     };
     const graeben = [];
-    for (const [abstand, sg] of o.graeben || [
+    for (const [abstand, sg] of [
         [1, 1],
         [3, -1],
     ]) {
@@ -893,7 +893,7 @@ async function wasserGraben(o = {}) {
         g.vor = messen(px, pz).nass;
         try {
             r.dslRun(["voxel_carve", px, r._voxelSurfaceY(px, pz), pz, HIEB], { source: "human" });
-            for (let t = 0; t < (o.takte || 900) && g.ruhe < 0; t++) {
+            for (let t = 0; t < 900 && g.ruhe < 0; t++) {
                 r._gameLoopTick(performance.now());
                 const m = messen(px, pz);
                 for (const k of ["doppelt", "ueber", "ueberM"]) g[k] = Math.max(g[k], m[k]);
@@ -1015,7 +1015,7 @@ async function wasserDamm(o = {}) {
 // über dem Wasser, und wo der Fluss-Spiegel an der Krone endet, sprang der Bezug auf den Meeresspiegel. Ein Sprung =
 // Luma-Stufe > 0,02 zwischen zwei Nachbar-Proben (stetig ändert sich die Farbe dort < 0,008 je 2 cm), Boden-Stufen über
 // 0,15 m (Überhang, Kante) zählen nicht. Dazu die Parität: die Worker-Farbe eines Ufer-Chunks gegen den Main.
-async function wasserUferFarbe(o = {}) {
+async function wasserUferFarbe() {
     const r = window.anazhRealm;
     const st = r.state;
     const h = st.hydrosphere;
@@ -1024,7 +1024,7 @@ async function wasserUferFarbe(o = {}) {
     const R = wasserRund(1);
     const proben = [];
     for (const rv of h.rivers)
-        for (let k = 3; k + 1 < rv.points.length && proben.length < (o.n || 24); k += 9) {
+        for (let k = 3; k + 1 < rv.points.length && proben.length < 24; k += 9) {
             const a = rv.points[k],
                 b = rv.points[k + 1];
             if (!a.inLake && !b.inLake) proben.push([a, b]);
@@ -1114,7 +1114,7 @@ async function wasserUferFarbe(o = {}) {
             abweichend = 0,
             maxDiff = 0,
             fels = 0;
-        for (const [a] of proben.slice(0, o.chunks || 3)) {
+        for (const [a] of proben.slice(0, 3)) {
             const m = await r._voxelWorkerComputeChunkMesh(Math.floor(a.x / span), Math.floor(a.z / span), 0);
             if (!m || m.empty) continue;
             const pos = new Float32Array(m.positions),
@@ -1232,8 +1232,8 @@ async function wasserBild(o = {}) {
     geom.setAttribute("aSlope", new T.Float32BufferAttribute(steil, 1));
     geom.setAttribute("color", new T.Float32BufferAttribute(farbe, 3));
     geom.setIndex(idx);
-    const W = o.w || 512,
-        H = o.h || 288;
+    const W = 512,
+        H = 288;
     const szene = new T.Scene();
     szene.background = new T.Color(0, 0, 0);
     const wasser = new T.Mesh(geom, mat);
@@ -1362,10 +1362,10 @@ async function wasserBild(o = {}) {
     try {
         // zwei Uhren, die keine ganze Zahl von Phasen trennt (sonst verglichen beide dieselbe Phase)
         if (U.wind) U.wind.value = 0.06;
-        a = await mess(o.t0 || 61.3);
-        b = await mess(o.t1 || 3601.7);
+        a = await mess(61.3);
+        b = await mess(3601.7);
         if (U.wind) U.wind.value = 1.0;
-        sturm = await mess(o.t0 || 61.3);
+        sturm = await mess(61.3);
     } finally {
         if (U.wind) U.wind.value = windAlt;
         U.time.value = zeitAlt;
@@ -1401,14 +1401,14 @@ async function wasserBild(o = {}) {
 // Der ECHTE Regen der Welt (`_tickRain` im Sturm, dasselbe Objekt, dasselbe Material) allein auf Schwarz, mit einer
 // Kamera am Auge quer zum Wind: lit = Pixel über 4/255; eine Schliere = ein senkrechter Lauf ≥ 4 lit Pixel; die Neigung
 // = (rechts − links) / (rechts + links) der diagonalen Nachbarn im Lauf (der Wind treibt die Schlieren schräg).
-async function wasserRegen(o = {}) {
+async function wasserRegen() {
     const r = window.anazhRealm;
     const st = r.state;
     const T = window.THREE;
     const renderer = st.renderer;
     if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
-    const W = o.w || 640,
-        H = o.h || 360;
+    const W = 640,
+        H = 360;
     renderer.setAnimationLoop(null);
     const wetterAlt = st.weather;
     const camAlt = st.camera;
@@ -1490,7 +1490,7 @@ async function wasserRegen(o = {}) {
 // ist der Grund eines Körpers in der Höhle: die EINE Wasser-Wahrheit am Körper darf dort kein Wasser lesen (Chokepoint), der
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
 // (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert).
-async function wasserHoehle(o = {}) {
+async function wasserHoehle() {
     const r = window.anazhRealm;
     const st = r.state;
     const A = r.constructor;
@@ -1561,7 +1561,7 @@ async function wasserHoehle(o = {}) {
     // Die Pfade der Leser an Höhlen mit Kopf-Raum (zwei Luft-Zellen über dem Boden): Spieler, Kamera, Tier.
     const raum = hoehlen.filter((h) => h.luft);
     const wahl = [];
-    for (let q = 0; q < raum.length && wahl.length < (o.n || 6); q += Math.max(1, Math.floor(raum.length / 6)))
+    for (let q = 0; q < raum.length && wahl.length < 6; q += Math.max(1, Math.floor(raum.length / 6)))
         wahl.push(raum[q]);
     const FUSS = A.PLAYER_FOOT_OFFSET;
     const leib = window.__wasserLeib();
@@ -2240,7 +2240,7 @@ async function wasserQuelle(o = {}) {
                 if (hub > 0.05) {
                     buckel++;
                     if (hub > buckelMax) buckelMax = hub;
-                    if (beispiele.length < (o.beispiele || 6))
+                    if (beispiele.length < 6)
                         beispiele.push(["buckel", R(P[0].x, 0), R(P[0].z, 0), R(hub)]);
                 }
             }
@@ -2307,7 +2307,7 @@ async function wasserQuelle(o = {}) {
                 lauf.length,
             ];
             alle.push(zeile);
-            if ((ueber || !nassFrueh || unsicht > 0 || phant > 0) && beispiele.length < (o.beispiele || 6))
+            if ((ueber || !nassFrueh || unsicht > 0 || phant > 0) && beispiele.length < 6)
                 beispiele.push(zeile);
         }
     }
@@ -2480,7 +2480,7 @@ async function wasserBach(o = {}) {
             aus.unsichtbarBreite += s.unsichtbarM;
             if (s.phantomM > 0) aus.mitPhantom++;
             if (s.unsichtbarM > 0) aus.mitUnsichtbar++;
-            if ((s.phantomM > 0 || s.unsichtbarM > 0) && aus.beispiele.length < (o.beispiele || 6))
+            if ((s.phantomM > 0 || s.unsichtbarM > 0) && aus.beispiele.length < 6)
                 aus.beispiele.push([R(x, 1), R(z, 1), s.koerperM, s.bildM, s.phantomM, s.unsichtbarM]);
         }
     }
@@ -2495,7 +2495,7 @@ async function wasserSee(o = {}) {
     const f = o.fenster || (await window.__wasserOrte({})).see.fenster;
     await window.__weltDa((r) => !r._ensureHydroTilesAround((f[0] + f[2]) / 2, (f[1] + f[3]) / 2, 256));
     const sicht = window.__wasserSichtNetz();
-    const aus = sicht.fenster(f[0], f[1], f[2], f[3], o.d || 0.5);
+    const aus = sicht.fenster(f[0], f[1], f[2], f[3], 0.5);
     aus.fenster = f;
     aus.flora = window.__wasserFlora({ sicht, fenster: f });
     return aus;
@@ -2601,7 +2601,7 @@ async function wasserBank(o = {}) {
         geroellGrad = grad(G.schuttKandidat);
     const ort = o.ort || (({ fluss }) => fluss && [fluss.x, fluss.z])(await window.__wasserOrte({}));
     if (!ort) return { fehler: "kein Fluss an der Mess-Wiese" };
-    const rad = o.r || 240;
+    const rad = 240;
     await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], rad + 64));
     const punkte = [];
     // Heimat-Region und Kacheln (der Fluss der Mess-Wiese liegt jenseits ±1024 m)
@@ -2620,7 +2620,7 @@ async function wasserBank(o = {}) {
     let fels = 0,
         geroell = 0;
     const beispiele = [];
-    const jede = Math.max(1, Math.floor(punkte.length / (o.n || 80)));
+    const jede = Math.max(1, Math.floor(punkte.length / 80));
     for (let q = 0; q < punkte.length; q += jede) {
         const [a, b] = punkte[q];
         const fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
@@ -2854,7 +2854,7 @@ async function wasserMutation(o = {}) {
     const unter = (it) => punkte.some((p) => (it.x - p.x) ** 2 + (it.z - p.z) ** 2 <= RHO * RHO && it.y < p.b + TIEF);
     const punkte = [];
     let versuche = 0;
-    for (; versuche < 3000 && punkte.length < (o.n || 50); versuche++) {
+    for (; versuche < 3000 && punkte.length < 50; versuche++) {
         const x = ort[0] + (zufall() * 2 - 1) * 60;
         const z = ort[1] + (zufall() * 2 - 1) * 60;
         if (punkte.some((p) => Math.hypot(p.x - x, p.z - z) < 2 * RHO + 4)) continue;

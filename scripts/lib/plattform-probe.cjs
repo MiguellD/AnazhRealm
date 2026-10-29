@@ -437,7 +437,6 @@ module.exports = {
     FUNKTIONEN,
     probeWand,
     fingerabdruck,
-    goldenVergleich,
     goldenSelbsttest,
     fallSchluessel,
 };

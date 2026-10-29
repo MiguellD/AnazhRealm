@@ -146,9 +146,18 @@ class FakePC {
 }
 
 const tick = () => new Promise((r) => setImmediate(r));
+// die EINE Fake-Umgebung der Fixturen (je Ruf ein frisches Objekt)
+const umwelt = (timers, RTCPeerConnection, now = () => 0) => ({
+    AnazhRealm: AR,
+    performance: { now },
+    setTimeout: timers.setT,
+    clearTimeout: timers.clearT,
+    WebSocket: FakeWS,
+    RTCPeerConnection,
+});
 
 // ── Realm-Fixture A: WS-Rejoin ──
-function makeRealmA(env, initSrcOverride) {
+function makeRealmA(env) {
     const R = {
         state: {
             p2p: {
@@ -207,7 +216,7 @@ function makeRealmA(env, initSrcOverride) {
             return `${w}:${r}`;
         },
     };
-    R.initP2PSync = mk("initP2PSync", env, initSrcOverride);
+    R.initP2PSync = mk("initP2PSync", env);
     R.shutdownP2PSync = mk("shutdownP2PSync", env);
     R._p2pScheduleReconnect = mk("_p2pScheduleReconnect", env);
     R._p2pReconnectDelayMs = mk("_p2pReconnectDelayMs", env);
@@ -235,14 +244,7 @@ hauptLauf(async () => {
     console.log("\n── A: WS-Rejoin (Exponential-Backoff + seeded Jitter) ──");
     {
         const timers = makeTimers();
-        const env = {
-            AnazhRealm: AR,
-            performance: { now: () => 0 },
-            setTimeout: timers.setT,
-            clearTimeout: timers.clearT,
-            WebSocket: FakeWS,
-            RTCPeerConnection: undefined,
-        };
+        const env = umwelt(timers, undefined);
         FakeWS.instances = [];
         const R = makeRealmA(env);
         const res = R.initP2PSync("raum-fix");
@@ -357,15 +359,8 @@ hauptLauf(async () => {
     console.log("\n── B: RTC-Heilung (restartIce genau 1× je failed-Übergang) ──");
     {
         const timers = makeTimers();
-        const env = {
-            AnazhRealm: AR,
-            performance: { now: () => 0 },
-            setTimeout: timers.setT,
-            clearTimeout: timers.clearT,
-            WebSocket: FakeWS,
-            RTCPeerConnection: FakePC,
-        };
-        const makeRealmB = (myId, createSrcOverride) => {
+        const env = umwelt(timers, FakePC);
+        const makeRealmB = (myId) => {
             const R = {
                 state: { p2p: { peerId: myId, iceServers: [], rtcPeers: new Map(), peers: new Map(), meshActive: false } },
                 signals: [],
@@ -381,7 +376,7 @@ hauptLauf(async () => {
                     return true;
                 },
             };
-            R._p2pCreatePeerConnection = mk("_p2pCreatePeerConnection", env, createSrcOverride);
+            R._p2pCreatePeerConnection = mk("_p2pCreatePeerConnection", env);
             R._p2pHealRtcPeer = mk("_p2pHealRtcPeer", env);
             R._p2pReconnectDelayMs = mk("_p2pReconnectDelayMs", env);
             R._p2pReconnectJitterMs = mk("_p2pReconnectJitterMs", env);
@@ -489,15 +484,12 @@ hauptLauf(async () => {
     console.log("\n── C: Snapshot-Puffer (Valve-Source-Interpolation) ──");
     {
         let nowVal = 0;
-        const timers = makeTimers();
-        const env = {
-            AnazhRealm: AR,
-            performance: { now: () => nowVal },
-            setTimeout: timers.setT,
-            clearTimeout: timers.clearT,
-            WebSocket: FakeWS,
-            RTCPeerConnection: FakePC,
-        };
+        const env = umwelt(makeTimers(), FakePC, () => nowVal);
+        // die Fabriken der Fixture: ein Puffer-Punkt, ein Snap, ein Peer-Eintrag (je Ruf ein frisches Objekt)
+        const pt = (t, x = 0, y = 0, z = 0, yaw = 0) => ({ t, x, y, z, yaw });
+        const snap = (peerId, x = 0, y = 0, z = 0, yaw = 0) => ({ peerId, x, y, z, yaw });
+        const eintrag = (peerId, o) =>
+            Object.assign({ peerId, x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 }, o);
         const interp = mk("_p2pSnapInterpolate", env);
         const self = {
             _p2pSnapInterpolate: interp,
@@ -509,10 +501,7 @@ hauptLauf(async () => {
         self._weltUhrNimm = mk("_weltUhrNimm", env); // die Welt-Uhr des Orts (pos.w; ohne w nimmt sie nichts)
 
         // Der reine Kern: (t=0,x=0) · (t=100,x=3) ⇒ bei 50 ≈ 1,5.
-        const buf = [
-            { t: 0, x: 0, y: 0, z: 4, yaw: 0 },
-            { t: 100, x: 3, y: 1, z: -2, yaw: 0.5 },
-        ];
+        const buf = [pt(0, 0, 0, 4), pt(100, 3, 1, -2, 0.5)];
         const mid = interp.call(self, buf, 50);
         check(
             "Kern: t=50 zwischen (0,x=0) und (100,x=3) ⇒ x=1,5 (y/z/yaw lerpen mit)",
@@ -527,10 +516,7 @@ hauptLauf(async () => {
         );
         const wrap = interp.call(
             self,
-            [
-                { t: 0, x: 0, y: 0, z: 0, yaw: 3.0 },
-                { t: 100, x: 0, y: 0, z: 0, yaw: -3.0 },
-            ],
+            [pt(0, 0, 0, 0, 3.0), pt(100, 0, 0, 0, -3.0)],
             50
         );
         check(
@@ -542,12 +528,12 @@ hauptLauf(async () => {
         // Integration über die ECHTE Pipe: _p2pMsgPos füllt, der Sampler liest
         // renderT = now − INTERP_DELAY.
         const p2p = { peerId: "ich" };
-        const entry = { peerId: "peerX", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 };
+        const entry = eintrag("peerX");
         self._p2pEnsurePeerEntry = () => entry;
         nowVal = 0;
-        self._p2pMsgPos({ peerId: "peerX", x: 0, y: 0, z: 0, yaw: 0 }, p2p);
+        self._p2pMsgPos(snap("peerX"), p2p);
         nowVal = 100;
-        self._p2pMsgPos({ peerId: "peerX", x: 3, y: 1, z: -2, yaw: 0.5 }, p2p);
+        self._p2pMsgPos(snap("peerX", 3, 1, -2, 0.5), p2p);
         nowVal = 100 + AR.P2P_SNAP_INTERP_DELAY_MS - 50; // renderT = 50
         const sampled = self._p2pSampleSnapBuf(entry, nowVal);
         check(
@@ -557,10 +543,10 @@ hauptLauf(async () => {
         );
 
         // Erst-Kontakt (< 2 Snaps): roh, kein Sampling.
-        const entry1 = { peerId: "peerY", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 };
+        const entry1 = eintrag("peerY");
         self._p2pEnsurePeerEntry = () => entry1;
         nowVal = 0;
-        self._p2pMsgPos({ peerId: "peerY", x: 7, y: 0, z: 0, yaw: 0 }, p2p);
+        self._p2pMsgPos(snap("peerY", 7), p2p);
         check(
             "Erst-Kontakt: EIN Snap ⇒ rohes Direkt-Schreiben, Sampler tritt zurück",
             entry1.x === 7 && self._p2pSampleSnapBuf(entry1, 200) === false && entry1.x === 7
@@ -568,33 +554,27 @@ hauptLauf(async () => {
 
         // LOCKSTEP BLEIBT BYTE-HEILIG: fährt der Ghost, geht der Snap zur
         // Autorität (authX), der Puffer leert sich, der Sampler tritt zurück.
-        const entryL = {
-            peerId: "peerZ",
+        const entryL = eintrag("peerZ", {
             x: 7,
             y: 7,
             z: 7,
-            yaw: 0,
             lockstep: { seeded: true, lastStepAt: 0, authX: NaN, authY: NaN, authZ: NaN },
-            snapBuf: [
-                { t: 0, x: 0, y: 0, z: 0, yaw: 0 },
-                { t: 50, x: 1, y: 0, z: 0, yaw: 0 },
-            ],
-            lastMovedAt: 0,
-        };
+            snapBuf: [pt(0), pt(50, 1)],
+        });
         self._p2pEnsurePeerEntry = () => entryL;
         nowVal = 100; // Ghost frisch (< 1200 ms)
-        self._p2pMsgPos({ peerId: "peerZ", x: 9, y: 8, z: 7, yaw: 1 }, p2p);
+        self._p2pMsgPos(snap("peerZ", 9, 8, 7, 1), p2p);
         const lockstepUntouched =
             entryL.x === 7 && entryL.lockstep.authX === 9 && entryL.snapBuf.length === 0;
         const samplerSteppedBack = self._p2pSampleSnapBuf(entryL, nowVal) === false && entryL.x === 7;
         check("Lockstep-Pfad byte-heilig: Snap wird Autorität (authX), Puffer fällt, Sampler tritt zurück", lockstepUntouched && samplerSteppedBack);
 
         // Bounded: der Puffer wächst nie über P2P_SNAP_BUF_MAX.
-        const entryB = { peerId: "peerB", x: 0, y: 0, z: 0, yaw: 0, lockstep: null, snapBuf: null, lastMovedAt: 0 };
+        const entryB = eintrag("peerB");
         self._p2pEnsurePeerEntry = () => entryB;
         for (let i = 0; i < 40; i++) {
             nowVal = i * 33;
-            self._p2pMsgPos({ peerId: "peerB", x: i, y: 0, z: 0, yaw: 0 }, p2p);
+            self._p2pMsgPos(snap("peerB", i), p2p);
         }
         check(
             `Puffer bounded (≤ ${AR.P2P_SNAP_BUF_MAX} Snaps bei 40 Empfängen)`,

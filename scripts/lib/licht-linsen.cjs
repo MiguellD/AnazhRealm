@@ -276,12 +276,7 @@ function albedoSicht(opts) {
         }
         const karte = new T.Mesh(
             new T.PlaneGeometry(2, 2),
-            new T.MeshStandardNodeMaterial({
-                color: new T.Color(0.18, 0.18, 0.18),
-                roughness: 1,
-                metalness: 0,
-                side: T.DoubleSide,
-            })
+            window.__grauStoff({ side: T.DoubleSide })
         );
         karte.name = "graukarte";
         karte.position.set(pp.x + 40, pp.y + 30, pp.z + 40);
@@ -664,6 +659,14 @@ function albedoSicht(opts) {
     })();
 }
 
+// DIE 18-%-KARTE der Familie (Albedo-Sicht, Licht-Bilanz, Laub, Licht-Weg): der EINE graue Stoff, je Ruf ein frischer
+function grauStoff(mehr) {
+    const T = window.THREE;
+    return new T.MeshStandardNodeMaterial(
+        Object.assign({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }, mehr)
+    );
+}
+
 // DAS ZIEL DER FAMILIE (Halb-Float W × H; Albedo-Sicht, Licht-Bilanz, Nah-Fern und Laub lesen es): `zeichne(cam)` die Szene
 // hinein, `lies()` dicht als Float32 (die Zeilen liegen auf 256 Byte, 8 Byte je Pixel), `bundles()` frischt jede Bündel-Gruppe
 // (`window.__bundlesNeu`, welt-boot)
@@ -718,7 +721,7 @@ function lichtBilanz() {
             H = 64;
         const karte = new T.Mesh(
             new T.PlaneGeometry(1.2, 1.2),
-            new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+            window.__grauStoff()
         );
         const basis = new T.Vector3(pp.x + 6, gy + 45, pp.z + 6);
         sc.add(karte);
@@ -1756,7 +1759,7 @@ function laubGegenlicht(opts) {
                 }
                 const karte = new T.Mesh(
                     new T.PlaneGeometry(breit * 2, breit * 2),
-                    new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+                    window.__grauStoff()
                 );
                 karte.rotation.x = -Math.PI / 2;
                 karte.position.set(mitte.x, kopf + 0.05, mitte.z);
@@ -1877,7 +1880,7 @@ function lichtWeg(opts) {
         let luftZurueck;
         const kamZurueck = zl.kamera(cam);
         const flaeche = (mat, kipp) => Object.assign(new T.Mesh(new T.PlaneGeometry(40, 40).rotateX(kipp), mat), { frustumCulled: false });
-        const karte = flaeche(new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 }), -Math.PI / 2);
+        const karte = flaeche(window.__grauStoff(), -Math.PI / 2);
         const see = flaeche(r._ensureHydroSurfaceMaterial(), Math.PI / 2), n = see.geometry.attributes.position.count;
         [["aFlow", 2, 0], ["aWave", 1, 0], ["aDepth", 1, 20], ["aSlope", 1, 0]].forEach(([a, k, v]) => see.geometry.setAttribute(a, new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k)));
         // DER KÖRPER IM FLÜSSIGEN WASSER (stoffe.K3, wie die Bühne von diag-post-kette): `wasser` und `spiegel` stehen mit Auge,
@@ -2813,6 +2816,7 @@ module.exports = {
     kronenObenUrteil,
     kronenReflexionSoll,
     LINSEN_INSTALL:
+        `window.__grauStoff = ${grauStoff.toString()};` +
         `window.__linsenZiel = ${linsenZiel.toString()};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
