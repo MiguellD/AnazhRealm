@@ -25,6 +25,12 @@
 // Antworten von der Platte · im Werk gebaut · leer, Güsse des Haupt-Fadens). Mit `--profil` wartet sie auf die Ruhe der Foundry
 // (der Erst-Boot füllt die Platte ganz); am Zweit-Boot urteilt sie: ≥ 95 % von der Platte, kein Auftrag verschluckt.
 // --selftest verschluckt eine Lieferung (Null-Renderer) — die Zeile ist ROT beim Namen.
+// DIE ART-ZEILE (pipeline.K4 Stufe 2): am Zweit-Boot Blatt-Atlas, Dorf-Export und Karten je ganz von der Platte, dazu die
+// Haupt-Faden-ms ihrer Erzeuger (die Liefer-Marke zählt sie). Jeder Lauf mit `--profil` legt die Liste seiner Lieferungen
+// (Art · Rest · Weg · Kerne) ins Profil; `--kern-wechsel <kern>` serviert die Skripte des Kerns mit einem Kommentar mehr
+// (sein Gesetz-SHA springt) und urteilt gegen die Liste davor: nur seine Leser bauen neu — ein fremder Neubau dessen, was
+// die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
+// es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
@@ -38,7 +44,8 @@ const OPT = (k) => ARGV.includes(k) && ARGV[ARGV.indexOf(k) + 1];
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
 // Das ganze Bild (ankunft K2 Staffel 1): ≤ 2 % der Pixel weichen gegen dieselbe Pose nach 60 s Ruhe um mehr als ein Achtel ab.
 const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = [5000, 0.1, 1500, 60000, 0.02];
-const server = statikServer();
+const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-wechsel"));
+const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
     const p = () => window.anazhRealm?.state.playerMesh?.position;
@@ -78,7 +85,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
 // dann gilt ihre Liefer-Marke
 const RUHE = (r = window.anazhRealm) =>
     window
-        .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat, max: 600 })
+        .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat && !(r._impostorBakeQueue || []).length, max: 600 })
         .then(() => r._foundry.lieferung);
 // DER GEPFLANZTE BRUCH (--selftest): die erste Körper-Antwort nach dem Erwachen verschluckt der Haupt-Faden, ihr Leser bekommt null
 function SCHLUCK() {
@@ -98,10 +105,26 @@ function lieferUrteil(roh, zweit) {
     const n = L.platte + L.werk + L.leer + L.haupt;
     const weg = L.auftrag + L.haupt - n;
     const q = n ? L.platte / n : 0;
+    const je = ["blatt-atlas", "dorf-export", "karte"].map((k) => [k, Object.assign({ platte: 0, werk: 0, haupt: 0, ms: 0 }, L.je?.[k])]);
     return {
         weg,
         gruen: zweit && !weg && q >= 0.95,
         zeile: `LIEFERUNG ${zweit ? "zweit" : "kalt"}: ${L.platte} von ${n} von der Platte (${(q * 100).toFixed(1)} %) · Werk ${L.werk} · Haupt-Faden ${L.haupt} · leer ${L.leer} · verschluckt ${weg}`,
+        artGruen: zweit && je.every(([, J]) => J.platte && !J.werk && !J.haupt),
+        artZeile: `LIEFERUNG je Art: ${je.map(([k, J]) => `${k} ${J.platte}/${J.platte + J.werk + J.haupt} ${Math.round(J.ms)} ms`).join(" · ")}`,
+    };
+}
+// DAS URTEIL DES KERN-WECHSELS über die Listen [Art, Rest, Weg, Kerne] zweier Boots: `neu` sind die neu gebauten Leser
+function wechselUrteil(vor, nach, kern) {
+    const [trug, neu, fremd, alt] = [new Set(vor.filter((z) => z[2] === "platte").map((z) => z[1])), new Set(), [], []];
+    for (const [, rest, weg, kerne] of nach) {
+        const liest = kerne.split(",").includes(kern);
+        if (weg === "platte" && liest && !neu.has(rest)) alt.push(rest);
+        if (weg === "werk" || weg === "haupt") liest ? neu.add(rest) : trug.has(rest) && fremd.push(rest);
+    }
+    return {
+        gruen: neu.size > 0 && !fremd.length && !alt.length,
+        zeile: `KERN-WECHSEL ${kern}: ${neu.size} Leser neu · fremd ${fremd.length} ${fremd.slice(0, 6)} · alt ${alt.length} ${alt.slice(0, 6)}`,
     };
 }
 
@@ -253,6 +276,9 @@ async function kaltLauf() {
             lieferung: r._foundry.lieferung,
         });
     });
+    const liste = path.join(profil, "lieferung.json");
+    const wechsel = KERN && wechselUrteil(JSON.parse(fs.readFileSync(liste)), out.lieferung.liste, KERN.id);
+    if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
     Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
     server.close();
@@ -317,6 +343,8 @@ async function kaltLauf() {
     // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): am Zweit-Boot urteilt sie (Exit bleibt die Ankunft)
     const k4 = lieferUrteil(out.lieferung, zweit);
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
+    console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
+    if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
     process.exit(gut && ganz ? 0 : 1);
 }
 
@@ -423,6 +451,9 @@ hauptLauf(async () => {
             ],
             [out.liefer.weg === 1, `SELBST-TEST: die verschluckte Lieferung ist ROT — ${out.liefer.zeile}`]
         );
+    // das Urteil des Kern-Wechsels an Bruch-Daten: gesund GRÜN, ein fremder Neubau (e) und ein alter Leser (d) ROT
+    const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
+    if (SELFTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);

@@ -23,7 +23,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   (Regler · Sitzung · Kosten-Leiste · Portal-Brücke, 12 von 12 trusted Studios). Heute fährt die Engine der Welt nur `gelaende` (Modus
   `index.html?studio=gelaende`), die übrigen zeichnen mit eigenem `WebGLRenderer` (r128 bis r183) — Labor = Welt ist dort Gesetz, nicht Stand.
 - **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf three r128 (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
-  `export-settlement`; die IDB-Platte trägt nur `build-asset`, SHA-Stempel der Quellen) · `voxel-worker.js`. **Server:** save-server
+  `export-settlement`; die IDB-Platte der Schale trägt jede Lieferung — build-asset · Dorf-Export · Blatt-Atlas · Karte —
+  unter dem Gesetz-SHA der Kerne, die sie liest) · `voxel-worker.js`. **Server:** save-server
   (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).
 
 ## Die Quelle je Domäne
