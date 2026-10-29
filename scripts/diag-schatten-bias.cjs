@@ -28,17 +28,14 @@
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, taeterFaelle, selbsttestEnde, pngDatei, wandEnde, argOpt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const ECHT = process.argv.includes("--echt");
-const TAG = (() => {
-    const i = process.argv.indexOf("--tag");
-    return i > 0 ? process.argv[i + 1] : "echt";
-})();
+const TAG = argOpt("--tag", "echt");
 const OUT = path.join(root, "artifacts", "schatten-bias", TAG);
 const WERFER = ["wolf", "fuchs", "busch", "pfosten", "spieler"];
 const IOU_MIN = 0.4;

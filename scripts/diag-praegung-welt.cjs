@@ -624,11 +624,11 @@ hauptLauf(async () => {
         `je Art ${Object.entries(K.je).map(([a, [e, n]]) => `${a} ${e}/${n}`).join(" · ")} (tot ${K.unbewegt.length}, ohne Wort ${K.ohneWort.length})` +
             (kiUrteil(K).length ? ` — ${kiUrteil(K).slice(0, 6).join(" · ")}` : "")
     );
-    check("KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk", K.klemme && K.klemme.ok, JSON.stringify(K.klemme));
+    check("KLEMME: W -3 · pitchDeg 75 · annexN 1,6 → 6 · 60 · 2, benannt, gebaut wie das Studio-Werk", K.klemme && K.klemme.ok, K.klemme);
     check(
         "FAIL-CLOSED: fremder Regler · Text · Liste · Art ohne Zeilen · Wesen · Prägung setzen nichts, benannt",
         ["fremd", "text", "liste", "baum", "wesen", "praegung"].every((n) => K.zu[n]),
-        JSON.stringify(K.zu)
+        K.zu
     );
     check("PROMPT: jede Zeile jeder sagbaren Art mit Bereich, aus DERSELBEN Quelle (Mutation gewinnt)", K.prompt && !K.prompt.length && K.mutation, `fehlt: ${K.prompt} · Mutation ${K.mutation}`);
     const kk = K.korpus || [];
@@ -668,14 +668,14 @@ hauptLauf(async () => {
     check(
         "0 Schreibe: Baupläne, Bauten, Regeln, Edits, Same, Erinnerung unverändert",
         b.nullSchreibe === true,
-        JSON.stringify(b.nullSchreibe)
+        b.nullSchreibe
     );
     check("P2P: Slot 6 mit einem Regler außerhalb des Vertrags fällt benannt (dieselbe Wand)", b.p2pVertrag);
     check("P2P: eine Regel mit verbotenem Effekt fällt benannt (rule_effect_forbidden)", b.p2pRegel);
     check(
         "must-ignore gilt FREMDEN Hüllen-Feldern: das Werk steht, das Feld ist benannt",
         b.zukunft?.ok && b.zukunft.fremd.includes("zukunft"),
-        JSON.stringify(b.zukunft)
+        b.zukunft
     );
     check(
         "ein Name aus fremder Hand erreicht die KI nie (Werk steht, System-Prompt ohne ihn)",

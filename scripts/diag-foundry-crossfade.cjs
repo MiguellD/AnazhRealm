@@ -1484,7 +1484,7 @@ async function main() {
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
             !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
-            JSON.stringify(out.warm)
+            out.warm
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);
         let holes = 0,
@@ -1530,7 +1530,7 @@ async function main() {
     check(
         "SPIEGEL DER BLENDE: die Masken-Uniformen tragen je Bild das CPU-Band (LOD_DISTANCES) — vor dem Bild alt, nach ihm neu",
         sp.seed === true && sp.vorBild === false && sp.nachBild === true && sp.zurueck === true,
-        JSON.stringify(sp)
+        sp
     );
 
     if (out && Array.isArray(out.zensus)) {
@@ -1571,7 +1571,7 @@ async function main() {
         check(
             "STUFEN-WAHRHEIT: das Billboard stand im Sweep mit SEINEM Stempel (= die Höhe der L1, kein Rahmen-Modell)",
             (SW.voll.modi.fin || 0) > 0 && (SW.last.modi.fin || 0) > 0,
-            JSON.stringify({ voll: SW.voll.modi, last: SW.last.modi })
+            { voll: SW.voll.modi, last: SW.last.modi }
         );
         const ST = SW.strauch;
         check(
@@ -1581,7 +1581,7 @@ async function main() {
                 out.strauchWarm.l0 &&
                 out.strauchWarm.l1 &&
                 out.strauchWarm.l2,
-            JSON.stringify({ preset: out.strauchPreset, warm: out.strauchWarm })
+            { preset: out.strauchPreset, warm: out.strauchWarm }
         );
         if (ST) {
             check(
@@ -1591,7 +1591,7 @@ async function main() {
                     (ST.voll.modi.fin || 0) > 0 &&
                     !ST.voll.modi.l1e &&
                     !ST.voll.modi.frei,
-                JSON.stringify(ST.voll.modi)
+                ST.voll.modi
             );
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
             check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
@@ -1610,7 +1610,7 @@ async function main() {
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): jede gezeigte Stufe hat ihren Partner (L0 ↔ L1), alle warm`,
                 !!op.preset && mitPartner && op.alleWarm === true,
-                JSON.stringify({ preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm })
+                { preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm }
             );
             if (!op.voll || !op.last) {
                 check(`KETTE DES GESETZBUCHS (${op.typ}): Sweep lief`, false, "fehlt");
@@ -1626,7 +1626,7 @@ async function main() {
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): der Partner steht im Bild — jede gezeigte Stufe zeichnet im Sweep`,
                 g.length > 0 && g.every((s) => (op.voll.stufen[s] || 0) > 0 && (op.last.stufen[s] || 0) > 0),
-                JSON.stringify({ voll: op.voll.stufen, last: op.last.stufen, modi: op.voll.modi })
+                { voll: op.voll.stufen, last: op.last.stufen, modi: op.voll.modi }
             );
             if (op.satzArt)
                 check(
