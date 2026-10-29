@@ -234,6 +234,8 @@ const K4_BEFEHL = [
     "-c",
     `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
 ];
+// DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
+const K4_AUSNAHME = "sieben Mesh-Studios je Bühne und Welt aus dem Ausgabe-Pfad (Werk über den EINEN Übergabe-Kanal), Bild-Differenz und Albedo-Tafel beider Seiten";
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
@@ -1702,7 +1704,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 900, befehl: K4_BEFEHL },
+        probe: { sek: 90, mutiert: true, ausnahme: K4_AUSNAHME, befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1718,7 +1720,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 900, befehl: K4_BEFEHL },
+        probe: { sek: 90, mutiert: true, ausnahme: K4_AUSNAHME, befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,
