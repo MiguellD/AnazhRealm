@@ -1693,3 +1693,4 @@
 2026-10-30 00:13:31 takt22-radeon lod.K2#1 ROT 1.7 · 29/65
 2026-10-30 00:13:41 takt22-radeon material.K4#1 ROT 0.1 · 30/65
 2026-10-30 00:13:54 takt22-radeon material.K5#1 ROT 0.2 · 31/65
+2026-10-30 00:20:03 takt22-radeon studios.K4#1 ROT 6.1 · 32/65
